@@ -280,7 +280,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
       }
       // If linking to taxa for an existing sample or occurrence attribute, we
       // need a caption to display.
-      $masterListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
+      $masterListId = warehouse::getMasterTaxonListId();
       if ($masterListId) {
         $otherData['taxon_restrictions'] = $this->db
           ->select('t.id as taxa_taxon_list_id, tr.restrict_to_taxon_meaning_id, tr.restrict_to_stage_term_meaning_id, stage.id as restrict_to_stage_termlists_term_id')

@@ -143,7 +143,7 @@ $('#milestones-form').submit(function() {
       'allowSave' => false,
       'embedInExistingForm' => true,
       'runningOnWarehouse' => true,
-      'taxon_list_id' => kohana::config('cache_builder_variables.master_list_id'),
+      'taxon_list_id' => warehouse::getMasterTaxonListId(),
       'website_id' => html::initial_value($values, 'milestone:website_id') ? html::initial_value($values, 'milestone:website_id') : $values['website_id']
     ), $this->uri->argument(1), $hiddenStuff);
     // fields to auto-create a filter record for this group's defined set of records

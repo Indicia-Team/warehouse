@@ -353,7 +353,7 @@ HTML;
     // Use a species checklist to capture information about taxon restrictions
     // for this attribute.
     if ($_GET['type'] === 'sample' || $_GET['type'] === 'occurrence') {
-      $masterListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
+      $masterListId = warehouse::getMasterTaxonListId();
       if ($masterListId) {
         $msg = empty($other_data['sexStageOccAttrs']) ? 'taxa' : 'taxa and sex/stage combinations';
         echo <<<HTML

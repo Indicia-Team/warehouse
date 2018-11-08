@@ -349,7 +349,7 @@ TXT;
    *   List of tips, which will be amended if any tips identified by this function.
    */
   private static function checkMasterTaxonList($authFilter, array &$messages) {
-    $masterTaxonListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
+    $masterTaxonListId = warehouse::getMasterTaxonListId();
     if (!$masterTaxonListId && empty($authFilter)) {
       $url = url::base();
       $description = <<<TXT
