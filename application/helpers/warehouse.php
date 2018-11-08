@@ -29,6 +29,15 @@
  */
 class warehouse {
 
+  private static $sharingMappings = [
+    'R' => 'reporting',
+    'V' => 'verification',
+    'P' => 'peer review',
+    'D' => 'data flow',
+    'M' => 'moderation',
+    'E' => 'editing',
+  ];
+
   /**
    * Loads any of the client helper libraries.
    *
@@ -70,6 +79,33 @@ class warehouse {
     }
     // If not set, default to zero for safety.
     return empty($masterTaxonListId) ? 0 : $masterTaxonListId;
+  }
+
+  /**
+   * Expand a single character sharing mode code to the full term.
+   *
+   * @param string $code
+   *   Sharing mode code to expand.
+   *
+   * @return string
+   *   Expanded term.
+   */
+  public static function sharingCodeToTerm($code) {
+    return array_key_exists($code, self::$sharingMappings) ? self::$sharingMappings[$code] : $code;
+  }
+
+  /**
+   * Converts a sharing term to a single character sharing mode code.
+   *
+   * @param string $term
+   *   Sharing mode term.
+   *
+   * @return string
+   *   Sharing mode code.
+   */
+  public static function sharingTermToCode($term) {
+    $mappings = array_flip(self::$sharingMappings);
+    return array_key_exists($term, $mappings) ? $mappings[$term] : $term;
   }
 
 }
