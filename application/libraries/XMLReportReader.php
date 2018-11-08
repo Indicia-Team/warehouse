@@ -303,6 +303,9 @@ class XMLReportReader_Core implements ReportReader {
         // Get any extra columns from the query data. Do this at the end so that the specified columns appear first, followed by any unspecified ones.
         $this->inferFromQuery();
       }
+      if ($this->query) {
+        $this->query = str_replace('#master_list_id', warehouse::getMasterTaxonListId());
+      }
     }
     catch (Exception $e)
     {
