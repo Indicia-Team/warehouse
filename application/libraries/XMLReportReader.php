@@ -366,13 +366,13 @@ class XMLReportReader_Core implements ReportReader {
         // Add a filter so we can check their privacy preferences. This does
         // not apply if record input on this website, or for the admin user
         // account.
+        $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
         if (!empty($this->blockedSharingTasksField)) {
           $sharingCode = warehouse::sharingTermToCode($sharing);
           $sharingFilters[] = "($this->websiteFilterField in ($idList) OR $this->createdByField=1 OR " .
-            "NOT $this->blockedSharingTasksField @> ARRAY['$sharingCode'])";
+            "NOT $this->blockedSharingTasksField @> ARRAY['$sharingCode'::character ])";
         }
         else {
-          $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
           $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=$this->createdByField";
           $sharingFilters[] = "($this->websiteFilterField in ($idList) OR privacyusers.id=1 OR " .
               "privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)";
@@ -711,8 +711,7 @@ class XMLReportReader_Core implements ReportReader {
     return $this->vagueDateProcessing;
   }
 
-  public function getDownloadDetails()
-  {
+  public function getDownloadDetails() {
    $thisDefn = new stdClass;
    $thisDefn->mode = $this->download;
    $thisDefn->id = 'occurrence_id';
@@ -735,11 +734,12 @@ class XMLReportReader_Core implements ReportReader {
   {
     return $this->row_class;
   }
-  private function buildAttributeQuery($attributes)
-  {
+
+  private function buildAttributeQuery($attributes) {
     $parentSingular = inflector::singular($this->tables[$attributes->parentTableIndex]['tablename']);
-    if($parentSingular == 'cache_occurrence')
+    if ($parentSingular == 'cache_occurrence') {
       $parentSingular = 'occurrence';
+    }
     // This processing assumes some properties of the attribute tables - eg columns the data is stored in and deleted columns
     $query = "SELECT vt.".$parentSingular."_id as main_id,
       vt.text_value, vt.float_value, vt.int_value, vt.date_start_value, vt.date_end_value, vt.date_type_value,
@@ -750,21 +750,22 @@ class XMLReportReader_Core implements ReportReader {
     $i = $attributes->parentTableIndex;
     while(true){
       if ($i == 0) {
-          $from = $this->tables[$i]['tablename']." lt".$i.$from;
-          break;
-      } else {
-          $from = " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i.
-                  " ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'].
-                  ($this->tables[$i]['where'] != null ?
-                      " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']) :
-                      "").") ".$from;
-          $i = $this->tables[$i]['parent']; // next process the parent for this table, until we've scanned upto zero.
+        $from = $this->tables[$i]['tablename'] . " lt" . $i . $from;
+        break;
+      }
+      else {
+        $from = " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i.
+                " ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'].
+                ($this->tables[$i]['where'] != null ?
+                    " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']) :
+                    "").") ".$from;
+        $i = $this->tables[$i]['parent']; // next process the parent for this table, until we've scanned upto zero.
       }
     }
     $query .= " FROM ".$from;
-    $query .= " INNER JOIN ".$parentSingular."_attribute_values vt ON (vt.".$parentSingular."_id = "." lt".$attributes->parentTableIndex.".id and vt.deleted = FALSE) ";
-    $query .= " INNER JOIN ".$parentSingular."_attributes at ON (vt.".$parentSingular."_attribute_id = at.id and at.deleted = FALSE) ";
-    $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE and (rt.restrict_to_survey_id = #".
+    $query .= " INNER JOIN " . $parentSingular . "_attribute_values vt ON (vt." . $parentSingular . "_id = " . " lt" . $attributes->parentTableIndex . ".id and vt.deleted = FALSE) ";
+    $query .= " INNER JOIN " . $parentSingular . "_attributes at ON (vt." . $parentSingular . "_attribute_id = at.id and at.deleted = FALSE) ";
+    $query .= " INNER JOIN " . $parentSingular . "_attributes_websites rt ON (rt." . $parentSingular . "_attribute_id = at.id and rt.deleted = FALSE and (rt.restrict_to_survey_id = #" .
         $this->surveyParam."# or rt.restrict_to_survey_id is null)) ";
     // where list
     $previous=false;
@@ -860,20 +861,20 @@ TBL;
       if ($linked_filter_field != '') $this->params[$name]['linked_filter_field'] = $linked_filter_field;
     } else {
       $this->params[$name] = array(
-        'datatype'=>$type,
-        'allow_buffer'=>$allow_buffer,
-        'fieldname'=>$fieldname,
-        'alias'=>$alias,
-        'emptyvalue'=>$emptyvalue,
-        'default'=>$default,
-        'display'=>$display,
-        'description'=>$description,
+        'datatype' => $type,
+        'allow_buffer' => $allow_buffer,
+        'fieldname' => $fieldname,
+        'alias' => $alias,
+        'emptyvalue' => $emptyvalue,
+        'default' => $default,
+        'display' => $display,
+        'description' => $description,
         'query' => $query,
         'preprocess' => $preprocess,
         'lookup_values' => $lookup_values,
         'population_call' => $population_call,
         'linked_to' => $linked_to,
-        'linked_filter_field' => $linked_filter_field
+        'linked_filter_field' => $linked_filter_field,
       );
     }
     if ($this->params[$name]['datatype'] === 'lookup') {
@@ -881,33 +882,37 @@ TBL;
       $this->params[$name]['description'];
     }
     // if we have a default value, keep a list
-    if (isset($this->params[$name]['default']) && $this->params[$name]['default']!==null) {
+    if (isset($this->params[$name]['default']) && $this->params[$name]['default'] !== NULL) {
       $this->defaultParamValues[$name] = $this->params[$name]['default'];
     }
-    // Does the parameter define optional join elements which are associated with specific parameter values?
-    if ($reader!==null) {
+    // Does the parameter define optional join elements which are associated
+    // with specific parameter values?
+    if ($reader !== NULL) {
       $paramXml = $reader->readInnerXML();
       if (!empty($paramXml)) {
         $reader = new XMLReader();
-        // wrap contents of param in a container so we only have 1 top level node
+        // Wrap contents of param in a container so we only have 1 top level
+        // node.
         $reader->XML("<container>$paramXml</container>");
         while ($reader->read()) {
-          if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='join') {
-            if (!isset($this->params[$name]['joins']))
-              $this->params[$name]['joins']=array();
+          if ($reader->nodeType == XMLREADER::ELEMENT && $reader->name === 'join') {
+            if (!isset($this->params[$name]['joins'])) {
+              $this->params[$name]['joins'] = array();
+            }
             $this->params[$name]['joins'][] = array(
-              'value'=>$reader->getAttribute('value'),
-              'operator'=>$reader->getAttribute('operator'),
-              'sql'=>$reader->readString()
+              'value' => $reader->getAttribute('value'),
+              'operator' => $reader->getAttribute('operator'),
+              'sql' => $reader->readString(),
             );
           }
-          if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='where') {
-            if (!isset($this->params[$name]['wheres']))
-              $this->params[$name]['wheres']=array();
+          if ($reader->nodeType == XMLREADER::ELEMENT && $reader->name === 'where') {
+            if (!isset($this->params[$name]['wheres'])) {
+              $this->params[$name]['wheres'] = array();
+            }
             $this->params[$name]['wheres'][] = array(
-              'value'=>$reader->getAttribute('value'),
-              'operator'=>$reader->getAttribute('operator'),
-              'sql'=>$reader->readString()
+              'value' => $reader->getAttribute('value'),
+              'operator' => $reader->getAttribute('operator'),
+              'sql' => $reader->readString(),
             );
           }
         }
@@ -923,18 +928,21 @@ TBL;
     if ($this->loadStandardParamsSet) {
       $standardParamsHelper = "report_standard_params_{$this->loadStandardParamsSet}";
       $deprecated = $standardParamsHelper::getDeprecatedParameters();
+      kohana::log('debug', var_export($providedParams, true));
       // For backwards compatibility, convert a few param names...
       foreach ($deprecated as $param) {
         $this->convertDeprecatedParam($providedParams, $param);
       }
-      // always include the operation params, as their default might be needed even when no parameter is provided. E.g.
-      // the default website_list_op param comes into effect if just a website_list is provided.
+      // Always include the operation params, as their default might be needed
+      // even when no parameter is provided. E.g. the default website_list_op
+      // param comes into effect if just a website_list is provided.
       $opParams = $standardParamsHelper::getOperationParameters();
       foreach ($opParams as $param => $cfg) {
         if (!empty($providedParams[$param]))
           $this->params["{$param}_op"] = $cfg;
-        if (!empty($providedParams["{$param}_context"]))
+        if (!empty($providedParams["{$param}_context"])) {
           $this->params["{$param}_op_context"] = $cfg;
+        }
       }
       $params = $standardParamsHelper::getParameters();
       if ($this->loadLegacyStandardParamsSet) {
@@ -944,20 +952,23 @@ TBL;
         }
       }
       $this->defaultParamValues = array_merge($standardParamsHelper::getDefaultParameterValues(), $this->defaultParamValues);
-      // Any defaults can be skipped if a context parameter is provided to override the default
+      // Any defaults can be skipped if a context parameter is provided to
+      // override the default.
       foreach (array_keys($this->defaultParamValues) as $param) {
-        if (isset($providedParams[$param.'_context'])) {
+        if (isset($providedParams[$param . '_context'])) {
           unset($this->defaultParamValues[$param]);
         }
       }
       $providedParams = array_merge($this->defaultParamValues, $providedParams);
-      // load up the params for any which have a value provided
+      // Load up the params for any which have a value provided.
       foreach ($params as $param => $cfg) {
         if (isset($providedParams[$param])) {
           if (isset($cfg['joins'])) {
-            foreach ($cfg['joins'] as &$join)
-              if (!empty($join['sql']))
+            foreach ($cfg['joins'] as &$join) {
+              if (!empty($join['sql'])) {
                 $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '$1', $join['sql']);
+              }
+            }
           }
           $this->params[$param] = $cfg;
         }
@@ -965,7 +976,7 @@ TBL;
       // now load any context parameters - i.e. filters defined by the user's permissions that must always apply.
       // Use a new loop so that prior changes to $cfg are lost.
       foreach ($params as $param => $cfg) {
-        if (isset($providedParams[$param.'_context'])) {
+        if (isset($providedParams[$param . '_context'])) {
           if (isset($cfg['joins'])) {
             foreach ($cfg['joins'] as &$join) {
               if (!empty($join['sql'])) {
@@ -987,7 +998,7 @@ TBL;
           // and any references in the preprocessing query point to the context version of the param value
           if (isset($cfg['preprocess']))
             $cfg['preprocess'] = str_replace("#$param#", "#{$param}_context#", $cfg['preprocess']);
-          $this->params[$param.'_context'] = $cfg;
+          $this->params[$param . '_context'] = $cfg;
         }
       }
     }
@@ -1017,26 +1028,35 @@ TBL;
   }
 
   /**
-   * To retain backwards compatibility with previous versions of standard params, we convert some param names.
+   * Convert deprecated parameter names for backwards compatibility.
    *
-   * @param array $providedParams The array of provided parameters which will be modified.
-   * @param string $from The deprecated parameter name which will be swapped from.
-   * @param string $from The new parameter name which will be use instead.
-   * @param boolean $string Set to true if a text parameter so quotes can be added to the in clause
+   * To retain backwards compatibility with previous versions of standard
+   * params, we convert some param names.
+   *
+   * @param array $providedParams
+   *   The array of provided parameters which will be modified.
+   * @param string $param
+   *   The parameter mapping definition. The first array entry is the old param
+   *   name, the second is the new one. The third entry is set to TRUE for any
+   *   string parameters which should be quoted.
    */
   private function convertDeprecatedParam(&$providedParams, $param) {
-    if (count($param)===2)
-      $param[] = false; // default to not handle as string
+    kohana::log('debug', "param " . var_export($param, TRUE));
+    if (count($param) === 2) {
+      // Default to not handle as string.
+      $param[] = FALSE;
+    }
     list($from, $to, $string) = $param;
     $quote = $string ? "'" : '';
-    if (isset($providedParams[$from]) && !isset($providedParams[$to])) {
-      $providedParams[$to]=$quote . $providedParams[$from] . $quote;
+    if (!empty($providedParams[$from]) && empty($providedParams[$to])) {
+      kohana::log('debug', "Found provided param $from - $to");
+      $providedParams[$to] = $quote . $providedParams[$from] . $quote;
       unset($providedParams[$from]);
     }
-    if (isset($providedParams[$from.'_context']) && !isset($providedParams[$to.'_context']))
-      $providedParams[$to.'_context']=$quote . $providedParams[$from.'_context'] . $quote;
+    if (isset($providedParams[$from . '_context']) && !isset($providedParams[$to . '_context']))
+      $providedParams[$to . '_context'] = $quote . $providedParams[$from . '_context'] . $quote;
     if (!empty($providedParams['paramsFormExcludes'])) {
-      $excludes=json_decode($providedParams['paramsFormExcludes'], true);
+      $excludes = json_decode($providedParams['paramsFormExcludes'], TRUE);
       if (in_array($from, $excludes) || in_array("{$from}_context", $excludes)) {
         if (in_array($from, $excludes))
           $excludes[] = $to;
