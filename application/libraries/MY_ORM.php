@@ -1793,6 +1793,9 @@ class ORM extends ORM_Core {
           return FALSE;
         }
       }
+      else {
+        $attrValueModel->upper_value = NULL;
+      }
       $attrValueModel->$vf = $value;
       // Test that ORM accepted the new value - it will reject if the wrong data type for example.
       // Use a string compare to get a proper test but with type tolerance.
