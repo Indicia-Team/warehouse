@@ -1,4 +1,4 @@
--- #slow script
+-- #slow script#
 
 -- Create a temp table for prebuilt arrays of indexed location_ids. Empty table
 -- build if the soatial index builder not installed.
@@ -85,16 +85,14 @@ SET location_ids=l.location_ids,
         CASE WHEN u.allow_share_for_editing=false THEN 'E' ELSE NULL END
       ], NULL)
     END
-FROM loc_ids l, cache_occurrences_functional o
-JOIN users u ON privacyusers.id=o.created_by_id
-JOIN cache_taxa_taxon_lists cttl
-  ON cttl.external_key=o.taxa_taxon_list_external_key
-  AND cttl.taxon_list_id=#master_list_id#
+FROM loc_ids l, users u, cache_taxa_taxon_lists cttl
 LEFT JOIN cache_taxon_paths ctp
   ON ctp.taxon_meaning_id=cttl.taxon_meaning_id
   AND ctp.taxon_list_id=#master_list_id#
 WHERE l.sample_id=o.sample_id
-AND sh.website_id=o.website_id;
+AND u.id=o.created_by_id
+AND cttl.external_key=o.taxa_taxon_list_external_key
+AND cttl.taxon_list_id=#master_list_id#;
 
 UPDATE cache_samples_functional s
 SET location_ids=l.location_ids,
@@ -116,7 +114,6 @@ SET location_ids=l.location_ids,
     END
 FROM loc_ids l, users u
 WHERE l.sample_id=s.id
-AND sh.website_id=s.website_id
 AND u.id=s.created_by_id;
 
 -- Re-create the indexes.

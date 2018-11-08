@@ -14,7 +14,7 @@ CREATE INDEX ix_cache_samples_functional_location_ids
   USING GIN(location_ids);
 
 -- Index on the array of ancestors for each taxon.
-CREATE INDEX ix_cache_occurrences_v2_taxon_path
-  ON cache_occurrences_v2
+CREATE INDEX ix_cache_occurrences_functional_taxon_path
+  ON cache_occurrences_functional
   USING gin
   (taxon_path);
