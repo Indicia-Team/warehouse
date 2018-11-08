@@ -43,6 +43,7 @@ class XMLReportReader_Core implements ReportReader {
   private $surveyParam='survey_id';
   private $websiteFilterField = 'w.id';
   private $trainingFilterField = 'o.training';
+  private $blockedSharingTasksField = 'blocked_sharing_tasks';
   private $createdByField;
   private $colsToInclude = array();
 
@@ -148,6 +149,13 @@ class XMLReportReader_Core implements ReportReader {
                 if ($this->trainingFilterField===null)
                   // default field name for filtering training records
                   $this->trainingFilterField = 'o.training';
+                $this->blockedSharingTasksField = $reader->getAttribute('blocked_sharing_tasks_field');
+                if ($this->blockedSharingTasksField === NULL) {
+                  $sp = $reader->getAttribute('standard_params');
+                  if (!empty($sp)) {
+                    $this->blockedSharingTasksField = $sp === 'samples' ? 's.blocked_sharing_tasks' : 'o.blocked_sharing_tasks';
+                  }
+                }
                 if (!$this->createdByField = $reader->getAttribute('created_by_field'))
                   // default field name for filtering the user ID that created the record
                   $this->createdByField = 'o.created_by_id';
@@ -304,7 +312,7 @@ class XMLReportReader_Core implements ReportReader {
         $this->inferFromQuery();
       }
       if ($this->query) {
-        $this->query = str_replace('#master_list_id', warehouse::getMasterTaxonListId());
+        $this->query = str_replace('#master_list_id', warehouse::getMasterTaxonListId(), $this->query);
       }
     }
     catch (Exception $e)
@@ -350,21 +358,31 @@ class XMLReportReader_Core implements ReportReader {
       $sharing = 'reporting';
     }
     if (isset($idList)) {
-      if ($sharing==='website')
+      if ($sharing === 'website') {
         $sharingFilters[] = "{$this->websiteFilterField} in ($idList)";
+      }
       elseif (!empty($this->websiteFilterField)) {
-        // implement the appropriate sharing agreement across websites
-        $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
-        // add a join to users so we can check their privacy preferences. This does not apply if record input
-        // on this website, or for the admin user account.
-        $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=".$this->createdByField;
-        $sharingFilters[] = "({$this->websiteFilterField} in ($idList) OR privacyusers.id=1 OR " .
-            "privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)";
-        $sharingFilters[] = "{$this->websiteFilterField} in ($sharedWebsiteIdList)";
+        // Implement the appropriate sharing agreement across websites.
+        // Add a filter so we can check their privacy preferences. This does
+        // not apply if record input on this website, or for the admin user
+        // account.
+        if (!empty($this->blockedSharingTasksField)) {
+          $sharingCode = warehouse::sharingTermToCode($sharing);
+          $sharingFilters[] = "($this->websiteFilterField in ($idList) OR $this->createdByField=1 OR " .
+            "NOT $this->blockedSharingTasksField @> ARRAY['$sharingCode'])";
+        }
+        else {
+          $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
+          $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=$this->createdByField";
+          $sharingFilters[] = "($this->websiteFilterField in ($idList) OR privacyusers.id=1 OR " .
+              "privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)";
+        }
+        $sharingFilters[] = "$this->websiteFilterField in ($sharedWebsiteIdList)";
         $query = str_replace('#sharing_website_ids#', $sharedWebsiteIdList, $query);
       }
+
     }
-    // add a dummy sharing filter if nothing else set, for the sake of syntax
+    // Add a dummy sharing filter if nothing else set, for the sake of syntax.
     if (empty($sharingFilters))
       $sharingFilters[] = '1=1';
     $query = str_replace(
