@@ -236,10 +236,13 @@ SQL;
     // are not needed now.
     foreach ($exist as $record) {
       if (in_array($record->taxon_group_id, $taxon_group_ids)) {
-        // Got a correct one already. Remove the location ID from the list we
+        // Got a correct one already. Remove the taxon group ID from the list we
         // want to add later.
-        unset($taxon_group_ids[$record->taxon_group_id]);
-      } else {
+        if (($key = array_search($record->taxon_group_id, $taxon_group_ids)) !== FALSE) {
+          unset($taxon_group_ids[$key]);
+        }
+      }
+      else {
         // Got one we didn't actually want.
         $this->db->delete('index_groups_taxon_groups', array('id' => $record->id));
       }
