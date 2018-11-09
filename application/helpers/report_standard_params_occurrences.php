@@ -742,23 +742,44 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.taxon_path @> ARRAY[#taxa_taxon_list_list#]",
+            'sql' => "o.taxon_path && ARRAY[#taxa_taxon_list_list#]",
           ],
         ],
-        'preprocess' => 'select taxon_meaning_id from cache_taxa_taxon_lists where id=#taxa_taxon_list_list#',
+        'preprocess' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
+          from cache_taxa_taxon_lists l
+          join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
+          where l.id in (#taxa_taxon_list_list#)",
       ],
       'taxon_meaning_list' => [
         'datatype' => 'integer[]',
         'display' => "Taxon meaning IDs",
         'description' => 'Comma separated list of taxon meaning IDs',
-        'joins' => [
+        'wheres' => [
           [
             'value' => '',
             'operator' => '',
-            'sql' =>
-              "join cache_taxon_paths ctp on o.taxon_meaning_id=ctp.taxon_meaning_id and ctp.path && ARRAY[#taxon_meaning_list#]",
+            'sql' => "o.taxon_path && ARRAY[#taxon_meaning_list#]",
           ],
         ],
+        'preprocess' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
+          from cache_taxa_taxon_lists l
+          join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
+          where l.taxon_meaning_id in (#taxon_meaning_list#)",
+      ],
+      'taxa_taxon_list_external_key_list' => [
+        'datatype' => 'string[]',
+        'display' => "Taxon external keys",
+        'description' => 'Comma separated list of taxon external keys',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "o.taxon_path && ARRAY[#taxa_taxon_list_external_key_list#]",
+          ],
+        ],
+        'preprocess' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
+          from cache_taxa_taxon_lists m
+          where m.taxon_list_id=#master_list_id# and m.external_key in (#taxa_taxon_list_external_key_list#)",
       ],
       'taxon_designation_list' => [
         'datatype' => 'integer[]',
