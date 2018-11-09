@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Queue worker to update cache_occurrences_functional.blocked_sharing_tasks.
+ * Queue worker to update cache table blocked_sharing_tasks field.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -25,13 +25,13 @@
  defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Queue worker to cache_occurrences_functional.blocked_sharing_tasks..
+ * Queue worker to update cache table blocked_sharing_tasks field.
  *
  * Class called when a task_cache_builder_user task encountered in the work
- * queue. Updates cache_occurrences_functional.blocked_sharing_tasks to reflect
- * any changes to a user's record privacy settings.
+ * queue. Updates cache_*_functional.blocked_sharing_tasks to reflect any
+ * changes to a user's record privacy settings.
  */
-class task_cache_builder_user {
+class task_cache_builder_user_privacy {
 
   /**
    * Low batch size as could be lots to update.
@@ -77,7 +77,32 @@ JOIN work_queue q
   AND q.task='task_cache_builder_user'
   AND q.entity='user'
   AND q.claimed_by='$procId'
-WHERE u.id=o.created_by_id
+WHERE u.id=o.created_by_id;
+
+UPDATE cache_samples_functional s
+  SET blocked_sharing_tasks=
+    CASE WHEN u.allow_share_for_reporting
+      AND u.allow_share_for_peer_review AND u.allow_share_for_verification
+      AND u.allow_share_for_data_flow AND u.allow_share_for_moderation
+      AND u.allow_share_for_editing
+    THEN null
+    ELSE
+      ARRAY_REMOVE(ARRAY[
+        CASE WHEN u.allow_share_for_reporting=false THEN 'R' ELSE NULL END,
+        CASE WHEN u.allow_share_for_peer_review=false THEN 'P' ELSE NULL END,
+        CASE WHEN u.allow_share_for_verification=false THEN 'V' ELSE NULL END,
+        CASE WHEN u.allow_share_for_data_flow=false THEN 'D' ELSE NULL END,
+        CASE WHEN u.allow_share_for_moderation=false THEN 'M' ELSE NULL END,
+        CASE WHEN u.allow_share_for_editing=false THEN 'E' ELSE NULL END
+      ], NULL)
+    END
+FROM users u
+JOIN work_queue q
+  ON q.record_id=u.id
+  AND q.task='task_cache_builder_user'
+  AND q.entity='user'
+  AND q.claimed_by='$procId'
+WHERE u.id=s.created_by_id
 
 SQL;
     $db->query($sql);

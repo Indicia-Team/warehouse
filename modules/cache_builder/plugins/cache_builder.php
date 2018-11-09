@@ -125,7 +125,7 @@ function cache_builder_orm_work_queue() {
         'allow_share_for_moderation',
         'allow_share_for_editing',
       ],
-      'task' => 'task_cache_builder_user',
+      'task' => 'task_cache_builder_user_privacy',
       'cost_estimate' => 100,
       'priority' => 2,
     ],
