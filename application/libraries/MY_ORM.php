@@ -44,11 +44,18 @@ class ORM extends ORM_Core {
 
 
   /**
-   * Tracks list of all inserted, updated or deleted records in this transaction.
+   * Tracks list of all inserted, updated or deleted records in this submit.
    *
    * @var array
    */
-  public static $changedRecords;
+  public $changedRecords;
+
+  /**
+   * Values before any changes applied.
+   *
+   * @var array
+   */
+  public $initialValues = [];
 
   public function last_query() {
     return $this->db->last_query();
@@ -704,7 +711,7 @@ class ORM extends ORM_Core {
    */
   private function preProcess() {
     // Initialise the variable which tracks the records we are about to submit.
-    self::$changedRecords = [
+    $this->changedRecords = [
       'update' => [],
       'insert' => [],
       'delete' => [],
@@ -719,28 +726,28 @@ class ORM extends ORM_Core {
   private function postProcess() {
     if (class_exists('cache_builder')) {
       $occurrences = [];
-      if (!empty(self::$changedRecords['insert']['occurrence'])) {
-        cache_builder::insert($this->db, 'occurrences', self::$changedRecords['insert']['occurrence']);
-        $occurrences = self::$changedRecords['insert']['occurrence'];
+      if (!empty($this->changedRecords['insert']['occurrence'])) {
+        cache_builder::insert($this->db, 'occurrences', $this->changedRecords['insert']['occurrence']);
+        $occurrences = $this->changedRecords['insert']['occurrence'];
       }
-      if (!empty(self::$changedRecords['update']['occurrence'])) {
-        cache_builder::update($this->db, 'occurrences', self::$changedRecords['update']['occurrence']);
-        $occurrences += self::$changedRecords['update']['occurrence'];
+      if (!empty($this->changedRecords['update']['occurrence'])) {
+        cache_builder::update($this->db, 'occurrences', $this->changedRecords['update']['occurrence']);
+        $occurrences += $this->changedRecords['update']['occurrence'];
       }
-      if (!empty(self::$changedRecords['delete']['occurrence'])) {
-        cache_builder::delete($this->db, 'occurrences', self::$changedRecords['delete']['occurrence']);
+      if (!empty($this->changedRecords['delete']['occurrence'])) {
+        cache_builder::delete($this->db, 'occurrences', $this->changedRecords['delete']['occurrence']);
       }
       $samples = [];
-      if (!empty(self::$changedRecords['insert']['sample'])) {
-        $samples = self::$changedRecords['insert']['sample'];
-        cache_builder::insert($this->db, 'samples', self::$changedRecords['insert']['sample']);
+      if (!empty($this->changedRecords['insert']['sample'])) {
+        $samples = $this->changedRecords['insert']['sample'];
+        cache_builder::insert($this->db, 'samples', $this->changedRecords['insert']['sample']);
       }
-      if (!empty(self::$changedRecords['update']['sample'])) {
-        $samples += self::$changedRecords['update']['sample'];
-        cache_builder::update($this->db, 'samples', self::$changedRecords['update']['sample']);
+      if (!empty($this->changedRecords['update']['sample'])) {
+        $samples += $this->changedRecords['update']['sample'];
+        cache_builder::update($this->db, 'samples', $this->changedRecords['update']['sample']);
       }
-      if (!empty(self::$changedRecords['delete']['sample'])) {
-        cache_builder::delete($this->db, 'samples', self::$changedRecords['delete']['sample']);
+      if (!empty($this->changedRecords['delete']['sample'])) {
+        cache_builder::delete($this->db, 'samples', $this->changedRecords['delete']['sample']);
       }
       if (!empty($samples)) {
         // @todo Map squares could be added to work queue.
@@ -756,8 +763,8 @@ class ORM extends ORM_Core {
         postgreSQL::insertMapSquaresForOccurrences($occurrences, 10000, $this->db);
       }
     }
-    if (!empty(self::$changedRecords['insert']['occurrence_association']) ||
-        !empty(self::$changedRecords['update']['occurrence_association'])) {
+    if (!empty($this->changedRecords['insert']['occurrence_association']) ||
+        !empty($this->changedRecords['update']['occurrence_association'])) {
       // We've got some associations between occurrences that could not have
       // the to_occurrence_id foreign key filled in yet, since the occurrence
       // referred to did not exist at the time of saving.
@@ -792,8 +799,27 @@ class ORM extends ORM_Core {
     }
     foreach ($queueHelpers as $cfg) {
       foreach ($cfg['ops'] as $op) {
-        if (!empty(self::$changedRecords[$op][$cfg['entity']])) {
-          $this->queueWork($cfg, self::$changedRecords[$op][$cfg['entity']]);
+        if (!empty($this->changedRecords[$op][$cfg['entity']])) {
+          $proceed = TRUE;
+          if (!empty($cfg['limit_to_field_changes'])) {
+            $proceed = FALSE;
+            $currentValues = $this->as_array();
+            foreach ($cfg['limit_to_field_changes'] as $field) {
+              if (array_key_exists($field, $this->initialValues) && array_key_exists($field, $currentValues)) {
+                $oldVal = $this->initialValues[$field];
+                if ($oldVal === 't') {
+                  $oldVal = '1';
+                }
+                elseif ($oldVal === 'f') {
+                  $oldVal = '0';
+                }
+                $proceed = $proceed || ($oldVal !== $currentValues[$field]);
+              }
+            }
+          }
+          if ($proceed) {
+            $this->queueWork($cfg, $this->changedRecords[$op][$cfg['entity']]);
+          }
         }
       }
     }
@@ -843,6 +869,7 @@ class ORM extends ORM_Core {
     $return = $this->createParentRecords() && $return;
     // No point doing any more if the parent records did not post
     if ($return) {
+      $this->initialValues = $this->as_array();
       $this->preSubmit();
       $this->removeUnwantedFields();
       $return = $this->validateAndSubmit();
@@ -856,11 +883,11 @@ class ORM extends ORM_Core {
         $return = $this->createJoinRecords() ? $return : NULL;
 
         if ($isInsert)
-          $addTo=&self::$changedRecords['insert'];
+          $addTo=&$this->changedRecords['insert'];
         elseif (isset($this->deleted) && $this->deleted==='t')
-          $addTo=&self::$changedRecords['delete'];
+          $addTo=&$this->changedRecords['delete'];
         else
-          $addTo=&self::$changedRecords['update'];
+          $addTo=&$this->changedRecords['update'];
         if (!isset($addTo[$this->object_name]))
           $addTo[$this->object_name] = array();
         $addTo[$this->object_name][] = $this->id;
@@ -1829,7 +1856,6 @@ class ORM extends ORM_Core {
       $attrValueModel->wantToUpdateMetadata=FALSE;
     try {
       $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()), TRUE);
-      kohana::log('debug', 'Value: ' . var_export($attrValueModel->as_array(), true));
     } catch (Exception $e) {
       $v=FALSE;
       $this->errors[$fieldId]=$e->getMessage();
