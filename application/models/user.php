@@ -25,16 +25,21 @@
 class User_Model extends ORM {
   public $search_field='username';
 
-  protected $belongs_to = array('person', 'core_role',
-    'created_by'=>'user', 'updated_by'=>'user');
-  protected $has_and_belongs_to_many = array(
+  protected $belongs_to = [
+    'person',
+    'core_role',
+    'created_by' => 'user',
+    'updated_by' => 'user'
+  ];
+
+  protected $has_and_belongs_to_many = [
     'websites',
-    'groups'
-  );
+    'groups',
+  ];
 
   protected $droppedFields;
 
-  public $users_websites = array();
+  public $users_websites = [];
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
@@ -47,7 +52,7 @@ class User_Model extends ORM {
     if (array_key_exists('password', $_POST)) {
       $array->add_rules('password', 'required', 'length[7,30]', 'matches_post[password2]');
     }
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'interests',
       'location_name',
       'core_role_id',
@@ -59,7 +64,8 @@ class User_Model extends ORM {
       'allow_share_for_verification',
       'allow_share_for_data_flow',
       'allow_share_for_moderation',
-      'allow_share_for_editing');
+      'allow_share_for_editing',
+    ];
     if (!array_key_exists('core_role_id', $array->as_array())) {
     	// if core role id is blank, make sure it is nulled out.
       $array['core_role_id'] = null;
@@ -68,7 +74,6 @@ class User_Model extends ORM {
   }
 
   public function preSubmit() {
-
     if (isset($this->submission['fields']['core_role_id']))
       if (!is_numeric($this->submission['fields']['core_role_id']['value']))
         $this->submission['fields']['core_role_id']['value'] = NULL;
