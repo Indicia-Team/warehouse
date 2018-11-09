@@ -74,7 +74,7 @@ UPDATE cache_occurrences_functional o
 FROM users u
 JOIN work_queue q
   ON q.record_id=u.id
-  AND q.task='task_cache_builder_user'
+  AND q.task='task_cache_builder_user_privacy'
   AND q.entity='user'
   AND q.claimed_by='$procId'
 WHERE u.id=o.created_by_id;
@@ -99,7 +99,7 @@ UPDATE cache_samples_functional s
 FROM users u
 JOIN work_queue q
   ON q.record_id=u.id
-  AND q.task='task_cache_builder_user'
+  AND q.task='task_cache_builder_user_privacy'
   AND q.entity='user'
   AND q.claimed_by='$procId'
 WHERE u.id=s.created_by_id
