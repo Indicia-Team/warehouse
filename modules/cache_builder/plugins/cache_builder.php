@@ -114,5 +114,20 @@ function cache_builder_orm_work_queue() {
       'cost_estimate' => 30,
       'priority' => 2,
     ],
+    [
+      'entity' => 'user',
+      'ops' => ['update'],
+      'limit_to_field_changes' => [
+        'allow_share_for_reporting',
+        'allow_share_for_peer_review',
+        'allow_share_for_verification',
+        'allow_share_for_data_flow',
+        'allow_share_for_moderation',
+        'allow_share_for_editing',
+      ],
+      'task' => 'task_cache_builder_user',
+      'cost_estimate' => 100,
+      'priority' => 2,
+    ],
   ];
 }
