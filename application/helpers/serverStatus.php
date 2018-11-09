@@ -42,7 +42,6 @@ class serverStatus {
    */
   public static function getGettingStartedTips($db, $authFilter) {
     $messages = [];
-    self::checkScheduledTasksHasBeenSetup($db, $messages);
     self::checkWebsite($db, $authFilter, $messages);
     self::checkSurvey($db, $authFilter, $messages);
     self::checkTaxonList($db, $authFilter, $messages);
@@ -64,8 +63,13 @@ class serverStatus {
    */
   public static function getStatusWarnings($db, $authFilter) {
     $messages = [];
-    self::checkScheduledTasks($db, $messages);
-    self::checkWorkQueue($db, $messages);
+    // Limit these warnings to core admin users.
+    $auth = new Auth();
+    if ($auth->logged_in('CoreAdmin')) {
+      self::checkScheduledTasksHasBeenSetup($db, $messages);
+      self::checkScheduledTasks($db, $messages);
+      self::checkWorkQueue($db, $messages);
+    }
     return $messages;
   }
 
