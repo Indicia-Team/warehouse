@@ -5,6 +5,10 @@ CREATE INDEX ix_cache_occurrences_functional_ttl_ext_key_map_sq_v
   ON cache_occurrences_functional(taxa_taxon_list_external_key, map_sq_10km_id)
   WHERE record_status='V';
 
+-- Improve performance of taxon meaning filtering.
+CREATE INDEX ix_cache_occurrences_functional_taxon_meaning_id
+  ON cache_occurrences_functional(taxon_meaning_id);
+
 -- indexes for the new location_ids fields.
 CREATE INDEX ix_cache_occurrences_functional_location_ids
   ON cache_occurrences_functional
