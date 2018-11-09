@@ -75,7 +75,7 @@ $id = html::initial_value($values, 'user:id');
     ]);
     echo data_entry_helper::checkbox([
       'label' => 'This user allows records to be shared for data flow',
-      'fieldname' => 'user:allow_share_for_',
+      'fieldname' => 'user:allow_share_for_data_flow',
       'default' => html::initial_value($values, 'user:allow_share_for_data_flow'),
     ]);
     echo data_entry_helper::checkbox([
