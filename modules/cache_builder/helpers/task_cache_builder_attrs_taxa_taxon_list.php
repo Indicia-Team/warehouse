@@ -75,7 +75,7 @@ class task_cache_builder_attrs_taxa_taxon_list {
   LEFT JOIN (terms ti18n
     JOIN languages l on l.id=ti18n.language_id AND l.deleted=false AND l.iso='$lang'
   ) ON ti18n.id=tlti18n.term_id AND ti18n.deleted=false
-  WHERE q.entity='taxa_taxon_list' AND q.task='task_cache_builder_attrs_taxa_taxon_list' AND claimed_by='$procId'
+  WHERE q.entity='taxa_taxon_list' AND q.task='task_cache_builder_attrs_taxa_taxon_list' AND q.claimed_by='$procId'
   AND a.data_type='L'
   GROUP BY taxa_taxon_list_id, taxa_taxon_list_attribute_id, a.multi_value
 
