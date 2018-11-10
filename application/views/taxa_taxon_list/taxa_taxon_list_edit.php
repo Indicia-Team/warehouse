@@ -115,11 +115,27 @@ echo html::error_message($model->getError('deleted'));
       'default' => html::initial_value($values, 'taxa_taxon_list:description'),
       'helpText' => 'Description which applies only to this taxon within the context of this list.',
     ]);
+    $helpText = <<<TXT
+Unique identifier for this taxon concept as defined by an external source. For example in the UK this field is
+typically used to store an NBN Taxon Version Key for the accepted name.
+TXT;
     echo data_entry_helper::text_input([
       'fieldname' => 'taxon:external_key',
-      'label' => 'External key',
+      'label' => 'Accepted name unique identifier (external key)',
       'default' => html::initial_value($values, 'taxon:external_key'),
-      'helpText' => 'Unique key for this taxon concept as defined by an external source. For example in the UK this field is typically used to store an NBN Taxon Version Key.',
+      'helpText' => $helpText,
+    ]);
+    $helpText = <<<TXT
+Unique identifier for this taxon name as defined by an external source. For example in the UK this field is
+typically used to store an NBN Taxon Version Key for the name, which will therefore be the same as the accepted name
+unique identifier, but any synonyms and common names would have a different Taxon Version Key / taxon name unique
+identifier.
+TXT;
+    echo data_entry_helper::text_input([
+      'label' => 'Taxon name unique identifier (search code)',
+      'fieldname' => 'taxon:search_code',
+      'default' => html::initial_value($values, 'taxon:search_code'),
+      'helpText' => $helpText,
     ]);
     echo data_entry_helper::text_input([
       'fieldname' => 'taxon_meaning:id',
@@ -143,11 +159,6 @@ echo html::error_message($model->getError('deleted'));
       'label' => 'Sort order in list',
       'fieldname' => 'taxa_taxon_list:taxonomic_sort_order',
       'default' => html::initial_value($values, 'taxa_taxon_list:taxonomic_sort_order'),
-    ]);
-    echo data_entry_helper::text_input([
-      'label' => 'Search code',
-      'fieldname' => 'taxon:search_code',
-      'default' => html::initial_value($values, 'taxon:search_code'),
     ]);
     echo data_entry_helper::checkbox([
       'label' => 'Allow data entry',
