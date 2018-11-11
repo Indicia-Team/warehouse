@@ -28,6 +28,7 @@
     <param name='locality_type_id' display='Locality Type ID' description='ID of the location type used for verification localities' datatype='text' emptyvalue="0"/>
   </params>
   <columns>
+    <column name='external_key' display='Key facts:Record external key' sql='o.external_key' />
     <column name='taxon' display='Key facts:Species' sql='cttl.taxon' />
     <column name='record_status' display="Key facts:Record status" sql='o.record_status' />
     <column name='record_substatus' sql='o.record_substatus' />
