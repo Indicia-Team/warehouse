@@ -19,8 +19,6 @@
  * @link http://code.google.com/p/indicia/
  */
 
-$config['master_list_id'] = 1;
-
 /**
  * List of languages which will be included in the cached attribute values
  * in cache_[samples|occurrences]_nonfunctional.attrs_json. If this

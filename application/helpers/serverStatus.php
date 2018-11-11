@@ -42,7 +42,6 @@ class serverStatus {
    */
   public static function getGettingStartedTips($db, $authFilter) {
     $messages = [];
-    self::checkScheduledTasksHasBeenSetup($db, $messages);
     self::checkWebsite($db, $authFilter, $messages);
     self::checkSurvey($db, $authFilter, $messages);
     self::checkTaxonList($db, $authFilter, $messages);
@@ -64,8 +63,13 @@ class serverStatus {
    */
   public static function getStatusWarnings($db, $authFilter) {
     $messages = [];
-    self::checkScheduledTasks($db, $messages);
-    self::checkWorkQueue($db, $messages);
+    // Limit these warnings to core admin users.
+    $auth = new Auth();
+    if ($auth->logged_in('CoreAdmin')) {
+      self::checkScheduledTasksHasBeenSetup($db, $messages);
+      self::checkScheduledTasks($db, $messages);
+      self::checkWorkQueue($db, $messages);
+    }
     return $messages;
   }
 
@@ -349,18 +353,30 @@ TXT;
    *   List of tips, which will be amended if any tips identified by this function.
    */
   private static function checkMasterTaxonList($authFilter, array &$messages) {
-    $masterTaxonListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
+    $masterTaxonListId = warehouse::getMasterTaxonListId();
     if (!$masterTaxonListId && empty($authFilter)) {
       $url = url::base();
       $description = <<<TXT
 Although not essential, if you have a single species checklist which contains a full taxonomic hierarchy, then you
-should add this list's ID to the cache builder module's warehouse configuration. To do this:
+should add this list's ID to Indicia's warehouse configuration. Ensure that the list has the accepted name unique
+identifier (external_key) field populated for all the species names and that this identifier is used to map to names in
+other lists. To update the configuration:
 <ul>
   <li>Go to <a href="{$url}index.php/taxon_list">the species lists page</a> and find the ID of your full list.</li>
-  <li>In the warehouse file system, copy the file modules/cache_builder/config/cache_builder_variables.php.example to
-  modules/cache_builder/config/cache_builder_variables.php then edit the file with a text editor. Change the value
-  given for \$config['master_list_id'] to your list's ID and save the file.</li>
+  <li>In the warehouse file system, edit the file application/config/indicia.php with a text editor. Append the
+  following to the text, replacing &lt;id&gt; with your list's ID:<br/>
+  \$config['master_list_id'] = &lt;id&gt;</li>
+  <li>Save the file.</li>
+  <li>Run the following SQL statement using pgAdmin, connected to your Indicia database with the search_path set to your
+  indicia schema:<br/>
+  INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)<br/>
+  SELECT DISTINCT 'task_cache_builder_path_occurrence', 'occurrence', id, 2, 100, now()<br/>
+  FROM occurrences<br/>
+  WHERE deleted=false;<br/>
+  </li>
 </ul>
+The scheduled tasks running on the warehouse will gradually populate the cache data for occurrence taxon paths in
+batches.
 TXT;
       $messages[] = array(
         'title' => 'Master species checklist',

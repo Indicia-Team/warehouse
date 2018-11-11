@@ -79,6 +79,7 @@ class cache_builder {
    */
   public static function insert($db, $table, $ids) {
     if (count($ids)>0) {
+      $master_list_id = warehouse::getMasterTaxonListId();
       $idlist=implode(',', $ids);
       $queries = kohana::config("cache_builder.$table");
       if (!isset($queries['key_field']))
@@ -86,7 +87,11 @@ class cache_builder {
       if (!is_array($queries['insert']))
         $queries['insert'] = array($queries['insert']);
       foreach ($queries['insert'] as $query) {
-        $insertSql = str_replace('#join_needs_update#', '', $query);
+        $insertSql = str_replace(
+          ['#join_needs_update#', '#master_list_id#'],
+          ['', $master_list_id],
+          $query
+        );
         $insertSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
         $db->query($insertSql);
       }
@@ -102,6 +107,7 @@ class cache_builder {
    */
   public static function update($db, $table, $ids) {
     if (count($ids)>0) {
+      $master_list_id = warehouse::getMasterTaxonListId();
       $idlist=implode(',', $ids);
       $queries = kohana::config("cache_builder.$table");
       if (!isset($queries['key_field']))
@@ -109,7 +115,11 @@ class cache_builder {
       if (!is_array($queries['update']))
         $queries['update'] = array($queries['update']);
       foreach ($queries['update'] as $query) {
-        $updateSql = str_replace('#join_needs_update#', '', $query);
+        $updateSql = str_replace(
+          ['#join_needs_update#', '#master_list_id#'],
+          ['', $master_list_id],
+          $query
+        );
         $updateSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
         $db->query($updateSql);
       }
@@ -233,8 +243,7 @@ SQL;
    * @param string $action Term describing the action, used for feedback only.
    */
   private static function run_statement($db, $table, $query, $action) {
-    $master_list_id = Kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
-    $master_list_id = $master_list_id ? $master_list_id : 0; // default so nothing breaks
+    $master_list_id = warehouse::getMasterTaxonListId();
     if (is_array($query)) {
       foreach ($query as $title => $sql) {
         $sql = str_replace('#master_list_id#', $master_list_id, $sql);

@@ -40,27 +40,36 @@ class error_logger {
     // Double check the log threshold to avoid unnecessary work.
     if (kohana::config('config.log_threshold')==4) {
       $trace = $e->getTrace();
-      $output="Stack trace:\n";
-      for ($i=0; $i<count($trace); $i++) {
-        if (array_key_exists('file', $trace[$i])) {
-          $file=$trace[$i]['file'];
-        } else {
-          $file='Unknown file';
-        }
-        if (array_key_exists('line', $trace[$i])) {
-          $line=$trace[$i]['line'];
-        } else {
-          $line='Unknown';
-        }
-        if (array_key_exists('function', $trace[$i])) {
-          $function=$trace[$i]['function'];
-        } else {
-          $function='Unknown function';
-        }
-        $output .= "\t".$file.' - line '.$line.' - '.$function."\n";
-      }
-      kohana::log('debug', $output);
+      self::log_trace($trace);
       kohana::log_save();
     }
+  }
+
+  /**
+   * Dump a call stack trace into the kohana log.
+   *
+   * @param array $trace
+   */
+  public static function log_trace($trace) {
+    $output="Stack trace:\n";
+    for ($i=0; $i<count($trace); $i++) {
+      if (array_key_exists('file', $trace[$i])) {
+        $file=$trace[$i]['file'];
+      } else {
+        $file='Unknown file';
+      }
+      if (array_key_exists('line', $trace[$i])) {
+        $line=$trace[$i]['line'];
+      } else {
+        $line='Unknown';
+      }
+      if (array_key_exists('function', $trace[$i])) {
+        $function=$trace[$i]['function'];
+      } else {
+        $function='Unknown function';
+      }
+      $output .= "\t".$file.' - line '.$line.' - '.$function."\n";
+    }
+    kohana::log('debug', $output);
   }
 }

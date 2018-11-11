@@ -50,6 +50,13 @@ class ORM extends ORM_Core {
    */
   public static $changedRecords;
 
+  /**
+   * Values before any changes applied.
+   *
+   * @var array
+   */
+  public $initialValues = [];
+
   public function last_query() {
     return $this->db->last_query();
   }
@@ -793,7 +800,26 @@ class ORM extends ORM_Core {
     foreach ($queueHelpers as $cfg) {
       foreach ($cfg['ops'] as $op) {
         if (!empty(self::$changedRecords[$op][$cfg['entity']])) {
-          $this->queueWork($cfg, self::$changedRecords[$op][$cfg['entity']]);
+          $proceed = TRUE;
+          if (!empty($cfg['limit_to_field_changes'])) {
+            $proceed = FALSE;
+            $currentValues = $this->as_array();
+            foreach ($cfg['limit_to_field_changes'] as $field) {
+              if (array_key_exists($field, $this->initialValues) && array_key_exists($field, $currentValues)) {
+                $oldVal = $this->initialValues[$field];
+                if ($oldVal === 't') {
+                  $oldVal = '1';
+                }
+                elseif ($oldVal === 'f') {
+                  $oldVal = '0';
+                }
+                $proceed = $proceed || ($oldVal !== $currentValues[$field]);
+              }
+            }
+          }
+          if ($proceed) {
+            $this->queueWork($cfg, self::$changedRecords[$op][$cfg['entity']]);
+          }
         }
       }
     }
@@ -843,6 +869,7 @@ class ORM extends ORM_Core {
     $return = $this->createParentRecords() && $return;
     // No point doing any more if the parent records did not post
     if ($return) {
+      $this->initialValues = $this->as_array();
       $this->preSubmit();
       $this->removeUnwantedFields();
       $return = $this->validateAndSubmit();
@@ -1832,7 +1859,6 @@ class ORM extends ORM_Core {
       $attrValueModel->wantToUpdateMetadata=FALSE;
     try {
       $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()), TRUE);
-      kohana::log('debug', 'Value: ' . var_export($attrValueModel->as_array(), true));
     } catch (Exception $e) {
       $v=FALSE;
       $this->errors[$fieldId]=$e->getMessage();

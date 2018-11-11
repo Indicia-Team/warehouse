@@ -69,7 +69,9 @@ SELECT o.id,
   snf.attr_biotope,
   snf.attr_sref_precision,
   o.confidential,
-  o.location_ids
+  o.location_ids,
+  o.taxon_path,
+  o.blocked_sharing_tasks
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id

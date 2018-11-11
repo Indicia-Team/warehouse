@@ -96,7 +96,7 @@ get_controls(NULL, $controlfilter, $this->db);
  */
 function get_controls($block_id, array $controlFilter, $db) {
   global $indicia_templates;
-  $masterTaxonListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
+  $masterTaxonListId = warehouse::getMasterTaxonListId();
   $id = "controls";
   if ($block_id) {
     $id .= '-for-block-' . $block_id;

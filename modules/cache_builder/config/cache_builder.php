@@ -332,14 +332,16 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     );
 
     UPDATE cache_occurrences_functional u
-    SET family_taxa_taxon_list_id=cttlf.id
+    SET family_taxa_taxon_list_id=cttlf.id,
+      taxon_path=ctp.path
     FROM cache_taxa_taxon_lists cttl
     -- Ensure only changed taxon concepts are updated
     JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
     JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
-    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(ctp.path) and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON ctp.path @> ARRAY[cttlf.taxon_meaning_id] and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
     WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
-    AND COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0);",
+    AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
+    OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(ctp.path, ARRAY[]::integer[]));",
   "teardown" => "
     DROP TABLE descendants;
     DROP TABLE ttl_path;",
@@ -1388,7 +1390,8 @@ SET sample_id=o.sample_id,
   licence_id=s.licence_id,
   import_guid=o.import_guid,
   confidential=o.confidential,
-  external_key=o.external_key
+  external_key=o.external_key,
+  taxon_path=ctp.path
 FROM occurrences o
 #join_needs_update#
 left join cache_occurrences_functional co on co.id=o.id
@@ -1397,6 +1400,7 @@ LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
 LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
     JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
@@ -1613,7 +1617,8 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             taxon_meaning_id, taxa_taxon_list_external_key, family_taxa_taxon_list_id,
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
-            training, zero_abundance, licence_id, import_guid, confidential, external_key)
+            training, zero_abundance, licence_id, import_guid, confidential, external_key,
+            taxon_path, blocked_sharing_tasks)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1635,7 +1640,23 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
     end,
     o.sensitivity_precision is not null, o.release_status, cttl.marine_flag,
     case when o.last_verification_check_date is null then null else dc.id is null end,
-    o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key
+    o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key,
+    ctp.path,
+    CASE WHEN u.allow_share_for_reporting
+      AND u.allow_share_for_peer_review AND u.allow_share_for_verification
+      AND u.allow_share_for_data_flow AND u.allow_share_for_moderation
+      AND u.allow_share_for_editing
+    THEN null
+    ELSE
+      ARRAY_REMOVE(ARRAY[
+        CASE WHEN u.allow_share_for_reporting=false THEN 'R' ELSE NULL END,
+        CASE WHEN u.allow_share_for_peer_review=false THEN 'P' ELSE NULL END,
+        CASE WHEN u.allow_share_for_verification=false THEN 'V' ELSE NULL END,
+        CASE WHEN u.allow_share_for_data_flow=false THEN 'D' ELSE NULL END,
+        CASE WHEN u.allow_share_for_moderation=false THEN 'M' ELSE NULL END,
+        CASE WHEN u.allow_share_for_editing=false THEN 'E' ELSE NULL END
+      ], NULL)
+    END
 FROM occurrences o
 #join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
@@ -1643,7 +1664,9 @@ JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
+JOIN users u ON u.id=o.created_by_id AND u.deleted=false
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
 LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
     JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'

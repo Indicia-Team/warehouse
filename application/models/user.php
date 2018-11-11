@@ -25,16 +25,21 @@
 class User_Model extends ORM {
   public $search_field='username';
 
-  protected $belongs_to = array('person', 'core_role',
-    'created_by'=>'user', 'updated_by'=>'user');
-  protected $has_and_belongs_to_many = array(
+  protected $belongs_to = [
+    'person',
+    'core_role',
+    'created_by' => 'user',
+    'updated_by' => 'user'
+  ];
+
+  protected $has_and_belongs_to_many = [
     'websites',
-    'groups'
-  );
+    'groups',
+  ];
 
   protected $droppedFields;
 
-  public $users_websites = array();
+  public $users_websites = [];
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
@@ -47,7 +52,7 @@ class User_Model extends ORM {
     if (array_key_exists('password', $_POST)) {
       $array->add_rules('password', 'required', 'length[7,30]', 'matches_post[password2]');
     }
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'interests',
       'location_name',
       'core_role_id',
@@ -59,7 +64,8 @@ class User_Model extends ORM {
       'allow_share_for_verification',
       'allow_share_for_data_flow',
       'allow_share_for_moderation',
-      'allow_share_for_editing');
+      'allow_share_for_editing',
+    ];
     if (!array_key_exists('core_role_id', $array->as_array())) {
     	// if core role id is blank, make sure it is nulled out.
       $array['core_role_id'] = null;
@@ -68,21 +74,9 @@ class User_Model extends ORM {
   }
 
   public function preSubmit() {
-
     if (isset($this->submission['fields']['core_role_id']))
       if (!is_numeric($this->submission['fields']['core_role_id']['value']))
         $this->submission['fields']['core_role_id']['value'] = NULL;
-
-    // Set boolean field defaults as not in form submission if not checked. This is not required if the view is
-    // switched to the data_entry_helper controls.
-    $this->submission['fields']['email_visible']	 = array('value' => (isset($this->submission['fields']['email_visible']) ? 't' : 'f'));
-    $this->submission['fields']['view_common_names'] = array('value' => (isset($this->submission['fields']['view_common_names']) ? 't' : 'f'));
-    $this->submission['fields']['allow_share_for_reporting'] = array('value' => (isset($this->submission['fields']['allow_share_for_reporting']) ? 't' : 'f'));
-    $this->submission['fields']['allow_share_for_peer_review'] = array('value' => (isset($this->submission['fields']['allow_share_for_peer_review']) ? 't' : 'f'));
-    $this->submission['fields']['allow_share_for_verification'] = array('value' => (isset($this->submission['fields']['allow_share_for_verification']) ? 't' : 'f'));
-    $this->submission['fields']['allow_share_for_data_flow'] = array('value' => (isset($this->submission['fields']['allow_share_for_data_flow']) ? 't' : 'f'));
-    $this->submission['fields']['allow_share_for_moderation'] = array('value' => (isset($this->submission['fields']['allow_share_for_moderation']) ? 't' : 'f'));
-    $this->submission['fields']['allow_share_for_editing'] = array('value' => (isset($this->submission['fields']['allow_share_for_editing']) ? 't' : 'f'));
     // Ensure that the website fields remain available (as they are not proper model columns so get
     // stripped from the model).
     $this->droppedFields = array_diff_key($this->submission['fields'],
@@ -143,7 +137,7 @@ class User_Model extends ORM {
                     null
             );
             $users_websites->submission = $save_array;
-            $users_websites->submit();
+            $users_websites->inner_submit();
           }
         }
       } catch (Exception $e) {

@@ -139,3 +139,9 @@ $config['upload_file_type'] = array(
  * 0.8.x or earlier is required.
  */
 $config['http_status_responses'] = TRUE;
+
+/**
+ * Set this to a taxon_list_id to identify that list as the main list which
+ * provides an overall taxonomic hierarchy.
+ */
+$config['master_list_id'] = 0;

@@ -29,6 +29,15 @@
  */
 class warehouse {
 
+  private static $sharingMappings = [
+    'R' => 'reporting',
+    'V' => 'verification',
+    'P' => 'peer review',
+    'D' => 'data flow',
+    'M' => 'moderation',
+    'E' => 'editing',
+  ];
+
   /**
    * Loads any of the client helper libraries.
    *
@@ -50,6 +59,53 @@ class warehouse {
     // Ensure correct protocol, in case both http and https supported.
     $protocol = empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off' ? 'http' : 'https';
     helper_base::$base_url = preg_replace('/^https?/', $protocol, helper_base::$base_url);
+  }
+
+  /**
+   * Find the master taxon list's ID from config.
+   *
+   * This identifies the taxon list which provides an overall taxonomic
+   * hierarchy. Zero returned if not set to prevent errors in SQL.
+   *
+   * @return int
+   *   Taxon list ID or zero.
+   */
+  public static function getMasterTaxonListId() {
+    // Preferred location in indicia config file.
+    $masterTaxonListId = kohana::config('indicia.master_list_id', FALSE, FALSE);
+    // Legacy support - in v1.x the setting was in the cache builder module.
+    if (!$masterTaxonListId) {
+      $masterTaxonListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
+    }
+    // If not set, default to zero for safety.
+    return empty($masterTaxonListId) ? 0 : $masterTaxonListId;
+  }
+
+  /**
+   * Expand a single character sharing mode code to the full term.
+   *
+   * @param string $code
+   *   Sharing mode code to expand.
+   *
+   * @return string
+   *   Expanded term.
+   */
+  public static function sharingCodeToTerm($code) {
+    return array_key_exists($code, self::$sharingMappings) ? self::$sharingMappings[$code] : $code;
+  }
+
+  /**
+   * Converts a sharing term to a single character sharing mode code.
+   *
+   * @param string $term
+   *   Sharing mode term.
+   *
+   * @return string
+   *   Sharing mode code.
+   */
+  public static function sharingTermToCode($term) {
+    $mappings = array_flip(self::$sharingMappings);
+    return array_key_exists($term, $mappings) ? $mappings[$term] : $term;
   }
 
 }
