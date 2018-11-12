@@ -12,8 +12,6 @@
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   JOIN websites w on w.id=o.website_id and w.deleted=false
-  JOIN users u ON u.id=o.created_by_id
-  JOIN people p ON p.id=u.person_id
   #agreements_join#
   #joins#
   WHERE #sharing_filter#
@@ -121,11 +119,6 @@
     <column name='licence_code' sql='onf.licence_code' display="Licence" />
     <column name="autochecks" display="Automated checks"
       sql="CASE WHEN o.data_cleaner_result='t' THEN 'pass' WHEN not w.verification_checks_enabled THEN 'checks disabled' WHEN o.data_cleaner_result IS NULL THEN 'pending' ELSE onf.data_cleaner_info END" />
-    <!-- the following can only be filled in for sure if we have an exact match with the recorder, since we only know the record created by ID.-->
-    <column name='recorder_person_id' sql="case when snf.recorders = p.surname || ', ' || p.first_name or snf.recorders = p.first_name || ' ' || p.surname then cast(p.id as varchar(20)) else 'unknown' end" />
-    <column name='determiner_person_id' sql="case when snf.recorders = onf.attr_det_last_name || ', ' || onf.attr_det_first_name
-        or snf.recorders = onf.attr_det_first_name || ' ' || onf.attr_det_last_name
-        or snf.recorders = onf.attr_det_full_name then cast(p.id as varchar(20)) else 'unknown' end" />
     <column name='belongs_to_user' display='Belongs to user' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
   </columns>
 </report>
