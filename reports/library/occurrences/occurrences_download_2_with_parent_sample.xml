@@ -10,11 +10,9 @@
   LEFT JOIN locations vc on vc.id=o.location_id_vice_county and vc.deleted=false
   JOIN samples sc on sc.id=o.sample_id and sc.deleted=false
   JOIN cache_samples_nonfunctional snf on snf.id=sc.parent_id
-  JOIN users u ON u.id=o.created_by_id
-  JOIN people p ON p.id=u.person_id
   #agreements_join#
   #joins#
-  WHERE #sharing_filter# 
+  WHERE #sharing_filter#
   AND o.record_status not in ('I','T') AND (#ownData#=1 OR o.record_status not in ('D','R'))
   #idlist#
   </query>
@@ -28,7 +26,7 @@
     <param name="date_to" display="Date To" datatype="date" description="Filter by record observation date">
       <where>('#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
-    <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
+    <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup'
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected'>
       <modifiers>
         <where value="V" operator="equal">o.record_status = 'V'</where>
@@ -53,14 +51,14 @@
     <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
         population_call='direct:location:id:name' />
     <param name="ownLocality" display="My locality only?" datatype="checkbox">
-      <join value="1">JOIN locations lfilter ON st_intersects(lfilter.boundary_geom, o.public_geom) AND lfilter.id=#location_id#</join>  
+      <join value="1">JOIN locations lfilter ON st_intersects(lfilter.boundary_geom, o.public_geom) AND lfilter.id=#location_id#</join>
     </param>
     <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="integer[]" emptyvalue="0"/>
     <param name="ownGroups" display="My species groups only?" datatype="checkbox">
       <join value="1">o.taxon_group_id IN (#taxon_groups#)</join>
     </param>
     <param name="surveys" display="Surveys" description="List of survey IDs to view data for" datatype="integer[]" emptyvalue="0"/>
-    <param name="ownSurveys" display="My surveys only?" datatype="checkbox" emptyvalue="0">      
+    <param name="ownSurveys" display="My surveys only?" datatype="checkbox" emptyvalue="0">
       <join value="1">o.survey_id IN (#surveys#)</join>
     </param>
   </params>
@@ -69,10 +67,10 @@
     <column name='recordkey' display='RecordKey' sql="'iBRC' || o.id" datatype="text" />
     <column name='source' display='Source' sql="snf.website_title || ' | ' || snf.survey_title" datatype="text" />
     <column name='sample_id' visible='false' sql='case when onf.sensitivity_precision is null then o.sample_id else null end' datatype='integer' />
-    <column name='taxon' display='Species' 
+    <column name='taxon' display='Species'
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
       sql="cttl.preferred_taxon" datatype='text' />
-    <column name='common' display='Common name' 
+    <column name='common' display='Common name'
       template="&lt;div class='zero-{zero_abundance}'&gt;{common}&lt;/div&gt;"
       sql="cttl.default_common_name" datatype='text' />
     <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype='text' />
@@ -83,8 +81,8 @@
     <column name='entered_sref' display='Grid Ref' sql="case snf.entered_sref_system when '4326' then snf.public_entered_sref else replace(snf.public_entered_sref, ' ', '') end" datatype='text' />
     <column name='lat' display='Latitude' sql="substring(st_astext(st_transform(st_centroid(o.public_geom), 4326)) from E'POINT\\(.+ (.+)\\)')" datatype="text" />
     <column name='long' display='Longitude' sql="substring(st_astext(st_transform(st_centroid(o.public_geom), 4326)) from E'POINT\\((.+) ')" datatype="text" />
-    <column name='projection' display='Projection' 
-        sql="case snf.entered_sref_system when '4326' then 'WGS84' when '27700' then 'OSGB36' else upper(snf.entered_sref_system) end" 
+    <column name='projection' display='Projection'
+        sql="case snf.entered_sref_system when '4326' then 'WGS84' when '27700' then 'OSGB36' else upper(snf.entered_sref_system) end"
         datatype="text" />
     <column name="precision" display="Precision" datatype="float"
             sql="get_sref_precision(snf.public_entered_sref, snf.entered_sref_system, snf.attr_sref_precision)" />
@@ -115,11 +113,6 @@
         ELSE o.record_status END" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='certainty' sql="CASE o.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
-    <!-- the following can only be filled in for sure if we have an exact match with the recorder, since we only know the record created by ID.-->
-    <column name='recorder_person_id' sql="case when snf.recorders = p.surname || ', ' || p.first_name or snf.recorders = p.first_name || ' ' || p.surname then cast(p.id as varchar(20)) else 'unknown' end" />
-    <column name='determiner_person_id' sql="case when snf.recorders = onf.attr_det_last_name || ', ' || onf.attr_det_first_name
-        or snf.recorders = onf.attr_det_first_name || ' ' || onf.attr_det_last_name
-        or snf.recorders = onf.attr_det_full_name then cast(p.id as varchar(20)) else 'unknown' end" />
     <column name='licence_code' sql='onf.licence_code' display="Licence" />
   </columns>
 </report>
