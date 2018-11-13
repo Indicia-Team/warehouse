@@ -57,6 +57,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   //
   // default to no updates allowed - must explicity allow updates.
   protected $allow_updates = array(
+    'attribute_sets_survey',
     'comment_quick_reply_page_auth',
     'determination',
     'filter',
@@ -72,7 +73,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     'location_medium',
     'notification',
     'occurrence',
+    'occurrence_attribute',
     'occurrence_attribute_value',
+    'occurrence_attributes_taxa_taxon_list_attribute',
     'occurrence_comment',
     'occurrence_medium',
     'person_attribute_value',
@@ -90,6 +93,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'taxa_taxon_list',
     'taxa_taxon_list_attribute',
     'taxa_taxon_list_attribute_value',
+    'taxon_lists_taxa_taxon_list_attribute',
     'taxon_rank',
     'taxon_relation',
     'taxon_group',
