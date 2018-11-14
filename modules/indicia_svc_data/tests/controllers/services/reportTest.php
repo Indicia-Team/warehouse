@@ -606,7 +606,8 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       foreach ($cfg['tests'] as $test) {
         $response = $this->getReportResponse("$cfg[path].xml", $test['params']);
         $this->assertFalse(isset($response['error']),
-          "$cfg[path] returned an error with params " . var_export($test['params'], true));
+          "$cfg[path] returned an error with params " . var_export($test['params'], true) .
+          ' and error ' . var_export($response, true));
         // count of records expected?
         if (is_int($test['result'])) {
           $this->assertEquals($test['result'], count($response),
