@@ -26,6 +26,8 @@
            description="Comma separated list of occurrence attribute IDs to include"/>
     <param name="warehouse_id" display="Warehouse unique ID" default="iBRC"
            description="Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key"/>
+    <param name='vice_county_location_type_term' default='Vice County'
+           preprocess="SELECT id FROM cache_termlists_terms WHERE termlist_title='Location types' AND term='#vice_county_location_type_term#'" />
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />

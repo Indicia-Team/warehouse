@@ -59,6 +59,8 @@
     <param name="ownSurveys" display="My surveys only?" datatype="checkbox" emptyvalue="0">
       <where value="1">o.survey_id IN (#surveys#)</where>
     </param>
+    <param name='vice_county_location_type_term' default='Vice County'
+           preprocess="SELECT id FROM cache_termlists_terms WHERE termlist_title='Location types' AND term='#vice_county_location_type_term#'" />
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />

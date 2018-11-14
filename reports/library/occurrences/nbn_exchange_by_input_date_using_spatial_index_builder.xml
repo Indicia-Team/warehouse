@@ -51,6 +51,8 @@ and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62
     <param name="ownSurveys" display="My surveys only?" datatype="checkbox">
       <where value="1">o.survey_id IN (#surveys#)</where>
     </param>
+    <param name='vice_county_location_type_term' default='Vice County'
+           preprocess="SELECT id FROM cache_termlists_terms WHERE termlist_title='Location types' AND term='#vice_county_location_type_term#'" />
   </params>
   <columns>
     <column name='id' display='ID' sql="o.id" datatype="integer" visible="false" />
