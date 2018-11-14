@@ -1032,8 +1032,12 @@ SQL;
               $output = $this->reportDb->query($prequery)->result_array(FALSE);
               $value = count($output) > 0 ? implode(',', $output[0]) : NULL;
               if (empty($value)) {
-                // Set a dummy value that keeps the SQL valid.
-                $value = "'-999999'";
+                if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'])) {
+                  $value = "-999999";
+                }
+                else {
+                  $value = "'-999999'";
+                }
               }
             }
             $query = preg_replace("/#$name#/", $value, $query);
