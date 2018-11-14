@@ -27,6 +27,8 @@ and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62
   <params>
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default="" />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' default="" />
+    <param name='vice_county_location_type_term' default='Vice County'
+      preprocess="SELECT id FROM cache_termlists_terms WHERE termlist_title='Location types' AND term='#vice_county_location_type_term#'" />
   </params>
   <columns>
     <column name='id' display='ID' sql="o.id" datatype="integer" visible="false" />
