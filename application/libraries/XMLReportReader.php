@@ -371,6 +371,10 @@ class XMLReportReader_Core implements ReportReader {
           $sharingCode = warehouse::sharingTermToCode($sharing);
           $sharingFilters[] = "($this->websiteFilterField in ($idList) OR $this->createdByField=1 OR " .
             "NOT $this->blockedSharingTasksField @> ARRAY['$sharingCode'::character ])";
+          // Some reports may rely on the syntax of an agreement join being
+          // present. Therefore we insert a dummy join that will have little or
+          // no effect on performance.
+          $agreementsJoins[] = 'JOIN system sys ON sys.id=1';
         }
         else {
           $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=$this->createdByField";
@@ -928,7 +932,6 @@ TBL;
     if ($this->loadStandardParamsSet) {
       $standardParamsHelper = "report_standard_params_{$this->loadStandardParamsSet}";
       $deprecated = $standardParamsHelper::getDeprecatedParameters();
-      kohana::log('debug', var_export($providedParams, true));
       // For backwards compatibility, convert a few param names...
       foreach ($deprecated as $param) {
         $this->convertDeprecatedParam($providedParams, $param);
@@ -1041,7 +1044,6 @@ TBL;
    *   string parameters which should be quoted.
    */
   private function convertDeprecatedParam(&$providedParams, $param) {
-    kohana::log('debug', "param " . var_export($param, TRUE));
     if (count($param) === 2) {
       // Default to not handle as string.
       $param[] = FALSE;

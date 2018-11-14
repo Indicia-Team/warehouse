@@ -39,10 +39,10 @@
     <column name="person_name" display="User's Name" sql="p.first_name || ' ' || p.surname" datatype="text"/>
     <column name="location_name" display="Location" sql="l.name" datatype="text" />
     <column name="status" display=" " sql="
-case when pav.created_by_id =  pav.updated_by_id then 
+case when u.id =  pav.updated_by_id then 
 '&lt;div style=&quot;color:red&quot;&gt;Awaiting approval&lt;div&gt;' else 
 '&lt;div style=&quot;color:green&quot;&gt;Approved&lt;div&gt;' End" datatype="text" />
     <column name="status_int" visible="false" sql="
-case when pav.created_by_id =  pav.updated_by_id then 0 else 1 End" datatype="integer" />
+case when u.id =  pav.updated_by_id then 0 else 1 End" datatype="integer" />
   </columns>
 </report>

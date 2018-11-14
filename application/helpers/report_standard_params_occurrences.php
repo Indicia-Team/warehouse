@@ -758,7 +758,7 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "(o.taxon_path && ARRAY[#taxon_meaning_list#] OR o.taxon_meaning_id=#taxon_meaning_list-unprocessed#)",
+            'sql' => "(o.taxon_path && ARRAY[#taxon_meaning_list#] OR o.taxon_meaning_id in (#taxon_meaning_list-unprocessed#))",
           ],
         ],
         'preprocess' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
