@@ -17,7 +17,7 @@
           AND savLinkToSurveyOne.int_value != 0 AND savLinkToSurveyOne.deleted=false
       JOIN users u on u.id=#iUserID# AND u.deleted=false
       JOIN person_attribute_values pav on pav.person_id=u.person_id AND pav.person_attribute_id=#person_square_attr_id# 
-        AND pav.int_value=plot.parent_id AND pav.created_by_id != pav.updated_by_id AND pav.deleted=false
+        AND pav.int_value=plot.parent_id AND u.id != pav.updated_by_id AND pav.deleted=false
       LEFT JOIN sample_attribute_values savLinkToSurveyTwo on savLinkToSurveyTwo.int_value = csf.id AND savLinkToSurveyTwo.sample_attribute_id = #s1AttrID# 
           AND savLinkToSurveyTwo.int_value != 0 AND savLinkToSurveyTwo.deleted=false
       WHERE 
@@ -38,7 +38,7 @@
   </params>
   <columns>
     <column name='sample_id' sql='csf.id' display='ID' visible='false' in_count="true"/>
-    <column name='sample_1_id' sql="coalesce(savLinkToSurveyOne.int_value,csf.id)" display='ID' datatype="text"/>
+    <column name='sample_1_id' sql="coalesce(savLinkToSurveyOne.int_value,csf.id)" display='ID' datatype="integer"/>
     <column name='created_by_id' sql='csf.created_by_id' display='Created BY ID Sample' visible='false'/>
     <column name='location_name'
     sql="

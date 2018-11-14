@@ -36,7 +36,7 @@
   <columns>
     <column name='id' sql='csf.id' display='ID' visible='false' in_count="true"/>
     <column name='survey' display='Survey' sql='csnf.survey_title' datatype='text'/>
-    <column name='sample_1_id' sql="coalesce(savLinkToSurveyOne.int_value,csf.id)" display='ID' datatype="text"/>
+    <column name='sample_1_id' sql="coalesce(savLinkToSurveyOne.int_value,csf.id)" display='ID' datatype="integer"/>
     <column name='created_by_id' sql='csf.created_by_id' display='Created BY ID Sample' visible='false'/>
     <column name='location_name'
     sql="
