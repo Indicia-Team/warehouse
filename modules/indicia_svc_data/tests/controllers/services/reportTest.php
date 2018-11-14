@@ -109,6 +109,22 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       )
     ),
     array(
+      'path' => 'library/occurrences/filterable_occurrences_download',
+      'tests' => array(
+        array(
+          'params' => array(),
+          'result' => 1,
+          'valueChecks' => array(
+            array(
+              'row' => 0,
+              'field' => 'occurrence_id',
+              'value' => 1 // Check the first record returned which is not confidential
+            )
+          )
+        )
+      )
+    ),
+    array(
       'path' => 'library/occurrences/filterable_occurrences_download_without_locality',
       'tests' => array(
         array(
