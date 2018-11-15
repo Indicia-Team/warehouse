@@ -15,9 +15,11 @@ $BODY$
 BEGIN
   BEGIN
     INSERT INTO loc_ids
-    SELECT sample_id, array_agg(distinct location_id) as location_ids
-    FROM index_locations_samples
-    GROUP BY sample_id;
+    SELECT s.id as sample_id, array_agg(distinct ils.location_id) as location_ids
+    FROM samples s
+    LEFT JOIN index_locations_samples ils ON ils.sample_id=s.id
+    WHERE s.deleted=false
+    GROUP BY s.id;
   EXCEPTION
     WHEN undefined_table THEN
       BEGIN
@@ -86,13 +88,16 @@ SET location_ids=l.location_ids,
       ], NULL)
     END
 FROM loc_ids l, users u, cache_taxa_taxon_lists cttl
+LEFT JOIN cache_taxa_taxon_lists cttlm
+  ON cttlm.external_key=o.taxa_taxon_list_external_key
+  AND cttlm.taxon_list_id=#master_list_id#
+  AND cttlm.preferred=true;
 LEFT JOIN cache_taxon_paths ctp
-  ON ctp.taxon_meaning_id=cttl.taxon_meaning_id
+  ON ctp.taxon_meaning_id=cttlm.taxon_meaning_id
   AND ctp.taxon_list_id=#master_list_id#
-WHERE l.sample_id=o.sample_id
-AND u.id=o.created_by_id
-AND cttl.external_key=o.taxa_taxon_list_external_key
-AND cttl.taxon_list_id=#master_list_id#;
+WHERE cttl.id=o.taxa_taxon_list_id
+AND l.sample_id=o.sample_id
+AND u.id=o.created_by_id;
 
 UPDATE cache_samples_functional s
 SET location_ids=l.location_ids,
