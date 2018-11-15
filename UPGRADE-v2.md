@@ -17,21 +17,26 @@
 * **Ensure you have a backup of your warehouse database before proceeding!**
 
 1. Take a note of the time on the warehouse system clock.
-2. In the following script, replace #master_list_id# with the ID of the
+2. Grab a copy of the version 2 warehouse code for yourself.
+3. Run each of the following scripts in sequence, then remove them from your
+   copy of the version 2 code base. You can leave the warehouse online whilst
+   running these scripts:
+
+   * modules/cache_builder/db/version_2_0_0/201804231959_taxon_path_schema.sql
+   * modules/cache_builder/db/version_2_0_0/201804232000_hierarchy_populate.sql
+   * modules/cache_builder/db/version_2_0_0/201806051122_attrs_json.sql
+   * modules/cache_builder/db/version_2_0_0/201806141347_attrs_json_taxa.sql
+   * modules/cache_builder/db/version_2_0_0/201806220938_term_image_paths.sql
+   * modules/cache_builder/db/version_2_0_0/201809042100_location_index_field.sql
+   * modules/cache_builder/db/version_2_0_0/201809082100_term_allow_data_entry.sql
+   * modules/cache_builder/db/version_2_0_0/201811071506_cache_table_new_fields.sql
+
+4. In the following script, replace #master_list_id# with the ID of the
    taxon_list which contains your master taxonomic hierarchy. Run the
    following script which is safe to run on a live warehouse, though may reduce
    performance:
 
 ```sql
-
-ALTER TABLE cache_occurrences_functional
-  ADD COLUMN location_ids integer[],
-  ADD COLUMN taxon_path integer[],
-  ADD COLUMN blocked_sharing_tasks char[];
-
-ALTER TABLE cache_samples_functional
-  ADD COLUMN location_ids integer[],
-  ADD COLUMN blocked_sharing_tasks char[];
 
 -- Create a temp table for prebuilt arrays of indexed location_ids. Empty table
 -- build if the soatial index builder not installed.
@@ -296,18 +301,17 @@ CREATE INDEX ix_cache_samples_functional_v2_public_geom
 
 ```
 
-3. When the script is done and you are ready to proceed with the upgrade,
+5. When the script is done and you are ready to proceed with the upgrade,
    notify your users and take your client websites offline.
-4. Copy over the latest version of the warehouse, replacing existing files.
-5. Delete the following files:
-   * modules/cache_builder/db/version_2_0_0/201809042100_location_index_field.sql
-   * modules/cache_builder/db/version_2_0_0/201811071506_cache_table_new_fields.sql
+6. Copy your version of the warehouse over the live version, replacing existing
+   files.
+7. Delete the following files:
    * modules/cache_builder/db/version_2_0_0/201811071507_cache_table_updates.sql
    * modules/cache_builder/db/version_2_0_0/201811071512_new_cache_indexes.sql
    * modules/cache_builder/db/version_2_0_0/201811081048_cache_occurrences_view.sql
    * modules/spatial_index_builder/db/version_2_0_0/201811141205_drop_index_table.sql
-6. Visit the warehouse home page and run the upgrade.
-7. Run the following script, replacing #datetime# with the date and time of the
+8. Visit the warehouse home page and run the upgrade.
+9. Run the following script, replacing #datetime# with the date and time of the
    server system clock before you started (YYYY-MM-DD hh:mm:ss format):
 
 ```sql
@@ -364,88 +368,10 @@ CREATE TRIGGER delete_quick_reply_auth_trigger
   FOR EACH ROW
   EXECUTE PROCEDURE delete_quick_reply_auth();
 
-CREATE OR REPLACE VIEW cache_occurrences AS
-SELECT o.id,
-  o.record_status,
-  o.zero_abundance,
-  o.website_id,
-  o.survey_id,
-  o.sample_id,
-  snf.survey_title,
-  snf.website_title,
-  o.date_start,
-  o.date_end,
-  o.date_type,
-  snf.public_entered_sref,
-  snf.entered_sref_system,
-  o.public_geom,
-  o.taxa_taxon_list_id,
-  cttl.preferred_taxa_taxon_list_id,
-  cttl.taxonomic_sort_order,
-  cttl.taxon,
-  cttl.authority,
-  cttl.preferred_taxon,
-  cttl.preferred_authority,
-  cttl.default_common_name,
-  cttl.external_key as taxa_taxon_list_external_key,
-  cttl.taxon_meaning_id,
-  cttl.taxon_group_id,
-  cttl.taxon_group,
-  o.created_by_id,
-  o.created_on as cache_created_on,
-  o.updated_on as cache_updated_on,
-  o.certainty,
-  o.location_name,
-  snf.recorders,
-  onf.verifier,
-  onf.media as images,
-  o.training,
-  o.location_id,
-  o.input_form,
-  o.data_cleaner_result,
-  onf.data_cleaner_info,
-  o.release_status,
-  o.verified_on,
-  onf.sensitivity_precision,
-  o.map_sq_1km_id,
-  o.map_sq_2km_id,
-  o.map_sq_10km_id,
-  o.group_id,
-  onf.privacy_precision,
-  onf.output_sref,
-  o.record_substatus,
-  o.query,
-  o.licence_id,
-  onf.licence_code,
-  o.family_taxa_taxon_list_id,
-  onf.attr_sex,
-  onf.attr_stage,
-  onf.attr_sex_stage,
-  onf.attr_sex_stage_count,
-  onf.attr_certainty,
-  onf.attr_det_first_name,
-  onf.attr_det_last_name,
-  onf.attr_det_full_name,
-  snf.attr_email,
-  snf.attr_cms_user_id,
-  snf.attr_cms_username,
-  snf.attr_first_name,
-  snf.attr_last_name,
-  snf.attr_full_name,
-  snf.attr_biotope,
-  snf.attr_sref_precision,
-  o.confidential,
-  o.location_ids,
-  o.taxon_path,
-  o.blocked_sharing_tasks
-  FROM cache_occurrences_functional o
-  JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
-  JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
-  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id;
-
    ```
 
-8. Go back online.
-9. Drop the table index_locations_samples if and when you are sure that any
+10. Visit index.php/home/upgrade on the website and run the upgrade scripts.
+11. Go back online.
+12. Drop the table index_locations_samples if and when you are sure that any
    custom reports that refer to this table have been updated to use the new
    location_ids fields.
