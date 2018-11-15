@@ -22,3 +22,7 @@ CREATE INDEX ix_cache_occurrences_functional_taxon_path
   ON cache_occurrences_functional
   USING gin
   (taxon_path);
+
+CREATE INDEX ix_cache_samples_functional_public_geom
+    ON cache_samples_functional USING gist
+    (public_geom);
