@@ -1030,13 +1030,13 @@ SQL;
                 $paramDefs[$name]['preprocess']
               );
               $output = $this->reportDb->query($prequery)->result_array(FALSE);
-              $value = implode(',', $output[0]);
+              $value = count($output) > 0 ? implode(',', $output[0]) : NULL;
               if (empty($value)) {
                 if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'])) {
                   $value = "-999999";
                 }
                 else {
-                  $value = "'@@invalid@@filter@@'";
+                  $value = "'-999999'";
                 }
               }
             }
