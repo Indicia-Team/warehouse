@@ -1,8 +1,11 @@
 # Version 2.0.0
 
+Please see [upgrading to version 2.0.0](UPGRADE-v2.md).
+
 ## Warehouse user interface changes
 
-* Warehouse client helper and media code libraries updated to use jQuery 3+.
+* Warehouse client helper and media code libraries updated to use jQuery 3.2.1
+  and jQuery UI 1.12.
 * Overhaul the warehouse UI with a new Bootstrap 3 based theme and more logical menus.
 
 ## Back-end changes
