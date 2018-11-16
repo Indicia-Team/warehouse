@@ -4,7 +4,7 @@
     featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
-         standard_params="occurrences" count_field="o.*">
+         standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
     select #columns#
     from cache_occurrences_functional o
     join cache_occurrences_nonfunctional onf on onf.id=o.id

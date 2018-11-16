@@ -4,7 +4,7 @@
         Spatial Index Builder module to index the list of locations that users can set in their preferences
         as their locality, for significantly improved performance."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
   SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id

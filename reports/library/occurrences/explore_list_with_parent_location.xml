@@ -2,7 +2,7 @@
     title="Explore records with parent location"
     description="Report designed for the explore records facility in iRecord that includes a join to the parent location for location attributes. Suitable for getting transect details from sectioned transect surveys."
 >
-  <query website_filter_field="o.website_id" count_field="o.*">
+  <query website_filter_field="o.website_id" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
   SELECT #columns#
   FROM cache_occurrences o
   JOIN samples s on s.id=o.sample_id and s.deleted=false

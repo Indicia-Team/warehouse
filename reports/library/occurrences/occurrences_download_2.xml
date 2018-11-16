@@ -2,7 +2,8 @@
     title="Occurrences Download 2"
     description="Report suitable for downloading data, compatible with the explore report parameters."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" count_field="o.*">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" count_field="o.*"
+    blocked_sharing_tasks_field="o.blocked_sharing_tasks">
   SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id

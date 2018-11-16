@@ -2,7 +2,7 @@
     title="A list of images for event reporting"
     description="Designed for fast reporting on events like bioblitzes with a simple survey/date filter."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
   SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
