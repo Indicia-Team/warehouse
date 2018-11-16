@@ -317,22 +317,164 @@ CREATE INDEX ix_cache_samples_functional_v2_public_geom
    * modules/spatial_index_builder/db/version_2_0_0/201811141205_drop_index_table.sql
 8. Visit the warehouse home page and run the upgrade.
 9. Run the following script, replacing #datetime# with the date and time of the
-   server system clock before you started (YYYY-MM-DD hh:mm:ss format):
+   server system clock before you started (YYYY-MM-DD hh:mm:ss format). Note
+   that when you drop the cache_occurrences_functional and
+   cache_samples_functional tables all views that refer to the table will need
+   to be dropped and recreated afterwards. The script includes DROP and CREATE
+   statements for the views built into core, but any custom views will also
+   need to be dropped then recreated afterwards. Also, the script includes
+   references to indicia_user and indicia_report_user, the PostgreSQL
+   connection's username. If your installation uses a different username then
+   please replace it in the script. You should also check any users which have
+   special grants on any of the views you drop (including the 4 core views in
+   the script) and recreate those grants afterwards, for example if select
+   access is granted to indicia_report_user.
 
 ```sql
+ALTER TABLE cache_taxon_paths OWNER TO indicia_user;
+
 -- This forces any new records to rebuild in the cache.
 UPDATE system SET last_scheduled_task_check='#datetime#' WHERE name='cache_builder';
 
+DROP VIEW cache_occurrences;
+DROP VIEW detail_occurrence_associations;
+DROP VIEW list_occurrence_associations;
+
 DROP TABLE cache_occurrences_functional;
 ALTER TABLE cache_occurrences_functional_v2 RENAME TO cache_occurrences_functional;
+ALTER TABLE cache_occurrences_functional OWNER TO indicia_user;
+GRANT SELECT ON cache_occurrences_functional TO indicia_report_user;
+
+CREATE OR REPLACE VIEW cache_occurrences AS
+SELECT o.id,
+  o.record_status,
+  o.zero_abundance,
+  o.website_id,
+  o.survey_id,
+  o.sample_id,
+  snf.survey_title,
+  snf.website_title,
+  o.date_start,
+  o.date_end,
+  o.date_type,
+  snf.public_entered_sref,
+  snf.entered_sref_system,
+  o.public_geom,
+  o.taxa_taxon_list_id,
+  cttl.preferred_taxa_taxon_list_id,
+  cttl.taxonomic_sort_order,
+  cttl.taxon,
+  cttl.authority,
+  cttl.preferred_taxon,
+  cttl.preferred_authority,
+  cttl.default_common_name,
+  cttl.external_key as taxa_taxon_list_external_key,
+  cttl.taxon_meaning_id,
+  cttl.taxon_group_id,
+  cttl.taxon_group,
+  o.created_by_id,
+  o.created_on as cache_created_on,
+  o.updated_on as cache_updated_on,
+  o.certainty,
+  o.location_name,
+  snf.recorders,
+  onf.verifier,
+  onf.media as images,
+  o.training,
+  o.location_id,
+  o.input_form,
+  o.data_cleaner_result,
+  onf.data_cleaner_info,
+  o.release_status,
+  o.verified_on,
+  onf.sensitivity_precision,
+  o.map_sq_1km_id,
+  o.map_sq_2km_id,
+  o.map_sq_10km_id,
+  o.group_id,
+  onf.privacy_precision,
+  onf.output_sref,
+  o.record_substatus,
+  o.query,
+  o.licence_id,
+  onf.licence_code,
+  o.family_taxa_taxon_list_id,
+  onf.attr_sex,
+  onf.attr_stage,
+  onf.attr_sex_stage,
+  onf.attr_sex_stage_count,
+  onf.attr_certainty,
+  onf.attr_det_first_name,
+  onf.attr_det_last_name,
+  onf.attr_det_full_name,
+  snf.attr_email,
+  snf.attr_cms_user_id,
+  snf.attr_cms_username,
+  snf.attr_first_name,
+  snf.attr_last_name,
+  snf.attr_full_name,
+  snf.attr_biotope,
+  snf.attr_sref_precision,
+  o.confidential,
+  o.location_ids,
+  o.taxon_path,
+  o.blocked_sharing_tasks
+  FROM cache_occurrences_functional o
+  JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
+  JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id;
+
+CREATE OR REPLACE VIEW list_occurrence_associations AS
+select
+  oa.id, oa.from_occurrence_id, oa.to_occurrence_id, cttlfrom.taxon as from_taxon, cttlto.taxon as to_taxon, cofrom.sample_id,
+  oa.association_type_id, atype.term as association_type, oa.part_id, part.term as part,
+  oa.position_id, pos.term as position, oa.impact_id, impact.term as impact, cofrom.website_id
+from occurrence_associations oa
+join cache_occurrences_functional cofrom on cofrom.id=oa.from_occurrence_id
+join cache_occurrences_functional coto on coto.id=oa.to_occurrence_id
+join cache_taxa_taxon_lists cttlfrom on cttlfrom.id=cofrom.taxa_taxon_list_id
+join cache_taxa_taxon_lists cttlto on cttlto.id=coto.taxa_taxon_list_id
+join cache_termlists_terms atype on atype.id=oa.association_type_id
+left join cache_termlists_terms part on part.id=oa.part_id
+left join cache_termlists_terms pos on pos.id=oa.position_id
+left join cache_termlists_terms impact on impact.id=oa.impact_id
+where oa.deleted=false;
+
+CREATE OR REPLACE VIEW detail_occurrence_associations AS
+select
+  oa.id, oa.from_occurrence_id, oa.to_occurrence_id, cttlfrom.taxon as from_taxon, cttlto.taxon as to_taxon, cofrom.sample_id,
+  oa.association_type_id, atype.term as association_type, oa.part_id, part.term as part,
+  oa.position_id, pos.term as position, oa.impact_id, impact.term as impact, oa.comment,
+  oa.created_by_id, c.username AS created_by, oa.updated_by_id, u.username AS updated_by, cofrom.website_id
+from occurrence_associations oa
+join cache_occurrences_functional cofrom on cofrom.id=oa.from_occurrence_id
+join cache_occurrences_functional coto on coto.id=oa.to_occurrence_id
+join cache_taxa_taxon_lists cttlfrom on cttlfrom.id=cofrom.taxa_taxon_list_id
+join cache_taxa_taxon_lists cttlto on cttlto.id=coto.taxa_taxon_list_id
+join cache_termlists_terms atype on atype.id=oa.association_type_id
+left join cache_termlists_terms part on part.id=oa.part_id
+left join cache_termlists_terms pos on pos.id=oa.position_id
+left join cache_termlists_terms impact on impact.id=oa.impact_id
+JOIN users c ON c.id = oa.created_by_id
+JOIN users u ON u.id = oa.updated_by_id
+where oa.deleted=false;
+
+ALTER VIEW cache_occurrences OWNER TO indicia_user;
+ALTER VIEW list_occurrence_associations OWNER TO indicia_user;
+ALTER VIEW detail_occurrence_associations OWNER TO indicia_user;
+GRANT SELECT ON cache_occurrences TO indicia_report_user;
+GRANT SELECT ON list_occurrence_associations TO indicia_report_user;
+GRANT SELECT ON detail_occurrence_associations TO indicia_report_user;
 
 DROP TABLE cache_samples_functional;
 ALTER TABLE cache_samples_functional_v2 RENAME TO cache_samples_functional;
+ALTER TABLE cache_samples_functional OWNER TO indicia_user;
+GRANT SELECT ON cache_samples_functional TO indicia_report_user;
 
-ALTER TABLE cache_occurrences_functional_v2
+ALTER TABLE cache_occurrences_functional
   RENAME CONSTRAINT pk_cache_occurrences_functional_v2 TO pk_cache_occurrences_functional;
 
-ALTER TABLE cache_samples_functional_v2
+ALTER TABLE cache_samples_functional
   RENAME CONSTRAINT pk_cache_samples_functional_v2 TO pk_cache_samples_functional;
 
 ALTER INDEX ix_cache_occurrences_functional_v2_created_by_id RENAME TO ix_cache_occurrences_functional_created_by_id;
