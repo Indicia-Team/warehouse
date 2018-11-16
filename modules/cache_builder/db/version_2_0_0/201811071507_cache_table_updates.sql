@@ -69,8 +69,8 @@ DROP INDEX ix_cache_samples_functional_map_sq_2km_id;
 DROP INDEX ix_cache_samples_functional_survey;
 
 UPDATE cache_occurrences_functional o
-SET location_ids=l.location_ids,
-  taxon_path=ctp.path,
+SET location_ids=CASE l.location_ids WHEN ARRAY[NULL::integer] THEN NULL ELSE l.location_ids END,
+  taxon_path=CASE ctp.path WHEN ARRAY[NULL::integer] THEN NULL ELSE ctp.path END,
   blocked_sharing_tasks=
     CASE WHEN u.allow_share_for_reporting
       AND u.allow_share_for_peer_review AND u.allow_share_for_verification
@@ -89,15 +89,15 @@ SET location_ids=l.location_ids,
     END
 FROM loc_ids l, users u, cache_taxa_taxon_lists cttl
 LEFT JOIN cache_taxa_taxon_lists cttlm
-  ON cttlm.external_key=o.taxa_taxon_list_external_key
+  ON cttlm.external_key=cttl.external_key
   AND cttlm.taxon_list_id=#master_list_id#
-  AND cttlm.preferred=true;
+  AND cttlm.preferred=true
 LEFT JOIN cache_taxon_paths ctp
   ON ctp.taxon_meaning_id=cttlm.taxon_meaning_id
-  AND ctp.taxon_list_id=#master_list_id#
-WHERE cttl.id=o.taxa_taxon_list_id
-AND l.sample_id=o.sample_id
-AND u.id=o.created_by_id;
+  AND ctp.taxon_list_id=cttlm.taxon_list_id
+WHERE l.sample_id=o.sample_id
+AND u.id=o.created_by_id
+AND cttl.id=o.taxa_taxon_list_id;
 
 UPDATE cache_samples_functional s
 SET location_ids=l.location_ids,
