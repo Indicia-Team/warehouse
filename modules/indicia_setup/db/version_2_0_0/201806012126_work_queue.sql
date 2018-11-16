@@ -45,4 +45,9 @@ CREATE INDEX ix_work_queue_claimed_by
   ON work_queue
   USING btree
   (claimed_by);
-CREATE UNIQUE INDEX ix_work_queue_unique_task ON work_queue (task, COALESCE(entity, ''), COALESCE(record_id, 0), COALESCE((params::text), '')) WHERE (claimed_by is null);
+CREATE UNIQUE INDEX ix_work_queue_unique_task ON work_queue (
+  task,
+  COALESCE(entity, ''),
+  COALESCE(record_id, 0),
+  COALESCE((params::text), '')
+) WHERE (claimed_by is null);
