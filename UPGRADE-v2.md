@@ -5,7 +5,12 @@
   several hours to apply if you have millions of occurrence records due to the
   updates required to the reporting cache tables.
 * If you have any custom reports, you will need to review them, especially if
-  they join to the index_locations_samples table which has been dropped.
+  they join to the index_locations_samples table which has been dropped and
+  replaced by cache_occurrences_functional.location_ids and
+  cache_samples_functional.location_ids, both of which hold an array of
+  location IDs for each indexed location that intersects the record. Also note
+  the new cache_taxon_paths table and cache_occurrences_functional.taxon_paths
+  field used to optimised hierarchical taxonomic indexing.
 * Existing client websites should continue to operate as before without
   amendment.
 * Although there are significant upgrades to the client helper library code
@@ -81,12 +86,12 @@ DROP FUNCTION temp_spatial_index();
 
 CREATE INDEX ix_loc_ids ON loc_ids(sample_id);
 
-SELECT * INTO TEMPORARY cache_occurrences_functional_v2 FROM cache_occurrences_functional;
+SELECT * INTO cache_occurrences_functional_v2 FROM cache_occurrences_functional;
 
 ALTER TABLE cache_occurrences_functional_v2
   ADD CONSTRAINT pk_cache_occurrences_functional_v2 PRIMARY KEY(id);
 
-SELECT * INTO TEMPORARY cache_samples_functional_v2 FROM cache_samples_functional;
+SELECT * INTO cache_samples_functional_v2 FROM cache_samples_functional;
 
 ALTER TABLE cache_samples_functional_v2
   ADD CONSTRAINT pk_cache_samples_functional_v2 PRIMARY KEY(id);
