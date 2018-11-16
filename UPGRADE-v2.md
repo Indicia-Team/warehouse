@@ -314,7 +314,6 @@ CREATE INDEX ix_cache_samples_functional_v2_public_geom
 7. Delete the following files:
    * modules/cache_builder/db/version_2_0_0/201811071507_cache_table_updates.sql
    * modules/cache_builder/db/version_2_0_0/201811071512_new_cache_indexes.sql
-   * modules/cache_builder/db/version_2_0_0/201811081048_cache_occurrences_view.sql
    * modules/spatial_index_builder/db/version_2_0_0/201811141205_drop_index_table.sql
 8. Visit the warehouse home page and run the upgrade.
 9. Run the following script, replacing #datetime# with the date and time of the

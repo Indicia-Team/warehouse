@@ -1,3 +1,5 @@
+-- #slow script#
+
 -- In case there is unreliability in any of the v1 index_locations_samples data
 -- prompt a rebuild using the work queue.
 INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
