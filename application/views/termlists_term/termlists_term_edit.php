@@ -102,6 +102,7 @@ TXT;
       'captionField' => 'term',
       'default' => html::initial_value($values, 'termlists_term:source_id'),
       'extraParams' => $readAuth + ['termlist_external_key' => 'indicia:term_sources'],
+      'blankText' => '<none>',
     ]);
     echo data_entry_helper::checkbox([
       'label' => 'Allow data entry',
