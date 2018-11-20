@@ -1025,8 +1025,8 @@ SQL;
               // Use a preprocessing query to calculate the actual param value
               // to use.
               $prequery = str_replace(
-                ["#$name#", '#master_list_id#'],
-                [$value, warehouse::getMasterTaxonListId()],
+                ["#$name#", '#website_ids#', '#master_list_id#'],
+                [$value, implode(',', $this->websiteIds), warehouse::getMasterTaxonListId()],
                 $paramDefs[$name]['preprocess']
               );
               $output = $this->reportDb->query($prequery)->result_array(FALSE);
