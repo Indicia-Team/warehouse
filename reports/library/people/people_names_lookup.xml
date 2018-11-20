@@ -13,9 +13,9 @@
     UNION
     SELECT DISTINCT null::integer as id, v.text_value as person_name, null::text as email_address
     FROM sample_attribute_values v
-    JOIN sample_attributes a on a.id=v.sample_attribute_id and a.deleted=false and a.system_function='full_name'
     JOIN cache_samples_functional s on s.id=v.sample_id
     WHERE v.deleted=false
+    AND v.sample_attribute_id in (#attr_function#)
     AND s.website_id in (#website_ids#)
     AND lower(v.text_value) like lower(replace('#q#', '*', '%') || '%')
     AND NOT EXISTS (
@@ -33,6 +33,8 @@
   </orderbys>
   <params>
     <param name="q" display="Search for" datatype="text"/>
+    <param name="attr_function" display="Sysfunc of attribute to lookup in" datatype="string" default="full_name"
+      preprocess="select id from list_sample_attributes where website_id in (#website_ids#) and system_function='#attr_function#'" />
   </params>
   <columns>
     <column name="id" sql="p.id" datatype="integer" visible="false"/>
