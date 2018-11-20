@@ -1034,7 +1034,11 @@ SQL;
               // Ensure the original value can be used as well as the processed value.
               $query = preg_replace("/#$name-unprocessed#/", $value, $query);
               // Use a preprocessing query to calculate the actual param value to use.
-              $prequery = str_replace("#$name#", $value, $paramDefs[$name]['preprocess']);
+              $prequery = str_replace(
+                ["#$name#", '#website_ids#'],
+                [$value, implode(',', $this->websiteIds)],
+                $paramDefs[$name]['preprocess']
+              );
               $output = $this->reportDb->query($prequery)->result_array(FALSE);
               $value = implode(',', $output[0]);
               if (empty($value)) {
