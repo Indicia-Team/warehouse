@@ -3,21 +3,23 @@
     description='An list of text names used for the recorder names attribute entered by the user - this assummes Easy Login.'
 >
   <query>
-  SELECT distinct(sav.text_value) as name
-  FROM sample_attribute_values sav
-  JOIN samples s ON s.id = sav.sample_id and s.deleted = FALSE
-  WHERE sav.deleted = FALSE
-  AND sav.sample_attribute_id = #attr_id#
-  AND (CAST(s.survey_id AS character varying)='#survey_id#')
-  AND (CAST(sav.created_by_id AS character varying)='#user_id#')
-  AND sav.text_value IS NOT NULL AND sav.text_value != ''
-  ORDER BY name
+  SELECT distinct snf.attr_full_name AS name
+  FROM cache_samples_nonfunctional snf
+  JOIN samples s on s.id=snf.id
+  WHERE snf.attr_full_name is not null
+  AND snf.attr_full_name&lt;&gt;''
   </query>
+  <order_bys>
+    <order_by>snf.attr_full_name</order_by>
+  </order_bys>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
-        population_call='direct:survey:id:title' />
-    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' />
-    <param name='attr_id' display='Recorder Name sample attribute ID' description='Recorder Name sample attribute ID' datatype='int' />
+        population_call='direct:survey:id:title' >
+      <where>s.survey_id=#survey_id#</where>
+    </param>
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int'>
+      <where>s.created_by_id=#user_id#</where>
+    </param>
   </params>
   <columns>
     <column name='name' display='Name' />
