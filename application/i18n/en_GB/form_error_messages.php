@@ -27,6 +27,11 @@ $lang = [
     'required' => 'Count cannot be blank.',
     'digit' => 'This must be a valid whole number.',
   ],
+  'csv_upload' => [
+    'size' => 'The uploaded file is too large.',
+    'required' => 'Missing upload file.',
+    'default' => 'Invalid file uploaded',
+  ],
   'data_type' => [
     'required' => 'The data type must be supplied.',
   ],
