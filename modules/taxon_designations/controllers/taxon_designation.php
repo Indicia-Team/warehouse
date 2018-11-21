@@ -76,12 +76,16 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
           $finalName = time() . strtolower($_FILES['csv_upload']['name']);
         }
         $fTmp = upload::save('csv_upload', $finalName);
-        url::redirect('taxon_designation/import_progress?file=' . urlencode(basename($fTmp)));
+        $qry = http_build_query([
+          'file' => basename($fTmp),
+          'taxon_list_id' => $_POST['taxon_list_id'],
+        ]);
+        url::redirect("taxon_designation/import_progress?$qry");
       }
       else {
         kohana::log('error', 'Validation errors uploading file ' . $_FILES['csv_upload']['name']);
         kohana::log('error', print_r($_FILES->errors('form_error_messages'), TRUE));
-        throw new ValidationError('Validation error', 2004, $_FILES->errors('form_error_messages'));
+        throw new Exception(implode('; ', $_FILES->errors('form_error_messages')));
       }
     }
     catch (Exception $e) {
@@ -139,6 +143,10 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
         $obj = $cache->get(basename($_GET['uploaded_csv']) . 'metadata');
       }
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit === FALSE || $count < $limit)) {
+        if (trim(implode('', $data)) === '') {
+          // Skip any empty lines.
+          continue;
+        }
         $count++;
         $filepos = ftell($handle);
         $designationTitle = $this->findValue($data, ['designation title', 'designation'], $obj);
@@ -213,20 +221,26 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
         }
         $desId = $r[0]['id'];
         // Third step - find the pre-existing taxon/taxa.
-        $where = array();
+        $where = [
+          't.deleted' => 'f',
+          'ttl.deleted' => 'f',
+          'ttl.taxon_list_id' => $_GET['taxon_list_id'],
+        ];
         if (!empty($taxon)) {
-          $where['taxon'] = trim($taxon);
+          $where['t.taxon'] = trim($taxon);
         }
         if (!empty($taxonExternalKey)) {
-          $where['external_key'] = trim($taxonExternalKey);
+          $where['t.external_key'] = trim($taxonExternalKey);
         }
         if (count($where) === 0) {
           throw new exception('Missing taxon or external key - cannot link to a taxon');
         }
         $r = $this->db
-          ->select('id')
-          ->from('taxa')
+          ->select('t.id, ttl.preferred')
+          ->from('taxa as t')
+          ->join('taxa_taxon_lists as ttl', 'ttl.taxon_id', 't.id')
           ->where($where)
+          ->orderby('ttl.preferred', 'DESC')
           ->get()->result_array(FALSE);
         // Convert years to a date.
         if (preg_match('/\d\d\d\d/', $startDate)) {
@@ -235,7 +249,15 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
         if (empty($startDate)) {
           $startDate = NULL;
         }
+        $hasPreferred = FALSE;
         foreach ($r as $taxon) {
+          // If there was at least one preferred matching taxon, skip any
+          // remaining synonyms. If none are preferred, then link to all the
+          // matching synonyms.
+          $hasPreferred = $hasPreferred || ($taxon['preferred'] === 't');
+          if ($hasPreferred && $taxon['preferred'] === 'f') {
+            break;
+          }
           // Insert a link from each matched taxon to the designation, if not
           // already present.
           $r = $this->db

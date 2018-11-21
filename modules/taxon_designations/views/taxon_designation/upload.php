@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,12 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Taxon Designations
- * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	https://github.com/indicia-team/warehouse/
  */
+
 ?>
 <script type="text/javascript">
 // <![CDATA[
@@ -31,8 +31,10 @@ $(document).ready(function() {
 uploadChunk = function() {
   var limit=50;
   var filename='<?php echo $_GET['file']; ?>';
+  var taxon_list_id='<?php echo $_GET['taxon_list_id']; ?>';
   $.ajax({
-    url: '<?php echo url::base(); ?>index.php/taxon_designation/upload?offset='+total+'&limit='+limit+'&filepos='+filepos+'&uploaded_csv='+filename,
+    url: '<?php echo url::base(); ?>index.php/taxon_designation/upload?offset=' + total +
+      '&limit=' + limit + '&filepos=' + filepos + '&uploaded_csv=' + filename + '&taxon_list_id=' + taxon_list_id,
     dataType: 'json',
     success: function(response) {
       total = total + response.uploaded;

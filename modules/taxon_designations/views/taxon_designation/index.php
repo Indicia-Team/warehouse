@@ -22,16 +22,35 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+
 echo $grid;
 ?>
 <form action="<?php echo url::site() . 'taxon_designation/create'; ?>">
 <input type="submit" value="New taxon designation" class="ui-corner-all ui-state-default button" />
 </form>
+<h2>Upload Indicia CSV format file</h2>
 <?php echo $upload_csv_form ?>
-<form enctype="multipart/form-data" class="linear-form" method="post" action="<?php echo url::site() . 'taxon_designation/upload_csv'; ?>">
+<h2>Upload Conservation Designations spreadsheet</h2>
+<form id="cons-desig-upload" enctype="multipart/form-data" class="linear-form" method="post"
+  action="<?php echo url::site() . 'taxon_designation/upload_csv'; ?>">
   <fieldset>
-    <label for="csv_upload" class="auto">Upload a Designations Spreadsheet (CSV) file into this list:</label>
-    <input type="file" name="csv_upload" id="csv_upload" size="40" />
+    <label for="csv_upload">Upload a Designations Spreadsheet (CSV) file:</label>
+    <input type="file" name="csv_upload" class="form-control" required />
+    <?php
+    echo data_entry_helper::select([
+      'label' => 'Taxon list',
+      'fieldname' => 'taxon_list_id',
+      'table' => 'taxon_list',
+      'valueField' => 'id',
+      'captionField' => 'title',
+      'extraParams' => $readAuth,
+      'default' => warehouse::getMasterTaxonListId(),
+      'validation' => ['required'],
+      'helpText' => 'Choose the taxon list you would like to search for taxa in when linking imported designations.',
+    ]);
+    ?>
     <input type="submit" value="Upload Designations File" />
     <p>This lets you import designations including links for any existing taxon, identified by the external key.
       To use this facility, create a spreadsheet with the following columns, or columns matching the JNCC Conservation Designations spreadsheet:</p>
@@ -49,3 +68,7 @@ echo $grid;
     </ol>
   </fieldset>
 </form>
+<?php
+data_entry_helper::enable_validation('cons-desig-upload');
+echo data_entry_helper::dump_javascript();
+?>
