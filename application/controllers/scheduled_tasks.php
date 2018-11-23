@@ -97,7 +97,13 @@ class Scheduled_Tasks_Controller extends Controller {
       $params = json_decode($trigger->params_json, TRUE);
       $params['date'] = $this->last_run_date;
       $reportEngine = new ReportEngine();
-      $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
+      try {
+        $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
+      }
+      catch (Exception $e) {
+        self::msg($trigger->name . ": " . $e, 'error');
+        continue;
+      }
       if (!isset($data['content']['records'])) {
         kohana::log('error', 'Error in trigger file ' . $trigger->trigger_template_file . '.xml');
         continue;
@@ -203,7 +209,7 @@ class Scheduled_Tasks_Controller extends Controller {
             'updated_by_id' => 1,
             'updated_on' => date('Y-m-d H:i:s'),
             'occurrence_id' => $record[$occIDCol],
-            'generated_by' => 'notificatons',
+            'generated_by' => 'notifications',
           ));
         }
         else {
@@ -246,7 +252,7 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     $data['headings'] = array_diff_key($data['headings'], array_flip($colsToRemove));
     // Keep a list of users to notify.
-    $userNotificatons = [];
+    $userNotifications = [];
     // For each record, attach it to any user that needs to be notified.
     foreach ($data['data'] as $websiteId => &$records) {
       foreach ($records as &$record) {
@@ -710,19 +716,25 @@ class Scheduled_Tasks_Controller extends Controller {
   }
 
   /**
-   * If a plugin needs a different occurrences delta table to the one we've got currently prepared, then
-   * build it.
+   * Creates the occdelta table.
+   *
+   * If a plugin needs a different occurrences delta table to the one we've got
+   * currently prepared, then build it.
+   *
    * @param type $plugin
    * @param type $timestamp
-   * @param string $currentTime Timepoint of the scheduled task run, so we can be absolutely clear about not including
-   * records added which overlap the scheduled task.
+   * @param string $currentTime
+   *   Timepoint of the scheduled task run, so we can be absolutely clear about
+   *   not including records added which overlap the scheduled task.
+   *
    * @link http://indicia-docs.readthedocs.io/en/latest/developing/warehouse/plugins.html#scheduled-task-hook
    */
   private function loadOccurrencesDelta($plugin, $timestamp, $currentTime) {
     if ($this->pluginMetadata['requires_occurrences_delta']) {
-      if ($this->occdeltaStartTimestamp!==$timestamp) {
-        // This scheduled plugin wants to know about the changed occurrences, and the current occdelta table does
-        // not contain the records since the correct change point
+      if ($this->occdeltaStartTimestamp !== $timestamp) {
+        // This scheduled plugin wants to know about the changed occurrences,
+        // and the current occdelta table does not contain the records since
+        // the correct change point.
         $this->db->query('DROP TABLE IF EXISTS occdelta;');
         // This query uses a 2 stage process as it is faster than joining occurrences to cache_occurrences.
         $query = "
@@ -759,44 +771,48 @@ left join samples sp on sp.id=s.parent_id and sp.deleted=false
 join websites w on w.id=o.website_id and w.deleted=false;
 
 create index ix_occdelta_taxa_taxon_list_id on occdelta(taxa_taxon_list_id);
+create index ix_occdelta_taxa_taxon_list_external_key on occdelta(taxa_taxon_list_external_key);
 
 drop table occlist;";
         $this->db->query($query);
-        $this->occdeltaStartTimestamp=$timestamp;
-        $this->occdeltaEndTimestamp=$currentTime;
-        // if processing more than a few thousand records at a time, things will slow down. So we'll cut off the delta at the second which
-        // the 5000th record fell on.
+        $this->occdeltaStartTimestamp = $timestamp;
+        $this->occdeltaEndTimestamp = $currentTime;
+        // If processing more than a few thousand records at a time, things
+        // will slow down. So we'll cut off the delta at the second which the
+        // 5000th record fell on.
         $this->limitDeltaSize();
       }
     }
   }
 
   /**
-   * if processing too many records, clear out the excess.
+   * If processing too many records, clear out the excess.
    */
   private function limitDeltaSize() {
-    $this->occdeltaCount=$this->db->count_records('occdelta');
+    $this->occdeltaCount = $this->db->count_records('occdelta');
     $max = 5000;
-    if ($this->occdeltaCount>$max) {
+    if ($this->occdeltaCount > $max) {
       $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max");
       foreach ($qry as $t) {
-        self::msg("Scheduled tasks are delaying processing of ".$this->db->query("delete from occdelta where timestamp>'$t->timestamp'")->count()." records as too many to process", 'alert');
-        // remember where we are up to.
+        self::msg("Scheduled tasks are delaying processing of " . $this->db->query("delete from occdelta where timestamp>'$t->timestamp'")->count()." records as too many to process", 'alert');
+        // Remember where we are up to.
         $this->occdeltaEndTimestamp = $t->timestamp;
       }
-      $this->occdeltaCount=$this->db->count_records('occdelta');
+      $this->occdeltaCount = $this->db->count_records('occdelta');
     }
   }
 
   /**
    * Loads the metadata for the given plugin name.
-   * @param string $plugin Name of the plugin
+   *
+   * @param string $plugin
+   *   Name of the plugin.
    */
   private function loadPluginMetadata($plugin) {
-    $this->pluginMetadata = function_exists($plugin.'_metadata') ? call_user_func($plugin.'_metadata') : array();
+    $this->pluginMetadata = function_exists($plugin . '_metadata') ? call_user_func($plugin . '_metadata') : array();
     $this->pluginMetadata = array_merge(array(
       'requires_occurrences_delta' => FALSE,
-      'always_run' => FALSE
+      'always_run' => FALSE,
     ), $this->pluginMetadata);
   }
 

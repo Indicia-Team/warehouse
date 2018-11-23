@@ -147,14 +147,14 @@ END"
   ELSE st_y(st_transform(st_centroid(o.public_geom), 4326))
 END"
           datatype="integer"
-          term="http://rs.tdwg.org/dwc/terms/decimaLatitude" />
+          term="http://rs.tdwg.org/dwc/terms/decimalLatitude" />
     <column name="decimalLongitude"
           sql="CASE
   WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
   ELSE st_x(st_transform(st_centroid(o.public_geom), 4326))
 END"
           datatype="integer"
-          term="http://rs.tdwg.org/dwc/terms/decimaLongitude" />
+          term="http://rs.tdwg.org/dwc/terms/decimalLongitude" />
     <column name="datasetName"
           sql="'#dataset_name#'"
           datatype="text"
@@ -181,7 +181,7 @@ END"
           WHEN 'V1' THEN 'Accepted - correct'
           WHEN 'V2' THEN 'Accepted - considered correct'
           WHEN 'C' THEN 'Unconfirmed - not reviewed'
-          WHEN 'C3' THEN 'Unconfirmed – plausible'
+          WHEN 'C3' THEN 'Unconfirmed - plausible'
           ELSE null
           END"
           datatype="text"
