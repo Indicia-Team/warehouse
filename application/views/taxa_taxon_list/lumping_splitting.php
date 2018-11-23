@@ -280,7 +280,7 @@ performSplit = function(){
   ?>
     <input id="LStaxon" name="LStaxon" value="" />
     <input type="hidden" id="LStaxon_meaning_id" />
-    <input type="button" value="Add to List" onClick="addLStaxon()" class="btn btn-default" /><br/>
+    <input type="button" value="Add to list" onClick="addLStaxon()" class="btn btn-default" /><br/>
     <table id="LS_taxa_table" class="ui-widget ui-widget-content"><thead class="ui-widget-header" ><tr class="headingRow" >
         <th id="LS_Taxon">Taxon</th>
         <?php if ($canLump) { ?><th id="Already_Lumped">Already Lumped</th><?php } ?>

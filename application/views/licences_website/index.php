@@ -25,6 +25,6 @@
 echo $grid;
 if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin')) : ?>
   <a href="<?php echo url::site() . 'licences_website/create/' . $this->uri->argument(1); ?>" class="btn btn-primary">
-    Add Licence
+    Add licence
   </a>
 <?php endif;
