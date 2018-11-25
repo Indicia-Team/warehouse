@@ -195,6 +195,9 @@ class Import_Controller extends Service_Base_Controller {
     if (isset($metadata['importMergeFields'])) {
       $metadata['importMergeFields'] = json_decode($metadata['importMergeFields'], TRUE);
     }
+    if (isset($metadata['synonymProcessing'])) {
+        $metadata['synonymProcessing'] = json_decode($metadata['synonymProcessing'], TRUE);
+    }
 
     // the metadata can also hold auth tokens and user_id, though they do not need decoding.
     self::internal_cache_upload_metadata($metadata);
@@ -251,6 +254,36 @@ class Import_Controller extends Service_Base_Controller {
     fclose($mappingHandle);
   }
 
+  /**
+   * Saves a set of meanings for an upload to a file, so it can persist across requests.
+   * This is the mapping between the synonym identifier column and the indicia meaning id.
+   */
+  private function cache_stored_meanings($meanings) {
+      $previous = self::retrieve_cached_stored_meanings();
+      $metadata = array_merge($previous, $meanings);
+      $meaningsFile = str_replace('.csv', '-meanings.txt', $_GET['uploaded_csv']);
+      $meaningsHandle = fopen(DOCROOT . "upload/$meaningsFile", "w");
+      fwrite($meaningsHandle, json_encode($meanings));
+      fclose($meaningsHandle);
+  }
+
+  /**
+   * Internal function that retrieves the meanings for a CSV upload.
+   */
+  private function retrieve_cached_stored_meanings() {
+      $meaningsFile = DOCROOT . "upload/" . str_replace('.csv', '-meanings.txt', $_GET['uploaded_csv']);
+      if (file_exists($meaningsFile)) {
+          $meaningsHandle = fopen($meaningsFile, "r");
+          $meanings = fgets($meaningsHandle);
+          fclose($meaningsHandle);
+          return json_decode($meanings, TRUE);
+      }
+      else {
+          // no previous file, so create default new metadata
+          return array();
+      }
+  }
+  
   /*
    * Determines if the provided module has been activated in the indicia configuration.
    */
@@ -360,11 +393,13 @@ class Import_Controller extends Service_Base_Controller {
           }
         }
       }
-
+      $storedMeanings = self::retrieve_cached_stored_meanings();
       while (($data = fgetcsv($handle, 10000, ",")) !== FALSE && ($limit === FALSE || $count < $limit)) {
         if (!array_filter($data)) { // skip empty rows
           continue;
         }
+        // Can't just clear the model, as clear does not do a full reset - leaves related entries: important for location joinsTo websites.
+        $model = ORM::Factory($_GET['model']);
         $count++;
         $index = 0;
         $saveArray = $model->getDefaults();
@@ -558,6 +593,48 @@ class Import_Controller extends Service_Base_Controller {
           $associationExists = FALSE;
           $modelToSubmit = $model;
         }
+        $mainOrSynonym = FALSE;
+        $error = FALSE;
+        if (isset($metadata['synonymProcessing']) && isset($metadata['synonymProcessing']['separateSynonyms']) &&
+            $metadata['synonymProcessing']['separateSynonyms'] && isset($saveArray['synonym:tracker'])) {
+                $mainOrSynonym = "maybe";
+          $modelToSubmit->process_synonyms = FALSE;
+                if (isset($metadata['synonymProcessing']['synonymValues'])) {
+              foreach ($metadata['synonymProcessing']['synonymValues'] as $synonymValue) {
+                  if($saveArray['synonym:tracker'] === $synonymValue)
+                      $mainOrSynonym = "synonym";
+              }
+          }
+          if (isset($metadata['synonymProcessing']['mainValues'])) {
+              foreach ($metadata['synonymProcessing']['mainValues'] as $mainValue) {
+                  if($saveArray['synonym:tracker'] === $mainValue)
+                      $mainOrSynonym = "main";
+              }
+          }
+          if (!isset($saveArray['synonym:identifier']) || $saveArray['synonym:identifier'] === '')
+            $error = "Could not identify field to group synonyms with.";
+          if ($mainOrSynonym === "maybe")
+            $error = "Could not identify whether record is main record or synonym : " . $saveArray['synonym:tracker'];
+        }
+        if (!$error && $mainOrSynonym === "synonym") {
+            $modelToSubmit->submission['fields']['preferred']['value'] = 'f';
+            kohana::log('debug', 'Synonym detected');
+            if (array_key_exists($saveArray['synonym:identifier'], $storedMeanings)) {
+            // Meaning is held on supermodel.
+                  foreach ( $modelToSubmit->submission['superModels'] as $idx => $superModel) {
+                      if ($superModel['model']['id'] == 'taxon_meaning' && !isset($superModel['model']['fields']['id'])) {
+                        $modelToSubmit->submission['superModels'][$idx]['model']['fields']['id'] = array('value'=>$storedMeanings[$saveArray['synonym:identifier']]);
+                      }
+                  }
+            } else
+              $error = "Synonym appears in file before equivalent main record : " . $saveArray['synonym:identifier'];
+        }
+        if (!$error && $mainOrSynonym === "main") {
+            if (array_key_exists($saveArray['synonym:identifier'], $storedMeanings)) {
+                $error = "Main record appears more than once : " . $saveArray['synonym:identifier'];
+            }
+        }
+        if (!$error) {
         if (($id = $modelToSubmit->submit()) == NULL) {
           // Record has errors - now embedded in model, so dump them into the error file
           $errors = array();
@@ -590,6 +667,25 @@ class Import_Controller extends Service_Base_Controller {
           // in case they are duplicated in the next csv row.
           $this->previousCsvSupermodel['details'] = array_merge($this->previousCsvSupermodel['details'], $updatedPreviousCsvSupermodelDetails);
           $this->captureSupermodelIds($modelToSubmit, $associationExists);
+            if ($mainOrSynonym === "main") {
+                // in case of a main record, store the meaning id
+                $storedMeanings[$saveArray['synonym:identifier']] = $this->previousCsvSupermodel['id']['taxon_meaning'];
+            }
+          }
+        }
+        else {
+          $error = "Could not identify whether record is main record or synonym : " . $saveArray['synonym:tracker'];
+          if ($existingProblemColIdx === FALSE)
+            $data[] = $error;
+          else $data[$existingProblemColIdx] = $error;
+          if ($existingErrorRowNoColIdx === FALSE)
+            $data[] = $count + $offset + 1; // 1 for header
+          else $data[$existingErrorRowNoColIdx] = $count + $offset + 1;
+          if ($supportsImportGuid && $existingImportGuidColIdx === FALSE)
+            $data[] = $fileNameParts[0];
+          fputcsv($errorHandle, $data);
+          kohana::log('debug', 'Failed to import CSV row: ' . $error);
+          $metadata['errorCount'] = $metadata['errorCount'] + 1;
         }
         // get file position here otherwise the fgetcsv in the while loop will move it one record too far.
         $filepos = ftell($handle);
@@ -605,7 +701,7 @@ class Import_Controller extends Service_Base_Controller {
       fclose($handle);
       fclose($errorHandle);
       self::internal_cache_upload_metadata($metadata);
-
+      self::cache_stored_meanings($storedMeanings);
       // An AJAX upload request will just receive the number of records uploaded and progress
       $this->auto_render = FALSE;
       $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
