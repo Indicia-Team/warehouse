@@ -20,12 +20,12 @@ FROM (
       CASE a.data_type
           WHEN 'T'::bpchar THEN
             CASE
-              // colour value with a secondary colour.
-              WHEN colour LIKE '#%;%' THEN '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || split_part(colour, ';', 1) || '"&gt; &lt;/span&gt;'
-                || '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || split_part(colour, ';', 2) || '"&gt; &lt;/span&gt;'
-              // single colour value.
+              -- colour value with a secondary colour.
+              WHEN av.text_value LIKE '#%;%' THEN '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || split_part(av.text_value, ';', 1) || '"&gt; &lt;/span&gt;'
+                || '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || split_part(av.text_value, ';', 2) || '"&gt; &lt;/span&gt;'
+              -- single colour value.
               WHEN av.text_value LIKE '#%' THEN '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || av.text_value || '"&gt; &lt;/span&gt;'
-              // any other value.
+              -- any other value.
               ELSE av.text_value
             END
           WHEN 'L'::bpchar THEN t.term::text
