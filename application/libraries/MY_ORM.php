@@ -1039,40 +1039,59 @@ class ORM extends ORM_Core {
    * Supermodels part of the submission.
    */
   private function createParentRecords() {
-    // Iterate through supermodels, calling their submit methods with subarrays
+    // Iterate through supermodels, calling their submit methods with
+    // subarrays.
     if (array_key_exists('superModels', $this->submission)) {
       foreach ($this->submission['superModels'] as &$a) {
-        // Establish the right model - either an existing one or create a new one
-        $id = array_key_exists('id', $a['model']['fields']) ? $a['model']['fields']['id']['value'] : null;
+        // Establish the right model - either an existing one or create a new
+        // one.
+        $id = array_key_exists('id', $a['model']['fields']) ? $a['model']['fields']['id']['value'] : NULL;
+        // If a re-import of an existing record with a lookup based on field
+        // matching, then we will know the main model ID but not the
+        // supermodel. In this case we need to look it up.
+        if ($id === NULL && !empty($this->submission['fields']['id']) && !empty($this->submission['fields']['id']['value'])) {
+          $fk = $this->db->select("$a[fkId] as fk")
+            ->from(inflector::plural($this->object_name))
+            ->where('id', $this->submission['fields']['id']['value'])
+            ->get()->current();
+          $id = $fk->fk;
+          $a['model']['fields']['id'] = [
+            'value' => $id,
+          ];
+        }
         if ($id) {
           $m = ORM::factory($a['model']['id'], $id);
-        } else {
+        }
+        else {
           $m = ORM::factory($a['model']['id']);
         }
-        // Don't accidentally delete a parent when deleting a child
+        // Don't accidentally delete a parent when deleting a child.
         unset($a['model']['fields']['deleted']);
-        // Call the submit method for that model and
-        // check whether it returns correctly
+        // Call the submit method for that model and check whether it returns
+        // correctly.
         $m->submission = $a['model'];
-        // copy up the website id and survey id
+        // Copy up the website id and survey id.
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
         $this->nestedParentModelIds[] = $m->get_submission_response_metadata();
-        // copy the submission back so we pick up updated foreign keys that have been looked up. E.g. if submitting a taxa taxon list, and the
-        // taxon supermodel has an fk lookup, we need to keep it so that it gets copied into common names and synonyms
+        // Copy the submission back so we pick up updated foreign keys that have
+        // been looked up. E.g. if submitting a taxa taxon list, and the taxon
+        // supermodel has an fk lookup, we need to keep it so that it gets
+        // copied into common names and synonyms.
         $a['model'] = $m->submission;
         if ($result) {
           $this->submission['fields'][$a['fkId']]['value'] = $result;
-        } else {
-          $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
-          foreach($m->errors as $key=>$value) {
-            $this->errors[$fieldPrefix.$key]=$value;
+        }
+        else {
+          $fieldPrefix = (array_key_exists('field_prefix', $a['model'])) ? $a['model']['field_prefix'] . ':' : '';
+          foreach ($m->errors as $key => $value) {
+            $this->errors[$fieldPrefix . $key] = $value;
           }
-          return false;
+          return FALSE;
         }
       }
     }
-    return true;
+    return TRUE;
   }
 
   /**
