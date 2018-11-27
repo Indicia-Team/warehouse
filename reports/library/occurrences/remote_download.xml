@@ -70,7 +70,7 @@
            description="Image upload folder on the warehouse including the trailing slash" />
     <param name="include_unlicensed_media" display="Include unlicensed media" datatype="boolean" default="0"
       description="Should media with no explicit licence be included" />
-    <param name="media_licence_ids" display="Media licence IDs" datatype="integer[]" default="0"
+    <param name="media_licence_ids" display="Media licence IDs" datatype="integer[]" default="0" emptyvalue="0"
       description="Comma separated list of licences to include when filtering media." />
   </params>
   <columns>
