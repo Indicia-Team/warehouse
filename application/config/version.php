@@ -29,12 +29,8 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @var string
  */
-<<<<<<< HEAD
 $config['version'] = '2.0.0';
 
-=======
-$config['version'] = '1.63.1';
->>>>>>> hotfix-remote_download
 /**
  * Version release date.
  *
