@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -23,7 +24,7 @@ defined('SYSPATH') or die('No direct script access.');
 class html extends html_Core {
 
   /**
-   * Outputs an error message in a span, but only if there is something to output.
+   * Outputs an error message in a span only if there is something to output.
    */
   public static function error_message($message) {
     if ($message) {
@@ -32,7 +33,7 @@ class html extends html_Core {
   }
 
   /**
-   * Outputs an error message in a span, but only if there is something to output.
+   * Outputs an error message in a span only if there is something to output.
    */
   public static function error_class($message) {
     if ($message) {
@@ -41,10 +42,7 @@ class html extends html_Core {
   }
 
   /**
-   * @todo Roll page_error and page_notice into a single html method.
-   * Update setup check, as well as home page template to use it.
-   * Ensure icons match bootstrap 3.
-   * Add instructions above the configuration check list.
+   * Outputs a page flash notice.
    */
   public static function page_notice(
       $title,
@@ -65,16 +63,19 @@ HTML;
   }
 
   /**
-   * Returns the initial value for an edit control on a page. This is either loaded from the $_POST
-   * array (if reloading after a failed attempt to save) or from the model or initial default value
-   * otherwise.
+   * Finds the value to load into a form edit control.
+   *
+   * Returns the initial value for an edit control on a page. This is either
+   * loaded from the $_POST array (if reloading after a failed attempt to save)
+   * or from the model or initial default value otherwise.
    *
    * @param ORM $values
-   *   List of values to load in an array
+   *   List of values to load in an array.
    * @param string $fieldname
-   *   The fieldname should be of form model:fieldname. If the model part indicates a different model
-   *   then the field value will be loaded from the other model (assuming that model is linked to the
-   *   main one. E.g.'taxon:description' would load the $model->taxon->description field.
+   *   The fieldname should be of form model:fieldname. If the model part
+   *   indicates a different model then the field value will be loaded from the
+   *   other model (assuming that model is linked to the main one. E.g.
+   *   'taxon:description' would load the $model->taxon->description field.
    */
   public static function initial_value($values, $fieldname) {
     if (array_key_exists($fieldname, $values)) {
@@ -86,38 +87,47 @@ HTML;
   }
 
   /**
-  * Return HTML to output the default OK and Cancel buttons to display at the bottom of an edit form. Also
-  * outputs a delete button if the $allowDelete parameter is true.
-  *
-  * @param boolean $allowDelete If true, then a delete button is included in the output.
-  * @param boolean $readOnly If true, then the only button is a form cancel button.
-  * @param boolean $allowUserSelectNextPage If true then then a select control is output which lets the user define
-  * whether to continue adding records on the add new page or to return the index page for the current model.
-  */
+   * Output buttons for an edit form.
+   *
+   * Return HTML to output the default OK and Cancel buttons to display at the
+   * bottom of an edit form. Also outputs a delete button if the $allowDelete
+   * parameter is true.
+   *
+   * @param bool $allowDelete
+   *   If true, then a delete button is included in the output.
+   * @param bool $readOnly
+   *   If true, then the only button is a form cancel button.
+   * @param bool $allowUserSelectNextPage
+   *   If true then then a select control is output which lets the user define
+   *   whether to continue adding records on the add new page or to return the
+   *   index page for the current model.
+   */
   public static function form_buttons($allowDelete, $readOnly = FALSE, $allowUserSelectNextPage = TRUE) {
     $r = '<fieldset class="button-set form-inline">' . "\n";
     if ($readOnly) {
-      $r .= '  <input type="submit" name="submit" value="' . kohana::lang('misc.cancel') . '" class="btn btn-default" />'."\n";
+      $r .= '  <input type="submit" name="submit" value="' . kohana::lang('misc.cancel') . '" class="btn btn-default" />' . "\n";
     }
     else {
       $r .= '  <input type="submit" name="submit" value="' . kohana::lang('misc.save') . '" class="btn btn-primary" />' . "\n";
       $r .= '  <input type="submit" name="submit" value="' . kohana::lang('misc.cancel') . '" class="btn btn-default" />' . "\n";
       if ($allowDelete) {
-        $r .= '  <input type="submit" name="submit" value="' . kohana::lang('misc.delete') . '" onclick="if (!confirm(\'' . kohana::lang('misc.confirm_delete').'\')) {return false;}" class="btn btn-warning" />'."\n";
+        $r .= '  <input type="submit" name="submit" value="' . kohana::lang('misc.delete') . '" onclick="if (!confirm(\'' .
+          kohana::lang('misc.confirm_delete') . '\')) {return false;}" class="btn btn-warning" />' . "\n";
       }
-      // Add a drop down to select action after submit clicked. Needs to remember its previous setting from the session,
-      // since we normally arrive here after a redirect.
+      // Add a drop down to select action after submit clicked. Needs to
+      // remember its previous setting from the session, since we normally
+      // arrive here after a redirect.
       if (isset($_SESSION['what-next']) && $_SESSION['what-next'] === 'add') {
         $selAdd = ' selected="selected"';
         $selReturn = '';
       }
-    else {
-      $selAdd = '';
-      $selReturn = ' selected="selected"';
-    }
-    if ($allowUserSelectNextPage) {
-      $langThen = kohana::lang('misc.then');
-      $r .= <<<CTRL
+      else {
+        $selAdd = '';
+        $selReturn = ' selected="selected"';
+      }
+      if ($allowUserSelectNextPage) {
+        $langThen = kohana::lang('misc.then');
+        $r .= <<<CTRL
   <label for="next-action">$langThen</label>
   <select id="what-next" class="form-control" name="what-next">
     <option value="return"$selReturn>go back to the list</option>
@@ -125,11 +135,11 @@ HTML;
   </select>
 
 CTRL;
+      }
     }
+    $r .= "</fieldset>\n";
+    return $r;
   }
-  $r .= "</fieldset>\n";
-  return $r;
-}
 
   /**
    * Outputs an image.
@@ -157,7 +167,7 @@ CTRL;
         $sizing = ' width="' . $img_config[$size]['width'] . '"';
       }
       if (array_key_exists('height', $img_config[$size])) {
-        $sizing .= ' height="'.$img_config[$size]['height'].'"';
+        $sizing .= ' height="' . $img_config[$size]['height'] . '"';
       }
     }
     $base = url::base();

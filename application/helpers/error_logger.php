@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -24,21 +25,25 @@
 class error_logger {
 
   /**
-   * Standardise the dumping of an exception message into the kohana log. E.g.
+   * Standardise the dumping of an exception message into the kohana log.
+   *
+   * For example,
    * try {
-   *	   ... code that throws exception ...
+   *   ... code that throws exception ...
    * } catch (Exception $e) {
    *   error_logger::log_error('Error occurred whilst running some code', $e);
    * }
    *
-   * @param string $msg A description of where the error occurred.
-   * $param object $e The exception object.
+   * @param string $msg
+   *   A description of where the error occurred.
+   * @param object $e
+   *   The exception object.
    */
   public static function log_error($msg, $e) {
-    kohana::log('error', '#'.$e->getCode() . ': ' . $msg.'. '.$e->getMessage() .' at line '.
-          $e->getLine().' in file '.$e->getFile());
+    kohana::log('error', '#' . $e->getCode() . ': ' . $msg . '. ' . $e->getMessage() . ' at line ' .
+          $e->getLine() . ' in file ' . $e->getFile());
     // Double check the log threshold to avoid unnecessary work.
-    if (kohana::config('config.log_threshold')==4) {
+    if (kohana::config('config.log_threshold') === 4) {
       $trace = $e->getTrace();
       self::log_trace($trace);
       kohana::log_save();
@@ -49,27 +54,32 @@ class error_logger {
    * Dump a call stack trace into the kohana log.
    *
    * @param array $trace
+   *   Response from debug_backtrace() to log.
    */
   public static function log_trace($trace) {
-    $output="Stack trace:\n";
-    for ($i=0; $i<count($trace); $i++) {
+    $output = "Stack trace:\n";
+    for ($i = 0; $i < count($trace); $i++) {
       if (array_key_exists('file', $trace[$i])) {
-        $file=$trace[$i]['file'];
-      } else {
-        $file='Unknown file';
+        $file = $trace[$i]['file'];
+      }
+      else {
+        $file = 'Unknown file';
       }
       if (array_key_exists('line', $trace[$i])) {
-        $line=$trace[$i]['line'];
-      } else {
-        $line='Unknown';
+        $line = $trace[$i]['line'];
+      }
+      else {
+        $line = 'Unknown';
       }
       if (array_key_exists('function', $trace[$i])) {
-        $function=$trace[$i]['function'];
-      } else {
-        $function='Unknown function';
+        $function = $trace[$i]['function'];
       }
-      $output .= "\t".$file.' - line '.$line.' - '.$function."\n";
+      else {
+        $function = 'Unknown function';
+      }
+      $output .= "\t$file - line $line - $function\n";
     }
     kohana::log('debug', $output);
   }
+
 }
