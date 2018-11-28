@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the language edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,34 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
+$id = html::initial_value($values, 'language:id');
 ?>
-<form class="cmxform" action="<?php echo url::site().'language/save' ?>" method="post">
-<?php echo $metadata; ?>
-<fieldset>
-<legend>Language Details</legend>
-<ol>
-<li>
-<input type="hidden" name="language:id" value="<?php echo html::initial_value($values, 'language:id'); ?>" />
-<label for="iso">ISO language code</label>
-<input id="iso" name="language:iso" class="narrow" value="<?php echo html::initial_value($values, 'language:iso'); ?>"/>
-<?php echo html::error_message($model->getError('language:iso')); ?>
-</li>
-<li>
-<label for="language">Language</label>
-<input id="language" name="language:language" value="<?php echo html::initial_value($values, 'language:language'); ?>" />
-<?php echo html::error_message($model->getError('language:language')); ?>
-</li>
-</ol>
-</fieldset>
-<?php 
-echo html::form_buttons(html::initial_value($values, 'language:id')!=null)
-?>
+<form id="language-edit" action="<?php echo url::site() . 'language/save' ?>" method="post">
+  <fieldset>
+  <legend>Language details <?php echo $metadata; ?></legend>
+    <input type="hidden" name="language:id" value="<?php echo $id; ?>" />
+    <?php
+    echo data_entry_helper::text_input([
+      'label' => 'ISO language code',
+      'fieldname' => 'language:iso',
+      'default' => html::initial_value($values, 'language:iso'),
+      'helpText' => 'The ISO standard code for this language.',
+      'validation' => ['required'],
+    ]);
+    echo data_entry_helper::text_input([
+      'label' => 'Language name',
+      'fieldname' => 'language:language',
+      'default' => html::initial_value($values, 'language:language'),
+      'helpText' => 'The display name for this language.',
+      'validation' => ['required'],
+    ]);
+    ?>
+  </fieldset>
+  <?php
+  echo html::form_buttons(!empty($id), FALSE, FALSE);
+  data_entry_helper::enable_validation('language-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>
-

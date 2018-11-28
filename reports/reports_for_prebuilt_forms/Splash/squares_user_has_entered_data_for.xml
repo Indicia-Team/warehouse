@@ -1,0 +1,31 @@
+<report
+    title="Squares User Has Entered Data For"
+    description="Return a list of NPMS Squares users has previously entered data for."
+>
+  <query website_filter_field="square_w.website_id">
+  SELECT #columns#
+  FROM locations square
+    LEFT JOIN locations_websites square_w on square_w.location_id=square.id AND square_w.deleted=false
+    JOIN locations plot on plot.parent_id=square.id AND plot.deleted=false
+    JOIN samples samp on samp.location_id = plot.id AND samp.survey_id in (#limit_survey_ids#) AND samp.deleted = false
+  WHERE square.deleted=false
+    AND #website_filter#
+    AND samp.created_by_id=#the_user_id#
+    AND samp.date_start &gt;= CAST(COALESCE('#ignore_sample_dates_before#','1500-01-01') as date)
+    AND square.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date)
+  </query>
+  <params>
+    <param name='the_user_id' display='User Id' description='User id to report on.' datatype='integer'/>
+    <param name="ignore_sample_dates_before" display="Ignore Sample Dates Before" description="Ignore samples whose date is before this date (we can ignore previous years data)." datatype="date" />   
+    <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any squares created before this date.
+Useful if old squares are left on the system but are not currently active." datatype="date"/>
+    <param name="limit_survey_ids" display="Limit Survey IDs" description="Comma separated list of survey ids to limit the results to." datatype="text"/>
+    <param name="square_admin_page_link" display="Link to square administration page" description="Link to page which administrators use to manage squares." datatype="text" emptyvalue=""/>
+  </params>
+  <columns> 
+    <column name='id' sql='distinct(square.id)' datatype='integer' visible='false' in_count="true"/>
+    <column name='centroid_sref' display='Square' sql="
+      '&lt;a href=&quot;' || '#square_admin_page_link#' || '?location_id=' || square.id || '&quot;&gt;' || regexp_replace(square.centroid_sref, ',[^ ]', ', ', 'g') || '&lt;/a&gt;'
+    " datatype='text' in_count="true"/>
+  </columns>
+</report>

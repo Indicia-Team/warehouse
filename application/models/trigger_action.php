@@ -14,28 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Triggers table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Trigger_Action_Model extends ORM {
   public $search_field='id';
 
   protected $belongs_to = array(
     'created_by'=>'user',
-    'updated_by'=>'user',   
+    'updated_by'=>'user',
     'trigger'
-  );  
+  );
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
@@ -47,7 +41,7 @@ class Trigger_Action_Model extends ORM {
     // for email notifications, param 3 is a comma separated list of emails.
     if ($values['type']=='E') {
       $array->add_rules('param3', 'email_list');
-    } else 
+    } else
       $this->unvalidatedFields[] = 'param3';
     return parent::validate($array, $save);
   }

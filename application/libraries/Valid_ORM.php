@@ -14,16 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage LIbraries
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
  /**
- * Extension to the ORM library which includes handling for validation rules being stored in a text field.
- */
+  * Extension to the ORM library which includes handling for validation rules being stored in a text field.
+  */
 abstract class Valid_ORM extends ORM {
 
   public $valid_required;
@@ -48,25 +46,25 @@ abstract class Valid_ORM extends ORM {
   public $valid_max_value;
   public $valid_date_in_past;
   public $valid_time;
-  
+
   public function validate(Validation $array, $save = FALSE) {
     if (array_key_exists('validation_rules', $array->as_array())) {
-      $this->validation_rules = $array['validation_rules'];      
+      $this->validation_rules = $array['validation_rules'];
       $save = $save && $this->validateValidationRules();
     } else {
       $this->validation_rules = null;
-    }  
+    }
     return parent::validate($array, $save);
   }
-  
-  /** 
-   * Applies validation logic to the loaded validation rules - e.g. for min validation we must have a min value to 
+
+  /**
+   * Applies validation logic to the loaded validation rules - e.g. for min validation we must have a min value to
    * check against.
-   * 
+   *
    * @return boolean Returns true if successful.
    */
   private function validateValidationRules() {
-    $r = true;     
+    $r = true;
     // do validation for validation_rules here
     $this->populate_validation_rules();
     // do validation for validation_rules here
@@ -89,7 +87,7 @@ abstract class Valid_ORM extends ORM {
         $r=false;
       }
     }
-    if ($this->valid_regex == true){      
+    if ($this->valid_regex == true){
       if (empty($this->valid_regex_format)) {
         $this->errors['valid_regex']='Format String must be provided';
         $r=false;
@@ -106,23 +104,23 @@ abstract class Valid_ORM extends ORM {
         $this->errors['valid_max']='Maximum value must be provided';
         $r=false;
       }
-    }    
+    }
     return $r;
   }
 
   /**
   * As the validation rules are stored combined in a text field, this method explodes them into
-  * different rule attributes for each set of rules. The exploded rules are stored as properties 
+  * different rule attributes for each set of rules. The exploded rules are stored as properties
   * of this class.
   */
   public function populate_validation_rules() {
-    if (empty($this->validation_rules)) 
+    if (empty($this->validation_rules))
       return;
     $rules_list = explode("\r\n", $this->validation_rules);
     foreach($rules_list as $rule) {
       // argument extraction is complicated by fact that for regex holds a regular expression.
       if (substr($rule, -2)=='[]') {
-        // Remove the empty params as this breaks the regex  
+        // Remove the empty params as this breaks the regex
         $rule = substr($rule, 0, -2);
       }
       // Use the same method as the validation object
@@ -132,61 +130,61 @@ abstract class Valid_ORM extends ORM {
         // Split the rule into the function and args
         $rule = $matches[1];
         $args = $matches[2];
-      }      
+      }
       switch ($rule) {
-        case 'required' :	
+        case 'required' :
 		  $this->valid_required = true;
           break;
-        case 'alpha' :	
+        case 'alpha' :
 		  $this->valid_alpha = true;
           break;
-        case 'email' :	
+        case 'email' :
 		  $this->valid_email = true;
           break;
-        case 'url' :	
+        case 'url' :
 		  $this->valid_url = true;
           break;
-        case 'alpha_numeric' :	
+        case 'alpha_numeric' :
 		  $this->valid_alpha_numeric = true;
           break;
-        case 'numeric' :	
+        case 'numeric' :
 		  $this->valid_numeric = true;
           break;
-        case 'digit' :	
+        case 'digit' :
 		  $this->valid_digit = true;
           break;
-        case 'integer' :	
+        case 'integer' :
 		  $this->valid_integer = true;
           break;
-        case 'standard_text' :	
+        case 'standard_text' :
 		  $this->valid_standard_text = true;
           break;
-        case 'decimal' :	
+        case 'decimal' :
 		  $this->valid_decimal = true;
           $this->valid_dec_format = $args;
           break;
-        case 'regex' :	
+        case 'regex' :
 		  $this->valid_regex = true;
 		  $this->valid_regex_format = $args;
           break;
-        case 'minimum' :	
+        case 'minimum' :
 		  $this->valid_min = true;
           $this->valid_min_value = $args;
           break;
-        case 'maximum' :	
+        case 'maximum' :
 		  $this->valid_max = true;
           $this->valid_max_value = $args;
           break;
-        case 'length' :	
+        case 'length' :
 		  $this->valid_length = true;
           $args = preg_split('/(?<!\\\\),\s*/', $matches[2]);
           $this->valid_length_min = $args[0];
           $this->valid_length_max = $args[1];
           break;
-        case 'date_in_past' : 
+        case 'date_in_past' :
 		  $this->valid_date_in_past=true;
           break;
-        case 'time' : 
+        case 'time' :
 		  $this->valid_time=true;
           break;
       }

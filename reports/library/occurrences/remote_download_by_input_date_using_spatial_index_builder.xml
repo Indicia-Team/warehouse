@@ -2,7 +2,8 @@
     title="Remote Download using spatial index builder"
     description="Report suitable for downloading data into remote systems, such as via Indicia2Recorder."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" count_field="o.*">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" count_field="o.*"
+    blocked_sharing_tasks_field="o.blocked_sharing_tasks">
   SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
@@ -56,7 +57,7 @@
     <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
         population_call='direct:location:id:name' />
     <param name="ownLocality" display="My locality only?" datatype="checkbox">
-      <join value="1">JOIN index_locations_samples lfilter ON lfilter.sample_id=o.sample_id and lfilter.location_id=#location_id#</join>
+      <where value="1">o.location_ids @> ARRAY[#location_id#]</where>
     </param>
     <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="integer[]" emptyvalue="0"/>
     <param name="ownGroups" display="My species groups only?" datatype="checkbox">

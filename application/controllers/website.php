@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the list of websites registered on this Warehouse instance.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Website_Controller extends Gridview_Base_Controller
 {
@@ -53,21 +48,23 @@ class Website_Controller extends Gridview_Base_Controller
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $r['password2']=$r['website:password'];
+    $r['password2'] = $r['website:password'];
     return $r;
   }
 
   /**
    * If trying to edit an existing website record, ensure the user has rights to this website.
    */
-  public function record_authorised ($id) {
-    if (is_null($id))
-      // creating a new website registration so must be core admin.
+  public function record_authorised($id) {
+    if (is_null($id)) {
+      // Creating a new website registration so must be core admin.
       return $this->auth->logged_in('CoreAdmin');
-    elseif (!is_null($id) AND !is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
-      // editing a website registration - so must have rights to it.
+    }
+    elseif (!is_null($id) && !is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
+      // Editing a website registration - so must have rights to it.
       return (in_array($id, $this->auth_filter['values']));
-    return true;
+    }
+    return TRUE;
   }
 
   /**
@@ -76,7 +73,7 @@ class Website_Controller extends Gridview_Base_Controller
   public function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
   }
-  
+
   /**
    * Return a list of the tabs to display for this controller's actions.
    */

@@ -13,11 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Helpers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
  defined('SYSPATH') or die('No direct script access.');
@@ -178,6 +176,9 @@ class vague_date {
     $start = empty($date[0]) ? NULL : $date[0];
     $end = empty($date[1]) ? NULL : $date[1];
     $type = $date[2];
+    if ($type === '') {
+      return '';
+    }
     if (is_string($start)) {
       $start = DateTime::createFromFormat(Kohana::lang('dates.format'), $date[0]);
       if (!$start) {

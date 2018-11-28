@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Scheduled tasks controller.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,76 +19,98 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/Indicia-Team/warehouse
+ * @link https://github.com/indicia-team/warehouse
  */
 
  defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Controller that implements any scheduled tasks, such as checking triggers against the recent
- * records to look for notifications. This controller does not have a user interface, it is intended
- * to be automated on a schedule.
+ * Scheduled tasks controller.
  *
- * @package Core
- * @subpackage Controllers
+ * Controller that implements any scheduled tasks, such as checking triggers
+ * against the recent records to look for notifications. This controller does
+ * not have a user interface, it is intended to be automated on a schedule.
  */
 class Scheduled_Tasks_Controller extends Controller {
-  private $last_run_date;
+  private $lastRunDate;
   private $occdeltaStartTimestamp = '';
   private $occdeltaEndTimestamp = '';
   private $occdeltaCount = 0;
   private $pluginMetadata;
 
-  public function __construct()  {
-    parent::__construct();
-  }
-
   /**
-   * The index method is the default method called when you access this controller, so we can use this
-   * to run the scheduled tasks. Takes an optional URL parameter "tasks", which is a comma separated list of
-   * the module names to schedule, plus can contain "notifications" to fire the built in notifications system or
-   * "all_modules" to fire every module that declares a scheduled task plugin.
-   * If tasks are not specified then everything is run.
+   * Main entry point for scheduled tasks.
+   *
+   * The index method is the default method called when you access this
+   * controller, so we can use this to run the scheduled tasks. Takes an
+   * optional URL parameter "tasks", which is a comma separated list of
+   * the module names to schedule, plus can contain "notifications" to fire the
+   * built in notifications system or "all_modules" to fire every module that
+   * declares a scheduled task plugin. If tasks are not specified then
+   * everything is run.
    */
   public function index() {
     $tm = microtime(TRUE);
     $this->db = new Database();
     $system = new System_Model();
+    $allNonPluginTasks = ['notifications', 'work_queue'];
     if (isset($_GET['tasks'])) {
-      $tasks = explode(',', $_GET['tasks']);
+      $requestedTasks = explode(',', $_GET['tasks']);
+      $scheduledPlugins = array_diff($requestedTasks, $allNonPluginTasks);
+      $nonPluginTasks = array_intersect($allNonPluginTasks, $requestedTasks);
     }
     else {
-      $tasks = array('notifications', 'all_modules');
+      $nonPluginTasks = $allNonPluginTasks;
+      $scheduledPlugins = ['all_modules'];
     }
-    // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
+    // Grab the time before we start, so there is no chance of a record coming
+    // in while we run that is missed.
     $currentTime = time();
-    if (in_array('notifications', $tasks)) {
-      $this->last_run_date = $system->getLastScheduledTaskCheck();
+    if (in_array('notifications', $nonPluginTasks)) {
+      $this->lastRunDate = $system->getLastScheduledTaskCheck();
       $this->checkTriggers();
+      $tmtask = microtime(TRUE) - $tm;
+      if ($tmtask > 5) {
+        self::msg("Triggers & notifications scheduled task took $tmtask seconds.", 'alert');
+      }
     }
-    $tmtask = microtime(TRUE) - $tm;
-    if ($tmtask > 5) {
-      self::msg("Triggers & notifications scheduled task took $tmtask seconds.", 'alert');
+    if ($scheduledPlugins) {
+      $this->runScheduledPlugins($system, $scheduledPlugins);
     }
-    $this->runScheduledPlugins($system, $tasks);
-    if (in_array('notifications', $tasks)) {
+    if (in_array('notifications', $nonPluginTasks)) {
       $swift = email::connect();
       $this->doRecordOwnerNotifications($swift);
       $this->doDigestNotifications($swift);
     }
-    // mark the time of the last scheduled task check, so we can get diffs next time
+    if (in_array('work_queue', $nonPluginTasks)) {
+      $qtm = microtime(TRUE);
+      $queue = new WorkQueue();
+      $queue->process($this->db);
+      $qtm = microtime(TRUE) - $qtm;
+      if ($qtm > 10) {
+        self::msg("Work queue processing took $qtm seconds.", 'alert');
+      }
+    }
+    // Mark the time of the last scheduled task check, so we can get diffs
+    // next time.
     $this->db->update('system', array('last_scheduled_task_check' => "'" . date('c', $currentTime) . "'"), array('id' => 1));
     self::msg("Ok!");
     $tm = microtime(TRUE) - $tm;
     if ($tm > 30) {
-      self::msg("Scheduled tasks for " . implode(', ', $tasks) . " took $tm seconds.", 'alert');
+      self::msg(
+        "Scheduled tasks for " . implode(', ', array_merge($nonPluginTasks, $scheduledPlugins)) . " took $tm seconds.",
+        'alert'
+      );
     }
   }
 
   /**
-  * Compares any recently entered or edited records with the notifications registered on the system, looking
-  * for matches. If found, then the notification's actions are fired.
-  */
+   * Check triggers fired when data changes.
+   *
+   * Compares any recently entered or edited records with the notifications
+   * registered on the system, looking for matches. If found, then the
+   * notification's actions are fired.
+   */
   protected function checkTriggers() {
     self::msg("Checking triggers");
     kohana::log('info', "Checking triggers");
@@ -95,7 +120,7 @@ class Scheduled_Tasks_Controller extends Controller {
     // defines the trigger.
     foreach ($result as $trigger) {
       $params = json_decode($trigger->params_json, TRUE);
-      $params['date'] = $this->last_run_date;
+      $params['date'] = $this->lastRunDate;
       $reportEngine = new ReportEngine();
       try {
         $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
@@ -111,23 +136,25 @@ class Scheduled_Tasks_Controller extends Controller {
       if (count($data['content']['records'] > 0)) {
         $parsedData = $this->parseData($data);
         self::msg($trigger->name . ": " . count($data['content']['records']) . " records found");
-        // Note escaping disabled in where clause to permit use of CAST expression.
+        // Note escaping disabled in where clause to permit use of CAST
+        // expression.
         $actions = $this->db
           ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, trigger_actions.param3, users.default_digest_mode, people.email_address, users.core_role_id')
           ->from('trigger_actions, users')
           ->join('people', 'people.id', 'users.person_id')
           ->where(array(
-              'trigger_id' => $trigger->id,
-              'type' => "'E'",
-              'users.id' => 'CAST(param1 AS INT)',
-              'trigger_actions.deleted' => "'f'",
-              'users.deleted' => "'f'",
-              'people.deleted' => "'f'"
+            'trigger_id' => $trigger->id,
+            'type' => "'E'",
+            'users.id' => 'CAST(param1 AS INT)',
+            'trigger_actions.deleted' => "'f'",
+            'users.deleted' => "'f'",
+            'people.deleted' => "'f'",
           ), NULL, FALSE)
           ->get();
         foreach ($actions as $action) {
           if ($action->core_role_id !== 1) {
-            // If not a core admin, we will need to do a filter on websites the user has access to.
+            // If not a core admin, we will need to do a filter on websites
+            // the user has access to.
             $userWebsites = $this->db
               ->select('website_id')
               ->from('users_websites')
@@ -135,7 +162,8 @@ class Scheduled_Tasks_Controller extends Controller {
               ->get();
           }
 
-          // Insert data in notifications table, either for the user to manually acknowledge, or for a digest mail to be built.
+          // Insert data in notifications table, either for the user to
+          // manually acknowledge, or for a digest mail to be built.
           // First build a list of data for the user's websites.
           if ($action->core_role_id == 1) {
             // Core admin can see any data.
@@ -290,7 +318,7 @@ class Scheduled_Tasks_Controller extends Controller {
     // First, build a list of the notifications we are going to do.
     $digestTypes = array('I');
     $date = getdate();
-    $lastdate = getdate(strtotime($this->last_run_date));
+    $lastdate = getdate(strtotime($this->lastRunDate));
     if ($date['yday'] != $lastdate['yday'] || $date['year'] != $lastdate['year']) {
       $digestTypes[] = 'D';
     }
@@ -486,7 +514,7 @@ class Scheduled_Tasks_Controller extends Controller {
       ->where(array(
         'sa1.caption' => 'Email me a copy of the record',
         'sa2.caption' => 'Email',
-        'samples.created_on>=' => $this->last_run_date,
+        'samples.created_on>=' => $this->lastRunDate,
       ))
       ->where('sav1.int_value<>0')
       ->get();
@@ -595,14 +623,15 @@ class Scheduled_Tasks_Controller extends Controller {
       'Email me a copy of the record',
       'CMS Username',
       'CMS User ID',
-      'Email','Happy for Contact?'
+      'Email',
+      'Happy for Contact?',
     );
     foreach ($array[$occurrenceId] as $field => $value) {
       if ($field === 'date_start') {
         $value = vague_date::vague_date_to_string(array(
           $array[$occurrenceId]->date_start,
           $array[$occurrenceId]->date_end,
-          $array[$occurrenceId]->date_type
+          $array[$occurrenceId]->date_type,
         ));
         $field = 'date';
       }
@@ -617,11 +646,11 @@ class Scheduled_Tasks_Controller extends Controller {
    *
    * @param object $system
    *   System model instance.
-   * @param array $tasks
+   * @param array $scheduledPlugins
    *   Array of plugin names to run, or array containing "all_modules" to run
    *   them all.
    */
-  private function runScheduledPlugins($system, array $tasks) {
+  private function runScheduledPlugins($system, array $scheduledPlugins) {
     // take 1 second off current time to use as the end of the scanned time period. Avoids possibilities of records
     // being lost half way through the current second.
     $t = time() - 1;
@@ -637,7 +666,7 @@ class Scheduled_Tasks_Controller extends Controller {
       ->get();
     $sortedPlugins = array();
     foreach ($pluginsFromDb as $plugin) {
-      $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check===null ? $currentTime : $plugin->last_scheduled_task_check;
+      $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check === NULL ? $currentTime : $plugin->last_scheduled_task_check;
     }
     // Any new plugins not run before should also be included in the list
     foreach ($plugins as $plugin) {
@@ -645,19 +674,21 @@ class Scheduled_Tasks_Controller extends Controller {
         $sortedPlugins[$plugin] = $currentTime;
       }
     }
-    echo '<br/>';
-    var_export($sortedPlugins);
-    echo '<br/>';
-    //Make sure data_cleaner runs before auto_verify module
-    if (array_key_exists('data_cleaner', $sortedPlugins))
+    // Make sure data_cleaner runs before auto_verify module.
+    if (array_key_exists('data_cleaner', $sortedPlugins)) {
       $sortedPlugins = array('data_cleaner' => $sortedPlugins['data_cleaner']) + $sortedPlugins;
-    //Make sure the cache_builder and spatial_index_builders run first as some other modules depend on the cache_occurrences and index_locations_samples tables
-    if (array_key_exists('spatial_index_builder', $sortedPlugins))
+    }
+    // Make sure the cache_builder and spatial_index_builders run first as some
+    // other modules depend on the cache_occurrences_* tables.
+    if (array_key_exists('spatial_index_builder', $sortedPlugins)) {
       $sortedPlugins = array('spatial_index_builder' => $sortedPlugins['spatial_index_builder']) + $sortedPlugins;
-    if (array_key_exists('cache_builder', $sortedPlugins))
+    }
+    if (array_key_exists('cache_builder', $sortedPlugins)) {
       $sortedPlugins = array('cache_builder' => $sortedPlugins['cache_builder']) + $sortedPlugins;
-    //Make sure the verifier notification emails run last as the emails are sent out based on the results of other modules such as
-    //notifications generated
+    }
+    // Make sure the verifier notification emails run last as the emails are
+    // sent out based on the results of other modules such as notifications
+    // generated.
     if (array_key_exists('verifier_notification_emails', $sortedPlugins)) {
       $temp = $sortedPlugins['verifier_notification_emails'];
       unset($sortedPlugins['verifier_notification_emails']);
@@ -666,21 +697,28 @@ class Scheduled_Tasks_Controller extends Controller {
     // Now go through timestamps in order of time since they were run.
     foreach ($sortedPlugins as $plugin => $timestamp) {
       // allow the list of scheduled plugins we are running to be controlled from the URL parameters.
-      if (in_array('all_modules', $tasks) || in_array($plugin, $tasks)) {
+      if (in_array('all_modules', $scheduledPlugins) || in_array($plugin, $scheduledPlugins)) {
         require_once MODPATH . "$plugin/plugins/$plugin.php";
         $this->loadPluginMetadata($plugin);
         $this->loadOccurrencesDelta($plugin, $timestamp, $currentTime);
-        $tm = microtime(TRUE);
-        if (!$this->pluginMetadata['requires_occurrences_delta'] || $this->occdeltaCount>0 || $this->pluginMetadata['always_run']) {
-          // call the plugin, only if there are records to process, or it doesn't care
-          self::msg("Running $plugin");
+        // Call the plugin, only if there are records to process, or it doesn't care.
+        if (!$this->pluginMetadata['requires_occurrences_delta']
+            || $this->occdeltaCount > 0
+            || $this->pluginMetadata['always_run']) {
+          echo "<strong>Running $plugin</strong> - last run at $timestamp <br/>";
+          $tm = microtime(TRUE);
           call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $currentTime);
+          // log plugins which take more than 5 seconds
+          $took = microtime(TRUE) - $tm;
+          if ($took > 5) {
+            self::msg("Scheduled plugin $plugin took $took seconds", 'alert');
+          }
         }
-        // log plugins which take more than 5 seconds
-        $took = microtime(TRUE) - $tm;
-        if ($took > 5)
-          self::msg("Scheduled plugin $plugin took $took seconds", 'alert');
-        // mark the time of the last scheduled task check so we can get the correct list of updates next time
+        else {
+          echo "<strong>Skipping $plugin as nothing to do</strong> - last run at $timestamp <br/>";
+        }
+        // Mark the time of the last scheduled task check so we can get the
+        // correct list of updates next time.
         $timestamp = $this->pluginMetadata['requires_occurrences_delta'] ? $this->occdeltaEndTimestamp : $currentTime;
         if (!$this->db->update('system', array('last_scheduled_task_check' => $timestamp), array('name' => $plugin))->count())
           $this->db->insert('system', array(

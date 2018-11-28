@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Species and occurrence counts by warehouse user sites" description="Lists locations and the number of species and occurrences within them 
+<report title="Species and occurrence counts by warehouse user sites" description="Lists locations and the number of species and occurrences within them
     for the sites owned by a warehouse user. Relies on the spatial index builder to cache the link between sites and records.">
       <query>
       SELECT #columns#
       FROM locations l
       LEFT JOIN cache_termlists_terms lt on lt.id=l.location_type_id
-      LEFT JOIN (
-        index_locations_samples ils        
-        JOIN cache_occurrences_functional co on co.sample_id=ils.sample_id
-      ) on ils.location_id=l.id
+      LEFT JOIN cache_occurrences_functional co on co.location_ids @> ARRAY[l.id]
       #joins#
       WHERE l.deleted=false
       AND l.created_by_id=#user_id#
@@ -32,11 +29,11 @@
         <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
       </params>
       <columns>
-            <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
-            <column name="name" display="Site Name" sql="l.name" />
-            <column name="code" display="Site Code" sql="l.code" />
-            <column name="occurrences" display="No. of Records" sql="COUNT(DISTINCT co.id)" aggregate="true" />
-            <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT co.taxon_meaning_id)" aggregate="true" />
-            <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT co.taxon_group_id)" aggregate="true" />
+        <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
+        <column name="name" display="Site Name" sql="l.name" />
+        <column name="code" display="Site Code" sql="l.code" />
+        <column name="occurrences" display="No. of Records" sql="COUNT(DISTINCT co.id)" aggregate="true" />
+        <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT co.taxon_meaning_id)" aggregate="true" />
+        <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT co.taxon_group_id)" aggregate="true" />
       </columns>
 </report>

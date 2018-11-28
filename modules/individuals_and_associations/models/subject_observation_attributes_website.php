@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -34,7 +34,7 @@ class Subject_observation_attributes_website_Model extends Valid_ORM
     'subject_observation_attribute',
     'website',
   );
-  
+
   protected $belongs_to = array(
     'created_by'=>'user',
   );
@@ -56,9 +56,9 @@ class Subject_observation_attributes_website_Model extends Valid_ORM
 	      'control_type_id');
     return parent::validate($array, $save);
   }
-  
+
   /**
-   * Return a displayable caption for the item.   
+   * Return a displayable caption for the item.
    */
   public function caption()
   {
@@ -66,14 +66,14 @@ class Subject_observation_attributes_website_Model extends Valid_ORM
       return ($this->subject_observation_attribute != null ? $this->subject_observation_attribute->caption : '');
     } else {
       return 'Subject Observation Attribute';
-    }    
+    }
   }
-  
-  /** 
+
+  /**
    * Map a virtual field called default_value onto the relevant default value fields, depending on the data type.
    */
   protected function preSubmit()
-  { 
+  {
     if (isset($this->submission['fields']['default_value']['value'])) {
       $attr = ORM::factory('subject_observation_attribute', $this->submission['fields']['subject_observation_attribute_id']['value']);
       switch ($attr->data_type) {
@@ -92,13 +92,13 @@ class Subject_observation_attributes_website_Model extends Valid_ORM
           $vagueDate = vague_date::string_to_vague_date($this->submission['fields']['default_value']['value']);
           $this->submission['fields']['default_date_start_value']['value']=$vagueDate[0];
           $this->submission['fields']['default_date_end_value']['value']=$vagueDate[1];
-          $this->submission['fields']['default_date_type_value']['value']=$vagueDate[2];            
+          $this->submission['fields']['default_date_type_value']['value']=$vagueDate[2];
       }
     }
     return parent::presubmit();
   }
-  
-  /** 
+
+  /**
    * Create a virtual field called default_value from the relevant default value fields, depending on the data type.
    */
   public function __get($column)
@@ -115,12 +115,12 @@ class Subject_observation_attributes_website_Model extends Valid_ORM
         return parent::__get('default_int_value');
         case 'D':
         case 'V':
-        $vagueDate = array(parent::__get('default_date_start_value'), 
-            parent::__get('default_date_end_value'), 
+        $vagueDate = array(parent::__get('default_date_start_value'),
+            parent::__get('default_date_end_value'),
           parent::__get('default_date_type_value'));
-        return vague_date::vague_date_to_string($vagueDate);           
+        return vague_date::vague_date_to_string($vagueDate);
       }
-    } else 
+    } else
       return parent::__get($column);
   }
 

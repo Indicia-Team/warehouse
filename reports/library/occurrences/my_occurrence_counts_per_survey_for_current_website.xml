@@ -2,10 +2,10 @@
     title="My Occurrence Counts Per Survey For Current Website"
     description="Report designed to display a count of the user's occurrences per survey for the current website."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
     SELECT #columns#
-    FROM cache_occurrences o
-      JOIN websites w on w.id=o.website_id 
+    FROM cache_occurrences_functional o
+      JOIN websites w on w.id=o.website_id
       JOIN samples s on s.id=o.sample_id
       JOIN surveys sv on sv.id=s.survey_id
     #agreements_join#

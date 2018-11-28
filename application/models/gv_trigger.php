@@ -14,31 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage GridModels
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Declares a model simply to expose the gv_trigger view to ORM.
- *
- * @package	Core
- * @subpackage GridModels
  */
 class gv_trigger_Model extends ORM {
 
   /**
    * The find_all override enforces that the grid view only shows public triggers or triggers created by this user,
-   * and also filters the subscriber information to this user only. A bit too complex for base filter and auth 
+   * and also filters the subscriber information to this user only. A bit too complex for base filter and auth
    * filter techniques.
    */
   public function find_all($limit = NULL, $offset = NULL) {
-    $this->in('private_for_user_id', array(null, $_SESSION['auth_user']->id)); 
-    return parent::find_all($limit, $offset);    
+    $this->in('private_for_user_id', array(null, $_SESSION['auth_user']->id));
+    return parent::find_all($limit, $offset);
   }
-  
-  
+
+
 
 }

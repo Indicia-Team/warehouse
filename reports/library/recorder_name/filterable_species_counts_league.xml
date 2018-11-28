@@ -9,7 +9,7 @@
     #joins#
     WHERE #sharing_filter#
     #filters#
-    AND o.recorders IS NOT NULL
+    AND snf.recorders IS NOT NULL
   </query>
   <order_bys>
     <order_by>value DESC</order_by>
@@ -20,4 +20,4 @@
         <column name="name" display="Recorder" sql="snf.recorders" />
         <column name="value" display="No. of Species"  sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true"/>
   </columns>
-</report>  
+</report>

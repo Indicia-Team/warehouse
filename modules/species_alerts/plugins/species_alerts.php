@@ -46,13 +46,11 @@ function species_alerts_scheduled_task($last_run_date, $db) {
     FROM occdelta od
       JOIN cache_samples_nonfunctional snf on snf.id=od.sample_id
       JOIN cache_taxa_taxon_lists cttl on cttl.id=od.taxa_taxon_list_id
-      LEFT JOIN index_locations_samples ils on ils.sample_id=od.sample_id
-      -- join to find any taxon list that this taxon occurs on
       LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=od.taxon_meaning_id
           OR (cttlall.external_key IS NOT NULL AND od.taxa_taxon_list_external_key IS NOT NULL AND cttlall.external_key=od.taxa_taxon_list_external_key)
       JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=od.website_id and iwwa.receive_for_reporting=true
       JOIN species_alerts sa ON
-        (sa.location_id IS NULL OR sa.location_id=ils.location_id)
+        (sa.location_id IS NULL OR od.location_ids @> ARRAY[sa.location_id])
         AND
           (sa.taxon_meaning_id = od.taxon_meaning_id
           OR

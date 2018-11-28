@@ -14,53 +14,49 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Survey_Comments table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Survey_comment_model extends ORM {
   public $search_field = 'comment';
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'survey');
+  protected $belongs_to = [
+    'created_by' => 'user',
+    'updated_by' => 'user',
+    'survey'
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all fields before validation.
     $array->pre_filter('trim');
-    $array->add_rules('comment','required');
+    $array->add_rules('comment', 'required');
     $array->add_rules('survey_id', 'required');
 
-    // Explicitly add those fields for which we don't do validation
+    // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = array(
       'email_address',
       'person_name',
       'deleted',
-      'external_key'
+      'external_key',
     );
     return parent::validate($array, $save);
-
   }
-
 
   /**
-   * Returns an abbreviated version of the comment to act as a caption
+   * Returns an abbreviated version of the comment to act as a caption.
    */
-  public function caption()
-  {
-    if (strlen($this->comment)>30)
-      return substr($this->comment, 0, 30).'...';
-    else
+  public function caption() {
+    if (strlen($this->comment) > 30) {
+      return substr($this->comment, 0, 30) . '...';
+    }
+    else {
       return $this->comment;
+    }
   }
-
 
 }

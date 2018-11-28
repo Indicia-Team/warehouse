@@ -18,10 +18,10 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
- 
- 
+
+
 echo $grid;
 $systemTableEntries = $this->db->select('*')->from('system')->where('name','summary_builder')->get()->as_array(true);
 foreach($systemTableEntries as $systemTableEntry) {

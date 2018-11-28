@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -29,23 +29,23 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class User_email_notification_setting_Model extends ORM {
-  
+
   protected $belongs_to = array(
     'user',
     'created_by'=>'user',
     'updated_by'=>'user'
   );
 
-  public function validate(Validation $array, $save = FALSE) { 
+  public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $array->add_rules('user_id','required'); 
+    $array->add_rules('user_id','required');
     $array->add_rules('notification_source_type', 'required', 'length[1,2]');
     $array->add_rules('notification_frequency', 'required', 'length[1,2]');
     $this->unvalidatedFields = array('deleted');
     return parent::validate($array, $save);
   }
-  
+
   /**
    * Return the submission structure
    *
@@ -54,5 +54,5 @@ class User_email_notification_setting_Model extends ORM {
   public function get_submission_structure() {
     $r = parent::get_submission_structure();
     return $r;
-  } 
+  }
 }

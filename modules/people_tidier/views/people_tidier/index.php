@@ -18,9 +18,9 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
- 
+
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
@@ -39,10 +39,10 @@ $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohan
 data_entry_helper::$javascript .= "$('input#person_id\\:caption').change(function(event) {
   var personId=$('input#person_id').val(), table;
   $('#found-person-id').val(personId);
-  jQuery.ajax({ 
-    type: 'GET', 
-    url: '".url::site()."people_tidier/person_panel/'+personId, 
-    data: {}, 
+  jQuery.ajax({
+    type: 'GET',
+    url: '".url::site()."people_tidier/person_panel/'+personId,
+    data: {},
     success: function(table) {
       $('#selected-person').html(table);
       $('#resolution input').attr('disabled','');
@@ -65,7 +65,7 @@ $('#resolution').submit(function(e){
 <form method="post" id="resolution" action="<?php echo url::site(); ?>people_tidier/merge_people" class="ui-helper-clearfix">
 <div class="left" style="width: 45%">
 <fieldset>
-<p>If you are certain that the 2 people in the database are the same person, then click this button to keep the 
+<p>If you are certain that the 2 people in the database are the same person, then click this button to keep the
 person you've searched for on the left hand side of this page and merge the person record on the right into it.</p>
 <input type="hidden" name="found-person-id" id="found-person-id" />
 <input type="submit" name="keep-found" value="Keep person on left" disabled="disabled"/>
@@ -73,7 +73,7 @@ person you've searched for on the left hand side of this page and merge the pers
 </div>
 <div class="right" style="width: 45%">
 <fieldset>
-<p>If you are certain that the 2 people in the database are the same person, then click this button to keep the 
+<p>If you are certain that the 2 people in the database are the same person, then click this button to keep the
 person you'd originally selected on the right hand side of this page and merge the person record on the left into it.</p>
 <input type="hidden" name="selected-person-id" id="selected-person-id" value="<?php echo $personId; ?>" />
 <input type="submit" name="keep-selected" value="Keep person on right" disabled="disabled"/>

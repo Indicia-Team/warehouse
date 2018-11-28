@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Helpers
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
  defined('SYSPATH') or die('No direct script access.');
@@ -123,13 +121,14 @@ and (ocprev.record_status is not null or ocprev.query='t' or (co.confidential=fa
 and ocprev.created_by_id<>oc.created_by_id and ocprev.created_by_id<>co.created_by_id;
 
 
-select rn.*, u.username
+select rn.*, case u.id when 1 then u.username else coalesce(p.first_name || ' ', '') || p.surname end as username
 from records_to_notify rn
 join occurrences o on o.id=rn.id
 left join notifications n on n.linked_id=o.id
           and n.source_type=rn.source_type
           and n.source_detail=rn.source_detail
 join users u on u.id=coalesce(rn.occurrence_comment_created_by_id, o.verified_by_id)
+join people p on p.id=u.person_id
 where n.id is null;
 SQL
     )->result();
@@ -763,7 +762,7 @@ length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*') || '.*', ''
 -- prefer matches where the full search term is close together, by counting the characters in the area covered by the search term
 case
   when searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%'
-    then length((regexp_matches(searchterm, replace('$escapedTerm', ' ', '.*'), 'i'))[1])
+    then length(searchterm) - length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*?'), ''))
   else 9999 end,
 cts.preferred desc,
 -- finally alpha sort

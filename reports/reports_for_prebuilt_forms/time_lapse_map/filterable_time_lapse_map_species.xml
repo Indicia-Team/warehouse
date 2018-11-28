@@ -1,0 +1,28 @@
+<report
+    title="Time lapse species list"
+    description="Report to populate the list of species available for a time-lapse map."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         standard_params="occurrences">
+    SELECT DISTINCT #columns#
+    FROM cache_occurrences_functional o
+    JOIN cache_taxa_taxon_lists cttl on cttl.id=o.preferred_taxa_taxon_list_id
+    JOIN samples smp on smp.id=o.sample_id and smp.deleted=false
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+    #idlist#
+  </query>
+  <order_bys>
+    <order_by>ccoalesce(cttl.default_common_name, cttl.taxon)</order_by>
+  </order_bys>
+  <params>
+    <param name="sample_method" display="Sample Method" description="Select the sample method." default="" >
+      <join>JOIN cache_termlists_terms t on t.id=smp.sample_method_id and t.term = '#sample_method#'</join>
+    </param>
+  </params>
+  <columns>
+    <column name="taxon" sql="coalesce(cttl.default_common_name, cttl.taxon)" datatype="text"/>
+    <column name="species_id" sql="cttl.external_key" datatype="text"/>
+  </columns>
+</report>

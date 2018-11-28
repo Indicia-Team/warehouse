@@ -57,6 +57,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   //
   // default to no updates allowed - must explicity allow updates.
   protected $allow_updates = array(
+    'attribute_sets_survey',
     'comment_quick_reply_page_auth',
     'determination',
     'filter',
@@ -72,7 +73,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     'location_medium',
     'notification',
     'occurrence',
+    'occurrence_attribute',
     'occurrence_attribute_value',
+    'occurrence_attributes_taxa_taxon_list_attribute',
     'occurrence_comment',
     'occurrence_medium',
     'person_attribute_value',
@@ -88,6 +91,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     'sample_comment',
     'survey_medium',
     'taxa_taxon_list',
+    'taxa_taxon_list_attribute',
+    'taxa_taxon_list_attribute_value',
+    'taxon_lists_taxa_taxon_list_attribute',
     'taxon_rank',
     'taxon_relation',
     'taxon_group',
@@ -531,8 +537,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/taxa_taxon_list service.
   * Retrieves details of taxa on a taxon_list.
   */
-  public function taxa_taxon_list()
-  {
+  public function taxa_taxon_list() {
     $this->handle_call('taxa_taxon_list');
   }
 
@@ -540,8 +545,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/taxa_taxon_list_attribute service.
   * Retrieves details of taxa on taxon list attributes.
   */
-  public function taxa_taxon_list_attribute()
-  {
+  public function taxa_taxon_list_attribute() {
     $this->handle_call('taxa_taxon_list_attribute');
   }
 
@@ -549,17 +553,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/taxa_taxon_list_attribute_value service.
   * Retrieves details of taxa on taxon list attribute values.
   */
-  public function taxa_taxon_list_attribute_value()
-  {
-  $this->handle_call('taxa_taxon_list_attribute_value');
+  public function taxa_taxon_list_attribute_value() {
+    $this->handle_call('taxa_taxon_list_attribute_value');
   }
 
   /**
    * Provides the /service/data/termlists_term_attribute service.
    * Retrieves details of taxa on taxon list attributes.
    */
-  public function termlists_term_attribute()
-  {
+  public function termlists_term_attribute() {
     $this->handle_call('termlists_term_attribute');
   }
 
@@ -647,7 +649,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('user_trust');
   }
-  
+
   public function comment_quick_reply_page_auth()
   {
     $this->handle_call('comment_quick_reply_page_auth');
@@ -786,7 +788,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       {
         $this->handle_request();
       }
-      kohana::log('debug', 'Sending reponse size '.count($this->response));
+      kohana::log('debug', 'Sending reponse size ' . strlen($this->response));
       $this->send_response();
     }
     catch (Exception $e)
@@ -820,6 +822,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $model = ORM::factory($this->entity);
       $model->submission = $s;
       $result = $model->submit();
+      kohana::log('debug', "Model submit: $model->object_name $model->id");
       $id = $model->id;
     }
     if ($result)

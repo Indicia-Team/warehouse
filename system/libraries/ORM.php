@@ -667,13 +667,13 @@ class ORM_Core {
 
       foreach ($fields as $key => $value)
       {
-        if (isset($safe_array[$key]))
+        if (array_key_exists($key, $safe_array) )
         {
           // Set new data, ignoring any missing fields or fields without rules
           $this->$key = $value;
         }
       }
-      
+
       if ($save === TRUE OR is_string($save))
       {
         // Save this object

@@ -18,7 +18,7 @@
  * @subpackage Plugins
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /*
@@ -62,13 +62,13 @@ function milestones_extend_data_services() {
 }
 
 /**
- * Get a list of distinct user/website combinations and the occurrence/taxon count milestones that each combination will need testing for 
+ * Get a list of distinct user/website combinations and the occurrence/taxon count milestones that each combination will need testing for
  * (these are milestones associated with each website where the milestone has not been
  * awarded yet for that user)
  * Also collect details for the filter associated with the milestone (this is a 1 to 1 relationship)
- * 
+ *
  * Only need to take into account user/website combinations for occurrences that have been created/verified since the last time the scheduled task was run
- * as only these will have passed a new milestone. 
+ * as only these will have passed a new milestone.
  */
 function get_user_website_combinations_with_unawarded_milestones_for_changed_occurrences($db) {
   $usersWebsiteCombos = $db->query("
@@ -85,15 +85,15 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
 }
 
 /**
- * Get a list of distinct user/website combinations and the media count milestones that each combination will need testing for 
+ * Get a list of distinct user/website combinations and the media count milestones that each combination will need testing for
  * (these are milestones associated with each website where the milestone has not been
  * awarded yet for that user)
  * Also collect details for the filter associated with the milestone (this is a 1 to 1 relationship)
- * 
+ *
  * Only need to take into account user/website combinations for occurrence_media that have been created (or the occurrence itself verified) since the last time the scheduled task was run
- * as only these will have passed a new milestone. 
- * 
- * 
+ * as only these will have passed a new milestone.
+ *
+ *
  */
 function get_user_website_combinations_with_unawarded_milestones_for_changed_occ_media($db) {
   $usersWebsiteCombos = $db->query("
@@ -115,7 +115,7 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
  * When the scheduled task is run, we need to send a notification to all users who have passed a new milestone
  */
 function milestones_scheduled_task($last_run_date, $db) {
-  //Get a list of distinct user/website combinations and  milestones that each combination will need testing for, 
+  //Get a list of distinct user/website combinations and  milestones that each combination will need testing for,
   //these are milestones associated with each website the user is associated with, where the milestone has not been
   //awarded yet)
   $occurrenceMilestonesToCheck = get_user_website_combinations_with_unawarded_milestones_for_changed_occurrences($db);
@@ -137,11 +137,11 @@ function milestones_scheduled_task($last_run_date, $db) {
   //Cycle through all the occurrence media milestones that haven't been awarded yet and could potentially need to be awarded since last run.
   foreach ($mediaMilestonesToCheck as $milestoneToCheck) {
     $report = 'library/occurrences/filterable_occurrence_media_counts_per_user_website';
-    
+
     $params = json_decode($milestoneToCheck['definition'],true);
     $params['user_id'] = $milestoneToCheck['created_by_id'];
     $params['website_id'] = $milestoneToCheck['website_id'];
-    
+
     try {
       //Get the report data for all new occurrences that match the filter,user,website.
       $data=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
@@ -160,13 +160,13 @@ function milestones_scheduled_task($last_run_date, $db) {
   foreach ($occurrenceMilestonesToCheck as $milestoneToCheck) {
     if ($milestoneToCheck['milestone_entity']=='T')
       $report = 'library/occurrences/filterable_taxa_counts_per_user_website';
-    else 
+    else
       $report = 'library/occurrences/filterable_occurrence_counts_per_user_website';
-    
+
     $params = json_decode($milestoneToCheck['definition'],true);
     $params['user_id'] = $milestoneToCheck['created_by_id'];
     $params['website_id'] = $milestoneToCheck['website_id'];
-    
+
     try {
       //Get the report data for all new occurrences that match the filter/user/website
       $data=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
@@ -176,7 +176,7 @@ function milestones_scheduled_task($last_run_date, $db) {
     }
     foreach($data['content']['records'] as $milestoneCountData) {
       if ($milestoneCountData['count']>=$milestoneToCheck['count']) {
-        create_milestone_reached_notification($milestoneToCheck);       
+        create_milestone_reached_notification($milestoneToCheck);
         $notificationCount++;
       }
     }
@@ -185,7 +185,7 @@ function milestones_scheduled_task($last_run_date, $db) {
     echo 'No new milestone notifications have been created.</br>';
   elseif ($notificationCount==1)
     echo '1 new milestone notification has been created.</br>';
-  else 
+  else
     echo $notificationCount.' new milestone notifications have been created.</br>';
 }
 
@@ -197,7 +197,7 @@ function create_milestone_reached_notification($milestoneToCheck) {
   $notificationObj->source='milestones';
   $notificationObj->triggered_on=date("Ymd H:i:s");
   $notificationObj->user_id=$milestoneToCheck['created_by_id'];
-  $notificationObj->source_type='M'; 
+  $notificationObj->source_type='M';
   $notificationObj->data=json_encode(
     array('comment'=>$milestoneToCheck['success_message'],
           'auto_generated'=>'t',

@@ -454,4 +454,4 @@ set location_name=null, location_id=null where id in (
   select s.id from samples s
   join cache_occurrences_functional o on o.sample_id=s.id
   where o.sensitive=true
-)
+);

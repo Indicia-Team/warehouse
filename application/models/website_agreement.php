@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Websites table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Website_Agreement_Model extends ORM
 {
@@ -46,7 +40,7 @@ class Website_Agreement_Model extends ORM
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('title', 'required', 'length[1,100]');
-    // Set validation to check various requirements fields have allowed values for 
+    // Set validation to check various requirements fields have allowed values for
     // Disallowed, Optional, optional required Admin to change, Required
     $array->add_rules('provide_for_reporting', 'required', 'regex[/^[DOAR]$/]');
     $array->add_rules('receive_for_reporting', 'required', 'regex[/^[DOAR]$/]');
@@ -68,9 +62,9 @@ class Website_Agreement_Model extends ORM
 
     return parent::validate($array, $save);
   }
-  
+
   /**
-   * Override the save method to additionally refresh index_websites_website_agreement with the 
+   * Override the save method to additionally refresh index_websites_website_agreement with the
    * latest information about website agreements.
    */
   public function save() {

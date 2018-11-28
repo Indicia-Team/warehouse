@@ -14,27 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Survey_Attributes table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Survey_Attribute_Model extends ATTR_ORM {
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'termlist');
+  protected $belongs_to = array(
+    'created_by' => 'user',
+    'updated_by' => 'user',
+    'termlist_id' => 'termlist',
+    'source_id' => 'termlists_term',
+    'reporting_category_id' => 'termlists_term',
+  );
 
   protected $has_many = array(
     'survey_attributes_values',
-    );
+  );
 
   protected $has_and_belongs_to_many = array('websites');
 

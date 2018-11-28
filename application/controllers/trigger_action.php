@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller for the trigger action (subscription) page.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Trigger_Action_Controller extends Gridview_Base_Controller {
 
@@ -41,15 +36,15 @@ class Trigger_Action_Controller extends Gridview_Base_Controller {
       'created_by_name'=>'Owner');
     $this->pagetitle = "Subscriptions";
   }
-  
+
   /**
    * Default behaviour for the edit page breadcrumbs. Can be overrridden.
    */
-  protected function defineEditBreadcrumbs() { 
+  protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('trigger', 'Triggers');
     $this->page_breadcrumbs[] ='Subscribe';
   }
-  
+
   /**
    * Provide default values for a new notification.
    */
@@ -61,19 +56,19 @@ class Trigger_Action_Controller extends Gridview_Base_Controller {
       'trigger_action:trigger_id' => $this->uri->last_segment()
     );
   }
-  
-  /** 
+
+  /**
   * Override the edit method, since we are passed a trigger id, whereas we need to edit the
-  * associated action id.  
+  * associated action id.
   */
   public function edit($id) {
-    $filter = array('param1'=> "".$_SESSION['auth_user']->id."", 'trigger_id'=>$id, 'deleted'=>'f');      
+    $filter = array('param1'=> "".$_SESSION['auth_user']->id."", 'trigger_id'=>$id, 'deleted'=>'f');
     $ta = $this->db
         ->select('id')
         ->from('trigger_actions')
         ->where($filter)
         ->limit(1)
-        ->get()->result_array();    
+        ->get()->result_array();
     parent::edit($ta[0]->id);
   }
 }

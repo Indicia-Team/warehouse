@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the logged audit actions table.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,89 +17,106 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
- /**
-  * Generates a paginated grid for the logged action table view. Loosely based on standard gridview,
-  * but filtering is different
-  */
+/*
+ * Generates a paginated grid for the logged action table view. Loosely based
+ * on the standard gridview, but filtering is different.
+ */
 
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+warehouse::loadHelpers(['report_helper']);
+$readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 $colDefs = array();
 foreach ($columns as $fieldname => $title) {
-  if (!isset($orderby)) $orderby=$fieldname;
+  if (!isset($orderby)) {
+    $orderby = $fieldname;
+  }
   $def = array(
     'fieldname' => $fieldname,
-    'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title
+    'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title,
   );
-  if ($fieldname == 'path') 
-    $def['img'] = true;
+  if ($fieldname === 'path') {
+    $def['img'] = TRUE;
+  }
   $colDefs[] = $def;
 }
 $actions = $this->get_action_columns();
 foreach ($actions as &$action) {
   if (substr($action['url'], 0, 4) != 'http') {
-    $action['url'] = url::base(true).$action['url'];
+    $action['url'] = url::base(TRUE) . $action['url'];
   }
 }
-if (count($actions)>0) 
+if (count($actions) > 0) {
   $colDefs[] = array(
     'display' => 'Actions',
-    'actions' => $actions
+    'actions' => $actions,
   );
+}
 
-// New filters
-$reloadUrl = data_entry_helper::get_reload_link_parts();
+$reloadUrl = report_helper::get_reload_link_parts();
 
-// Filter by postgresql transaction
-$value = (isset($_GET['transaction_id'])) ? ' value="'.$_GET['transaction_id'].'"' : '';
-$r = '<form action="'.$reloadUrl['path'].'" method="get" class="linear-form" id="loggedActionFilterForm-Transaction">'.
-		'<label for="transaction_id" class="auto" style="width:auto">'.lang::get('Filter Events for a Postgres Transaction ID of ').'</label> '.
-		'<input type="text" name="transaction_id" id="transaction_id" class="filterInput"'.$value.'/> '.
-		'<input type="submit" value="Filter" class="run-filter ui-corner-all ui-state-default"/>'.
-		"</form>\n";
+// Filter by postgresql transaction.
+$value = (isset($_GET['transaction_id'])) ? " value=\"$_GET[transaction_id]\"" : '';
+$label = lang::get('Filter Events for a PostgreSQL transaction ID of ');
+$r = <<<HTML
+<form action="$reloadUrl[path]" method="get" class="form-inline" id="loggedActionFilterForm-Transaction">
+  <div class="form-group">
+    <label for="transaction_id">$label</label>
+    <input type="text" name="transaction_id" id="transaction_id" class="filterInput form-control"$value/>
+  </div>
+  <input type="submit" value="Filter" class="run-filter btn btn-primary"/>
+</form>
+<br/>
+
+HTML;
 
 // Filter by indicia table and id
 $tables = array('samples', 'occurrences', 'locations');
-$search_key = (isset($_GET['search_key'])) ? ' value="'.$_GET['search_key'].'"' : '';
-$r .= '<form action="'.$reloadUrl['path'].'" method="get" class="linear-form" id="loggedActionFilterForm-Key">'.
-		'<label for="search_table_name" class="auto" style="width:auto">'.lang::get('Filter Events for ').'</label> '.
-		'<select name="search_table_name" class="filterSelect" id="search_table_name"><option value="">&lt;Please select table name&gt;</option>';
+$search_key = (isset($_GET['search_key'])) ? ' value="' . $_GET['search_key'] . '"' : '';
+$tableOptions = '';
 foreach ($tables as $table) {
-	$selected = (isset($_GET['search_table_name']) && $_GET['search_table_name']==$table) ? ' selected="selected"' : '';
-  	$r .= "<option value=\"".$table."\"$selected>".ucfirst($table)."</option>";
+  $selected = (isset($_GET['search_table_name']) && $_GET['search_table_name'] === $table) ? ' selected="selected"' : '';
+  $tableOptions .= "<option value=\"$table\"$selected>" . ucfirst($table) . "</option>";
 }
-$r .= "</select> ".
-		'<label for="search_key" class="auto">'.lang::get('records with an Indicia ID of').'</label> '.  
-		'<input type="text" name="search_key" id="search_key" class="filterInput"'.$search_key.'/> '.
-		'<input type="submit" value="Filter" class="run-filter ui-corner-all ui-state-default"/>'.
-		"</form>\n";
+$label1 = lang::get('Filter events for');
+$label2 = lang::get('records with an Indicia ID of');
+$r .= <<<HTML
+<form action="$reloadUrl[path]" method="get" class="form-inline" id="loggedActionFilterForm-Key">
+  <div class="form-group">
+    <label for="search_table_name">$label1</label>
+    <select name="search_table_name" class="filterSelect form-control" id="search_table_name">
+      <option value="">&lt;Please select table name&gt;</option>
+      $tableOptions
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="search_key">$label2</label>
+    <input type="text" name="search_key" id="search_key" class="filterInput form-control"$search_key/>
+  </div>
+  <input type="submit" value="Filter" class="btn btn-primary"/>
+</form>
+<br/>
+
+HTML;
 echo $r;
 
-echo data_entry_helper::report_grid(array(
+echo report_helper::report_grid(array(
   'id' => $id,
-  'mode'=>'direct',
+  'mode' => 'direct',
   'dataSource' => $source,
   'view' => 'gv',
   'readAuth' => $readAuth,
-  'includeAllColumns' => false,
+  'includeAllColumns' => FALSE,
   'columns' => $colDefs,
-  'extraParams' => array('orderby'=>$orderby),
+  'extraParams' => array('orderby' => $orderby),
   'filters' => $filter,
   'itemsPerPage' => 1000,
-  'autoParamsForm' => false,
-  'ajax' => false
+  'autoParamsForm' => FALSE,
+  'ajax' => FALSE,
+  'class' => 'report-grid table',
 ));
-data_entry_helper::link_default_stylesheet();
-// No need to re-link to jQuery
-data_entry_helper::$dumped_resources[] = 'jquery';
-data_entry_helper::$dumped_resources[] = 'jquery_ui';
-data_entry_helper::$dumped_resources[] = 'fancybox';
-echo data_entry_helper::dump_javascript();
-?>
+
+echo report_helper::dump_javascript();

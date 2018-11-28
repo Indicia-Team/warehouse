@@ -1,0 +1,54 @@
+<report
+    title="Deallocated squares list."
+    description="List information about squares that have been deallocated."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations square
+    LEFT JOIN locations_websites lw on lw.location_id=square.id AND lw.deleted=false
+    LEFT JOIN location_attribute_values lavEx on lavEx.location_id=square.id AND lavEx.location_attribute_id=#excluded_square_attr_id# AND lavEx.deleted=false
+    --We are not interested in squares which were de-allocated without any data being created
+    JOIN locations plot on plot.parent_id=square.id AND plot.deleted=false
+    JOIN samples s on s.location_id=plot.id AND s.deleted=false
+    --If square is de-allocated it must have a deleted allocation
+    JOIN person_attribute_values pavRemovedAlloc on pavRemovedAlloc.int_value=square.id AND pavRemovedAlloc.person_attribute_id=#user_square_attr_id# AND pavRemovedAlloc.deleted=true
+    JOIN people p on p.id=pavRemovedAlloc.person_id AND p.deleted=false
+    JOIN users u on u.person_id=p.id AND u.deleted=false
+    JOIN users_websites uw on u.id=uw.user_id AND uw.website_id=lw.website_id AND uw.created_on &gt;= CAST(COALESCE('#ignore_registration_dates_before#','1500-01-01') as date)
+
+  WHERE (square.location_type_id=#core_square_type_id#)  
+    AND #website_filter# 
+    AND (lavEx.int_value != 1 OR lavEx.int_value IS NULL) 
+    AND square.deleted=false
+    AND 
+    --If a square is deallocated, then check it hasn't been re-allocated
+        square.id NOT in
+          (select pavAlloc.int_value
+           from person_attribute_values pavAlloc
+           where pavAlloc.int_value=square.id AND pavAlloc.person_attribute_id=#user_square_attr_id# AND pavAlloc.deleted=false
+           )
+    --To get the most revent owner information, we need to make sure we are only getting the most recent de-allocation
+    AND pavRemovedAlloc.id in
+        (select max(pavMostRecentRemovedAlloc.id)
+         from person_attribute_values pavMostRecentRemovedAlloc
+         where pavMostRecentRemovedAlloc.int_value=square.id AND pavMostRecentRemovedAlloc.deleted=true)
+  </query>
+  <params>
+    <param name='core_square_type_id' display='Core Square Type Id' description='' datatype='integer'/>
+    <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
+    <param name="ignore_registration_dates_before" display="Ignore Registration Dates Before" description="Ignore anyone who registered earlier than this date
+        where working out if a square has been allocated or not." datatype="date" emptyvalue="" default=""/>
+    <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any squares created before this date.
+        Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
+      <where>square.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date)</where>
+    </param>
+    <param name="excluded_square_attr_id" display="Excluded squares attribute id" description="Id of attribute that holds whether a square is excluded or not. If it is excluded then don't display on the map." datatype="integer"/>
+  </params>
+  <columns> 
+    <column name='id' sql='square.id' datatype='integer' visible="false" in_count="true"/>  
+    <column name='square' display='Square' sql="regexp_replace(square.centroid_sref, ',[^ ]', ', ', 'g')" datatype='text' aggregate="true"/>
+    <column name='first_name' sql='p.first_name' display='Last owner first name' datatype='text'/>
+    <column name='surname' sql='p.surname' display='Last owner surname' datatype='text'/>
+    <column name='email' sql='p.email_address' display='Last owner email' datatype='text'/>
+  </columns>
+</report>

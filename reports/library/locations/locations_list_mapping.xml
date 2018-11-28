@@ -12,7 +12,8 @@
       #filters#
   </query>
   <params>
-      <param name="location_type_id" display="Location Type" description="Select the location type, or leave blank to not filter by location type." datatype="lookup"
+      <param name="location_type_id" display="Location type(s)" datatype="lookup"
+        description="Select the location type, or leave blank to not filter by location type."
         population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=" >
           <where>l.location_type_id in (#location_type_id#)</where>
       </param>

@@ -14,21 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Libraries
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link  http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
-/** 
- * Extension to the cache library class which adds functionality to optimally check for 
+/**
+ * Extension to the cache library class which adds functionality to optimally check for
  * authentication cache items.
  */
 class Cache extends Cache_Core {
-  
+
   public function exists($id) {
     return $this->driver->exists($id);
   }
-  
+
 }

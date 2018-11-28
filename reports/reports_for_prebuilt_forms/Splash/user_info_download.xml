@@ -92,10 +92,8 @@ an event filter to return users associated with a particular event."
     <param name="allocation_date_end" display="User allocated square before this date" description="Only return users who were allocated a square before this date." datatype="date" emptyvalue=""/>
   </params>
   <columns> 
-    <column name='id' sql='u.id' display='Indicia User Id' datatype='integer' in_count="true"/>
     <column name='first_name' display='First name' sql='p.first_name' datatype='text' /> 
     <column name='surname' display='Surname' sql='p.surname' datatype='text' />        
-    <column name='username' display='Indicia Username' sql='u.username' datatype='text'/> 
     <column name='email_address' display='Email address' sql='p.email_address' datatype='text' />  
     <column name='address' display='Address' sql='pavAddr.text_value' datatype='text' /> 
     <column name='town' display='Town' sql='pavTown.text_value' datatype='text' />

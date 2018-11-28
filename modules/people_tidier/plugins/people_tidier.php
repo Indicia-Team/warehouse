@@ -17,7 +17,7 @@
  * @subpackage Plugins
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -26,7 +26,7 @@
  */
 function people_tidier_extend_ui() {
   return array(array(
-    'view'=>'person/person_edit', 
+    'view'=>'person/person_edit',
     'type'=>'tab',
     'controller'=>'people_tidier/index',
     'title'=>'Tidy'

@@ -14,20 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
  defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Controller class for the forgotten password page.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Forgotten_Password_Controller extends Indicia_Controller {
 
@@ -40,13 +35,12 @@ class Forgotten_Password_Controller extends Indicia_Controller {
       $this->template->content->link_to_logout = 'YES';
       return;
     }
-    $this->template->title = 'Forgotten Password Email Request';
+    $this->template->title = 'Forgotten password email request';
     $this->template->content = new View('login/forgotten_password');
     if (request::method() == 'post') {
       $post = new Validation($_POST);
       $post->pre_filter('trim', TRUE);
       $post->add_rules('UserID', 'required');
-
       $returned = $this->auth->user_and_person_by_username_or_email($_POST['UserID']);
       if (array_key_exists('error_message', $returned)) {
         $this->template->content->error_message = $returned['error_message'];
@@ -57,9 +51,7 @@ class Forgotten_Password_Controller extends Indicia_Controller {
       if (!$this->check_can_login($user)) {
         return;
       }
-
       $this->auth->send_forgotten_password_mail($user, $person);
-
       $this->template->title = 'Email Sent';
       $this->template->content = new View('login/login_message');
       $this->template->content->message = 'An email providing a link which will allow your password to be reset has been sent to the specified email address, or if a username was provided, to the registered email address for that user.<br />';
@@ -69,7 +61,7 @@ class Forgotten_Password_Controller extends Indicia_Controller {
   public function check_can_login($user) {
     if (is_null($user->core_role_id) && ORM::factory('users_website')
       ->where('user_id', $user->id)->where('site_role_id IS NOT ', NULL)->find_all() === 0) {
-      $this->template->content->error_message = $_POST['UserID'].' does not have permission to log on to this website';
+      $this->template->content->error_message = $_POST['UserID'] . ' does not have permission to log on to this website';
       return FALSE;
     }
     return TRUE;

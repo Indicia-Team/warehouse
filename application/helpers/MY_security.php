@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Helpers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
@@ -27,8 +26,9 @@ class Security extends security_Core {
   /**
    * Create an authorisation nonce.
    *
-   * Method to create a nonce, either from a service call (when the caller type is a website) or from the Warehouse
-   * (when the caller type is an Indicia user.
+   * Method to create a nonce, either from a service call (when the caller type
+   * is a website) or from the Warehouse (when the caller type is an Indicia
+   * user.
    */
   public static function create_nonce($type, $website_id) {
     $nonce = sha1(time() . ':' . rand() . $_SERVER['REMOTE_ADDR'] . ':' . kohana::config('indicia.private_key'));
@@ -41,11 +41,15 @@ class Security extends security_Core {
    * Takes a value and ensures it is matches an expected pattern. Used to
    * check parameters passed to web services to inhibit SQL injection.
    *
-   * @param mixed $value The value to check.
-   * @param string $type The type of parameter, [int|str], for integer or
-   * string.
-   * @param string $regex The pattern for a valid string parameter to match.
-   * @return string The value or false if the check fails
+   * @param mixed $value
+   *   The value to check.
+   * @param string $type
+   *   The type of parameter, [int|str], for integer or string.
+   * @param string $regex
+   *   The pattern for a valid string parameter to match.
+   *
+   * @return string
+   *   The value or false if the check fails
    */
   public static function checkParam($value, $type, $regex = NULL) {
     switch ($type) {
@@ -59,6 +63,7 @@ class Security extends security_Core {
           return $value;
         }
         break;
+
       case 'str':
         // Value must match regexp.
         $value = trim($value);
@@ -72,7 +77,8 @@ class Security extends security_Core {
   /**
    * Returns the ID to use for the current logged in user.
    *
-   * @return integer
+   * @return int
+   *   User ID.
    */
   public static function getUserId() {
     // @todo Refactor getUserId method into a helper somewhere.

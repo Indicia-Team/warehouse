@@ -17,7 +17,7 @@
  * @subpackage Controllers
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -29,14 +29,14 @@ class Taxon_groups_taxon_list_Controller extends Gridview_Base_Controller {
 
   public function __construct()
   {
-    parent::__construct('taxon_groups_taxon_list', 'taxon_groups_taxon_list/index', 
+    parent::__construct('taxon_groups_taxon_list', 'taxon_groups_taxon_list/index',
         null, 'taxon_groups_taxon_list');
     $this->columns = array(
       'title' => 'Taxon Group'
     );
     $this->pagetitle = "Taxon Groups";
   }
-  
+
   /**
    * Apply the filter for the selected taxon list to the list of groups.
    */
@@ -47,21 +47,21 @@ class Taxon_groups_taxon_list_Controller extends Gridview_Base_Controller {
     }
     parent::index();
   }
-  
-  /** 
+
+  /**
    * Controller action to delete the selected taxon_groups_taxon_lists record.
    */
   public function delete($id) {
     $model = ORM::factory('taxon_groups_taxon_list', $id);
     $model->deleted='t';
-    $model->save();    
+    $model->save();
     // if called with JavaScript enabled then the JS will remove the row from the grid.
     if (!request::is_ajax())
       url::redirect('taxon_list/edit/'.$model->taxon_list_id.'?tab=Taxon_Groups');
   }
-  
+
   /**
-   * Override the default action columns for a grid to replace the edit link with a 
+   * Override the default action columns for a grid to replace the edit link with a
    * delete link, since we don't have an edit page.
    */
   protected function get_action_columns() {
@@ -72,7 +72,7 @@ class Taxon_groups_taxon_list_Controller extends Gridview_Base_Controller {
       )
     );
   }
-  
+
   /**
    * Controller action for AJAX to add a taxon group to this list.
    */

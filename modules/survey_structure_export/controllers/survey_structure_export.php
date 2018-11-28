@@ -17,7 +17,7 @@
  * @subpackage Controllers
  * @author    Indicia Team
  * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link     http://code.google.com/p/indicia/
+ * @link     https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -29,26 +29,26 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * @var array Holds a list of log messages describing the results of an import.
    */
   private $log=array();
-  
+
   /**
    * @var integer The user's ID.
    */
   private $userId;
-  
+
   /**
    * @var integer The ID of the website we are importing into.
    */
   private $website_id;
-  
+
   /**
-   * @const SQL_FETCH_ALL_SAMPLE_ATTRS Query definition which retrieves all the sample attribute details for a survey 
+   * @const SQL_FETCH_ALL_SAMPLE_ATTRS Query definition which retrieves all the sample attribute details for a survey
    * ID in preparation for export.
    */
   const SQL_FETCH_ALL_SAMPLE_ATTRS = "select a.caption, a.data_type, a.applies_to_location, a.validation_rules, a.multi_value, a.public, a.applies_to_recorder, a.system_function,
-          sm.term as aw_restrict_to_sample_method_id_term, aw.validation_rules as aw_validation_rules, aw.weight as aw_weight, aw.control_type_id as aw_control_type_id, 
-          aw.website_id as aw_website_id, aw.default_text_value as aw_default_text_value, aw.default_float_value as aw_default_float_value, aw.default_int_value as aw_default_int_value, 
+          sm.term as aw_restrict_to_sample_method_id_term, aw.validation_rules as aw_validation_rules, aw.weight as aw_weight, aw.control_type_id as aw_control_type_id,
+          aw.website_id as aw_website_id, aw.default_text_value as aw_default_text_value, aw.default_float_value as aw_default_float_value, aw.default_int_value as aw_default_int_value,
           aw.default_date_start_value as aw_default_date_start_value, aw.default_date_end_value as aw_default_date_end_value, aw.default_date_type_value as aw_default_date_type_value,
-          fsb1.name as fsb1_name, fsb1.weight as fsb1_weight, fsb2.name as fsb2_name, fsb2.weight as fsb2_weight, t.termlist_title as termlist_title, 
+          fsb1.name as fsb1_name, fsb1.weight as fsb1_weight, fsb2.name as fsb2_name, fsb2.weight as fsb2_weight, t.termlist_title as termlist_title,
           array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
         from sample_attributes a
         join sample_attributes_websites aw on aw.sample_attribute_id=a.id and aw.deleted=false
@@ -60,21 +60,21 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         where a.deleted=false
         {where}
         group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules, a.multi_value, a.public, a.applies_to_recorder, a.system_function,
-          sm.term, aw.validation_rules, aw.weight, aw.control_type_id, 
-          aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value, 
+          sm.term, aw.validation_rules, aw.weight, aw.control_type_id,
+          aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value,
           aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value,
           fsb1.name, fsb1.weight, fsb2.name, fsb2.weight, t.termlist_title
         order by fsb1.weight, fsb2.weight, aw.weight";
-  
+
   /**
-   * @const SQL_FETCH_ALL_OCCURRENCE_ATTRS Query definition which retrieves all the occurrence attribute details for a survey 
+   * @const SQL_FETCH_ALL_OCCURRENCE_ATTRS Query definition which retrieves all the occurrence attribute details for a survey
    * ID in preparation for export.
    */
   const SQL_FETCH_ALL_OCCURRENCE_ATTRS = "select 	a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function,
-          aw.validation_rules as aw_validation_rules, aw.weight as aw_weight, aw.control_type_id as aw_control_type_id, 
-          aw.website_id as aw_website_id, aw.default_text_value as aw_default_text_value, aw.default_float_value as aw_default_float_value, aw.default_int_value as aw_default_int_value, 
+          aw.validation_rules as aw_validation_rules, aw.weight as aw_weight, aw.control_type_id as aw_control_type_id,
+          aw.website_id as aw_website_id, aw.default_text_value as aw_default_text_value, aw.default_float_value as aw_default_float_value, aw.default_int_value as aw_default_int_value,
           aw.default_date_start_value as aw_default_date_start_value, aw.default_date_end_value as aw_default_date_end_value, aw.default_date_type_value as aw_default_date_type_value,
-          fsb1.name as fsb1_name, fsb1.weight as fsb1_weight, fsb2.name as fsb2_name, fsb2.weight as fsb2_weight, t.termlist_title as termlist_title, 
+          fsb1.name as fsb1_name, fsb1.weight as fsb1_weight, fsb2.name as fsb2_name, fsb2.weight as fsb2_weight, t.termlist_title as termlist_title,
           array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
         from occurrence_attributes a
         join occurrence_attributes_websites aw on aw.occurrence_attribute_id=a.id and aw.deleted=false
@@ -85,19 +85,19 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         where a.deleted=false
         {where}
         group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function,
-          aw.validation_rules, aw.weight, aw.control_type_id, 
-          aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value, 
+          aw.validation_rules, aw.weight, aw.control_type_id,
+          aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value,
           aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value,
           fsb1.name, fsb1.weight, fsb2.name, fsb2.weight, t.termlist_title
         order by fsb1.weight, fsb2.weight, aw.weight";
 
   /**
-   * @const SQL_FIND_ATTRS Query definition which searches for an existing attribute which matches the 
+   * @const SQL_FIND_ATTRS Query definition which searches for an existing attribute which matches the
    * definition of one being imported. Uses an array aggregation to get details of all terms which must be manually
    * tested after running the query, since PostgreSQL does not support aggregates in the where clause. The order by
    * clause puts any attributes already used by this website at the top.
-   */        
-  const SQL_FIND_ATTRS = "select a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function{extraFields}, 
+   */
+  const SQL_FIND_ATTRS = "select a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function{extraFields},
 	t.termlist_title as termlist_title, aw.website_id,
 	array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
 from {type}_attributes a
@@ -111,26 +111,26 @@ group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.publ
 order by aw.website_id is null, aw.website_id={websiteId}";
 
   /**
-   * @const SQL_FIND_TERMLIST Query definition which searches for an existing termlist which matches the 
+   * @const SQL_FIND_TERMLIST Query definition which searches for an existing termlist which matches the
    * definition of one being imported. Uses an array aggregation to get details of all terms which must be manually
    * tested after running the query, since PostgreSQL does not support aggregates in the where clause.
-   */ 
-  const SQL_FIND_TERMLIST = "select t.termlist_id, t.termlist_title, 
+   */
+  const SQL_FIND_TERMLIST = "select t.termlist_id, t.termlist_title,
       array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
     from cache_termlists_terms t
     left join cache_termlists_terms tp on tp.id=t.parent_id
     where {where}
     group by t.termlist_id, t.termlist_title";
-    
+
   /**
    * Constructor.
    */
   public function __construct() {
     parent::__construct();
   }
-  
+
   /**
-   * Controller action for the export tab content. Displays the view containing a block of 
+   * Controller action for the export tab content. Displays the view containing a block of
    * exportable content as well as a textarea into which exports from elsewhere can be pasted.
    */
   public function index() {
@@ -141,11 +141,11 @@ order by aw.website_id is null, aw.website_id={websiteId}";
     $this->view->export = json_encode($export);
     $this->template->content = $this->view;
   }
- 
+
   /**
    * Controller action called when Save clicked. Perform the import when text has been pasted into the import text area.
    */
-  public function save() {    
+  public function save() {
     $surveyId = $_POST['survey_id'];
     $survey = $this->db
         ->select('website_id, title')
@@ -209,7 +209,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       $this->processAttribute('occurrence', $importAttrDef, array());
     }
   }
-  
+
   /**
    * Handles the import of a single occurrence or sample custom attribute.
    *
@@ -222,16 +222,16 @@ order by aw.website_id is null, aw.website_id={websiteId}";
     $this->log[] = "Processing $type attribute: $importAttrDef[caption]";
     // fetch possible matches based on the following SQL field matches
     $fieldsToMatch = array(
-      'caption'=>'a.caption', 
-      'data_type'=>'a.data_type', 
-      'validation_rules'=>'a.validation_rules',  
-      'multi_value'=>'a.multi_value',  
-      'public'=>'a.public', 
+      'caption'=>'a.caption',
+      'data_type'=>'a.data_type',
+      'validation_rules'=>'a.validation_rules',
+      'multi_value'=>'a.multi_value',
+      'public'=>'a.public',
       'system_function'=>'a.system_function'
     );
-    // Depending on the type of attribute (occurrence or sample), there might be some additional fields to match. 
+    // Depending on the type of attribute (occurrence or sample), there might be some additional fields to match.
     // We also need these in a string suitable for adding to the SQL select and group by clauses.
-    $extras = ''; 
+    $extras = '';
     foreach ($extraFields as $field) {
       $fieldsToMatch[$field] = "a.$field";
       $extras .= ", a.$field";
@@ -245,21 +245,21 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       else
         $where .= "and $fieldsql='$value' ";
     }
-    
-    $query = str_replace(array('{type}', '{where}', '{extraFields}', '{websiteId}'), 
+
+    $query = str_replace(array('{type}', '{where}', '{extraFields}', '{websiteId}'),
         array($type, $where, $extras, $this->website_id), self::SQL_FIND_ATTRS);
     $possibleMatches = $this->db->query($query)->result_array(FALSE);
-    // we now have one or more possible matching attributes. Strip out any that don't match the aggregated termlist data. 
+    // we now have one or more possible matching attributes. Strip out any that don't match the aggregated termlist data.
     $existingAttrs = array();
     foreach ($possibleMatches as $possibleMatch) {
-      // additional checks that can't be done in SQL because aggregates don't work in SQL where clauses.  
+      // additional checks that can't be done in SQL because aggregates don't work in SQL where clauses.
       if ($possibleMatch['termlist_title']===$importAttrDef['termlist_title'] && $possibleMatch['terms']===$importAttrDef['terms'])
         $existingAttrs[] = $possibleMatch;
     }
     if (count($existingAttrs)===0)
       $this->createAttr($type, $importAttrDef, $extraFields);
-    else 
-      // Because the find query puts the attributes already used by this website at the top, we 
+    else
+      // Because the find query puts the attributes already used by this website at the top, we
       // can use $existingAttrs[0] to link to safely.
       $this->linkAttr($type, $importAttrDef, $existingAttrs[0]);
   }
@@ -283,13 +283,13 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       'system_function' => $attrDef['system_function']
     );
     // Depending on if it is an occurrence or sample attribute there might be extra fields to copy
-    foreach ($extraFields as $field) 
+    foreach ($extraFields as $field)
       $array[$field] = $attrDef[$field];
     // Lookups need to link to or create a termlist
     if ($attrDef['data_type'] === 'L') {
       // Find termlists with the same name that are available to this website?
       $possibleMatches = $this->db->query(
-          str_replace('{where}', "t.termlist_title='$attrDef[termlist_title]' and (t.website_id={$this->website_id} or t.website_id is null)", 
+          str_replace('{where}', "t.termlist_title='$attrDef[termlist_title]' and (t.website_id={$this->website_id} or t.website_id is null)",
           self::SQL_FIND_TERMLIST)
       )->result_array(FALSE);
       // Now double check that the found termlist(s) have the same set of terms we are expecting.
@@ -299,7 +299,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
           $termlists[] = $possibleMatch;
       }
       // Do we have any matching termlists?
-      if (count($termlists)>=1) 
+      if (count($termlists)>=1)
         // use the existing termlist to provide terms for the new custom attribute
         $array['termlist_id'] = $termlists[0]['termlist_id'];
       else {
@@ -309,7 +309,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
     }
     $a = ORM::factory("{$type}_attribute");
     $a->set_submission_data($array);
-    if (!$a->submit()) 
+    if (!$a->submit())
       throw new exception("Error creating $type attribute for $attrDef[caption]");
     else {
       $this->log[] = "Created $type attribute $attrDef[caption]";
@@ -332,13 +332,13 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       'description' => "Terms for the $attrDef[caption] attribute",
       'website_id' => $this->website_id
     ));
-    if (!$tl->submit()) 
+    if (!$tl->submit())
       throw new exception("Error creating termlist $attrDef[termlist_title] for $attrDef[caption]");
     else {
       // now we need to create the terms required by the termlist. Split the terms string into individual terms.
       $terms = explode('**', $attrDef['terms']);
       foreach ($terms as $term) {
-        // the tokens defining the term are separated by pipes. 
+        // the tokens defining the term are separated by pipes.
         $term = explode('|', $term);
         // SQL escaping
         $escapedTerm = pg_escape_string($term[0]);
@@ -348,13 +348,13 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       }
       // Now re-iterate through the terms and set the term parents
       foreach ($terms as $term) {
-        // the tokens defining the term are separated by pipes. 
+        // the tokens defining the term are separated by pipes.
         $term = explode('|', $term);
         if (!empty($term[3])) {
           // SQL escaping
           $escapedTerm = pg_escape_string($term[0]);
           $escapedParent = pg_escape_string($term[3]);
-          $this->db->query("update termlists_terms tlt set parent_id=tltp.id 
+          $this->db->query("update termlists_terms tlt set parent_id=tltp.id
             from terms t, termlists_terms tltp
             join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$escapedParent'
             where tlt.termlist_id={$tl->id} and t.id=tlt.term_id and t.deleted=false and t.term='$escapedTerm'
@@ -413,11 +413,11 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       }
     }
   }
-  
+
   /**
    * Given an attribute import definition, work out if the correct form structure blocks are already available
    * and return the appropriate ID. If not already available then the form structure blocks are created.
-   * 
+   *
    * @todo Should probably use the database agnostic query builder here.
    * @param string $type Type of attribute we are working on, occurrence or sample.
    * @param array $attrDef Definition of the attribute as defined by the imported data.
@@ -440,7 +440,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       // Matching form structure block exists
       return $matches[0]['id'];
     else {
-      // Need to create the form structure block. 
+      // Need to create the form structure block.
       $parent=false;
       if (!empty($attrDef['fsb2_name'])) {
         // If we have a parent block, find an existing one or create a new one as appropriate
@@ -469,10 +469,10 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       return $child->id;
     }
   }
-  
+
   /**
    * Retrieves the data for a list of attributes associated with a given survey.
-   * 
+   *
    * @param integer $id Survey ID
    * @return array A version of the data which has been changed into structured
    * arrays of the data from the tables.
@@ -485,5 +485,5 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       'occAttrs'=>$occAttrs
     );
   }
-  
+
 }

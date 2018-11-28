@@ -8,7 +8,7 @@
     WHERE id=#taxa_taxon_list_id#
    UNION
     SELECT 'image', path as the_text, caption
-    FROM taxon_images
+    FROM taxon_media
     WHERE taxon_meaning_id=#taxon_meaning_id#
   </query>
   <params>

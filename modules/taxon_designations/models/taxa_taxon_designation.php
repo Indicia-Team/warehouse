@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -31,10 +31,11 @@
 class Taxa_taxon_designation_Model extends ORM {
 
   protected $belongs_to = array(
-      'taxa',
-      'taxon_designation',
-      'created_by'=>'user',
-      'updated_by'=>'user');
+    'taxa',
+    'taxon_designation',
+    'created_by' => 'user',
+    'updated_by' => 'user'
+  );
 
   protected $lookup_against='gv_taxa_taxon_designations';
 
@@ -49,11 +50,11 @@ class Taxa_taxon_designation_Model extends ORM {
   /**
    * Return a displayable caption for the item.
    */
-  public function caption()
-  {
+  public function caption() {
     if ($this->id) {
-      return ($this->taxon_designation_id != null ? $this->taxon_designation->title : '');
-    } else {
+      return ($this->taxon_designation_id != NULL ? $this->taxon_designation->title : '');
+    }
+    else {
       return 'Taxon Designation';
     }
   }

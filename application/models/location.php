@@ -16,13 +16,11 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Locations table.
- *
- * @link http://code.google.com/p/indicia/wiki/DataModel
  */
 class Location_Model extends ORM_Tree {
 

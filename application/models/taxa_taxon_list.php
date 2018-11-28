@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Taxa_Taxon_Lists table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxa_taxon_list_Model extends Base_Name_Model {
   public $search_field='taxon';
@@ -61,7 +55,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           'columns' => array('taxon:taxon:genus', 'taxon:taxon:specific')
       )
   );
-  
+
   public $import_duplicate_check_combinations = array(
       array('description' => 'Species list And Taxon name',
           'fields' => array(array('fieldName' => 'taxa_taxon_list:taxon_list_id'),
@@ -177,51 +171,57 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       }
 
       // $arraySyn should now be left only with those synonyms
-      // we wish to add to the database
+      // we wish to add to the database.
 
-      Kohana::log("debug", "Number of synonyms remaining to add: ".count($arrSyn));
+      Kohana::log("debug", "Number of synonyms remaining to add: " . count($arrSyn));
       $sm = ORM::factory('taxa_taxon_list');
-      foreach ($arrSyn as $key => $syn)
-      {
+      foreach ($arrSyn as $key => $syn) {
         $sm->clear();
         $taxon = $syn['taxon'];
         $lang = $syn['lang'];
         $auth = $syn['auth'];
 
-        // Wrap a new submission
-        Kohana::log("info", "Wrapping submission for synonym ".$taxon);
+        // Wrap a new submission.
+        Kohana::log("info", "Wrapping submission for synonym $taxon");
 
         $lang_id = ORM::factory('language')->where(array('iso' => $lang))->find()->id;
-        // If language not found, use english as the default. Future versions may wish this to be
-        // user definable.
+        // If language not found, use english as the default. Future versions
+        // may wish this to be user definable.
         $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
-        // copy the original post array to pick up the common things, first the taxa_taxon_list data
+        // Copy the original post array to pick up the common things, first the
+        // taxa_taxon_list data.
         $this->copy_shared_fields_from_submission('taxa_taxon_list', $this->submission['fields'], $syn, array(
             'description', 'parent', 'taxonomic_sort_order', 'allow_data_entry', 'taxon_list_id'
         ));
 
-        // Next do the data in the taxon supermodel - we have to search for it rather than rely on it being in a particular position in the list
-        foreach($this->submission['superModels'] as $supermodel) {
-          if ($supermodel['model']['id']=='taxon') {
-            $this->copy_shared_fields_from_submission('taxon',$supermodel['model']['fields'], $syn, array(
-                'description', 'external_key', 'taxon_group_id'
-            ));
+        // Next do the data in the taxon supermodel - we have to search for it
+        // rather than rely on it being in a particular position in the list.
+        foreach ($this->submission['superModels'] as $supermodel) {
+          if ($supermodel['model']['id'] === 'taxon') {
+            $this->copy_shared_fields_from_submission(
+              'taxon',
+              $supermodel['model']['fields'],
+              $syn,
+              ['description', 'external_key', 'taxon_group_id', 'taxon_rank_id']
+            );
             break;
           }
         }
-        // Now update the record with specifics for this synonym
-        $syn['taxon:id'] = null;
+        // Now update the record with specifics for this synonym.
+        $syn['taxon:id'] = NULL;
         $syn['taxon:taxon'] = $taxon;
         $syn['taxon:authority'] = $auth;
         $syn['taxon:language_id'] = $lang_id;
         $syn['taxa_taxon_list:id'] = '';
         $syn['taxa_taxon_list:preferred'] = 'f';
-        // taxon meaning Id cannot be copied from the submission, since for new data it is generated when saved
+        // Taxon meaning Id cannot be copied from the submission, since for new
+        // data it is generated when saved.
         $syn['taxa_taxon_list:taxon_meaning_id'] = $this->taxon_meaning_id;
         $sub = $this->wrap($syn);
-        // Don't resubmit the meaning record, again we can't rely on the order of the supermodels in the list
-        foreach($sub['superModels'] as $idx => $supermodel) {
-          if ($supermodel['model']['id']=='taxon_meaning') {
+        // Don't resubmit the meaning record, again we can't rely on the order
+        // of the supermodels in the list.
+        foreach ($sub['superModels'] as $idx => $supermodel) {
+          if ($supermodel['model']['id'] === 'taxon_meaning') {
             unset($sub['superModels'][$idx]);
             break;
           }

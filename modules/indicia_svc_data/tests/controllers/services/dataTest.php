@@ -394,6 +394,33 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals($filter->website_id, $filterData['filter:website_id']);
   }
 
+  public function testCreateGroup() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateGroup");
+    // Post a group.
+    $groupData = array(
+      'group:title' => 'Test',
+      'group:description' => 'Test descrtiption',
+      'group:joining_method' => 'P',
+      'group:code' => 'ABC123',
+      'group:website_id' => 1,
+      // Set to test group type term.
+      'group:group_type_id' => 6,
+    );
+    $s = submission_builder::build_submission($groupData, array('model' => 'group'));
+    $r = data_entry_helper::forward_post_to('group', $s, $this->auth['write_tokens']);
+
+    Kohana::log('debug', "Submission response to group save " . print_r($r, TRUE));
+    $this->assertTrue(isset($r['success']), 'Submitting a new group did not work');
+
+    $groupId = $r['success'];
+    $group = ORM::factory('group', $groupId);
+    $this->assertEquals($groupData['group:title'], $group->title);
+    $this->assertEquals($groupData['group:description'], $group->description);
+    $this->assertEquals($groupData['group:joining_method'], $group->joining_method);
+    $this->assertEquals($groupData['group:code'], $group->code);
+    $this->assertEquals($groupData['group:website_id'], $group->website_id);
+  }
+
   public function testCreateSample() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateSample");
     // Post a location with an attribute value.
@@ -450,6 +477,29 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(isset($r['error']), 'Submitting a sample wth bad vague date did not fail');
   }
 
+  public function testCreateSampleComment() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateSampleComment");
+    // Post a location with an attribute value.
+    $array = array(
+      'sample:survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'sample_comment:comment' => 'This is a test comment',
+    );
+    $s = submission_builder::build_submission($array, [
+      'model' => 'sample',
+      'subModels' => [
+        'sample_comment' => ['fk' => 'sample_id'],
+      ],
+    ]);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+    $sc = ORM::factory('sample_comment', ['sample_id' => $r['success']]);
+    $this->assertTrue($sc->loaded, 'Record not found after submitting a comment');
+    $this->assertEquals('This is a test comment', $sc->comment, 'Sample comment saved but incorrect comment saved');
+  }
+
   public function testCreateOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateOccurrence");
     $array = array(
@@ -471,6 +521,81 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
     Kohana::log('debug', "Submission response to sample 1 save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+  }
+
+  public function testCreateOccurrenceComment() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateOccurrenceComment");
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU123456',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+    ];
+    $s = submission_builder::build_submission($array, array('model' => 'sample'));
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $smpId = $r['success'];
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'occurrence:sample_id' => $smpId,
+      'occurrence:taxa_taxon_list_id' => 1,
+      // Deliberately test some special characters.
+      'occurrence_comment:comment' => 'This is a test occurrence comment ëēœû',
+    ];
+    $structure = [
+      'model' => 'occurrence',
+      'subModels' => [
+        'occurrence_comment' => [
+          'fk' => 'occurrence_id',
+        ],
+      ],
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting an occurrence with comment did not return success response');
+    $oc = ORM::factory('occurrence_comment', ['occurrence_id' => $r['success']]);
+    $this->assertTrue($oc->loaded, 'Comment not found after submitting a sample with occurrence and comment');
+    $this->assertEquals('This is a test occurrence comment ëēœû', $oc->comment, 'Sample comment saved but incorrect comment saved');
+  }
+
+  public function testCreateTermlistTerm() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateTermlistTerm");
+    $array = [
+      'website_id' => 1,
+      'term:term' => 'Added term',
+      'term:language_id' => 1,
+      'termlists_term:termlist_id' => 1,
+      'termlists_term:preferred' => 't',
+      'termlists_term:sort_order' => 123,
+    ];
+    $s = submission_builder::build_submission($array, [
+      'model' => 'termlists_term',
+      'superModels' => [
+        'meaning' => ['fk' => 'meaning_id'],
+        'term' => ['fk' => 'term_id'],
+      ],
+    ]);
+    $r = data_entry_helper::forward_post_to('termlists_term', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a termlists_term did not return success response');
+    $termlistsTermId = $r['success'];
+    $termlistsTerm = ORM::Factory('termlists_term', $termlistsTermId);
+    $this->assertEquals('Added term', $termlistsTerm->term->term);
+    $this->assertEquals(123, $termlistsTerm->sort_order);
+    $array['sort_order'] = NULL;
+    $array['termlists_term:id'] = $termlistsTermId;
+    $array['term:id'] = $termlistsTerm->term->id;
+    $s = submission_builder::build_submission($array, [
+      'model' => 'termlists_term',
+      'superModels' => [
+        'meaning' => ['fk' => 'meaning_id'],
+        'term' => ['fk' => 'term_id'],
+      ],
+    ]);
+    $r = data_entry_helper::forward_post_to('termlists_term', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Updating a termlists_term did not return success response');
+    $termlistsTerm->reload();
+    $this->assertEmpty($termlistsTerm->sort_order);
   }
 
   /**

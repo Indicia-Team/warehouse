@@ -257,6 +257,8 @@ meanings:
     id: 10003
   -
     id: 10004
+  -
+    id: 10005
 
 
 termlists:
@@ -293,6 +295,14 @@ termlists:
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
     external_key: "indicia:user_identifier_types"
+  -
+    title: "Group types"
+    description: "Term list for group types"
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+    external_key: "indicia:group_types"
 
 
 terms:
@@ -326,6 +336,13 @@ terms:
     updated_by_id: 1
   -
     term: "twitter"
+    language_id: 1
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+  -
+    term: "Test group type"
     language_id: 1
     created_on: 2016-07-22:16:00:00
     created_by_id: 1
@@ -382,6 +399,16 @@ termlists_terms:
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
     meaning_id: 10004
+    preferred: "true"
+    sort_order: 2
+  -
+    termlist_id: 5                          #Group types
+    term_id: 6                              #Test group type
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+    meaning_id: 10005
     preferred: "true"
     sort_order: 2
 
@@ -470,6 +497,23 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10004
+    cache_created_on: 2016-07-22:16:00:00
+    cache_updated_on: 2016-07-22:16:00:00
+  -
+    id: 6
+    preferred: "true"
+    termlist_id: 5
+    termlist_title: "Group types"
+    website_id:
+    preferred_termlists_term_id: 6
+    sort_order: 1
+    term: "Test group type"
+    language_iso: "eng"
+    language: "English"
+    preferred_term: "Test group type"
+    preferred_language_iso: "eng"
+    preferred_language: "English"
+    meaning_id: 10005
     cache_created_on: 2016-07-22:16:00:00
     cache_updated_on: 2016-07-22:16:00:00
 

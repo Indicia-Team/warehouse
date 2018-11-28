@@ -1,0 +1,63 @@
+<report
+    title="Taxon derived validation rules for occurrence attributes"
+    description="For a chosen taxon, suggests validation rules for the dynamic occurrence attributes
+      based on the taxon character data."
+>
+  <query website_filter_field="oaw.website_id">
+SELECT DISTINCT ON (oattla.taxa_taxon_list_attribute_id)
+  #columns#
+-- From the entered taxon.
+FROM cache_taxa_taxon_lists cttl
+-- Find the entered taxon's parents.
+JOIN cache_taxon_paths ctp
+  ON ctp.external_key=cttl.external_key
+-- Find attributes linked to any of it's parents.
+JOIN occurrence_attribute_taxon_restrictions oatr
+  ON ctp.path @> ARRAY[oatr.restrict_to_taxon_meaning_id]
+  AND oatr.deleted=false
+-- Occurrence_attributes_websites gives us the occattr ID.
+JOIN occurrence_attributes_websites oaw
+  ON oaw.id=oatr.occurrence_attributes_website_id
+  AND oaw.deleted=false
+JOIN occurrence_attributes oa
+  ON oa.id=oaw.occurrence_attribute_id
+  -- Only lookups or numbers are relevant
+  AND oa.data_type IN ('L', 'I', 'F', 'B')
+  AND oa.deleted=false
+-- Find the linked taxon attributes.
+JOIN occurrence_attributes_taxa_taxon_list_attributes oattla
+  ON oattla.occurrence_attribute_id=oaw.occurrence_attribute_id
+  AND oattla.validate_occurrence_attribute_values_against_taxon_values
+  AND oattla.deleted=false
+-- Find the linked taxon attribute values.
+JOIN taxa_taxon_list_attributes ttla
+  ON ttla.id=oattla.taxa_taxon_list_attribute_id
+  AND ttla.deleted=false
+JOIN taxa_taxon_list_attribute_values ttlav
+  ON ttlav.taxa_taxon_list_attribute_id=ttla.id
+  AND ttlav.deleted=false
+-- Find the taxon level this is linked at so we can priorities more specific taxa.
+-- This also limits the attribute values to those in the taxonomic path.
+JOIN cache_taxa_taxon_lists cttlattr
+  ON cttlattr.id=ttlav.taxa_taxon_list_id
+  AND ctp.path @> ARRAY[cttlattr.taxon_meaning_id]
+WHERE cttl.id=#taxa_taxon_list_id#
+ORDER BY oattla.taxa_taxon_list_attribute_id, cttlattr.taxon_rank_sort_order DESC;
+  </query>
+  <params>
+    <param name="taxa_taxon_list_id" display="Taxa taxon list ID" datatype="integer" />
+  </params>
+  <columns>
+    <column name="occurrence_attribute_id" display="Occurrence attribute ID" sql="oa.id" data_type="integer" />
+    <column name="attr_caption" display="Occurrence attribute caption" sql="oa.caption" data_type="text" />
+    <column name="attr_data_type" display="Occurrence attribute data type" sql="oa.data_type" data_type="text" />
+    <column name="allow_ranges" display="Occurrence attribute allows ranges" sql="oa.allow_ranges" data_type="boolean" />
+    <column name="taxon_providing_values" display="Taxon providing the values" sql="cttlattr.taxon" data_type="text" />
+    <column name="taxa_taxon_list_attribute_id" display="Tx attribute ID" sql="oattla.taxa_taxon_list_attribute_id" data_type="integer" />
+    <column name="taxon_attr_data_type" display="Tx attribute data type" sql="ttla.data_type" data_type="text" />
+    <column name="taxon_attr_allow_ranges" display="Tx attribute allows ranges" sql="ttla.allow_ranges" data_type="boolean" />
+    <column name="int_value" display="Int value to validate against" sql="ttlav.int_value" data_type="integer" />
+    <column name="float_value" display="Float value to validate against" sql="ttlav.float_value" data_type="float" />
+    <column name="upper_value" display="Upper value of range to validate against" sql="ttlav.upper_value" data_type="float" />
+  </columns>
+</report>

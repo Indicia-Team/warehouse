@@ -109,6 +109,22 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       )
     ),
     array(
+      'path' => 'library/occurrences/filterable_occurrences_download',
+      'tests' => array(
+        array(
+          'params' => array(),
+          'result' => 1,
+          'valueChecks' => array(
+            array(
+              'row' => 0,
+              'field' => 'occurrence_id',
+              'value' => 1 // Check the first record returned which is not confidential
+            )
+          )
+        )
+      )
+    ),
+    array(
       'path' => 'library/occurrences/filterable_occurrences_download_without_locality',
       'tests' => array(
         array(
@@ -218,7 +234,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
    *
    * @var array
    *
-   * @todo Add tests for higher_taxa_taxon_list which needs hierarchical taxon data.
+   * @todo Add tests for taxa_taxon_list which needs hierarchical taxon data.
    * @todo Add tests for taxon_designation_list.
    */
   private $standardParamTests = [
@@ -590,7 +606,8 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       foreach ($cfg['tests'] as $test) {
         $response = $this->getReportResponse("$cfg[path].xml", $test['params']);
         $this->assertFalse(isset($response['error']),
-          "$cfg[path] returned an error with params " . var_export($test['params'], true));
+          "$cfg[path] returned an error with params " . var_export($test['params'], TRUE) .
+          ' and error ' . var_export($response, TRUE));
         // count of records expected?
         if (is_int($test['result'])) {
           $this->assertEquals($test['result'], count($response),
@@ -618,7 +635,8 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     foreach ($this->standardParamTests as $params) {
       $response = $this->getReportResponse("library/occurrences/filterable_explore_list.xml", $params);
       $this->assertFalse(isset($response['error']),
-        "library/occurrences/filterable_explore_list.xml returned an error with standard params " . var_export($params, TRUE));
+        "library/occurrences/filterable_explore_list.xml returned an error with standard params " . var_export($params, TRUE) .
+        ' and error ' . var_export($response, TRUE));
     }
   }
 

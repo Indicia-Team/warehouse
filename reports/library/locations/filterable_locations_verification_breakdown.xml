@@ -3,8 +3,7 @@
   <query website_filter_field="o.website_id" standard_params="occurrences">
     select #columns#
     from cache_occurrences_functional o
-    join index_locations_samples ils on ils.sample_id=o.sample_id
-    join locations l on l.id=ils.location_id and l.deleted=false
+    join locations l on o.location_ids @> ARRAY[l.id] and l.deleted=false
     #agreements_join#
     #joins#
     where #sharing_filter#

@@ -1,6 +1,12 @@
 <?php
 
 /**
+ * @file
+ * SHP file upload feedback template.
+ *
+ * Template for the feedback given for each location created or updated after
+ * uploading a SHP file.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,19 +20,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 ?>
-<?php 
-foreach ($update as $row):
-  echo '<p>Location with name "'.$row.'" updated. (<a href="edit/'.$location_id[$row].'">Edit</a>)</p>';
-endforeach; ?>
-<?php 
-foreach ($create as $row):
-  echo '<p>New location with name "'.$row.'" created. (<a href="edit/'.$location_id[$row].'">Edit</a>)</p>';
-endforeach; ?>
-
+<?php
+foreach ($errors as $error) {
+  echo "<div class=\"alert alert-warning\"><strong>$error[name]</strong> $error[msg]</div>";
+}
+foreach ($update as $row) {
+  echo "<div class=\"alert alert-success\"><strong>$row</strong> updated. (<a href=\"edit/" . $location_id[$row] . "\">Edit</a>)</div>";
+}
+foreach ($create as $row) {
+  echo "<div class=\"alert alert-success\"><strong>$row</strong> inserted. (<a href=\"edit/" . $location_id[$row] . "\">Edit</a>)</div>";
+}

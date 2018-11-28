@@ -70,7 +70,9 @@ $config['termlists_terms']['update'] = "update cache_termlists_terms ctlt
       preferred_language_iso=lpref.iso,
       preferred_language=lpref.language,
       meaning_id=tltpref.meaning_id,
-      cache_updated_on=now()
+      preferred_image_path=tltpref.image_path,
+      cache_updated_on=now(),
+      allow_data_entry=tlt.allow_data_entry
     from termlists tl
     join termlists_terms tlt on tlt.termlist_id=tl.id
     #join_needs_update#
@@ -85,7 +87,7 @@ $config['termlists_terms']['insert'] = "insert into cache_termlists_terms (
       id, preferred, termlist_id, termlist_title, website_id,
       preferred_termlists_term_id, parent_id, sort_order,
       term, language_iso, language, preferred_term, preferred_language_iso, preferred_language, meaning_id,
-      cache_created_on, cache_updated_on
+      preferred_image_path, cache_created_on, cache_updated_on, allow_data_entry
     )
     select distinct on (tlt.id) tlt.id, tlt.preferred,
       tl.id as termlist_id, tl.title as termlist_title, tl.website_id,
@@ -94,7 +96,7 @@ $config['termlists_terms']['insert'] = "insert into cache_termlists_terms (
       l.iso as language_iso, l.language,
       tpref.term as preferred_term,
       lpref.iso as preferred_language_iso, lpref.language as preferred_language, tltpref.meaning_id,
-      now(), now()
+      tltpref.image_path, now(), now(), tlt.allow_data_entry
     from termlists tl
     join termlists_terms tlt on tlt.termlist_id=tl.id
     #join_needs_update#
@@ -153,6 +155,13 @@ $config['taxa_taxon_lists']['get_changed_items_query'] = "
 $config['taxa_taxon_lists']['delete_query']['taxa'] = "
   delete from cache_taxa_taxon_lists where id in (select id from needs_update_taxa_taxon_lists where deleted=true)";
 
+$config['taxa_taxon_lists']['delete_query']['paths'] = "
+  delete from cache_taxon_paths ctp
+  using needs_update_taxa_taxon_lists nu
+  join taxa_taxon_lists ttl on ttl.id=nu.id and ttl.preferred=true
+  where nu.deleted=true
+  and ttl.taxon_meaning_id=ctp.taxon_meaning_id and ttl.taxon_list_id=ctp.taxon_list_id";
+
 $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     set preferred=ttl.preferred,
       taxon_list_id=tl.id,
@@ -175,6 +184,9 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       taxon_meaning_id=ttlpref.taxon_meaning_id,
       taxon_group_id = tpref.taxon_group_id,
       taxon_group = tg.title,
+      taxon_rank_id = tr.id,
+      taxon_rank = tr.rank,
+      taxon_rank_sort_order = tr.sort_order,
       cache_updated_on=now(),
       allow_data_entry=ttl.allow_data_entry,
       marine_flag=t.marine_flag
@@ -186,11 +198,12 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       and ttlpref.preferred=true
       and ttlpref.taxon_list_id=ttl.taxon_list_id
       and ttlpref.deleted=false
-      and ttlpref.allow_data_entry=true
+      and ttlpref.allow_data_entry=ttl.allow_data_entry
     join taxa t on t.id=ttl.taxon_id and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false
     join taxa tpref on tpref.id=ttlpref.taxon_id and tpref.deleted=false
     join taxon_groups tg on tg.id=tpref.taxon_group_id and tg.deleted=false
+    left join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false
     join languages lpref on lpref.id=tpref.language_id and lpref.deleted=false
     left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id and tcommon.deleted=false
     where cttl.id=ttl.id";
@@ -201,6 +214,7 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
       taxon, authority, language_iso, language, preferred_taxon, preferred_authority,
       preferred_language_iso, preferred_language, default_common_name, search_name, external_key,
       taxon_meaning_id, taxon_group_id, taxon_group,
+      taxon_rank_id, taxon_rank, taxon_rank_sort_order,
       cache_created_on, cache_updated_on, allow_data_entry, marine_flag
     )
     select distinct on (ttl.id) ttl.id, ttl.preferred,
@@ -213,6 +227,7 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
       tcommon.taxon as default_common_name,
       regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'),
       tpref.external_key, ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
+      tr.id, tr.rank, tr.sort_order,
       now(), now(), ttl.allow_data_entry, t.marine_flag
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id and ttl.deleted=false
@@ -223,11 +238,12 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
       and ttlpref.preferred='t'
       and ttlpref.taxon_list_id=ttl.taxon_list_id
       and ttlpref.deleted=false
-      and ttlpref.allow_data_entry=true
+      and ttlpref.allow_data_entry=ttl.allow_data_entry
     join taxa t on t.id=ttl.taxon_id and t.deleted=false and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false and l.deleted=false
     join taxa tpref on tpref.id=ttlpref.taxon_id and tpref.deleted=false
     join taxon_groups tg on tg.id=tpref.taxon_group_id and tg.deleted=false
+    left join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false
     join languages lpref on lpref.id=tpref.language_id and lpref.deleted=false
     left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id and tcommon.deleted=false
     where cttl.id is null and tl.deleted=false";
@@ -236,101 +252,99 @@ $config['taxa_taxon_lists']['join_needs_update'] = 'join needs_update_taxa_taxon
 $config['taxa_taxon_lists']['key_field'] = 'ttl.id';
 
 $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
+  'setup' => "
+    WITH RECURSIVE q AS (
+      SELECT ttl.id
+      FROM taxa_taxon_lists ttl
+      JOIN needs_update_taxa_taxon_lists nu ON nu.id=ttl.id
+      WHERE ttl.deleted=false
+      UNION ALL
+      SELECT ttl.id
+      FROM q
+      JOIN taxa_taxon_lists ttl ON ttl.parent_id=q.id and ttl.deleted=false AND ttl.preferred=true
+    )
+    SELECT DISTINCT *
+    INTO TEMPORARY descendants FROM q;
+
+    WITH RECURSIVE q AS (
+      SELECT distinct ttlpref.id AS child_pref_ttl_id, ttlpref.parent_id,
+      ttlpref.taxon_meaning_id AS rank_taxon_meaning_id, ttlpref.taxon_list_id, 0 as distance
+      FROM taxa_taxon_lists ttlpref
+      JOIN taxa t ON t.id=ttlpref.taxon_id and t.deleted=false
+      JOIN descendants d ON d.id=ttlpref.id
+      WHERE ttlpref.preferred=true
+      AND ttlpref.deleted=false
+      UNION ALL
+      SELECT q.child_pref_ttl_id, ttl.parent_id,
+          ttl.taxon_meaning_id AS rank_taxon_meaning_id, ttl.taxon_list_id, q.distance+1
+      FROM q
+      JOIN taxa_taxon_lists ttl ON ttl.id=q.parent_id and ttl.deleted=false and ttl.taxon_list_id=q.taxon_list_id
+      JOIN taxa t ON t.id=ttl.taxon_id and t.deleted=false
+    )
+    SELECT child_pref_ttl_id, array_agg(rank_taxon_meaning_id order by distance desc) as path
+    INTO TEMPORARY ttl_path
+    FROM q
+    GROUP BY child_pref_ttl_id
+    ORDER BY child_pref_ttl_id;",
+  'Taxon paths' => "
+    UPDATE cache_taxon_paths ctp
+    SET path=tp.path, external_key=t.external_key
+    FROM taxa_taxon_lists ttl
+    JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
+    JOIN ttl_path tp ON tp.child_pref_ttl_id=ttl.id
+    WHERE ctp.taxon_meaning_id=ttl.taxon_meaning_id AND ctp.taxon_list_id=ttl.taxon_list_id
+    AND (ctp.path<>tp.path OR COALESCE(ctp.external_key, '')<>COALESCE(t.external_key, ''))
+    AND ttl.deleted=false;
+
+    INSERT INTO cache_taxon_paths (taxon_meaning_id, taxon_list_id, external_key, path)
+    SELECT DISTINCT ON (ttl.taxon_meaning_id, ttl.taxon_list_id) ttl.taxon_meaning_id, ttl.taxon_list_id, t.external_key, tp.path
+    FROM taxa_taxon_lists ttl
+    JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
+    JOIN ttl_path tp ON tp.child_pref_ttl_id=ttl.id
+    LEFT JOIN cache_taxon_paths ctp ON ctp.taxon_meaning_id=ttl.taxon_meaning_id AND ctp.taxon_list_id=ttl.taxon_list_id
+    WHERE ctp.taxon_meaning_id IS NULL
+    AND ttl.deleted=false;
+
+    DELETE FROM cache_taxon_paths
+    USING cache_taxon_paths ctp
+    LEFT JOIN taxa_taxon_lists ttl ON ttl.taxon_meaning_id=ctp.taxon_meaning_id AND ttl.taxon_list_id=ctp.taxon_list_id AND ttl.deleted=false
+    WHERE ttl.id IS NULL
+    AND cache_taxon_paths.taxon_meaning_id=ctp.taxon_meaning_id AND cache_taxon_paths.taxon_list_id=ctp.taxon_list_id;",
   'Ranks' => "
-WITH RECURSIVE q AS (
-  SELECT distinct ttl1.external_key AS child_external_key, ttl1.preferred_taxon AS child_taxon, ttlpref.parent_id,
-      ttlpref.id AS rank_ttl_id, ttlpref.external_key AS rank_external_key, t.taxon AS rank_taxon, tr.rank, tr.id AS taxon_rank_id, tr.sort_order AS taxon_rank_sort_order
-  FROM cache_taxa_taxon_lists ttl1
-  JOIN cache_taxa_taxon_lists ttlpref ON ttlpref.external_key=ttl1.external_key
-    and ttlpref.taxon_list_id=#master_list_id# and ttlpref.preferred=true and ttlpref.allow_data_entry=true
-  JOIN taxa_taxon_lists ttlprefraw ON ttlprefraw.id=ttlpref.id and ttlprefraw.deleted=false
-  JOIN taxa t ON t.id=ttlprefraw.taxon_id and t.deleted=false and t.deleted=false
-  JOIN taxon_ranks tr ON tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
-  JOIN needs_update_taxa_taxon_lists nu ON nu.id=ttl1.id
-  UNION ALL
-  SELECT q.child_external_key, q.child_taxon, ttl.parent_id,
-      ttl.id AS rank_ttl_id, t.external_key AS rank_external_key, t.taxon AS rank_taxon, tr.rank, tr.id AS taxon_rank_id, tr.sort_order AS taxon_rank_sort_order
-  FROM q
-  JOIN taxa_taxon_lists ttl ON ttl.id=q.parent_id and ttl.deleted=false
-  JOIN taxa t ON t.id=ttl.taxon_id and t.deleted=false and t.deleted=false
-  JOIN taxon_ranks tr ON tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
-) SELECT DISTINCT * INTO TEMPORARY rankupdate FROM q;
+    UPDATE cache_taxa_taxon_lists u
+    SET family_taxa_taxon_list_id=cttlf.id, family_taxon=cttlf.taxon,
+      order_taxa_taxon_list_id=cttlo.id, order_taxon=cttlo.taxon,
+      kingdom_taxa_taxon_list_id=cttlk.id, kingdom_taxon=cttlk.taxon
+    FROM cache_taxa_taxon_lists cttl
+    -- Ensure only changed taxon concepts are updated
+    JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
+    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(ctp.path) and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlo ON cttlo.taxon_meaning_id=ANY(ctp.path) and cttlo.taxon_rank='Order' and cttlo.taxon_list_id=1 AND cttlo.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlk ON cttlk.taxon_meaning_id=ANY(ctp.path) and cttlk.taxon_rank='Kingdom' and cttlk.taxon_list_id=1 AND cttlk.preferred=true
+    WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
+    AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
+      OR COALESCE(u.family_taxon, '')<>COALESCE(cttlf.taxon, '')
+      OR COALESCE(u.order_taxa_taxon_list_id, 0)<>COALESCE(cttlo.id, 0)
+      OR COALESCE(u.order_taxon, '')<>COALESCE(cttlo.taxon, '')
+      OR COALESCE(u.kingdom_taxa_taxon_list_id, 0)<>COALESCE(cttlk.id, 0)
+      OR COALESCE(u.kingdom_taxon, '')<>COALESCE(cttlk.taxon, '')
+    );
 
-UPDATE cache_taxa_taxon_lists u
-SET kingdom_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id, kingdom_taxon=ruHigherConcept.rank_taxon
-FROM cache_taxa_taxon_lists cttl
--- Find the correct higher taxon data
-LEFT JOIN rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=cttl.external_key AND ruHigherConcept.rank='Kingdom'
-WHERE cttl.id=u.id
--- Only change the updated taxa
-AND cttl.external_key IN (SELECT DISTINCT child_external_key FROM rankupdate)
-AND (
-  COALESCE(cttl.kingdom_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0)
-  OR COALESCE(cttl.kingdom_taxon, '')<>COALESCE(ruHigherConcept.rank_taxon, '')
-);
-
-UPDATE cache_taxa_taxon_lists u
-SET order_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id, order_taxon=ruHigherConcept.rank_taxon
-FROM cache_taxa_taxon_lists cttl
--- Find the correct higher taxon data
-LEFT JOIN rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=cttl.external_key AND ruHigherConcept.rank='Order'
-WHERE cttl.id=u.id
--- Only change the updated taxa
-AND cttl.external_key IN (SELECT DISTINCT child_external_key FROM rankupdate)
-AND (
-  COALESCE(cttl.order_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0)
-  OR COALESCE(cttl.order_taxon, '')<>COALESCE(ruHigherConcept.rank_taxon, '')
-);
-
-UPDATE cache_taxa_taxon_lists u
-SET family_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id, family_taxon=ruHigherConcept.rank_taxon
-FROM cache_taxa_taxon_lists cttl
--- Find the correct higher taxon data
-LEFT join rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=cttl.external_key AND ruHigherConcept.rank='Family'
-WHERE cttl.id=u.id
--- Only change the updated taxa
-AND cttl.external_key IN (SELECT DISTINCT child_external_key FROM rankupdate)
-AND (
-  COALESCE(cttl.family_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0)
-  OR COALESCE(cttl.family_taxon, '')<>COALESCE(ruHigherConcept.rank_taxon, '')
-);
-
-UPDATE cache_taxa_taxon_lists cttl
-SET taxon_rank_id=ru.taxon_rank_id, taxon_rank=ru.rank, taxon_rank_sort_order=ru.taxon_rank_sort_order
-FROM rankupdate ru
-WHERE ru.child_external_key=cttl.external_key
-AND ru.child_external_key=ru.rank_external_key
-AND (
-  COALESCE(cttl.taxon_rank_id, 0)<>COALESCE(ru.taxon_rank_id, 0)
-  OR COALESCE(cttl.taxon_rank, '')<>COALESCE(ru.rank, '')
-  OR COALESCE(cttl.taxon_rank_sort_order, 0)<>COALESCE(ru.taxon_rank_sort_order, 0)
-);
-
-UPDATE cache_taxon_searchterms cts
-SET taxon_rank_sort_order=ru.taxon_rank_sort_order
-FROM rankupdate ru
-WHERE ru.child_external_key=cts.external_key
-AND ru.child_external_key=ru.rank_external_key
-AND COALESCE(cts.taxon_rank_sort_order, 0)<>COALESCE(ru.taxon_rank_sort_order, 0);
-
-UPDATE cache_occurrences_functional co
-SET taxon_rank_sort_order=ru.taxon_rank_sort_order
-FROM rankupdate ru
-WHERE ru.child_external_key=co.taxa_taxon_list_external_key
-AND ru.child_external_key=ru.rank_external_key
-AND COALESCE(co.taxon_rank_sort_order, 0)<>COALESCE(ru.taxon_rank_sort_order, 0);
-
-UPDATE cache_occurrences_functional u
-SET family_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id
-FROM cache_occurrences_functional co
--- Ensure only changed taxon concepts are updated
-JOIN rankupdate ruThisConcept ON ruThisConcept.rank_external_key = co.external_key
--- Find the correct higher taxon data
-LEFT join rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=co.external_key AND ruHigherConcept.rank='Family'
-WHERE co.id=u.id
-AND COALESCE(co.family_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0);
-
-DROP TABLE rankupdate;"
+    UPDATE cache_occurrences_functional u
+    SET family_taxa_taxon_list_id=cttlf.id,
+      taxon_path=ctp.path
+    FROM cache_taxa_taxon_lists cttl
+    -- Ensure only changed taxon concepts are updated
+    JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
+    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON ctp.path @> ARRAY[cttlf.taxon_meaning_id] and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
+    WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
+    AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
+    OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(ctp.path, ARRAY[]::integer[]));",
+  "teardown" => "
+    DROP TABLE descendants;
+    DROP TABLE ttl_path;",
 );
 
 // --------------------------------------------------------------------------------------------------------------------------
@@ -487,6 +501,7 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
         ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       parent_id=cttl.parent_id,
       preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
+      taxon_rank_sort_order=cttl.taxon_rank_sort_order,
       marine_flag=cttl.marine_flag,
       external_key=cttl.external_key,
       authority=cttl.authority,
@@ -949,14 +964,7 @@ WHERE s.deleted=false
 AND cs.id IS NULL
 ";
 
-$config['samples']['insert']['functional_media'] = "
-UPDATE cache_samples_functional u
-SET media_count=(SELECT COUNT(sm.*)
-FROM sample_media sm WHERE sm.sample_id=u.id AND sm.deleted=false)
-FROM samples s
-#join_needs_update#
-WHERE s.id=u.id
-";
+$config['samples']['insert']['functional_media'] = $config['samples']['update']['functional_media'];
 
 $config['samples']['insert']['functional_sensitive'] = "
 UPDATE cache_samples_functional
@@ -1382,7 +1390,8 @@ SET sample_id=o.sample_id,
   licence_id=s.licence_id,
   import_guid=o.import_guid,
   confidential=o.confidential,
-  external_key=o.external_key
+  external_key=o.external_key,
+  taxon_path=ctp.path
 FROM occurrences o
 #join_needs_update#
 left join cache_occurrences_functional co on co.id=o.id
@@ -1391,6 +1400,7 @@ LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
 LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
     JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
@@ -1607,7 +1617,8 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             taxon_meaning_id, taxa_taxon_list_external_key, family_taxa_taxon_list_id,
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
-            training, zero_abundance, licence_id, import_guid, confidential, external_key)
+            training, zero_abundance, licence_id, import_guid, confidential, external_key,
+            taxon_path, blocked_sharing_tasks)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1629,7 +1640,23 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
     end,
     o.sensitivity_precision is not null, o.release_status, cttl.marine_flag,
     case when o.last_verification_check_date is null then null else dc.id is null end,
-    o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key
+    o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key,
+    ctp.path,
+    CASE WHEN u.allow_share_for_reporting
+      AND u.allow_share_for_peer_review AND u.allow_share_for_verification
+      AND u.allow_share_for_data_flow AND u.allow_share_for_moderation
+      AND u.allow_share_for_editing
+    THEN null
+    ELSE
+      ARRAY_REMOVE(ARRAY[
+        CASE WHEN u.allow_share_for_reporting=false THEN 'R' ELSE NULL END,
+        CASE WHEN u.allow_share_for_peer_review=false THEN 'P' ELSE NULL END,
+        CASE WHEN u.allow_share_for_verification=false THEN 'V' ELSE NULL END,
+        CASE WHEN u.allow_share_for_data_flow=false THEN 'D' ELSE NULL END,
+        CASE WHEN u.allow_share_for_moderation=false THEN 'M' ELSE NULL END,
+        CASE WHEN u.allow_share_for_editing=false THEN 'E' ELSE NULL END
+      ], NULL)
+    END
 FROM occurrences o
 #join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
@@ -1637,7 +1664,9 @@ JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
+JOIN users u ON u.id=o.created_by_id AND u.deleted=false
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
 LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
     JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
@@ -1654,14 +1683,7 @@ WHERE o.deleted=false
 AND co.id IS NULL
 ";
 
-$config['occurrences']['insert']['functional_media'] = "
-UPDATE cache_occurrences_functional u
-SET media_count=(SELECT COUNT(om.*)
-FROM occurrence_media om WHERE om.occurrence_id=u.id AND om.deleted=false)
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=u.id
-";
+$config['occurrences']['insert']['functional_media'] = $config['occurrences']['update']['functional_media'];
 
 $config['occurrences']['insert']['functional_sensitive'] = "
 UPDATE cache_samples_functional cs

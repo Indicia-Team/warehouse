@@ -11,11 +11,11 @@
   #order_by#
   </query>
   <field_sql>
-  o.survey_title as title, o.website_id, o.id as occurrence_id, o.date_start, o.date_end, o.date_type, o.taxon, 
-  o.public_entered_sref as entered_sref, o.location_name, oi.path, 
-  CASE o.record_status 
-    WHEN 'C' THEN 'Data Entry Complete' 
-    WHEN 'V' THEN 'Verified'
+  o.survey_title as title, o.website_id, o.id as occurrence_id, o.date_start, o.date_end, o.date_type, o.taxon,
+  o.public_entered_sref as entered_sref, o.location_name, oi.path,
+  CASE o.record_status
+    WHEN 'C' THEN 'Unconfirmed - not reviewed'
+    WHEN 'V' THEN 'Accepted'
     WHEN 'R' THEN 'Rejected'
     WHEN 'I' THEN 'In Progress'
     WHEN 'T' THEN 'Test'

@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -26,7 +26,7 @@
  *
  * @package	Core
  * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * @link	https://github.com/indicia-team/warehouse/wiki/DataModel
  */
 class Taxon_designation_Model extends ORM {
 
@@ -34,7 +34,7 @@ class Taxon_designation_Model extends ORM {
       'termlist_term'=>'category',
       'created_by'=>'user',
       'updated_by'=>'user');
-      
+
   protected $has_and_belongs_to_many = array('taxa');
 
   public function validate(Validation $array, $save = FALSE) {

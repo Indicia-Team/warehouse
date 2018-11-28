@@ -17,7 +17,7 @@
  * @subpackage Cache builder
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -38,7 +38,7 @@ function summary_builder_scheduled_task($last_run_date, $db) {
   $location = isset($_GET['location_id']) && $_GET['location_id'] != '' ? $_GET['location_id'] : false;
   $taxa_taxon_list_id = isset($_GET['taxa_taxon_list_id']) && $_GET['taxa_taxon_list_id'] != '' ? $_GET['taxa_taxon_list_id'] : false;
   $only = isset($_GET['only']) && $_GET['only'] != '' ? $_GET['only'] : false;
-  
+
   if($verbose) {
 	echo 'Summary Builder module: Optional URL Parameters<br/><ul>';
 	echo '<li><b>help</b> : '.(!isset($_GET['help']) ? 'absent' : 'present').'</li>';
@@ -51,7 +51,7 @@ function summary_builder_scheduled_task($last_run_date, $db) {
 	echo '<li><b>force_summary_missing_check</b> : '.($missing_check === false ? 'absent (missing checks as defined in summary definition for individual survey)' : ($missing_check === true ? 'present (missing checks forced on all surveys)' : $missing_check.' (Survey ID, missing checks forced on this survey, for all other surveys missing checks as defined in summary definition)')).'</li>';
 	echo '<li><b>only</b> : '.($only === false ? 'absent' : $only).'</li></ul><br/>';
   }
-  
+
   if(isset($_GET['help'])) {
 	echo 'Summary Builder module task help:<br/>Optional URL Parameters<br/><ul>';
 	echo '<li><b>&amp;help</b> : displays this message detailing the available URL parameters when running the Summary Builder module scheduled task. No other processing takes place.<br/>';

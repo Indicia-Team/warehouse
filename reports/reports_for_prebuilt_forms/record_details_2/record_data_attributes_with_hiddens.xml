@@ -28,7 +28,7 @@
               WHEN 'D' THEN av.date_start_value::varchar
               WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
               ELSE NULL::text
-          END AS value,
+          END || CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN COALESCE(' - ' || av.upper_value::text, '') ELSE '' END AS value,
           CASE a.data_type
               WHEN 'T' THEN av.text_value
               WHEN 'L' THEN av.int_value::varchar
@@ -38,7 +38,8 @@
               WHEN 'D' THEN av.date_start_value::varchar
               WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
               ELSE NULL::text
-          END AS raw_value
+          END AS raw_value,
+          CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN av.upper_value ELSE null END AS upper_value
   from occurrences o
   join occurrence_attribute_values av on av.occurrence_id=o.id and av.deleted=false
   join occurrence_attributes a on a.id=av.occurrence_attribute_id and a.deleted=false
@@ -73,7 +74,7 @@
             WHEN 'D' THEN av.date_start_value::varchar
             WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
             ELSE NULL::text
-        END AS value,
+        END || CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN COALESCE(' - ' || av.upper_value::text, '') ELSE '' END AS value,
         CASE a.data_type
             WHEN 'T' THEN av.text_value
             WHEN 'L' THEN av.int_value::varchar
@@ -83,7 +84,8 @@
             WHEN 'D' THEN av.date_start_value::varchar
             WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
             ELSE NULL::text
-        END AS raw_value
+        END AS raw_value,
+        CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN av.upper_value ELSE null END AS upper_value
   from occurrences o
   join samples s on s.id=o.sample_id and s.deleted=false
   join sample_attribute_values av on av.sample_id=s.parent_id and av.deleted=false
@@ -120,7 +122,7 @@
             WHEN 'D' THEN av.date_start_value::varchar
             WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
             ELSE NULL::text
-        END AS value,
+        END || CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN COALESCE(' - ' || av.upper_value::text, '') ELSE '' END AS value,
         CASE a.data_type
             WHEN 'T' THEN av.text_value
             WHEN 'L' THEN av.int_value::varchar
@@ -130,7 +132,8 @@
             WHEN 'D' THEN av.date_start_value::varchar
             WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
             ELSE NULL::text
-        END AS raw_value
+        END AS raw_value,
+        CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN av.upper_value ELSE null END AS upper_value
   from occurrences o
   join sample_attribute_values av on av.sample_id=o.sample_id and av.deleted=false
   join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false

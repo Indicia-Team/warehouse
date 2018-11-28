@@ -14,35 +14,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Websites table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Websites_Website_Agreement_Model extends ORM
-{
-  
-  protected $belongs_to = array(
+class Websites_Website_Agreement_Model extends ORM {
+
+  protected $belongs_to = [
     'website',
     'website_agreement',
-    'created_by'=>'user',
-    'updated_by'=>'user'
-  );
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  ];
 
   /**
    * Validate and save the data.
    */
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('website_id', 'required');
     $array->add_rules('website_agreement_id', 'required');
@@ -58,26 +52,29 @@ class Websites_Website_Agreement_Model extends ORM
     $array->add_rules('receive_for_moderation', 'required');
     $array->add_rules('provide_for_editing', 'required');
     $array->add_rules('receive_for_editing', 'required');
-    // Explicitly add those fields for which we don't do validation
-    $this->unvalidatedFields = array(
-      'deleted'
-    );
+    // Explicitly add those fields for which we don't do validation.
+    $this->unvalidatedFields = [
+      'deleted',
+    ];
 
     return parent::validate($array, $save);
   }
-  
-  public function caption()
-  {
+
+  public function caption() {
     if ($this->id) {
-      return 'agreement for '.$this->website->title.' with '.$this->website_agreement->title;
-    } else {
+      return 'agreement for ' . $this->website->title . ' with ' . $this->website_agreement->title;
+    }
+    else {
       return $this->getNewItemCaption();
     }
   }
-  
+
   /**
-   * Override the save method to additionally refresh index_websites_website_agreement with the 
-   * latest information about website agreements.
+   * Refresh index_websites_website_agreementse on save.
+   *
+   * Override the save method to additionally refresh
+   * index_websites_website_agreement with the latest information about website
+   * agreements.
    */
   public function save() {
     $v = parent::save();

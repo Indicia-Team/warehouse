@@ -91,7 +91,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
     ));
     // Code currently assumes only taxa_taxon_list_external_key possible in the key options.
     $params = $readAuth;
-    if ($listId = Kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE)) {
+    if ($listId = warehouse::getMasterTaxonListId()) {
       $params += array('taxon_list_id' => $listId);
     }
     echo data_entry_helper::species_autocomplete(array(

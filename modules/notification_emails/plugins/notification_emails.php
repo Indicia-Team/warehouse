@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Notification emails
- * @subpackage Plugins
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -118,13 +116,11 @@ FROM notifications n
 JOIN users u ON u.id = n.user_id AND u.deleted=false
 JOIN people p ON p.id = u.person_id AND p.deleted=false
 LEFT JOIN cache_occurrences_functional cof on cof.id=n.linked_id
-LEFT JOIN taxa_taxon_lists ttl on ttl.id = cof.taxa_taxon_list_id and ttl.deleted=false
-LEFT JOIN taxa t on t.id = ttl.taxon_id and t.deleted=false
 --This part just deals with the normal situation where we include a notification email if the user has a setting that
 -- matches the current run or has its escalate_email_priority set (so we always send immediately).
 LEFT JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type
   AND unf.user_id = n.user_id
-  AND (unf.notification_frequency in ($frequencyToRunString) OR escalate_email_priority IS NOT NULL)
+  AND (unf.notification_frequency in ($frequencyToRunString) OR n.escalate_email_priority IS NOT NULL)
   AND unf.deleted='f'
 LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency
 
@@ -137,7 +133,7 @@ SQL;
 LEFT JOIN workflow_metadata wm ON 'IH' IN ($frequencyToRunString)
   AND lower(wm.entity)='occurrence'
   AND lower(wm.key)='taxa_taxon_list_external_key'
-  AND (wm.key_value=t.external_key AND t.external_key IS NOT NULL)
+  AND (wm.key_value=cof.taxa_taxon_list_external_key AND cof.taxa_taxon_list_external_key IS NOT NULL)
   AND wm.verifier_notifications_immediate=true
   AND wm.deleted=false
 LEFT JOIN user_email_notification_settings unfMetaDataLinked ON unfMetaDataLinked.notification_source_type=n.source_type
@@ -148,8 +144,12 @@ LEFT JOIN user_email_notification_frequency_last_runs unflrMetaDataLinked ON unf
 
 SQL;
   }
+  $idFilterQuery = $db->query(
+    'SELECT MIN(last_max_notification_id) as last_id FROM user_email_notification_frequency_last_runs'
+  )->result_array(FALSE);
+  $newIdFilter = $idFilterQuery[0]['last_id'] === NULL ? '' : 'AND n.id>' . $idFilterQuery[0]['last_id'];
   $notificationsToSendEmailsForSql .= <<<SQL
-WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f'
+WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f' $newIdFilter
 --Send a notification if the user has a notification setting and notification that matches the current run
 --and the notification hasn't already been set (or nothing has ever been sent)
 AND (
@@ -517,6 +517,7 @@ function send_out_user_email(
   $swift = email::connect();
   // Use a transaction to allow us to prevent the email sending and marking of
   // notification as done getting out of step.
+  $db->begin();
   try {
     // Get the user's email address from the people table.
     $userResults = $db

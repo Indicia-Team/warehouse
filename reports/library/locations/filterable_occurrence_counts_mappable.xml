@@ -1,30 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Record counts by location using standard filter params" 
+<report title="Record counts by location using standard filter params"
         description="Lists locations with mappable boundary output and the number of records within them. Requires a public and indexed location type.">
   <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
-    FROM locations l1 
+    FROM locations l1
     JOIN (
-    SELECT l.id, count(distinct o.id) as count
-    FROM locations l
-    LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
-    JOIN (index_locations_samples ils
-      JOIN samples s on s.id=ils.sample_id
-      JOIN surveys su on su.id=s.survey_id
-      JOIN cache_occurrences_functional o ON o.website_id=su.website_id AND o.survey_id=su.id AND o.sample_id=ils.sample_id
+      SELECT l.id, count(distinct o.id) as count
+      FROM locations l
+      LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
+      JOIN cache_occurrences_functional o ON o.location_ids @> ARRAY[l.id] AND o.zero_abundance='f'
       #agreements_join#
       #joins#
-      AND #sharing_filter# 
-      AND o.zero_abundance='f'
+      WHERE l.deleted=false
+      AND l.location_type_id=#location_type_id#
+      AND (l.public=true OR lw.id IS NOT NULL)
+      AND (l.code NOT LIKE ('%+%') OR l.code IS NULL)
+      AND #sharing_filter#
       #filters#
       #idlist#
-    ) ON ils.location_id=l.id
-    WHERE l.deleted=false
-    AND l.location_type_id=#location_type_id#
-    AND (l.public=true or lw.id IS NOT NULL)
-    AND (l.code NOT LIKE ('%+%') OR l.code IS NULL)
-    GROUP BY l.id, l.name
+      GROUP BY l.id, l.name
     ) as l2 ON l2.id=l1.id
   </query>
   <params>
@@ -45,4 +40,4 @@
         <column name="sw" visible="false" feature_style="strokeWidth" sql="2" />
         <column name="fs" visible="false" feature_style="fontSize" sql="case when count>1000 then #baseFontSize# else #baseFontSize#+1 end" />
   </columns>
-</report>  
+</report>

@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Helpers
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
@@ -46,6 +44,7 @@ class report_standard_params_occurrences {
       ['survey_id', 'survey_list'],
       ['indexed_location_id', 'indexed_location_list'],
       ['input_form', 'input_form_list', TRUE],
+      ['higher_taxa_taxon_list_list', 'taxa_taxon_list_list'],
     ];
   }
 
@@ -200,22 +199,15 @@ class report_standard_params_occurrences {
       'indexed_location_list' => [
         'datatype' => 'integer[]',
         'display' => 'Location IDs (indexed)',
-        'custom' => 'unique_location_index',
         'description' => 'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
-        'joins' => [
-          // Join will be skipped if using a uniquely indexed location type.
-          [
-            'value' => '',
-            'operator' => '',
-            'sql' => "JOIN index_locations_samples #alias:ilsfilt# on #alias:ilsfilt#.sample_id=o.sample_id and #alias:ilsfilt#.location_id #indexed_location_list_op# (#indexed_location_list#)",
-          ],
-        ],
         'wheres' => [
-          // Where will be used only if using a uniquely indexed location type.
           [
-            'value' => '',
-            'operator' => '',
-            'sql' => "o.location_id_#typealias# #indexed_location_list_op# (#indexed_location_list#)",
+            'param_op' => 'in',
+            'sql' => "o.location_ids @> ARRAY[#indexed_location_list#]",
+          ],
+          [
+            'param_op' => 'not in',
+            'sql' => "(NOT (o.location_ids @> ARRAY[#indexed_location_list#]) OR o.location_ids IS NULL)",
           ],
         ],
       ],
@@ -275,7 +267,9 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "('#input_date_from#'='Click here' OR o.created_on >= '#input_date_from#'::timestamp)",
+            // Use filter on both created_on and updated_on, as the latter is
+            // indexed.
+            'sql' => "o.created_on >= '#input_date_from#'::timestamp AND o.updated_on >= '#input_date_from#'::timestamp",
           ],
         ],
       ],
@@ -300,7 +294,9 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.created_on>now()-'#input_date_age#'::interval",
+            // Use filter on both created_on and updated_on, as the latter is
+            // indexed.
+            'sql' => "o.created_on>now()-'#input_date_age#'::interval AND o.updated_on>now()-'#input_date_age#'::interval",
           ],
         ],
       ],
@@ -469,15 +465,14 @@ class report_standard_params_occurrences {
             'value' => 'T',
             'operator' => 'equal',
             'sql' =>
-            "LEFT JOIN index_locations_samples #alias:ilstrust# on #alias:ilstrust#.sample_id=o.sample_id
-  JOIN user_trusts #alias:ut# on (#alias:ut#.survey_id=o.survey_id
+            "JOIN user_trusts #alias:ut# on (#alias:ut#.survey_id=o.survey_id
       OR #alias:ut#.taxon_group_id=o.taxon_group_id
-      OR (#alias:ut#.location_id=#alias:ilstrust#.location_id or #alias:ut#.location_id is null)
+      OR (o.location_ids @> ARRAY[#alias:ut#.location_id] OR #alias:ut#.location_id IS NULL)
     )
     AND #alias:ut#.deleted=false
     AND ((o.survey_id = #alias:ut#.survey_id) or (#alias:ut#.survey_id is null and (#alias:ut#.taxon_group_id is not null or #alias:ut#.location_id is not null)))
     AND ((o.taxon_group_id = #alias:ut#.taxon_group_id) or (#alias:ut#.taxon_group_id is null and (#alias:ut#.survey_id is not null or #alias:ut#.location_id is not null)))
-    AND ((#alias:ilstrust#.location_id = #alias:ut#.location_id) OR (#alias:ut#.location_id IS NULL and (#alias:ut#.survey_id is not null or #alias:ut#.taxon_group_id is not null)))
+    AND ((o.location_ids @> ARRAY[#alias:ut#.location_id]) OR (#alias:ut#.location_id IS NULL and (#alias:ut#.survey_id is not null or #alias:ut#.taxon_group_id is not null)))
     AND o.created_by_id = #alias:ut#.user_id",
           ],
         ],
@@ -715,6 +710,18 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'import_guid_list' => [
+        'datatype' => 'string[]',
+        'display' => "Import  GUIDs",
+        'description' => 'Comma separated list of GUIDs of occurrence imports to limit to.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "o.import_guid IN (#import_guid_list#)",
+          ],
+        ],
+      ],
       'taxon_group_list' => [
         'datatype' => 'integer[]',
         'display' => "Taxon Group IDs",
@@ -729,50 +736,19 @@ class report_standard_params_occurrences {
       ],
       'taxa_taxon_list_list' => [
         'datatype' => 'integer[]',
-        'display' => "Taxa taxon list IDs",
-        'description' => 'Comma separated list of preferred IDs',
-        'wheres' => [
-          [
-            'value' => '',
-            'operator' => '',
-            'sql' => "o.taxa_taxon_list_external_key in (#taxa_taxon_list_list#)",
-          ],
-        ],
-        // Faster than embedding this query in the report.
-        'preprocess' =>
-          "with recursive q as (
-    select preferred_taxa_taxon_list_id, external_key
-    from cache_taxa_taxon_lists t
-    where id in (#taxa_taxon_list_list#)
-    union all
-    select tc.preferred_taxa_taxon_list_id, tc.external_key
-    from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id
-  ) select '''' || array_to_string(array_agg(distinct external_key::varchar), ''',''') || '''' from q",
-      ],
-      // Version of the above optimised for searching for higher taxa.
-      'higher_taxa_taxon_list_list' => [
-        'datatype' => 'integer[]',
         'display' => "Higher taxa taxon list IDs",
-        'description' => 'Comma separated list of preferred IDs. Optimised for searches at family level or higher',
+        'description' => 'Comma separated list of preferred IDs.',
         'wheres' => [
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.family_taxa_taxon_list_id in (#higher_taxa_taxon_list_list#)",
+            'sql' => "o.taxon_path && ARRAY[#taxa_taxon_list_list#]",
           ],
         ],
-        // Faster than embedding this query in the report.
-        'preprocess' =>
-          "with recursive q as (
-    select preferred_taxa_taxon_list_id, family_taxa_taxon_list_id
-    from cache_taxa_taxon_lists t
-    where id in (#higher_taxa_taxon_list_list#)
-    union all
-    select tc.preferred_taxa_taxon_list_id, tc.family_taxa_taxon_list_id
-    from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id and tc.taxon_rank_sort_order<=180
-  ) select array_to_string(array_agg(distinct family_taxa_taxon_list_id::varchar), ',') from q",
+        'preprocess' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
+          from cache_taxa_taxon_lists l
+          join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
+          where l.id in (#taxa_taxon_list_list#)",
       ],
       'taxon_meaning_list' => [
         'datatype' => 'integer[]',
@@ -782,20 +758,28 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.taxon_meaning_id in (#taxon_meaning_list#)",
+            'sql' => "(o.taxon_path && ARRAY[#taxon_meaning_list#] OR o.taxon_meaning_id in (#taxon_meaning_list-unprocessed#))",
           ],
         ],
-        // Faster than embedding this query in the report.
-        'preprocess' =>
-          "with recursive q as (
-    select preferred_taxa_taxon_list_id, taxon_meaning_id
-    from cache_taxa_taxon_lists t
-    where taxon_meaning_id in (#taxon_meaning_list#)
-    union all
-    select tc.preferred_taxa_taxon_list_id, tc.taxon_meaning_id
-    from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id
-  ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q",
+        'preprocess' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
+          from cache_taxa_taxon_lists l
+          join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
+          where l.taxon_meaning_id in (#taxon_meaning_list#)",
+      ],
+      'taxa_taxon_list_external_key_list' => [
+        'datatype' => 'string[]',
+        'display' => "Taxon external keys",
+        'description' => 'Comma separated list of taxon external keys',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "o.taxon_path && ARRAY[#taxa_taxon_list_external_key_list#]",
+          ],
+        ],
+        'preprocess' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
+          from cache_taxa_taxon_lists m
+          where m.taxon_list_id=#master_list_id# and m.external_key in (#taxa_taxon_list_external_key_list#)",
       ],
       'taxon_designation_list' => [
         'datatype' => 'integer[]',
@@ -864,7 +848,9 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "('#input_date_from#'='Click here' OR o.cache_created_on >= '#input_date_from#'::timestamp)",
+            // Use filter on both created_on and updated_on, as the latter is
+            // indexed.
+            'sql' => "o.cache_created_on >= '#input_date_from#'::timestamp AND o.cache_updated_on >= '#input_date_from#'::timestamp",
           ],
         ],
       ],
@@ -884,7 +870,9 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.cache_created_on>now()-'#input_date_age#'::interval",
+            // Use filter on both created_on and updated_on, as the latter is
+            // indexed.
+            'sql' => "o.cache_created_on>now()-'#input_date_age#'::interval AND o.cache_updated_on>now()-'#input_date_age#'::interval",
           ],
         ],
       ],

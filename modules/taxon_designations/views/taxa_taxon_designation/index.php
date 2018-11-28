@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Taxon designations index view.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Taxon Designations
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
 echo $grid;
 ?>
-<form action="<?php echo url::site()."taxa_taxon_designation/create/$taxa_taxon_list_id"; ?>" method="post">
-<input type="submit" value="New designation" class="ui-corner-all ui-state-default button" />
+<form action="<?php echo url::site() . "taxa_taxon_designation/create/$taxa_taxon_list_id"; ?>" method="post">
+  <input type="submit" value="New designation" class="btn btn-primary" />
 </form>

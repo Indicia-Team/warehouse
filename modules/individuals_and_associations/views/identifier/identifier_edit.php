@@ -17,7 +17,7 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
@@ -28,15 +28,15 @@ if (isset($_POST))
 <?php ///echo '$values: '.print_r($values, true).'<br />'; ?>
 <?php //echo '$other_data: '.print_r($other_data, true); ?>
 <?php //echo 'initial taxa: '.print_r(html::initial_value($values, 'joinsTo:taxa_taxon_list:id'), true); ?>
-<?php  
-echo $metadata; 
+<?php
+echo $metadata;
 if (isset($values['identifier:id'])) : ?>
   <input type="hidden" name="identifier:id" value="<?php echo html::initial_value($values, 'identifier:id'); ?>" />
 <?php endif; ?>
 <input type="hidden" name="website_id" value="<?php echo html::initial_value($values, 'website_id'); ?>" />
 <fieldset>
 <legend>Identifier details</legend>
-<?php 
+<?php
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 echo data_entry_helper::select(array(
   'label' => 'Issue Authority',
@@ -153,12 +153,12 @@ echo data_entry_helper::textarea(array(
         'default' => $attr['value']
       ));
   endswitch;
-	
+
 endforeach;
  ?>
 </ol>
 </fieldset>
-<?php 
+<?php
 endif;
 echo html::form_buttons(html::initial_value($values, 'identifier:id')!=null, false, false);
 data_entry_helper::$dumped_resources[] = 'jquery';

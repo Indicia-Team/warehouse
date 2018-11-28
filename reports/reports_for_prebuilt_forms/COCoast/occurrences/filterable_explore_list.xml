@@ -1,7 +1,6 @@
 <report
     title="Explore occurrences (standard filters)"
     description="A list of occurrences designed for tabular output."
-    featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*">

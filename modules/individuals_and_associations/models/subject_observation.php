@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -31,9 +31,9 @@
 class Subject_Observation_Model extends ORM_Tree
 {
   protected $ORM_Tree_children = 'subject_observations';
-  
+
   public $search_field='comment';
-  
+
   protected $belongs_to=array(
     'sample',
     'website',
@@ -60,7 +60,7 @@ class Subject_Observation_Model extends ORM_Tree
   public $include_public_attributes = true;  // TODO, do we want this?
   protected $attrs_submission_name='sjoAttributes';
   protected $attrs_field_prefix='sjoAttr';
-  
+
   public function validate(Validation $array, $save = false) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
@@ -80,7 +80,7 @@ class Subject_Observation_Model extends ORM_Tree
   }
 
   /**
-   * Returns the species this is an observation of to act as the caption. 
+   * Returns the species this is an observation of to act as the caption.
    */
   public function caption()
   {
@@ -90,7 +90,7 @@ class Subject_Observation_Model extends ORM_Tree
         ->join('list_occurrences as o', array('o.id'=>'oso.occurrence_id'))
         ->where(array('oso.deleted'=>'f', 'oso.subject_observation_id'=>$this->id))
         ->get()->result();
-    foreach($result as $row) 
+    foreach($result as $row)
       $species[] = $row->taxon;
     return 'Observation of '.implode(',',$species);
   }
@@ -99,7 +99,7 @@ class Subject_Observation_Model extends ORM_Tree
   * Before submission, TODO perhaps?
   */
   protected function preSubmit()
-  { 
+  {
     kohana::log('debug', 'In Subject_observation_Model::preSubmit() $this->submission is '.print_r($this->submission, true));
     // if sample_id not set in occurrence submissions, then set it now
     if (array_key_exists('subModels', $this->submission)) {
@@ -119,7 +119,7 @@ class Subject_Observation_Model extends ORM_Tree
               && array_key_exists('fields', $this->submission)
               && array_key_exists('sample_id', $this->submission['fields'])
               && array_key_exists('value', $this->submission['fields']['sample_id'])) {
-              $superModel['model']['fields']['sample_id']['value'] = 
+              $superModel['model']['fields']['sample_id']['value'] =
                 $this->submission['fields']['sample_id']['value'];
             }
           }
@@ -128,26 +128,26 @@ class Subject_Observation_Model extends ORM_Tree
     }
     return parent::presubmit();
   }
-  
+
   /**
   * After submission, TODO perhaps?
   */
   protected function postSubmit($isInsert)
-  { 
+  {
     kohana::log('debug', 'In Subject_observation_Model::postSubmit() $this->submission is '.print_r($this->submission, true));
     return parent::postSubmit($isInsert);
   }
-  
+
   /**
    * Return the submission structure, which includes defining the occurrences table
    * is a sub-model.
-   * 
+   *
    * @return array Submission structure for a subject_observation entry.
    */
   public function get_submission_structure() {
     $r = parent::get_submission_structure();
     $r['joinsTo'] = array('occurrences');
     return $r;
-  } 
-  
+  }
+
 }

@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the termlists_term_attribute_value table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Termlists_term_attribute_value_Model extends Attribute_Value_ORM {
   public $search_field='text_value';
@@ -42,7 +36,7 @@ class Termlists_term_attribute_value_Model extends Attribute_Value_ORM {
    * Override the validate method to call the standard attribute validation code.
    * @param Validation $array Validation object.
    * @param boolean $save Should the data be saved?
-   * @return booleab 
+   * @return booleab
    */
   public function validate(Validation $array, $save = FALSE) {
     self::attribute_validation($array, 'termlists_term');

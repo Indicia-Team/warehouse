@@ -17,12 +17,20 @@ $lang = [
     'required' => 'The spatial reference must be supplied.',
     'sref' => 'The spatial reference is not recognised.',
   ],
+  'code' => [
+    'length' => 'The code must be a maximum of 20 characters.',
+  ],
   'comment' => [
     'required' => 'Please provide a comment.',
   ],
   'count' => [
     'required' => 'Count cannot be blank.',
     'digit' => 'This must be a valid whole number.',
+  ],
+  'csv_upload' => [
+    'size' => 'The uploaded file is too large.',
+    'required' => 'Missing upload file.',
+    'default' => 'Invalid file uploaded',
   ],
   'data_type' => [
     'required' => 'The data type must be supplied.',
@@ -233,5 +241,29 @@ $lang = [
   ],
   'to_occurrence_id' => [
     'required' => 'The association to_occurrence_id must be supplied.',
+  ],
+  'survey_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
+  'sample_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
+  'occurrence_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
+  'location_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
+  'taxa_taxon_list_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
+  'person_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
   ],
 ];

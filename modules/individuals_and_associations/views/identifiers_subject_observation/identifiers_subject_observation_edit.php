@@ -18,7 +18,7 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 $id = html::initial_value($values, 'identifiers_subject_observation:id');
@@ -27,9 +27,9 @@ $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohan
 ?>
 <p>This page allows you to specify the details of an identifier for a subject observation.</p>
 <form class="cmxform" action="<?php echo url::site().'identifiers_subject_observation/save'; ?>" method="post" id="entry-form">
-<?php 
+<?php
 data_entry_helper::enable_validation('entry-form');
-echo $metadata; 
+echo $metadata;
 ?>
 <fieldset>
 <input type="hidden" name="identifiers_subject_observation:id" value="<?php echo $id ?>" />
@@ -61,7 +61,7 @@ echo data_entry_helper::select(array(
   'default'=>html::initial_value($values, 'identifiers_subject_observation:verified_status'),
   'validation'=>'required'
 ));
-  
+
 ?>
 </fieldset>
 
@@ -106,16 +106,16 @@ echo data_entry_helper::select(array(
         'default' => $attr['value']
       ));
   endswitch;
-	
+
 endforeach;
  ?>
  </ol>
  </fieldset>
-<?php 
+<?php
 endif;
 ?>
-<?php 
-echo html::form_buttons($id!=null, false, false); 
+<?php
+echo html::form_buttons($id!=null, false, false);
 data_entry_helper::link_default_stylesheet();
 // No need to re-link to jQuery
 data_entry_helper::$dumped_resources[] = 'jquery';

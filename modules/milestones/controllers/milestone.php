@@ -17,7 +17,7 @@
  * @subpackage Controllers
  * @author    Indicia Team
  * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link     http://code.google.com/p/indicia/
+ * @link     https://github.com/indicia-team/warehouse/
  */
 
 /*
@@ -35,7 +35,7 @@ class Milestone_Controller extends Gridview_Base_Controller {
     );
     $this->set_website_access('admin');
   }
-  
+
   public function index($filter = null) {
     if ($this->uri->total_arguments()>0) {
       $this->website_id = $this->uri->argument(1);
@@ -43,7 +43,7 @@ class Milestone_Controller extends Gridview_Base_Controller {
     }
     parent::index();
   }
- 
+
   /*
    * Define what happens when the user clicks to edit a milestone as we need to give the page the filter_id from the grid
    * view as a $_GET so it knows which filter to display
@@ -56,7 +56,7 @@ class Milestone_Controller extends Gridview_Base_Controller {
       ),
     );
   }
-  
+
   /**
    *  Setup the default values to use when loading this controller to edit a new page.
    */
@@ -68,7 +68,7 @@ class Milestone_Controller extends Gridview_Base_Controller {
     }
     return $r;
   }
-  
+
   /**
    * Override the default return page behaviour so that after saving a milestone you
    * are returned to the list of milestones on the sub-tab of the website.
@@ -77,12 +77,12 @@ class Milestone_Controller extends Gridview_Base_Controller {
     if (array_key_exists('website_id', $_POST)) {
       //just return to the website page
       return "website/edit/".$_POST['website_id']."?tab=Milestones";
-    } elseif (array_key_exists('website_id', $_GET)) {    
+    } elseif (array_key_exists('website_id', $_GET)) {
       return "website/edit/".$_GET['website_id']."?tab=Milestones";
     } else {
       // last resort if we don't know the list, just show the whole lot of milestones
       return $this->model->object_name;
-      
+
     }
   }
 }
