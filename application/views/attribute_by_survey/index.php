@@ -206,7 +206,7 @@ HTML;
     <label for="new-block">Block name:</label>
     <input type="text" name="new-block" id="new-block" class="form-control" />
   </div>
-  <input type="submit" value="Create new block" id="submit-new-block" class="btn btn-default line-up" />
+  <input type="submit" value="Create new block" id="submit-new-block" class="btn btn-default" />
 </form>
 <form id="actions-add-existing" class="form-inline">
   <div class="form-group">

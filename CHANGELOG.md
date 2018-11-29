@@ -6,11 +6,15 @@ Please see [upgrading to version 2.0.0](UPGRADE-v2.md).
 
 * Warehouse client helper and media code libraries updated to use jQuery 3.2.1
   and jQuery UI 1.12.
-* Overhaul the warehouse UI with a new Bootstrap 3 based theme and more logical menus.
+* Overhaul the warehouse UI with a new Bootstrap 3 based theme and more logical menu
+  structure.
+* Warehouse home page now has additional help for getting started and diagnosing
+  problems.
 
 ## Back-end changes
 
 * Support for PostgreSQL version 10.
+* Support for PHP 7.2.
 * Support for prioritised load aware background task scheduling via a work queue module.
 
 ## Database schema changes
@@ -34,11 +38,13 @@ Please see [upgrading to version 2.0.0](UPGRADE-v2.md).
   the new method of accessing attribute values. This has the potential to improve
   performance significantly for reports which include many different attribute values in
   the output.
-
+* New cache_taxon_paths which provides a hierarchical link between taxa and all their
+  taxonomic parents.
+* Cache_occurrences_functional now has a taxon_path field which links to the parent taxa
+  for the record, as defined by the main taxon list configured on the warehouse.
 * Reports no longer need to join via users to check the sharing/privacy settings of a
   user. Any sharing task codes which are not available for the user are listed in
   cache_*_functional.blocked_sharing_tasks.
-
 * Support for dynamic attributes, i.e custom sample or occurrence attributes which are
   linked to a taxon. They can then be included on a recording form only when entering a
   taxon that is, or is a descendant of, the linked taxon.

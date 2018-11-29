@@ -858,11 +858,11 @@ SET website_title=w.title,
       WHEN 'F'::bpchar THEN v_sref_precision.float_value
       ELSE NULL::double precision
   END,
-  attr_sample_method=COALESCE(t_sample_method_id.term, CASE a_sample_method.data_type
+  attr_sample_method=COALESCE(CASE a_sample_method.data_type
       WHEN 'T'::bpchar THEN v_sample_method.text_value
       WHEN 'L'::bpchar THEN t_sample_method.term
       ELSE NULL::text
-  END),
+  END, t_sample_method_id.term),
   attr_linked_location_id=v_linked_location_id.int_value
 FROM samples s
 #join_needs_update#
