@@ -1,5 +1,5 @@
 -- #slow script#
-UPDATE cache_samples_functional u
+UPDATE cache_samples_nonfunctional u
 SET attr_sample_method=COALESCE(CASE a_sample_method.data_type
       WHEN 'T'::bpchar THEN v_sample_method.text_value
       WHEN 'L'::bpchar THEN t_sample_method.term
