@@ -140,19 +140,8 @@ MSG;
     if ($userstatus and $personstatus) {
       $user->save();
       $person->save();
-      // We need different paths for core users and web site users.
-      if (is_null($user->core_role_id)) {
-        // Just return a success confirmation, can't log them in as not a core
-        // user.
-        $this->template->title = 'Password reset successfully';
-        $this->template->content = new View('login/login_message');
-        $this->template->content->message = 'Your indicia password has been reset and you can now use the new password to <a href="' . url::site() . '/login">log in</a>.<br />';
-      }
-      else {
-        // With the password updated, login and jump to the home page.
-        $this->auth->login($user->id, $password);
-        url::redirect(arr::remove('requested_page', $_SESSION));
-      }
+      $this->session->set_flash('flash_info', 'Your password has been changed.');
+      url::redirect(arr::remove('requested_page', $_SESSION));
     }
     else {
       // Because this does not use the standard submit code we need to manually
