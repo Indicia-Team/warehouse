@@ -54,11 +54,11 @@ class View extends View_Core {
           // A plugin page.
           $path = url::site() . "$controller$args";
         }
-        $safe = preg_replace('/[^a-z]/', '_', strtolower($tab));
-        $tabLinks[] = "<li id=\"tab-$safe\"><a href=\"$path\" title=\"$tab\"><span>$tab</span></a></li>";
+        $safe = $this->tabNameToId($tab);
+        $tabLinks[] = "<li id=\"$safe-tab\"><a href=\"$path\" title=\"$tab\"><span>$tab</span></a></li>";
       }
       $tabsLi = implode("\n    ", $tabLinks);
-      $selectedTab = empty($_GET['tab']) ? '' : $_GET['tab'];
+      $selectedTab = empty($_GET['tab']) ? '' : $this->tabNameToId($_GET['tab']);
       $output = <<<HTML
 <div id="tabs">
   <ul>
@@ -70,14 +70,26 @@ class View extends View_Core {
   jQuery(document).ready(function($) {
     var tabs = $('#tabs').tabs();
     if ('$selectedTab') {
-      var tabIndex = $('#tab-$selectedTab').index();
-      tabs.tabs('option', 'active', tabIndex);
+      indiciaFns.activeTab(tabs, '$selectedTab');
     }
   });
 </script>
 HTML;
     }
     return $output;
+  }
+
+  /**
+   * Convert a tab title to a safe ID.
+   *
+   * @param string $tab
+   *   Tab title.
+   *
+   * @return string
+   *   Safe ID, lower case with non-alpha characters replaced by _.
+   */
+  private function tabNameToId($tab) {
+    return preg_replace('/[^a-z]/', '_', strtolower($tab));
   }
 
   /**
