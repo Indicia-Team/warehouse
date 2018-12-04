@@ -504,18 +504,18 @@ class Import_Controller extends Service_Base_Controller {
                 preg_match("/^$associatedRecordPrefix:fk_taxa_taxon_list/", $assocField));
           }
         }
+        // Clear the model, so nothing else from the previous row carries over.
+        $model->clear();
+        // If a possible previous record, attempt to find the relevant IDs.
+        if (isset($metadata['mappings']['lookupSelect' . $_GET['model']]) && $metadata['mappings']['lookupSelect' . $_GET['model']] !== '') {
+          self::mergeExistingRecordIDs($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, "", $metadata, $model, $saveArray);
+        }
         // Check if we can use a existing data relationship to workmout if this
         // is a new or old record. If posting a supermodel, are the details of
         // the supermodel the same as for the previous CSV row? If so, we can
         // link to that record rather than create a new supermodel record.
         // If not, then potentially lookup existing record in the database.
         $updatedPreviousCsvSupermodelDetails = $this->checkForSameSupermodel($saveArray, $model, $associationExists, $metadata);
-        // Clear the model, so nothing else from the previous row carries over.
-        $model->clear();
-        // If a possible previous record, attempt to load in.
-        if (isset($metadata['mappings']['lookupSelect' . $_GET['model']]) && $metadata['mappings']['lookupSelect' . $_GET['model']] !== '') {
-          self::mergeExistingRecordIDs($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, "", $metadata, $model, $saveArray);
-        }
         if ($associationExists && isset($metadata['mappings']['lookupSelect' . $associatedRecordPrefix]) && $metadata['mappings']['lookupSelect' . $associatedRecordPrefix] !== '') {
           $assocModel = ORM::Factory($_GET['model']);
           self::mergeExistingRecordIDs($_GET['model'], $associatedRecordPrefix, $associatedAttributePrefix, $associatedSuffix, $metadata, $assocModel, $saveArray);
@@ -780,16 +780,29 @@ class Import_Controller extends Service_Base_Controller {
         }
         $sm = ORM::factory($modelName);
         $smAttrsPrefix = isset($sm->attrs_field_prefix) ? $sm->attrs_field_prefix : NULL;
-        // Look for data in that supermodel and build something we can use for
-        // comparison. We must capture both normal and custom attributes.
-        $hash = '';
+        // We are going to build a hash which uniquely identifies everything we
+        // know about the current row's supermodel, so we can detect if it
+        // changes between rows.
+        $hashArray = [];
+        // If updating an existing record, then the comparison with supermodel
+        // data must include the existing supermodel's key as the import data
+        // is only partial.
+        if (!empty($saveArray[$model->object_name . ':id'])) {
+          $existing = ORM::factory($model->object_name, $saveArray[$model->object_name . ':id']);
+          $hashArray[$modelDetails['fk']] = $existing->{$modelDetails['fk']};
+        }
+        // Look for new import values related to this supermodel to include in
+        // our comparison. We must capture both normal and custom attributes.
         foreach ($saveArray as $field => $value) {
-          if (substr($field, 0, strlen($modelName) + 1) == "$modelName:") {
-            $hash .= "$field|$value|";
+          if (substr($field, 0, strlen($modelName) + 1) === "$modelName:"
+              || $smAttrsPrefix && substr($field, 0, strlen($smAttrsPrefix) + 1) === "$smAttrsPrefix:") {
+            $hashArray[preg_replace("/^$modelName:/", '', $field)] = $value;
           }
-          elseif ($smAttrsPrefix && substr($field, 0, strlen($smAttrsPrefix) + 1) == "$smAttrsPrefix:") {
-            $hash .= "$field|$value|";
-          }
+        }
+        $hash = '';
+        // Convert the hash data into a key string we can store and compare.
+        foreach ($hashArray as $field => $value) {
+          $hash .= "$field|$value|";
         }
         // If we have previously stored a hash for this supermodel, check if
         // they are the same. If so we can get the ID.
