@@ -764,8 +764,8 @@ class ORM extends ORM_Core {
    * If not, returns null - errors are embedded in the model.
    */
   public function inner_submit(){
-    $this->wantToUpdateMetadata = true;
-    $isInsert = $this->id===0
+    $this->wantToUpdateMetadata = TRUE;
+    $isInsert = $this->id === 0
         && (!isset($this->submission['fields']['id']) || !$this->submission['fields']['id']);
     $this->handleCaptionSubmission();
     $return = $this->populateFkLookups();
@@ -776,18 +776,17 @@ class ORM extends ORM_Core {
       $this->preSubmit();
       $this->removeUnwantedFields();
       $return = $this->validateAndSubmit();
-      $return = $this->checkRequiredAttributes() ? $return : null;
+      $return = $this->checkRequiredAttributes() ? $return : NULL;
       if ($this->id) {
         // Make sure we got a record to save against before attempting to post children. Post attributes first
         // before child records because the parent (e.g. Sample) attribute values sometimes affect the cached data
         // (e.g. the recorders stored in cache_occurrences)
-        $return = $this->createAttributes($isInsert) ? $return : null;
-        $return = $this->createChildRecords() ? $return : null;
-        $return = $this->createJoinRecords() ? $return : null;
-
+        $return = $this->createAttributes($isInsert) ? $return : NULL;
+        $return = $this->createChildRecords() ? $return : NULL;
+        $return = $this->createJoinRecords() ? $return : NULL;
         if ($isInsert)
           $addTo=&self::$changedRecords['insert'];
-        elseif (isset($this->deleted) && $this->deleted==='t')
+        elseif (isset($this->deleted) && $this->deleted === 't')
           $addTo=&self::$changedRecords['delete'];
         else
           $addTo=&self::$changedRecords['update'];
@@ -798,11 +797,11 @@ class ORM extends ORM_Core {
       // Call postSubmit
       if ($return) {
         $ps = $this->postSubmit($isInsert);
-        if ($ps == null) {
-          $return = null;
+        if ($ps == NULL) {
+          $return = NULL;
         }
       }
-      if (kohana::config('config.log_threshold')=='4') {
+      if (kohana::config('config.log_threshold') == '4') {
         kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
       }
     }
@@ -1498,8 +1497,11 @@ class ORM extends ORM_Core {
 
  /**
   * Create the records for any attributes attached to the current submission.
-  * @param bool $isInsert TRUE for when the parent of the attributes is a fresh insert, FALSE for an update.
-  * @return bool TRUE if success.
+
+  * @param bool $isInsert
+  *   TRUE for when the parent of the attributes is a fresh insert, FALSE for an update.
+  * @return bool
+  *   TRUE if success.
   */
   protected function createAttributes($isInsert) {
     if ($this->has_attributes) {
@@ -1519,7 +1521,7 @@ class ORM extends ORM_Core {
             $valueId = count($arr)>2 ? $arr[2] : NULL;
             $attrDef = self::loadAttrDef($this->object_name, $attrId);
             $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
-            if (!$attr) {
+            if ($attr === FALSE) {
               // Failed to create attribute so drop out.
               return FALSE;
             }
@@ -1562,7 +1564,7 @@ class ORM extends ORM_Core {
         }
       }
     }
-    return true;
+    return TRUE;
   }
 
   /**
@@ -1570,8 +1572,7 @@ class ORM extends ORM_Core {
    * called metafields. This code is used to provide backwards compatibility with this submission format.
    */
   protected function createAttributesFromMetafields() {
-    foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $attr)
-    {
+    foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $attr) {
       $value = $attr['fields']['value'];
       if ($value != '') {
         // work out the *_attribute this is attached to, to figure out the field(s) to store the value in.
@@ -1638,11 +1639,17 @@ class ORM extends ORM_Core {
       $attrValueModel=ORM::factory($this->object_name.'_attribute_value');
       $this->attrValModels[$this->object_name] = $attrValueModel;
     }
-    if ($this->existing && $attrDef->multi_value === 'f') {
-      $attrValueModel->where(array($this->object_name.'_attribute_id' => $attrId, $this->object_name.'_id' => $this->id))->find();
-    }
-    if (!$attrValueModel->loaded && !empty($valueId)) {
+    if (!empty($valueId)) {
+      // If we know the value ID, load the model.
       $attrValueModel->find($valueId);
+    }
+    elseif ($this->existing && $attrDef->multi_value === 'f') {
+      // If we don't know the ID, but an existing record, then we can search
+      // for the existing value as there should only be one.
+      $attrValueModel->where([
+        $this->object_name.'_attribute_id' => $attrId,
+        $this->object_name.'_id' => $this->id,
+      ])->find();
     }
 
     $oldValues = array_merge($attrValueModel->as_array());
