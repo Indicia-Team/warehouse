@@ -887,7 +887,7 @@ class ORM extends ORM_Core {
     Kohana::log("debug", "About to validate the following array in model $this->object_name");
     Kohana::log("debug", kohana::debug($this->sanitise($vArray)));
     try {
-      if (array_key_exists('deleted', $vArray) && $vArray['deleted'] == 't') {
+      if (array_key_exists('deleted', $vArray) && $vArray['deleted'] === 't') {
         // For a record deletion, we don't want to validate and save anything. Just mark delete it.
         $this->deleted = 't';
         $this->set_metadata();
@@ -975,10 +975,10 @@ class ORM extends ORM_Core {
     $r = false;
     $key = '';
     if (isset($fkArr['fkSearchFilterValue'])) {
-    	if(is_array($fkArr['fkSearchFilterValue']))
-	    	$filterValue = $fkArr['fkSearchFilterValue']['value'];
-    	else
-	    	$filterValue = $fkArr['fkSearchFilterValue'];
+      if(is_array($fkArr['fkSearchFilterValue']))
+        $filterValue = $fkArr['fkSearchFilterValue']['value'];
+      else
+        $filterValue = $fkArr['fkSearchFilterValue'];
     } else $filterValue = '';
 
     if (ORM::$cacheFkLookups) {
@@ -1506,9 +1506,10 @@ class ORM extends ORM_Core {
       // Deprecated submission format attributes are stored in a metafield.
       if (isset($this->submission['metaFields'][$this->attrs_submission_name])) {
         return self::createAttributesFromMetafields();
-      } else {
-        // loop to find the custom attributes embedded in the table fields
-        $multiValueData=array();
+      }
+      else {
+        // Loop to find the custom attributes embedded in the table fields.
+        $attrs = [];
         foreach ($this->submission['fields'] as $field => $content) {
           if (preg_match('/^'.$this->attrs_field_prefix.':(fk_)?[\d]+(:([\d]+)?(:[^:]*)?)?$/', $field)) {
             $value = $content['value'];
@@ -1517,45 +1518,46 @@ class ORM extends ORM_Core {
             $attrId = $arr[1];
             $valueId = count($arr)>2 ? $arr[2] : null;
             $attrDef = self::loadAttrDef($this->object_name, $attrId);
-            // If this attribute is a multivalue array, then any existing attributes which are not in the submission for the same attr ID should be removed.
-            // We need to keep an array of the multi-value attribute IDs, with a sub-array for the existing values that were included in the submission,
-            // so that we can mark-delete the ones that are not in the submission.
-            if ($attrDef->multi_value=='t' && count($arr)) {
-              if (!isset($multiValueData["attr:$attrId"]))
-                $multiValueData["attr:$attrId"]=array('attrId'=>$attrId, 'attrDef'=>$attrDef, 'values'=>array());
-              if (is_array($value))
-                $multiValueData["attr:$attrId"]['values']=array_merge($multiValueData["attr:$attrId"]['values'], $value);
-              else
-                $multiValueData["attr:$attrId"]['values'][]=$value;
+            $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
+            if (!$attr) {
+              // Failed to create attribute so drop out.
+              return FALSE;
             }
-            if (!$this->createAttributeRecord($attrId, $valueId, $value, $attrDef))
-              return false;
+            // If this attribute is a multivalue array, then any existing
+            // attributes which are not in the submission for the same attr ID
+            // should be removed. We need to keep an array of the multi-value
+            // attribute IDs, with a sub-array for the existing value IDs that
+            // were included in the submission, so that we can mark-delete the
+            // ones that are not in the submission.
+            if ($attrDef->multi_value === 't' && count($arr)) {
+              if (!isset($multiValueData["attr:$attrId"])) {
+                $multiValueData["attr:$attrId"] = array('attrId' => $attrId, 'ids' => []);
+              }
+              $multiValueData["attr:$attrId"]['ids'] = array_merge($multiValueData["attr:$attrId"]['ids'], $attr);
+            }
           }
         }
-        // delete any old values from a mult-value attribute. No need to worry for inserting new records.
+        // Delete any old values from a mult-value attribute. No need to worry
+        // for inserting new records.
         if (!$isInsert && !empty($multiValueData)) {
-          // If we did any multivalue updates for existing records, then any attributes whose values were not included in the submission must be removed.
-          // We may have more than one multivalue field in the record, each of a different type
+          // If we did any multivalue updates for existing records, then any
+          // attributes whose values were not included in the submission must
+          // be removed. Note that we may have more than one multivalue field
+          // in the record, so process each.
           foreach ($multiValueData as $spec) {
-            switch ($spec['attrDef']->data_type) {
-              case 'I':
-              case 'L':
-                $vf = 'int_value';
-                break;
-              case 'F':
-                $vf = 'float_value';
-                break;
-              case 'D':
-              case 'V':
-                $vf = 'date_start_value';
-                break;
-              default:
-                $vf = 'text_value';
-            }
-          	$this->db->from($this->object_name.'_attribute_values')->set(array('deleted'=>'t', 'updated_on'=>date("Ymd H:i:s")))
-                ->where(array($this->object_name.'_attribute_id'=>$spec['attrId'], $this->object_name.'_id'=>$this->id, 'deleted'=>'f'))
-                ->notin($vf, $spec['values'])
-                ->update();
+            $this->db
+              ->from($this->object_name.'_attribute_values')
+              ->set([
+                'deleted' => 't',
+                'updated_on' => date("Ymd H:i:s"),
+                'updated_by_id' => security::getUserId(),
+              ])
+              ->where([
+                $this->object_name.'_attribute_id' => $spec['attrId'],
+                $this->object_name.'_id' => $this->id,
+                'deleted' => 'f'])
+              ->notin('id', $spec['ids'])
+              ->update();
           }
         }
       }
@@ -1577,13 +1579,20 @@ class ORM extends ORM_Core {
         // If this is an existing attribute value, get the record id to overwrite
         $valueId = (array_key_exists('id', $attr['fields'])) ? $attr['fields']['id'] : null;
         $attrDef = self::loadAttrDef($this->object_name, $attrId);
-        if (!$this->createAttributeRecord($attrId, $valueId, $value, $attrDef))
-          return false;
+        if ($this->createAttributeRecord($attrId, $valueId, $value, $attrDef) === FALSE) {
+          return FALSE;
+        }
       }
     }
-    return true;
+    return TRUE;
   }
 
+  /**
+   * Creates an attribute value record or records for a multi-value.
+   *
+   * @return mixed
+   *   FALSE on fail, else array of attribute value IDs objects.
+   */
   protected function createAttributeRecord($attrId, $valueId, $value, $attrDef) {
     // There are particular circumstances when $value is actually an array: when a attribute is multi value,
     // AND has yet to be created, AND is passed in as multiple ***Attr:<n>[] POST variables. This should only happen when
@@ -1591,24 +1600,30 @@ class ORM extends ORM_Core {
     // is no longer multivalue - only one value is stored per attribute value record, though more than one record may exist
     // for a given attribute. There may be others with th same <n> without a $valueID.
     // If attrId = fk_* (e.g. when importing data) then the value is a term whose id needs to be looked up.
-    if (is_array($value)){
+    if (is_array($value)) {
       if (is_null($valueId)) {
-        $retVal = true;
+        $r = [];
         foreach($value as $singlevalue) { // recurse over array.
-          $retVal = $this->createAttributeRecord($attrId, $valueId, $singlevalue, $attrDef) && $retVal;
+          $attrIds = $this->createAttributeRecord($attrId, $valueId, $singlevalue, $attrDef);
+          if ($attrIds === FALSE) {
+            return FALSE;
+          }
+          else {
+            $r = array_merge($r, $attrIds);
+          }
         }
-        return $retVal;
+        return $r;
       } else {
         $this->errors['general']='INTERNAL ERROR: multiple values passed in for '.$this->object_name.' '.$valueId.' '.print_r($value, true);
-        return false;
+        return FALSE;
       }
     }
 
-    $fk = false;
+    $fk = FALSE;
     $value=trim($value);
     if (substr($attrId, 0, 3) == 'fk_') {
       // value is a term that needs looking up
-      $fk = true;
+      $fk = TRUE;
       $attrId = substr($attrId, 3);
     }
     // Create a attribute value, loading the existing value id if it exists, or search for the existing record
@@ -1629,7 +1644,7 @@ class ORM extends ORM_Core {
 
     $oldValues = array_merge($attrValueModel->as_array());
     $dataType = $attrDef->data_type;
-    $vf = null;
+    $vf = NULL;
 
     $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
     // For attribute value errors, we need to report e.g smpAttr:attrId[:attrValId] as the error key name, not
@@ -1662,7 +1677,7 @@ class ORM extends ORM_Core {
           } else {
             $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
             kohana::log('debug', "Could not accept value $value into date fields for attribute $fieldId.");
-            return false;
+            return FALSE;
           }
         } else {
           $attrValueModel->date_start_value = null;
@@ -1702,7 +1717,7 @@ class ORM extends ORM_Core {
           } else {
             $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
             kohana::log('debug', "Could not accept value $value into field $vf  for attribute $fieldId.");
-            return false;
+            return FALSE;
           }
         }
         break;
@@ -1711,7 +1726,7 @@ class ORM extends ORM_Core {
         $vf = 'int_value';
         break;
     }
-    if ($vf != null) {
+    if ($vf != NULL) {
       $attrValueModel->$vf = $value;
       // Test that ORM accepted the new value - it will reject if the wrong data type for example.
       // Use a string compare to get a proper test but with type tolerance.
@@ -1723,12 +1738,12 @@ class ORM extends ORM_Core {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId.");
       }
       else {
-        if ( $dataType === 'F' && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf ) {
+        if ($dataType === 'F' && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf) {
           kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
         } else {
           $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
           kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
-          return false;
+          return FALSE;
         }
       }
     }
@@ -1749,7 +1764,7 @@ class ORM extends ORM_Core {
     try {
       $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()), true);
     } catch (Exception $e) {
-      $v=false;
+      $v = FALSE;
       $this->errors[$fieldId]=$e->getMessage();
       error_logger::log_error('Exception during validation', $e);
     }
@@ -1758,7 +1773,7 @@ class ORM extends ORM_Core {
         // concatenate the errors if more than one per field.
         $this->errors[$fieldId] = array_key_exists($fieldId, $this->errors) ? $this->errors[$fieldId] . '  ' . $value : $value;
       }
-      return false;
+      return FALSE;
     }
     $attrValueModel->save();
     if ($wantToUpdateAttrMetadata && !$this->wantToUpdateMetadata) {
@@ -1769,7 +1784,7 @@ class ORM extends ORM_Core {
     }
     $this->nestedChildModelIds[] = $attrValueModel->get_submission_response_metadata();
 
-    return true;
+    return [$attrValueModel->id];
   }
 
   /**
