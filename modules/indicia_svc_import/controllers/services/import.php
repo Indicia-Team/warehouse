@@ -14,41 +14,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Services
- * @subpackage Import
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Controller class for import web services
- *
- * @package  Services
- * @subpackage Data
+ * Controller class for import web services.
  */
 class Import_Controller extends Service_Base_Controller {
   private $submissionStruct;
 
   /**
-   * @var array Parent model field details from the previous row. Allows us to efficiently use the same sample for
-   * multiple occurrences etc.
+   * Parent model field details from the previous row.
+   *
+   * Allows us to efficiently use the same sample for multiple occurrences etc.
+   *
+   * @var array
    */
   private $previousCsvSupermodel;
 
   /**
-   * Controller function that provides a web service services/import/get_import_settings/model.
-   * Options for the model's specific form can be passed in $_GET.
-   * @param string $model Singular name of the model entity to check.
-   * @return string JSON Parameters form details for this model, or empty string if no parameters form required.
+   * Import settings service end-point.
+   *
+   * Controller function that provides a web service
+   * services/import/get_import_settings/model. Options for the model's
+   * specific form can be passed in $_GET. Echos JSON parameters form details
+   * for this model, or empty string if no parameters form required.
+   *
+   * @param string $model
+   *   Singular name of the model entity to check.
    */
   public function get_import_settings($model) {
     $this->authenticate('read');
     $model = ORM::factory($model);
     if (method_exists($model, 'fixed_values_form')) {
-      // Pass URL parameters through to the fixed values form in case there are model specific settings.
+      // Pass URL parameters through to the fixed values form in case there are
+      // model specific settings.
       $options = array_merge($_GET);
       unset($options['nonce']);
       unset($options['auth_token']);
@@ -58,10 +62,13 @@ class Import_Controller extends Service_Base_Controller {
 
   /**
    * Controller function that returns the list of importable fields for a model.
-   * Accepts optional $_GET parameters for the website_id and survey_id, which limit the available
-   * custom attribute fields as appropriate.
-   * @param string $model Singular name of the model entity to check.
-   * @return string JSON listing the fields that can be imported.
+   *
+   * Accepts optional $_GET parameters for the website_id and survey_id, which
+   * limit the available custom attribute fields as appropriate. Echoes JSON
+   * listing the fields that can be imported.
+   *
+   * @param string $model
+   *   Singular name of the model entity to check.
    */
   public function get_import_fields($model) {
     $this->authenticate('read');
@@ -87,10 +94,13 @@ class Import_Controller extends Service_Base_Controller {
 
   /**
    * Controller function that returns the list of required fields for a model.
-   * Accepts optional $_GET parameters for the website_id and survey_id, which limit the available
-   * custom attribute fields as appropriate.
-   * @param string $model Singular name of the model entity to check.
-   * @return string JSON listing the fields that are required.
+   *
+   * Accepts optional $_GET parameters for the website_id and survey_id, which
+   * limit the available custom attribute fields as appropriate. Echoes JSON
+   * listing the fields that are required.
+   *
+   * @param string $model
+   *   Singular name of the model entity to check.
    */
   public function get_required_fields($model) {
     $this->authenticate('read');
@@ -106,9 +116,14 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Controller function that returns the list of combinations of fields that can be used to determine if a record already exists.
-   * @param string $model Singular name of the model entity to check.
-   * @return string array : JSON listing the fields that are required.
+   * List field combinations that can be used to locate existing records.
+   *
+   * Controller function that returns the list of combinations of fields that
+   * can be used to determine if a record already exists. Echoes JSON listing
+   * the fields that are required.
+   *
+   * @param string $modelName
+   *   Singular name of the model entity to check.
    */
   public function get_existing_record_options($modelName) {
     $this->authenticate('read');
@@ -130,16 +145,19 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Handle uploaded files in the $_FILES array by moving them to the upload folder. The current time is prefixed to the
-   * name to make it unique. The uploaded file should be in a field called media_upload.
+   * Handle the upload of a CSV file.
+   *
+   * Handle uploaded files in the $_FILES array by moving them to the upload
+   * folder. The current time is prefixed to the  name to make it unique. The
+   * uploaded file should be in a field called media_upload.
    */
   public function upload_csv() {
     try {
       // Ensure we have write permissions.
       $this->authenticate();
-      // We will be using a POST array to send data, and presumably a FILES array for the
-      // media.
-      // Upload size
+      // We will be using a POST array to send data, and presumably a FILES
+      // array for the media.
+      // Upload size.
       $ups = Kohana::config('indicia.maxUploadSize');
       $_FILES = Validation::factory($_FILES)->add_rules(
         'media_upload', 'upload::valid', 'upload::required',
@@ -177,8 +195,11 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Caches various metadata to do with the upload, including the upload mappings and the error count. This action
-   * is called by the JavaScript code responsible for a chunked upload, before the upload actually starts.
+   * Store the upload process metadata.
+   *
+   * Caches various metadata to do with the upload, including the upload
+   * mappings and the error count. This action is called by the JavaScript
+   * code responsible for a chunked upload, before the upload actually starts.
    */
   public function cache_upload_metadata() {
     $this->authenticate();
@@ -195,8 +216,9 @@ class Import_Controller extends Service_Base_Controller {
     if (isset($metadata['importMergeFields'])) {
       $metadata['importMergeFields'] = json_decode($metadata['importMergeFields'], TRUE);
     }
-    
-    // the metadata can also hold auth tokens and user_id, though they do not need decoding.
+
+    // The metadata can also hold auth tokens and user_id, though they do not
+    // need decoding.
     self::internal_cache_upload_metadata($metadata);
     echo "OK";
   }
@@ -239,7 +261,9 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Saves a set of metadata for an upload to a file, so it can persist across requests.
+   * Saves a set of metadata for an upload to a file.
+   *
+   * Allows the metadata to persist across requests.
    */
   private function internal_cache_upload_metadata($metadata) {
     $previous = self::getMetadata($_GET['uploaded_csv']);
@@ -251,10 +275,16 @@ class Import_Controller extends Service_Base_Controller {
     fclose($mappingHandle);
   }
 
-  /*
-   * Determines if the provided module has been activated in the indicia configuration.
+  /**
+   * Determines if the provided module has been activated in the configuration.
+   *
+   * @param string $module
+   *   Name of the module.
+   *
+   * @return bool
+   *   TRUE if the module is active.
    */
-  private function _check_module_active($module) {
+  private function checkModuleActive($module) {
     $config = kohana::config_load('core');
     foreach ($config['modules'] as $path) {
       if (strlen($path) >= strlen($module) &&
@@ -267,11 +297,13 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Controller action that performs the import of data in an uploaded CSV file.
-   * Allows $_GET parameters to specify the filepos, offset and limit when uploading just a chunk at a time.
-   * This method is called to perform the entire upload when JavaScript is not enabled, or can
-   * be called to perform part of an AJAX csv upload where only a part of the data is imported
-   * on each call.
+   * Controller action that performs the import of data in an uploaded file.
+   *
+   * Allows $_GET parameters to specify the filepos, offset and limit when
+   * uploading just a chunk at a time. This method is called to perform the
+   * entire upload when JavaScript is not enabled, or can be called to perform
+   * part of an AJAX csv upload where only a part of the data is imported on
+   * each call.
    * Requires a $_GET parameter for uploaded_csv - the uploaded file name.
    */
   public function upload() {
@@ -281,19 +313,19 @@ class Import_Controller extends Service_Base_Controller {
       global $remoteUserId;
       $remoteUserId = $metadata['user_id'];
     }
-    // Check if details of the last supermodel (e.g. sample for an occurrence) are in the cache from a previous iteration of
-    // this bulk operation
+    // Check if details of the last supermodel (e.g. sample for an occurrence)
+    // are in the cache from a previous iteration of this bulk operation.
     $cache = Cache::instance();
     $this->getPreviousRowSupermodel($cache);
-    // enable caching of things like language lookups
+    // Enable caching of things like language lookups.
     ORM::$cacheFkLookups = TRUE;
-    // make sure the file still exists
+    // Make sure the file still exists.
     if (file_exists($csvTempFile)) {
-      // Following helps for files from Macs
+      // Following helps for files from Macs.
       ini_set('auto_detect_line_endings', 1);
       $model = ORM::Factory($_GET['model']);
       $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
-      // create the file pointer, plus one for errors
+      // Create the file pointer, plus one for errors.
       $handle = fopen($csvTempFile, "r");
       $this->checkIfUtf8($metadata, $handle);
       $existingProblemColIdx = FALSE;
@@ -306,23 +338,24 @@ class Import_Controller extends Service_Base_Controller {
       $filepos = (isset($_GET['filepos']) ? $_GET['filepos'] : 0);
       $offset = (isset($_GET['offset']) ? $_GET['offset'] : 0);
       if ($filepos == 0) {
-        // first row, so skip the header
+        // First row, so skip the header.
         fseek($handle, 0);
         fgetcsv($handle, 1000, ",");
-        // also clear the lookup cache
+        // Also clear the lookup cache.
         $cache->delete_tag('lookup');
       }
-      else // skip rows to allow for the last file position
-      {
+      else {
+        // Skip rows to allow for the last file position.
         fseek($handle, $filepos);
       }
       $this->submissionStruct = $model->get_submission_structure();
 
-      // check if the conditions for special field processing are met - all the columns are in the mapping.
+      // Check if the conditions for special field processing are met - all the
+      // columns are in the mapping.
       $specialFieldProcessing = array();
       if (isset($model->special_import_field_processing_defn)) {
         foreach ($model->special_import_field_processing_defn as $column => $defn) {
-            $columns = array();
+          $columns = array();
           $index = 0;
           foreach ($metadata['mappings'] as $col => $attr) {
             if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col != 'AllowLookup') {
@@ -333,14 +366,15 @@ class Import_Controller extends Service_Base_Controller {
             $index++;
           }
           if (count($defn['columns']) === count(array_keys($columns))) {
-              $specialFieldProcessing[$column] = TRUE;
+            $specialFieldProcessing[$column] = TRUE;
           }
         }
       }
       $specialMergeProcessing = array();
       if (isset($metadata['importMergeFields'])) {
-        // only do the special merge processing if all the required fields are there, and if there are no required
-        // then if one of the optional ones are there.
+        // Only do the special merge processing if all the required fields are
+        // there, and if there are no required then if one of the optional ones
+        // are there.
         foreach ($metadata['importMergeFields'] as $modelSpec) {
           if (!isset($modelSpec['model']) || ($modelSpec['model'] = $_GET['model'])) {
             foreach ($modelSpec['fields'] as $fieldSpec) {
@@ -350,49 +384,56 @@ class Import_Controller extends Service_Base_Controller {
                 if (in_array($fieldSpec['fieldName'] . ':' . $subFieldSpec['fieldNameSuffix'], $metadata['mappings'])) {
                   $foundOne = TRUE;
                 }
-                else if (isset($subFieldSpec['required']) && $subFieldSpec['required']) {
+                elseif (isset($subFieldSpec['required']) && $subFieldSpec['required']) {
                   $foundAllRequired = FALSE;
                 }
               }
-              if ($foundOne && $foundAllRequired)
+              if ($foundOne && $foundAllRequired) {
                 $specialMergeProcessing[] = $fieldSpec;
+              }
             }
           }
         }
       }
 
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit === FALSE || $count < $limit)) {
-        if (!array_filter($data)) { // skip empty rows
+        if (!array_filter($data)) {
+          // Skip empty rows.
           continue;
         }
         $count++;
         $index = 0;
         $saveArray = $model->getDefaults();
-        // Note, the mappings will always be in the same order as the columns of the CSV file
+        // Note, the mappings will always be in the same order as the columns
+        // of the CSV file.
         foreach ($metadata['mappings'] as $col => $attr) {
-          // skip cols to do with remembered mappings
+          // Skip cols to do with remembered mappings.
           if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col != 'AllowLookup') {
             if (isset($data[$index])) {
-              // '<Please select>' is a value fixed in import_helper::model_field_options
+              // '<Please select>' is a value fixed in
+              // import_helper::model_field_options.
               if ($attr != '<Please select>' && $data[$index] !== '') {
-                // Add the data to the record save array. Utf8 encode if file does not have UTF8 BOM.
+                // Add the data to the record save array. Utf8 encode if file
+                // does not have UTF8 BOM.
                 $saveArray[$attr] = $metadata['isUtf8'] ? $data[$index] : utf8_encode($data[$index]);
               }
             }
             else {
-              // This is one of our static fields at the end
+              // This is one of our static fields at the end.
               $saveArray[$col] = $attr;
             }
             $index++;
           }
         }
         foreach ($specialFieldProcessing as $col => $discard) {
-            if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
-            $saveArray[$col] = vsprintf($model->special_import_field_processing_defn[$col]['template'],
-                array_map(function ($column) use ($saveArray){
-                        return $saveArray[$column];
-                      },
-                      $model->special_import_field_processing_defn[$col]['columns']));
+          if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
+            $saveArray[$col] = vsprintf(
+              $model->special_import_field_processing_defn[$col]['template'],
+              array_map(function ($column) use ($saveArray) {
+                return $saveArray[$column];
+              },
+              $model->special_import_field_processing_defn[$col]['columns'])
+            );
             foreach ($model->special_import_field_processing_defn[$col]['columns'] as $column) {
               unset($saveArray[$column]);
             }
@@ -403,115 +444,130 @@ class Import_Controller extends Service_Base_Controller {
           foreach ($fieldSpec['virtualFields'] as $subFieldSpec) {
             $col = $fieldSpec['fieldName'] . ':' . $subFieldSpec['fieldNameSuffix'];
             if (isset($saveArray[$col])) {
-              if($saveArray[$col] !== '')
+              if ($saveArray[$col] !== '') {
                 $merge[] = (isset($subFieldSpec['dataPrefix']) ? $subFieldSpec['dataPrefix'] : '') .
-                                $saveArray[$col] .
-                                (isset($subFieldSpec['dataSuffix']) ? $subFieldSpec['dataSuffix'] : '');
+                  $saveArray[$col] .
+                  (isset($subFieldSpec['dataSuffix']) ? $subFieldSpec['dataSuffix'] : '');
+              }
               unset($saveArray[$col]);
             }
           }
-          if (count($merge) > 0)
+          if (count($merge) > 0) {
             $saveArray[$fieldSpec['fieldName']] = implode(str_replace('<newline>', "\r\n", (isset($fieldSpec['joiningString']) ? $fieldSpec['joiningString'] : '')), $merge);
+          }
         }
-        // copy across the fixed values, including the website id, into the data to save.
+        // Copy across the fixed values, including the website id, into the
+        // data to save.
         if ($metadata['settings']) {
           $saveArray = array_merge($metadata['settings'], $saveArray);
         }
         if (!empty($saveArray['website_id'])) {
-          // automatically join to the website if relevant
+          // Sutomatically join to the website if relevant.
           if (isset($this->submissionStruct['joinsTo']) && in_array('websites', $this->submissionStruct['joinsTo'])) {
             $saveArray['joinsTo:website:' . $saveArray['website_id']] = 1;
           }
         }
         if ($supportsImportGuid) {
           if ($existingImportGuidColIdx === FALSE) {
-            // Save the upload filename (which is a guid) in a field so the results of each
-            // individual upload can be grouped together. Relies on the model being imported
-            // into having a text field called import_guid otherwise it's just ignored.
+            // Save the upload filename (which is a guid) in a field so the
+            // results of each  individual upload can be grouped together.
+            // Relies on the model being imported into having a text field
+            // called import_guid otherwise it's just ignored.
             $fileNameParts = explode('.', basename($csvTempFile));
             $saveArray['import_guid'] = $fileNameParts[0];
           }
           else {
-            // This is a reimport of error records which want to link back to the original import. So use the original
-            // guid as supplied in the data rather than the uploaded file name.
+            // This is a reimport of error records which want to link back to
+            // the original import. So use the original GUID as supplied in the
+            // data rather than the uploaded file name.
             $saveArray['import_guid'] = $data[$existingImportGuidColIdx];
           }
         }
-        // Check if in an association situation
+        // Check if in an association situation.
         $associationExists = FALSE;
         $originalRecordPrefix = $this->submissionStruct['model'];
         $originalAttributePrefix = (isset($model->attrs_field_prefix) ? $model->attrs_field_prefix : '');
         $originalMediaPrefix = $originalRecordPrefix . '_media';
-        if (self::_check_module_active($this->submissionStruct['model'] . '_associations')) {
-          // assume model has attributes.
+        if (self::checkModuleActive($this->submissionStruct['model'] . '_associations')) {
+          // Assume model has attributes.
           $associatedSuffix = '_2';
           $associatedRecordSubmissionStructure = $this->submissionStruct;
           $associatedRecordPrefix = $originalRecordPrefix . $associatedSuffix;
           $associatedAttributePrefix = $originalAttributePrefix . $associatedSuffix;
           $associatedMediaPrefix = $originalMediaPrefix . $associatedSuffix;
           $associationRecordPrefix = $originalRecordPrefix . '_association';
-          // find out if association or associated records exist - do this if a species lookup value is filled in.
-          // This restricts to occurrence/taxa associations
+          // Find out if association or associated records exist - do this if a
+          // species lookup value is filled in.
+          // This restricts to occurrence/taxa associations.
           foreach ($saveArray as $assocField => $assocValue) {
             $associationExists = $associationExists || (!empty($assocValue) &&
                 preg_match("/^$associatedRecordPrefix:fk_taxa_taxon_list/", $assocField));
           }
         }
-        // Check if we can use a existing data relationship to workmout if this is a new or old record.
-        // If posting a supermodel, are the details of the supermodel the same as for the previous CSV row? If so, we can link to that
-        // record rather than create a new supermodel record.
-        // If not, then potentially lookup existing record in the database.
-        $updatedPreviousCsvSupermodelDetails = $this->checkForSameSupermodel($saveArray, $model, $associationExists, $metadata);
         // Clear the model, so nothing else from the previous row carries over.
         $model->clear();
-        // If a possible previous record, attempt to load in
+        // If a possible previous record, attempt to find the relevant IDs.
         if (isset($metadata['mappings']['lookupSelect' . $_GET['model']]) && $metadata['mappings']['lookupSelect' . $_GET['model']] !== '') {
           self::mergeExistingRecordIDs($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, "", $metadata, $model, $saveArray);
         }
+        // Check if we can use a existing data relationship to workmout if this
+        // is a new or old record. If posting a supermodel, are the details of
+        // the supermodel the same as for the previous CSV row? If so, we can
+        // link to that record rather than create a new supermodel record.
+        // If not, then potentially lookup existing record in the database.
+        $updatedPreviousCsvSupermodelDetails = $this->checkForSameSupermodel($saveArray, $model, $associationExists, $metadata);
         if ($associationExists && isset($metadata['mappings']['lookupSelect' . $associatedRecordPrefix]) && $metadata['mappings']['lookupSelect' . $associatedRecordPrefix] !== '') {
           $assocModel = ORM::Factory($_GET['model']);
           self::mergeExistingRecordIDs($_GET['model'], $associatedRecordPrefix, $associatedAttributePrefix, $associatedSuffix, $metadata, $assocModel, $saveArray);
           if (isset($saveArray[$originalRecordPrefix . ':id']) && isset($saveArray[$associatedRecordPrefix . ':id'])) {
-            $assocModel = ORM::Factory($associationRecordPrefix)->
-                    where(array(
-                        'from_' . $_GET['model'] . '_id' => $saveArray[$originalRecordPrefix . ':id'],
-                        'to_' . $_GET['model'] . '_id' => $saveArray[$associatedRecordPrefix . ':id'],
-                        'association_type_id' => $saveArray[$associationRecordPrefix . ':association_type_id'],
-                        'deleted' => 'f'
-                      )
-                    )->find();
+            $assocModel = ORM::Factory($associationRecordPrefix)
+              ->where([
+                'from_' . $_GET['model'] . '_id' => $saveArray[$originalRecordPrefix . ':id'],
+                'to_' . $_GET['model'] . '_id' => $saveArray[$associatedRecordPrefix . ':id'],
+                'association_type_id' => $saveArray[$associationRecordPrefix . ':association_type_id'],
+                'deleted' => 'f',
+              ])->find();
             if ($assocModel->loaded === TRUE) {
               $saveArray[$associationRecordPrefix . ':id'] = $assocModel->id;
             }
           }
         }
 
-        // Save the record
+        // Save the record.
         $model->set_submission_data($saveArray, TRUE);
-        /* At this point, if model has associations (i.e. a module is active called <modelSingular>_associations)
-           we flip the submission so the model becomes the subModel. This way we can bolt any second associated
-           record in, into the submodel array. */
-        // GvB TODO alter automatic mappings to set up secondary occurrences correctly.
+        /*
+        At this point, if model has associations (i.e. a module is active
+        called <modelSingular>_associations) we flip the submission so the
+        model becomes the subModel. This way we can bolt any second
+        associated record in, into the submodel array.
+         */
+        // GvB TODO alter automatic mappings to set up secondary occurrences
+        // correctly.
         if ($associationExists && isset($model->submission['superModels']) &&
           is_array($model->submission['superModels']) &&
           count($model->submission['superModels']) === 1
         ) {
-          // We are assuming only one superModel, which must exist at this point.
-          // Use key 'record1' into the subModel array so association record knows which is which.
-          unset($associatedRecordSubmissionStructure['superModels']); // we are using the previously wrapped superModel
-          // flip then bolt in as second submodel to the supermodel using key 'record2',
+          // We are assuming only one superModel, which must exist at this
+          // point. Use key 'record1' into the subModel array so association
+          // record knows which is which.
+          // We are using the previously wrapped superModel.
+          unset($associatedRecordSubmissionStructure['superModels']);
+          // Flip then bolt in as second submodel to the supermodel using key
+          // 'record2'.
           $submissionData = $model->submission;
           $superModelSubmission = $submissionData['superModels'][0]['model'];
           $superModelFK = $submissionData['superModels'][0]['fkId'];
           $superModel = ORM::Factory($superModelSubmission['id']);
           $superModel->clear();
           unset($submissionData['superModels']);
-          // try to wrap second record of original model.
-          // as the submission builder needs a 1-1 match between field prefix and model name, we need to generate an altered saveArray.
+          // Try to wrap second record of original model.
+          // As the submission builder needs a 1-1 match between field prefix
+          // and model name, we need to generate an altered saveArray.
           $associatedArray = array();
           foreach ($saveArray as $fieldname => $value) {
             $parts = explode(':', $fieldname);
-            // filter out original model feilds, any of its attributes and media records.
+            // Filter out original model feilds, any of its attributes and
+            // media records.
             if ($parts[0] != $originalRecordPrefix &&
               $parts[0] != $originalAttributePrefix &&
               $parts[0] != $originalMediaPrefix
@@ -532,24 +588,26 @@ class Import_Controller extends Service_Base_Controller {
               $associatedArray[implode(':', $parts)] = $value;
             }
           }
-          $associatedSubmission = submission_builder::build_submission($associatedArray, $associatedRecordSubmissionStructure); // func already loaded for previous wrap
-          // Map fk_* fields to the looked up id
+          $associatedSubmission = submission_builder::build_submission($associatedArray, $associatedRecordSubmissionStructure);
+          // Map fk_* fields to the looked up id.
           $associatedSubmission = $model->getFkFields($associatedSubmission, $associatedArray);
-          // wrap the association and bolt in as a submodel of original model, using '||record2||' pointer.
+          // Wrap the association and bolt in as a submodel of original model,
+          // using '||record2||' pointer.
           $association = ORM::Factory($associationRecordPrefix);
           $association->set_submission_data($saveArray, TRUE);
-          if (!isset($association->submission['fields']['to_' . $associatedRecordSubmissionStructure['model'] . '_id']))
-              $association->submission['fields']['to_' . $associatedRecordSubmissionStructure['model'] . '_id'] = array('value' => '||record2||');
+          if (!isset($association->submission['fields']['to_' . $associatedRecordSubmissionStructure['model'] . '_id'])) {
+            $association->submission['fields']['to_' . $associatedRecordSubmissionStructure['model'] . '_id'] = array('value' => '||record2||');
+          }
           $submissionData['subModels'] = array(
             array(
               'fkId' => 'from_' . $associatedRecordSubmissionStructure['model'] . '_id',
-              'model' => $association->submission
-            )
+              'model' => $association->submission,
+            ),
           );
           $superModelSubmission['subModels'] =
             array(
               'record1' => array('fkId' => $superModelFK, 'model' => $submissionData),
-              'record2' => array('fkId' => $superModelFK, 'model' => $associatedSubmission)
+              'record2' => array('fkId' => $superModelFK, 'model' => $associatedSubmission),
             );
           $superModel->submission = $superModelSubmission;
           $modelToSubmit = $superModel;
@@ -559,7 +617,8 @@ class Import_Controller extends Service_Base_Controller {
           $modelToSubmit = $model;
         }
         if (($id = $modelToSubmit->submit()) == NULL) {
-          // Record has errors - now embedded in model, so dump them into the error file
+          // Record has errors - now embedded in model, so dump them into the
+          // error file.
           $errors = array();
           foreach ($modelToSubmit->getAllErrors() as $field => $msg) {
             $fldTitle = array_search($field, $metadata['mappings']);
@@ -574,30 +633,34 @@ class Import_Controller extends Service_Base_Controller {
             $data[$existingProblemColIdx] = $errors;
           }
           if ($existingErrorRowNoColIdx === FALSE) {
-            $data[] = $count + $offset + 1; // 1 for header
+            // + 1 for header.
+            $data[] = $count + $offset + 1;
           }
           else {
             $data[$existingErrorRowNoColIdx] = $count + $offset + 1;
           }
-          if ($supportsImportGuid && $existingImportGuidColIdx === FALSE)
+          if ($supportsImportGuid && $existingImportGuidColIdx === FALSE) {
             $data[] = $fileNameParts[0];
+          }
           fputcsv($errorHandle, $data);
           kohana::log('debug', 'Failed to import CSV row: ' . $errors);
           $metadata['errorCount'] = $metadata['errorCount'] + 1;
         }
         else {
-          // now the record has successfully posted, we need to store the details of any new supermodels and their Ids,
-          // in case they are duplicated in the next csv row.
+          // Now the record has successfully posted, we need to store the
+          // details of any new supermodels and their Ids, in case they are
+          // duplicated in the next csv row.
           $this->previousCsvSupermodel['details'] = array_merge($this->previousCsvSupermodel['details'], $updatedPreviousCsvSupermodelDetails);
           $this->captureSupermodelIds($modelToSubmit, $associationExists);
         }
-        // get file position here otherwise the fgetcsv in the while loop will move it one record too far.
+        // Get file position here otherwise the fgetcsv in the while loop will
+        // move it one record too far.
         $filepos = ftell($handle);
       }
-      // Get percentage progress
+      // Get percentage progress.
       $progress = $filepos * 100 / filesize($csvTempFile);
       $r = "{\"uploaded\":$count,\"progress\":$progress,\"filepos\":$filepos}";
-      // allow for a JSONP cross-site request
+      // Allow for a JSONP cross-site request.
       if (array_key_exists('callback', $_GET)) {
         $r = $_GET['callback'] . "(" . $r . ")";
       }
@@ -606,7 +669,8 @@ class Import_Controller extends Service_Base_Controller {
       fclose($errorHandle);
       self::internal_cache_upload_metadata($metadata);
 
-      // An AJAX upload request will just receive the number of records uploaded and progress
+      // An AJAX upload request will just receive the number of records
+      // uploaded and progress.
       $this->auto_render = FALSE;
       $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
     }
@@ -623,18 +687,19 @@ class Import_Controller extends Service_Base_Controller {
     $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
     if ($wheres !== FALSE) {
       $db = Database::instance();
-      // Have to use a db as this may have a join
-      $existing = $db->query("SELECT " . $table . ".id FROM " . $table . ' ' .
-              $join . " WHERE " . $wheres)->result_array(FALSE);
+      // Have to use a db as this may have a join.
+      $existing = $db->query("SELECT $table.id FROM $table $join WHERE " . $wheres)->result_array(FALSE);
       if (count($existing) > 0) {
-        // If an previous record exists, we have to check for existing attributes.
+        // If an previous record exists, we have to check for existing
+        // attributes.
         // Note this only works properly on single value attributes.
         $saveArray[$fieldPrefix . ':id'] = $existing[0]['id'];
         if (isset($model->attrs_field_prefix)) {
-          if ($setSupermodel)
+          if ($setSupermodel) {
             $this->previousCsvSupermodel['attributeIds'][$modelName] = array();
+          }
           $attributes = ORM::Factory($modelName . '_attribute_value')
-                ->where(array($modelName . '_id' => $existing[0]['id'], 'deleted' => 'f'))->find_all();
+            ->where(array($modelName . '_id' => $existing[0]['id'], 'deleted' => 'f'))->find_all();
           foreach ($attributes as $attribute) {
             if ($setSupermodel) {
               $this->previousCsvSupermodel['attributeIds'][$modelName][$attribute->__get($modelName . '_attribute_id')] = $attribute->id;
@@ -644,7 +709,7 @@ class Import_Controller extends Service_Base_Controller {
                 $saveArray[$attrPrefix . ':' . $attribute->__get($modelName . '_attribute_id')];
               unset($saveArray[$attrPrefix . ':' . $attribute->__get($modelName . '_attribute_id')]);
             }
-            else if (isset($saveArray[$attrPrefix . ':fk_' . $attribute->__get($modelName . '_attribute_id')])) {
+            elseif (isset($saveArray[$attrPrefix . ':fk_' . $attribute->__get($modelName . '_attribute_id')])) {
               $saveArray[$attrPrefix . ':fk_' . $attribute->__get($modelName . '_attribute_id') . ':' . $attribute->id] =
                 $saveArray[$attrPrefix . ':fk_' . $attribute->__get($modelName . '_attribute_id')];
               unset($saveArray[$attrPrefix . ':fk_' . $attribute->__get($modelName . '_attribute_id')]);
@@ -656,10 +721,13 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Display the end result of an upload. Either displayed at the end of a non-AJAX upload, or redirected
-   * to directly by the AJAX code that is performing a chunked upload when the upload completes.
-   * Requires a get parameter for the uploaded_csv filename.
-   * @return string JSON containing the problems cound and error file name.
+   * Display the end result of an upload.
+   *
+   * Either displayed at the end of a non-AJAX upload, or redirected to
+   * directly by the AJAX code that is performing a chunked upload when the
+   * upload completes. Requires a get parameter for the uploaded_csv filename.
+   *
+   * Echoes JSON containing the problems cound and error file name.
    */
   public function get_upload_result() {
     $this->authenticate('read');
@@ -668,9 +736,10 @@ class Import_Controller extends Service_Base_Controller {
     $metadata = $this->getMetadata($_GET['uploaded_csv']);
     echo json_encode(array(
       'problems' => $metadata['errorCount'],
-      'file' => url::base() . 'upload/' . basename($errorFile)
+      'file' => url::base() . 'upload/' . basename($errorFile),
     ));
-    // clean up the uploaded file and mapping file, but only remove the error file if no errors, otherwise we make it downloadable
+    // Clean up the uploaded file and mapping file, but only remove the error
+    // file if no errors, otherwise we make it downloadable.
     if (file_exists(DOCROOT . "upload/" . $_GET['uploaded_csv'])) {
       unlink(DOCROOT . "upload/" . $_GET['uploaded_csv']);
     }
@@ -680,49 +749,73 @@ class Import_Controller extends Service_Base_Controller {
     if ($metadata['errorCount'] == 0 && file_exists(DOCROOT . "upload/" . $errorFile)) {
       unlink(DOCROOT . "upload/" . $errorFile);
     }
-    // clean up cached lookups
+    // Clean up cached lookups.
     $cache = Cache::instance();
     $cache->delete_tag('lookup');
   }
 
   /**
-   * When looping through csv import data, if the import data includes a supermodel (e.g. the sample for an occurrence)
-   * then this method checks to see if the supermodel part of the submission is repeated. If so, then rather than create
-   * a new record for the supermodel, we just link this new record to the existing supermodel record. E.g. a spreadsheet
-   * containing several occurrences in a single sample can repeat the sample details but only one sample gets created.
-   * BUT, there are situations (like building an association based submission) where we need to keep the structure, in which
-   * case we just set the id, rather than remove all the supermodel entries.
+   * Checks for matching supermodels (e.g. samples) between rows.
+   *
+   * When looping through csv import data, if the import data includes a
+   * supermodel (e.g. the sample for an occurrence) then this method checks to
+   * see if the supermodel part of the submission is repeated. If so, then
+   * rather than create a new record for the supermodel, we just link this new
+   * record to the existing supermodel record. E.g. a spreadsheet containing
+   * several occurrences in a single sample can repeat the sample details but
+   * only one sample gets created. BUT, there are situations (like building an
+   * association based submission) where we need to keep the structure, in
+   * which case we just set the id, rather than remove all the supermodel
+   * entries.
    */
   private function checkForSameSupermodel(&$saveArray, $model, $linkOnly = FALSE, $metadata = array()) {
     $updatedPreviousCsvSupermodelDetails = array();
     if (isset($this->submissionStruct['superModels'])) {
-      // loop through the supermodels
+      // Loop through the supermodels.
       foreach ($this->submissionStruct['superModels'] as $modelName => $modelDetails) {
-        // meaning models do not get shared across rows - we always generate a new meaning ID.
+        // Meaning models do not get shared across rows - we always generate a
+        // new meaning ID.
         if ($modelName == 'taxon_meaning' || $modelName == 'meaning') {
           continue;
         }
         $sm = ORM::factory($modelName);
         $smAttrsPrefix = isset($sm->attrs_field_prefix) ? $sm->attrs_field_prefix : NULL;
-        // look for data in that supermodel and build something we can use for comparison. We must capture both normal and custom attributes.
-        $hash = '';
+        // We are going to build a hash which uniquely identifies everything we
+        // know about the current row's supermodel, so we can detect if it
+        // changes between rows.
+        $hashArray = [];
+        // If updating an existing record, then the comparison with supermodel
+        // data must include the existing supermodel's key as the import data
+        // is only partial.
+        if (!empty($saveArray[$model->object_name . ':id'])) {
+          $existing = ORM::factory($model->object_name, $saveArray[$model->object_name . ':id']);
+          $hashArray[$modelDetails['fk']] = $existing->{$modelDetails['fk']};
+        }
+        // Look for new import values related to this supermodel to include in
+        // our comparison. We must capture both normal and custom attributes.
         foreach ($saveArray as $field => $value) {
-          if (substr($field, 0, strlen($modelName) + 1) == "$modelName:") {
-            $hash .= "$field|$value|";
-          }
-          elseif ($smAttrsPrefix && substr($field, 0, strlen($smAttrsPrefix) + 1) == "$smAttrsPrefix:") {
-            $hash .= "$field|$value|";
+          if (substr($field, 0, strlen($modelName) + 1) === "$modelName:"
+              || $smAttrsPrefix && substr($field, 0, strlen($smAttrsPrefix) + 1) === "$smAttrsPrefix:") {
+            $hashArray[preg_replace("/^$modelName:/", '', $field)] = $value;
           }
         }
-        // if we have previously stored a hash for this supermodel, check if they are the same. If so we can get the ID.
+        $hash = '';
+        // Convert the hash data into a key string we can store and compare.
+        foreach ($hashArray as $field => $value) {
+          $hash .= "$field|$value|";
+        }
+        // If we have previously stored a hash for this supermodel, check if
+        // they are the same. If so we can get the ID.
         if (isset($this->previousCsvSupermodel['details'][$modelName]) && $this->previousCsvSupermodel['details'][$modelName] == $hash) {
-          // the details for this supermodel point to an existing record, so we need to re-use it.
+          // The details for this supermodel point to an existing record, so we
+          // need to re-use it.
           if ($linkOnly) {
-            // now link the existing supermodel record to the save array
+            // Now link the existing supermodel record to the save array.
             $saveArray[$modelName . ':id'] = $this->previousCsvSupermodel['id'][$modelName];
             if (isset($sm->attrs_field_prefix)) {
               if (!isset($this->previousCsvSupermodel['attributeIds'][$modelName])) {
-                // only fetch supermodel attribute data now as this is first time it is used.
+                // Only fetch supermodel attribute data now as this is first
+                // time it is used.
                 $this->previousCsvSupermodel['attributeIds'][$modelName] = array();
                 $smattrs = ORM::factory($modelName . '_attribute_value')->where(array('deleted' => 'f', $modelName . '_id' => $this->previousCsvSupermodel['id'][$modelName]))->find_all();
                 foreach ($smattrs as $smattr) {
@@ -734,7 +827,7 @@ class Import_Controller extends Service_Base_Controller {
                   $saveArray[$sm->attrs_field_prefix . ':' . $smattrId . ':' . $smattrValueId] = $saveArray[$sm->attrs_field_prefix . ':' . $smattrId];
                   unset($saveArray[$sm->attrs_field_prefix . ':' . $smattrId]);
                 }
-                else if (isset($saveArray[$sm->attrs_field_prefix . ':fk_' . $smattrId])) {
+                elseif (isset($saveArray[$sm->attrs_field_prefix . ':fk_' . $smattrId])) {
                   $saveArray[$sm->attrs_field_prefix . ':fk_' . $smattrId . ':' . $smattrValueId] = $saveArray[$sm->attrs_field_prefix . ':fk_' . $smattrId];
                   unset($saveArray[$sm->attrs_field_prefix . ':fk_' . $smattrId]);
                 }
@@ -742,34 +835,38 @@ class Import_Controller extends Service_Base_Controller {
             }
           }
           else {
-            // First, remove the data from the submission array so we don't re-submit it.
-            // although this leaves any attributes of the supermodel in the saveArray, they are ignored without the supermodel itself.
+            // First, remove the data from the submission array so we don't
+            // re-submit it. Although this leaves any attributes of the
+            // supermodel in the saveArray, they are ignored without the
+            // supermodel itself.
             foreach ($saveArray as $field => $value) {
               if (substr($field, 0, strlen($modelName) + 1) == "$modelName:") {
                 unset($saveArray[$field]);
               }
             }
-            // now link the existing supermodel record to the save array
+            // Now link the existing supermodel record to the save array.
             $saveArray[$model->object_name . ':' . $modelDetails['fk']] = $this->previousCsvSupermodel['id'][$modelName];
           }
         }
         else {
-          // this is a new supermodel (e.g. a new sample for the occurrences).
+          // This is a new supermodel (e.g. a new sample for the occurrences).
           $updatedPreviousCsvSupermodelDetails[$modelName] = $hash;
           unset($this->previousCsvSupermodel['attributeIds'][$modelName]);
-          // Check if there is lookup for existing data
+          // Check if there is lookup for existing data.
           if (isset($metadata['mappings']) && isset($metadata['mappings']['lookupSelect' . $modelName]) && $metadata['mappings']['lookupSelect' . $modelName] !== '') {
             $superModel = ORM::Factory($modelName);
             self::mergeExistingRecordIDs($modelName, $modelName, $sm->attrs_field_prefix, "", $metadata, $superModel, $saveArray, TRUE);
           }
-          else if ($modelName === 'term' && isset($metadata['mappings']) &&
+          elseif ($modelName === 'term' && isset($metadata['mappings']) &&
               isset($metadata['mappings']['lookupSelect' . $model->object_name]) &&
               $metadata['mappings']['lookupSelect' . $model->object_name] !== '' &&
               isset($saveArray['term:term'])) {
-            // special case for termlist_terms, and their term supermodel: have to look up using complex query to get the link between the termlist and the term
-            // no attributes. No website join. The term and termlist_id have to be provided at this point.
+            // Special case for termlist_terms, and their term supermodel: have
+            // to look up using complex query to get the link between the
+            // termlist and the term no attributes. No website join. The term
+            // and termlist_id have to be provided at this point.
             $db = Database::instance();
-            // Have to use a db as this may have a join
+            // Have to use a db as this may have a join.
             $existing = $db->query("SELECT tlt.term_id, tlt.meaning_id " .
                       "FROM indicia.termlists_terms tlt " .
                       "JOIN indicia.terms t ON t.id = tlt.term_id AND t.deleted = false " .
@@ -781,25 +878,31 @@ class Import_Controller extends Service_Base_Controller {
                           " AND tl.title = '" . $saveArray['termlists_term:fk_termlist'] . "'" :
                           " AND tlt.termlist_id = " . $saveArray['termlists_term:termlist_id']))->result_array(FALSE);
             if (count($existing) > 0) {
-              // If an previous record exists, we have to check for existing attributes.
+              // If an previous record exists, we have to check for existing
+              // attributes.
               // Note this only works properly on single value attributes.
               $saveArray[$modelName . ':id'] = $existing[0]['term_id'];
               $saveArray['meaning:id'] = $existing[0]['meaning_id'];
               // No attributes for terms.
             }
           }
-          else if ($modelName === 'taxon' && isset($metadata['mappings']) && 
-              isset($metadata['mappings']['lookupSelect' . $model->object_name]) && 
+          elseif ($modelName === 'taxon' && isset($metadata['mappings']) &&
+              isset($metadata['mappings']['lookupSelect' . $model->object_name]) &&
               $metadata['mappings']['lookupSelect' . $model->object_name] !== '') {
-            // same for taxa_taxon_lists, and their taxon supermodel: have to look up using complex query to get the link between the taxon_list and the taxon
-            // This has attributes. No website join. The taxon and taxon_list_id have to be provided at this point.
+            // Same for taxa_taxon_lists, and their taxon supermodel: have to
+            // look up using complex query to get the link between the
+            // taxon_list and the taxon.
+            // This has attributes. No website join. The taxon and
+            // taxon_list_id have to be provided at this point.
             $fields = json_decode($metadata['mappings']['lookupSelect' . $model->object_name]);
             $fields = array_map(
               function ($field) {
                 return $field->fieldName;
-              }, $fields);
-              $db = Database::instance();
-              // Have to use a db as this may have a join
+              },
+              $fields
+            );
+            $db = Database::instance();
+            // Have to use a db as this may have a join.
             $query = "SELECT ttl.taxon_id, ttl.taxon_meaning_id " .
                   "FROM indicia.taxa_taxon_lists ttl " .
                   "JOIN indicia.taxa t ON t.id = ttl.taxon_id AND t.deleted = false " .
@@ -812,14 +915,17 @@ class Import_Controller extends Service_Base_Controller {
             if (in_array('taxon:taxon', $fields) && isset($saveArray['taxon:taxon'])) {
               $query .= "AND t.taxon='" . $saveArray['taxon:taxon'] . "' ";
               $existing = $db->query($query)->result_array(FALSE);
-            } else if (in_array('taxon:external_key', $fields) && isset($saveArray['taxon:external_key'])) {
+            }
+            elseif (in_array('taxon:external_key', $fields) && isset($saveArray['taxon:external_key'])) {
               $query .= "AND t.external_key ='" . $saveArray['taxon:external_key'] . "' ";
               $existing = $db->query($query)->result_array(FALSE);
-            } else {
+            }
+            else {
               $existing = array();
             }
             if (count($existing) > 0) {
-              // If an previous record exists, we have to check for existing attributes.
+              // If an previous record exists, we have to check for existing
+              // attributes.
               // Note this only works properly on single value attributes.
               $saveArray[$modelName . ':id'] = $existing[0]['taxon_id'];
               $saveArray['taxon_meaning:id'] = $existing[0]['taxon_meaning_id'];
@@ -833,14 +939,18 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
-   * When saving a model with supermodels, we don't want to duplicate the supermodel record if all the details are the same across 2
-   * spreadsheet rows. So this method captures the ID of the supermodels that we have just posted, in case their details are replicated
-   * in the next record.
-   * Handles case where the submission has been flipped (associations), and supermodel has been made the main model.
+   * Find IDs associated with a supermodel (e.g. sample).
+   *
+   * When saving a model with supermodels, we don't want to duplicate the
+   * supermodel record if all the details are the same across 2 spreadsheet
+   * rows. So this method captures the ID of the supermodels that we have just
+   * posted, in case their details are replicated in the next record. Handles
+   * case where the submission has been flipped (associations), and supermodel
+   * has been made the main model.
    */
   private function captureSupermodelIds($model, $flipped = FALSE) {
     if ($flipped) {
-      // supermodel is now main model - just look for the ID field...
+      // Supermodel is now main model - just look for the ID field...
       $array = $model->as_array();
       $subStruct = $model->get_submission_structure();
       $this->previousCsvSupermodel['id'][$subStruct['model']] = $model->id;
@@ -848,13 +958,14 @@ class Import_Controller extends Service_Base_Controller {
     else {
       if (isset($this->submissionStruct['superModels'])) {
         $array = $model->as_array();
-        // loop through the supermodels
+        // Loop through the supermodels.
         foreach ($this->submissionStruct['superModels'] as $modelName => $modelDetails) {
           $id = $modelName . '_id';
-          // Expect that the fk field is called fkTable_id (e.g. if the super model is called sample, then
-          // the field should be sample_id). If it is not, then we revert to using ORM to find the ID, which
-          // incurs a database hit.
-          // For this reason as well we don't get any attribute values now, but rather the first time they need to be used.
+          // Expect that the fk field is called fkTable_id (e.g. if the super
+          // model is called sample, then the field should be sample_id). If it
+          // is not, then we revert to using ORM to find the ID, which incurs a
+          // database hit. For this reason as well we don't get any attribute
+          // values now, but rather the first time they need to be used.
           $this->previousCsvSupermodel['id'][$modelName] =
             isset($array[$id]) ? $array[$id] : $model->$modelName->id;
         }
@@ -863,8 +974,10 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Internal function that retrieves the metadata for a CSV upload. For AJAX requests, this comes
-   * from a cached file. For normal requests, the mappings should be in the $_POST data.
+   * Internal function that retrieves the metadata for a CSV upload.
+   *
+   * For AJAX requests, this comes from a cached file. For normal requests, the
+   * mappings should be in the $_POST data.
    */
   private function getMetadata($csvTempFile) {
     $metadataFile = DOCROOT . "upload/" . str_replace('.csv', '-metadata.txt', $csvTempFile);
@@ -875,25 +988,37 @@ class Import_Controller extends Service_Base_Controller {
       return json_decode($metadata, TRUE);
     }
     else {
-      // no previous file, so create default new metadata
-      return array('mappings' => array(), 'settings' => array(), 'errorCount' => 0);
+      // No previous file, so create default new metadata.
+      return ['mappings' => [], 'settings' => [], 'errorCount' => 0];
     }
   }
 
   /**
-   * During a csv upload, this method is called to retrieve a resource handle to a file that can
-   * contain errors during the upload. The file is created if required, and the headers from the
-   * uploaded csv file (referred to by handle) are copied into the first row of the new error file
-   * along with a header for the problem description and row number.
-   * @param string $csvTempFile File name of the imported CSV file.
-   * @param resource $handle File handle
-   * @param Boolean $supportsImportGuid True if the model supports tracking imports by GUID, therefore the error file
-   * needs to link the error row to its original GUID.
-   * @param integer $existingProblemColIdx Returns the column index that the current row's error message is in.
-   * @param integer $existingProblemRowNoColIdx Returns the column index that the current row's error source row number is
-   * in.
-   * @param integer $existingImportGuidColIdx Returns the column index that the current row's import GUID is in.
-   * @return resource The error file's handle.
+   * Retrieve the file handle of the error file.
+   *
+   * During a csv upload, this method is called to retrieve a resource handle
+   * to a file that can contain errors during the upload. The file is created
+   * if required, and the headers from the uploaded csv file (referred to by
+   * handle) are copied into the first row of the new error file along with a
+   * header for the problem description and row number.
+   *
+   * @param string $csvTempFile
+   *   File name of the imported CSV file.
+   * @param resource $handle
+   *   File handle.
+   * @param bool $supportsImportGuid
+   *   True if the model supports tracking imports by GUID, therefore the error
+   *   file needs to link the error row to its original GUID.
+   * @param int $existingProblemColIdx
+   *   Returns the column index that the current row's error message is in.
+   * @param int $existingProblemRowNoColIdx
+   *   Returns the column index that the current row's error source row number
+   *   is in.
+   * @param int $existingImportGuidColIdx
+   *   Returns the column index that the current row's import GUID is in.
+   *
+   * @return resource
+   *   The error file's handle.
    */
   private function getErrorFileHandle($csvTempFile,
                                       $handle,
@@ -901,26 +1026,29 @@ class Import_Controller extends Service_Base_Controller {
                                       &$existingProblemColIdx,
                                       &$existingProblemRowNoColIdx,
                                       &$existingImportGuidColIdx) {
-    // move the file to the beginning, so we can load the first row of headers.
+    // Move the file to the beginning, so we can load the first row of headers.
     fseek($handle, 0);
     $errorFile = str_replace('.csv', '-errors.csv', $csvTempFile);
     $needHeaders = !file_exists($errorFile);
     $errorHandle = fopen($errorFile, "a");
-    // skip the header row, but add it to the errors file with additional field for row number unless already present.
+    // Skip the header row, but add it to the errors file with additional field
+    // for row number unless already present.
     $headers = fgetcsv($handle, 1000, ",");
     $existingImportGuidColIdx = FALSE;
     if ($needHeaders) {
       $existingProblemColIdx = array_search('Problem', $headers);
-      if ($existingProblemColIdx === FALSE)
+      if ($existingProblemColIdx === FALSE) {
         $headers[] = 'Problem';
+      }
       $existingProblemRowNoColIdx = array_search('Row no.', $headers);
-      if ($existingProblemRowNoColIdx === FALSE)
+      if ($existingProblemRowNoColIdx === FALSE) {
         $headers[] = 'Row no.';
+      }
       if ($supportsImportGuid) {
         $existingImportGuidColIdx = array_search('Import ID', $headers);
         if ($existingImportGuidColIdx === FALSE) {
-          // If not re-importing errors, store the file ID as an import guid in the errors, to link errors to their
-          // original import.
+          // If not re-importing errors, store the file ID as an import guid in
+          // the errors, to link errors to their original import.
           $headers[] = 'Import ID';
         }
       }
@@ -930,35 +1058,44 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Runs at the start of each batch of rows. Checks if the previous imported row defined a supermodel. If so, we'll load
-   * it from the Kohana cache. This allows us to determine if the new row can link to the same supermodel or not. An example
-   * would be linking several occurrences to the same sample.
-   * @param $cache
+   * Retrieves the supermodel (e.g. sample) associated with the last row.
+   *
+   * Runs at the start of each batch of rows. Checks if the previous imported
+   * row defined a supermodel. If so, we'll load it from the Kohana cache. This
+   * allows us to determine if the new row can link to the same supermodel or
+   * not. An example would be linking several occurrences to the same sample.
+   *
+   * @param object $cache
+   *   Cache object.
    */
   private function getPreviousRowSupermodel($cache) {
     $this->previousCsvSupermodel = $cache->get(basename($_GET['uploaded_csv']) . 'previousSupermodel');
     if (!$this->previousCsvSupermodel) {
       $this->previousCsvSupermodel = array(
-        'id' => array(),
-        'details' => array(),
-        'attributeIds' => array()
+        'id' => [],
+        'details' => [],
+        'attributeIds' => [],
       );
     }
   }
 
   /**
-   * Checks if there is a byte order marker at the beginning of the file (BOM). If so, sets this information in the $metadata.
-   * Rewinds the file to the beginning.
-   * @param $metadata
-   * @param $handle
-   * @return mixed
+   * Checks if there is a byte order marker at the beginning of the file (BOM).
+   *
+   * If so, sets this information in the $metadata. Rewinds the file to the
+   * beginning.
+   *
+   * @param array $metadata
+   *   Import metadata information.
+   * @param resource $handle
+   *   File handle.
    */
-  private function checkIfUtf8(&$metadata, $handle) {
+  private function checkIfUtf8(array &$metadata, $handle) {
     if (!isset($metadata['isUtf8'])) {
       fseek($handle, 0);
-      $BOMCheck = fread($handle, 3);
-      // Flag if this file has a UTF8 BOM at the start
-      $metadata['isUtf8'] = $BOMCheck === chr(0xEF) . chr(0xBB) . chr(0xBF);
+      $bomCheck = fread($handle, 3);
+      // Flag if this file has a UTF8 BOM at the start.
+      $metadata['isUtf8'] = $bomCheck === chr(0xEF) . chr(0xBB) . chr(0xBF);
     }
   }
 
