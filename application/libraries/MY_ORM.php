@@ -1516,7 +1516,7 @@ class ORM extends ORM_Core {
             // Attribute name is of form tblAttr:attrId:valId:uniqueIdx
             $arr = explode(':', $field);
             $attrId = $arr[1];
-            $valueId = count($arr)>2 ? $arr[2] : null;
+            $valueId = count($arr)>2 ? $arr[2] : NULL;
             $attrDef = self::loadAttrDef($this->object_name, $attrId);
             $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
             if (!$attr) {
@@ -1613,7 +1613,8 @@ class ORM extends ORM_Core {
           }
         }
         return $r;
-      } else {
+      }
+      else {
         $this->errors['general']='INTERNAL ERROR: multiple values passed in for '.$this->object_name.' '.$valueId.' '.print_r($value, true);
         return FALSE;
       }
@@ -1637,10 +1638,12 @@ class ORM extends ORM_Core {
       $attrValueModel=ORM::factory($this->object_name.'_attribute_value');
       $this->attrValModels[$this->object_name] = $attrValueModel;
     }
-    if ($this->existing && (!is_null($valueId)) && (!$attrDef->multi_value=='f'))
-      $attrValueModel->where(array($this->object_name.'_attribute_id'=>$attrId, $this->object_name.'_id'=>$this->id))->find();
-    if (!$attrValueModel->loaded && !empty($valueId))
+    if ($this->existing && $attrDef->multi_value === 'f') {
+      $attrValueModel->where(array($this->object_name.'_attribute_id' => $attrId, $this->object_name.'_id' => $this->id))->find();
+    }
+    if (!$attrValueModel->loaded && !empty($valueId)) {
       $attrValueModel->find($valueId);
+    }
 
     $oldValues = array_merge($attrValueModel->as_array());
     $dataType = $attrDef->data_type;
