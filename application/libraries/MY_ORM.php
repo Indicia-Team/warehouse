@@ -1624,11 +1624,6 @@ class ORM extends ORM_Core {
             $attrId = $arr[1];
             $valueId = count($arr)>2 ? $arr[2] : NULL;
             $attrDef = self::loadAttrDef($this->object_name, $attrId);
-            $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
-            if ($attr === FALSE) {
-              // Failed to create attribute so drop out.
-              return FALSE;
-            }
             // If this attribute is a multivalue array, then any existing
             // attributes which are not in the submission for the same attr ID
             // should be removed. We need to keep an array of the multi-value
@@ -1645,8 +1640,10 @@ class ORM extends ORM_Core {
                 && !empty($this->submission['fields']["$field:upper"]['value'])) {
               $value .= ' - ' . $this->submission['fields']["$field:upper"]['value'];
             }
-            if (!$this->createAttributeRecord($attrId, $valueId, $value, $attrDef))
+            if ($this->createAttributeRecord($attrId, $valueId, $value, $attrDef) === FALSE) {
+              // Failed to create attribute so drop out.
               return FALSE;
+            }
           }
         }
         // Delete any old values from a mult-value attribute. No need to worry
@@ -1729,7 +1726,6 @@ class ORM extends ORM_Core {
         return FALSE;
       }
     }
-
     $fk = FALSE;
     $value=trim($value);
     if (substr($attrId, 0, 3) == 'fk_') {
