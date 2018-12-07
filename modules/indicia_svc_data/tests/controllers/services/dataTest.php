@@ -286,7 +286,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'location:name' => 'UnitTest2',
       'location:centroid_sref' => 'SU0101',
       'location:centroid_sref_system' => 'osgb',
-      'locAttr:3' => 'not an int'
+      'locAttr:3' => 'not an int',
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
     $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
@@ -301,7 +301,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'location:name' => 'UnitTest2',
       'location:centroid_sref' => 'SU0101',
       'location:centroid_sref_system' => 'osgb',
-      'locAttr:3' => 0
+      'locAttr:3' => 0,
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
     $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
@@ -310,18 +310,24 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(isset($r['success']), 'Submitting a location with int attr did not return success response');
 
     $locId = $r['success'];
-    $locAttr = ORM::Factory('location_attribute_value')->where(array('location_id'=>$locId, 'deleted' => 'f'))->find();
+    $locAttr = ORM::Factory('location_attribute_value')
+      ->where([
+        'location_id' => $locId,
+        'location_attribute_id' => 3,
+        'deleted' => 'f',
+      ])
+      ->find();
 
     Kohana::log('debug', "Valid location attribute " . print_r((new ArrayObject($locAttr))->offsetGet("\0*\0object"), TRUE));
     $this->assertEquals(0, $locAttr->int_value, 'Submitting a location with zero int attr did not save');
 
-    // set attr to empty to check it deletes the attribute value
+    // Set attr to empty to check it deletes the attribute value.
     $array = array(
       'location:id' => $locId,
       'location:name' => 'UnitTest2',
       'location:centroid_sref' => 'SU0101',
       'location:centroid_sref_system' => 'osgb',
-      'locAttr:2:'.$locAttr->id => ''
+      "locAttr:3:$locAttr->id" => '',
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
     $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
@@ -329,9 +335,14 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Submission response to location attribute delete " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a location with blank attr did not return success response');
 
-    $db = ORM::Factory('location_attribute_value')->where(array('location_id'=>$locId, 'deleted' => 'f'));
+    $db = ORM::Factory('location_attribute_value')
+      ->where([
+        'location_id' => $locId,
+        'location_attribute_id' => 3,
+        'deleted' => 'f',
+      ]);
     $this->assertEquals(0, $db->count_all(), 'Submitting a location with blank attr did not delete the attr');
-    // cleanup
+    // Cleanup.
     $locAttr->delete();
     ORM::Factory('location', $locId)->delete();
   }
