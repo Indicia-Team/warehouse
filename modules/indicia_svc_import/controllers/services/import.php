@@ -506,10 +506,41 @@ class Import_Controller extends Service_Base_Controller {
         }
         // Clear the model, so nothing else from the previous row carries over.
         $model->clear();
+        // If main model ID is set in imported data, then we MUST be importing
+        // into an existing record. Import file can't create arbitrary new IDs.
+        $mustExist = FALSE;
+        if (!empty($saveArray["$_GET[model]:id"])) {
+          // Test that if an import contains an ID for the main model, that it
+          // is used for a lookup of existing records.
+          $ok = FALSE;
+          if (!empty($metadata['mappings']['lookupSelect' . $_GET['model']])) {
+            $lookupFields = json_decode($metadata['mappings']['lookupSelect' . $_GET['model']]);
+            foreach ($lookupFields as $lookupField) {
+              if ($lookupField->fieldName === "$_GET[model]:id") {
+                $ok = TRUE;
+              }
+            }
+          }
+          if (!$ok) {
+            $this->logError(
+              $data, 'ID specified in import row but not being used to lookup an existing record.',
+              $existingProblemColIdx, $existingErrorRowNoColIdx,
+              $errorHandle, $count + $offset + 1,
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+              $metadata
+            );
+            // Get file position here otherwise the fgetcsv in the while loop
+            // will move it one record too far.
+            $filepos = ftell($handle);
+            continue;
+          }
+          $mustExist = TRUE;
+        }
         // If a possible previous record, attempt to find the relevant IDs.
         if (isset($metadata['mappings']['lookupSelect' . $_GET['model']]) && $metadata['mappings']['lookupSelect' . $_GET['model']] !== '') {
           try {
-            self::mergeExistingRecordIDs($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, "", $metadata, $model, $saveArray);
+            self::mergeExistingRecordIDs($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, '', $metadata,
+              $mustExist, $model, $saveArray);
           }
           catch (Exception $e) {
             $this->logError(
@@ -533,7 +564,8 @@ class Import_Controller extends Service_Base_Controller {
         $updatedPreviousCsvSupermodelDetails = $this->checkForSameSupermodel($saveArray, $model, $associationExists, $metadata);
         if ($associationExists && isset($metadata['mappings']['lookupSelect' . $associatedRecordPrefix]) && $metadata['mappings']['lookupSelect' . $associatedRecordPrefix] !== '') {
           $assocModel = ORM::Factory($_GET['model']);
-          self::mergeExistingRecordIDs($_GET['model'], $associatedRecordPrefix, $associatedAttributePrefix, $associatedSuffix, $metadata, $assocModel, $saveArray);
+          self::mergeExistingRecordIDs($_GET['model'], $associatedRecordPrefix, $associatedAttributePrefix, $associatedSuffix,
+            $metadata, FALSE, $assocModel, $saveArray);
           if (isset($saveArray[$originalRecordPrefix . ':id']) && isset($saveArray[$associatedRecordPrefix . ':id'])) {
             $assocModel = ORM::Factory($associationRecordPrefix)
               ->where([
@@ -707,7 +739,8 @@ class Import_Controller extends Service_Base_Controller {
   /**
    * If there is an existing record to lookup, merge its IDs with the data row.
    */
-  private function mergeExistingRecordIDs($modelName, $fieldPrefix, $attrPrefix, $assocSuffix, $metadata, &$model, &$saveArray, $setSupermodel = FALSE) {
+  private function mergeExistingRecordIDs($modelName, $fieldPrefix, $attrPrefix, $assocSuffix, $metadata, $mustExist,
+      &$model, &$saveArray, $setSupermodel = FALSE) {
     $join = "";
     $table = inflector::plural($modelName);
     $fields = json_decode($metadata['mappings']['lookupSelect' . $fieldPrefix]);
@@ -747,6 +780,9 @@ class Import_Controller extends Service_Base_Controller {
             }
           }
         }
+      }
+      elseif ($mustExist) {
+        throw new Exception('Importing an existing ID but the row does not already exist.');
       }
     }
   }
@@ -886,7 +922,8 @@ class Import_Controller extends Service_Base_Controller {
           // Check if there is lookup for existing data.
           if (isset($metadata['mappings']) && isset($metadata['mappings']['lookupSelect' . $modelName]) && $metadata['mappings']['lookupSelect' . $modelName] !== '') {
             $superModel = ORM::Factory($modelName);
-            self::mergeExistingRecordIDs($modelName, $modelName, $sm->attrs_field_prefix, "", $metadata, $superModel, $saveArray, TRUE);
+            self::mergeExistingRecordIDs($modelName, $modelName, $sm->attrs_field_prefix, '', $metadata, FALSE,
+              $superModel, $saveArray, TRUE);
           }
           elseif ($modelName === 'term' && isset($metadata['mappings']) &&
               isset($metadata['mappings']['lookupSelect' . $model->object_name]) &&
