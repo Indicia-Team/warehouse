@@ -133,13 +133,13 @@ class Import_Controller extends Service_Base_Controller {
     if (isset($submissionStruct['superModels'])) {
       foreach ($submissionStruct['superModels'] as $superModelName => $details) {
         $superModel = ORM::factory($superModelName);
-        if (isset($superModel->import_duplicate_check_combinations)) {
-          $combinations[$superModelName] = $superModel->import_duplicate_check_combinations;
+        if (isset($superModel->importDuplicateCheckCombinations)) {
+          $combinations[$superModelName] = $superModel->importDuplicateCheckCombinations;
         }
       }
     }
-    if (isset($model->import_duplicate_check_combinations)) {
-      $combinations[$modelName] = $model->import_duplicate_check_combinations;
+    if (isset($model->importDuplicateCheckCombinations)) {
+      $combinations[$modelName] = $model->importDuplicateCheckCombinations;
     }
     echo json_encode($combinations);
   }
@@ -386,8 +386,8 @@ class Import_Controller extends Service_Base_Controller {
       // Check if the conditions for special field processing are met - all the
       // columns are in the mapping.
       $specialFieldProcessing = array();
-      if (isset($model->special_import_field_processing_defn)) {
-        foreach ($model->special_import_field_processing_defn as $column => $defn) {
+      if (isset($model->specialImportFieldProcessingDefn)) {
+        foreach ($model->specialImportFieldProcessingDefn as $column => $defn) {
           $columns = array();
           $index = 0;
           foreach ($metadata['mappings'] as $col => $attr) {
@@ -464,13 +464,13 @@ class Import_Controller extends Service_Base_Controller {
         foreach ($specialFieldProcessing as $col => $discard) {
           if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
             $saveArray[$col] = vsprintf(
-              $model->special_import_field_processing_defn[$col]['template'],
+              $model->specialImportFieldProcessingDefn[$col]['template'],
               array_map(function ($column) use ($saveArray) {
                 return $saveArray[$column];
               },
-              $model->special_import_field_processing_defn[$col]['columns'])
+              $model->specialImportFieldProcessingDefn[$col]['columns'])
             );
-            foreach ($model->special_import_field_processing_defn[$col]['columns'] as $column) {
+            foreach ($model->specialImportFieldProcessingDefn[$col]['columns'] as $column) {
               unset($saveArray[$column]);
             }
           }
@@ -542,9 +542,55 @@ class Import_Controller extends Service_Base_Controller {
         }
         // Clear the model, so nothing else from the previous row carries over.
         $model->clear();
+        // If main model ID is set in imported data, then we MUST be importing
+        // into an existing record. Import file can't create arbitrary new IDs.
+        $mustExist = FALSE;
+        if (!empty($saveArray["$_GET[model]:id"])) {
+          // Test that if an import contains an ID for the main model, that it
+          // is used for a lookup of existing records.
+          $ok = FALSE;
+          if (!empty($metadata['mappings']['lookupSelect' . $_GET['model']])) {
+            $lookupFields = json_decode($metadata['mappings']['lookupSelect' . $_GET['model']]);
+            foreach ($lookupFields as $lookupField) {
+              if ($lookupField->fieldName === "$_GET[model]:id") {
+                $ok = TRUE;
+              }
+            }
+          }
+          if (!$ok) {
+            $this->logError(
+              $data, 'ID specified in import row but not being used to lookup an existing record.',
+              $existingProblemColIdx, $existingErrorRowNoColIdx,
+              $errorHandle, $count + $offset + 1,
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+              $metadata
+            );
+            // Get file position here otherwise the fgetcsv in the while loop
+            // will move it one record too far.
+            $filepos = ftell($handle);
+            continue;
+          }
+          $mustExist = TRUE;
+        }
         // If a possible previous record, attempt to find the relevant IDs.
         if (isset($metadata['mappings']['lookupSelect' . $_GET['model']]) && $metadata['mappings']['lookupSelect' . $_GET['model']] !== '') {
-          self::mergeExistingRecordIDs($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, "", $metadata, $model, $saveArray);
+          try {
+            self::mergeExistingRecordIDs($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, '', $metadata,
+              $mustExist, $model, $saveArray);
+          }
+          catch (Exception $e) {
+            $this->logError(
+              $data, $e->getMessage(),
+              $existingProblemColIdx, $existingErrorRowNoColIdx,
+              $errorHandle, $count + $offset + 1,
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+              $metadata
+            );
+            // Get file position here otherwise the fgetcsv in the while loop
+            // will move it one record too far.
+            $filepos = ftell($handle);
+            continue;
+          }
         }
         // Check if we can use a existing data relationship to workmout if this
         // is a new or old record. If posting a supermodel, are the details of
@@ -554,7 +600,8 @@ class Import_Controller extends Service_Base_Controller {
         $updatedPreviousCsvSupermodelDetails = $this->checkForSameSupermodel($saveArray, $model, $associationExists, $metadata);
         if ($associationExists && isset($metadata['mappings']['lookupSelect' . $associatedRecordPrefix]) && $metadata['mappings']['lookupSelect' . $associatedRecordPrefix] !== '') {
           $assocModel = ORM::Factory($_GET['model']);
-          self::mergeExistingRecordIDs($_GET['model'], $associatedRecordPrefix, $associatedAttributePrefix, $associatedSuffix, $metadata, $assocModel, $saveArray);
+          self::mergeExistingRecordIDs($_GET['model'], $associatedRecordPrefix, $associatedAttributePrefix, $associatedSuffix,
+            $metadata, FALSE, $assocModel, $saveArray);
           if (isset($saveArray[$originalRecordPrefix . ':id']) && isset($saveArray[$associatedRecordPrefix . ':id'])) {
             $assocModel = ORM::Factory($associationRecordPrefix)
               ->where([
@@ -712,25 +759,13 @@ class Import_Controller extends Service_Base_Controller {
               $errors[] = "$fldTitle: $msg";
             }
             $errors = implode("\n", array_unique($errors));
-            if ($existingProblemColIdx === FALSE) {
-              $data[] = $errors;
-            }
-            else {
-              $data[$existingProblemColIdx] = $errors;
-            }
-            if ($existingErrorRowNoColIdx === FALSE) {
-              // + 1 for header.
-              $data[] = $count + $offset + 1;
-            }
-            else {
-              $data[$existingErrorRowNoColIdx] = $count + $offset + 1;
-            }
-            if ($supportsImportGuid && $existingImportGuidColIdx === FALSE) {
-              $data[] = $fileNameParts[0];
-            }
-            fputcsv($errorHandle, $data);
-            kohana::log('debug', 'Failed to import CSV row: ' . $errors);
-            $metadata['errorCount'] = $metadata['errorCount'] + 1;
+            $this->logError(
+              $data, $errors,
+              $existingProblemColIdx, $existingErrorRowNoColIdx,
+              $errorHandle, $count + $offset + 1,
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+              $metadata
+            );
           }
           else {
             // Now the record has successfully posted, we need to store the
@@ -746,25 +781,13 @@ class Import_Controller extends Service_Base_Controller {
         }
         else {
           $error = "Could not identify whether record is main record or synonym : " . $saveArray['synonym:tracker'];
-          if ($existingProblemColIdx === FALSE) {
-            $data[] = $error;
-          }
-          else {
-            $data[$existingProblemColIdx] = $error;
-          }
-          if ($existingErrorRowNoColIdx === FALSE) {
-            // + 1 for header
-            $data[] = $count + $offset + 1;
-          }
-          else {
-            $data[$existingErrorRowNoColIdx] = $count + $offset + 1;
-          }
-          if ($supportsImportGuid && $existingImportGuidColIdx === FALSE) {
-            $data[] = $fileNameParts[0];
-          }
-          fputcsv($errorHandle, $data);
-          kohana::log('debug', 'Failed to import CSV row: ' . $error);
-          $metadata['errorCount'] = $metadata['errorCount'] + 1;
+          $this->logError(
+            $data, $error,
+            $existingProblemColIdx, $existingErrorRowNoColIdx,
+            $errorHandle, $count + $offset + 1,
+            $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+            $metadata
+          );
         }
         // Get file position here otherwise the fgetcsv in the while loop will
         // move it one record too far.
@@ -790,7 +813,36 @@ class Import_Controller extends Service_Base_Controller {
     }
   }
 
-  private function mergeExistingRecordIDs($modelName, $fieldPrefix, $attrPrefix, $assocSuffix, $metadata, &$model, &$saveArray, $setSupermodel = FALSE) {
+  /**
+   * Adds an error to the error log file.
+   */
+  private function logError($data, $error, $existingProblemColIdx, $existingErrorRowNoColIdx, $errorHandle, $total, $importGuid, &$metadata) {
+    if ($existingProblemColIdx === FALSE) {
+      $data[] = $error;
+    }
+    else {
+      $data[$existingProblemColIdx] = $error;
+    }
+    if ($existingErrorRowNoColIdx === FALSE) {
+      // + 1 for header.
+      $data[] = $total;
+    }
+    else {
+      $data[$existingErrorRowNoColIdx] = $total;
+    }
+    if ($importGuid) {
+      $data[] = $fileNameParts[0];
+    }
+    fputcsv($errorHandle, $data);
+    kohana::log('debug', 'Failed to import CSV row: ' . $error);
+    $metadata['errorCount'] = $metadata['errorCount'] + 1;
+  }
+
+  /**
+   * If there is an existing record to lookup, merge its IDs with the data row.
+   */
+  private function mergeExistingRecordIDs($modelName, $fieldPrefix, $attrPrefix, $assocSuffix, $metadata, $mustExist,
+      &$model, &$saveArray, $setSupermodel = FALSE) {
     $join = "";
     $table = inflector::plural($modelName);
     $fields = json_decode($metadata['mappings']['lookupSelect' . $fieldPrefix]);
@@ -830,6 +882,9 @@ class Import_Controller extends Service_Base_Controller {
             }
           }
         }
+      }
+      elseif ($mustExist) {
+        throw new Exception('Importing an existing ID but the row does not already exist.');
       }
     }
   }
@@ -969,7 +1024,8 @@ class Import_Controller extends Service_Base_Controller {
           // Check if there is lookup for existing data.
           if (isset($metadata['mappings']) && isset($metadata['mappings']['lookupSelect' . $modelName]) && $metadata['mappings']['lookupSelect' . $modelName] !== '') {
             $superModel = ORM::Factory($modelName);
-            self::mergeExistingRecordIDs($modelName, $modelName, $sm->attrs_field_prefix, "", $metadata, $superModel, $saveArray, TRUE);
+            self::mergeExistingRecordIDs($modelName, $modelName, $sm->attrs_field_prefix, '', $metadata, FALSE,
+              $superModel, $saveArray, TRUE);
           }
           elseif ($modelName === 'term' && isset($metadata['mappings']) &&
               isset($metadata['mappings']['lookupSelect' . $model->object_name]) &&
