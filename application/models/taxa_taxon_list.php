@@ -55,14 +55,14 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'taxon:taxon:genus' => 'Genus (builds binomial name)',
       'taxon:taxon:specific' => 'Specific name/epithet (builds binomial name)',
   );
-  public $special_import_field_processing_defn = array(
+  public $specialImportFieldProcessingDefn = array(
       'taxon:taxon' => array(
           'template' => '%s %s',
           'columns' => array('taxon:taxon:genus', 'taxon:taxon:specific')
       )
   );
-  
-  public $import_duplicate_check_combinations = array(
+
+  public $importDuplicateCheckCombinations = array(
       array('description' => 'Species list And Taxon name',
           'fields' => array(array('fieldName' => 'taxa_taxon_list:taxon_list_id'),
               array('fieldName' => 'taxon:taxon'),
