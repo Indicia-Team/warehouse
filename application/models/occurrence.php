@@ -66,14 +66,14 @@ class Occurrence_Model extends ORM {
   );
 
   // During an import it is possible to merge different columns in a CSV row to make a database field
-  public $special_import_field_processing_defn = array(
+  public $specialImportFieldProcessingDefn = array(
       'occurrence:fk_taxa_taxon_list' => array(
           'template' => '%s %s',
           'columns' => array('occurrence:fk_taxa_taxon_list:genus', 'occurrence:fk_taxa_taxon_list:specific')
         )
       );
 
-  public $import_duplicate_check_combinations = array(
+  public $importDuplicateCheckCombinations = array(
       array(
         'description' => 'Occurrence External Key',
         'fields' => array(

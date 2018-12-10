@@ -68,7 +68,7 @@ class Sample_Model extends ORM_Tree {
   );
 
   // During an import it is possible to merge different columns in a CSV row to make a database field
-  public $special_import_field_processing_defn = array(
+  public $specialImportFieldProcessingDefn = array(
       'sample:date' => array(
           'template' => '%04d-%02d-%02d',
           'columns' => array('sample:date:year', 'sample:date:month', 'sample:date:day')
@@ -83,7 +83,7 @@ class Sample_Model extends ORM_Tree {
    *
    * @var array
    */
-  public $import_duplicate_check_combinations = [
+  public $importDuplicateCheckCombinations = [
     [
       'description' => 'Sample ID',
       'fields' => [

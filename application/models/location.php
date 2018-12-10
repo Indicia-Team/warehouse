@@ -48,7 +48,7 @@ class Location_Model extends ORM_Tree {
     'location:fk_parent:external_key' => 'Parent location External key',
   );
 
-  public $import_duplicate_check_combinations = array(
+  public $importDuplicateCheckCombinations = array(
     array(
       'description' => 'Location External Key',
       'fields' => array(
