@@ -73,23 +73,38 @@ class Occurrence_Model extends ORM {
         )
       );
 
-  public $importDuplicateCheckCombinations = array(
-      array(
-        'description' => 'Occurrence External Key',
-        'fields' => array(
-            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
-            array('fieldName' => 'occurrence:external_key'),
-        ),
-      ),
-      array(
-        'description' => 'Sample and Taxon',
-        'fields' => array(
-            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
-            array('fieldName' => 'occurrence:sample_id', 'notInMappings' => TRUE),
-            array('fieldName' => 'occurrence:taxa_taxon_list_id'),
-        ),
-      ),
-  );
+  /**
+   * Methods of identifying duplicates during import.
+   *
+   * Define field combinations that can be used to lookup existing records for
+   * updates during import.
+   *
+   * @var array
+   */
+  public $importDuplicateCheckCombinations = [
+    [
+      'description' => 'Occurrence ID',
+      'fields' => [
+        ['fieldName' => 'website_id', 'notInMappings' => TRUE],
+        ['fieldName' => 'occurrence:id'],
+      ],
+    ],
+    [
+      'description' => 'Occurrence External Key',
+      'fields' => [
+        ['fieldName' => 'website_id', 'notInMappings' => TRUE],
+        ['fieldName' => 'occurrence:external_key'],
+      ],
+    ],
+    [
+      'description' => 'Sample and Taxon',
+      'fields' => [
+        ['fieldName' => 'website_id', 'notInMappings' => TRUE],
+        ['fieldName' => 'occurrence:sample_id', 'notInMappings' => TRUE],
+        ['fieldName' => 'occurrence:taxa_taxon_list_id'],
+      ],
+    ],
+  ];
 
   /**
    * Should a determination be logged if this is a changed record?
