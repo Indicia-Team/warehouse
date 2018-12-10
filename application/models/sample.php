@@ -28,8 +28,7 @@
  * @subpackage Models
  * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
-class Sample_Model extends ORM_Tree
-{
+class Sample_Model extends ORM_Tree {
   protected $requeuedForVerification = FALSE;
 
   public $search_field = 'id';
@@ -76,31 +75,57 @@ class Sample_Model extends ORM_Tree
         )
       );
 
-  public $import_duplicate_check_combinations = array(
-      array(
-        'description' => 'Sample External Key',
-        'fields' => array(array('fieldName' => 'survey_id', 'notInMappings' => TRUE),
-              array('fieldName' => 'sample:sample_method_id'),
-              array('fieldName' => 'sample:external_key'),
-        )
-      ),
-      array(
-        'description' => 'Grid Ref and Date',
-        'fields' => array(array('fieldName' => 'survey_id', 'notInMappings' => TRUE),
-              array('fieldName' => 'sample:sample_method_id'),
-              array('fieldName' => 'sample:entered_sref'),
-              array('fieldName' => 'sample:date'),
-        )
-      ),
-      array(
-        'description' => 'Location Record and Date',
-        'fields' => array(array('fieldName' => 'survey_id', 'notInMappings' => TRUE),
-              array('fieldName' => 'sample:sample_method_id'),
-              array('fieldName' => 'sample:location_id'),
-              array('fieldName' => 'sample:date'),
-        )
-      ),
-  );
+  /**
+   * Methods of identifying duplicates during import.
+   *
+   * Define field combinations that can be used to lookup existing records for
+   * updates during import.
+   *
+   * @var array
+   */
+  public $import_duplicate_check_combinations = [
+    [
+      'description' => 'Sample ID',
+      'fields' => [
+        ['fieldName' => 'survey_id', 'notInMappings' => TRUE],
+        ['fieldName' => 'sample:id'],
+      ],
+    ],
+    [
+      'description' => 'Sample External Key',
+      'fields' => [
+        ['fieldName' => 'survey_id', 'notInMappings' => TRUE],
+        ['fieldName' => 'sample:sample_method_id'],
+        ['fieldName' => 'sample:external_key'],
+      ],
+    ],
+    [
+      'description' => 'Sample External Key',
+      'fields' => [
+        ['fieldName' => 'survey_id', 'notInMappings' => TRUE],
+        ['fieldName' => 'sample:sample_method_id'],
+        ['fieldName' => 'sample:external_key'],
+      ],
+    ],
+    [
+      'description' => 'Grid Ref and Date',
+      'fields' => [
+        ['fieldName' => 'survey_id', 'notInMappings' => TRUE],
+        ['fieldName' => 'sample:sample_method_id'],
+        ['fieldName' => 'sample:entered_sref'],
+        ['fieldName' => 'sample:date'],
+      ],
+    ],
+    [
+      'description' => 'Location Record and Date',
+      'fields' => [
+        ['fieldName' => 'survey_id', 'notInMappings' => TRUE],
+        ['fieldName' => 'sample:sample_method_id'],
+        ['fieldName' => 'sample:location_id'],
+        ['fieldName' => 'sample:date'],
+      ],
+    ],
+  ];
 
   /**
   * Validate and save the data.
