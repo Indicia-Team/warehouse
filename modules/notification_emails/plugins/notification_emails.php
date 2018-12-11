@@ -574,7 +574,7 @@ function send_out_user_email(
     // All notifications that have been sent out in an email are marked so we
     // don't resend them.
     $db
-      ->set('email_sent', 'true')
+      ->set('email_sent', 't')
       ->from('notifications')
       ->in('id', $notificationIds)
       ->update();
