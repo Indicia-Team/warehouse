@@ -370,7 +370,7 @@ class XMLReportReader_Core implements ReportReader {
         if (!empty($this->blockedSharingTasksField)) {
           $sharingCode = warehouse::sharingTermToCode($sharing);
           $sharingFilters[] = "($this->websiteFilterField in ($idList) OR $this->createdByField=1 OR " .
-            "NOT $this->blockedSharingTasksField @> ARRAY['$sharingCode'::character ])";
+            "$this->blockedSharingTasksField IS NULL OR NOT $this->blockedSharingTasksField @> ARRAY['$sharingCode'::character ])";
           // Some reports may rely on the syntax of an agreement join being
           // present. Therefore we insert a dummy join that will have little or
           // no effect on performance.

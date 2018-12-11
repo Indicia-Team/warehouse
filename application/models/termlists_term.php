@@ -43,7 +43,7 @@ class Termlists_term_Model extends Base_Name_Model {
 
   protected $ORM_Tree_children = 'termlists_terms';
 
-  public $import_duplicate_check_combinations = array(
+  public $importDuplicateCheckCombinations = array(
       array(
         'description' => 'Termlist And Term',
         'fields' => array(array('fieldName' => 'termlists_term:termlist_id'),
@@ -134,6 +134,8 @@ class Termlists_term_Model extends Base_Name_Model {
           else {
             // Synonym has been deleted - remove it from the db.
             $syn->deleted = 't';
+            $syn->updated_on = date("Ymd H:i:s");
+            $syn->updated_by_id = security::getUserId();
             $syn->save();
           }
         }

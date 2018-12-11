@@ -174,6 +174,7 @@ abstract class ATTR_ORM extends Valid_ORM {
         'title' => $s['fields']['caption']['value'],
         'description' => 'Termlist created for attribute ' . $s['fields']['caption']['value'],
         'website_id' => count($websiteIds) == 1 ? $websiteIds[0] : NULL,
+        'deleted' => 'f',
       ));
       if (!$termlist->submit()) {
         throw new exception('Failed to create attribute termlist');
