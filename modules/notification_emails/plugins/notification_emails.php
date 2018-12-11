@@ -586,6 +586,7 @@ function send_out_user_email(
       ->where("source_type != 'VT' AND source_type != 'PT'")
       ->in('id', $notificationIds)
       ->update();
+    $db->commit();
   }
   catch (Exception $e) {
     $db->rollback();
