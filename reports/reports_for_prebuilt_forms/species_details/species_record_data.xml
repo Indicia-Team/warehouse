@@ -1,0 +1,25 @@
+<report
+    title="Records for a species"
+    description="Report used to retrieve records for a species, currently for use on the Species Details map.
+Could also be used to provide a grid on the same page in the future."
+>
+  <query website_filter_field="o.website_id">
+  select #columns#
+  from cache_occurrences_functional o
+  join cache_taxa_taxon_lists cttl on cttl.external_key=o.taxa_taxon_list_external_key
+  #agreements_join#
+  #joins#
+  and #sharing_filter#
+  </query>
+  <params>
+    <param name='taxa_taxon_list_id' display='Taxa taxon list ID' description='Taxa taxon list ID of the records to load' datatype="integer" default="">
+      <where>cttl.id=#taxa_taxon_list_id#</where>
+    </param>
+    <param name='taxon_meaning_id' display='Taxon meaning ID' description='Meaning ID of the taxon records to load' datatype="integer">
+      <where>cttl.taxon_meaning_id=#taxon_meaning_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name='geom' sql="st_astext(o.public_geom)" mappable="true" />
+  </columns>
+</report>
