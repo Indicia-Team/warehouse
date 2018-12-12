@@ -1,0 +1,104 @@
+<report
+    title="A description of a taxon based on attached attributes"
+    description="Uses the category (and parent category) of attached attribute values to build a text description"
+>
+  <query website_filter_field="">
+SELECT #columns#
+FROM (
+  SELECT catsort, category, subcatsort, subcategory, caption, raw_caption, weight, STRING_AGG(distinct value, ', ') AS values
+  from (
+    SELECT
+      cat_l.sort_order as catsort,
+      COALESCE(cat_l.term, cat.term) as category,
+      subcat_l.sort_order as subcatsort,
+      COALESCE(subcat_l.term, subcat.term) as subcategory,
+      CASE '#include_captions#' WHEN '1' THEN
+          trim(regexp_replace(regexp_replace(a.caption, ' \(95%\)$', ''), '^' || COALESCE(subcat_l.term, subcat.term), '')) || ': '
+      ELSE '' END as caption,
+      a.caption as raw_caption,
+      tlttla.weight,
+      CASE a.data_type
+          WHEN 'T'::bpchar THEN
+            CASE
+              -- colour value with a secondary colour.
+              WHEN av.text_value LIKE '#%;%' THEN '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || split_part(av.text_value, ';', 1) || '"&gt; &lt;/span&gt;'
+                || '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || split_part(av.text_value, ';', 2) || '"&gt; &lt;/span&gt;'
+              -- single colour value.
+              WHEN av.text_value LIKE '#%' THEN '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || av.text_value || '"&gt; &lt;/span&gt;'
+              -- any other value.
+              ELSE av.text_value
+            END
+          WHEN 'L'::bpchar THEN t.term::text
+          WHEN 'I'::bpchar THEN
+            CASE
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true AND a80v.id IS NOT NULL THEN
+                  '(' || a80v.int_value::text || ') ' || av.int_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text) || COALESCE(' (' || a80v.upper_value::text || ')', '')
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN
+                  av.int_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text)
+                ELSE av.int_value::text
+            END
+          WHEN 'B'::bpchar THEN av.int_value::text
+          WHEN 'F'::bpchar THEN
+            CASE
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true AND a80v.id IS NOT NULL THEN
+                  '(' || a80v.float_value::text || ') ' || av.float_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text) || COALESCE(' (' || a80v.upper_value::text || ')', '')
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN
+                  av.float_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text)
+                ELSE av.float_value::text
+            END
+          WHEN 'D'::bpchar THEN av.date_start_value::text
+          WHEN 'V'::bpchar THEN indicia.vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
+          ELSE NULL::text
+      END ||
+      COALESCE(a.unit, '') AS value
+    FROM cache_termlists_terms subcat
+    LEFT JOIN cache_termlists_terms subcat_l on subcat_l.preferred_termlists_term_id=subcat.preferred_termlists_term_id and subcat_l.language_iso='#language#'
+    LEFT JOIN cache_termlists_terms cat ON cat.id=subcat.parent_id
+    LEFT JOIN cache_termlists_terms cat_l on cat_l.preferred_termlists_term_id=cat.preferred_termlists_term_id and cat_l.language_iso='#language#'
+    JOIN taxa_taxon_list_attributes a ON a.reporting_category_id=subcat.id AND a.deleted=false
+    JOIN taxa_taxon_list_attribute_values av ON av.taxa_taxon_list_attribute_id=a.id AND av.deleted=false
+    LEFT JOIN cache_termlists_terms t ON t.id=av.int_value AND a.data_type='L'
+    JOIN cache_taxa_taxon_lists cttl on cttl.id=av.taxa_taxon_list_id
+    JOIN cache_taxon_paths ctp ON ctp.path @> ARRAY[cttl.taxon_meaning_id]
+    JOIN cache_taxa_taxon_lists cttlany on cttlany.taxon_meaning_id=ctp.taxon_meaning_id
+    JOIN taxon_lists_taxa_taxon_list_attributes tlttla ON tlttla.taxa_taxon_list_attribute_id=a.id AND tlttla.taxon_list_id=1 AND tlttla.deleted=false
+    LEFT JOIN taxa_taxon_list_attributes a80
+      ON a.caption like '% (95\%)'
+      AND a80.caption = replace(a.caption, ' (95%)', ' (80%)')
+      AND a80.deleted = false
+    LEFT JOIN taxa_taxon_list_attribute_values a80v
+      ON a80v.taxa_taxon_list_attribute_id=a80.id
+      AND a80v.deleted=false
+      AND a80v.taxa_taxon_list_id = av.taxa_taxon_list_id
+    WHERE 1=1
+    AND a.caption NOT LIKE '% (80\%)'
+    AND (a80v.id IS NOT NULL OR a.caption NOT LIKE '% (95\%)')
+    #filters#
+  ) AS sub1
+  GROUP BY catsort, category, subcatsort, subcategory, weight, raw_caption, caption
+) AS sub2
+  </query>
+  <order_bys>
+    <order_by>catsort, category, subcatsort, subcategory</order_by>
+  </order_bys>
+  <params>
+    <param name="taxa_taxon_list_id" display="Taxa taxon list ID" datatype="integer" default=""
+      description="Taxa taxon list ID of the record to load" >
+      <where>cttlany.id=#taxa_taxon_list_id#</where>
+    </param>
+    <param name="taxon_meaning_id" display="Taxon meaning ID" datatype="integer" default=""
+      description="Taxon meaning ID of the record to load" >
+      <where>cttlany.taxon_meaning_id=#taxon_meaning_id#</where>
+    </param>
+    <param name="include_captions" datatype="boolean" default="1" />
+    <param name="language" display="Language" description="ISO 3 letter code of language to use for captions if available."
+        datatype="text" default="eng" />
+  </params>
+  <columns>
+    <column name="catsort" sql="catsort" />
+    <column name="category" sql="category" />
+    <column name="subcatsort" sql="subcatsort" />
+    <column name="subcategory" sql="subcategory" />
+    <column name="values" aggregate="true" sql="STRING_AGG(caption || values, '; ' order by weight, raw_caption)" />
+  </columns>
+</report>
