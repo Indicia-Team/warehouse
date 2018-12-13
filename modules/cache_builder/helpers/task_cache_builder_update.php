@@ -52,15 +52,16 @@ class task_cache_builder_update {
    *   tasks to perform.
    */
   public static function process($db, $taskType, $procId) {
+    $table = inflector::plural($taskType->entity);
     $sql = <<<SQL
-CREATE TEMPORARY TABLE needs_update_$taskType->entity AS
+CREATE TEMPORARY TABLE needs_update_$table AS
 SELECT record_id AS id, COALESCE(params->>'deleted' = 'true', false) AS deleted
 FROM work_queue
 WHERE entity='$taskType->entity' AND claimed_by='$procId'
 SQL;
     $db->query($sql);
-    $db->query("ALTER TABLE needs_update_$taskType->entity ADD CONSTRAINT ix_nu_$taskType->entity PRIMARY KEY (id)");
-    cache_builder::makeChanges($db, $taskType->entity);
+    $db->query("ALTER TABLE needs_update_$table ADD CONSTRAINT ix_nu_$table PRIMARY KEY (id)");
+    cache_builder::makeChanges($db, $table);
   }
 
 }
