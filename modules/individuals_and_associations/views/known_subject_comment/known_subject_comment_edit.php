@@ -18,7 +18,7 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 $id = html::initial_value($values, 'known_subject_comment:id');
@@ -36,7 +36,7 @@ echo data_entry_helper::textarea(array(
   'label' => 'Comment',
   'fieldname' => 'known_subject_comment:comment',
   'default' => html::initial_value($values, 'known_subject_comment:comment')
-)); 
+));
 ?>
 </fieldset>
 <?php echo html::form_buttons($id!=null, false, false); ?>

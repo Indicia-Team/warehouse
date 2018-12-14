@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Config
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/Indicia-Team/warehouse
+ * @link https://github.com/indicia-team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
@@ -31,7 +29,8 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @var string
  */
-$config['version'] = '1.64.2';
+$config['version'] = '2.0.0';
+
 /**
  * Version release date.
  *

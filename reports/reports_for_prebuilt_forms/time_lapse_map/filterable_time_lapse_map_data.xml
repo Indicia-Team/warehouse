@@ -10,7 +10,7 @@
     JOIN samples smp on smp.id=o.sample_id and smp.deleted=false
     #agreements_join#
     #joins#
-    WHERE #sharing_filter# 
+    WHERE #sharing_filter#
     #idlist#
   </query>
   <order_bys>
@@ -28,9 +28,10 @@
   <columns>
     <column name="geom" visible="false" mappable="true" sql="st_astext(st_snaptogrid(st_centroid(o.public_geom), #grid_size#))" />
     <column name="taxon" sql="coalesce(cttl.default_common_name, cttl.taxon)" datatype="text"/>
-    <column name="species_id" sql="o.external_key" datatype="text"/>   
+    <column name="species_id" sql="o.external_key" datatype="text"/>
     <column name="date" sql="coalesce(o.date_start, o.date_end)"/>
     <column name="recordDayIndex" sql="floor(extract(epoch from coalesce(o.date_start, o.date_end))/(24*3600))"/>
     <column name="created_by_id" sql="o.created_by_id" />
+    <column name="record_status" sql="o.record_status" />
   </columns>
 </report>

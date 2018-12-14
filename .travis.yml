@@ -1,12 +1,16 @@
-dist: precise
+dist: trusty
+sudo: required
 
 language: php
 
 php:
-  - '5.6'
   - '7.0'
   - '7.1'
-#  - hhvm
+  - '7.2'
+
+env:
+  - POSTGRESQL_VERSION=postgresql-9.3-postgis-2.1
+  - POSTGRESQL_VERSION=postgresql-10-postgis-2.4
 
 services:
   - postgresql
@@ -23,18 +27,21 @@ before_install:
   # Reinstall PostgreSQL - see https://github.com/travis-ci/travis-ci/issues/7048#issuecomment-267731971
   - sudo apt-get autoremove postgis*
   - sudo apt-get autoremove postgresql*
-  - sudo apt-get install postgresql-9.3-postgis-2.1
+  - sudo apt-get install $POSTGRESQL_VERSION
   # Install Apache.
   - sudo apt-get install apache2 libapache2-mod-fastcgi
-  # Enable php-fpm.
-  - sudo cp ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf.default ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf
+  # See https://www.marcus-povey.co.uk/2016/02/16/travisci-with-php-7-on-apache-php-fpm/
   - if [[ ${TRAVIS_PHP_VERSION:0:2} == "7." ]]; then sudo cp ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.d/www.conf.default ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.d/www.conf; fi
+  # enable php-fpm
+  - sudo cp ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf.default ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf
   - sudo a2enmod rewrite actions fastcgi alias
   - echo "cgi.fix_pathinfo = 1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - sudo sed -i -e "s,www-data,travis,g" /etc/apache2/envvars
+  - sudo chown -R travis:travis /var/lib/apache2/fastcgi
   - ~/.phpenv/versions/$(phpenv version-name)/sbin/php-fpm
-  # Configure apache virtual hosts.
-  - sudo cp -f .travis/travis-ci-apache /etc/apache2/sites-available/default
-  - sudo sed -e "s?%TRAVIS_BUILD_DIR%?$(pwd)?g" --in-place /etc/apache2/sites-available/default
+  # configure apache virtual hosts
+  - sudo cp -f .travis/travis-ci-apache /etc/apache2/sites-available/000-default.conf
+  - sudo sed -e "s?%TRAVIS_BUILD_DIR%?$(pwd)?g" --in-place /etc/apache2/sites-available/000-default.conf
   - sudo service apache2 restart
 
 install:
@@ -42,6 +49,16 @@ install:
   - chmod +x .travis/postgres_setup.sh
 
 before_script:
+    # Special configuration required for PostgreSQL 10.
+  - |
+    if [ ${POSTGRESQL_VERSION:10:4} == "-10-" ]; then
+      # Use default port
+      sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
+      # Use 9.6 auth config:
+      sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf
+    fi
+  - sudo service postgresql restart
+  # Create database
   - psql -c 'create database indicia;' -U postgres -d postgres
   # Add extension for PostGIS
   - psql -U postgres -d indicia -c "create extension postgis"
@@ -58,12 +75,12 @@ before_script:
   - sudo mv phpunit-5.7.phar /usr/local/bin/phpunit
 
 script:
-  - /usr/local/bin/phpunit --configuration phpunit-config-test.xml
-  - /usr/local/bin/phpunit --configuration phpunit-setup-check-test.xml
-  - /usr/local/bin/phpunit --configuration phpunit-home-test.xml
+  - /usr/local/bin/phpunit --stderr --configuration phpunit-config-test.xml
+  - /usr/local/bin/phpunit --stderr --configuration phpunit-setup-check-test.xml
+  - /usr/local/bin/phpunit --stderr --configuration phpunit-home-test.xml
   # Repeat to upgrade modules
-  - /usr/local/bin/phpunit --configuration phpunit-home-test.xml
-  - /usr/local/bin/phpunit --configuration phpunit-tests.xml
+  - /usr/local/bin/phpunit --stderr --configuration phpunit-home-test.xml
+  - /usr/local/bin/phpunit --stderr --configuration phpunit-tests.xml
 
 after_script:
   - cat application/logs/*

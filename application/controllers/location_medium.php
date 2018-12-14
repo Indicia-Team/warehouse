@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Controllers
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the images for a location media file
- *
- * @package  Core
- * @subpackage Controllers
  */
 class Location_medium_Controller extends Gridview_Base_Controller
 {
@@ -45,7 +40,7 @@ class Location_medium_Controller extends Gridview_Base_Controller
   * Override the default index functionality to filter by location_id.
   */
   public function index()
-  { 
+  {
     if ($this->uri->total_arguments()>0) {
       $this->base_filter=array('location_id' => $this->uri->argument(1));
     }
@@ -56,12 +51,12 @@ class Location_medium_Controller extends Gridview_Base_Controller
       $this->view->location_id=$this->uri->argument(1);
     }
   }
-  
+
   /**
-   *  Setup the default values to use when loading this controller to edit a new page.   
+   *  Setup the default values to use when loading this controller to edit a new page.
    */
-  protected function getDefaults() {    
-    $r = parent::getDefaults();    
+  protected function getDefaults() {
+    $r = parent::getDefaults();
     if ($this->uri->method(false)=='create') {
       // location id is passed as first argument in URL when creating. But the image
       // gets linked by meaning, so fetch the meaning_id.
@@ -71,27 +66,26 @@ class Location_medium_Controller extends Gridview_Base_Controller
     }
     return $r;
   }
-  
+
   /**
    * Override the default return page behaviour so that after saving an image you
    * are returned to the location entry which has the image.
    */
   protected function get_return_page() {
     if (array_key_exists('location_medium:location_id', $_POST)) {
-      return "location/edit/".$_POST['location_medium:location_id']."?tab=Media_Files";
+      return "location/edit/" . $_POST['location_medium:location_id'] . "?tab=Media_Files";
     } else {
       return $this->model->object_name;
     }
   }
-  
+
   /**
-   * Get the list of terms ready for the media types list. 
+   * Get the list of terms ready for the media types list.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')    
-    );   
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types'),
+    );
   }
 
   /**
@@ -100,10 +94,11 @@ class Location_medium_Controller extends Gridview_Base_Controller
   protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('location', 'Locations');
     if ($this->model->id) {
-      // editing an existing item
+      // Editing an existing item.
       $locationId = $this->model->location_id;
-    } else {
-      // creating a new one so our argument is the location id
+    }
+    else {
+      // Creating a new one so our argument is the location id.
       $locationId = $this->uri->argument(1);
     }
     $loc = ORM::factory('location', $locationId);

@@ -1,9 +1,6 @@
-<?php
+<?php defined('SYSPATH') or die('No direct script access.');
 
 /**
- * @file
- * Contains the model class for the groups table.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,15 +16,11 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
-
-defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the groups table.
- *
- * @link http://code.google.com/p/indicia/wiki/DataModel
  */
 class Group_Model extends ORM {
 
@@ -38,53 +31,32 @@ class Group_Model extends ORM {
   protected $has_many = array('group_invitations', 'group_pages');
 
   /**
-   * Updating release status flag.
-   *
-   * Flag indicating if the group's private records status is changing,
-   * indicating we need to update the release status of records.
-   *
-   * @var bool
+   * @var boolean Flag indicating if the group's private records status is changing, indicating we need to update the release status of records.
    */
-  protected $wantToUpdateReleaseStatus = FALSE;
+  protected $wantToUpdateReleaseStatus=false;
 
-  /**
-   * ORM validate override.
-   */
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
     $array->add_rules('group_type_id', 'required');
     $array->add_rules('website_id', 'required');
-    $this->unvalidatedFields = [
-      'code',
-      'description',
-      'from_date',
-      'to_date',
-      'private_records',
-      'filter_id',
-      'joining_method',
-      'deleted',
-      'implicit_record_inclusion',
-      'view_full_precision',
-      'logo_path',
-      'licence_id',
-    ];
-    // Has the private records flag changed?
+    $array->add_rules('code', 'length[1,20]');
+    $this->unvalidatedFields = array('code', 'description', 'from_date','to_date','private_records',
+        'filter_id', 'joining_method', 'deleted', 'implicit_record_inclusion', 'view_full_precision',
+        'logo_path', 'licence_id');
+    // has the private records flag changed?
     $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) &&
-        $this->submission['fields']['private_records'] !== $this->private_records;
+        $this->submission['fields']['private_records']!==$this->private_records;
     return parent::validate($array, $save);
   }
 
   /**
-   * Post submission handler.
-   *
-   * If changing the private records setting, then must update the group's
-   * records release_status.
+   * If changing the private records setting, then must update the group's records release_status.
    */
   public function postSubmit($isInsert) {
     if (!$isInsert && $this->wantToUpdateReleaseStatus) {
-      $status = $this->private_records === '1' ? 'U' : 'R';
-      $sql = "update #table# o
+      $status = $this->private_records==='1' ? 'U' : 'R';
+      $sql="update #table# o
 set release_status='$status'
 from samples s
 where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
@@ -93,14 +65,12 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
     }
     $this->processIndexGroupsLocations();
     $this->processIndexGroupsTaxonGroups();
-    return TRUE;
+    return true;
   }
 
   /**
-   * Popuate index_groups_locations.
-   *
-   * Method to populate the indexed locations that this group intersects with.
-   * Makes it easy to do things like suggest groups based on geographic region.
+   * Method to populate the indexed locations that this group intersects with. Makes it easy to do things like
+   * suggest groups based on geographic region.
    */
   private function processIndexGroupsLocations() {
     $filter = json_decode($this->filter->definition, TRUE);
@@ -108,7 +78,6 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
       ->from('index_groups_locations')
       ->where('group_id', $this->id)
       ->get();
-
     $location_ids = array();
     // Backwards compatibility checks.
     if (!empty($filter['indexed_location_id']) && empty($filter['indexed_location_list'])) {
@@ -117,7 +86,6 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
     if (!empty($filter['location_id']) && empty($filter['location_list'])) {
       $filter['location_list'] = $filter['location_id'];
     }
-
     if (!empty($filter['indexed_location_list'])) {
       // Got an indexed location as the filter boundary definition, so we can
       // use that as it is.
@@ -225,8 +193,11 @@ SQL;
   }
 
   /**
-   * Method to populate the indexed taxon groups that this group intersects with. Makes it easy to do things like
-   * suggest groups based on species being recorded.
+   * Process taxon groups for a recording group.
+   *
+   * Method to populate the indexed taxon groups that this group intersects
+   * with. Makes it easy to do things like suggest groups based on species
+   * being recorded.
    */
   private function processIndexGroupsTaxonGroups() {
     $filter = json_decode($this->filter->definition, TRUE);
@@ -265,10 +236,13 @@ SQL;
     // are not needed now.
     foreach ($exist as $record) {
       if (in_array($record->taxon_group_id, $taxon_group_ids)) {
-        // Got a correct one already. Remove the location ID from the list we
+        // Got a correct one already. Remove the taxon group ID from the list we
         // want to add later.
-        unset($taxon_group_ids[$record->taxon_group_id]);
-      } else {
+        if (($key = array_search($record->taxon_group_id, $taxon_group_ids)) !== FALSE) {
+          unset($taxon_group_ids[$key]);
+        }
+      }
+      else {
         // Got one we didn't actually want.
         $this->db->delete('index_groups_taxon_groups', array('id' => $record->id));
       }

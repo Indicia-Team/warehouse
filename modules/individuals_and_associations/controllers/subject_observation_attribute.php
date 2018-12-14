@@ -27,14 +27,14 @@
  * @package Core
  * @subpackage Controllers
  */
-class Subject_observation_attribute_Controller extends Attr_Gridview_Base_Controller {
+class Subject_observation_attribute_Controller extends Attr_Base_Controller {
 
   public function __construct()
   {
     $this->prefix = 'subject_observation';
     parent::__construct();
   }
-  
+
   /**
    * Returns the shared view for all custom attribute edits.
    */

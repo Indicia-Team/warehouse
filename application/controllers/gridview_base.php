@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Controllers
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
@@ -26,9 +24,6 @@ defined('SYSPATH') or die('No direct script access.');
 /**
  * Base class for controllers which support paginated grids of any datatype. Also
  * supports basic CSV data upload into the grid's underlying model.
- *
- * @package  Core
- * @subpackage Controllers
  */
 abstract class Gridview_Base_Controller extends Indicia_Controller {
 
@@ -76,9 +71,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     // Templating
     $this->template->title = $this->pagetitle;
     $this->template->content = $this->view;
-    
+
     // Setup breadcrumbs
-    $this->page_breadcrumbs[] = html::anchor($this->modelname, $this->pagetitle);    
+    $this->page_breadcrumbs[] = html::anchor($this->modelname, $this->pagetitle);
   }
 
   /**
@@ -104,16 +99,16 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $this->upload_csv_form->controllerpath = $this->controllerpath;
     $this->view->upload_csv_form = $this->upload_csv_form;
   }
-  
+
   /**
    * Overridable function to determine if an edit page should be read only or not.
    * @return boolean True if edit page should be read only.
    */
   protected function get_read_only($values) {
-    return false;   
+    return false;
   }
-  
-  /** 
+
+  /**
    * Controller function to display a generic import wizard for any data.
    */
   public function importer() {
@@ -124,41 +119,41 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     // but make it clear the bottom level breadcrumb is the importer
     $this->page_breadcrumbs[count($this->page_breadcrumbs)-1] = kohana::lang('misc.model_import', $this->model->caption());
   }
-  
+
   /**
-   * Loads the custom attributes for a taxon, sample, location, survey, person or occurrence into the load array. 
+   * Loads the custom attributes for a taxon, sample, location, survey, person or occurrence into the load array.
    * Also sets up any lookup lists required.
    * This is only called by sub-classes for entities that have associated attributes.
    */
   protected function loadAttributes(&$r, $in) {
     // First load up the possible attribute list
-    $this->db->from('list_'.$this->model->object_name.'_attributes');
-    foreach($in as $field=>$values)
+    $this->db->from('list_' . $this->model->object_name . '_attributes');
+    foreach($in as $field => $values)
       if (count($values))
         $this->db->in($field, $values);
     if ($this->model->include_public_attributes) {
-      $this->db->orwhere('public','t');
+      $this->db->orwhere('public', 't');
     }
-    $result = $this->db->get()->as_array(true);
+    $result = $this->db->get()->as_array(TRUE);
     $attrs = array();
-    foreach($result as $attr) {
+    foreach ($result as $attr) {
       $attrs[$attr->id] = array(
-        'id' => null, // the attribute value ID, which we don't know yet
-        $this->model->object_name.'_id'=>null,
-        $this->model->object_name.'_attribute_id' => $attr->id,
+        'id' => NULL, // the attribute value ID, which we don't know yet
+        $this->model->object_name . '_id' => NULL,
+        $this->model->object_name . '_attribute_id' => $attr->id,
         'data_type' => $attr->data_type,
         'caption' => $attr->caption,
-        'value' => null,
-        'raw_value' => null,
-        'termlist_id' => $attr->termlist_id,
+        'value' => NULL,
+        'raw_value' => NULL,
+        'termlist_id' => isset($attr->lookup_termlist_id) ? $attr->lookup_termlist_id : $attr->termlist_id,
         'validation_rules' => $attr->validation_rules
       );
     }
     // now load up the values and splice into the array
-    if ($this->model->id!==0) {
-      $where = array($this->model->object_name.'_id'=>$this->model->id);
+    if ($this->model->id !== 0) {
+      $where = array($this->model->object_name . '_id' => $this->model->id);
       $this->db
-        ->from('list_'.$this->model->object_name.'_attribute_values')
+        ->from('list_' . $this->model->object_name . '_attribute_values')
         ->where($where);
       $result = $this->db->get()->as_array(false);
       $toRemove = array();
@@ -182,7 +177,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $r['attributes'] = $attrs;
     // now work out if we need termlist content for lookups
     foreach ($attrs as $attr) {
-      // if there are any lookup lists in the attributes, preload the options     
+      // if there are any lookup lists in the attributes, preload the options
       if (!empty($attr['termlist_id'])) {
         $r['terms_'.$attr['termlist_id']]=$this->get_termlist_terms($attr['termlist_id']);
         $r['terms_'.$attr['termlist_id']][''] = '-no value-';

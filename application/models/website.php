@@ -14,35 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Websites table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Website_Model extends ORM
-{
-  protected $auth = null;
+class Website_Model extends ORM {
+  protected $auth = NULL;
 
   protected $has_many = array(
     'termlists',
-    'taxon_lists'
+    'taxon_lists',
   );
   protected $belongs_to = array(
-    'created_by'=>'user',
-    'updated_by'=>'user'
+    'created_by' => 'user',
+    'updated_by' => 'user',
   );
   protected $has_and_belongs_to_many = array(
     'locations',
-    'users'
+    'users',
   );
 
   public $password2;
@@ -60,50 +53,61 @@ class Website_Model extends ORM
     // and is not present in the validation object at this point. The "matches" validation rule does not
     // work in these circumstances, so a new "matches_post" has been inserted into MY_valid.php
     $array->add_rules('password', 'required', 'length[7,30]', 'matches_post[password2]');
-    // Explicitly add those fields for which we don't do validation
+    // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = array(
       'description',
       'deleted',
-      'verification_checks_enabled'
+      'verification_checks_enabled',
     );
 
     return parent::validate($array, $save);
   }
 
   /**
-   * Filters to the user's authorised list of ORM websites. This acts like calling
-   * where on the ORM object.
-   * @param string $role The role to require on that website. Defaults to Admin, other
-   * possible values are User or Editor.
-   * @return ORM object so can be used for method chaining.
+   * Filters to the user's authorised list of ORM websites.
+   *
+   * This acts like calling where on the ORM object.
+   *
+   * @param string $role
+   *   The role to require on that website. Defaults to Admin, other possible values are User or Editor.
+   *
+   * @return ORM
+   *   REturns the object so can be used for method chaining.
    */
-  public function in_allowed_websites($role='Admin') {
-    if (!isset($this->auth))
+  public function in_allowed_websites($role = 'Admin') {
+    if (!isset($this->auth)) {
       $this->auth = new Auth;
+    }
 
     if (!$this->auth->logged_in('CoreAdmin')) {
       $websites = $this->db->select('websites.id')
-          ->from('users_websites')
-          ->join('site_roles', 'site_roles.id', 'users_websites.site_role_id')
-          ->join('websites', 'websites.id', 'users_websites.website_id')
-          ->where(array('users_websites.user_id'=>$_SESSION['auth_user']->id,
-              'site_roles.title'=>$role,
-              'websites.deleted'=>'f'))->get();
-    } else {
+        ->from('users_websites')
+        ->join('site_roles', 'site_roles.id', 'users_websites.site_role_id')
+        ->join('websites', 'websites.id', 'users_websites.website_id')
+        ->where(array(
+          'users_websites.user_id' => $_SESSION['auth_user']->id,
+          'site_roles.title' => $role,
+          'websites.deleted' => 'f',
+        ))->get();
+    }
+    else {
       $websites = $this->db->select('id')
-          ->from('websites')
-          ->where(array('websites.deleted'=>'f'))
-          ->get();
+        ->from('websites')
+        ->where(array('websites.deleted' => 'f'))
+        ->get();
     }
     $arr = array();
-    foreach ($websites as $website)
+    foreach ($websites as $website) {
       $arr[] = $website->id;
+    }
     $this->in('id', $arr);
     return $this;
   }
-  
+
   /**
-   * Override the save method to additionally refresh index_websites_website_agreement with the 
+   * Save method override.
+   *
+   * Override the save method to additionally refresh index_websites_website_agreement with the
    * latest information about website agreements.
    */
   public function save() {

@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Core
- * @subpackage Libraries
- * @author    Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link     http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
@@ -26,66 +24,87 @@
  * To declare a plugin, create a module with a plugins folder, containing a php file named the same as the module.
  * Inside this module, write a method called (module_name)_extend_ui and return an array of user interface extensions.
  * Each extension is a child array, containing a view (the name of the view it is extending), type (='tab'), controller
- * (the path to the controller function which should be displayed on the tab), title (the title of the tab). 
+ * (the path to the controller function which should be displayed on the tab), title (the title of the tab).
  */
 class View extends View_Core {
 
-  protected $viewname='';
+  protected $viewname = '';
 
   /**
-   * When a view is rendered, check for plugins which are adding tabs to the view. If any exist, then 
-   * wrap the current view output in the first tab of a jQuery tabs implementation and add links to the plugin output
-   * for the other tabs.
+   * Render a view.
+   *
+   * When a view is rendered, check for plugins which are adding tabs to the
+   * view. If any exist, then wrap the current view output in the first tab
+   * of a jQuery tabs implementation and add links to the plugin output for the
+   * other tabs.
    */
   public function render($print = FALSE, $renderer = FALSE) {
-    
     $output = parent::render($print, $renderer);
     $tabs = $this->get_tabs();
     // If only one tab, that is the current view, so don't bother tabifying it.
-    if (count($tabs)>1) {
-      $js = "<script type=\"text/javascript\">
-jQuery(document).ready(function() {
-  var t=$('#tabs').tabs();
-  var initTab='".(array_key_exists('tab', $_GET) ? $_GET['tab'] : '')."';
-  if (initTab!='') {
-    t.tabs('select', '#' + initTab);
-  }
-});
-</script>";
-      $prefix = "<div id=\"tabs\"><ul>\n";
-      $suffix = "</div>\n";
+    if (count($tabs) > 1) {
+      $tabLinks = [];
       $args = $this->get_args();
-      foreach ($tabs as $tab=>$controller) {
-        if ($controller==$this->viewname)
-          // this is the default page
-          $path="#main";
-        else {
-          // a plugin page
-          $path=url::site()."$controller$args";
+      foreach ($tabs as $tab => $controller) {
+        if ($controller === $this->viewname) {
+          // This is the default page.
+          $path = "#main";
         }
-        $prefix .= '<li><a href="'.$path.'" title="'.$tab.'"><span>'.$tab."</span></a></li>\n";
-        $suffix .= '<div id="'.str_replace(' ','_', $tab).'"></div>';
+        else {
+          // A plugin page.
+          $path = url::site() . "$controller$args";
+        }
+        $safe = $this->tabNameToId($tab);
+        $tabLinks[] = "<li id=\"$safe-tab\"><a href=\"$path\" title=\"$tab\"><span>$tab</span></a></li>";
       }
-      $prefix .= "</ul>\n<div id=\"main\">";
-      $suffix .= "</div>\n";
-      $output = "$js$prefix$output$suffix";
+      $tabsLi = implode("\n    ", $tabLinks);
+      $selectedTab = empty($_GET['tab']) ? '' : $this->tabNameToId($_GET['tab']);
+      $output = <<<HTML
+<div id="tabs">
+  <ul>
+    $tabsLi
+  </ul>
+  <div id="main">$output</div>
+</div>
+<script type="text/javascript">
+  jQuery(document).ready(function($) {
+    var tabs = $('#tabs').tabs();
+    if ('$selectedTab') {
+      indiciaFns.activeTab(tabs, '$selectedTab');
+    }
+  });
+</script>
+HTML;
     }
     return $output;
   }
-  
+
+  /**
+   * Convert a tab title to a safe ID.
+   *
+   * @param string $tab
+   *   Tab title.
+   *
+   * @return string
+   *   Safe ID, lower case with non-alpha characters replaced by _.
+   */
+  private function tabNameToId($tab) {
+    return preg_replace('/[^a-z]/', '_', strtolower($tab));
+  }
+
   /**
    * Work out the current argument list so they can be passed through to the tab. E.g. the current record ID.
    */
   private function get_args() {
     $uri = URI::instance();
-    if ($uri->total_arguments()) 
+    if ($uri->total_arguments())
       $args = '/'.implode('/', $uri->argument_array());
     else
       $args = '';
     return $args;
   }
-  
-  /** 
+
+  /**
    * Retrieve the list of tabs for the current view.
    */
   protected function get_tabs() {
@@ -94,11 +113,11 @@ jQuery(document).ready(function() {
     if ($this->viewname=='setup_check')
       return array('General'=>$this->viewname);
     else {
-      $uri = URI::instance();  
+      $uri = URI::instance();
       // use caching, so things don't slow down if there are lots of plugins
       $cacheId = 'tabs-'.$this->viewname.'-'.$uri->segment(2);
       $cache = Cache::instance();
-      if ($tabs = $cache->get($cacheId)) { 
+      if ($tabs = $cache->get($cacheId)) {
         return $tabs;
       } else {
         // $this->tabs is set by the controller to the default tabs for the view - excluding module extensions.
@@ -121,9 +140,9 @@ jQuery(document).ready(function() {
         $cache->set($cacheId, $tabs);
         return $tabs;
       }
-    }    
+    }
   }
-  
+
   /**
    * Takes a list of tabs and adds new tabs to them according to the supplied list of extensions.
    */
@@ -137,7 +156,7 @@ jQuery(document).ready(function() {
         $tabs[$extend['title']]=$extend['controller'];
     }
   }
-  
+
   /**
    * Override the set_filename property accessor to keep a record of the view name, letting us check for
    * plugins which are linked to this view's path.

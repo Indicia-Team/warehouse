@@ -36,38 +36,54 @@ class cache_builder {
     try {
       $count=cache_builder::get_changelist($db, $table, $queries, $last_run_date);
       if ($count>0) {
-        cache_builder::do_delete($db, $table, $queries);
-        // preprocess some of the tags in the queries
-        if (is_array($queries['update']))
-          foreach($queries['update'] as $key=>&$sql)
-            $sql = str_replace('#join_needs_update#', $queries['join_needs_update'], $sql);
-        else
-          $queries['update'] = str_replace('#join_needs_update#', $queries['join_needs_update'], $queries['update']);
-        cache_builder::run_statement($db, $table, $queries['update'], 'update');
-        // preprocess some of the tags in the queries
-        if (is_array($queries['insert']))
-          foreach($queries['insert'] as $key=>&$sql)
-            $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $sql);
-        else
-          $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $queries['insert']);
-        cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
-        if (isset($queries['extra_multi_record_updates']))
-          cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');
-        if (!variable::get("populated-$table")) {
-          $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
-          if (isset($queries['count']))
-            $totalQuery = $db->query($queries['count'])->result_array(false);
-          else
-            $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(false);
-          $percent = round($cacheQuery[0]['count']*100/$totalQuery[0]['count']);
-          echo "$table population in progress - $percent% done";
-        }
+        cache_builder::makeChanges($db, $table);
         echo '<br/>';
       }
       $db->query("drop table needs_update_$table");
     } catch (Exception $e) {
       $db->query("drop table needs_update_$table");
       throw $e;
+    }
+  }
+
+  /**
+   * Apply required database changes to the cache tables.
+   *
+   * When the needs_update_* table already populated, apply the actual cache
+   * update changes to the cached entity.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $table
+   *   Entity name to update (e.g. sample, occurrence, taxa_taxon_list).
+   */
+  public static function makeChanges($db, $table) {
+    $queries = kohana::config("cache_builder.$table");
+    cache_builder::do_delete($db, $table, $queries);
+    // preprocess some of the tags in the queries
+    if (is_array($queries['update']))
+      foreach($queries['update'] as $key=>&$sql)
+        $sql = str_replace('#join_needs_update#', $queries['join_needs_update'], $sql);
+    else
+      $queries['update'] = str_replace('#join_needs_update#', $queries['join_needs_update'], $queries['update']);
+    cache_builder::run_statement($db, $table, $queries['update'], 'update');
+    // preprocess some of the tags in the queries
+    if (is_array($queries['insert']))
+      foreach($queries['insert'] as $key=>&$sql)
+        $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $sql);
+    else
+      $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $queries['insert']);
+    cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
+    if (isset($queries['extra_multi_record_updates']))
+      cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');
+    if (!variable::get("populated-$table")) {
+      $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
+      if (isset($queries['count']))
+        $totalQuery = $db->query($queries['count'])->result_array(false);
+      else
+        $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(false);
+      $percent = round($cacheQuery[0]['count']*100/$totalQuery[0]['count']);
+      echo "$table population in progress - $percent% done";
     }
   }
 
@@ -79,6 +95,7 @@ class cache_builder {
    */
   public static function insert($db, $table, $ids) {
     if (count($ids)>0) {
+      $master_list_id = warehouse::getMasterTaxonListId();
       $idlist=implode(',', $ids);
       $queries = kohana::config("cache_builder.$table");
       if (!isset($queries['key_field']))
@@ -86,7 +103,11 @@ class cache_builder {
       if (!is_array($queries['insert']))
         $queries['insert'] = array($queries['insert']);
       foreach ($queries['insert'] as $query) {
-        $insertSql = str_replace('#join_needs_update#', '', $query);
+        $insertSql = str_replace(
+          ['#join_needs_update#', '#master_list_id#'],
+          ['', $master_list_id],
+          $query
+        );
         $insertSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
         $db->query($insertSql);
       }
@@ -102,6 +123,7 @@ class cache_builder {
    */
   public static function update($db, $table, $ids) {
     if (count($ids)>0) {
+      $master_list_id = warehouse::getMasterTaxonListId();
       $idlist=implode(',', $ids);
       $queries = kohana::config("cache_builder.$table");
       if (!isset($queries['key_field']))
@@ -109,7 +131,11 @@ class cache_builder {
       if (!is_array($queries['update']))
         $queries['update'] = array($queries['update']);
       foreach ($queries['update'] as $query) {
-        $updateSql = str_replace('#join_needs_update#', '', $query);
+        $updateSql = str_replace(
+          ['#join_needs_update#', '#master_list_id#'],
+          ['', $master_list_id],
+          $query
+        );
         $updateSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
         $db->query($updateSql);
       }
@@ -195,7 +221,7 @@ SQL;
     }
     $db->query("ALTER TABLE needs_update_$table ADD CONSTRAINT ix_nu_$table PRIMARY KEY (id)");
     $r = $db->query("select count(*) as count from needs_update_$table")->result_array(false);
-    $row=$r[0];
+    $row = $r[0];
     if (variable::get("populated-$table")) {
       if ($row['count']>0)
         echo "Updating $table with {$row['count']} changes<br/>";
@@ -206,22 +232,28 @@ SQL;
   }
 
   /**
-   * Deletes all records from the cache table which are in the table of records to update and
-   * where the deleted flag is true.
-   * @param object $db Database connection.
-   * @param string $table Name of the table being cached.
-   * @param array $queries List of configured queries for this table, which might include non-default delete queries.
+   * Deletes all records from the cache table which are in the table of
+   * records to update and where the deleted flag is true.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $table
+   *   Name of the table being cached.
+   * @param array $queries
+   *   List of configured queries for this table, which might include non-default delete queries.
    */
   private static function do_delete($db, $table, $queries) {
     // set up a default delete query if none are specified
-    if (!isset($queries['delete_query']))
+    if (!isset($queries['delete_query'])) {
       $queries['delete_query'] = array("delete from cache_$table where id in (select id from needs_update_$table where deleted=true)");
-    $count=0;
-    foreach($queries['delete_query'] as $query) {
+    }
+    $count = 0;
+    foreach ($queries['delete_query'] as $query) {
       $count += $db->query($query)->count();
     }
-    if (variable::get("populated-$table"))
+    if (variable::get("populated-$table")) {
       echo ", $count delete(s)";
+    }
   }
 
   /**
@@ -233,8 +265,7 @@ SQL;
    * @param string $action Term describing the action, used for feedback only.
    */
   private static function run_statement($db, $table, $query, $action) {
-    $master_list_id = Kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
-    $master_list_id = $master_list_id ? $master_list_id : 0; // default so nothing breaks
+    $master_list_id = warehouse::getMasterTaxonListId();
     if (is_array($query)) {
       foreach ($query as $title => $sql) {
         $sql = str_replace('#master_list_id#', $master_list_id, $sql);

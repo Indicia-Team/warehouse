@@ -17,7 +17,7 @@
  * @subpackage Controllers
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -42,7 +42,7 @@ class People_tidier_Controller extends Indicia_Controller {
       $this->template->content = $this->view;
     }
   }
-  
+
   /**
    * AJAX handler to return a details panel for a person.
    */
@@ -51,9 +51,9 @@ class People_tidier_Controller extends Indicia_Controller {
     if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin'))
       echo $this->get_person_panel($id);
   }
-  
+
   /**
-   * Controller action for merging 2 peopls, who should be identified in the post data. 
+   * Controller action for merging 2 peopls, who should be identified in the post data.
    * Once complete, redirects back to the index of people.
    */
   public function merge_people() {
@@ -61,12 +61,12 @@ class People_tidier_Controller extends Indicia_Controller {
     $this->session->set_flash('flash_info', 'The people database records have been merged into 1.');
     url::redirect('person/index');
   }
-  
+
   /**
    * Performs the task of merging people (and associated user data if there is any)
    */
   private function do_person_merge() {
-    if (!isset($_POST['selected-person-id']) || !isset($_POST['found-person-id'])) 
+    if (!isset($_POST['selected-person-id']) || !isset($_POST['found-person-id']))
       throw new exception('This page has not been accessed with the correct parameters for the people to merge.');
     if (isset($_POST['keep-selected'])) {
       $keepId=$_POST['selected-person-id'];
@@ -100,7 +100,7 @@ class People_tidier_Controller extends Indicia_Controller {
             ->where(array('user_id' => $keepUser->id, 'identifier'=>$identifier->identifier, 'type_id'=>$identifier->type_id))
             ->get()->result_array(false);
           // If this identifier does not exist for the keep user, then move it across
-          if ($exists[0]['count']==0) 
+          if ($exists[0]['count']==0)
             $this->db->from('user_identifiers')->set(array('user_id'=>$keepUser->id))->where('id', $identifier->id)->update();
         }
         // Ensure the websites are copied over
@@ -115,7 +115,7 @@ class People_tidier_Controller extends Indicia_Controller {
             ->where(array('user_id' => $keepUser->id, 'website_id'=>$website->website_id))
             ->get()->result_array(false);
           // If this identifier does not exist for the keep user, then move it across
-          if ($exists[0]['count']==0) 
+          if ($exists[0]['count']==0)
             $this->db->from('users_websites')->set(array('user_id'=>$keepUser->id))->where('id', $website->id)->update();
         }
         // Delete the user
@@ -126,15 +126,15 @@ class People_tidier_Controller extends Indicia_Controller {
     }
     $this->db->from('people')->set(array('deleted'=>'t'))->where('id', $loseId)->update();
   }
-  
-  /** 
+
+  /**
    * Builds an HTML table containing the details of a person. Used to populate the view directly and
    * also provides the response for AJAX call.s
    */
   private function get_person_panel($id) {
     $person = ORM::Factory('person', $id);
     $name=array();
-    if (!empty($person->title_id))       
+    if (!empty($person->title_id))
       $name[] = $person->title->title;
     if (!empty($person->first_name))
       $name[]=$person->first_name;
@@ -154,7 +154,7 @@ class People_tidier_Controller extends Indicia_Controller {
     if (!empty($person->external_key))
       $details['External Key']=$person->external_key;
     $r = "<table>\n";
-    foreach ($details as $attr => $value) 
+    foreach ($details as $attr => $value)
       $r .= "<tr><td><strong>$attr</strong></td><td>$value</td></tr>\n";
     $r .= '</table>';
     return $r;

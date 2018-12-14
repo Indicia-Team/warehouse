@@ -1,37 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Record counts for indexed sites map using standard filter params" 
+<report title="Record counts for indexed sites map using standard filter params"
         description="Lists locations with mappable boundary output and the number of records within them.">
   <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
-    FROM locations l1 
+    FROM locations l1
     JOIN (
-    SELECT l.id, count(distinct o.id) as count
-    FROM locations l
-    LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
-    JOIN (index_locations_samples ils
-      JOIN samples s on s.id=ils.sample_id
-      JOIN surveys su on su.id=s.survey_id
-      JOIN cache_occurrences_functional o ON o.website_id=su.website_id AND o.survey_id=su.id AND o.sample_id=ils.sample_id
+      SELECT l.id, count(distinct o.id) as count
+      FROM locations l
+      LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
+      JOIN cache_occurrences_functional o ON o.location_ids @> ARRAY[l.id] AND o.zero_abundance='f'
       #agreements_join#
       #joins#
-      AND #sharing_filter# 
-      AND o.zero_abundance='f'
+      WHERE l.deleted=false
+      AND ('#location_type_ids#'='0' OR l.location_type_id IN (#location_type_ids#))
+      AND (l.public=true OR lw.id IS NOT NULL)
+      AND l.code NOT LIKE '%+%' -- exclude composite 'fake' counties like Yorkshire
+      AND #sharing_filter#
       #filters#
       #idlist#
-    ) ON ils.location_id=l.id
-    WHERE l.deleted=false
-    AND ('#location_type_ids#'='0' OR l.location_type_id IN (#location_type_ids#))
-    AND (l.public=true OR lw.id IS NOT NULL)
-    AND l.code NOT LIKE '%+%' -- exclude composite 'fake' counties like Yorkshire
-    GROUP BY l.id, l.name
+      GROUP BY l.id, l.name
     ) as l2 ON l2.id=l1.id
   </query>
   <params>
-    <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.' 
+    <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.'
            datatype="integer[]" emptyvalue="0" default="" />
     <param name="simplifyFeatureTo" datatype="integer" default="100" />
-  </params>  
+  </params>
   <columns>
         <column name="id" visible="false" sql="l1.id" />
         <column name="name" display="Site name" sql="l1.name" />
@@ -42,4 +37,4 @@
         <column name="sw" visible="false" feature_style="strokeWidth" sql="0.5" />
         <column name="sc" visible="false" feature_style="strokeColor" sql="'#333333'" />
   </columns>
-</report>  
+</report>

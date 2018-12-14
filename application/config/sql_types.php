@@ -1,13 +1,28 @@
-<?php defined('SYSPATH') OR die('No direct access allowed.');
+<?php
+
 /**
- * @package  Database
+ * Indicia, the OPAL Online Recording Toolkit.
  *
- * SQL data types. If there are missing values, please report them:
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @link  http://trac.kohanaphp.com/newticket
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
+
+defined('SYSPATH') or die('No direct access allowed.');
+
 $config = array(
-  'tinyint' => array('type' => 'int', 'max' => 127),
+  'tinyint'	=> array('type' => 'int', 'max' => 127),
   'smallint' => array('type' => 'int', 'max' => 32767),
   'mediumint' => array('type' => 'int', 'max' => 8388607),
   'int' => array('type' => 'int', 'max' => 2147483647),

@@ -17,7 +17,7 @@
  * @subpackage Plugins
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -26,7 +26,7 @@
  */
 function survey_cleanup_extend_ui() {
   return array(array(
-    'view'=>'survey/survey_edit', 
+    'view'=>'survey/survey_edit',
     'type'=>'tab',
     'controller'=>'survey_cleanup/index',
     'title'=>'Cleanup Records',

@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the list of websites registered on this Warehouse instance.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Website_agreement_Controller extends Gridview_Base_Controller
 {
@@ -54,7 +49,7 @@ class Website_agreement_Controller extends Gridview_Base_Controller
     $r = parent::getModelValues();
     return $r;
   }
-  
+
   /**
    * Website agreements only editable by core admin
    */

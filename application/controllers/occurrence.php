@@ -14,41 +14,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
  defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Controller providing CRUD access to the occurrence data.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Occurrence_controller extends Gridview_Base_Controller {
 
-  public function __construct()
-  {
+  public function __construct() {
     parent::__construct('occurrence');
     $this->pagetitle = 'Occurrences';
-    $this->actionColumns = array
-    (
+    $this->actionColumns = [
       'Edit Occ' => 'occurrence/edit/{id}',
-      'Edit Smp' => 'sample/edit/{sample_id}'
-    );
-    $this->columns = array
-    (
+      'Edit Smp' => 'sample/edit/{sample_id}',
+    ];
+    $this->columns = [
       'id' => 'ID',
       'website' => 'Website',
       'survey' => 'Survey',
       'taxon' => 'Taxon',
       'entered_sref' => 'Spatial Ref',
-      'date_start' => 'Date'
-    );
+      'date_start' => 'Date',
+    ];
     $this->set_website_access('editor');
   }
 
@@ -58,50 +50,49 @@ class Occurrence_controller extends Gridview_Base_Controller {
   public function index() {
     // This constructor normally has 1 argument which is the grid page. If there is a second argument
     // then it is the parent list ID.
-    if ($this->uri->total_arguments()>0) {
-      $this->base_filter=array('sample_id' => $this->uri->argument(1));
+    if ($this->uri->total_arguments() > 0) {
+      $this->base_filter = array('sample_id' => $this->uri->argument(1));
     }
     parent::index();
   }
-  
+
   /**
-   * Returns an array of all values from this model and its super models ready to be 
+   * Returns an array of all values from this model and its super models ready to be
    * loaded into a form. For this controller, we need to also setup the custom attributes
    * available to display on the form.
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
     $this->loadAttributes($r, array(
-        'website_id'=>array($r['occurrence:website_id']),
-        'restrict_to_survey_id'=>array(null, $r['sample:survey_id'])
+      'website_id' => array($r['occurrence:website_id']),
+      'restrict_to_survey_id' => array(NULL, $r['sample:survey_id']),
     ));
-    return $r;  
+    return $r;
   }
-  
+
   protected function getDefaults() {
     $r = parent::getDefaults();
     // as you can't create an occurrence in the warehouse, no logic yet for which attributes
     // to display
-    if ($this->uri->method(false)!=='create') {
+    if ($this->uri->method(FALSE) !== 'create') {
       $sample = ORM::Factory('sample', $_POST['occurrence:sample_id']);
       $this->loadAttributes($r, array(
-          'website_id'=>array($_POST['occurrence:website_id']),
-          'restrict_to_survey_id'=>array(null, $sample->survey_id)
+        'website_id' => array($_POST['occurrence:website_id']),
+        'restrict_to_survey_id' => array(NULL, $sample->survey_id)
       ));
     }
     return $r;
   }
-  
-  public function save()
-  {
-    // unchecked check boxes are not in POST, so set false values.
-    if (!isset($_POST['occurrence:confidential']))
-      $_POST['occurrence:confidential']='f';
-    if (!isset($_POST['occurrence:zero_abundance']))
-      $_POST['occurrence:zero_abundance']='f';
+
+  public function save() {
+    if (!empty($_POST['occurrence:record_status:combined'])) {
+      $_POST['occurrence:record_status'] = substr($_POST['occurrence:record_status:combined'], 0, 1);
+      $_POST['occurrence:record_substatus'] = substr($_POST['occurrence:record_status:combined'], 1, 1);
+    }
+    kohana::log('debug', var_export($_POST, true));
     parent::save();
   }
-  
+
   /**
    * Return a list of the tabs to display for this controller's actions.
    */

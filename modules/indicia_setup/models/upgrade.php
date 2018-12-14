@@ -1,14 +1,30 @@
 <?php
+
 /**
- * INDICIA
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link http://code.google.com/p/indicia/
- * @package Indicia
  */
 
 /**
  * Filter helper class to find folders in a db folder that are named version_x_x_x
  * and therefore contain scripts to run for that version.
+ *
  * @param string $folder
+ *
  * @return boolean
  */
 class FolderFilter {
@@ -36,17 +52,24 @@ class FolderFilter {
   }
 
   /**
-   * Checks if a folder's file name is for a version between the range of versions
-   * we are applying.
-   * @param string $folder Folder name
+   * Chacks a folder verion number.
+   *
+   * Checks if a folder's file name is for a version between the range of
+   * versions we are applying.
+   *
+   * @param string $folder
+   *   Folder name.
+   *
    * @return bool
+   *   True if the folder version number is the current version or higher.
    */
   private function isCurrentVersionOrAbove($folder) {
-    // convert the folder name to a version string
+    // Convert the folder name to a version string.
     preg_match('/^version_(\d+)_(\d+)_(\d+)/', $folder, $matches);
     array_shift($matches);
     $this_version = implode('.', $matches);
-    // use a natural string comparison as it works nicely with 1.10.0 being higher than 1.2.0
+    // Use a natural string comparison as it works nicely with 1.10.0 being
+    // higher than 1.2.0.
     return strnatcasecmp($this_version, $this->minVersion) >=0
         && strnatcasecmp($this_version, $this->maxVersion) <= 0;
   }
@@ -123,7 +146,7 @@ class Upgrade_Model extends Model {
       ->current()->approx_count > 1000;
     // Run the core upgrade.
     $last_run_script = $system->getLastRunScript('Indicia');
-    $this->apply_update_scripts($this->base_dir . "/modules/indicia_setup/", 'Indicia', $old_version, $new_version, $last_run_script);
+    $this->applyUpdateScripts($this->base_dir . "/modules/indicia_setup/", 'Indicia', $old_version, $new_version, $last_run_script);
     $this->setNewVersion($new_version, 'Indicia');
     // Need to look for any module with a db folder, then read its system
     // version and apply the updates.
@@ -134,7 +157,7 @@ class Upgrade_Model extends Model {
         if (file_exists("$path/db/")) {
           $old_version = $system->getVersion(basename($path));
           $last_run_script = $system->getLastRunScript(basename($path));
-          $this->apply_update_scripts("$path/", basename($path), $old_version, $new_version, $last_run_script);
+          $this->applyUpdateScripts("$path/", basename($path), $old_version, $new_version, $last_run_script);
         }
         else {
           // Update the system table to reflect version of all modules without
@@ -163,8 +186,13 @@ class Upgrade_Model extends Model {
     return $folders;
   }
 
-  private function apply_update_scripts($base_dir, $app_name, $old_version, $new_version, $last_run_script) {
+  private function applyUpdateScripts($base_dir, $app_name, $old_version, $new_version, $last_run_script) {
     $db_versions = $this->get_db_versions($base_dir, $old_version, $new_version);
+    // If we are starting a new folder (i.e. the last folder of db scripts has
+    // already been fully applied) then make sure we start at the beginning.
+    if (count($db_versions) > 0 && reset($db_versions) !== 'version_' . str_replace('.', '_', $old_version)) {
+      $last_run_script = '';
+    }
     foreach ($db_versions as $version_folder) {
       kohana::log('debug', "upgrading $app_name database to $version_folder");
       if (file_exists($base_dir . "db/" . $version_folder)) {
@@ -192,6 +220,9 @@ class Upgrade_Model extends Model {
         // Reset last run script - if there are more version folders then we
         // start at the top.
         $last_run_script = '';
+        if ($app_name === 'Indicia' && method_exists($this, $version_folder)) {
+          $this->$version_folder();
+        }
       }
     }
     kohana::log('debug', "Upgrade of $app_name completed to $new_version");
@@ -260,7 +291,8 @@ class Upgrade_Model extends Model {
 
     if ((($handle = @opendir($full_upgrade_folder))) != FALSE) {
       while (($file = readdir($handle)) != FALSE) {
-        if (!preg_match("/^20.*\.sql$/", $file)) {
+        // File name must start with at least the date in ISO numerical format.
+        if (!preg_match("/^\d{8}.*\.sql$/", $file)) {
           continue;
         }
         $file_name[] = $file;
@@ -271,6 +303,7 @@ class Upgrade_Model extends Model {
       throw new Exception("Cant open dir " . $full_upgrade_folder);
     }
     sort($file_name);
+    $masterListId = warehouse::getMasterTaxonListId();
     try {
       foreach($file_name as $name) {
         if (strcmp($name, $last_run_script)>0 || empty($last_run_script)) {
@@ -282,6 +315,8 @@ class Upgrade_Model extends Model {
           if (!utf8::is_ascii($_db_file)) {
             $_db_file = utf8::strip_non_ascii($_db_file);
           }
+          // Let upgrade scripts know if there is a master taxon list ID.
+          $_db_file = str_replace('#master_list_id#', $masterListId, $_db_file);
           if (substr($_db_file, 0, 18) === '-- #postgres user#')
             $this->scriptsForPgUser .= $_db_file . "\n\n";
           elseif (substr($_db_file, 0, 16) === '-- #slow script#' && $this->couldBeSlow)
@@ -379,6 +414,34 @@ class Upgrade_Model extends Model {
     // delete any that remain in $existing, since they are no longer supported
     foreach ($existing as $idx => $record) {
       $this->db->delete('spatial_systems', array('id'=>$record['id']));
+    }
+  }
+
+  /**
+   * Method called for v2 upgrade.
+   *
+   * Removes location_id_* columns from cache tables as replaced by
+   * location_ids[].
+   */
+  private function version_2_0_0() {
+    if (in_array(MODPATH . 'cache_builder', kohana::config('config.modules'))) {
+      $baseTables = ['samples', 'occurrences'];
+      foreach ($baseTables as $baseTable) {
+        $qry = <<<SQL
+select column_name from information_schema.columns
+where table_schema='indicia'
+and table_name='cache_{$baseTable}_functional'
+and column_name like 'location\_id\_%'
+SQL;
+        $columns = $this->db->query($qry)->result();
+        foreach ($columns as $column) {
+          $qry = <<<SQL
+ALTER TABLE cache_{$baseTable}_functional
+DROP COLUMN $column->column_name
+SQL;
+          $this->db->query($qry);
+        }
+      }
     }
   }
 

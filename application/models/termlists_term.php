@@ -14,38 +14,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Models
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Termlists_Terms table.
- *
- * @package Core
- * @subpackage Models
- * @link    http://code.google.com/p/indicia/wiki/DataModel
  */
 class Termlists_term_Model extends Base_Name_Model {
 
-  public $search_field='term';
+  public $search_field = 'term';
 
-  protected $lookup_against='lookup_term';
+  protected $lookup_against = 'lookup_term';
 
   protected $list_id_field = 'termlist_id';
 
-  protected $belongs_to = array(
+  protected $belongs_to = [
     'term', 'termlist', 'meaning',
     'created_by' => 'user',
-    'updated_by' => 'user'
-  );
+    'updated_by' => 'user',
+  ];
 
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
-  protected $has_attributes=TRUE;
-  protected $attrs_submission_name='trmAttributes';
-  public $attrs_field_prefix='trmAttr';
+  protected $has_attributes = TRUE;
+  protected $attrs_submission_name = 'trmAttributes';
+  public $attrs_field_prefix = 'trmAttr';
 
   protected $ORM_Tree_children = 'termlists_terms';
 
@@ -70,15 +64,17 @@ class Termlists_term_Model extends Base_Name_Model {
     $array->add_rules('term_id', 'required');
     $array->add_rules('termlist_id', 'required');
     $array->add_rules('meaning_id', 'required');
+    $array->add_rules('sort_order', 'integer');
     // $array->add_callbacks('deleted', array($this, '__dependents'));
 
-    // Explicitly add those fields for which we don't do validation
+    // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = array(
       'parent_id',
       'preferred',
       'deleted',
-      'sort_order',
-      'source_id'
+      'source_id',
+      'image_path',
+      'allow_data_entry',
     );
     return parent::validate($array, $save);
   }
@@ -89,7 +85,7 @@ class Termlists_term_Model extends Base_Name_Model {
   public function __dependents(Validation $array, $field) {
     if ($array['deleted'] == 'true') {
       $record = ORM::factory('termlists_term', $array['id']);
-      if (count($record->children)!=0) {
+      if (count($record->children) !== 0) {
         $array->add_error($field, 'has_children');
       }
     }
@@ -100,30 +96,46 @@ class Termlists_term_Model extends Base_Name_Model {
    */
   protected function postSubmit($isInsert) {
     $success = TRUE;
-    if ($this->submission['fields']['preferred']['value']=='t') {
+    if ($this->submission['fields']['preferred']['value'] === 't') {
       try {
         if (isset($this->submission['metaFields']) && array_key_exists('synonyms', $this->submission['metaFields'])) {
-          $arrSyn=$this->parseRelatedNames(
+          $arrSyn = $this->parseRelatedNames(
             $this->submission['metaFields']['synonyms']['value'],
             'set_synonym_sub_array'
           );
         }
-        else $arrSyn=array();
-        $meaning_id=$this->submission['fields']['meaning_id']['value'];
+        else {
+          $arrSyn = array();
+        }
+        $meaning_id = $this->submission['fields']['meaning_id']['value'];
+        if (isset($this->submission['fields']['allow_data_entry'])
+            && ($this->submission['fields']['allow_data_entry']['value'] === '1'
+            || $this->submission['fields']['allow_data_entry']['value'] === 't')) {
+          $allow_data_entry = 't';
+        }
+        else {
+          $allow_data_entry = 'f';
+        }
         $existingSyn = $this->getSynonomy('meaning_id', $meaning_id);
-
         // Iterate through existing synonomies, discarding those that have
         // been deleted and removing existing ones from the list to add
         // Not sure this is correct way of doing it as it would appear that you can only have one synonym per language....
         foreach ($existingSyn as $syn) {
           // Is the term from the db in the list of synonyms?
           if (array_key_exists($syn->term->language->iso, $arrSyn) &&
-              $arrSyn[$syn->term->language->iso] == $syn->term->term)
+              $arrSyn[$syn->term->language->iso] == $syn->term->term) {
+            if ($syn->allow_data_entry !== $allow_data_entry) {
+              $syn->allow_data_entry = $allow_data_entry;
+              $syn->save();
+            }
             // This one already in db, so can remove from our array
             $arrSyn = array_diff_key($arrSyn, array($syn->term->language->iso => ''));
+          }
           else {
-            // Synonym has been deleted - remove it from the db
+            // Synonym has been deleted - remove it from the db.
             $syn->deleted = 't';
+            $syn->updated_on = date("Ymd H:i:s");
+            $syn->updated_by_id = security::getUserId();
             $syn->save();
           }
         }
@@ -136,29 +148,32 @@ class Termlists_term_Model extends Base_Name_Model {
         foreach ($arrSyn as $lang => $term) {
           $sm->clear();
           $syn = array();
-          // Wrap a new submission
+          // Wrap a new submission.
           Kohana::log("debug", "Wrapping submission for synonym " . $term);
           $lang_id = ORM::factory('language')->where(array('iso' => $lang))->find()->id;
-          // If language not found, use english as the default. Future versions may wish this to be
-          // user definable.
+          // If language not found, use english as the default. Future versions
+          // may wish this to be user definable.
           $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
-          // copy the original post array to pick up the common things, first the taxa_taxon_list data
+          // Copy the original post array to pick up the common things, first
+          // the taxa_taxon_list data.
           foreach (array('parent', 'sort_order', 'termlist_id') as $field) {
             if (isset($this->submission['fields'][$field])) {
-              $syn["termlists_term:$field"]=is_array($this->submission['fields'][$field]) ? $this->submission['fields'][$field]['value'] : $this->submission['fields'][$field];
+              $syn["termlists_term:$field"] = is_array($this->submission['fields'][$field]) ? $this->submission['fields'][$field]['value'] : $this->submission['fields'][$field];
             }
           }
-          // unlike the taxa there are no term based shared data.
+          // Unlike the taxa there are no term based shared data.
           // Now update the record with specifics for this synonym
           $syn['term:id'] = NULL;
           $syn['term:term'] = $term;
           $syn['term:language_id'] = $lang_id;
           $syn['termlists_term:id'] = '';
           $syn['termlists_term:preferred'] = 'f';
-          // meaning Id cannot be copied from the submission, since for new data it is generated when saved
+          // Meaning Id cannot be copied from the submission, since for new
+          // data it is generated when saved.
           $syn['termlists_term:meaning_id'] = $meaning_id;
-          // Prevent a recursion by not posting synonyms with a synonym
-          $syn['metaFields:synonyms']='';
+          $syn['termlists_term:allow_data_entry'] = $allow_data_entry;
+          // Prevent a recursion by not posting synonyms with a synonym.
+          $syn['metaFields:synonyms'] = '';
           $sub = $this->wrap($syn);
           // Don't resubmit the meaning record, again we can't rely on the order of the supermodels in the list
           foreach ($sub['superModels'] as $idx => $supermodel) {
@@ -169,20 +184,73 @@ class Termlists_term_Model extends Base_Name_Model {
           }
           $sm->submission = $sub;
           if (!$sm->submit()) {
-            $success=FALSE;
-            foreach ($sm->errors as $key => $value) {
-              $this->errors[$sm->object_name . ':' . $key]=$value;
+            $success = false;
+            foreach($sm->errors as $key => $value) {
+              $this->errors[$sm->object_name . ':' . $key] = $value;
             }
           }
         }
+        if (!$isInsert) {
+          $this->enqueueCustomAttributeJsonUpdate($meaning_id);
+        }
       }
       catch (Exception $e) {
-        $this->errors['general']='<strong>An error occurred</strong><br/>' . $e->getMessage();
+        $this->errors['general'] = '<strong>An error occurred</strong><br/>' . $e->getMessage();
         error_logger::log_error('Exception during postSubmit in termlists_term model.', $e);
         $success = FALSE;
       }
     }
     return $success;
+  }
+
+  /**
+   * Work queue task additions after a term change.
+   *
+   * Term changes may need to be reflected in the cache table attrs_json fields
+   * for both occurrences and samples, so create the work queue entries
+   * required to perform the updates in the background.
+   *
+   * @param int $meaning_id
+   *   Term meaning ID being changed.
+   */
+  private function enqueueCustomAttributeJsonUpdate($meaning_id) {
+    // The comments at the top of these insert statements prevent the kohana
+    // DB layer from treating these as inserts and looking for lastval(),
+    // which causes errors when the work_queue task already exists.
+    $sql = <<<SQL
+-- insert if not already exists
+SELECT DISTINCT 'task_cache_builder_attrs_occurrences', 'occurrences', av.occurrence_id, 2, 60, now()
+FROM cache_termlists_terms t
+JOIN occurrence_attribute_values av
+  ON av.int_value=t.id
+  AND av.deleted=false
+JOIN occurrence_attributes a
+  ON a.id=av.occurrence_attribute_id
+  AND a.data_type='L'
+  AND a.deleted=false
+LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_occurrences'
+  AND q.entity='occurrences' AND q.record_id=av.occurrence_id AND q.params IS NULL
+WHERE t.meaning_id=$meaning_id
+AND q.id IS NULL;
+SQL;
+    $this->db->query($sql);
+    $sql = <<<SQL
+-- insert if not already exists
+SELECT DISTINCT 'task_cache_builder_attrs_samples', 'samples', av.sample_id, 2, 60, now()
+FROM cache_termlists_terms t
+JOIN sample_attribute_values av
+  ON av.int_value=t.id
+  AND av.deleted=false
+JOIN sample_attributes a
+  ON a.id=av.sample_attribute_id
+  AND a.data_type='L'
+  AND a.deleted=false
+LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_samples'
+  AND q.entity='samples' AND q.record_id=av.sample_id AND q.params IS NULL
+WHERE t.meaning_id=$meaning_id
+AND q.id IS NULL;
+SQL;
+    $this->db->query($sql);
   }
 
   /**
@@ -231,7 +299,8 @@ class Termlists_term_Model extends Base_Name_Model {
    */
   public function getDefaults() {
     return array(
-      'preferred'=>'t'
+      'preferred' => 't',
+      'termlists_term:allow_data_entry' => 't',
     );
   }
 

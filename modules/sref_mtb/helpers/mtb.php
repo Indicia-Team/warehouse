@@ -17,9 +17,9 @@
  * @subpackage MTBQQQ Grid References
  * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link  https://github.com/indicia-team/warehouse/
  */
- 
+
 define("GRIDORIGIN_X",1);
 define("GRIDORIGIN_Y",9);
 define("SIXMINUTES",1/10);
@@ -27,7 +27,7 @@ define("TENMINUTES",1/6);
 define("ORIGIN_X", 35/6);
 define("ORIGIN_Y", 55.1);
 
-/** 
+/**
  * Conversion class for MTBQQQ (German grid system) grid references.
  * @package Modules
  * @subpackage MTBQQQ Grid References

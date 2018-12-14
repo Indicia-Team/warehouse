@@ -1,0 +1,31 @@
+<report
+    title="Delete occurrences list"
+    description="A list of occurrences IDs that have been deleted."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         count_field="o.*">
+    select #columns#
+    from occurrences o
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+    AND o.deleted=true
+  </query>
+  <order_bys>
+    <order_by>o.id</order_by>
+  </order_bys>
+  <params>
+    <!-- last_date and last_id parameters required for autofeed to work. -->
+    <param name="last_date" display="Last update date" datatype="date" default="">
+      <where>o.updated_on &gt; '#last_date#'</where>
+    </param>
+    <param name="last_id" display="Last ID" datatype="integer" default="">
+      <where>o.id &gt; #last_id#</where>
+    </param>
+  </params>
+  <columns>
+    <!-- Tracking field called "id" is required for autofeed to work. -->
+    <column name="id" sql="o.id" datatype="integer" />
+    <column name="updated_on" sql="o.updated_on" datatype="date" />
+  </columns>
+</report>

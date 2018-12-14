@@ -2,21 +2,22 @@
     title="Occurrences Download with parent sample support"
     description="Report suitable for downloading data, compatible with the explore report parameters, where sample attributes come from a parent sample."
 >
-  <query website_filter_field="o.website_id" samples_id_field="schild.parent_id" count_field="o.*">
+  <query website_filter_field="o.website_id" samples_id_field="schild.parent_id" count_field="o.*"
+    blocked_sharing_tasks_field="o.blocked_sharing_tasks">
   SELECT #columns#
   FROM cache_occurrences o
   JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
   JOIN samples schild on schild.id=o.sample_id AND schild.deleted=false
   JOIN samples s on s.id=schild.parent_id AND s.deleted=false
-  JOIN websites w on w.id=o.website_id 
+  JOIN websites w on w.id=o.website_id
   #agreements_join#
   #joins#
-  WHERE #sharing_filter# 
+  WHERE #sharing_filter#
   AND o.record_status not in ('I','T') AND (#ownData#=1 OR o.record_status not in ('D','R'))
   AND ('#searchArea#'='' OR st_intersects(o.public_geom, ST_MakeValid(st_geomfromtext('#searchArea#',900913))))
   AND (#ownData#=0 OR CAST(o.created_by_id AS character varying)='#currentUser#')
   AND (trim('#date_from#')='' or '#date_from#'='Click here' or o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
-  AND (trim('#date_to#')='' or '#date_to#'='Click here' or o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))    
+  AND (trim('#date_to#')='' or '#date_to#'='Click here' or o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
   AND quality_check('#quality#', o.record_status, o.certainty)=true
   #idlist#
   </query>
@@ -26,7 +27,7 @@
   <params>
     <param name='date_from' display='Date From' datatype='date' description="Filter by record added or updated date" />
     <param name='date_to' display='Date To' datatype='date' description="Filter by record added or updated date" />
-    <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
+    <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup'
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
     <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
            description='Comma separated list of sample attribute IDs to include as columns in the report' />
@@ -39,14 +40,14 @@
     <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
         population_call='direct:location:id:name' />
     <param name="ownLocality" display="My locality only?" datatype="checkbox">
-      <join value="1">JOIN locations lfilter ON st_intersects(lfilter.boundary_geom, o.public_geom) AND lfilter.id=#location_id#</join>  
+      <join value="1">JOIN locations lfilter ON st_intersects(lfilter.boundary_geom, o.public_geom) AND lfilter.id=#location_id#</join>
     </param>
     <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="integer[]" emptyvalue="0"/>
-    <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
+    <param name="ownGroups" display="My species groups only?" datatype="checkbox">
       <join value="1">o.taxon_group_id IN (#taxon_groups#)</join>
     </param>
     <param name="surveys" display="Surveys" description="List of survey IDs to view data for" datatype="integer[]" emptyvalue="0"/>
-    <param name="ownSurveys" display="My surveys only?" datatype="checkbox" emptyvalue="0">      
+    <param name="ownSurveys" display="My surveys only?" datatype="checkbox" emptyvalue="0">
       <join value="1">o.survey_id IN (#surveys#)</join>
     </param>
   </params>
@@ -54,10 +55,10 @@
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" datatype="text" />
     <column name='sample_id' visible='false' sql='case when o.sensitivity_precision is null then o.sample_id else null end' datatype='integer' />
-    <column name='taxon' display='Species' 
+    <column name='taxon' display='Species'
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
       sql="o.preferred_taxon" datatype='text' />
-    <column name='common' display='Common name' 
+    <column name='common' display='Common name'
       template="&lt;div class='zero-{zero_abundance}'&gt;{common}&lt;/div&gt;"
       sql="o.default_common_name" datatype='text' />
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
@@ -73,12 +74,12 @@
     <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt;' END || o.recorders" datatype="text" />
     <column name='sample_comment' display='Sample comment' sql="s.comment" datatype="text" />
     <column name='zeroabundance' display='ZeroAbundance' sql='upper(cast (o.zero_abundance as character))' datatype="text" />
-    <column name='record_status' display='State' 
+    <column name='record_status' display='State'
         sql="CASE o.record_status WHEN 'V' THEN 'Verified' WHEN 'D' THEN 'Dubious' WHEN 'R' THEN 'Rejected' WHEN 'I' THEN 'In progress' WHEN 'C' THEN 'Complete' WHEN 'S' THEN 'Awaiting check' ELSE o.record_status END" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='certainty' sql="CASE o.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
     <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(o.public_entered_sref) / 24.0' />
-    <column name='strokecolor' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
+    <column name='strokecolor' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then
       case o.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
     when 'V' then 'green'
     when 'D' then 'orange'

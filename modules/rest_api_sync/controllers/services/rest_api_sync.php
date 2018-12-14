@@ -16,7 +16,7 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 define('MAX_RECORDS_TO_PROCESS', 2000);

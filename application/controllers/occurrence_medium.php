@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
- * Controller providing CRUD access to the images for an occurrence media file
- *
- * @package  Core
- * @subpackage Controllers
+ * Controller providing CRUD access to the images for an occurrence media file.
  */
 class Occurrence_medium_Controller extends Gridview_Base_Controller
 {
@@ -78,32 +73,33 @@ class Occurrence_medium_Controller extends Gridview_Base_Controller
    */
   protected function get_return_page() {
     if (array_key_exists('occurrence_medium:occurrence_id', $_POST)) {
-      return "occurrence/edit/".$_POST['occurrence_medium:occurrence_id']."?tab=Media_Files";
-    } else {
+      return "occurrence/edit/" . $_POST['occurrence_medium:occurrence_id'] . "?tab=Media_Files";
+    }
+    else {
       return $this->model->object_name;
     }
   }
-  
+
   /**
-   * Get the list of terms ready for the media types list. 
+   * Get the list of terms ready for the media types list.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')    
-    );   
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types'),
+    );
   }
-  
+
   /**
    * Define non-standard behaviuor for the breadcrumbs, since this is accessed via an occurrence
    */
   protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('occurrence', 'Occurrences');
     if ($this->model->id) {
-      // editing an existing item
+      // Editing an existing item.
       $occurrenceId = $this->model->occurrence_id;
-    } else {
-      // creating a new one so our argument is the location id
+    }
+    else {
+      // Creating a new one so our argument is the location id.
       $occurrenceId = $this->uri->argument(1);
     }
     $occ = ORM::factory('occurrence', $occurrenceId);

@@ -17,7 +17,7 @@
  * @subpackage Plugins
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -27,7 +27,7 @@
  */
 function individuals_and_associations_extend_ui() {
   return array(array(
-    'view'=>'sample/sample_edit', 
+    'view'=>'sample/sample_edit',
     'type'=>'tab',
     'controller'=>'subject_observation/index',
     'title'=>'Subject Observations',
@@ -40,9 +40,9 @@ function individuals_and_associations_extend_ui() {
  */
 function individuals_and_associations_alter_menu ($menu, $auth) {
   if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('editor')) {
-    $menu['Entered data']['Known subjects'] = 'known_subject';
-    $menu['Entered data']['Identifiers'] = 'identifier';
-    $menu['Entered data']['Subject observations'] = 'subject_observation';
+    $menu['Observations data']['Known subjects'] = 'known_subject';
+    $menu['Observations data']['Identifiers'] = 'identifier';
+    $menu['Observations data']['Subject observations'] = 'subject_observation';
     $menu['Custom attributes']['Known subject attributes'] = 'known_subject_attribute';
     $menu['Custom attributes']['Identifiers attributes'] = 'identifier_attribute';
     $menu['Custom attributes']['Identifiers subject observation attributes'] = 'identifiers_subject_observation_attribute';
@@ -52,7 +52,7 @@ function individuals_and_associations_alter_menu ($menu, $auth) {
 }
 
 /**
- * Hook to ORM enable the relationship between known subjects and: 
+ * Hook to ORM enable the relationship between known subjects and:
  * 1) taxa_taxon_lists from the taxon end.
  * 2) websites from the website end.
  */

@@ -14,29 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Models
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Occurrences table.
- *
- * @package Core
- * @subpackage Models
- * @link http://code.google.com/p/indicia/wiki/DataModel
  */
 class Occurrence_Model extends ORM {
   protected $requeuedForVerification = FALSE;
 
-  protected $has_many=array(
+  protected $has_many = array(
     'occurrence_attribute_values',
     'determinations',
     'occurrence_media'
   );
-  protected $belongs_to=array(
+  protected $belongs_to = array(
     'determiner' => 'person',
     'sample',
     'taxa_taxon_list',
@@ -122,7 +116,7 @@ class Occurrence_Model extends ORM {
 
   public function validate(Validation $array, $save = FALSE) {
     if ($save) {
-      $this->logDeterminations($array);
+      $this->handleRedeterminations($array);
       $fields = array_merge($this->submission['fields']);
       $newStatus = empty($fields['record_status']) ? $this->record_status : $fields['record_status']['value'];
       $newSubstatus = empty($fields['record_substatus']) ? $this->record_substatus : $fields['record_substatus']['value'];
@@ -223,35 +217,67 @@ class Occurrence_Model extends ORM {
     }
   }
 
-  private function logDeterminations(Validation $array) {
-    // Only log a determination for the occurrence if the species is changed.
-    // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
-    // and the config setting must be enabled.
-    if (kohana::config('indicia.auto_log_determinations') === TRUE && !empty($this->taxa_taxon_list_id) &&
-      !empty($this->submission['fields']['taxa_taxon_list_id']['value']) && $this->all_info_in_determinations !== 'Y' &&
-      $this->taxa_taxon_list_id != $this->submission['fields']['taxa_taxon_list_id']['value']) {
-      $this->logDetermination = TRUE;
-      $currentUserId = $this->get_current_user_id();
-      // We log the old taxon.
-      $rowToAdd['taxa_taxon_list_id'] = $this->taxa_taxon_list_id;
-      $rowToAdd['determination_type'] = 'B';
-      $rowToAdd['occurrence_id'] = $this->id;
-      // Last change to the occurrence is really the create metadata for this determination, since we are copying it
-      // out of the existing occurrence record.
-      $rowToAdd['created_by_id'] = $this->updated_by_id;
-      $rowToAdd['updated_by_id'] = $this->updated_by_id;
-      $rowToAdd['created_on'] = $this->getWhenRecordLastDetermined();
-      $rowToAdd['updated_on'] = date("Ymd H:i:s");
-      $rowToAdd['person_name'] = $this->get_person_name_and_update_determiner($this->as_array(), $this->updated_by_id);
+  /**
+   * Handle cases where an existing record is redetermined.
+   *
+   * This includes logging of the change to the determinations table and
+   * updating the identified by field value.
+   *
+   * @param Validation $array
+   *   Validation data.
+   */
+  private function handleRedeterminations(Validation $array) {
+    if (!empty($this->taxa_taxon_list_id) &&
+        !empty($this->submission['fields']['taxa_taxon_list_id']['value']) &&
+        $this->taxa_taxon_list_id != $this->submission['fields']['taxa_taxon_list_id']['value']) {
+      // Only log a determination for the occurrence if the species is changed.
+      // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
+      // and the config setting must be enabled.
+      if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
+        $this->logDetermination = TRUE;
+        $currentUserId = $this->get_current_user_id();
+        // We log the old taxon.
+        $rowToAdd['taxa_taxon_list_id'] = $this->taxa_taxon_list_id;
+        $rowToAdd['determination_type'] = 'B';
+        $rowToAdd['occurrence_id'] = $this->id;
+        // Last change to the occurrence is really the create metadata for this
+        // determination, since we are copying it out of the existing
+        // occurrence record.
+        $rowToAdd['created_by_id'] = $this->updated_by_id;
+        $rowToAdd['updated_by_id'] = $this->updated_by_id;
+        $rowToAdd['created_on'] = $this->getWhenRecordLastDetermined();
+        $rowToAdd['updated_on'] = date("Ymd H:i:s");
+        $rowToAdd['person_name'] = $this->get_person_name_and_update_determiner($this->as_array(), $this->updated_by_id);
 
-      $insert = $this->db
-        ->from('determinations')
-        ->set($rowToAdd)
-        ->insert();
+        $insert = $this->db
+          ->from('determinations')
+          ->set($rowToAdd)
+          ->insert();
 
-      if ($currentUserId !== 1) {
-        $this->submission['fields']['determiner_id']['value'] = $currentUserId;
+        if ($currentUserId !== 1) {
+          $this->submission['fields']['determiner_id']['value'] = $currentUserId;
+        }
       }
+      // Update any determiner occurrence attributes.
+      $sql = <<<SQL
+UPDATE occurrence_attribute_values v
+SET text_value=CASE a.system_function
+  WHEN 'det_full_name' THEN COALESCE(p.first_name || ' ', '') || p.surname
+  WHEN 'det_first_name' THEN p.first_name
+  WHEN 'det_last_name' THEN p.surname
+END
+FROM occurrence_attributes a, users u
+JOIN people p ON p.id=u.person_id
+  AND p.deleted=false
+WHERE a.deleted=false
+AND v.deleted=false
+AND v.occurrence_attribute_id=a.id
+AND v.occurrence_id=$this->id
+AND a.system_function in ('det_full_name', 'det_first_name', 'det_last_name')
+AND u.id=$currentUserId
+AND u.deleted=false
+SQL;
+      $this->db->query($sql);
     }
   }
 
@@ -572,7 +598,8 @@ class Occurrence_Model extends ORM {
         'description' => 'Select the website to import records into.',
         'datatype' => 'lookup',
         'population_call' => 'direct:website:id:title' ,
-        'filterIncludesNulls' => TRUE
+        'filterIncludesNulls' => TRUE,
+        'validation' => ['required'],
       ),
       'survey_id' => array(
         'display' => 'Survey',
@@ -580,7 +607,8 @@ class Occurrence_Model extends ORM {
         'datatype' => 'lookup',
         'population_call' => 'direct:survey:id:title',
         'linked_to' => 'website_id',
-        'linked_filter_field' => 'website_id'
+        'linked_filter_field' => 'website_id',
+        'validation' => ['required'],
       ),
       'sample:entered_sref_system' => array(
         'display' => 'Spatial ref. system',
@@ -604,7 +632,7 @@ class Occurrence_Model extends ORM {
         'display' => 'Record status',
         'description' => 'Select the initial status for imported species records',
         'datatype' => 'lookup',
-        'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
+        'lookup_values' => 'C:Unconfirmed - not reviewed,V:Accepted,I:Data entry still in progress',
         'default' => 'C'
       )
     );

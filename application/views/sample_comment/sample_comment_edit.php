@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the sample comment edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,30 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'sample_comment:id');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 ?>
 <p>This page allows you to specify the details of a sample comment.</p>
-<form class="cmxform" action="<?php echo url::site().'sample_comment/save'; ?>" method="post" enctype="multipart/form-data">
-<?php echo $metadata; ?>
-<fieldset>
-<input type="hidden" name="sample_comment:id" value="<?php echo $id ?>" />
-<input type="hidden" name="sample_comment:sample_id" value="<?php echo html::initial_value($values, 'sample_comment:sample_id'); ?>" />
-<legend>Sample Comment</legend>
-<?php
-echo data_entry_helper::textarea(array(
-  'label' => 'Comment',
-  'fieldname' => 'sample_comment:comment',
-  'default' => html::initial_value($values, 'sample_comment:comment')
-)); 
-?>
-</fieldset>
-<?php echo html::form_buttons($id!=null, false, false); ?>
+<form action="<?php echo url::site() . 'sample_comment/save'; ?>" method="post" enctype="multipart/form-data">
+  <fieldset>
+    <input type="hidden" name="sample_comment:id" value="<?php echo $id ?>" />
+    <input type="hidden" name="sample_comment:sample_id" value="<?php echo html::initial_value($values, 'sample_comment:sample_id'); ?>" />
+    <legend>Sample Comment<?php echo $metadata; ?></legend>
+    <?php
+    echo data_entry_helper::textarea(array(
+      'label' => 'Comment',
+      'fieldname' => 'sample_comment:comment',
+      'default' => html::initial_value($values, 'sample_comment:comment'),
+      'validation' => ['required'],
+    ));
+    ?>
+  </fieldset>
+  <?php echo html::form_buttons($id !== NULL, FALSE, FALSE); ?>
 </form>

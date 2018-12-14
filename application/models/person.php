@@ -16,13 +16,11 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the People table.
- *
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Person_Model extends ORM {
   public $search_field='surname';

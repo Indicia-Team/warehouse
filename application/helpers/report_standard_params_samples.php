@@ -13,11 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Helpers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
@@ -119,16 +117,21 @@ class report_standard_params_samples {
             "and not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom)")
         )
       ),
-      'indexed_location_list' => array('datatype'=>'integer[]', 'display'=>'Location IDs (indexed)', 'custom'=>'unique_location_index',
-        'description'=>'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ilsfilt# on #alias:ilsfilt#.sample_id=s.id and #alias:ilsfilt#.location_id #indexed_location_list_op# (#indexed_location_list#)")
-        ),
-        'wheres' => array(
-          // where will be used only if using a uniquely indexed location type
-          array('value'=>'', 'operator'=>'', 'sql'=>"s.location_id_#typealias# #indexed_location_list_op# (#indexed_location_list#)")
-        )
-      ),
+      'indexed_location_list' => [
+        'datatype' => 'integer[]',
+        'display' => 'Location IDs (indexed)',
+        'description' => 'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
+        'wheres' => [
+          [
+            'param_op' => 'in',
+            'sql' => "s.location_ids @> ARRAY[#indexed_location_list#]",
+          ],
+          [
+            'param_op' => 'not in',
+            'sql' => "(NOT (s.location_ids @> ARRAY[#indexed_location_list#]) OR s.location_ids IS NULL)",
+          ],
+        ],
+      ],
       'date_from' => array('datatype'=>'date', 'display'=>'Date from',
         'description'=>'Date of first sample to include in the output',
         'wheres' => array(

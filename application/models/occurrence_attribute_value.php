@@ -14,30 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Models
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Occurrence_Attribute_Values table.
- *
- * @package  Core
- * @subpackage Models
- * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
 class Occurrence_Attribute_Value_Model extends Attribute_Value_ORM {
   public $search_field='text_value';
-  
+
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'occurrence', 'occurrence_attribute');
 
   public function validate(Validation $array, $save = FALSE) {
-    self::attribute_validation($array, 'occurrence');    
+    self::attribute_validation($array, 'occurrence');
     return parent::validate($array, $save);
   }
-  
+
   protected function get_survey_specific_rules($values) {
     return $this->db
             ->from('occurrence_attributes_websites as oaw')

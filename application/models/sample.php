@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Models
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Samples table.
- *
- * @package  Core
- * @subpackage Models
- * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
 class Sample_Model extends ORM_Tree {
   protected $requeuedForVerification = FALSE;
@@ -34,8 +28,8 @@ class Sample_Model extends ORM_Tree {
   public $search_field = 'id';
 
   protected $ORM_Tree_children = "samples";
-  protected $has_many=array('occurrences', 'sample_attribute_values', 'sample_media');
-  protected $belongs_to=array(
+  protected $has_many = array('occurrences', 'sample_attribute_values', 'sample_media');
+  protected $belongs_to = array(
     'survey',
     'location',
     'licence',

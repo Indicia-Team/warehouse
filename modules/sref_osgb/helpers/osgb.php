@@ -17,10 +17,10 @@
  * @subpackage OSGB Grid References
  * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link  https://github.com/indicia-team/warehouse/
  */
 
-/** 
+/**
  * Conversion class for OSGB grid references.
  * @package Modules
  * @subpackage OSGB Grid References
@@ -104,7 +104,7 @@ class osgb {
     }
     else
       throw new Exception('wkt_to_sref translation only works for POINT or POLYGON wkt.');
-    
+
     $points = explode(',',$points);
     // use the first point to do the conversion
     $point = explode(' ',$points[0]);
@@ -160,7 +160,7 @@ class osgb {
     $n = floor(($northing - (100000 * $hundredKmN)) / $accuracy);
     return $firstLetter.$secondLetter.str_pad($e, $precision/2, '0', STR_PAD_LEFT).str_pad($n, $precision/2, '0', STR_PAD_LEFT);
   }
-  
+
   /**
    * Tidying function for input grid refs.
    * Forces uppercase with no spaces for consistency.

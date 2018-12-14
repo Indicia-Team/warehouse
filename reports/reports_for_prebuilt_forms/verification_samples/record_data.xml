@@ -9,9 +9,10 @@
   join surveys su on su.id=s.survey_id and su.deleted=false
   left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
   left join locations l on l.id=s.location_id and l.deleted=false
-  left join (index_locations_samples ils
-    join locations locality on locality.id=ils.location_id and locality.location_type_id=#locality_type_id#
-  ) on ils.sample_id=s.id
+  left join (cache_samples_functional sf
+    join locations locality on sf.location_ids @> ARRAY[locality.id]
+      and locality.deleted=false and locality.location_type_id=#locality_type_id#
+  ) on sf.id=s.id
   left join (users u
     join people p on p.id=u.person_id and p.deleted=false
   ) on u.id=s.created_by_id and u.id&lt;&gt;1 and u.deleted=false

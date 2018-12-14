@@ -22,8 +22,8 @@
   o.id as occurrence_id, su.title, su.website_id, s.date_start, s.date_end, s.date_type, lttl.taxon,
   s.entered_sref, l.name as location_name, oi.path,
   CASE o.record_status
-    WHEN 'C' THEN 'Data Entry Complete'
-    WHEN 'V' THEN 'Verified'
+    WHEN 'C' THEN 'Unconfirmed - not reviewed'
+    WHEN 'V' THEN 'Accepted'
     WHEN 'R' THEN 'Rejected'
     WHEN 'I' THEN 'In Progress'
     WHEN 'T' THEN 'Test'

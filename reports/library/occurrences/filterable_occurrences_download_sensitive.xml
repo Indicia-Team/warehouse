@@ -10,10 +10,6 @@
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   JOIN samples s on s.id=o.sample_id
-  LEFT JOIN (index_locations_samples ils
-    JOIN cache_termlists_terms ctt on ctt.id=ils.location_type_id AND ctt.term='Vice County'
-  ) on ils.sample_id=o.sample_id and ils.contains=true
-  LEFT JOIN locations vc on vc.id=ils.location_id and coalesce(vc.code, '') not like '%+%'
   #agreements_join#
   #joins#
   WHERE #sharing_filter#
@@ -30,6 +26,8 @@
     <param name='uploadFolder' display='Image upload folder' description='Image upload folder on the warehouse including the trailing slash' datatype='string' default='' />
     <param name='warehouse_id' display='Warehouse unique ID' default='iBRC'
         description='Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key'/>
+    <param name='vice_county_location_type_term' default='Vice County'
+      preprocess="SELECT id FROM cache_termlists_terms WHERE termlist_title='Location types' AND term='#vice_county_location_type_term#'" />
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
@@ -62,8 +60,18 @@
     <column name='output_sref_projection' display='Output map ref projection' datatype='text'
             sql="case onf.output_sref_system when '4326' then 'WGS84' when '27700' then 'OSGB36' else upper(onf.output_sref_system) end" />
     <column name='attr_biotope' display='Biotope' sql="snf.attr_biotope" datatype='text' />
-    <column name="vicecounty_number" display="VC number" sql="vc.code" datatype="text" />
-    <column name="vicecounty" display="Vice county" sql="vc.name" datatype="text" />
+    <column name="vicecounty_number" display="VC number" datatype="text"
+      sql="(SELECT string_agg(vc.code, '; ')
+        FROM locations vc
+        WHERE vc.location_type_id=#vice_county_location_type_term#
+        AND vc.name NOT LIKE '%+%'
+        AND vc.id = ANY(o.location_ids))" />
+    <column name="vicecounty" display="Vice county" datatype="text"
+      sql="(SELECT string_agg(vc.name, '; ')
+        FROM locations vc
+        WHERE vc.location_type_id=#vice_county_location_type_term#
+        AND vc.name NOT LIKE '%+%'
+        AND vc.id = ANY(o.location_ids))" />
     <column name="date" display="Date interpreted" datatype="date" />
     <column name="date_start" display="Date from" sql="o.date_start" visible="true" />
     <column name="date_end" display="Date to" sql="o.date_end" visible="true" />

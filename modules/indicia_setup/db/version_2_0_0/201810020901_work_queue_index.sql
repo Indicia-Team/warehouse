@@ -1,0 +1,1 @@
+CREATE INDEX ix_work_queue_cost_priority ON work_queue(priority, cost_estimate) where claimed_by is null and error_detail is null;

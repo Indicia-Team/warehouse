@@ -17,10 +17,10 @@
  * @subpackage OSGB Grid References
  * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link  https://github.com/indicia-team/warehouse/
  */
 
-/** 
+/**
  * Conversion class for OS Ireland grid references (TM75).
  * @package Modules
  * @subpackage OSGB Grid References
@@ -153,7 +153,7 @@ class osie {
     $n = floor(($northing - (100000 * $hundredKmN)) / $accuracy);
     return $firstLetter.str_pad($e, $precision/2, '0', STR_PAD_LEFT).str_pad($n, $precision/2, '0', STR_PAD_LEFT);
   }
-  
+
   /**
    * Tidying function for input grid refs.
    * Forces uppercase with no spaces for consistency.

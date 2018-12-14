@@ -14,27 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Models
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Model class for the known_subject_attribute_values table.
  *
- * @package  Core
- * @subpackage Models
- * @link  http://code.google.com/p/indicia/wiki/DataModel
+ * @link http://code.google.com/p/indicia/wiki/DataModel
  */
 class Known_subject_attribute_value_Model extends Attribute_Value_ORM {
   public $search_field='text_value';
-  
+
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'known_subject', 'known_subject_attribute');
 
   public function validate(Validation $array, $save = FALSE) {
-    self::attribute_validation($array, 'known_subject');    
+    self::attribute_validation($array, 'known_subject');
     return parent::validate($array, $save);
   }
 }

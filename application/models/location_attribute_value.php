@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Models
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Location_Attribute_Values table.
- *
- * @package  Core
- * @subpackage Models
- * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
 class Location_Attribute_Value_Model extends Attribute_Value_ORM {
   public $search_field='text_value';
@@ -34,8 +28,8 @@ class Location_Attribute_Value_Model extends Attribute_Value_ORM {
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'location', 'location_attribute');
 
   public function validate(Validation $array, $save = FALSE) {
-    self::attribute_validation($array, 'location');    
+    self::attribute_validation($array, 'location');
     return parent::validate($array, $save);
   }
-  
+
 }

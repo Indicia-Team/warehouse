@@ -17,15 +17,15 @@
  * @subpackage UTM Grid References
  * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link  https://github.com/indicia-team/warehouse/
  */
 
-/** 
+/**
  * Conversion class for grid references in UTM zone 30U.
  * ie. between latitude 48N and 56N and longitude 6W and 0
  * Created for use with the Channel Islands
  * @package Modules
- * @subpackage 
+ * @subpackage
  * @author  Indicia Team
  */
 class utm_grid {
@@ -146,7 +146,7 @@ class utm_grid {
     else
       $index = ord('A') + $hundredKmN - 55;
     $secondLetter = chr($index);
-    
+
     if ($precision == 3) {
       // DINTY TETRADS
       // 2 numbers at start equivalent to precision = 2
@@ -172,7 +172,7 @@ class utm_grid {
     $east = 100000;
     $char1ord = ord(substr($sref, 0, 1));
     $east += ($char1ord - ord('S'))  * 100000;
-    
+
     $char2 = substr($sref, 1, 1);
     if ($char2 == 'U')
       $north = 5300000;
@@ -182,7 +182,7 @@ class utm_grid {
       $char2ord = ord($char2);
       $north = 5500000 + (($char2ord - ord('A')) * 100000);
     }
-    
+
     $output['x']=$east;
     $output['y']=$north;
     return $output;

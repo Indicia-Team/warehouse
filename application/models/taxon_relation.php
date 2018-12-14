@@ -14,31 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Taxon_Relations table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxon_Relation_Model extends ORM {
   public $search_field = 'id';
-  
-  protected $belongs_to = array(
-    'created_by' => 'user', 
-    'updated_by' => 'user',
-    'from_taxon_meaning' => 'taxon_meaning', 
-    'to_taxon_meaning' => 'taxon_meaning',
-    'taxon_relation_type');
 
-  public function validate(Validation $array, $save = false) {
+  protected $belongs_to = array(
+    'created_by' => 'user',
+    'updated_by' => 'user',
+    'from_taxon_meaning' => 'taxon_meaning',
+    'to_taxon_meaning' => 'taxon_meaning',
+    'taxon_relation_type',
+  );
+
+  public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('from_taxon_meaning_id', 'required');
     $array->add_rules('to_taxon_meaning_id', 'required');

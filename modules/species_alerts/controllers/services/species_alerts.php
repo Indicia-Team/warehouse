@@ -18,9 +18,9 @@
  * @subpackage Data
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
- 
+
 /**
  * Class providing species_alerts web services.
  */
@@ -43,12 +43,12 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       else {
         // User was not logged in when subscribing, so use their details to find or create a warehouse user id.
         $emailIdentifierObject = new stdClass();
-        $emailIdentifierObject->type="email";      
+        $emailIdentifierObject->type="email";
         $emailIdentifierObject->identifier=$_GET["email"];
         $userIdentificationData['identifiers']=json_encode(array($emailIdentifierObject));
         //Also pass through these fields so if a new user is required then the system can fill in the database details
         $userIdentificationData['surname']=$_GET["surname"];
-        $userIdentificationData['first_name']=$_GET["first_name"];      
+        $userIdentificationData['first_name']=$_GET["first_name"];
         //Call existing user identifier code that will either fetch an existing user for that email, or create a new one.
         $userDetails=user_identifier::get_user_id($userIdentificationData, $_GET["website_id"]);
         if (!empty($userDetails['userId']))
@@ -71,13 +71,13 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
           self::store_user_email_notification_setting($userId);
       } catch (exception $e) {
         kohana::log('debug', "Unable to register user ".$userId." for email notifications, perhaps that module is not installed?.");
-      } 
-    } 
+      }
+    }
     catch (Exception $e) {
       $this->handle_error($e);
     }
   }
-  
+
   /*
    * Create the Species Alert record to submit and save it to the database
    * @todo Shouldn't the validation here be built into the model, and the results extracted
@@ -89,10 +89,10 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       $alertRecordSubmissionObj = ORM::factory('species_alert', $_GET['id']);
     else
       $alertRecordSubmissionObj = ORM::factory('species_alert');
-    //The user id can be either a new user or exsting user, this has already been sorted out by the get_user_id function, so 
+    //The user id can be either a new user or exsting user, this has already been sorted out by the get_user_id function, so
     //by this point we don't care about whether the user is new or existing, we are just dealing with a user id given to us by that function.
     //No need to validate as the user_id comes from get_user_id
-    $alertRecordSubmissionObj->user_id=$userId;   
+    $alertRecordSubmissionObj->user_id=$userId;
     //Region to receive alerts for.
     $alertRecordSubmissionObj->location_id = empty($_GET['location_id']) ? null : $_GET['location_id'];
     //Already checked this has been filled in so don't need to do this again
@@ -102,7 +102,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     $alertRecordSubmissionObj->taxon_meaning_id = empty($_GET['taxon_meaning_id']) ? null : $_GET['taxon_meaning_id'];
     $alertRecordSubmissionObj->external_key = empty($_GET['external_key']) ? null : $_GET['external_key'];
     $alertRecordSubmissionObj->taxon_list_id = empty($_GET['taxon_list_id']) ? null : $_GET['taxon_list_id'];
-    
+
     //If boolean isn't supplied just assume as false
     $alertRecordSubmissionObj->alert_on_entry = empty($_GET['alert_on_entry']) ? 'f' : $_GET['alert_on_entry'];
     $alertRecordSubmissionObj->alert_on_verify = empty($_GET['alert_on_verify']) ? 'f' : $_GET['alert_on_verify'];
@@ -110,7 +110,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     $alertRecordSubmissionObj->set_metadata($alertRecordSubmissionObj);
     $alertRecordSubmissionObj->save();
   }
-  
+
   /*
    * Automatically register the user to receive notification emails when they register for species alerts
    */
@@ -137,7 +137,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       $notificationSettingSubmissionObj->save();
     }
   }
-  
+
   /*
    * Check that a supplied table key is at least 1 and is a number. Key can be empty
    */
@@ -146,7 +146,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       throw new Exception($keyToValidate.' has not been supplied as an integer greater than 0.');
     }
   }
-  
+
   /*
    * Check that a supplied table key is at least 1 and is a number. Key can't be empty
    */
@@ -155,17 +155,17 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       throw new Exception($keyToValidate.' has not been supplied to the Species Alert service or it has not been supplied as an integer greater than 0.');
     }
   }
-  
+
   /*
-   * If a boolean is supplied, we make sure it is of the correct type (if it isn't supplied we don't need to throw an exception 
+   * If a boolean is supplied, we make sure it is of the correct type (if it isn't supplied we don't need to throw an exception
    * as the system will assume it is false)
    */
-  private function boolean_validate($keyToValidate) {     
+  private function boolean_validate($keyToValidate) {
     if (array_key_exists($keyToValidate, $_GET) && (!isset($_GET[$keyToValidate]) || !in_array($_GET[$keyToValidate], array(1, 0)))) {
       throw new Exception($keyToValidate.' has been supplied to the Species Alert service and it has not been supplied as a boolean.');
     }
   }
-  
+
   /*
    * Validate strings that are required
    */
@@ -174,7 +174,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       throw new Exception($keyToValidate.' has not been supplied to the Species Alert service or is missing a data value.');
     }
   }
-  
+
   /*
    * Validate an "at least one of" scenerio where is at least one of a list of fields must be filled in
    */
@@ -188,6 +188,5 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     throw new Exception('At least one of ' . implode(', ', $array) . ' must be supplied to the Species Alert service.');
   }
 }
- 
- 
- 
+
+

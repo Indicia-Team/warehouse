@@ -3,30 +3,29 @@
 <report title="Summary species counts by location" description="Lists locations with mappable boundary output and the number of species within them. Requires the spatial_index_builder warehouse module to be enabled.">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM (SELECT l.id as id, count(distinct o.taxon_meaning_id) as value
-          FROM locations l
-          LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
-          JOIN index_locations_samples ils on ils.location_id=l.id
-          JOIN samples s on s.id=ils.sample_id
-          JOIN surveys su on su.id=s.survey_id
-          JOIN cache_occurrences_functional o ON o.website_id=su.website_id AND o.survey_id=su.id AND o.sample_id=ils.sample_id
-          #agreements_join# 
-          #joins#
-          WHERE l.deleted=false 
-          AND l.code not like ('%+%') -- exclude combined polygon sites which have 2 codes separated by a +
-          AND (lw.website_id in (#website_ids#) OR l.public=true)
-          AND (o.id IS NULL or (
-            o.zero_abundance='f'
-            AND #sharing_filter# 
-            AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
-            AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
-            AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-            AND quality_check('#quality#', o.record_status, o.certainty)=true)
-            AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='')
-          )
-      GROUP BY l.id) AS stats
+      FROM (
+        SELECT l.id as id, count(distinct o.taxon_meaning_id) as value
+        FROM locations l
+        LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+        JOIN cache_occurrences_functional o ON o.location_ids @> ARRAY[l.id]
+        #agreements_join#
+        #joins#
+        WHERE l.deleted=false
+        AND l.code not like ('%+%') -- exclude combined polygon sites which have 2 codes separated by a +
+        AND (lw.website_id in (#website_ids#) OR l.public=true)
+        AND (o.id IS NULL or (
+          o.zero_abundance='f'
+          AND #sharing_filter#
+          AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+          AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+          AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+          AND quality_check('#quality#', o.record_status, o.certainty)=true)
+          AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='')
+        )
+        GROUP BY l.id
+      ) AS stats
       RIGHT JOIN locations l on l.id=stats.id AND l.deleted=false AND l.boundary_geom IS NOT NULL
-      LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
       WHERE l.deleted=false
           AND l.code not like ('%+%') -- exclude combined polygon sites which have 2 codes separated by a +
           AND (lw.website_id in (#website_ids#) OR l.public=true)
@@ -40,7 +39,7 @@
         <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
             population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id='/>
         <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
-        <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
+        <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup'
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
       </params>
       <columns>

@@ -16,7 +16,7 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 abstract class ATTR_ORM extends Valid_ORM {
 
@@ -53,14 +53,19 @@ abstract class ATTR_ORM extends Valid_ORM {
         'multi_value',
         'deleted',
         'description',
-        'source_id',
         'caption_i18n',
+        'description_i18n',
         'term_name',
         'term_identifier',
+        'allow_ranges',
+        'unit',
+        'image_path',
       )
     );
     $array->add_rules('caption', 'required');
     $array->add_rules('data_type', 'required');
+    $array->add_rules('source_id', 'integer');
+    $array->add_rules('reporting_category_id', 'integer');
     if (array_key_exists('data_type', $array->as_array()) && $array['data_type'] == 'L') {
       if (empty($array['termlist_id'])) {
         $array->add_rules('termlist_id', 'required');
@@ -70,6 +75,10 @@ abstract class ATTR_ORM extends Valid_ORM {
       }
     }
     $array->add_rules('system_function', 'length[1,30]');
+    if (!empty($array->multi_value) && !empty($array->allow_ranges) &&
+        $array->multi_value === '1' && $array->allow_ranges === '1') {
+      $array->add_error("$this->object_name:allow_ranges", 'notmultiple');
+    }
     $parent_valid = parent::validate($array, $save);
     // Clean up cached required fields in case validation rules have changed.
     $cache = Cache::instance();
@@ -80,8 +89,9 @@ abstract class ATTR_ORM extends Valid_ORM {
       $cache = new Cache();
       // Type is the object name with _attribute stripped from the end.
       $type = substr($this->object_name, 0, strlen($this->object_name) - 10);
-      $cache->delete('attrInfo_' . $type . '_' . $this->id);
+      $cache->delete("attrInfo_{$type}_$this->id");
     }
+
     return $save && $parent_valid;
   }
 
@@ -164,6 +174,7 @@ abstract class ATTR_ORM extends Valid_ORM {
         'title' => $s['fields']['caption']['value'],
         'description' => 'Termlist created for attribute ' . $s['fields']['caption']['value'],
         'website_id' => count($websiteIds) == 1 ? $websiteIds[0] : NULL,
+        'deleted' => 'f',
       ));
       if (!$termlist->submit()) {
         throw new exception('Failed to create attribute termlist');
@@ -283,7 +294,7 @@ abstract class ATTR_ORM extends Valid_ORM {
    * Override set handler to store caption translations as JSON.
    */
   public function __set($key, $value) {
-    if ($key === 'caption_i18n' && !empty($value)) {
+    if (($key === 'caption_i18n' || $key === 'description_i18n') && !empty($value)) {
       $list = explode("\n", $value);
       $obj = [];
       foreach ($list as $item) {
@@ -308,7 +319,7 @@ abstract class ATTR_ORM extends Valid_ORM {
    */
   public function __get($column) {
     $value = parent::__get($column);
-    if ($column === 'caption_i18n' && $value !== NULL) {
+    if (($column === 'caption_i18n' || $column === 'description_i18n') && $value !== NULL) {
       $obj = json_decode($value, TRUE);
       if (!empty($obj)) {
         $list = [];

@@ -13,11 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Helpers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
@@ -35,7 +33,7 @@ class spatial_ref {
     $cacheId = 'spatial-ref-systems';
     if ($refresh) {
       $cache = Cache::instance();
-      $cache->delete($cacheId); 
+      $cache->delete($cacheId);
       self::$system_metadata=false;
     }
     if (self::$system_metadata === false) {
@@ -65,14 +63,14 @@ class spatial_ref {
             }
           }
         }
-        $cache->set($cacheId, self::$system_metadata); 
+        $cache->set($cacheId, self::$system_metadata);
       }
     }
     return self::$system_metadata;
   }
-  
+
   /**
-   * Retrieves an associative array of supported spatial system codes and titles, suitable for 
+   * Retrieves an associative array of supported spatial system codes and titles, suitable for
    * passing to a data_entry_helper::select control as the lookupValues option.
    *
    * @return array Associative array of supported systems.
@@ -85,7 +83,7 @@ class spatial_ref {
       $r[$code] = $metadata['title'];
     }
     return $r;
-    
+
   }
 
   /**
@@ -114,12 +112,12 @@ class spatial_ref {
       self::validateSystemClass($system);
       if (method_exists($system, 'is_valid'))
         return (bool) call_user_func("$system::is_valid", $sref);
-      else 
+      else
         throw new Exception("The spatial reference system $sref is not recognised.", 4001);
     }
   }
-	
-  /** 
+
+  /**
    * Throw an exception if the class name provided for spatial reference translation is not recognisable.
    */
   private static function validateSystemClass($system) {
@@ -128,7 +126,7 @@ class spatial_ref {
     // Note, do not use method_exists here as it can cause crashes in FastCGI servers.
     if (!is_callable(array($system, 'is_valid')) ||
         !is_callable(array($system, 'sref_to_wkt')) ||
-        !is_callable(array($system, 'wkt_to_sref'))) 
+        !is_callable(array($system, 'wkt_to_sref')))
       throw new Exception("The spatial reference system $system is not recognised.");
   }
 
@@ -146,7 +144,7 @@ class spatial_ref {
     }
     return $found>0;
   }
-  
+
   /**
    * Reformat an input spatial ref to enforce consistency, e.g. OSGB is capitalised and spaces removed.
    * @param type $sref
@@ -242,7 +240,7 @@ class spatial_ref {
       $systems = self::system_metadata();
       $srid = $systems[$system]['srid'];
     }
-    
+
     $transformedWkt = postgreSQL::transformWkt($wkt, kohana::config('sref_notations.internal_srid'), $srid);
     if (is_numeric($system)) {
       // NB the handed in precision is ignored, and the rounding is determined by the system in use
@@ -341,11 +339,11 @@ class spatial_ref {
   }
 
   /**
-   * Convert a lat/long point WKT to a latitude and longitude display representation. 
+   * Convert a lat/long point WKT to a latitude and longitude display representation.
    * @param string $wkt The well known text for a lat long point.
    * @param string $system The latitude and longitude system for both the input and output, normally 4326 for GPS/WGS84 lat longs.
    * @param string $output The optional output format if overriding the default for this system. Options are DMS, DM, or D for degrees, minutes, seconds,
-   * degrees and minutes, or decimal degrees (default). 
+   * degrees and minutes, or decimal degrees (default).
    */
   protected static function point_to_lat_long($wkt, $system, $output=null)
   {
@@ -384,7 +382,7 @@ class spatial_ref {
         $long_res .= ($coords[0] < 0 ? 'W' : 'E');
         $lat_res .= ($coords[1] < 0 ? 'S' : 'N');
       }
-      // when rounding for DMS & DM, the accuracy is reduced unless we increase the number of digits by one. 
+      // when rounding for DMS & DM, the accuracy is reduced unless we increase the number of digits by one.
       // This is because rounding in base 60 gives less accuracy than in base 100. To do this we show both minutes when rounding is 1, etc.
       if ($output == 'DMS') {
         $long_deg = floor($long);
@@ -396,10 +394,10 @@ class spatial_ref {
         $lat_sec = ($round < 1 ? 0 : round((3600*($lat-$lat_deg)-$lat_min*60), $round <= 3 ? 0 : $round - 3));
         $lat_res .= $lat_deg.(Kohana::lang('misc.d_m_s_separator')).$lat_min.(Kohana::lang('misc.d_m_s_separator')).$lat_sec;
       } else if ($output == 'DM') {
-        $long_deg = floor($long);    
+        $long_deg = floor($long);
         $long_min = ($round == 0 ? 0 : round(($long-$long_deg)*60, $round <= 1 ? 0 : $round - 1));
         $long_res .= $long_deg.Kohana::lang('misc.d_m_s_separator').$long_min;
-        $lat_deg = floor($lat);    
+        $lat_deg = floor($lat);
         $lat_min = ($round == 0 ? 0 : round(($lat-$lat_deg)*60, $round <= 1 ? 0 : $round - 1));
         $lat_res .= $lat_deg.Kohana::lang('misc.d_m_s_separator').$lat_min;
       }else {

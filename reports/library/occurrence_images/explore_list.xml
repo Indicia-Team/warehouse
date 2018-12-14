@@ -2,7 +2,7 @@
     title="Explore photos"
     description="Report designed for the explore photos facility in iRecord."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
   SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id

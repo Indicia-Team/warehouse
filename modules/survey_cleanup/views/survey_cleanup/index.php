@@ -17,9 +17,9 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
- 
+
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 
 if (!($this->auth->logged_in('CoreAdmin') || $this->auth->has_website_access('admin', $survey->website_id))) {
@@ -56,8 +56,8 @@ if (!($this->auth->logged_in('CoreAdmin') || $this->auth->has_website_access('ad
     if (!confirm('Are you certain you want to cleanup these records?')) {
       return false;
     } else {
-      $.post(\"".url::site('survey_cleanup/cleanup')."\", 
-        { mode: $('input:radio[name=mode]:checked').val(), survey_id: $('#survey_id').val() }, 
+      $.post(\"".url::site('survey_cleanup/cleanup')."\",
+        { mode: $('input:radio[name=mode]:checked').val(), survey_id: $('#survey_id').val() },
         function(data, textStatus) {
           alert(data);
         }

@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -36,7 +36,7 @@ class Summariser_definition_Model extends ORM {
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
-    $array->pre_filter('trim'); 
+    $array->pre_filter('trim');
     $array->add_rules('survey_id', 'required');
     $array->add_rules('period_type', 'required', 'chars[W,M]');
     $array->add_rules('period_start', 'required');
@@ -47,7 +47,7 @@ class Summariser_definition_Model extends ORM {
     $array->add_rules('first_value', 'required', 'chars[X,H]');
     $array->add_rules('last_value', 'required', 'chars[X,H]');
     $array->add_rules('max_records_per_cycle', 'required', 'integer', 'minimum[1]');
-    
+
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
     		'occurrence_attribute_id',
@@ -56,7 +56,7 @@ class Summariser_definition_Model extends ORM {
     		'season_limits',
     		'deleted'
     );
-    
+
     return parent::validate($array, $save);
   }
 

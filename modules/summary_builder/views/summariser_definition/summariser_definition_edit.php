@@ -17,7 +17,7 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
@@ -63,7 +63,7 @@ echo data_entry_helper::text_input(array(
 ));
 ?>
 <p>Only one period option (weekly) available at the moment.</p>
-<?php 
+<?php
 echo data_entry_helper::hidden_text(array(
 		// 'caption'=>'Summarisation Period',
 		'fieldname'=>'summariser_definition:period_type',
@@ -99,7 +99,7 @@ echo data_entry_helper::checkbox(array(
 ));
 ?>
 <fieldset><legend>Data Handling</legend>
-<?php 
+<?php
 echo data_entry_helper::select(array(
 	'label'=>'Summary Data Combination method',
 	'fieldname'=>'summariser_definition:data_combination_method',
@@ -122,7 +122,7 @@ echo data_entry_helper::select(array(
 ?>
 </fieldset><fieldset><legend>Estimate Generation</legend>
 <p>Only one interpolation option (linear) available at the moment.</p>
-<?php 
+<?php
 // Only one interpolation option at the moment. This may change in future. Keep hidden control until that point.
 // 'L' = 'Linear interpolation'
 echo data_entry_helper::hidden_text(array(

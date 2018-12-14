@@ -9,13 +9,12 @@ FROM cache_occurrences_functional o
 JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
 JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
 JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-LEFT JOIN locations vc on vc.id=o.location_id_vice_county and vc.deleted=false
 LEFT JOIN group_relations grel on grel.to_group_id=o.group_id and grel.deleted=false
 LEFT JOIN groups g2 on g2.id=grel.from_group_id and g2.deleted=false
 #agreements_join#
 #joins#
-where #sharing_filter# 
-and o.date_type in ('D','DD','O','OO','Y','YY','-Y','U') 
+where #sharing_filter#
+and o.date_type in ('D','DD','O','OO','Y','YY','-Y','U')
 and (snf.entered_sref_system ilike 'osgb' or snf.entered_sref_system ilike 'osie' or snf.entered_sref_system = '4326' or snf.entered_sref_system = '27700')
 and o.taxa_taxon_list_external_key is not null
 and st_x(st_transform(st_centroid(o.public_geom), 4326)) between -14 and 13
@@ -30,6 +29,8 @@ and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62
            description='Comma separated list of sample attribute IDs to include as columns in the report' />
     <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
            description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
+    <param name='vice_county_location_type_term' default='Vice County'
+           preprocess="SELECT id FROM cache_termlists_terms WHERE termlist_title='Location types' AND term='#vice_county_location_type_term#'" />
   </params>
   <columns>
     <column name='id' display='ID' sql="o.id" datatype="integer" visible="false" />
@@ -47,15 +48,20 @@ and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62
     <column name='gridreference' display='GridReference' sql="case when snf.entered_sref_system in ('4326', '27700') then null else replace(snf.public_entered_sref, ' ', '') end" datatype="text" />
     <column name='east' display='East' sql="case when snf.entered_sref_system in ('4326', '27700') then st_x(st_transform(st_centroid(o.public_geom), snf.entered_sref_system::int)) else null end" datatype="text" />
     <column name='north' display='North' sql="case when snf.entered_sref_system in ('4326', '27700') then st_y(st_transform(st_centroid(o.public_geom), snf.entered_sref_system::int)) else null end" datatype="text" />
-    <column name='projection' display='Projection' 
-        sql="case upper(snf.entered_sref_system) when '4326' then 'WGS84' when '27700' then 'OSGB36' when 'OSIE' then 'OSI' else upper(snf.entered_sref_system) end" 
+    <column name='projection' display='Projection'
+        sql="case upper(snf.entered_sref_system) when '4326' then 'WGS84' when '27700' then 'OSGB36' when 'OSIE' then 'OSI' else upper(snf.entered_sref_system) end"
         datatype="text" />
     <column name="precision" display="Precision" datatype="float"
             sql="get_sref_precision(snf.public_entered_sref, snf.entered_sref_system, snf.attr_sref_precision)" />
-    <column name="vicecounty" display="ViceCounty" sql="vc.name" datatype="text" />        
+    <column name="vicecounty" display="ViceCounty" datatype="text"
+      sql="(SELECT string_agg(vc.name, '; ')
+        FROM locations vc
+        WHERE vc.location_type_id=#vice_county_location_type_term#
+        AND vc.name NOT LIKE '%+%'
+        AND vc.id = ANY(o.location_ids))" />
     <column name='recorder' display='Recorder' sql='snf.recorders' datatype="text" />
     <column name='verifier' display='Verifier' sql='onf.verifier' datatype="text" />
     <column name='source_group' display='SourceGroup' sql="coalesce(g2.title || '::', '') || snf.group_title" datatype="text" />
-        
+
   </columns>
 </report>

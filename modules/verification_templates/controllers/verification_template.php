@@ -60,31 +60,37 @@ class Verification_template_Controller extends Gridview_Base_Controller {
     // Should not get here as auth_filter populated if not core admin.
     return FALSE;
   }
-  
+
   /**
-   * Additional information for the edit view.
-   * This converts the array fields into values suitable for a textarea
-   * 
-   * @param array $values Existing data values for the view.
-   * @return array Array of additional data items required.
+   * Prepare additional information for the edit view.
+   *
+   * This converts the array fields into values suitable for a textarea.
+   *
+   * @param array $values
+   *   Existing data values for the view.
+   *
+   * @return array
+   *   Array of additional data items required.
    */
-  protected function prepareOtherViewData($values)
-  {
+  protected function prepareOtherViewData(array $values) {
     // $values can be empty, or populated from either the database, or from a failed POST
     // For the failed post, the special fields/formats already exist.
     if (isset($values['verification_template:restrict_to_external_keys_list'])) {
       $restrictToExternalKeysList = $values['verification_template:restrict_to_external_keys_list'];
-    } else {
+    }
+    else {
       $restrictToExternalKeysList = implode("\n", self::array_parse(html::initial_value($values, 'verification_template:restrict_to_external_keys')));
     }
     if (isset($values['verification_template:restrict_to_family_external_keys_list'])) {
       $restrictToFamilyExternalKeysList = $values['verification_template:restrict_to_family_external_keys_list'];
-    } else {
+    }
+    else {
       $restrictToFamilyExternalKeysList = implode("\n", self::array_parse(html::initial_value($values, 'verification_template:restrict_to_family_external_keys_list')));
     }
     if (isset($values['verification_template:template_statuses']) && is_array($values['verification_template:template_statuses'])) {
       $templateStatuses = $values['verification_template:template_statuses'];
-    } else {
+    }
+    else {
       $templateStatuses = self::array_parse(html::initial_value($values, 'verification_template:template_statuses'));
     }
     $websites = ORM::factory('website');
@@ -92,17 +98,17 @@ class Verification_template_Controller extends Gridview_Base_Controller {
       $websites = $websites->in('id', $this->auth_filter['values']);
     }
     $arr = array();
-    foreach ($websites->where('deleted','false')->orderby('title','asc')->find_all() as $website)  {
+    foreach ($websites->where('deleted', 'false')->orderby('title', 'asc')->find_all() as $website) {
       $arr[$website->id] = $website->title;
     }
     // Convert the status into an array.
     // convert the 2 arrays for the keys from the postgres format string to a value that can be used on the form
     return array(
-        'websites' => $arr,
-        'restrict_to_external_keys_list' => $restrictToExternalKeysList,
-        'restrict_to_family_external_keys_list' => $restrictToFamilyExternalKeysList,
-        'template_statuses' => $templateStatuses,
-      );
+      'websites' => $arr,
+      'restrict_to_external_keys_list' => $restrictToExternalKeysList,
+      'restrict_to_family_external_keys_list' => $restrictToFamilyExternalKeysList,
+      'template_statuses' => $templateStatuses,
+    );
   }
 
   /**

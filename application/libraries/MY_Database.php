@@ -1,13 +1,13 @@
 <?php
 class Database extends Database_Core {
 
-  protected $in_trans = false; 
-  
+  protected $in_trans = false;
+
 	public function __construct($config = array()) {
     parent::__construct($config);
 
     if ($config == 'report' && !$this->link) {
-      // Add schema to the search path as Indicia::prepare_connection() only 
+      // Add schema to the search path as Indicia::prepare_connection() only
       // applies this to the default connection.
       $_schema = Kohana::config('database.report.schema');
 
@@ -18,29 +18,29 @@ class Database extends Database_Core {
       }
     }
   }
-  
+
   public function __destruct() {
-    self::rollback(); 
-  } 
-  
-  public function begin() { 
-    if ( !$this->in_trans ) 
+    self::rollback();
+  }
+
+  public function begin() {
+    if ( !$this->in_trans )
       $this->query( 'BEGIN' );
     $this->in_trans = true;
-  } 
-  
-  public function commit() { 
-    if ( $this->in_trans ) 
-      $this->query( 'COMMIT' ); 
-    $this->in_trans = false; 
-  } 
-  
+  }
+
+  public function commit() {
+    if ( $this->in_trans )
+      $this->query( 'COMMIT' );
+    $this->in_trans = false;
+  }
+
   public function rollback() {
-    if ( $this->in_trans ) 
+    if ( $this->in_trans )
       $this->query( 'ROLLBACK' );
-    $this->in_trans = false; 
-  } 
-  
+    $this->in_trans = false;
+  }
+
 
   /**
   * Adds an "IN" condition to the where clause
@@ -145,6 +145,19 @@ class Database extends Database_Core {
   }
 
   /**
+   * Runs a query with no other code.
+   *
+   * Direct access to pg_query for times we don't want the side effects and
+   * overhead of query().
+   *
+   * @param string $sql
+   *   Query string.
+   */
+  public function justRunQuery($sql) {
+    pg_query($this->link, $sql);
+  }
+
+  /**
   * Chooses which column(s) to order the select query by.
   * Overridden to handle 'vague_date' fields which don't exist in the db but are presented in the
   * ORM controller.
@@ -192,11 +205,11 @@ class Database extends Database_Core {
   public function table_exists($table_name, $prefix = TRUE, $schema = TRUE)
   {
     if ($schema) {
-      $schema_name = (isset($this->config['schema']) && !empty($this->config['schema'])) ? $this->config['schema'].'.' : ''; 
+      $schema_name = (isset($this->config['schema']) && !empty($this->config['schema'])) ? $this->config['schema'].'.' : '';
       if ($prefix)
               return in_array($schema_name.$this->config['table_prefix'].$table_name, $this->list_tables());
       else
-              return in_array($schema_name.$table_name, $this->list_tables());   
+              return in_array($schema_name.$table_name, $this->list_tables());
     } else {
       if ($prefix)
               return in_array($this->config['table_prefix'].$table_name, $this->list_tables());
@@ -204,7 +217,7 @@ class Database extends Database_Core {
               return in_array($table_name, $this->list_tables());
     }
   }
-  
+
   public function set($key, $value = '')
   {
     if (!is_array($key)) {
@@ -220,7 +233,7 @@ class Database extends Database_Core {
       if (is_array($v)) {
         if(strpos($k, '_id') !== false) {// ID, so assume ints else strings
           foreach ($v as $i => $single) {
-            $v[$i] = (int) $single; 
+            $v[$i] = (int) $single;
           }
         }
       }
@@ -232,5 +245,5 @@ class Database extends Database_Core {
     }
     return $this;
   }
-  
+
 }

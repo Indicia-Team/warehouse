@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,29 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Taxon Designations
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 ?>
 <script type="text/javascript">
 // <![CDATA[
 
 $(document).ready(function() {
-  
-var totaldone=0, 
-  totalerrors=0, 
+
+var totaldone=0,
+  totalerrors=0,
   uploadId='<?php echo $uploadId; ?>',
   requiresFetch=<?php echo $requiresFetch; ?>;
-  
+
 function dumpErrors(response) {
   if (typeof response.errors!=="undefined") {
     $.each(response.errors, function(idx, error) {
       $('#messages > div').append('<div class="error">' + error + '</div>');
     });
-  }  
+  }
 }
 
 function fetchFileChunk() {
@@ -89,7 +88,7 @@ uploadChunk = function() {
       }
     },
     error: function(jqXHR, textStatus, errorThrown) {
-      alert('Error occurred, please check the warehouse logs.'); 
+      alert('Error occurred, please check the warehouse logs.');
     }
   });
 };

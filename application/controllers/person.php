@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the people data.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Person_Controller extends Gridview_Base_Controller {
 
@@ -41,24 +36,24 @@ class Person_Controller extends Gridview_Base_Controller {
     if (!$this->auth->logged_in('CoreAdmin'))
       $this->auth_filter = array('field' => 'admin_user_id', 'values' => $_SESSION['auth_user']->id);
   }
-  
+
   protected function getModelValues() {
     $r = parent::getModelValues();
     $websiteIds = $this->getWebsiteIds($r['person:id']);
     $this->loadAttributes($r, array(
         'website_id'=>$websiteIds
     ));
-    return $r;      
+    return $r;
   }
-  
+
   /**
    * Load default values either when creating a sample new or reloading after a validation failure.
-   * This adds the custome attributes list to the data available for the view. 
+   * This adds the custome attributes list to the data available for the view.
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    // when creating a person, we don't know the websites for the person, so cannot 
-    // filter the attribute values available. Therefore they are not displayed until 
+    // when creating a person, we don't know the websites for the person, so cannot
+    // filter the attribute values available. Therefore they are not displayed until
     // after the person has been saved. Therefore no need to call loadAttributes.
     // We do when editing after a validation failure though.
     if ($this->model->id!==0) {
@@ -69,7 +64,7 @@ class Person_Controller extends Gridview_Base_Controller {
     }
     return $r;
   }
-  
+
   protected function getWebsiteIds($personId) {
     $person = ORM::Factory('person', $personId);
     $websiteIds = array();
@@ -134,7 +129,7 @@ class Person_Controller extends Gridview_Base_Controller {
       return $allowedPersonIds === true || in_array($id, $allowedPersonIds);
     }
   }
-  
+
   /**
    * You can only access the list of people if at least an editor of one website.
    */
