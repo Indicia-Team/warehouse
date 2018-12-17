@@ -1051,12 +1051,14 @@ TBL;
     list($from, $to, $string) = $param;
     $quote = $string ? "'" : '';
     if (!empty($providedParams[$from]) && empty($providedParams[$to])) {
-      kohana::log('debug', "Found provided param $from - $to");
+      kohana::log('debug', "Converting provided param $from - $to");
       $providedParams[$to] = $quote . $providedParams[$from] . $quote;
       unset($providedParams[$from]);
     }
-    if (isset($providedParams[$from . '_context']) && !isset($providedParams[$to . '_context']))
+    if (isset($providedParams[$from . '_context']) && !isset($providedParams[$to . '_context'])) {
+      kohana::log('debug', "Converting provided param {$from}_context - {$to}_context");
       $providedParams[$to . '_context'] = $quote . $providedParams[$from . '_context'] . $quote;
+    }
     if (!empty($providedParams['paramsFormExcludes'])) {
       $excludes = json_decode($providedParams['paramsFormExcludes'], TRUE);
       if (in_array($from, $excludes) || in_array("{$from}_context", $excludes)) {
