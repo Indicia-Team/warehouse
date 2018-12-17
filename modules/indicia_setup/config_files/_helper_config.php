@@ -14,25 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Client
- * @subpackage Config
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
+
 /*
- * The indicia upload path should mirror the value for directory in the upload config file. The value in
- * this file is relative to the base_url, and indicates the upload directory on the warehouse.
- * The upload_path is relative to the website install.
+ * The indicia upload path should mirror the value for directory in the upload
+ * config file. The value in this file is relative to the base_url, and
+ * indicates the upload directory on the warehouse. The upload_path is relative
+ * to the website install.
  */
 class helper_config {
-  static $base_url='*base_url*';
-  static $interim_image_folder = 'upload/';  // relative to the client_helpers folder. Code referring to this should use upload/ as default if missing
-  static $final_image_folder = 'warehouse'; // if set to a folder path, submitted images are moved to this folder rather than moved to the Warehouse.
-  static $cache_folder = 'cache/';  // relative to the client_helpers folder. Code referring to this should use cache/ as default if missing
-  static $indicia_upload_path = 'upload/';  // this is relative to the indicia installation directory
-  static $geoserver_url = '';
-  static $geoplanet_api_key='';
-  static $bing_api_key='';
-  static $maxUploadSize='4MB'; // max image upload size. Should match setting on the Warehouse config/indicia.php file.
+  public static $base_url = '*base_url*';
+  public static $geoserver_url = '';
+  public static $geoplanet_api_key = '';
+  public static $bing_api_key = '';
+  // Max image upload size. Should match setting on the Warehouse
+  // config/indicia.php file.
+  public static $maxUploadSize = '4MB';
+
 }

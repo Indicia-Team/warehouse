@@ -63,6 +63,8 @@ before_script:
   # Add extension for PostGIS
   - psql -U postgres -d indicia -c "create extension postgis"
   - psql -U postgres -d indicia -c "create extension postgis_topology"
+  # Add extension for btree_gin indexes.
+  - psql -U postgres -d indicia -c "create extension btree_gin"
   # Set up database.
   - .travis/postgres_setup.sh
   # Enable the phpunit module in config.php (meaning initialise() is not tested)
