@@ -26,9 +26,12 @@
  * to the website install.
  */
 class helper_config {
-  static $base_url='*base_url*';
-  static $geoserver_url = '';
-  static $geoplanet_api_key='';
-  static $bing_api_key='';
-  static $maxUploadSize='4MB'; // max image upload size. Should match setting on the Warehouse config/indicia.php file.
+  public static $base_url = '*base_url*';
+  public static $geoserver_url = '';
+  public static $geoplanet_api_key = '';
+  public static $bing_api_key = '';
+  // Max image upload size. Should match setting on the Warehouse
+  // config/indicia.php file.
+  public static $maxUploadSize = '4MB';
+
 }
