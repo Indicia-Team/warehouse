@@ -87,7 +87,8 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
         'fieldname' => 'location_medium:media_type_id',
         'default' => $mediaTypeId,
         'lookupValues' => $other_data['media_type_terms'],
-        'blankText' => '<Please select>'
+        'blankText' => '<Please select>',
+        'validation' => ['required'],
       ]);
     }
     ?>

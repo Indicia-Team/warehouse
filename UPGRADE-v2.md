@@ -339,7 +339,7 @@ UPDATE system SET last_scheduled_task_check='#datetime#' WHERE name='cache_build
 -- Ensure inserts since we started are in new cache.
 INSERT INTO cache_occurrences_functional_v2
 SELECT o.* FROM cache_occurrences_functional o
-LEFT JOIN cache_occurrences_functional _v2 o2 ON o2.id=o.id
+LEFT JOIN cache_occurrences_functional_v2 o2 ON o2.id=o.id
 WHERE o2.id IS NULL
 AND o.updated_on > '#datetime#';
 

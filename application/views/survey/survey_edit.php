@@ -134,7 +134,6 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       echo data_entry_helper::text_input(array(
         'label' => 'Auto Accept Maximum Difficulty',
         'fieldname' => 'survey:auto_accept_max_difficulty',
-        'class' => 'control-width-1',
         'default' => html::initial_value($values, 'survey:auto_accept_max_difficulty'),
         'helpText' => 'If Auto Accept is set, then this is the minimum identification difficulty that will be auto verified.',
       ));

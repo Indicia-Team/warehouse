@@ -36,7 +36,6 @@ conditions.</p>
       'label' => 'Name',
       'fieldname' => 'trigger:name',
       'default' => html::initial_value($values, 'trigger:name'),
-      'class' => 'control-width-5',
     ));
     echo data_entry_helper::textarea(array(
       'label' => 'Description',

@@ -84,6 +84,5 @@ if (isset($parent_list_id)) {
     // already on the page.
     data_entry_helper::$dumped_resources[] = 'jquery';
   }
-  data_entry_helper::link_default_stylesheet();
   echo data_entry_helper::dump_javascript(TRUE);
 }
