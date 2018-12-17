@@ -1,5 +1,13 @@
 # Upgrading to version 2 of the warehouse.
 
+**Before installing version 2 of Indicia, if upgrading from version 1 you
+should install the btree_gin extension for PostgreSQL using the following SQL
+statement, which requires admin privileges:
+
+```
+CREATE EXTENSION btree_gin;
+```
+
 * The warehouse upgrade to version 2 is significant and therefore should be
   tested on a copy of your setup before running on live. It may take up to
   several hours to apply if you have millions of occurrence records due to the

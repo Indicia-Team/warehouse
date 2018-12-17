@@ -1,6 +1,4 @@
 -- #slow script#
-CREATE EXTENSION btree_gin;
-
 CREATE INDEX ix_cache_occurrences_functional_verify_taxa
   ON cache_occurrences_functional
   USING GIN(website_id, taxon_path)

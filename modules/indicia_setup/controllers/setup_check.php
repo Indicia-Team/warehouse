@@ -216,12 +216,13 @@ class Setup_Check_Controller extends Template_Controller {
       $this->template->content = new View('fixers/config_db');
       $this->template->content->error = $this->error;
 
-      // init and default values of view vars
+      // Init and default values of view vars.
       $this->view_var = array();
 
       $description = str_replace(
         array('*code*', '*code_user*', '*code_perm*'),
         array(
+          '<span class="code">CREATE EXTENSION btree_gin;</span>',
           '<span class="code">CREATE DATABASE indicia TEMPLATE=template_postgis;</span>',
           '<span class="code">CREATE USER indicia_user WITH PASSWORD \'indicia\';<br/>' .
           'GRANT ALL PRIVILEGES ON DATABASE indicia TO indicia_user;</span>',
@@ -234,7 +235,7 @@ class Setup_Check_Controller extends Template_Controller {
         Kohana::lang('setup.description'));
 
       $this->template->content->description = $description;
-      // Assign default settings if the user has not yet updated the db config
+      // Assign default settings if the user has not yet updated the db config.
       $db_config = kohana::config('database');
       if ($db_config['default']['connection']['type'] == 'mysql') {
         $this->template->content->host = 'localhost';
