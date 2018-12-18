@@ -16,7 +16,9 @@
     LEFT JOIN taxa_taxon_list_attribute_values av ON av.taxa_taxon_list_attribute_id=a.id AND av.deleted=false
       AND av.taxa_taxon_list_id=#taxa_taxon_list_id#
     LEFT JOIN cache_termlists_terms t ON t.id=av.int_value AND a.data_type='L'
+    LEFT JOIN cache_termlists_terms t_l ON t_l.id=t.preferred_termlists_term_id AND a.data_type='L' AND t_l.language_iso='#language#'
     LEFT JOIN cache_termlists_terms tdefault ON tdefault.id=tla.default_int_value AND a.data_type='L'
+    LEFT JOIN cache_termlists_terms tdefault_l ON tdefault_l.id=tdefault.preferred_termlists_term_id AND a.data_type='L' AND tdefault.language_iso='#language#'
     LEFT JOIN form_structure_blocks fsb on fsb.id=tla.form_structure_block_id
     LEFT JOIN form_structure_blocks fsbp on fsbp.id=fsb.parent_id
     LEFT JOIN control_types ct ON ct.id = tla.control_type_id
@@ -72,7 +74,7 @@
     <column name="inner_block_name" display="Inner block name" sql="fsb.name" datatype="text" />
     <column name="default_value" display="Default value" sql="CASE a.data_type
             WHEN 'T'::bpchar THEN tla.default_text_value
-            WHEN 'L'::bpchar THEN tla.default_int_value::text
+            WHEN 'L'::bpchar THEN COALESCE(tdefault_l.id, tdefault.id)::text
             WHEN 'I'::bpchar THEN tla.default_int_value::text
             WHEN 'B'::bpchar THEN tla.default_int_value::text
             WHEN 'F'::bpchar THEN tla.default_float_value::text
@@ -91,7 +93,7 @@
      json_agg(('{&quot;id&quot;:' || av.id::text || ',' ||
      '&quot;value&quot;:' || COALESCE(CASE a.data_type
             WHEN 'T'::bpchar THEN to_json(av.text_value)::text
-            WHEN 'L'::bpchar THEN to_json(t.term)::text
+            WHEN 'L'::bpchar THEN to_json(COALESCE(t_l.term, t.term))::text
             WHEN 'I'::bpchar THEN '&quot;' || av.int_value::text ||
             CASE
                 WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
@@ -109,7 +111,7 @@
         END, 'null') || ',' ||
      '&quot;raw_value&quot;:' || COALESCE(CASE a.data_type
             WHEN 'T'::bpchar THEN to_json(av.text_value)::text
-            WHEN 'L'::bpchar THEN av.int_value::text
+            WHEN 'L'::bpchar THEN COALESCE(t_l.id, t.id)::text
             WHEN 'I'::bpchar THEN av.int_value::text
             WHEN 'B'::bpchar THEN av.int_value::text
             WHEN 'F'::bpchar THEN av.float_value::text
