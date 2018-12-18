@@ -68,7 +68,15 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
    */
   public $importDuplicateCheckCombinations = [
     [
-      'description' => 'Species list And Taxon name',
+      'description' => 'Species list and taxa taxon list ID',
+      'fields' => [
+        ['fieldName' => 'taxa_taxon_list:taxon_list_id'],
+        ['fieldName' => 'taxa_taxon_list:id'],
+        ['fieldName' => 'taxa_taxon_list:taxon_id', 'notInMappings' => TRUE],
+      ],
+    ],
+    [
+      'description' => 'Species list and taxon name',
       'fields' => [
         ['fieldName' => 'taxa_taxon_list:taxon_list_id'],
         ['fieldName' => 'taxon:taxon'],
@@ -76,7 +84,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       ],
     ],
     [
-      'description' => 'Species list And Taxon external key',
+      'description' => 'Species list and taxon external key',
       'fields' => [
         ['fieldName' => 'taxa_taxon_list:taxon_list_id'],
         ['fieldName' => 'taxon:external_key'],
@@ -84,7 +92,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       ],
     ],
     [
-      'description' => 'Species list, Parent taxon name And Taxon name',
+      'description' => 'Species list, parent taxon name and taxon name',
       'fields' => [
         ['fieldName' => 'taxa_taxon_list:taxon_list_id'],
         ['fieldName' => 'taxon:taxon'],
