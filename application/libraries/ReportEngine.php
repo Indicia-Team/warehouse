@@ -1254,7 +1254,9 @@ SQL;
     // Ensure filter clause reflects any current parameter values.
     $replacements = array();
     foreach ($this->providedParams as $paramName => $paramVal) {
-      $replacements["/#$paramName#/"] = $paramVal;
+      if (!is_array($paramVal)) {
+        $replacements["/#$paramName#/"] = $paramVal;
+      }
     }
     $field = preg_replace(array_keys($replacements), array_values($replacements), $field);
     if ($datatype === 'text' || $datatype === 'species') {
