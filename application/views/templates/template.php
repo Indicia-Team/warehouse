@@ -57,11 +57,11 @@ echo html::stylesheet(
 echo html::script(
   array(
     'media/js/json2.js',
-    'media/js/jquery.js',
+    'media/js/jquery.js?v=3.2.1',
     'media/js/jquery.url.js',
     'media/js/fancybox/source/jquery.fancybox.pack.js',
     'media/js/hasharray.js',
-    'media/js/jquery-ui.min.js',
+    'media/js/jquery-ui.min.js?v=1.12.1',
     'vendor/bootstrap/js/bootstrap.min.js',
   ), FALSE
 );
