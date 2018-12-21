@@ -124,11 +124,11 @@ class report_standard_params_samples {
         'wheres' => [
           [
             'param_op' => 'in',
-            'sql' => "s.location_ids @> ARRAY[#indexed_location_list#]",
+            'sql' => "s.location_ids && ARRAY[#indexed_location_list#]",
           ],
           [
             'param_op' => 'not in',
-            'sql' => "(NOT (s.location_ids @> ARRAY[#indexed_location_list#]) OR s.location_ids IS NULL)",
+            'sql' => "(NOT (s.location_ids && ARRAY[#indexed_location_list#]) OR s.location_ids IS NULL)",
           ],
         ],
       ],
