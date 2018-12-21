@@ -22,7 +22,7 @@
     <column name='source' on_demand="true" datatype="text"
             sql="snf.website_title || ' | ' || case when substring(snf.survey_title from 1 for length(snf.website_title)) = snf.website_title then trim(substring(snf.survey_title from length(snf.website_title)+1)) else snf.survey_title end" />
     <column name='location_name' on_demand="true" sql='s.location_name' datatype="text" />
-    <column name='entered_sref' on_demand="true" sql="s.public_entered_sref" datatype="text" />
+    <column name='entered_sref' on_demand="true" sql="snf.public_entered_sref" datatype="text" />
     <column name='date_start' on_demand="true" sql='s.date_start' visible='false' />
     <column name='date_end' on_demand="true" sql='s.date_end' visible='false' />
     <column name='date_type' on_demand="true" sql='s.date_type' visible='false' />
