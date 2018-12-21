@@ -203,11 +203,11 @@ class report_standard_params_occurrences {
         'wheres' => [
           [
             'param_op' => 'in',
-            'sql' => "o.location_ids @> ARRAY[#indexed_location_list#]",
+            'sql' => "o.location_ids && ARRAY[#indexed_location_list#]",
           ],
           [
             'param_op' => 'not in',
-            'sql' => "(NOT (o.location_ids @> ARRAY[#indexed_location_list#]) OR o.location_ids IS NULL)",
+            'sql' => "(NOT (o.location_ids && ARRAY[#indexed_location_list#]) OR o.location_ids IS NULL)",
           ],
         ],
       ],
