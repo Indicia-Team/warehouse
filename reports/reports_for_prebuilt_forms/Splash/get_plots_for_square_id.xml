@@ -6,13 +6,12 @@
     SELECT #columns#
     FROM locations plot
       LEFT JOIN locations_websites lw on lw.location_id=plot.id AND lw.deleted=false
-      LEFT JOIN termlists_terms ttPlotType on ttPlotType.id = plot.location_type_id
-      LEFT JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
+      LEFT JOIN cache_termlists_terms cache_ttPlotType on cache_ttPlotType.id = plot.location_type_id
       LEFT JOIN location_attribute_values lav on lav.location_attribute_id=#plot_number_attr_id# AND lav.location_id=plot.id
       LEFT JOIN person_attribute_values pav on pav.int_value=plot.parent_id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
     WHERE (plot.parent_id = #square_id#)
     AND #website_filter# AND plot.deleted=false
-    GROUP BY plot.id,lav.text_value,termplottype.term
+    GROUP BY plot.id,lav.text_value,cache_ttPlotType.term
     HAVING (plot.created_by_id=#current_user_id# OR count(pav.id) &lt; 2)
   </query>
   <order_bys>
@@ -30,9 +29,9 @@
       case 
         when lav.text_value IS null
       then
-        'Plot at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') '
+        'Plot at ' || plot.centroid_sref || ' ('||  cache_ttPlotType.term || ') '
       else 
-        'Plot ' || lav.text_value || ' at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') '
+        'Plot ' || lav.text_value || ' at ' || plot.centroid_sref || ' ('||  cache_ttPlotType.term || ') '
       end
     " datatype='text'/>
   </columns>
