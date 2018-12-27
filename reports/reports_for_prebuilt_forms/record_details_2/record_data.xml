@@ -36,6 +36,7 @@
   </params>
   <columns>
     <column name='occurrence_id' sql='o.id' />
+    <column name='occurrence_external_key' sql='o.external_key' />
     <column name='taxon' sql="case o.zero_abundance when true then '&lt;span class=&quot;zero-abundance&quot;&gt;' || cttl.taxon || '&lt;span&gt; - zero abundance found' else cttl.taxon end" />
     <column name='language_iso' sql='cttl.language_iso' />
     <column name='preferred_taxon' sql='cttl.preferred_taxon' />
