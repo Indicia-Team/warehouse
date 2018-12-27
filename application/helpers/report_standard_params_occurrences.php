@@ -158,6 +158,18 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'occurrence_external_key' => [
+        'datatype' => 'text',
+        'display' => 'External key',
+        'description' => 'Limit to a single record matching this occurrence external key.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "o.external_key='#occurrence_external_key#'",
+          ],
+        ],
+      ],
       'taxon_rank_sort_order' => [
         'datatype' => 'integer',
         'display' => 'Taxon rank',
