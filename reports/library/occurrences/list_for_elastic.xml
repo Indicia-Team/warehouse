@@ -11,7 +11,6 @@
     join occurrences occ on occ.id=o.id and occ.deleted=false
     join cache_samples_nonfunctional snf on snf.id=o.sample_id
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-    join locations l on o.location_ids @&gt; ARRAY[l.id] AND l.deleted=false
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
@@ -59,7 +58,7 @@
     <column name="output_sref" sql="onf.output_sref" datatype="text" />
     <column name="output_sref_system" sql="onf.output_sref_system" datatype="text" />
     <column name="location_name" sql="o.location_name" datatype="text" />
-    <column name="indexed_location_ids" sql="to_json(o.location_ids)" datatype="text" />
+    <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
     <column name="record_status" sql="o.record_status" datatype="text" />
     <column name="record_substatus" sql="o.record_substatus" datatype="text" />
     <column name="verified_on" sql="o.verified_on" datatype="date" />
@@ -80,6 +79,7 @@
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
     <column name="attr_sample_method" sql="snf.attr_sample_method" datatype="text" />
     <column name="media" sql="snf.media" datatype="text" />
+    <column name="created_on" sql="o.created_on" datatype="date" />
     <column name="updated_on" sql="greatest(o.updated_on, cttl.cache_updated_on)" datatype="date" />
   </columns>
 </report>
