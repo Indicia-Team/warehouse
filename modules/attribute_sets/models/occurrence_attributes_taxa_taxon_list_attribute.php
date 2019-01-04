@@ -79,6 +79,8 @@ class Occurrence_attributes_taxa_taxon_list_attribute_Model extends ORM {
         'term_identifier' => $ttla->term_identifier,
         'allow_ranges' => $this->getValue('restrict_occurrence_attribute_to_single_value') === 't'
           ? 'f' : $ttla->allow_ranges,
+        'unit' => $ttla->unit,
+        'image_path' => $ttla->image_path,
       ];
       // Force an update if it already exists.
       if (!empty($this->getValue('occurrence_attribute_id'))) {
