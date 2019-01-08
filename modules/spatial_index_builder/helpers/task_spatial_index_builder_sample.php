@@ -56,7 +56,7 @@ WHERE claimed_by='$procId'
 AND entity='sample'
 AND task='task_spatial_index_builder_sample';
 
-SELECT DISTINCT s.id as sample_id, CASE WHEN count(l.id)=0 THEN NULL ELSE array_agg(l.id) END as location_ids
+SELECT DISTINCT s.id AS sample_id, array_agg(l.id) AS location_ids
 INTO TEMPORARY changed_samples
 FROM smplist sl
 JOIN cache_samples_functional s ON s.id=sl.record_id
@@ -74,7 +74,7 @@ UPDATE cache_samples_functional u
 FROM changed_samples cs
 WHERE cs.sample_id=u.id
 AND (
-  ((u.location_ids is null)<>(cs.location_ids is null))
+  ((u.location_ids IS NULL)<>(cs.location_ids IS NULL))
   OR u.location_ids <@ cs.location_ids = false OR u.location_ids @> cs.location_ids = false
 );
 
