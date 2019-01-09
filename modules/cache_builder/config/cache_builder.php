@@ -764,7 +764,8 @@ SET website_id=su.website_id,
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
     else 'A'
-  end
+  end,
+  parent_sample_id=s.parent_id
 FROM samples s
 #join_needs_update#
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -937,7 +938,7 @@ $config['samples']['insert']['functional'] = "
 INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
-            group_id, record_status, query)
+            group_id, record_status, query, parent_sample_id)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
@@ -948,7 +949,8 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
     else 'A'
-  end
+  end,
+  s.parent_id
 FROM samples s
 #join_needs_update#
 LEFT JOIN cache_samples_functional cs on cs.id=s.id
@@ -1391,7 +1393,8 @@ SET sample_id=o.sample_id,
   import_guid=o.import_guid,
   confidential=o.confidential,
   external_key=o.external_key,
-  taxon_path=ctp.path
+  taxon_path=ctp.path,
+  parent_sample_id=s.parent_id
 FROM occurrences o
 #join_needs_update#
 left join cache_occurrences_functional co on co.id=o.id
@@ -1618,7 +1621,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
             training, zero_abundance, licence_id, import_guid, confidential, external_key,
-            taxon_path, blocked_sharing_tasks)
+            taxon_path, blocked_sharing_tasks, parent_sample_id)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1656,7 +1659,8 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         CASE WHEN u.allow_share_for_moderation=false THEN 'M' ELSE NULL END,
         CASE WHEN u.allow_share_for_editing=false THEN 'E' ELSE NULL END
       ], NULL)
-    END
+    END,
+    s.parent_id
 FROM occurrences o
 #join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id

@@ -14,6 +14,14 @@
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
+    AND o.id < COALESCE(
+      (SELECT min(o.id)
+      FROM cache_occurrences_functional o
+      JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
+      WHERE (onf.data_cleaner_info IS NULL AND o.verification_checks_enabled=true)
+      OR location_ids IS NULL),
+      (SELECT max(id)+1 FROM occurrences)
+    );
   </query>
   <order_bys>
     <order_by>o.id</order_by>
@@ -31,8 +39,10 @@
     <!-- Tracking field called "id" is required for autofeed to work. -->
     <column name="id" sql="o.id" datatype="integer" />
     <column name="created_by_id" sql="o.created_by_id" datatype="integer" />
-    <column name="survey_id" sql="o.survey_id" datatype="integer" />
     <column name="website_id" sql="o.website_id" datatype="integer" />
+    <column name="survey_id" sql="o.survey_id" datatype="integer" />
+    <column name="sample_id" sql="o.sample_id" datatype="integer" />
+    <column name="parent_sample_id" sql="o.parent_sample_id" datatype="integer" />
     <column name="group_id" sql="o.group_id" datatype="integer" />
     <column name="website_title" sql="snf.website_title" datatype="text" />
     <column name="survey_title" sql="snf.survey_title" datatype="text" />
@@ -59,14 +69,6 @@
     <column name="output_sref_system" sql="onf.output_sref_system" datatype="text" />
     <column name="location_name" sql="o.location_name" datatype="text" />
     <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
-    <column name="record_status" sql="o.record_status" datatype="text" />
-    <column name="record_substatus" sql="o.record_substatus" datatype="text" />
-    <column name="verified_on" sql="o.verified_on" datatype="date" />
-    <column name="verified_by_id" sql="occ.verified_by_id" datatype="text" />
-    <column name="verifier" sql="onf.verifier" datatype="text" />
-    <column name="query" sql="o.query" datatype="text" />
-    <column name="sensitive" sql="o.sensitive" datatype="boolean" />
-    <column name="data_cleaner_info" sql="onf.data_cleaner_info" datatype="text" />
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
     <column name="licence_code" sql="onf.licence_code" datatype="text" />
@@ -81,5 +83,19 @@
     <column name="media" sql="snf.media" datatype="text" />
     <column name="created_on" sql="o.created_on" datatype="date" />
     <column name="updated_on" sql="greatest(o.updated_on, cttl.cache_updated_on)" datatype="date" />
+    <column name="record_status" sql="o.record_status" datatype="text" />
+    <column name="record_substatus" sql="o.record_substatus" datatype="text" />
+    <column name="verified_by_id" sql="occ.verified_by_id" datatype="integer" />
+    <column name="verifier" sql="onf.verifier" datatype="text" />
+    <column name="verified_on" sql="o.verified_on" datatype="date" />
+    <column name="data_cleaner_info" sql="onf.data_cleaner_info" datatype="text" />
+    <column name='verification_checks_enabled' sql="o.verification_checks_enabled" datatype="boolean" />
+    <column name="query" sql="o.query" datatype="text" />
+    <column name="sensitive" sql="CASE o.sensitive WHEN true THEN 'true' ELSE 'false' END" datatype="text" />
+    <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
+    <!-- Flag sensitivity_version = B for blurred version of a sensitive record. -->
+    <column name="sensitivity_blur" sql="CASE o.sensitive WHEN true THEN 'B' ELSE 'null' END" datatype="text" />
+    <column name="confidential" sql="CASE o.confidential WHEN true THEN 'true' ELSE 'false' END" datatype="boolean" />
+    <column name="release_status" sql="o.release_status" datatype="text" />
   </columns>
 </report>
