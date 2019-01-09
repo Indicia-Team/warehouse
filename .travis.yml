@@ -12,6 +12,7 @@ env:
   - POSTGRESQL_VERSION=postgresql-9.3-postgis-2.1
   - POSTGRESQL_VERSION=postgresql-10-postgis-2.4
 
+
 services:
   - postgresql
 
