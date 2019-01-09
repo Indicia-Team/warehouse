@@ -8,6 +8,9 @@
   * cache_samples_functional.parent_sample_id
 * Update many reports to avoid need to join to websites table since
   verification_checks_enabled now in cache.
+* Cache table location_ids field now stores an empty array when the associated
+  sample is not linked to any indexed locations rather than null, allowing
+  records not yet indexed to be identifiable.
 
 # Version 2.2.0
 
