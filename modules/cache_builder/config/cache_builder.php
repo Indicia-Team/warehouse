@@ -1394,11 +1394,13 @@ SET sample_id=o.sample_id,
   confidential=o.confidential,
   external_key=o.external_key,
   taxon_path=ctp.path,
-  parent_sample_id=s.parent_id
+  parent_sample_id=s.parent_id,
+  verification_checks_enabled=w.verification_checks_enabled
 FROM occurrences o
 #join_needs_update#
 left join cache_occurrences_functional co on co.id=o.id
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
+JOIN websites w ON w.id=o.website_id AND w.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
@@ -1621,7 +1623,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
             training, zero_abundance, licence_id, import_guid, confidential, external_key,
-            taxon_path, blocked_sharing_tasks, parent_sample_id)
+            taxon_path, blocked_sharing_tasks, parent_sample_id, verification_checks_enabled)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1660,10 +1662,12 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         CASE WHEN u.allow_share_for_editing=false THEN 'E' ELSE NULL END
       ], NULL)
     END,
-    s.parent_id
+    s.parent_id,
+    w.verification_checks_enabled
 FROM occurrences o
 #join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
+JOIN websites w ON w.id=o.website_id AND w.deleted=false
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
