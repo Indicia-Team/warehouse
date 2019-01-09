@@ -71,8 +71,6 @@ FROM cache_occurrences_functional
 LIMIT 0;
 SQL
 );
-      // Ensure the verify service always performs checks
-      $db->query("ALTER TABLE occdelta ADD COLUMN verification_checks_enabled boolean NOT NULL DEFAULT true;");
       try {
         $this->prepareOccdelta($db, $sample, $occurrences);
         $r = $this->runRules($db);
