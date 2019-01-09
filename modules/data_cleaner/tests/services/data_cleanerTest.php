@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Services
- * @subpackage Data
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -174,21 +172,21 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
    * data_cleaner_period_within_year module must be enabled.
    */
   public function testPeriodWithinYearPass() {
-    $response = data_entry_helper::http_post($this->request, array(
-      'sample'=>json_encode(array(
-        'sample:survey_id'=>1,
-        'sample:date'=>'12/08/2012',
-        'sample:entered_sref'=>'SU1234',
-        'sample:entered_sref_system'=>'osgb'
-      )),
-      'occurrences'=>json_encode(array(
-        array(
-          'occurrence:taxa_taxon_list_id'=>1
-        ))
-      ),
-      'rule_types'=>json_encode(array('PeriodWithinYear'))
-    ));
-    $errors = json_decode($response['output'], true);
+    $response = data_entry_helper::http_post($this->request, [
+      'sample' => json_encode([
+        'sample:survey_id' => 1,
+        'sample:date' => '12/08/2012',
+        'sample:entered_sref' => 'SU1234',
+        'sample:entered_sref_system' => 'osgb',
+      ]),
+      'occurrences' => json_encode([
+        [
+          'occurrence:taxa_taxon_list_id' => 1,
+        ],
+      ]),
+      'rule_types' => json_encode(['PeriodWithinYear']),
+    ]);
+    $errors = json_decode($response['output'], TRUE);
 
     $this->assertTrue($response['result'], 'Invalid response');
     $this->assertInternalType('array', $errors, 'Errors list not returned');

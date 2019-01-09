@@ -13,8 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link  http://code.google.com/p/indicia/
  */
@@ -71,15 +70,14 @@ FROM cache_occurrences_functional
 LIMIT 0;
 SQL
 );
-      // Ensure the verify service always performs checks
-      $db->query("ALTER TABLE occdelta ADD COLUMN verification_checks_enabled boolean NOT NULL DEFAULT true;");
       try {
         $this->prepareOccdelta($db, $sample, $occurrences);
         $r = $this->runRules($db);
         $db->query('drop table occdelta');
         $this->content_type = 'Content-Type: application/json';
         $this->response = json_encode($r);
-      } catch (Exception $e) {
+      }
+      catch (Exception $e) {
         $db->query('drop table occdelta');
         $this->response = "Query failed";
         error_logger::log_error('Error occurred calling verification rule service', $e);
@@ -118,8 +116,8 @@ SQL
       $date_start = $vd[0];
       $date_end = $vd[1];
       $date_type = $vd[2];
-      $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_geom, taxa_taxon_list_id)
-          values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type',  st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
+      $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_geom, taxa_taxon_list_id, verification_checks_enabled)
+          values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type',  st_geomfromtext('$geom', $srid), $taxa_taxon_list_id, 't');");
     }
     // patch in some extra details about the taxon required for each cache entry
     $db->query("update occdelta o set taxon_meaning_id=ttl.taxon_meaning_id, taxa_taxon_list_external_key=ttl.external_key ".
