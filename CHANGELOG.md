@@ -1,3 +1,23 @@
+# Version 2.3.0
+
+## Database schema changes
+
+* Add the following cache fields:
+  * cache_occurrences_functional.verification_checks_enabled
+  * cache_occurrences_functional.parent_sample_id
+  * cache_samples_functional.parent_sample_id
+* Update many reports to avoid need to join to websites table since
+  verification_checks_enabled now in cache.
+
+# Version 2.2.0
+
+* Enable use of a scratchpad list of species as a standard filter parameter.
+
+# Version 2.1.0
+
+* Enable import of occurrences where the taxon is identified using a known
+  taxa_taxon_list_id.
+
 # Version 2.0.0
 
 Please see [upgrading to version 2.0.0](UPGRADE-v2.md).
