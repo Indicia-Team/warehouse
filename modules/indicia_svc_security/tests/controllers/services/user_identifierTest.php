@@ -27,6 +27,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
             'updated_by_id' => 1,
             'url' => 'http://www.indicia.org.uk',
             'password' => 'password',
+            'verification_checks_enabled' => 'f',
           ),
         ),
         'surveys' => array(
