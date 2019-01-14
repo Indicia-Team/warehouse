@@ -202,9 +202,9 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
-              "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#) " .
-              "and not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#)",
+            'sql' => "JOIN locations #alias:lfilt# ON #alias:lfilt#.id #location_list_op# (#location_list#) AND #alias:lfilt#.deleted=false " .
+              "AND st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#) " .
+              "AND (st_geometrytype(#sample_geom_field#)='ST_Point' OR NOT st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#))",
           ],
         ],
       ],
