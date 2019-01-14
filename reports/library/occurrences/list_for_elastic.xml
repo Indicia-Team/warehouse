@@ -14,14 +14,15 @@
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
-    AND o.id < COALESCE(
-      (SELECT min(o.id)
-      FROM cache_occurrences_functional o
-      JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
-      WHERE (onf.data_cleaner_info IS NULL AND o.verification_checks_enabled=true)
-      OR location_ids IS NULL),
-      (SELECT max(id)+1 FROM occurrences)
-    );
+    AND o.id &lt;= (
+      SELECT id FROM cache_occurrences_functional
+      WHERE location_ids IS NOT NULL
+      ORDER BY id DESC LIMIT 1
+    )
+    AND o.id &lt;= (
+      SELECT id FROM cache_occurrences_functional
+      WHERE updated_on &lt; COALESCE((select last_scheduled_task_check FROM system WHERE name='data_cleaner'), now())
+      ORDER BY id DESC LIMIT 1)
   </query>
   <order_bys>
     <order_by>o.id</order_by>
@@ -29,7 +30,7 @@
   <params>
     <!-- last_date and last_id parameters required for autofeed to work. -->
     <param name="last_date" display="Last update date" datatype="date" default="">
-      <where>o.updated_on &gt; '#last_date#'</where>
+      <where>o.updated_on &gt;= '#last_date#'</where>
     </param>
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>o.id &gt; #last_id#</where>
@@ -62,9 +63,8 @@
               and coalesce(date_part('month', date_start), 0)=coalesce(date_part('month', date_end), 0) then coalesce(date_part('month', date_start), 0)
             else null
           end" datatype="integer" />
-    <column name="geom" sql="st_astext(st_transform(o.public_geom, 4326))" datatype="text" />
-    <column name="point_x" sql="st_x(st_transform(st_centroid(o.public_geom), 4326))" datatype="float" />
-    <column name="point_y" sql="st_y(st_transform(st_centroid(o.public_geom), 4326))" datatype="float" />
+    <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(o.public_geom, 4326)))" datatype="text" />
+    <column name="point" sql="st_y(st_transform(st_centroid(o.public_geom), 4326))::text || ',' || st_x(st_transform(st_centroid(o.public_geom), 4326))::text" datatype="text" />
     <column name="output_sref" sql="onf.output_sref" datatype="text" />
     <column name="output_sref_system" sql="onf.output_sref_system" datatype="text" />
     <column name="location_name" sql="o.location_name" datatype="text" />
