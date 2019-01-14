@@ -18,6 +18,7 @@
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
+    AND o.taxa_taxon_list_external_key IS NOT NULL
     #idlist#
   </query>
   <params>
@@ -63,7 +64,11 @@
     <column name="scientificName"
             sql="CASE cttl.language_iso
               WHEN 'lat' THEN cttl.taxon || COALESCE(' ' || cttl.authority, '')
-              ELSE cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')
+              ELSE
+                CASE cttl.preferred_language_iso
+                  WHEN 'lat' THEN cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')
+                  ELSE NULL
+                END
             END"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/scientificName" />
