@@ -692,21 +692,31 @@ ROW;
           echo ',';
         }
         elseif ($autofeed) {
+          // Capture the ID and update datestamp of the last row in the report,
+          // so we can autofeed the next batch.
           $lastId = $row['id'];
+          $lastUpdate = $row['updated_on'];
         }
       }
       if ($autofeed) {
         echo ']';
         $afSettings = (array) variable::get("rest-autofeed-$_GET[proj_id]", [], FALSE);
         if ($afSettings['mode'] === 'initialLoad' && isset($lastId) && $dbObject->count() >= AUTOFEED_DEFAULT_PAGE_SIZE) {
+          // On initial load mode, we want the next autofeed batch to start on
+          // our highest row ID + 1, unless we've reached the end..
           $afSettings['last_id'] = $lastId;
-          variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
         }
         elseif ($afSettings['mode'] === 'initialLoad') {
+          // At the end of the initial load, switch to updates only mode.
           $afSettings['mode'] = 'updates';
           unset($afSettings['last_id']);
-          variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
         }
+        elseif ($afSettings['mode'] === 'updates') {
+          // Whilst in updates only mode, we want to start the next batch at
+          // the same timestamp as the last batch finished so we get no gaps.
+          $afSettings['last_date'] = $lastUpdate;
+        }
+        variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
       }
       else {
         echo $parts[1];

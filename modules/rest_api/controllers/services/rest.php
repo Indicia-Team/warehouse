@@ -1397,11 +1397,8 @@ class Rest_Controller extends Controller {
         $params['last_id'] = $afSettings['last_id'];
       }
       elseif ($afSettings['mode'] === 'updates') {
-        // Doing updates of changes only as initial load done. Use the last
-        // date of a run to filter for changed records.
+        // Doing updates of changes only as initial load done.
         $params['last_date'] = $afSettings['last_date'];
-        $afSettings['last_date'] = date('c');
-        variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
       }
     }
     if (!empty($this->resourceOptions['cached'])) {
