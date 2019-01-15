@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Record counts for my sites map using standard filter params" 
+<report title="Record counts for my sites map using standard filter params"
         description="Lists locations with mappable boundary output and the number of records within them.">
   <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
-    FROM locations l1 
+    FROM locations l1
     JOIN (
     SELECT l.id, count(distinct o.id) as count
     FROM locations l
@@ -14,12 +14,12 @@
     LEFT JOIN (cache_occurrences_functional o
       #agreements_join#
       #joins#
-      AND #sharing_filter# 
+      AND #sharing_filter#
       AND o.zero_abundance='f'
       #filters#
       #idlist#
     ) ON st_intersects(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom))
-      AND NOT st_touches(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom))
+      AND (st_geometrytype(o.public_geom)='ST_Point' OR NOT st_touches(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom)))
     WHERE l.deleted=false
     AND ('#location_type_ids#'='0' OR l.location_type_id IN (#location_type_ids#))
     AND (l.created_by_id=#user_id# or u.id=#user_id#)
@@ -27,13 +27,13 @@
     ) as l2 ON l2.id=l1.id
   </query>
   <params>
-    <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.' 
+    <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.'
            datatype="integer[]" emptyvalue="0" default="" />
     <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" />
-    <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" 
+    <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites"
            datatype="integer" emptyvalue="0" default="" />
     <param name="simplifyFeatureTo" datatype="integer" default="10" />
-  </params>  
+  </params>
   <columns>
         <column name="id" visible="false" sql="l1.id" />
         <column name="name" display="Site name" sql="l1.name" />
@@ -47,4 +47,4 @@
         <column name="sw" visible="false" feature_style="strokeWidth" sql="2" />
         <column name="fs" visible="false" feature_style="fontSize" sql="case when count>1000 then 8 else 9 end" />
   </columns>
-</report>  
+</report>

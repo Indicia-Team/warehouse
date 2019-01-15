@@ -109,14 +109,20 @@ class report_standard_params_samples {
           array('value'=>'', 'operator'=>'', 'sql'=>"(s.location_name ilike '%#location_name#%' or l.name ilike '%#location_name#%')")
         )
       ),
-      'location_list' => array('datatype'=>'integer[]', 'display'=>'Location IDs',
-        'description'=>'Comma separated list of location IDs',
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
-            "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom) " .
-            "and not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom)")
-        )
-      ),
+      'location_list' => [
+        'datatype' => 'integer[]',
+        'display' => 'Location IDs',
+        'description' => 'Comma separated list of location IDs',
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
+              "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom) " .
+              "and (st_geometrytype(s.geom)='ST_Point' or not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom))",
+          ],
+        ],
+      ],
       'indexed_location_list' => [
         'datatype' => 'integer[]',
         'display' => 'Location IDs (indexed)',
