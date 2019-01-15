@@ -90,7 +90,7 @@ SET location_ids=CASE l.location_ids WHEN ARRAY[NULL::integer] THEN NULL ELSE l.
 FROM loc_ids l, users u, cache_taxa_taxon_lists cttl
 LEFT JOIN cache_taxa_taxon_lists cttlm
   ON cttlm.external_key=cttl.external_key
-  AND cttlm.taxon_list_id=#master_list_id#
+  AND cttlm.taxon_list_id=COALESCE(#master_list_id#, cttl.taxon_list_id)
   AND cttlm.preferred=true
 LEFT JOIN cache_taxon_paths ctp
   ON ctp.taxon_meaning_id=cttlm.taxon_meaning_id
