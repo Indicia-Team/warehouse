@@ -68,7 +68,7 @@ JOIN locations l
   AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
 JOIN cache_samples_functional s
   ON st_intersects(l.boundary_geom, s.public_geom)
-  AND NOT st_touches(l.boundary_geom, s.public_geom)
+  AND (st_geometrytype(s.public_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.public_geom))
   $locationTypeFilters[surveyFilters]
 GROUP BY s.id;
 

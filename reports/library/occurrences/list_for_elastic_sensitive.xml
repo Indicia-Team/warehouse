@@ -1,7 +1,7 @@
 <report
-    title="Autofeed occurrences for Elasticsearch (standard filters)"
-    description="A list of occurrences designed for feeding into Elasticsearch or a similar JSON store."
-    featured="true"
+    title="Autofeed occurrences for Elasticsearch (standard filters, sensitive only)"
+    description="A list of occurrences designed for feeding into Elasticsearch or a similar JSON store. This report
+      returns full precision copies of the records."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
@@ -11,9 +11,12 @@
     join occurrences occ on occ.id=o.id and occ.deleted=false
     join cache_samples_nonfunctional snf on snf.id=o.sample_id
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+    join samples s on s.id=o.sample_id and s.deleted=false
+    left join locations l on l.id=s.location_id and l.deleted=false
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
+    AND sensitive=true
     AND o.id &lt;= (
       SELECT id FROM cache_occurrences_functional
       WHERE location_ids IS NOT NULL
@@ -30,7 +33,7 @@
   <params>
     <!-- last_date and last_id parameters required for autofeed to work. -->
     <param name="last_date" display="Last update date" datatype="date" default="">
-      <where>o.updated_on &gt;= '#last_date#'</where>
+      <where>o.updated_on &gt; '#last_date#'</where>
     </param>
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>o.id &gt; #last_id#</where>
@@ -63,11 +66,11 @@
               and coalesce(date_part('month', date_start), 0)=coalesce(date_part('month', date_end), 0) then coalesce(date_part('month', date_start), 0)
             else null
           end" datatype="integer" />
-    <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(o.public_geom, 4326)))" datatype="text" />
-    <column name="point" sql="st_y(st_transform(st_centroid(o.public_geom), 4326))::text || ',' || st_x(st_transform(st_centroid(o.public_geom), 4326))::text" datatype="text" />
-    <column name="output_sref" sql="onf.output_sref" datatype="text" />
-    <column name="output_sref_system" sql="onf.output_sref_system" datatype="text" />
-    <column name="location_name" sql="o.location_name" datatype="text" />
+    <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(s.geom, 4326)))" datatype="text" />
+    <column name="point" sql="st_y(st_transform(st_centroid(s.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.geom), 4326))::text" datatype="text" />
+    <column name="output_sref" sql="s.entered_sref" datatype="text" />
+    <column name="output_sref_system" sql="s.entered_sref_system" datatype="text" />
+    <column name="location_name" sql="coalesce(s.location_name, l.name)" datatype="text" />
     <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
@@ -93,8 +96,8 @@
     <column name="query" sql="o.query" datatype="text" />
     <column name="sensitive" sql="CASE o.sensitive WHEN true THEN 'true' ELSE 'false' END" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
-    <!-- Flag sensitivity_version = B for blurred version of a sensitive record. -->
-    <column name="sensitivity_blur" sql="CASE o.sensitive WHEN true THEN 'B' ELSE 'null' END" datatype="text" />
+    <!-- Flag sensitivity_version = F for full precision version of a sensitive record. -->
+    <column name="sensitivity_blur" sql="'F'" datatype="text" />
     <column name="confidential" sql="CASE o.confidential WHEN true THEN 'true' ELSE 'false' END" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
   </columns>
