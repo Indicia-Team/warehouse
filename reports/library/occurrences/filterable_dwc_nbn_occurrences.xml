@@ -77,7 +77,7 @@
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/scientificName" />
     <column name="taxonID"
-            sql="t.search_code"
+            sql="COALESCE(t.search_code, t.external_key)"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/taxonID" />
     <column name="lifeStage"
