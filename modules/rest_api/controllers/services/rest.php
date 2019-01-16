@@ -1399,6 +1399,7 @@ class Rest_Controller extends Controller {
       elseif ($afSettings['mode'] === 'updates') {
         // Doing updates of changes only as initial load done.
         $params['last_date'] = $afSettings['last_date'];
+        $params['orderby'] = 'updated_on';
       }
     }
     if (!empty($this->resourceOptions['cached'])) {
