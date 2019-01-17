@@ -1,0 +1,22 @@
+<report
+  title="Species Imges"
+  description="Report used to retrieve images associated with all the occurrences for a species."
+>
+  <query website_filter_field="o.website_id">
+    SELECT #columns#
+      FROM occurrence_images oi
+      JOIN cache_occurrences o on o.id = oi.occurrence_id
+      JOIN taxa_taxon_lists tl on tl.id = o.taxa_taxon_list_id
+    WHERE tl.taxon_meaning_id in 
+      (SELECT taxon_meaning_id
+        FROM taxa_taxon_lists
+      WHERE id = #taxon_id#)
+  </query>
+  <params>
+    <param name='taxon_id' display='Taxon ID' description='ID of the taxon to load' datatype='text' />
+  </params>
+  <columns>
+    <column name='caption' display='Record:Caption' sql='oi.caption' />
+    <column name='path' display='Record:Path' sql='oi.path' />
+  </columns>
+</report>
