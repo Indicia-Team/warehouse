@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Group for add group drop-down" description="A list of groups available for selection when adding group to a user(s).">
+      <query website_filter_field="tl.website_id">
+        SELECT #columns#
+          FROM terms t
+          JOIN termlists_terms tt on tt.term_id = t.id AND tt.deleted=false
+          JOIn termlists tl on tl.id = tt.termlist_id AND tl.deleted=false
+          #joins#
+          WHERE t.deleted=false
+            AND #website_filter#
+            AND tl.id = #group_termlist_id#
+      </query>
+      <order_bys>
+        <order_by>t.term ASC</order_by>
+      </order_bys>
+      <params>  
+        <param name="group_termlist_id" display="Group termlist id" description="Id of the group termlist we are managing." datatype="text" emptyvalue='-1'/>
+      </params>
+      <columns>
+        <column name="id" visible="false" sql="tt.id" unique="true" in_count="true" />
+        <column name="name" display="Group Name" sql="t.term" datatype="text" />
+      </columns>
+</report>
