@@ -11,8 +11,7 @@ or any plot they are assigned to which they didn't create (as long as they are t
     FROM locations l
       LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
       LEFT JOIN samples locationSamples on locationSamples.location_id = l.id
-      LEFT JOIN termlists_terms ttPlotType on ttPlotType.id = l.location_type_id
-      LEFT JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
+      LEFT JOIN cache_termlists_terms cache_ttPlotType on cache_ttPlotType.id = l.location_type_id      
       JOIN locations square on (square.id=l.id OR square.id=l.parent_id) AND square.location_type_id=#core_square_location_type_id# OR square.location_type_id=#additional_square_location_type_id#
       LEFT JOIN location_attribute_values lavPlotName on lavPlotName.location_attribute_id=#plot_number_attr_id# AND lavPlotName.location_id=l.id
       LEFT JOIN location_attribute_values lavPriv on lavPriv.location_id=l.id AND lavPriv.location_attribute_id = #private_plot_attr_id# AND lavPriv.deleted=false
@@ -22,7 +21,7 @@ or any plot they are assigned to which they didn't create (as long as they are t
     #joins#
     WHERE (l.id = square.id OR l.parent_id = square.id)
     AND #website_filter# AND l.deleted=false
-    GROUP BY square.id,l.parent_id,l.id,lavplotname.text_value,termplottype.term,pav.updated_by_id,u.id,lavPriv.int_value,ttplottype.id
+    GROUP BY square.id,l.parent_id,l.id,lavplotname.text_value,cache_ttPlotType.term,pav.updated_by_id,u.id,lavPriv.int_value,cache_ttPlotType.id
     HAVING (l.parent_id IS NULL OR (#only_show_my_useable_plots_squares#=0 OR (#only_show_my_useable_plots_squares#=1 AND ((l.created_by_id=#current_user_id# or l.created_by_id=#user_id#) OR count(distinct pavOthers.id) &lt; 2))))
   </query>
   <order_bys>
@@ -63,16 +62,16 @@ or any plot they are assigned to which they didn't create (as long as they are t
         when l.parent_id is null
           then '&lt;b&gt;' || square.centroid_sref || '&lt;/b&gt;' 
         when l.parent_id is not null AND lavPlotName.text_value IS null 
-          then '&lt;i&gt;' || 'Plot at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
+          then '&lt;i&gt;' || 'Plot at ' || l.centroid_sref || ' ('||  cache_ttPlotType.term || ') ' || '&lt;/i&gt;' 
         else 
-          '&lt;i&gt;' || 'Plot ' || lavPlotName.text_value || ' at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
+          '&lt;i&gt;' || 'Plot ' || lavPlotName.text_value || ' at ' || l.centroid_sref || ' ('||  cache_ttPlotType.term || ') ' || '&lt;/i&gt;' 
       end" datatype='text' />
     <column name='location_type' display='Square or plot type' sql="
       case 
         when l.parent_id is null then 'square' 
-        when ttPlotType.id = #linear_location_type_id# then 'linear' 
-        when ttPlotType.id = #5_location_type_id# then '5' 
-        when ttPlotType.id = #10_location_type_id# then '10' 
+        when cache_ttPlotType.id = #linear_location_type_id# then 'linear' 
+        when cache_ttPlotType.id = #5_location_type_id# then '5' 
+        when cache_ttPlotType.id = #10_location_type_id# then '10' 
         else ''
     end" visible="false"/>  
     <column name='plot_label' display='Plot Label' sql="lavPlotName.text_value" datatype='text' visible="false"/>

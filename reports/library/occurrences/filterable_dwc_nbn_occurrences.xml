@@ -169,7 +169,7 @@ END"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/datasetName" />
     <column name="datasetID"
-          sql="snf.attrs_json->'#dataset_id_term#'"
+          sql="snf.attrs_json->>'#dataset_id_term#'"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/datasetID" />
     <column name="collectionCode"

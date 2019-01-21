@@ -13,6 +13,8 @@
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
     join samples s on s.id=o.sample_id and s.deleted=false
     left join locations l on l.id=s.location_id and l.deleted=false
+    left join samples sp on sp.id=s.parent_id and sp.deleted=false
+    left join locations lp on lp.id=sp.location_id and lp.deleted=false
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
@@ -33,7 +35,7 @@
   <params>
     <!-- last_date and last_id parameters required for autofeed to work. -->
     <param name="last_date" display="Last update date" datatype="date" default="">
-      <where>o.updated_on &gt; '#last_date#'</where>
+      <where>(o.updated_on &gt;= '#last_date#' OR cttl.cache_updated_on &gt;= '#last_date#')</where>
     </param>
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>o.id &gt; #last_id#</where>
@@ -57,20 +59,28 @@
     <column name="date_end" sql="o.date_end" datatype="date" />
     <column name="day_of_year" sql="case date_type when 'D' then extract(doy from date_start) else null end" datatype="integer" />
     <column name="week_of_year" sql="case
-            when coalesce(date_part('year', date_start), 0)=coalesce(date_part('year', date_end), 0)
-              and coalesce(floor(extract(doy from date_start)/7+1), 0)=coalesce(floor(extract(doy from date_end)/7+1), 0) then coalesce(floor(extract(doy from date_start)/7+1), 0)
+            when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
+              and coalesce(floor(extract(doy from o.date_start)/7+1), 0)=coalesce(floor(extract(doy from o.date_end)/7+1), 0) then coalesce(floor(extract(doy from o.date_start)/7+1), 0)
             else null
           end" datatype="integer" />
     <column name="month_of_year" sql="case
-            when coalesce(date_part('year', date_start), 0)=coalesce(date_part('year', date_end), 0)
-              and coalesce(date_part('month', date_start), 0)=coalesce(date_part('month', date_end), 0) then coalesce(date_part('month', date_start), 0)
+            when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
+              and coalesce(date_part('month', o.date_start), 0)=coalesce(date_part('month', o.date_end), 0) then coalesce(date_part('month', o.date_start), 0)
+            else null
+          end" datatype="integer" />
+    <column name="year" sql="case
+            when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0) then coalesce(date_part('year', o.date_start), null)
             else null
           end" datatype="integer" />
     <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(s.geom, 4326)))" datatype="text" />
     <column name="point" sql="st_y(st_transform(st_centroid(s.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.geom), 4326))::text" datatype="text" />
     <column name="output_sref" sql="s.entered_sref" datatype="text" />
     <column name="output_sref_system" sql="s.entered_sref_system" datatype="text" />
-    <column name="location_name" sql="coalesce(s.location_name, l.name)" datatype="text" />
+    <column name="given_locality_name" sql="coalesce(s.location_name, l.name)" datatype="text" />
+    <column name="recorded_location_id" sql="l.id" datatype="integer" />
+    <column name="recorded_location_name" sql="l.name" datatype="text" />
+    <column name="recorded_parent_location_id" sql="lp.id" datatype="integer" />
+    <column name="recorded_parent_location_name" sql="lp.name" datatype="text" />
     <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
@@ -79,6 +89,7 @@
     <column name="attr_stage" sql="onf.attr_stage" datatype="text" />
     <column name="attr_sex" sql="onf.attr_sex" datatype="text" />
     <column name="attr_sex_stage_count" sql="onf.attr_sex_stage_count" datatype="text" />
+    <column name="attr_sex_stage_count_exact" sql="case when onf.attr_sex_stage_count similar to '\d+' then onf.attr_sex_stage_count::integer else null end" />
     <column name="attr_certainty" sql="onf.attr_certainty" datatype="text" />
     <column name="attr_det_name" sql="coalesce(onf.attr_det_full_name, coalesce(onf.attr_det_first_name, '') || ' ' || onf.attr_det_last_name)" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />

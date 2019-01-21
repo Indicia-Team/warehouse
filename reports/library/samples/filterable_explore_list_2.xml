@@ -1,0 +1,44 @@
+<report
+    title="Explore samples using standard filters 2"
+    description="Explore samples with standardised filtering parameters. Adds location code and sref to original."
+>
+  <query website_filter_field="s.website_id" standard_params="samples"
+         created_by_field="s.created_by_id" training_filter_field="">
+  SELECT #columns#
+  FROM cache_samples_functional s
+  JOIN cache_samples_nonfunctional snf ON snf.id=s.id
+  LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
+  #agreements_join#
+  #joins#
+  AND #sharing_filter#
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+  </params>
+  <columns>
+    <column name='sample_id' display='ID' sql='s.id' datatype="integer"
+        template='&lt;div class="status-{record_status}"&gt;&lt;div class="record-id"&gt;{sample_id}&lt;/div&gt;&lt;/div&gt;'  />
+    <column name='source' display='Source' datatype="text" 
+        sql="snf.website_title || ' | ' || case when substring(snf.survey_title from 1 for length(snf.website_title)) = snf.website_title then trim(substring(snf.survey_title from length(snf.website_title)+1)) else snf.survey_title end" />
+    <column name='location_name' display='Site name' sql='s.location_name' datatype="text" />
+    <column name='location_code' display='Site code' sql='l.code' datatype="text" />
+    <column name='location_sref' display='Site grid ref' sql='l.centroid_sref' datatype="text" />
+    <column name='entered_sref' display='Grid ref' sql="snf.public_entered_sref" datatype="text" />
+    <column name='date_start' sql='s.date_start' visible='false' />
+    <column name='date_end' sql='s.date_end' visible='false' />
+    <column name='date_type' sql='s.date_type' visible='false' />
+    <column name='date' display='Date' datatype="date" />
+    <column name='recorder' display='Recorder' sql="snf.recorders" datatype="text" />
+    <column name='created_by_id' visible='false' sql='s.created_by_id' datatype="integer" />
+    <column name='record_status' display='State' sql='s.record_status' visible="false" />
+    <column name='belongs_to_user' display='Belongs to user' sql="CASE WHEN CAST(s.created_by_id AS character varying) = '#user_id#' AND s.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='belongs_to_site' display='Belongs to site' sql="CASE WHEN s.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='input_form' visible="false" sql="case when s.input_form is null then '#default_input_form#' else s.input_form end" datatype="text" />
+  </columns>
+</report>
