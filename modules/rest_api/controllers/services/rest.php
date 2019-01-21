@@ -140,6 +140,13 @@ class Rest_Controller extends Controller {
   private $authConfig;
 
   /**
+   * Config settings relating to the authenticated client if any.
+   *
+   * @var array
+   */
+  private $clientConfig;
+
+  /**
    * Resource options.
    *
    * Flags and options passed to the resource which can be set by the chosen
@@ -149,6 +156,15 @@ class Rest_Controller extends Controller {
    * @var array
    */
   private $resourceOptions;
+
+  /**
+   * Elastic proxy configuration key.
+   *
+   * Set to the key of the configuration section, if using Elasticsearch.
+   *
+   * @var bool|string
+   */
+  private $elasticProxy = FALSE;
 
   /**
    * List of authentication methods that are allowed.
@@ -599,7 +615,10 @@ class Rest_Controller extends Controller {
       if (!empty($_GET['cached']) && $_GET['cached'] === 'true') {
         $this->resourceOptions['cached'] = TRUE;
       }
-      if (array_key_exists($this->resourceName, $this->resourceConfig)) {
+      if ($this->elasticProxy) {
+        $this->elasticRequest();
+      }
+      elseif (array_key_exists($this->resourceName, $this->resourceConfig)) {
         $resourceConfig = $this->resourceConfig[$this->resourceName];
         $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->method === 'OPTIONS') {
@@ -692,6 +711,79 @@ class Rest_Controller extends Controller {
         $this->apiResponse->fail('No Content', 204);
       }
     }
+  }
+
+  /**
+   * Proxies the current request to a provided URL.
+   *
+   * Eg. used when proxying to an Elasticsearch instance.
+   *
+   * @param string $url
+   *   URL to proxy to.
+   */
+  private function proxyTo($url) {
+    $session = curl_init($url);
+    // Set the POST options.
+    $httpHeader = array();
+    if (!empty($_POST)) {
+      curl_setopt($session, CURLOPT_POST, 1);
+      curl_setopt($session, CURLOPT_POSTFIELDS, $_POST);
+      // Post contains a raw XML document?
+      if (is_string($postData) && substr($postData, 0, 1) === '<') {
+        $httpHeader[] = 'Content-Type: text/xml';
+      }
+    }
+    if (count($httpHeader) > 0) {
+      curl_setopt($session, CURLOPT_HTTPHEADER, $httpHeader);
+    }
+
+    curl_setopt($session, CURLOPT_HEADER, TRUE);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($session, CURLOPT_REFERER, $_SERVER['HTTP_HOST']);
+    curl_setopt($session, CURLOPT_SSL_VERIFYPEER, FALSE);
+
+    // Do the POST and then close the session.
+    $response = curl_exec($session);
+    $headers = curl_getinfo($session);
+    if (array_key_exists('charset', $headers)) {
+      $headers['content_type'] .= '; ' . $headers['charset'];
+    }
+    header('Content-type: ' . $headers['content_type']);
+    // Last part of response is the actual data.
+    $arr = explode("\r\n\r\n", $response);
+    echo array_pop($arr);
+    curl_close($session);
+  }
+
+  /**
+   * Handles a request to Elasticsearch via a proxy.
+   */
+  private function elasticRequest() {
+    $esConfig = kohana::config('rest.elasticsearch');
+    $thisProxyCfg = $esConfig[$this->elasticProxy];
+    $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
+    if (isset($thisProxyCfg['allowed'])) {
+      $allowed = FALSE;
+      if (isset($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])])) {
+        foreach ($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])] as $regex => $description) {
+          if (preg_match($regex, $resource)) {
+            $allowed = TRUE;
+          }
+        }
+      }
+      if (!$allowed) {
+        $this->apiResponse->fail('Bad request', 400, 'Elasticsearch request not allowed.');
+      }
+    }
+    $url = "$thisProxyCfg[url]/$thisProxyCfg[index]/$resource";
+    if (!empty($_GET)) {
+      // Don't pass on the auth tokens.
+      unset($_GET['user']);
+      unset($_GET['website_id']);
+      unset($_GET['secret']);
+      $url .= '?' . http_build_query($_GET);
+    }
+    $this->proxyTo($url);
   }
 
   /**
@@ -1741,12 +1833,34 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Checks if the current request is to an Elasticsearch proxy end-point.
+   *
+   * If so and the end-point is open access, authenticates the request.
+   */
+  private function checkElasticsearchRequest() {
+    $resource = $this->uri->segment(3);
+    $esConfig = Kohana::config('rest.elasticsearch');
+    if ($resource && $esConfig && array_key_exists($resource, $esConfig)) {
+      $this->elasticProxy = $resource;
+      if (array_key_exists('open', $esConfig[$resource]) && $esConfig[$resource]['open'] === TRUE) {
+        $this->authenticated = TRUE;
+      }
+    }
+  }
+
+  /**
    * Checks that the request is authentic.
    */
   private function authenticate() {
     $this->isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
     $this->serverUserId = Kohana::config('rest.user_id');
     $methods = Kohana::config('rest.authentication_methods');
+    $this->authenticated = FALSE;
+    $this->checkElasticsearchRequest();
+    if ($this->authenticated) {
+      kohana::log('debug', "Open elasticsearch request");
+      return;
+    }
     // Provide a default if not configured.
     if (!$methods) {
       $methods = $this->defaultAuthenticationMethods;
@@ -1754,14 +1868,25 @@ class Rest_Controller extends Controller {
     if ($this->restrictToAuthenticationMethods !== FALSE) {
       $methods = array_intersect_key($methods, $this->restrictToAuthenticationMethods);
     }
-    $this->authenticated = FALSE;
     foreach ($methods as $method => $cfg) {
       // Skip methods if http and method requires https.
-      if ($this->isHttps || array_key_exists('allow_http', $cfg)) {
+      if ($this->isHttps || array_key_exists('allow_http', $cfg) || in_array('allow_http', $cfg)) {
         $method = ucfirst($method);
         // Try this authentication method.
         call_user_func(array($this, "authenticateUsing$method"));
         if ($this->authenticated) {
+          // Double checking required for Elasticsearch proxy.
+          if ($this->elasticProxy) {
+            if (empty($cfg['resource_options']['elasticsearch']) || !in_array($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
+              kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
+              $this->apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+            }
+            if (!empty($this->clientConfig) && empty($this->clientConfig['elasticsearch']) ||
+                !in_array($this->elasticProxy, $this->clientConfig['elasticsearch'])) {
+              kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for client");
+              $this->apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+            }
+          }
           kohana::log('debug', "authenticated via $method");
           $this->authConfig = $cfg;
           break;
@@ -1813,8 +1938,10 @@ class Rest_Controller extends Controller {
         if ($supplied_hmac === $correct_hmac) {
           $this->clientSystemId = $clientSystemId;
           $this->projects = $config[$clientSystemId]['projects'];
-          if (!empty($_REQUEST['proj_id']))
+          $this->clientConfig = $config[$clientSystemId];
+          if (!empty($_REQUEST['proj_id'])) {
             $this->clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
+          }
           // Apart from the projects resource, other end-points will need a
           // proj_id if using client system based authorisation.
           if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
@@ -1931,6 +2058,7 @@ class Rest_Controller extends Controller {
     }
     $this->clientSystemId = $clientSystemId;
     $this->projects = $config[$clientSystemId]['projects'];
+    $this->clientConfig = $config[$clientSystemId];
     // Taxon observations and annotations resource end-points will need a
     // proj_id if using client system based authorisation.
     if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
