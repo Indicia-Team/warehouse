@@ -638,7 +638,7 @@ class Rest_Controller extends Controller {
           }
 
           $methodName = $name . '_' . strtolower($this->method);
-          $this->check_version($arguments);
+          $this->checkVersion($arguments);
 
           $requestForId = NULL;
 
