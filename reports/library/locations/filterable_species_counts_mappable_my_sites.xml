@@ -18,7 +18,7 @@
       #filters#
       #idlist#
     ) ON st_intersects(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom))
-      AND NOT st_touches(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom))
+      AND (st_geometrytype(o.public_geom)='ST_Point' OR NOT st_touches(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom)))
     WHERE l.deleted=false
     AND ('#location_type_ids#'='0' OR l.location_type_id IN (#location_type_ids#))
     AND (l.created_by_id=#user_id# or u.id=#user_id#)

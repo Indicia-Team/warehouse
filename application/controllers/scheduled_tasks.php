@@ -804,7 +804,7 @@ join occurrences o on o.id=ol.id
 join cache_occurrences_functional co on co.id=o.id
 join cache_occurrences_nonfunctional onf on onf.id=co.id
 join samples s on s.id=o.sample_id and s.deleted=false
-left join samples sp on sp.id=s.parent_id and sp.deleted=false
+left join samples sp on sp.id=s.parent_id and sp.deleted=false;
 
 create index ix_occdelta_taxa_taxon_list_id on occdelta(taxa_taxon_list_id);
 create index ix_occdelta_taxa_taxon_list_external_key on occdelta(taxa_taxon_list_external_key);

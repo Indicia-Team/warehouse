@@ -71,10 +71,13 @@ HTML;
   public $includeEmptyValues = true;
 
   /**
-   * Index method, which provides top level help for the API resource endpoints.
-   * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
+   * Index method which provides top level help for the API resource endpoints.
+   *
+   * @param array $resourceConfig
+   *   Configuration for the list of available resources and the methods they
+   *   support.
    */
-  public function index($resourceConfig) {
+  public function index(array $resourceConfig) {
     switch ($this->getResponseFormat()) {
       case 'html':
         $this->indexHtml($resourceConfig);
@@ -159,7 +162,7 @@ HTML;
 HTML;
 
     // Loop the resource names and output each of the available methods.
-    foreach($resourceConfig as $resource => $methods) {
+    foreach ($resourceConfig as $resource => $methods) {
       echo "<h3>$resource</h3>";
       foreach ($methods as $method => $methodConfig) {
         foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
@@ -198,6 +201,25 @@ HTML;
             }
             echo "<td>$help</td>";
             echo "</tr>";
+          }
+          echo '</tbody></table>';
+        }
+      }
+    }
+    $es = Kohana::config('rest.elasticsearch');
+    if ($es) {
+      echo '<h3>Elasticsearch end-points</h3>';
+      foreach ($es as $endpoint => $esConfig) {
+        // Also allow if authentication provided.
+        if ($esConfig['open'] === TRUE) {
+          echo '<h4>' . url::base() . "index.php/services/rest/$endpoint</h4>";
+          echo '<table class="table table-bordered table-responsive"><caption>Allowed methods</caption>';
+          echo '<thead><tr><th>HTTP method</th><th>Expression</th><th>Description</th></tr></thead>';
+          echo '<tbody>';
+          foreach ($esConfig['allowed'] as $method => $patterns) {
+            foreach ($patterns as $expr => $desc) {
+              echo "<tr><td>$method</td><td>$expr</td><td>$desc</desc></tr>";
+            }
           }
           echo '</tbody></table>';
         }
@@ -692,21 +714,31 @@ ROW;
           echo ',';
         }
         elseif ($autofeed) {
+          // Capture the ID and update datestamp of the last row in the report,
+          // so we can autofeed the next batch.
           $lastId = $row['id'];
+          $lastUpdate = $row['updated_on'];
         }
       }
       if ($autofeed) {
         echo ']';
         $afSettings = (array) variable::get("rest-autofeed-$_GET[proj_id]", [], FALSE);
         if ($afSettings['mode'] === 'initialLoad' && isset($lastId) && $dbObject->count() >= AUTOFEED_DEFAULT_PAGE_SIZE) {
+          // On initial load mode, we want the next autofeed batch to start on
+          // our highest row ID + 1, unless we've reached the end..
           $afSettings['last_id'] = $lastId;
-          variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
         }
         elseif ($afSettings['mode'] === 'initialLoad') {
+          // At the end of the initial load, switch to updates only mode.
           $afSettings['mode'] = 'updates';
           unset($afSettings['last_id']);
-          variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
         }
+        elseif ($afSettings['mode'] === 'updates') {
+          // Whilst in updates only mode, we want to start the next batch at
+          // the same timestamp as the last batch finished so we get no gaps.
+          $afSettings['last_date'] = $lastUpdate;
+        }
+        variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
       }
       else {
         echo $parts[1];

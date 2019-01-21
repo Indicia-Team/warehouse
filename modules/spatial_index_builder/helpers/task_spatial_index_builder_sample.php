@@ -61,7 +61,7 @@ INTO TEMPORARY changed_samples
 FROM smplist sl
 JOIN cache_samples_functional s ON s.id=sl.record_id
 LEFT JOIN locations l ON st_intersects(l.boundary_geom, s.public_geom)
-  AND NOT st_touches(l.boundary_geom, s.public_geom)
+  AND (st_geometrytype(s.public_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.public_geom))
   AND l.deleted=false
   AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
   $locationTypeFilters[surveyFilters]

@@ -1,7 +1,7 @@
 <report
-    title="Autofeed occurrences for Elasticsearch (standard filters)"
-    description="A list of occurrences designed for feeding into Elasticsearch or a similar JSON store."
-    featured="true"
+    title="Autofeed occurrences for Elasticsearch (standard filters, sensitive only)"
+    description="A list of occurrences designed for feeding into Elasticsearch or a similar JSON store. This report
+      returns full precision copies of the records."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
@@ -11,12 +11,14 @@
     join occurrences occ on occ.id=o.id and occ.deleted=false
     join cache_samples_nonfunctional snf on snf.id=o.sample_id
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-    left join locations l on l.id=o.location_id and l.deleted=false
-    left join samples sp on sp.id=o.parent_sample_id and sp.deleted=false
+    join samples s on s.id=o.sample_id and s.deleted=false
+    left join locations l on l.id=s.location_id and l.deleted=false
+    left join samples sp on sp.id=s.parent_id and sp.deleted=false
     left join locations lp on lp.id=sp.location_id and lp.deleted=false
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
+    AND sensitive=true
     AND o.id &lt;= (
       SELECT id FROM cache_occurrences_functional
       WHERE location_ids IS NOT NULL
@@ -55,7 +57,7 @@
     <column name="taxon_key" sql="o.taxa_taxon_list_external_key" datatype="text" />
     <column name="date_start" sql="o.date_start" datatype="date" />
     <column name="date_end" sql="o.date_end" datatype="date" />
-    <column name="day_of_year" sql="case o.date_type when 'D' then extract(doy from o.date_start) else null end" datatype="integer" />
+    <column name="day_of_year" sql="case date_type when 'D' then extract(doy from date_start) else null end" datatype="integer" />
     <column name="week_of_year" sql="case
             when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
               and coalesce(floor(extract(doy from o.date_start)/7+1), 0)=coalesce(floor(extract(doy from o.date_end)/7+1), 0) then coalesce(floor(extract(doy from o.date_start)/7+1), 0)
@@ -70,11 +72,11 @@
             when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0) then coalesce(date_part('year', o.date_start), null)
             else null
           end" datatype="integer" />
-    <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(o.public_geom, 4326)))" datatype="text" />
-    <column name="point" sql="st_y(st_transform(st_centroid(o.public_geom), 4326))::text || ',' || st_x(st_transform(st_centroid(o.public_geom), 4326))::text" datatype="text" />
-    <column name="output_sref" sql="onf.output_sref" datatype="text" />
-    <column name="output_sref_system" sql="onf.output_sref_system" datatype="text" />
-    <column name="given_locality_name" sql="o.location_name" datatype="text" />
+    <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(s.geom, 4326)))" datatype="text" />
+    <column name="point" sql="st_y(st_transform(st_centroid(s.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.geom), 4326))::text" datatype="text" />
+    <column name="output_sref" sql="s.entered_sref" datatype="text" />
+    <column name="output_sref_system" sql="s.entered_sref_system" datatype="text" />
+    <column name="given_locality_name" sql="coalesce(s.location_name, l.name)" datatype="text" />
     <column name="recorded_location_id" sql="l.id" datatype="integer" />
     <column name="recorded_location_name" sql="l.name" datatype="text" />
     <column name="recorded_parent_location_id" sql="lp.id" datatype="integer" />
@@ -105,8 +107,8 @@
     <column name="query" sql="o.query" datatype="text" />
     <column name="sensitive" sql="CASE o.sensitive WHEN true THEN 'true' ELSE 'false' END" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
-    <!-- Flag sensitivity_version = B for blurred version of a sensitive record. -->
-    <column name="sensitivity_blur" sql="CASE o.sensitive WHEN true THEN 'B' ELSE 'null' END" datatype="text" />
+    <!-- Flag sensitivity_version = F for full precision version of a sensitive record. -->
+    <column name="sensitivity_blur" sql="'F'" datatype="text" />
     <column name="confidential" sql="CASE o.confidential WHEN true THEN 'true' ELSE 'false' END" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
   </columns>

@@ -1043,7 +1043,7 @@ TBL;
    *   name, the second is the new one. The third entry is set to TRUE for any
    *   string parameters which should be quoted.
    */
-  private function convertDeprecatedParam(&$providedParams, $param) {
+  private function convertDeprecatedParam(array &$providedParams, $param) {
     if (count($param) === 2) {
       // Default to not handle as string.
       $param[] = FALSE;
@@ -1055,7 +1055,7 @@ TBL;
       $providedParams[$to] = $quote . $providedParams[$from] . $quote;
       unset($providedParams[$from]);
     }
-    if (isset($providedParams[$from . '_context']) && !isset($providedParams[$to . '_context'])) {
+    if (!empty($providedParams[$from . '_context']) && empty($providedParams[$to . '_context'])) {
       kohana::log('debug', "Converting provided param {$from}_context - {$to}_context");
       $providedParams[$to . '_context'] = $quote . $providedParams[$from . '_context'] . $quote;
     }
