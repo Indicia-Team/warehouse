@@ -1547,13 +1547,13 @@ class Rest_Controller extends Controller {
    * structure ready for returning as the result from an API call. Adds
    * pagination information as well as hrefs for contained objects.
    *
-   * @param array $list
-   *   Array of records from the database.
+   * @param object $list
+   *   List of records from the database as a database object.
    *
    * @return array
    *   Restructured version of the input list, with pagination and hrefs added.
    */
-  private function listResponseStructure(array $list) {
+  private function listResponseStructure($list) {
     $pagination = array(
       'self' => $this->generateLink(array('page' => $this->request['page'])),
     );
