@@ -58,12 +58,22 @@
     <column name="date_start" sql="o.date_start" datatype="date" />
     <column name="date_end" sql="o.date_end" datatype="date" />
     <column name="day_of_year" sql="case date_type when 'D' then extract(doy from date_start) else null end" datatype="integer" />
-    <column name="week_of_year" sql="case
+    <column name="week" sql="case
             when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
-              and coalesce(floor(extract(doy from o.date_start)/7+1), 0)=coalesce(floor(extract(doy from o.date_end)/7+1), 0) then coalesce(floor(extract(doy from o.date_start)/7+1), 0)
+                and coalesce(floor(extract(doy from o.date_start)/7+1), 0)=coalesce(floor(extract(doy from o.date_end)/7+1), 0)
+              then coalesce(floor(extract(doy from o.date_start)/7+1), 0)
             else null
           end" datatype="integer" />
-    <column name="month_of_year" sql="case
+    <column name="ukbms_week" sql="case
+            when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
+                and
+                  floor((extract('doy' from date_start) - extract('doy' from (extract('year' from date_start) || '-04-01')::date))/7)
+                  =
+                  floor((extract('doy' from date_end) - extract('doy' from (extract('year' from date_end) || '-04-01')::date))/7)
+              then floor((extract('doy' from date_start) - extract('doy' from (extract('year' from date_start) || '-04-01')::date))/7) + 1
+            else null
+          end" datatype="integer" />
+    <column name="month" sql="case
             when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
               and coalesce(date_part('month', o.date_start), 0)=coalesce(date_part('month', o.date_end), 0) then coalesce(date_part('month', o.date_start), 0)
             else null
@@ -76,6 +86,14 @@
     <column name="point" sql="st_y(st_transform(st_centroid(s.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.geom), 4326))::text" datatype="text" />
     <column name="output_sref" sql="s.entered_sref" datatype="text" />
     <column name="output_sref_system" sql="s.entered_sref_system" datatype="text" />
+    <column name="coordinate_uncertainty_in_meters"
+              sql="CASE
+      WHEN snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
+        get_sref_precision(onf.output_sref, onf.output_sref_system, null)
+      ELSE COALESCE(snf.attr_sref_precision, 50)
+    END"
+            datatype="float"
+            term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
     <column name="given_locality_name" sql="coalesce(s.location_name, l.name)" datatype="text" />
     <column name="recorded_location_id" sql="l.id" datatype="integer" />
     <column name="recorded_location_name" sql="l.name" datatype="text" />
@@ -85,11 +103,10 @@
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
     <column name="licence_code" sql="onf.licence_code" datatype="text" />
-    <column name="attr_sex_stage" sql="onf.attr_sex_stage" datatype="text" />
-    <column name="attr_stage" sql="onf.attr_stage" datatype="text" />
+    <column name="attr_stage" sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)" datatype="text" />
     <column name="attr_sex" sql="onf.attr_sex" datatype="text" />
     <column name="attr_sex_stage_count" sql="onf.attr_sex_stage_count" datatype="text" />
-    <column name="attr_sex_stage_count_exact" sql="case when onf.attr_sex_stage_count similar to '\d+' then onf.attr_sex_stage_count::integer else null end" />
+    <column name="attr_sex_stage_count_exact" sql="case when onf.attr_sex_stage_count similar to '\d{1,9}' then onf.attr_sex_stage_count::integer else null end" />
     <column name="attr_certainty" sql="onf.attr_certainty" datatype="text" />
     <column name="attr_det_name" sql="coalesce(onf.attr_det_full_name, coalesce(onf.attr_det_first_name, '') || ' ' || onf.attr_det_last_name)" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
@@ -97,8 +114,7 @@
     <column name="media" sql="snf.media" datatype="text" />
     <column name="created_on" sql="o.created_on" datatype="date" />
     <column name="updated_on" sql="greatest(o.updated_on, cttl.cache_updated_on)" datatype="date" />
-    <column name="record_status" sql="o.record_status" datatype="text" />
-    <column name="record_substatus" sql="o.record_substatus" datatype="text" />
+    <column name="record_status" sql="o.record_status || coalesce(o.record_substatus::text, '')" datatype="text" />
     <column name="verified_by_id" sql="occ.verified_by_id" datatype="integer" />
     <column name="verifier" sql="onf.verifier" datatype="text" />
     <column name="verified_on" sql="o.verified_on" datatype="date" />
@@ -107,7 +123,7 @@
     <column name="query" sql="o.query" datatype="text" />
     <column name="sensitive" sql="CASE o.sensitive WHEN true THEN 'true' ELSE 'false' END" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
-    <!-- Flag sensitivity_version = F for full precision version of a sensitive record. -->
+    <!-- Flag sensitivity_blur = F for full precision version of a sensitive record. -->
     <column name="sensitivity_blur" sql="'F'" datatype="text" />
     <column name="confidential" sql="CASE o.confidential WHEN true THEN 'true' ELSE 'false' END" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
