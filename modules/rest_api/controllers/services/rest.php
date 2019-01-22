@@ -640,7 +640,7 @@ class Rest_Controller extends Controller {
             $this->request = $_POST;
           }
 
-          $methodName = $name . '_' . strtolower($this->method);
+          $methodName = lcfirst(ucwords($name, '-')) . ucfirst(strtolower($this->method));
           $this->checkVersion($arguments);
 
           $requestForId = NULL;
@@ -670,7 +670,7 @@ class Rest_Controller extends Controller {
             }
           }
           if ($requestForId) {
-            $methodName .= '_id';
+            $methodName .= 'Id';
           }
           $this->validateParameters($this->resourceName, strtolower($this->method), $requestForId);
           if (isset($this->clientSystemId) &&
@@ -794,7 +794,7 @@ class Rest_Controller extends Controller {
    * @param string $id
    *   Unique ID for the project to output.
    */
-  private function projects_get_id($id) {
+  private function projectsGetId($id) {
     if (!array_key_exists($id, $this->projects)) {
       $this->apiResponse->fail('No Content', 204);
     }
@@ -810,11 +810,11 @@ class Rest_Controller extends Controller {
    * @todo Projects are currently hard coded in the config file, so pagination
    * etc is just stub code.
    */
-  private function projects_get() {
+  private function projectsGet() {
     $this->apiResponse->succeed([
       'data' => array_values($this->projects),
       'paging' => [
-        'self' => $this->generateLink(array('page' => 1)),
+        'self' => $this->generateLink(['page' => 1]),
       ],
     ],
     [
@@ -831,7 +831,7 @@ class Rest_Controller extends Controller {
    * @param string $id
    *   Unique ID for the taxon-observations to output.
    */
-  private function taxon_observations_get_id($id) {
+  private function taxonObservationsGetId($id) {
     if (substr($id, 0, strlen(kohana::config('rest.user_id'))) === kohana::config('rest.user_id')) {
       $occurrence_id = substr($id, strlen(kohana::config('rest.user_id')));
       $params = array('occurrence_id' => $occurrence_id);
@@ -868,7 +868,7 @@ class Rest_Controller extends Controller {
    *
    * @todo Ensure delete information is output.
    */
-  private function taxon_observations_get() {
+  private function taxonObservationsGet() {
     $this->checkPaginationParams();
     $params = [
       // Limit set to 1 more than we need, so we can ascertain if next page
@@ -901,7 +901,7 @@ class Rest_Controller extends Controller {
    * @param string $id
    *   Unique ID for the annotations to output.
    */
-  private function annotations_get_id($id) {
+  private function annotationsGetId($id) {
     $params = array('id' => $id);
     $report = $this->loadReport('rest_api/filterable_annotations', $params);
     if (empty($report['content']['records'])) {
@@ -937,7 +937,7 @@ class Rest_Controller extends Controller {
    *
    * Outputs a list of annotation details.
    */
-  private function annotations_get() {
+  private function annotationsGet() {
     // @todo Integrate determinations in the output
     // @todo handle taxonVersionKey properly
     // @todo handle unansweredQuestion
@@ -984,7 +984,7 @@ class Rest_Controller extends Controller {
    * @todo option to limit columns in results
    * @todo caching option
    */
-  private function taxa_get() {
+  private function taxaGet() {
     $segments = $this->uri->segment_array();
     if (count($segments) !== 4 || $segments[4] !== 'search') {
       $this->apiResponse->fail('Bad request', 404, "Resource taxa not known, try taxa/search");
@@ -1085,7 +1085,7 @@ class Rest_Controller extends Controller {
    *   are included in report output. Applies when authenticating as a
    *   warehouse user only.
    */
-  private function reports_get() {
+  private function reportsGet() {
     $segments = $this->uri->segment_array();
     // Remove services/rest/reports from the URL segments.
     array_shift($segments);
@@ -1120,7 +1120,7 @@ class Rest_Controller extends Controller {
    * @return string
    *   Report path.
    */
-  private function getReportFileNameFromSegments($segments) {
+  private function getReportFileNameFromSegments(array $segments) {
     // Report file specified. Don't need the .xml suffix.
     $fileName = array_pop($segments);
     $fileName = substr($fileName, 0, strlen($fileName) - 4);
@@ -1187,7 +1187,7 @@ class Rest_Controller extends Controller {
    * @param array $segments
    *   URL segments.
    */
-  private function getReportOutput($segments) {
+  private function getReportOutput(array $segments) {
     $reportFile = $this->getReportFileNameFromSegments($segments);
     $report = $this->loadReport($reportFile, $_GET);
     if (isset($report['content']['records'])) {
@@ -1239,9 +1239,9 @@ class Rest_Controller extends Controller {
       // Columns with a datatype can also be used as a parameter.
       foreach ($metadata['columns'] as $name => $columnDef) {
         if (!empty($columnDef['datatype']) && !isset($list[$name])) {
-          $def = array(
-            'description' => 'Column available for use as a parameter'
-          );
+          $def = [
+            'description' => 'Column available for use as a parameter',
+          ];
           if (!empty($columnDef['display'])) {
             $def['display'] = $columnDef['display'];
           }
@@ -1286,10 +1286,12 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Retrieves a list of folders and report files at a single location in the report
-   * hierarchy.
+   * Return the report hierarchy.
    *
-   * @param $segments
+   * Retrieves a list of folders and report files at a single location in the
+   * report hierarchy.
+   *
+   * @param array $segments
    *   URL segments.
    */
   private function getReportHierarchy(array $segments) {
@@ -1395,7 +1397,7 @@ class Rest_Controller extends Controller {
    * @param array $metadata
    *   Report metadata about to be output.
    */
-  private function addReportLinks(&$metadata) {
+  private function addReportLinks(array &$metadata) {
     $metadata['href'] = $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml");
     $metadata['params'] = [
       'href' => $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml/params"),
@@ -1490,6 +1492,8 @@ class Rest_Controller extends Controller {
    *   Name of the resource.
    * @param string $method
    *   Method name, e.g. GET or POST.
+   * @param bool $requestForId
+   *   ID of resource being requested if any.
    */
   private function validateParameters($resourceName, $method, $requestForId) {
     $info = $this->resourceConfig[$resourceName][$method]['subresources'];
@@ -1554,20 +1558,20 @@ class Rest_Controller extends Controller {
    *   Restructured version of the input list, with pagination and hrefs added.
    */
   private function listResponseStructure($list) {
-    $pagination = array(
-      'self' => $this->generateLink(array('page' => $this->request['page'])),
-    );
+    $pagination = [
+      'self' => $this->generateLink(['page' => $this->request['page']]),
+    ];
     if ($this->request['page'] > 1) {
-      $pagination['previous'] = $this->generateLink(array('page' => $this->request['page'] - 1));
+      $pagination['previous'] = $this->generateLink(['page' => $this->request['page'] - 1]);
     }
     // Set a flag to indicate another page required.
     if (count($list) > $this->request['page_size']) {
-      $pagination['next'] = $this->generateLink(array('page' => $this->request['page'] + 1));
+      $pagination['next'] = $this->generateLink(['page' => $this->request['page'] + 1]);
     }
-    return array(
+    return [
       'paging' => $pagination,
       'data' => $list,
-    );
+    ];
   }
 
   /**
@@ -1735,13 +1739,13 @@ class Rest_Controller extends Controller {
    * @return string
    *   The reconstructed URL.
    */
-  private function generateLink($replacements = array()) {
+  private function generateLink(array $replacements = []) {
     $params = array_merge($_GET, $replacements);
     return url::base() . 'index.php/services/rest/' . $this->resourceName . '?' . http_build_query($params);
   }
 
   /**
-   * Returns the filter definition for a filter associated with a given project ID.
+   * Returns the filter definition associated with a given project ID.
    *
    * @param string $id
    *   Project ID.
@@ -1768,9 +1772,13 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * If a filter ID is being passed in the URL to override the default limitation when authenticating as a user of only
-   * being able to see your own records, checks that the ID in the query params points to a filter belonging to the user
-   * which grants them additional permissions and if so, returns the definition of the filter.
+   * Apply permissions filter passed in the URL parameters.
+   *
+   * If a filter ID is being passed in the URL to override the default
+   * limitation when authenticating as a user of only being able to see your
+   * own records, checks that the ID in the query params points to a filter
+   * belonging to the user which grants them additional permissions and if so,
+   * returns the definition of the filter.
    *
    * @return array
    *   Filter definition or empty array.
@@ -1898,6 +1906,9 @@ class Rest_Controller extends Controller {
     }
   }
 
+  /**
+   * Attempts to authenticate using the oAuth2 protocal.
+   */
   private function authenticateUsingOauth2User() {
     $headers = apache_request_headers();
     if (isset($headers['Authorization']) && strpos($headers['Authorization'], 'Bearer ') === 0) {
@@ -1925,6 +1936,9 @@ class Rest_Controller extends Controller {
     }
   }
 
+  /**
+   * Attempts to authenticate using the HMAC client protocal.
+   */
   private function authenticateUsingHmacClient() {
     $headers = apache_request_headers();
     if (isset($headers['Authorization']) &&  substr_count($headers['Authorization'], ':') === 3) {
@@ -1954,6 +1968,9 @@ class Rest_Controller extends Controller {
     }
   }
 
+  /**
+   * Attempts to authenticate using the HMAC website protocal.
+   */
   private function authenticateUsingHmacWebsite() {
     $headers = apache_request_headers();
     if (isset($headers['Authorization']) && substr_count($headers['Authorization'], ':') === 3) {
@@ -1986,6 +2003,9 @@ class Rest_Controller extends Controller {
     }
   }
 
+  /**
+   * Attempts to authenticate using the direct user protocal.
+   */
   private function authenticateUsingDirectUser() {
     $headers = apache_request_headers();
     if (isset($headers['Authorization']) &&
@@ -2033,6 +2053,9 @@ class Rest_Controller extends Controller {
     // @todo Apply user ID limit to data, limit to filterable reports
   }
 
+  /**
+   * Attempts to authenticate using the direct client protocal.
+   */
   private function authenticateUsingDirectClient() {
     $headers = apache_request_headers();
     $config = Kohana::config('rest.clients');
@@ -2078,6 +2101,9 @@ class Rest_Controller extends Controller {
     $this->authenticated = TRUE;
   }
 
+  /**
+   * Attempts to authenticate using the direct website protocal.
+   */
   private function authenticateUsingDirectWebsite() {
     $headers = apache_request_headers();
     if (isset($headers['Authorization']) && substr_count($headers['Authorization'], ':') === 3) {
@@ -2094,7 +2120,7 @@ class Rest_Controller extends Controller {
     else {
       return;
     }
-    // input validation
+    // Input validation.
     if (!preg_match('/^\d+$/', $websiteId)) {
       $this->apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
     }
@@ -2152,4 +2178,5 @@ class Rest_Controller extends Controller {
   private function getToken() {
     return sha1(time() . ':' . rand() . $_SERVER['REMOTE_ADDR'] . ':' . kohana::config('indicia.private_key'));
   }
+
 }
