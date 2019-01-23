@@ -67,10 +67,10 @@
     <column name="ukbms_week" sql="case
             when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
                 and
-                  floor((extract('doy' from date_start) - extract('doy' from (extract('year' from date_start) || '-04-01')::date))/7)
+                  floor((extract('doy' from o.date_start) - extract('doy' from (extract('year' from o.date_start) || '-04-01')::date))/7)
                   =
-                  floor((extract('doy' from date_end) - extract('doy' from (extract('year' from date_end) || '-04-01')::date))/7)
-              then floor((extract('doy' from date_start) - extract('doy' from (extract('year' from date_start) || '-04-01')::date))/7) + 1
+                  floor((extract('doy' from o.date_end) - extract('doy' from (extract('year' from o.date_end) || '-04-01')::date))/7)
+              then floor((extract('doy' from o.date_start) - extract('doy' from (extract('year' from o.date_start) || '-04-01')::date))/7) + 1
             else null
           end" datatype="integer" />
     <column name="month" sql="case
@@ -119,13 +119,14 @@
     <column name="verifier" sql="onf.verifier" datatype="text" />
     <column name="verified_on" sql="o.verified_on" datatype="date" />
     <column name="data_cleaner_info" sql="onf.data_cleaner_info" datatype="text" />
-    <column name='verification_checks_enabled' sql="o.verification_checks_enabled" datatype="boolean" />
+    <column name="data_cleaner_result" sql="o.data_cleaner_result::text" datatype="text" />
+    <column name='verification_checks_enabled' sql="o.verification_checks_enabled::text" datatype="boolean" />
     <column name="query" sql="o.query" datatype="text" />
-    <column name="sensitive" sql="CASE o.sensitive WHEN true THEN 'true' ELSE 'false' END" datatype="text" />
+    <column name="sensitive" sql="o.sensitive::text" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
     <!-- Flag sensitivity_blur = F for full precision version of a sensitive record. -->
     <column name="sensitivity_blur" sql="'F'" datatype="text" />
-    <column name="confidential" sql="CASE o.confidential WHEN true THEN 'true' ELSE 'false' END" datatype="boolean" />
+    <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
   </columns>
 </report>
