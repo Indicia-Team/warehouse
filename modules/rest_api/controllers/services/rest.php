@@ -725,13 +725,22 @@ class Rest_Controller extends Controller {
     $session = curl_init($url);
     // Set the POST options.
     $httpHeader = array();
-    if (!empty($_POST)) {
-      curl_setopt($session, CURLOPT_POST, 1);
-      curl_setopt($session, CURLOPT_POSTFIELDS, $_POST);
-      // Post contains a raw XML document?
+    $postData = file_get_contents('php://input');
+    if (empty($postData)) {
+      $postData = $_POST;
+    }
+    else {
+      // Post body contains a raw XML document?
       if (is_string($postData) && substr($postData, 0, 1) === '<') {
         $httpHeader[] = 'Content-Type: text/xml';
       }
+      else {
+        $httpHeader[] = 'Content-Type: application/json';
+      }
+    }
+    if (!empty($postData)) {
+      curl_setopt($session, CURLOPT_POST, 1);
+      curl_setopt($session, CURLOPT_POSTFIELDS, $postData);
     }
     if (count($httpHeader) > 0) {
       curl_setopt($session, CURLOPT_HTTPHEADER, $httpHeader);
