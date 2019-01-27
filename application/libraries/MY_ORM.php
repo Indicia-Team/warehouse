@@ -1630,11 +1630,6 @@ class ORM extends ORM_Core {
             // attribute IDs, with a sub-array for the existing value IDs that
             // were included in the submission, so that we can mark-delete the
             // ones that are not in the submission.
-            $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
-            if ($attr === FALSE) {
-              // Failed to create attribute so drop out.
-              return FALSE;
-            }
             if ($attrDef->multi_value === 't' && count($arr)) {
               if (!isset($multiValueData["attr:$attrId"])) {
                 $multiValueData["attr:$attrId"] = array('attrId' => $attrId, 'ids' => []);
@@ -1644,6 +1639,11 @@ class ORM extends ORM_Core {
             if ($attrDef->allow_ranges === 't' && !empty($this->submission['fields']["$field:upper"])
                 && !empty($this->submission['fields']["$field:upper"]['value'])) {
               $value .= ' - ' . $this->submission['fields']["$field:upper"]['value'];
+            }
+            $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
+            if ($attr === FALSE) {
+              // Failed to create attribute so drop out.
+              return FALSE;
             }
           }
         }
