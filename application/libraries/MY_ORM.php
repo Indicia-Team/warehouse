@@ -1624,6 +1624,15 @@ class ORM extends ORM_Core {
             $attrId = $arr[1];
             $valueId = count($arr)>2 ? $arr[2] : NULL;
             $attrDef = self::loadAttrDef($this->object_name, $attrId);
+            if ($attrDef->allow_ranges === 't' && !empty($this->submission['fields']["$field:upper"])
+                && !empty($this->submission['fields']["$field:upper"]['value'])) {
+              $value .= ' - ' . $this->submission['fields']["$field:upper"]['value'];
+            }
+            $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
+            if ($attr === FALSE) {
+              // Failed to create attribute so drop out.
+              return FALSE;
+            }
             // If this attribute is a multivalue array, then any existing
             // attributes which are not in the submission for the same attr ID
             // should be removed. We need to keep an array of the multi-value
@@ -1635,15 +1644,6 @@ class ORM extends ORM_Core {
                 $multiValueData["attr:$attrId"] = array('attrId' => $attrId, 'ids' => []);
               }
               $multiValueData["attr:$attrId"]['ids'] = array_merge($multiValueData["attr:$attrId"]['ids'], $attr);
-            }
-            if ($attrDef->allow_ranges === 't' && !empty($this->submission['fields']["$field:upper"])
-                && !empty($this->submission['fields']["$field:upper"]['value'])) {
-              $value .= ' - ' . $this->submission['fields']["$field:upper"]['value'];
-            }
-            $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
-            if ($attr === FALSE) {
-              // Failed to create attribute so drop out.
-              return FALSE;
             }
           }
         }
