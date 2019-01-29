@@ -1755,6 +1755,7 @@ class ORM extends ORM_Core {
       $attrValueModel->where([
         $this->object_name.'_attribute_id' => $attrId,
         $this->object_name.'_id' => $this->id,
+        'deleted' => 'f',
       ])->find();
     }
 
