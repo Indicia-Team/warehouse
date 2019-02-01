@@ -197,7 +197,7 @@ META;
       $array['columns'] = $this->view_columns;
     if ($wantParameters && isset($data['parameterRequest']))
       $array['parameterRequest'] = $data['parameterRequest'];
-    if ($wantCount && !isset($data['parameterRequest'])) {
+    if ($wantCount) {
       $count = $this->record_count();
       if ($count !== FALSE)
         $array['count'] = $count;
