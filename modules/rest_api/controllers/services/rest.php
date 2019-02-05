@@ -1591,6 +1591,11 @@ class Rest_Controller extends Controller {
     // array.
     if (!isset($this->reportEngine)) {
       $this->reportEngine = new ReportEngine(array($this->clientWebsiteId));
+      // Resource configuration can provide a list of restricted reports that
+      // are allowed for this client.
+      if (isset($this->resourceOptions['authorise'])) {
+        $this->reportEngine->setAuthorisedReports($this->resourceOptions['authorise']);
+      }
     }
   }
 

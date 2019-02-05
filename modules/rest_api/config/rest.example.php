@@ -150,7 +150,14 @@ $config['clients'] = [
         // Optional, which resources are available? Default is all.
         'resources' => ['taxon-observations', 'annotations', 'reports'],
         'resource_options' => [
-          'reports' => ['raw_data', 'featured'],
+          'reports' => [
+            'raw_data',
+            'featured',
+            'authorise' => [
+              // Authorise a normally restricted report for this project.
+              'library/occurrences/list_for_elastic_all.xml',
+            ],
+          ],
         ],
         // Set the following to TRUE for Indicia to automatically feed through
         // pages of data. Useful when the client is a dumb poller for the data.
