@@ -639,8 +639,7 @@ class Rest_Controller extends Controller {
           elseif ($this->method === 'POST') {
             $this->request = $_POST;
           }
-
-          $methodName = lcfirst(ucwords($name, '-')) . ucfirst(strtolower($this->method));
+          $methodName = lcfirst(str_replace('_', '', ucwords($name, '_'))) . ucfirst(strtolower($this->method));
           $this->checkVersion($arguments);
 
           $requestForId = NULL;
