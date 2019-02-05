@@ -1,4 +1,38 @@
+# Version 2.5.0
+*2019-02-05*
+
+## Database schema changes
+
+* Terms.term field is now unlimited length.
+
+## Other changes
+
+* Fixes a bug saving attribute values that contain ranges.
+* Fixes a bug where an existing deleted attribute value prevented others from
+  being saved.
+* Support for a restricted attribute in report files for reports which are only
+  available to RESTful API clients which have been explicitly authorised to use
+  them.
+* Updated_on flag is updated after a taxonomy update in the associated
+  cache_occurrences_functional records. Previuosly a taxon name change or
+  similar would not cause the updated_on field to be updated making change
+  tracking harder.
+* A parameter request in a report result no longer prevents the report output
+  from being counted.
+* Elasticsearch population reports updated (better performance and document
+  structure, restricted access where appropriate).
+
+# Version 2.4.0
+*2019-01-21*
+
+* Support for proxy requests to an Elasticsearch cluster, with authentication &
+  authorisation support in the RESTful API. See
+  https://indicia-docs.readthedocs.io/en/latest/developing/rest-web-services/elasticsearch.html and
+  https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/README.md.
+
+
 # Version 2.3.0
+*2019-01-09*
 
 ## Database schema changes
 
@@ -13,15 +47,18 @@
   records not yet indexed to be identifiable.
 
 # Version 2.2.0
+*2018-12-19*
 
 * Enable use of a scratchpad list of species as a standard filter parameter.
 
 # Version 2.1.0
+*2018-12-18*
 
 * Enable import of occurrences where the taxon is identified using a known
   taxa_taxon_list_id.
 
 # Version 2.0.0
+*2018-12-14*
 
 Please see [upgrading to version 2.0.0](UPGRADE-v2.md).
 
