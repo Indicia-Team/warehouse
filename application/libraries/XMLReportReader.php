@@ -89,9 +89,12 @@ class XMLReportReader_Core implements ReportReader {
         $metadata['title'] = $reader->getAttribute('title');
         $metadata['description'] = $reader->getAttribute('description');
         $metadata['featured'] = $reader->getAttribute('featured');
+        $metadata['restricted'] = $reader->getAttribute('restricted');
         $metadata['summary'] = $reader->getAttribute('summary');
         if (!$metadata['featured'])
           unset($metadata['featured']);
+        if (!$metadata['restricted'])
+          unset($metadata['restricted']);
         if (!$metadata['summary'])
           unset($metadata['summary']);
         if (!$metadata['title'])
