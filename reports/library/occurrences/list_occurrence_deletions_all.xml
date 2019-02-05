@@ -1,14 +1,15 @@
 <report
-    title="Delete occurrences list"
-    description="A list of occurrences IDs that have been deleted."
+    title="Delete occurrences list (no website limit)"
+    description="A list of occurrences IDs that have been deleted.
+      No website limit so designed to collect records from all website registrations."
+    restricted="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          count_field="o.*">
     SELECT #columns#
     FROM occurrences o
-    #agreements_join#
     #joins#
-    WHERE #sharing_filter#
+    WHERE 1=1
   </query>
   <order_bys>
     <order_by>o.id</order_by>

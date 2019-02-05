@@ -2,32 +2,26 @@
     title="Autofeed occurrences for Elasticsearch (standard filters, sensitive only)"
     description="A list of occurrences designed for feeding into Elasticsearch or a similar JSON store. This report
       returns full precision copies of the records."
+    restricted="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
-    select #columns#
-    from cache_occurrences_functional o
-    join cache_occurrences_nonfunctional onf on onf.id=o.id
-    join occurrences occ on occ.id=o.id and occ.deleted=false
-    join cache_samples_nonfunctional snf on snf.id=o.sample_id
-    join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-    join samples s on s.id=o.sample_id and s.deleted=false
-    left join locations l on l.id=s.location_id and l.deleted=false
-    left join samples sp on sp.id=s.parent_id and sp.deleted=false
-    left join locations lp on lp.id=sp.location_id and lp.deleted=false
+    -- Union is faster than an OR in the filter.
+    SELECT #columns#
+    FROM cache_occurrences_functional o
+    JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
+    JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
+    JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    JOIN samples s on s.id=o.sample_id AND s.deleted=false
+    LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
+    LEFT JOIN samples sp ON sp.id=s.parent_id AND sp.deleted=false
+    LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
     AND sensitive=true
-    AND o.id &lt;= (
-      SELECT id FROM cache_occurrences_functional
-      WHERE location_ids IS NOT NULL
-      ORDER BY id DESC LIMIT 1
-    )
-    AND o.id &lt;= (
-      SELECT id FROM cache_occurrences_functional
-      WHERE updated_on &lt; COALESCE((select last_scheduled_task_check FROM system WHERE name='data_cleaner'), now())
-      ORDER BY id DESC LIMIT 1)
+    AND o.updated_on&lt;'#update_to#'
   </query>
   <order_bys>
     <order_by>o.id</order_by>
@@ -35,10 +29,22 @@
   <params>
     <!-- last_date and last_id parameters required for autofeed to work. -->
     <param name="last_date" display="Last update date" datatype="date" default="">
-      <where>(o.updated_on &gt;= '#last_date#' OR cttl.cache_updated_on &gt;= '#last_date#')</where>
+      <where>o.updated_on &gt;= '#last_date#'</where>
     </param>
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>o.id &gt; #last_id#</where>
+    </param>
+    <param
+      name="update_to"
+      display="Highest update timestamp to include"
+      description="Highest timestamp to include, which will be auto-generated according to the progress of background tasks"
+      default=""
+      preprocess="SELECT LEAST(
+        (SELECT updated_on FROM cache_occurrences_functional
+        WHERE location_ids IS NOT NULL
+        ORDER BY updated_on DESC LIMIT 1),
+        COALESCE((select last_scheduled_task_check FROM system WHERE name='data_cleaner'), now())
+      ) - '1 second'::interval">
     </param>
   </params>
   <columns>
@@ -112,8 +118,8 @@
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
     <column name="attr_sample_method" sql="snf.attr_sample_method" datatype="text" />
     <column name="media" sql="snf.media" datatype="text" />
-    <column name="created_on" sql="o.created_on" datatype="date" />
-    <column name="updated_on" sql="greatest(o.updated_on, cttl.cache_updated_on)" datatype="date" />
+    <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
+    <column name="updated_on" sql="to_char(greatest(o.updated_on, cttl.cache_updated_on), 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="record_status" sql="o.record_status || coalesce(o.record_substatus::text, '')" datatype="text" />
     <column name="verified_by_id" sql="occ.verified_by_id" datatype="integer" />
     <column name="verifier" sql="onf.verifier" datatype="text" />
@@ -122,6 +128,8 @@
     <column name="data_cleaner_result" sql="o.data_cleaner_result::text" datatype="text" />
     <column name='verification_checks_enabled' sql="o.verification_checks_enabled::text" datatype="boolean" />
     <column name="query" sql="o.query" datatype="text" />
+    <column name="zero_abundance" sql="o.zero_abundance::text" datatype="text" />
+    <column name="trial" sql="o.training::text" datatype="text" />
     <column name="sensitive" sql="o.sensitive::text" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
     <!-- Flag sensitivity_blur = F for full precision version of a sensitive record. -->
