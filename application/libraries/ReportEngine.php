@@ -95,6 +95,18 @@ class ReportEngine {
   private $recordCountResult;
 
   /**
+   * List of reports that have been explicitly authorised.
+   *
+   * Reports may have an attribute restricted="true", in which case they are
+   * only available if explicitly authorised by the REST API for an
+   * authenticated client.
+   *
+   * @var array
+   */
+  private $authorisedReports = [];
+
+
+  /**
    * Constructor.
    *
    * @param array $websiteIds
@@ -124,6 +136,23 @@ class ReportEngine {
       }
     }
     return $reports;
+  }
+
+  /**
+   * Returns true if a report cannot be accessed because it is restricted.
+   *
+   * @param string $report
+   *   Report file path.
+   * @param array $metadata
+   *   Report metadata.
+   *
+   * @return bool
+   *   True if the report is inaccessible for this request.
+   */
+  private function isReportRestricted($report, array $metadata) {
+    return !empty($metadata['restricted'])
+      && $metadata['restricted'] !== 'false'
+      && !in_array(ltrim($report, '/'), $this->authorisedReports);
   }
 
   /**
@@ -167,13 +196,16 @@ class ReportEngine {
       }
       elseif (substr($file, -4) === '.xml') {
         $metadata = XMLReportReader::loadMetadata("$fullPath$file");
+        if ($this->isReportRestricted("$path$file", $metadata)) {
+          continue;
+        }
         $file = basename($file, '.xml');
         $reportPath = ltrim("$path$file", '/');
         $reportInfo = array(
           'type' => 'report',
           'title' => $metadata['title'],
           'description' => $metadata['description'],
-          'path' => $reportPath
+          'path' => $reportPath,
         );
         if (!empty($metadata['standard_params'])) {
           $reportInfo['standard_params'] = $metadata['standard_params'];
@@ -261,6 +293,11 @@ class ReportEngine {
         // Allow the list of columns to be returned to be passed as a parameter.
         $cols = empty($this->providedParams['columns']) ? array() : explode(',', $this->providedParams['columns']);
         $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->sharingMode, $cols);
+        $metadata = XMLReportReader::loadMetadata($this->report);
+        if ($this->isReportRestricted($report, $metadata)) {
+          // Abort as restricted report.
+          throw new Exception('Attempt to access unauthorised report');
+        }
         $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
         break;
 
@@ -338,6 +375,21 @@ class ReportEngine {
       'parameters' => $params,
     );
     return $r;
+  }
+
+  /**
+   * Authorise access to a list of restricted reports.
+   *
+   * If a client's authorisation (e.g. a client project in the RESTful API)
+   * authorises any restricted reports then this method can be called to enable
+   * access.
+   *
+   * @param array $reports
+   *   List of reports to enable access for, e.g.
+   *   `['library/occurrences/list_for_elastic_sensitive.xml']`.
+   */
+  public function setAuthorisedReports(array $reports) {
+    $this->authorisedReports = $reports;
   }
 
   /**
@@ -1028,10 +1080,12 @@ SQL;
                 ? $paramDefs[$name]['preprocess'] : [$name => $paramDefs[$name]['preprocess']];
               // Use each preprocessing query to calculate the actual param
               // value to use.
+              $websiteFilter = $this->websiteIds ? implode(',', $this->websiteIds) : 'select id from websites';
+              $masterTaxonListId = warehouse::getMasterTaxonListId();
               foreach ($preprocessors as $token => $qry) {
                 $prequery = str_replace(
                   ["#$name#", '#website_ids#', '#master_list_id#'],
-                  [$value, implode(',', $this->websiteIds), warehouse::getMasterTaxonListId()],
+                  [$value, $websiteFilter, $masterTaxonListId],
                   $qry
                 );
                 $output = $this->reportDb->query($prequery)->result_array(FALSE);
