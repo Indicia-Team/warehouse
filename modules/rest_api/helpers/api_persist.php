@@ -118,7 +118,7 @@ class api_persist {
    * @return bool
    *   True if new annotation inserted, false if updated.
    */
-  public static function annotation($db, $annotation, $survey_id) {
+  public static function annotation($db, array $annotation, $survey_id) {
     self::mapRecordStatus($annotation);
     // Set up a values array for the annotation post.
     $values = self::getAnnotationValues($db, $annotation);
@@ -146,8 +146,10 @@ class api_persist {
   }
 
   /**
-   * Builds the values array required to post a taxon-observation resource to the local
-   * database.
+   * Retrieve taxon observation values.
+   *
+   * Builds the values array required to post a taxon-observation resource to
+   * the local database.
    *
    * @param object $db
    *   Database connection object.
@@ -164,6 +166,7 @@ class api_persist {
    * @todo Reuse the last sample if it matches
    */
   private static function getTaxonObservationValues($db, $website_id, array $observation, $ttl_id) {
+    $sensitive = isset($observation['sensitive']) && strtolower($observation['sensitive']) === 't';
     $values = array(
       'website_id' => $website_id,
       'sample:date_start'     => $observation['startDate'],
@@ -173,11 +176,10 @@ class api_persist {
       'occurrence:taxa_taxon_list_id' => $ttl_id,
       'occurrence:external_key' => $observation['id'],
       'occurrence:zero_abundance' => isset($observation['zeroAbundance']) ? strtolower($observation['zeroAbundance']) : 'f',
-      'occurrence:sensitivity_precision' => isset($observation['sensitive'])
-        && strtolower($observation['sensitive']) === 't' ? 10000 : NULL,
+      'occurrence:sensitivity_precision' => $sensitive ? 10000 : NULL,
     );
     if (!empty($observation['licenceCode'])) {
-      $values['sample:licence_id'] = self::getLicenceIDFromCode($db, $observation['licenceCode']);
+      $values['sample:licence_id'] = self::getLicenceIdFromCode($db, $observation['licenceCode']);
     }
     if (!empty($observation['media'])) {
       foreach ($observation['media'] as $idx => $medium) {
@@ -185,7 +187,7 @@ class api_persist {
         $values["occurrence_medium:caption:$idx"] = $medium['caption'];
         $values["occurrence_medium:media_type_id:$idx"] = self::getMediaTypeId($db, $medium['mediaType']);
         if (!empty($medium['licenceCode'])) {
-          $values["occurrence_medium:licence_id:$idx"] = self::getLicenceIDFromCode($db, $medium['licenceCode']);
+          $values["occurrence_medium:licence_id:$idx"] = self::getLicenceIdFromCode($db, $medium['licenceCode']);
         }
       }
     }
@@ -264,7 +266,18 @@ SQL;
     );
   }
 
-  private static function getLicenceIDFromCode($db, $licenceCode) {
+  /**
+   * Convert a licence code to a licence's record ID.
+   *
+   * @param object $db
+   *   Database connection object.
+   * @param string $licenceCode
+   *   Licence code to retrieve the ID for.
+   *
+   * @return int
+   *   Licence ID.
+   */
+  private static function getLicenceIdFromCode($db, $licenceCode) {
     if (self::$licences === NULL) {
       $qry = <<<SQL
 SELECT id, code
@@ -327,20 +340,25 @@ SQL;
   }
 
   /**
-   * Checks that all the mandatory fields for a given resource type are populated. Returns
-   * an array of missing field names, empty if the record is complete.
+   * Mandatory field check.
    *
-   * @param $array
+   * Checks that all the mandatory fields for a given resource type are
+   * populated. Returns an array of missing field names, empty if the record
+   * is complete.
+   *
+   * @param array $array
+   *   List of parameters.
    * @param string $resourceName
    *   Name of the resource being checked.
    *
    * @throws \exception
    */
-  private static function checkMandatoryFields($array, $resourceName) {
+  private static function checkMandatoryFields(array $array, $resourceName) {
     $required = array();
-    // deletions have no other mandatory fields except the id to delete
-    if (!empty($resource['delete']) && $resource['delete'] === 'T')
+    // Deletions have no other mandatory fields except the id to delete.
+    if (!empty($resource['delete']) && $resource['delete'] === 'T') {
       $array[] = 'id';
+    }
     else {
       switch ($resourceName) {
         case 'taxon-observation':
@@ -457,16 +475,20 @@ SQL;
   }
 
   /**
-   * Retrieve existing comment details from the database for an annotation ID supplied by
-   * a call to the REST API.
+   * Find an existing annotation.
+   *
+   * Retrieve existing comment details from the database for an annotation ID
+   * supplied by a call to the REST API.
    *
    * @param object $db
    *   Database instance.
    * @param string $id
    *   The taxon-observation's ID as returned by a call to the REST api.
-   * @param integer $occ_id
+   * @param int $occ_id
    *   The database observation ID value to lookup within.
-   * @return array Array containing occurrence comment ID for any existing matching records.
+   *
+   * @return array
+   *   Array containing occurrence comment ID for any existing matching records.
    */
   private static function findExistingAnnotation($db, $id, $occ_id) {
     // @todo Add external key to comments table? OR do we use the timestamp?
@@ -475,7 +497,7 @@ SQL;
     // Look for an existing record to overwrite.
     $filter = array(
       'oc.deleted' => 'f',
-      'occurrence_id' => $occ_id
+      'occurrence_id' => $occ_id,
     );
     // @todo What happens if origin here but record missing?
     if ($recordOriginHere) {
@@ -492,8 +514,10 @@ SQL;
   }
 
   /**
-   * Uses the data in an observation to set the spatial reference information in a values array
-   * before it can be submitted via ORM to the database.
+   * Sets spatial reference data for an observation.
+   *
+   * Uses the data in an observation to set the spatial reference information
+   * in a values array before it can be submitted via ORM to the database.
    *
    * @param array $values
    *   The values array to add the spatial reference information to.
@@ -503,7 +527,7 @@ SQL;
    *   The name of the spatial reference field to be set in the values array,
    *   e.g. sample:entered_sref.
    */
-  private static function setSrefData(&$values, $observation, $fieldname) {
+  private static function setSrefData(array &$values, array $observation, $fieldname) {
     if ($observation['projection'] === 'OSGB' || $observation['projection'] === 'OSI') {
       $values[$fieldname] = strtoupper(str_replace(' ', '', $observation['gridReference']));
       $values[$fieldname . '_system'] = $observation['projection'] === 'OSGB' ? 'OSGB' : 'OSIE';
