@@ -1,3 +1,14 @@
+# Version 2.6.0
+*2019-02-07*
+
+* New indexed_location_type_list standard parameter for reports. Allows
+  filtering to any record which is indexed against a site of the given type(s).
+* Uploading locations from SHP file now generates work queue entries correctly
+  for updates as well as inserts.
+* Spatial indexer updates the cache table updated_on fields when changing the
+  location_ids field in the cache. This makes it easier to pass changes through
+  to feeds such as Elasticsearch.
+
 # Version 2.5.0
 *2019-02-05*
 
