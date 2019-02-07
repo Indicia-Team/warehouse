@@ -138,6 +138,20 @@ class report_standard_params_samples {
           ],
         ],
       ],
+      'indexed_location_type_list' => [
+        'datatype' => 'integer[]',
+        'display' => 'Location Type IDs (indexed)',
+        'description' => 'Comma separated list of location type IDs. Any record indexed against any location of one ' .
+          'of these types will be included.',
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => 'join locations ltype on s.location_ids @> ARRAY[ltype.id] ' .
+              'and ltype.location_type_id in (#indexed_location_type_list#) and ltype.deleted=false',
+          ],
+        ],
+      ],
       'date_from' => array('datatype'=>'date', 'display'=>'Date from',
         'description'=>'Date of first sample to include in the output',
         'wheres' => array(
