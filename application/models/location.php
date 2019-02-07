@@ -227,7 +227,7 @@ SQL;
   /*
    * Calculates centroid of a location from a boundary wkt
    */
-  protected function calcCentroid($boundary, $system = '4326') {
+  public function calcCentroid($boundary, $system = '4326') {
     $row = $this->db->query("SELECT ST_AsText(ST_Centroid(ST_GeomFromText('$boundary', " . kohana::config('sref_notations.internal_srid') . "))) AS wkt")->current();
     $result = array(
       'wkt' => $row->wkt,
@@ -235,17 +235,6 @@ SQL;
       'sref_system' => $system
     );
     return $result;
-  }
-
-  /*
-   * Sets centroid from boundary_geom
-   */
-  public function setCentroid($system = '4326') {
-    $boundary = $this->__get('boundary_geom', $system);
-    $centroid = $this->calcCentroid($boundary, $system);
-    $this->__set('centroid_geom', $centroid['wkt']);
-    $this->__set('centroid_sref', $centroid['sref']);
-    $this->__set('centroid_sref_system', $centroid['sref_system']);
   }
 
   private static function getConvertedOptionValue($first, $second) {

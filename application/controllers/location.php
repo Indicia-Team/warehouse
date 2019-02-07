@@ -406,68 +406,65 @@ class Location_Controller extends Gridview_Base_Controller {
             $myLocation = ORM::factory('location');
           }
         }
-
-        if ($myLocation->loaded) {
-          // Update existing record.
-          if ($_POST['geometries'] === 'boundary') {
-            $myLocation->__set('boundary_geom', $this->wkt);
-            $myLocation->setCentroid(isset($_POST['use_sref_system']) && $_POST['use_sref_system'] && isset($_POST['srid']) && $_POST['srid'] != '' ? $_POST['srid'] : '4326');
-          }
-          else {
-            $myLocation->__set('centroid_geom', $this->wkt);
-            $myLocation->__set('centroid_sref', $this->firstPoint);
-            $myLocation->__set('centroid_sref_system', $_POST['srid']);
-          }
-          $myLocation->save();
-          $description = $locationName . (isset($parent) ? ' - parent ' . $parent : '');
-          $view->update[] = $description;
-          $view->location_id[$description] = $myLocation->id;
+        // Store CRUD status, since after save it will always be loaded.
+        $isUpdate = $myLocation->loaded;
+        $fields = [
+          'name' => ['value' => $locationName],
+          'deleted' => ['value' => 'f'],
+          'public' => ['value' => ($_POST['website_id'] === 'all' ? 't' : 'f')],
+        ];
+        if ($_POST['geometries'] === 'boundary') {
+          // Load the geometry into the boundary. So, we need to calculate the
+          // centroid.
+          $system = isset($_POST['use_sref_system']) && $_POST['use_sref_system'] && isset($_POST['srid']) && $_POST['srid'] != ''
+            ? $_POST['srid'] : '4326';
+          $centroid = $myLocation->calcCentroid($this->wkt, $system);
+          $fields = array_merge($fields, [
+            'boundary_geom' => ['value' => $this->wkt],
+            'centroid_geom' => ['value' => $centroid['wkt']],
+            'centroid_sref' => ['value' => $centroid['sref']],
+            'centroid_sref_system' => ['value' => $centroid['sref_system']],
+          ]);
         }
         else {
-          // Create a new record.
-          $fields = array(
-            'name' => array('value' => $locationName),
-            'deleted' => array('value' => 'f'),
-            'public' => array('value' => ($_POST['website_id'] === 'all' ? 't' : 'f')),
-          );
-          if ($_POST['geometries'] === 'boundary') {
-            // Centroid is calculated in Location_Model::preSubmit.
-            $fields['boundary_geom'] = array('value' => $this->wkt);
-            if (isset($_POST['use_sref_system']) && $_POST['use_sref_system'] && isset($_POST['srid']) && $_POST['srid'] != '') {
-              $fields['centroid_sref_system'] = array('value' => $_POST['srid']);
-            }
-          }
-          else {
-            $fields['centroid_geom'] = array('value' => $this->wkt);
-            $fields['centroid_sref'] = array('value' => $this->firstPoint);
-            $fields['centroid_sref_system'] = array('value' => $_POST['srid']);
-          }
-          if (array_key_exists('use_parent', $_POST)) {
-            $fields['parent_id'] = array('value' => $parent_id);
-          }
-          if (array_key_exists('code', $_POST)) {
-            $fields['code'] = array('value' => $this->getDbaseRecordFieldValue($record, $_POST['code']));
-          }
-          if (array_key_exists('type', $_POST)) {
-            $fields['location_type_id'] = array('value' => $_POST['type']);
-          }
-
-          $save_array = array(
-            'id' => $myLocation->object_name,
-            'fields' => $fields,
-            'fkFields' => array(),
-            'superModels' => array(),
-          );
-          if ($_POST['website_id'] != 'all') {
-            $save_array['joinsTo'] = array('website' => array($_POST['website_id']));
-          }
-          $myLocation->submission = $save_array;
-          $myLocation->submit();
-
-          $description = $locationName . (isset($parent) ? ' - parent ' . $parent : '');
-          $view->create[] = $description;
-          $view->location_id[$description] = $myLocation->id;
+          // Load the geometry into the centroid.
+          $fields = array_merge($fields, [
+            'centroid_geom' => ['value' => $this->wkt],
+            'centroid_sref' => ['value' => $this->firstPoint],
+            'centroid_sref_system' => ['value' => $_POST['srid']],
+          ]);
         }
+        // Copy fields from the DBF file, depending on settings.
+        if (array_key_exists('use_parent', $_POST)) {
+          $fields['parent_id'] = ['value' => $parent_id];
+        }
+        if (array_key_exists('code', $_POST)) {
+          $fields['code'] = ['value' => $this->getDbaseRecordFieldValue($record, $_POST['code'])];
+        }
+        if (array_key_exists('type', $_POST)) {
+          $fields['location_type_id'] = ['value' => $_POST['type']];
+        }
+        // Submit the location.
+        $save_array = array(
+          'id' => $myLocation->object_name,
+          'fields' => $fields,
+          'fkFields' => array(),
+          'superModels' => array(),
+        );
+        if (!$isUpdate && $_POST['website_id'] != 'all') {
+          $save_array['joinsTo'] = array('website' => array($_POST['website_id']));
+        }
+        $myLocation->submission = $save_array;
+        $myLocation->submit();
+        $description = $locationName . (isset($parent) ? ' - parent ' . $parent : '');
+        // Log the change for the summary page after the upload.
+        if ($isUpdate) {
+          $view->update[] = $description;
+        }
+        else {
+          $view->create[] = $description;
+        }
+        $view->location_id[$description] = $myLocation->id;
       }
       catch (Exception $e) {
         $view->errors[] = [
