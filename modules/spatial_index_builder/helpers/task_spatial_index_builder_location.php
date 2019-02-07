@@ -74,7 +74,7 @@ GROUP BY s.id;
 
 -- Samples - remove any old hits for locations that have changed.
 UPDATE cache_samples_functional u
-SET location_ids=array_remove(u.location_ids, ll.record_id)
+SET location_ids=array_remove(u.location_ids, ll.record_id), updated_on=now()
 FROM cache_samples_functional s
 JOIN loclist ll ON s.location_ids @> ARRAY[ll.record_id]
 LEFT JOIN (changed_location_hits clh
@@ -85,13 +85,14 @@ AND clh.sample_id IS NULL;
 
 -- Samples - add any missing hits for locations that have changed.
 UPDATE cache_samples_functional u
-  SET location_ids=CASE WHEN u.location_ids IS NULL THEN clh.location_ids ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids))) END
+  SET location_ids=CASE WHEN u.location_ids IS NULL THEN clh.location_ids ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids))) END,
+  updated_on=now()
 FROM changed_location_hits clh
 WHERE u.id=clh.sample_id;
 
 -- Occurrences - remove any old hits for locations that have changed.
 UPDATE cache_occurrences_functional u
-SET location_ids=array_remove(u.location_ids, ll.record_id)
+SET location_ids=array_remove(u.location_ids, ll.record_id), updated_on=now()
 FROM cache_occurrences_functional o
 JOIN loclist ll ON o.location_ids @> ARRAY[ll.record_id]
 LEFT JOIN (changed_location_hits clh
@@ -102,7 +103,8 @@ AND clh.sample_id IS NULL;
 
 -- Samples - add any missing hits for locations that have changed.
 UPDATE cache_occurrences_functional u
-  SET location_ids=CASE WHEN u.location_ids IS NULL THEN clh.location_ids ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids))) END
+  SET location_ids=CASE WHEN u.location_ids IS NULL THEN clh.location_ids ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids))) END,
+  updated_on=now()
 FROM changed_location_hits clh
 WHERE u.sample_id=clh.sample_id;
 
