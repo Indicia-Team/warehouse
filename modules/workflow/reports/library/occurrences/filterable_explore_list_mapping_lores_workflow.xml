@@ -16,6 +16,7 @@
   JOIN workflow_metadata wm ON wm.key='taxa_taxon_list_external_key'
           and wm.key_value=o.taxa_taxon_list_external_key
           and wm.group_code='#workflow_group_code-unprocessed#'
+          and wm.deleted=false
   #agreements_join#
   #joins#
   WHERE #sharing_filter#
