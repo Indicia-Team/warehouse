@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @subpackage REST API
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    https://github.com/indicia-team/warehouse/
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 class RestApiResponse {
+
+  private $startTime;
 
   /**
    * A template to define the header of any HTML pages output. Replace
@@ -314,14 +314,25 @@ HTML;
   }
 
   /**
+   * Get's the timestamp of a process start.
+   *
+   * Allows a change of behaviour if a max_time parameter is exceeded.
+   */
+  public function trackTime() {
+    $this->startTime = microtime(TRUE);
+  }
+
+  /**
    * Outputs a data object as JSON (or chosen alternative format), in the case of successful operation.
    *
-   * @param array $data Response data to output.
-   * @param array $options Additional options for the output. Content can include:
-   * * metadata - information to display at top of HTML output
-   * * columns - list of column definitions for tabular output
-   * * attachHref
-   * * columnsToUnset - an array of columns to remove from tabular output
+   * @param array $data
+   *   Response data to output.
+   * @param array $options
+   *   Additional options for the output. Content can include:
+   *   * metadata - information to display at top of HTML output
+   *   * columns - list of column definitions for tabular output
+   *   * attachHref
+   *   * columnsToUnset - an array of columns to remove from tabular output
    */
   public function succeed($data, $options = array(), $autofeed = FALSE) {
     $format = $this->getResponseFormat();
@@ -738,7 +749,16 @@ ROW;
           // the same timestamp as the last batch finished so we get no gaps.
           $afSettings['last_date'] = $lastUpdate;
         }
-        variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
+        // Do not set the tracking variable if we have exceeded a time limit
+        // specified in the request.
+        if (!isset($this->startTime) || !isset($_REQUEST['max_time']) ||
+            microtime(TRUE) - $this->startTime < $_REQUEST['max_time']) {
+          variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
+        }
+        else {
+          kohana::log('error', "Max time exceeded: $this->startTime - " . microtime(TRUE) .
+            " is greater than $_REQUEST[max_time]");
+        }
       }
       else {
         echo $parts[1];
