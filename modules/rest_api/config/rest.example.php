@@ -160,7 +160,8 @@ $config['clients'] = [
           ],
         ],
         // Set the following to TRUE for Indicia to automatically feed through
-        // pages of data. Useful when the client is a dumb poller for the data.
+        // pages of data. Useful when the client is a dumb poller for the data
+        // such as the Elastic Stack's Logstash.
         'autofeed' => FALSE,
       ],
     ],
