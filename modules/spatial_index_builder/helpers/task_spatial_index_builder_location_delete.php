@@ -51,12 +51,12 @@ DROP TABLE IF EXISTS loclist;
 SELECT record_id INTO temporary loclist FROM work_queue WHERE claimed_by='$procId' AND entity='location';
 
 UPDATE cache_occurrences_functional u
-SET location_ids=array_remove(u.location_ids, l.record_id), updated_on=now()
+SET location_ids=array_remove(u.location_ids, l.record_id)
 FROM loclist l
 WHERE u.location_ids @> ARRAY[l.record_id];
 
 UPDATE cache_samples_functional u
-SET location_ids=array_remove(u.location_ids, l.record_id), updated_on=now()
+SET location_ids=array_remove(u.location_ids, l.record_id)
 FROM loclist l
 WHERE u.location_ids @> ARRAY[l.record_id];
 SQL;

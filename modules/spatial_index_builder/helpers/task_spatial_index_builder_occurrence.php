@@ -59,7 +59,7 @@ AND entity='occurrence'
 AND task='task_spatial_index_builder_occurrence';
 
 UPDATE cache_occurrences_functional o
-SET location_ids = s.location_ids, updated_on=now()
+SET location_ids = s.location_ids
 FROM occlist ol, cache_samples_functional s
 WHERE s.id=o.sample_id
 AND o.id=ol.record_id
