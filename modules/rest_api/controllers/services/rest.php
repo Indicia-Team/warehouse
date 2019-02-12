@@ -1094,6 +1094,7 @@ class Rest_Controller extends Controller {
    *   warehouse user only.
    */
   private function reportsGet() {
+    $this->apiResponse->trackTime();
     $segments = $this->uri->segment_array();
     // Remove services/rest/reports from the URL segments.
     array_shift($segments);
@@ -1194,34 +1195,54 @@ class Rest_Controller extends Controller {
    *
    * @param array $segments
    *   URL segments.
+   *
+   * @throws \RestApiAbort
    */
   private function getReportOutput(array $segments) {
-    $reportFile = $this->getReportFileNameFromSegments($segments);
-    $report = $this->loadReport($reportFile, $_GET);
-    if (isset($report['content']['records'])) {
-      if ($this->getAutofeedMode()) {
-        // Autofeed mode - no need for pagination info.
-        $this->apiResponse->succeed([
-          'data' => $report['content']['records'],
-        ], [], TRUE);
+    if ($this->getAutofeedMode()) {
+      // Check the semaphore to ensure we don't run the same autofeed query
+      // twice at one time. Could happen if a query runs slowly.
+      if (variable::get("rest-autofeed-$_GET[proj_id]-running") === TRUE) {
+        $this->apiResponse->fail('Service still processing prior request for feed.', 503, "Service unavailable");
+        throw new RestApiAbort("Autofeed for $_GET[proj_id] already running");
       }
-      else {
-        $pagination = $this->getPagination($report['count']);
-        $this->apiResponse->succeed(
-          [
-            'count' => $report['count'],
-            'paging' => $pagination,
+      // Set a semaphore so we know this feed is querying.
+      variable::set("rest-autofeed-$_GET[proj_id]-running", TRUE);
+    }
+    try {
+      $reportFile = $this->getReportFileNameFromSegments($segments);
+      $report = $this->loadReport($reportFile, $_GET);
+      if (isset($report['content']['records'])) {
+        if ($this->getAutofeedMode()) {
+          // Autofeed mode - no need for pagination info.
+          $this->apiResponse->succeed([
             'data' => $report['content']['records'],
-          ],
-          [
-            'columns' => $report['content']['columns'],
-          ]
-        );
+          ], [], TRUE);
+        }
+        else {
+          $pagination = $this->getPagination($report['count']);
+          $this->apiResponse->succeed(
+            [
+              'count' => $report['count'],
+              'paging' => $pagination,
+              'data' => $report['content']['records'],
+            ],
+            [
+              'columns' => $report['content']['columns'],
+            ]
+          );
+        }
+      }
+      elseif (isset($report['content']['parameterRequest'])) {
+        // @todo: handle param requests
+        $this->apiResponse->fail('Bad request (parameters missing)', 400, "Missing parameters");
       }
     }
-    elseif (isset($report['content']['parameterRequest'])) {
-      // @todo: handle param requests
-      $this->apiResponse->fail('Bad request (parameters missing)', 400, "Missing parameters");
+    finally {
+      if ($this->getAutofeedMode()) {
+        // Remove the semaphore as no longer querying.
+        variable::delete("rest-autofeed-$_GET[proj_id]-running");
+      }
     }
   }
 

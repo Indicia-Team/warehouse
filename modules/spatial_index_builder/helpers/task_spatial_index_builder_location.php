@@ -50,7 +50,12 @@ class task_spatial_index_builder_location {
     $qry = <<<SQL
 DROP TABLE IF EXISTS loclist;
 DROP TABLE IF EXISTS changed_location_hits;
+DROP TABLE IF EXISTS changed_location_hits_occs;
+DROP TABLE IF EXISTS smp_locations_deleted;
+DROP TABLE IF EXISTS occ_locations_deleted;
 
+-- Prepare temporary tables that make things faster when we update cache
+-- tables.
 SELECT DISTINCT w.record_id INTO temporary loclist
 FROM work_queue w
 JOIN locations l ON l.id = w.record_id
@@ -72,41 +77,57 @@ JOIN cache_samples_functional s
   $locationTypeFilters[surveyFilters]
 GROUP BY s.id;
 
--- Samples - remove any old hits for locations that have changed.
-UPDATE cache_samples_functional u
-SET location_ids=array_remove(u.location_ids, ll.record_id), updated_on=now()
+SELECT s.id, array_remove(s.location_ids, ll.record_id) as location_ids
+INTO TEMPORARY smp_locations_deleted
 FROM cache_samples_functional s
 JOIN loclist ll ON s.location_ids @> ARRAY[ll.record_id]
 LEFT JOIN (changed_location_hits clh
   JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
 ) ON clh.sample_id=s.id
-WHERE u.id=s.id
-AND clh.sample_id IS NULL;
+WHERE clh.sample_id IS NULL;
 
--- Samples - add any missing hits for locations that have changed.
-UPDATE cache_samples_functional u
-  SET location_ids=CASE WHEN u.location_ids IS NULL THEN clh.location_ids ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids))) END,
-  updated_on=now()
-FROM changed_location_hits clh
-WHERE u.id=clh.sample_id;
-
--- Occurrences - remove any old hits for locations that have changed.
-UPDATE cache_occurrences_functional u
-SET location_ids=array_remove(u.location_ids, ll.record_id), updated_on=now()
+SELECT o.id, array_remove(o.location_ids, ll.record_id) as location_ids
+INTO TEMPORARY occ_locations_deleted
 FROM cache_occurrences_functional o
 JOIN loclist ll ON o.location_ids @> ARRAY[ll.record_id]
 LEFT JOIN (changed_location_hits clh
   JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
 ) ON clh.sample_id=o.sample_id
-WHERE u.id=o.id
-AND clh.sample_id IS NULL;
+WHERE clh.sample_id IS NULL;
+
+-- Samples - remove any old hits for locations that have changed.
+UPDATE cache_samples_functional u
+SET location_ids=ld.location_ids
+FROM smp_locations_deleted ld
+WHERE u.id=ld.id;
+
+-- Samples - add any missing hits for locations that have changed.
+UPDATE cache_samples_functional u
+  SET location_ids=CASE
+    WHEN u.location_ids IS NULL THEN clh.location_ids
+    ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
+  END,
+  updated_on=now()
+FROM changed_location_hits clh
+WHERE u.id=clh.sample_id
+AND NOT u.location_ids @> clh.location_ids;
+
+-- Occurrences - remove any old hits for locations that have changed.
+UPDATE cache_occurrences_functional u
+SET location_ids=ld.location_ids
+FROM occ_locations_deleted ld
+WHERE u.id=ld.id;
 
 -- Samples - add any missing hits for locations that have changed.
 UPDATE cache_occurrences_functional u
-  SET location_ids=CASE WHEN u.location_ids IS NULL THEN clh.location_ids ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids))) END,
+  SET location_ids=CASE
+    WHEN u.location_ids IS NULL THEN clh.location_ids
+    ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
+  END,
   updated_on=now()
 FROM changed_location_hits clh
 WHERE u.sample_id=clh.sample_id;
+AND NOT u.location_ids @> clh.location_ids
 
 SQL;
     $db->query($qry);
