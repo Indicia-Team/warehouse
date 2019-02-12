@@ -751,16 +751,12 @@ class ORM extends ORM_Core {
       }
       if (!empty($samples)) {
         // @todo Map squares could be added to work queue.
-        postgreSQL::insertMapSquaresForSamples($samples, 1000, $this->db);
-        postgreSQL::insertMapSquaresForSamples($samples, 2000, $this->db);
-        postgreSQL::insertMapSquaresForSamples($samples, 10000, $this->db);
+        postgreSQL::insertMapSquaresForSamples($samples, $this->db);
       }
       elseif (!empty($occurrences)) {
         // No need to do occurrence map square update if inserting a sample, as
         // the above code does the occurrences in bulk.
-        postgreSQL::insertMapSquaresForOccurrences($occurrences, 1000, $this->db);
-        postgreSQL::insertMapSquaresForOccurrences($occurrences, 2000, $this->db);
-        postgreSQL::insertMapSquaresForOccurrences($occurrences, 10000, $this->db);
+        postgreSQL::insertMapSquaresForOccurrences($occurrences, $this->db);
       }
     }
     if (!empty(self::$changedRecords['insert']['occurrence_association']) ||
