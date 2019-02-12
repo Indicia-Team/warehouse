@@ -569,8 +569,14 @@ function send_out_user_email(
     $recipients = new Swift_RecipientList();
     $recipients->addTo($userResults[0]->email_address);
     // Send the email.
-    $swift->send($message, $recipients, $emailAddress);
-    kohana::log('info', 'Email notification sent to ' . $userResults[0]->email_address);
+    try {
+      $swift->send($message, $recipients, $emailAddress);
+      kohana::log('info', 'Email notification sent to ' . $userResults[0]->email_address);
+    }
+    catch (Swift_ConnectionException $e) {
+      kohana::log('error', 'Failed to send email notification to ' . $userResults[0]->email_address);
+      error_logger::log_error('Sending email from notification_emails', $e);
+    }
     // All notifications that have been sent out in an email are marked so we
     // don't resend them.
     $db

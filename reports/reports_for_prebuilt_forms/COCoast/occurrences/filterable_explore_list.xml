@@ -48,7 +48,7 @@
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype="integer" />
     <column name='location_name' display='Site name' sql='o.location_name' datatype="text" />
     <column name='entered_sref' display='Original grid ref' datatype="text" visible="false"
-        sql="coalesce(snf.public_entered_sref, regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g'), onf.output_sref)" />
+        sql="coalesce(regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g'), snf.public_entered_sref, onf.output_sref)" />
     <column name="output_sref" sql="onf.output_sref" display="Grid ref" datatype="text" />
     <column name='date_start' sql='o.date_start' visible='false' />
     <column name='date_end' sql='o.date_end' visible='false' />

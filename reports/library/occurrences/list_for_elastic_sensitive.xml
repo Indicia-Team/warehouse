@@ -6,7 +6,19 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
-    -- Union is faster than an OR in the filter.
+    DROP TABLE IF EXISTS occs_for_elastic;
+    SELECT *
+    INTO TEMPORARY occs_for_elastic
+    FROM cache_occurrences_functional o
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+    AND sensitive=true
+    AND o.updated_on&lt;'#update_to#'
+    #filters#
+    #order_by#
+    LIMIT #limit#;
+
     SELECT #columns#
     FROM cache_occurrences_functional o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
@@ -17,11 +29,7 @@
     LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
     LEFT JOIN samples sp ON sp.id=s.parent_id AND sp.deleted=false
     LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
-    #agreements_join#
-    #joins#
-    WHERE #sharing_filter#
-    AND sensitive=true
-    AND o.updated_on&lt;'#update_to#'
+    #order_by#
   </query>
   <order_bys>
     <order_by>o.id</order_by>
@@ -34,6 +42,7 @@
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>o.id &gt; #last_id#</where>
     </param>
+    <param name="limit" datatype="integer" default="10000" />
     <param
       name="update_to"
       display="Highest update timestamp to include"
