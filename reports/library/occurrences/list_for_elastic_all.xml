@@ -6,8 +6,18 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
-    SELECT #columns#
+    DROP TABLE IF EXISTS occs_for_elastic;
+    SELECT *
+    INTO TEMPORARY occs_for_elastic
     FROM cache_occurrences_functional o
+    #joins#
+    WHERE o.updated_on&lt;'#update_to#'
+    #filters#
+    #order_by#
+    LIMIT #limit#;
+
+    SELECT #columns#
+    FROM occs_for_elastic o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
@@ -15,8 +25,7 @@
     LEFT JOIN locations l on l.id=o.location_id AND l.deleted=false
     LEFT JOIN samples sp on sp.id=o.parent_sample_id AND sp.deleted=false
     LEFT JOIN locations lp on lp.id=sp.location_id AND lp.deleted=false
-    #joins#
-    WHERE o.updated_on&lt;'#update_to#'
+    #order_by#
   </query>
   <order_bys>
     <order_by>o.id</order_by>
@@ -29,6 +38,7 @@
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>o.id &gt; #last_id#</where>
     </param>
+    <param name="limit" datatype="integer" default="10000" />
     <param
       name="update_to"
       display="Highest update timestamp to include"
