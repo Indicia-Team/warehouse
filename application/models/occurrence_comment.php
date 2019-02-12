@@ -66,17 +66,16 @@ class Occurrence_comment_model extends ORM {
   /**
    * Implement an instant update of the cache occurrences queried field, so the verification UI
    * can report on in as changes are made.
+   *
    * @param $isInsert
    * @return bool
    */
   public function postSubmit($isInsert) {
     if ($isInsert && $this->auto_generated!=='t' and $this->query==='t') {
-      $this->db->query("update cache_occurrences_functional set query='Q' where id={$this->occurrence_id}");
+      $this->db->query("update cache_occurrences_functional set query='Q' where id={$this->occurrence_id} and query<>'Q'");
     }
-    // answers don't need to be instant, just queries
-    return true;
+    // Answers don't need to be instant, just queries.
+    return TRUE;
   }
-
-
 
 }
