@@ -142,5 +142,6 @@
     <column name="sensitivity_blur" sql="CASE o.sensitive WHEN true THEN 'B' ELSE null END" datatype="text" />
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
+    <column name="tracking" sql="o.tracking" datatype="integer" />
   </columns>
 </report>

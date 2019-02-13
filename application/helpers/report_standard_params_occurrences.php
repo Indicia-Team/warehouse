@@ -400,6 +400,36 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'tracking_from' => [
+        'datatype' => 'integer',
+        'display' => 'First squential update ID to include',
+        'description' => 'All record inserts and updates are given a sequential tracking ID. Filter by this to limit ' .
+          'the range of records returned to a contiguous batch of updates. Tracking is updated when the record is ' .
+          'affected in any way, not just when it is edited. E.g. an update to spatial indexing will update the tracking.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' =>
+            "o.tracking >= #tracking_from#",
+          ],
+        ],
+      ],
+      'tracking_to' => [
+        'datatype' => 'integer',
+        'display' => 'Last squential update ID to include',
+        'description' => 'All record inserts and updates are given a sequential tracking ID. Filter by this to limit ' .
+          'the range of records returned to a contiguous batch of updates. Tracking is updated when the record is ' .
+          'affected in any way, not just when it is edited. E.g. an update to spatial indexing will update the tracking.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' =>
+            "o.tracking <= #tracking_from#",
+          ],
+        ],
+      ],
       'quality' => [
         'datatype' => 'lookup',
         'display' => 'Quality',

@@ -70,7 +70,7 @@ GROUP BY s.id;
 
 -- Samples - for updated samples, copy over the changes if there are any
 UPDATE cache_samples_functional u
-  SET location_ids=cs.location_ids, updated_on=now()
+  SET location_ids=cs.location_ids
 FROM changed_samples cs
 WHERE cs.sample_id=u.id
 AND (
@@ -79,7 +79,7 @@ AND (
 );
 
 UPDATE cache_occurrences_functional o
-SET location_ids = s.location_ids, updated_on=now()
+SET location_ids = s.location_ids
 FROM cache_samples_functional s
 JOIN changed_samples cs on cs.sample_id=s.id
 WHERE o.sample_id=s.id

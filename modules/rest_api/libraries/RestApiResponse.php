@@ -725,10 +725,10 @@ ROW;
           echo ',';
         }
         elseif ($autofeed) {
-          // Capture the ID and update datestamp of the last row in the report,
-          // so we can autofeed the next batch.
+          // Capture the ID and update tracking ID of the last row in the
+          // report, so we can autofeed the next batch.
           $lastId = $row['id'];
-          $lastUpdate = $row['updated_on'];
+          $lastTrackingId = isset($row['tracking']) ? $row['tracking'] : 0;
         }
       }
       if ($autofeed) {
@@ -744,18 +744,21 @@ ROW;
           $afSettings['mode'] = 'updates';
           unset($afSettings['last_id']);
         }
-        elseif ($afSettings['mode'] === 'updates') {
-          // Whilst in updates only mode, we want to start the next batch at
-          // the same timestamp as the last batch finished so we get no gaps.
-          $afSettings['last_date'] = $lastUpdate;
+        elseif ($afSettings['mode'] === 'updates' && isset($lastTrackingId)) {
+          // Whilst in updates only mode, we want to start the next batch after
+          // the same tracking ID as the last batch finished so we get no gaps.
+          $afSettings['last_tracking_id'] = $lastTrackingId;
         }
         // Do not set the tracking variable if we have exceeded a time limit
-        // specified in the request.
+        // specified in the request. Otherwise a failure to process the batch
+        // on the client results in a batch being skipped.
         if (!isset($this->startTime) || !isset($_REQUEST['max_time']) ||
             microtime(TRUE) - $this->startTime < $_REQUEST['max_time']) {
           variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
         }
         else {
+          // In this instance, we don't update the variable, so the next batch
+          // will be the same as this one.
           kohana::log('error', "Max time exceeded: $this->startTime - " . microtime(TRUE) .
             " is greater than $_REQUEST[max_time]");
         }

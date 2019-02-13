@@ -106,8 +106,7 @@ UPDATE cache_samples_functional u
   SET location_ids=CASE
     WHEN u.location_ids IS NULL THEN clh.location_ids
     ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
-  END,
-  updated_on=now()
+  END
 FROM changed_location_hits clh
 WHERE u.id=clh.sample_id
 AND NOT u.location_ids @> clh.location_ids;
@@ -123,8 +122,7 @@ UPDATE cache_occurrences_functional u
   SET location_ids=CASE
     WHEN u.location_ids IS NULL THEN clh.location_ids
     ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
-  END,
-  updated_on=now()
+  END
 FROM changed_location_hits clh
 WHERE u.sample_id=clh.sample_id;
 AND NOT u.location_ids @> clh.location_ids

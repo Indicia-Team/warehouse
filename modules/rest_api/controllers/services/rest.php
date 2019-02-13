@@ -1644,12 +1644,15 @@ class Rest_Controller extends Controller {
       // Find our state data for this feed.
       $afSettings = (array) variable::get("rest-autofeed-$_GET[proj_id]", ['mode' => 'notStarted'], FALSE);
       if ($afSettings['mode'] === 'notStarted') {
-        // First use of this autofeed, so we need to store the timepoint to
+        // First use of this autofeed, so we need to store the tracking point to
         // ensure we capture all changes after the initial sweep up of records
         // is done. Switch state to initial loading.
+        $lastTrackingInfo = $this->db
+          ->query('SELECT max(tracking) as max_tracking FROM cache_occurrences_functional')
+          ->current();
         $afSettings = [
           'mode' => 'initialLoad',
-          'last_date' => date('c'),
+          'last_tracking_id' => $lastTrackingInfo->max_tracking,
           'last_id' => 0,
         ];
         variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
@@ -1661,8 +1664,15 @@ class Rest_Controller extends Controller {
       }
       elseif ($afSettings['mode'] === 'updates') {
         // Doing updates of changes only as initial load done.
-        $params['last_date'] = $afSettings['last_date'];
-        $params['orderby'] = 'updated_on';
+        if (isset($afSettings['last_date'])) {
+          // Last_date only used pre version 2.7, but may as well be polite.
+          $params['last_date'] = $afSettings['last_date'];
+        }
+        else {
+          // Start at one record after the last one we retrieved.
+          $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
+        }
+        $params['orderby'] = 'tracking';
       }
     }
     if (!empty($this->resourceOptions['cached'])) {
