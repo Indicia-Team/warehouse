@@ -222,17 +222,18 @@ class Setup_Check_Controller extends Template_Controller {
       $description = str_replace(
         array('*code*', '*code_user*', '*code_perm*'),
         array(
-          '<span class="code">CREATE EXTENSION btree_gin;</span>',
-          '<span class="code">CREATE DATABASE indicia TEMPLATE=template_postgis;</span>',
-          '<span class="code">CREATE USER indicia_user WITH PASSWORD \'indicia\';<br/>' .
-          'GRANT ALL PRIVILEGES ON DATABASE indicia TO indicia_user;</span>',
-          '<span class="code">GRANT ALL PRIVILEGES ON TABLE geometry_columns TO indicia_user;<br/>' .
-          'GRANT ALL PRIVILEGES ON TABLE spatial_ref_sys TO indicia_user;<br/>' .
-          'GRANT EXECUTE ON FUNCTION st_astext(geometry) TO indicia_user;<br/>' .
-          'GRANT EXECUTE ON FUNCTION st_geomfromtext(text, integer) TO indicia_user;<br/>' .
-          'GRANT EXECUTE ON FUNCTION st_transform(geometry, integer) TO indicia_user;</span>'
+          "CREATE DATABASE indicia TEMPLATE=template_postgis;",
+          "CREATE USER indicia_user WITH PASSWORD 'indicia';\n" .
+          "GRANT ALL PRIVILEGES ON DATABASE indicia TO indicia_user;",
+          "CREATE EXTENSION btree_gin;\n" .
+          "GRANT ALL PRIVILEGES ON TABLE geometry_columns TO indicia_user;\n" .
+          "GRANT ALL PRIVILEGES ON TABLE spatial_ref_sys TO indicia_user;\n" .
+          "GRANT EXECUTE ON FUNCTION st_astext(geometry) TO indicia_user;\n" .
+          "GRANT EXECUTE ON FUNCTION st_geomfromtext(text, integer) TO indicia_user;\n" .
+          "GRANT EXECUTE ON FUNCTION st_transform(geometry, integer) TO indicia_user;",
         ),
-        Kohana::lang('setup.description'));
+        Kohana::lang('setup.description')
+      );
 
       $this->template->content->description = $description;
       // Assign default settings if the user has not yet updated the db config.
