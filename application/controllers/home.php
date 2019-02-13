@@ -33,9 +33,21 @@ class Home_Controller extends Indicia_Controller {
     $view->db_version = $system->getVersion();
     $view->app_version = kohana::config('version.version');
     $this->set_website_access('admin');
-    $view->configProblems = config_test::check_config(TRUE, TRUE);
-    $view->gettingStartedTips = serverStatus::getGettingStartedTips($this->db, $this->auth_filter);
-    $view->statusWarnings = serverStatus::getStatusWarnings($this->db, $this->auth_filter);
+    if ($view->db_version === $view->app_version) {
+      $view->configProblems = config_test::check_config(TRUE, TRUE);
+      $view->gettingStartedTips = serverStatus::getGettingStartedTips($this->db, $this->auth_filter);
+      $view->statusWarnings = serverStatus::getStatusWarnings($this->db, $this->auth_filter);
+    }
+    else {
+      $view->configProblems = [];
+      $view->gettingStartedTips = [
+        [
+          'title' => 'Upgrade required',
+          'description' => 'Database requires upgrade as there are schema changes that have not been applied yet.',
+        ]
+      ];
+      $view->statusWarnings = [];
+    }
     $this->template->content = $view;
   }
 
