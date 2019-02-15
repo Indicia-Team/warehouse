@@ -1,5 +1,11 @@
+# Version 2.8.0
+*2019-02-15*
+
+* ElasticSearch output reports now include custom attributes data.
+* Fixes a syntax error in spatial indexing SQL statements.
+
 # Version 2.7.0
-*2019-02-13
+*2019-02-13*
 
 * Saving a record slightly faster, because ap square updates are done in a single update
   statement rather than one per square size.
