@@ -7,7 +7,7 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
     DROP TABLE IF EXISTS occs_for_elastic;
-    SELECT *
+    SELECT o.*
     INTO TEMPORARY occs_for_elastic
     FROM cache_occurrences_functional o
     #joins#
@@ -128,7 +128,7 @@
     <column name="record_status" sql="o.record_status || coalesce(o.record_substatus::text, '')" datatype="text" />
     <column name="verified_by_id" sql="occ.verified_by_id" datatype="integer" />
     <column name="verifier" sql="onf.verifier" datatype="text" />
-    <column name="verified_on" sql="o.verified_on" datatype="date" />
+    <column name="verified_on" sql="to_char(o.verified_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="data_cleaner_info" sql="onf.data_cleaner_info" datatype="text" />
     <column name="data_cleaner_result" sql="o.data_cleaner_result::text" datatype="text" />
     <column name='verification_checks_enabled' sql="o.verification_checks_enabled::text" datatype="boolean" />
@@ -141,6 +141,8 @@
     <column name="sensitivity_blur" sql="CASE o.sensitive WHEN true THEN 'B' ELSE null END" datatype="text" />
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
+    <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />
+    <column name="occurrence_attrs_json" sql="onf.attrs_json" datatype="text" />
     <column name="tracking" sql="o.tracking" datatype="integer" />
   </columns>
 </report>
