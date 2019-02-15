@@ -124,8 +124,8 @@ UPDATE cache_occurrences_functional u
     ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
   END
 FROM changed_location_hits clh
-WHERE u.sample_id=clh.sample_id;
-AND NOT u.location_ids @> clh.location_ids
+WHERE u.sample_id=clh.sample_id
+AND NOT u.location_ids @> clh.location_ids;
 
 SQL;
     $db->query($qry);
