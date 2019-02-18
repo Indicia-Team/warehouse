@@ -119,7 +119,7 @@ $config['elasticsearch'] = [
     // So, this example allows the following call:
     // http://mywarehouse.com/index.php/services/rest/es/_search?q=taxon.name:quercus
     // which proxies to
-    // http://my.elastic.url:5601/occurrence/_search?q=taxon.name:quercus
+    // http://my.elastic.url:9200/occurrence/_search?q=taxon.name:quercus
     'allowed' => [
       'get' => [
         '/^_search/' => 'GET requests to the search API (/_search?...)',
