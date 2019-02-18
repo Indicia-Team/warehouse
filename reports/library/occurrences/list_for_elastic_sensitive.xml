@@ -14,7 +14,7 @@
     #joins#
     WHERE #sharing_filter#
     AND sensitive=true
-    AND o.updated_on&lt;'#update_to#'
+    AND o.tracking&lt;'#update_to#'
     #filters#
     #order_by#
     LIMIT #limit#;
@@ -45,16 +45,18 @@
     <param name="limit" datatype="integer" default="10000" />
     <param
       name="update_to"
-      display="Highest update timestamp to include"
-      description="Highest timestamp to include, which will be auto-generated according to the progress of background tasks"
-      default=""
+      display="Highest update tracking ID to include"
+      description="Highest tracking ID to include, which will be auto-generated according to the progress of background tasks"
+      default="1900-01-01"
       preprocess="SELECT LEAST(
-        (SELECT updated_on FROM cache_occurrences_functional
-        WHERE location_ids IS NOT NULL
-        ORDER BY updated_on DESC LIMIT 1),
-        COALESCE((select last_scheduled_task_check FROM system WHERE name='data_cleaner'), now())
-      ) - '1 second'::interval">
-    </param>
+        (
+          SELECT tracking FROM cache_occurrences_functional
+          WHERE location_ids IS NOT NULL
+          OR (data_cleaner_result IS NULL and verification_checks_enabled=TRUE)
+          ORDER BY tracking DESC LIMIT 1
+        ),
+        -(((2^(8*pg_column_size(1::bigint)-2))::bigint &lt;&lt; 1)+1)
+      )"/>
   </params>
   <columns>
     <!-- Tracking field called "id" is required for autofeed to work. -->
