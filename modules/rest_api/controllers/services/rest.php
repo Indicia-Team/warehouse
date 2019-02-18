@@ -1664,14 +1664,8 @@ class Rest_Controller extends Controller {
       }
       elseif ($afSettings['mode'] === 'updates') {
         // Doing updates of changes only as initial load done.
-        if (isset($afSettings['last_date'])) {
-          // Last_date only used pre version 2.7, but may as well be polite.
-          $params['last_date'] = $afSettings['last_date'];
-        }
-        else {
-          // Start at one record after the last one we retrieved.
-          $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
-        }
+        // Start at one record after the last one we retrieved.
+        $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
         $params['orderby'] = 'tracking';
       }
     }
