@@ -323,7 +323,8 @@ SQL;
     ], [
       'task' => $taskType->task,
     ]);
-    error_logger::log_error("Failure in work queue task batch because $taskType->task missing", $e);
+    kohana::log('error', "Failure in work queue task batch because $taskType->task missing");
+    error_logger::log_trace(debug_backtrace());
   }
 
 }
