@@ -337,7 +337,7 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     FROM cache_taxa_taxon_lists cttl
     -- Ensure only changed taxon concepts are updated
     JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
-    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
+    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=COALESCE(#master_list_id#, cttl.taxon_list_id)
     LEFT JOIN cache_taxa_taxon_lists cttlf ON ctp.path @> ARRAY[cttlf.taxon_meaning_id] and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
     WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
     AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
@@ -764,7 +764,9 @@ SET website_id=su.website_id,
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
     else 'A'
-  end
+  end,
+  parent_sample_id=s.parent_id,
+  media_count=(SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false)
 FROM samples s
 #join_needs_update#
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -778,22 +780,14 @@ LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
 WHERE s.id=s_update.id
 ";
 
-$config['samples']['update']['functional_media'] = "
-UPDATE cache_samples_functional u
-SET media_count=(SELECT COUNT(sm.*)
-FROM sample_media sm WHERE sm.sample_id=u.id AND sm.deleted=false)
-FROM samples s
-#join_needs_update#
-WHERE s.id=u.id
-";
-
 $config['samples']['update']['functional_sensitive'] = "
-UPDATE cache_samples_functional
+UPDATE cache_samples_functional u
 SET location_id=null, location_name=null
 FROM samples s
 #join_needs_update#
 JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false AND o.sensitivity_precision IS NOT NULL
-WHERE s.id=cache_samples_functional.id
+WHERE s.id=u.id
+AND (u.location_id IS NOT NULL OR u.location_name IS NOT NULL)
 ";
 
 $config['samples']['update']['nonfunctional'] = "
@@ -937,7 +931,7 @@ $config['samples']['insert']['functional'] = "
 INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
-            group_id, record_status, query)
+            group_id, record_status, query, parent_sample_id, media_count)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
@@ -948,7 +942,9 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
     else 'A'
-  end
+  end,
+  s.parent_id,
+  (SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false)
 FROM samples s
 #join_needs_update#
 LEFT JOIN cache_samples_functional cs on cs.id=s.id
@@ -963,8 +959,6 @@ LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
 WHERE s.deleted=false
 AND cs.id IS NULL
 ";
-
-$config['samples']['insert']['functional_media'] = $config['samples']['update']['functional_media'];
 
 $config['samples']['insert']['functional_sensitive'] = "
 UPDATE cache_samples_functional
@@ -1358,7 +1352,7 @@ SET sample_id=o.sample_id,
   date_end=s.date_end,
   date_type=s.date_type,
   created_on=o.created_on,
-  updated_on=o.updated_on,
+  updated_on=greatest(o.updated_on, cttl.cache_updated_on),
   verified_on=o.verified_on,
   created_by_id=o.created_by_id,
   group_id=s.group_id,
@@ -1391,16 +1385,20 @@ SET sample_id=o.sample_id,
   import_guid=o.import_guid,
   confidential=o.confidential,
   external_key=o.external_key,
-  taxon_path=ctp.path
+  taxon_path=ctp.path,
+  parent_sample_id=s.parent_id,
+  verification_checks_enabled=w.verification_checks_enabled,
+  media_count=(SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
 FROM occurrences o
 #join_needs_update#
 left join cache_occurrences_functional co on co.id=o.id
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
+JOIN websites w ON w.id=o.website_id AND w.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
+LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=COALESCE(#master_list_id#, cttl.taxon_list_id)
 LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
     JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
@@ -1415,15 +1413,6 @@ LEFT JOIN occurrence_comments dc
     AND dc.implies_manual_check_required=true
     AND dc.deleted=false
 WHERE cache_occurrences_functional.id=o.id
-";
-
-$config['occurrences']['update']['functional_media'] = "
-UPDATE cache_occurrences_functional u
-SET media_count=(SELECT COUNT(om.*)
-FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=u.id
 ";
 
 $config['occurrences']['update']['functional_sensitive'] = "
@@ -1618,7 +1607,8 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
             training, zero_abundance, licence_id, import_guid, confidential, external_key,
-            taxon_path, blocked_sharing_tasks)
+            taxon_path, blocked_sharing_tasks, parent_sample_id, verification_checks_enabled,
+            media_count)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1656,10 +1646,14 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         CASE WHEN u.allow_share_for_moderation=false THEN 'M' ELSE NULL END,
         CASE WHEN u.allow_share_for_editing=false THEN 'E' ELSE NULL END
       ], NULL)
-    END
+    END,
+    s.parent_id,
+    w.verification_checks_enabled,
+    (SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
 FROM occurrences o
 #join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
+JOIN websites w ON w.id=o.website_id AND w.deleted=false
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
@@ -1682,8 +1676,6 @@ LEFT JOIN occurrence_comments dc
 WHERE o.deleted=false
 AND co.id IS NULL
 ";
-
-$config['occurrences']['insert']['functional_media'] = $config['occurrences']['update']['functional_media'];
 
 $config['occurrences']['insert']['functional_sensitive'] = "
 UPDATE cache_samples_functional cs

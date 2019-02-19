@@ -104,7 +104,6 @@ TXT;
         'default' => html::initial_value($values, "$model->object_name:term_identifier"),
         'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
         'helpText' => $helpText,
-        'class' => 'control-width-6',
       ]);
     }
     if (array_key_exists('description', $this->model->as_array())) {

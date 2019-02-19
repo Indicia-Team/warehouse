@@ -62,14 +62,12 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
         'label' => 'Path or URL',
         'fieldname' => 'sample_medium:path',
         'default' => html::initial_value($values, 'sample_medium:path'),
-        'class' => 'control-width-5',
       ]);
     }
     echo data_entry_helper::text_input([
       'label' => 'Caption',
       'fieldname' => 'sample_medium:caption',
       'default' => html::initial_value($values, 'sample_medium:caption'),
-      'class' => 'control-width-5',
     ]);
     echo data_entry_helper::select(array(
       'label' => 'Licence',
@@ -89,7 +87,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
         'default' => $mediaTypeId,
         'lookupValues' => $other_data['media_type_terms'],
         'blankText' => '<Please select>',
-        'class' => 'control-width-5',
+        'validation' => ['required'],
       ]);
     }
     ?>

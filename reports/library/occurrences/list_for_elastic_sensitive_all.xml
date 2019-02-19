@@ -1,0 +1,153 @@
+<report
+    title="Autofeed occurrences for Elasticsearch (standard filters, sensitive only, no website limit)"
+    description="A list of occurrences designed for feeding into Elasticsearch or a similar JSON store. This report
+      returns full precision copies of the records. No website limit so designed to collect records from all
+      website registrations."
+    restricted="true"
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
+    DROP TABLE IF EXISTS occs_for_elastic;
+    SELECT o.*
+    INTO TEMPORARY occs_for_elastic
+    FROM cache_occurrences_functional o
+    #joins#
+    WHERE sensitive=true
+    AND o.tracking&lt;'#update_to#'
+    #filters#
+    #order_by#
+    LIMIT #limit#;
+
+    SELECT #columns#
+    FROM occs_for_elastic o
+    JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
+    JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
+    JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    JOIN samples s on s.id=o.sample_id AND s.deleted=false
+    LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
+    LEFT JOIN samples sp ON sp.id=s.parent_id AND sp.deleted=false
+    LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
+    #order_by#;
+  </query>
+  <order_bys>
+    <order_by>o.id</order_by>
+  </order_bys>
+  <params>
+    <!-- last_date and last_id parameters required for autofeed to work. -->
+    <param name="last_date" display="Last update date" datatype="date" default="">
+      <where>o.updated_on &gt;= '#last_date#'</where>
+    </param>
+    <param name="last_id" display="Last ID" datatype="integer" default="">
+      <where>o.id &gt; #last_id#</where>
+    </param>
+    <param name="limit" datatype="integer" default="10000" />
+    <param
+      name="update_to"
+      display="Highest update tracking ID to include"
+      description="Highest tracking ID to include, which will be auto-generated according to the progress of background tasks"
+      default="1900-01-01"
+      preprocess="SELECT LEAST(
+        (
+          SELECT tracking FROM cache_occurrences_functional
+          WHERE location_ids IS NOT NULL
+          OR (data_cleaner_result IS NULL and verification_checks_enabled=TRUE)
+          ORDER BY tracking DESC LIMIT 1
+        ),
+        -(((2^(8*pg_column_size(1::bigint)-2))::bigint &lt;&lt; 1)+1)
+      )"/>
+  </params>
+  <columns>
+    <!-- Tracking field called "id" is required for autofeed to work. -->
+    <column name="id" sql="o.id" datatype="integer" />
+    <column name="created_by_id" sql="o.created_by_id" datatype="integer" />
+    <column name="website_id" sql="o.website_id" datatype="integer" />
+    <column name="survey_id" sql="o.survey_id" datatype="integer" />
+    <column name="sample_id" sql="o.sample_id" datatype="integer" />
+    <column name="parent_sample_id" sql="o.parent_sample_id" datatype="integer" />
+    <column name="group_id" sql="o.group_id" datatype="integer" />
+    <column name="website_title" sql="snf.website_title" datatype="text" />
+    <column name="survey_title" sql="snf.survey_title" datatype="text" />
+    <column name="group_title" sql="snf.group_title" datatype="text" />
+    <column name="recorders" sql="snf.recorders" datatype="text" />
+    <column name="taxon_key" sql="o.taxa_taxon_list_external_key" datatype="text" />
+    <column name="date_start" sql="o.date_start" datatype="date" />
+    <column name="date_end" sql="o.date_end" datatype="date" />
+    <column name="day_of_year" sql="case date_type when 'D' then extract(doy from date_start) else null end" datatype="integer" />
+    <column name="week" sql="case
+            when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
+                and coalesce(floor(extract(doy from o.date_start)/7+1), 0)=coalesce(floor(extract(doy from o.date_end)/7+1), 0)
+              then coalesce(floor(extract(doy from o.date_start)/7+1), 0)
+            else null
+          end" datatype="integer" />
+    <column name="ukbms_week" sql="case
+            when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
+                and
+                  floor((extract('doy' from o.date_start) - extract('doy' from (extract('year' from o.date_start) || '-04-01')::date))/7)
+                  =
+                  floor((extract('doy' from o.date_end) - extract('doy' from (extract('year' from o.date_end) || '-04-01')::date))/7)
+              then floor((extract('doy' from o.date_start) - extract('doy' from (extract('year' from o.date_start) || '-04-01')::date))/7) + 1
+            else null
+          end" datatype="integer" />
+    <column name="month" sql="case
+            when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
+              and coalesce(date_part('month', o.date_start), 0)=coalesce(date_part('month', o.date_end), 0) then coalesce(date_part('month', o.date_start), 0)
+            else null
+          end" datatype="integer" />
+    <column name="year" sql="case
+            when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0) then coalesce(date_part('year', o.date_start), null)
+            else null
+          end" datatype="integer" />
+    <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(s.geom, 4326)))" datatype="text" />
+    <column name="point" sql="st_y(st_transform(st_centroid(s.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.geom), 4326))::text" datatype="text" />
+    <column name="output_sref" sql="s.entered_sref" datatype="text" />
+    <column name="output_sref_system" sql="s.entered_sref_system" datatype="text" />
+    <column name="coordinate_uncertainty_in_meters"
+              sql="CASE
+      WHEN snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
+        get_sref_precision(onf.output_sref, onf.output_sref_system, null)
+      ELSE COALESCE(snf.attr_sref_precision, 50)
+    END"
+            datatype="float"
+            term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
+    <column name="given_locality_name" sql="coalesce(s.location_name, l.name)" datatype="text" />
+    <column name="recorded_location_id" sql="l.id" datatype="integer" />
+    <column name="recorded_location_name" sql="l.name" datatype="text" />
+    <column name="recorded_parent_location_id" sql="lp.id" datatype="integer" />
+    <column name="recorded_parent_location_name" sql="lp.name" datatype="text" />
+    <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
+    <column name="comment" sql="onf.comment" datatype="text" />
+    <column name="sample_comment" sql="snf.comment" datatype="text" />
+    <column name="licence_code" sql="onf.licence_code" datatype="text" />
+    <column name="attr_stage" sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)" datatype="text" />
+    <column name="attr_sex" sql="onf.attr_sex" datatype="text" />
+    <column name="attr_sex_stage_count" sql="onf.attr_sex_stage_count" datatype="text" />
+    <column name="attr_sex_stage_count_exact" sql="case when onf.attr_sex_stage_count similar to '\d{1,9}' then onf.attr_sex_stage_count::integer else null end" />
+    <column name="attr_certainty" sql="onf.attr_certainty" datatype="text" />
+    <column name="attr_det_name" sql="coalesce(onf.attr_det_full_name, coalesce(onf.attr_det_first_name, '') || ' ' || onf.attr_det_last_name)" datatype="text" />
+    <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
+    <column name="attr_sample_method" sql="snf.attr_sample_method" datatype="text" />
+    <column name="media" sql="snf.media" datatype="text" />
+    <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
+    <column name="updated_on" sql="to_char(greatest(o.updated_on, cttl.cache_updated_on), 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
+    <column name="record_status" sql="o.record_status || coalesce(o.record_substatus::text, '')" datatype="text" />
+    <column name="verified_by_id" sql="occ.verified_by_id" datatype="integer" />
+    <column name="verifier" sql="onf.verifier" datatype="text" />
+    <column name="verified_on" sql="to_char(o.verified_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
+    <column name="data_cleaner_info" sql="onf.data_cleaner_info" datatype="text" />
+    <column name="data_cleaner_result" sql="o.data_cleaner_result::text" datatype="text" />
+    <column name='verification_checks_enabled' sql="o.verification_checks_enabled::text" datatype="boolean" />
+    <column name="query" sql="o.query" datatype="text" />
+    <column name="zero_abundance" sql="o.zero_abundance::text" datatype="text" />
+    <column name="trial" sql="o.training::text" datatype="text" />
+    <column name="sensitive" sql="o.sensitive::text" datatype="text" />
+    <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
+    <!-- Flag sensitivity_blur = F for full precision version of a sensitive record. -->
+    <column name="sensitivity_blur" sql="'F'" datatype="text" />
+    <column name="confidential" sql="o.confidential::text" datatype="boolean" />
+    <column name="release_status" sql="o.release_status" datatype="text" />
+    <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />
+    <column name="occurrence_attrs_json" sql="onf.attrs_json" datatype="text" />
+    <column name="tracking" sql="o.tracking" datatype="integer" />
+  </columns>
+</report>

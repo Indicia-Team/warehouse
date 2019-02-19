@@ -9,7 +9,6 @@
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
-  JOIN websites w on w.id=o.website_id and w.deleted=false
   JOIN samples s on s.id=snf.id and s.deleted=false
   LEFT JOIN samples sp on sp.id=s.parent_id
   LEFT JOIN cache_termlists_terms sm on sm.id=s.sample_method_id
@@ -39,7 +38,7 @@
         template="&lt;span class='status-icon status-{record_status} release-{release_status} substatus-{record_substatus} query-{query} certainty-{certainty}' title='{status_hint}'&gt;&lt;/span&gt;&lt;span class='record-id'&gt;{occurrence_id}&lt;/span&gt;" />
     <column name="source" display="Source" datatype="text"
         sql="snf.website_title
-        || ' | ' || case when substring(snf.survey_title from 1 for length(snf.website_title)) = w.title then trim(substring(snf.survey_title from length(snf.website_title)+1)) else snf.survey_title end
+        || ' | ' || case when substring(snf.survey_title from 1 for length(snf.website_title)) = snf.website_title then trim(substring(snf.survey_title from length(snf.website_title)+1)) else snf.survey_title end
         || coalesce(' | ' || snf.group_title, '')" />
     <column name="website_title" display="Website" datatype="text" sql="snf.website_title" />
     <column name="survey_title" display="Survey dataset" datatype="text" sql="snf.survey_title" />
@@ -60,8 +59,8 @@
     <column name="release_status" display="State" sql="o.release_status" />
     <column name='pass' visible='false' sql="CASE
       WHEN o.data_cleaner_result='t' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;Passes all auto-checks.&quot;&gt;&lt;/div&gt;'
-      WHEN true and w.verification_checks_enabled='f' THEN '&lt;div class=&quot;auto-check-disabled-icon&quot; title=&quot;Auto-check disabled.&quot;&gt;-&lt;/div&gt;'
-      WHEN w.verification_checks_enabled='t' AND o.data_cleaner_result IS NULL THEN '&lt;div class=&quot;pending-icon&quot; title=&quot;Pending auto-check.&quot;&gt;...&lt;/div&gt;'
+      WHEN true and o.verification_checks_enabled='f' THEN '&lt;div class=&quot;auto-check-disabled-icon&quot; title=&quot;Auto-check disabled.&quot;&gt;-&lt;/div&gt;'
+      WHEN o.verification_checks_enabled='t' AND o.data_cleaner_result IS NULL THEN '&lt;div class=&quot;pending-icon&quot; title=&quot;Pending auto-check.&quot;&gt;...&lt;/div&gt;'
     END" />
     <column name="fails" display="Auto check" template="{pass}{fails}"
         sql="case when o.data_cleaner_result='f' then

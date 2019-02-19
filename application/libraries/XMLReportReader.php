@@ -89,9 +89,12 @@ class XMLReportReader_Core implements ReportReader {
         $metadata['title'] = $reader->getAttribute('title');
         $metadata['description'] = $reader->getAttribute('description');
         $metadata['featured'] = $reader->getAttribute('featured');
+        $metadata['restricted'] = $reader->getAttribute('restricted');
         $metadata['summary'] = $reader->getAttribute('summary');
         if (!$metadata['featured'])
           unset($metadata['featured']);
+        if (!$metadata['restricted'])
+          unset($metadata['restricted']);
         if (!$metadata['summary'])
           unset($metadata['summary']);
         if (!$metadata['title'])
@@ -1043,7 +1046,7 @@ TBL;
    *   name, the second is the new one. The third entry is set to TRUE for any
    *   string parameters which should be quoted.
    */
-  private function convertDeprecatedParam(&$providedParams, $param) {
+  private function convertDeprecatedParam(array &$providedParams, $param) {
     if (count($param) === 2) {
       // Default to not handle as string.
       $param[] = FALSE;
@@ -1051,12 +1054,14 @@ TBL;
     list($from, $to, $string) = $param;
     $quote = $string ? "'" : '';
     if (!empty($providedParams[$from]) && empty($providedParams[$to])) {
-      kohana::log('debug', "Found provided param $from - $to");
+      kohana::log('debug', "Converting provided param $from - $to");
       $providedParams[$to] = $quote . $providedParams[$from] . $quote;
       unset($providedParams[$from]);
     }
-    if (isset($providedParams[$from . '_context']) && !isset($providedParams[$to . '_context']))
+    if (!empty($providedParams[$from . '_context']) && empty($providedParams[$to . '_context'])) {
+      kohana::log('debug', "Converting provided param {$from}_context - {$to}_context");
       $providedParams[$to . '_context'] = $quote . $providedParams[$from . '_context'] . $quote;
+    }
     if (!empty($providedParams['paramsFormExcludes'])) {
       $excludes = json_decode($providedParams['paramsFormExcludes'], TRUE);
       if (in_array($from, $excludes) || in_array("{$from}_context", $excludes)) {

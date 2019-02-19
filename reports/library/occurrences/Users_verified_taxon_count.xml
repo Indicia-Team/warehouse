@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Users verified taxon count" definition="Shows how the count of user verified records specific to some taxon">
+	<query>
+		SELECT o.verifier, o.taxon_group, COUNT(*) AS count
+		FROM cache_occurrences o
+		WHERE o.record_status = 'V'
+		GROUP BY o.verifier, o.taxon_group
+	</query>
+	<columns>
+		<column name="verifier" display="VERIFIER" />
+		<column name="taxon_group" display="TAXON GROUP" />
+		<column name="count" display="COUNT" />
+	</columns>
+</report>

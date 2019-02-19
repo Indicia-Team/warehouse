@@ -95,6 +95,18 @@ class ReportEngine {
   private $recordCountResult;
 
   /**
+   * List of reports that have been explicitly authorised.
+   *
+   * Reports may have an attribute restricted="true", in which case they are
+   * only available if explicitly authorised by the REST API for an
+   * authenticated client.
+   *
+   * @var array
+   */
+  private $authorisedReports = [];
+
+
+  /**
    * Constructor.
    *
    * @param array $websiteIds
@@ -124,6 +136,23 @@ class ReportEngine {
       }
     }
     return $reports;
+  }
+
+  /**
+   * Returns true if a report cannot be accessed because it is restricted.
+   *
+   * @param string $report
+   *   Report file path.
+   * @param array $metadata
+   *   Report metadata.
+   *
+   * @return bool
+   *   True if the report is inaccessible for this request.
+   */
+  private function isReportRestricted($report, array $metadata) {
+    return !empty($metadata['restricted'])
+      && $metadata['restricted'] !== 'false'
+      && !in_array(ltrim($report, '/'), $this->authorisedReports);
   }
 
   /**
@@ -167,13 +196,16 @@ class ReportEngine {
       }
       elseif (substr($file, -4) === '.xml') {
         $metadata = XMLReportReader::loadMetadata("$fullPath$file");
+        if ($this->isReportRestricted("$path$file", $metadata)) {
+          continue;
+        }
         $file = basename($file, '.xml');
         $reportPath = ltrim("$path$file", '/');
         $reportInfo = array(
           'type' => 'report',
           'title' => $metadata['title'],
           'description' => $metadata['description'],
-          'path' => $reportPath
+          'path' => $reportPath,
         );
         if (!empty($metadata['standard_params'])) {
           $reportInfo['standard_params'] = $metadata['standard_params'];
@@ -261,6 +293,11 @@ class ReportEngine {
         // Allow the list of columns to be returned to be passed as a parameter.
         $cols = empty($this->providedParams['columns']) ? array() : explode(',', $this->providedParams['columns']);
         $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->sharingMode, $cols);
+        $metadata = XMLReportReader::loadMetadata($this->report);
+        if ($this->isReportRestricted($report, $metadata)) {
+          // Abort as restricted report.
+          throw new Exception('Attempt to access unauthorised report');
+        }
         $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
         break;
 
@@ -338,6 +375,21 @@ class ReportEngine {
       'parameters' => $params,
     );
     return $r;
+  }
+
+  /**
+   * Authorise access to a list of restricted reports.
+   *
+   * If a client's authorisation (e.g. a client project in the RESTful API)
+   * authorises any restricted reports then this method can be called to enable
+   * access.
+   *
+   * @param array $reports
+   *   List of reports to enable access for, e.g.
+   *   `['library/occurrences/list_for_elastic_sensitive.xml']`.
+   */
+  public function setAuthorisedReports(array $reports) {
+    $this->authorisedReports = $reports;
   }
 
   /**
@@ -1022,25 +1074,38 @@ SQL;
               // Ensure the original value can be used as well as the processed
               // value.
               $query = preg_replace("/#$name-unprocessed#/", $value, $query);
-              // Use a preprocessing query to calculate the actual param value
-              // to use.
-              $prequery = str_replace(
-                ["#$name#", '#website_ids#', '#master_list_id#'],
-                [$value, implode(',', $this->websiteIds), warehouse::getMasterTaxonListId()],
-                $paramDefs[$name]['preprocess']
-              );
-              $output = $this->reportDb->query($prequery)->result_array(FALSE);
-              $value = count($output) > 0 ? implode(',', $output[0]) : NULL;
-              if (empty($value)) {
-                if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'])) {
-                  $value = "-999999";
+              // Preprocessor can be a single query string, or a keyed array of
+              // preprocess queries to run.
+              $preprocessors = is_array($paramDefs[$name]['preprocess'])
+                ? $paramDefs[$name]['preprocess'] : [$name => $paramDefs[$name]['preprocess']];
+              // Use each preprocessing query to calculate the actual param
+              // value to use.
+              $websiteFilter = $this->websiteIds ? implode(',', $this->websiteIds) : 'select id from websites';
+              $masterTaxonListId = warehouse::getMasterTaxonListId();
+              foreach ($preprocessors as $token => $qry) {
+                $prequery = str_replace(
+                  ["#$name#", '#website_ids#', '#master_list_id#'],
+                  [$value, $websiteFilter, $masterTaxonListId],
+                  $qry
+                );
+                $output = $this->reportDb->query($prequery)->result_array(FALSE);
+                kohana::log('debug', 'prequery: ' . $prequery);
+                $pqValue = count($output) > 0 ? implode(',', $output[0]) : NULL;
+                if (empty($pqValue)) {
+                  // Create a dummy value so as to not cause a syntax error.
+                  if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'])) {
+                    $pqValue = "-999999";
+                  }
+                  else {
+                    $pqValue = "'-999999'";
+                  }
                 }
-                else {
-                  $value = "'-999999'";
-                }
+                $query = preg_replace("/#$token#/", $pqValue, $query);
               }
             }
-            $query = preg_replace("/#$name#/", $value, $query);
+            else {
+              $query = preg_replace("/#$name#/", $value, $query);
+            }
           }
         }
       }
@@ -1243,7 +1308,9 @@ SQL;
     // Ensure filter clause reflects any current parameter values.
     $replacements = array();
     foreach ($this->providedParams as $paramName => $paramVal) {
-      $replacements["/#$paramName#/"] = $paramVal;
+      if (!is_array($paramVal)) {
+        $replacements["/#$paramName#/"] = $paramVal;
+      }
     }
     $field = preg_replace(array_keys($replacements), array_values($replacements), $field);
     if ($datatype === 'text' || $datatype === 'species') {
@@ -1925,9 +1992,11 @@ SQL;
     foreach ($paramDef['wheres'] as $whereDef) {
       if (empty($whereDef['param_op'])) {
         if (
-            // Parameter filter applied if value matches the filter's specified value.
+            // Parameter filter applied if value matches the filter's
+            // specified value.
             (!empty($whereDef['operator']) && (($whereDef['operator'] === 'equal' && $whereDef['value'] === $value)
-            // Parameter filter applied if value doesn't match the filter's specified value.
+            // Parameter filter applied if value doesn't match the filter's
+            // specified value.
             || ($whereDef['operator'] === 'notequal' && $whereDef['value'] !== $value)))
             // Operator not provided, so default is to join if param not empty
             // (NULL string passed for empty integers).
@@ -1936,11 +2005,19 @@ SQL;
           $query = str_replace('#filters#', "AND $whereDef[sql]\n#filters#", $query);
         }
       }
-      elseif (!empty($this->providedParams["{$paramName}_op"])
-          && $this->providedParams["{$paramName}_op"] === $whereDef['param_op']
-          && $value !== '') {
-        // Wheres can be specified separarely per operation (IN, NOT IN etc).
-        $query = str_replace('#filters#', "AND $whereDef[sql]\n#filters#", $query);
+      else {
+        // Handle params that have where clauses linked to different ops.
+        // If the parameter name is <name>_context, them the op param is
+        //<name>_op_context so we need to do some splicing.
+        $paramOpName = preg_match('/_context$/', $paramName)
+          ? preg_replace('/_context$/', '_op_context', $paramName)
+          : "{$paramName}_op";
+        if (!empty($this->providedParams[$paramOpName])
+            && $this->providedParams[$paramOpName] === $whereDef['param_op']
+            && $value !== '') {
+          // Wheres can be specified separarely per operation (IN, NOT IN etc).
+          $query = str_replace('#filters#', "AND $whereDef[sql]\n#filters#", $query);
+        }
       }
     }
     return $query;

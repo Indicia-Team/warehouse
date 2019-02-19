@@ -575,7 +575,7 @@ class Import_Controller extends Service_Base_Controller {
         // If a possible previous record, attempt to find the relevant IDs.
         if (isset($metadata['mappings']['lookupSelect' . $_GET['model']]) && $metadata['mappings']['lookupSelect' . $_GET['model']] !== '') {
           try {
-            self::mergeExistingRecordIDs($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, '', $metadata,
+            self::mergeExistingRecordIds($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, '', $metadata,
               $mustExist, $model, $saveArray);
           }
           catch (Exception $e) {
@@ -600,7 +600,7 @@ class Import_Controller extends Service_Base_Controller {
         $updatedPreviousCsvSupermodelDetails = $this->checkForSameSupermodel($saveArray, $model, $associationExists, $metadata);
         if ($associationExists && isset($metadata['mappings']['lookupSelect' . $associatedRecordPrefix]) && $metadata['mappings']['lookupSelect' . $associatedRecordPrefix] !== '') {
           $assocModel = ORM::Factory($_GET['model']);
-          self::mergeExistingRecordIDs($_GET['model'], $associatedRecordPrefix, $associatedAttributePrefix, $associatedSuffix,
+          self::mergeExistingRecordIds($_GET['model'], $associatedRecordPrefix, $associatedAttributePrefix, $associatedSuffix,
             $metadata, FALSE, $assocModel, $saveArray);
           if (isset($saveArray[$originalRecordPrefix . ':id']) && isset($saveArray[$associatedRecordPrefix . ':id'])) {
             $assocModel = ORM::Factory($associationRecordPrefix)
@@ -816,7 +816,15 @@ class Import_Controller extends Service_Base_Controller {
   /**
    * Adds an error to the error log file.
    */
-  private function logError($data, $error, $existingProblemColIdx, $existingErrorRowNoColIdx, $errorHandle, $total, $importGuid, &$metadata) {
+  private function logError(
+      $data,
+      $error,
+      $existingProblemColIdx,
+      $existingErrorRowNoColIdx,
+      $errorHandle,
+      $total,
+      $importGuidToAppend,
+      &$metadata) {
     if ($existingProblemColIdx === FALSE) {
       $data[] = $error;
     }
@@ -830,8 +838,8 @@ class Import_Controller extends Service_Base_Controller {
     else {
       $data[$existingErrorRowNoColIdx] = $total;
     }
-    if ($importGuid) {
-      $data[] = $fileNameParts[0];
+    if ($importGuidToAppend) {
+      $data[] = $importGuidToAppend;
     }
     fputcsv($errorHandle, $data);
     kohana::log('debug', 'Failed to import CSV row: ' . $error);
@@ -841,8 +849,16 @@ class Import_Controller extends Service_Base_Controller {
   /**
    * If there is an existing record to lookup, merge its IDs with the data row.
    */
-  private function mergeExistingRecordIDs($modelName, $fieldPrefix, $attrPrefix, $assocSuffix, $metadata, $mustExist,
-      &$model, &$saveArray, $setSupermodel = FALSE) {
+  private function mergeExistingRecordIds(
+      $modelName,
+      $fieldPrefix,
+      $attrPrefix,
+      $assocSuffix,
+      $metadata,
+      $mustExist,
+      &$model,
+      &$saveArray,
+      $setSupermodel = FALSE) {
     $join = "";
     $table = inflector::plural($modelName);
     $fields = json_decode($metadata['mappings']['lookupSelect' . $fieldPrefix]);
@@ -1024,7 +1040,7 @@ class Import_Controller extends Service_Base_Controller {
           // Check if there is lookup for existing data.
           if (isset($metadata['mappings']) && isset($metadata['mappings']['lookupSelect' . $modelName]) && $metadata['mappings']['lookupSelect' . $modelName] !== '') {
             $superModel = ORM::Factory($modelName);
-            self::mergeExistingRecordIDs($modelName, $modelName, $sm->attrs_field_prefix, '', $metadata, FALSE,
+            self::mergeExistingRecordIds($modelName, $modelName, $sm->attrs_field_prefix, '', $metadata, FALSE,
               $superModel, $saveArray, TRUE);
           }
           elseif ($modelName === 'term' && isset($metadata['mappings']) &&
@@ -1058,7 +1074,11 @@ class Import_Controller extends Service_Base_Controller {
           }
           elseif ($modelName === 'taxon' && isset($metadata['mappings']) &&
               isset($metadata['mappings']['lookupSelect' . $model->object_name]) &&
-              $metadata['mappings']['lookupSelect' . $model->object_name] !== '') {
+              $metadata['mappings']['lookupSelect' . $model->object_name] !== '' &&
+              // Taxon info may not be provided if looking up existing record.
+              // In which case, skip the lookup.
+              !empty($saveArray['taxon:language_id']) &&
+              (!empty($saveArray['taxon:taxon']) || !empty($saveArray['taxon:external_key']))) {
             // Same for taxa_taxon_lists, and their taxon supermodel: have to
             // look up using complex query to get the link between the
             // taxon_list and the taxon.

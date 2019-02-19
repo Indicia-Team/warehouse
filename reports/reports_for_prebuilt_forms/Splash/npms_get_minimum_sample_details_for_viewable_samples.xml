@@ -1,0 +1,33 @@
+<report
+    title="Get samples and creator for samples user has rights to"
+    description="Simplified version of NPMS Sample Occurrence Samples 3 which just gets the
+    sample ID and creator ID of samples a user has rights to see.">
+  <query website_filter_field="csf.website_id">
+    SELECT #columns#
+      FROM users u
+      JOIN person_attribute_values pav
+        ON pav.person_id = u.person_id
+        AND pav.person_attribute_id = #person_square_attr_id#
+        AND pav.updated_by_id &lt;&gt; u.id
+        AND pav.deleted = false
+      JOIN locations plot
+        ON plot.parent_id=pav.int_value
+        AND plot.deleted=false
+      JOIN cache_samples_functional csf
+        ON csf.location_id = plot.id
+        AND csf.survey_id = #survey_id#
+      WHERE u.id=#iUserID# AND u.deleted=false
+      #order_by#
+  </query>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='iUserID' display='Indicia User ID' description='Indicia User ID: use 0 to ignore' datatype='int' />
+    <param name='s1AttrID' display='Sample 1 Attribute ID' description='The ID of the sample attribute that links a second sample to a first' datatype='int' />
+    <param name='person_square_attr_id' description='Id of the person attribute that holds user squares' datatype='integer'/>
+  </params>
+  <columns>
+    <column name='sample_id' sql='csf.id' display='ID' visible='false' in_count="true"/>
+    <column name='created_by_id' sql='csf.created_by_id' display='Created BY ID Sample' visible='false'/>
+  </columns>
+</report>

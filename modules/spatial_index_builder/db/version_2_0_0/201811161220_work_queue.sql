@@ -5,6 +5,6 @@
 DELETE FROM work_queue WHERE task='task_spatial_index_builder_sample';
 
 INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
-SELECT DISTINCT 'task_spatial_index_builder_sample', 'sample', id, 2, 60, now()
+SELECT DISTINCT 'task_spatial_index_builder_sample', 'sample', id, 3, 60, now()
 FROM samples
 WHERE deleted=false;

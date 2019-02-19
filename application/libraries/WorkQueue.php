@@ -172,10 +172,10 @@ SQL;
         throw new exception('Invalid max-priority parameter - value from 1 to 3 expected.');
       }
       if ($_GET['max-priority'] < 3) {
-        unset($maxCostByPriority[3]);
+        $maxCostByPriority[3] = 0;
       }
       if ($_GET['max-priority'] < 2) {
-        unset($maxCostByPriority[2]);
+        $maxCostByPriority[2] = 0;
       }
     }
     return $maxCostByPriority;
@@ -261,6 +261,7 @@ WHERE id IN (
   AND error_detail IS NULL
   AND task='$taskType->task'
   AND COALESCE(entity, '')='$taskType->entity'
+  ORDER BY priority, cost_estimate
   LIMIT $batchSize
 );
 SQL;
@@ -322,7 +323,8 @@ SQL;
     ], [
       'task' => $taskType->task,
     ]);
-    error_logger::log_error("Failure in work queue task batch because $taskType->task missing", $e);
+    kohana::log('error', "Failure in work queue task batch because $taskType->task missing");
+    error_logger::log_trace(debug_backtrace());
   }
 
 }

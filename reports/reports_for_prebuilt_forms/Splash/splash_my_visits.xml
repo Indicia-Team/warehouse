@@ -8,8 +8,7 @@
       JOIN cache_samples_nonfunctional csnf on csnf.id = csf.id
       JOIN locations plot ON plot.id = csf.location_id AND plot.deleted=false
       LEFT JOIN location_attribute_values lavPlotName on lavPlotName.location_attribute_id=#plot_number_attr_id# AND lavPlotName.location_id=plot.id AND lavPlotName.deleted=false
-      JOIN termlists_terms ttPlotType on ttPlotType.id = plot.location_type_id
-      JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
+      JOIN cache_termlists_terms cache_ttPlotType on cache_ttPlotType.id = plot.location_type_id
       --JOIN sample_attribute_values savLinkToSurveyOne ON savLinkToSurveyOne.sample_id = csf.id AND savLinkToSurveyOne.sample_attribute_id = #s1AttrID# AND savLinkToSurveyOne.int_value = 0
       LEFT JOIN sample_attribute_values savLinkToSurveyOne ON savLinkToSurveyOne.sample_id = csf.id AND savLinkToSurveyOne.sample_attribute_id = #s1AttrID# 
           AND savLinkToSurveyOne.int_value != 0 AND savLinkToSurveyOne.deleted=false
@@ -43,9 +42,9 @@
     COALESCE(
         case 
         when lavPlotName.text_value IS null 
-          then '&lt;i&gt;' || 'Plot at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
+          then '&lt;i&gt;' || 'Plot at ' || plot.centroid_sref || ' ('||  cache_ttPlotType.term || ') ' || '&lt;/i&gt;' 
         else 
-          '&lt;i&gt;' || 'Plot ' || lavPlotName.text_value || ' at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
+          '&lt;i&gt;' || 'Plot ' || lavPlotName.text_value || ' at ' || plot.centroid_sref || ' ('||  cache_ttPlotType.term || ') ' || '&lt;/i&gt;' 
         end
         , csf.location_name, csnf.public_entered_sref)
     " display='Plot' />

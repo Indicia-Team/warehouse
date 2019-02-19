@@ -17,7 +17,6 @@
         AND plot.deleted=false
       JOIN cache_samples_functional csf
         ON csf.location_id = plot.id
-        AND csf.website_id IN (#website_ids#)
         AND csf.survey_id = #survey_id#
       JOIN cache_samples_nonfunctional csnf
         ON csnf.id = csf.id

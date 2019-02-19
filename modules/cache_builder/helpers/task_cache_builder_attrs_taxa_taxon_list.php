@@ -64,17 +64,17 @@ class task_cache_builder_attrs_taxa_taxon_list {
 
   SELECT av.taxa_taxon_list_id, a.multi_value,
     av.taxa_taxon_list_attribute_id::text || ':$lang' as f,
-    array_agg(COALESCE(ti18n.term, t.term) ORDER BY COALESCE(tlti18n.sort_order, tlt.sort_order), COALESCE(ti18n.term, t.term)) as v
+    array_agg(COALESCE(ti18n.term, t.term) ORDER BY COALESCE(tlti18n.sort_order, tlt.sort_order)) as v
   FROM work_queue q
   JOIN taxa_taxon_list_attribute_values av ON av.taxa_taxon_list_id=q.record_id AND av.deleted=false
     AND COALESCE(av.int_value::text, av.text_value::text, av.float_value::text, av.date_start_value::text) IS NOT NULL
   JOIN taxa_taxon_list_attributes a ON a.id=av.taxa_taxon_list_attribute_id AND a.deleted=false
   LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND tlt.deleted=false
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
-  LEFT JOIN termlists_terms tlti18n on tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
-  LEFT JOIN (terms ti18n
+  LEFT JOIN (termlists_terms tlti18n
+    JOIN terms ti18n ON ti18n.id=tlti18n.term_id AND ti18n.deleted=false
     JOIN languages l on l.id=ti18n.language_id AND l.deleted=false AND l.iso='$lang'
-  ) ON ti18n.id=tlti18n.term_id AND ti18n.deleted=false
+  ) ON tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
   WHERE q.entity='taxa_taxon_list' AND q.task='task_cache_builder_attrs_taxa_taxon_list' AND q.claimed_by='$procId'
   AND a.data_type='L'
   GROUP BY taxa_taxon_list_id, taxa_taxon_list_attribute_id, a.multi_value
@@ -107,8 +107,10 @@ FROM (
             ELSE ''::text
           END
         WHEN 'B'::bpchar THEN av.int_value::text
-        WHEN 'D'::bpchar THEN '"' || av.date_start_value::text || '"'
-        WHEN 'V'::bpchar THEN '"' || (av.date_start_value::text || ' - '::text) || av.date_end_value::text || '"'
+        WHEN 'D'::bpchar THEN av.date_start_value::text
+        WHEN 'V'::bpchar THEN
+          av.date_start_value::text ||
+          CASE WHEN av.date_end_value > av.date_start_value THEN ' - '::text || av.date_end_value::text ELSE '' END
         ELSE NULL::text
       END ORDER BY tlt.sort_order, t.term
     ) as v

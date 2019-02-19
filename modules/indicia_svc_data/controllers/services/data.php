@@ -1046,7 +1046,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       // we have a filter on website_id to apply
       if ($this->website_id) {
         // check if a request for shared data is being made. Also check this is valid to prevent injection.
-        if (isset($_REQUEST['sharing']) && preg_match('/[reporting|peer_review|verification|data_flow|moderation|editing]/', $_REQUEST['sharing'])) {
+        if (isset($_REQUEST['sharing']) && preg_match('/(reporting|peer_review|verification|data_flow|moderation|editing)/', $_REQUEST['sharing'])) {
           // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So
           // we can use this to work out access to other website data.
           $this->db->join('index_websites_website_agreements as iwwa', array(
@@ -1444,7 +1444,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     if (!in_array($entity, $this->allow_full_access)) {
       if (array_key_exists('website_id', $fields)) {
         // check if a request for shared data is being made. Also check this is valid to prevent injection.
-        if ($sharing && preg_match('/[reporting|peer_review|verification|data_flow|moderation|editing]/', $sharing)) {
+        if ($sharing && preg_match('/(reporting|peer_review|verification|data_flow|moderation|editing)/', $sharing)) {
           // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So
           // we can use this to work out access to other website data.
           $this->db->join('index_websites_website_agreements as iwwa', array(

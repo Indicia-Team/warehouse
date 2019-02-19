@@ -751,16 +751,12 @@ class ORM extends ORM_Core {
       }
       if (!empty($samples)) {
         // @todo Map squares could be added to work queue.
-        postgreSQL::insertMapSquaresForSamples($samples, 1000, $this->db);
-        postgreSQL::insertMapSquaresForSamples($samples, 2000, $this->db);
-        postgreSQL::insertMapSquaresForSamples($samples, 10000, $this->db);
+        postgreSQL::insertMapSquaresForSamples($samples, $this->db);
       }
       elseif (!empty($occurrences)) {
         // No need to do occurrence map square update if inserting a sample, as
         // the above code does the occurrences in bulk.
-        postgreSQL::insertMapSquaresForOccurrences($occurrences, 1000, $this->db);
-        postgreSQL::insertMapSquaresForOccurrences($occurrences, 2000, $this->db);
-        postgreSQL::insertMapSquaresForOccurrences($occurrences, 10000, $this->db);
+        postgreSQL::insertMapSquaresForOccurrences($occurrences, $this->db);
       }
     }
     if (!empty(self::$changedRecords['insert']['occurrence_association']) ||
@@ -1624,26 +1620,26 @@ class ORM extends ORM_Core {
             $attrId = $arr[1];
             $valueId = count($arr)>2 ? $arr[2] : NULL;
             $attrDef = self::loadAttrDef($this->object_name, $attrId);
+            if ($attrDef->allow_ranges === 't' && !empty($this->submission['fields']["$field:upper"])
+                && !empty($this->submission['fields']["$field:upper"]['value'])) {
+              $value .= ' - ' . $this->submission['fields']["$field:upper"]['value'];
+            }
+            $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
+            if ($attr === FALSE) {
+              // Failed to create attribute so drop out.
+              return FALSE;
+            }
             // If this attribute is a multivalue array, then any existing
             // attributes which are not in the submission for the same attr ID
             // should be removed. We need to keep an array of the multi-value
             // attribute IDs, with a sub-array for the existing value IDs that
             // were included in the submission, so that we can mark-delete the
             // ones that are not in the submission.
-            $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
-            if ($attr === FALSE) {
-              // Failed to create attribute so drop out.
-              return FALSE;
-            }
             if ($attrDef->multi_value === 't' && count($arr)) {
               if (!isset($multiValueData["attr:$attrId"])) {
                 $multiValueData["attr:$attrId"] = array('attrId' => $attrId, 'ids' => []);
               }
               $multiValueData["attr:$attrId"]['ids'] = array_merge($multiValueData["attr:$attrId"]['ids'], $attr);
-            }
-            if ($attrDef->allow_ranges === 't' && !empty($this->submission['fields']["$field:upper"])
-                && !empty($this->submission['fields']["$field:upper"]['value'])) {
-              $value .= ' - ' . $this->submission['fields']["$field:upper"]['value'];
             }
           }
         }
@@ -1755,6 +1751,7 @@ class ORM extends ORM_Core {
       $attrValueModel->where([
         $this->object_name.'_attribute_id' => $attrId,
         $this->object_name.'_id' => $this->id,
+        'deleted' => 'f',
       ])->find();
     }
 

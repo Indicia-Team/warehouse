@@ -177,57 +177,81 @@ SQL
    * submitted directly (i.e. not as part of a sample), to make sure that any
    * changed occurrences are linked to their map square entries properly.
    */
-  public static function insertMapSquaresForOccurrences($ids, $size, $db = NULL) {
-    self::insertMapSquares($ids, 'o', $size, $db);
+  public static function insertMapSquaresForOccurrences($ids, $db) {
+    self::insertMapSquares($ids, 'o', $db);
   }
 
   /**
    * Generic shared code for the insertMapSquaresFor... methods.
    */
-  private static function insertMapSquares($ids, $alias, $size, $db = NULL) {
+  private static function insertMapSquares($ids, $alias, $db) {
     if (count($ids) > 0) {
       static $srid;
       if (!isset($srid)) {
         $srid = kohana::config('sref_notations.internal_srid');
       }
-      if (!$db)
-        $db = new Database();
       $idlist = implode(',', $ids);
-      // Seems much faster to break this into small queries than one big left join.
-      $smpInfo = $db->query(
-      "SELECT DISTINCT s.id, o.website_id, s.survey_id, st_astext(coalesce(s.geom, l.centroid_geom)) as geom, o.confidential,
-          GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size) as size,
-          coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system,
-          round(st_x(st_centroid(reduce_precision(
-            coalesce(s.geom, l.centroid_geom), o.confidential,
-            GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size),
-            s.entered_sref_system)
-          ))) as x,
-          round(st_y(st_centroid(reduce_precision(
-            coalesce(s.geom, l.centroid_geom), o.confidential,
-            GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size), s.entered_sref_system)
-          ))) as y
-        FROM samples s
-        JOIN occurrences o ON o.sample_id=s.id
-        LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
-        WHERE $alias.id IN ($idlist)")->result_array(TRUE);
-      $km = $size / 1000;
+      $sizes = [1000, 2000, 10000];
+      $fieldsForEachSquare = '';
+      foreach ($sizes as $idx => $size) {
+        $fieldsForEachSquare .= <<<SQL
+  GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size) as size$size,
+  round(st_x(st_centroid(reduce_precision(
+    coalesce(s.geom, l.centroid_geom), o.confidential,
+    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size),
+    s.entered_sref_system)
+  ))) as x$size,
+  round(st_y(st_centroid(reduce_precision(
+    coalesce(s.geom, l.centroid_geom), o.confidential,
+    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size), s.entered_sref_system)
+  ))) as y$size
+SQL;
+        if ($idx < 2) {
+          $fieldsForEachSquare .= ",\n";
+        }
+      }
+      $query = <<<SQL
+SELECT DISTINCT s.id,
+  st_astext(coalesce(s.geom, l.centroid_geom)) as geom,
+  o.confidential,
+  coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system,
+  $fieldsForEachSquare
+FROM samples s
+JOIN occurrences o ON o.sample_id=s.id
+LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
+WHERE $alias.id IN ($idlist)
+SQL;
+      $smpInfo = $db->query($query)->result_array(TRUE);
       foreach ($smpInfo as $s) {
-        $existing = $db->query("SELECT id FROM map_squares WHERE x={$s->x} AND y={$s->y} AND size={$s->size}")
-          ->result_array(FALSE);
-        if (count($existing)===0) {
-          $qry = $db->query("INSERT INTO map_squares (geom, x, y, size)
-            VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', {$s->size}, '{$s->entered_sref_system}'), {$s->x}, {$s->y}, {$s->size})");
-          $msqId = $qry->insert_id();
+        $updateFieldSQL = [];
+        $updateFilterSQL = [];
+        foreach ($sizes as $size) {
+          $km = $size / 1000;
+          $squareDetail = [
+            'x' => $s->{"x$size"},
+            'y' => $s->{"y$size"},
+            'size' => $s->{"size$size"},
+          ];
+          $existing = $db
+            ->query("SELECT id FROM map_squares WHERE x=$squareDetail[x] AND y=$squareDetail[y] AND size=$squareDetail[size]")
+            ->result_array(FALSE);
+          if (count($existing) === 0) {
+            $qry = $db->query("INSERT INTO map_squares (geom, x, y, size)
+              VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', $squareDetail[size], '{$s->entered_sref_system}'), $squareDetail[x], $squareDetail[y], $squareDetail[size])");
+            $msqId = $qry->insert_id();
+          }
+          else {
+            $msqId = $existing[0]['id'];
+          }
+          $updateFieldSQL[] = "map_sq_{$km}km_id=$msqId";
+          $updateFilterSQL[] = "map_sq_{$km}km_id IS NULL OR map_sq_{$km}km_id<>$msqId";
         }
-        else {
-          $msqId = $existing[0]['id'];
-        }
-        $db->query("UPDATE cache_occurrences_functional SET map_sq_{$km}km_id=$msqId " .
-          "WHERE website_id={$s->website_id} AND survey_id={$s->survey_id} AND sample_id={$s->id} " .
-          "AND (map_sq_{$km}km_id IS NULL OR map_sq_{$km}km_id<>$msqId)");
-        $db->query("UPDATE cache_samples_functional SET map_sq_{$km}km_id=$msqId " .
-          "WHERE id={$s->id} AND (map_sq_{$km}km_id IS NULL OR map_sq_{$km}km_id<>$msqId)");
+        $db->query("UPDATE cache_occurrences_functional SET " . implode(', ', $updateFieldSQL) .
+          "WHERE sample_id={$s->id} " .
+          'AND (' . implode(' OR ', $updateFilterSQL) . ')');
+        $db->query("UPDATE cache_samples_functional SET " . implode(', ', $updateFieldSQL) .
+          "WHERE id={$s->id} " .
+          'AND (' . implode(' OR ', $updateFilterSQL) . ')');
       }
     }
   }

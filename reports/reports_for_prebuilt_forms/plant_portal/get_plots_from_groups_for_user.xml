@@ -1,0 +1,40 @@
+<report
+    title="Get plots in groups for user."
+    description="Get the plots in the groups the user has permission to use."
+    >
+  <query website_filter_field="lw.website_id">
+    select #columns#
+    from person_attribute_values pavPerm
+    join people p on p.id=pavPerm.person_id AND p.deleted=false
+    join users u on u.person_id=p.id AND u.id=#user_id# AND u.deleted=false
+    join termlists_terms plotGroupTT on plotGroupTT.id = pavPerm.int_value AND plotGroupTT.deleted=false
+    join terms plotGroupT on plotGroupT.id = plotGroupTT.term_id AND plotGroupT.deleted=false
+    join location_attribute_values lavPerm on lavPerm.int_value=pavPerm.int_value AND lavPerm.deleted=false
+    join locations plot on plot.id = lavPerm.location_id AND plot.deleted=false
+    left join locations_websites lw on lw.location_id = plot.id AND lw.deleted
+    #joins#
+    WHERE pavPerm.deleted=false AND pavPerm.person_attribute_id = #plot_group_permission_person_attr_id#
+    AND #website_filter#
+    GROUP BY plot.centroid_sref,plot.centroid_sref_system, plot.name, plotGroupT.term
+  </query>
+  <params>
+    <param name="plot_group_permission_person_attr_id" display="Plot group permission person attr id" description="The id of the attribute that hold plot goup permissions." datatype="integer"/>
+    <param name="user_id" display="Indicia user id" description="Indicia user id for find sample group permissions for." datatype="integer"/>
+    <param name="plot_name" display="Plot name" description="Optional name of a plot to limit results to." datatype="text" emptyvalue='' default=''>
+      <where>plot.name='#plot_name#'</where>
+    </param>
+    <param name="plot_sp_ref" display="Plot spatial reference" description="Optional plot spatial reference to limit results to." datatype="text" emptyvalue='' default=''>
+      <where>plot.centroid_sref='#plot_sp_ref#'</where>
+    </param>
+    <param name="plot_group_name" display="Plot group identifier name" description="Optional plot group identifier name to limit results to." datatype="text" emptyvalue='' default=''>
+      <where>plotGroupT.term='#plot_group_name#'</where>
+    </param>
+  </params>
+  <columns>
+    <column name="centroid_sref" sql="plot.centroid_sref" display="Plot spatial reference"/>
+    <column name="centroid_sref_system" sql="plot.centroid_sref_system" display="Plot spatial reference system"/>
+    <column name="plot_name" sql="plot.name" display="Name"/>
+    <column name="plot_group_identifier_name" sql="plotGroupT.term" display="Plot group identifier name"/>
+    <column name="plot_count" sql="count(*)" display="Plot count"/>
+  </columns>
+</report>

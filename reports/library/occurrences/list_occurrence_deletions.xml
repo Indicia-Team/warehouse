@@ -4,12 +4,11 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          count_field="o.*">
-    select #columns#
-    from occurrences o
+    SELECT #columns#
+    FROM occurrences o
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
-    AND o.deleted=true
   </query>
   <order_bys>
     <order_by>o.id</order_by>
@@ -21,6 +20,10 @@
     </param>
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>o.id &gt; #last_id#</where>
+    </param>
+    <param name="zeros" display="Treat zero abundance records as deleted" datatype="boolean" default="0">
+      <where value="0" operator="equal">o.deleted=true</where>
+      <where value="1" operator="equal">(o.deleted=true OR o.zero_abundance=true)</where>
     </param>
   </params>
   <columns>

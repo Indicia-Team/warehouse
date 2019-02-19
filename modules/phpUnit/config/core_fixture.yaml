@@ -12,6 +12,7 @@ websites:
     updated_by_id: 1
     url: "http://www.indicia.org.uk"
     password: "password"
+    verification_checks_enabled: "true"
 
 
 surveys:
@@ -606,6 +607,7 @@ cache_occurrences_functional:
     map_sq_1km_id: 1
     map_sq_2km_id: 1
     map_sq_10km_id: 1
+    verification_checks_enabled: "true"
   -
     id: 2
     sample_id: 1
@@ -629,6 +631,7 @@ cache_occurrences_functional:
     map_sq_1km_id: 1
     map_sq_2km_id: 1
     map_sq_10km_id: 1
+    verification_checks_enabled: "true"
 
 cache_occurrences_nonfunctional:
   -

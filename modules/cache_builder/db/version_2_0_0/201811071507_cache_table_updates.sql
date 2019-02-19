@@ -60,9 +60,6 @@ DROP INDEX ix_cache_occurrences_functional_taxa_taxon_list_external_key;
 DROP INDEX ix_cache_occurrences_functional_taxon_group_id;
 DROP INDEX ix_cache_occurrences_functional_updated_on;
 DROP INDEX ix_cache_occurrences_functional_verified_on;
-DROP INDEX ix_cache_occurrences_functional_verify_ext_key;
-DROP INDEX ix_cache_occurrences_functional_verify_taxon_group;
-DROP INDEX ix_cache_occurrences_functional_verify_family;
 DROP TRIGGER delete_quick_reply_auth_trigger ON cache_occurrences_functional;
 DROP INDEX ix_cache_samples_functional_created_by_id;
 DROP INDEX ix_cache_samples_functional_location_id;
@@ -93,7 +90,7 @@ SET location_ids=CASE l.location_ids WHEN ARRAY[NULL::integer] THEN NULL ELSE l.
 FROM loc_ids l, users u, cache_taxa_taxon_lists cttl
 LEFT JOIN cache_taxa_taxon_lists cttlm
   ON cttlm.external_key=cttl.external_key
-  AND cttlm.taxon_list_id=#master_list_id#
+  AND cttlm.taxon_list_id=COALESCE(#master_list_id#, cttl.taxon_list_id)
   AND cttlm.preferred=true
 LEFT JOIN cache_taxon_paths ctp
   ON ctp.taxon_meaning_id=cttlm.taxon_meaning_id
@@ -214,18 +211,6 @@ CREATE INDEX ix_cache_occurrences_functional_verified_on
   ON cache_occurrences_functional
   USING btree
   (verified_on);
-
-CREATE INDEX ix_cache_occurrences_functional_verify_ext_key
-  ON cache_occurrences_functional(website_id, taxa_taxon_list_external_key)
-WHERE record_status='C' and record_substatus IS NULL;
-
-CREATE INDEX ix_cache_occurrences_functional_verify_taxon_group
-  ON cache_occurrences_functional(website_id, taxon_group_id)
-WHERE record_status='C' and record_substatus IS NULL;
-
-CREATE INDEX ix_cache_occurrences_functional_verify_family
-  ON cache_occurrences_functional(website_id, family_taxa_taxon_list_id)
-WHERE record_status='C' and record_substatus IS NULL;
 
 CREATE TRIGGER delete_quick_reply_auth_trigger
   AFTER UPDATE

@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @subpackage REST API
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    https://github.com/indicia-team/warehouse/
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 class RestApiResponse {
+
+  private $startTime;
 
   /**
    * A template to define the header of any HTML pages output. Replace
@@ -71,10 +71,13 @@ HTML;
   public $includeEmptyValues = true;
 
   /**
-   * Index method, which provides top level help for the API resource endpoints.
-   * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
+   * Index method which provides top level help for the API resource endpoints.
+   *
+   * @param array $resourceConfig
+   *   Configuration for the list of available resources and the methods they
+   *   support.
    */
-  public function index($resourceConfig) {
+  public function index(array $resourceConfig) {
     switch ($this->getResponseFormat()) {
       case 'html':
         $this->indexHtml($resourceConfig);
@@ -159,7 +162,7 @@ HTML;
 HTML;
 
     // Loop the resource names and output each of the available methods.
-    foreach($resourceConfig as $resource => $methods) {
+    foreach ($resourceConfig as $resource => $methods) {
       echo "<h3>$resource</h3>";
       foreach ($methods as $method => $methodConfig) {
         foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
@@ -198,6 +201,25 @@ HTML;
             }
             echo "<td>$help</td>";
             echo "</tr>";
+          }
+          echo '</tbody></table>';
+        }
+      }
+    }
+    $es = Kohana::config('rest.elasticsearch');
+    if ($es) {
+      echo '<h3>Elasticsearch end-points</h3>';
+      foreach ($es as $endpoint => $esConfig) {
+        // Also allow if authentication provided.
+        if ($esConfig['open'] === TRUE) {
+          echo '<h4>' . url::base() . "index.php/services/rest/$endpoint</h4>";
+          echo '<table class="table table-bordered table-responsive"><caption>Allowed methods</caption>';
+          echo '<thead><tr><th>HTTP method</th><th>Expression</th><th>Description</th></tr></thead>';
+          echo '<tbody>';
+          foreach ($esConfig['allowed'] as $method => $patterns) {
+            foreach ($patterns as $expr => $desc) {
+              echo "<tr><td>$method</td><td>$expr</td><td>$desc</desc></tr>";
+            }
           }
           echo '</tbody></table>';
         }
@@ -292,14 +314,25 @@ HTML;
   }
 
   /**
+   * Get's the timestamp of a process start.
+   *
+   * Allows a change of behaviour if a max_time parameter is exceeded.
+   */
+  public function trackTime() {
+    $this->startTime = microtime(TRUE);
+  }
+
+  /**
    * Outputs a data object as JSON (or chosen alternative format), in the case of successful operation.
    *
-   * @param array $data Response data to output.
-   * @param array $options Additional options for the output. Content can include:
-   * * metadata - information to display at top of HTML output
-   * * columns - list of column definitions for tabular output
-   * * attachHref
-   * * columnsToUnset - an array of columns to remove from tabular output
+   * @param array $data
+   *   Response data to output.
+   * @param array $options
+   *   Additional options for the output. Content can include:
+   *   * metadata - information to display at top of HTML output
+   *   * columns - list of column definitions for tabular output
+   *   * attachHref
+   *   * columnsToUnset - an array of columns to remove from tabular output
    */
   public function succeed($data, $options = array(), $autofeed = FALSE) {
     $format = $this->getResponseFormat();
@@ -692,20 +725,42 @@ ROW;
           echo ',';
         }
         elseif ($autofeed) {
+          // Capture the ID and update tracking ID of the last row in the
+          // report, so we can autofeed the next batch.
           $lastId = $row['id'];
+          $lastTrackingId = isset($row['tracking']) ? $row['tracking'] : 0;
         }
       }
       if ($autofeed) {
         echo ']';
         $afSettings = (array) variable::get("rest-autofeed-$_GET[proj_id]", [], FALSE);
         if ($afSettings['mode'] === 'initialLoad' && isset($lastId) && $dbObject->count() >= AUTOFEED_DEFAULT_PAGE_SIZE) {
+          // On initial load mode, we want the next autofeed batch to start on
+          // our highest row ID + 1, unless we've reached the end..
           $afSettings['last_id'] = $lastId;
-          variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
         }
         elseif ($afSettings['mode'] === 'initialLoad') {
+          // At the end of the initial load, switch to updates only mode.
           $afSettings['mode'] = 'updates';
           unset($afSettings['last_id']);
+        }
+        elseif ($afSettings['mode'] === 'updates' && isset($lastTrackingId)) {
+          // Whilst in updates only mode, we want to start the next batch after
+          // the same tracking ID as the last batch finished so we get no gaps.
+          $afSettings['last_tracking_id'] = $lastTrackingId;
+        }
+        // Do not set the tracking variable if we have exceeded a time limit
+        // specified in the request. Otherwise a failure to process the batch
+        // on the client results in a batch being skipped.
+        if (!isset($this->startTime) || !isset($_REQUEST['max_time']) ||
+            microtime(TRUE) - $this->startTime < $_REQUEST['max_time']) {
           variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
+        }
+        else {
+          // In this instance, we don't update the variable, so the next batch
+          // will be the same as this one.
+          kohana::log('error', "Max time exceeded: $this->startTime - " . microtime(TRUE) .
+            " is greater than $_REQUEST[max_time]");
         }
       }
       else {

@@ -120,7 +120,7 @@
     <column name='verified_on' display='Verified on' sql='o.verified_on' datatype="text" />
     <column name='licence_code' sql='onf.licence_code' display="Licence" />
     <column name="autochecks" display="Automated checks"
-      sql="CASE WHEN o.data_cleaner_result='t' THEN 'pass' WHEN not w.verification_checks_enabled THEN 'checks disabled' WHEN o.data_cleaner_result IS NULL THEN 'pending' ELSE onf.data_cleaner_info END" />
+      sql="CASE WHEN o.data_cleaner_result='t' THEN 'pass' WHEN not o.verification_checks_enabled THEN 'checks disabled' WHEN o.data_cleaner_result IS NULL THEN 'pending' ELSE onf.data_cleaner_info END" />
     <column name='belongs_to_user' display='Belongs to user' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
   </columns>
 </report>

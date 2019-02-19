@@ -21,12 +21,12 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
-require_once DOCROOT . 'client_helpers/report_helper.php';
+
+warehouse::loadHelpers(['report_helper']);
 $readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 echo report_helper::report_grid(array(
-    'readAuth' => $readAuth,
-    'dataSource' => $_GET['report_name'],
-    'itemsPerPage' => kohana::config('pagination.default.items_per_page')
+  'readAuth' => $readAuth,
+  'dataSource' => $_GET['report_name'],
+  'itemsPerPage' => kohana::config('pagination.default.items_per_page'),
 ));
-report_helper::link_default_stylesheet();
 echo report_helper::dump_javascript();

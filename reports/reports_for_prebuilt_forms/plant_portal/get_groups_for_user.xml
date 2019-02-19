@@ -1,0 +1,24 @@
+<report
+    title="Get groups for user."
+    description="Get groups user has rights to."
+    >
+  <query website_filter_field="groupTl.website_id">
+    select #columns#
+    from person_attribute_values pavPerm
+    join people p on p.id=pavPerm.person_id AND p.deleted=false
+    join users u on u.person_id=p.id AND u.id=#user_id# AND u.deleted=false
+    join termlists_terms groupTT on groupTT.id = pavPerm.int_value AND groupTT.deleted=false
+    join termlists groupTl on groupTl.id = groupTT.termlist_id AND groupTl.deleted=false
+    join terms groupT on groupT.id = groupTT.term_id AND groupT.deleted=false
+    WHERE pavPerm.deleted=false AND pavPerm.person_attribute_id = #group_permission_person_attr_id#
+  </query>
+  <params>
+    <param name="group_permission_person_attr_id" display="Group permission person attr id" description="The id of the attribute that hold the group permissions." datatype="integer"/>
+    <param name="user_id" display="Indicia user id" description="Indicia user id to find group permissions for." datatype="integer"/>
+  </params>
+  <columns>
+    <column name="group_id" sql="groupTT.id" display="Group ID" in_count="true"/>
+    <column name="group_identifier_name" sql="groupT.term" display="Group identifier name"/>
+    <column name="group_count" sql="count(distinct groupT.term)" display="Group name count" aggregate="true"/>
+  </columns>
+</report>

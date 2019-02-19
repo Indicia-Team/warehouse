@@ -1,6 +1,7 @@
 -- #slow script#
-CREATE INDEX ix_cache_occurrences_functional_verify_ext_key
-  ON cache_occurrences_functional(website_id, taxa_taxon_list_external_key)
+CREATE INDEX ix_cache_occurrences_functional_verify_taxa
+  ON cache_occurrences_functional
+  USING GIN(website_id, taxon_path)
 WHERE record_status='C' and record_substatus IS NULL;
 CREATE INDEX ix_cache_occurrences_functional_verify_taxon_group
   ON cache_occurrences_functional(website_id, taxon_group_id)

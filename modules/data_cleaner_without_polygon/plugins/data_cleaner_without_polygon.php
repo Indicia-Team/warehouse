@@ -69,7 +69,7 @@ left join cache_occurrences_functional o2 on o2.id<>co.id
   and o2.map_sq_10km_id=co.map_sq_10km_id
 SQL;
   $whereSql = <<<SQL
-vr.reverse_rule=(st_intersects(co.public_geom, vr.geom) and not st_touches(co.public_geom, vr.geom))
+vr.reverse_rule=(st_intersects(co.public_geom, vr.geom) and (st_geometrytype(co.public_geom)='ST_Point' or not st_touches(co.public_geom, vr.geom)))
 SQL;
   $groupBy = <<<SQL
 group by co.id, co.taxa_taxon_list_external_key,

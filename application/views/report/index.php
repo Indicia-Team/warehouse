@@ -18,17 +18,13 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
+
+warehouse::loadHelpers(['report_helper']);
 ?>
 <form action="<?php echo url::site()?>report_viewer/load" method="GET">
 <?php
-require_once DOCROOT . 'client_helpers/report_helper.php';
-require_once DOCROOT . 'client_helpers/templates.bootstrap-3.php';
 $readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 echo report_helper::report_picker(array('readAuth' => $readAuth));
-report_helper::link_default_stylesheet();
-report_helper::$dumped_resources[] = 'jquery';
-report_helper::$dumped_resources[] = 'jquery_ui';
-report_helper::$dumped_resources[] = 'fancybox';
 echo report_helper::dump_javascript();
 ?>
 <input type="submit" value="Load report" />

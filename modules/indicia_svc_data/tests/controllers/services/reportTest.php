@@ -597,6 +597,15 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertArrayHasKey('point_geom', $response[0]);
   }
 
+  public function testReportRestricted() {
+    Kohana::log('debug', 'Running unit test, ' .
+        'Controllers_Services_Report_Test::testReportRestricted');
+    $response = $this->getReportResponse(
+      'library/occurrences/list_for_elastic_all.xml', array());
+    // Ensure that this report does not return as it should be restricted.
+    $this->assertTrue(isset($response['error']), 'Access to a restricted report worked');
+  }
+
   /**
    * Runs a test using the configuration array at the top of the class which does a fairly
    * thorough test of all the reports flagged as featured.

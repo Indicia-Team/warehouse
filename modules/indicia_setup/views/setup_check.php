@@ -58,9 +58,11 @@ if ($failures > 0) {
 }
 else {
   echo html::page_notice(
-    'Installation Complete',
-    'Congratulations! The Indicia Warehouse has been successfully installed. An admin account has been created for '.
-      'you with username=admin and no password and you will be asked to enter a password when you first log in.',
+    'Database installed',
+    'The database has been successfully installed. There are just a couple more steps required to complete the ' .
+    'installation. You now need to log in to the warehouse to bring the database up to the latest version. ' .
+    'An admin account has been created for you with username=admin and no password and you will be asked to enter ' .
+    'a password when you first log in.',
     'success',
     'ok',
     'Proceed to the login page',

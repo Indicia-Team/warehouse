@@ -158,6 +158,18 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'occurrence_external_key' => [
+        'datatype' => 'text',
+        'display' => 'External key',
+        'description' => 'Limit to a single record matching this occurrence external key.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "o.external_key='#occurrence_external_key#'",
+          ],
+        ],
+      ],
       'taxon_rank_sort_order' => [
         'datatype' => 'integer',
         'display' => 'Taxon rank',
@@ -190,9 +202,9 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
-              "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#) " .
-              "and not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#)",
+            'sql' => "JOIN locations #alias:lfilt# ON #alias:lfilt#.id #location_list_op# (#location_list#) AND #alias:lfilt#.deleted=false " .
+              "AND st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#) " .
+              "AND (st_geometrytype(#sample_geom_field#)='ST_Point' OR NOT st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#))",
           ],
         ],
       ],
@@ -203,11 +215,25 @@ class report_standard_params_occurrences {
         'wheres' => [
           [
             'param_op' => 'in',
-            'sql' => "o.location_ids @> ARRAY[#indexed_location_list#]",
+            'sql' => "o.location_ids && ARRAY[#indexed_location_list#]",
           ],
           [
             'param_op' => 'not in',
-            'sql' => "(NOT (o.location_ids @> ARRAY[#indexed_location_list#]) OR o.location_ids IS NULL)",
+            'sql' => "(NOT (o.location_ids && ARRAY[#indexed_location_list#]) OR o.location_ids IS NULL)",
+          ],
+        ],
+      ],
+      'indexed_location_type_list' => [
+        'datatype' => 'integer[]',
+        'display' => 'Location Type IDs (indexed)',
+        'description' => 'Comma separated list of location type IDs. Any record indexed against any location of one ' .
+          'of these types will be included.',
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => 'join locations ltype on o.location_ids @> ARRAY[ltype.id] ' .
+              'and ltype.location_type_id in (#indexed_location_type_list#) and ltype.deleted=false',
           ],
         ],
       ],
@@ -371,6 +397,36 @@ class report_standard_params_occurrences {
             'operator' => '',
             'sql' =>
             "o.verified_on>now()-'#verified_date_age#'::interval",
+          ],
+        ],
+      ],
+      'tracking_from' => [
+        'datatype' => 'integer',
+        'display' => 'First squential update ID to include',
+        'description' => 'All record inserts and updates are given a sequential tracking ID. Filter by this to limit ' .
+          'the range of records returned to a contiguous batch of updates. Tracking is updated when the record is ' .
+          'affected in any way, not just when it is edited. E.g. an update to spatial indexing will update the tracking.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' =>
+            "o.tracking >= #tracking_from#",
+          ],
+        ],
+      ],
+      'tracking_to' => [
+        'datatype' => 'integer',
+        'display' => 'Last squential update ID to include',
+        'description' => 'All record inserts and updates are given a sequential tracking ID. Filter by this to limit ' .
+          'the range of records returned to a contiguous batch of updates. Tracking is updated when the record is ' .
+          'affected in any way, not just when it is edited. E.g. an update to spatial indexing will update the tracking.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' =>
+            "o.tracking <= #tracking_from#",
           ],
         ],
       ],
@@ -742,13 +798,21 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.taxon_path && ARRAY[#taxa_taxon_list_list#]",
+            'sql' => "o.taxon_group_id IN (#taxon_group_ids#) and o.taxon_path && ARRAY[#taxon_meaning_ids#]",
           ],
         ],
-        'preprocess' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
-          from cache_taxa_taxon_lists l
-          join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
-          where l.id in (#taxa_taxon_list_list#)",
+        'preprocess' => [
+          'taxon_meaning_ids' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
+            from cache_taxa_taxon_lists l
+            join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
+            where l.id in (#taxa_taxon_list_list#)",
+          // Adds a second filter on taxon group ID. This is more likely to
+          // successfully use an index when the list of taxon meaning IDs is
+          // long.
+          'taxon_group_ids' => "select string_agg(distinct taxon_group_id::text, ',')
+            from cache_taxa_taxon_lists
+            where id in (#taxa_taxon_list_list#)",
+        ],
       ],
       'taxon_meaning_list' => [
         'datatype' => 'integer[]',
@@ -758,13 +822,21 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "(o.taxon_path && ARRAY[#taxon_meaning_list#] OR o.taxon_meaning_id in (#taxon_meaning_list-unprocessed#))",
+            'sql' => "o.taxon_group_id IN (#taxon_group_ids#) AND (o.taxon_path && ARRAY[#taxon_meaning_ids#] OR o.taxon_meaning_id in (#taxon_meaning_list-unprocessed#))",
           ],
         ],
-        'preprocess' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
-          from cache_taxa_taxon_lists l
-          join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
-          where l.taxon_meaning_id in (#taxon_meaning_list#)",
+        'preprocess' => [
+          'taxon_meaning_ids' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
+            from cache_taxa_taxon_lists l
+            join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
+            where l.taxon_meaning_id in (#taxon_meaning_list#)",
+          // Adds a second filter on taxon group ID. This is more likely to
+          // successfully use an index when the list of taxon meaning IDs is
+          // long.
+          'taxon_group_ids' => "select string_agg(distinct taxon_group_id::text, ',')
+            from cache_taxa_taxon_lists
+            where taxon_meaning_id in (#taxon_meaning_list#)",
+        ],
       ],
       'taxa_taxon_list_external_key_list' => [
         'datatype' => 'string[]',
@@ -774,12 +846,20 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.taxon_path && ARRAY[#taxa_taxon_list_external_key_list#]",
+            'sql' => "o.taxon_group_id in (#taxon_group_ids#) and o.taxon_path && ARRAY[#taxon_meaning_ids#]",
           ],
         ],
-        'preprocess' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
-          from cache_taxa_taxon_lists m
-          where m.taxon_list_id=#master_list_id# and m.external_key in (#taxa_taxon_list_external_key_list#)",
+        'preprocess' => [
+          'taxon_meaning_ids' => "select string_agg(distinct taxon_meaning_id::text, ',')
+            from cache_taxa_taxon_lists
+            where taxon_list_id=#master_list_id# and external_key in (#taxa_taxon_list_external_key_list#)",
+          // Adds a second filter on taxon group ID. This is more likely to
+          // successfully use an index when the list of taxon meaning IDs is
+          // long.
+          'taxon_group_ids' => "select string_agg(distinct taxon_group_id::text, ',')
+            from cache_taxa_taxon_lists
+            where taxon_list_id=#master_list_id# and external_key in (#taxa_taxon_list_external_key_list#)",
+        ],
       ],
       'taxon_designation_list' => [
         'datatype' => 'integer[]',
@@ -828,6 +908,32 @@ class report_standard_params_occurrences {
               'and ttl_attribute_terms.taxa_taxon_list_attribute_id in (#taxa_taxon_list_attribute_ids#) ' .
               'and ttl_attribute_terms.int_value in (#taxa_taxon_list_attribute_termlist_term_ids#)',
           ],
+        ],
+      ],
+      'taxa_scratchpad_list_id' => [
+        'datatype' => 'integer',
+        'display' => 'Scratchpad taxon list',
+        'description' => 'Limit to taxa listed in a scratchpad list.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "o.taxon_group_id IN (#taxon_group_ids#) and o.taxon_path && ARRAY[#taxon_meaning_ids#]",
+          ],
+        ],
+        'preprocess' => [
+          'taxon_meaning_ids' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
+            from scratchpad_list_entries sle
+            join cache_taxa_taxon_lists l on l.id=sle.entry_id
+            join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
+            where sle.scratchpad_list_id=#taxa_scratchpad_list_id#",
+          // Adds a second filter on taxon group ID. This is more likely to
+          // successfully use an index when the list of taxon meaning IDs is
+          // long.
+          'taxon_group_ids' => "select string_agg(distinct l.taxon_group_id::text, ',')
+            from scratchpad_list_entries sle
+            join cache_taxa_taxon_lists l on l.id=sle.entry_id
+            where sle.scratchpad_list_id=#taxa_scratchpad_list_id#",
         ],
       ],
     ];

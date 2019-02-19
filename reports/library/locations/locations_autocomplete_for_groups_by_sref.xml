@@ -1,0 +1,38 @@
+<report
+    title="Location autocomplete lookup for groups by centroid_sref."
+    description="Returns the list of sites that are linked to a recording group or its parent."
+    >
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+  JOIN groups_locations gl on gl.location_id=l.id and gl.deleted=false AND gl.group_id in (#group_id#)
+  LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+  LEFT JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id
+  #joins#
+  WHERE l.deleted=false 
+  AND lower(l.centroid_sref) like '#q#%'
+  AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name="group_id" display="Group ID" description="Comma separated list of group_ids to show locations for" datatype="integer[]" />
+    <param name='location_type_id' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.' datatype="integer[]" default="">
+      <where>l.location_type_id in (#location_type_id#)</where>
+    </param>
+    <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' default=''/>
+	<param name='q' display='Search sref' description='Start of centroid sref to search on, all lower case.' datatype='text' />
+  </params>
+  <columns>
+    <column name='location_id' display='ID' sql="l.id" datatype="integer" visible="false" />
+    <column name='groups_location_id' display='Groups location ID' sql="gl.id" datatype="integer" visible="false" />
+    <column name='name' display='Site name' sql="l.name" datatype="text" />
+    <column name='code' display='Site code' sql="l.code" datatype="text" />
+    <column name='location_type_id' visible='false' sql="l.location_type_id" datatype="integer" />
+    <column name='location_type' display='Type' sql="ctt.term" datatype="text" visible="false" />
+    <column name='centroid_sref' display='Map ref' sql="l.centroid_sref" datatype="text" />
+    <column name='centroid_sref_system' visible='false' sql="l.centroid_sref_system" datatype="text" />
+    <column name='geom' visible='false' sql="st_astext(coalesce(boundary_geom, centroid_geom))" datatype="text" mappable="true" />
+  </columns>
+</report>

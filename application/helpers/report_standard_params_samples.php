@@ -109,14 +109,20 @@ class report_standard_params_samples {
           array('value'=>'', 'operator'=>'', 'sql'=>"(s.location_name ilike '%#location_name#%' or l.name ilike '%#location_name#%')")
         )
       ),
-      'location_list' => array('datatype'=>'integer[]', 'display'=>'Location IDs',
-        'description'=>'Comma separated list of location IDs',
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
-            "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom) " .
-            "and not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom)")
-        )
-      ),
+      'location_list' => [
+        'datatype' => 'integer[]',
+        'display' => 'Location IDs',
+        'description' => 'Comma separated list of location IDs',
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
+              "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom) " .
+              "and (st_geometrytype(s.geom)='ST_Point' or not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom))",
+          ],
+        ],
+      ],
       'indexed_location_list' => [
         'datatype' => 'integer[]',
         'display' => 'Location IDs (indexed)',
@@ -124,11 +130,25 @@ class report_standard_params_samples {
         'wheres' => [
           [
             'param_op' => 'in',
-            'sql' => "s.location_ids @> ARRAY[#indexed_location_list#]",
+            'sql' => "s.location_ids && ARRAY[#indexed_location_list#]",
           ],
           [
             'param_op' => 'not in',
-            'sql' => "(NOT (s.location_ids @> ARRAY[#indexed_location_list#]) OR s.location_ids IS NULL)",
+            'sql' => "(NOT (s.location_ids && ARRAY[#indexed_location_list#]) OR s.location_ids IS NULL)",
+          ],
+        ],
+      ],
+      'indexed_location_type_list' => [
+        'datatype' => 'integer[]',
+        'display' => 'Location Type IDs (indexed)',
+        'description' => 'Comma separated list of location type IDs. Any record indexed against any location of one ' .
+          'of these types will be included.',
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => 'join locations ltype on s.location_ids @> ARRAY[ltype.id] ' .
+              'and ltype.location_type_id in (#indexed_location_type_list#) and ltype.deleted=false',
           ],
         ],
       ],
@@ -208,6 +228,36 @@ class report_standard_params_samples {
           array('value'=>'', 'operator'=>'', 'sql'=>"s.verified_on>now()-'#verified_date_age#'::interval")
         )
       ),
+      'tracking_from' => [
+        'datatype' => 'integer',
+        'display' => 'First squential update ID to include',
+        'description' => 'All record inserts and updates are given a sequential tracking ID. Filter by this to limit ' .
+          'the range of records returned to a contiguous batch of updates. Tracking is updated when the record is ' .
+          'affected in any way, not just when it is edited. E.g. an update to spatial indexing will update the tracking.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' =>
+            "s.tracking >= #tracking_from#",
+          ],
+        ],
+      ],
+      'tracking_to' => [
+        'datatype' => 'integer',
+        'display' => 'Last squential update ID to include',
+        'description' => 'All record inserts and updates are given a sequential tracking ID. Filter by this to limit ' .
+          'the range of records returned to a contiguous batch of updates. Tracking is updated when the record is ' .
+          'affected in any way, not just when it is edited. E.g. an update to spatial indexing will update the tracking.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' =>
+            "s.tracking <= #tracking_from#",
+          ],
+        ],
+      ],
       'quality' => array('datatype'=>'lookup', 'display'=>'Quality',
         'description'=>'Minimum quality of records to include',
         'lookup_values'=>'V:Accepted records only,P:Not reviewed,!D:Exclude queried or not accepted records,' .

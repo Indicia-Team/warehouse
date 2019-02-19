@@ -197,16 +197,23 @@ META;
       $array['columns'] = $this->view_columns;
     if ($wantParameters && isset($data['parameterRequest']))
       $array['parameterRequest'] = $data['parameterRequest'];
-    if ($wantCount && !isset($data['parameterRequest'])) {
+    // Retrieve the count if requested, only if we successfully obtained the
+    // records since we don't want to attempt counting if there are unfilfilled
+    // required parameters.
+    if ($wantCount && isset($data['records'])) {
       $count = $this->record_count();
-      if ($count !== FALSE)
+      if ($count !== FALSE) {
         $array['count'] = $count;
+      }
     }
-    // if only returning records, simplify the array down to just return the list of records rather than the full structure
-    if (count($array) === 1 && isset($array['records']))
+    // If only returning records, simplify the array down to just return the
+    // list of records rather than the full structure
+    if (count($array) === 1 && isset($array['records'])) {
       return array_pop($array);
-    else
+    }
+    else {
       return $array;
+    }
   }
 
   /**

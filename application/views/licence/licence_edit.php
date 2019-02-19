@@ -58,7 +58,6 @@ $id = html::initial_value($values, 'licence:id');
       'default' => html::initial_value($values, 'licence:url_readable'),
       'helpText' => 'Link to the online licence page in plain rather than legal language if available.',
       'validation' => array('url'),
-      'class' => 'control-width-6',
     ));
     echo data_entry_helper::text_input(array(
       'label' => 'URL (legal)',
@@ -66,7 +65,6 @@ $id = html::initial_value($values, 'licence:id');
       'default' => html::initial_value($values, 'licence:url_legal'),
       'helpText' => 'Link to the online licence page in legal rather than plain language if available.',
       'validation' => array('url'),
-      'class' => 'control-width-6',
     ));
     ?>
   </fieldset>

@@ -1,5 +1,13 @@
 # Upgrading to version 2 of the warehouse.
 
+**Before installing version 2 of Indicia, if upgrading from version 1 you
+should install the btree_gin extension for PostgreSQL using the following SQL
+statement, which requires admin privileges:
+
+```
+CREATE EXTENSION btree_gin;
+```
+
 * The warehouse upgrade to version 2 is significant and therefore should be
   tested on a copy of your setup before running on live. It may take up to
   several hours to apply if you have millions of occurrence records due to the
@@ -336,6 +344,23 @@ ALTER TABLE cache_taxon_paths OWNER TO indicia_user;
 -- This forces any new records to rebuild in the cache.
 UPDATE system SET last_scheduled_task_check='#datetime#' WHERE name='cache_builder';
 
+-- Ensure inserts since we started are in new cache.
+INSERT INTO cache_occurrences_functional_v2
+SELECT o.* FROM cache_occurrences_functional o
+LEFT JOIN cache_occurrences_functional_v2 o2 ON o2.id=o.id
+WHERE o2.id IS NULL
+AND o.updated_on > '#datetime#';
+
+-- Plus ensure any updates and deletes are applied.
+INSERT INTO work_queue(task, entity, record_id,
+    params, cost_estimate, priority, created_on)
+  SELECT 'task_cache_builder_update', 'occurrence', id,
+    CASE deleted WHEN true THEN '{"deleted":true}'::json ELSE NULL END,
+    100, 2, now()
+  FROM occurrences
+  WHERE updated_on>'#datetime#'
+  ORDER BY id;
+
 DROP VIEW cache_occurrences;
 DROP VIEW detail_occurrence_associations;
 DROP VIEW list_occurrence_associations;
@@ -517,8 +542,9 @@ CREATE TRIGGER delete_quick_reply_auth_trigger
 
    ```
 
-10. Visit index.php/home/upgrade on the website and run the upgrade scripts.
+10. Make sure the scripts mentioned in #3 are removed from your warehouse, then visit
+    index.php/home/upgrade on the website and run the upgrade scripts.
 11. Go back online.
 12. Drop the table index_locations_samples if and when you are sure that any
-   custom reports that refer to this table have been updated to use the new
-   location_ids fields.
+    custom reports that refer to this table have been updated to use the new
+    location_ids fields.

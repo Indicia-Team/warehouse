@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="All User Groups" description="A list of groups that are associated with a user, or all users for a website.">
+  <query website_filter_field="tl.website_id">
+    SELECT #columns#
+      FROM person_attribute_values pav
+      JOIN termlists_terms tt on tt.id = pav.int_value AND tt.deleted = false
+      JOIN termlists tl ON tl.id = tt.termlist_id AND tl.id = #group_termlist_id# AND tl.deleted=false
+      JOIN terms t ON t.id = tt.term_id AND t.deleted=false
+      LEFT JOIN people p on p.id = pav.person_id AND p.deleted=false
+      LEFT JOIN users u ON u.person_id=p.id
+      #joins#
+    WHERE 1=1
+      #filters#
+      AND pav.deleted=false
+      AND pav.person_attribute_id=#person_group_attr_id#
+      AND #website_filter#        
+   </query>
+  <order_bys>
+    <order_by>pav.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="person_group_attr_id" display="Person Groups Attribute ID" description="The person attribute ID used to store groups" datatype="integer" />
+    <param name="group_id" display="Group Id" description="A termlist term id used if we only want to return results for a single group." datatype="integer" default='' emptyvalue=''>
+      <where>tt.id=#group_id#</where>
+    </param>
+    <param name="group_termlist_id" display="Group termlist id" description="Id of the group termlist we are managing." datatype="text"/>
+    --Note am using the name the_user_id as just using user_id seems to pickup the current user's id automatically which isn't what we want at all
+    <param name="the_user_id" display="User Id" description="A user id used if we only want to return results for a single user." datatype="integer" default='' emptyvalue=''>
+      <where>u.id=#the_user_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" sql="pav.id" unique="true" in_count="integer" type="hidden" visible="false"/>
+    <column name="group_id" display="Group Id" sql="tt.id" datatype="integer" visible="false"/>
+    --note: Do not rename this as user_id as there appears to be automatic code associated with the website filter that looks for that name
+    <column name="pav_user_id" display="User Id" sql="u.id" datatype="integer" visible="false"/>
+    <column name="person_name" display="User's Name" sql="p.first_name || ' ' || p.surname" datatype="text"/>
+    --Default to invisible as this field was added later and don't want to affect old reports
+    <column name="person_email" display="User's Email" sql="p.email_address" visible="false" datatype="text"/>
+    <column name="group_name" display="Group" sql="t.term" datatype="text" />
+  </columns>
+</report>

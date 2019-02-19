@@ -56,12 +56,12 @@ WHERE claimed_by='$procId'
 AND entity='sample'
 AND task='task_spatial_index_builder_sample';
 
-SELECT DISTINCT s.id as sample_id, CASE WHEN count(l.id)=0 THEN NULL ELSE array_agg(l.id) END as location_ids
+SELECT DISTINCT s.id AS sample_id, array_agg(l.id) AS location_ids
 INTO TEMPORARY changed_samples
 FROM smplist sl
 JOIN cache_samples_functional s ON s.id=sl.record_id
 LEFT JOIN locations l ON st_intersects(l.boundary_geom, s.public_geom)
-  AND NOT st_touches(l.boundary_geom, s.public_geom)
+  AND (st_geometrytype(s.public_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.public_geom))
   AND l.deleted=false
   AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
   $locationTypeFilters[surveyFilters]
@@ -74,7 +74,7 @@ UPDATE cache_samples_functional u
 FROM changed_samples cs
 WHERE cs.sample_id=u.id
 AND (
-  ((u.location_ids is null)<>(cs.location_ids is null))
+  ((u.location_ids IS NULL)<>(cs.location_ids IS NULL))
   OR u.location_ids <@ cs.location_ids = false OR u.location_ids @> cs.location_ids = false
 );
 
