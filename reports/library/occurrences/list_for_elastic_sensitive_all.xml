@@ -127,7 +127,7 @@
     <column name="attr_det_name" sql="coalesce(onf.attr_det_full_name, coalesce(onf.attr_det_first_name, '') || ' ' || onf.attr_det_last_name)" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
     <column name="attr_sample_method" sql="snf.attr_sample_method" datatype="text" />
-    <column name="media" sql="snf.media" datatype="text" />
+    <column name="media" sql="onf.media" datatype="text" />
     <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="updated_on" sql="to_char(greatest(o.updated_on, cttl.cache_updated_on), 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="record_status" sql="o.record_status || coalesce(o.record_substatus::text, '')" datatype="text" />
