@@ -10,7 +10,7 @@ an event filter to return users associated with a particular event."
   JOIN users_websites uw on u.id=uw.user_id 
     LEFT JOIN person_attribute_values pavAddr ON pavAddr.person_id=u.person_id AND pavAddr.person_attribute_id=#address_attr_id# AND pavAddr.deleted=false
     LEFT JOIN person_attribute_values pavAddr2 ON pavAddr2.person_id=u.person_id AND pavAddr2.person_attribute_id=#address_attr_line_2_id# AND pavAddr2.deleted=false 
-    LEFT JOIN person_attribute_values pavAddr3 ON pavAddr3.person_id=u.person_id AND pavAddr3.person_attribute_id=#address_attr_line_3_id# AND pavAddr3.deleted=false 
+    LEFT JOIN person_attribute_values pavAddr3 ON pavAddr3.person_id=u.person_id AND pavAddr3.person_attribute_id=#address_attr_line_3_id# AND pavAddr3.deleted=false
     LEFT JOIN person_attribute_values pavTown ON pavTown.person_id=u.person_id AND pavTown.person_attribute_id=#town_attr_id# AND pavTown.deleted=false 
     LEFT JOIN person_attribute_values pavCounty ON pavCounty.person_id=u.person_id AND pavCounty.person_attribute_id=#county_attr_id# AND pavCounty.deleted=false 
     LEFT JOIN person_attribute_values pavCountry ON pavCountry.person_id=u.person_id AND pavCountry.person_attribute_id=#country_attr_id# AND pavCountry.deleted=false 
@@ -83,6 +83,10 @@ an event filter to return users associated with a particular event."
     <param name="registration_date_end" display="User registered before this date" description="Only return users who registered before this date." datatype="date" emptyvalue="">
       <where>(uw.created_on &lt;= CAST(COALESCE('#registration_date_end#','1500-01-01') as date))</where>
     </param>
+    <param name="ignore_registration_dates_before" display="Ignore Registration Dates Before" description="Ignore anyone who registered earlier than this date.
+        Useful if old users are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
+      <where>uw.created_on &gt;= CAST(COALESCE('#ignore_registration_dates_before#','1500-01-01') as date)</where>
+    </param>
     <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any squares created before this date.
         Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default=""/>
     <param name="address_attr_id" display="Address attribute id" description="Person attribute id that holds the user address." datatype="text"/>
@@ -98,18 +102,39 @@ an event filter to return users associated with a particular event."
     <param name="data_access_attr_id" display="Data Access Policy attribute id" description="Person attribute id that holds whether a user has agreed to the data access policy." datatype="text"/>
     <param name="allocation_date_start" display="User allocated square on or after this date" description="Only return users who were allocated a square on or after this date." datatype="date" emptyvalue=""/>
     <param name="allocation_date_end" display="User allocated square before this date" description="Only return users who were allocated a square before this date." datatype="date" emptyvalue=""/>
-    <param name="square_admin_page_link" display="Link to square administration page" description="Link to page which administrators use to manage squares." datatype="text" emptyvalue=""/>
     <param name="user_admin_page_link" display="Link to user administration page" description="Link to page which administrators use to manage users." datatype="text" emptyvalue=""/>
   </params>
-  <columns> 
-    <column name='person_surname' display='Surname' sql="p.surname" datatype='text'/>       
-    <column name='person_full_name' display='Full name' 
+  <columns>
+    <column name='person_full_name_admin_link' display='User administration link' 
         sql="'&lt;a href=&quot;' || '#user_admin_page_link#' || '?dynamic-the_user_id=' || u.id || '&quot;&gt;' || p.first_name || ' ' || p.surname || '&lt;/a&gt;'" 
     datatype='text'/> 
-    <column name='email_address' display='Email address' sql='p.email_address' datatype='text' />
-    <column name='address' display='Address' sql='pavAddr.text_value' datatype='text' />
-    <column name='address_line_2' display='Address Line 2' sql='pavAddr2.text_value' datatype='text' /> 
-    <column name='address_line_3' display='Address Line 3' sql='pavAddr3.text_value' datatype='text' /> 
+    <column name='person_surname' display='Surname' sql="p.surname" datatype='text'/>       
+    <column name='person_full_name' display='Full name' 
+        sql="p.first_name || ' ' || p.surname" 
+    datatype='text'/> 
+    <column name='email_address' display='Email address' sql='p.email_address' datatype='text' in_count='true'/>
+    <!--If we replace all new lines with commas, then we know we only need to deal with commas as address separator -->
+    <column name='address' display='Address' sql="
+    trim(
+      split_part(
+        REPLACE(pavAddr.text_value, E'\n', ',' )
+      ,',',1)
+    )" datatype='text' />
+    <column name='address_line_2' display='Address Line 2' sql="
+    trim(
+      split_part(
+        REPLACE(pavAddr.text_value, E'\n', ',' )
+      ,',',2)
+    )
+    " datatype='text' />
+    <!--Get everthing after second comma-->
+    <column name='address_line_3' display='Address Line 3' sql="
+    trim(
+      substring(
+        REPLACE(pavAddr.text_value, E'\n', ',' ), '[^,]*,[^,]*,(.*)'
+      )
+    )
+    " datatype='text' />
     <column name='town' display='Town' sql='pavTown.text_value' datatype='text' />
     <column name='county' display='County' sql='pavCounty.text_value' datatype='text' />
     <column name='country' display='Country' sql='pavCountry.text_value' datatype='text' />
@@ -123,8 +148,7 @@ an event filter to return users associated with a particular event."
     <column name='allocated_squares' sql="string_agg(distinct(case when 
           ((sqrPavDated.created_on &gt;= CAST(COALESCE('#allocation_date_start#','1500-01-01') as date) OR '#allocation_date_start#'='')
           AND (sqrPavDated.created_on &lt;= CAST(COALESCE('#allocation_date_end#','1500-01-01') as date) OR '#allocation_date_end#'=''))
-          THEN '&lt;a href=&quot;' || '#square_admin_page_link#' || '?location_id=' || sqr.id || '&quot;&gt;' || sqr.name || '&lt;/a&gt;' 
-          ELSE '&lt;b style=&quot;color:red&quot;&gt;' || '&lt;a href=&quot;' || '#square_admin_page_link#' || '?location_id=' || sqr.id || '&quot;&gt;' || sqr.name || '&lt;/a&gt;'   || '&lt;/b&gt;' END), ', ')" 
+          Then sqr.name else '&lt;b style=&quot;color:red&quot;&gt;' || sqr.name || '&lt;/b&gt;' END), ', ')" 
         display='Squares allocated' datatype='text' aggregate="true"/>
     <column name='allocated_events' sql="string_agg(distinct(event.name), ',')" display='Events' datatype='text' aggregate="true"/>
   </columns>
