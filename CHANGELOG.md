@@ -1,3 +1,13 @@
+# Version 2.9.0
+*2019-02-22*
+
+* Adds a download folder to warehouse for temporary generated download files.
+* REST API ElasticSearch proxy supports the Scroll API for generation of large downnload files in chunks.
+* REST API ElasticSearch proxy supports formatting output as CSV.
+* Fix REST API JSON output so that zeros are not excluded.
+* Improvements to ElasticSearch document format.
+* Updates to reports for Splash.
+
 # Version 2.8.0
 *2019-02-15*
 
