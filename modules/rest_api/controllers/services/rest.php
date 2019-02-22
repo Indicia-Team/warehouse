@@ -833,13 +833,22 @@ class Rest_Controller extends Controller {
 
   /**
    * Custom sort function for date comparison of files.
+   *
+   * @param int $a
+   *   Date value 1 as Unix timestamp.
+   * * @param int $a
+   *   Date value 1 as Unix timestamp.
    */
-  private static function DateCmp($a, $b) {
-    if ($a[1]<$b[1])
+  private static function dateCmp($a, $b) {
+    if ($a[1] < $b[1]) {
       $r = -1;
-    else if ($a[1]>$b[1])
+    }
+    elseif ($a[1] > $b[1]) {
       $r = 1;
-    else $r=0;
+    }
+    else {
+      $r = 0;
+    }
     return $r;
   }
 
@@ -851,7 +860,7 @@ class Rest_Controller extends Controller {
   private static function purgeDownloadFiles() {
     // don't do this every time.
     if (TRUE || rand(1, 10) === 1) {
-      // First, get an array of files sorted by date
+      // First, get an array of files sorted by date.
       $files = array();
       $folder = DOCROOT . 'download/';
       $dir = opendir($folder);
@@ -867,7 +876,7 @@ class Rest_Controller extends Controller {
         }
       }
       // Sort the file array by date, oldest first.
-      usort($files, array('Rest_Controller', 'DateCmp'));
+      usort($files, array('Rest_Controller', 'dateCmp'));
       // Iterate files, ignoring the number of files we allow in the cache
       // without caring.
       for ($i = 0; $i < count($files); $i++) {
