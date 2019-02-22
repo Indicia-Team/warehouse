@@ -869,6 +869,6 @@ ROW;
    * @return bool
    */
   function notEmpty($value) {
-    return !empty($value);
+    return $value !== NULL && $value !== '';
   }
 }
