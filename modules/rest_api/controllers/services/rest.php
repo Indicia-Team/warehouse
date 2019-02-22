@@ -992,9 +992,6 @@ class Rest_Controller extends Controller {
     curl_setopt($session, CURLOPT_HEADER, FALSE);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($session, CURLOPT_REFERER, $_SERVER['HTTP_HOST']);
-    kohana::log('debug', 'ES request');
-    kohana::log('debug', $actualUrl);
-    kohana::log('debug', $postData);
     // Do the POST and then close the session.
     $response = curl_exec($session);
     $headers = curl_getinfo($session);
