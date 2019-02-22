@@ -13,7 +13,7 @@
     FROM cache_occurrences_functional o
     #joins#
     WHERE sensitive=true
-    AND o.tracking&lt;'#update_to#'
+    AND (o.tracking IS NULL OR o.tracking&lt;#update_to#)
     #filters#
     #order_by#
     LIMIT #limit#;
@@ -50,8 +50,11 @@
       preprocess="SELECT LEAST(
         (
           SELECT tracking FROM cache_occurrences_functional
-          WHERE location_ids IS NOT NULL
-          OR (data_cleaner_result IS NULL and verification_checks_enabled=TRUE)
+          WHERE tracking IS NOT NULL
+          AND (
+            location_ids IS NOT NULL
+            OR (data_cleaner_result IS NULL and verification_checks_enabled=TRUE)
+          )
           ORDER BY tracking DESC LIMIT 1
         ),
         -(((2^(8*pg_column_size(1::bigint)-2))::bigint &lt;&lt; 1)+1)
@@ -60,6 +63,7 @@
   <columns>
     <!-- Tracking field called "id" is required for autofeed to work. -->
     <column name="id" sql="o.id" datatype="integer" />
+    <column name="occurrence_external_key" sql="o.external_key" datatype="text" />
     <column name="created_by_id" sql="o.created_by_id" datatype="integer" />
     <column name="website_id" sql="o.website_id" datatype="integer" />
     <column name="survey_id" sql="o.survey_id" datatype="integer" />
@@ -130,7 +134,8 @@
     <column name="media" sql="onf.media" datatype="text" />
     <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="updated_on" sql="to_char(greatest(o.updated_on, cttl.cache_updated_on), 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
-    <column name="record_status" sql="o.record_status || coalesce(o.record_substatus::text, '')" datatype="text" />
+    <column name="record_status" sql="o.record_status" datatype="text" />
+    <column name="record_substatus" sql="coalesce(o.record_substatus, 0)" datatype="integer" />
     <column name="verified_by_id" sql="occ.verified_by_id" datatype="integer" />
     <column name="verifier" sql="onf.verifier" datatype="text" />
     <column name="verified_on" sql="to_char(o.verified_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
