@@ -832,6 +832,59 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Custom sort function for date comparison of files.
+   */
+  private static function DateCmp($a, $b) {
+    if ($a[1]<$b[1])
+      $r = -1;
+    else if ($a[1]>$b[1])
+      $r = 1;
+    else $r=0;
+    return $r;
+  }
+
+  /**
+   * Functionality for purging the old download files.
+   *
+   * Anything older than 1 hour is a candidate for deletion.
+   */
+  private static function purgeDownloadFiles() {
+    // don't do this every time.
+    if (TRUE || rand(1, 10) === 1) {
+      // First, get an array of files sorted by date
+      $files = array();
+      $folder = DOCROOT . 'download/';
+      $dir = opendir($folder);
+      // Skip certain file names.
+      $exclude = array('.', '..', '.htaccess', 'web.config', '.gitignore');
+      if ($dir) {
+        while ($filename = readdir($dir)) {
+          if (is_dir($filename) || in_array($filename, $exclude)) {
+            continue;
+          }
+          $lastModified = filemtime($folder . $filename);
+          $files[] = array($folder . $filename, $lastModified);
+        }
+      }
+      // Sort the file array by date, oldest first.
+      usort($files, array('Rest_Controller', 'DateCmp'));
+      // Iterate files, ignoring the number of files we allow in the cache
+      // without caring.
+      for ($i = 0; $i < count($files); $i++) {
+        // If we have reached a file that is not old enough to expire, don't
+        // go any further. Expiry set to 1 hour.
+        if ($files[$i][1] > (time() - 3600)) {
+          break;
+        }
+        // Clear out the old file.
+        if (is_file($files[$i][0])) {
+          unlink($files[$i][0]);
+        }
+      }
+    }
+  }
+
+  /**
    * Builds an empty CSV file ready to received a scrolled ES request.
    *
    * @param string $format
@@ -841,6 +894,7 @@ class Rest_Controller extends Controller {
    *   File array containing the name and handle.
    */
   private function prepareScrollFile($format) {
+    $this->purgeDownloadFiles();
     $filename = uniqid() . ".$format";
     // Reopen file for appending.
     $handle = fopen(DOCROOT . "download/$filename", "w");
@@ -1139,12 +1193,21 @@ class Rest_Controller extends Controller {
     return '';
   }
 
+  /**
+   * Processes parameters passed to a special field function.
+   *
+   * @param string $params
+   *   Parameters input string, e.g. "type=Country,field=code".
+   *
+   * @return array
+   *   Key value pairs.
+   */
   private function explodeParams($params) {
     $list = explode(',', $params);
     $r = [];
     foreach ($list as $item) {
       $tokens = explode('=', $item);
-      $r[$tokens[0]] = $tokens[1];
+      $r[trim($tokens[0])] = trim($tokens[1]);
     }
     return $r;
   }
