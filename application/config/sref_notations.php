@@ -34,6 +34,7 @@ $config['sref_notations'] = [
   '31370' => 'Belgian Lambert 72',
   '3109' => 'ETRS89 / Jersey Transverse Mercator',
   '23030' => 'ED50 / UTM zone 30N',
+  '29902' => 'TM65 / Irish Grid',
 ];
 
 // Set the internally stored geoms to use spherical mercator projection.

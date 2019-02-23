@@ -1,3 +1,8 @@
+# Version 2.10.0
+*2019-02-22*
+
+* Adds support for importing locations using TM65 Irish Grid projection.
+
 # Version 2.9.0
 *2019-02-22*
 
