@@ -24,6 +24,9 @@
 
 define("REST_API_DEFAULT_PAGE_SIZE", 100);
 define("AUTOFEED_DEFAULT_PAGE_SIZE", 10000);
+// Max load from ES, keep fairly low to avoid PHP memory overload.
+define('MAX_ES_SIZE', 2000);
+define('SCROLL_TIMEOUT', '5m');
 
 if (!function_exists('apache_request_headers')) {
   Kohana::log('debug', 'PHP apache_request_headers() function does not exist. Replacement function used.');
@@ -713,6 +716,248 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Template for ES CSV output.
+   *
+   * @var array
+   *
+   * @todo Make this configurable.
+   */
+  private $esCsvTemplate = [
+    'ID' => 'id',
+    'RecordKey' => '_id',
+    'Sample ID' => 'event.event_id',
+    'Date' => '[date string]',
+    'Recorded by' => 'event.recorded_by',
+    'Determined by' => 'identification.identified_by',
+    'Grid reference' => 'location.output_sref',
+    'System' => 'location.output_sref_system',
+    'Coordinate uncertainty (m)' => 'location.coordinate_uncertainty_in_metres',
+    'Lat/Long' => 'location.point',
+    'Location name' => 'location.name',
+    'Higher geography' => '[higher geography](field=name,text=true)',
+    'Vice County' => '[higher geography](field=name,text=true,type=Vice County)',
+    'Vice County number' => '[higher geography](field=code,text=true,type=Vice County)',
+    'Identified by' => 'identification.identified_by',
+    'Taxon accepted name' => 'taxon.accepted_name',
+    'Taxon recorded name' => 'taxon.taxon_name',
+    'Taxon common name' => 'taxon.vernacular_name',
+    'Taxon group' => 'taxon.group',
+    'Kindom' => 'taxon.kingdom',
+    'Phylum' => 'taxon.phylum',
+    'Order' => 'taxon.order',
+    'Family' => 'taxon.family',
+    'Genus' => 'taxon.genus',
+    'Taxon Version Key' => 'taxon.taxon_id',
+    'Accepted Taxon Version Key' => 'taxon.accepted_taxon_id',
+    'Sex' => 'occurrence.sex',
+    'Stage' => 'occurrence.life_stage',
+    'Quantity' => 'occurrence.organism_quantity',
+    'Zero abundance' => 'occurrence.zero_abundance',
+    'Sensitive' => 'metadata.sensitive',
+    'Record status' => 'identification.identification_verification_status',
+    'Verifier' => 'identification.verifier.name',
+    'Verified on' => 'identification.verified_on',
+    'Website' => 'metadata.website.title',
+    'Survey dataset' => 'metadata.survey.title',
+    'Media' => '[media]',
+  ];
+  // occurrence external key
+
+
+  /**
+   * Calculate the data to post to an ElasticSearch search.
+   *
+   * @param string $scrollMode
+   *   Scroll mode for ES, either off, initial, or nextpage.
+   *
+   * @return string
+   *   Data to post.
+   */
+  private function getEsPostData($scrollMode) {
+    if ($scrollMode === 'nextpage') {
+      // A subsequent hit on a scrolled request.
+      $postObj = [
+        'scroll_id' => $_GET['scroll_id'],
+        'scroll' => SCROLL_TIMEOUT,
+      ];
+    }
+    else {
+      // Either unscrolled, or the first call to a scroll. So post the query.
+      $postData = file_get_contents('php://input');
+      $postObj = empty($postData) ? [] : json_decode($postData, TRUE);
+      $postObj['size'] = MAX_ES_SIZE;
+    }
+    return json_encode($postObj);
+  }
+
+  /**
+   * Works out the actual URL required for an ElasticSearch request.
+   *
+   * Caters for fact that the URL is different when scrolling to the next page
+   * of a scrolled request. For unscrolled URLs adds the GET parameters to the
+   * request if appropriate.
+   *
+   * @param string $url
+   *   ElasticSearch alias URL.
+   * @param string $scrollMode
+   *   Current scroll mode, either off, initial or nextpage.
+   *
+   * @return string
+   *   Revised URL.
+   */
+  private function getEsActualUrl($url, $scrollMode) {
+    if ($scrollMode === 'nextpage') {
+      // On subsequent hits to a scrolled request, the URL is different.
+      return preg_replace('/[a-z0-9_-]*\/_search$/', '_search/scroll', $url);
+    }
+    else {
+      if (!empty($_GET)) {
+        $params = array_merge($_GET);
+        // Don't pass on the auth tokens.
+        unset($params['user']);
+        unset($params['website_id']);
+        unset($params['secret']);
+        unset($params['format']);
+        unset($params['scroll']);
+        unset($params['scroll_id']);
+        unset($params['callback']);
+        unset($params['_']);
+        if ($scrollMode === 'initial') {
+          $params['scroll'] = SCROLL_TIMEOUT;
+        }
+        $url .= '?' . http_build_query($params);
+      }
+      return $url;
+    }
+  }
+
+  /**
+   * Custom sort function for date comparison of files.
+   *
+   * @param int $a
+   *   Date value 1 as Unix timestamp.
+   * * @param int $a
+   *   Date value 1 as Unix timestamp.
+   */
+  private static function dateCmp($a, $b) {
+    if ($a[1] < $b[1]) {
+      $r = -1;
+    }
+    elseif ($a[1] > $b[1]) {
+      $r = 1;
+    }
+    else {
+      $r = 0;
+    }
+    return $r;
+  }
+
+  /**
+   * Functionality for purging the old download files.
+   *
+   * Anything older than 1 hour is a candidate for deletion.
+   */
+  private static function purgeDownloadFiles() {
+    // don't do this every time.
+    if (TRUE || rand(1, 10) === 1) {
+      // First, get an array of files sorted by date.
+      $files = array();
+      $folder = DOCROOT . 'download/';
+      $dir = opendir($folder);
+      // Skip certain file names.
+      $exclude = array('.', '..', '.htaccess', 'web.config', '.gitignore');
+      if ($dir) {
+        while ($filename = readdir($dir)) {
+          if (is_dir($filename) || in_array($filename, $exclude)) {
+            continue;
+          }
+          $lastModified = filemtime($folder . $filename);
+          $files[] = array($folder . $filename, $lastModified);
+        }
+      }
+      // Sort the file array by date, oldest first.
+      usort($files, array('Rest_Controller', 'dateCmp'));
+      // Iterate files, ignoring the number of files we allow in the cache
+      // without caring.
+      for ($i = 0; $i < count($files); $i++) {
+        // If we have reached a file that is not old enough to expire, don't
+        // go any further. Expiry set to 1 hour.
+        if ($files[$i][1] > (time() - 3600)) {
+          break;
+        }
+        // Clear out the old file.
+        if (is_file($files[$i][0])) {
+          unlink($files[$i][0]);
+        }
+      }
+    }
+  }
+
+  /**
+   * Builds an empty CSV file ready to received a scrolled ES request.
+   *
+   * @param string $format
+   *   Data format, either json or csv.
+   *
+   * @return array
+   *   File array containing the name and handle.
+   */
+  private function prepareScrollFile($format) {
+    $this->purgeDownloadFiles();
+    $filename = uniqid() . ".$format";
+    // Reopen file for appending.
+    $handle = fopen(DOCROOT . "download/$filename", "w");
+    fwrite($handle, $this->getEsOutputHeader($format));
+    return [
+      'filename' => $filename,
+      'handle' => $handle,
+    ];
+  }
+
+  /**
+   * Builds the header for the top of a scrolled ElasticSearch output.
+   *
+   * For example, adds the CSV row.
+   *
+   * @param string $format
+   *   Data format, either json or csv.
+   *
+   * @return string
+   *   Header content.
+   */
+  private function getEsOutputHeader($format) {
+    if ($format === 'csv') {
+      $row = array_map(function ($cell) {
+        // Cells containing a quote, a comma or a new line will need to be
+        // contained in double quotes.
+        if (preg_match('/["\n,]/', $cell)) {
+          // Double quotes within cells need to be escaped.
+          return '"' . preg_replace('/"/', '""', $cell) . '"';
+        }
+        return $cell;
+      }, array_keys($this->esCsvTemplate));
+      return implode(',', $row) . "\n";
+    }
+    return '';
+  }
+
+  /**
+   * Create a temporary file that will be used to build an ES download.
+   *
+   * @return array
+   *   File details, array containing filename and handle.
+   */
+  private function openScrollFile() {
+    $cache = Cache::instance();
+    $info = $cache->get("es-scroll-$_GET[scroll_id]");
+    if ($info === NULL) {
+      $this->apiResponse->fail('Bad request', 400, 'Invalid scroll ID.');
+    }
+    $info['handle'] = fopen(DOCROOT . "download/$info[filename]", 'a');
+    return $info;
+  }
+
+  /**
    * Proxies the current request to a provided URL.
    *
    * Eg. used when proxying to an Elasticsearch instance.
@@ -720,47 +965,301 @@ class Rest_Controller extends Controller {
    * @param string $url
    *   URL to proxy to.
    */
-  private function proxyTo($url) {
-    $session = curl_init($url);
-    // Set the POST options.
-    $httpHeader = array();
-    $postData = file_get_contents('php://input');
-    if (empty($postData)) {
-      $postData = $_POST;
-    }
-    else {
-      // Post body contains a raw XML document?
-      if (is_string($postData) && substr($postData, 0, 1) === '<') {
-        $httpHeader[] = 'Content-Type: text/xml';
-      }
-      else {
-        $httpHeader[] = 'Content-Type: application/json';
-      }
-    }
+  private function proxyToEs($url) {
+    $format = isset($_GET['format']) && $_GET['format'] === 'csv' ? 'csv' : 'json';
+    $scrollMode = isset($_GET['scroll']) ? 'initial' : (empty($_GET['scroll_id']) ? 'off' : 'nextpage');
+    $postData = $this->getEsPostData($scrollMode);
+    $actualUrl = $this->getEsActualUrl($url, $scrollMode);
+    $session = curl_init($actualUrl);
     if (!empty($postData)) {
       curl_setopt($session, CURLOPT_POST, 1);
       curl_setopt($session, CURLOPT_POSTFIELDS, $postData);
     }
-    if (count($httpHeader) > 0) {
-      curl_setopt($session, CURLOPT_HTTPHEADER, $httpHeader);
+    if ($scrollMode === 'initial') {
+      // First iteration of a scrolled request, so prepare an output file.
+      $file = $this->prepareScrollFile($format);
     }
-
-    curl_setopt($session, CURLOPT_HEADER, TRUE);
+    elseif ($scrollMode === 'nextpage') {
+      $file = $this->openScrollFile();
+    }
+    else {
+      echo $this->getEsOutputHeader($format);
+    }
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+      curl_setopt($session, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
+    }
+    curl_setopt($session, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($session, CURLOPT_HEADER, FALSE);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($session, CURLOPT_REFERER, $_SERVER['HTTP_HOST']);
-    curl_setopt($session, CURLOPT_SSL_VERIFYPEER, FALSE);
-
     // Do the POST and then close the session.
     $response = curl_exec($session);
     $headers = curl_getinfo($session);
-    if (array_key_exists('charset', $headers)) {
-      $headers['content_type'] .= '; ' . $headers['charset'];
-    }
-    header('Content-type: ' . $headers['content_type']);
-    // Last part of response is the actual data.
-    $arr = explode("\r\n\r\n", $response);
-    echo array_pop($arr);
     curl_close($session);
+    // First response from a scroll, need to grab the scroll ID.
+    if ($scrollMode === 'initial') {
+      $data = json_decode($response, TRUE);
+      $file['scroll_id'] = $data['_scroll_id'];
+      $file['total'] = $data['hits']['total'];
+      $file['done'] = 0;
+    }
+    elseif ($scrollMode === 'nextpage') {
+      $file['scroll_id'] = $_GET['scroll_id'];
+    }
+
+    if ($scrollMode === 'off') {
+      switch ($format) {
+        case 'csv':
+          header('Content-type: text/csv');
+          $this->esToCsv($response);
+          break;
+
+        case 'json':
+          if (array_key_exists('charset', $headers)) {
+            $headers['content_type'] .= '; ' . $headers['charset'];
+          }
+          header('Content-type: ' . $headers['content_type']);
+          echo $response;
+          break;
+
+        default:
+          throw new exception("Invalid format $format");
+      }
+    }
+    else {
+      switch ($format) {
+        case 'csv':
+          $this->esToCsv($response, $file);
+          break;
+
+        case 'json':
+          // Append a separator to the output file.
+          fwrite($file['handle'], "\n~~~\n");
+          break;
+
+        default:
+          throw new exception("Invalid format $format");
+      }
+      fclose($file['handle']);
+      unset($file['handle']);
+      $file['done'] = min($file['total'], $file['done'] + MAX_ES_SIZE);
+      $cache = Cache::instance();
+      if ($file['done'] < $file['total']) {
+        $cache->set("es-scroll-$file[scroll_id]", $file);
+      }
+      else {
+        $cache->delete("es-scroll-$file[scroll_id]", $file);
+        unset($file['scroll_id']);
+      }
+      $file['filename'] = url::base() . 'download/' . $file['filename'];
+      header('Content-type: application/json');
+      // Allow for a JSONP cross-site request.
+      if (array_key_exists('callback', $_GET)) {
+        echo $_GET['callback'] . "(" . json_encode($file) . ")";
+      }
+      else {
+        echo json_encode($file);
+      }
+    }
+  }
+
+  /**
+   * Converts an ElasticSearch response to a chunk of CSV data.
+   *
+   * @param string $response
+   *   Response from an ElasticSearch search.
+   * @param array $file
+   *   File data, or NULL if not writing to a file in which case the output
+   *   is echoed.
+   */
+  private function esToCsv($response, $file = NULL) {
+    $data = json_decode($response, TRUE);
+    if (empty($data['hits']['hits'])) {
+      return;
+    }
+    foreach ($data['hits']['hits'] as $doc) {
+      $row = [];
+      foreach ($this->esCsvTemplate as $source) {
+        $this->copyIntoCSVRow($doc['_source'], $source, $row);
+      }
+      $row = array_map(function ($cell) {
+        // Cells containing a quote, a comma or a new line will need to be
+        // contained in double quotes.
+        if (preg_match('/["\n,]/', $cell)) {
+          // Double quotes within cells need to be escaped.
+          return '"' . preg_replace('/"/', '""', $cell) . '"';
+        }
+        return $cell;
+      }, $row);
+      if ($file) {
+        fwrite($file['handle'], implode(',', $row) . "\n");
+      }
+      else {
+        echo implode(',', $row) . "\n";
+      }
+    };
+  }
+
+  /**
+   * Special field handler for ElasticSearch dates.
+   *
+   * Converts event.date_from and event.date_to to a readable date string, e.g.
+   * for inclusion in CSV output.
+   *
+   * @param array $doc
+   *   ElasticSearch document.
+   *
+   * @return string
+   *   Formatted readable date.
+   */
+  private function esGetSpecialFieldDateString($doc) {
+    if (empty($doc['event']['date_start']) && empty($doc['event']['date_end'])) {
+      return 'Unknown';
+    }
+    elseif (empty($doc['event']['date_end'])) {
+      return 'After ' . $doc['event']['date_start'];
+    }
+    elseif (empty($doc['event']['date_start'])) {
+      return 'Before ' . $doc['event']['date_end'];
+    }
+    elseif ($doc['event']['date_start'] === $doc['event']['date_end']) {
+      return $doc['event']['date_start'];
+    }
+    else {
+      return $doc['event']['date_start'] . ' to ' . $doc['event']['date_end'];
+    }
+  }
+
+  /**
+   * Special field handler for ElasticSearch higher geography.
+   *
+   * Converts location.higher_geography to a string, e.g. for inclusion in CSV
+   * output. Configurable output by passing parameters:
+   * * type - limit output to this type.
+   * * field - limit output to content of this field (name, id, type or code).
+   * * text - set to tru to convert the resultant JSON to text.
+   * E.g. pass type=Country, field=name, text=true to convert to a plaintext
+   * Country name.
+   *
+   * @param array $doc
+   *   ElasticSearch document.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldHigherGeography($doc, $params) {
+    if (isset($doc['location']) && isset($doc['location']['higher_geography'])) {
+      if (empty($params) || empty($params['type'])) {
+        $r = $doc['location']['higher_geography'];
+      }
+      else {
+        $r = [];
+        foreach ($doc['location']['higher_geography'] as $loc) {
+          if ($loc['type'] === $params['type']) {
+            if (!empty($params['field'])) {
+              $r[] = $loc[$params['field']];
+            }
+            else {
+              $r[] = $loc;
+            }
+          }
+        }
+      }
+      if (!empty($params['text']) && $params['text'] === 'true') {
+        $outputList = [];
+        foreach ($r as $outputItem) {
+          $outputList[] = is_array($outputItem) ? implode(';', $outputItem) : $outputItem;
+        }
+        return implode('|', $outputList);
+      }
+      else {
+        return json_encode($r);
+      }
+    }
+    else {
+      return '';
+    }
+  }
+
+  /**
+   * Special field handler for ElasticSearch media.
+   *
+   * Concatenates media to a comma separated string.
+   *
+   * @param array $doc
+   *   ElasticSearch document.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldMedia($doc) {
+    if (!empty($doc['occurrence']['associated_media'])) {
+      return implode('; ', $doc['occurrence']['associated_media']);
+    }
+    return '';
+  }
+
+  /**
+   * Processes parameters passed to a special field function.
+   *
+   * @param string $params
+   *   Parameters input string, e.g. "type=Country,field=code".
+   *
+   * @return array
+   *   Key value pairs.
+   */
+  private function explodeParams($params) {
+    $list = explode(',', $params);
+    $r = [];
+    foreach ($list as $item) {
+      $tokens = explode('=', $item);
+      $r[trim($tokens[0])] = trim($tokens[1]);
+    }
+    return $r;
+  }
+
+  /**
+   * Copies a source field from an ElasticSearch document into a CSV row.
+   *
+   * @param array $doc
+   *   ElasticSearch document.
+   * @param string $source
+   *   Source field name or special field name.
+   * @param array $row
+   *   Output row array, will be update with the value to output.
+   */
+  private function copyIntoCSVRow($doc, $source, array &$row) {
+    if (preg_match('/^\[(?P<sourceType>[a-z ]*)\](\((?<params>[a-z0-9]*=[^,=\)]*(,[a-z0-9]*=[^,=\)]*)*)\))?$/', $source, $matches)) {
+      $fn = 'esGetSpecialField' .
+        str_replace(' ', '', ucwords(str_replace(['['], '', $matches['sourceType'])));
+      $params = empty($matches['params']) ? [] : $this->explodeParams($matches['params']);
+      if (method_exists($this, $fn)) {
+        $row[] = $this->$fn($doc, $params);
+      }
+      else {
+        $row[] = "Invalid field $source";
+      }
+    }
+    else {
+      if (!preg_match('/^[a-z0-9_]+(\.[a-z0-9_]+)*$/', $source)) {
+        $row[] = "Invalid field $source";
+      }
+      else {
+        $search = explode('.', $source);
+        $data = $doc;
+        $failed = FALSE;
+        foreach ($search as $field) {
+          if (isset($data[$field])) {
+            $data = $data[$field];
+          }
+          else {
+            $failed = TRUE;
+            break;
+          }
+        }
+        $row[] = $failed ? '-' : $data;
+      }
+    }
   }
 
   /**
@@ -784,14 +1283,7 @@ class Rest_Controller extends Controller {
       }
     }
     $url = "$thisProxyCfg[url]/$thisProxyCfg[index]/$resource";
-    if (!empty($_GET)) {
-      // Don't pass on the auth tokens.
-      unset($_GET['user']);
-      unset($_GET['website_id']);
-      unset($_GET['secret']);
-      $url .= '?' . http_build_query($_GET);
-    }
-    $this->proxyTo($url);
+    $this->proxyToEs($url);
   }
 
   /**
