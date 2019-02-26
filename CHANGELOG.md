@@ -1,3 +1,9 @@
+# Version 2.11.0
+*2019-02-26*
+
+* CSV files generated for download using the REST API and the Elasticsearch scroll API
+  are now zipped.
+
 # Version 2.10.0
 *2019-02-22*
 
