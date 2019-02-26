@@ -52,7 +52,7 @@ class report_standard_params_occurrences {
    * Gets parameter details related to operations on other parameter values.
    *
    * List of parameters that have an associated operation parameter. E.g. along
-   * with the occurrence_id parameter you can supply occurrence_id_op='>=' to define the operation
+   * with the occ_id parameter you can supply occ_id_op='>=' to define the operation
    * to be applied in the filter.
    *
    * @return array
@@ -60,10 +60,10 @@ class report_standard_params_occurrences {
    */
   public static function getOperationParameters() {
     return [
-      'occurrence_id' => [
+      'occ_id' => [
         'datatype' => 'lookup',
         'display' => 'ID operation',
-        'description' => 'Operator to use in conjunction with a value provided in the occurrence_id parameter.',
+        'description' => 'Operator to use in conjunction with a value provided in the occ_id parameter.',
         'lookup_values' => '=:is,>=:is at least,<=:is at most',
       ],
       'website_list' => [
@@ -131,7 +131,7 @@ class report_standard_params_occurrences {
         'display' => 'List of IDs',
         'emptyvalue' => '',
         'fieldname' => 'o.id',
-        'alias' => 'occurrence_id',
+        'alias' => 'occ_id',
         'description' => 'Comma separated list of occurrence IDs to filter to.',
       ],
       'searchArea' => [
@@ -146,15 +146,15 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
-      'occurrence_id' => [
+      'occ_id' => [
         'datatype' => 'integer',
         'display' => 'ID',
-        'description' => 'Limit to a single record matching this occurrence ID.',
+        'description' => 'Limit by occurrence ID.',
         'wheres' => [
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.id #occurrence_id_op# #occurrence_id#",
+            'sql' => "o.id #occ_id_op# #occ_id#",
           ],
         ],
       ],
@@ -1094,7 +1094,7 @@ class report_standard_params_occurrences {
    */
   public static function getDefaultParameterValues() {
     return [
-      'occurrence_id_op' => '=',
+      'occ_id_op' => '=',
       'taxon_rank_sort_order_op' => '=',
       'website_list_op' => 'in',
       'survey_list_op' => 'in',
@@ -1102,7 +1102,7 @@ class report_standard_params_occurrences {
       'location_list_op' => 'in',
       'indexed_location_list_op' => 'in',
       'identification_difficulty_op' => '=',
-      'occurrence_id_op_context' => '=',
+      'occ_id_op_context' => '=',
       'website_list_op_context' => 'in',
       'survey_list_op_context' => 'in',
       'input_form_list_op_context' => 'in',
