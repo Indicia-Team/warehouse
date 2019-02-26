@@ -91,22 +91,22 @@ class report_standard_params_samples {
           array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(s.geom, st_makevalid(st_geomfromtext('#searchArea#',900913)))")
         )
       ),
-      'sample_id' => array('datatype'=>'integer', 'display'=>'ID',
-        'description'=>'Sample ID',
+      'sample_id' => array('datatype' => 'integer', 'display' => 'ID',
+        'description' => 'Sample ID',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"s.id #sample_id_op# #sample_id#")
+          array('value' => '', 'operator' => '', 'sql' => "s.id #sample_id_op# #sample_id#")
         )
       ),
-      'sample_method_id' => array('datatype'=>'integer', 'display'=>'Sample Method ID',
-        'description'=>'Termlists_terms ID for the Sample Method',
+      'sample_method_id' => array('datatype' => 'integer', 'display' => 'Sample Method ID',
+        'description' => 'Termlists_terms ID for the Sample Method',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"s.sample_method_id=#sample_method_id#")
+          array('value' => '', 'operator' => '', 'sql' => "s.location_name ilike replace('#location_name#', '*', '%') || '%'"),
         )
       ),
-      'location_name' => array('datatype'=>'text', 'display'=>'Location name',
-        'description'=>'Name of location to filter to (contains search)',
+      'location_name' => array('datatype' => 'text', 'display' => 'Location name',
+        'description' => 'Name of location to filter to (starts with search)',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"(s.location_name ilike '%#location_name#%' or l.name ilike '%#location_name#%')")
+          array('value' => '', 'operator' => '', 'sql' => "(s.location_name ilike '%#location_name#%' or l.name ilike '%#location_name#%')")
         )
       ),
       'location_list' => [
