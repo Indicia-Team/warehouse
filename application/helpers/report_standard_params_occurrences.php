@@ -185,12 +185,12 @@ class report_standard_params_occurrences {
       'location_name' => [
         'datatype' => 'text',
         'display' => 'Location name',
-        'description' => 'Name of location to filter to (contains search)',
+        'description' => 'Name of location to filter to (starts with search)',
         'wheres' => [
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.location_name ilike '%#location_name#%'",
+            'sql' => "o.location_name ilike replace('#location_name#', '*', '%') || '%'",
           ],
         ],
       ],
