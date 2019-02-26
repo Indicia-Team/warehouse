@@ -999,6 +999,11 @@ class Rest_Controller extends Controller {
     // First response from a scroll, need to grab the scroll ID.
     if ($scrollMode === 'initial') {
       $data = json_decode($response, TRUE);
+      if (!empty($data['error'])) {
+        kohana::log('error', 'Bad ES Rest query response: ' . json_encode($data['error']));
+        kohana::log('error', 'Query: ' . $postData);
+        $this->apiResponse->fail('Bad request', 400, json_encode($data['error']));
+      }
       $file['scroll_id'] = $data['_scroll_id'];
       $file['total'] = $data['hits']['total'];
       $file['done'] = 0;
@@ -1050,6 +1055,7 @@ class Rest_Controller extends Controller {
       else {
         $cache->delete("es-scroll-$file[scroll_id]", $file);
         unset($file['scroll_id']);
+        $this->zip($file);
       }
       $file['filename'] = url::base() . 'download/' . $file['filename'];
       header('Content-type: application/json');
@@ -1061,6 +1067,24 @@ class Rest_Controller extends Controller {
         echo json_encode($file);
       }
     }
+  }
+
+  /**
+   * Zip the CSV file ready for download.
+   *
+   * @param array $file
+   *   File details. The filename will be modified to reflect the zip file name.
+   */
+  private function zip(array &$file) {
+    $zip = new ZipArchive();
+    $zipFile = DOCROOT . 'download/' . basename($file['filename'], '.csv') . '.zip';
+    if ($zip->open($zipFile, ZipArchive::CREATE) !== TRUE) {
+      throw new exception("Cannot create zip file $zipFile.");
+    }
+    $zip->addFile(DOCROOT . 'download/' . $file['filename'], $file['filename']);
+    $zip->close();
+    unlink(DOCROOT . 'download/' . $file['filename']);
+    $file['filename'] = basename($file['filename'], '.csv') . '.zip';
   }
 
   /**

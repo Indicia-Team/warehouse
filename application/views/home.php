@@ -36,7 +36,7 @@ jQuery(document).ready(function($){
   });
 });
 </script>
-<?php if ($db_version < $app_version) : ?>
+<?php if (version_compare($app_version, $db_version) === 1) : ?>
 <div class="alert alert-warning"><p>Your database needs to be upgraded as the application version is
 <?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.</p>
 <a class="btn btn-primary" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a>
