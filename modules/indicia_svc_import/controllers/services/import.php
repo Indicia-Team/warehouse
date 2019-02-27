@@ -461,7 +461,7 @@ class Import_Controller extends Service_Base_Controller {
             $index++;
           }
         }
-        foreach ($specialFieldProcessing as $col => $discard) {
+        foreach (array_keys($specialFieldProcessing) as $col) {
           if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
             $saveArray[$col] = vsprintf(
               $model->specialImportFieldProcessingDefn[$col]['template'],
