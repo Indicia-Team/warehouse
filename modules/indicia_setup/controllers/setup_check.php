@@ -226,8 +226,8 @@ class Setup_Check_Controller extends Template_Controller {
           "CREATE USER indicia_user WITH PASSWORD 'indicia';\n" .
           "GRANT ALL PRIVILEGES ON DATABASE indicia TO indicia_user;",
           "CREATE EXTENSION btree_gin;\n" .
-          "GRANT ALL PRIVILEGES ON TABLE geometry_columns TO indicia_user;\n" .
-          "GRANT ALL PRIVILEGES ON TABLE spatial_ref_sys TO indicia_user;\n" .
+          "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO indicia_user;\n" .
+          "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO indicia_user;\n" .
           "GRANT EXECUTE ON FUNCTION st_astext(geometry) TO indicia_user;\n" .
           "GRANT EXECUTE ON FUNCTION st_geomfromtext(text, integer) TO indicia_user;\n" .
           "GRANT EXECUTE ON FUNCTION st_transform(geometry, integer) TO indicia_user;",
