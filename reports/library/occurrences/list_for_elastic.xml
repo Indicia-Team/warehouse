@@ -5,9 +5,9 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
-    DROP TABLE IF EXISTS occs_for_elastic;
+    DROP TABLE IF EXISTS filtered_occurrences;
     SELECT o.*
-    INTO TEMPORARY occs_for_elastic
+    INTO TEMPORARY filtered_occurrences
     FROM cache_occurrences_functional o
     #agreements_join#
     #joins#
@@ -18,7 +18,7 @@
     LIMIT #limit#;
 
     SELECT #columns#
-    FROM cache_occurrences_functional o
+    FROM filtered_occurrences o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
