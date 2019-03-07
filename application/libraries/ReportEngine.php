@@ -1186,7 +1186,7 @@ SQL;
       }
       if ($orderBy) {
         $orderBy = $this->checkOrderByForVagueDate($orderBy);
-        if (strpos($query, 'distinct on') === FALSE) {
+        if (stripos($query, 'distinct on') === FALSE) {
           $orderBy = $this->optimiseQueryPlan($orderBy);
         }
         // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
