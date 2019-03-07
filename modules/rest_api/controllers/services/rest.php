@@ -25,7 +25,7 @@
 define("REST_API_DEFAULT_PAGE_SIZE", 100);
 define("AUTOFEED_DEFAULT_PAGE_SIZE", 10000);
 // Max load from ES, keep fairly low to avoid PHP memory overload.
-define('MAX_ES_SIZE', 2000);
+define('MAX_ES_SCROLL_SIZE', 2000);
 define('SCROLL_TIMEOUT', '5m');
 
 if (!function_exists('apache_request_headers')) {
@@ -785,7 +785,10 @@ class Rest_Controller extends Controller {
       // Either unscrolled, or the first call to a scroll. So post the query.
       $postData = file_get_contents('php://input');
       $postObj = empty($postData) ? [] : json_decode($postData, TRUE);
-      $postObj['size'] = MAX_ES_SIZE;
+
+      if ($scrollMode !== 'off' && empty($postObj['size'])) {
+        $postObj['size'] = MAX_ES_SCROLL_SIZE;
+      }
     }
     return json_encode($postObj);
   }
@@ -971,7 +974,7 @@ class Rest_Controller extends Controller {
     $postData = $this->getEsPostData($scrollMode);
     $actualUrl = $this->getEsActualUrl($url, $scrollMode);
     $session = curl_init($actualUrl);
-    if (!empty($postData)) {
+    if (!empty($postData) && $postData !== '[]') {
       curl_setopt($session, CURLOPT_POST, 1);
       curl_setopt($session, CURLOPT_POSTFIELDS, $postData);
     }
@@ -1047,7 +1050,7 @@ class Rest_Controller extends Controller {
       }
       fclose($file['handle']);
       unset($file['handle']);
-      $file['done'] = min($file['total'], $file['done'] + MAX_ES_SIZE);
+      $file['done'] = min($file['total'], $file['done'] + MAX_ES_SCROLL_SIZE);
       $cache = Cache::instance();
       if ($file['done'] < $file['total']) {
         $cache->set("es-scroll-$file[scroll_id]", $file);
