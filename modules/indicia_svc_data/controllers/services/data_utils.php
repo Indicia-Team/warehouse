@@ -161,16 +161,56 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   /**
    * Single record verification service end-point.
    *
-   * Provides the services/data_utils/single_verify service. This takes an occurrence:id, occurrence:record_status, user_id (the verifier)
-   * and optional occurrence_comment:comment in the $_POST data and updates the record. This is provided as a more optimised
-   * alternative to using the normal data services calls. If occurrence:taxa_taxon_list_id is supplied then a redetermination will
-   * get triggered.
+   * Provides the services/data_utils/single_verify service. This takes an the
+   * following parameters in the POST:
+   * * occurrence:id
+   * * occurrence:record_status
+   * * user_id (the verifier)
+   * * occurrence_comment:comment (optional comment).
+   * * occurrence:taxa_taxon_list_id (optional ID for redeterminations).
+   * Updates the record. This is provided as a more optimised alternative to
+   * using the normal data services calls. If occurrence:taxa_taxon_list_id is
+   * supplied then a redetermination will get triggered.
    */
   public function single_verify() {
     if (empty($_POST['occurrence:id']) || !preg_match('/^\d+$/', $_POST['occurrence:id'])) {
       echo 'occurrence:id not supplied or invalid';
+      return;
     }
-    elseif (empty($_POST['occurrence:record_status']) || !preg_match('/^[VRCD]$/', $_POST['occurrence:record_status'])) {
+    $this->array_verify([$_POST['occurrence:id']]);
+  }
+
+  /**
+   * List of records verification service end-point.
+   *
+   * Provides the services/data_utils/list_verify service. This takes an the
+   * following parameters in the POST:
+   * * occurrence:ids - a comma separated list of IDs.
+   * * occurrence:record_status
+   * * user_id (the verifier)
+   * * occurrence_comment:comment (optional comment).
+   * * occurrence:taxa_taxon_list_id (optional ID for redeterminations).
+   * Updates the records. This is provided as a more optimised alternative to
+   * using the normal data services calls. If occurrence:taxa_taxon_list_id is
+   * supplied then a redetermination will get triggered for each record.
+   */
+  public function list_verify() {
+    if (empty($_POST['occurrence:ids'])) {
+      echo 'occurrence:ids not supplied';
+      kohana::log('debug', 'Invalid occurrence:ids to list_verify: ' . var_export($_POST, TRUE));
+      return;
+    }
+    $this->array_verify(explode(',', $_POST['occurrence:ids']));
+  }
+
+  /**
+   * Internal method which provides the code for single or list verification.
+   *
+   * @param array $ids
+   *   Array of IDs.
+   */
+  private function array_verify($ids) {
+    if (empty($_POST['occurrence:record_status']) || !preg_match('/^[VRCD]$/', $_POST['occurrence:record_status'])) {
       echo 'occurrence:record_status not supplied or invalid';
     }
     elseif (!empty($_POST['occurrence:record_substatus']) && !preg_match('/^[1-5]$/', $_POST['occurrence:record_substatus'])) {
@@ -192,19 +232,21 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           empty($_POST['occurrence:record_decision_source']) ? 'H' : $_POST['occurrence:record_decision_source']
         );
         // Give the workflow module a chance to rewind or update the values before updating.
-        $this->applyWorkflowToOccurrenceUpdates($db, [$_POST['occurrence:id']], $updates);
-        if (!empty($_POST['occurrence_comment:comment'])) {
-          $db->insert('occurrence_comments', array(
-            'occurrence_id' => $_POST['occurrence:id'],
-            'comment' => $_POST['occurrence_comment:comment'],
-            'created_by_id' => $this->user_id,
-            'created_on' => date('Y-m-d H:i:s'),
-            'updated_by_id' => $this->user_id,
-            'updated_on' => date('Y-m-d H:i:s'),
-            'record_status' => $_POST['occurrence:record_status'],
-            'record_substatus' => empty($_POST['occurrence:record_substatus'])
-              ? NULL : $_POST['occurrence:record_substatus']
+        $this->applyWorkflowToOccurrenceUpdates($db, $ids, $updates);
+        foreach ($ids as $id) {
+          if (!empty($_POST['occurrence_comment:comment'])) {
+            $db->insert('occurrence_comments', array(
+              'occurrence_id' => $id,
+              'comment' => $_POST['occurrence_comment:comment'],
+              'created_by_id' => $this->user_id,
+              'created_on' => date('Y-m-d H:i:s'),
+              'updated_by_id' => $this->user_id,
+              'updated_on' => date('Y-m-d H:i:s'),
+              'record_status' => $_POST['occurrence:record_status'],
+              'record_substatus' => empty($_POST['occurrence:record_substatus'])
+                ? NULL : $_POST['occurrence:record_substatus'],
             ));
+          }
         }
         echo 'OK';
       }
