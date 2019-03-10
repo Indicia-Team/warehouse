@@ -114,6 +114,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'species_alert',
     'taxa_taxon_list',
     'taxa_taxon_list_attribute',
+    'taxon_lists_taxa_taxon_list_attribute',
     'taxon_rank',
     'taxon_relation',
     'taxon_group',
