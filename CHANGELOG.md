@@ -1,3 +1,22 @@
+# Version 2.14.0
+
+* Spatial index builder supports automatic inclusion of location parents in the index,
+  improving performance in the background tasks where layers are hierarchical since only
+  the bottom layer needs to be scanned.
+
+# Version 2.13.0
+*2019-03-09*
+
+* Filters list report loaded onto report pages - improved performance.
+* New list_verify web service for verifying against a list of IDs.
+
+# Version 2.12.0
+*2019-03-07*
+
+* Fixes importing of constituent date fields into occurrences (#318).
+* Installation process fixed in some environments (#317).
+* ElasticSearch proxy in REST API and scrolling support for large downloads.
+
 # Version 2.11.0
 *2019-02-26*
 
