@@ -133,7 +133,7 @@ class Scheduled_Tasks_Controller extends Controller {
         kohana::log('error', 'Error in trigger file ' . $trigger->trigger_template_file . '.xml');
         continue;
       }
-      if (count($data['content']['records'] > 0)) {
+      if (count($data['content']['records']) > 0) {
         $parsedData = $this->parseData($data);
         self::msg($trigger->name . ": " . count($data['content']['records']) . " records found");
         // Note escaping disabled in where clause to permit use of CAST
