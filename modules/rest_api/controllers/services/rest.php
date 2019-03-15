@@ -2162,7 +2162,6 @@ class Rest_Controller extends Controller {
    *   Report response structure.
    */
   private function loadReport($report, array $params) {
-    // Don't need to count records when autofeeding.
     if ($this->getAutofeedMode()) {
       // Fudge to prevent the overhead of a count query.
       $_REQUEST['wantCount'] = '0';
@@ -2180,6 +2179,7 @@ class Rest_Controller extends Controller {
         $afSettings = [
           'mode' => 'initialLoad',
           'last_tracking_id' => $lastTrackingInfo->max_tracking,
+          'last_tracking_date' => Date('c'),
           'last_id' => 0,
         ];
         variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
@@ -2191,8 +2191,16 @@ class Rest_Controller extends Controller {
       }
       elseif ($afSettings['mode'] === 'updates') {
         // Doing updates of changes only as initial load done.
-        // Start at one record after the last one we retrieved.
-        $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
+        // Start at one record after the last one we retrieved, or use the
+        // tracking date if the report does not support a tracking ID field.
+        // We just pass both parameters through and allow the report to
+        // implement whichever it chooses.
+        if (isset($afSettings['last_tracking_id'])) {
+          $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
+        }
+        if (isset($afSettings['last_tracking_date'])) {
+          $params['tracking_date_from'] = $afSettings['last_tracking_date'];
+        }
         $params['orderby'] = 'tracking';
       }
     }
