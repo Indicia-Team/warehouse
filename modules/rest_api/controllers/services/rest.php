@@ -723,7 +723,7 @@ class Rest_Controller extends Controller {
    * @todo Make this configurable.
    */
   private $esCsvTemplate = [
-    'ID' => 'id',
+    'Record ID' => 'id',
     'RecordKey' => '_id',
     'Sample ID' => 'event.event_id',
     'Date' => '[date string]',
@@ -765,7 +765,7 @@ class Rest_Controller extends Controller {
 
 
   /**
-   * Calculate the data to post to an ElasticSearch search.
+   * Calculate the data to post to an Elasticsearch search.
    *
    * @param string $scrollMode
    *   Scroll mode for ES, either off, initial, or nextpage.
@@ -794,14 +794,14 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Works out the actual URL required for an ElasticSearch request.
+   * Works out the actual URL required for an Elasticsearch request.
    *
    * Caters for fact that the URL is different when scrolling to the next page
    * of a scrolled request. For unscrolled URLs adds the GET parameters to the
    * request if appropriate.
    *
    * @param string $url
-   *   ElasticSearch alias URL.
+   *   Elasticsearch alias URL.
    * @param string $scrollMode
    *   Current scroll mode, either off, initial or nextpage.
    *
@@ -918,7 +918,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Builds the header for the top of a scrolled ElasticSearch output.
+   * Builds the header for the top of a scrolled Elasticsearch output.
    *
    * For example, adds the CSV row.
    *
@@ -998,6 +998,13 @@ class Rest_Controller extends Controller {
     // Do the POST and then close the session.
     $response = curl_exec($session);
     $headers = curl_getinfo($session);
+    $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
+    if ($httpCode !== 200) {
+      $error = curl_error($session);
+      kohana::log('error', 'ES proxy request failed: ' . $error . ': ' . json_encode($error));
+      kohana::log('error', 'Query: ' . $postData);
+      $this->apiResponse->fail('Internal server error', 500, json_encode($error));
+    }
     curl_close($session);
     // First response from a scroll, need to grab the scroll ID.
     if ($scrollMode === 'initial') {
@@ -1091,10 +1098,10 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Converts an ElasticSearch response to a chunk of CSV data.
+   * Converts an Elasticsearch response to a chunk of CSV data.
    *
    * @param string $response
-   *   Response from an ElasticSearch search.
+   *   Response from an Elasticsearch search.
    * @param array $file
    *   File data, or NULL if not writing to a file in which case the output
    *   is echoed.
@@ -1128,13 +1135,13 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Special field handler for ElasticSearch dates.
+   * Special field handler for Elasticsearch dates.
    *
    * Converts event.date_from and event.date_to to a readable date string, e.g.
    * for inclusion in CSV output.
    *
    * @param array $doc
-   *   ElasticSearch document.
+   *   Elasticsearch document.
    *
    * @return string
    *   Formatted readable date.
@@ -1158,7 +1165,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Special field handler for ElasticSearch higher geography.
+   * Special field handler for Elasticsearch higher geography.
    *
    * Converts location.higher_geography to a string, e.g. for inclusion in CSV
    * output. Configurable output by passing parameters:
@@ -1169,7 +1176,7 @@ class Rest_Controller extends Controller {
    * Country name.
    *
    * @param array $doc
-   *   ElasticSearch document.
+   *   Elasticsearch document.
    *
    * @return string
    *   Formatted string
@@ -1209,12 +1216,12 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Special field handler for ElasticSearch media.
+   * Special field handler for Elasticsearch media.
    *
    * Concatenates media to a comma separated string.
    *
    * @param array $doc
-   *   ElasticSearch document.
+   *   Elasticsearch document.
    *
    * @return string
    *   Formatted string
@@ -1246,10 +1253,10 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Copies a source field from an ElasticSearch document into a CSV row.
+   * Copies a source field from an Elasticsearch document into a CSV row.
    *
    * @param array $doc
-   *   ElasticSearch document.
+   *   Elasticsearch document.
    * @param string $source
    *   Source field name or special field name.
    * @param array $row
@@ -1306,7 +1313,8 @@ class Rest_Controller extends Controller {
         }
       }
       if (!$allowed) {
-        $this->apiResponse->fail('Bad request', 400, 'Elasticsearch request not allowed.');
+        $this->apiResponse->fail('Bad request', 400,
+          "Elasticsearch request $resource ($_SERVER[REQUEST_METHOD]) disallowed by Warehouse REST API proxy configuration.");
       }
     }
     $url = "$thisProxyCfg[url]/$thisProxyCfg[index]/$resource";
@@ -2154,7 +2162,6 @@ class Rest_Controller extends Controller {
    *   Report response structure.
    */
   private function loadReport($report, array $params) {
-    // Don't need to count records when autofeeding.
     if ($this->getAutofeedMode()) {
       // Fudge to prevent the overhead of a count query.
       $_REQUEST['wantCount'] = '0';
@@ -2172,6 +2179,7 @@ class Rest_Controller extends Controller {
         $afSettings = [
           'mode' => 'initialLoad',
           'last_tracking_id' => $lastTrackingInfo->max_tracking,
+          'last_tracking_date' => Date('c'),
           'last_id' => 0,
         ];
         variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
@@ -2183,8 +2191,16 @@ class Rest_Controller extends Controller {
       }
       elseif ($afSettings['mode'] === 'updates') {
         // Doing updates of changes only as initial load done.
-        // Start at one record after the last one we retrieved.
-        $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
+        // Start at one record after the last one we retrieved, or use the
+        // tracking date if the report does not support a tracking ID field.
+        // We just pass both parameters through and allow the report to
+        // implement whichever it chooses.
+        if (isset($afSettings['last_tracking_id'])) {
+          $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
+        }
+        if (isset($afSettings['last_tracking_date'])) {
+          $params['tracking_date_from'] = $afSettings['last_tracking_date'];
+        }
         $params['orderby'] = 'tracking';
       }
     }

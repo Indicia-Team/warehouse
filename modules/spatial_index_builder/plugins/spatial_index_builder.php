@@ -28,6 +28,13 @@
  * Plugin module which creates an indexed array of overlapping location IDs in
  * the cache tables.
  */
+
+/**
+ * Declare which ORM CRUD operations should generate work queue tasks.
+ *
+ * @return array
+ *   List of operations.
+ */
 function spatial_index_builder_orm_work_queue() {
   return [
     [

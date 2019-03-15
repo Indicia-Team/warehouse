@@ -47,6 +47,7 @@ class task_spatial_index_builder_location {
    */
   public static function process($db, $taskType, $procId) {
     $locationTypeFilters = spatial_index_builder::getLocationTypeFilters($db);
+    $locationTypeTreeFilters = spatial_index_builder::getLocationTypeTreeFilters($db);
     $qry = <<<SQL
 DROP TABLE IF EXISTS loclist;
 DROP TABLE IF EXISTS changed_location_hits;
@@ -64,18 +65,27 @@ WHERE w.claimed_by='$procId'
 AND w.entity='location'
 AND w.task='task_spatial_index_builder_location';
 
-SELECT s.id as sample_id, array_agg(l.id) as location_ids
-INTO TEMPORARY changed_location_hits
-FROM loclist ll
-JOIN locations l
-  ON l.id=ll.record_id
-  AND l.deleted=false
+WITH RECURSIVE ltree AS (
+  SELECT l.id, l.location_type_id, l.parent_id, s.id as sample_id
+  FROM loclist ll
+  JOIN locations l
+    ON l.id=ll.record_id
+    AND l.deleted=false
   AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
-JOIN cache_samples_functional s
-  ON st_intersects(l.boundary_geom, s.public_geom)
-  AND (st_geometrytype(s.public_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.public_geom))
-  $locationTypeFilters[surveyFilters]
-GROUP BY s.id;
+  JOIN cache_samples_functional s
+    ON st_intersects(l.boundary_geom, s.public_geom)
+    AND (st_geometrytype(s.public_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.public_geom))
+    $locationTypeFilters[surveyFilters]
+  UNION ALL
+  SELECT l.id, ltree.location_type_id, l.parent_id, ltree.sample_id
+  FROM locations l
+  JOIN ltree ON ltree.parent_id = l.id
+  AND ltree.location_type_id IN ($locationTypeTreeFilters)
+)
+SELECT sample_id, array_agg(distinct id) as location_ids
+INTO TEMPORARY changed_location_hits
+FROM ltree
+GROUP BY sample_id;
 
 SELECT s.id, array_remove(s.location_ids, ll.record_id) as location_ids
 INTO TEMPORARY smp_locations_deleted

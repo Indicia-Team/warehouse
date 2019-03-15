@@ -58,6 +58,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   // default to no updates allowed - must explicity allow updates.
   protected $allow_updates = array(
     'attribute_sets_survey',
+    'attribute_sets_taxon_restriction',
     'comment_quick_reply_page_auth',
     'determination',
     'filter',
@@ -108,12 +109,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   // There is a potential issues with this: We may want everyone to have complete access to a particular dataset
   // So if we wish total access to a given dataset, the entity must appear in the following list.
   protected $allow_full_access = array(
+    'attribute_sets_taxon_restriction',
     'filter',
     'filters_user',
     'comment_quick_reply_page_auth',
     'species_alert',
     'taxa_taxon_list',
     'taxa_taxon_list_attribute',
+    'taxon_lists_taxa_taxon_list_attribute',
     'taxon_rank',
     'taxon_relation',
     'taxon_group',

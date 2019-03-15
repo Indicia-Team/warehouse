@@ -27,6 +27,12 @@ $config['location_types']=array(
   'Local wildlife site'
 );
 
+// Of the indexed types, which are layers which have a parent ID that points to
+// another higher level layer that should also be indexed?
+$config['hierarchical_location_types']=array(
+  'Vice County',
+);
+
 // If any of the indexed location types only need indexing for certain surveys then that can be configured here.
 // Omit this configuration if not required.
 $config['survey_restrictions']=array(

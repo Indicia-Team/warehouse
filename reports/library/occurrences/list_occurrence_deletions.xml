@@ -14,12 +14,11 @@
     <order_by>o.id</order_by>
   </order_bys>
   <params>
-    <!-- last_date and last_id parameters required for autofeed to work. -->
-    <param name="last_date" display="Last update date" datatype="date" default="">
-      <where>o.updated_on &gt; '#last_date#'</where>
-    </param>
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>o.id &gt; #last_id#</where>
+    </param>
+    <param name="tracking_date_from" datatype="date" default="">
+      <where>o.updated_on >= '#tracking_date_from#'</where>
     </param>
     <param name="zeros" display="Treat zero abundance records as deleted" datatype="boolean" default="0">
       <where value="0" operator="equal">o.deleted=true</where>
@@ -27,8 +26,9 @@
     </param>
   </params>
   <columns>
-    <!-- Tracking field called "id" is required for autofeed to work. -->
     <column name="id" sql="o.id" datatype="integer" />
-    <column name="updated_on" sql="o.updated_on" datatype="date" />
+    <column name="tracking_date" sql="o.updated_on" datatype="date" />
+    <!-- Required to enable tracking sort -->
+    <column name="tracking" sql="o.updated_on" datatype="date" />
   </columns>
 </report>

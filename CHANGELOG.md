@@ -1,3 +1,24 @@
+# Version 2.14.0
+
+* Spatial index builder supports automatic inclusion of location parents in the index,
+  improving performance in the background tasks where layers are hierarchical since only
+  the bottom layer needs to be scanned.
+* Autofeed reports in the REST API support tracking updates by a date field where the
+  cache_occurrences_functional.tracking field is not available.
+
+# Version 2.13.0
+*2019-03-09*
+
+* Filters list report loaded onto report pages - improved performance.
+* New list_verify web service for verifying against a list of IDs.
+
+# Version 2.12.0
+*2019-03-07*
+
+* Fixes importing of constituent date fields into occurrences (#318).
+* Installation process fixed in some environments (#317).
+* Elasticsearch proxy in REST API and scrolling support for large downloads.
+
 # Version 2.11.0
 *2019-02-26*
 
@@ -13,16 +34,16 @@
 *2019-02-22*
 
 * Adds a download folder to warehouse for temporary generated download files.
-* REST API ElasticSearch proxy supports the Scroll API for generation of large downnload files in chunks.
-* REST API ElasticSearch proxy supports formatting output as CSV.
+* REST API Elasticsearch proxy supports the Scroll API for generation of large downnload files in chunks.
+* REST API Elasticsearch proxy supports formatting output as CSV.
 * Fix REST API JSON output so that zeros are not excluded.
-* Improvements to ElasticSearch document format.
+* Improvements to Elasticsearch document format.
 * Updates to reports for Splash.
 
 # Version 2.8.0
 *2019-02-15*
 
-* ElasticSearch output reports now include custom attributes data.
+* Elasticsearch output reports now include custom attributes data.
 * Fixes a syntax error in spatial indexing SQL statements.
 
 # Version 2.7.0
