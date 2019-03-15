@@ -3,6 +3,8 @@
 * Spatial index builder supports automatic inclusion of location parents in the index,
   improving performance in the background tasks where layers are hierarchical since only
   the bottom layer needs to be scanned.
+* Autofeed reports in the REST API support tracking updates by a date field where the
+  cache_occurrences_functional.tracking field is not available.
 
 # Version 2.13.0
 *2019-03-09*
