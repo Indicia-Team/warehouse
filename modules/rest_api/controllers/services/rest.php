@@ -723,7 +723,7 @@ class Rest_Controller extends Controller {
    * @todo Make this configurable.
    */
   private $esCsvTemplate = [
-    'ID' => 'id',
+    'Record ID' => 'id',
     'RecordKey' => '_id',
     'Sample ID' => 'event.event_id',
     'Date' => '[date string]',
