@@ -120,12 +120,12 @@ end" />
   when o.record_status='R' then '#a10003'
   else '#5095ad'
 end" />
-    <column name='fo' visible='false' feature_style="fillOpacity" sql="0.5" aggregate="true" />
     <column name='zi' visible='false' feature_style="graphicZIndex" sql="case
-  when o.record_status='V' then 30
-  when o.record_status='C' and o.record_substatus=4 then 20
-  when o.record_status='C' then 10
-  else 0
-end" />
+      when o.record_status='V' then 30
+      when o.record_status='C' and o.record_substatus=4 then 20
+      when o.record_status='C' then 10
+      else 0
+    end" />
+    <column name='fo' visible='false' feature_style="fillOpacity" sql="0.5" aggregate="true" />
   </columns>
 </report>
