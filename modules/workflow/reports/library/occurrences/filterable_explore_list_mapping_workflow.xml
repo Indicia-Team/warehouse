@@ -106,18 +106,26 @@ end" datatype="text" />
 end" />
     <column name='fc' visible='false' feature_style="fillColor"
       sql="case
-  when o.record_status='R' then '#d7191c'
-  when o.record_status='C' then '#abd9e9'
+  when o.record_status='V' then '#008837'
   when o.record_status='C' and o.record_substatus=4 then '#fdae61'
-  else '#008837'
+  when o.record_status='C' then '#abd9e9'
+  when o.record_status='R' then '#d7191c'
+  else '#abd9e9'
 end" />
     <column name='sc' visible='false' feature_style="strokeColor"
           sql="case
-  when o.record_status='R' then '#a10003'
-  when o.record_status='C' then '#5095ad'
+  when o.record_status='V' then '#7fa1ad'
   when o.record_status='C' and o.record_substatus=4 then '#bf5e00'
-  else '#7fa1ad'
+  when o.record_status='C' then '#5095ad'
+  when o.record_status='R' then '#a10003'
+  else '#5095ad'
 end" />
-  <column name='fo' visible='false' feature_style="fillOpacity" sql="0.5" aggregate="true" />
+    <column name='fo' visible='false' feature_style="fillOpacity" sql="0.5" aggregate="true" />
+    <column name='zi' visible='false' feature_style="graphicZIndex" sql="case
+  when o.record_status='V' then 30
+  when o.record_status='C' and o.record_substatus=4 then 20
+  when o.record_status='C' then 10
+  else 0
+end" />
   </columns>
 </report>
