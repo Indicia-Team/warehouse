@@ -357,7 +357,9 @@ class Scheduled_Tasks_Controller extends Controller {
         }
         $currentUserId = $notification->user_id;
         $currentCc = $notification->cc;
-        $emailContent = kohana::lang('misc.notification_intro', kohana::config('email.server_name')) . '<br/><br/>';
+        $intro = empty(kohana::config('email.notification_intro')) ?
+          kohana::lang('misc.notification_intro') : kohana::config('email.notification_intro');
+        $emailContent = sprintf($intro, kohana::config('email.server_name')) . '<br/><br/>';
       }
       $emailContent .= self::unparseData($notification->data);
     }
@@ -391,8 +393,13 @@ class Scheduled_Tasks_Controller extends Controller {
         return;
       }
       foreach ($userResults as $user) {
-        $message = new Swift_Message(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), $emailContent,
-                                     'text/html');
+        $subject = empty(kohana::config('email.notification_subject')) ?
+          kohana::lang('misc.notification_subject') : kohana::config('email.notification_subject');
+        $message = new Swift_Message(
+          sprintf($subject, kohana::config('email.server_name')),
+          $emailContent,
+          'text/html'
+        );
         $recipients = new Swift_RecipientList();
         $recipients->addTo($user->email_address);
         $cc = explode(',', $cc);
