@@ -101,18 +101,27 @@ end" />
 
     <column name='fc' visible='false' feature_style="fillColor" aggregate="true"
       sql="case
-  when sum(case o.record_status when 'R' then 1 else 0 end)>0 then '#d7191c'
-  when sum(case o.record_status when 'C' then 1 else 0 end)>0 then '#abd9e9'
+  when sum(case o.record_status when 'V' then 1 else 0 end)>0 then '#008837'
   when sum(case when o.record_status='C' and o.record_substatus=4 then 1 else 0 end)>0 then '#fdae61'
-  else '#008837'
+  when sum(case o.record_status when 'C' then 1 else 0 end)>0 then '#abd9e9'
+  when sum(case o.record_status when 'R' then 1 else 0 end)>0 then '#d7191c'
+  else '#abd9e9'
 end" />
     <column name='sc' visible='false' feature_style="strokeColor" aggregate="true"
-          sql="case
-  when sum(case o.record_status when 'R' then 1 else 0 end)>0 then '#a10003'
-  when sum(case o.record_status when 'C' then 1 else 0 end)>0 then '#5095ad'
+      sql="case
+  when sum(case o.record_status when 'V' then 1 else 0 end)>0 then '#006629'
   when sum(case when o.record_status='C' and o.record_substatus=4 then 1 else 0 end)>0 then '#bf5e00'
-  else '#006629'
+  when sum(case o.record_status when 'C' then 1 else 0 end)>0 then '#5095ad'
+  when sum(case o.record_status when 'R' then 1 else 0 end)>0 then '#a10003'
+  else '#5095ad'
 end" />
+    <column name='zi' visible='false' feature_style="graphicZIndex" aggregate="true"
+      sql="case
+      when sum(case o.record_status when 'V' then 1 else 0 end)>0 then 30
+      when sum(case when o.record_status='C' and o.record_substatus=4 then 1 else 0 end)>0 then 20
+      when sum(case o.record_status when 'C' then 1 else 0 end)>0 then 10
+      else 0
+    end" />
     <column name='fo' visible='false' feature_style="fillOpacity" aggregate="true" sql="0.7" />
   </columns>
 </report>

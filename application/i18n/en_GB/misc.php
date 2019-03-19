@@ -16,6 +16,8 @@ $lang = array
   'next'=>'Next',
   'save'=>'Save',
   'unsubscribe'=>'Unsubscribe',
+  // The default notification email texts below can be overridden in
+  // application/config/email.php
   'notification_subject'=>'Messages from %s',
   'notification_intro'=>'Here are your latest messages from %s',
   'then' => 'then',

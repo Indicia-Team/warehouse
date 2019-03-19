@@ -46,7 +46,7 @@
     <column name='date_type' sql='o.date_type' visible='false' />
     <column name='date' display='Key facts:Date' datatype="date" />
     <column name='occurrence_id' display='Record:ID' sql='o.id' />
-    <column name='email' visible='false' sql='p.email_address' />
+    <column name='email' visible='false' sql='coalesce(snf.attr_email, p.email_address)' />
     <column name='verifier' display='Record:Verified by' sql='onf.verifier' />
     <column name='preferred_taxon' display='Record:Preferred species name' sql='CASE cttl.preferred_taxon WHEN cttl.taxon THEN null ELSE cttl.preferred_taxon END' />
     <column name='occurrence_comment' display='Record:Comment' sql='onf.comment' />

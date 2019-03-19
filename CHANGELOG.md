@@ -1,3 +1,15 @@
+# Version 2.15.0
+*2019-03-19*
+
+* email.notification_subject and email.notification_intro can both be
+  overridden in the application/config/email.php file.
+* Workflow mapping reports make verified records at top of z order.
+* Variant on workflow records explore report that outputs full precision grid
+  ref for download.
+* Fix problem in Swift email component for PHP 7 which caused PHP errors.
+* Record data for verification uses recorder email rather than inputter email
+  where available, so record queries go to the correct location.
+
 # Version 2.14.0
 
 * Spatial index builder supports automatic inclusion of location parents in the index,
