@@ -780,15 +780,14 @@ class Rest_Controller extends Controller {
         'scroll_id' => $_GET['scroll_id'],
         'scroll' => SCROLL_TIMEOUT,
       ];
+      return json_encode($postObj);
     }
-    else {
-      // Either unscrolled, or the first call to a scroll. So post the query.
-      $postData = file_get_contents('php://input');
-      $postObj = empty($postData) ? [] : json_decode($postData, TRUE);
+    // Either unscrolled, or the first call to a scroll. So post the query.
+    $postData = file_get_contents('php://input');
+    $postObj = empty($postData) ? [] : json_decode($postData);
 
-      if ($scrollMode !== 'off' && empty($postObj['size'])) {
-        $postObj['size'] = MAX_ES_SCROLL_SIZE;
-      }
+    if ($scrollMode !== 'off' && empty($postObj->size)) {
+      $postObj->size = MAX_ES_SCROLL_SIZE;
     }
     return json_encode($postObj);
   }
