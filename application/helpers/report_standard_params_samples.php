@@ -106,7 +106,7 @@ class report_standard_params_samples {
       'location_name' => array('datatype' => 'text', 'display' => 'Location name',
         'description' => 'Name of location to filter to (starts with search)',
         'wheres' => array(
-          array('value' => '', 'operator' => '', 'sql' => "(s.location_name ilike '%#location_name#%' or l.name ilike '%#location_name#%')")
+          array('value' => '', 'operator' => '', 'sql' => "s.location_name ilike '%#location_name#%'")
         )
       ),
       'location_list' => [
