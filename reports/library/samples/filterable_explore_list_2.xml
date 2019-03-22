@@ -10,7 +10,7 @@
   LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
   #agreements_join#
   #joins#
-  AND #sharing_filter#
+  WHERE #sharing_filter#
   #idlist#
   </query>
   <order_bys>
@@ -24,7 +24,7 @@
   <columns>
     <column name='sample_id' display='ID' sql='s.id' datatype="integer"
         template='&lt;div class="status-{record_status}"&gt;&lt;div class="record-id"&gt;{sample_id}&lt;/div&gt;&lt;/div&gt;'  />
-    <column name='source' display='Source' datatype="text" 
+    <column name='source' display='Source' datatype="text"
         sql="snf.website_title || ' | ' || case when substring(snf.survey_title from 1 for length(snf.website_title)) = snf.website_title then trim(substring(snf.survey_title from length(snf.website_title)+1)) else snf.survey_title end" />
     <column name='location_name' display='Site name' sql='s.location_name' datatype="text" />
     <column name='location_code' display='Site code' sql='l.code' datatype="text" />
