@@ -315,13 +315,13 @@ class report_standard_params_samples {
       'website_list' => array('datatype'=>'integer[]', 'display'=>"Website IDs",
         'description'=>'Comma separated list of IDs',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"su.website_id #website_list_op# (#website_list#)")
+          array('value'=>'', 'operator'=>'', 'sql'=>"s.website_id #website_list_op# (#website_list#)")
         )
       ),
       'survey_list' => array('datatype'=>'integer[]', 'display'=>"Survey IDs",
         'description'=>'Comma separated list of IDs',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"su.id #survey_list_op# (#survey_list#)")
+          array('value'=>'', 'operator'=>'', 'sql'=>"s.survey_id #survey_list_op# (#survey_list#)")
         )
       ),
       'input_form_list' => array('datatype'=>'text[]', 'display'=>"Input forms",
