@@ -24,6 +24,9 @@
 
  defined('SYSPATH') or die('No direct script access.');
 
+ define('INAT_PAGE_SIZE', 100);
+ define('INAT_MAX_PAGES', 10);
+
 /**
  * Helper class for syncing to the RESTful API on iNaturalist.
  */
@@ -60,15 +63,30 @@ class rest_api_sync_inaturalist {
    *   Server configuration.
    */
   public static function syncServer($serverId, $server) {
-    $page = isset($_GET['start_page']) ? $_GET['start_page'] : 1;
+    // Physical page tracker.
+    $page = 1;
+    if (isset($_GET['start_page'])) {
+      $page = $_GET['start_page'];
+    }
+    else {
+      // If last run not finished all pages, start at last page.
+      $page = variable::get("rest_api_sync_{$serverId}_page", $page);
+    }
+    // Count of pages done in this run.
+    $pageCount = 0;
     $timestampAtStart = date('c');
     self::loadControlledTerms($serverId, $server);
     do {
       $syncStatus = self::syncPage($serverId, $server, $page);
       $page++;
+      $pageCount++;
       ob_flush();
-    } while ($syncStatus['moreToDo']);
-    variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
+      variable::set("rest_api_sync_{$serverId}_page", $page);
+    } while ($syncStatus['moreToDo'] && $pageCount < INAT_MAX_PAGES);
+    if (!$syncStatus['moreToDo']) {
+      variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
+      variable::delete("rest_api_sync_{$serverId}_page");
+    }
   }
 
   /**
@@ -116,7 +134,7 @@ class rest_api_sync_inaturalist {
   public static function syncPage($serverId, array $server, $page) {
     $db = Database::instance();
     $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
-    $pageSize = 200;
+    $pageSize = INAT_PAGE_SIZE;
     $data = rest_api_sync::getDataFromRestUrl(
       "$server[url]/observations?" . http_build_query(array_merge(
         $server['parameters'],
@@ -130,6 +148,7 @@ class rest_api_sync_inaturalist {
     );
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
+    $tm = microtime(TRUE);
     foreach ($data['results'] as $iNatRecord) {
       try {
         if (empty($iNatRecord['taxon']['name'])) {
