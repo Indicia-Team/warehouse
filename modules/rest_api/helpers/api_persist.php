@@ -309,10 +309,26 @@ SQL;
    * @throws \exception
    */
   private static function findTaxon($db, $taxon_list_id, array $lookup) {
-    $filter = empty($lookup['original'])
-      ? '' : "AND searchterm like '" . pg_escape_string($lookup['original']) . "%'\n";
-    foreach ($lookup as $key => $value) {
-      $filter .= "AND $key='$value'\n";
+    $filter = '';
+    if (!empty($lookup['original'])) {
+      // This facilitates use of an index on searchterm. Only search on first 2
+      // words in case different way of annotation subsp.
+      $words = explode(' ', $lookup['original']);
+      $searchTerm = $words[0] . (count($words) > 1 ? " $words[1]" : '');
+      $filter = "AND searchterm like '" . pg_escape_string($searchTerm) . "%'\n";
+      // Now build a custom exact match filter that looks for alternative ssp.
+      // annotations.
+      $exactMatches = ["'" . pg_escape_string($lookup['original']) . "'"];
+      if (count($words) === 3) {
+        $exactMatches[] = "'" . pg_escape_string("$words[0] $words[1] subsp. $words[2]") . "'";
+      }
+      $filter .= 'AND original in (' . implode(',', $exactMatches) . ")\n";
+    }
+    else {
+      // Add in the exact match filter for other search methods.
+      foreach ($lookup as $key => $value) {
+        $filter .= "AND $key='$value'\n";
+      }
     }
     $qry = <<<SQL
 SELECT taxon_meaning_id, taxa_taxon_list_id
