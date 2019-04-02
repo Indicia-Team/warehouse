@@ -1371,9 +1371,9 @@ SET sample_id=o.sample_id,
       else 'U'
   end,
   query=case
-      when oc1.id is null or o.record_status in ('V','R') then null
-      when oc2.id is null and o.updated_on<=oc1.created_on then 'Q'
-      else 'A'
+    when oc1.id is not null and oc2.id is not null then 'A'
+    when oc1.id is not null and oc2.id is null then 'Q'
+    else null
   end,
   sensitive=o.sensitivity_precision is not null,
   release_status=o.release_status,
@@ -1623,13 +1623,9 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         when certainty.sort_order <200 then 'L'
         else 'U'
     end,
-    case
-        when oc1.id is null or o.record_status in ('R','V') then null
-        when oc2.id is null and o.updated_on<=oc1.created_on then 'Q'
-        else 'A'
-    end,
+    null,
     o.sensitivity_precision is not null, o.release_status, cttl.marine_flag,
-    case when o.last_verification_check_date is null then null else dc.id is null end,
+    null,
     o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key,
     ctp.path,
     CASE WHEN u.allow_share_for_reporting
@@ -1665,14 +1661,6 @@ LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
     JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
   ) ON oav.occurrence_id=o.id AND oav.deleted='f'
-LEFT JOIN occurrence_comments oc1 ON oc1.occurrence_id=o.id AND oc1.deleted=false AND oc1.auto_generated=false
-    AND oc1.query=true AND (o.verified_on IS NULL OR oc1.created_on>o.verified_on)
-LEFT JOIN occurrence_comments oc2 ON oc2.occurrence_id=o.id AND oc2.deleted=false AND oc2.auto_generated=false
-    AND oc2.query=false AND (o.verified_on IS NULL OR oc2.created_on>o.verified_on) AND oc2.id>oc1.id
-LEFT JOIN occurrence_comments dc
-    ON dc.occurrence_id=o.id
-    AND dc.implies_manual_check_required=true
-    AND dc.deleted=false
 WHERE o.deleted=false
 AND co.id IS NULL
 ";
