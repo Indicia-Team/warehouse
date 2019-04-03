@@ -1,3 +1,22 @@
+# Version 2.17.0
+
+* Fixes required to run on PHP 7.3 (not yet fully tested).
+* Import guids are now true GUIDs rather than numeric. Prevents Excel mashing the large
+  numbers to scientific notation and therefore preventing re-imports of error files from
+  binding to the correct import GUID.
+* INaturalist sync now pages data and limits processing per run to cope with larger 
+  datasets.
+* INaturalist sync (and any others built on the Rest_api_sync module) now tolerate naming
+  differences where subspecies names either do or don't include the rank.
+* New report for scratchpad list species external keys - can be used to drive sensitive
+  record suggestions on a client entry form.
+
+# Version 2.16.0
+*2019-03-20*
+
+* Changes required to allow tracked correspondance to appear on client where appropriate.
+* ES searches which contain {} are no longer broken by converting to [].
+
 # Version 2.15.0
 *2019-03-19*
 
