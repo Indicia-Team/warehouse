@@ -753,7 +753,7 @@ ROW;
             // no gaps.
             $afSettings['last_tracking_id'] = $lastTrackingId;
           }
-          else {
+          elseif (isset($lastTrackingDate)) {
             // Or same principle for date tracking mode.
             $afSettings['last_tracking_date'] = $lastTrackingDate;
           }
