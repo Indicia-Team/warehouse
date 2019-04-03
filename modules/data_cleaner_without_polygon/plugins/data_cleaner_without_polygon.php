@@ -139,8 +139,8 @@ function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
 
         default:
           // We don't know this grid square type - should not have come back
-          // from the query.
-          continue;
+          // from the query. Continue to next foreach iteration.
+          continue 2;
       }
       $srid = kohana::config('sref_notations.internal_srid');
       try {
