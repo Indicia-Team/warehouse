@@ -75,9 +75,8 @@ class valid_Core {
 	 * @param   string   URL
 	 * @return  boolean
 	 */
-	public static function url($url)
-	{
-		return (bool) filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_HOST_REQUIRED);
+	public static function url($url) {
+		return (bool) filter_var($url, FILTER_VALIDATE_URL);
 	}
 
 	/**

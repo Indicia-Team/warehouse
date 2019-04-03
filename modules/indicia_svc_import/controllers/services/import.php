@@ -505,12 +505,11 @@ class Import_Controller extends Service_Base_Controller {
         }
         if ($supportsImportGuid) {
           if ($existingImportGuidColIdx === FALSE) {
-            // Save the upload filename (which is a guid) in a field so the
-            // results of each  individual upload can be grouped together.
-            // Relies on the model being imported into having a text field
-            // called import_guid otherwise it's just ignored.
-            $fileNameParts = explode('.', basename($csvTempFile));
-            $saveArray['import_guid'] = $fileNameParts[0];
+            // Save the import guid  in a field so the results of each
+            // individual upload can be grouped together. Relies on the model
+            // being imported into having a text field called import_guid
+            // otherwise it's just ignored.
+            $saveArray['import_guid'] = $metadata['guid'];
           }
           else {
             // This is a reimport of error records which want to link back to
@@ -562,7 +561,7 @@ class Import_Controller extends Service_Base_Controller {
               $data, 'ID specified in import row but not being used to lookup an existing record.',
               $existingProblemColIdx, $existingErrorRowNoColIdx,
               $errorHandle, $count + $offset + 1,
-              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
             );
             // Get file position here otherwise the fgetcsv in the while loop
@@ -583,7 +582,7 @@ class Import_Controller extends Service_Base_Controller {
               $data, $e->getMessage(),
               $existingProblemColIdx, $existingErrorRowNoColIdx,
               $errorHandle, $count + $offset + 1,
-              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
             );
             // Get file position here otherwise the fgetcsv in the while loop
@@ -763,7 +762,7 @@ class Import_Controller extends Service_Base_Controller {
               $data, $errors,
               $existingProblemColIdx, $existingErrorRowNoColIdx,
               $errorHandle, $count + $offset + 1,
-              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
             );
           }
@@ -785,7 +784,7 @@ class Import_Controller extends Service_Base_Controller {
             $data, $error,
             $existingProblemColIdx, $existingErrorRowNoColIdx,
             $errorHandle, $count + $offset + 1,
-            $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+            $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
             $metadata
           );
         }
@@ -1163,6 +1162,13 @@ class Import_Controller extends Service_Base_Controller {
     }
   }
 
+  private function createGuid() {
+    return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X',
+       mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479),
+       mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535)
+    );
+  }
+
   /**
    * Internal function that retrieves the metadata for a CSV upload.
    *
@@ -1179,7 +1185,12 @@ class Import_Controller extends Service_Base_Controller {
     }
     else {
       // No previous file, so create default new metadata.
-      return ['mappings' => [], 'settings' => [], 'errorCount' => 0];
+      return [
+        'mappings' => [],
+        'settings' => [],
+        'errorCount' => 0,
+        'guid' => $this->createGuid(),
+      ];
     }
   }
 

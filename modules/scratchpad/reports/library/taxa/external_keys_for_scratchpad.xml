@@ -1,0 +1,20 @@
+<report
+    title="External taxon keys for a scratchpad"
+    description="Lists external keys for all taxa identified by a scratchpad list. Includes hierarchical children.
+      Designed to link to the [sensitivity scratchpad] control on a data entry form.">
+  <query>
+    SELECT DISTINCT #columns#
+    FROM scratchpad_list_entries sle
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=sle.entry_id
+    JOIN cache_taxon_paths ctp ON ctp.path @> ARRAY[cttl.taxon_meaning_id]
+    JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
+    WHERE sle.scratchpad_list_id=#scratchpad_list_id#
+  </query>
+  <params>
+    <param name="scratchpad_list_id" display="Scratchpad list ID" description="ID of the scratchpad list to load"
+           datatype="integer" />
+  </params>
+  <columns>
+    <column name="external_key" display="External key" sql="cttlany.external_key" in_count="true" />
+  </columns>
+</report>
