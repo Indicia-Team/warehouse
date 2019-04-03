@@ -1,4 +1,5 @@
 # Version 2.17.0
+*2019-04-03*
 
 * Fixes required to run on PHP 7.3 (not yet fully tested).
 * Import guids are now true GUIDs rather than numeric. Prevents Excel mashing the large
