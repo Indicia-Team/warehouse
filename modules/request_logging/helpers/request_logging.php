@@ -62,13 +62,16 @@ class request_logging {
       $db->query('START TRANSACTION READ WRITE;');
       $get = empty($_GET) ? NULL : json_encode($_GET);
       if ($overrideStoredPost) {
-        $post = json_encode($overrideStoredPost);
+        $post = $overrideStoredPost;
       }
       else {
         $post = file_get_contents('php://input');
         if (empty($post)) {
-          $post = empty($_POST) ? NULL : json_encode($_POST);
+          $post = empty($_POST) ? NULL : $_POST;
         }
+      }
+      if ($post) {
+        $post = json_encode($post);
       }
       $db->insert('request_log_entries', array(
         'io' => $io,

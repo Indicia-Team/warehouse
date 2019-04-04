@@ -795,8 +795,11 @@ class Data_Controller extends Data_Service_Base_Controller {
       kohana::log('debug', 'Sending reponse size ' . strlen($this->response));
       $this->send_response();
       if (class_exists('request_logging')) {
+        // Note that we store the response for submissions as more practical than
+        // entire POST.
         request_logging::log(array_key_exists('submission', $_POST) ? 'i' : 'o', 'data', $entity,
-          $this->website_id, $this->user_id, $tm, $this->db);
+          $this->website_id, $this->user_id, $tm, $this->db, NULL,
+          array_key_exists('submission', $_POST) ? $this->response : NULL);
       }
     }
     catch (Exception $e) {
