@@ -775,28 +775,36 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Internal method to handle calls - decides if it's a request for data or a submission.
-  * @todo include exception getTrace() in the error response?
-  */
-  protected function handle_call($entity)
-  {
+   * Internal method to handle calls.
+   *
+   * Decides if it's a request for data or a submission.
+   *
+   * @param string
+   *   Name of the affected entity.
+   */
+  protected function handle_call($entity) {
+    $tm = microtime(TRUE);
     try {
       $this->entity = $entity;
-
-      if (array_key_exists('submission', $_POST))
-      {
+      if (array_key_exists('submission', $_POST)) {
         $this->handle_submit();
       }
-      else
-      {
+      else {
         $this->handle_request();
       }
       kohana::log('debug', 'Sending reponse size ' . strlen($this->response));
       $this->send_response();
+      if (class_exists('request_logging')) {
+        request_logging::log(array_key_exists('submission', $_POST) ? 'i' : 'o', 'data', $entity,
+          $this->website_id, $this->user_id, $tm, $this->db);
+      }
     }
-    catch (Exception $e)
-    {
+    catch (Exception $e) {
       $this->handle_error($e);
+      if (class_exists('request_logging')) {
+        request_logging::log(array_key_exists('submission', $_POST) ? 'i' : 'o', 'data', $entity,
+          $this->website_id, $this->user_id, $tm, $this->db, $e->getMessage());
+      }
     }
   }
 
@@ -1336,16 +1344,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   /**
   * Accepts a submission from POST data and attempts to save to the database.
   */
-  public function save()
-  {
-    try
-    {
+  public function save() {
+    $tm = microtime(TRUE);
+    try {
       $this->authenticate();
-      if (array_key_exists('submission', $_POST))
-      {
+      $response = '';
+      if (array_key_exists('submission', $_POST)) {
         $mode = $this->get_input_mode();
-        switch ($mode)
-        {
+        switch ($mode) {
           case 'json':
             $s = json_decode($_POST['submission'], true);
         }
@@ -1358,10 +1364,16 @@ class Data_Controller extends Data_Service_Base_Controller {
         echo json_encode($response);
       }
       $this->delete_nonce();
+      if (class_exists('request_logging')) {
+        request_logging::log('i', 'data', "save:$s[id]", $this->website_id, $this->user_id, $tm, $this->db, NULL, $response);
+      }
     }
-    catch (Exception $e)
-    {
+    catch (Exception $e) {
       $this->handle_error($e, (isset($s['fields']['transaction_id']['value']) ? $s['fields']['transaction_id']['value'] : null));
+      if (class_exists('request_logging')) {
+        request_logging::log('i', 'data', "save:$s[id]", $this->website_id, $this->user_id, $tm, $this->db,
+          $e->getMessage(), $response);
+      }
     }
   }
 

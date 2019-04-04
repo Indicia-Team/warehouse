@@ -145,6 +145,7 @@ $config['modules'] = array
   MODPATH.'auto_verify',           // verification acceptance based on data cleaner rules
   MODPATH.'milestones',            // milestone achievements against milestones
   MODPATH.'workflow',              // control of record flags through verification workflow
+  MODPATH.'attribute_sets',        // custom attribute management functionality
+  MODPATH.'request_logging',       // track report and data timings
   MODPATH.'phpUnit',               // Required for testing
-  MODPATH.'attribute_sets',
 );

@@ -354,6 +354,7 @@ class Import_Controller extends Service_Base_Controller {
     ORM::$cacheFkLookups = TRUE;
     // Make sure the file still exists.
     if (file_exists($csvTempFile)) {
+      $tm = microtime(TRUE);
       // Following helps for files from Macs.
       ini_set('auto_detect_line_endings', 1);
       $model = ORM::Factory($_GET['model']);
@@ -809,6 +810,11 @@ class Import_Controller extends Service_Base_Controller {
       // uploaded and progress.
       $this->auto_render = FALSE;
       $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
+      if (class_exists('request_logging')) {
+        request_logging::log('i', 'import', 'upload',
+          empty($saveArray['website_id']) ? NULL : $saveArray['website_id'],
+          security::getUserId(), $tm);
+      }
     }
   }
 
