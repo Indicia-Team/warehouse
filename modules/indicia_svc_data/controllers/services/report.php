@@ -114,7 +114,7 @@ class Report_Controller extends Data_Service_Base_Controller {
         if (empty($_REQUEST['wantRecords']) || $_REQUEST['wantRecords'] === '1') {
           $subtypes[] = 'records';
         }
-        if (!empty($_REQUEST['wantCount']) || $_REQUEST['wantCount'] === '1') {
+        if (!empty($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') {
           $subtypes[] = 'count';
         }
 
