@@ -811,7 +811,7 @@ class Import_Controller extends Service_Base_Controller {
       $this->auto_render = FALSE;
       $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
       if (class_exists('request_logging')) {
-        request_logging::log('i', 'import', 'upload',
+        request_logging::log('i', 'import', NULL, 'upload',
           empty($saveArray['website_id']) ? NULL : $saveArray['website_id'],
           security::getUserId(), $tm);
       }

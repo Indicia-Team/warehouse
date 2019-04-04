@@ -29,6 +29,7 @@ class request_logging {
 
   /**
    * Log a web service request.
+   *
    * @param string $io
    *   Pass one of the following:
    *   * 'i' for inputs (sending data into the warehouse)
@@ -36,12 +37,15 @@ class request_logging {
    *   * 'a' for other actions.
    * @param string $service
    *   Web service class that was requested.
+   * @param string $subtype
+   *   Subtype of the resource if additional information available (e.g. report
+   *   count).
    * @param string $resource
    *   Resource that was accessed if appropriate, e.g. a table or report name.
-   * @param integer $website_id
-   *   ID of the client website, or null if not known
-   * @param integer $user_id
-   *   ID of the user making the request, or null if not known
+   * @param int $website_id
+   *   ID of the client website, or null if not known.
+   * @param int $user_id
+   *   ID of the user making the request, or null if not known.
    * @param float $startTime
    *   Unix timestamp of the request start, i.e. the value of microtime(true).
    * @param Database $db
@@ -52,7 +56,7 @@ class request_logging {
    *   Where POST data are large or to complex to log usefully, it may be
    *   replaced in the log by specifying an object to store here.
    */
-  public static function log($io, $service, $resource, $website_id, $user_id, $startTime, $db = NULL,
+  public static function log($io, $service, $subtype, $resource, $website_id, $user_id, $startTime, $db = NULL,
       $exceptionMsg = NULL, $overrideStoredPost = NULL) {
     // Check if this type of request is logged.
     $logged = Kohana::config('request_logging.logged_requests');
@@ -77,6 +81,7 @@ class request_logging {
         'io' => $io,
         'service' => $service,
         'resource' => $resource,
+        'subtype' => $subtype,
         'request_parameters_get' => $get,
         'request_parameters_post' => $post,
         'website_id' => $website_id,

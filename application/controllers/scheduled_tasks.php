@@ -74,7 +74,7 @@ class Scheduled_Tasks_Controller extends Controller {
         self::msg("Triggers & notifications scheduled task took $tmtask seconds.", 'alert');
       }
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'scheduled_tasks', 'triggers_notifications', 0, 0, $tm, $this->db);
+        request_logging::log('a', 'scheduled_tasks', NULL, 'triggers_notifications', 0, 0, $tm, $this->db);
       }
     }
     if ($scheduledPlugins) {
@@ -94,7 +94,7 @@ class Scheduled_Tasks_Controller extends Controller {
         self::msg("Work queue processing took $qtm seconds.", 'alert');
       }
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'scheduled_tasks', 'work_queue', 0, 0, $qtm, $this->db);
+        request_logging::log('a', 'scheduled_tasks', NULL, 'work_queue', 0, 0, $qtm, $this->db);
       }
     }
     // Mark the time of the last scheduled task check, so we can get diffs
@@ -727,7 +727,7 @@ class Scheduled_Tasks_Controller extends Controller {
             self::msg("Scheduled plugin $plugin took $took seconds", 'alert');
           }
           if (class_exists('request_logging')) {
-            request_logging::log('a', 'scheduled_tasks', $plugin, NULL, NULL, $tm, $this->db);
+            request_logging::log('a', 'scheduled_tasks', NULL, $plugin, NULL, NULL, $tm, $this->db);
           }
         }
         else {
