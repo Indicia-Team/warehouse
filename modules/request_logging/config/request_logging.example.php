@@ -31,4 +31,8 @@ $config['logged_requests'] = array(
   'i.data',
   // Other data actions.
   'a.data',
+  // Imports.
+  'i.import',
+  // Scheduled tasks.
+  'a.scheduled_tasks',
 );
