@@ -797,7 +797,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       if (class_exists('request_logging')) {
         // Note that we store the response for submissions as more practical than
         // entire POST.
-        request_logging::log(array_key_exists('submission', $_POST) ? 'i' : 'o', 'data', $entity,
+        request_logging::log(array_key_exists('submission', $_POST) ? 'i' : 'o', 'data', NULL, $entity,
           $this->website_id, $this->user_id, $tm, $this->db, NULL,
           array_key_exists('submission', $_POST) ? $this->response : NULL);
       }
@@ -805,7 +805,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     catch (Exception $e) {
       $this->handle_error($e);
       if (class_exists('request_logging')) {
-        request_logging::log(array_key_exists('submission', $_POST) ? 'i' : 'o', 'data', $entity,
+        request_logging::log(array_key_exists('submission', $_POST) ? 'i' : 'o', 'data', NULL, $entity,
           $this->website_id, $this->user_id, $tm, $this->db, $e->getMessage());
       }
     }
@@ -1368,13 +1368,13 @@ class Data_Controller extends Data_Service_Base_Controller {
       }
       $this->delete_nonce();
       if (class_exists('request_logging')) {
-        request_logging::log('i', 'data', "save:$s[id]", $this->website_id, $this->user_id, $tm, $this->db, NULL, $response);
+        request_logging::log('i', 'data', $s['id'], 'save', $this->website_id, $this->user_id, $tm, $this->db, NULL, $response);
       }
     }
     catch (Exception $e) {
       $this->handle_error($e, (isset($s['fields']['transaction_id']['value']) ? $s['fields']['transaction_id']['value'] : null));
       if (class_exists('request_logging')) {
-        request_logging::log('i', 'data', "save:$s[id]", $this->website_id, $this->user_id, $tm, $this->db,
+        request_logging::log('i', 'data', $s['id'], 'save', $this->website_id, $this->user_id, $tm, $this->db,
           $e->getMessage(), $response);
       }
     }

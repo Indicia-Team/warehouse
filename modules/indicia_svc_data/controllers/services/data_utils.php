@@ -80,14 +80,14 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $params = implode(', ', $action['parameters']);
       echo json_encode($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'data', $action, $this->website_id, $this->user_id, $tm, $db);
+        request_logging::log('a', 'data', NULL, $action, $this->website_id, $this->user_id, $tm, $db);
       }
     }
     catch (Exception $e) {
       error_logger::log_error("Exception during custom data_utils action $name", $e);
       $this->handle_error($e);
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'data', $action, $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+        request_logging::log('a', 'data', NULL, $action, $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
       }
     }
   }
@@ -160,14 +160,14 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       }
       echo count($ids);
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'data', 'bulk_verify', $this->website_id, $this->user_id, $tm, $db);
+        request_logging::log('a', 'data', NULL, 'bulk_verify', $this->website_id, $this->user_id, $tm, $db);
       }
     }
     catch (Exception $e) {
       error_logger::log_error('Exception during bulk verify', $e);
       $this->handle_error($e);
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'data', 'bulk_verify', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+        request_logging::log('a', 'data', NULL, 'bulk_verify', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
       }
     }
   }
@@ -266,14 +266,14 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         echo 'OK';
         kohana::log('debug', 'done array_verify');
         if (class_exists('request_logging')) {
-          request_logging::log('a', 'data', 'array_verify', $this->website_id, $this->user_id, $tm, $db, NULL, $ids);
+          request_logging::log('a', 'data', NULL, 'array_verify', $this->website_id, $this->user_id, $tm, $db, NULL, $ids);
         }
       }
       catch (Exception $e) {
         echo $e->getMessage();
         error_logger::log_error('Exception during single record verify', $e);
         if (class_exists('request_logging')) {
-          request_logging::log('a', 'data', 'array_verify', $this->website_id, $this->user_id, $tm, $db, $e->getMessage, $ids);
+          request_logging::log('a', 'data', NULL, 'array_verify', $this->website_id, $this->user_id, $tm, $db, $e->getMessage, $ids);
         }
       }
     }
@@ -334,14 +334,14 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         }
         echo 'OK';
         if (class_exists('request_logging')) {
-          request_logging::log('a', 'data', 'single_verify_sample', $this->website_id, $this->user_id, $tm, $db);
+          request_logging::log('a', 'data', NULL, 'single_verify_sample', $this->website_id, $this->user_id, $tm, $db);
         }
       }
       catch (Exception $e) {
         echo $e->getMessage();
         error_logger::log_error('Exception during single sample verify', $e);
         if (class_exists('request_logging')) {
-          request_logging::log('a', 'data', 'single_verify_sample', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+          request_logging::log('a', 'data', NULL, 'single_verify_sample', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
         }
       }
     }
@@ -395,14 +395,14 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $db->from('cache_samples_functional')->set($updates)->in('id', array_keys($ids))->update();
       echo count($ids);
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'data', 'bulk_verify_samples', $this->website_id, $this->user_id, $tm, $db);
+        request_logging::log('a', 'data', NULL, 'bulk_verify_samples', $this->website_id, $this->user_id, $tm, $db);
       }
     }
     catch (Exception $e) {
       echo $e->getMessage();
       error_logger::log_error('Exception during bulk verify of samples', $e);
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'data', 'bulk_verify_samples', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+        request_logging::log('a', 'data', NULL, 'bulk_verify_samples', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
       }
     }
   }
@@ -489,13 +489,13 @@ SQL;
         );
         echo json_encode($response);
         if (class_exists('request_logging')) {
-          request_logging::log('a', 'data', 'bulk_delete_occurrences', $this->website_id, $this->user_id, $tm, $db);
+          request_logging::log('a', 'data', NULL, 'bulk_delete_occurrences', $this->website_id, $this->user_id, $tm, $db);
         }
       }
       catch (Exception $e) {
         error_logger::log_error('Exception during bulk_delete_occurrences', $e);
         if (class_exists('request_logging')) {
-          request_logging::log('a', 'data', 'bulk_delete_occurrences', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+          request_logging::log('a', 'data', NULL, 'bulk_delete_occurrences', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
         }
       }
     }
