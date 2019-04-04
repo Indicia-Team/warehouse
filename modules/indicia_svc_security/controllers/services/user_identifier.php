@@ -1,4 +1,5 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,11 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link http://code.google.com/p/indicia/
  */
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Controller for service calls relating to the use of user identifiers to associated
@@ -27,10 +29,11 @@
  * @link http://code.google.com/p/indicia/wiki/WebServicesUserIdentifiers
  */
 class User_Identifier_Controller extends Service_Base_Controller {
-  public function get_user_id() { 
+
+  public function get_user_id() {
     try {
       // don't use $_REQUEST as it can do funny things escaping quotes etc.
-      $request=array_merge($_GET, $_POST);
+      $request = array_merge($_GET, $_POST);
       // authenticate requesting website for this service. This can create a user, so need write
       // permission.
       $this->authenticate('write');
@@ -40,4 +43,5 @@ class User_Identifier_Controller extends Service_Base_Controller {
       $this->handle_error($e);
     }
   }
+
 }
