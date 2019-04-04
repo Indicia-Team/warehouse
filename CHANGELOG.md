@@ -1,3 +1,10 @@
+# Version 2.18.0
+*2019-04-04*
+
+* Request_logging module can now capture additional types of events to track performance
+  of save events, imports, verification and taxon searches. See the provided example
+  config file under modules/request_logging/config.
+
 # Version 2.17.0
 *2019-04-03*
 
@@ -5,7 +12,7 @@
 * Import guids are now true GUIDs rather than numeric. Prevents Excel mashing the large
   numbers to scientific notation and therefore preventing re-imports of error files from
   binding to the correct import GUID.
-* INaturalist sync now pages data and limits processing per run to cope with larger 
+* INaturalist sync now pages data and limits processing per run to cope with larger
   datasets.
 * INaturalist sync (and any others built on the Rest_api_sync module) now tolerate naming
   differences where subspecies names either do or don't include the rank.
