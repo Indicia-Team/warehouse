@@ -176,6 +176,15 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $output = json_decode($response['output']);
     $this->assertEquals($uid1, $output->userId, 'A repeat request for same identifiers did not return the same user ID');
 
+    // Request for the same email address but with a different case.
+    $response = $this->callGetUserIdService($this->auth, array(
+      array('type' => 'email', 'identifier' => 'Test@test.com'),
+    ), 9997, '?', 'autotest');
+    $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
+    $output = json_decode($response['output']);
+    $this->assertEquals($uid1, $output->userId, 'A repeat request for same email with different case did not return the same user ID');
+    echo "uid1 $uid1 returned $output->userId\n";
+
     // Clean up user identifiers, user websites, person and user records.
     $this->db->query('delete from user_identifiers where user_id=' . $user->id);
     $this->db->query('delete from users_websites where user_id=' . $user->id);
