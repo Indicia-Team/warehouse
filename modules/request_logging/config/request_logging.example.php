@@ -1,5 +1,9 @@
 <?php
+
 /**
+ * @file
+ * Configuration for the request logger.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -13,15 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
- * @subpackage Cache builder
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 $config['logged_requests'] = array(
-  'o.report', // read (output) data
-  'o.data', // read (output) data, not supported yet
-  'i.data' // any update to data (input), not supported yet
+  // Read (output) data.
+  'o.report',
+  // Read (output) data.
+  'o.data',
+  // Any update to data (input).
+  'i.data',
+  // Other data actions.
+  'a.data',
 );
