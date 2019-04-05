@@ -345,6 +345,28 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(isset($response[0]['title']), 'Report get JSON response not as expected');
   }
 
+  /**
+   * Test that a bad user ID value does not break the request logger.
+   */
+  public function testRequestReportBadUserID() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Report_Test::testRequestReportBadUserID");
+    $params = array(
+      'report' => 'library/websites/species_and_occurrence_counts.xml',
+      'reportSource' => 'local',
+      'mode' => 'json',
+      'auth_token' => $this->auth['read']['auth_token'],
+      'nonce' => $this->auth['read']['nonce'],
+      'user_id' => 'NULL',
+    );
+    $url = report_helper::$base_url . 'index.php/services/report/requestReport?' . http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    // valid json response will decode
+    $response = json_decode($response, TRUE);
+    $this->assertFalse(isset($response['error']), 'testRequestReportBadUserID returned error. ' . var_export($response, TRUE));
+    $this->assertNotCount(0, $response, "Database contains no records to report on");
+    $this->assertTrue(isset($response[0]['title']), 'Report get JSON response not as expected');
+  }
+
   public function testRequestReportPostJson() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Report_Test::testRequestReportPostJson");
     $params = array(
