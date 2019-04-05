@@ -733,7 +733,7 @@ class Rest_Controller extends Controller {
     'System' => 'location.output_sref_system',
     'Coordinate uncertainty (m)' => 'location.coordinate_uncertainty_in_metres',
     'Lat/Long' => 'location.point',
-    'Location name' => 'location.name',
+    'Location name' => 'location.verbatim_locality',
     'Higher geography' => '[higher geography](field=name,text=true)',
     'Vice County' => '[higher geography](field=name,text=true,type=Vice County)',
     'Vice County number' => '[higher geography](field=code,text=true,type=Vice County)',
