@@ -53,7 +53,7 @@
            description="Comma separated list of sample attribute IDs to include as columns in the report" />
     <param name="occattrs" display="Occurrence attribute list" datatype="occattrs"
            description="Comma separated list of occurrence attribute IDs to include as columns in the report" />
-    <param name="created_by_id" display="Warehouse User ID" datatype="integer" default="0"
+    <param name="created_by_id" display="Warehouse User ID" datatype="integer" emptyvalue="0"
            description="Enter the ID of the warehouse user" >
       <where>o.created_by_id=#created_by_id#</where>
     </param>
