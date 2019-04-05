@@ -89,8 +89,7 @@ class Scheduled_Tasks_Controller extends Controller {
       $qtm = microtime(TRUE);
       $queue = new WorkQueue();
       $queue->process($this->db);
-      $qtm = microtime(TRUE) - $qtm;
-      if ($qtm > 10) {
+      if (microtime(TRUE) - $qtm > 10) {
         self::msg("Work queue processing took $qtm seconds.", 'alert');
       }
       if (class_exists('request_logging')) {
