@@ -1240,11 +1240,11 @@ SQL;
    * @link http://stackoverflow.com/questions/6037843/extremely-slow-postgresql-query-with-order-and-limit-clauses
    */
   private function optimiseQueryPlan($orderBy) {
-    // If we are limited to a relatively few number of records.
-    if (!empty($this->limit) && $this->limit < 200) {
+    // If we are limited to a relatively few number of records and sorting by
+    // o.id.
+    if (!empty($this->limit) && $this->limit < 200 && preg_match('/o.id (desc|asc)/i', $orderBy)) {
       $count = FALSE;
-      if (preg_match('/o.id (desc|asc)/i', $orderBy)
-          && ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') || isset($_REQUEST['knownCount']))) {
+      if ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') || isset($_REQUEST['knownCount'])) {
         // Grab the count now. If less than the limit, we fudge the order by to
         // switch query plan.
         $count = isset($_REQUEST['knownCount']) ? $_REQUEST['knownCount'] : $this->recordCount();
