@@ -90,7 +90,8 @@ abstract class Attr_Base_Controller extends Gridview_Base_Controller {
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-    // Can the user edit the actual attribute? If not they can still assign it to their surveys.
+    // Can the user edit the actual attribute? If not they can still assign it
+    // to their surveys.
     if ($this->auth->logged_in('CoreAdmin')) {
       $r['metaFields:disabled_input'] = 'NO';
     }
