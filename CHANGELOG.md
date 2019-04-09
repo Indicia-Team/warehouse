@@ -1,3 +1,9 @@
+# Version 2.19.0
+*2019-04-08*
+
+* Adds support for categorisation of scratchpad lists via new scratchpad_type_id field
+  and associated termlist.
+
 # Version 2.18.0
 *2019-04-04*
 
