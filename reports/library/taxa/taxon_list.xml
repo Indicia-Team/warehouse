@@ -1,0 +1,52 @@
+<report
+    title="List taxa"
+    description="A list of distinct taxa."
+    featured="true"
+>
+  <query website_filter_field="cttl.website_id" training_filter_field="">
+    SELECT #columns#
+    FROM cache_taxa_taxon_lists cttl
+    #agreements_join#
+    #joins#
+    WHERE (cttl.website_id IS NULL OR cttl.website_id IN (#website_ids#))
+  </query>
+  <order_bys>
+    <order_by>cttl.kingdom_taxon, cttl.order_taxon, cttl.family_taxon, cttl.taxon</order_by>
+  </order_bys>
+  <params>
+    <param name="taxon_list_id" datatype="integer" display="Taxon List ID" default=""
+        description="Limit to the list with this ID.">
+      <where>cttl.taxon_list_id=#taxon_list_id#</where>
+    </param>
+    <param name="taxon_group_list" datatype="integer[]" display="Taxon Group IDs" default=""
+        description="Comma separated list of IDs of taxon groups to limit to.">
+      <where>cttl.taxon_group_id in (#taxon_group_list#)</where>
+    </param>
+    <param name="preferred" datatype="boolean" display="Limit to preferred" default="false"
+        description="Limit to preferred names.">
+      <where>cttl.preferred=true</where>
+    </param>
+  </params>
+  <columns>
+    <column name='id' display='ID'
+            sql='cttl.id' in_count="true" datatype="integer" />
+    <column name='preferred_taxa_taxon_list_id' display='Preferred name ID'
+            sql='cttl.preferred_taxa_taxon_list_id' visible="false" datatype="integer" />
+    <column name='taxon_meaning_id' display='ID'
+            sql='cttl.taxon_meaning_id' visible="false" datatype="integer" />
+    <column name='external_key' display='External key'
+            sql='cttl.external_key' visible="false" datatype="text" />
+    <column name='taxon' display='Taxon name'
+            sql="cttl.taxon" datatype="text" />
+    <column name='preferred_taxon' display='Preferred name'
+            sql="cttl.preferred_taxon" datatype="text" />
+    <column name='common' display='Common name'
+            sql="cttl.default_common_name" datatype="text" />
+    <column name='taxon_group' display='Taxon group'
+            sql='cttl.taxon_group' datatype="text" />
+    <column name='taxon_group_id' display='Taxon group ID'
+            sql='cttl.taxon_group_id' visible="false" datatype="integer" />
+    <column name='taxonomy' display="Taxonomy" datatype="text"
+            sql="COALESCE(cttl.kingdom_taxon || ' :: ', '') || COALESCE(cttl.order_taxon, '-') || ' :: ' || COALESCE(cttl.family_taxon, '-')" />
+  </columns>
+</report>
