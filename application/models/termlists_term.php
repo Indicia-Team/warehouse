@@ -219,7 +219,7 @@ class Termlists_term_Model extends Base_Name_Model {
     // which causes errors when the work_queue task already exists.
     $sql = <<<SQL
 -- insert if not already exists
-SELECT DISTINCT 'task_cache_builder_attrs_occurrences', 'occurrences', av.occurrence_id, 2, 60, now()
+SELECT DISTINCT 'task_cache_builder_attrs_occurrence', 'occurrence', av.occurrence_id, 2, 60, now()
 FROM cache_termlists_terms t
 JOIN occurrence_attribute_values av
   ON av.int_value=t.id
@@ -228,7 +228,7 @@ JOIN occurrence_attributes a
   ON a.id=av.occurrence_attribute_id
   AND a.data_type='L'
   AND a.deleted=false
-LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_occurrences'
+LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_occurrence'
   AND q.entity='occurrences' AND q.record_id=av.occurrence_id AND q.params IS NULL
 WHERE t.meaning_id=$meaning_id
 AND q.id IS NULL;
@@ -236,7 +236,7 @@ SQL;
     $this->db->query($sql);
     $sql = <<<SQL
 -- insert if not already exists
-SELECT DISTINCT 'task_cache_builder_attrs_samples', 'samples', av.sample_id, 2, 60, now()
+SELECT DISTINCT 'task_cache_builder_attrs_sample', 'sample', av.sample_id, 2, 60, now()
 FROM cache_termlists_terms t
 JOIN sample_attribute_values av
   ON av.int_value=t.id
@@ -245,7 +245,7 @@ JOIN sample_attributes a
   ON a.id=av.sample_attribute_id
   AND a.data_type='L'
   AND a.deleted=false
-LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_samples'
+LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_sample'
   AND q.entity='samples' AND q.record_id=av.sample_id AND q.params IS NULL
 WHERE t.meaning_id=$meaning_id
 AND q.id IS NULL;
