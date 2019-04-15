@@ -1187,22 +1187,27 @@ class ORM extends ORM_Core {
    * submission.
    */
   private function createChildRecords() {
-    $r=TRUE;
+    $r = TRUE;
     if (array_key_exists('subModels', $this->submission)) {
       // Iterate through the subModel array, linking them to this model
       foreach ($this->submission['subModels'] as $key => $a) {
         Kohana::log("debug", "Submitting submodel ".$a['model']['id'].".");
-        // Establish the right model
+        // Establish the right model.
         $modelName = $a['model']['id'];
-        // alias old images tables to new media tables
-        $modelName=preg_replace('/^([a-z_]+)_image$/', '${1}_medium', $modelName);
+        // alias old images tables to new media tables.
+        $modelName = preg_replace('/^([a-z_]+)_image$/', '${1}_medium', $modelName);
         $m = ORM::factory($modelName);
-        // Set the correct parent key in the subModel
+        // Set the correct parent key in the subModel.
         $fkId = $a['fkId'];
-        $a['model']['fields'][$fkId]['value'] = $this->id;
-        // copy any request fields
-        if(isset($a['copyFields'])){
-          foreach($a['copyFields'] as $from => $to){
+        if (isset($a['fkField'])) {
+          $a['model']['fields'][$fkId]['value'] = $this->{$a['fkField']};
+        }
+        else {
+          $a['model']['fields'][$fkId]['value'] = $this->id;
+        }
+        // Copy any request fields.
+        if (isset($a['copyFields'])) {
+          foreach ($a['copyFields'] as $from => $to) {
             Kohana::log("debug", "Setting ".$to." field (from parent record ".$from." field) to value ".$this->$from);
             $a['model']['fields'][$to]['value'] = $this->$from;
           }
@@ -1223,13 +1228,14 @@ class ORM extends ORM_Core {
         }
 
         if (!$result) {
-          $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
-          // Remember this model so that its errors can be reported
-          foreach($m->errors as $key=>$value) {
+          $fieldPrefix = (array_key_exists('field_prefix', $a['model'])) ? $a['model']['field_prefix'].':' : '';
+          // Remember this model so that its errors can be reported.
+          foreach ($m->errors as $key=>$value) {
             $this->errors[$fieldPrefix.$key]=$value;
           }
           $r=FALSE;
-        } elseif (!preg_match('/^\d+$/', $key)) {
+        }
+        elseif (!preg_match('/^\d+$/', $key)) {
           // sub-model list is an associative array. This means there might be references
           // to these keys elsewhere in the submission. Basically dynamic references to
           // rows which don't yet exist.

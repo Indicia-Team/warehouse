@@ -22,10 +22,10 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
- define('INAT_PAGE_SIZE', 100);
- define('INAT_MAX_PAGES', 10);
+define('INAT_PAGE_SIZE', 100);
+define('INAT_MAX_PAGES', 10);
 
 /**
  * Helper class for syncing to the RESTful API on iNaturalist.
@@ -148,7 +148,6 @@ class rest_api_sync_inaturalist {
     );
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
-    $tm = microtime(TRUE);
     foreach ($data['results'] as $iNatRecord) {
       try {
         if (empty($iNatRecord['taxon']['name'])) {
@@ -161,7 +160,7 @@ class rest_api_sync_inaturalist {
         }
         list($north, $east) = explode(',', $iNatRecord['location']);
         $observation = [
-          'id' => $iNatRecord['id'],
+          'id' => "iNat:$iNatRecord[id]",
           'taxonName' => $iNatRecord['taxon']['name'],
           'startDate' => $iNatRecord['observed_on'],
           'endDate' => $iNatRecord['observed_on'],
@@ -179,12 +178,15 @@ class rest_api_sync_inaturalist {
         if (!empty($iNatRecord['photos'])) {
           $observation['media'] = [];
           foreach ($iNatRecord['photos'] as $iNatPhoto) {
-            $observation['media'][] = [
-              'path' => $iNatPhoto['url'],
-              'caption' => $iNatPhoto['attribution'],
-              'mediaType' => 'Image:iNaturalist',
-              'licenceCode' => $iNatPhoto['license_code'],
-            ];
+            // Don't import unlicensed photos.
+            if (!empty($iNatPhoto['license_code'])) {
+              $observation['media'][] = [
+                'path' => $iNatPhoto['url'],
+                'caption' => $iNatPhoto['attribution'],
+                'mediaType' => 'Image:iNaturalist',
+                'licenceCode' => $iNatPhoto['license_code'],
+              ];
+            }
           }
         }
         if (!empty($server['attrs']) && !empty($iNatRecord['annotations'])) {
