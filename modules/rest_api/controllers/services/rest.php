@@ -726,7 +726,9 @@ class Rest_Controller extends Controller {
     'Record ID' => 'id',
     'RecordKey' => '_id',
     'Sample ID' => 'event.event_id',
-    'Date' => '[date string]',
+    'Date interpreted' => '[date string]',
+    'Date start' => 'event.date_start',
+    'Date end' => 'event.date_end',
     'Recorded by' => 'event.recorded_by',
     'Determined by' => 'identification.identified_by',
     'Grid reference' => 'location.output_sref',
@@ -754,7 +756,9 @@ class Rest_Controller extends Controller {
     'Quantity' => 'occurrence.organism_quantity',
     'Zero abundance' => 'occurrence.zero_abundance',
     'Sensitive' => 'metadata.sensitive',
-    'Record status' => 'identification.identification_verification_status',
+    'Record status' => 'identification.verification_status',
+    'Record substatus' => 'identification.verification_substatus',
+    'Query status' => 'identification.query',
     'Verifier' => 'identification.verifier.name',
     'Verified on' => 'identification.verified_on',
     'Website' => 'metadata.website.title',
@@ -1251,6 +1255,22 @@ class Rest_Controller extends Controller {
     return $r;
   }
 
+  private function getRawESFieldValue($doc, $source) {
+    $search = explode('.', $source);
+    $data = $doc;
+    $failed = FALSE;
+    foreach ($search as $field) {
+      if (isset($data[$field])) {
+        $data = $data[$field];
+      }
+      else {
+        $failed = TRUE;
+        break;
+      }
+    }
+    return $failed ? '-' : $data;
+  }
+
   /**
    * Copies a source field from an Elasticsearch document into a CSV row.
    *
@@ -1278,19 +1298,7 @@ class Rest_Controller extends Controller {
         $row[] = "Invalid field $source";
       }
       else {
-        $search = explode('.', $source);
-        $data = $doc;
-        $failed = FALSE;
-        foreach ($search as $field) {
-          if (isset($data[$field])) {
-            $data = $data[$field];
-          }
-          else {
-            $failed = TRUE;
-            break;
-          }
-        }
-        $row[] = $failed ? '-' : $data;
+        $row[] = $this->getRawESFieldValue($doc, $source);
       }
     }
   }
