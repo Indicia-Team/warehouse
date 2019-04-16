@@ -6,8 +6,6 @@
   <query website_filter_field="cttl.website_id" training_filter_field="">
     SELECT #columns#
     FROM cache_taxa_taxon_lists cttl
-    #agreements_join#
-    #joins#
     WHERE (cttl.website_id IS NULL OR cttl.website_id IN (#website_ids#))
   </query>
   <order_bys>
