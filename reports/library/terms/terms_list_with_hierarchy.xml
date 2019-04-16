@@ -9,17 +9,18 @@
         where parent_id is null
       and termlist_id=#termlist_id#
       and preferred=true
-      and website_id in (#website_list#)
+      and website_id in (#website_ids#)
     union all
         select o.id, concat(path, '->', term)
         from cache_termlists_terms o
         join nodes n on n.id = o.parent_id
       where o.preferred=true
     )
-    select *
+    select id, path as term
     from nodes
     order by path;
+  </query>
   <params>
     <param name="termlist_id" display="Termlist" datatype="lookup" population_call="direct:termlist:id:title" />
-  </param>
+  </params>
 </report>
