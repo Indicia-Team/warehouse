@@ -726,12 +726,14 @@ class Rest_Controller extends Controller {
     'Record ID' => 'id',
     'RecordKey' => '_id',
     'Sample ID' => 'event.event_id',
-    'Date' => '[date string]',
+    'Date interpreted' => '[date string]',
+    'Date start' => 'event.date_start',
+    'Date end' => 'event.date_end',
     'Recorded by' => 'event.recorded_by',
     'Determined by' => 'identification.identified_by',
     'Grid reference' => 'location.output_sref',
     'System' => 'location.output_sref_system',
-    'Coordinate uncertainty (m)' => 'location.coordinate_uncertainty_in_metres',
+    'Coordinate uncertainty (m)' => 'location.coordinate_uncertainty_in_meters',
     'Lat/Long' => 'location.point',
     'Location name' => 'location.verbatim_locality',
     'Higher geography' => '[higher geography](field=name,text=true)',
@@ -754,7 +756,9 @@ class Rest_Controller extends Controller {
     'Quantity' => 'occurrence.organism_quantity',
     'Zero abundance' => 'occurrence.zero_abundance',
     'Sensitive' => 'metadata.sensitive',
-    'Record status' => 'identification.identification_verification_status',
+    'Record status' => 'identification.verification_status',
+    'Record substatus' => '[null if zero](field=identification.verification_substatus)',
+    'Query status' => 'identification.query',
     'Verifier' => 'identification.verifier.name',
     'Verified on' => 'identification.verified_on',
     'Website' => 'metadata.website.title',
@@ -786,7 +790,7 @@ class Rest_Controller extends Controller {
     $postData = file_get_contents('php://input');
     $postObj = empty($postData) ? [] : json_decode($postData);
 
-    if ($scrollMode !== 'off' && empty($postObj->size)) {
+    if ($scrollMode !== 'off') {
       $postObj->size = MAX_ES_SCROLL_SIZE;
     }
     return json_encode($postObj);
@@ -1113,7 +1117,7 @@ class Rest_Controller extends Controller {
     foreach ($data['hits']['hits'] as $doc) {
       $row = [];
       foreach ($this->esCsvTemplate as $source) {
-        $this->copyIntoCSVRow($doc['_source'], $source, $row);
+        $this->copyIntoCSVRow($doc, $source, $row);
       }
       $row = array_map(function ($cell) {
         // Cells containing a quote, a comma or a new line will need to be
@@ -1215,6 +1219,26 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Special field handler for ES fields that should treat zero as null.
+   *
+   * If the field value (fieldname in params) is zero, then return null, else
+   * return the original value.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @param array params
+   *   Provided parameters
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldNullIfZero(array $doc, array $params) {
+    $value = $this->getRawESFieldValue($doc, $params['field']);
+    return ($value === '0' || $value === 0) ? NULL : $value;
+  }
+
+  /**
    * Special field handler for Elasticsearch media.
    *
    * Concatenates media to a comma separated string.
@@ -1251,46 +1275,53 @@ class Rest_Controller extends Controller {
     return $r;
   }
 
+  private function getRawESFieldValue($doc, $source) {
+    $search = explode('.', $source);
+    $data = $doc;
+    $failed = FALSE;
+    foreach ($search as $field) {
+      if (isset($data[$field])) {
+        $data = $data[$field];
+      }
+      else {
+        $failed = TRUE;
+        break;
+      }
+    }
+    return $failed ? '-' : $data;
+  }
+
   /**
    * Copies a source field from an Elasticsearch document into a CSV row.
    *
    * @param array $doc
    *   Elasticsearch document.
-   * @param string $source
+   * @param string $sourceField
    *   Source field name or special field name.
    * @param array $row
    *   Output row array, will be update with the value to output.
    */
-  private function copyIntoCSVRow($doc, $source, array &$row) {
-    if (preg_match('/^\[(?P<sourceType>[a-z ]*)\](\((?<params>[a-z0-9]*=[^,=\)]*(,[a-z0-9]*=[^,=\)]*)*)\))?$/', $source, $matches)) {
+  private function copyIntoCSVRow($doc, $sourceField, array &$row) {
+    // Fields starting '_' are special fields in the root of the doc. Others
+    // are in the _source element.
+    $docSource = strpos($sourceField, '_') === 0 ? $doc : $doc['_source'];
+    if (preg_match('/^\[(?P<sourceType>[a-z ]*)\](\((?<params>[a-z0-9]*=[^,=\)]*(,[a-z0-9]*=[^,=\)]*)*)\))?$/', $sourceField, $matches)) {
       $fn = 'esGetSpecialField' .
         str_replace(' ', '', ucwords(str_replace(['['], '', $matches['sourceType'])));
       $params = empty($matches['params']) ? [] : $this->explodeParams($matches['params']);
       if (method_exists($this, $fn)) {
-        $row[] = $this->$fn($doc, $params);
+        $row[] = $this->$fn($docSource, $params);
       }
       else {
-        $row[] = "Invalid field $source";
+        $row[] = "Invalid field $sourceField";
       }
     }
     else {
-      if (!preg_match('/^[a-z0-9_]+(\.[a-z0-9_]+)*$/', $source)) {
-        $row[] = "Invalid field $source";
+      if (!preg_match('/^[a-z0-9_]+(\.[a-z0-9_]+)*$/', $sourceField)) {
+        $row[] = "Invalid field $sourceField";
       }
       else {
-        $search = explode('.', $source);
-        $data = $doc;
-        $failed = FALSE;
-        foreach ($search as $field) {
-          if (isset($data[$field])) {
-            $data = $data[$field];
-          }
-          else {
-            $failed = TRUE;
-            break;
-          }
-        }
-        $row[] = $failed ? '-' : $data;
+        $row[] = $this->getRawESFieldValue($docSource, $sourceField);
       }
     }
   }
