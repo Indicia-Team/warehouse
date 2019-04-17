@@ -765,8 +765,6 @@ class Rest_Controller extends Controller {
     'Survey dataset' => 'metadata.survey.title',
     'Media' => '[media]',
   ];
-  // occurrence external key
-
 
   /**
    * Calculate the data to post to an Elasticsearch search.
@@ -842,8 +840,8 @@ class Rest_Controller extends Controller {
    *
    * @param int $a
    *   Date value 1 as Unix timestamp.
-   * * @param int $a
-   *   Date value 1 as Unix timestamp.
+   * @param int $b
+   *   Date value 2 as Unix timestamp.
    */
   private static function dateCmp($a, $b) {
     if ($a[1] < $b[1]) {
@@ -1109,7 +1107,7 @@ class Rest_Controller extends Controller {
    *   File data, or NULL if not writing to a file in which case the output
    *   is echoed.
    */
-  private function esToCsv($response, $file = NULL) {
+  private function esToCsv($response, array $file = NULL) {
     $data = json_decode($response, TRUE);
     if (empty($data['hits']['hits'])) {
       return;
@@ -1117,7 +1115,7 @@ class Rest_Controller extends Controller {
     foreach ($data['hits']['hits'] as $doc) {
       $row = [];
       foreach ($this->esCsvTemplate as $source) {
-        $this->copyIntoCSVRow($doc, $source, $row);
+        $this->copyIntoCsvRow($doc, $source, $row);
       }
       $row = array_map(function ($cell) {
         // Cells containing a quote, a comma or a new line will need to be
@@ -1149,7 +1147,7 @@ class Rest_Controller extends Controller {
    * @return string
    *   Formatted readable date.
    */
-  private function esGetSpecialFieldDateString($doc) {
+  private function esGetSpecialFieldDateString(array $doc) {
     if (empty($doc['event']['date_start']) && empty($doc['event']['date_end'])) {
       return 'Unknown';
     }
@@ -1180,11 +1178,13 @@ class Rest_Controller extends Controller {
    *
    * @param array $doc
    *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters in field definition.
    *
    * @return string
    *   Formatted string
    */
-  private function esGetSpecialFieldHigherGeography($doc, $params) {
+  private function esGetSpecialFieldHigherGeography(array $doc, array $params) {
     if (isset($doc['location']) && isset($doc['location']['higher_geography'])) {
       if (empty($params) || empty($params['type'])) {
         $r = $doc['location']['higher_geography'];
@@ -1226,15 +1226,14 @@ class Rest_Controller extends Controller {
    *
    * @param array $doc
    *   Elasticsearch document.
-   *
-   * @param array params
-   *   Provided parameters
+   * @param array $params
+   *   Provided parameters.
    *
    * @return string
    *   Formatted string
    */
   private function esGetSpecialFieldNullIfZero(array $doc, array $params) {
-    $value = $this->getRawESFieldValue($doc, $params['field']);
+    $value = $this->getRawEsFieldValue($doc, $params['field']);
     return ($value === '0' || $value === 0) ? NULL : $value;
   }
 
@@ -1249,7 +1248,7 @@ class Rest_Controller extends Controller {
    * @return string
    *   Formatted string
    */
-  private function esGetSpecialFieldMedia($doc) {
+  private function esGetSpecialFieldMedia(array $doc) {
     if (!empty($doc['occurrence']['associated_media'])) {
       return implode('; ', $doc['occurrence']['associated_media']);
     }
@@ -1275,7 +1274,19 @@ class Rest_Controller extends Controller {
     return $r;
   }
 
-  private function getRawESFieldValue($doc, $source) {
+  /**
+   * Function to find the value stored in an ES doc for a field.
+   *
+   * @param array $doc
+   *   Document extracted from Elasticsearch.
+   * @param string $source
+   *   Fieldname, with nested segments separated by a period, e.g.
+   *   identification.verification_status.
+   *
+   * @return mixed
+   *   Data value or empty string if not found.
+   */
+  private function getRawEsFieldValue(array $doc, $source) {
     $search = explode('.', $source);
     $data = $doc;
     $failed = FALSE;
@@ -1288,7 +1299,7 @@ class Rest_Controller extends Controller {
         break;
       }
     }
-    return $failed ? '-' : $data;
+    return $failed ? '' : $data;
   }
 
   /**
@@ -1301,7 +1312,7 @@ class Rest_Controller extends Controller {
    * @param array $row
    *   Output row array, will be update with the value to output.
    */
-  private function copyIntoCSVRow($doc, $sourceField, array &$row) {
+  private function copyIntoCsvRow(array $doc, $sourceField, array &$row) {
     // Fields starting '_' are special fields in the root of the doc. Others
     // are in the _source element.
     $docSource = strpos($sourceField, '_') === 0 ? $doc : $doc['_source'];
@@ -1321,7 +1332,7 @@ class Rest_Controller extends Controller {
         $row[] = "Invalid field $sourceField";
       }
       else {
-        $row[] = $this->getRawESFieldValue($docSource, $sourceField);
+        $row[] = $this->getRawEsFieldValue($docSource, $sourceField);
       }
     }
   }
@@ -2209,7 +2220,7 @@ class Rest_Controller extends Controller {
         $afSettings = [
           'mode' => 'initialLoad',
           'last_tracking_id' => $lastTrackingInfo->max_tracking,
-          'last_tracking_date' => Date('c'),
+          'last_tracking_date' => date('c'),
           'last_id' => 0,
         ];
         variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
