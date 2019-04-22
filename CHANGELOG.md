@@ -1,3 +1,8 @@
+# Version 2.22.0
+*2019-04-22*
+
+* Updates views for taxon designation data to support new tools for editing taxon designations.
+
 # Version 2.21.0
 *2019-04-17*
 
