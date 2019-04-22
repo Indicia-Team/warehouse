@@ -1200,7 +1200,7 @@ class ORM extends ORM_Core {
         // Set the correct parent key in the subModel.
         $fkId = $a['fkId'];
         if (isset($a['fkField'])) {
-          $a['model']['fields'][$fkId]['value'] = $this->{$a['fkField']};
+          $a['model']['fields'][$fkId] = ['value' => $this->{$a['fkField']}];
         }
         else {
           $a['model']['fields'][$fkId]['value'] = $this->id;
