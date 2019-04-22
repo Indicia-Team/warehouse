@@ -1,3 +1,29 @@
+# Version 2.22.0
+*2019-04-22*
+
+* Updates views for taxon designation data to support new tools for editing taxon designations.
+
+# Version 2.21.0
+*2019-04-17*
+
+* Updates the fields available when doing CSV download from Elasticsearch.
+  (https://github.com/BiologicalRecordsCentre/iRecord/issues/549)
+* New report required for showing recorder email addresses to verifiers using
+  Elasticsearch (https://github.com/BiologicalRecordsCentre/iRecord/issues/552).
+* A report providing a hierarchical view of a termlist, used for editing trait
+  data in the Pantheon system.
+
+# Version 2.20.0
+*2019-04-15*
+
+* Data services submission format now allows fkField to override the name of the key linked to a foreign key when
+  describing entity relationships in a data submission. Further info at
+  https://indicia-docs.readthedocs.io/en/latest/developing/web-services/submission-format.html?highlight=fkfield#super-and-sub-models
+* iNaturalist sync method in the `rest_api_sync` module now skips unlicenced photos.
+* New report, `reports/library/locations/location_boundary_projected.xml`, provides a simple list of location boundaries
+  in a given projection, ideal for use on Leaflet maps.
+* New report, `reports/library/taxa/taxon_list.xml`, provides a simple list of taxon names and associated data.
+
 # Version 2.19.0
 *2019-04-08*
 
