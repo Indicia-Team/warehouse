@@ -4,9 +4,9 @@ sudo: required
 language: php
 
 php:
-  - '7.0'
   - '7.1'
   - '7.2'
+  - '7.3'
 
 env:
   - POSTGRESQL_VERSION=postgresql-9.3-postgis-2.1
