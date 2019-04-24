@@ -48,6 +48,13 @@ class XMLReportReader_Core implements ReportReader {
   private $colsToInclude = array();
 
   /**
+   * Database connection object;
+   *
+   * @var object
+   */
+  private $db;
+
+  /**
    * @var bool Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the
    * sql for the columns list.
    */
@@ -116,16 +123,25 @@ class XMLReportReader_Core implements ReportReader {
   }
 
   /**
-  * Constructs a reader for the specified report.
-  * @param string $report Report file path
-  * @param array $websiteIds List of websites to include data for
-  * @param string $sharing Set to reporting, verification, moderation, peer_review, data_flow, editing or me
-  * (=user's data) depending on the type of data from other websites to include in this report.
-  * @param array $colsToInclude Optional list of column names to include in the report output.
-  */
-  public function __construct($report, $websiteIds, $sharing='reporting', $colsToInclude = array()) {
+   * Constructs a reader for the specified report.
+   *
+   * @param object $db
+   *   Report database connection.
+   * @param string $report
+   *   Report file path.
+   * @param array $websiteIds
+   *   List of websites to include data for.
+   * @param string $sharing
+   *   Set to reporting, verification, moderation, peer_review, data_flow,
+   *   editing or me (=user's data) depending on the type of data from other
+   *   websites to include in this report.
+   * @param array $colsToInclude
+   *   Optional list of column names to include in the report output.
+   */
+  public function __construct($db, $report, array $websiteIds, $sharing = 'reporting', array $colsToInclude = []) {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try {
+      $this->db = $db;
       $a = explode('/', $report);
       $this->name = $a[count($a)-1];
       $reader = new XMLReader();
@@ -327,7 +343,7 @@ class XMLReportReader_Core implements ReportReader {
   /**
    * Apply the website and sharing related filters to the query.
    */
-  public function applyWebsitePermissions(&$query, $websiteIds, $training, $sharing, $userId) {
+  public function applyWebsitePermissions(&$query, $websiteIds, $providedParams, $sharing, $userId) {
     if ($websiteIds) {
       if (in_array('', $websiteIds)) {
         foreach ($websiteIds as $key => $value) {
@@ -343,11 +359,11 @@ class XMLReportReader_Core implements ReportReader {
       // use a dummy filter to return all websites if core admin
       $query = str_replace(array('#website_filter#', '#website_ids#'), array('1=1', 'SELECT id FROM websites'), $query);
     if (!empty($this->trainingFilterField)) {
-      $boolStr = $training==='true' ? 'true' : 'false';
+      $boolStr = $providedParams['training'] ==='true' ? 'true' : 'false';
       $query = str_replace('#sharing_filter#', "{$this->trainingFilterField}=$boolStr AND #sharing_filter#", $query);
     }
     // an alternative way to inform a query about training mode....
-    $query = str_replace('#training#', $training, $query);
+    $query = str_replace('#training#', $providedParams['training'], $query);
     // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
     if ($sharing==='me' && empty($userId))
       // revert to website type sharing if we have no known user Id.
@@ -381,10 +397,15 @@ class XMLReportReader_Core implements ReportReader {
         }
         else {
           $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=$this->createdByField";
-          $sharingFilters[] = "($this->websiteFilterField in ($idList) OR privacyusers.id=1 OR " .
+          $sharingFilters[] = "($this->websiteFilterField in /*1*/ ($idList) OR privacyusers.id=1 OR " .
               "privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)";
         }
-        $sharingFilters[] = "$this->websiteFilterField in ($sharedWebsiteIdList)";
+        // If scope not controlled by a survey standard parameter filter, then
+        // apply a website_id filter. Avoid doing this unnecessary as it
+        // affects performance
+        if (!$this->coveringSurveyFilter($providedParams, $sharedWebsiteIdList)) {
+          $sharingFilters[] = "$this->websiteFilterField in ($sharedWebsiteIdList)";
+        }
         $query = str_replace('#sharing_website_ids#', $sharedWebsiteIdList, $query);
       }
 
@@ -397,6 +418,43 @@ class XMLReportReader_Core implements ReportReader {
       array(implode("\n", $agreementsJoins), implode("\n AND ", $sharingFilters), $sharing),
       $query
     );
+  }
+
+  /**
+   * Check if we have a survey filter param which covers permissions.
+   *
+   * If doing a standard params filter including a filter on survey and all
+   * the requested surveys are allowed (i.e. in the list of allowed websites)
+   * then we can drop the website filter from the query. This saves extra
+   * work for the query optimised.
+   *
+   * @param array $providedParams
+   *   Report parameters.
+   * @param string $sharedWebsiteIdList
+   *   Comma separated list of allowed website IDs according to current share
+   *   settings.
+   *
+   * @return bool
+   */
+  private function coveringSurveyFilter(array $providedParams, $sharedWebsiteIdList) {
+    if ($this->loadStandardParamsSet && !empty($providedParams['survey_list']) || !empty($providedParams['survey_id'])) {
+      $surveys = empty($providedParams['survey_list']) ? $providedParams['survey_id'] : $providedParams['survey_list'];
+      $cacheId = "covering-survey-filter-s-$surveys-w-" . $sharedWebsiteIdList;
+      $cache = Cache::instance();
+      if ($cached = $cache->get($cacheId)) {
+        return $cached;
+      }
+      // Doing a standard params filter on survey ID. If all the requested
+      // surveys are allowed then we don't need a separate website filter.
+      $qry = $this->db->select('count(*)')
+        ->from('surveys')
+        ->in('id', $surveys)
+        ->notin('website_id', $sharedWebsiteIdList)
+        ->get()->current();
+      $cache->set($cacheId, $qry->count === '0');
+      return $qry->count === '0';
+    }
+    return FALSE;
   }
 
   /**
@@ -416,8 +474,7 @@ class XMLReportReader_Core implements ReportReader {
         return $cached;
       }
     }
-    $db = new Database();
-    $qry = $db->select('to_website_id')
+    $qry = $this->db->select('to_website_id')
       ->from('index_websites_website_agreements')
       ->where("receive_for_$sharing", 't')
       ->in('from_website_id', $websiteIds)
