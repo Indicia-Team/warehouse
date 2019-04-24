@@ -142,6 +142,8 @@ class rest_api_sync_inaturalist {
           'updated_since' => $fromDateTime,
           'per_page' => $pageSize,
           'page' => $page,
+          'order' => 'asc',
+          'order_by' => 'created_at',
         ]
       )),
       $serverId
