@@ -435,6 +435,8 @@ class XMLReportReader_Core implements ReportReader {
    *   settings.
    *
    * @return bool
+   *   True if the survey filter covers permissions requirements so the website
+   *   filter can be dropped.
    */
   private function coveringSurveyFilter(array $providedParams, $sharedWebsiteIdList) {
     if ($this->loadStandardParamsSet && !empty($providedParams['survey_list']) || !empty($providedParams['survey_id'])) {
