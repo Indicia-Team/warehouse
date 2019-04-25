@@ -32,7 +32,7 @@ $(document).ready(function docReady() {
         }
       },
       error: function errorResponse(jqXHR, textStatus, errorThrown) {
-        alert('error');
+        alert('An error occurred syncing records. ' . errorThrown);
       }
     });
   }
