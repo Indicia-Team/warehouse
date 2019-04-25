@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,20 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
- * @subpackage Cache_builder
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
 /**
- * Helper class for cache_builder functionality
- *
- * @package	Modules
- * @subpackage Cache_Builder
+ * Helper class for cache_builder functionality.
  */
 class cache_builder {
+
+  public static $delayCacheUpdates = FALSE;
 
   /**
    * Performs the actual task of table population.
@@ -34,8 +33,8 @@ class cache_builder {
   public static function populate_cache_table($db, $table, $last_run_date) {
     $queries = kohana::config("cache_builder.$table");
     try {
-      $count=cache_builder::get_changelist($db, $table, $queries, $last_run_date);
-      if ($count>0) {
+      $count = cache_builder::get_changelist($db, $table, $queries, $last_run_date);
+      if ($count > 0) {
         cache_builder::makeChanges($db, $table);
         echo '<br/>';
       }
@@ -89,74 +88,106 @@ class cache_builder {
 
   /**
    * Inserts a single record into the cache, e.g. could be used as soon as a record is submitted.
-   * @param object $db Database object.
-   * @param string $table Plural form of the table name.
-   * @param array $ids Record IDs to insert in the cache
+   *
+   * @param object $db
+   *   Database object.
+   * @param string $table
+   *   Plural form of the table name.
+   * @param array $ids
+   *   Record IDs to insert in the cache
    */
-  public static function insert($db, $table, $ids) {
-    if (count($ids)>0) {
-      $master_list_id = warehouse::getMasterTaxonListId();
-      $idlist=implode(',', $ids);
-      $queries = kohana::config("cache_builder.$table");
-      if (!isset($queries['key_field']))
-        throw new exception('Cannot do a specific record insert into cache as the key_field configuration not defined in cache_builder configuration');
-      if (!is_array($queries['insert']))
-        $queries['insert'] = array($queries['insert']);
-      foreach ($queries['insert'] as $query) {
-        $insertSql = str_replace(
-          ['#join_needs_update#', '#master_list_id#'],
-          ['', $master_list_id],
-          $query
-        );
-        $insertSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
-        $db->query($insertSql);
+  public static function insert($db, $table, array $ids) {
+    if (count($ids) > 0) {
+      $idlist = implode(',', $ids);
+      if (self::$delayCacheUpdates && in_array($table, ['occurrences', 'samples'])) {
+        kohana::log('debug', "Delayed inserts for $table ($idlist)");
+        self::delayChangesViaWorkQueue($db, $table, $idlist);
+      }
+      else {
+        $master_list_id = warehouse::getMasterTaxonListId();
+        $queries = kohana::config("cache_builder.$table");
+        if (!isset($queries['key_field']))
+          throw new exception('Cannot do a specific record insert into cache as the key_field configuration not defined in cache_builder configuration');
+        if (!is_array($queries['insert']))
+          $queries['insert'] = array($queries['insert']);
+        foreach ($queries['insert'] as $query) {
+          $insertSql = str_replace(
+            ['#join_needs_update#', '#master_list_id#'],
+            ['', $master_list_id],
+            $query
+          );
+          $insertSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
+          $db->query($insertSql);
+        }
       }
       self::final_queries($db, $table, $ids);
     }
   }
 
   /**
-   * Updates a single record in the cache, e.g. could be used as soon as a record is edited.
-   * @param object $db Database object.
-   * @param string $table Plural form of the table name.
-   * @param array $ids Record IDs to insert in the cache
+   * Updates a single record in the cache.
+   *
+   * E.g. could be used as soon as a record is edited.
+   *
+   * @param object $db
+   *   Database object.
+   * @param string $table
+   *   Plural form of the table name.
+   * @param array $ids
+   *   Record IDs to insert in the cache.
    */
-  public static function update($db, $table, $ids) {
-    if (count($ids)>0) {
-      $master_list_id = warehouse::getMasterTaxonListId();
-      $idlist=implode(',', $ids);
-      $queries = kohana::config("cache_builder.$table");
-      if (!isset($queries['key_field']))
-        throw new exception('Cannot do a specific record update into cache as the key_field configuration not defined in cache_builder configuration');
-      if (!is_array($queries['update']))
-        $queries['update'] = array($queries['update']);
-      foreach ($queries['update'] as $query) {
-        $updateSql = str_replace(
-          ['#join_needs_update#', '#master_list_id#'],
-          ['', $master_list_id],
-          $query
-        );
-        $updateSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
-        $db->query($updateSql);
+  public static function update($db, $table, array $ids) {
+    if (count($ids) > 0) {
+      $idlist = implode(',', $ids);
+      if (self::$delayCacheUpdates && in_array($table, ['occurrences', 'samples'])) {
+        kohana::log('debug', "Delayed updates for $table ($idlist)");
+        self::delayChangesViaWorkQueue($db, $table, $idlist);
       }
-      self::final_queries($db, $table, $ids);
+      else {
+        $master_list_id = warehouse::getMasterTaxonListId();
+        $queries = kohana::config("cache_builder.$table");
+        if (!isset($queries['key_field']))
+          throw new exception('Cannot do a specific record update into cache as the key_field configuration not defined in cache_builder configuration');
+        if (!is_array($queries['update']))
+          $queries['update'] = array($queries['update']);
+        foreach ($queries['update'] as $query) {
+          $updateSql = str_replace(
+            ['#join_needs_update#', '#master_list_id#'],
+            ['', $master_list_id],
+            $query
+          );
+          $updateSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
+          $db->query($updateSql);
+        }
+        self::final_queries($db, $table, $ids);
+      }
     }
   }
 
   /**
-   * Deletes a single record from the cache, e.g. could be used as soon as a record is deleted.
-   * @param object $db Database object.
-   * @param string $table Plural form of the table name.
-   * @param array $ids Record IDs to delete from the cache
+   * Deletes a single record from the cache.
+   *
+   * E.g. could be used as soon as a record is deleted.
+   *
+   * @param object $db
+   *   Database object.
+   * @param string $table
+   *   Plural form of the table name.
+   * @param array $ids
+   *   Record IDs to delete from the cache.
    */
-  public static function delete($db, $table, $ids) {
-    foreach ($ids as $id) {
-      if ($table==='occurrences' || $table==='samples') {
-        $db->delete("cache_{$table}_functional", array('id' => $id));
-        $db->delete("cache_{$table}_nonfunctional", array('id' => $id));
-        if ($table==='samples') {
-          // Slightly more complex delete query to ensure indexes used.
-          $sql = <<<SQL
+  public static function delete($db, $table, array $ids) {
+    if (self::$delayCacheUpdates && in_array($table, ['occurrences', 'samples'])) {
+      self::delayChangesViaWorkQueue($db, $table, implode(',', $ids));
+    }
+    else {
+      foreach ($ids as $id) {
+        if ($table === 'occurrences' || $table === 'samples') {
+          $db->delete("cache_{$table}_functional", array('id' => $id));
+          $db->delete("cache_{$table}_nonfunctional", array('id' => $id));
+          if ($table === 'samples') {
+            // Slightly more complex delete query to ensure indexes used.
+            $sql = <<<SQL
 DELETE FROM cache_occurrences_functional o
 USING samples s
 JOIN surveys su on su.id=s.survey_id
@@ -165,12 +196,37 @@ AND o.sample_id=s.id
 AND o.survey_id=su.id
 AND o.website_id=su.website_id
 SQL;
-          $db->query($sql);
-          $db->query("delete from cache_occurrences_nonfunctional where id in (select id from occurrences where sample_id=$id)");
+            $db->query($sql);
+            $db->query("delete from cache_occurrences_nonfunctional where id in (select id from occurrences where sample_id=$id)");
+          }
         }
-      } else
-        $db->delete("cache_$table", array('id' => $id));
+        else {
+          $db->delete("cache_$table", array('id' => $id));
+        }
+      }
     }
+  }
+
+  /**
+   * During an import, add tasks to work queue rather than do immediate update.
+   *
+   * Allows performance improvement during import.
+   *
+   * @param object $db
+   *   Database object.
+   * @param string $table
+   *   Plural form of the table name.
+   * @param string $idCsv
+   *   Record IDs to delete from the cache (comma separated string).
+   */
+  private static function delayChangesViaWorkQueue($db, $table, $idCsv) {
+    $entity = inflector::singular($table);
+    $sql = <<<SQL
+INSERT INTO work_queue(task, entity, record_id, params, cost_estimate, priority, created_on)
+SELECT 'task_cache_builder_update', '$entity', id, null, 100, 2, now()
+FROM $table WHERE id in ($idCsv);
+SQL;
+    $db->query($sql);
   }
 
   public static function final_queries($db, $table, $ids) {

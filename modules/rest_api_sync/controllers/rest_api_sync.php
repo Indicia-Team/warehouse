@@ -51,6 +51,9 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     $servers = Kohana::config('rest_api_sync.servers');
     foreach (array_keys($servers) as $serverId) {
       variable::set("rest_api_sync_{$serverId}_last_run", $_GET['startTime']);
+      // Clean up possible page tracking data.
+      variable::delete("rest_api_sync_{$serverId}_last_id");
+      variable::delete("rest_api_sync_{$serverId}_page");
     }
   }
 
@@ -84,14 +87,21 @@ class Rest_api_sync_Controller extends Indicia_Controller {
       ]);
     }
     else {
-      echo json_encode([
+      $r = [
         'state' => 'in progress',
         'serverIdx' => $serverIdx,
         'page' => $page,
-        'pageCount' => $progressInfo['pageCount'],
-        'recordCount' => $progressInfo['recordCount'],
         'log' => rest_api_sync::$log,
-      ]);
+      ];
+      // The following might only be calculated on the first page load, so are
+      // optional.
+      if (array_key_exists('pageCount', $progressInfo)) {
+        $r['pageCount'] = $progressInfo['pageCount'];
+      }
+      if (array_key_exists('recordCount', $progressInfo)) {
+        $r['recordCount'] = $progressInfo['recordCount'];
+      }
+      echo json_encode($r);
     }
   }
 

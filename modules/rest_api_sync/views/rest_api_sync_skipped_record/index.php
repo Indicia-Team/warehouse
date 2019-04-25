@@ -23,7 +23,6 @@ $servers = Kohana::config('rest_api_sync.servers');
 if (empty($servers)) : ?>
 <div class="alert alert-warning"><strong>Warning!</strong> no configurations defined for the rest_api_sync module.</div>
 <?php else : ?>
-  <div id="progress"></div>
   <h2>Server configurations</h2>
   <ul class="list-group">
     <?php
@@ -33,11 +32,13 @@ if (empty($servers)) : ?>
     ?>
   </ul>
   <button type="button" class="button button-primary" id="start-sync">Start sync</button>
-  <div class="alert alert-info">The following table shows any records which have failed to be imported during
-  previous synchronisation attempts.</div>
-  <?php echo $grid; ?>
-  <div id="output" class="panel panel-default">
-    <div class="panel-heading">Synchronisation messages</div>
-    <div class="panel-body"></div>
+  <div id="sync-progress">
+    <h2>Synchronisation progress</h2>
+    <div id="progress"></div><br/>
+    <?php echo $grid; ?>
+    <div id="output" class="panel panel-default">
+      <div class="panel-heading">Synchronisation messages</div>
+      <div class="panel-body"></div>
+    </div>
   </div>
 <?php endif;
