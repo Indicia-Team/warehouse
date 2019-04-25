@@ -25,7 +25,7 @@
 defined('SYSPATH') or die('No direct script access.');
 
 define('INAT_PAGE_SIZE', 100);
-define('INAT_MAX_PAGES', 10);
+define('INAT_MAX_PAGES', 5);
 
 /**
  * Helper class for syncing to the RESTful API on iNaturalist.
@@ -33,25 +33,10 @@ define('INAT_MAX_PAGES', 10);
 class rest_api_sync_inaturalist {
 
   /**
-   * Processing state.
+   * Terms loaded from iNat.
    *
-   * Current processing state, used to track initial setup.
-   *
-   * @var string
+   * @var array
    */
-  private $state;
-
-  /**
-   * Date up to which processing has been performed.
-   *
-   * When a sync run only manages to do part of the job (too many records to
-   * process) this defines the limit of the completely processed edit date
-   * range.
-   *
-   * @var string
-   */
-  private static $processingDateLimit;
-
   private static $controlledTerms = [];
 
   /**
@@ -72,10 +57,11 @@ class rest_api_sync_inaturalist {
       // If last run not finished all pages, start at last page.
       $page = variable::get("rest_api_sync_{$serverId}_page", $page);
     }
+    $firstPage = $page === 1;
+    echo $firstPage ? 'First</br>' : 'not first<br/>';
     // Count of pages done in this run.
     $pageCount = 0;
     $timestampAtStart = date('c');
-    self::loadControlledTerms($serverId, $server);
     do {
       $syncStatus = self::syncPage($serverId, $server, $page);
       $page++;
@@ -83,9 +69,12 @@ class rest_api_sync_inaturalist {
       ob_flush();
       variable::set("rest_api_sync_{$serverId}_page", $page);
     } while ($syncStatus['moreToDo'] && $pageCount < INAT_MAX_PAGES);
-    if (!$syncStatus['moreToDo']) {
+    if ($firstPage) {
       variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
+    }
+    if (!$syncStatus['moreToDo']) {
       variable::delete("rest_api_sync_{$serverId}_page");
+      variable::delete("rest_api_sync_{$serverId}_last_id");
     }
   }
 
@@ -97,51 +86,59 @@ class rest_api_sync_inaturalist {
    * @param array $server
    *   Server configuration.
    */
-  private static function loadControlledTerms($serverId, $server) {
+  public static function loadControlledTerms($serverId, $server) {
     if (!empty(self::$controlledTerms)) {
       // Already loaded.
       return;
     }
-    $data = rest_api_sync::getDataFromRestUrl(
-      "$server[url]/controlled_terms",
-      $serverId
-    );
-    foreach ($data['results'] as $iNatControlledTerm) {
-      $termLookup = [];
-      foreach ($iNatControlledTerm['values'] as $iNatValue) {
-        $termLookup[$iNatValue['id']] = $iNatValue['label'];
+    $cache = Cache::instance();
+    self::$controlledTerms = $cache->get('inaturalist-controlled-terms');
+    if (!self::$controlledTerms) {
+      $data = rest_api_sync::getDataFromRestUrl(
+        "$server[url]/controlled_terms",
+        $serverId
+      );
+      foreach ($data['results'] as $iNatControlledTerm) {
+        $termLookup = [];
+        foreach ($iNatControlledTerm['values'] as $iNatValue) {
+          $termLookup[$iNatValue['id']] = $iNatValue['label'];
+        }
+        self::$controlledTerms[$iNatControlledTerm['id']] = [
+          'label' => $iNatControlledTerm['label'],
+          'values' => $termLookup,
+        ];
       }
-      self::$controlledTerms[$iNatControlledTerm['id']] = [
-        'label' => $iNatControlledTerm['label'],
-        'values' => $termLookup,
-      ];
+      $cache->set('inaturalist-controlled-terms', self::$controlledTerms);
     }
   }
 
   /**
    * Synchronise a single page of data loaded from the iNat server.
    *
+   * For this sync, we don't use the provided $page parameter as pagination
+   * is not possible on large iNat datasets. Instead we keep our own last_id
+   * variable to chunk through the data..
+   *
    * @param string $serverId
    *   ID of the server as defined in the configuration.
    * @param array $server
    *   Server configuration.
-   * @param int $page
-   *   Page number.
    *
    * @return array
    *   Status info.
    */
-  public static function syncPage($serverId, array $server, $page) {
+  public static function syncPage($serverId, array $server) {
     $db = Database::instance();
     $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
-    $pageSize = INAT_PAGE_SIZE;
+    $fromId = variable::get("rest_api_sync_{$serverId}_last_id", 0, FALSE);
+    $lastId = $fromId;
     $data = rest_api_sync::getDataFromRestUrl(
       "$server[url]/observations?" . http_build_query(array_merge(
         $server['parameters'],
         [
           'updated_since' => $fromDateTime,
-          'per_page' => $pageSize,
-          'page' => $page,
+          'per_page' => INAT_PAGE_SIZE,
+          'id_above' => $fromId,
           'order' => 'asc',
           'order_by' => 'created_at',
         ]
@@ -214,9 +211,11 @@ class rest_api_sync_inaturalist {
           "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
       }
       catch (exception $e) {
-        $tracker['errors']++;
-        rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
-            json_encode($iNatRecord), $tracker);
+        rest_api_sync::log(
+          'error',
+          "Error occurred submitting an occurrence with iNaturalist ID $iNatRecord[id]\n" . $e->getMessage(),
+          $tracker
+        );
         $msg = pg_escape_string($e->getMessage());
         $createdById = isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
         $sql = <<<QRY
@@ -241,17 +240,20 @@ VALUES (
 QRY;
         $db->query($sql);
       };
+      $lastId = $iNatRecord['id'];
     }
+    variable::set("rest_api_sync_{$serverId}_last_id", $lastId);
     rest_api_sync::log(
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
-    echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
-    return [
-      'moreToDo' => $data['total_results'] / $pageSize > $page,
-      'pageCount' => ceil($data['total_results'] / $pageSize),
-      'recordCount' => $data['total_results'],
-    ];
+    $r = ['moreToDo' => count($data['results']) === INAT_PAGE_SIZE];
+    // Only on first page of data can we work out total dataset size.
+    if ($fromId === 0) {
+      $r['pageCount'] = ceil($data['total_results'] / INAT_PAGE_SIZE);
+      $r['recordCount'] = $data['total_results'];
+    }
+    return $r;
   }
 
 }

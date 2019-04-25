@@ -242,7 +242,6 @@ class rest_api_sync_indicia {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
         catch (exception $e) {
-          $tracker['errors']++;
           rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
               json_encode($observation), $tracker);
         }
