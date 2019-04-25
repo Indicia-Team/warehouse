@@ -62,7 +62,6 @@ class rest_api_sync_inaturalist {
     // Count of pages done in this run.
     $pageCount = 0;
     $timestampAtStart = date('c');
-    self::loadControlledTerms($serverId, $server);
     do {
       $syncStatus = self::syncPage($serverId, $server, $page);
       $page++;
@@ -87,24 +86,29 @@ class rest_api_sync_inaturalist {
    * @param array $server
    *   Server configuration.
    */
-  private static function loadControlledTerms($serverId, $server) {
+  public static function loadControlledTerms($serverId, $server) {
     if (!empty(self::$controlledTerms)) {
       // Already loaded.
       return;
     }
-    $data = rest_api_sync::getDataFromRestUrl(
-      "$server[url]/controlled_terms",
-      $serverId
-    );
-    foreach ($data['results'] as $iNatControlledTerm) {
-      $termLookup = [];
-      foreach ($iNatControlledTerm['values'] as $iNatValue) {
-        $termLookup[$iNatValue['id']] = $iNatValue['label'];
+    $cache = Cache::instance();
+    self::$controlledTerms = $cache->get('inaturalist-controlled-terms');
+    if (!self::$controlledTerms) {
+      $data = rest_api_sync::getDataFromRestUrl(
+        "$server[url]/controlled_terms",
+        $serverId
+      );
+      foreach ($data['results'] as $iNatControlledTerm) {
+        $termLookup = [];
+        foreach ($iNatControlledTerm['values'] as $iNatValue) {
+          $termLookup[$iNatValue['id']] = $iNatValue['label'];
+        }
+        self::$controlledTerms[$iNatControlledTerm['id']] = [
+          'label' => $iNatControlledTerm['label'],
+          'values' => $termLookup,
+        ];
       }
-      self::$controlledTerms[$iNatControlledTerm['id']] = [
-        'label' => $iNatControlledTerm['label'],
-        'values' => $termLookup,
-      ];
+      $cache->set('inaturalist-controlled-terms', self::$controlledTerms);
     }
   }
 
@@ -207,9 +211,11 @@ class rest_api_sync_inaturalist {
           "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
       }
       catch (exception $e) {
-        $tracker['errors']++;
-        rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
-            json_encode($iNatRecord), $tracker);
+        rest_api_sync::log(
+          'error',
+          "Error occurred submitting an occurrence with iNaturalist ID $iNatRecord[id]\n" . $e->getMessage(),
+          $tracker
+        );
         $msg = pg_escape_string($e->getMessage());
         $createdById = isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
         $sql = <<<QRY

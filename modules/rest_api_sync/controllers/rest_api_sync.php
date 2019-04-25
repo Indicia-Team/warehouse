@@ -72,6 +72,7 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     $server = $servers[$serverId];
     $serverType = isset($server['serverType']) ? $server['serverType'] : 'indicia';
     $helperClass = 'rest_api_sync_' . strtolower($serverType);
+    $helperClass::loadControlledTerms($serverId, $server);
     $progressInfo = $helperClass::syncPage($serverId, $server, $page);
     if ($progressInfo['moreToDo']) {
       $page++;
