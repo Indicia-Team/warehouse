@@ -83,8 +83,11 @@ class request_logging {
           $post = empty($_POST) ? NULL : $_POST;
         }
       }
-      if ($post && is_array($post)) {
-        $post = json_encode(self::stripUnloggedParams($post));
+      if ($post) {
+        if (is_array($post)) {
+          self::stripUnloggedParams($post);
+        }
+        $post = json_encode($post);
       }
       $db->insert('request_log_entries', array(
         'io' => $io,
