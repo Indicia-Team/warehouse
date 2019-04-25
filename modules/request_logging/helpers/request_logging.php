@@ -114,7 +114,7 @@ class request_logging {
    *   Tidied array.
    */
   private static function stripUnloggedParams(array $array) {
-    $skipped = ['nonce', 'auth_token', 'paramsFormExcludes', 'callback'];
+    $skipped = ['nonce', 'auth_token', 'paramsFormExcludes', 'callback', 'reportSource', 'mode'];
     return array_diff_key($array, array_combine($skipped, $skipped));
   }
 
