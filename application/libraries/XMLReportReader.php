@@ -397,7 +397,7 @@ class XMLReportReader_Core implements ReportReader {
         }
         else {
           $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=$this->createdByField";
-          $sharingFilters[] = "($this->websiteFilterField in /*1*/ ($idList) OR privacyusers.id=1 OR " .
+          $sharingFilters[] = "($this->websiteFilterField in ($idList) OR privacyusers.id=1 OR " .
               "privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)";
         }
         // If scope not controlled by a survey standard parameter filter, then
