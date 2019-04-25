@@ -56,15 +56,24 @@ class request_logging {
    *   Where POST data are large or to complex to log usefully, it may be
    *   replaced in the log by specifying an object to store here.
    */
-  public static function log($io, $service, $subtype, $resource, $website_id, $user_id, $startTime, $db = NULL,
-      $exceptionMsg = NULL, $overrideStoredPost = NULL) {
+  public static function log(
+      $io,
+      $service,
+      $subtype,
+      $resource,
+      $website_id,
+      $user_id,
+      $startTime,
+      $db = NULL,
+      $exceptionMsg = NULL,
+      $overrideStoredPost = NULL) {
     // Check if this type of request is logged.
     $logged = Kohana::config('request_logging.logged_requests');
     if (in_array("$io.$service", $logged)) {
       // Request is to be logged.
       $db = new Database();
       $db->query('START TRANSACTION READ WRITE;');
-      $get = empty($_GET) ? NULL : json_encode($_GET);
+      $get = empty($_GET) ? NULL : json_encode(self::stripUnloggedParams($_GET));
       if ($overrideStoredPost) {
         $post = $overrideStoredPost;
       }
@@ -74,8 +83,8 @@ class request_logging {
           $post = empty($_POST) ? NULL : $_POST;
         }
       }
-      if ($post) {
-        $post = json_encode($post);
+      if ($post && is_array($post)) {
+        $post = json_encode(self::stripUnloggedParams($post));
       }
       $db->insert('request_log_entries', array(
         'io' => $io,
@@ -94,4 +103,19 @@ class request_logging {
       $db->query('COMMIT');
     }
   }
+
+  /**
+   * Tidy up parameters we don't want to log.
+   *
+   * @param array $array
+   *   Parameters list.
+   *
+   * @return array
+   *   Tidied array.
+   */
+  private static function stripUnloggedParams(array $array) {
+    $skipped = ['nonce', 'auth_token', 'paramsFormExcludes', 'callback', 'reportSource', 'mode'];
+    return array_diff_key($array, array_combine($skipped, $skipped));
+  }
+
 }
