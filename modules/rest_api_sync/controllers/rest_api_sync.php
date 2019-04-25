@@ -27,6 +27,11 @@
  */
 class Rest_api_sync_Controller extends Indicia_Controller {
 
+  /**
+   * On initiation of sync processing, return the list of servers.
+   *
+   * This allows the JS client to process earch server's sync in trun.
+   */
   public function start() {
     $this->auto_render = FALSE;
     $servers = Kohana::config('rest_api_sync.servers');
@@ -36,6 +41,11 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     ]);
   }
 
+  /**
+   * On completion of sync processing, update variables.
+   *
+   * Allows next sync run to start where this left off.
+   */
   public function end() {
     $this->auto_render = FALSE;
     $servers = Kohana::config('rest_api_sync.servers');
