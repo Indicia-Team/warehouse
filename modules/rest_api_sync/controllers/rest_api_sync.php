@@ -27,6 +27,11 @@
  */
 class Rest_api_sync_Controller extends Indicia_Controller {
 
+  /**
+   * On initiation of sync processing, return the list of servers.
+   *
+   * This allows the JS client to process earch server's sync in trun.
+   */
   public function start() {
     $this->auto_render = FALSE;
     $servers = Kohana::config('rest_api_sync.servers');
@@ -36,11 +41,19 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     ]);
   }
 
+  /**
+   * On completion of sync processing, update variables.
+   *
+   * Allows next sync run to start where this left off.
+   */
   public function end() {
     $this->auto_render = FALSE;
     $servers = Kohana::config('rest_api_sync.servers');
     foreach (array_keys($servers) as $serverId) {
       variable::set("rest_api_sync_{$serverId}_last_run", $_GET['startTime']);
+      // Clean up possible page tracking data.
+      variable::delete("rest_api_sync_{$serverId}_last_id");
+      variable::delete("rest_api_sync_{$serverId}_page");
     }
   }
 
@@ -59,6 +72,7 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     $server = $servers[$serverId];
     $serverType = isset($server['serverType']) ? $server['serverType'] : 'indicia';
     $helperClass = 'rest_api_sync_' . strtolower($serverType);
+    $helperClass::loadControlledTerms($serverId, $server);
     $progressInfo = $helperClass::syncPage($serverId, $server, $page);
     if ($progressInfo['moreToDo']) {
       $page++;
@@ -74,14 +88,21 @@ class Rest_api_sync_Controller extends Indicia_Controller {
       ]);
     }
     else {
-      echo json_encode([
+      $r = [
         'state' => 'in progress',
         'serverIdx' => $serverIdx,
         'page' => $page,
-        'pageCount' => $progressInfo['pageCount'],
-        'recordCount' => $progressInfo['recordCount'],
         'log' => rest_api_sync::$log,
-      ]);
+      ];
+      // The following might only be calculated on the first page load, so are
+      // optional.
+      if (array_key_exists('pageCount', $progressInfo)) {
+        $r['pageCount'] = $progressInfo['pageCount'];
+      }
+      if (array_key_exists('recordCount', $progressInfo)) {
+        $r['recordCount'] = $progressInfo['recordCount'];
+      }
+      echo json_encode($r);
     }
   }
 

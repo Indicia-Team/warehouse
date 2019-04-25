@@ -1,8 +1,8 @@
 $(document).ready(function docReady() {
   var startInfo;
+  var pageCount;
 
-  $('#progress').hide();
-  $('#output').hide();
+  $('#sync-progress').hide();
   $('#progress').progressbar();
   function doRequest(data) {
     $.ajax({
@@ -12,7 +12,9 @@ $(document).ready(function docReady() {
       success: function successResponse(response) {
         var chunkPercentage;
         var progress;
-        $('#output .panel-body').append(response.log.join('<br/>'));
+        // Page count is only guaranteed in the response on first call.
+        pageCount = typeof response.pageCount === 'undefined' ? pageCount : response.pageCount;
+        $('#output .panel-body').append('<div>' + response.log.join('<br/>') + '</div>');
         if (response.state === 'done') {
           $('#output .panel-body').append('<div class="alert alert-success">Synchronisation complete</div>');
           $('#progress').hide();
@@ -23,7 +25,7 @@ $(document).ready(function docReady() {
           });
         } else {
           chunkPercentage = 100 / startInfo.servers.length;
-          progress = ((response.serverIdx - 1) + ((response.page - 1) / response.pageCount)) * chunkPercentage;
+          progress = ((response.serverIdx - 1) + ((response.page - 1) / pageCount)) * chunkPercentage;
           $('#progress').progressbar('value', progress);
           doRequest({
             serverIdx: response.serverIdx,
@@ -32,15 +34,14 @@ $(document).ready(function docReady() {
         }
       },
       error: function errorResponse(jqXHR, textStatus, errorThrown) {
-        alert('error');
+        alert('An error occurred syncing records. ' + errorThrown);
       }
     });
   }
 
   $('#start-sync').click(function startSync() {
     $('#start-sync').attr('disabled', 'disabled');
-    $('#progress').show();
-    $('#output').show();
+    $('#sync-progress').show();
     $('#rest_api_sync_skipped_record.report-grid-container').hide();
     $.ajax({
       url: 'rest_api_sync/start',
