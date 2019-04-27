@@ -35,6 +35,16 @@ class Rest_api_sync_Controller extends Indicia_Controller {
   public function start() {
     $this->auto_render = FALSE;
     $servers = Kohana::config('rest_api_sync.servers');
+    foreach (array_keys($servers) as $serverId) {
+      // If last run still going, not on first page.
+      $firstPage = !variable::get("rest_api_sync_{$serverId}_next_run", FALSE, FALSE);
+      if ($firstPage) {
+        // Track when we started this run, so the next run can pick up all
+        // changes.
+        $timestampAtStart = date('c');
+        variable::set("rest_api_sync_{$serverId}_next_run", $timestampAtStart);
+      }
+    }
     echo json_encode([
       'servers' => array_keys($servers),
       'startTime' => date('c'),
@@ -50,10 +60,11 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     $this->auto_render = FALSE;
     $servers = Kohana::config('rest_api_sync.servers');
     foreach (array_keys($servers) as $serverId) {
-      variable::set("rest_api_sync_{$serverId}_last_run", $_GET['startTime']);
+      // Inform next sync run when to start from.
+      variable::set("rest_api_sync_{$serverId}_last_run", variable::get("rest_api_sync_{$serverId}_next_run"));
       // Clean up possible page tracking data.
+      variable::delete("rest_api_sync_{$serverId}_next_run");
       variable::delete("rest_api_sync_{$serverId}_last_id");
-      variable::delete("rest_api_sync_{$serverId}_page");
     }
   }
 
@@ -73,6 +84,10 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     $serverType = isset($server['serverType']) ? $server['serverType'] : 'indicia';
     $helperClass = 'rest_api_sync_' . strtolower($serverType);
     $helperClass::loadControlledTerms($serverId, $server);
+    // For performance, just notify work_queue to update cache entries.
+    if (class_exists('cache_builder')) {
+      cache_builder::$delayCacheUpdates = TRUE;
+    }
     $progressInfo = $helperClass::syncPage($serverId, $server, $page);
     if ($progressInfo['moreToDo']) {
       $page++;
@@ -93,15 +108,9 @@ class Rest_api_sync_Controller extends Indicia_Controller {
         'serverIdx' => $serverIdx,
         'page' => $page,
         'log' => rest_api_sync::$log,
+        'pagesToGo' => $progressInfo['pagesToGo'],
+        'recordsToGo' => $progressInfo['recordsToGo'],
       ];
-      // The following might only be calculated on the first page load, so are
-      // optional.
-      if (array_key_exists('pageCount', $progressInfo)) {
-        $r['pageCount'] = $progressInfo['pageCount'];
-      }
-      if (array_key_exists('recordCount', $progressInfo)) {
-        $r['recordCount'] = $progressInfo['recordCount'];
-      }
       echo json_encode($r);
     }
   }

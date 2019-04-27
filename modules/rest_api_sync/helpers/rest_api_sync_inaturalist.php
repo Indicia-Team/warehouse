@@ -48,32 +48,24 @@ class rest_api_sync_inaturalist {
    *   Server configuration.
    */
   public static function syncServer($serverId, $server) {
-    // Physical page tracker.
-    $page = 1;
-    if (isset($_GET['start_page'])) {
-      $page = $_GET['start_page'];
-    }
-    else {
-      // If last run not finished all pages, start at last page.
-      $page = variable::get("rest_api_sync_{$serverId}_page", $page);
-    }
-    $firstPage = $page === 1;
-    echo $firstPage ? 'First</br>' : 'not first<br/>';
     // Count of pages done in this run.
     $pageCount = 0;
-    $timestampAtStart = date('c');
+    // If last run still going, not on first page.
+    $firstPage = !variable::get("rest_api_sync_{$serverId}_next_run");
+    if ($firstPage) {
+      // Track when we started this run, so the next run can pick up all
+      // changes.
+      $timestampAtStart = date('c');
+      variable::set("rest_api_sync_{$serverId}_next_run", $timestampAtStart);
+    }
     do {
-      $syncStatus = self::syncPage($serverId, $server, $page);
-      $page++;
+      $syncStatus = self::syncPage($serverId, $server);
       $pageCount++;
       ob_flush();
-      variable::set("rest_api_sync_{$serverId}_page", $page);
     } while ($syncStatus['moreToDo'] && $pageCount < INAT_MAX_PAGES);
-    if ($firstPage) {
-      variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
-    }
     if (!$syncStatus['moreToDo']) {
-      variable::delete("rest_api_sync_{$serverId}_page");
+      variable::set("rest_api_sync_{$serverId}_last_run", variable::get("rest_api_sync_{$serverId}_next_run"));
+      variable::delete("rest_api_sync_{$serverId}_next_run");
       variable::delete("rest_api_sync_{$serverId}_last_id");
     }
   }
@@ -247,12 +239,11 @@ QRY;
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
-    $r = ['moreToDo' => count($data['results']) === INAT_PAGE_SIZE];
-    // Only on first page of data can we work out total dataset size.
-    if ($fromId === 0) {
-      $r['pageCount'] = ceil($data['total_results'] / INAT_PAGE_SIZE);
-      $r['recordCount'] = $data['total_results'];
-    }
+    $r = [
+      'moreToDo' => count($data['results']) === INAT_PAGE_SIZE,
+      'pagesToGo' => ceil($data['total_results'] / INAT_PAGE_SIZE),
+      'recordsToGo' => $data['total_results'],
+    ];
     return $r;
   }
 
