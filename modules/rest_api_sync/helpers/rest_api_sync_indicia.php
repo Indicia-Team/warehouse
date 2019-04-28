@@ -105,8 +105,8 @@ class rest_api_sync_indicia {
     self::syncServer($serverId, $server);
     return [
       'moreToDo' => FALSE,
-      'pageCount' => 1,
-      'recordCount' => -1,
+      'pagesToGo' => 0,
+      'recordsToGo' => 0,
     ];
   }
 

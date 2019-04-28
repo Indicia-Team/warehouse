@@ -129,8 +129,8 @@ class XMLReportReader_Core implements ReportReader {
    *   Report database connection.
    * @param string $report
    *   Report file path.
-   * @param array $websiteIds
-   *   List of websites to include data for.
+   * @param mixed $websiteIds
+   *   List of websites to include data for or NULL if any.
    * @param string $sharing
    *   Set to reporting, verification, moderation, peer_review, data_flow,
    *   editing or me (=user's data) depending on the type of data from other
@@ -138,7 +138,7 @@ class XMLReportReader_Core implements ReportReader {
    * @param array $colsToInclude
    *   Optional list of column names to include in the report output.
    */
-  public function __construct($db, $report, array $websiteIds, $sharing = 'reporting', array $colsToInclude = []) {
+  public function __construct($db, $report, $websiteIds, $sharing = 'reporting', array $colsToInclude = []) {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try {
       $this->db = $db;
