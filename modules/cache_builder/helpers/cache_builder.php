@@ -223,8 +223,11 @@ SQL;
     $entity = inflector::singular($table);
     $sql = <<<SQL
 INSERT INTO work_queue(task, entity, record_id, params, cost_estimate, priority, created_on)
-SELECT 'task_cache_builder_update', '$entity', id, null, 100, 2, now()
-FROM $table WHERE id in ($idCsv);
+SELECT 'task_cache_builder_update', '$entity', t.id, null, 100, 2, now()
+FROM $table t
+LEFT JOIN work_queue w ON w.task='task_cache_builder_update' AND w.entity='$entity' AND w.record_id=t.id
+WHERE t.id IN ($idCsv)
+AND w.id IS NULL;
 SQL;
     $db->query($sql);
   }

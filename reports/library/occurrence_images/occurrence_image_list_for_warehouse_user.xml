@@ -11,6 +11,7 @@
   #joins#
   WHERE #website_filter#
   AND o.media_count>0
+  AND o.created_by_id=#created_by_id#
   #filters#
   </query>
   <field_sql>
@@ -54,9 +55,8 @@
     <param name="occattrs" display="Occurrence attribute list" datatype="occattrs"
            description="Comma separated list of occurrence attribute IDs to include as columns in the report" />
     <param name="created_by_id" display="Warehouse User ID" datatype="integer" emptyvalue="0"
-           description="Enter the ID of the warehouse user" >
-      <where>o.created_by_id=#created_by_id#</where>
-    </param>
+           description="Enter the ID of the warehouse user" />
+
   </params>
   <columns>
     <column name="occurrence_id" display="ID" />

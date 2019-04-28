@@ -31,7 +31,7 @@ if (empty($servers)) : ?>
     }
     ?>
   </ul>
-  <button type="button" class="button button-primary" id="start-sync">Start sync</button>
+  <button type="button" class="btn btn-primary" id="start-sync">Start sync</button>
   <div id="sync-progress">
     <h2>Synchronisation progress</h2>
     <div id="progress"></div><br/>

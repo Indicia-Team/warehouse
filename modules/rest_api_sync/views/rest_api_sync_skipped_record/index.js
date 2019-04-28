@@ -12,8 +12,8 @@ $(document).ready(function docReady() {
       success: function successResponse(response) {
         var chunkPercentage;
         var progress;
-        // Page count is only guaranteed in the response on first call.
-        pageCount = typeof response.pageCount === 'undefined' ? pageCount : response.pageCount;
+        // Get pageCount from pagesToGo on first iteration.
+        pageCount = typeof pageCount === 'undefined' ? response.pagesToGo : pageCount;
         $('#output .panel-body').append('<div>' + response.log.join('<br/>') + '</div>');
         if (response.state === 'done') {
           $('#output .panel-body').append('<div class="alert alert-success">Synchronisation complete</div>');

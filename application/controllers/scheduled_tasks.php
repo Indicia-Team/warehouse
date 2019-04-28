@@ -86,14 +86,15 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->doDigestNotifications($swift);
     }
     if (in_array('work_queue', $nonPluginTasks)) {
-      $qtm = microtime(TRUE);
+      $timeAtStart = microtime(TRUE);
       $queue = new WorkQueue();
       $queue->process($this->db);
-      if (microtime(TRUE) - $qtm > 10) {
-        self::msg("Work queue processing took $qtm seconds.", 'alert');
+      $timeTaken = microtime(TRUE) - $timeAtStart;
+      if ($timeTaken > 10) {
+        self::msg("Work queue processing took $timeTaken seconds.", 'alert');
       }
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'scheduled_tasks', NULL, 'work_queue', 0, 0, $qtm, $this->db);
+        request_logging::log('a', 'scheduled_tasks', NULL, 'work_queue', 0, 0, $timeAtStart, $this->db);
       }
     }
     // Mark the time of the last scheduled task check, so we can get diffs
