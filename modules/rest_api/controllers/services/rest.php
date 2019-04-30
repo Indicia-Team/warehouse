@@ -25,7 +25,7 @@
 define("REST_API_DEFAULT_PAGE_SIZE", 100);
 define("AUTOFEED_DEFAULT_PAGE_SIZE", 10000);
 // Max load from ES, keep fairly low to avoid PHP memory overload.
-define('MAX_ES_SCROLL_SIZE', 2000);
+define('MAX_ES_SCROLL_SIZE', 5000);
 define('SCROLL_TIMEOUT', '5m');
 
 if (!function_exists('apache_request_headers')) {
