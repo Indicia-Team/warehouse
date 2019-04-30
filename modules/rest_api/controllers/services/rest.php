@@ -771,11 +771,14 @@ class Rest_Controller extends Controller {
    *
    * @param string $scrollMode
    *   Scroll mode for ES, either off, initial, or nextpage.
+   * @param string $format
+   *   Format identifier. If CSV then we can use this to do source filtering
+   *   to lower memory consumption.
    *
    * @return string
    *   Data to post.
    */
-  private function getEsPostData($scrollMode) {
+  private function getEsPostData($scrollMode, $format) {
     if ($scrollMode === 'nextpage') {
       // A subsequent hit on a scrolled request.
       $postObj = [
@@ -790,6 +793,27 @@ class Rest_Controller extends Controller {
 
     if ($scrollMode !== 'off') {
       $postObj->size = MAX_ES_SCROLL_SIZE;
+    }
+    if ($format === 'csv') {
+      foreach ($this->esCsvTemplate as $field) {
+        if (strpos($field, '_') === 0) {
+          // Fields starting _ are not inside _source object.
+          continue;
+        }
+        if (preg_match('/^[a-z_]+(\.[a-z_]+)*$/', $field)) {
+          $fields[] = $field;
+        }
+        elseif (preg_match('/^\[higher geography\]/', $field)) {
+          $fields[] = 'higher_geography.*';
+        }
+        elseif (preg_match('/^\[media\]/', $field)) {
+          $fields[] = 'occurrence.associated_media';
+        }
+        elseif (preg_match('/^\[null if zero\]\(field=([a-z_]+(\.[a-z_]+)*)\)$/', $field, $matches)) {
+          $fields[] = $matches[1];
+        }
+      }
+      $postObj->_source = array_values(array_unique($fields));
     }
     return json_encode($postObj);
   }
@@ -972,7 +996,7 @@ class Rest_Controller extends Controller {
   private function proxyToEs($url) {
     $format = isset($_GET['format']) && $_GET['format'] === 'csv' ? 'csv' : 'json';
     $scrollMode = isset($_GET['scroll']) ? 'initial' : (empty($_GET['scroll_id']) ? 'off' : 'nextpage');
-    $postData = $this->getEsPostData($scrollMode);
+    $postData = $this->getEsPostData($scrollMode, $format);
     $actualUrl = $this->getEsActualUrl($url, $scrollMode);
     $session = curl_init($actualUrl);
     if (!empty($postData) && $postData !== '[]') {
