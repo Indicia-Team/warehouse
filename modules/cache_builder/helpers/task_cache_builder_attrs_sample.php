@@ -54,7 +54,7 @@ class task_cache_builder_attrs_sample {
    */
   public static function process($db, $taskType, $procId) {
     // Work out the SQL required to get the i18n for lookup term values.
-    $langs = kohana::config('cache_builder_variables.attrs_cache_languages');
+    $langs = kohana::config('cache_builder_variables.attrs_cache_languages', FALSE, FALSE);
     $langTermSql = '';
     if ($langs !== NULL) {
       foreach ($langs as $lang) {
