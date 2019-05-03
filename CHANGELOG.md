@@ -1,3 +1,10 @@
+# Version 2.25.0
+*2019-05-03*
+
+* Fixes re-use of previous location related sample data from a site when adding a new sample so that more than one
+  value can be copied over.
+* Fixes an error when auto_log_determinations is off and a record is redetermined.
+
 # Version 2.22.0
 *2019-04-22*
 
