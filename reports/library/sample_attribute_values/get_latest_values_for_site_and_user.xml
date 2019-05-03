@@ -4,21 +4,21 @@
                  values for samples created by the current user and where the sample attribute has applies_to_location set."
 >
 <query website_filter_field="lw.website_id">
-  SELECT * FROM (SELECT #columns#
-  FROM sample_attribute_values sav
-    JOIN sample_attributes sa on sa.id = sav.sample_attribute_id
-    JOIN samples s on s.id = sav.sample_id and s.created_by_id='#created_by_id#' and s.location_id='#location_id#'
-    LEFT JOIN cache_termlists_terms ctt on ctt.id=sav.int_value AND sa.data_type='L'
-  WHERE sa.applies_to_location = true
-  ORDER BY s.created_on DESC
-  LIMIT 1) AS subtable
+  SELECT * FROM (
+    SELECT #columns#
+    FROM sample_attribute_values sav
+      JOIN sample_attributes sa on sa.id = sav.sample_attribute_id
+      LEFT JOIN cache_termlists_terms ctt on ctt.id=sav.int_value AND sa.data_type='L'
+    WHERE sa.applies_to_location = true
+    AND sav.sample_id=(SELECT max(id) FROM samples WHERE created_by_id=#created_by_id# AND location_id=#location_id#)
+  ) AS subtable
 </query>
 <params>
   <param name='location_id' display='Location Id' description='Location to get latest sample attributes for.' datatype='lookup' />
   <param name='created_by_id' display='Created By Id' description='Only return sample attribute values created by the current user.' datatype='lookup' />
 </params>
 <columns>
-  <column name='location_id' display='Location Id' sql='s.location_id' datatype='lookup' />
+  <column name='location_id' display='Location Id' sql='#location_id#' datatype='lookup' />
   <column name='id' display='Sample Attribute Id' sql='sa.id' datatype='lookup' />
   <column name='data_type' display='Sample Attribute Data Type' sql="
           CASE sa.data_type
