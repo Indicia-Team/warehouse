@@ -20,7 +20,7 @@
  * @license  http://www.gnu.org/licenses/gpl.html GPL
  * @link   http://code.google.com/p/indicia/
  */
- 
+
 defined('SYSPATH') or die('No direct script access.');
 
 /**
@@ -56,7 +56,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       echo json_encode($model->fixed_values_form($options));
     }
   }
-  
+
   /**
    * Controller function that returns the list of importable fields for a model.
    * Accepts optional $_GET parameters for the website_id and survey_id, which limit the available
@@ -75,12 +75,21 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     		break;
     }
     $model = ORM::factory($model);
-    $website_id = empty($_GET['website_id']) ? null : $_GET['website_id'];
-    $survey_id = empty($_GET['survey_id']) ? null : $_GET['survey_id'];
+    // Identify the context of the import
+    $identifiers = [];
+    if (!empty($_GET['website_id'])) {
+      $identifiers['website_id'] = $_GET['website_id'];
+    }
+    if (!empty($_GET['survey_id'])) {
+      $identifiers['survey_id'] = $_GET['survey_id'];
+    }
+    if (!empty($_GET['taxon_list_id'])) {
+      $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
+    }
     $use_associations = (empty($_GET['use_associations']) ? false : ($_GET['use_associations'] == "true" ? true : false));
-    echo json_encode($model->getSubmittableFields(true, $website_id, $survey_id, $attrTypeFilter, $use_associations));
+    echo json_encode($model->getSubmittableFields(true, $idenfiers, $attrTypeFilter, $use_associations));
   }
-  
+
   /**
    * Controller function that returns the list of required fields for a model.
    * Accepts optional $_GET parameters for the website_id and survey_id, which limit the available
@@ -91,18 +100,27 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
   public function get_plant_portal_required_fields($model) {
     $this->authenticate('read');
     $model = ORM::factory($model);
-    $website_id = empty($_GET['website_id']) ? null : $_GET['website_id'];
-    $survey_id = empty($_GET['survey_id']) ? null : $_GET['survey_id'];
+    // Identify the context of the import
+    $identifiers = [];
+    if (!empty($_GET['website_id'])) {
+      $identifiers['website_id'] = $_GET['website_id'];
+    }
+    if (!empty($_GET['survey_id'])) {
+      $identifiers['survey_id'] = $_GET['survey_id'];
+    }
+    if (!empty($_GET['taxon_list_id'])) {
+      $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
+    }
     $use_associations = (empty($_GET['use_associations']) ? false : ($_GET['use_associations'] == "true" ? true : false));
-    $fields = $model->getRequiredFields(true, $website_id, $survey_id, $use_associations);
+    $fields = $model->getRequiredFields(true, $identifiers, $use_associations);
     foreach ($fields as &$field) {
       $field = preg_replace('/:date_type$/', ':date', $field);
     }
     echo json_encode($fields);
   }
-  
+
   /**
-   * Handle uploaded files in the $_FILES array by moving them to the upload folder. The current time is prefixed to the 
+   * Handle uploaded files in the $_FILES array by moving them to the upload folder. The current time is prefixed to the
    * name to make it unique. The uploaded file should be in a field called media_upload.
    */
   public function upload_csv()
@@ -124,7 +142,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       }
       elseif ($_FILES->validate())
       {
-        if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true') 
+        if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true')
           $finalName = strtolower($_FILES['media_upload']['name']);
         else
           $finalName = time().strtolower($_FILES['media_upload']['name']);
@@ -150,9 +168,9 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       $this->handle_error($e);
     }
   }
-  
+
   /**
-   * Caches various metadata to do with the upload, including the upload mappings and the error count. This action 
+   * Caches various metadata to do with the upload, including the upload mappings and the error count. This action
    * is called by the JavaScript code responsible for a chunked upload, before the upload actually starts.
    */
   public function cache_upload_metadata() {
@@ -166,7 +184,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     self::internal_cache_upload_metadata($metadata);
     echo "OK";
   }
-  
+
   private function codeToMessage($code) {
     switch ($code) {
       case UPLOAD_ERR_INI_SIZE:
@@ -195,8 +213,8 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
         break;
     }
       return $message;
-  } 
-  
+  }
+
   /**
    * Saves a set of metadata for an upload to a file, so it can persist across requests.
    */
@@ -209,7 +227,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     fwrite($mappingHandle, json_encode($metadata));
     fclose($mappingHandle);
   }
-  
+
   /*
    * Determines if the provided module has been activated in the indicia configuration.
    */
@@ -223,11 +241,11 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
   	}
   	return false;
   }
-  
+
   /**
    * Controller action that performs the import of data in an uploaded CSV file.
    * Allows $_GET parameters to specify the filepos, offset and limit when uploading just a chunk at a time.
-   * This method is called to perform the entire upload when JavaScript is not enabled, or can 
+   * This method is called to perform the entire upload when JavaScript is not enabled, or can
    * be called to perform part of an AJAX csv upload where only a part of the data is imported
    * on each call.
    * Requires a $_GET parameter for uploaded_csv - the uploaded file name.
@@ -239,7 +257,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       global $remoteUserId;
       $remoteUserId = $metadata['user_id'];
     }
-    // Check if details of the last supermodel (e.g. sample for an occurrence) are in the cache from a previous iteration of 
+    // Check if details of the last supermodel (e.g. sample for an occurrence) are in the cache from a previous iteration of
     // this bulk operation
     $cache= Cache::instance();
     $this->getPreviousRowSupermodel($cache);
@@ -271,7 +289,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       $this->submissionStruct = $model->get_submission_structure();
       // special date processing.
       $index = 0;
-      $dayColumn = false; 
+      $dayColumn = false;
       $monthColumn = false;
       $yearColumn = false;
       foreach ($metadata['mappings'] as $col=>$attr) {
@@ -348,7 +366,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
         			substr($assocField, 0, strlen($associatedRecordPrefix)) == $associatedRecordPrefix;
         	}
         }
-        
+
         // If posting a supermodel, are the details of the supermodel the same as for the previous CSV row? If so, we can link to that
         // record rather than create a new supermodel record.
         $updatedPreviousCsvSupermodelDetails=$this->checkForSameSupermodel($saveArray, $model, $associationExists);
@@ -356,7 +374,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
         $model->clear();
         // Save the record with automatically generated spatial reference from the Vice County/Country where needed
         $saveArray=self::auto_generate_grid_references($saveArray);
-        $model->set_submission_data($saveArray, true);         
+        $model->set_submission_data($saveArray, true);
         $associationExists = false;
         if (($id = $model->submit()) == null) {
           // Record has errors - now embedded in model, so dump them into the error file
@@ -373,12 +391,12 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
           kohana::log('debug', 'Failed to import CSV row: '.$errors);
           $metadata['errorCount'] = $metadata['errorCount'] + 1;
         } else {
-          // now the record has successfully posted, we need to store the details of any new supermodels and their Ids, 
+          // now the record has successfully posted, we need to store the details of any new supermodels and their Ids,
           // in case they are duplicated in the next csv row.
           $this->previousCsvSupermodel['details'] = array_merge($this->previousCsvSupermodel['details'], $updatedPreviousCsvSupermodelDetails);
           $this->captureSupermodelIds($model, $associationExists);
         }
-        // get file position here otherwise the fgetcsv in the while loop will move it one record too far. 
+        // get file position here otherwise the fgetcsv in the while loop will move it one record too far.
         $filepos = ftell($handle);
       }
       // Get percentage progress
@@ -392,13 +410,13 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       fclose($handle);
       fclose($errorHandle);
       self::internal_cache_upload_metadata($metadata);
-      
+
       // An AJAX upload request will just receive the number of records uploaded and progress
-      $this->auto_render=false;      
-      $cache->set(basename($csvTempFile).'previousSupermodel', $this->previousCsvSupermodel);      
+      $this->auto_render=false;
+      $cache->set(basename($csvTempFile).'previousSupermodel', $this->previousCsvSupermodel);
     }
   }
-  
+
   /*
    * Create new plots with data passed in from the website
    */
@@ -441,11 +459,11 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
                 . ",".$userId
                 . "WHERE
                      NOT EXISTS (
-                       SELECT id 
-                       FROM locations 
-                       WHERE 
+                       SELECT id
+                       FROM locations
+                       WHERE
                        name = '".$plotName."' AND
-                       centroid_sref = '".$explodedPlotSrefs[$plotIdx]."' AND 
+                       centroid_sref = '".$explodedPlotSrefs[$plotIdx]."' AND
                        centroid_sref_system = '".$explodedPlotSrefSystems[$plotIdx]."'
                      );"
               . "insert into locations_websites"
@@ -466,16 +484,16 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
                   . ",".$userId
               . "WHERE
                    NOT EXISTS (
-                     SELECT id 
-                     FROM locations_websites 
-                     WHERE 
+                     SELECT id
+                     FROM locations_websites
+                     WHERE
                      location_id = (select id from locations where name = '".$plotName."' AND deleted=false order by id desc limit 1) AND
                      website_id = ".$websiteId."
                    );"
       );
     }
   }
-  
+
   /*
    * Create new groups with data passed in from the website
    */
@@ -495,7 +513,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       }
     }
   }
-  
+
   /*
    * After creating the groups, we actually need to assign the group to the user automatically (as they have just imported the group this makes sense to do)
    */
@@ -505,7 +523,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     //duplicate detection should be much earlier, possibly remove entirely if performance becomes an issue
     $db->query("
       insert into person_attribute_values (person_id,person_attribute_id,int_value, created_on, created_by_id, updated_on, updated_by_id)
-      select ".$personId.", 
+      select ".$personId.",
       ".$personattributeIdToHoldPlotGroups.",
       (select tt.id
       from termlists_terms tt
@@ -519,11 +537,11 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       ".$userId."
       WHERE
         NOT EXISTS (
-          SELECT id 
-          FROM person_attribute_values 
-          WHERE 
+          SELECT id
+          FROM person_attribute_values
+          WHERE
           person_id = ".$personId." AND
-          person_attribute_id = ".$personattributeIdToHoldPlotGroups." AND  
+          person_attribute_id = ".$personattributeIdToHoldPlotGroups." AND
           int_value = (
             select tt.id
             from termlists_terms tt
@@ -534,7 +552,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
           )
       );")->result();
   }
-  
+
   public function create_new_plot_to_group_attachments() {
     $db = new Database();
     $websiteId = (isset($_GET['websiteId']) ? $_GET['websiteId'] : false);
@@ -560,7 +578,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       $db->query($databaseInsertionString)->result_array(false);
     }
   }
-  
+
   private static function get_new_plot_attachments_plot_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$personId) {
     $plotNamesForAttachmentSet = '(';
     foreach ($explodedPlotPairsForPlotGroupAttachment as $plotPairsForPlotGroupAttachment) {
@@ -568,18 +586,18 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       $plotNamesForAttachmentSet.="'".$explodedPlotNameGroupNamePair[0]."',";
     }
     $plotNamesForAttachmentSet=substr($plotNamesForAttachmentSet, 0, -1);
-    $plotNamesForAttachmentSet .= ')';  
+    $plotNamesForAttachmentSet .= ')';
     $returnArray=$db->
     query(
     "select l.id as id, l.name as name
      from locations l
-     join locations_websites lw on lw.location_id = l.id 
+     join locations_websites lw on lw.location_id = l.id
      where l.deleted=false AND l.name in ".$plotNamesForAttachmentSet."
-     order by l.id desc limit ".count($explodedPlotPairsForPlotGroupAttachment)                   
+     order by l.id desc limit ".count($explodedPlotPairsForPlotGroupAttachment)
     )->result_array(false);
     return $returnArray;
   }
-  
+
   private static function get_new_plot_attachments_group_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$personId,$personAttributeIdThatHoldsPlotGroup) {
     $plotGroupNamesForAttachmentSet = '(';
     foreach ($explodedPlotPairsForPlotGroupAttachment as $plotPairsForPlotGroupAttachment) {
@@ -594,11 +612,11 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
      from terms t
      join termlists_terms tt on tt.term_id = t.id AND tt.deleted=false
      join person_attribute_values pav on pav.int_value = tt.id AND pav.person_attribute_id = ".$personAttributeIdThatHoldsPlotGroup." AND pav.deleted=false
-     where t.deleted=false AND t.term in ".$plotGroupNamesForAttachmentSet                    
+     where t.deleted=false AND t.term in ".$plotGroupNamesForAttachmentSet
     )->result_array(false);
     return $returnArray;
   }
-  
+
   /*
    * Build a string for inserting the plot location to group attachments
    */
@@ -618,7 +636,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     }
     return $insertionString;
   }
-  
+
   private static function get_new_plot_attachments_to_create($explodedPlotPairsForPlotGroupAttachments,$plotIdsToCreateAttachmentsFor,$groupIdsToCreateAttachmentsFor) {
     $explodedPlotPairsForPlotGroupAttachmentAsIds=array();
     foreach ($explodedPlotPairsForPlotGroupAttachments as $plotPairForPlotGroupAttachment) {
@@ -637,24 +655,24 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
         }
       }
       $explodedPlotPairsForPlotGroupAttachmentAsIds[]=$plotPairForPlotGroupAttachmentAsIds;
-      
+
     }
     return $explodedPlotPairsForPlotGroupAttachmentAsIds;
   }
-  
+
   private function get_person_from_user_id($db,$userId) {
     $returnObj=$db->query("select u.person_id AS id from users u where u.id = ".$userId.";")->current();
     if (!empty($returnObj->id))
       $returnVal=$returnObj->id;
-    else 
+    else
       $returnVal=null;
     return $returnVal;
   }
-  
-  /* 
-   * If spatial reference is missing then automatically generate one using the vice county name or country name 
+
+  /*
+   * If spatial reference is missing then automatically generate one using the vice county name or country name
    * Note this has an equivalent function with the same name in the Drupal prebuilt form.
-   * Changes to the logic here should also occur in that function 
+   * Changes to the logic here should also occur in that function
    */
   private static function auto_generate_grid_references($saveArray) {
     $viceCountyPairs = explode(',',kohana::config('plant_portal_import.vice_counties_list'));
@@ -665,8 +683,8 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       foreach ($viceCountyPairs as $viceCountyNameGridRefPair) {
         $viceCountyNameGridRefPairExploded=explode('|',$viceCountyNameGridRefPair);
         //If we find a match for the vice county then we can set the spatial reference and spatial reference system from the vice county
-        if (!empty($saveArray['smpAttr:'.kohana::config('plant_portal_import.vice_county_attr_id')])&& 
-                !empty($viceCountyNameGridRefPairExploded[0]) && 
+        if (!empty($saveArray['smpAttr:'.kohana::config('plant_portal_import.vice_county_attr_id')])&&
+                !empty($viceCountyNameGridRefPairExploded[0]) &&
                 $saveArray['smpAttr:'.kohana::config('plant_portal_import.vice_county_attr_id')]==$viceCountyNameGridRefPairExploded[0]) {
           $saveArray['sample:entered_sref']=$viceCountyNameGridRefPairExploded[1];
           $saveArray['sample:entered_sref_system']='4326';
@@ -678,7 +696,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       foreach ($countryPairs as $countryNameGridRefPair) {
         $countryNameGridRefPairExploded=explode('|',$countryNameGridRefPair);
         if (!empty($saveArray['smpAttr:'.kohana::config('plant_portal_import.country_attr_id')])&&
-                !empty($countryNameGridRefPairExploded[0]) && 
+                !empty($countryNameGridRefPairExploded[0]) &&
                 $saveArray['smpAttr:'.kohana::config('plant_portal_import.country_attr_id')]==$countryNameGridRefPairExploded[0]) {
           $saveArray['sample:entered_sref']=$countryNameGridRefPairExploded[1];
           $saveArray['sample:entered_sref_system']='4326';
@@ -687,7 +705,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     }
     return $saveArray;
   }
-  
+
   /**
    * Display the end result of an upload. Either displayed at the end of a non-AJAX upload, or redirected
    * to directly by the AJAX code that is performing a chunked upload when the upload completes.
@@ -696,7 +714,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
    */
   public function get_upload_result() {
     $this->authenticate('read');
-    $metadataFile = str_replace('.csv','-metadata.txt', $_GET['uploaded_csv']);    
+    $metadataFile = str_replace('.csv','-metadata.txt', $_GET['uploaded_csv']);
     $errorFile = str_replace('.csv','-errors.csv',$_GET['uploaded_csv']);
     $metadata = $this->_get_metadata($_GET['uploaded_csv']);
     echo json_encode(array('problems'=>$metadata['errorCount'], 'file' => url::base().'upload/'.basename($errorFile)));
@@ -711,7 +729,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     $cache= Cache::instance();
     $cache->delete_tag('lookup');
   }
-  
+
   /**
    * When looping through csv import data, if the import data includes a supermodel (e.g. the sample for an occurrence)
    * then this method checks to see if the supermodel part of the submission is repeated. If so, then rather than create
@@ -726,21 +744,21 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       // loop through the supermodels
       foreach($this->submissionStruct['superModels'] as $modelName=>$modelDetails) {
         // meaning models do not get shared across rows - we always generate a new meaning ID.
-        if ($modelName=='taxon_meaning' || $modelName=='meaning') 
+        if ($modelName=='taxon_meaning' || $modelName=='meaning')
           continue;
         $sm = ORM::factory($modelName);
         $smAttrsPrefix = isset($sm->attrs_field_prefix) ? $sm->attrs_field_prefix : null;
         // look for data in that supermodel and build something we can use for comparison. We must capture both normal and custom attributes.
         $hash='';
-        foreach ($saveArray as $field=>$value) {          
-          if (substr($field, 0, strlen($modelName)+1)=="$modelName:")            
+        foreach ($saveArray as $field=>$value) {
+          if (substr($field, 0, strlen($modelName)+1)=="$modelName:")
             $hash.="$field|$value|";
-          elseif ($smAttrsPrefix && substr($field, 0, strlen($smAttrsPrefix)+1)=="$smAttrsPrefix:")          
-            $hash.="$field|$value|";          
+          elseif ($smAttrsPrefix && substr($field, 0, strlen($smAttrsPrefix)+1)=="$smAttrsPrefix:")
+            $hash.="$field|$value|";
         }
         // if we have previously stored a hash for this supermodel, check if they are the same. If so we can get the ID.
         if (isset($this->previousCsvSupermodel['details'][$modelName]) && $this->previousCsvSupermodel['details'][$modelName]==$hash) {
-          // the details for this supermodel point to an existing record, so we need to re-use it. 
+          // the details for this supermodel point to an existing record, so we need to re-use it.
           if($linkOnly) {
           	// now link the existing supermodel record to the save array
           	$saveArray[$modelName.':id'] = $this->previousCsvSupermodel['id'][$modelName];
@@ -761,7 +779,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     }
     return $updatedPreviousCsvSupermodelDetails;
   }
-  
+
   /**
   * When saving a model with supermodels, we don't want to duplicate the supermodel record if all the details are the same across 2
   * spreadsheet rows. So this method captures the ID of the supermodels that we have just posted, in case their details are replicated
@@ -773,41 +791,41 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
   		// supermodel is now main model - just look for the ID field...
   		$array = $model->as_array();
   		$subStruct = $model->get_submission_structure();
-  		$this->previousCsvSupermodel['id'][$subStruct['model']] = $model->id;		
+  		$this->previousCsvSupermodel['id'][$subStruct['model']] = $model->id;
   	} else if (isset($this->submissionStruct['superModels'])) {
       $array = $model->as_array();
       // loop through the supermodels
       foreach($this->submissionStruct['superModels'] as $modelName=>$modelDetails) {
         $id = $modelName . '_id';
         // Expect that the fk field is called fkTable_id (e.g. if the super model is called sample, then
-        // the field should be sample_id). If it is not, then we revert to using ORM to find the ID, which 
+        // the field should be sample_id). If it is not, then we revert to using ORM to find the ID, which
         // incurs a database hit.
         $this->previousCsvSupermodel['id'][$modelName]=
           isset($array[$id]) ? $array[$id] : $model->$modelName->id;
       }
     }
   }
-  
+
   /**
-   * Internal function that retrieves the metadata for a CSV upload. For AJAX requests, this comes 
+   * Internal function that retrieves the metadata for a CSV upload. For AJAX requests, this comes
    * from a cached file. For normal requests, the mappings should be in the $_POST data.
    */
   private function _get_metadata($csvTempFile) {
     $metadataFile = DOCROOT . "upload/" . str_replace('.csv','-metadata.txt', $csvTempFile);
-    if (file_exists($metadataFile)) {      
+    if (file_exists($metadataFile)) {
       $metadataHandle = fopen($metadataFile, "r");
       $metadata = fgets($metadataHandle);
       fclose($metadataHandle);
       return json_decode($metadata, true);
     } else {
-      // no previous file, so create default new metadata      
+      // no previous file, so create default new metadata
       return array('mappings'=>array(), 'settings'=>array(), 'errorCount'=>0);
     }
   }
-  
+
   /**
-   * During a csv upload, this method is called to retrieve a resource handle to a file that can 
-   * contain errors during the upload. The file is created if required, and the headers from the 
+   * During a csv upload, this method is called to retrieve a resource handle to a file that can
+   * contain errors during the upload. The file is created if required, and the headers from the
    * uploaded csv file (referred to by handle) are copied into the first row of the new error file
    * along with a header for the problem description and row number.
    * @param string $csvTempFile File name of the imported CSV file.
