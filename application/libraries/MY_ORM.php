@@ -1382,18 +1382,20 @@ class ORM extends ORM_Core {
    * survey scope.
    */
   protected function getAttributes($required = FALSE, $typeFilter = NULL, $hasSurveyRestriction = TRUE) {
-    if (empty($this->identifiers['website_id']))
+    if (empty($this->identifiers['website_id']) && empty($this->identifiers['taxon_list_id'])) {
       return array();
-    $attr_entity = $this->object_name.'_attribute';
+    }
+    $attr_entity = $this->object_name . '_attribute';
     $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption', $attr_entity.'s.data_type');
     $this->db->from($attr_entity.'s');
     $this->db->where($attr_entity.'s.deleted', 'f');
-    if (($this->identifiers['website_id'] || $this->identifiers['survey_id']) && $this->db->table_exists($attr_entity.'s_websites')) {
+    if ((!empty($this->identifiers['website_id']) || !empty($this->identifiers['survey_id']))
+        && $this->db->table_exists($attr_entity.'s_websites')) {
       $this->db->join($attr_entity.'s_websites', $attr_entity.'s_websites.'.$attr_entity.'_id', $attr_entity.'s.id');
       $this->db->where($attr_entity.'s_websites.deleted', 'f');
-      if ($this->identifiers['website_id'])
+      if (!empty($this->identifiers['website_id']))
         $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
-      if ($this->identifiers['survey_id'] && $hasSurveyRestriction)
+      if (!empty($this->identifiers['survey_id']) && $hasSurveyRestriction)
         $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], NULL));
       // note we concatenate the validation rules to check both global and website specific rules for requiredness.
       if ($required) {
@@ -1424,11 +1426,18 @@ class ORM extends ORM_Core {
         $this->db->where("tr.id IS NULL");
       }
     }
+    elseif (!empty($this->identifiers['taxon_list_id']) && $this->object_name === 'taxa_taxon_list') {
+      $this->db->join('taxon_lists_taxa_taxon_list_attributes', 'taxon_lists_taxa_taxon_list_attributes.'.$attr_entity.'_id', $attr_entity.'s.id');
+      $this->db->where('taxon_lists_taxa_taxon_list_attributes.deleted', 'f');
+      $this->db->where('taxon_lists_taxa_taxon_list_attributes.taxon_list_id', $this->identifiers['taxon_list_id']);
+    }
     elseif ($required) {
       $this->db->like($attr_entity.'s.validation_rules', '%required%');
     }
     $this->db->orderby($attr_entity.'s.caption', 'ASC');
-    return $this->db->get()->result_array(TRUE);
+    $r = $this->db->get()->result_array(TRUE);
+    kohana::log('debug', $this->db->last_query());
+    return $r;
   }
 
   /**
@@ -1441,18 +1450,21 @@ class ORM extends ORM_Core {
    * supermodels list. For example, when adding an occurrence via import, you supply
    * the fields for the sample to create rather than a lookup value for the existing
    * samples.
-   * @param boolean $fk
-   * @param integer $website_id If set then custom attributes are limited to those for this website.
-   * @param integer $survey_id If set then custom attributes are limited to those for this survey.
-   * @param int @attrTypeFilter Specify a location type meaning id or a sample method meaning id to
-   * filter the returned attributes to those which apply to the given type or method.
-   * @return array The list of submittable field definitions.
+   *
+   * @param bool $fk
+   * @param array $identifiers
+   *   Website ID, survey ID and/or taxon list ID that define the context of
+   *   the list of fields, used to determine the custom attributes to include.
+   * @param int @attrTypeFilter
+   *   Specify a location type meaning id or a sample method meaning id to
+   *   filter the returned attributes to those which apply to the given type or
+   *   method.
+   *
+   * @return array
+   *   The list of submittable field definitions.
    */
-  public function getSubmittableFields($fk = FALSE, $website_id=NULL, $survey_id=NULL, $attrTypeFilter=NULL, $use_associations = FALSE) {
-    if ($website_id!==NULL)
-      $this->identifiers['website_id']=$website_id;
-    if ($survey_id!==NULL)
-      $this->identifiers['survey_id']=$survey_id;
+  public function getSubmittableFields($fk = FALSE, array $identifiers = [], $attrTypeFilter=NULL, $use_associations = FALSE) {
+    $this->identifiers = $identifiers;
     $fields = $this->getPrefixedColumnsArray($fk);
     $fields = array_merge($fields, $this->additional_csv_fields);
     ksort($fields);
@@ -1473,21 +1485,21 @@ class ORM extends ORM_Core {
     $struct = $this->get_submission_structure();
     if (array_key_exists('superModels', $struct)) {
       // currently can only have associations if a single superModel exists.
-      if($use_associations && count($struct['superModels'])===1){
+      if($use_associations && count($struct['superModels']) === 1) {
       	// duplicate all the existing fields, but rename adding a 2 to model end.
       	$newFields = array();
       	foreach($fields as $name=>$caption){
       		$parts=explode(':',$name);
-      		if($parts[0]==$struct['model'] || $parts[0]==$struct['model'].'_image' || $parts[0]==$this->attrs_field_prefix) {
+      		if($parts[0]==$struct['model'] || $parts[0] == $struct['model'].'_image' || $parts[0] == $this->attrs_field_prefix) {
       			$parts[0] .= '_2';
       			$newFields[implode(':',$parts)] = ($caption != '' ? $caption.' (2)' : '');
       		}
       	}
-      	$fields = array_merge($fields, ORM::factory($struct['model'].'_association')->getSubmittableFields($fk, $website_id, $survey_id, NULL, FALSE));
+      	$fields = array_merge($fields, ORM::factory($struct['model'].'_association')->getSubmittableFields($fk, $identifiers, NULL, FALSE));
       	$fields = array_merge($fields,$newFields);
       }
       foreach ($struct['superModels'] as $super=>$content) {
-        $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $website_id, $survey_id, $attrTypeFilter, FALSE));
+        $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $identifiers, $attrTypeFilter, FALSE));
       }
     }
     if (array_key_exists('metaFields', $struct)) {
@@ -1500,17 +1512,15 @@ class ORM extends ORM_Core {
 
   /**
    * Retrieves a list of the required fields for this model and its related models.
+   *
    * @param <type> $fk
-   * @param int $website_id
-   * @param int $survey_id
+   * @param array $identifiers
+   *   Website ID, survey ID and/or taxon list ID that define the context of
+   *   the list of fields, used to determine the custom attributes to include.
    *
    * @return array List of the fields which are required.
    */
-  public function getRequiredFields($fk = FALSE, $website_id=NULL, $survey_id=NULL, $use_associations = FALSE) {
-    if ($website_id!==NULL)
-      $this->identifiers['website_id']=$website_id;
-    if ($website_id!==NULL)
-      $this->identifiers['survey_id']=$survey_id;
+  public function getRequiredFields($fk = FALSE, array $identifiers = [], $use_associations = FALSE) {
     $sub = $this->get_submission_structure();
     $arr = new Validation(array('id'=>1));
     $this->validate($arr, FALSE);
@@ -1547,11 +1557,11 @@ class ORM extends ORM_Core {
     			}
     		}
     		$fields = array_merge($fields,$newFields);
-    		$fields = array_merge($fields, ORM::factory($sub['model'].'_association')->getRequiredFields($fk, $website_id, $survey_id, FALSE));
+    		$fields = array_merge($fields, ORM::factory($sub['model'].'_association')->getRequiredFields($fk, $identifiers, FALSE));
     	}
 
       foreach ($sub['superModels'] as $super=>$content) {
-        $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($fk, $website_id, $survey_id, FALSE));
+        $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($fk, $identifiers, FALSE));
       }
     }
     return $fields;
