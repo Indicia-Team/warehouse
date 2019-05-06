@@ -86,10 +86,19 @@ class Import_Controller extends Service_Base_Controller {
         break;
     }
     $model = ORM::factory($model);
-    $website_id = empty($_GET['website_id']) ? NULL : $_GET['website_id'];
-    $survey_id = empty($_GET['survey_id']) ? NULL : $_GET['survey_id'];
+    // Identify the context of the import
+    $identifiers = [];
+    if (!empty($_GET['website_id'])) {
+      $identifiers['website_id'] = $_GET['website_id'];
+    }
+    if (!empty($_GET['survey_id'])) {
+      $identifiers['survey_id'] = $_GET['survey_id'];
+    }
+    if (!empty($_GET['taxon_list_id'])) {
+      $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
+    }
     $use_associations = (empty($_GET['use_associations']) ? FALSE : ($_GET['use_associations'] == "true" ? TRUE : FALSE));
-    echo json_encode($model->getSubmittableFields(TRUE, $website_id, $survey_id, $attrTypeFilter, $use_associations));
+    echo json_encode($model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $use_associations));
   }
 
   /**
@@ -105,10 +114,19 @@ class Import_Controller extends Service_Base_Controller {
   public function get_required_fields($model) {
     $this->authenticate('read');
     $model = ORM::factory($model);
-    $website_id = empty($_GET['website_id']) ? NULL : $_GET['website_id'];
-    $survey_id = empty($_GET['survey_id']) ? NULL : $_GET['survey_id'];
+    // Identify the context of the import
+    $identifiers = [];
+    if (!empty($_GET['website_id'])) {
+      $identifiers['website_id'] = $_GET['website_id'];
+    }
+    if (!empty($_GET['survey_id'])) {
+      $identifiers['survey_id'] = $_GET['survey_id'];
+    }
+    if (!empty($_GET['taxon_list_id'])) {
+      $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
+    }
     $use_associations = (empty($_GET['use_associations']) ? FALSE : ($_GET['use_associations'] == "true" ? TRUE : FALSE));
-    $fields = $model->getRequiredFields(TRUE, $website_id, $survey_id, $use_associations);
+    $fields = $model->getRequiredFields(TRUE, $identifiers, $use_associations);
     foreach ($fields as &$field) {
       $field = preg_replace('/:date_type$/', ':date', $field);
     }
