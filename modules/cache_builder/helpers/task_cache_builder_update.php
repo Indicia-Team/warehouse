@@ -62,6 +62,20 @@ SQL;
     $db->query($sql);
     $db->query("ALTER TABLE needs_update_$table ADD CONSTRAINT ix_nu_$table PRIMARY KEY (id)");
     cache_builder::makeChanges($db, $table);
+    $ids = [];
+    $sql = <<<SQL
+SELECT DISTINCT id FROM needs_update_$table;
+SQL;
+    $rows = $db->query($sql)->result();
+    foreach($rows as $row) {
+      $ids[] = $row->id;
+    }
+    if ($table === 'samples') {
+      postgreSQL::insertMapSquaresForSamples($ids, $db);
+    }
+    elseif ($table === 'occurrences') {
+      postgreSQL::insertMapSquaresForOccurrences($ids, $db);
+    }
   }
 
 }

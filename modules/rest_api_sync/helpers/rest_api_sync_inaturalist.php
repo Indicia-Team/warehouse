@@ -160,7 +160,7 @@ class rest_api_sync_inaturalist {
           'east' => $east,
           'north' => $north,
           'projection' => 'WGS84',
-          'precision' => $iNatRecord['positional_accuracy'],
+          'precision' => $iNatRecord['public_positional_accuracy'],
           'siteName' => $iNatRecord['place_guess'],
           'href' => $iNatRecord['uri'],
           // American English in iNat field name - sic.
