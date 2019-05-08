@@ -186,6 +186,11 @@ SQL
    */
   private static function insertMapSquares($ids, $alias, $db) {
     if (count($ids) > 0) {
+      if (cache_builder::$delayCacheUpdates) {
+        // The cache_* records may not be available yet, so let the work queue
+        // do them.
+        return;
+      }
       static $srid;
       if (!isset($srid)) {
         $srid = kohana::config('sref_notations.internal_srid');
