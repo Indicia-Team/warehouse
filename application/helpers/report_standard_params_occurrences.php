@@ -798,7 +798,7 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.taxon_group_id IN (#taxon_group_ids#) and o.taxon_path && ARRAY[#taxon_meaning_ids#]",
+            'sql' => "o.taxon_path && ARRAY[#taxon_meaning_ids#]",
           ],
         ],
         'preprocess' => [
@@ -806,12 +806,6 @@ class report_standard_params_occurrences {
             from cache_taxa_taxon_lists l
             join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
             where l.id in (#taxa_taxon_list_list#)",
-          // Adds a second filter on taxon group ID. This is more likely to
-          // successfully use an index when the list of taxon meaning IDs is
-          // long.
-          'taxon_group_ids' => "select string_agg(distinct taxon_group_id::text, ',')
-            from cache_taxa_taxon_lists
-            where id in (#taxa_taxon_list_list#)",
         ],
       ],
       'taxon_meaning_list' => [
@@ -822,7 +816,7 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.taxon_group_id IN (#taxon_group_ids#) AND (o.taxon_path && ARRAY[#taxon_meaning_ids#] OR o.taxon_meaning_id in (#taxon_meaning_list-unprocessed#))",
+            'sql' => "(o.taxon_path && ARRAY[#taxon_meaning_ids#] OR o.taxon_meaning_id in (#taxon_meaning_list-unprocessed#))",
           ],
         ],
         'preprocess' => [
@@ -830,12 +824,6 @@ class report_standard_params_occurrences {
             from cache_taxa_taxon_lists l
             join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
             where l.taxon_meaning_id in (#taxon_meaning_list#)",
-          // Adds a second filter on taxon group ID. This is more likely to
-          // successfully use an index when the list of taxon meaning IDs is
-          // long.
-          'taxon_group_ids' => "select string_agg(distinct taxon_group_id::text, ',')
-            from cache_taxa_taxon_lists
-            where taxon_meaning_id in (#taxon_meaning_list#)",
         ],
       ],
       'taxa_taxon_list_external_key_list' => [
@@ -846,17 +834,11 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.taxon_group_id in (#taxon_group_ids#) and o.taxon_path && ARRAY[#taxon_meaning_ids#]",
+            'sql' => "o.taxon_path && ARRAY[#taxon_meaning_ids#]",
           ],
         ],
         'preprocess' => [
           'taxon_meaning_ids' => "select string_agg(distinct taxon_meaning_id::text, ',')
-            from cache_taxa_taxon_lists
-            where taxon_list_id=#master_list_id# and external_key in (#taxa_taxon_list_external_key_list#)",
-          // Adds a second filter on taxon group ID. This is more likely to
-          // successfully use an index when the list of taxon meaning IDs is
-          // long.
-          'taxon_group_ids' => "select string_agg(distinct taxon_group_id::text, ',')
             from cache_taxa_taxon_lists
             where taxon_list_id=#master_list_id# and external_key in (#taxa_taxon_list_external_key_list#)",
         ],
