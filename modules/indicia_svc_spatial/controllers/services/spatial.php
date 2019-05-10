@@ -171,10 +171,11 @@ class Spatial_Controller extends Service_Base_Controller {
   public function buffer() {
     $params = array_merge($_GET, $_POST);
     if (array_key_exists('wkt', $params) && array_key_exists('buffer', $params)) {
-      $segmentsInQuarterCircle = empty($params['segmentsInQuarterCircle'])
-      if ($params['buffer']==0)
-        // no need to buffer if width set to zero
+      $segmentsInQuarterCircle = empty($params['segmentsInQuarterCircle']) ? 8 : $params['segmentsInQuarterCircle'];
+      if ($params['buffer'] === 0) {
+        // No need to buffer if width set to zero.
         $r = $params['wkt'];
+      }
       else {
         $db = new Database;
         // Test/escape parameters that are passed in to queries to prevent
