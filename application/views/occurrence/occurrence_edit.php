@@ -117,10 +117,24 @@ $(document).ready(function() {
       'default' => html::initial_value($values, 'occurrence:determiner_id'),
       'defaultCaption' => $defaultDeterminer,
     ]);
+    echo data_entry_helper::select([
+      'label' => 'Sensitivity precision',
+      'fieldname' => 'occurrence:sensitivity_precision',
+      'default' => html::initial_value($values, 'occurrence:sensitivity_precision'),
+      'lookupValues' => [
+        '1000' => '1km',
+        '10000' => '10km',
+        '100000' => '100km',
+      ],
+      'blankText' => '<not sensitive>',
+      'helpText' => 'Sensitive records may be blurred to an appropriate precision. They are publically viewable in ' .
+        'their blurred form.',
+    ]);
     echo data_entry_helper::checkbox([
       'label' => 'Confidential',
       'fieldname' => 'occurrence:confidential',
       'default' => html::initial_value($values, 'occurrence:confidential'),
+      'helpText' => 'Confidential records are completely blocked from public facing reports.',
     ]);
     echo data_entry_helper::checkbox([
       'label' => 'Zero abundance',
