@@ -127,7 +127,7 @@
       'searchAuthors' => 'Set to true to include author strings in the searched text.',
       'wholeWords' => 'Set to true to only search whole words in the full text index, otherwise searches the start ' .
           'of words.',
-      'min_taxon_rank_sort_order' => 'Set to the minumum sort order of the taxon ranks to include in the results.',
+      'min_taxon_rank_sort_order' => 'Set to the minimum sort order of the taxon ranks to include in the results.',
       'max_taxon_rank_sort_order' => 'Set to the maximum sort order of the taxon ranks to include in the results.',
       'limit' => 'Limit the number of records in the response.',
       'offset' => 'Offset from the start of the dataset that the response will start.',
