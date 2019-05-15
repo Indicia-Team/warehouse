@@ -13,8 +13,16 @@ FROM (
       subcat_l.sort_order as subcatsort,
       COALESCE(subcat_l.term, subcat.term) as subcategory,
       CASE '#include_captions#' WHEN '1' THEN
-          trim(regexp_replace(regexp_replace(a.caption, ' \(95%\)$', ''), '^' || COALESCE(subcat_l.term, subcat.term), '')) || ': '
-      ELSE '' END as caption,
+          trim(regexp_replace(regexp_replace(
+          	  CASE '#language#' WHEN '' THEN 
+          		'&lt;b&gt;' || a.caption || '&lt;/b&gt;' 
+          	  ELSE 
+          	  	'&lt;b&gt;' || COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) || '&lt;/b&gt;' 
+          	  END,
+          ' \(95%\)$', ''), '^' || COALESCE(subcat_l.term, subcat.term), '')) || ': '
+      ELSE 
+      	  '' 
+      END as caption,
       a.caption as raw_caption,
       tlttla.weight,
       CASE a.data_type
