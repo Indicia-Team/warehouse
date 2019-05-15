@@ -1350,8 +1350,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function save() {
     $tm = microtime(TRUE);
     try {
-      $this->authenticate();
       $response = '';
+      $this->authenticate();
       if (array_key_exists('submission', $_POST)) {
         $mode = $this->get_input_mode();
         switch ($mode) {
