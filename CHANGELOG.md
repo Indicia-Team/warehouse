@@ -1,3 +1,10 @@
+# Version 2.26.0
+*2019-05-13*
+
+* Adds sensitivity precision control to occurrence edit form.
+* Data services views for custom attributes include the unit field in the response.
+* Spatial services buffer function allows the projection code and number of segments to be passed as parameters.
+
 # Version 2.25.0
 *2019-05-03*
 

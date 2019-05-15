@@ -1377,8 +1377,11 @@ class Data_Controller extends Data_Service_Base_Controller {
         (isset($s) && isset($s['fields']['transaction_id']['value'])) ? $s['fields']['transaction_id']['value'] : null
       );
       if (class_exists('request_logging')) {
-        request_logging::log('i', 'data', $s['id'], 'save', $this->website_id, $this->user_id, $tm, $this->db,
-          $e->getMessage(), $response);
+        request_logging::log(
+          'i', 'data', isset($s) && isset($s['id']) ? $s['id'] : NULL, 'save',
+          $this->website_id, $this->user_id, $tm, $this->db,
+          $e->getMessage(), $response
+        );
       }
     }
   }

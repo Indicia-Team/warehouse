@@ -5,7 +5,9 @@ toolkit. Indicia accelerates development of wildlife recording websites and mobi
 available at https://indicia-docs.readthedocs.io/en/latest/index.html.
 
 Details of the installation procedure are at
-http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-installation.html
+http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-installation.html.
 
-Details of the updrade procedure are at
-http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-upgrading.html
+The latest stable download of the warehouse code is available at https://github.com/Indicia-Team/warehouse/releases/tag/v2.26.0.
+
+Details of the upgrade procedure are at
+http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-upgrading.html.
