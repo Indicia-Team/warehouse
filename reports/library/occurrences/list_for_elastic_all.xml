@@ -72,6 +72,8 @@
     <column name="group_title" sql="snf.group_title" datatype="text" />
     <column name="recorders" sql="snf.recorders" datatype="text" />
     <column name="taxon_key" sql="o.taxa_taxon_list_external_key" datatype="text" />
+    <column name="taxa_taxon_list_id" sql="o.taxa_taxon_list_id" datatype="integer" />
+    <column name="taxon_meaning_id" sql="o.taxon_meaning_id" datatype="integer" />
     <column name="date_start" sql="o.date_start" datatype="date" />
     <column name="date_end" sql="o.date_end" datatype="date" />
     <column name="day_of_year" sql="case o.date_type when 'D' then extract(doy from o.date_start) else null end" datatype="integer" />
