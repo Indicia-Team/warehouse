@@ -9,7 +9,7 @@
    UNION
     SELECT 'image', path as the_text, caption
     FROM taxon_media
-    WHERE taxon_meaning_id=#taxon_meaning_id#
+    WHERE taxon_meaning_id=#taxon_meaning_id# and deleted=false
   </query>
   <params>
     <param name='taxa_taxon_list_id' display='Taxon ID' description='ID of the taxon to loads notes for' datatype='text' emptyvalue='-1'/>

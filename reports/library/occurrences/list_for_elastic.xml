@@ -73,6 +73,8 @@
     <column name="group_title" sql="snf.group_title" datatype="text" />
     <column name="recorders" sql="snf.recorders" datatype="text" />
     <column name="taxon_key" sql="o.taxa_taxon_list_external_key" datatype="text" />
+    <column name="taxa_taxon_list_id" sql="o.taxa_taxon_list_id" datatype="integer" />
+    <column name="taxon_meaning_id" sql="o.taxon_meaning_id" datatype="integer" />
     <column name="date_start" sql="o.date_start" datatype="date" />
     <column name="date_end" sql="o.date_end" datatype="date" />
     <column name="day_of_year" sql="case o.date_type when 'D' then extract(doy from o.date_start) else null end" datatype="integer" />
@@ -102,6 +104,9 @@
           end" datatype="integer" />
     <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(o.public_geom, 4326)))" datatype="text" />
     <column name="point" sql="st_y(st_transform(st_centroid(o.public_geom), 4326))::text || ',' || st_x(st_transform(st_centroid(o.public_geom), 4326))::text" datatype="text" />
+    <column name="map_sq_1km_geom" sql="CASE WHEN onf.sensitivity_precision > 1000 THEN NULL ELSE st_astext(st_transform(reduce_precision(o.public_geom, false, 1000, '4326'), 4326)) END" datatype="text" />
+    <column name="map_sq_2km_geom" sql="CASE WHEN onf.sensitivity_precision > 2000 THEN NULL ELSE st_astext(st_transform(reduce_precision(o.public_geom, false, 2000, '4326'), 4326)) END" datatype="text" />
+    <column name="map_sq_10km_geom" sql="CASE WHEN onf.sensitivity_precision > 10000 THEN NULL ELSE st_astext(st_transform(reduce_precision(o.public_geom, false, 10000, '4326'), 4326)) END" datatype="text" />
     <column name="output_sref" sql="onf.output_sref" datatype="text" />
     <column name="output_sref_system" sql="onf.output_sref_system" datatype="text" />
     <column name="coordinate_uncertainty_in_meters"
@@ -134,6 +139,7 @@
     <column name="updated_on" sql="to_char(greatest(o.updated_on, cttl.cache_updated_on), 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="record_status" sql="o.record_status" datatype="text" />
     <column name="record_substatus" sql="coalesce(o.record_substatus, 0)" datatype="integer" />
+    <column name="record_decision_source" sql="occ.record_decision_source" datatype="text" />
     <column name="verified_by_id" sql="occ.verified_by_id" datatype="integer" />
     <column name="verifier" sql="onf.verifier" datatype="text" />
     <column name="verified_on" sql="to_char(o.verified_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />

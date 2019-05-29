@@ -2,7 +2,7 @@ CREATE TABLE licences
 (
   id serial NOT NULL, -- Primary key and unique identifier for the table
   title character varying NOT NULL, -- Title for the licence
-  code character varying NOT NULL, -- Code for the licence, e.g. CC-BY
+  code character varying NOT NULL, -- Code for the licence, e.g. CC BY
   description character varying, -- Description of the licence
   url_readable character varying, -- URL to the human readable licence definition
   url_legal character varying, -- URL to the full legal licence definition
@@ -40,7 +40,7 @@ COMMENT ON TABLE licences
   IS 'Data licences available for linking to records';
 COMMENT ON COLUMN licences.id IS 'Primary key and unique identifier for the table';
 COMMENT ON COLUMN licences.title IS 'Title for the licence';
-COMMENT ON COLUMN licences.code IS 'Abbreviation/code for the licence, e.g. CC-BY';
+COMMENT ON COLUMN licences.code IS 'Abbreviation/code for the licence, e.g. CC BY';
 COMMENT ON COLUMN licences.description IS 'Description of the licence';
 COMMENT ON COLUMN licences.url_readable IS 'URL to the human readable licence definition';
 COMMENT ON COLUMN licences.url_legal IS 'URL to the full legal licence definition';
