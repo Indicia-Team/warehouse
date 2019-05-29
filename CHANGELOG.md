@@ -1,3 +1,9 @@
+# Version 2.27.0
+*2019-05-29*
+
+* Elasticsearch extraction reports include map squares data and verification decision source.
+* Correct CC licence codes (e.g. CC-BY-AT becomes CC BY-AT).
+
 # Version 2.26.0
 *2019-05-13*
 
