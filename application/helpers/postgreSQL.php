@@ -203,12 +203,11 @@ SQL
   GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size) as size$size,
   round(st_x(st_centroid(reduce_precision(
     coalesce(s.geom, l.centroid_geom), o.confidential,
-    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size),
-    s.entered_sref_system)
+    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size))
   ))) as x$size,
   round(st_y(st_centroid(reduce_precision(
     coalesce(s.geom, l.centroid_geom), o.confidential,
-    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size), s.entered_sref_system)
+    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size))
   ))) as y$size
 SQL;
         if ($idx < 2) {
@@ -242,7 +241,7 @@ SQL;
             ->result_array(FALSE);
           if (count($existing) === 0) {
             $qry = $db->query("INSERT INTO map_squares (geom, x, y, size)
-              VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', $squareDetail[size], '{$s->entered_sref_system}'), $squareDetail[x], $squareDetail[y], $squareDetail[size])");
+              VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', $squareDetail[size]), $squareDetail[x], $squareDetail[y], $squareDetail[size])");
             $msqId = $qry->insert_id();
           }
           else {

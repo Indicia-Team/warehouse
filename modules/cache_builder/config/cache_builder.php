@@ -749,8 +749,7 @@ SET website_id=su.website_id,
   input_form=COALESCE(sp.input_form, s.input_form),
   location_id= s.location_id,
   location_name=CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
-  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
-        case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
+  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision),
   date_start=s.date_start,
   date_end=s.date_end,
   date_type=s.date_type,
@@ -934,8 +933,7 @@ INSERT INTO cache_samples_functional(
             group_id, record_status, query, parent_sample_id, media_count)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
-  reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
-        case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
+  reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
   s.group_id, s.record_status,
   case
@@ -1346,8 +1344,7 @@ SET sample_id=o.sample_id,
   location_id=s.location_id,
   location_name=case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
       then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
-  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
+  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision)),
   date_start=s.date_start,
   date_end=s.date_end,
   date_type=s.date_type,
@@ -1431,25 +1428,6 @@ SET comment=o.comment,
   sensitivity_precision=o.sensitivity_precision,
   privacy_precision=s.privacy_precision,
   output_sref=get_output_sref(
-      case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null then null else
-      case
-        when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
-          abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
-          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
-          || ', '
-          || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
-          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
-        when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
-          abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
-          || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
-          || ', '
-          || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
-          || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
-      else
-        coalesce(s.entered_sref, l.centroid_sref)
-      end
-    end,
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
       o.sensitivity_precision,
@@ -1462,14 +1440,10 @@ SET comment=o.comment,
         else 10
       end,
       10 -- default minimum square size
-    ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)
+    ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
   ),
   output_sref_system=get_output_system(
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
-    '4326'
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
   ),
   verifier=pv.surname || ', ' || pv.first_name,
   licence_code=li.code,
@@ -1612,8 +1586,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-        case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end) as public_geom,
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision)) as public_geom,
     s.date_start, s.date_end, s.date_type, o.created_on, o.updated_on, o.verified_on,
     o.created_by_id, s.group_id, o.taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id,
     cttl.taxon_meaning_id, cttl.external_key, cttl.family_taxa_taxon_list_id,
@@ -1682,25 +1655,6 @@ SELECT o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
   get_output_sref(
-      case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null then null else
-      case
-        when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
-          abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
-          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
-          || ', '
-          || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
-          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
-        when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
-          abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
-          || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
-          || ', '
-          || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
-          || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
-      else
-        coalesce(s.entered_sref, l.centroid_sref)
-      end
-    end,
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
       o.sensitivity_precision,
@@ -1713,14 +1667,10 @@ SELECT o.id,
         else 10
       end,
       10 -- default minimum square size
-    ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)
+    ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
   ),
   get_output_system(
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
-    '4326'
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
   ),
   li.code
 FROM occurrences o
