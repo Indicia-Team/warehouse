@@ -219,8 +219,8 @@ $BODY$
   COST 100;
 
 -- Clean up
-DROP FUNCTION get_output_sref(character varying, character varying, integer, geometry);
-DROP FUNCTION get_output_system(geometry, character varying, character varying);
+DROP FUNCTION IF EXISTS get_output_sref(character varying, character varying, integer, geometry);
+DROP FUNCTION IF EXISTS get_output_system(geometry, character varying, character varying);
 
 -- Leave deprecated versions of this function in place which can be removed at a later date,
 -- as used by the Ecobat module which may not be updated at the same point in time.
