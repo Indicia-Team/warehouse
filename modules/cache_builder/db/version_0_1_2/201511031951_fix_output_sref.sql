@@ -1,8 +1,6 @@
 -- #slow script#
 
 select co.id, get_output_sref(
-    co.public_entered_sref,
-    co.entered_sref_system,
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
       co.sensitivity_precision,
@@ -28,7 +26,7 @@ where s.id=co.sample_id and s.deleted=false;
 
 create index ix_temp_to_update on to_update(id);
 
-update cache_occurrences co 
+update cache_occurrences co
 set output_sref = up.output_sref
 from to_update up
 where up.id=co.id
