@@ -164,7 +164,8 @@ class rest_api_sync_inaturalist {
           'siteName' => $iNatRecord['place_guess'],
           'href' => $iNatRecord['uri'],
           // American English in iNat field name - sic.
-          'licenceCode' => $iNatRecord['license_code'],
+          // Also correct extra hyphen in iNat CC licence codes.
+          'licenceCode' => preg_replace('/^cc-/', 'cc ', $iNatRecord['license_code']),
         ];
         if (!empty($iNatRecord['photos'])) {
           $observation['media'] = [];
@@ -175,7 +176,7 @@ class rest_api_sync_inaturalist {
                 'path' => $iNatPhoto['url'],
                 'caption' => $iNatPhoto['attribution'],
                 'mediaType' => 'Image:iNaturalist',
-                'licenceCode' => $iNatPhoto['license_code'],
+                'licenceCode' => preg_replace('/^cc-/', 'cc ', $iNatPhoto['license_code']),
               ];
             }
           }
