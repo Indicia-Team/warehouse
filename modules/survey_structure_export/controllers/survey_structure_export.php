@@ -330,7 +330,9 @@ order by aw.website_id is null, aw.website_id={websiteId}";
     $tl->set_submission_data(array(
       'title' => $attrDef['termlist_title'],
       'description' => "Terms for the $attrDef[caption] attribute",
-      'website_id' => $this->website_id
+      'website_id' => $this->website_id,
+      // Following is required because termlists have a deleted callback.
+      'deleted' => 'f',
     ));
     if (!$tl->submit())
       throw new exception("Error creating termlist $attrDef[termlist_title] for $attrDef[caption]");
