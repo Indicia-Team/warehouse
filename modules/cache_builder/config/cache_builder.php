@@ -319,9 +319,9 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     -- Ensure only changed taxon concepts are updated
     JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
     JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
-    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(ctp.path) and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
-    LEFT JOIN cache_taxa_taxon_lists cttlo ON cttlo.taxon_meaning_id=ANY(ctp.path) and cttlo.taxon_rank='Order' and cttlo.taxon_list_id=1 AND cttlo.preferred=true
-    LEFT JOIN cache_taxa_taxon_lists cttlk ON cttlk.taxon_meaning_id=ANY(ctp.path) and cttlk.taxon_rank='Kingdom' and cttlk.taxon_list_id=1 AND cttlk.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(ctp.path) and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=#master_list_id# AND cttlf.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlo ON cttlo.taxon_meaning_id=ANY(ctp.path) and cttlo.taxon_rank='Order' and cttlo.taxon_list_id=#master_list_id# AND cttlo.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlk ON cttlk.taxon_meaning_id=ANY(ctp.path) and cttlk.taxon_rank='Kingdom' and cttlk.taxon_list_id=#master_list_id# AND cttlk.preferred=true
     WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
     AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
       OR COALESCE(u.family_taxon, '')<>COALESCE(cttlf.taxon, '')
@@ -338,7 +338,7 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     -- Ensure only changed taxon concepts are updated
     JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
     JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=COALESCE(#master_list_id#, cttl.taxon_list_id)
-    LEFT JOIN cache_taxa_taxon_lists cttlf ON ctp.path @> ARRAY[cttlf.taxon_meaning_id] and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON ctp.path @> ARRAY[cttlf.taxon_meaning_id] and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=#master_list_id# AND cttlf.preferred=true
     WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
     AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
     OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(ctp.path, ARRAY[]::integer[]));",
