@@ -299,7 +299,7 @@ SQL;
     $person = ORM::factory('person')
       ->where('deleted', 'f')
       // Use like as converts to ilike so case-insensitive.
-      ->like('email_address', $email)
+      ->like('email_address', addcslashes($email, '%\\_'))
       ->find();
     if ($person->loaded
         && ((!empty($person->first_name) && $person->first_name != '?'
