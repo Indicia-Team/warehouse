@@ -279,6 +279,21 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->cleanupUsers([$user1->id, $user2->id, $user3->id]);
   }
 
+  function testGetUserIDWildcards() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Identifier_Test::testGetUserIDWildcards");
+    $response = $this->callGetUserIdService($this->auth, [
+      ['type' => 'email', 'identifier' => 'testwildcard@test.com'],
+    ], 19997, 'testwildcard1', 'name');
+    $response = $this->callGetUserIdService($this->auth, [
+      ['type' => 'email', 'identifier' => 'test%card@test.com'],
+    ], 19997, 'testwildcard2', 'name');
+    $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed with % wildcard.');
+    $response = $this->callGetUserIdService($this->auth, [
+      ['type' => 'email', 'identifier' => 'test_ildcard@test.com'],
+    ], 19997, 'testwildcard3', 'name');
+    $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed with _ wildcard.');
+  }
+
   /**
    * A substantial test designed to test a real world scenario of usage.
    */
