@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Get taxon associations as string"
+    description="Returns a comma separated list of associated species">    
+    <query>
+      SELECT #columns#
+        FROM indicia.cache_taxa_taxon_lists cttl
+        JOIN indicia.taxon_associations ta on ta.from_taxon_meaning_id = cttl.taxon_meaning_id AND ta.deleted=false
+        JOIN indicia.cache_taxa_taxon_lists cttl_hosts on cttl_hosts.taxon_meaning_id = ta.to_taxon_meaning_id and cttl_hosts.preferred=true
+      WHERE cttl.id = #taxa_taxon_list_id# OR cttl.taxon_meaning_id = #taxon_meaning_id# 
+    </query>
+    <order_bys>order by cttl.taxon asc</order_bys>
+  <params>
+    <param name="taxa_taxon_list_id" display='Taxa taxon list ID' description='Taxa taxon list ID to return data for.' datatype="int" emptyvalue='0'/>
+    <param name="taxon_meaning_id" display='Taxon meaining ID' description='Taxa meaning ID to return data for.' datatype="int" emptyvalue='0'/>
+  </params>
+  <columns>
+    <column name='associated_taxa' display='Associated taxa' sql="STRING_AGG(cttl_hosts.taxon,', ')" datatype='text'/>
+  </columns>
+</report>
