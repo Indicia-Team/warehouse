@@ -198,7 +198,7 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       and ttlpref.preferred=true
       and ttlpref.taxon_list_id=ttl.taxon_list_id
       and ttlpref.deleted=false
-      and ttlpref.allow_data_entry=ttl.allow_data_entry
+      and (ttlpref.allow_data_entry=ttl.allow_data_entry or ttlpref.allow_data_entry=true)
     join taxa t on t.id=ttl.taxon_id and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false
     join taxa tpref on tpref.id=ttlpref.taxon_id and tpref.deleted=false
