@@ -718,7 +718,8 @@ class Scheduled_Tasks_Controller extends Controller {
         if (!$this->pluginMetadata['requires_occurrences_delta']
             || $this->occdeltaCount > 0
             || $this->pluginMetadata['always_run']) {
-          echo "<strong>Running $plugin</strong> - last run at $timestamp <br/>";
+          echo "<h2>Running $plugin</h2>";
+          echo "<p>Last run at $timestamp</p>";
           $tm = microtime(TRUE);
           call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $currentTime);
           // log plugins which take more than 5 seconds
