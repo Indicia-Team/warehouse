@@ -140,7 +140,15 @@
     <column name="attr_det_name" sql="coalesce(onf.attr_det_full_name, coalesce(onf.attr_det_first_name, '') || ' ' || onf.attr_det_last_name)" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
     <column name="attr_sample_method" sql="snf.attr_sample_method" datatype="text" />
-    <column name="media" sql="onf.media" datatype="text" />
+    <column name="media_data" sql="CASE
+      WHEN o.media_count>0 THEN
+        (SELECT string_agg(om.path || '~~' || COALESCE(om.caption, '') || '~~' ||  COALESCE(l.code, '') || '~~' ||  COALESCE(t.term, ''), '@@')
+        FROM occurrence_media om
+        LEFT JOIN licences l ON l.id=om.licence_id
+        LEFT JOIN cache_termlists_terms t ON t.id=om.media_type_id
+        WHERE om.occurrence_id=o.id AND om.deleted=false)
+      ELSE null
+      END" datatype="text" />
     <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="updated_on" sql="to_char(greatest(o.updated_on, cttl.cache_updated_on), 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="record_status" sql="o.record_status" datatype="text" />
