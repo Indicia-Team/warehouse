@@ -695,8 +695,11 @@ class ORM extends ORM_Core {
       $res = NULL;
     }
     if ($res) {
-      Kohana::log('debug', 'Committing transaction.');
-      $this->db->query('COMMIT;');
+      $allowCommitToDB = (isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : true);
+      if (!empty($allowCommitToDB)&&$allowCommitToDB==true) {
+        Kohana::log('debug', 'Committing transaction.');
+        $this->db->query('COMMIT;');
+      }
     }
     else {
       Kohana::log('debug', 'Rolling back transaction.');
