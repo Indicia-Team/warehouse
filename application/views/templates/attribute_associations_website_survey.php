@@ -1,6 +1,10 @@
 <fieldset>
   <legend><?php echo $other_data['name']; ?> attribute website/survey allocation</legend>
   <?php
+  if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
+    // Output a hidden input to list the websites we are allowed update against.
+    echo '<input type="hidden" name="restricted-to-websites" value="' . implode(',', $this->auth_filter['values']) . '"/>';
+  }
   $baseEntityName = strtolower($other_data['name']);
   $surveyCheckboxList = [];
   $siteUrl = url::site();
