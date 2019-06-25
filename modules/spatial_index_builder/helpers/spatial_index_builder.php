@@ -86,7 +86,7 @@ class spatial_index_builder {
    * parent_ids that point to another layer which contains locations that
    * should also be indexed. For example, a Counties layer could be
    * included in this list if the location parent_ids point to locations in a
-   * Countries layer. The Countries would then be inluded in the indexing data
+   * Countries layer. The Countries would then be included in the indexing data
    * without ever needing to be spatially queried.
    *
    * @param object $db
