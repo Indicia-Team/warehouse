@@ -114,7 +114,7 @@ class Validation_Core extends ArrayObject {
 			$this->rules,
 			$this->callbacks,
 			$this->post_filters
-		)); 		
+		));
 
 		// Remove wildcard fields
 		$fields = array_diff($fields, array('*'));
@@ -209,11 +209,6 @@ class Validation_Core extends ArrayObject {
 			{
 				$callback = explode('::', $callback);
 			}
-			elseif (function_exists($callback))
-			{
-				// No need to check if the callback is a method
-				$callback = $callback;
-			}
 			elseif (method_exists($this, $callback))
 			{
 				// The callback exists in Validation
@@ -223,6 +218,11 @@ class Validation_Core extends ArrayObject {
 			{
 				// The callback exists in valid::
 				$callback = array('valid', $callback);
+      }
+      elseif (function_exists($callback))
+			{
+				// No need to check if the callback is a method
+				$callback = $callback;
 			}
 		}
 
@@ -486,7 +486,7 @@ class Validation_Core extends ArrayObject {
 
 		foreach ($this->rules as $field => $callbacks)
 		{
-			
+
 			foreach ($callbacks as $callback)
 			{
 				// Separate the callback and arguments
