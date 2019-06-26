@@ -81,9 +81,14 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->runScheduledPlugins($system, $scheduledPlugins);
     }
     if (in_array('notifications', $nonPluginTasks)) {
-      $swift = email::connect();
-      $this->doRecordOwnerNotifications($swift);
-      $this->doDigestNotifications($swift);
+      $email_config = Kohana::config('email');
+      if (array_key_exists ('do_not_send' , $email_config) and $email_config['do_not_send']){
+        kohana::log('info', "Email configured for do_not_send: ignoring notifications from scheduled tasks");
+      } else {
+        $swift = email::connect();
+        $this->doRecordOwnerNotifications($swift);
+        $this->doDigestNotifications($swift);
+      }
     }
     if (in_array('work_queue', $nonPluginTasks)) {
       $timeAtStart = microtime(TRUE);

@@ -440,7 +440,10 @@ class Auth_Core {
     Kohana::log('debug', 'Entering Auth_Core->send_forgotten_password_mail');
 
     $email_config = Kohana::config('email');
-
+    if (array_key_exists ('do_not_send' , $email_config) and $email_config['do_not_send']){
+      kohana::log('info', "Email configured for do_not_send: ignoring send_forgotten_password_mail");
+      return;
+    }
     $link_code = $this->hash_password($user->username);
     $user->__set('forgotten_password_key', $link_code);
     $user->save();

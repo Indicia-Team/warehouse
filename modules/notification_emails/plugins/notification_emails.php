@@ -510,6 +510,12 @@ function send_out_user_email(
     $emailAddress,
     $subscriptionSettingsPageUrl,
     $highPriority) {
+
+  $email_config = Kohana::config('email');
+  if (array_key_exists ('do_not_send' , $email_config) and $email_config['do_not_send']){
+    kohana::log('info', "Email configured for do_not_send: ignoring send_out_user_email");
+    return;
+  }
   //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
   $emailContent .= '<br><a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
     url::base() . '">Click here to update your subscription settings.</a><br/><br/>';
