@@ -1,4 +1,5 @@
 <?php
+
 class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
 
   /*****************************
@@ -294,6 +295,8 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
         'Date 34 march 73' => ['34 march 73'],
         'Date 100/13/2001' => ['100/13/2001'],
         'Date 06/1992-1996' => ['06/1992-1996'],
+        'Date Apr 2019 to Dec 2017' => ['Apr 2019 to Dec 2017'],
+        'Date 04/2019 to 12/2017' => ['04/2019 to 12/2017'],
     ];
   }
 
