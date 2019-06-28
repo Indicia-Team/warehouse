@@ -837,7 +837,7 @@ class vague_date {
     $end = $vagueDate[1];
     $type = $vagueDate[2];
 
-    if ($start > $end) {
+    if ($end < $start && !is_null($end)) {
       //End date must be after start date
       return false;
     } else {
