@@ -193,7 +193,7 @@ class vague_date {
         $end = new DateTime($date[1]);
       }
     }
-    self::validate($start, $end, $type);
+    //self::validate(array($start, $end, $type);
     switch ($type) {
       case 'D':
         return self::vague_date_to_day($start, $end);
@@ -347,7 +347,7 @@ class vague_date {
             $endDate->getImpreciseDateEnd(),
             'P'
           );
-          return $vagueDate;
+          return self::validate($vagueDate);
         } else {
           // No year, so we're an S
           $vagueDate = array(
@@ -355,7 +355,7 @@ class vague_date {
             $endDate->getImpreciseDateEnd(),
             'S'
           );
-          return $vagueDate;
+          return self::validate($vagueDate);
         }
       }
       // Do we have day precision?
@@ -368,7 +368,7 @@ class vague_date {
             $endDate->getIsoDate(),
             'D'
           );
-          return $vagueDate;
+          return self::validate($vagueDate);
         } else {
           // Type is DD. We copy across any data not set in the
           // start date.
@@ -383,7 +383,7 @@ class vague_date {
             // try and massage them together
             return false;
           }
-          return $vagueDate;
+          return self::validate($vagueDate);
 
         }
       }
@@ -405,7 +405,7 @@ class vague_date {
               $endDate->getImpreciseDateEnd(),
               'O'
             );
-            return $vagueDate;
+            return self::validate($vagueDate);
           } else {
             // Month without a year - type M
             $vagueDate = array(
@@ -413,7 +413,7 @@ class vague_date {
               $endDate->getImpreciseDateEnd(),
               'M'
             );
-            return $vagueDate;
+            return self::validate($vagueDate);
           }
         } else {
           // We do have a range, OO
@@ -424,7 +424,7 @@ class vague_date {
               $endDate->getImpreciseDateEnd(),
               'OO'
             );
-            return $vagueDate;
+            return self::validate($vagueDate);
           } else {
             // MM is not an allowed type
             // TODO think about this
@@ -447,7 +447,7 @@ class vague_date {
             $endDate->getImpreciseDateEnd(),
             'C'
           );
-          return $vagueDate;
+          return self::validate($vagueDate);
         } else {
           if ($start && $end) {
             // We're CC
@@ -456,7 +456,7 @@ class vague_date {
               $endDate->getImpreciseDateEnd(),
               'CC'
             );
-            return $vagueDate;
+            return self::validate($vagueDate);
           } else if ($start && !$end) {
             // We're C-
             $vagueDate = array(
@@ -464,7 +464,7 @@ class vague_date {
               null,
               'C-'
             );
-            return $vagueDate;
+            return self::validate($vagueDate);
           } else if ($end && !$start) {
             // We're -C
             $vagueDate = array(
@@ -472,7 +472,7 @@ class vague_date {
               $endDate->getImpreciseDateEnd(),
               '-C'
             );
-            return $vagueDate;
+            return self::validate($vagueDate);
           }
         }
       }
@@ -486,7 +486,7 @@ class vague_date {
             $endDate->getImpreciseDateEnd(),
             'Y'
           );
-          return $vagueDate;
+          return self::validate($vagueDate);
         } else {
           if ($start && $end){
             // We're YY
@@ -495,7 +495,7 @@ class vague_date {
               $endDate->getImpreciseDateEnd(),
               'YY'
             );
-            return $vagueDate;
+            return self::validate($vagueDate);
           } else if ($start && !$end){
             // We're Y-
             $vagueDate = array(
@@ -503,7 +503,7 @@ class vague_date {
               null,
               'Y-'
             );
-            return $vagueDate;
+            return self::validate($vagueDate);
           } else if ($end && !$start){
             // We're -Y
             $vagueDate = array(
@@ -511,7 +511,7 @@ class vague_date {
               $endDate->getImpreciseDateEnd(),
               '-Y'
             );
-            return $vagueDate;
+            return self::validate($vagueDate);
           }
         }
       } else {
@@ -831,9 +831,18 @@ class vague_date {
   /**
    * Ensure a vague date array is well-formed.
    */
-  protected static function validate($start, $end, $type)
+  protected static function validate($vagueDate)
   {
+    $start = $vagueDate[0];
+    $end = $vagueDate[1];
+    $type = $vagueDate[2];
 
+    if ($start > $end) {
+      //End date must be after start date
+      return false;
+    } else {
+      return $vagueDate;
+    }
   }
 
   /**
