@@ -81,9 +81,14 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->runScheduledPlugins($system, $scheduledPlugins);
     }
     if (in_array('notifications', $nonPluginTasks)) {
-      $swift = email::connect();
-      $this->doRecordOwnerNotifications($swift);
-      $this->doDigestNotifications($swift);
+      $email_config = Kohana::config('email');
+      if (array_key_exists ('do_not_send' , $email_config) and $email_config['do_not_send']){
+        kohana::log('info', "Email configured for do_not_send: ignoring notifications from scheduled tasks");
+      } else {
+        $swift = email::connect();
+        $this->doRecordOwnerNotifications($swift);
+        $this->doDigestNotifications($swift);
+      }
     }
     if (in_array('work_queue', $nonPluginTasks)) {
       $timeAtStart = microtime(TRUE);
@@ -718,7 +723,8 @@ class Scheduled_Tasks_Controller extends Controller {
         if (!$this->pluginMetadata['requires_occurrences_delta']
             || $this->occdeltaCount > 0
             || $this->pluginMetadata['always_run']) {
-          echo "<strong>Running $plugin</strong> - last run at $timestamp <br/>";
+          echo "<h2>Running $plugin</h2>";
+          echo "<p>Last run at $timestamp</p>";
           $tm = microtime(TRUE);
           call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $currentTime);
           // log plugins which take more than 5 seconds

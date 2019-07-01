@@ -47,6 +47,7 @@ class Rest_Api_Sync_Controller extends Controller {
       echo "<h2>$serverId</h2>";
       $serverType = isset($server['serverType']) ? $server['serverType'] : 'indicia';
       $helperClass = 'rest_api_sync_' . strtolower($serverType);
+      $helperClass::loadControlledTerms($serverId, $server);
       $helperClass::syncServer($serverId, $server);
     }
   }

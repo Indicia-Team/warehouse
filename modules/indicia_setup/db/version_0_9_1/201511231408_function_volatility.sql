@@ -102,46 +102,6 @@ $BODY$
   COST 100;
 
 
-  
-CREATE OR REPLACE FUNCTION get_output_sref(sref character varying, sref_system character varying, accuracy integer, geom geometry)
-  RETURNS character varying AS
-$BODY$
-DECLARE output_system CHARACTER VARYING;
-DECLARE output_srid INTEGER;
-DECLARE centroid_in_srid GEOMETRY;
-DECLARE east FLOAT;
-DECLARE north FLOAT;
-DECLARE usedAccuracy INTEGER;
-BEGIN
-
--- set a default if accuracy not recorded.
-usedAccuracy = COALESCE(accuracy, 10);
--- no support for DINTY at this point
-IF usedAccuracy=2000 THEN
-  usedAccuracy=10000;
-END IF;
--- Find the best local grid system appropriate to the area on the map
-output_system = get_output_system(geom, sref_system, '4326');
-output_srid = sref_system_to_srid(output_system);
-centroid_in_srid = st_transform(st_centroid(geom), output_srid);
-east = st_x(centroid_in_srid);
-north = st_y(centroid_in_srid);
--- this currently only supports OSGB and OSIE so will need extending to support other grid systems
-IF output_system='OSGB' THEN
-  RETURN convert_east_north_to_osgb(east, north, usedAccuracy);
-ELSEIF output_system='OSIE' THEN
-  RETURN convert_east_north_to_osie(east, north, usedAccuracy);
-ELSE
-  RETURN format_geom_as_latlong(geom, 4326, accuracy);
-END IF;
-
-END
-$BODY$
-  LANGUAGE plpgsql IMMUTABLE
-  COST 100;
-
-
-
 CREATE OR REPLACE FUNCTION get_output_system(geom_in geometry, sref_system character varying, default_system character varying default '900913')
   RETURNS character varying AS
 $BODY$
@@ -203,7 +163,7 @@ r=
   -- include anything not dubious or worse, if requested
   (quality='!D' AND record_status NOT IN ('D')) OR
   -- or just include anything not rejected
-  (quality='!R')) AND 
+  (quality='!R')) AND
   -- always exclude rejected, in progress and test records
   record_status NOT IN ('R', 'I', 'T');
 RETURN r;
@@ -237,8 +197,8 @@ BEGIN
       r = geom_in;
     ELSE
       sys = get_output_system(geom_in, sref_system);
-      srid = CASE sys 
-        WHEN 'OSGB' THEN 27700 
+      srid = CASE sys
+        WHEN 'OSGB' THEN 27700
         WHEN 'OSIE' THEN 29901
         WHEN 'LUGR' THEN 2169
         ELSE sys::integer
@@ -290,7 +250,7 @@ $BODY$
 CREATE OR REPLACE FUNCTION taxon_abbreviation(taxon character varying)
   RETURNS character varying AS
 $BODY$
-DECLARE 
+DECLARE
 simplified character varying;
 BEGIN
 -- remove the subgenera in brackets if they exist

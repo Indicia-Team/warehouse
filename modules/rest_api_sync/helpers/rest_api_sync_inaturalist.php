@@ -186,9 +186,11 @@ class rest_api_sync_inaturalist {
             $iNatAttr = "controlled_attribute:$annotation[controlled_attribute_id]";
             if (isset($server['attrs'][$iNatAttr])) {
               $attrTokens = explode(':', $server['attrs'][$iNatAttr]);
-              $controlledTermValues = self::$controlledTerms[$annotation['controlled_attribute_id']]['values'];
-              $controlledValueId = $annotation['controlled_value_id'];
-              $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $controlledTermValues[$controlledValueId];
+              if (isset(self::$controlledTerms[$annotation['controlled_attribute_id']])) {
+                $controlledTermValues = self::$controlledTerms[$annotation['controlled_attribute_id']]['values'];
+                $controlledValueId = $annotation['controlled_value_id'];
+                $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $controlledTermValues[$controlledValueId];
+              }
             }
           }
         }

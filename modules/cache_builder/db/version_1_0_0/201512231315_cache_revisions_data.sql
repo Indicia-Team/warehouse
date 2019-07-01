@@ -62,25 +62,6 @@ SELECT o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
   get_output_sref(
-      case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null then null else
-      case
-        when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
-          abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
-          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
-          || ', '
-          || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
-          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
-        when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
-          abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
-          || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
-          || ', '
-          || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
-          || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
-      else
-        coalesce(s.entered_sref, l.centroid_sref)
-      end
-    end,
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
       o.sensitivity_precision,

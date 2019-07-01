@@ -33,13 +33,31 @@ class cache_builder {
   public static function populate_cache_table($db, $table, $last_run_date) {
     $queries = kohana::config("cache_builder.$table");
     try {
-      $count = cache_builder::get_changelist($db, $table, $queries, $last_run_date);
+      echo "<h3>$table</h3>";
+      $count = cache_builder::getChangeList($db, $table, $queries, $last_run_date);
       if ($count > 0) {
+        echo <<<HTML
+<table>
+  <thead>
+    <tr><th></th><th># records affected</th></tr>
+  </thead>
+  <tbody>
+    <tr><th scope=\"row\">Total</th><td>$count</td>
+    </tr>
+
+HTML;
         cache_builder::makeChanges($db, $table);
-        echo '<br/>';
+        echo <<<HTML
+  </tbody>
+</table>
+HTML;
+      }
+      else {
+        echo "<p>No changes</p>";
       }
       $db->query("drop table needs_update_$table");
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
       $db->query("drop table needs_update_$table");
       throw $e;
     }
@@ -82,7 +100,7 @@ class cache_builder {
       else
         $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(false);
       $percent = round($cacheQuery[0]['count']*100/$totalQuery[0]['count']);
-      echo "$table population in progress - $percent% done";
+      echo "<p>Initial population of $table progress $percent%.</p>";
     }
   }
 
@@ -262,7 +280,7 @@ SQL;
    * run, used to filter records to only the recent changes. Supplied as a string
    * suitable for injection into an SQL query.
    */
-  private static function get_changelist($db, $table, $queries, $last_run_date) {
+  private static function getChangeList($db, $table, $queries, $last_run_date) {
     $query = str_replace('#date#', $last_run_date, $queries['get_changed_items_query']);
     $db->query("create temporary table needs_update_$table as $query");
     if (!variable::get("populated-$table")) {
@@ -271,22 +289,16 @@ SQL;
       // of the cache
       $query = $queries['get_missing_items_query'] . ' limit 5000';
       $result = $db->query("insert into needs_update_$table $query");
-      if ($result->count()===0) {
+      if ($result->count() === 0) {
         // Flag that we don't need to do any more previously existing records as they are all done.
         // Future cache updates can just pick up changes from now on.
-        variable::set("populated-$table", true);
-        echo "$table population completed<br/>";
+        variable::set("populated-$table", TRUE);
+        echo "<p>Initial population of $table completed</p>";
       }
     }
     $db->query("ALTER TABLE needs_update_$table ADD CONSTRAINT ix_nu_$table PRIMARY KEY (id)");
-    $r = $db->query("select count(*) as count from needs_update_$table")->result_array(false);
+    $r = $db->query("select count(*) as count from needs_update_$table")->result_array(FALSE);
     $row = $r[0];
-    if (variable::get("populated-$table")) {
-      if ($row['count']>0)
-        echo "Updating $table with {$row['count']} changes<br/>";
-      else
-        echo "No changes for $table<br/>";
-    }
     return $row['count'];
   }
 
@@ -311,7 +323,7 @@ SQL;
       $count += $db->query($query)->count();
     }
     if (variable::get("populated-$table")) {
-      echo ", $count delete(s)";
+      echo "    <tr><th scope=\"row\">Delete(s)</th><td>$count</td></tr>\n";
     }
   }
 
@@ -330,13 +342,14 @@ SQL;
         $sql = str_replace('#master_list_id#', $master_list_id, $sql);
         $count = $db->query($sql)->count();
         if (variable::get("populated-$table"))
-          echo ", $count $action(s) for $title";
+          echo "    <tr><th scope=\"row\">$action(s) for $title</th><td>$count</td></tr>\n";
       }
     } else {
       $sql = str_replace('#master_list_id#', $master_list_id, $query);
       $count = $db->query($query)->count();
-      if (variable::get("populated-$table"))
-        echo ", $count $action(s)";
+      if (variable::get("populated-$table")) {
+        echo "    <tr><th scope=\"row\">$action(s)</th><td>$count</td></tr>\n";
+      }
     }
   }
 }

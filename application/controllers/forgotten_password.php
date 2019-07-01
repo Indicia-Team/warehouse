@@ -27,6 +27,7 @@
 class Forgotten_Password_Controller extends Indicia_Controller {
 
   public function index() {
+
     if ($this->auth->logged_in()) {
       $this->template->title = 'Already Logged In';
       $this->template->content = new View('login/login_message');
@@ -69,7 +70,10 @@ class Forgotten_Password_Controller extends Indicia_Controller {
 
   public function send_from_user($id = NULL) {
     $email_config = Kohana::config('email');
-
+    if (array_key_exists ('do_not_send' , $email_config) and $email_config['do_not_send']) {
+      kohana::log('info', "Email configured for do_not_send: ignoring send_from_user");
+      return;
+    }
     $this->template->title = 'Forgotten Password Email Request';
     $this->template->content = new View('login/login_message');
     $this->template->content->message = 'You are already logged in.<br />';
