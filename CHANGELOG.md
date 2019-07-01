@@ -1,3 +1,26 @@
+# Version 2.28.0
+*2019-07-01*
+
+* Set option `do_not_send` to false in `application/config/email.php` to prevent server from attempting to send
+  notification emails on development and test servers (https://github.com/Indicia-Team/warehouse/issues/323).
+* Improved error handling where vague date ranges are the wrong way round ().
+* Improvements to reporting standard parameters handling where there are multiple filters for taxonomic limits
+  interacting.
+* Fixed bugs filtering against occurrence association reports (https://github.com/Indicia-Team/warehouse/issues/322).
+* CSV Importer now supports a mode where it checks and validates all records without committing anything.
+* Fixes problems with links between preferred and non-preferred taxa for newly entered taxa via the UI
+  (https://github.com/BiologicalRecordsCentre/iRecord/issues/548).
+* Output grid ref system no longer uses the input grid ref system as a parameter, ensuring output grid refs are
+  consistent in each locality around the world.
+* When scheduled tasks run from a browser, the output for cache building is significantlt tidier.
+* REST API Sync module now works correctly when run from a URL endpoint.
+* Bug fixes to Survey Structure Importer when handling termlist data.
+* My sites lookup (for location autocompletes) now trims the search text, preventing errors in the full text lookup.
+* Updates to reports used to extract data into Elasticsearch.
+* When re-using a location for data entry, more than one location-linked sample attribute's values can be recovered from
+  the last submission to provide defaults for the next submission (e.g. to obtain a default for habitat and altitude)
+  (https://github.com/BiologicalRecordsCentre/iRecord/issues/321).
+
 # Version 2.27.0
 *2019-05-29*
 
