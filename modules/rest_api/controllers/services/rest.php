@@ -2540,6 +2540,7 @@ class Rest_Controller extends Controller {
       }
     }
     if (!$this->authenticated) {
+      // Either the authentication wrong, or using HTTP instead of HTTPS.
       $this->apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
     }
   }
