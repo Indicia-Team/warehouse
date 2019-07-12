@@ -134,18 +134,6 @@ class report_standard_params_occurrences {
         'alias' => 'occ_id',
         'description' => 'Comma separated list of occurrence IDs to filter to.',
       ],
-      'searchArea' => [
-        'datatype' => 'geometry',
-        'display' => 'Boundary',
-        'description' => 'Boundary to search within, in Well Known Text format using Web Mercator projection.',
-        'wheres' => [
-          [
-            'value' => '',
-            'operator' => '',
-            'sql' => "st_intersects(#sample_geom_field#, st_makevalid(st_geomfromtext('#searchArea#',900913)))",
-          ],
-        ],
-      ],
       'occ_id' => [
         'datatype' => 'integer',
         'display' => 'ID',
@@ -170,15 +158,15 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
-      'taxon_rank_sort_order' => [
-        'datatype' => 'integer',
-        'display' => 'Taxon rank',
-        'description' => 'Rank of the identified taxon in the taxonomic hierarchy',
+      'searchArea' => [
+        'datatype' => 'geometry',
+        'display' => 'Boundary',
+        'description' => 'Boundary to search within, in Well Known Text format using Web Mercator projection.',
         'wheres' => [
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#",
+            'sql' => "st_intersects(#sample_geom_field#, st_makevalid(st_geomfromtext('#searchArea#',900913)))",
           ],
         ],
       ],
@@ -775,6 +763,18 @@ class report_standard_params_occurrences {
             'value' => '',
             'operator' => '',
             'sql' => "o.import_guid IN (#import_guid_list#)",
+          ],
+        ],
+      ],
+      'taxon_rank_sort_order' => [
+        'datatype' => 'integer',
+        'display' => 'Taxon rank',
+        'description' => 'Rank of the identified taxon in the taxonomic hierarchy',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "o.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#",
           ],
         ],
       ],
