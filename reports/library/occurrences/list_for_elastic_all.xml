@@ -4,7 +4,7 @@
       No website limit so designed to collect records from all website registrations."
     restricted="true"
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" training_filter_field=""
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
     DROP TABLE IF EXISTS filtered_occurrences;
     SELECT o.*
