@@ -3,7 +3,7 @@
     description="A list of occurrences designed for feeding into Elasticsearch or a similar JSON store."
     featured="true"
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" training_filter_field=""
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
     DROP TABLE IF EXISTS filtered_occurrences;
     SELECT o.*
