@@ -52,12 +52,13 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     // Extra lookup options.
     'taxon:taxon:genus' => 'Genus (builds binomial name)',
     'taxon:taxon:specific' => 'Specific name/epithet (builds binomial name)',
+    'taxon:taxon:qualifier' => 'Qualifier (builds binomial name)'
   ];
 
   public $specialImportFieldProcessingDefn = [
     'taxon:taxon' => [
-      'template' => '%s %s',
-      'columns' => ['taxon:taxon:genus', 'taxon:taxon:specific'],
+      'template' => '%s %s %s',
+      'columns' => ['taxon:taxon:genus', 'taxon:taxon:specific','taxon:taxon:qualifier'],
     ],
   ];
 
