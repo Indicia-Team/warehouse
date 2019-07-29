@@ -93,6 +93,14 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       ],
     ],
     [
+      'description' => 'Species list and taxon search code',
+      'fields' => [
+        ['fieldName' => 'taxa_taxon_list:taxon_list_id'],
+        ['fieldName' => 'taxon:search_code'],
+        ['fieldName' => 'taxa_taxon_list:taxon_id', 'notInMappings' => TRUE],
+      ],
+    ],
+    [
       'description' => 'Species list, parent taxon name and taxon name',
       'fields' => [
         ['fieldName' => 'taxa_taxon_list:taxon_list_id'],
@@ -239,7 +247,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
               'taxon',
               $supermodel['model']['fields'],
               $syn,
-              ['description', 'external_key', 'taxon_group_id', 'taxon_rank_id']
+              ['description', 'external_key', 'search_code', 'taxon_group_id', 'taxon_rank_id']
             );
             break;
           }
