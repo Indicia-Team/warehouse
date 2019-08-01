@@ -173,5 +173,6 @@
     <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />
     <column name="occurrence_attrs_json" sql="onf.attrs_json" datatype="text" />
     <column name="tracking" sql="o.tracking" datatype="integer" />
+    <column name="input_form" sql="o.input_form" datatype="text" />
   </columns>
 </report>
