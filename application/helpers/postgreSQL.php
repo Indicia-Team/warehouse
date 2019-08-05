@@ -25,11 +25,25 @@
  defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Helper class to provide postgreSQL specific SQL functions, so that they can all be
- * kept in one place.
+ * Helper class to provide postgreSQL specific SQL functions.
  */
 class postgreSQL {
 
+  /**
+   * Use PostGIS to transform a geometry.
+   *
+   * @param string $wkt
+   *   Geometry in WKT format.
+   * @param int $fromSrid
+   *   SRID of projection to transform from.
+   * @param int $toSrid
+   *   SRID of projection to transform to.
+   * @param object $db
+   *   Datavase connection.
+   *
+   * @return string
+   *   Transformed geometyr in WKT format.
+   */
   public static function transformWkt($wkt, $fromSrid, $toSrid, $db = NULL) {
     if ($fromSrid != $toSrid) {
       if (!$db) {
@@ -135,8 +149,7 @@ SQL
   }
 
   /**
-   * Runs a query to select the notification data to generate for verification and comment status updates since the
-   * last run date. This allows recorders to be notified of verification actions and/or comments on their records.
+   * Select pending group users awaiting adminstrator approval.
    */
   public static function selectPendingGroupsUsersNotifications($last_run_date, $db = NULL) {
     if (!$db) {
@@ -325,17 +338,16 @@ SQL;
    * A clone of the sql_type method in the PG driver, copied here to support
    * our version of list_fields.
    *
-   * @staticvar $sql_types
-   *   Used to cache the sql types config per request
-   *
    * @param string $str
    *   Type name.
    *
    * @return array
    *   SQL version of the type name.
+   *
+   * @staticvar $sql_types
+   *   Used to cache the sql types config per request
    */
-  protected static function sql_type($str)
-  {
+  protected static function sql_type($str) {
     static $sql_types;
 
     if ($sql_types === NULL) {
@@ -495,7 +507,7 @@ SQL;
     self::integerListOption($options, 'parent_id');
     self::stringListOption($options, 'language');
     self::checkBooleanOptions($options,
-        ['preferred', 'commonNames', 'synonyms', 'abbreviations', 'marine_flag', 'searchAuthors', 'wholeWords']);
+      ['preferred', 'commonNames', 'synonyms', 'abbreviations', 'marine_flag', 'searchAuthors', 'wholeWords']);
   }
 
   /**
@@ -532,7 +544,10 @@ SQL;
   }
 
   /**
-   * Prepares the part of the taxon search query SQL which limits the results to the context, e.g. the taxon group.
+   * Limit taxon search query context.
+   *
+   * Prepares the part of the taxon search query SQL which limits the results
+   * to the context, e.g. the taxon group.
    *
    * @param array $options
    *   Options array passed to taxon search.
@@ -544,7 +559,7 @@ SQL;
     $filters = [];
     $params = [
       'taxon_list_id', 'taxon_group_id', 'taxon_group', 'taxon_meaning_id', 'taxa_taxon_list_id',
-      'preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'parent_id'
+      'preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'parent_id',
     ];
     foreach ($params as $param) {
       if (!empty($options[$param])) {
@@ -612,7 +627,8 @@ SQL;
     if (isset($options['marine_flag'])) {
       $filters[] = 'cts.marine_flag=' . ($options['marine_flag'] ? 'true' : 'false');
     }
-    // Disable 3+2 abbreviations if search val is not 5 characters, or abbreviations explicitly disabled.
+    // Disable 3+2 abbreviations if search val is not 5 characters, or
+    // abbreviations explicitly disabled.
     if (!empty($options['searchQuery']) && !preg_match('/^[a-z0-9]{5}$/', strtolower($options['searchQuery'])) ||
         (isset($options['abbreviations']) && $options['abbreviations'] === FALSE)) {
       $filters[] = "cts.name_type<>'A'";
@@ -674,17 +690,20 @@ SQL;
         );
         $searchFilters[] = "(cts.simplified=true and searchterm like /***/ '$likesearchterm')";
         $highlightRegex = pg_escape_string('(' . preg_replace(array(
-          // wildcard * at the beginning is removed so leading characters not highlighted
+          // Wildcard * at the beginning is removed so leading characters not
+          // highlighted.
           '/^\*/',
-          // any other * or space will be replaced by a regex wildcard to match anything
+          // Any other * or space will be replaced by a regex wildcard to match
+          // anything.
           '/[\*\s]/',
-          // all other characters (i.e. not a regex wildcard) will be altered to allow optional space afterwards so the search can
-          // go across word boundaries, including skipping of subgenera in brackets.
-          '/([^(\.\+)])/'
+          // All other characters (i.e. not a regex wildcard) will be altered
+          // to allow optional space afterwards so the search can go across
+          // word boundaries, including skipping of subgenera in brackets.
+          '/([^(\.\+)])/',
         ), array(
           '',
           '.+',
-          '$1( )?( \(.+\) )?'
+          '$1( )?( \(.+\) )?',
         ), $searchTerm) . ')');
         $headlineColumnSql = "regexp_replace(original, '$highlightRegex', E'<b>\\\\1</b>', 'i') as highlighted";
       }
@@ -724,8 +743,10 @@ SQL;
    * @param bool $isCount
    *   Set to true for a count query.
    * @param array $searchFilterData
+   *   Current search filter definition.
    *
    * @return string
+   *   SQL for the columns list.
    */
   private static function taxonSearchGetColsListSql($isCount, array $searchFilterData) {
     if ($isCount) {
@@ -764,6 +785,7 @@ SQL;
    *   Set to true for a count query. Order by is not required for count
    *   queries.
    * @param array $searchFilterData
+   *   Definition of the current search filter.
    *
    * @return string
    *   SQL for the ORDER BY clause.
@@ -806,6 +828,7 @@ SQL;
    * Count queries do not set the limit or offset.
    *
    * @param array $options
+   *   Options passed to the search.
    *
    * @return string
    *   SQL for the LIMIT and OFFSET clauses.
@@ -838,38 +861,55 @@ SQL;
    *     taxa_Taxon_lists_ids. ID of the taxon list or an array of list IDs
    *     to search.
    *   * searchQuery - text to search for.
-   *   * taxon_group_id - ID or array of IDs of taxon groups to limit the search to.
-   *   * taxon_group - Taxon group name or array of taxon group names to limit the search to, an alternative to using
-   *     taxon_group_id.
-   *   * taxon_meaning_id - ID or array of IDs of taxon meanings to limit the search to.
-   *   * taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to.
-   *   * preferred_taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to, using
-   *     the preferred name's ID to filter against, therefore including synonyms and common names in the search.
-   *   * preferred_taxon - preferred taxon name or array of preferred names to limit the search to (e.g. limit to a list
-   *     of species names). Exact matches required.
-   *   * external_key - External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).
-   *   * parent_id - ID of a taxa_taxon_list record limit the search to children of, e.g. a species when searching the
-   *     subspecies. May be set to null to force top level only. Pass null to search top level taxa only.
-   *   * language - array of name languages to include in search results. Pass a 3 character iso code for the language,
-   *     e.g. "lat" for Latin names or "eng" for English names.
-   *   * preferred - set to true to limit to preferred names, false to limit to non-preferred names. E.g. filter
-   *     language=lat&preferred=false to find all synonyms.
-   *   * commonNames - set to true to limit to common names (non-latin names) or false to exclude non-latin names.
-   *   * synonyms - set to true to limit to synonyms (latin names which are not the preferred name) or false to exclude
-   *     synonyms.
-   *   * abbreviations - boolean, default true. Set to false to disable searching 2+3 character species name
-   *     abbreviations.
-   *   * marine_flag - set to true for only marine associated species, false to exclude marine-associated species.
-   *   * searchAuthors - boolean, default false. Set to true to include author strings in the searched text.
-   *   * wholeWords - boolean, default false. Set to true to only search whole words in the full text index, otherwise
-   *     searches the start of words.
-   *   * min_taxon_rank_sort_order - integer. Minimum taxon rank to include in results. Can be used to exclude higher
-   *     taxa from the search results (e.g. you might only want to records of genera or higher).
-   *   * max_taxon_rank_sort_order - integer. Maximum taxon rank to include in results. Can be used to exclude lower
-   *     taxa from the search results (e.g. you might want to exclude sub-species from the search results).
+   *   * taxon_group_id - ID or array of IDs of taxon groups to limit the
+   *     search to.
+   *   * taxon_group - Taxon group name or array of taxon group names to limit
+   *     the search to, an alternative to using taxon_group_id.
+   *   * taxon_meaning_id - ID or array of IDs of taxon meanings to limit the
+   *     search to.
+   *   * taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to
+   *     limit the search to.
+   *   * preferred_taxa_taxon_list_id - ID or array of IDs of taxa taxon list
+   *     records to limit the search to, using the preferred name's ID to
+   *     filter against, therefore including synonyms and common names in the
+   *     search.
+   *   * preferred_taxon - preferred taxon name or array of preferred names to
+   *     limit the search to (e.g. limit to a list of species names). Exact
+   *     matches required.
+   *   * external_key - External key or array of external keys to limit the
+   *     search to (e.g. limit to a list of TVKs).
+   *   * parent_id - ID of a taxa_taxon_list record limit the search to
+   *     children of, e.g. a species when searching the subspecies. May be set
+   *     to null to force top level only. Pass null to search top level taxa
+   *     only.
+   *   * language - array of name languages to include in search results. Pass
+   *     a 3 character iso code for the language, e.g. "lat" for Latin names or
+   *     "eng" for English names.
+   *   * preferred - set to true to limit to preferred names, false to limit to
+   *     non-preferred names. E.g. filter language=lat&preferred=false to find
+   *     all synonyms.
+   *   * commonNames - set to true to limit to common names (non-latin names)
+   *     or false to exclude non-latin names.
+   *   * synonyms - set to true to limit to synonyms (latin names which are not
+   *     the preferred name) or false to exclude synonyms.
+   *   * abbreviations - boolean, default true. Set to false to disable
+   *     searching 2+3 character species name abbreviations.
+   *   * marine_flag - set to true for only marine associated species, false to
+   *     exclude marine-associated species.
+   *   * searchAuthors - boolean, default false. Set to true to include author
+   *     strings in the searched text.
+   *   * wholeWords - boolean, default false. Set to true to only search whole
+   *     words in the full text index, otherwise searches the start of words.
+   *   * min_taxon_rank_sort_order - integer. Minimum taxon rank to include in
+   *     results. Can be used to exclude higher taxa from the search results
+   *     (e.g. you might only want to records of genera or higher).
+   *   * max_taxon_rank_sort_order - integer. Maximum taxon rank to include in
+   *     results. Can be used to exclude lower taxa from the search results
+   *     (e.g. you might want to exclude sub-species from the search results).
    *   * count - set to true to return a results count query.
    *   * limit - set to limit number of records returned.
-   *   * offset - set to offset the query results from the start of the dataset for paging.
+   *   * offset - set to offset the query results from the start of the dataset
+   *     for paging.
    *
    * @return string
    *   SQL to run.
