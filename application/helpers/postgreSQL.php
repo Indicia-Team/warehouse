@@ -510,7 +510,11 @@ SQL;
     self::integerListOption($options, 'parent_id');
     self::stringListOption($options, 'language');
     self::checkBooleanOptions($options,
-      ['preferred', 'commonNames', 'synonyms', 'abbreviations', 'marine_flag', 'searchAuthors', 'wholeWords']);
+      ['preferred', 'synonyms', 'abbreviations', 'marine_flag', 'searchAuthors', 'wholeWords']);
+    if (isset($options['commonNames'])) {
+      self::assert(is_bool($options['commonNames']) || $options['commonNames'] === 'defaults',
+        'The commonNames option must be a boolean or the value defaults');
+    }
   }
 
   /**
@@ -624,9 +628,14 @@ SQL;
       $filters[] = 'cts.preferred=' . ($options['preferred'] ? 'true' : 'false');
     }
     if (isset($options['commonNames'])) {
-      $filters[] = $options['commonNames']
+      if ($options['commonNames'] === 'defaults') {
+        $filters[] = "(cts.language_iso='lat' or cts.original=cts.default_common_name)";
+      }
+      else {
+        $filters[] = $options['commonNames']
           ? "(cts.language_iso<>'lat')"
           : "(cts.language_iso='lat')";
+      }
     }
     if (isset($options['synonyms'])) {
       $filters[] = $options['synonyms']
@@ -904,7 +913,9 @@ SQL;
    *     non-preferred names. E.g. filter language=lat&preferred=false to find
    *     all synonyms.
    *   * commonNames - set to true to limit to common names (non-latin names)
-   *     or false to exclude non-latin names.
+   *     false to exclude non-latin names, "defaults" to limit common names to
+   *     the single default common name for each taxon (other names still
+   *     included).
    *   * synonyms - set to true to limit to synonyms (latin names which are not
    *     the preferred name) or false to exclude synonyms.
    *   * abbreviations - boolean, default true. Set to false to disable
