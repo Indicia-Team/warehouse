@@ -1,3 +1,10 @@
+# Version 2.29.0
+*2019-08-04*
+
+* Taxon search API now allows exclusion of taxa or taxon names via options exclude_taxon_meaning_id,
+  exclude_taxa_taxon_list_id and exclude_preferred_taxa_taxon_list_id.
+* Taxon search API now supports option commonNames=defaults, meaning that non-default common names will be excluded.
+
 # Version 2.28.0
 *2019-07-01*
 
