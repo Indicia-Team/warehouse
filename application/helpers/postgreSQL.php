@@ -502,6 +502,9 @@ SQL;
     self::integerListOption($options, 'taxon_meaning_id');
     self::integerListOption($options, 'taxa_taxon_list_id');
     self::integerListOption($options, 'preferred_taxa_taxon_list_id');
+    self::integerListOption($options, 'exclude_taxon_meaning_id');
+    self::integerListOption($options, 'exclude_taxa_taxon_list_id');
+    self::integerListOption($options, 'exclude_preferred_taxa_taxon_list_id');
     self::stringListOption($options, 'preferred_taxon');
     self::stringListOption($options, 'external_key');
     self::integerListOption($options, 'parent_id');
@@ -559,7 +562,8 @@ SQL;
     $filters = [];
     $params = [
       'taxon_list_id', 'taxon_group_id', 'taxon_group', 'taxon_meaning_id', 'taxa_taxon_list_id',
-      'preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'parent_id',
+      'preferred_taxa_taxon_list_id', 'exclude_taxon_meaning_id', 'exclude_taxa_taxon_list_id',
+      'exclude_preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'parent_id',
     ];
     foreach ($params as $param) {
       if (!empty($options[$param])) {
@@ -568,7 +572,12 @@ SQL;
         }
         else {
           $list = $options[$param];
-          $filters[] = "cts.$param in ($list)";
+          $inverse = '';
+          if (substr($param, 0, 8) === 'exclude_') {
+            $inverse = ' NOT';
+            $param = str_replace('exclude_', '', $param);
+          }
+          $filters[] = "cts.$param$inverse IN ($list)";
         }
       }
     }
@@ -873,6 +882,12 @@ SQL;
    *     records to limit the search to, using the preferred name's ID to
    *     filter against, therefore including synonyms and common names in the
    *     search.
+   *   * exclude_taxon_meaning_id - as taxon_meaning_id but to exclude
+   *     taxon names rather than include them.
+   *   * exclude_taxa_taxon_list_id - as taxa_taxon_list_id but to exclude
+   *     taxon names rather than include them.
+   *   * exclude_preferred_taxa_taxon_list_id - as preferred_taxa_taxon_list_id
+   *     but to exclude taxon concepts rather than include them.
    *   * preferred_taxon - preferred taxon name or array of preferred names to
    *     limit the search to (e.g. limit to a list of species names). Exact
    *     matches required.
