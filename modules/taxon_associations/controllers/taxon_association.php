@@ -59,10 +59,12 @@ class Taxon_association_Controller extends Gridview_Base_Controller {
    *
    * @param array $values
    *   Form values.
+   *
    * @return array
    *   Additional information for the view.
    */
-  protected function prepareOtherViewData(array $values) {
+  protected function getModelValues() {
+    $r = parent::getModelValues();
     $taId = $this->uri->argument(1);
     // Find basic info about the occurrence association.
     $sql = <<<SQL
@@ -74,10 +76,8 @@ JOIN cache_taxa_taxon_lists cttlto ON cttlto.taxon_meaning_id=ta.to_taxon_meanin
 WHERE ta.id=$taId;
 SQL;
     $ids = $this->db->query($sql)->current();
-    $otherData = [
-      'from_taxon' => $ids->from_taxon,
-      'to_taxon' => $ids->to_taxon,
-    ];
+    $r['from_taxon'] = $ids->from_taxon;
+    $r['to_taxon'] = $ids->to_taxon;
     // Store the taxa_taxon_list ID we are viewing the association from, e.g. to use
     // when building breadcrumbs.
     $this->taxa_taxon_list_id = $ids->id;
@@ -105,22 +105,24 @@ SQL;
       'impact_termlist_ids' => 'impact_terms',
     ];
     foreach ($termDataToFetch as $listIdsField => $termsField) {
-      $otherData[$termsField] = [];
+      $r[$termsField] = [];
       if (!empty($termlists->$listIdsField)) {
         foreach (explode(',', $termlists->$listIdsField) as $listId) {
-          $otherData[$termsField] += $this->get_termlist_terms($listId);
+          $r[$termsField] += $this->get_termlist_terms($listId);
         }
       }
     }
-    return $otherData;
+    return $r;
   }
 
   /**
    * Set the edit page breadcrumbs to link back through the occurrences.
    */
   protected function defineEditBreadcrumbs() {
-    $taId = $taId = $this->uri->argument(1);
-    $sql = <<<SQL
+    $this->page_breadcrumbs[] = html::anchor('taxon_list', 'Species Lists');
+    if ($this->model->id) {
+      $taId = $taId = $this->uri->argument(1);
+      $sql = <<<SQL
 SELECT DISTINCT cttlfrom.id, cttlfrom.taxon, tl.id as taxon_list_id, tl.title as taxon_list_title, cttlfrom.preferred
 FROM taxon_associations ta
 JOIN cache_taxa_taxon_lists cttlfrom ON cttlfrom.taxon_meaning_id=ta.from_taxon_meaning_id
@@ -129,11 +131,15 @@ WHERE ta.id=$taId
 ORDER BY cttlfrom.preferred DESC
 LIMIT 1;
 SQL;
-    $info = $this->db->query($sql)->current();
-    $this->page_breadcrumbs[] = html::anchor('taxon_list', 'Species Lists');
-    $this->page_breadcrumbs[] = html::anchor("taxon_list/edit/$info->taxon_list_id?tab=associations", $info->taxon_list_title);
-    $this->page_breadcrumbs[] = html::anchor("taxa_taxon_list/edit/$info->id?tab=associations", $info->taxon);
-    $this->page_breadcrumbs[] = $this->model->caption();
+      $info = $this->db->query($sql)->current();
+
+      $this->page_breadcrumbs[] = html::anchor("taxon_list/edit/$info->taxon_list_id?tab=associations", $info->taxon_list_title);
+      $this->page_breadcrumbs[] = html::anchor("taxa_taxon_list/edit/$info->id?tab=associations", $info->taxon);
+      $this->page_breadcrumbs[] = $this->model->caption();
+    }
+    else {
+      $this->page_breadcrumbs[] = 'New association';
+    }
   }
 
   /**

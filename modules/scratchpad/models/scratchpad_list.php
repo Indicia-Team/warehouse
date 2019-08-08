@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -14,25 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Scratchpad
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the scratchpad_list_entries table.
  *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * @link http://code.google.com/p/indicia/wiki/DataModel
  */
 class Scratchpad_list_Model extends ORM {
 
   protected $belongs_to = array(
-      'website',
-      'created_by'=>'user'
+    'website',
+    'created_by' => 'user',
   );
 
   protected $has_many = array('scratchpad_list_entries');
@@ -43,23 +41,26 @@ class Scratchpad_list_Model extends ORM {
     $array->add_rules('entity', 'required');
     $array->add_rules('website_id', 'required');
     $array->add_rules('website_id', 'integer');
+    $array->add_rules('scratchpad_type_id', 'integer');
     $this->unvalidatedFields = array('description', 'expires_on');
     return parent::validate($array, $save);
   }
 
   /**
-   * Return the submission structure, which includes defining taxon and taxon_meaning
-   * as the parent (super) models, and the synonyms and commonNames as metaFields which
-   * are specially handled.
+   * Return the submission structure.
    *
-   * @return array Submission structure for a taxa_taxon_list entry.
+   * This includes defining taxon and taxon_meaning as the parent (super)
+   * models, and the synonyms and commonNames as metaFields which are specially
+   * handled.
+   *
+   * @return array
+   *   Submission structure for a taxa_taxon_list entry.
    */
-  public function get_submission_structure()
-  {
-    return array(
-      'model'=>$this->object_name,
-      'metaFields'=>array('entries')
-    );
+  public function get_submission_structure() {
+    return [
+      'model' => $this->object_name,
+      'metaFields' => array('entries')
+    ];
   }
 
   public function postSubmit($isInsert) {
@@ -73,14 +74,14 @@ class Scratchpad_list_Model extends ORM {
       foreach ($entries as $entry_id) {
         if ($this->db->query(
             "select 1 from scratchpad_list_entries where scratchpad_list_id=$this->id and entry_id=$entry_id"
-            )->count()===0) {
+            )->count() === 0) {
           $this->db->query(
             "insert into scratchpad_list_entries (scratchpad_list_id, entry_id) select $this->id, $entry_id"
           );
         }
       }
     }
-    return true;
+    return TRUE;
   }
 
 }

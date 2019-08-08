@@ -1,7 +1,170 @@
+# Version 2.29.0
+*2019-08-04*
+
+* Taxon search API now allows exclusion of taxa or taxon names via options exclude_taxon_meaning_id,
+  exclude_taxa_taxon_list_id and exclude_preferred_taxa_taxon_list_id.
+* Taxon search API now supports option commonNames=defaults, meaning that non-default common names will be excluded.
+
+# Version 2.28.0
+*2019-07-01*
+
+* Set option `do_not_send` to false in `application/config/email.php` to prevent server from attempting to send
+  notification emails on development and test servers (https://github.com/Indicia-Team/warehouse/issues/323).
+* Improved error handling where vague date ranges are the wrong way round ().
+* Improvements to reporting standard parameters handling where there are multiple filters for taxonomic limits
+  interacting.
+* Fixed bugs filtering against occurrence association reports (https://github.com/Indicia-Team/warehouse/issues/322).
+* CSV Importer now supports a mode where it checks and validates all records without committing anything.
+* Fixes problems with links between preferred and non-preferred taxa for newly entered taxa via the UI
+  (https://github.com/BiologicalRecordsCentre/iRecord/issues/548).
+* Output grid ref system no longer uses the input grid ref system as a parameter, ensuring output grid refs are
+  consistent in each locality around the world.
+* When scheduled tasks run from a browser, the output for cache building is significantlt tidier.
+* REST API Sync module now works correctly when run from a URL endpoint.
+* Bug fixes to Survey Structure Importer when handling termlist data.
+* My sites lookup (for location autocompletes) now trims the search text, preventing errors in the full text lookup.
+* Updates to reports used to extract data into Elasticsearch.
+* When re-using a location for data entry, more than one location-linked sample attribute's values can be recovered from
+  the last submission to provide defaults for the next submission (e.g. to obtain a default for habitat and altitude)
+  (https://github.com/BiologicalRecordsCentre/iRecord/issues/321).
+
+# Version 2.27.0
+*2019-05-29*
+
+* Elasticsearch extraction reports include map squares data and verification decision source.
+* Correct CC licence codes (e.g. CC-BY-AT becomes CC BY-AT).
+
+# Version 2.26.0
+*2019-05-13*
+
+* Adds sensitivity precision control to occurrence edit form.
+* Data services views for custom attributes include the unit field in the response.
+* Spatial services buffer function allows the projection code and number of segments to be passed as parameters.
+
+# Version 2.25.0
+*2019-05-03*
+
+* Fixes re-use of previous location related sample data from a site when adding a new sample so that more than one
+  value can be copied over.
+* Fixes an error when auto_log_determinations is off and a record is redetermined.
+
+# Version 2.22.0
+*2019-04-22*
+
+* Updates views for taxon designation data to support new tools for editing taxon designations.
+
+# Version 2.21.0
+*2019-04-17*
+
+* Updates the fields available when doing CSV download from Elasticsearch.
+  (https://github.com/BiologicalRecordsCentre/iRecord/issues/549)
+* New report required for showing recorder email addresses to verifiers using
+  Elasticsearch (https://github.com/BiologicalRecordsCentre/iRecord/issues/552).
+* A report providing a hierarchical view of a termlist, used for editing trait
+  data in the Pantheon system.
+
+# Version 2.20.0
+*2019-04-15*
+
+* Data services submission format now allows fkField to override the name of the key linked to a foreign key when
+  describing entity relationships in a data submission. Further info at
+  https://indicia-docs.readthedocs.io/en/latest/developing/web-services/submission-format.html?highlight=fkfield#super-and-sub-models
+* iNaturalist sync method in the `rest_api_sync` module now skips unlicenced photos.
+* New report, `reports/library/locations/location_boundary_projected.xml`, provides a simple list of location boundaries
+  in a given projection, ideal for use on Leaflet maps.
+* New report, `reports/library/taxa/taxon_list.xml`, provides a simple list of taxon names and associated data.
+
+# Version 2.19.0
+*2019-04-08*
+
+* Adds support for categorisation of scratchpad lists via new scratchpad_type_id field
+  and associated termlist.
+
+# Version 2.18.0
+*2019-04-04*
+
+* Request_logging module can now capture additional types of events to track performance
+  of save events, imports, verification and taxon searches. See the provided example
+  config file under modules/request_logging/config.
+
+# Version 2.17.0
+*2019-04-03*
+
+* Fixes required to run on PHP 7.3 (not yet fully tested).
+* Import guids are now true GUIDs rather than numeric. Prevents Excel mashing the large
+  numbers to scientific notation and therefore preventing re-imports of error files from
+  binding to the correct import GUID.
+* INaturalist sync now pages data and limits processing per run to cope with larger
+  datasets.
+* INaturalist sync (and any others built on the Rest_api_sync module) now tolerate naming
+  differences where subspecies names either do or don't include the rank.
+* New report for scratchpad list species external keys - can be used to drive sensitive
+  record suggestions on a client entry form.
+
+# Version 2.16.0
+*2019-03-20*
+
+* Changes required to allow tracked correspondance to appear on client where appropriate.
+* ES searches which contain {} are no longer broken by converting to [].
+
+# Version 2.15.0
+*2019-03-19*
+
+* email.notification_subject and email.notification_intro can both be
+  overridden in the application/config/email.php file.
+* Workflow mapping reports make verified records at top of z order.
+* Variant on workflow records explore report that outputs full precision grid
+  ref for download.
+* Fix problem in Swift email component for PHP 7 which caused PHP errors.
+* Record data for verification uses recorder email rather than inputter email
+  where available, so record queries go to the correct location.
+
+# Version 2.14.0
+
+* Spatial index builder supports automatic inclusion of location parents in the index,
+  improving performance in the background tasks where layers are hierarchical since only
+  the bottom layer needs to be scanned.
+* Autofeed reports in the REST API support tracking updates by a date field where the
+  cache_occurrences_functional.tracking field is not available.
+
+# Version 2.13.0
+*2019-03-09*
+
+* Filters list report loaded onto report pages - improved performance.
+* New list_verify web service for verifying against a list of IDs.
+
+# Version 2.12.0
+*2019-03-07*
+
+* Fixes importing of constituent date fields into occurrences (#318).
+* Installation process fixed in some environments (#317).
+* Elasticsearch proxy in REST API and scrolling support for large downloads.
+
+# Version 2.11.0
+*2019-02-26*
+
+* CSV files generated for download using the REST API and the Elasticsearch scroll API
+  are now zipped.
+
+# Version 2.10.0
+*2019-02-22*
+
+* Adds support for importing locations using TM65 Irish Grid projection.
+
+# Version 2.9.0
+*2019-02-22*
+
+* Adds a download folder to warehouse for temporary generated download files.
+* REST API Elasticsearch proxy supports the Scroll API for generation of large downnload files in chunks.
+* REST API Elasticsearch proxy supports formatting output as CSV.
+* Fix REST API JSON output so that zeros are not excluded.
+* Improvements to Elasticsearch document format.
+* Updates to reports for Splash.
+
 # Version 2.8.0
 *2019-02-15*
 
-* ElasticSearch output reports now include custom attributes data.
+* Elasticsearch output reports now include custom attributes data.
 * Fixes a syntax error in spatial indexing SQL statements.
 
 # Version 2.7.0

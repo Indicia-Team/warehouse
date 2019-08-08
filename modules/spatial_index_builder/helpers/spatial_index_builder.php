@@ -30,10 +30,11 @@
 class spatial_index_builder {
 
   /**
-   * A utility function used by the work queue task helpers.
+   * Retrieve a list of indexed location types.
    *
-   * Returns the filter SQL to limit indexed locations to the correct types as
-   * declared in the configuration, with survey limits where appropriate.
+   * A utility function used by the work queue task helpers. Returns the filter
+   * SQL to limit indexed locations to the correct types as declared in the
+   * configuration, with survey limits where appropriate.
    *
    * @param object $db
    *   Database connection object.
@@ -51,7 +52,7 @@ class spatial_index_builder {
         throw new Exception('Spatial index builder configuration location_types missing');
       }
       $idQuery = $db->query("select id, term from cache_termlists_terms where preferred_term in ('" .
-        implode("','", $config['location_types']) . "')")
+        implode("','", $config['location_types']) . "') and termlist_title ilike 'location types'")
         ->result();
       $allLocationTypeIds = [];
       foreach ($idQuery as $row) {
@@ -75,6 +76,46 @@ class spatial_index_builder {
       $cache->set('spatial-index-location-type-filter-info', $filters);
     }
     return $filters;
+  }
+
+  /**
+   * Retrieve a list of location types to be treated as hiearchical.
+   *
+   * A utility function used by the work queue task helpers. Returns the
+   * list of location type IDs where the locations in this layer have
+   * parent_ids that point to another layer which contains locations that
+   * should also be indexed. For example, a Counties layer could be
+   * included in this list if the location parent_ids point to locations in a
+   * Countries layer. The Countries would then be included in the indexing data
+   * without ever needing to be spatially queried.
+   *
+   * @param object $db
+   *   Database connection object.
+   *
+   * @return string
+   *   Comma separated list of IDs. If none, then returns '0' so can still be
+   *   inserted into an SQL IN (...) filter.
+   */
+  public static function getLocationTypeTreeFilters($db) {
+    $cache = Cache::instance();
+    $locationTypeIds = $cache->get('spatial-index-hierarchical-location-types');
+    if (!$locationTypeIds) {
+      $config = kohana::config_load('spatial_index_builder');
+      if (!array_key_exists('hierarchical_location_types', $config)) {
+        // This effectively cancels the hierarchical querying.
+        return '0';
+      }
+      $idQuery = $db->query("select id, term from cache_termlists_terms where preferred_term in ('" .
+        implode("','", $config['location_types']) . "') and termlist_title ilike 'location types'")
+        ->result();
+      $locationTypeIds = [];
+      foreach ($idQuery as $row) {
+        $locationTypeIds[$row->term] = $row->id;
+      }
+      $locationTypeIds = implode(', ', $locationTypeIds);
+      $cache->set('spatial-index-hierarchical-location-types', $locationTypeIds);
+    }
+    return $locationTypeIds;
   }
 
 }

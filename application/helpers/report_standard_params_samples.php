@@ -49,13 +49,13 @@ class report_standard_params_samples {
 
   /**
    * @return array List of parameters that have an associated operation parameter. E.g. along
-   * with the sample_id parameter you can supply sample_id='>=' to define the operation
+   * with the smp_id parameter you can supply smp_id='>=' to define the operation
    * to be applied in the filter.
    * @return array
    */
   public static function getOperationParameters() {
     return array(
-      'sample_id' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'ID operation',
+      'smp_id' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'ID operation',
         'description'=>'Sample ID lookup operation', 'lookup_values'=>'=:is,>=:is at least,<=:is at most'
       ),
       'website_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Website IDs mode',
@@ -82,7 +82,7 @@ class report_standard_params_samples {
    */
   public static function getParameters() {
     return array(
-      'idlist' => array('datatype'=>'idlist', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'s.id', 'alias'=>'sample_id',
+      'idlist' => array('datatype'=>'idlist', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'s.id', 'alias'=>'smp_id',
         'description'=>'Comma separated list of sample IDs to filter to'
       ),
       'searchArea' => array('datatype'=>'geometry', 'display'=>'Boundary',
@@ -91,22 +91,22 @@ class report_standard_params_samples {
           array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(s.geom, st_makevalid(st_geomfromtext('#searchArea#',900913)))")
         )
       ),
-      'sample_id' => array('datatype'=>'integer', 'display'=>'ID',
-        'description'=>'Sample ID',
+      'smp_id' => array('datatype' => 'integer', 'display' => 'ID',
+        'description' => 'Sample ID',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"s.id #sample_id_op# #sample_id#")
+          array('value' => '', 'operator' => '', 'sql' => "s.id #smp_id_op# #smp_id#")
         )
       ),
-      'sample_method_id' => array('datatype'=>'integer', 'display'=>'Sample Method ID',
-        'description'=>'Termlists_terms ID for the Sample Method',
+      'sample_method_id' => array('datatype' => 'integer', 'display' => 'Sample Method ID',
+        'description' => 'Termlists_terms ID for the Sample Method',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"s.sample_method_id=#sample_method_id#")
+          array('value' => '', 'operator' => '', 'sql' => "s.location_name ilike replace('#location_name#', '*', '%') || '%'"),
         )
       ),
-      'location_name' => array('datatype'=>'text', 'display'=>'Location name',
-        'description'=>'Name of location to filter to (contains search)',
+      'location_name' => array('datatype' => 'text', 'display' => 'Location name',
+        'description' => 'Name of location to filter to (starts with search)',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"(s.location_name ilike '%#location_name#%' or l.name ilike '%#location_name#%')")
+          array('value' => '', 'operator' => '', 'sql' => "s.location_name ilike '%#location_name#%'")
         )
       ),
       'location_list' => [
@@ -315,13 +315,13 @@ class report_standard_params_samples {
       'website_list' => array('datatype'=>'integer[]', 'display'=>"Website IDs",
         'description'=>'Comma separated list of IDs',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"su.website_id #website_list_op# (#website_list#)")
+          array('value'=>'', 'operator'=>'', 'sql'=>"s.website_id #website_list_op# (#website_list#)")
         )
       ),
       'survey_list' => array('datatype'=>'integer[]', 'display'=>"Survey IDs",
         'description'=>'Comma separated list of IDs',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"su.id #survey_list_op# (#survey_list#)")
+          array('value'=>'', 'operator'=>'', 'sql'=>"s.survey_id #survey_list_op# (#survey_list#)")
         )
       ),
       'input_form_list' => array('datatype'=>'text[]', 'display'=>"Input forms",
@@ -339,7 +339,7 @@ class report_standard_params_samples {
    */
   public static function getDefaultParameterValues() {
     return array(
-      'sample_id_op'=>'=',
+      'smp_id_op'=>'=',
       'website_list_op'=>'in',
       'survey_list_op'=>'in',
       'input_form_list_op'=>'in',

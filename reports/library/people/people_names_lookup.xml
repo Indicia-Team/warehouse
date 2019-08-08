@@ -14,19 +14,17 @@
     SELECT DISTINCT null::integer as id, v.text_value as person_name, null::text as email_address
     FROM sample_attribute_values v
     JOIN cache_samples_functional s on s.id=v.sample_id
+    LEFT JOIN (people p
+      JOIN users u ON u.person_id=p.id AND u.deleted=false
+      JOIN users_websites uw ON u.id = uw.user_id AND uw.site_role_id IS NOT NULL
+      and uw.website_id in (#website_ids#)
+    ) ON lower(p.surname || ', ' || p.first_name) = lower(v.text_value)
+      AND p.deleted=false
     WHERE v.deleted=false
     AND v.sample_attribute_id in (#attr_function#)
     AND s.website_id in (#website_ids#)
     AND lower(v.text_value) like lower(replace('#q#', '*', '%') || '%')
-    AND NOT EXISTS (
-      SELECT NULL
-      FROM users u
-      JOIN users_websites uw ON u.id = uw.user_id AND uw.site_role_id IS NOT NULL
-      JOIN people p ON p.id = u.person_id AND p.deleted = false
-      WHERE u.deleted = false
-      AND #website_filter#
-      AND lower(p.surname || ', ' || p.first_name) = lower(v.text_value)
-    )
+    AND p.id IS NULL
   </query>
   <orderbys>
     <orderby>person_name</orderby>

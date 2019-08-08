@@ -142,7 +142,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
   /**
    * Test the basic functionality of the user_identifier/get_user_id service call.
    */
-  function testGetUserID() {
+  public function testGetUserID() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Identifier_Test::testGetUserID");
     $response = $this->callGetUserIdService($this->auth, array(
       array('type' => 'email', 'identifier' => 'test@test.com'),
@@ -154,6 +154,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: ' . $response['output']);
 
     $uid1 = $output->userId;
+    $userIds = [$uid1];
     // There should now be a user that matches the response.
     $user = ORM::factory('user')->where(array('username' => 'test_autotest'))->find();
 
@@ -175,20 +176,26 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertEquals($uid1, $output->userId, 'A repeat request for same identifiers did not return the same user ID');
+    $userIds[] = $output->userId;
+
+    // Request for the same email address but with a different case.
+    $response = $this->callGetUserIdService($this->auth, array(
+      array('type' => 'email', 'identifier' => 'Test@test.com'),
+    ), 9997, '?', 'autotest');
+    $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
+    $output = json_decode($response['output']);
+    $this->assertEquals($uid1, $output->userId, 'A repeat request for same email with different case did not return the same user ID');
+    $userIds[] = $output->userId;
 
     // Clean up user identifiers, user websites, person and user records.
-    $this->db->query('delete from user_identifiers where user_id=' . $user->id);
-    $this->db->query('delete from users_websites where user_id=' . $user->id);
-    $person_id = $user->person_id;
-    $this->db->query('delete from users where id=' . $user->id);
-    $this->db->query('delete from people where id=' . $person_id);
+    $this->cleanupUsers($userIds);
   }
 
   /**
    * Test the case where an identifier is submitted with an unknown type. The type should get automatically
    * stored in the termlist.
    */
-  function testInvalidType() {
+  public function testInvalidType() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Identifier_Test::testInvalidType");
     $randomType = substr(base64_encode(rand(1000000000, 9999999999)), 0, 10);
     $response = $this->callGetUserIdService($this->auth, array(
@@ -267,10 +274,24 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $obj = json_decode($response['output']);
     $userId3 = $obj->userId;
     $user3 = ORM::factory('user', $userId3);
-    echo "\n$user1->username\n";
-    echo "$user2->username\n";
-    echo "$user3->username\n";
     $this->assertNotEquals($user3->username, $user1->username, 'get_user_id failed to generate unique usernames');
+    // cleanup as makes re-runs easier.
+    $this->cleanupUsers([$user1->id, $user2->id, $user3->id]);
+  }
+
+  function testGetUserIDWildcards() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Identifier_Test::testGetUserIDWildcards");
+    $response = $this->callGetUserIdService($this->auth, [
+      ['type' => 'email', 'identifier' => 'testwildcard@test.com'],
+    ], 19997, 'testwildcard1', 'name');
+    $response = $this->callGetUserIdService($this->auth, [
+      ['type' => 'email', 'identifier' => 'test%card@test.com'],
+    ], 19997, 'testwildcard2', 'name');
+    $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed with % wildcard.');
+    $response = $this->callGetUserIdService($this->auth, [
+      ['type' => 'email', 'identifier' => 'test_ildcard@test.com'],
+    ], 19997, 'testwildcard3', 'name');
+    $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed with _ wildcard.');
   }
 
   /**
@@ -366,6 +387,19 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->db->query("delete from user_identifiers where user_id in ($uid1, $uid2)");
     $this->db->query("delete from users_websites where user_id in ($uid1, $uid2)");
     $this->db->query("delete from users where id in ($uid1, $uid2)");
+  }
+
+  private function cleanupUsers($userIds) {
+    $idList = implode(',', $userIds);
+    $cleanupSql = <<<SQL
+drop table if exists people_ids;
+delete from user_identifiers where user_id in ($idList);
+delete from users_websites where user_id in ($idList);
+select person_id into temporary people_ids from users where id in ($idList);
+delete from users where id in ($idList);
+delete from people where id in (select person_id from people_ids);
+SQL;
+    $this->db->query($cleanupSql);
   }
 
   /**

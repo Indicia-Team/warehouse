@@ -22,7 +22,10 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
+
+define('INAT_PAGE_SIZE', 100);
+define('INAT_MAX_PAGES', 5);
 
 /**
  * Helper class for syncing to the RESTful API on iNaturalist.
@@ -30,25 +33,10 @@
 class rest_api_sync_inaturalist {
 
   /**
-   * Processing state.
+   * Terms loaded from iNat.
    *
-   * Current processing state, used to track initial setup.
-   *
-   * @var string
+   * @var array
    */
-  private $state;
-
-  /**
-   * Date up to which processing has been performed.
-   *
-   * When a sync run only manages to do part of the job (too many records to
-   * process) this defines the limit of the completely processed edit date
-   * range.
-   *
-   * @var string
-   */
-  private static $processingDateLimit;
-
   private static $controlledTerms = [];
 
   /**
@@ -60,15 +48,26 @@ class rest_api_sync_inaturalist {
    *   Server configuration.
    */
   public static function syncServer($serverId, $server) {
-    $page = isset($_GET['start_page']) ? $_GET['start_page'] : 1;
-    $timestampAtStart = date('c');
-    self::loadControlledTerms($serverId, $server);
+    // Count of pages done in this run.
+    $pageCount = 0;
+    // If last run still going, not on first page.
+    $firstPage = !variable::get("rest_api_sync_{$serverId}_next_run");
+    if ($firstPage) {
+      // Track when we started this run, so the next run can pick up all
+      // changes.
+      $timestampAtStart = date('c');
+      variable::set("rest_api_sync_{$serverId}_next_run", $timestampAtStart);
+    }
     do {
-      $syncStatus = self::syncPage($serverId, $server, $page);
-      $page++;
+      $syncStatus = self::syncPage($serverId, $server);
+      $pageCount++;
       ob_flush();
-    } while ($syncStatus['moreToDo']);
-    variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
+    } while ($syncStatus['moreToDo'] && $pageCount < INAT_MAX_PAGES);
+    if (!$syncStatus['moreToDo']) {
+      variable::set("rest_api_sync_{$serverId}_last_run", variable::get("rest_api_sync_{$serverId}_next_run"));
+      variable::delete("rest_api_sync_{$serverId}_next_run");
+      variable::delete("rest_api_sync_{$serverId}_last_id");
+    }
   }
 
   /**
@@ -79,51 +78,61 @@ class rest_api_sync_inaturalist {
    * @param array $server
    *   Server configuration.
    */
-  private static function loadControlledTerms($serverId, $server) {
+  public static function loadControlledTerms($serverId, $server) {
     if (!empty(self::$controlledTerms)) {
       // Already loaded.
       return;
     }
-    $data = rest_api_sync::getDataFromRestUrl(
-      "$server[url]/controlled_terms",
-      $serverId
-    );
-    foreach ($data['results'] as $iNatControlledTerm) {
-      $termLookup = [];
-      foreach ($iNatControlledTerm['values'] as $iNatValue) {
-        $termLookup[$iNatValue['id']] = $iNatValue['label'];
+    $cache = Cache::instance();
+    self::$controlledTerms = $cache->get('inaturalist-controlled-terms');
+    if (!self::$controlledTerms) {
+      $data = rest_api_sync::getDataFromRestUrl(
+        "$server[url]/controlled_terms",
+        $serverId
+      );
+      foreach ($data['results'] as $iNatControlledTerm) {
+        $termLookup = [];
+        foreach ($iNatControlledTerm['values'] as $iNatValue) {
+          $termLookup[$iNatValue['id']] = $iNatValue['label'];
+        }
+        self::$controlledTerms[$iNatControlledTerm['id']] = [
+          'label' => $iNatControlledTerm['label'],
+          'values' => $termLookup,
+        ];
       }
-      self::$controlledTerms[$iNatControlledTerm['id']] = [
-        'label' => $iNatControlledTerm['label'],
-        'values' => $termLookup,
-      ];
+      $cache->set('inaturalist-controlled-terms', self::$controlledTerms);
     }
   }
 
   /**
    * Synchronise a single page of data loaded from the iNat server.
    *
+   * For this sync, we don't use the provided $page parameter as pagination
+   * is not possible on large iNat datasets. Instead we keep our own last_id
+   * variable to chunk through the data..
+   *
    * @param string $serverId
    *   ID of the server as defined in the configuration.
    * @param array $server
    *   Server configuration.
-   * @param int $page
-   *   Page number.
    *
    * @return array
    *   Status info.
    */
-  public static function syncPage($serverId, array $server, $page) {
+  public static function syncPage($serverId, array $server) {
     $db = Database::instance();
     $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
-    $pageSize = 200;
+    $fromId = variable::get("rest_api_sync_{$serverId}_last_id", 0, FALSE);
+    $lastId = $fromId;
     $data = rest_api_sync::getDataFromRestUrl(
       "$server[url]/observations?" . http_build_query(array_merge(
         $server['parameters'],
         [
           'updated_since' => $fromDateTime,
-          'per_page' => $pageSize,
-          'page' => $page,
+          'per_page' => INAT_PAGE_SIZE,
+          'id_above' => $fromId,
+          'order' => 'asc',
+          'order_by' => 'created_at',
         ]
       )),
       $serverId
@@ -142,7 +151,7 @@ class rest_api_sync_inaturalist {
         }
         list($north, $east) = explode(',', $iNatRecord['location']);
         $observation = [
-          'id' => $iNatRecord['id'],
+          'id' => "iNat:$iNatRecord[id]",
           'taxonName' => $iNatRecord['taxon']['name'],
           'startDate' => $iNatRecord['observed_on'],
           'endDate' => $iNatRecord['observed_on'],
@@ -151,21 +160,25 @@ class rest_api_sync_inaturalist {
           'east' => $east,
           'north' => $north,
           'projection' => 'WGS84',
-          'precision' => $iNatRecord['positional_accuracy'],
+          'precision' => $iNatRecord['public_positional_accuracy'],
           'siteName' => $iNatRecord['place_guess'],
           'href' => $iNatRecord['uri'],
           // American English in iNat field name - sic.
-          'licenceCode' => $iNatRecord['license_code'],
+          // Also correct extra hyphen in iNat CC licence codes.
+          'licenceCode' => preg_replace('/^cc-/', 'cc ', $iNatRecord['license_code']),
         ];
         if (!empty($iNatRecord['photos'])) {
           $observation['media'] = [];
           foreach ($iNatRecord['photos'] as $iNatPhoto) {
-            $observation['media'][] = [
-              'path' => $iNatPhoto['url'],
-              'caption' => $iNatPhoto['attribution'],
-              'mediaType' => 'Image:iNaturalist',
-              'licenceCode' => $iNatPhoto['license_code'],
-            ];
+            // Don't import unlicensed photos.
+            if (!empty($iNatPhoto['license_code'])) {
+              $observation['media'][] = [
+                'path' => $iNatPhoto['url'],
+                'caption' => $iNatPhoto['attribution'],
+                'mediaType' => 'Image:iNaturalist',
+                'licenceCode' => preg_replace('/^cc-/', 'cc ', $iNatPhoto['license_code']),
+              ];
+            }
           }
         }
         if (!empty($server['attrs']) && !empty($iNatRecord['annotations'])) {
@@ -173,9 +186,11 @@ class rest_api_sync_inaturalist {
             $iNatAttr = "controlled_attribute:$annotation[controlled_attribute_id]";
             if (isset($server['attrs'][$iNatAttr])) {
               $attrTokens = explode(':', $server['attrs'][$iNatAttr]);
-              $controlledTermValues = self::$controlledTerms[$annotation['controlled_attribute_id']]['values'];
-              $controlledValueId = $annotation['controlled_value_id'];
-              $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $controlledTermValues[$controlledValueId];
+              if (isset(self::$controlledTerms[$annotation['controlled_attribute_id']])) {
+                $controlledTermValues = self::$controlledTerms[$annotation['controlled_attribute_id']]['values'];
+                $controlledValueId = $annotation['controlled_value_id'];
+                $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $controlledTermValues[$controlledValueId];
+              }
             }
           }
         }
@@ -191,9 +206,11 @@ class rest_api_sync_inaturalist {
           "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
       }
       catch (exception $e) {
-        $tracker['errors']++;
-        rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
-            json_encode($iNatRecord), $tracker);
+        rest_api_sync::log(
+          'error',
+          "Error occurred submitting an occurrence with iNaturalist ID $iNatRecord[id]\n" . $e->getMessage(),
+          $tracker
+        );
         $msg = pg_escape_string($e->getMessage());
         $createdById = isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
         $sql = <<<QRY
@@ -218,17 +235,19 @@ VALUES (
 QRY;
         $db->query($sql);
       };
+      $lastId = $iNatRecord['id'];
     }
+    variable::set("rest_api_sync_{$serverId}_last_id", $lastId);
     rest_api_sync::log(
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
-    echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
-    return [
-      'moreToDo' => $data['total_results'] / $pageSize > $page,
-      'pageCount' => ceil($data['total_results'] / $pageSize),
-      'recordCount' => $data['total_results'],
+    $r = [
+      'moreToDo' => count($data['results']) === INAT_PAGE_SIZE,
+      'pagesToGo' => ceil($data['total_results'] / INAT_PAGE_SIZE),
+      'recordsToGo' => $data['total_results'],
     ];
+    return $r;
   }
 
 }

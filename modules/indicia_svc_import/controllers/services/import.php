@@ -86,10 +86,19 @@ class Import_Controller extends Service_Base_Controller {
         break;
     }
     $model = ORM::factory($model);
-    $website_id = empty($_GET['website_id']) ? NULL : $_GET['website_id'];
-    $survey_id = empty($_GET['survey_id']) ? NULL : $_GET['survey_id'];
+    // Identify the context of the import
+    $identifiers = [];
+    if (!empty($_GET['website_id'])) {
+      $identifiers['website_id'] = $_GET['website_id'];
+    }
+    if (!empty($_GET['survey_id'])) {
+      $identifiers['survey_id'] = $_GET['survey_id'];
+    }
+    if (!empty($_GET['taxon_list_id'])) {
+      $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
+    }
     $use_associations = (empty($_GET['use_associations']) ? FALSE : ($_GET['use_associations'] == "true" ? TRUE : FALSE));
-    echo json_encode($model->getSubmittableFields(TRUE, $website_id, $survey_id, $attrTypeFilter, $use_associations));
+    echo json_encode($model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $use_associations));
   }
 
   /**
@@ -105,10 +114,19 @@ class Import_Controller extends Service_Base_Controller {
   public function get_required_fields($model) {
     $this->authenticate('read');
     $model = ORM::factory($model);
-    $website_id = empty($_GET['website_id']) ? NULL : $_GET['website_id'];
-    $survey_id = empty($_GET['survey_id']) ? NULL : $_GET['survey_id'];
+    // Identify the context of the import
+    $identifiers = [];
+    if (!empty($_GET['website_id'])) {
+      $identifiers['website_id'] = $_GET['website_id'];
+    }
+    if (!empty($_GET['survey_id'])) {
+      $identifiers['survey_id'] = $_GET['survey_id'];
+    }
+    if (!empty($_GET['taxon_list_id'])) {
+      $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
+    }
     $use_associations = (empty($_GET['use_associations']) ? FALSE : ($_GET['use_associations'] == "true" ? TRUE : FALSE));
-    $fields = $model->getRequiredFields(TRUE, $website_id, $survey_id, $use_associations);
+    $fields = $model->getRequiredFields(TRUE, $identifiers, $use_associations);
     foreach ($fields as &$field) {
       $field = preg_replace('/:date_type$/', ':date', $field);
     }
@@ -340,6 +358,7 @@ class Import_Controller extends Service_Base_Controller {
    * Requires a $_GET parameter for uploaded_csv - the uploaded file name.
    */
   public function upload() {
+    $allowCommitToDB = (isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : true);
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     $metadata = $this->getMetadata($_GET['uploaded_csv']);
     if (!empty($metadata['user_id'])) {
@@ -354,6 +373,7 @@ class Import_Controller extends Service_Base_Controller {
     ORM::$cacheFkLookups = TRUE;
     // Make sure the file still exists.
     if (file_exists($csvTempFile)) {
+      $tm = microtime(TRUE);
       // Following helps for files from Macs.
       ini_set('auto_detect_line_endings', 1);
       $model = ORM::Factory($_GET['model']);
@@ -461,7 +481,7 @@ class Import_Controller extends Service_Base_Controller {
             $index++;
           }
         }
-        foreach ($specialFieldProcessing as $col => $discard) {
+        foreach (array_keys($specialFieldProcessing) as $col) {
           if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
             $saveArray[$col] = vsprintf(
               $model->specialImportFieldProcessingDefn[$col]['template'],
@@ -505,12 +525,11 @@ class Import_Controller extends Service_Base_Controller {
         }
         if ($supportsImportGuid) {
           if ($existingImportGuidColIdx === FALSE) {
-            // Save the upload filename (which is a guid) in a field so the
-            // results of each  individual upload can be grouped together.
-            // Relies on the model being imported into having a text field
-            // called import_guid otherwise it's just ignored.
-            $fileNameParts = explode('.', basename($csvTempFile));
-            $saveArray['import_guid'] = $fileNameParts[0];
+            // Save the import guid  in a field so the results of each
+            // individual upload can be grouped together. Relies on the model
+            // being imported into having a text field called import_guid
+            // otherwise it's just ignored.
+            $saveArray['import_guid'] = $metadata['guid'];
           }
           else {
             // This is a reimport of error records which want to link back to
@@ -562,7 +581,7 @@ class Import_Controller extends Service_Base_Controller {
               $data, 'ID specified in import row but not being used to lookup an existing record.',
               $existingProblemColIdx, $existingErrorRowNoColIdx,
               $errorHandle, $count + $offset + 1,
-              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
             );
             // Get file position here otherwise the fgetcsv in the while loop
@@ -583,7 +602,7 @@ class Import_Controller extends Service_Base_Controller {
               $data, $e->getMessage(),
               $existingProblemColIdx, $existingErrorRowNoColIdx,
               $errorHandle, $count + $offset + 1,
-              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
             );
             // Get file position here otherwise the fgetcsv in the while loop
@@ -763,7 +782,7 @@ class Import_Controller extends Service_Base_Controller {
               $data, $errors,
               $existingProblemColIdx, $existingErrorRowNoColIdx,
               $errorHandle, $count + $offset + 1,
-              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
             );
           }
@@ -785,7 +804,7 @@ class Import_Controller extends Service_Base_Controller {
             $data, $error,
             $existingProblemColIdx, $existingErrorRowNoColIdx,
             $errorHandle, $count + $offset + 1,
-            $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $fileNameParts[0] : '',
+            $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
             $metadata
           );
         }
@@ -809,7 +828,14 @@ class Import_Controller extends Service_Base_Controller {
       // An AJAX upload request will just receive the number of records
       // uploaded and progress.
       $this->auto_render = FALSE;
-      $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
+      if (!empty($allowCommitToDB)&&$allowCommitToDB==true) {
+        $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
+      }       
+      if (class_exists('request_logging')) {
+        request_logging::log('i', 'import', NULL, 'upload',
+          empty($saveArray['website_id']) ? NULL : $saveArray['website_id'],
+          security::getUserId(), $tm);
+      }
     }
   }
 
@@ -1163,6 +1189,13 @@ class Import_Controller extends Service_Base_Controller {
     }
   }
 
+  private function createGuid() {
+    return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X',
+       mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479),
+       mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535)
+    );
+  }
+
   /**
    * Internal function that retrieves the metadata for a CSV upload.
    *
@@ -1179,7 +1212,12 @@ class Import_Controller extends Service_Base_Controller {
     }
     else {
       // No previous file, so create default new metadata.
-      return ['mappings' => [], 'settings' => [], 'errorCount' => 0];
+      return [
+        'mappings' => [],
+        'settings' => [],
+        'errorCount' => 0,
+        'guid' => $this->createGuid(),
+      ];
     }
   }
 

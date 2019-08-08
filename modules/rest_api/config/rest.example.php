@@ -123,6 +123,11 @@ $config['elasticsearch'] = [
     'allowed' => [
       'get' => [
         '/^_search/' => 'GET requests to the search API (/_search?...)',
+        '/^_mapping\/doc/' => 'GET requests to the mappings API (/_mapping/doc?...)',
+      ],
+      'post' => [
+        '/^_search/' => 'POST requests to the search API (/_search?...)',
+        '/^doc\/.*\/_update/' => 'POSTed document updates',
       ],
     ],
   ],

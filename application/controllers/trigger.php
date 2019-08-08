@@ -39,8 +39,8 @@ class Trigger_Controller extends Gridview_Base_Controller {
   }
 
   public function index() {
-    $this->base_filter['private_for_user_id'] = array(null, $_SESSION['auth_user']->id);
-    $this->base_filter['user_id'] = array(null, $_SESSION['auth_user']->id);
+    $this->base_filter['private_for_user_id'] = array(NULL, $_SESSION['auth_user']->id);
+    $this->base_filter['user_id'] = array(NULL, $_SESSION['auth_user']->id);
     parent::index();
   }
 
@@ -49,21 +49,22 @@ class Trigger_Controller extends Gridview_Base_Controller {
    */
   protected function get_action_columns() {
     $r = array();
-    if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin'))
+    if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin')) {
       $r[] = array(
-          'caption' => 'edit trigger',
-          'url'=>$this->controllerpath.'/edit/{id}',
-          'visibility_field' => 'edit_trigger'
+        'caption' => 'edit trigger',
+        'url' => $this->controllerpath . '/edit/{id}',
+        'visibility_field' => 'edit_trigger',
       );
+    }
     $r[] = array(
-        'caption' => 'subscribe',
-        'url'=>'trigger_action/create/{id}',
-        'visibility_field' => 'subscribe'
+      'caption' => 'subscribe',
+      'url' => 'trigger_action/create/{id}',
+      'visibility_field' => 'subscribe',
     );
     $r[] = array(
-        'caption' => 'edit subscription',
-        'url'=>'trigger_action/edit/{id}',
-        'visibility_field' => 'edit_subscription'
+      'caption' => 'edit subscription',
+      'url' => 'trigger_action/edit/{id}',
+      'visibility_field' => 'edit_subscription',
     );
     return $r;
   }
@@ -71,7 +72,7 @@ class Trigger_Controller extends Gridview_Base_Controller {
   /**
    * Provide the list of trigger templates to the edit view.
    */
-  protected function prepareOtherViewData($values) {
+  protected function prepareOtherViewData(array $values) {
     // Get full list of reports including those from custom modules.
     $reportEngine = new ReportEngine();
     $reports = $reportEngine->reportList();

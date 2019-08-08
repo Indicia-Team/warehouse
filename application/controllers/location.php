@@ -610,7 +610,7 @@ class Location_Controller extends Gridview_Base_Controller {
     $this->wkt = "$title(";
     $firstIndex = ftell($this->SHPFile);
     $readPoints = 0;
-    while (list($partIndex, $partData) = each($this->SHPData["parts"])) {
+    foreach ($this->SHPData["parts"] as $partIndex => $partData) {
       if (!isset($this->SHPData["parts"][$partIndex]["pointString"]) || !is_array($this->SHPData["parts"][$partIndex]["pointString"])) {
         $this->SHPData["parts"][$partIndex] = array();
         $this->SHPData["parts"][$partIndex]["pointString"] = "";

@@ -105,8 +105,8 @@ class rest_api_sync_indicia {
     self::syncServer($serverId, $server);
     return [
       'moreToDo' => FALSE,
-      'pageCount' => 1,
-      'recordCount' => -1,
+      'pagesToGo' => 0,
+      'recordsToGo' => 0,
     ];
   }
 
@@ -242,7 +242,6 @@ class rest_api_sync_indicia {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
         catch (exception $e) {
-          $tracker['errors']++;
           rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
               json_encode($observation), $tracker);
         }

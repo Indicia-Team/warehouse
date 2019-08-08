@@ -4,27 +4,28 @@
       returns full precision copies of the records."
     restricted="true"
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" training_filter_field=""
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
-    DROP TABLE IF EXISTS occs_for_elastic;
+    DROP TABLE IF EXISTS filtered_occurrences;
     SELECT o.*
-    INTO TEMPORARY occs_for_elastic
+    INTO TEMPORARY filtered_occurrences
     FROM cache_occurrences_functional o
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
     AND sensitive=true
-    AND o.tracking&lt;'#update_to#'
+    AND (o.tracking IS NULL OR o.tracking&lt;#update_to#)
     #filters#
     #order_by#
     LIMIT #limit#;
 
     SELECT #columns#
-    FROM cache_occurrences_functional o
+    FROM filtered_occurrences o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
-    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id
+    JOIN taxa t ON t.id=ttl.taxon_id
     JOIN samples s on s.id=o.sample_id AND s.deleted=false
     LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
     LEFT JOIN samples sp ON sp.id=s.parent_id AND sp.deleted=false
@@ -35,10 +36,10 @@
     <order_by>o.id</order_by>
   </order_bys>
   <params>
-    <!-- last_date and last_id parameters required for autofeed to work. -->
     <param name="last_date" display="Last update date" datatype="date" default="">
       <where>o.updated_on &gt;= '#last_date#'</where>
     </param>
+    <!-- last_id and update_to parameters required for autofeed to work. -->
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>o.id &gt; #last_id#</where>
     </param>
@@ -51,8 +52,11 @@
       preprocess="SELECT LEAST(
         (
           SELECT tracking FROM cache_occurrences_functional
-          WHERE location_ids IS NOT NULL
-          OR (data_cleaner_result IS NULL and verification_checks_enabled=TRUE)
+          WHERE tracking IS NOT NULL
+          AND (
+            location_ids IS NOT NULL
+            OR (data_cleaner_result IS NULL and verification_checks_enabled=TRUE)
+          )
           ORDER BY tracking DESC LIMIT 1
         ),
         -(((2^(8*pg_column_size(1::bigint)-2))::bigint &lt;&lt; 1)+1)
@@ -61,6 +65,7 @@
   <columns>
     <!-- Tracking field called "id" is required for autofeed to work. -->
     <column name="id" sql="o.id" datatype="integer" />
+    <column name="occurrence_external_key" sql="o.external_key" datatype="text" />
     <column name="created_by_id" sql="o.created_by_id" datatype="integer" />
     <column name="website_id" sql="o.website_id" datatype="integer" />
     <column name="survey_id" sql="o.survey_id" datatype="integer" />
@@ -71,7 +76,9 @@
     <column name="survey_title" sql="snf.survey_title" datatype="text" />
     <column name="group_title" sql="snf.group_title" datatype="text" />
     <column name="recorders" sql="snf.recorders" datatype="text" />
-    <column name="taxon_key" sql="o.taxa_taxon_list_external_key" datatype="text" />
+    <column name="taxon_key" sql="coalesce(t.search_code, o.taxa_taxon_list_external_key)" datatype="text" />
+    <column name="taxa_taxon_list_id" sql="o.taxa_taxon_list_id" datatype="integer" />
+    <column name="taxon_meaning_id" sql="o.taxon_meaning_id" datatype="integer" />
     <column name="date_start" sql="o.date_start" datatype="date" />
     <column name="date_end" sql="o.date_end" datatype="date" />
     <column name="day_of_year" sql="case date_type when 'D' then extract(doy from date_start) else null end" datatype="integer" />
@@ -101,6 +108,13 @@
           end" datatype="integer" />
     <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(s.geom, 4326)))" datatype="text" />
     <column name="point" sql="st_y(st_transform(st_centroid(s.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.geom), 4326))::text" datatype="text" />
+    <column name="map_sq_srid" sql="COALESCE(get_output_srid(o.public_geom), 3857)" datatype="integer" />
+    <column name="map_sq_1km_geom" datatype="text"
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 1000), 4326)))))" />
+    <column name="map_sq_2km_geom" datatype="text"
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 2000), 4326)))))" />
+    <column name="map_sq_10km_geom" datatype="text"
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 10000), 4326)))))" />
     <column name="output_sref" sql="s.entered_sref" datatype="text" />
     <column name="output_sref_system" sql="s.entered_sref_system" datatype="text" />
     <column name="coordinate_uncertainty_in_meters"
@@ -128,10 +142,20 @@
     <column name="attr_det_name" sql="coalesce(onf.attr_det_full_name, coalesce(onf.attr_det_first_name, '') || ' ' || onf.attr_det_last_name)" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
     <column name="attr_sample_method" sql="snf.attr_sample_method" datatype="text" />
-    <column name="media" sql="snf.media" datatype="text" />
+    <column name="media_data" sql="CASE
+      WHEN o.media_count>0 THEN
+        (SELECT string_agg(om.path || '~~' || COALESCE(om.caption, '') || '~~' ||  COALESCE(l.code, '') || '~~' ||  COALESCE(t.term, ''), '@@')
+        FROM occurrence_media om
+        LEFT JOIN licences l ON l.id=om.licence_id
+        LEFT JOIN cache_termlists_terms t ON t.id=om.media_type_id
+        WHERE om.occurrence_id=o.id AND om.deleted=false)
+      ELSE null
+      END" datatype="text" />
     <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
-    <column name="updated_on" sql="to_char(greatest(o.updated_on, cttl.cache_updated_on), 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
-    <column name="record_status" sql="o.record_status || coalesce(o.record_substatus::text, '')" datatype="text" />
+    <column name="updated_on" sql="to_char(greatest(o.updated_on, ttl.updated_on), 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
+    <column name="record_status" sql="o.record_status" datatype="text" />
+    <column name="record_substatus" sql="coalesce(o.record_substatus, 0)" datatype="integer" />
+    <column name="record_decision_source" sql="occ.record_decision_source" datatype="text" />
     <column name="verified_by_id" sql="occ.verified_by_id" datatype="integer" />
     <column name="verifier" sql="onf.verifier" datatype="text" />
     <column name="verified_on" sql="to_char(o.verified_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
@@ -150,5 +174,6 @@
     <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />
     <column name="occurrence_attrs_json" sql="onf.attrs_json" datatype="text" />
     <column name="tracking" sql="o.tracking" datatype="integer" />
+    <column name="input_form" sql="o.input_form" datatype="text" />
   </columns>
 </report>

@@ -60,7 +60,6 @@ class api_persist {
    * @throws \exception
    */
   public static function taxonObservation($db, array $observation, $website_id, $survey_id, $taxon_list_id) {
-    // @todo Persist custom attribute values
     if (!empty($observation['taxonVersionKey'])) {
       $lookup = ['search_code' => $observation['taxonVersionKey']];
     }
@@ -87,7 +86,8 @@ class api_persist {
     // Set the spatial reference depending on the projection information
     // supplied.
     self::setSrefData($values, $observation, 'sample:entered_sref');
-    // @todo Should the precision field be stored in a custom attribute?
+    self::setCoordinateUncertainty($db, $survey_id, $values, $observation);
+
     // Site handling. If a known site with a SiteKey, we can create a record in
     // locations, otherwise use the free text location_name field.
     if (!empty($observation['SiteKey'])) {
@@ -309,10 +309,26 @@ SQL;
    * @throws \exception
    */
   private static function findTaxon($db, $taxon_list_id, array $lookup) {
-    $filter = empty($lookup['original'])
-      ? '' : "AND searchterm like '" . pg_escape_string($lookup['original']) . "%'\n";
-    foreach ($lookup as $key => $value) {
-      $filter .= "AND $key='$value'\n";
+    $filter = '';
+    if (!empty($lookup['original'])) {
+      // This facilitates use of an index on searchterm. Only search on first 2
+      // words in case different way of annotation subsp.
+      $words = explode(' ', $lookup['original']);
+      $searchTerm = $words[0] . (count($words) > 1 ? " $words[1]" : '');
+      $filter = "AND searchterm like '" . pg_escape_string($searchTerm) . "%'\n";
+      // Now build a custom exact match filter that looks for alternative ssp.
+      // annotations.
+      $exactMatches = ["'" . pg_escape_string($lookup['original']) . "'"];
+      if (count($words) === 3) {
+        $exactMatches[] = "'" . pg_escape_string("$words[0] $words[1] subsp. $words[2]") . "'";
+      }
+      $filter .= 'AND original in (' . implode(',', $exactMatches) . ")\n";
+    }
+    else {
+      // Add in the exact match filter for other search methods.
+      foreach ($lookup as $key => $value) {
+        $filter .= "AND $key='$value'\n";
+      }
     }
     $qry = <<<SQL
 SELECT taxon_meaning_id, taxa_taxon_list_id
@@ -539,6 +555,35 @@ SQL;
     elseif ($observation['projection'] === 'OSGB36') {
       $values[$fieldname] = self::formatEastNorth($observation['east'], $observation['north']);
       $values[$fieldname . '_system'] = 27700;
+    }
+  }
+
+  /**
+   * Sets the coordinate uncertainty attribute for an imported observation.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param int $survey_id
+   *   ID of the survey (the sref_precision attribute should be linked to this).
+   * @param array $values
+   *   The values array to add the precision information to.
+   * @param array $observation
+   *   The observation data array.
+   */
+  private static function setCoordinateUncertainty($db, $survey_id, array &$values, array $observation) {
+    if (!empty($observation['precision'])) {
+      $attr = $db->select('a.id')
+        ->from('sample_attributes as a')
+        ->join('sample_attributes_websites as aw', 'aw.sample_attribute_id', 'a.id')
+        ->where([
+          'a.system_function' => 'sref_precision',
+          'aw.restrict_to_survey_id' => $survey_id,
+          'a.deleted' => 'f',
+          'aw.deleted' => 'f',
+        ])->get()->current();
+      if ($attr) {
+        $values["smpAttr:$attr->id"] = $observation['precision'];
+      }
     }
   }
 

@@ -3,6 +3,7 @@
     SELECT #columns#
     FROM scratchpad_lists s
     LEFT JOIN scratchpad_list_entries e on e.scratchpad_list_id=s.id
+    LEFT JOIN cache_termlists_terms t ON t.id=s.scratchpad_type_id
     #joins#
     WHERE (s.website_id in (#website_ids#) or s.website_id is null)
     AND s.deleted=false
@@ -19,6 +20,10 @@
            datatype="text" default="">
       <where>s.entity='#entity#'</where>
     </param>
+    <param name="scratchpad_type_id" display="Scratchpad type ID" description="Filter to lists of a given type"
+           datatype="integer" default="">
+      <where>s.scratchpad_type_id='#scratchpad_type_id#'</where>
+    </param>
   </params>
   <columns>
     <column name="id" visible="false" sql="s.id" in_count="true" />
@@ -27,5 +32,7 @@
     <column name="items" display="Items" datatype="integer" aggregate="true" sql="count(e.*)" />
     <column name="description" display='Description' datatype="text" sql="s.description" />
     <column name="created_on" display='Created on' datatype="date" sql="s.created_on" />
+    <column name="scratchpad_type_id" display='Scratchpad type ID' datatype="integer" sql="s.scratchpad_type_id" />
+    <column name="scratchpad_type_term" display='Scratchpad type term' datatype="text" sql="t.term" />
   </columns>
 </report>

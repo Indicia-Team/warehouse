@@ -60,7 +60,7 @@ class Base_licensed_medium_Model extends ORM {
       if (!array_key_exists('media_type_id', $this->submission['fields'])
           || empty($this->submission['fields']['media_type_id']['value'])) {
         $cache = Cache::instance();
-        if ($cached = $cache->get('image:local media_type_id')) {
+        if ($cached = $cache->get('image-local-media_type_id')) {
           $mediaTypeId = $cached;
         }
         else {
@@ -72,7 +72,7 @@ class Base_licensed_medium_Model extends ORM {
               'term' => 'Image:Local',
             ])
             ->get()->current()->id;
-          $cache->set('image:local media_type_id', $mediaTypeId);
+          $cache->set('image-local-media_type_id', $mediaTypeId);
         }
         $this->submission['fields']['media_type_id'] = ['value' => $mediaTypeId];
       }

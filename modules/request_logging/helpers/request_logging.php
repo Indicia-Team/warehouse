@@ -29,30 +29,71 @@ class request_logging {
 
   /**
    * Log a web service request.
-   * @param string $io Either pass 'i' for inputs (sending data into the warehouse) or 'o'
-   * for outputs (pulling data out).
-   * @param string $service Web service that was requested
-   * @param string $resource Resource that was accessed if appropriate, e.g. a table or report name.
-   * @param integer $website_id ID of the client website, or null if not known
-   * @param integer $user_id ID of the user making the request, or null if not known
-   * @param float $startTime Unix timestamp of the request start, i.e. the value of microtime(true).
-   * @param Database $db Kohana database object, or null if none available.
-   * @param string $exceptionMsg Optional message if an exception occurred.
-   * @throws \Kohana_Database_Exception
+   *
+   * @param string $io
+   *   Pass one of the following:
+   *   * 'i' for inputs (sending data into the warehouse)
+   *   * 'o' for outputs (pulling data out)
+   *   * 'a' for other actions.
+   * @param string $service
+   *   Web service class that was requested.
+   * @param string $subtype
+   *   Subtype of the resource if additional information available (e.g. report
+   *   count).
+   * @param string $resource
+   *   Resource that was accessed if appropriate, e.g. a table or report name.
+   * @param int $website_id
+   *   ID of the client website, or null if not known.
+   * @param int $user_id
+   *   ID of the user making the request, or null if not known.
+   * @param float $startTime
+   *   Unix timestamp of the request start, i.e. the value of microtime(true).
+   * @param Database $db
+   *   Kohana database object, or null if none available.
+   * @param string $exceptionMsg
+   *   Optional message if an exception occurred.
+   * @param string $overrideStoredPost
+   *   Where POST data are large or to complex to log usefully, it may be
+   *   replaced in the log by specifying an object to store here.
    */
-  public static function log($io, $service, $resource, $website_id, $user_id, $startTime, $db=null, $exceptionMsg=null) {
-    // Check if this type of request is loggd
+  public static function log(
+      $io,
+      $service,
+      $subtype,
+      $resource,
+      $website_id,
+      $user_id,
+      $startTime,
+      $db = NULL,
+      $exceptionMsg = NULL,
+      $overrideStoredPost = NULL) {
+    // Check if this type of request is logged.
     $logged = Kohana::config('request_logging.logged_requests');
     if (in_array("$io.$service", $logged)) {
       // Request is to be logged.
       $db = new Database();
       $db->query('START TRANSACTION READ WRITE;');
-      $get = empty($_GET) ? NULL : json_encode($_GET);
-      $post = empty($_GET) ? NULL : json_encode($_POST);
+      $get = empty($_GET) ? NULL : json_encode(self::stripUnloggedParams($_GET));
+      if ($overrideStoredPost) {
+        $post = $overrideStoredPost;
+      }
+      else {
+        $post = file_get_contents('php://input');
+        if (empty($post)) {
+          $post = empty($_POST) ? NULL : $_POST;
+        }
+      }
+      if ($post) {
+        if (is_array($post)) {
+          self::stripUnloggedParams($post);
+        }
+        $post = json_encode($post);
+      }
       $db->insert('request_log_entries', array(
         'io' => $io,
         'service' => $service,
         'resource' => $resource,
+        'subtype' => $subtype,
         'request_parameters_get' => $get,
         'request_parameters_post' => $post,
         'website_id' => $website_id,
@@ -60,9 +101,24 @@ class request_logging {
         'start_timestamp' => $startTime,
         'duration' => microtime(TRUE) - $startTime,
         'exception_msg' => $exceptionMsg,
-        'response_size' => ob_get_length()
+        'response_size' => ob_get_length(),
       ));
       $db->query('COMMIT');
     }
   }
+
+  /**
+   * Tidy up parameters we don't want to log.
+   *
+   * @param array $array
+   *   Parameters list.
+   *
+   * @return array
+   *   Tidied array.
+   */
+  private static function stripUnloggedParams(array $array) {
+    $skipped = ['nonce', 'auth_token', 'paramsFormExcludes', 'callback', 'reportSource', 'mode'];
+    return array_diff_key($array, array_combine($skipped, $skipped));
+  }
+
 }

@@ -292,7 +292,7 @@ class ReportEngine {
       case 'xml':
         // Allow the list of columns to be returned to be passed as a parameter.
         $cols = empty($this->providedParams['columns']) ? array() : explode(',', $this->providedParams['columns']);
-        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->sharingMode, $cols);
+        $this->reportReader = new XMLReportReader($this->reportDb, $this->report, $this->websiteIds, $this->sharingMode, $cols);
         $metadata = XMLReportReader::loadMetadata($this->report);
         if ($this->isReportRestricted($report, $metadata)) {
           // Abort as restricted report.
@@ -360,7 +360,7 @@ class ReportEngine {
    */
   public function requestMetadata($report, $includeUnusedParameters = FALSE) {
     $this->fetchLocalReport($report);
-    $this->reportReader = new XMLReportReader($this->report, $this->websiteIds);
+    $this->reportReader = new XMLReportReader($this->reportDb, $this->report, $this->websiteIds);
     $this->providedParams = array();
     if ($includeUnusedParameters) {
       $params = $this->reportReader->getAllParams();
@@ -489,7 +489,7 @@ class ReportEngine {
     }
     $countQuery = $this->mergeQueryWithParams($countQuery, FALSE);
     $this->reportReader->applyWebsitePermissions(
-      $countQuery, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId
+      $countQuery, $this->websiteIds, $this->providedParams, $this->sharingMode, $this->userId
     );
     // If there is a HAVING clause in the query, then we cannot count
     // aggregate queries in the normal way which is to strip the group by and
@@ -960,7 +960,7 @@ SQL;
     $query = $this->reportReader->getQuery();
     $query = $this->mergeQueryWithParams($query, $includeOrderBy);
     $this->reportReader->applyWebsitePermissions(
-      $query, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId
+      $query, $this->websiteIds, $this->providedParams, $this->sharingMode, $this->userId
     );
     return $query;
   }
@@ -1186,7 +1186,7 @@ SQL;
       }
       if ($orderBy) {
         $orderBy = $this->checkOrderByForVagueDate($orderBy);
-        if (strpos($query, 'distinct on') === FALSE) {
+        if (stripos($query, 'distinct on') === FALSE) {
           $orderBy = $this->optimiseQueryPlan($orderBy);
         }
         // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
@@ -1240,11 +1240,11 @@ SQL;
    * @link http://stackoverflow.com/questions/6037843/extremely-slow-postgresql-query-with-order-and-limit-clauses
    */
   private function optimiseQueryPlan($orderBy) {
-    // If we are limited to a relatively few number of records.
-    if (!empty($this->limit) && $this->limit < 200) {
+    // If we are limited to a relatively few number of records and sorting by
+    // o.id.
+    if (!empty($this->limit) && $this->limit < 200 && preg_match('/o.id (desc|asc)/i', $orderBy)) {
       $count = FALSE;
-      if (preg_match('/o.id (desc|asc)/i', $orderBy)
-          && ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') || isset($_REQUEST['knownCount']))) {
+      if ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') || isset($_REQUEST['knownCount'])) {
         // Grab the count now. If less than the limit, we fudge the order by to
         // switch query plan.
         $count = isset($_REQUEST['knownCount']) ? $_REQUEST['knownCount'] : $this->recordCount();

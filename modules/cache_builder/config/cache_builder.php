@@ -198,7 +198,7 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       and ttlpref.preferred=true
       and ttlpref.taxon_list_id=ttl.taxon_list_id
       and ttlpref.deleted=false
-      and ttlpref.allow_data_entry=ttl.allow_data_entry
+      and (ttlpref.allow_data_entry=ttl.allow_data_entry or ttlpref.allow_data_entry=true)
     join taxa t on t.id=ttl.taxon_id and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false
     join taxa tpref on tpref.id=ttlpref.taxon_id and tpref.deleted=false
@@ -319,9 +319,9 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     -- Ensure only changed taxon concepts are updated
     JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
     JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
-    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(ctp.path) and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
-    LEFT JOIN cache_taxa_taxon_lists cttlo ON cttlo.taxon_meaning_id=ANY(ctp.path) and cttlo.taxon_rank='Order' and cttlo.taxon_list_id=1 AND cttlo.preferred=true
-    LEFT JOIN cache_taxa_taxon_lists cttlk ON cttlk.taxon_meaning_id=ANY(ctp.path) and cttlk.taxon_rank='Kingdom' and cttlk.taxon_list_id=1 AND cttlk.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(ctp.path) and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=#master_list_id# AND cttlf.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlo ON cttlo.taxon_meaning_id=ANY(ctp.path) and cttlo.taxon_rank='Order' and cttlo.taxon_list_id=#master_list_id# AND cttlo.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlk ON cttlk.taxon_meaning_id=ANY(ctp.path) and cttlk.taxon_rank='Kingdom' and cttlk.taxon_list_id=#master_list_id# AND cttlk.preferred=true
     WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
     AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
       OR COALESCE(u.family_taxon, '')<>COALESCE(cttlf.taxon, '')
@@ -338,7 +338,7 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     -- Ensure only changed taxon concepts are updated
     JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
     JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=COALESCE(#master_list_id#, cttl.taxon_list_id)
-    LEFT JOIN cache_taxa_taxon_lists cttlf ON ctp.path @> ARRAY[cttlf.taxon_meaning_id] and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON ctp.path @> ARRAY[cttlf.taxon_meaning_id] and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=#master_list_id# AND cttlf.preferred=true
     WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
     AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
     OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(ctp.path, ARRAY[]::integer[]));",
@@ -749,8 +749,7 @@ SET website_id=su.website_id,
   input_form=COALESCE(sp.input_form, s.input_form),
   location_id= s.location_id,
   location_name=CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
-  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
-        case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
+  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision),
   date_start=s.date_start,
   date_end=s.date_end,
   date_type=s.date_type,
@@ -934,8 +933,7 @@ INSERT INTO cache_samples_functional(
             group_id, record_status, query, parent_sample_id, media_count)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
-  reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
-        case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
+  reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
   s.group_id, s.record_status,
   case
@@ -1346,8 +1344,7 @@ SET sample_id=o.sample_id,
   location_id=s.location_id,
   location_name=case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
       then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
-  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
+  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision)),
   date_start=s.date_start,
   date_end=s.date_end,
   date_type=s.date_type,
@@ -1371,9 +1368,9 @@ SET sample_id=o.sample_id,
       else 'U'
   end,
   query=case
-      when oc1.id is null or o.record_status in ('V','R') then null
-      when oc2.id is null and o.updated_on<=oc1.created_on then 'Q'
-      else 'A'
+    when oc1.id is not null and oc2.id is not null then 'A'
+    when oc1.id is not null and oc2.id is null then 'Q'
+    else null
   end,
   sensitive=o.sensitivity_precision is not null,
   release_status=o.release_status,
@@ -1431,25 +1428,6 @@ SET comment=o.comment,
   sensitivity_precision=o.sensitivity_precision,
   privacy_precision=s.privacy_precision,
   output_sref=get_output_sref(
-      case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null then null else
-      case
-        when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
-          abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
-          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
-          || ', '
-          || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
-          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
-        when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
-          abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
-          || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
-          || ', '
-          || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
-          || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
-      else
-        coalesce(s.entered_sref, l.centroid_sref)
-      end
-    end,
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
       o.sensitivity_precision,
@@ -1462,14 +1440,10 @@ SET comment=o.comment,
         else 10
       end,
       10 -- default minimum square size
-    ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)
+    ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
   ),
   output_sref_system=get_output_system(
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
-    '4326'
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
   ),
   verifier=pv.surname || ', ' || pv.first_name,
   licence_code=li.code,
@@ -1612,8 +1586,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-        case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end) as public_geom,
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision)) as public_geom,
     s.date_start, s.date_end, s.date_type, o.created_on, o.updated_on, o.verified_on,
     o.created_by_id, s.group_id, o.taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id,
     cttl.taxon_meaning_id, cttl.external_key, cttl.family_taxa_taxon_list_id,
@@ -1623,13 +1596,9 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         when certainty.sort_order <200 then 'L'
         else 'U'
     end,
-    case
-        when oc1.id is null or o.record_status in ('R','V') then null
-        when oc2.id is null and o.updated_on<=oc1.created_on then 'Q'
-        else 'A'
-    end,
+    null,
     o.sensitivity_precision is not null, o.release_status, cttl.marine_flag,
-    case when o.last_verification_check_date is null then null else dc.id is null end,
+    null,
     o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key,
     ctp.path,
     CASE WHEN u.allow_share_for_reporting
@@ -1665,14 +1634,6 @@ LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
     JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
   ) ON oav.occurrence_id=o.id AND oav.deleted='f'
-LEFT JOIN occurrence_comments oc1 ON oc1.occurrence_id=o.id AND oc1.deleted=false AND oc1.auto_generated=false
-    AND oc1.query=true AND (o.verified_on IS NULL OR oc1.created_on>o.verified_on)
-LEFT JOIN occurrence_comments oc2 ON oc2.occurrence_id=o.id AND oc2.deleted=false AND oc2.auto_generated=false
-    AND oc2.query=false AND (o.verified_on IS NULL OR oc2.created_on>o.verified_on) AND oc2.id>oc1.id
-LEFT JOIN occurrence_comments dc
-    ON dc.occurrence_id=o.id
-    AND dc.implies_manual_check_required=true
-    AND dc.deleted=false
 WHERE o.deleted=false
 AND co.id IS NULL
 ";
@@ -1694,25 +1655,6 @@ SELECT o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
   get_output_sref(
-      case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null then null else
-      case
-        when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
-          abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
-          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
-          || ', '
-          || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
-          || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
-        when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
-          abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
-          || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
-          || ', '
-          || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
-          || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
-      else
-        coalesce(s.entered_sref, l.centroid_sref)
-      end
-    end,
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
       o.sensitivity_precision,
@@ -1725,14 +1667,10 @@ SELECT o.id,
         else 10
       end,
       10 -- default minimum square size
-    ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)
+    ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
   ),
   get_output_system(
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
-      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
-    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
-    '4326'
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
   ),
   li.code
 FROM occurrences o

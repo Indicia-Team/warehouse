@@ -1,0 +1,18 @@
+<report
+    title="Location boundary projected"
+    description="Return the boundary of a location projected to a supplied SRID."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+  LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+  WHERE l.id=#location_id#
+  </query>
+  <params>
+    <param name='location_id' display='Location ID' description='ID of the location.' datatype='integer' />
+    <param name='srid' display='SRID' description='Projection ID' datatype='integer' />
+  </params>
+  <columns>
+    <column name="boundary_geom" display="Boundary geometry" sql="st_astext(st_transform(coalesce(l.boundary_geom, l.centroid_geom), #srid#))" />
+  </columns>
+</report>

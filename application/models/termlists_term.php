@@ -191,7 +191,7 @@ class Termlists_term_Model extends Base_Name_Model {
           }
         }
         if (!$isInsert) {
-          $this->enqueueCustomAttributeJsonUpdate($meaning_id);
+          $this->enqueueCustomAttributeJsonUpdate();
         }
       }
       catch (Exception $e) {
@@ -204,53 +204,71 @@ class Termlists_term_Model extends Base_Name_Model {
   }
 
   /**
+   * Finds all the IDs for termlists_terms that share this concept.
+   *
+   * I.e. all synonyms (terms that share the meaning_id).
+   *
+   * @return string
+   *   CSV string of IDs.
+   */
+  private function getAllIdsInConcept() {
+    $sql = <<<SQL
+SELECT string_agg(t1.id::text, ',') as ids
+FROM termlists_terms t1
+JOIN termlists_terms t2 ON t2.meaning_id=t1.meaning_id
+WHERE t2.id=$this->id AND t1.deleted=false;
+SQL;
+     return $this->db
+       ->query($sql)
+       ->current()->ids;
+  }
+
+  /**
    * Work queue task additions after a term change.
    *
    * Term changes may need to be reflected in the cache table attrs_json fields
    * for both occurrences and samples, so create the work queue entries
    * required to perform the updates in the background.
-   *
-   * @param int $meaning_id
-   *   Term meaning ID being changed.
    */
-  private function enqueueCustomAttributeJsonUpdate($meaning_id) {
-    // The comments at the top of these insert statements prevent the kohana
-    // DB layer from treating these as inserts and looking for lastval(),
-    // which causes errors when the work_queue task already exists.
-    $sql = <<<SQL
--- insert if not already exists
-SELECT DISTINCT 'task_cache_builder_attrs_occurrences', 'occurrences', av.occurrence_id, 2, 60, now()
-FROM cache_termlists_terms t
-JOIN occurrence_attribute_values av
-  ON av.int_value=t.id
-  AND av.deleted=false
-JOIN occurrence_attributes a
-  ON a.id=av.occurrence_attribute_id
-  AND a.data_type='L'
-  AND a.deleted=false
-LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_occurrences'
-  AND q.entity='occurrences' AND q.record_id=av.occurrence_id AND q.params IS NULL
-WHERE t.meaning_id=$meaning_id
-AND q.id IS NULL;
+  private function enqueueCustomAttributeJsonUpdate() {
+    if (!empty(kohana::config('cache_builder_variables.attrs_cache_languages', FALSE, FALSE))) {
+      // Other languages in cache tables so best update anything for the concept.
+      $ids = $this->getAllIdsInConcept();
+    }
+    else {
+      // Only need to do this term as no other languages in cache tables.
+      $ids = $this->id;
+    }
+    $entities = ['sample', 'occurrence'];
+    foreach ($entities as $entity) {
+      // First, find the list of attributes that might have values to change.
+      $sql = <<<SQL
+SELECT string_agg(a.id::text, ',') as attr_ids
+FROM {$entity}_attributes a
+JOIN cache_termlists_terms t on t.termlist_id=a.termlist_id and t.id in ($ids)
 SQL;
-    $this->db->query($sql);
-    $sql = <<<SQL
+      $attrIds = $this->db
+        ->query($sql)
+        ->current()->attr_ids;
+      // Now, the insert query for work_queue can filter on attribute IDs as
+      // well as int values, so it uses an index. The comments at the top of
+      // this insert statements prevent the kohana DB layer from treating these
+      // as inserts and looking for lastval(), which causes errors when the
+      // work_queue task already exists.
+      if ($attrIds) {
+        $sql = <<<SQL
 -- insert if not already exists
-SELECT DISTINCT 'task_cache_builder_attrs_samples', 'samples', av.sample_id, 2, 60, now()
-FROM cache_termlists_terms t
-JOIN sample_attribute_values av
-  ON av.int_value=t.id
-  AND av.deleted=false
-JOIN sample_attributes a
-  ON a.id=av.sample_attribute_id
-  AND a.data_type='L'
-  AND a.deleted=false
-LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_samples'
-  AND q.entity='samples' AND q.record_id=av.sample_id AND q.params IS NULL
-WHERE t.meaning_id=$meaning_id
-AND q.id IS NULL;
+INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+SELECT DISTINCT 'task_cache_builder_attrs_$entity', '$entity', v.{$entity}_id, 2, 60, now()
+FROM {$entity}_attribute_values v
+LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_$entity'
+  AND q.entity='$entity' AND q.record_id=v.{$entity}_id AND q.params IS NULL
+WHERE v.{$entity}_attribute_id IN ($attrIds)
+AND v.int_value IN ($ids);
 SQL;
-    $this->db->query($sql);
+        $this->db->query($sql);
+      }
+    }
   }
 
   /**

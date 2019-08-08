@@ -58,6 +58,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   // default to no updates allowed - must explicity allow updates.
   protected $allow_updates = array(
     'attribute_sets_survey',
+    'attribute_sets_taxon_restriction',
     'comment_quick_reply_page_auth',
     'determination',
     'filter',
@@ -108,12 +109,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   // There is a potential issues with this: We may want everyone to have complete access to a particular dataset
   // So if we wish total access to a given dataset, the entity must appear in the following list.
   protected $allow_full_access = array(
+    'attribute_sets_taxon_restriction',
     'filter',
     'filters_user',
     'comment_quick_reply_page_auth',
     'species_alert',
     'taxa_taxon_list',
     'taxa_taxon_list_attribute',
+    'taxon_lists_taxa_taxon_list_attribute',
     'taxon_rank',
     'taxon_relation',
     'taxon_group',
@@ -772,28 +775,39 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Internal method to handle calls - decides if it's a request for data or a submission.
-  * @todo include exception getTrace() in the error response?
-  */
-  protected function handle_call($entity)
-  {
+   * Internal method to handle calls.
+   *
+   * Decides if it's a request for data or a submission.
+   *
+   * @param string
+   *   Name of the affected entity.
+   */
+  protected function handle_call($entity) {
+    $tm = microtime(TRUE);
     try {
       $this->entity = $entity;
-
-      if (array_key_exists('submission', $_POST))
-      {
+      if (array_key_exists('submission', $_POST)) {
         $this->handle_submit();
       }
-      else
-      {
+      else {
         $this->handle_request();
       }
       kohana::log('debug', 'Sending reponse size ' . strlen($this->response));
       $this->send_response();
+      if (class_exists('request_logging')) {
+        // Note that we store the response for submissions as more practical than
+        // entire POST.
+        request_logging::log(array_key_exists('submission', $_POST) ? 'i' : 'o', 'data', NULL, $entity,
+          $this->website_id, $this->user_id, $tm, $this->db, NULL,
+          array_key_exists('submission', $_POST) ? $this->response : NULL);
+      }
     }
-    catch (Exception $e)
-    {
+    catch (Exception $e) {
       $this->handle_error($e);
+      if (class_exists('request_logging')) {
+        request_logging::log(array_key_exists('submission', $_POST) ? 'i' : 'o', 'data', NULL, $entity,
+          $this->website_id, $this->user_id, $tm, $this->db, $e->getMessage());
+      }
     }
   }
 
@@ -1333,16 +1347,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   /**
   * Accepts a submission from POST data and attempts to save to the database.
   */
-  public function save()
-  {
-    try
-    {
+  public function save() {
+    $tm = microtime(TRUE);
+    try {
+      $response = '';
       $this->authenticate();
-      if (array_key_exists('submission', $_POST))
-      {
+      if (array_key_exists('submission', $_POST)) {
         $mode = $this->get_input_mode();
-        switch ($mode)
-        {
+        switch ($mode) {
           case 'json':
             $s = json_decode($_POST['submission'], true);
         }
@@ -1355,10 +1367,22 @@ class Data_Controller extends Data_Service_Base_Controller {
         echo json_encode($response);
       }
       $this->delete_nonce();
+      if (class_exists('request_logging')) {
+        request_logging::log('i', 'data', $s['id'], 'save', $this->website_id, $this->user_id, $tm, $this->db, NULL, $response);
+      }
     }
-    catch (Exception $e)
-    {
-      $this->handle_error($e, (isset($s['fields']['transaction_id']['value']) ? $s['fields']['transaction_id']['value'] : null));
+    catch (Exception $e) {
+      $this->handle_error(
+        $e,
+        (isset($s) && isset($s['fields']['transaction_id']['value'])) ? $s['fields']['transaction_id']['value'] : null
+      );
+      if (class_exists('request_logging')) {
+        request_logging::log(
+          'i', 'data', isset($s) && isset($s['id']) ? $s['id'] : NULL, 'save',
+          $this->website_id, $this->user_id, $tm, $this->db,
+          $e->getMessage(), $response
+        );
+      }
     }
   }
 

@@ -9,7 +9,6 @@
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
-  JOIN samples s on s.id=o.sample_id and s.deleted=false
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   LEFT JOIN index_websites_website_agreements canEdit on canEdit.from_website_id=o.website_id
     and canEdit.to_website_id in (#website_ids#) and canEdit.provide_for_editing=true
@@ -26,7 +25,7 @@
     <param name='default_input_form' display='Default input form' default=''
            description='Input form path to use when no other available. Can be used to generate the path in report_grid action links.' />
     <param name="force_default_input_form" display="Force default input form" default="0"
-           description="Force the defaault input form to be used instead of the one specified by the record" />
+           description="Force the default input form to be used instead of the one specified by the record" />
     <param name="sq_size" display="Grid square size" description="Specify either 1000, 2000 or 10000 for the grid square resolution as 1km, 2km or 10km grid" datatype="integer">
       <joins>
         <join value="1000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_1km_id and (msq.size=1000 or o.sensitive=true)</join>
@@ -88,7 +87,7 @@
 end" datatype="text" />
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
     <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
-    <column name="geom" visible="false" mappable="true" sql="st_astext(case when msq.size > #sq_size# then s.geom else msq.geom end)" in_count="true" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(case when msq.size > #sq_size# then #sample_geom_field# else msq.geom end)" in_count="true" />
     <column name="sensitivity_precision" on_demand="true" visible="true" sql="onf.sensitivity_precision" />
     <column name="confidential" on_demand="true" visible="true"
       sql="case o.confidential when 't' then '&amp;#x2714;' else '&amp;#x2718;' end" />
@@ -101,18 +100,27 @@ end" />
 
     <column name='fc' visible='false' feature_style="fillColor" aggregate="true"
       sql="case
-  when sum(case o.record_status when 'R' then 1 else 0 end)>0 then '#d7191c'
-  when sum(case o.record_status when 'C' then 1 else 0 end)>0 then '#abd9e9'
+  when sum(case o.record_status when 'V' then 1 else 0 end)>0 then '#008837'
   when sum(case when o.record_status='C' and o.record_substatus=4 then 1 else 0 end)>0 then '#fdae61'
-  else '#008837'
+  when sum(case o.record_status when 'C' then 1 else 0 end)>0 then '#abd9e9'
+  when sum(case o.record_status when 'R' then 1 else 0 end)>0 then '#d7191c'
+  else '#abd9e9'
 end" />
     <column name='sc' visible='false' feature_style="strokeColor" aggregate="true"
-          sql="case
-  when sum(case o.record_status when 'R' then 1 else 0 end)>0 then '#a10003'
-  when sum(case o.record_status when 'C' then 1 else 0 end)>0 then '#5095ad'
+      sql="case
+  when sum(case o.record_status when 'V' then 1 else 0 end)>0 then '#006629'
   when sum(case when o.record_status='C' and o.record_substatus=4 then 1 else 0 end)>0 then '#bf5e00'
-  else '#006629'
+  when sum(case o.record_status when 'C' then 1 else 0 end)>0 then '#5095ad'
+  when sum(case o.record_status when 'R' then 1 else 0 end)>0 then '#a10003'
+  else '#5095ad'
 end" />
+    <column name='zi' visible='false' feature_style="graphicZIndex" aggregate="true"
+      sql="case
+      when sum(case o.record_status when 'V' then 1 else 0 end)>0 then 30
+      when sum(case when o.record_status='C' and o.record_substatus=4 then 1 else 0 end)>0 then 20
+      when sum(case o.record_status when 'C' then 1 else 0 end)>0 then 10
+      else 0
+    end" />
     <column name='fo' visible='false' feature_style="fillOpacity" aggregate="true" sql="0.7" />
   </columns>
 </report>

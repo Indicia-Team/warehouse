@@ -73,22 +73,33 @@ class Scheduled_Tasks_Controller extends Controller {
       if ($tmtask > 5) {
         self::msg("Triggers & notifications scheduled task took $tmtask seconds.", 'alert');
       }
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'scheduled_tasks', NULL, 'triggers_notifications', 0, 0, $tm, $this->db);
+      }
     }
     if ($scheduledPlugins) {
       $this->runScheduledPlugins($system, $scheduledPlugins);
     }
     if (in_array('notifications', $nonPluginTasks)) {
-      $swift = email::connect();
-      $this->doRecordOwnerNotifications($swift);
-      $this->doDigestNotifications($swift);
+      $email_config = Kohana::config('email');
+      if (array_key_exists ('do_not_send' , $email_config) and $email_config['do_not_send']){
+        kohana::log('info', "Email configured for do_not_send: ignoring notifications from scheduled tasks");
+      } else {
+        $swift = email::connect();
+        $this->doRecordOwnerNotifications($swift);
+        $this->doDigestNotifications($swift);
+      }
     }
     if (in_array('work_queue', $nonPluginTasks)) {
-      $qtm = microtime(TRUE);
+      $timeAtStart = microtime(TRUE);
       $queue = new WorkQueue();
       $queue->process($this->db);
-      $qtm = microtime(TRUE) - $qtm;
-      if ($qtm > 10) {
-        self::msg("Work queue processing took $qtm seconds.", 'alert');
+      $timeTaken = microtime(TRUE) - $timeAtStart;
+      if ($timeTaken > 10) {
+        self::msg("Work queue processing took $timeTaken seconds.", 'alert');
+      }
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'scheduled_tasks', NULL, 'work_queue', 0, 0, $timeAtStart, $this->db);
       }
     }
     // Mark the time of the last scheduled task check, so we can get diffs
@@ -133,7 +144,7 @@ class Scheduled_Tasks_Controller extends Controller {
         kohana::log('error', 'Error in trigger file ' . $trigger->trigger_template_file . '.xml');
         continue;
       }
-      if (count($data['content']['records'] > 0)) {
+      if (count($data['content']['records']) > 0) {
         $parsedData = $this->parseData($data);
         self::msg($trigger->name . ": " . count($data['content']['records']) . " records found");
         // Note escaping disabled in where clause to permit use of CAST
@@ -357,7 +368,9 @@ class Scheduled_Tasks_Controller extends Controller {
         }
         $currentUserId = $notification->user_id;
         $currentCc = $notification->cc;
-        $emailContent = kohana::lang('misc.notification_intro', kohana::config('email.server_name')) . '<br/><br/>';
+        $intro = empty(kohana::config('email.notification_intro')) ?
+          kohana::lang('misc.notification_intro') : kohana::config('email.notification_intro');
+        $emailContent = sprintf($intro, kohana::config('email.server_name')) . '<br/><br/>';
       }
       $emailContent .= self::unparseData($notification->data);
     }
@@ -391,8 +404,13 @@ class Scheduled_Tasks_Controller extends Controller {
         return;
       }
       foreach ($userResults as $user) {
-        $message = new Swift_Message(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), $emailContent,
-                                     'text/html');
+        $subject = empty(kohana::config('email.notification_subject')) ?
+          kohana::lang('misc.notification_subject') : kohana::config('email.notification_subject');
+        $message = new Swift_Message(
+          sprintf($subject, kohana::config('email.server_name')),
+          $emailContent,
+          'text/html'
+        );
         $recipients = new Swift_RecipientList();
         $recipients->addTo($user->email_address);
         $cc = explode(',', $cc);
@@ -705,13 +723,17 @@ class Scheduled_Tasks_Controller extends Controller {
         if (!$this->pluginMetadata['requires_occurrences_delta']
             || $this->occdeltaCount > 0
             || $this->pluginMetadata['always_run']) {
-          echo "<strong>Running $plugin</strong> - last run at $timestamp <br/>";
+          echo "<h2>Running $plugin</h2>";
+          echo "<p>Last run at $timestamp</p>";
           $tm = microtime(TRUE);
           call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $currentTime);
           // log plugins which take more than 5 seconds
           $took = microtime(TRUE) - $tm;
           if ($took > 5) {
             self::msg("Scheduled plugin $plugin took $took seconds", 'alert');
+          }
+          if (class_exists('request_logging')) {
+            request_logging::log('a', 'scheduled_tasks', NULL, $plugin, NULL, NULL, $tm, $this->db);
           }
         }
         else {

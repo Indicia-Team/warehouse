@@ -39,10 +39,15 @@ class Rest_Api_Sync_Controller extends Controller {
     echo "<h1>REST API Sync</h1>";
     $servers = Kohana::config('rest_api_sync.servers');
     rest_api_sync::$clientUserId = Kohana::config('rest_api_sync.user_id');
+    // For performance, just notify work_queue to update cache entries.
+    if (class_exists('cache_builder')) {
+      cache_builder::$delayCacheUpdates = TRUE;
+    }
     foreach ($servers as $serverId => $server) {
       echo "<h2>$serverId</h2>";
       $serverType = isset($server['serverType']) ? $server['serverType'] : 'indicia';
       $helperClass = 'rest_api_sync_' . strtolower($serverType);
+      $helperClass::loadControlledTerms($serverId, $server);
       $helperClass::syncServer($serverId, $server);
     }
   }

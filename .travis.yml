@@ -4,9 +4,9 @@ sudo: required
 language: php
 
 php:
-  - '7.0'
   - '7.1'
   - '7.2'
+  - '7.3'
 
 env:
   - POSTGRESQL_VERSION=postgresql-9.3-postgis-2.1
@@ -70,8 +70,9 @@ before_script:
   - .travis/postgres_setup.sh
   # Enable the phpunit module in config.php (meaning initialise() is not tested)
   - cp application/config/config.php.travis application/config/config.php
-  # Provide a config file for the rest_api module
+  # Provide a config file for the rest_api and request_logging modules
   - cp modules/rest_api/config/rest.php.travis  modules/rest_api/config/rest.php
+  - cp modules/request_logging/config/request_logging.example.php modules/request_logging/config/request_logging.php
   # Downgrade to PHPUnit 5.7
   - wget https://phar.phpunit.de/phpunit-5.7.phar
   - chmod +x phpunit-5.7.phar

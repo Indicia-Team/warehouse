@@ -61,12 +61,16 @@ class Occurrence_Model extends ORM {
   );
 
   // During an import it is possible to merge different columns in a CSV row to make a database field
-  public $specialImportFieldProcessingDefn = array(
-      'occurrence:fk_taxa_taxon_list' => array(
-          'template' => '%s %s',
-          'columns' => array('occurrence:fk_taxa_taxon_list:genus', 'occurrence:fk_taxa_taxon_list:specific')
-        )
-      );
+  public $specialImportFieldProcessingDefn = [
+    'occurrence:fk_taxa_taxon_list' => [
+      'template' => '%s %s',
+      'columns' => ['occurrence:fk_taxa_taxon_list:genus', 'occurrence:fk_taxa_taxon_list:specific'],
+    ],
+    'sample:date' => [
+      'template' => '%04d-%02d-%02d',
+      'columns' => ['sample:date:year', 'sample:date:month', 'sample:date:day'],
+    ],
+  ];
 
   /**
    * Methods of identifying duplicates during import.
@@ -234,9 +238,9 @@ class Occurrence_Model extends ORM {
       // Only log a determination for the occurrence if the species is changed.
       // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
       // and the config setting must be enabled.
+      $currentUserId = $this->get_current_user_id();
       if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
         $this->logDetermination = TRUE;
-        $currentUserId = $this->get_current_user_id();
         // We log the old taxon.
         $rowToAdd['taxa_taxon_list_id'] = $this->taxa_taxon_list_id;
         $rowToAdd['determination_type'] = 'B';

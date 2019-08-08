@@ -726,9 +726,11 @@ ROW;
         }
         elseif ($autofeed) {
           // Capture the ID and update tracking ID of the last row in the
-          // report, so we can autofeed the next batch.
+          // report, so we can autofeed the next batch. Also capture the
+          // tracking datae for reports that track on updated_on.
           $lastId = $row['id'];
           $lastTrackingId = isset($row['tracking']) ? $row['tracking'] : 0;
+          $lastTrackingDate = isset($row['tracking_date']) ? $row['tracking_date'] : 0;
         }
       }
       if ($autofeed) {
@@ -744,10 +746,17 @@ ROW;
           $afSettings['mode'] = 'updates';
           unset($afSettings['last_id']);
         }
-        elseif ($afSettings['mode'] === 'updates' && isset($lastTrackingId)) {
-          // Whilst in updates only mode, we want to start the next batch after
-          // the same tracking ID as the last batch finished so we get no gaps.
-          $afSettings['last_tracking_id'] = $lastTrackingId;
+        elseif ($afSettings['mode'] === 'updates') {
+          if (isset($lastTrackingId) && preg_match('/^\d+$/', $lastTrackingId)) {
+            // Whilst in updates only mode, we want to start the next batch
+            // after the same tracking ID as the last batch finished so we get
+            // no gaps.
+            $afSettings['last_tracking_id'] = $lastTrackingId;
+          }
+          elseif (isset($lastTrackingDate)) {
+            // Or same principle for date tracking mode.
+            $afSettings['last_tracking_date'] = $lastTrackingDate;
+          }
         }
         // Do not set the tracking variable if we have exceeded a time limit
         // specified in the request. Otherwise a failure to process the batch
@@ -869,6 +878,6 @@ ROW;
    * @return bool
    */
   function notEmpty($value) {
-    return !empty($value);
+    return $value !== NULL && $value !== '';
   }
 }

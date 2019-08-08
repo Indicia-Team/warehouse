@@ -11,6 +11,7 @@
   #joins#
   WHERE #website_filter#
   AND o.media_count>0
+  AND o.created_by_id=#created_by_id#
   #filters#
   </query>
   <field_sql>
@@ -34,8 +35,8 @@
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
-    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
-        population_call='direct:survey:id:title'>
+    <param name="survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
+        population_call="direct:survey:id:title">
       <where>o.survey_id=#survey_id#</where>
     </param>
     <param name="date_from" display="Date From" datatype="date">
@@ -44,31 +45,32 @@
     <param name="date_to" display="Date To" datatype="date">
       <where>('#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
-    <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
-        query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' >
+    <param name="taxon_group_id" display="Taxon Group"
+           description="Select the taxon group to return data for, or leave for all groups" datatype="lookup"
+           query="SELECT id, title as caption FROM taxon_groups" population_call="direct:taxon_group:id:title" >
       <where>cttl.taxon_group_id=#taxon_group_id#</where>
     </param>
-    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
-           description='Comma separated list of sample attribute IDs to include as columns in the report' />
-    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs'
-           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
-    <param name='created_by_id' display='Warehouse User ID' description='Enter the ID of the warehouse user' datatype='integer' >
-      <where>o.created_by_id=#created_by_id#</where>
-    </param>
+    <param name="smpattrs" display="Sample attribute list" datatype="smpattrs" default=""
+           description="Comma separated list of sample attribute IDs to include as columns in the report" />
+    <param name="occattrs" display="Occurrence attribute list" datatype="occattrs"
+           description="Comma separated list of occurrence attribute IDs to include as columns in the report" />
+    <param name="created_by_id" display="Warehouse User ID" datatype="integer" emptyvalue="0"
+           description="Enter the ID of the warehouse user" />
+
   </params>
   <columns>
-    <column name='occurrence_id' display='ID' />
-    <column name='path' display='Photo' img='true' />
-    <column name='caption' display='Caption' />
-    <column name='sample_id' visible='false' />
-    <column name='taxon' display='Preferred Name' />
-    <column name='common' display='Common Name' />
-    <column name='species' display='Species' visible="false" />
-    <column name='taxa_taxon_list_id' visible='false' />
-    <column name='location_name' display='Site name' />
-    <column name='entered_sref' display='SRef' />
-    <column name='date' display='Date' />
-    <column name='zero_abundance' display='Zero Abundance' />
-    <column name='taxon_group' display='Taxon Group' />
+    <column name="occurrence_id" display="ID" />
+    <column name="path" display="Photo" img="true" />
+    <column name="caption" display="Caption" />
+    <column name="sample_id" visible="false" />
+    <column name="taxon" display="Preferred Name" />
+    <column name="common" display="Common Name" />
+    <column name="species" display="Species" visible="false" />
+    <column name="taxa_taxon_list_id" visible="false" />
+    <column name="location_name" display="Site name" />
+    <column name="entered_sref" display="SRef" />
+    <column name="date" display="Date" />
+    <column name="zero_abundance" display="Zero Abundance" />
+    <column name="taxon_group" display="Taxon Group" />
   </columns>
 </report>

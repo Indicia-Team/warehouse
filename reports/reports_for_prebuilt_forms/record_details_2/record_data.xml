@@ -70,6 +70,7 @@
     <column name='date_type' sql='o.date_type' visible='false' />
     <column name='date' display='Date' datatype="date" />
     <column name='entered_sref' sql="case #allow_sensitive_full_precision# when '1' then s.entered_sref else snf.public_entered_sref end" />
+    <column name='sref_precision' sql='snf.attr_sref_precision' />
     <column name='occurrence_comment' sql='onf.comment' />
     <column name='location_name' sql="o.location_name" />
     <column name='sample_comment' sql="case when o.sensitive=false or #allow_sensitive_full_precision#='1' then snf.comment else null end" />

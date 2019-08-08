@@ -38,6 +38,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    *   List of arguments from URL.
    */
   public function __call($name, $arguments) {
+    $tm = microtime(TRUE);
     try {
       $this->authenticate('write');
       $actions = kohana::config("data_utils.actions");
@@ -78,10 +79,16 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       }
       $params = implode(', ', $action['parameters']);
       echo json_encode($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'data', NULL, $action, $this->website_id, $this->user_id, $tm, $db);
+      }
     }
     catch (Exception $e) {
       error_logger::log_error("Exception during custom data_utils action $name", $e);
       $this->handle_error($e);
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'data', NULL, $action, $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+      }
     }
   }
 
@@ -105,6 +112,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    * Verifies all the records returned by the report according to the filter.
    */
   public function bulk_verify() {
+    $tm = microtime(TRUE);
     $db = new Database();
     $this->authenticate('write');
     $dryRun = isset($_POST['dryrun']) && $_POST['dryrun'] === 'true';
@@ -151,26 +159,72 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         $this->applyWorkflowToOccurrenceUpdates($db, array_keys($ids), $updates);
       }
       echo count($ids);
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'data', NULL, 'bulk_verify', $this->website_id, $this->user_id, $tm, $db);
+      }
     }
     catch (Exception $e) {
       error_logger::log_error('Exception during bulk verify', $e);
       $this->handle_error($e);
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'data', NULL, 'bulk_verify', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+      }
     }
   }
 
   /**
    * Single record verification service end-point.
    *
-   * Provides the services/data_utils/single_verify service. This takes an occurrence:id, occurrence:record_status, user_id (the verifier)
-   * and optional occurrence_comment:comment in the $_POST data and updates the record. This is provided as a more optimised
-   * alternative to using the normal data services calls. If occurrence:taxa_taxon_list_id is supplied then a redetermination will
-   * get triggered.
+   * Provides the services/data_utils/single_verify service. This takes an the
+   * following parameters in the POST:
+   * * occurrence:id
+   * * occurrence:record_status
+   * * user_id (the verifier)
+   * * occurrence_comment:comment (optional comment).
+   * * occurrence:taxa_taxon_list_id (optional ID for redeterminations).
+   * Updates the record. This is provided as a more optimised alternative to
+   * using the normal data services calls. If occurrence:taxa_taxon_list_id is
+   * supplied then a redetermination will get triggered.
    */
   public function single_verify() {
     if (empty($_POST['occurrence:id']) || !preg_match('/^\d+$/', $_POST['occurrence:id'])) {
       echo 'occurrence:id not supplied or invalid';
+      return;
     }
-    elseif (empty($_POST['occurrence:record_status']) || !preg_match('/^[VRCD]$/', $_POST['occurrence:record_status'])) {
+    $this->array_verify([$_POST['occurrence:id']]);
+  }
+
+  /**
+   * List of records verification service end-point.
+   *
+   * Provides the services/data_utils/list_verify service. This takes an the
+   * following parameters in the POST:
+   * * occurrence:ids - a comma separated list of IDs.
+   * * occurrence:record_status
+   * * user_id (the verifier)
+   * * occurrence_comment:comment (optional comment).
+   * * occurrence:taxa_taxon_list_id (optional ID for redeterminations).
+   * Updates the records. This is provided as a more optimised alternative to
+   * using the normal data services calls. If occurrence:taxa_taxon_list_id is
+   * supplied then a redetermination will get triggered for each record.
+   */
+  public function list_verify() {
+    if (empty($_POST['occurrence:ids'])) {
+      echo 'occurrence:ids not supplied';
+      kohana::log('debug', 'Invalid occurrence:ids to list_verify: ' . var_export($_POST, TRUE));
+      return;
+    }
+    $this->array_verify(explode(',', $_POST['occurrence:ids']));
+  }
+
+  /**
+   * Internal method which provides the code for single or list verification.
+   *
+   * @param array $ids
+   *   Array of IDs.
+   */
+  private function array_verify($ids) {
+    if (empty($_POST['occurrence:record_status']) || !preg_match('/^[VRCD]$/', $_POST['occurrence:record_status'])) {
       echo 'occurrence:record_status not supplied or invalid';
     }
     elseif (!empty($_POST['occurrence:record_substatus']) && !preg_match('/^[1-5]$/', $_POST['occurrence:record_substatus'])) {
@@ -181,9 +235,10 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     }
     else {
       try {
+        kohana::log('debug', 'in array_verify');
+        $tm = microtime(TRUE);
         $db = new Database();
         $this->authenticate('write');
-        $verifier = $this->getVerifierName($db);
         // Field updates for the occurrences table and related cache tables.
         $updates = $this->getOccurrenceTableVerificationUpdateValues(
           $db,
@@ -192,25 +247,34 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           empty($_POST['occurrence:record_decision_source']) ? 'H' : $_POST['occurrence:record_decision_source']
         );
         // Give the workflow module a chance to rewind or update the values before updating.
-        $this->applyWorkflowToOccurrenceUpdates($db, [$_POST['occurrence:id']], $updates);
-        if (!empty($_POST['occurrence_comment:comment'])) {
-          $db->insert('occurrence_comments', array(
-            'occurrence_id' => $_POST['occurrence:id'],
-            'comment' => $_POST['occurrence_comment:comment'],
-            'created_by_id' => $this->user_id,
-            'created_on' => date('Y-m-d H:i:s'),
-            'updated_by_id' => $this->user_id,
-            'updated_on' => date('Y-m-d H:i:s'),
-            'record_status' => $_POST['occurrence:record_status'],
-            'record_substatus' => empty($_POST['occurrence:record_substatus'])
-              ? NULL : $_POST['occurrence:record_substatus']
+        $this->applyWorkflowToOccurrenceUpdates($db, $ids, $updates);
+        foreach ($ids as $id) {
+          if (!empty($_POST['occurrence_comment:comment'])) {
+            $db->insert('occurrence_comments', array(
+              'occurrence_id' => $id,
+              'comment' => $_POST['occurrence_comment:comment'],
+              'created_by_id' => $this->user_id,
+              'created_on' => date('Y-m-d H:i:s'),
+              'updated_by_id' => $this->user_id,
+              'updated_on' => date('Y-m-d H:i:s'),
+              'record_status' => $_POST['occurrence:record_status'],
+              'record_substatus' => empty($_POST['occurrence:record_substatus'])
+                ? NULL : $_POST['occurrence:record_substatus'],
             ));
+          }
         }
         echo 'OK';
+        kohana::log('debug', 'done array_verify');
+        if (class_exists('request_logging')) {
+          request_logging::log('a', 'data', NULL, 'array_verify', $this->website_id, $this->user_id, $tm, $db, NULL, $ids);
+        }
       }
       catch (Exception $e) {
         echo $e->getMessage();
         error_logger::log_error('Exception during single record verify', $e);
+        if (class_exists('request_logging')) {
+          request_logging::log('a', 'data', NULL, 'array_verify', $this->website_id, $this->user_id, $tm, $db, $e->getMessage, $ids);
+        }
       }
     }
   }
@@ -232,6 +296,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     }
     else {
       try {
+        $tm = microtime(TRUE);
         $db = new Database();
         $this->authenticate('write');
         $updates = array(
@@ -268,10 +333,16 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           ));
         }
         echo 'OK';
+        if (class_exists('request_logging')) {
+          request_logging::log('a', 'data', NULL, 'single_verify_sample', $this->website_id, $this->user_id, $tm, $db);
+        }
       }
       catch (Exception $e) {
         echo $e->getMessage();
         error_logger::log_error('Exception during single sample verify', $e);
+        if (class_exists('request_logging')) {
+          request_logging::log('a', 'data', NULL, 'single_verify_sample', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+        }
       }
     }
   }
@@ -281,6 +352,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    * data and verifies all the samples returned by the report according to the filter.
    */
   public function bulk_verify_samples() {
+    $tm = microtime(TRUE);
     $db = new Database();
     $this->authenticate('write');
     $report = $_POST['report'];
@@ -322,10 +394,16 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       );
       $db->from('cache_samples_functional')->set($updates)->in('id', array_keys($ids))->update();
       echo count($ids);
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'data', NULL, 'bulk_verify_samples', $this->website_id, $this->user_id, $tm, $db);
+      }
     }
     catch (Exception $e) {
       echo $e->getMessage();
       error_logger::log_error('Exception during bulk verify of samples', $e);
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'data', NULL, 'bulk_verify_samples', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+      }
     }
   }
 
@@ -361,11 +439,13 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $this->fail('Bad request', 400, 'Incorrect user_id format');
     }
     else {
-      $this->authenticate('write');
-      $db = new Database();
-      $deletionSql = '';
-      if (empty($_POST['trial'])) {
-        $deletionSql = <<<SQL
+      try {
+        $tm = microtime(TRUE);
+        $this->authenticate('write');
+        $db = new Database();
+        $deletionSql = '';
+        if (empty($_POST['trial'])) {
+          $deletionSql = <<<SQL
 UPDATE occurrences SET deleted=true, updated_on=now(), updated_by_id=$_POST[user_id]
 WHERE id IN (SELECT id FROM to_delete);
 
@@ -394,20 +474,30 @@ $deletionSql;
 
 SELECT COUNT(distinct id) AS occurrences, COUNT(distinct sample_id) AS samples FROM to_delete;
 SQL;
-      $db->query($qry);
-      $count = $db->select('COUNT(distinct id) AS occurrences, COUNT(distinct sample_id) AS samples')
-        ->from('to_delete')
-        ->get()->current();
-      $response = array(
-        'code' => 200,
-        'status' => 'OK',
-        'action' => empty($_POST['trial']) ? 'delete' : 'none',
-        'affected' => [
-          'occurrences' => $count->occurrences,
-          'samples' => $count->samples,
-        ]
-      );
-      echo json_encode($response);
+        $db->query($qry);
+        $count = $db->select('COUNT(distinct id) AS occurrences, COUNT(distinct sample_id) AS samples')
+          ->from('to_delete')
+          ->get()->current();
+        $response = array(
+          'code' => 200,
+          'status' => 'OK',
+          'action' => empty($_POST['trial']) ? 'delete' : 'none',
+          'affected' => [
+            'occurrences' => $count->occurrences,
+            'samples' => $count->samples,
+          ]
+        );
+        echo json_encode($response);
+        if (class_exists('request_logging')) {
+          request_logging::log('a', 'data', NULL, 'bulk_delete_occurrences', $this->website_id, $this->user_id, $tm, $db);
+        }
+      }
+      catch (Exception $e) {
+        error_logger::log_error('Exception during bulk_delete_occurrences', $e);
+        if (class_exists('request_logging')) {
+          request_logging::log('a', 'data', NULL, 'bulk_delete_occurrences', $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+        }
+      }
     }
   }
 
@@ -497,7 +587,7 @@ SQL;
       foreach ($idList as $id) {
         // If there is either a rewind operation, or a workflow event to apply, need to process this record individually.
         if (isset($rewinds["occurrence.$id"]) || isset($workflowEvents["occurrence.$id"])) {
-          // Grab a copy of the update array
+          // Grab a copy of the update array.
           $thisUpdates = $updates;
           if (isset($rewinds["occurrence.$id"])) {
             $thisRewind = $rewinds["occurrence.$id"];

@@ -71,8 +71,7 @@ class Report_Controller extends Data_Service_Base_Controller {
   * (this might be fun, given the low level that the reports run at).
   *
   */
-  public function requestReport()
-  {
+  public function requestReport() {
     try {
       $tm = microtime(true);
       $this->setup();
@@ -81,7 +80,7 @@ class Report_Controller extends Data_Service_Base_Controller {
       $mode = $this->get_output_mode();
       switch ($mode) {
         case 'json':
-      	case 'csv':
+        case 'csv':
         case 'tsv':
         case 'xml':
         case 'gpx':
@@ -111,14 +110,22 @@ class Report_Controller extends Data_Service_Base_Controller {
       }
       $this->send_response();
       if (class_exists('request_logging')) {
-        request_logging::log('o', 'report', empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'],
+        $subtypes = [];
+        if (empty($_REQUEST['wantRecords']) || $_REQUEST['wantRecords'] === '1') {
+          $subtypes[] = 'records';
+        }
+        if (!empty($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') {
+          $subtypes[] = 'count';
+        }
+
+        request_logging::log('o', 'report', implode(',', $subtypes), empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'],
           $this->website_id, $this->user_id, $tm);
       }
     }
     catch (Exception $e) {
       $this->handle_error($e);
       if (class_exists('request_logging')) {
-        request_logging::log('o', 'report', empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'],
+        request_logging::log('o', 'report', NULL, empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'],
           $this->website_id, $this->user_id, $tm, $e->getMessage());
       }
     }

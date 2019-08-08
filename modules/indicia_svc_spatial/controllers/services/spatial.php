@@ -156,18 +156,31 @@ class Spatial_Controller extends Service_Base_Controller {
 
   /**
    * Service method to buffer a provided wkt.
-   * Provide GET parameters for wkt (string) and buffer (a number of metres). Will
-   * return the well known text for the buffered geometry.
-   * If a callback function name is given in the GET parameters then returns a JSONP
-   * response with a json object that has a single response property.
+   *
+   * Provide GET parameters for wkt (string) and buffer (a number of metres).
+   * Will return the well known text for the buffered geometry.
+   * If a callback function name is given in the GET parameters then returns
+   * a JSONP response with a json object that has a single response property.
+   *
+   * Parameters can be provided via GET or POST and include:
+   * * wkt - well known text of the polygon.
+   * * buffer - buffer size in metres.
+   * * segmentsInQuarterCircle - number of segments used to create a quarter
+   *   circle. Default is 8 but can be lowered to simplify the polygon.
+   * * projection - projection EPSG code used for the calculation. 3857 (web
+   *   mercator) is default.
    */
-  public function buffer()
-  {
+  public function buffer() {
     $params = array_merge($_GET, $_POST);
     if (array_key_exists('wkt', $params) && array_key_exists('buffer', $params)) {
-      if ($params['buffer']==0)
-        // no need to buffer if width set to zero
+      $params = array_merge([
+        'segmentsInQuarterCircle' => 8,
+        'projection' => 3857,
+      ], $params);
+      if ($params['buffer'] === 0) {
+        // No need to buffer if width set to zero.
         $r = $params['wkt'];
+      }
       else {
         $db = new Database;
         // Test/escape parameters that are passed in to queries to prevent
@@ -178,7 +191,33 @@ class Spatial_Controller extends Service_Base_Controller {
           Kohana::log('alert', "Invalid parameter, buffer, with value '{$params['buffer']}' in request to spatial/buffer service.");
           throw new Exception('Invalid request.');
         }
-        $result = $db->query("SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;")->current();
+        if ($params['projection'] !== 900913 && $params['projection'] !== 3857) {
+          // If specifying the projection we have to transform to and fro.
+          $qry = <<<SQL
+SELECT st_astext(
+  st_transform(
+    st_buffer(
+      st_transform(st_geomfromtext('$wkt', 3857), $params[projection]),
+      $buffer,
+      $params[segmentsInQuarterCircle]
+    ),
+    3857
+  )
+) AS wkt;
+SQL;
+        }
+        else {
+          $qry = <<<SQL
+SELECT st_astext(
+  st_buffer(
+    st_geomfromtext('$wkt'),
+    $buffer,
+    $params[segmentsInQuarterCircle]
+  )
+) AS wkt;
+SQL;
+        }
+        $result = $db->query($qry)->current();
         $r = $result->wkt;
       }
     } else {

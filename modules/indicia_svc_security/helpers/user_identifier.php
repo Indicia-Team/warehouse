@@ -92,16 +92,16 @@ class user_identifier {
    *   error - Error string if an error occurred.
    */
   public static function get_user_id($request, $websiteId) {
-  // Test/escape $request parameters that are passed in to queries to prevent
-  // SQL injection.
-  // identifiers: looks like these are explicitly escaped and go through ORM.
-  // surname: looks like only goes through ORM so escaped.
-  // first_name: looks like only goes through ORM so escaped.
-  // warehouse_user_id: only goes through query builder so escaped.
-  // force: not passed to any query.
-  // users_to_merge: looks like these all go through query builder so are escaped.
-  // attribute_values: looks like these all go through ORM so are escaped.
-  // shares_to_prevent: not passed to any query
+    // Test/escape $request parameters that are passed in to queries to prevent
+    // SQL injection.
+    // identifiers: looks like these are explicitly escaped and go through ORM.
+    // surname: looks like only goes through ORM so escaped.
+    // first_name: looks like only goes through ORM so escaped.
+    // warehouse_user_id: only goes through query builder so escaped.
+    // force: not passed to any query.
+    // users_to_merge: looks like these all go through query builder so are escaped.
+    // attribute_values: looks like these all go through ORM so are escaped.
+    // shares_to_prevent: not passed to any query
 
     if (!array_key_exists('identifiers', $request)) {
       throw new exception('Error: missing identifiers parameter');
@@ -149,7 +149,7 @@ SELECT DISTINCT u.id as user_id, u.person_id
 FROM users u
 JOIN people p ON p.id=u.person_id AND p.deleted=false
 WHERE u.deleted=false
-AND p.email_address='$ident'
+AND lower(p.email_address) = lower('$ident')
 UNION
 
 SQL;
@@ -165,7 +165,7 @@ JOIN people p
 JOIN user_identifiers AS um
   ON um.user_id = u.id
   AND um.deleted=false
-  AND um.identifier='$ident'
+  AND lower(um.identifier)=lower('$ident')
 JOIN cache_termlists_terms t
   ON t.id=um.type_id
   AND t.preferred_term='$type'
@@ -177,6 +177,7 @@ SQL;
           $sql .= "\nAND u.id IN ($usersToMerge)";
         }
         $r = $userPersonObj->db->query($sql)->result_array(TRUE);
+        kohana::log('debug', $sql);
         foreach ($r as $existingUser) {
           // Create a placeholder for the known user we just found.
           if (!isset($existingUsers[$existingUser->user_id])) {
@@ -295,7 +296,11 @@ SQL;
    * in the $_REQUEST.
    */
   private static function createUser($email, $userPersonObj) {
-    $person = ORM::factory('person')->where(array('email_address'=>$email, 'deleted'=>'f'))->find();
+    $person = ORM::factory('person')
+      ->where('deleted', 'f')
+      // Use like as converts to ilike so case-insensitive.
+      ->like('email_address', addcslashes($email, '%\\_'))
+      ->find();
     if ($person->loaded
         && ((!empty($person->first_name) && $person->first_name != '?'
         && !empty($_REQUEST['first_name']) && strtolower(trim($_REQUEST['first_name'])) !== strtolower(trim($person->first_name)))
@@ -306,7 +311,7 @@ SQL;
     $data = array(
       'first_name' => isset($_REQUEST['first_name']) ? $_REQUEST['first_name'] : '?',
       'surname' => $_REQUEST['surname'],
-      'email_address'=>$email
+      'email_address' => $email,
     );
     if ($person->loaded) {
       $data['id'] = $person->id;
@@ -372,12 +377,12 @@ SQL;
         ->where(array(
           't.term' => $identifier->type,
           'ui.user_id' => $userId,
-          'ui.identifier' => $identifier->identifier,
           't.deleted' => 'f',
           'tlt1.deleted' => 'f',
           'tlt2.deleted' => 'f',
-          'ui.deleted' => 'f'
+          'ui.deleted' => 'f',
         ))
+        ->like('ui.identifier', $identifier->identifier)
         ->get()->result_array(FALSE);
       if (!count($r)) {
         // Identifier does not yet exist so create it.
@@ -386,7 +391,7 @@ SQL;
         $data = array(
           'user_id' => $userId,
           'type_id' => $userPersonObj->identifierTypes[$identifier->type],
-          'identifier' => $identifier->identifier
+          'identifier' => $identifier->identifier,
         );
         $new->validate(new Validation($data), TRUE);
         self::checkErrors($new);
@@ -429,8 +434,8 @@ join samples s on s.created_by_id=u.id and s.deleted=false
 join surveys su on su.id=s.survey_id and su.deleted=false and su.website_id=$websiteId
 where p.id={$userPersonObj->person_id}
 and sav.sample_id=s.id
-and sav.text_value<>p.email_address
-and sav.text_value=ui.identifier
+and lower(sav.text_value)<>lower(p.email_address)
+and lower(sav.text_value)=lower(ui.identifier)
 QRY
       );
     }
@@ -609,15 +614,22 @@ QRY
     foreach ($identifiers as $identifier) {
       // find all the existing users which match this identifier.
       $userPersonObj->db->select('ui.user_id, p.first_name, p.surname')
-          ->from('users as u')
-          ->join('people as p', 'p.id', 'u.person_id')
-          ->join('user_identifiers as ui', 'ui.user_id', 'u.id')
-          ->join('termlists_terms as tlt1', 'tlt1.id', 'ui.type_id')
-          ->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt1.meaning_id')
-          ->join('terms as t', 't.id', 'tlt2.term_id')
-          ->where(array('t.term'=>$identifier->type,
-              'ui.identifier'=>$identifier->identifier,
-              'u.deleted'=>'f', 'p.deleted'=>'f', 'ui.deleted'=>'f', 'tlt1.deleted'=>'f', 'tlt2.deleted'=>'f', 't.deleted'=>'f'));
+        ->from('users as u')
+        ->join('people as p', 'p.id', 'u.person_id')
+        ->join('user_identifiers as ui', 'ui.user_id', 'u.id')
+        ->join('termlists_terms as tlt1', 'tlt1.id', 'ui.type_id')
+        ->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt1.meaning_id')
+        ->join('terms as t', 't.id', 'tlt2.term_id')
+        ->where([
+          't.term' => $identifier->type,
+          'u.deleted' => 'f',
+          'p.deleted' => 'f',
+          'ui.deleted' => 'f',
+          'tlt1.deleted' => 'f',
+          'tlt2.deleted' => 'f',
+          't.deleted' => 'f',
+        ])
+        ->like('ui.identifier', $identifier->identifier);
       if (isset($_REQUEST['users_to_merge'])) {
         $usersToMerge = json_decode($_REQUEST['users_to_merge']);
         $userPersonObj->db->in('ui.user_id', $usersToMerge);
