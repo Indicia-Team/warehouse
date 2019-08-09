@@ -1,0 +1,40 @@
+<report
+    title="Get taxa completion status"
+    description="Gets a list of fungi that have had there descriptions finished. Only interested in ones with occurrences."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM cache_taxa_taxon_lists cttl
+    LEFT JOIN taxa_taxon_list_attribute_values ttlav_finished on ttlav_finished.taxa_taxon_list_id = cttl.id 
+        AND ttlav_finished.taxa_taxon_list_attribute_id = #finished_fungi_attribute_id# AND ttlav_finished.deleted=false
+    #joins#
+    WHERE cttl.taxon_list_id = #taxon_list_id# and cttl.taxon_rank_id=3
+    AND cttl.id in
+    (select o.taxa_taxon_list_id
+    from occurrences o 
+    where o.deleted=false)
+	AND (
+	('#status#'='complete' AND ttlav_finished.int_value = 1)
+	OR 
+	('#status#'='incomplete' AND (ttlav_finished.int_value IS NULL OR ttlav_finished.int_value!=1))
+	OR
+	'#status#'=''
+	)
+  </query>
+  <order_bys>
+    <order_by>cttl.taxon asc</order_by>
+  </order_bys>
+  <params>
+    <param name='status' display='Status' datatype='lookup'
+        lookup_values='incomplete:Incomplete,complete:Complete'/>
+    <param name="taxon_list_id" display="" datatype="integer"/>
+    <param name="finished_fungi_attribute_id" display="" datatype="integer"/>
+  </params>
+  <columns>
+    <column name='cttl_id' display='Taxa taxon list ID' sql="cttl.id" datatype='integer' visible="false" in_count="true"/>
+    <column name='ttlav_finished_id' display='Taxa taxon list attribute value ID' sql="ttlav_finished.id" datatype='integer' visible="false" />
+    <column name='fungi_name' display='Fungi' sql="case when ttlav_finished.int_value = 1 then cttl.taxon else cttl.taxon End" datatype='text'/>
+    <column name='status' display='Complete?' sql="case when ttlav_finished.int_value = 1 then 'Yes' else 'No' End" datatype='text'/>
+    <column name='status_boolean' sql="case when ttlav_finished.int_value = 1 then true else false End" datatype='boolean' visible="false" />
+  </columns> 
+</report>

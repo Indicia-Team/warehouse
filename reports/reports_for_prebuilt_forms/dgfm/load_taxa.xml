@@ -1,0 +1,24 @@
+<report
+    title="Taxa for Attribute Manager"
+    description="Basic taxa list for the attribute manager page."
+>
+  <query>
+    SELECT #columns#
+    FROM cache_taxa_taxon_lists cttl
+    WHERE cttl.taxon_list_id=#taxon_list_id#
+  </query>
+  <order_bys>
+    <order_by>cttl.taxon asc</order_by>
+  </order_bys>
+  <params>
+    <param name='taxon_list_id' display='Taxon list' description='Taxon list for report to run against' datatype='integer'/>
+  </params>
+  <columns>
+    <column name="taxon_id" display="ID" sql="cttl.id" datatype="text" visible="false"/>
+    <column name="taxon" display="Taxon" sql="cttl.taxon" datatype="text" />
+    <column name="rank" display="Taxon Rank" sql="cttl.taxon_rank" datatype="text" />
+    <column name="family" display="Family" sql="cttl.family_taxon" datatype="text" />
+    <column name="order" display="Order" sql="cttl.order_taxon" datatype="text" />
+    <column name="taxon_meaning_id" display="Taxon meaning Id" sql="cttl.taxon_meaning_id" datatype="text" visible="false"/>
+  </columns>
+</report>

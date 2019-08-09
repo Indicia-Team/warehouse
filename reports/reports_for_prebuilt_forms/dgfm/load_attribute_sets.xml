@@ -1,0 +1,24 @@
+<report
+    title="Load attribute sets"
+    description="List attribute sets along with attribute_sets_surveys ids for use on the Character Canagement Form Existing Attribute Sets
+    drop-down."
+>
+  <query>
+    SELECT #columns#
+    FROM attribute_sets a_set
+    JOIN attribute_sets_surveys ass on ass.attribute_set_id = a_set.id AND ass.survey_id = #survey_id# AND ass.deleted=false
+    WHERE a_set.website_id = #website_id# AND a_set.deleted=false
+  </query>
+  <order_bys>
+    <order_by>a_set.title asc</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey' description='Survey ID for report to run against' datatype='integer'/>
+    <param name='website_id' display='Website ID' description='Website for report to run against' datatype='integer'/>
+  </params>
+  <columns>
+    <column name="attribute_set_id" display="ID" sql="a_set.id" datatype="text" visible="false"/>
+    <column name="attribute_set_name" display="Attribute set name" sql="a_set.title" datatype="text" />
+    <column name="attribute_sets_survey_id" display="Taxon meaning Id" sql="ass.id" datatype="text" visible="false"/>
+  </columns>
+</report>

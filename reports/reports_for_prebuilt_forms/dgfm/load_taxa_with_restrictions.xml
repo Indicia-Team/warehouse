@@ -1,0 +1,33 @@
+<report
+    title="Load taxa with restrictions for the Attribute Manager"
+    description="List Taxa associated with a group for the attribute manager page."
+>
+  <query>
+    SELECT #columns#
+    FROM cache_taxa_taxon_lists cttl
+    JOIN attribute_sets_taxon_restrictions astr on astr.restrict_to_taxon_meaning_id=cttl.taxon_meaning_id AND astr.deleted=false        
+    JOIN attribute_sets_surveys aset_surv on aset_surv.id = astr.attribute_sets_survey_id AND aset_surv.survey_id=#survey_id# AND aset_surv.deleted=false        
+    JOIN attribute_sets aset on aset.id = aset_surv.attribute_set_id AND aset.id=#attribute_set_id# AND aset.deleted=false
+    LEFT JOIN termlists_terms tt_restrict on tt_restrict.id = astr.restrict_to_stage_term_meaning_id AND tt_restrict.deleted=false
+    LEFT JOIN terms t_restrict on t_restrict.id = tt_restrict.term_id AND t_restrict.deleted=false  
+    #joins#
+    WHERE cttl.taxon_list_id=#taxon_list_id#
+    AND (#attribute_set_id# = 0 OR aset.id=#attribute_set_id#)
+  </query>
+  <order_bys>
+    <order_by>cttl.taxon asc</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey' description='Survey for report to run against' datatype='integer'/>
+    <param name='taxon_list_id' display='Taxon list' description='Taxon list for report to run against' datatype='integer'/>
+    <param name='attribute_set_id' display='Attribute set' description='Attribute set to filter against' datatype='integer' default='0' emptyvalue='0'>           
+    </param>  
+  </params>
+  <columns>
+    <column name="attribute_sets_taxon_restriction_id" display="ID" sql="astr.id" datatype="text" visible="false"/>
+    <!--<column name="taxon_id" display="ID" sql="cttl.id" datatype="text" visible="false"/>-->
+    <column name="taxon" display="Taxon" sql="cttl.taxon" datatype="text" />
+    <column name="life_stage" display="Life stage" sql="t_restrict.term" datatype="text" />
+    <!--<column name="taxon_meaning_id" display="Taxon meaning Id" sql="cttl.taxon_meaning_id" datatype="text" visible="false"/>-->
+  </columns>
+</report>

@@ -1,0 +1,23 @@
+<report
+    title="Get data for the Character Manager Area/Sub-Area drop-down"
+    description="Gets a list of sub-areas, but include the main area in the name."
+>
+  <query website_filter_field="">
+    SELECT #columns#
+    FROM termlists_terms ttArea
+    JOIN termlists_terms ttSub on ttSub.parent_id = ttArea.id AND ttSub.deleted=false
+    JOIN terms tArea on tArea.id = ttArea.term_id AND tArea.deleted=false
+    JOIN terms tSub on tSub.id = ttSub.term_id AND tSub.deleted=false
+    WHERE ttArea.termlist_id = #termlist_id# AND ttArea.deleted=false
+  </query>
+  <order_bys>
+    <order_by>tArea.term, tSub.term</order_by>
+  </order_bys>
+  <params>
+    <param name="termlist_id" display="Termlist ID" datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Sub-area ID' sql="ttSub.id" datatype='integer' visible="false"/>
+    <column name='area_sub_area_fullname' display='Area/Sub-Area Name' sql="tArea.term || '/' || tSub.term" datatype='text'/>
+  </columns>
+</report>

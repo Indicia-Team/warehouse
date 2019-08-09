@@ -1,0 +1,33 @@
+<report
+    title="All attributes for Attribute Manager"
+    description="List all taxa_taxon_list_attributes for the attribute manager page."
+>
+  <query>
+    SELECT #columns#
+    FROM taxa_taxon_list_attributes ttla
+    JOIN taxon_lists_taxa_taxon_list_attributes tlttla on tlttla.taxa_taxon_list_attribute_id=ttla.id AND tlttla.taxon_list_id=#taxon_list_id# AND tlttla.deleted=false
+    LEFT JOIN termlists_terms tt_child_area on tt_child_area.id=ttla.reporting_category_id AND ttla.deleted=false
+    LEFT JOIN terms t_child_area on t_child_area.id=tt_child_area.term_id AND t_child_area.deleted=false
+    LEFT JOIN termlists_terms tt_parent_area on tt_parent_area.id=tt_child_area.parent_id AND tt_parent_area.deleted=false
+    LEFT JOIN terms t_parent_area on t_parent_area.id=tt_parent_area.term_id AND t_parent_area.deleted=false
+    #joins#
+    WHERE ttla.deleted=false
+  </query>
+  <order_bys>
+    <order_by>ttla.id desc</order_by>
+  </order_bys>
+  <params>
+    <param name='taxon_list_id' display='Taxon list' description='Taxon list for report to run against' datatype='integer'/>
+  </params>
+  <columns>
+    <column name="attribute_id" display="ID" sql="ttla.id" visible="false" datatype="text" in_count='true'/>
+    <column name="area" display="Area" sql="
+      CASE WHEN t_parent_area.term IS NOT NULL THEN t_parent_area.term ELSE t_child_area.term END"
+    datatype="text" />
+    <column name="sub_area" display="Sub-area" sql="
+      CASE WHEN t_parent_area.term IS NOT NULL THEN t_child_area.term ELSE null END
+    " datatype="text" />
+    <column name="attribute_caption" display="Caption" sql="ttla.caption" datatype="text" />
+    <column name="attribute_description" display="Description" sql="ttla.description" datatype="text" />
+  </columns>
+</report>
