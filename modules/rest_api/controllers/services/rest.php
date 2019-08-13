@@ -815,7 +815,8 @@ class Rest_Controller extends Controller {
       }
       $postObj->_source = array_values(array_unique($fields));
     }
-    return json_encode($postObj);
+    $r = json_encode($postObj);
+    return str_replace(['"#emptyobj#"', '"#emptyarray#"'], ['{}', '[]'], $r);
   }
 
   /**
