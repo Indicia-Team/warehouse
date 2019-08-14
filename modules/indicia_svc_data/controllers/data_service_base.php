@@ -296,74 +296,68 @@ META;
   }
 
   /**
-  * Return a line of CSV from an array. This is instead of PHP's fputcsv because that
-  * function only writes straight to a file, whereas we need a string.
-  */
-  function get_csv($data, $delimiter=',', $enclose='"')
-  {
-    $newline="\r\n";
+   * Return a line of CSV from an array.
+   *
+   * This is instead of PHP's fputcsv because that function only writes
+   * straight to a file, whereas we need a string.
+   */
+  function get_csv($data, $delimiter = ',', $enclose = '"') {
+    $newline = "\r\n";
     $output = '';
     foreach ($data as $idx => $cell) {
-      // If not numeric and contains the delimiter, enclose the string
-      if (!is_numeric($cell) && (preg_match('/[' . $delimiter . $enclose . '\r\n]/', $cell)))
-      {
-        //Escape the enclose
-        $cell = str_replace($enclose, $enclose.$enclose, $cell);
-        //Not numeric enclose
+      // If not numeric and contains the delimiter, enclose the string.
+      if (!is_numeric($cell) && (preg_match('/[' . $delimiter . $enclose . '\r\n]/', $cell))) {
+        // Escape the enclose.
+        $cell = str_replace($enclose, $enclose . $enclose, $cell);
+        // Not numeric enclose.
         $cell = $enclose . $cell . $enclose;
       }
       if ($idx === 0) {
         $output = $cell;
       }
       else {
-        $output.= $delimiter . $cell;
+        $output .= $delimiter . $cell;
       }
     }
-    $output.=$newline;
+    $output .= $newline;
     return $output;
   }
 
   /**
    * Return a line of TSV (tab separated values) from an array.
+   *
    * IANA compliant: no tabs allowed in the fields, so we replace any.
    */
-  function get_tsv($data,$delimiter="\t",$replace=' ')
-  {
-    $newline="\r\n";
+  function get_tsv($data, $delimiter = "\t", $replace = ' ') {
+    $newline = "\r\n";
     $output = '';
-    foreach ($data as $idx => $cell)
-    {
-      // replace all delimiter values with a dummy
-      $output .=  ($idx === 0 ? '' : $delimiter) . preg_replace('/\s+/', $replace, $cell);
+    foreach ($data as $idx => $cell) {
+      // Replace all delimiter values with a dummy.
+      $output .= ($idx === 0 ? '' : $delimiter) . preg_replace('/\s+/', $replace, $cell);
     }
-    $output.=$newline;
+    $output .= $newline;
     return $output;
   }
 
   /**
-  * Return a line of NBN exchange format data from an array.
-  */
-  function get_nbn($data)
-  {
-    $newline="\r\n";
+   * Return a line of NBN exchange format data from an array.
+   */
+  function get_nbn($data) {
+    $newline = "\r\n";
     $output = '';
-    foreach ($data as $cell)
-    {
+    foreach ($data as $cell) {
       // NBN file format does not allow new lines or tabs in any cells. So replace with spaces.
-      $cell = str_replace(array("\n","\r","\t"),array(' ',' ','  '),$cell);
-      if ($output=='')
-      {
+      $cell = str_replace(array("\n", "\r", "\t"), array(' ', ' ', '  '), $cell);
+      if ($output == '') {
         $output = $cell;
       }
-      else
-      {
-        $output.=  "\t" . $cell;
+      else {
+        $output .= "\t" . $cell;
       }
     }
-    $output.=$newline;
+    $output .= $newline;
     return $output;
   }
-
 
   /**
   * Get the results of the query using the supplied view to render each row.
