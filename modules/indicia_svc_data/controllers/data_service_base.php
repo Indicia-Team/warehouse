@@ -303,7 +303,7 @@ META;
   {
     $newline="\r\n";
     $output = '';
-    foreach ($data as $cell) {
+    foreach ($data as $idx => $cell) {
       // If not numeric and contains the delimiter, enclose the string
       if (!is_numeric($cell) && (preg_match('/[' . $delimiter . $enclose . '\r\n]/', $cell)))
       {
@@ -312,11 +312,11 @@ META;
         //Not numeric enclose
         $cell = $enclose . $cell . $enclose;
       }
-      if ($output=='') {
+      if ($idx === 0) {
         $output = $cell;
       }
       else {
-        $output.=  $delimiter . $cell;
+        $output.= $delimiter . $cell;
       }
     }
     $output.=$newline;
