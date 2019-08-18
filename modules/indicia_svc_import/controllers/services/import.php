@@ -418,12 +418,24 @@ class Import_Controller extends Service_Base_Controller {
             }
             $index++;
           }
+          // The genus, specific name and qualifier are all merge fields.
+          // However the qualifier is not mandatory, so if a qualifier is not specified, we effectively tell the system it has been specified
+          // so that the system doesn't ask for it. Ideally this code should be generalised going forward.
+          if ((in_array('taxon:taxon:genus',$metadata['mappings']) || in_array('taxon:taxon:specific',$metadata['mappings'])) &&  !in_array('taxon:taxon:qualifier',$metadata['mappings'])) {
+            $columns['taxon:taxon:qualifier'] = TRUE;
+          }
           if (count($defn['columns']) === count(array_keys($columns))) {
             $specialFieldProcessing[$column] = TRUE;
           }
         }
       }
       $specialMergeProcessing = array();
+      if (isset($metadata['importMergeFields'])) {
+        $metadata['importMergeFields'] = json_decode($metadata['importMergeFields'], TRUE);
+      }
+      if (isset($metadata['synonymProcessing'])) {
+        $metadata['synonymProcessing'] = json_decode($metadata['synonymProcessing'], TRUE);
+      }
       if (isset($metadata['importMergeFields'])) {
         // Only do the special merge processing if all the required fields are
         // there, and if there are no required then if one of the optional ones
@@ -480,6 +492,12 @@ class Import_Controller extends Service_Base_Controller {
             }
             $index++;
           }
+        }
+        // The genus, specific name and qualifier are all merge fields.
+        // However the qualifier is not mandatory, so if a qualifier is not specified, we effectively tell the system it has been specified
+        // so that the system doesn't ask for it. Ideally this code should be generalised going forward.
+        if ((array_key_exists('taxon:taxon:genus',$saveArray) || array_key_exists('taxon:taxon:specific',$saveArray)) &&  !array_key_exists('taxon:taxon:qualifier',$saveArray)) {
+          $saveArray['taxon:taxon:qualifier'] = '';
         }
         foreach (array_keys($specialFieldProcessing) as $col) {
           if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
