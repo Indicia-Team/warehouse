@@ -126,7 +126,7 @@ class Report_Controller extends Data_Service_Base_Controller {
       $this->handle_error($e);
       if (class_exists('request_logging')) {
         request_logging::log('o', 'report', NULL, empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'],
-          $this->website_id, $this->user_id, $tm, $e->getMessage());
+          $this->website_id, $this->user_id, $tm, NULL, $e->getMessage());
       }
     }
   }
