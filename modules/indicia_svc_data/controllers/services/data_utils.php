@@ -80,14 +80,14 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $params = implode(', ', $action['parameters']);
       echo json_encode($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'data', NULL, $action, $this->website_id, $this->user_id, $tm, $db);
+        request_logging::log('a', 'data', 'data_utils', $name, $this->website_id, $this->user_id, $tm, $db);
       }
     }
     catch (Exception $e) {
       error_logger::log_error("Exception during custom data_utils action $name", $e);
       $this->handle_error($e);
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'data', NULL, $action, $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+        request_logging::log('a', 'data', 'data_utils', $name, $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
       }
     }
   }
