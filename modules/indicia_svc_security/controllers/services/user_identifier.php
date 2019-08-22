@@ -31,17 +31,29 @@ defined('SYSPATH') or die('No direct script access.');
 class User_Identifier_Controller extends Service_Base_Controller {
 
   public function get_user_id() {
+    $tm = microtime(TRUE);
     try {
       // don't use $_REQUEST as it can do funny things escaping quotes etc.
       $request = array_merge($_GET, $_POST);
       // authenticate requesting website for this service. This can create a user, so need write
       // permission.
       $this->authenticate('write');
-      echo json_encode(user_identifier::get_user_id($request, $this->website_id));
+      $r = user_identifier::get_user_id($request, $this->website_id);
+      echo json_encode($r);
+      $userId = isset($r['userId']) ? $r['userId'] : NULL;
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'security', 'get_user_id', 'user',
+          $this->website_id, $userId, $tm);
+      }
     }
     catch (Exception $e) {
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'security', 'get_user_id', 'user',
+          $this->website_id, NULL, $tm, NULL, $e->getMessage());
+      }
       $this->handle_error($e);
     }
   }
 
 }
+
