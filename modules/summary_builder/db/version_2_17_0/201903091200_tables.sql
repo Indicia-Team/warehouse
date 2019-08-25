@@ -1,6 +1,7 @@
 ﻿
 
 DROP VIEW IF EXISTS gv_summariser_definitions;
+DROP VIEW IF EXISTS list_summariser_definitions;
 
 ALTER TABLE summariser_definitions
   DROP COLUMN check_for_missing,
@@ -13,6 +14,12 @@ CREATE VIEW gv_summariser_definitions AS
   LEFT JOIN websites w ON s.website_id = w.id AND w.deleted = FALSE
   WHERE sd.survey_id = s.id AND sd.deleted = false;
 
+CREATE VIEW list_summariser_definitions AS
+  SELECT s.website_id, sd.id, sd.survey_id, sd.period_type, sd.period_start, sd.period_one_contains, sd.calculate_estimates
+  FROM summariser_definitions sd 
+  JOIN surveys s ON sd.survey_id = s.id AND s.deleted = FALSE
+  JOIN websites w ON s.website_id = w.id AND w.deleted = FALSE
+  WHERE sd.survey_id = s.id AND sd.deleted = false;
 
 DROP VIEW IF EXISTS list_summary_occurrences;
 
@@ -48,7 +55,7 @@ CREATE OR REPLACE VIEW list_summary_occurrences AS
       year, location_id, user_id, type, 
       taxa_taxon_list_id, preferred_taxa_taxon_list_id, taxonomic_sort_order,
       taxon, preferred_taxon, default_common_name, taxon_meaning_id, taxon_list_id,
-      created_by_id, summary_created_on
+      created_by_id, summary_created_on, summarised_data
     FROM summary_occurrences;
 
 COMMENT ON TABLE summary_occurrences IS 'Summary of occurrence data used for reporting.';
