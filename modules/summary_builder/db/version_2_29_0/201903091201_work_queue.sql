@@ -9,4 +9,5 @@ SELECT DISTINCT 'task_summary_builder_sample', 'sample', id, 2, 50, now()
 FROM samples
 WHERE deleted=false
 AND parent_id IS NULL
-AND survey_id IN (SELECT survey_id FROM summariser_definitions WHERE deleted = false);
+AND survey_id IN (SELECT survey_id FROM summariser_definitions WHERE deleted = false)
+ORDER BY date desc;
