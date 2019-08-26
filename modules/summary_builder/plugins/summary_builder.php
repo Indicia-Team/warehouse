@@ -38,7 +38,7 @@ function summary_builder_orm_work_queue() {
       'entity' => 'sample',
       'ops' => ['insert', 'delete'],
       'task' => 'task_summary_builder_sample',
-      'cost_estimate' => 10,
+      'cost_estimate' => 50,
       'priority' => 2,
     ],
     [
@@ -46,7 +46,7 @@ function summary_builder_orm_work_queue() {
       'entity' => 'occurrence',
       'ops' => ['insert', 'delete'],
       'task' => 'task_summary_builder_occurrence_insert_delete',
-      'cost_estimate' => 10,
+      'cost_estimate' => 40,
       'priority' => 2,
     ],
     [
@@ -54,7 +54,7 @@ function summary_builder_orm_work_queue() {
       'entity' => 'occurrence',
       'ops' => ['update'],
       'task' => 'task_summary_builder_occurrence_update',
-      'cost_estimate' => 10,
+      'cost_estimate' => 50,
       'priority' => 2,
     ],
     [
@@ -62,8 +62,8 @@ function summary_builder_orm_work_queue() {
       'entity' => 'location',
       'ops' => ['delete'],
       'task' => 'task_summary_builder_location_delete',
-      'cost_estimate' => 10,
-      'priority' => 2,
+      'cost_estimate' => 40,
+      'priority' => 3,
     ],
 /*
     [

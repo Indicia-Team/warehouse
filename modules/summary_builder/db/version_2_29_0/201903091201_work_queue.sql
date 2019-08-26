@@ -5,7 +5,7 @@
 DELETE FROM work_queue WHERE task='task_summary_builder_sample';
 
 INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
-SELECT DISTINCT 'task_summary_builder_sample', 'sample', id, 3, 90, now()
+SELECT DISTINCT 'task_summary_builder_sample', 'sample', id, 2, 50, now()
 FROM samples
 WHERE deleted=false
 AND parent_id IS NULL
