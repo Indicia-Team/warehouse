@@ -430,10 +430,10 @@ class Import_Controller extends Service_Base_Controller {
         }
       }
       $specialMergeProcessing = array();
-      if (isset($metadata['importMergeFields'])) {
+      if (isset($metadata['importMergeFields']) && is_string($metadata['importMergeFields'])) {
         $metadata['importMergeFields'] = json_decode($metadata['importMergeFields'], TRUE);
       }
-      if (isset($metadata['synonymProcessing'])) {
+      if (isset($metadata['synonymProcessing']) && is_string($metadata['synonymProcessing'])) {
         $metadata['synonymProcessing'] = json_decode($metadata['synonymProcessing'], TRUE);
       }
       if (isset($metadata['importMergeFields'])) {
@@ -848,7 +848,7 @@ class Import_Controller extends Service_Base_Controller {
       $this->auto_render = FALSE;
       if (!empty($allowCommitToDB)&&$allowCommitToDB==true) {
         $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
-      }       
+      }
       if (class_exists('request_logging')) {
         request_logging::log('i', 'import', NULL, 'upload',
           empty($saveArray['website_id']) ? NULL : $saveArray['website_id'],

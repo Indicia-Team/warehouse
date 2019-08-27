@@ -35,4 +35,6 @@ $config['logged_requests'] = array(
   'i.import',
   // Scheduled tasks.
   'a.scheduled_tasks',
+  // Security (e.g. get_user_id).
+  'a.security',
 );
