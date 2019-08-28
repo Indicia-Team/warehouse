@@ -1,3 +1,9 @@
+# Version 2.30.0
+*2019-08-28*
+
+* REST API Elasticsearch CSV downloads now support flexible download column templates.
+* When importing against existing taxa, can now match against "Species list and taxon search code".
+
 # Version 2.29.0
 *2019-08-04*
 

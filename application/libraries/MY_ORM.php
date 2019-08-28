@@ -206,6 +206,8 @@ class ORM extends ORM_Core {
     // Add the external key and timestamps if present
     if (!empty($this->external_key))
       $r['external_key'] = $this->external_key;
+    if (!empty($this->search_code))
+      $r['search_code'] = $this->search_code;
     if (!empty($this->created_on))
       $r['created_on'] = $this->created_on;
     if (!empty($this->updated_on))

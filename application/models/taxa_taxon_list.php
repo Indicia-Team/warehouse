@@ -52,12 +52,13 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     // Extra lookup options.
     'taxon:taxon:genus' => 'Genus (builds binomial name)',
     'taxon:taxon:specific' => 'Specific name/epithet (builds binomial name)',
+    'taxon:taxon:qualifier' => 'Qualifier (builds binomial name)'
   ];
 
   public $specialImportFieldProcessingDefn = [
     'taxon:taxon' => [
-      'template' => '%s %s',
-      'columns' => ['taxon:taxon:genus', 'taxon:taxon:specific'],
+      'template' => '%s %s %s',
+      'columns' => ['taxon:taxon:genus', 'taxon:taxon:specific','taxon:taxon:qualifier'],
     ],
   ];
 
@@ -88,6 +89,14 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'fields' => [
         ['fieldName' => 'taxa_taxon_list:taxon_list_id'],
         ['fieldName' => 'taxon:external_key'],
+        ['fieldName' => 'taxa_taxon_list:taxon_id', 'notInMappings' => TRUE],
+      ],
+    ],
+    [
+      'description' => 'Species list and taxon search code',
+      'fields' => [
+        ['fieldName' => 'taxa_taxon_list:taxon_list_id'],
+        ['fieldName' => 'taxon:search_code'],
         ['fieldName' => 'taxa_taxon_list:taxon_id', 'notInMappings' => TRUE],
       ],
     ],
@@ -238,7 +247,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
               'taxon',
               $supermodel['model']['fields'],
               $syn,
-              ['description', 'external_key', 'taxon_group_id', 'taxon_rank_id']
+              ['description', 'external_key', 'search_code', 'taxon_group_id', 'taxon_rank_id']
             );
             break;
           }

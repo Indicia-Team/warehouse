@@ -75,10 +75,16 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     		break;
     }
     $model = ORM::factory($model);
-    $website_id = empty($_GET['website_id']) ? null : $_GET['website_id'];
-    $survey_id = empty($_GET['survey_id']) ? null : $_GET['survey_id'];
+    // Identify the context of the import
+    $identifiers = [];
+    if (!empty($_GET['website_id'])) {
+      $identifiers['website_id'] = empty($_GET['website_id']) ? null : $_GET['website_id'];
+    }
+    if (!empty($_GET['survey_id'])) {
+      $identifiers['survey_id'] = empty($_GET['survey_id']) ? null : $_GET['survey_id'];
+    }
     $use_associations = (empty($_GET['use_associations']) ? false : ($_GET['use_associations'] == "true" ? true : false));
-    echo json_encode($model->getSubmittableFields(true, $website_id, $survey_id, $attrTypeFilter, $use_associations));
+    echo json_encode($model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $use_associations));
   }
   
   /**
