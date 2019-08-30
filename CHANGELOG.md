@@ -1,3 +1,8 @@
+# Version 2.31.0
+*2019-08-29*
+
+* Refactor of the Summary Builder module to use the work_queue for greater efficiency.
+
 # Version 2.30.0
 *2019-08-28*
 
