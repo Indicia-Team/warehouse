@@ -1122,7 +1122,7 @@ class Import_Controller extends Service_Base_Controller {
               // Taxon info may not be provided if looking up existing record.
               // In which case, skip the lookup.
               !empty($saveArray['taxon:language_id']) &&
-              (!empty($saveArray['taxon:taxon']) || !empty($saveArray['taxon:external_key']  || !empty($saveArray['taxon:search_code'])))) {
+              (!empty($saveArray['taxon:taxon']) || !empty($saveArray['taxon:external_key'])  || !empty($saveArray['taxon:search_code']))) {
             // Same for taxa_taxon_lists, and their taxon supermodel: have to
             // look up using complex query to get the link between the
             // taxon_list and the taxon.
