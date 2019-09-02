@@ -910,6 +910,7 @@ class Import_Controller extends Service_Base_Controller {
       function ($field) {
         return $field->fieldName;
       }, $fields);
+    $join = self::buildJoin($fieldPrefix,$fields,$table,$saveArray); 
     $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
     if ($wheres !== FALSE) {
       $db = Database::instance();
@@ -947,6 +948,25 @@ class Import_Controller extends Service_Base_Controller {
         throw new Exception('Importing an existing ID but the row does not already exist.');
       }
     }
+  }
+
+  /*
+   * Need to build a join so the system works correctly when importing taxa with update existing records selected.
+   * e.g. a problematic scenario would happen if importing new taxa but the external key/search code is still selected 
+   * for existing record update, in this case without building a join, the system would keep overwriting the previous record
+   * as each new one is imported (as it wasn't checking the search code/external key, the final result would be that only one row would import).
+   * Note this function might need improving/generalising for other models, although I did check occurrence/sample import which
+   * did not seem to show the same issue.
+   */
+  public static function buildJoin($fieldPrefix,$fields,$table,$saveArray) {
+    $r = '';
+    if (!empty($saveArray['taxon:external_key']) && $table=='taxa_taxon_lists') {
+      $r = "join taxa t on t.id = ".$table.".taxon_id AND t.external_key='".$saveArray['taxon:external_key']."' AND t.deleted=false";
+    }
+    elseif (!empty($saveArray['taxon:search_code']) && $table=='taxa_taxon_lists') {
+      $r = "join taxa t on t.id = ".$table.".taxon_id AND t.search_code='".$saveArray['taxon:search_code']."' AND t.deleted=false";
+    } 
+    return $r;
   }
 
   /**
