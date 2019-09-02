@@ -82,9 +82,10 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     if (in_array('notifications', $nonPluginTasks)) {
       $email_config = Kohana::config('email');
-      if (array_key_exists ('do_not_send' , $email_config) and $email_config['do_not_send']){
+      if (array_key_exists('do_not_send', $email_config) and $email_config['do_not_send']) {
         kohana::log('info', "Email configured for do_not_send: ignoring notifications from scheduled tasks");
-      } else {
+      }
+      else {
         $swift = email::connect();
         $this->doRecordOwnerNotifications($swift);
         $this->doDigestNotifications($swift);
@@ -546,7 +547,7 @@ class Scheduled_Tasks_Controller extends Controller {
       $occurrenceEmails[$email->occurrence_id] = $email->email_address;
     }
     $qry = $this->db
-      ->select('o.id, ttl.taxon, s.date_start, s.date_end, s.date_type, s.entered_sref as spatial_reference, '.
+      ->select('o.id, ttl.taxon, s.date_start, s.date_end, s.date_type, s.entered_sref as spatial_reference, ' .
           's.location_name, o.comment as sample_comment, o.comment as occurrence_comment')
       ->from('samples as s')
       ->join('occurrences as o', 'o.sample_id', 's.id')
@@ -684,9 +685,10 @@ class Scheduled_Tasks_Controller extends Controller {
       ->get();
     $sortedPlugins = array();
     foreach ($pluginsFromDb as $plugin) {
-      $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check === NULL ? $currentTime : $plugin->last_scheduled_task_check;
+      $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check === NULL
+        ? $currentTime : $plugin->last_scheduled_task_check;
     }
-    // Any new plugins not run before should also be included in the list
+    // Any new plugins not run before should also be included in the list.
     foreach ($plugins as $plugin) {
       if (!isset($sortedPlugins[$plugin])) {
         $sortedPlugins[$plugin] = $currentTime;
@@ -718,8 +720,9 @@ class Scheduled_Tasks_Controller extends Controller {
       if (in_array('all_modules', $scheduledPlugins) || in_array($plugin, $scheduledPlugins)) {
         require_once MODPATH . "$plugin/plugins/$plugin.php";
         $this->loadPluginMetadata($plugin);
-        $this->loadOccurrencesDelta($plugin, $timestamp, $currentTime);
-        // Call the plugin, only if there are records to process, or it doesn't care.
+        $this->loadOccurrencesDelta($timestamp, $currentTime);
+        // Call the plugin, only if there are records to process, or it doesn't
+        // care.
         if (!$this->pluginMetadata['requires_occurrences_delta']
             || $this->occdeltaCount > 0
             || $this->pluginMetadata['always_run']) {
@@ -727,7 +730,7 @@ class Scheduled_Tasks_Controller extends Controller {
           echo "<p>Last run at $timestamp</p>";
           $tm = microtime(TRUE);
           call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $currentTime);
-          // log plugins which take more than 5 seconds
+          // Log plugins which take more than 5 seconds.
           $took = microtime(TRUE) - $tm;
           if ($took > 5) {
             self::msg("Scheduled plugin $plugin took $took seconds", 'alert');
@@ -758,13 +761,14 @@ class Scheduled_Tasks_Controller extends Controller {
   private function getScheduledPlugins() {
     $cacheId = 'scheduled-plugin-names';
     $cache = Cache::instance();
-    // get list of plugins which integrate with scheduled tasks. Use cache so we avoid loading all module files unnecessarily.
+    // Get list of plugins which integrate with scheduled tasks. Use cache so
+    // we avoid loading all module files unnecessarily.
     if (!($plugins = $cache->get($cacheId))) {
       $plugins = array();
       foreach (Kohana::config('config.modules') as $path) {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
-          require_once("$path/plugins/$plugin.php");
+          require_once "$path/plugins/$plugin.php";
           if (function_exists($plugin . '_scheduled_task')) {
             $plugins[] = $plugin;
           }
@@ -781,22 +785,23 @@ class Scheduled_Tasks_Controller extends Controller {
    * If a plugin needs a different occurrences delta table to the one we've got
    * currently prepared, then build it.
    *
-   * @param type $plugin
-   * @param type $timestamp
+   * @param string $timestamp
+   *   Timestamp to load changes since.
    * @param string $currentTime
    *   Timepoint of the scheduled task run, so we can be absolutely clear about
    *   not including records added which overlap the scheduled task.
    *
    * @link http://indicia-docs.readthedocs.io/en/latest/developing/warehouse/plugins.html#scheduled-task-hook
    */
-  private function loadOccurrencesDelta($plugin, $timestamp, $currentTime) {
+  private function loadOccurrencesDelta($timestamp, $currentTime) {
     if ($this->pluginMetadata['requires_occurrences_delta']) {
       if ($this->occdeltaStartTimestamp !== $timestamp) {
         // This scheduled plugin wants to know about the changed occurrences,
         // and the current occdelta table does not contain the records since
         // the correct change point.
         $this->db->query('DROP TABLE IF EXISTS occdelta;');
-        // This query uses a 2 stage process as it is faster than joining occurrences to cache_occurrences.
+        // This query uses a 2 stage process as it is faster than joining
+        // occurrences to cache_occurrences.
         $query = "
 select distinct o.id
 into temporary occlist
@@ -852,7 +857,9 @@ drop table occlist;";
     if ($this->occdeltaCount > $max) {
       $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max");
       foreach ($qry as $t) {
-        self::msg("Scheduled tasks are delaying processing of " . $this->db->query("delete from occdelta where timestamp>'$t->timestamp'")->count()." records as too many to process", 'alert');
+        self::msg("Scheduled tasks are delaying processing of " .
+          $this->db->query("delete from occdelta where timestamp>'$t->timestamp'")->count() .
+          " records as too many to process", 'alert');
         // Remember where we are up to.
         $this->occdeltaEndTimestamp = $t->timestamp;
       }
