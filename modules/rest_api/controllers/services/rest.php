@@ -827,7 +827,7 @@ class Rest_Controller extends Controller {
           $fields[] = $field;
         }
         elseif (preg_match('/^\[higher geography\]/', $field)) {
-          $fields[] = 'higher_geography.*';
+          $fields[] = 'location.higher_geography.*';
         }
         elseif (preg_match('/^\[media\]/', $field)) {
           $fields[] = 'occurrence.associated_media';
