@@ -830,7 +830,7 @@ length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*') || '.*', ''
 -- prefer matches where the full search term is close together, by counting the characters in the area covered by the search term
 case
   when searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%'
-    then length(searchterm) - length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*?'), ''))
+    then length(searchterm) - length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*?'), '', 'i'))
   else 9999 end,
 cts.preferred desc,
 -- finally alpha sort
