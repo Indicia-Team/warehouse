@@ -1,3 +1,10 @@
+# Version 2.32.0
+*2019-09-30*
+
+* Support for loading dynamic attributes for multiple occurrences in one go (required for species checklist). See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/637.
+* Fixes a bug in the Swift mailer class loader which was being too eager on some setups, causing file not found errors.
+
 # Version 2.31.0
 *2019-08-29*
 
