@@ -786,15 +786,6 @@ class Rest_Controller extends Controller {
    *   Data to post.
    */
   private function getEsPostData($scrollMode, $format) {
-    if ($scrollMode === 'nextpage') {
-      // A subsequent hit on a scrolled request.
-      $postObj = [
-        'scroll_id' => $_GET['scroll_id'],
-        'scroll' => SCROLL_TIMEOUT,
-      ];
-      return json_encode($postObj);
-    }
-    // Either unscrolled, or the first call to a scroll. So post the query.
     $postData = file_get_contents('php://input');
     $postObj = empty($postData) ? [] : json_decode($postData);
     // Params for configuring an ES CSV download template get extracted and not
@@ -811,7 +802,15 @@ class Rest_Controller extends Controller {
       $this->esCsvTemplateRemoveColumns = (array) $postObj->removeColumns;
       unset($postObj->removeColumns);
     }
-
+    if ($scrollMode === 'nextpage') {
+      // A subsequent hit on a scrolled request.
+      $postObj = [
+        'scroll_id' => $_GET['scroll_id'],
+        'scroll' => SCROLL_TIMEOUT,
+      ];
+      return json_encode($postObj);
+    }
+    // Either unscrolled, or the first call to a scroll. So post the query.
     if ($scrollMode !== 'off') {
       $postObj->size = MAX_ES_SCROLL_SIZE;
     }
