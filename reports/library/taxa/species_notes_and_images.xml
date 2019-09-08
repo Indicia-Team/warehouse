@@ -3,14 +3,16 @@
     description="Report used to retrieve description of a species and images associated with its taxon_meaning_id."
 >
   <query website_filter_field="o.website_id">
-   SELECT 'description', description as the_text, cast(null as varchar) as caption, cast(null as varchar) as external_details
-    FROM taxa_taxon_lists
-    WHERE id=#taxa_taxon_list_id#
-   UNION
     SELECT 'image', path as the_text, caption, external_details
     FROM taxon_media
     WHERE taxon_meaning_id=#taxon_meaning_id# and deleted=false
-    ORDER BY external_details
+	order by (
+	  case external_details 
+        when 'Detail' then 1
+        when 'Mikrobild' then 2
+        when 'Habitus' then 3
+        when 'Standort' then 4
+    end)
   </query>
   <params>
     <param name='taxa_taxon_list_id' display='Taxon ID' description='ID of the taxon to loads notes for' datatype='text' emptyvalue='-1'/>
