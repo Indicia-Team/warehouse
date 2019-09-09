@@ -17,7 +17,7 @@ FROM (
           	  CASE '#language#' WHEN '' THEN 
           		'&lt;b&gt;' || a.caption || '&lt;/b&gt;' 
           	  ELSE 
-          	  	'&lt;b&gt;' || COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) || '&lt;/b&gt;' 
+          	  	'&lt;b&gt;' || COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->>'#language#')::varchar), a.caption) || '&lt;/b&gt;' 
           	  END,
           ' \(95%\)$', ''), '^' || COALESCE(subcat_l.term, subcat.term), '')) || ': '
       ELSE 

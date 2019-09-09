@@ -72,6 +72,15 @@ class RestApiAbort extends Exception {}
 class Rest_Controller extends Controller {
 
   /**
+   * Defines which ES CSV column download template to use.
+   *
+   * Only supports "default" or empty string currently.
+   *
+   * @var string
+   */
+  private $esCsvTemplate = 'default';
+
+  /**
    * Set sensible defaults for the authentication methods available.
    *
    * @var array
@@ -719,10 +728,8 @@ class Rest_Controller extends Controller {
    * Template for ES CSV output.
    *
    * @var array
-   *
-   * @todo Make this configurable.
    */
-  private $esCsvTemplate = [
+  private $defaultEsCsvTemplate = [
     'Record ID' => 'id',
     'RecordKey' => '_id',
     'Sample ID' => 'event.event_id',
@@ -779,6 +786,22 @@ class Rest_Controller extends Controller {
    *   Data to post.
    */
   private function getEsPostData($scrollMode, $format) {
+    $postData = file_get_contents('php://input');
+    $postObj = empty($postData) ? [] : json_decode($postData);
+    // Params for configuring an ES CSV download template get extracted and not
+    // sent to ES.
+    if (isset($postObj->columnsTemplate)) {
+      $this->esCsvTemplate = $postObj->columnsTemplate;
+      unset($postObj->columnsTemplate);
+    }
+    if (isset($postObj->addColumns)) {
+      $this->esCsvTemplateAddColumns = (array) $postObj->addColumns;
+      unset($postObj->addColumns);
+    }
+    if (isset($postObj->removeColumns)) {
+      $this->esCsvTemplateRemoveColumns = (array) $postObj->removeColumns;
+      unset($postObj->removeColumns);
+    }
     if ($scrollMode === 'nextpage') {
       // A subsequent hit on a scrolled request.
       $postObj = [
@@ -788,14 +811,13 @@ class Rest_Controller extends Controller {
       return json_encode($postObj);
     }
     // Either unscrolled, or the first call to a scroll. So post the query.
-    $postData = file_get_contents('php://input');
-    $postObj = empty($postData) ? [] : json_decode($postData);
-
     if ($scrollMode !== 'off') {
       $postObj->size = MAX_ES_SCROLL_SIZE;
     }
     if ($format === 'csv') {
-      foreach ($this->esCsvTemplate as $field) {
+      $csvTemplate = $this->getEsCsvTemplate();
+      $fields = [];
+      foreach ($csvTemplate as $field) {
         if (strpos($field, '_') === 0) {
           // Fields starting _ are not inside _source object.
           continue;
@@ -804,7 +826,7 @@ class Rest_Controller extends Controller {
           $fields[] = $field;
         }
         elseif (preg_match('/^\[higher geography\]/', $field)) {
-          $fields[] = 'higher_geography.*';
+          $fields[] = 'location.higher_geography.*';
         }
         elseif (preg_match('/^\[media\]/', $field)) {
           $fields[] = 'occurrence.associated_media';
@@ -956,6 +978,7 @@ class Rest_Controller extends Controller {
    */
   private function getEsOutputHeader($format) {
     if ($format === 'csv') {
+      $csvTemplate = $this->getEsCsvTemplate();
       $row = array_map(function ($cell) {
         // Cells containing a quote, a comma or a new line will need to be
         // contained in double quotes.
@@ -964,10 +987,32 @@ class Rest_Controller extends Controller {
           return '"' . preg_replace('/"/', '""', $cell) . '"';
         }
         return $cell;
-      }, array_keys($this->esCsvTemplate));
+      }, array_keys($csvTemplate));
       return implode(',', $row) . "\n";
     }
     return '';
+  }
+
+  /**
+   * Determines the columns template for an ES download.
+   *
+   * @return array
+   *   List of column definitions to download.
+   */
+  private function getEsCsvTemplate() {
+    // Start with the default columns set, or an empty array.
+    $csvTemplate = $this->esCsvTemplate === 'default' ? $this->defaultEsCsvTemplate : [];
+    // Append extra columns.
+    if (!empty($this->esCsvTemplateAddColumns)) {
+      $csvTemplate = array_merge($csvTemplate, $this->esCsvTemplateAddColumns);
+    }
+    // Remove any that need to be removed.
+    if (!empty($this->esCsvTemplateRemoveColumns)) {
+      foreach ($this->esCsvTemplateRemoveColumns as $col) {
+        unset($csvTemplate[$col]);
+      }
+    }
+    return $csvTemplate;
   }
 
   /**
@@ -1137,9 +1182,10 @@ class Rest_Controller extends Controller {
     if (empty($data['hits']['hits'])) {
       return;
     }
+    $esCsvTemplate = $this->getEsCsvTemplate();
     foreach ($data['hits']['hits'] as $doc) {
       $row = [];
-      foreach ($this->esCsvTemplate as $source) {
+      foreach ($esCsvTemplate as $source) {
         $this->copyIntoCsvRow($doc, $source, $row);
       }
       $row = array_map(function ($cell) {
