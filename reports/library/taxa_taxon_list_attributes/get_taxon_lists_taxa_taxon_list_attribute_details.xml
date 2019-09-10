@@ -1,0 +1,26 @@
+<report
+    title="Get taxon_lists_taxa_taxon_list_attribute records for a taxa_taxon_list_attribute"
+    description="Retrieve details of taxon_lists_taxa_taxon_list_attribute records for a given taxa_taxon_list_attribute."
+    featured="true"
+>
+  <query website_filter_field="tlttla.website_id">
+    SELECT #columns#
+    FROM taxon_lists_taxa_taxon_list_attributes tlttla
+    JOIN taxa_taxon_list_attributes ttla on ttla.id=tlttla.taxa_taxon_list_attribute_id and ttla.deleted=false
+    WHERE tlttla.deleted=false
+  </query>
+  <params>
+    <param name="taxon_list_id" display="Survey ID" datatype="integer" emptyvalue="" default="" >
+      <where>tlttla.taxon_list_id=#taxon_list_id#</where>
+    </param>
+    <param name="taxa_taxon_list_attribute_id" display="taxa_taxon_list ID" datatype="integer" emptyvalue="" default="" >
+      <where>ttla.id=#taxa_taxon_list_attribute_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="taxon_lists_taxa_taxon_list_attribute_id" display="Taxon Lists Taxa Taxon List Attribute ID" sql="tlttla.id" datatype="integer" />
+    <column name="control_type_id" display="Control Type ID" sql="tlttla.control_type_id" datatype="integer" />
+    <column name="taxa_taxon_list_attribute_id" display="Taxa Taxon List Attribute ID" sql="ttla.id" datatype="integer" />
+    <column name="taxon_list_id" display="Taxon List ID" sql="tlttla.taxon_list_id" datatype="integer" />
+  </columns>
+</report>
