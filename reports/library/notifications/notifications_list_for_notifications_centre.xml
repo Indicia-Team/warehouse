@@ -59,6 +59,7 @@
     <column name="source_type" display='Source type' visible="false" datatype="text" sql="n.source_type" />
     <column name="data" display="Message" datatype="text" sql="replace(replace(n.data, '\n', '&lt;br/&gt;'), '&quot;username&quot;:&quot;admin&quot;', '&quot;username&quot;:&quot;#system_name#&quot;')" />
     <column name="occurrence_id" display="Record ID" datatype="integer" sql="o.id" />
+    <column name="sample_id" display="Sample ID" visible="false" datatype="integer" sql="o.sample_id" />
     <column name="linked_id" display="Linked ID" datatype="integer" sql="n.linked_id" />
     <column name="acknowledged" display="Acknowledged" datatype="boolean" sql="n.acknowledged" visible="false" />
     <column name="user_id" display="User ID" visible="false" datatype="integer" sql="n.user_id" />
