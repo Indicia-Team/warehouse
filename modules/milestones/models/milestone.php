@@ -49,7 +49,7 @@ class Milestone_Model extends ORM {
     $array->add_rules('success_message', 'required');
     $array->add_rules('website_id', 'required');
     $array->add_rules('awarded_by', 'required');
-    $this->unvalidatedFields = array('group_id','deleted');
+    $this->unvalidatedFields = array('group_id','deleted','send_to_user','admin_emails');
     return parent::validate($array, $save);
   }
 

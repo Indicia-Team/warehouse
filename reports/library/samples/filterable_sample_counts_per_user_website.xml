@@ -1,0 +1,25 @@
+<report
+    title="Filterable samples count per user/website combination."
+    description="Return a count of samples the user has created on a given website. Report can be supplied a filter from the filters table."
+>
+  <query website_filter_field="s.website_id" standard_params="samples">
+    SELECT #columns#
+    FROM cache_samples_functional s
+      #agreements_join#
+      #joins#
+    WHERE 
+      s.website_id=#website_id# 
+    AND 
+      s.created_by_id=#user_id#
+    AND
+      s.parent_sample_id IS NULL
+      #idlist#
+  </query>
+  <params>
+    <param name="user_id" display="User Id" description="User Id" datatype="text" />
+    <param name="website_id" display="Website Id" description="Website Id" datatype="text" />
+  </params>
+  <columns>
+    <column name="count" display="Count" sql="count(s.id)" datatype="integer" aggregate="true"/>
+  </columns>
+</report>

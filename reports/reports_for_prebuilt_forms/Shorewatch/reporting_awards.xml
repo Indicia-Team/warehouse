@@ -1,0 +1,69 @@
+<report
+    title="Shorewatch Reporting: Awards summary"
+    description="A list of volunteers and the awards that they have been awarded."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+    FROM users u 
+    JOIN people p ON p.id = u.person_id
+    JOIN (
+      SELECT s1.created_by_id,
+          COUNT(distinct s1.id) AS number_watches,
+          MIN(s1.date_start) AS first_watch,
+          MAX(s1.date_start) AS last_watch
+      FROM samples s1
+      #joins#
+      WHERE s1.deleted=false
+        AND s1.sample_method_id = #effort_sample_method_id#
+        #filters#
+      GROUP by s1.created_by_id
+    ) AS data ON data.created_by_id=u.id
+    LEFT JOIN (
+      SELECT m.id as milestone_id, ma.user_id, m.count, m.title, milestone_reached.date_reached
+      FROM milestones m
+      JOIN milestone_awards ma ON ma.milestone_id = m.id AND ma.deleted=false
+      JOIN (
+        SELECT s1.date_start As date_reached,
+          s1.created_by_id,
+          RANK () OVER ( 
+            PARTITION BY s1.created_by_id
+            ORDER BY s1.date_start  ASC, s1.id ASC
+          ) rank 
+        FROM samples s1
+        WHERE s1.deleted=false
+          AND s1.sample_method_id = #effort_sample_method_id#
+          #filters#
+      ) AS milestone_reached ON milestone_reached.created_by_id = ma.user_id AND milestone_reached.rank = m.count
+      WHERE m.deleted=false AND m.entity = 'S'
+    ) AS milestone_data ON milestone_data.user_id=u.id
+  </query>
+  <order_bys>
+    <order_by>p.surname ASC</order_by>
+    <order_by>p.first_name ASC</order_by>
+    <order_by>milestone_data.count DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id'
+            display='Survey'
+            description='Select the survey.'
+            datatype='lookup'
+            population_call='direct:survey:id:title' >
+        <where>s1.survey_id = #survey_id#</where>
+    </param>
+    <param name='effort_sample_method_id'
+            display='Effort Sample Method'
+            description='Select the effort sample method. Mandatory.'
+            datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
+  </params>
+  <columns>
+    <column name="user_id" display="User Indicia ID" sql="u.id" />
+    <column name="first_name" display="First name" sql="p.first_name" />
+    <column name="surname" display="Surname" sql="p.surname" />
+    <column name="first_watch" display="First watch" sql="data.first_watch" />
+    <column name="last_watch" display="Last watch" sql="data.last_watch" />
+    <column name="number_watches" display="Number of watches recorded" sql="data.number_watches" />
+    <column name="milestone" display="Milestone" sql="milestone_data.title" />
+    <column name="milestone_date" display="Date milestone reached" sql="milestone_data.date_reached" />
+  </columns>
+</report>

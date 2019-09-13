@@ -66,7 +66,7 @@ else {
     echo data_entry_helper::select(array(
       'label' => 'Count what?',
       'fieldname' => 'milestone:entity',
-      'lookupValues' => array('T' => 'Species or taxa', 'O' => 'Records', 'M' => 'Media/photos'),
+      'lookupValues' => array('T' => 'Species or taxa', 'O' => 'Records', 'M' => 'Media/photos', 'S' => 'Top level samples'),
       'default' => html::initial_value($values, 'milestone:entity'),
       'helpText' => 'Are you targetting a total count of species, records or media/photos for this milestone?'
     ));
@@ -87,6 +87,13 @@ else {
       'helpText' => 'Optional ID of the recording group associated with the milestone, only users that are members of this group will receive the milestone award.'
     ));
 
+    echo data_entry_helper::checkbox([
+        'label' => 'Send to User?',
+        'fieldname' => 'send_to_user',
+        'default' => html::initial_value($values, 'milestone:send_to_user'),
+        'helpText' => 'Indicate if notification to be sent to the user, as opposed or in addition to a central email account.',
+    ]);
+    
     echo data_entry_helper::textarea(array(
       'label' => 'Success message',
       'fieldname' => 'milestone:success_message',
@@ -103,6 +110,14 @@ else {
       'helpText' => 'Which organisation is awarding the milestone? This will appear in the from field for the notification sent to the recorder.'
     ));
 
+    echo data_entry_helper::text_input(array(
+      'label' => 'Admin emails',
+      'fieldname' => 'milestone:admin_emails',
+      'class' => 'control-width-6',
+      'default'=> html::initial_value($values, 'milestone:admin_emails'),
+      'helpText' => 'Optional: comma separated list of central email addresses to send a notification to that the user has reached the milestone.'
+    ));
+    
     //The filter title is actually generated using the milestone title we enter. There are issues with using the built-in validator to detect duplicate titles because the filter supermodel is validated
     //first. The filter requires a unique title/sharing/created_by_id option that isn't included in the model, the issue is only
     //detected once the system tries to add the filter to the database, this will fail with a general error without even getting as far as doing the milestone model's
