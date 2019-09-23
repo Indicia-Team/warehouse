@@ -62,14 +62,6 @@ join verification_rule_data vrdini on vrdini.verification_rule_id=vr.verificatio
   and vrdini.header_name='INI'
   and vrdini.key=vr.id_difficulty
   and vrdini.key::int>1 and vrdini.deleted=false
--- join to exclude warning user's who've already ID'd this species successfully.
-left join cache_occurrences_functional o2 on o2.id<>co.id
-  -- same species
-  and o2.taxa_taxon_list_external_key=co.taxa_taxon_list_external_key
-  -- accepted
-  and o2.record_status='V'
-  -- same user
-  and o2.created_by_id=co.created_by_id
 SQL;
   return array(
     'testType' => 'IdentificationDifficulty',
