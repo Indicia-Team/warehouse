@@ -74,7 +74,6 @@ SQL;
     'queries' => [
       [
         'joins' => $joinSql,
-        'where' => 'o2.id is null',
         'subtypeField' => 'vrdini.key',
       ],
     ],
