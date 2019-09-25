@@ -190,7 +190,7 @@ class summary_builder {
         foreach($existingResults as $row){
             foreach($definitionResult as $definition) {
                 if($definition['survey_id'] == $row['survey_id']) {
-                    self::do_summary($db, $definitionResult[0], $row[0]['year'], $row[0]['user_id'], $locationId,
+                    self::do_summary($db, $definition, $row['year'], $row['user_id'], $locationId,
                         [$row['taxa_taxon_list_id']]);
                 }
             }
