@@ -1048,7 +1048,6 @@ class Rest_Controller extends Controller {
     if (!empty($postData) && $postData !== '[]') {
       curl_setopt($session, CURLOPT_POST, 1);
       curl_setopt($session, CURLOPT_POSTFIELDS, $postData);
-      kohana::log('debug', 'ES POST: ' . $postData);
     }
     if ($scrollMode === 'initial') {
       // First iteration of a scrolled request, so prepare an output file.
