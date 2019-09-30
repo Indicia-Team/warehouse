@@ -28,7 +28,7 @@ $config['get_samples_to_process'] =
   JOIN summariser_definitions sd ON sd.survey_id = s.survey_id AND sd.deleted = false
   WHERE wq.claimed_by='#procId#'
     AND wq.entity='sample'
-    AND wq.task='task_summary_builder_sample';";
+    AND wq.task='#task#';";
 
 $config['get_definition'] =
 "SELECT sd.*, s.website_id
@@ -38,7 +38,6 @@ $config['get_definition'] =
 
 // assumes a two level sample/subsample arrangement
 // Needs to return the sample details, even if no taxa: allows us to fetch any exsting data.
-// TODO add 10 seconds buffer
 $config['sample_detail_lookup'] =
 "SELECT parent.survey_id, EXTRACT(YEAR FROM parent.date_start) as year, parent.created_by_id as user_id,
     parent.location_id, s.website_id
@@ -47,32 +46,20 @@ $config['sample_detail_lookup'] =
   WHERE parent.id = #sample_id# ;";
 
 $config['sample_occurrence_lookup'] =
-"SELECT occ.taxa_taxon_list_id
+"SELECT distinct occ.taxa_taxon_list_id
   FROM samples parent
   JOIN samples child ON child.parent_id = parent.id AND child.deleted = FALSE
   JOIN occurrences occ ON occ.sample_id = child.id AND occ.deleted = FALSE
-  LEFT JOIN summary_occurrences so
-            ON  so.website_id = #website_id#
-            AND so.survey_id = #survey_id#
-            AND so.user_id = #user_id#
-            AND so.location_id = #location_id#
-            AND so.taxa_taxon_list_id = occ.taxa_taxon_list_id
-            AND so.year = #year#
-            AND so.summary_created_on > parent.updated_on
-  WHERE parent.id = #sample_id# 
-  AND so.survey_id is NULL ;";
+  WHERE parent.id = #sample_id# ;";
 
 $config['sample_existing_taxa'] =
 "SELECT so.taxa_taxon_list_id
-  FROM samples parent
-  JOIN summary_occurrences so
-            ON  so.website_id = #website_id#
-            AND so.survey_id = #survey_id#
-            AND so.user_id = 0
-            AND so.location_id = #location_id#
-            AND so.year = #year#
-            AND so.summary_created_on <= parent.updated_on
-  WHERE parent.id = #sample_id# ;";
+  FROM summary_occurrences so
+  WHERE so.website_id = #website_id#
+    AND so.survey_id = #survey_id#
+    AND so.user_id = 0
+    AND so.location_id = #location_id#
+    AND so.year = #year# ;";
 
 // need to process deleted occurrences: can't use cache
 $config['get_occurrences_to_process'] =
@@ -92,15 +79,7 @@ $config['occurrence_detail_lookup'] =
   FROM samples parent
   JOIN samples child ON child.parent_id = parent.id
   JOIN occurrences occ ON occ.sample_id = child.id AND occ.id = #occurrence_id# 
-  LEFT JOIN summary_occurrences so
-            ON  so.survey_id = parent.survey_id
-            AND so.user_id = parent.created_by_id
-            AND so.location_id = parent.location_id
-            AND so.taxa_taxon_list_id = occ.taxa_taxon_list_id
-            AND so.year = EXTRACT(YEAR FROM parent.date_start)
-            AND so.summary_created_on > occ.updated_on
-  WHERE parent.location_id IS NOT NULL AND parent.deleted = false 
-  AND so.survey_id is NULL ;";
+  WHERE parent.location_id IS NOT NULL AND parent.deleted = false ;";
 
 $config['sample_detail_lookup_occurrence'] =
 "SELECT parent.id as sample_id, parent.survey_id, EXTRACT(YEAR FROM parent.date_start) as year,
