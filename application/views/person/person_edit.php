@@ -46,7 +46,6 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'extraParams' => $readAuth + ['orderby' => 'title'],
       'default' => html::initial_value($values, 'person:title_id'),
       'blankText' => '<Please select>',
-      'validation' => ['required'],
       'caching' => FALSE,
     ]);
     echo data_entry_helper::text_input([
