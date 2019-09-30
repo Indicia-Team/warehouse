@@ -1,5 +1,24 @@
-# Version 2.32.0
+# Version 2.34.0
 *2019-09-30*
+
+* Identification difficulty flags now always raised for benefit of verifiers,
+  even if recorder competent with that species. However, the notification is
+  only sent if the recorder has insufficient track record for that species.
+  (https://github.com/BiologicalRecordsCentre/iRecord/issues/657).
+* Removed inadvertant required flag on person title field in edit form.
+* Tweaks to UKBMS summary builder calculation optimisations.
+
+# Version 2.33.0
+*2019-09-30*
+
+* Higher geography Elasticsearch download fixed.
+* Fix taxon search ordering of results
+  (https://github.com/BiologicalRecordsCentre/iRecord/issues/669).
+* Fixes relating to Elasticsearch scroll mode (pagination) not applying column
+  settings.
+
+# Version 2.32.0
+*2019-09-03*
 
 * Support for loading dynamic attributes for multiple occurrences in one go (required for species checklist). See
   https://github.com/BiologicalRecordsCentre/iRecord/issues/637.
