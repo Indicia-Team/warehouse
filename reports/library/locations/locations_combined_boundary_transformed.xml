@@ -1,0 +1,20 @@
+<report
+    title="Locations combined boundary transformed"
+    description="A list of location boundaries combined into 1 and transformed to EPSG:4326 for Elasticsearch."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations l
+    LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+    WHERE l.deleted=false
+    AND l.id IN (#location_ids#)
+  </query>
+  <params>
+    <param name="location_ids" display="Location IDs" datatype="integer[]"
+       description="Comma separated list of location IDs"/>
+  </params>
+  <columns>
+    <column name="geom" aggregate="true"
+      sql="ST_AsText(ST_Transform(ST_Union(COALESCE(l.boundary_geom, l.centroid_geom)), 4326))"/>
+  </columns>
+</report>
