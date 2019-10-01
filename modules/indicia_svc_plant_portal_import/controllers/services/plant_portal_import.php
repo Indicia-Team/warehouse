@@ -362,6 +362,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
         $model->clear();
         // Save the record with automatically generated spatial reference from the Vice County/Country where needed
         $saveArray=self::auto_generate_grid_references($saveArray);
+        kohana::log('debug', 'Plant Portal - Warehouse is going to save this submission '.print_r($saveArray,true));
         $model->set_submission_data($saveArray, true);         
         $associationExists = false;
         if (($id = $model->submit()) == null) {
@@ -414,6 +415,9 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     $plotNames = (isset($_GET['plotNames']) ? $_GET['plotNames'] : false);
     $plotSrefs = (isset($_GET['plotSrefs']) ? $_GET['plotSrefs'] : false);
     $plotSrefSystems = (isset($_GET['plotSrefSystems']) ? $_GET['plotSrefSystems'] : false);
+    kohana::log('debug', 'Plant Portal - Warehouse has received these new plot names to process '.print_r($plotNames,true));
+    kohana::log('debug', 'Plant Portal - Warehouse has received these new plot spatial references to process '.print_r($plotSrefs,true));
+    kohana::log('debug', 'Plant Portal - Warehouse has received these new plot spatial reference systems to process '.print_r($plotSrefSystems,true));
     $plotLocationType = (isset($_GET['plotLocationType']) ? $_GET['plotLocationType'] : false);
     $websiteId = (isset($_GET['websiteId']) ? $_GET['websiteId'] : false);
     $userId = (isset($_GET['userId']) ? $_GET['userId'] : false);
@@ -488,6 +492,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
   public function create_new_groups() {
     $db = new Database();
     $groupNames = (isset($_GET['names']) ? $_GET['names'] : false);
+    kohana::log('debug', 'Plant Portal - Warehouse has received these new plot groups names to process '.print_r($groupNames,true));
     //Groups names set in batches, these are comma separated so explode them to deal with them
     $explodedGroupNames = explode(',',$groupNames);
     $userId = (isset($_GET['userId']) ? $_GET['userId'] : false);
