@@ -3,16 +3,14 @@
     description="Filter with extra searchArea column transformed to EPSG:4326 for use in Elasticsearch queries."
 >
   <query>
-  SELECT #columns#
-  FROM filters f
-  WHERE (f.website_id in (#website_ids#) or f.website_id is null)
-  AND f.deleted=false
-  and f.id=#filter_id#
-  #order_by#
+    SELECT #columns#
+    FROM filters f
+    LEFT JOIN locations l ON string_to_array(COALESCE(definition::json->>'location_list', definition::json->>'location_ids'), ',') @> ARRAY[l.id::text ]
+    WHERE (f.website_id in (#website_ids#) OR f.website_id is null)
+    AND f.deleted=false
+    and f.id=#filter_id#
+    #order_by#
   </query>
-  <order_bys>
-    <order_by>f.title ASC</order_by>
-  </order_bys>
   <param name="filter_id" data_type="integer" />
   <columns>
     <column name="id" visible="false" sql="f.id" />
@@ -24,7 +22,9 @@
     <column name="definition" visible="false" sql="f.definition" />
     <column name="defines_permissions" visible="false" sql="f.defines_permissions" />
     <column name="search_area"
-        sql="definition::json->>'searchArea', st_astext(st_transform(st_geomfromtext(definition::json->>'searchArea', 3857), 4326))" />
+        sql="definition::json->>'searchArea', ST_AsText(ST_Transform(ST_GeomFromText(definition::json->>'searchArea', 3857), 4326))" />
+    <column name="location_area" aggregate="true"
+        sql="ST_AsText(ST_Transform(ST_Union(COALESCE(l.boundary_geom, l.centroid_geom)), 4326))" />
   </columns>
 </report>
 
