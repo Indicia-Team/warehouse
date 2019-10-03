@@ -1,5 +1,14 @@
+# Version 2.35.0
+*2019-10-03*
+
+* Improved memory consumption when requesting large amounts of data from Data
+  Services.
+* DwC-A files now include a readme file that explains how to repair the file in
+  the event of an error such as a query timeout. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/477.
+
 # Version 2.34.0
-*2019-09-30*
+*2019-10-01*
 
 * Identification difficulty flags now always raised for benefit of verifiers,
   even if recorder competent with that species. However, the notification is
