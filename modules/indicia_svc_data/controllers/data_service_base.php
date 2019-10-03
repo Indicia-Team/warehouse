@@ -63,7 +63,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     try {
       $records = $this->read_data();
       if ($mode === 'json' || $mode === 'xml') {
-        $responseStruct = $this->get_response_structure($records);
+        $responseStruct = $this->getResponseStructure($records);
       }
     }
     catch (Exception $e) {
@@ -222,19 +222,22 @@ META;
    * Note that if the report parameters are incomplete, then the response will always be just the
    * parameter request.
    */
-  protected function get_response_structure($data) {
+  protected function getResponseStructure(&$data) {
     $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords'] !== '0';
     $wantColumns = isset($_REQUEST['wantColumns']) && $_REQUEST['wantColumns'] === '1';
     $wantCount = isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1';
     $wantParameters = (isset($_REQUEST['wantParameters']) && $_REQUEST['wantParameters'] === '1')
       || ($wantRecords && !isset($data['records']));
     $array = array();
-    if ($wantRecords && isset($data['records']))
-      $array['records'] = $data['records'];
-    if ($wantColumns && isset($this->view_columns))
+    if ($wantRecords && isset($data['records'])) {
+      $array['records'] = &$data['records'];
+    }
+    if ($wantColumns && isset($this->view_columns)) {
       $array['columns'] = $this->view_columns;
-    if ($wantParameters && isset($data['parameterRequest']))
+    }
+    if ($wantParameters && isset($data['parameterRequest'])) {
       $array['parameterRequest'] = $data['parameterRequest'];
+    }
     // Retrieve the count if requested, only if we successfully obtained the
     // records since we don't want to attempt counting if there are unfilfilled
     // required parameters.
@@ -245,7 +248,7 @@ META;
       }
     }
     // If only returning records, simplify the array down to just return the
-    // list of records rather than the full structure
+    // list of records rather than the full structure.
     if (count($array) === 1 && isset($array['records'])) {
       return array_pop($array);
     }

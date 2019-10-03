@@ -444,7 +444,7 @@ class ReportEngine {
       }
       $r = array(
         'columns' => $this->columns,
-        'records' => $data,
+        'records' => &$data,
       );
       if (isset($includedParams) && count($includedParams) > 0) {
         $r['parameterRequest'] = $includedParams;
