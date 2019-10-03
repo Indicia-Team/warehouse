@@ -25,6 +25,7 @@
     <column name='name' display='Name' sql="cttl.taxon" />
     <column name='simplified' display='Simplified' sql="cttl.search_name" />
     <column name="preferred" display="Preferred option" sql="cttl.preferred" />
+    <column name="allow_data_entry" display="Allow data entry" sql="cttl.allow_data_entry" />
     <column name='unambiguous' display='Unambiguous name'
             sql="  case cttl.language_iso when 'lat' then '&lt;em&gt;' || cttl.taxon || '&lt;/em&gt;' else cttl.taxon end ||
   coalesce(' ' || cttl.authority, '') ||
