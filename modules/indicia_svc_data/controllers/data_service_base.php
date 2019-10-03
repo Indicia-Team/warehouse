@@ -25,6 +25,13 @@
 class Data_Service_Base_Controller extends Service_Base_Controller {
 
   /**
+   * More details on a failure, e.g. SQL if a query fails.
+   *
+   * @var string
+   */
+  protected $failedRequestDetail = '';
+
+  /**
   * Cleanup a write once nonce from the cache. Should be called after a call to authenticate.
   * Read nonces do not need to be deleted - they are left to expire.
   */
@@ -51,10 +58,21 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     kohana::log('debug', 'Requesting data from Warehouse');
     kohana::log('debug', print_r($_REQUEST, TRUE));
     $this->authenticate('read');
-    // Return data will return an assoc array containing records and/or parameterRequest.
-    $records = $this->read_data();
     $mode = $this->get_output_mode();
-    $responseStruct = $this->get_response_structure($records);
+    // Read_data will return an assoc array containing records and/or parameterRequest.
+    try {
+      $records = $this->read_data();
+      if ($mode === 'json' || $mode === 'xml') {
+        $responseStruct = $this->get_response_structure($records);
+      }
+    }
+    catch (Exception $e) {
+      // Dwca has different way of handling errors, by embedding query and
+      // instructions in response.
+      if ($mode !== 'dwca') {
+        throw $e;
+      }
+    }
     switch ($mode) {
       case 'json':
         $a = json_encode($responseStruct);
@@ -72,7 +90,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         if (array_key_exists('xsl', $_REQUEST)) {
           $xsl = $_REQUEST['xsl'];
           if (!strpos($xsl, '/')) {
-            // xsl is not a fully qualified path, so point it to the media folder.
+            // Xsl is not a fully qualified path, so point it to the media folder.
             $xsl = url::base() . "media/services/stylesheets/$xsl";
           }
         }
@@ -111,14 +129,34 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
 
       case 'dwca':
         // Darwin Core archive.
-        $content = $this->csv_encode($records);
+        // If an error, we embed the query in the archive so it can be
+        // manually sorted out.
+        if ($this->failedRequestDetail) {
+          $dt = date('Y-m-d H:i:s');
+          $content = <<<TXT
+The following query failed at $dt. Further information is available in the warehouse logs.
+* Please run the SQL given below and export results as CSV to a file called occurrences.csv
+* Remove error-readme.txt from the DwC-a zip file.
+* Add occurrences.csv to the DwC-a zip file.
+
+$this->failedRequestDetail
+TXT;
+        }
+        else {
+          $content = $this->queryError ? $records : $this->csv_encode($records);
+        }
         $zip = new ZipArchive();
         $filename = DOCROOT . 'extract/' . uniqid('dwca-download-') . '.zip';
         $res = $zip->open($filename, ZipArchive::CREATE);
         if ($res === TRUE) {
-          // Add the CSV file to the zip archive - aote we add a Byte Order
-          // Marker to the CSV for UTF-8 support.
-          $zip->addFromString('occurrences.csv', chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF')) . $content);
+          if ($this->failedRequestDetail) {
+            $zip->addFromString('error-readme.txt', $content);
+          }
+          else {
+            // Add the CSV file to the zip archive - aote we add a Byte Order
+            // Marker to the CSV for UTF-8 support.
+            $zip->addFromString('occurrences.csv', chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF')) . $content);
+          }
           // Add the meta.xml file with column details.
           $this->addColumnsMetaToDwcA($zip);
           // Request (POST) can supply content of an EML file to include.

@@ -2076,4 +2076,14 @@ SQL;
     }
   }
 
+  /**
+   * Accessor for the SQL.
+   *
+   * @return string
+   *   Query SQL.
+   */
+  public function getQuery() {
+    return $this->query;
+  }
+
 }
