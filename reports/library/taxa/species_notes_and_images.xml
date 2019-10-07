@@ -9,9 +9,15 @@
 	order by (
 	  case external_details 
         when 'Detail' then 1
+        when 'Micro detail' then 2
         when 'Mikrobild' then 2
+        when 'Mikrofoto' then 2
+        when 'Appearance' then 3
         when 'Habitus' then 3
+        when 'Celkový vzhled' then 3
+        when 'Habitat' then 4
         when 'Standort' then 4
+        when 'Stanoviště' then 4
     end)
   </query>
   <params>
