@@ -3,7 +3,74 @@
     description="Report used to retrieve description of a species and images associated with its taxon_meaning_id."
 >
   <query website_filter_field="o.website_id">
-    SELECT 'image', path as the_text, caption, external_details
+    SELECT 'image', path as the_text, caption, 
+    case
+
+    when external_details = 'Micro detail' AND '#language#'='en' then
+      'Micro detail'
+    when external_details = 'Micro detail' AND '#language#'='de' then
+      'Mikrobild'
+    when external_details = 'Micro detail' AND '#language#'='cs' then
+      'Mikrofoto'
+
+    when external_details = 'Mikrobild' AND '#language#'='en' then
+      'Micro detail'
+    when external_details = 'Mikrobild' AND '#language#'='de' then
+      'Mikrobild'
+    when external_details = 'Mikrobild' AND '#language#'='cs' then
+      'Mikrofoto' 
+
+    when external_details = 'Mikrofoto' AND '#language#'='en' then
+      'Micro detail'
+    when external_details = 'Mikrofoto' AND '#language#'='de' then
+      'Mikrobild'
+    when external_details = 'Mikrofoto' AND '#language#'='cs' then
+      'Mikrofoto' 
+
+    when external_details = 'Appearance' AND '#language#'='en' then
+      'Appearance'
+    when external_details = 'Appearance' AND '#language#'='de' then
+      'Habitus'
+    when external_details = 'Appearance' AND '#language#'='cs' then
+      'Celkový vzhled'
+
+    when external_details = 'Habitus' AND '#language#'='en' then
+      'Appearance'
+    when external_details = 'Habitus' AND '#language#'='de' then
+      'Habitus'
+    when external_details = 'Habitus' AND '#language#'='cs' then
+      'Celkový vzhled'
+
+    when external_details = 'Celkový vzhled' AND '#language#'='en' then
+      'Appearance'
+    when external_details = 'Celkový vzhled' AND '#language#'='de' then
+      'Habitus'
+    when external_details = 'Celkový vzhled' AND '#language#'='cs' then
+      'Celkový vzhled'
+
+    when external_details = 'Habitat' AND '#language#'='en' then
+      'Habitat'
+    when external_details = 'Habitat' AND '#language#'='de' then
+      'Standort'
+    when external_details = 'Habitat' AND '#language#'='cs' then
+    'Stanoviště'
+
+    when external_details = 'Standort' AND '#language#'='en' then
+      'Habitat'
+    when external_details = 'Standort' AND '#language#'='de' then
+      'Standort'
+    when external_details = 'Standort' AND '#language#'='cs' then
+      'Stanoviště'
+
+    when external_details = 'Stanoviště' AND '#language#'='en' then
+      'Habitat'
+    when external_details = 'Stanoviště' AND '#language#'='de' then
+      'Standort'
+    when external_details = 'Stanoviště' AND '#language#'='cs' then
+      'Stanoviště'  
+    ELSE
+      external_details
+    END
     FROM taxon_media
     WHERE taxon_meaning_id=#taxon_meaning_id# and deleted=false
 	order by (
@@ -23,5 +90,6 @@
   <params>
     <param name='taxa_taxon_list_id' display='Taxon ID' description='ID of the taxon to loads notes for' datatype='text' emptyvalue='-1'/>
     <param name='taxon_meaning_id' display='Taxon meaning ID' description='The meaning ID of the taxon' datatype='text' emptyvalue='-1' />
+    <param name='language' display='Language code' description='Drupal language code user is using' datatype='text' />
   </params>
 </report>
