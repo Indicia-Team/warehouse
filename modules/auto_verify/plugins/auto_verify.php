@@ -32,35 +32,59 @@
  *   Database object.
  *
  * @todo Config for $autoVerifyNullIdDiff should be a boolean, not a string
- * @todo Config for $processOldData should be a boolean, not a string
  */
 function auto_verify_scheduled_task($last_run_date, $db) {
   $autoVerifyNullIdDiff = kohana::config('auto_verify.auto_accept_occurrences_with_null_id_difficulty', FALSE, FALSE);
-  $processOldData = kohana::config('auto_verify.process_old_data', FALSE, FALSE);
+
+  $oldestRecordCreatedDateToProcess = kohana::config('auto_verify.oldest_record_created_date_to_process', FALSE, FALSE);
+  $oldestOccurrenceIdToProcess = kohana::config('auto_verify.oldest_occurrence_id_to_process', FALSE, FALSE);
+  $maxRecordsNumber = kohana::config('auto_verify.max_num_records_to_process_at_once', FALSE, FALSE);
+
   if (empty($autoVerifyNullIdDiff)) {
     echo "Unable to automatically verify occurrences when the auto_accept_occurrences_with_null_id_difficulty entry is empty.<br>";
     kohana::log('error', 'Unable to automatically verify occurrences when the auto_accept_occurrences_with_null_id_difficulty configuration entry is empty.');
     return FALSE;
   }
-  // Do we need to consider old data (probably as a one-off run) or just newly
-  // changed data.
+
+  if (empty($oldestRecordCreatedDateToProcess)) {
+    echo "Unable to automatically verify occurrences when the oldest_record_created_date_to_process entry is empty.<br>";
+    kohana::log('error', 'Unable to automatically verify occurrences when the oldest_record_created_date_to_process configuration entry is empty.');
+    return FALSE;
+  }
+
+  if (empty($oldestOccurrenceIdToProcess)) {
+    echo "Unable to automatically verify occurrences when the oldest_occurrence_id_to_process entry is empty.<br>";
+    kohana::log('error', 'Unable to automatically verify occurrences when the oldest_occurrence_id_to_process configuration entry is empty.');
+    return FALSE;
+  }
+
+  if (empty($maxRecordsNumber)) {
+    echo "Unable to automatically verify occurrences when the max_num_records_to_process_at_once entry is empty.<br>";
+    kohana::log('error', 'Unable to automatically verify occurrences when the max_num_records_to_process_at_once configuration entry is empty.');
+    return FALSE;
+  }
+  
   $subQuery = "
-    SELECT delta.id";
-  if (!empty($processOldData)&&$processOldData === 'true') {
-    $subQuery .= "
-      FROM cache_occurrences_functional delta";
-  }
-  else {
-    $subQuery .= "
-      FROM occdelta delta";
-  }
-  $subQuery .= "
+    SELECT distinct delta.id
+    FROM cache_occurrences_functional delta
     JOIN surveys s on s.id = delta.survey_id AND s.auto_accept=true AND s.deleted=false
     LEFT JOIN cache_taxon_searchterms cts on cts.taxon_meaning_id = delta.taxon_meaning_id
     WHERE delta.data_cleaner_result=true
     AND delta.record_status='C' AND delta.record_substatus IS NULL
+        AND delta.created_on >= TO_TIMESTAMP('$oldestRecordCreatedDateToProcess', 'DD/MM/YYYY')
         AND (($autoVerifyNullIdDiff=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty)
         OR ($autoVerifyNullIdDiff=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty)))";
+
+  if (isset($oldestOccurrenceIdToProcess) && $oldestOccurrenceIdToProcess > -1) {
+    $subQuery .= "
+      AND delta.id >= $oldestOccurrenceIdToProcess";
+  }
+
+  if (isset($maxRecordsNumber) && $maxRecordsNumber > -1) {
+    $subQuery .= "
+      order by delta.id desc limit $maxRecordsNumber";
+  }
+
   $verificationTime = gmdate("Y\/m\/d H:i:s");
   //Need to update cache_occurrences_*, as these tables have already been built at this point.
   $query = "
@@ -77,7 +101,9 @@ function auto_verify_scheduled_task($last_run_date, $db) {
     release_status='R',
     verified_by_id=1,
     verified_on='$verificationTime',
-    record_decision_source='M'
+    record_decision_source='M',
+    updated_on = now(),
+    updated_by_id = 1
     WHERE id in
     ($subQuery);
 
@@ -109,13 +135,4 @@ function auto_verify_scheduled_task($last_run_date, $db) {
     echo '1 occurrence record has been automatically verified.</br>';
   else
     echo 'No occurrence records have been auto-verified.</br>';
-}
-
-/*
- * Tell the system that we need the occdelta table to find out which occurrences have been created/changed recently.
- */
-function auto_verify_metadata() {
-  return array(
-    'requires_occurrences_delta'=>TRUE
-  );
 }
