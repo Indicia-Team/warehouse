@@ -65,9 +65,39 @@ class Survey_Controller extends Gridview_Base_Controller {
     $arr = array();
     foreach ($websites->where('deleted','false')->orderby('title','asc')->find_all() as $website)
       $arr[$website->id] = $website->title;
-    return array(
+
+    $otherData = array(
       'websites' => $arr
     );
+
+    $otherData['taxon_restrictions'] = []; 
+    $masterListId = warehouse::getMasterTaxonListId();
+    if ($masterListId) {
+    
+      $tm_ids = $this->db
+          ->select('s.auto_accept_taxa_filters')
+          ->from('surveys AS s')
+          ->where([
+            's.id' => $values['survey:id'],
+          ])
+          ->get()->result_array(FALSE);    
+      $valsCSV=trim($tm_ids[0]['auto_accept_taxa_filters'], "{}");
+
+      if (!empty($valsCSV)) {
+        foreach (explode(",", $valsCSV) as $tm_id){ 
+          $ttl_id = $this->db
+            ->select('cttl.id as taxa_taxon_list_id')
+            ->from('cache_taxa_taxon_lists AS cttl')
+            ->where([
+              'cttl.taxon_meaning_id' => $tm_id,
+              'cttl.preferred' => true
+            ])
+            ->get()->result_array(FALSE);
+            array_push($otherData['taxon_restrictions'], $ttl_id[0]);
+        }
+      }
+    }
+    return $otherData;
   }
 
   /**
