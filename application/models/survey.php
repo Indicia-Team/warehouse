@@ -63,15 +63,22 @@ class Survey_Model extends ORM_Tree {
   protected function preSubmit() {
     if (!empty($_POST['has-taxon-restriction-data'])) {
       $ttlIds = [];
+      $tmIds = [];
       foreach ($_POST as $key => $value) {
         if (substr($key, -8) === ':present' && $value !== '0') {
-          $taxonMeaningId = $this->db
-              ->query('SELECT taxon_meaning_id FROM cache_taxa_taxon_lists WHERE id=' . $value)
-              ->current();
-          $ttlIds[] = intVal($taxonMeaningId->taxon_meaning_id);
+          $ttlIds[] = $value;
         }  
       }
-      $this->submission['fields']['auto_accept_taxa_filters']=array('value' => $ttlIds);
+      $tmIdRecs = $this->db
+          ->select('id, taxon_meaning_id')
+          ->from('cache_taxa_taxon_lists')
+          ->in('id', $ttlIds)
+          ->get()->result();
+
+      foreach ($tmIdRecs as $tmIdRec) {
+        $tmIds[] = intVal($tmIdRec->taxon_meaning_id);
+      }
+      $this->submission['fields']['auto_accept_taxa_filters']=array('value' => $tmIds);
     }
     return parent::presubmit();
   }

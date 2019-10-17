@@ -74,27 +74,27 @@ class Survey_Controller extends Gridview_Base_Controller {
     $masterListId = warehouse::getMasterTaxonListId();
     if ($masterListId) {
     
-      $tm_ids = $this->db
+      $tmIdVals = $this->db
           ->select('s.auto_accept_taxa_filters')
           ->from('surveys AS s')
           ->where([
             's.id' => $values['survey:id'],
           ])
-          ->get()->result_array(FALSE);    
-      $valsCSV=trim($tm_ids[0]['auto_accept_taxa_filters'], "{}");
+          ->get()->result();
 
-      if (!empty($valsCSV)) {
-        foreach (explode(",", $valsCSV) as $tm_id){ 
-          $ttl_id = $this->db
-            ->select('cttl.id as taxa_taxon_list_id')
-            ->from('cache_taxa_taxon_lists AS cttl')
-            ->where([
-              'cttl.taxon_meaning_id' => $tm_id,
-              'cttl.preferred' => true
-            ])
-            ->get()->result_array(FALSE);
-            array_push($otherData['taxon_restrictions'], $ttl_id[0]);
-        }
+      $valsCSV=trim($tmIdVals[0]->auto_accept_taxa_filters, "{}");
+      
+      $ttlIds = $this->db
+          ->select('id')
+          ->from('cache_taxa_taxon_lists as cttl')
+          ->in('taxon_meaning_id', explode(",", $valsCSV))
+          ->where([
+            'cttl.preferred' => true
+          ])
+          ->get()->result();
+
+      foreach ($ttlIds as $ttlId) {
+        array_push($otherData['taxon_restrictions'], array("taxa_taxon_list_id" => $ttlId->id));
       }
     }
     return $otherData;
