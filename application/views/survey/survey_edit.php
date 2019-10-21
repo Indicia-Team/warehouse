@@ -138,6 +138,36 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
         'helpText' => 'If Auto Accept is set, then this is the minimum identification difficulty that will be auto verified.',
       ));
     }
+    if (array_key_exists('survey:auto_accept_taxa_filters', $values)) {
+      $masterListId = warehouse::getMasterTaxonListId();
+      echo <<<HTML
+<div class="alert alert-info">
+ <p>You can use the taxon selection control below to 
+ select one or more higher level taxa to which recorded taxa must belong in order to
+ quality for auto-verification. Leave the list empty for no filtering. You must also
+ check the Auto Accept box for these filters to take effect.</p>
+</div>
+<label>Taxon restrictions</label>
+<input type="hidden" name="has-taxon-restriction-data" value="1" />
+HTML;
+      require_once 'client_helpers/prebuilt_forms/includes/language_utils.php';
+      $speciesChecklistOptions = [
+        'lookupListId' => $masterListId,
+        'rowInclusionCheck' => 'alwaysRemovable',
+        'extraParams' => $readAuth,
+        'survey_id' => $values['survey:id'],
+        'language' => iform_lang_iso_639_2(kohana::config('indicia.default_lang')),
+      ];
+      if (!empty($other_data['taxon_restrictions'])) {
+        $speciesChecklistOptions['listId'] = $masterListId;
+        $speciesChecklistOptions['preloadTaxa'] = [];
+        foreach ($other_data['taxon_restrictions'] as $restriction) {
+          $speciesChecklistOptions['preloadTaxa'][] = $restriction['taxa_taxon_list_id'];
+        }
+      }
+      echo data_entry_helper::species_checklist($speciesChecklistOptions);
+      echo '<br/>';
+    }
     ?>
   </fieldset>
   <?php if (array_key_exists('attributes', $values) && count($values['attributes']) > 0) : ?>
