@@ -79,9 +79,7 @@ function auto_verify_scheduled_task($last_run_date, $db) {
         AND delta.created_on >= TO_TIMESTAMP('$oldestRecordCreatedDateToProcess', 'DD/MM/YYYY')
         AND (($autoVerifyNullIdDiff=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty)
         OR ($autoVerifyNullIdDiff=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty)))
-    AND (s.auto_accept_taxa_filters is null
-      OR delta.taxon_meaning_id = ANY (s.auto_accept_taxa_filters)
-      OR (s.auto_accept_taxa_filters && delta.taxon_path))";
+    AND (s.auto_accept_taxa_filters is null OR (s.auto_accept_taxa_filters && delta.taxon_path))";
 
   if (isset($oldestOccurrenceIdToProcess) && $oldestOccurrenceIdToProcess > -1) {
     $subQuery .= "
