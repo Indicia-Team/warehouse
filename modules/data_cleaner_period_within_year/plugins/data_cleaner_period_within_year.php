@@ -139,12 +139,12 @@ and (coalesce(vr.survey_id, co.survey_id) = co.survey_id)
 and (vr.stages is null or vr.stages @> string_to_array(co.stage, ''))
 SQL;
   // The groupBy allows us to count the verified records at a similar time of
-  // year and only create messages if less than 2.
+  // year and only create messages if less than 6.
   $groupBy = <<<SQL
 group by co.id, co.date_start, co.taxa_taxon_list_external_key, co.stage,
   co.verification_checks_enabled, co.record_status, vr.error_message, vr.stages
--- at least 2 similar records
-having count(o2.id) < 2
+-- at least 6 similar records
+having count(o2.id) < 6
 SQL;
 
   return array(
