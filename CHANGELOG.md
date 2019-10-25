@@ -1,3 +1,12 @@
+# Version 2.36.0
+*2019-10-25*
+
+* UI added so that survey datasets will be able to define the taxonomic branches which
+  auto-verification will be applied to. https://github.com/BiologicalRecordsCentre/iRecord/issues/486
+* Minor wording changes in notification emails.
+* Elasticsearch extractions include basic taxonomic info even for taxa who are not on one of the
+  officially configured lists.
+
 # Version 2.35.0
 *2019-10-03*
 
