@@ -29,14 +29,13 @@ function summary_builder_orm_work_queue() {
   return [
     [
       /* It is only the presence/absence of a sample that affects the values/estimates, so this is invoked on insert or
-       * deletion, not update.
+       * deletion, but it is also possible for the UKBMS front end to modify the date.
        * There is a possibility that if the date on a sample changes to a different year, the the old year values
        * will not be updated - similar if the location is moved. Operationally, this is a very remote possibility,
        * and will be covered by allowing the warehouse front end to trigger a rebuild of a locations data.
-       * In addition the UKBMS front end can not change the date or location.
        */
       'entity' => 'sample',
-      'ops' => ['insert', 'delete'],
+      'ops' => ['insert', 'delete', 'update'],
       'task' => 'task_summary_builder_sample',
       'cost_estimate' => 50,
       'priority' => 2,
