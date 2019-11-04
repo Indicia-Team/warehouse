@@ -72,7 +72,7 @@ class Survey_Controller extends Gridview_Base_Controller {
 
     $otherData['taxon_restrictions'] = []; 
     $masterListId = warehouse::getMasterTaxonListId();
-    if ($masterListId) {
+    if ($masterListId && array_key_exists('survey:id', $values)) {
     
       $tmIdVals = $this->db
           ->select('s.auto_accept_taxa_filters')
