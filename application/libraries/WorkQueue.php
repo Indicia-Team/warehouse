@@ -261,7 +261,7 @@ WHERE id IN (
   AND error_detail IS NULL
   AND task='$taskType->task'
   AND COALESCE(entity, '')='$taskType->entity'
-  ORDER BY priority, cost_estimate
+  ORDER BY priority, cost_estimate, id
   LIMIT $batchSize
 );
 SQL;

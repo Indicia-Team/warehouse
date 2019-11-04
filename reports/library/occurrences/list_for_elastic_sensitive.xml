@@ -48,16 +48,15 @@
     <param
       name="update_to"
       display="Highest update tracking ID to include"
-      description="Highest tracking ID to include, which will be auto-generated according to the progress of background tasks"
+      description="Highest tracking ID to include, which will be auto-generated according to the progress of background tasks.
+        Records only included once they have been both spatially indexed and data cleaned."
       default="1900-01-01"
       preprocess="SELECT LEAST(
         (
           SELECT tracking FROM cache_occurrences_functional
           WHERE tracking IS NOT NULL
-          AND (
-            location_ids IS NOT NULL
-            OR (data_cleaner_result IS NULL and verification_checks_enabled=TRUE)
-          )
+          AND location_ids IS NOT NULL
+          AND data_cleaner_result IS NOT NULL
           ORDER BY tracking DESC LIMIT 1
         ),
         -(((2^(8*pg_column_size(1::bigint)-2))::bigint &lt;&lt; 1)+1)
