@@ -157,6 +157,7 @@ HTML;
         'extraParams' => $readAuth,
         'survey_id' => $values['survey:id'],
         'language' => iform_lang_iso_639_2(kohana::config('indicia.default_lang')),
+        'occAttrs' => [],
       ];
       if (!empty($other_data['taxon_restrictions'])) {
         $speciesChecklistOptions['listId'] = $masterListId;
