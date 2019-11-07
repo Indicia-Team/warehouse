@@ -13,7 +13,8 @@ password as required.
 *code_user*
 </pre>
 Finally, connect to your new database and run the following script to prepare the required extensions and grant
-permissions.
+permissions. Note that if installing the warehouse in a hosted environment, you may not be able to create the extensions
+yourself using SQL and will either have to do that via your control panel or by asking your host.
 <pre>
 *code_perm*
 </pre>
