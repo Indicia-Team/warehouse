@@ -1,3 +1,11 @@
+# Version 2.37.0
+*2019-11-07*
+
+* Fixes a bug when saving a new survey.
+* Fixes import of NBN Record cleaner rules.
+* Support for attribute values in Elasticsearch data downloads.
+* Minor updates to UKBMS downloads.
+
 # Version 2.36.0
 *2019-10-25*
 
