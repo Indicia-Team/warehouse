@@ -145,7 +145,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
   /**
    * Controller function that responds to any request for an upload.
    */
-  private function upload() {
+  public function upload() {
     if (!empty($_FILES['zipOrCsvFile']['name'])) {
       $tokens = explode('.', $_FILES['zipOrCsvFile']['name']);
       $ext = array_pop($tokens);

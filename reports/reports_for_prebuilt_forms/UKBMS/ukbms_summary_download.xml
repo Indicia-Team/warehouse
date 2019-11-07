@@ -49,7 +49,7 @@
       <where>parent.created_by_id=#user_id#</where>
     </param>
     <param name='taxon_list_id' display='Taxon list ID' description='ID of the taxon list to show' datatype='int' />
-    <param name='location_id' display='Location ID' description='Enter the ID of the location' datatype='int' >
+    <param name='location_id' display='Location ID' description='Enter the ID of the location' datatype='int' default='' >
       <where>parent.location_id=#location_id#</where>
     </param>
     <param name='location_list' display='Location List' description='Enter a comma separated list of location IDs' datatype='text' default='' >

@@ -23,8 +23,13 @@
 /**
  * Hook into the task scheduler. When run, the system checks the
  * cache_occurrences_functional table for records where the data cleaner has
- * marked the record as data_cleaner_info "pass", record_status="C", the system
- * then sets the record to verified automatically.
+ * marked the record as data_cleaner_result to true, record_status="C", the system
+ * then sets the record to verified automatically (subject to taxon restriction
+ * tests descrbed below).
+ * If the survey associated with the record has a value in its 
+ * auto_accept_taxa_filters field, then the taxon_meaning_id associated with 
+ * the record has to be the same as, or a decendent of, one of the
+ * taxa stored in the auto_accept_taxa_filters to qualify for auto verification.
  *
  * @param string $last_run_date
  *   Date last run, or null if never run.
@@ -73,7 +78,8 @@ function auto_verify_scheduled_task($last_run_date, $db) {
     AND delta.record_status='C' AND delta.record_substatus IS NULL
         AND delta.created_on >= TO_TIMESTAMP('$oldestRecordCreatedDateToProcess', 'DD/MM/YYYY')
         AND (($autoVerifyNullIdDiff=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty)
-        OR ($autoVerifyNullIdDiff=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty)))";
+        OR ($autoVerifyNullIdDiff=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty)))
+    AND (s.auto_accept_taxa_filters is null OR (s.auto_accept_taxa_filters && delta.taxon_path))";
 
   if (isset($oldestOccurrenceIdToProcess) && $oldestOccurrenceIdToProcess > -1) {
     $subQuery .= "

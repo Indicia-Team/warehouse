@@ -1243,7 +1243,7 @@ class Rest_Controller extends Controller {
    * output. Configurable output by passing parameters:
    * * type - limit output to this type.
    * * field - limit output to content of this field (name, id, type or code).
-   * * text - set to tru to convert the resultant JSON to text.
+   * * text - set to true to convert the resultant JSON to text.
    * E.g. pass type=Country, field=name, text=true to convert to a plaintext
    * Country name.
    *
@@ -1324,6 +1324,29 @@ class Rest_Controller extends Controller {
       return implode('; ', $doc['occurrence']['associated_media']);
     }
     return '';
+  }
+
+  /**
+   * Special field handler for Elasticsearch custom attribute values.
+   *
+   * Concatenates values to a semi-colon separated string.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldAttrValue(array $doc, array $params) {
+    $r = [];
+    if (in_array($params['entity'], ['occurrence', 'sample'])) {
+      foreach ($doc[$params['entity']]['attributes'] as $attr) {
+        if ($attr['id'] == $params['id']) {
+          $r[] = $attr['value'];
+        }
+      }
+    }
+    return implode('; ', $r);
   }
 
   /**
