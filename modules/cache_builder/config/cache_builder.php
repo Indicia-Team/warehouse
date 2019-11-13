@@ -1309,12 +1309,6 @@ $config['occurrences']['get_changed_items_query'] = "
     join locations l on l.id=s.location_id
     where l.updated_on>'#date#'
     union
-    select o.id, su.deleted
-    from occurrences o
-    join samples s on s.id=o.sample_id
-    join surveys su on su.id=s.survey_id
-    where su.updated_on>'#date#'
-    union
     select o.id, ttl.deleted
     from occurrences o
     join taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id
