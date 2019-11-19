@@ -253,6 +253,20 @@ class Rest_Controller extends Controller {
   private $request;
 
   /**
+   * For ES paged downloads, holds the mode (scroll or composite).
+   *
+   * @var string
+   */
+  private $pagingMode = 'off';
+
+  /**
+   * For ES paged downloads, holds the current request state (initial or nextPage).
+   *
+   * @var string
+   */
+  private $pagingModeState;
+
+  /**
    * List of project definitions that are available to the authorised client.
    *
    * @var array
@@ -774,20 +788,12 @@ class Rest_Controller extends Controller {
   ];
 
   /**
-   * Calculate the data to post to an Elasticsearch search.
+   * Works out the list of columns for an ES CSV download.
    *
-   * @param string $scrollMode
-   *   Scroll mode for ES, either off, initial, or nextpage.
-   * @param string $format
-   *   Format identifier. If CSV then we can use this to do source filtering
-   *   to lower memory consumption.
-   *
-   * @return string
-   *   Data to post.
+   * @param obj $postObj
+   *   Request object.
    */
-  private function getEsPostData($scrollMode, $format) {
-    $postData = file_get_contents('php://input');
-    $postObj = empty($postData) ? [] : json_decode($postData);
+  private function getColumnsTemplate(&$postObj) {
     // Params for configuring an ES CSV download template get extracted and not
     // sent to ES.
     if (isset($postObj->columnsTemplate)) {
@@ -802,7 +808,24 @@ class Rest_Controller extends Controller {
       $this->esCsvTemplateRemoveColumns = (array) $postObj->removeColumns;
       unset($postObj->removeColumns);
     }
-    if ($scrollMode === 'nextpage') {
+  }
+
+  /**
+   * Calculate the data to post to an Elasticsearch search.
+   *
+   * @param obj $postObj
+   *   Request object.
+   * @param string $format
+   *   Format identifier. If CSV then we can use this to do source filtering
+   *   to lower memory consumption.
+   * @param array|NULL $file
+   *   Cached info about the file if paging.
+   *
+   * @return string
+   *   Data to post.
+   */
+  private function getEsPostData($postObj, $format, $file) {
+    if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'nextPage') {
       // A subsequent hit on a scrolled request.
       $postObj = [
         'scroll_id' => $_GET['scroll_id'],
@@ -811,8 +834,13 @@ class Rest_Controller extends Controller {
       return json_encode($postObj);
     }
     // Either unscrolled, or the first call to a scroll. So post the query.
-    if ($scrollMode !== 'off') {
+    if ($this->pagingMode === 'scroll') {
       $postObj->size = MAX_ES_SCROLL_SIZE;
+    }
+    elseif ($this->pagingMode === 'composite' && isset($file['after_key'])) {
+      foreach ($postObj->aggs as &$agg) {
+        $agg->composite->after = $file['after_key'];
+      }
     }
     if ($format === 'csv') {
       $csvTemplate = $this->getEsCsvTemplate();
@@ -850,14 +878,12 @@ class Rest_Controller extends Controller {
    *
    * @param string $url
    *   Elasticsearch alias URL.
-   * @param string $scrollMode
-   *   Current scroll mode, either off, initial or nextpage.
    *
    * @return string
    *   Revised URL.
    */
-  private function getEsActualUrl($url, $scrollMode) {
-    if ($scrollMode === 'nextpage') {
+  private function getEsActualUrl($url) {
+    if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'nextPage') {
       // On subsequent hits to a scrolled request, the URL is different.
       return preg_replace('/[a-z0-9_-]*\/_search$/', '_search/scroll', $url);
     }
@@ -872,8 +898,11 @@ class Rest_Controller extends Controller {
         unset($params['scroll']);
         unset($params['scroll_id']);
         unset($params['callback']);
+        unset($params['aggregation_type']);
+        unset($params['state']);
+        unset($params['uniq_id']);
         unset($params['_']);
-        if ($scrollMode === 'initial') {
+        if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'initial') {
           $params['scroll'] = SCROLL_TIMEOUT;
         }
         $url .= '?' . http_build_query($params);
@@ -945,27 +974,6 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Builds an empty CSV file ready to received a scrolled ES request.
-   *
-   * @param string $format
-   *   Data format, either json or csv.
-   *
-   * @return array
-   *   File array containing the name and handle.
-   */
-  private function prepareScrollFile($format) {
-    $this->purgeDownloadFiles();
-    $filename = uniqid() . ".$format";
-    // Reopen file for appending.
-    $handle = fopen(DOCROOT . "download/$filename", "w");
-    fwrite($handle, $this->getEsOutputHeader($format));
-    return [
-      'filename' => $filename,
-      'handle' => $handle,
-    ];
-  }
-
-  /**
    * Builds the header for the top of a scrolled Elasticsearch output.
    *
    * For example, adds the CSV row.
@@ -1016,19 +1024,63 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Builds an empty CSV file ready to received a paged ES request.
+   *
+   * @param string $format
+   *   Data format, either json or csv.
+   *
+   * @return array
+   *   File array containing the name and handle.
+   */
+  private function preparePagingFile($format) {
+    $this->purgeDownloadFiles();
+    $uniqId = uniqid('', TRUE);
+    $filename = "download-$uniqId.$format";
+    // Reopen file for appending.
+    $handle = fopen(DOCROOT . "download/$filename", "w");
+    fwrite($handle, $this->getEsOutputHeader($format));
+    return [
+      'uniq_id' => $uniqId,
+      'filename' => $filename,
+      'handle' => $handle,
+      'done' => 0,
+    ];
+  }
+
+  /**
    * Create a temporary file that will be used to build an ES download.
+   *
+   * @param string $format
+   *   Data format, either json or csv.
    *
    * @return array
    *   File details, array containing filename and handle.
    */
-  private function openScrollFile() {
+  private function openPagingFile($format) {
+    $uniqId = isset($_GET['uniq_id']) ? $_GET['uniq_id'] : $_GET['scroll_id'];
     $cache = Cache::instance();
-    $info = $cache->get("es-scroll-$_GET[scroll_id]");
+    $info = $cache->get("es-paging-$uniqId");
     if ($info === NULL) {
-      $this->apiResponse->fail('Bad request', 400, 'Invalid scroll ID.');
+      $this->apiResponse->fail('Bad request', 400, 'Invalid scroll_id or uniq_id parameter.');
     }
     $info['handle'] = fopen(DOCROOT . "download/$info[filename]", 'a');
     return $info;
+  }
+
+  /**
+   * Works out the mode of paging for chunked downloads.
+   *
+   * Supports Elasticsearch scroll or composite aggregations for paging. Mode
+   * is stored in $this->pagingMode.
+   */
+  private function getPagingMode($format) {
+    $this->pagingModeState = empty($_GET['state']) ? 'initial' : $_GET['state'];
+    if (isset($_GET['aggregation_type']) && $_GET['aggregation_type'] === 'composite') {
+      $this->pagingMode = 'composite';
+    }
+    elseif ($format === 'csv') {
+      $this->pagingMode = 'scroll';
+    }
   }
 
   /**
@@ -1041,23 +1093,27 @@ class Rest_Controller extends Controller {
    */
   private function proxyToEs($url) {
     $format = isset($_GET['format']) && $_GET['format'] === 'csv' ? 'csv' : 'json';
-    $scrollMode = isset($_GET['scroll']) ? 'initial' : (empty($_GET['scroll_id']) ? 'off' : 'nextpage');
-    $postData = $this->getEsPostData($scrollMode, $format);
-    $actualUrl = $this->getEsActualUrl($url, $scrollMode);
+    $postData = file_get_contents('php://input');
+    $postObj = empty($postData) ? [] : json_decode($postData);
+    $this->getPagingMode($format);
+    $this->getColumnsTemplate($postObj);
+    $file = NULL;
+    if ($this->pagingModeState === 'initial') {
+      // First iteration of a scrolled request, so prepare an output file.
+      $file = $this->preparePagingFile($format);
+    }
+    elseif ($this->pagingModeState === 'nextPage') {
+      $file = $this->openPagingFile($format);
+    }
+    else {
+      echo $this->getEsOutputHeader($format);
+    }
+    $postData = $this->getEsPostData($postObj, $format, $file);
+    $actualUrl = $this->getEsActualUrl($url);
     $session = curl_init($actualUrl);
     if (!empty($postData) && $postData !== '[]') {
       curl_setopt($session, CURLOPT_POST, 1);
       curl_setopt($session, CURLOPT_POSTFIELDS, $postData);
-    }
-    if ($scrollMode === 'initial') {
-      // First iteration of a scrolled request, so prepare an output file.
-      $file = $this->prepareScrollFile($format);
-    }
-    elseif ($scrollMode === 'nextpage') {
-      $file = $this->openScrollFile();
-    }
-    else {
-      echo $this->getEsOutputHeader($format);
     }
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
       curl_setopt($session, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
@@ -1074,30 +1130,38 @@ class Rest_Controller extends Controller {
       $error = curl_error($session);
       kohana::log('error', 'ES proxy request failed: ' . $error . ': ' . json_encode($error));
       kohana::log('error', 'Query: ' . $postData);
+      kohana::log('error', 'Response: ' . $response);
       $this->apiResponse->fail('Internal server error', 500, json_encode($error));
     }
     curl_close($session);
-    // First response from a scroll, need to grab the scroll ID.
-    if ($scrollMode === 'initial') {
+    // Will need decoded data for processing CSV.
+    if ($format === 'csv') {
       $data = json_decode($response, TRUE);
       if (!empty($data['error'])) {
         kohana::log('error', 'Bad ES Rest query response: ' . json_encode($data['error']));
         kohana::log('error', 'Query: ' . $postData);
         $this->apiResponse->fail('Bad request', 400, json_encode($data['error']));
       }
-      $file['scroll_id'] = $data['_scroll_id'];
-      $file['total'] = $data['hits']['total'];
-      $file['done'] = 0;
+      // Find the list of documents or aggregation output to add to the CSV.
+      $itemList = $this->pagingMode === 'composite'
+        ? $data['aggregations']['samples']['buckets']
+        : $data['hits']['hits'];
     }
-    elseif ($scrollMode === 'nextpage') {
+    // First response from a scroll, need to grab the scroll ID.
+    if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'initial') {
+      $file['scroll_id'] = $data['_scroll_id'];
+      // ES6/7 tolerance.
+      $file['total'] = isset($data['hits']['total']['value']) ? $data['hits']['total']['value'] : $data['hits']['total'];
+    }
+    elseif ($this->pagingMode === 'scroll' && $this->pagingModeState === 'nextPage') {
       $file['scroll_id'] = $_GET['scroll_id'];
     }
 
-    if ($scrollMode === 'off') {
+    if ($this->pagingMode === 'off') {
       switch ($format) {
         case 'csv':
           header('Content-type: text/csv');
-          $this->esToCsv($response);
+          $this->esToCsv($itemList);
           break;
 
         case 'json':
@@ -1115,7 +1179,7 @@ class Rest_Controller extends Controller {
     else {
       switch ($format) {
         case 'csv':
-          $this->esToCsv($response, $file);
+          $this->esToCsv($itemList, $file);
           break;
 
         case 'json':
@@ -1128,15 +1192,35 @@ class Rest_Controller extends Controller {
       }
       fclose($file['handle']);
       unset($file['handle']);
-      $file['done'] = min($file['total'], $file['done'] + MAX_ES_SCROLL_SIZE);
-      $cache = Cache::instance();
-      if ($file['done'] < $file['total']) {
-        $cache->set("es-scroll-$file[scroll_id]", $file);
+      $done = FALSE;
+      if ($this->pagingMode === 'scroll') {
+        $file['done'] = min($file['total'], $file['done'] + MAX_ES_SCROLL_SIZE);
+        $done = $file['done'] >= $file['total'];
       }
-      else {
-        $cache->delete("es-scroll-$file[scroll_id]", $file);
+      elseif ($this->pagingMode === 'composite') {
+        if ($format === 'csv') {
+          $file['done'] = $file['done'] + count($itemList);
+        }
+        // Composite aggregation has to run till we get an empty response.
+        $data = json_decode($response, TRUE);
+        $list = $data['aggregations'][array_keys($data['aggregations'])[0]]['buckets'];
+        $done = count($list) === 0;
+        if (empty($data['aggregations'][array_keys($data['aggregations'])[0]]['after_key'])) {
+          unset($file['after_key']);
+        }
+        else {
+          $file['after_key'] = $data['aggregations'][array_keys($data['aggregations'])[0]]['after_key'];
+        }
+      }
+      $file['state'] = $done ? 'done' : 'nextPage';
+      $cache = Cache::instance();
+      if ($done) {
+        $cache->delete("es-paging-$file[uniq_id]", $file);
         unset($file['scroll_id']);
         $this->zip($file);
+      }
+      else {
+        $cache->set("es-paging-$file[uniq_id]", $file);
       }
       $file['filename'] = url::base() . 'download/' . $file['filename'];
       header('Content-type: application/json');
@@ -1171,22 +1255,21 @@ class Rest_Controller extends Controller {
   /**
    * Converts an Elasticsearch response to a chunk of CSV data.
    *
-   * @param string $response
-   *   Response from an Elasticsearch search.
+   * @param string $itemList
+   *   Decoded list of data from an Elasticsearch search.
    * @param array $file
    *   File data, or NULL if not writing to a file in which case the output
    *   is echoed.
    */
-  private function esToCsv($response, array $file = NULL) {
-    $data = json_decode($response, TRUE);
-    if (empty($data['hits']['hits'])) {
+  private function esToCsv($itemList, array $file = NULL) {
+    if (empty($itemList)) {
       return;
     }
     $esCsvTemplate = $this->getEsCsvTemplate();
-    foreach ($data['hits']['hits'] as $doc) {
+    foreach ($itemList as $item) {
       $row = [];
       foreach ($esCsvTemplate as $source) {
-        $this->copyIntoCsvRow($doc, $source, $row);
+        $this->copyIntoCsvRow($item, $source, $row);
       }
       $row = array_map(function ($cell) {
         // Cells containing a quote, a comma or a new line will need to be
@@ -1409,7 +1492,7 @@ class Rest_Controller extends Controller {
   private function copyIntoCsvRow(array $doc, $sourceField, array &$row) {
     // Fields starting '_' are special fields in the root of the doc. Others
     // are in the _source element.
-    $docSource = strpos($sourceField, '_') === 0 ? $doc : $doc['_source'];
+    $docSource = strpos($sourceField, '_') === 0 || !isset($doc['_source']) ? $doc : $doc['_source'];
     if (preg_match('/^\[(?P<sourceType>[a-z ]*)\](\((?<params>[a-z0-9]*=[^,=\)]*(,[a-z0-9]*=[^,=\)]*)*)\))?$/', $sourceField, $matches)) {
       $fn = 'esGetSpecialField' .
         str_replace(' ', '', ucwords(str_replace(['['], '', $matches['sourceType'])));
@@ -2574,7 +2657,6 @@ class Rest_Controller extends Controller {
     $this->authenticated = FALSE;
     $this->checkElasticsearchRequest();
     if ($this->authenticated) {
-      kohana::log('debug', "Open elasticsearch request");
       return;
     }
     // Provide a default if not configured.
