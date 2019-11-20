@@ -66,6 +66,7 @@
     <column name='input_form' visible="false" sql="case
     when canEdit.id is null then null
     when o.input_form is null or o.website_id not in (#website_ids#) or #force_default_input_form#=1 then '#default_input_form#'
+    when o.input_form='maach_mat/aginn_vun_daten' then 'edit-generic-record'
     else o.input_form
 end" datatype="text" />
     <column name='pass' visible='false' sql="CASE
