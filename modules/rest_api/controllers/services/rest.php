@@ -831,6 +831,10 @@ class Rest_Controller extends Controller {
         elseif (preg_match('/^\[media\]/', $field)) {
           $fields[] = 'occurrence.associated_media';
         }
+        elseif (preg_match('/^\[date string\]/', $field)) {
+          $fields[] = 'event.date_start';
+          $fields[] = 'event.date_end';
+        }
         elseif (preg_match('/^\[null if zero\]\(field=([a-z_]+(\.[a-z_]+)*)\)$/', $field, $matches)) {
           $fields[] = $matches[1];
         }
@@ -1073,7 +1077,9 @@ class Rest_Controller extends Controller {
     if ($httpCode !== 200) {
       $error = curl_error($session);
       kohana::log('error', 'ES proxy request failed: ' . $error . ': ' . json_encode($error));
+      kohana::log('error', 'URL: ' . $actualUrl);
       kohana::log('error', 'Query: ' . $postData);
+      kohana::log('error', 'Response: ' . $response);
       $this->apiResponse->fail('Internal server error', 500, json_encode($error));
     }
     curl_close($session);
