@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="eBMS species counts by sample for a survey" 
+    description="Lists locations and the number of species within them.">
+      <query website_filter_field="s.website_id">
+      SELECT #columns#
+      from cache_samples_functional s
+      join cache_occurrences_functional o on o.sample_id = s.id 
+      join cache_samples_nonfunctional csn on csn.id = s.id
+      #joins#
+      WHERE #website_filter#
+      AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND s.created_by_id=#user_id#
+      </query>
+      <params>
+        <param name='user_id' display='Warehouse User ID' description='Enter the ID of the warehouse user' datatype='int' />
+        <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+            query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+      </params>
+      <columns>
+            <column name="id" visible="false" sql="s.id" unique="true" />
+            <column name="date" display="Date" sql="TO_CHAR(s.created_on::date, 'dd/MM/yyyy')" />
+            <column name="taxa" display="Taxa" sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true" />
+            <column name="location" display="Location name" sql="s.location_name" unique="true"/>
+            <column name="sref" display="Spatial reference" sql="csn.public_entered_sref" unique="true"/>
+      </columns>
+</report>
