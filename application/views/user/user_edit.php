@@ -109,25 +109,30 @@ $id = html::initial_value($values, 'user:id');
     } ?>
   </fieldset>
   <fieldset>
-    <legend>Website Roles</legend>
-    <ol>
+    <legend>Website roles</legend>
       <?php
       foreach ($model->users_websites as $website) {
-        echo '<li><label class="wide" for="' . $website['name'] . '">' . $website['title'] . '</label>';
-        echo '  <select class="narrow" id="' . $website['name'] . '" name="' . $website['name'] . '">';
-        echo '	<option>None</option>';
+        $otherOptionList = [];
         $site_roles = ORM::factory('site_role')->orderby('title', 'asc')->find_all();
-        foreach ($site_roles as $site_role) {
-          echo '	<option value="' . $site_role->id . '" ';
-          if ($site_role->id == $website['value']) {
-            echo 'selected="selected" ';
-          }
-          echo '>' . $site_role->title . '</option>';
+        foreach ($site_roles as $siteRole) {
+          $selected = $siteRole->id == $website['value'] ? ' selected="selected"' : '';
+          $otherOptionList[] = "<option value=\"$siteRole->id\" $selected>$siteRole->title</option>";
         }
-        echo '</select></li>';
+        $otherOptions = implode("\n        ", $otherOptionList);
+        echo <<<HTML
+<div class="form-group">
+  <label for="$website[name]" class="col-sm-3 control-label">$website[title]:</label>
+  <div class="col-sm-9">
+      <select class="form-control" name="$website[name]" id="$website[name]">
+        <option>None</option>
+        $otherOptions
+      </select>
+    </div>
+</div>
+
+HTML;
       }
       ?>
-    </ol>
   </fieldset>
   <?php
   echo html::form_buttons($id != NULL, FALSE, FALSE);
