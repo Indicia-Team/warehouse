@@ -41,7 +41,7 @@ $(document).ready(function() {
     <a href="<?php echo url::site(); ?>sample/edit/<?php echo $sample->id; ?>">ID <?php echo $sample->id;?></a><br/>
     <?php
     echo data_entry_helper::text_input([
-      'label' => 'Survey',
+      'label' => 'Survey dataset',
       'fieldname' => 'sample-survey',
       'default' => $sample->survey->title,
       'readonly' => TRUE,

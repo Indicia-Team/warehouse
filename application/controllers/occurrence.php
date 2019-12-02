@@ -36,7 +36,7 @@ class Occurrence_controller extends Gridview_Base_Controller {
     $this->columns = [
       'id' => 'ID',
       'website' => 'Website',
-      'survey' => 'Survey',
+      'survey' => 'Survey dataset',
       'taxon' => 'Taxon',
       'entered_sref' => 'Spatial Ref',
       'date_start' => 'Date',

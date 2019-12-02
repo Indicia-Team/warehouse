@@ -73,8 +73,9 @@ class Survey_medium_Controller extends Gridview_Base_Controller
    */
   protected function get_return_page() {
     if (array_key_exists('survey_medium:survey_id', $_POST)) {
-      return "survey/edit/".$_POST['survey_medium:survey_id']."?tab=Media_Files";
-    } else {
+      return "survey/edit/" . $_POST['survey_medium:survey_id'] . "?tab=Media_Files";
+    }
+    else {
       return $this->model->object_name;
     }
   }
@@ -82,27 +83,27 @@ class Survey_medium_Controller extends Gridview_Base_Controller
   /**
    * Get the list of terms ready for the media types list.
    */
-  protected function prepareOtherViewData(array $values)
-  {
-    return array(
-      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')
-    );
+  protected function prepareOtherViewData(array $values) {
+    return [
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types'),
+    ];
   }
 
   /**
    * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a survey
    */
   protected function defineEditBreadcrumbs() {
-    $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
+    $this->page_breadcrumbs[] = html::anchor('survey', 'Survey datasets');
     if ($this->model->id) {
-      // editing an existing item
+      // Editing an existing item.
       $surveyId = $this->model->survey_id;
-    } else {
-      // creating a new one so our argument is the survey id
+    }
+    else {
+      // Creating a new one so our argument is the survey id.
       $surveyId = $this->uri->argument(1);
     }
     $survey = ORM::factory('survey', $surveyId);
-    $this->page_breadcrumbs[] = html::anchor('survey/edit/'.$surveyId, $survey->caption());
+    $this->page_breadcrumbs[] = html::anchor("survey/edit/$surveyId", $survey->caption());
     $this->page_breadcrumbs[] = $this->model->caption();
   }
 
