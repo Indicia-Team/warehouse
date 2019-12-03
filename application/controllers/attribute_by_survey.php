@@ -47,7 +47,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
     $segments = $this->uri->segment_array();
     $this->_survey_id = $segments[2];
     $this->pagetitle = 'Attributes for ' . $this->getSurvey()->title;
-    $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
+    $this->page_breadcrumbs[] = html::anchor('survey', 'Survey datasets');
     $this->page_breadcrumbs[] = $this->pagetitle;
     $this->template->content = new View('attribute_by_survey/index');
     $this->template->title = $this->pagetitle;
@@ -348,7 +348,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
    * Set the edit page breadcrumbs to cope with the fact this controller handles all *_attributes_website models.
    */
   protected function defineEditBreadcrumbs() {
-    $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
+    $this->page_breadcrumbs[] = html::anchor('survey', 'Survey datasets');
     $survey = ORM::Factory('survey', $this->model->restrict_to_survey_id);
     $this->page_breadcrumbs[] = html::anchor('/attribute_by_survey/'.$this->model->restrict_to_survey_id.'?type='.$this->type, 'Attributes for '.$survey->title);
     $this->page_breadcrumbs[] = $this->model->caption();

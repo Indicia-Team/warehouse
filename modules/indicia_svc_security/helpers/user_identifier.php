@@ -321,7 +321,6 @@ SQL;
     $user = ORM::factory('user');
     $data = array(
       'person_id' => $person->id,
-      'email_visible' => 'f',
       'username' => $person->newUsername(),
       // User will not actually have warehouse access, so password fairly irrelevant.
       'password' => 'P4ssw0rd',

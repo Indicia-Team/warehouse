@@ -66,9 +66,26 @@ class User_Controller extends Gridview_Base_Controller {
   }
 
   protected function password_fields($password = '', $password2 = '') {
-    return '<li><label for="password">Password</label><input id="password" name="password" value="'.html::specialchars($password).'" />' .
-        html::error_message($this->model->getError('password')) .
-        '</li><li><label for="password">Repeat Password</label><input id="password2" name="password2" value="'.html::specialchars($password2).'" /></li>';
+    $pw1 = html::specialchars($password);
+    $pw2 = html::specialchars($password2);
+    $error = html::error_message($this->model->getError('password'));
+    if (!empty($error)) {
+      $error = "<span class=\"help-block\">$error</span>";
+    }
+    $errorClass = empty($error) ? '' : ' has-error';
+    return <<<HTML
+<div class="form-group $errorClass">
+  <label for="password">Password:</label>
+  <input type="text" class="form-control" id="password" name="password" value="$pw1">
+  $error
+</div>
+
+<div class="form-group">
+  <label for="password2">Repeat password:</label>
+  <input type="text" class="form-control" id="password2" name="password2" value="$pw2">
+</div>
+
+HTML;
   }
 
   // Due to the way the Users gridview is displayed (ie driven off the person table)
