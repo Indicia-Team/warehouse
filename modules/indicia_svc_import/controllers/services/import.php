@@ -418,12 +418,24 @@ class Import_Controller extends Service_Base_Controller {
             }
             $index++;
           }
+          // The genus, specific name and qualifier are all merge fields.
+          // However the qualifier is not mandatory, so if a qualifier is not specified, we effectively tell the system it has been specified
+          // so that the system doesn't ask for it. Ideally this code should be generalised going forward.
+          if ((in_array('taxon:taxon:genus',$metadata['mappings']) || in_array('taxon:taxon:specific',$metadata['mappings'])) &&  !in_array('taxon:taxon:qualifier',$metadata['mappings'])) {
+            $columns['taxon:taxon:qualifier'] = TRUE;
+          }
           if (count($defn['columns']) === count(array_keys($columns))) {
             $specialFieldProcessing[$column] = TRUE;
           }
         }
       }
       $specialMergeProcessing = array();
+      if (isset($metadata['importMergeFields']) && is_string($metadata['importMergeFields'])) {
+        $metadata['importMergeFields'] = json_decode($metadata['importMergeFields'], TRUE);
+      }
+      if (isset($metadata['synonymProcessing']) && is_string($metadata['synonymProcessing'])) {
+        $metadata['synonymProcessing'] = json_decode($metadata['synonymProcessing'], TRUE);
+      }
       if (isset($metadata['importMergeFields'])) {
         // Only do the special merge processing if all the required fields are
         // there, and if there are no required then if one of the optional ones
@@ -480,6 +492,12 @@ class Import_Controller extends Service_Base_Controller {
             }
             $index++;
           }
+        }
+        // The genus, specific name and qualifier are all merge fields.
+        // However the qualifier is not mandatory, so if a qualifier is not specified, we effectively tell the system it has been specified
+        // so that the system doesn't ask for it. Ideally this code should be generalised going forward.
+        if ((array_key_exists('taxon:taxon:genus',$saveArray) || array_key_exists('taxon:taxon:specific',$saveArray)) &&  !array_key_exists('taxon:taxon:qualifier',$saveArray)) {
+          $saveArray['taxon:taxon:qualifier'] = '';
         }
         foreach (array_keys($specialFieldProcessing) as $col) {
           if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
@@ -830,7 +848,7 @@ class Import_Controller extends Service_Base_Controller {
       $this->auto_render = FALSE;
       if (!empty($allowCommitToDB)&&$allowCommitToDB==true) {
         $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
-      }       
+      }
       if (class_exists('request_logging')) {
         request_logging::log('i', 'import', NULL, 'upload',
           empty($saveArray['website_id']) ? NULL : $saveArray['website_id'],
@@ -892,6 +910,7 @@ class Import_Controller extends Service_Base_Controller {
       function ($field) {
         return $field->fieldName;
       }, $fields);
+    $join = self::buildJoin($fieldPrefix,$fields,$table,$saveArray); 
     $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
     if ($wheres !== FALSE) {
       $db = Database::instance();
@@ -929,6 +948,25 @@ class Import_Controller extends Service_Base_Controller {
         throw new Exception('Importing an existing ID but the row does not already exist.');
       }
     }
+  }
+
+  /*
+   * Need to build a join so the system works correctly when importing taxa with update existing records selected.
+   * e.g. a problematic scenario would happen if importing new taxa but the external key/search code is still selected 
+   * for existing record update, in this case without building a join, the system would keep overwriting the previous record
+   * as each new one is imported (as it wasn't checking the search code/external key, the final result would be that only one row would import).
+   * Note this function might need improving/generalising for other models, although I did check occurrence/sample import which
+   * did not seem to show the same issue.
+   */
+  public static function buildJoin($fieldPrefix,$fields,$table,$saveArray) {
+    $r = '';
+    if (!empty($saveArray['taxon:external_key']) && $table=='taxa_taxon_lists') {
+      $r = "join taxa t on t.id = ".$table.".taxon_id AND t.external_key='".$saveArray['taxon:external_key']."' AND t.deleted=false";
+    }
+    elseif (!empty($saveArray['taxon:search_code']) && $table=='taxa_taxon_lists') {
+      $r = "join taxa t on t.id = ".$table.".taxon_id AND t.search_code='".$saveArray['taxon:search_code']."' AND t.deleted=false";
+    } 
+    return $r;
   }
 
   /**
@@ -1104,7 +1142,7 @@ class Import_Controller extends Service_Base_Controller {
               // Taxon info may not be provided if looking up existing record.
               // In which case, skip the lookup.
               !empty($saveArray['taxon:language_id']) &&
-              (!empty($saveArray['taxon:taxon']) || !empty($saveArray['taxon:external_key']))) {
+              (!empty($saveArray['taxon:taxon']) || !empty($saveArray['taxon:external_key'])  || !empty($saveArray['taxon:search_code']))) {
             // Same for taxa_taxon_lists, and their taxon supermodel: have to
             // look up using complex query to get the link between the
             // taxon_list and the taxon.
@@ -1134,6 +1172,10 @@ class Import_Controller extends Service_Base_Controller {
             }
             elseif (in_array('taxon:external_key', $fields) && isset($saveArray['taxon:external_key'])) {
               $query .= "AND t.external_key ='" . $saveArray['taxon:external_key'] . "' ";
+              $existing = $db->query($query)->result_array(FALSE);
+            }
+            elseif (in_array('taxon:search_code', $fields) && isset($saveArray['taxon:search_code'])) {
+              $query .= "AND t.search_code ='" . $saveArray['taxon:search_code'] . "' ";
               $existing = $db->query($query)->result_array(FALSE);
             }
             else {

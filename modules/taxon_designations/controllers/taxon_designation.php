@@ -164,6 +164,9 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
           'current taxon name',
           'recommended taxon',
         ], $obj);
+        if (empty($taxonExternalKey) && empty($taxon)) {
+          throw new exception('Missing taxon or external key - cannot link to a taxon');
+        }
         $startDate = $this->findValue($data, ['start date', 'year'], $obj);
         $source = $this->findValue($data, ['source'], $obj);
         $geographicConstraint = $this->findValue($data, ['geographic constraint'], $obj);
@@ -186,7 +189,6 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
             ->get()->result_array(FALSE);
         }
         $catId = $r[0]['id'];
-        kohana::log('debug', "got category $catId");
         // Second step - ensure the designation exists.
         $r = $this->db
           ->select('id')
@@ -229,17 +231,18 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
         if (!empty($taxon)) {
           $where['t.taxon'] = trim($taxon);
         }
-        if (!empty($taxonExternalKey)) {
-          $where['t.external_key'] = trim($taxonExternalKey);
-        }
-        if (count($where) === 0) {
+        if (empty($taxonExternalKey) && empty($taxon)) {
           throw new exception('Missing taxon or external key - cannot link to a taxon');
         }
-        $r = $this->db
+        $this->db
           ->select('t.id, ttl.preferred')
           ->from('taxa as t')
           ->join('taxa_taxon_lists as ttl', 'ttl.taxon_id', 't.id')
-          ->where($where)
+          ->where($where);
+        if (!empty($taxonExternalKey)) {
+          $this->db->where("coalesce(t.search_code, t.external_key)='" . trim($taxonExternalKey) . "'");
+        }
+        $r = $this->db
           ->orderby('ttl.preferred', 'DESC')
           ->get()->result_array(FALSE);
         // Convert years to a date.

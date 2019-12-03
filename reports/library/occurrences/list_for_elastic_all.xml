@@ -23,6 +23,7 @@
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
     JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id
     JOIN taxa t ON t.id=ttl.taxon_id
+    LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
     LEFT JOIN locations l on l.id=o.location_id AND l.deleted=false
     LEFT JOIN samples sp on sp.id=o.parent_sample_id AND sp.deleted=false
     LEFT JOIN locations lp on lp.id=sp.location_id AND lp.deleted=false
@@ -43,16 +44,15 @@
     <param
       name="update_to"
       display="Highest update tracking ID to include"
-      description="Highest tracking ID to include, which will be auto-generated according to the progress of background tasks"
+      description="Highest tracking ID to include, which will be auto-generated according to the progress of background tasks.
+        Records only included once they have been both spatially indexed and data cleaned."
       default="1900-01-01"
       preprocess="SELECT LEAST(
         (
           SELECT tracking FROM cache_occurrences_functional
           WHERE tracking IS NOT NULL
-          AND (
-            location_ids IS NOT NULL
-            OR (data_cleaner_result IS NULL and verification_checks_enabled=TRUE)
-          )
+          AND location_ids IS NOT NULL
+          AND data_cleaner_result IS NOT NULL
           ORDER BY tracking DESC LIMIT 1
         ),
         -(((2^(8*pg_column_size(1::bigint)-2))::bigint &lt;&lt; 1)+1)
@@ -177,5 +177,17 @@
     <column name="occurrence_attrs_json" sql="onf.attrs_json" datatype="text" />
     <column name="tracking" sql="o.tracking" datatype="integer" />
     <column name="input_form" sql="o.input_form" datatype="text" />
+    <!-- Taxon info should get overwritten by master list data, but obtain default values to use just in case not
+      properly mapped -->
+    <column name="taxon_name" sql="cttl.taxon" datatype="text" />
+    <column name="taxon_authority" sql="cttl.authority" datatype="text" />
+    <column name="taxon_group_id" sql="cttl.taxon_group_id" datatype="integer" />
+    <column name="taxon_group" sql="cttl.taxon_group" datatype="text" />
+    <column name="common_name" sql="cttl.default_common_name" datatype="text" />
+    <column name="taxon_rank" sql="cttl.taxon_rank" datatype="text" />
+    <column name="taxon_rank_sort_order" sql="cttl.taxon_rank_sort_order" datatype="integer" />
+    <column name="taxon_kingdom" sql="cttl.kingdom_taxon" datatype="integer" />
+    <column name="taxon_order" sql="cttl.order_taxon" datatype="integer" />
+    <column name="taxon_family" sql="cttl.order_taxon" datatype="integer" />
   </columns>
 </report>

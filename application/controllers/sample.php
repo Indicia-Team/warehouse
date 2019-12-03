@@ -32,10 +32,10 @@ class Sample_Controller extends Gridview_Base_Controller
     (
       'id' => 'ID',
       'website' => 'Website',
-      'survey' => 'Survey',
+      'survey' => 'Survey dataset',
       'entered_sref' => 'Spatial Ref.',
       'location' => 'Location',
-      'date_start' => 'Date'
+      'date_start' => 'Date',
     );
    $this->set_website_access('editor');
   }

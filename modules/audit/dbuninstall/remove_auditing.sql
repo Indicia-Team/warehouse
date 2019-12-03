@@ -1,3 +1,3 @@
 
 DROP SCHEMA audit CASCADE;
-DELETE FROM indicia.system WHERE name = 'audit';
+DELETE FROM system WHERE name = 'audit';

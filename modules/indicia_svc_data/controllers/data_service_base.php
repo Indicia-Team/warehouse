@@ -25,6 +25,13 @@
 class Data_Service_Base_Controller extends Service_Base_Controller {
 
   /**
+   * More details on a failure, e.g. SQL if a query fails.
+   *
+   * @var string
+   */
+  protected $failedRequestDetail = '';
+
+  /**
   * Cleanup a write once nonce from the cache. Should be called after a call to authenticate.
   * Read nonces do not need to be deleted - they are left to expire.
   */
@@ -51,10 +58,21 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     kohana::log('debug', 'Requesting data from Warehouse');
     kohana::log('debug', print_r($_REQUEST, TRUE));
     $this->authenticate('read');
-    // Return data will return an assoc array containing records and/or parameterRequest.
-    $records = $this->read_data();
     $mode = $this->get_output_mode();
-    $responseStruct = $this->get_response_structure($records);
+    // Read_data will return an assoc array containing records and/or parameterRequest.
+    try {
+      $records = $this->read_data();
+      if ($mode === 'json' || $mode === 'xml') {
+        $responseStruct = $this->getResponseStructure($records);
+      }
+    }
+    catch (Exception $e) {
+      // Dwca has different way of handling errors, by embedding query and
+      // instructions in response.
+      if ($mode !== 'dwca') {
+        throw $e;
+      }
+    }
     switch ($mode) {
       case 'json':
         $a = json_encode($responseStruct);
@@ -72,7 +90,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         if (array_key_exists('xsl', $_REQUEST)) {
           $xsl = $_REQUEST['xsl'];
           if (!strpos($xsl, '/')) {
-            // xsl is not a fully qualified path, so point it to the media folder.
+            // Xsl is not a fully qualified path, so point it to the media folder.
             $xsl = url::base() . "media/services/stylesheets/$xsl";
           }
         }
@@ -111,14 +129,34 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
 
       case 'dwca':
         // Darwin Core archive.
-        $content = $this->csv_encode($records);
+        // If an error, we embed the query in the archive so it can be
+        // manually sorted out.
+        if ($this->failedRequestDetail) {
+          $dt = date('Y-m-d H:i:s');
+          $content = <<<TXT
+The following query failed at $dt. Further information is available in the warehouse logs.
+* Please run the SQL given below and export results as CSV to a file called occurrences.csv
+* Remove error-readme.txt from the DwC-a zip file.
+* Add occurrences.csv to the DwC-a zip file.
+
+$this->failedRequestDetail
+TXT;
+        }
+        else {
+          $content = $this->queryError ? $records : $this->csv_encode($records);
+        }
         $zip = new ZipArchive();
         $filename = DOCROOT . 'extract/' . uniqid('dwca-download-') . '.zip';
         $res = $zip->open($filename, ZipArchive::CREATE);
         if ($res === TRUE) {
-          // Add the CSV file to the zip archive - aote we add a Byte Order
-          // Marker to the CSV for UTF-8 support.
-          $zip->addFromString('occurrences.csv', chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF')) . $content);
+          if ($this->failedRequestDetail) {
+            $zip->addFromString('error-readme.txt', $content);
+          }
+          else {
+            // Add the CSV file to the zip archive - aote we add a Byte Order
+            // Marker to the CSV for UTF-8 support.
+            $zip->addFromString('occurrences.csv', chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF')) . $content);
+          }
           // Add the meta.xml file with column details.
           $this->addColumnsMetaToDwcA($zip);
           // Request (POST) can supply content of an EML file to include.
@@ -184,19 +222,22 @@ META;
    * Note that if the report parameters are incomplete, then the response will always be just the
    * parameter request.
    */
-  protected function get_response_structure($data) {
+  protected function getResponseStructure(&$data) {
     $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords'] !== '0';
     $wantColumns = isset($_REQUEST['wantColumns']) && $_REQUEST['wantColumns'] === '1';
     $wantCount = isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1';
     $wantParameters = (isset($_REQUEST['wantParameters']) && $_REQUEST['wantParameters'] === '1')
       || ($wantRecords && !isset($data['records']));
     $array = array();
-    if ($wantRecords && isset($data['records']))
-      $array['records'] = $data['records'];
-    if ($wantColumns && isset($this->view_columns))
+    if ($wantRecords && isset($data['records'])) {
+      $array['records'] = &$data['records'];
+    }
+    if ($wantColumns && isset($this->view_columns)) {
       $array['columns'] = $this->view_columns;
-    if ($wantParameters && isset($data['parameterRequest']))
+    }
+    if ($wantParameters && isset($data['parameterRequest'])) {
       $array['parameterRequest'] = $data['parameterRequest'];
+    }
     // Retrieve the count if requested, only if we successfully obtained the
     // records since we don't want to attempt counting if there are unfilfilled
     // required parameters.
@@ -207,7 +248,7 @@ META;
       }
     }
     // If only returning records, simplify the array down to just return the
-    // list of records rather than the full structure
+    // list of records rather than the full structure.
     if (count($array) === 1 && isset($array['records'])) {
       return array_pop($array);
     }
@@ -296,74 +337,68 @@ META;
   }
 
   /**
-  * Return a line of CSV from an array. This is instead of PHP's fputcsv because that
-  * function only writes straight to a file, whereas we need a string.
-  */
-  function get_csv($data, $delimiter=',', $enclose='"')
-  {
-    $newline="\r\n";
+   * Return a line of CSV from an array.
+   *
+   * This is instead of PHP's fputcsv because that function only writes
+   * straight to a file, whereas we need a string.
+   */
+  function get_csv($data, $delimiter = ',', $enclose = '"') {
+    $newline = "\r\n";
     $output = '';
-    foreach ($data as $cell) {
-      // If not numeric and contains the delimiter, enclose the string
-      if (!is_numeric($cell) && (preg_match('/[' . $delimiter . $enclose . '\r\n]/', $cell)))
-      {
-        //Escape the enclose
-        $cell = str_replace($enclose, $enclose.$enclose, $cell);
-        //Not numeric enclose
+    foreach ($data as $idx => $cell) {
+      // If not numeric and contains the delimiter, enclose the string.
+      if (!is_numeric($cell) && (preg_match('/[' . $delimiter . $enclose . '\r\n]/', $cell))) {
+        // Escape the enclose.
+        $cell = str_replace($enclose, $enclose . $enclose, $cell);
+        // Not numeric enclose.
         $cell = $enclose . $cell . $enclose;
       }
-      if ($output=='') {
+      if ($idx === 0) {
         $output = $cell;
       }
       else {
-        $output.=  $delimiter . $cell;
+        $output .= $delimiter . $cell;
       }
     }
-    $output.=$newline;
+    $output .= $newline;
     return $output;
   }
 
   /**
    * Return a line of TSV (tab separated values) from an array.
+   *
    * IANA compliant: no tabs allowed in the fields, so we replace any.
    */
-  function get_tsv($data,$delimiter="\t",$replace=' ')
-  {
-    $newline="\r\n";
+  function get_tsv($data, $delimiter = "\t", $replace = ' ') {
+    $newline = "\r\n";
     $output = '';
-    foreach ($data as $idx => $cell)
-    {
-      // replace all delimiter values with a dummy
-      $output .=  ($idx === 0 ? '' : $delimiter) . preg_replace('/\s+/', $replace, $cell);
+    foreach ($data as $idx => $cell) {
+      // Replace all delimiter values with a dummy.
+      $output .= ($idx === 0 ? '' : $delimiter) . preg_replace('/\s+/', $replace, $cell);
     }
-    $output.=$newline;
+    $output .= $newline;
     return $output;
   }
 
   /**
-  * Return a line of NBN exchange format data from an array.
-  */
-  function get_nbn($data)
-  {
-    $newline="\r\n";
+   * Return a line of NBN exchange format data from an array.
+   */
+  function get_nbn($data) {
+    $newline = "\r\n";
     $output = '';
-    foreach ($data as $cell)
-    {
+    foreach ($data as $cell) {
       // NBN file format does not allow new lines or tabs in any cells. So replace with spaces.
-      $cell = str_replace(array("\n","\r","\t"),array(' ',' ','  '),$cell);
-      if ($output=='')
-      {
+      $cell = str_replace(array("\n", "\r", "\t"), array(' ', ' ', '  '), $cell);
+      if ($output == '') {
         $output = $cell;
       }
-      else
-      {
-        $output.=  "\t" . $cell;
+      else {
+        $output .= "\t" . $cell;
       }
     }
-    $output.=$newline;
+    $output .= $newline;
     return $output;
   }
-
 
   /**
   * Get the results of the query using the supplied view to render each row.

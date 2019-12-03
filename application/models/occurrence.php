@@ -607,8 +607,8 @@ SQL;
         'validation' => ['required'],
       ),
       'survey_id' => array(
-        'display' => 'Survey',
-        'description' => 'Select the survey to import records into.',
+        'display' => 'Survey dataset',
+        'description' => 'Select the survey dataset to import records into.',
         'datatype' => 'lookup',
         'population_call' => 'direct:survey:id:title',
         'linked_to' => 'website_id',

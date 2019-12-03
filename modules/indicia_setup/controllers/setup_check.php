@@ -222,9 +222,11 @@ class Setup_Check_Controller extends Template_Controller {
       $description = str_replace(
         array('*code*', '*code_user*', '*code_perm*'),
         array(
-          "CREATE DATABASE indicia TEMPLATE=template_postgis;",
+          "CREATE DATABASE indicia;",
           "CREATE USER indicia_user WITH PASSWORD 'indicia';\n" .
           "GRANT ALL PRIVILEGES ON DATABASE indicia TO indicia_user;",
+          "CREATE EXTENSION postgis;\n" .
+          "CREATE EXTENSION postgis_topology;\n" .
           "CREATE EXTENSION btree_gin;\n" .
           "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO indicia_user;\n" .
           "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO indicia_user;\n" .

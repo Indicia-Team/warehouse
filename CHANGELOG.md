@@ -1,3 +1,98 @@
+# Version 3.0.0
+*2019-12-03*
+
+Note that the major version increment reflects the fact that the following
+potentially breaking changes exist in this version:
+
+* Some fields have been removed from the users table as described below.
+  This change is mitigated by the fact that the removed fields were not used by
+  any core Indicia code so could only impact custom developments.
+* The REST API for downloading Elasticsearch data has been changed so clients
+  using the experimental Elasticsearch client helper code will need to be
+  updated in order for downloads to continue working.
+
+These changes are considered low risk for impact on existing sites other than
+those which use the experimental Elasticsearch client code.
+
+* Removed unused fields from the `users` table:
+  * home_entered_sref
+  * home_entered_sref_system
+  * interests
+  * location_name
+  * email_visible
+  * view_common_names
+* HTML Bootstrap style applied for:
+  * User account password fields
+  * User website roles.
+* Consistency of terminology.
+* Fixes for installations where schema name not set to indicia.
+* Updating a survey no longer triggers a complete refresh of cache data due to
+  performance impact.
+* Installation guide updated for recent PostgreSQL/PostGIS versions.
+
+# Version 2.37.0
+*2019-11-07*
+
+* Fixes a bug when saving a new survey.
+* Fixes import of NBN Record cleaner rules.
+* Support for attribute values in Elasticsearch data downloads.
+* Minor updates to UKBMS downloads.
+
+# Version 2.36.0
+*2019-10-25*
+
+* UI added so that survey datasets will be able to define the taxonomic branches which
+  auto-verification will be applied to. https://github.com/BiologicalRecordsCentre/iRecord/issues/486
+* Minor wording changes in notification emails.
+* Elasticsearch extractions include basic taxonomic info even for taxa who are not on one of the
+  officially configured lists.
+
+# Version 2.35.0
+*2019-10-03*
+
+* Improved memory consumption when requesting large amounts of data from Data
+  Services.
+* DwC-A files now include a readme file that explains how to repair the file in
+  the event of an error such as a query timeout. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/477.
+
+# Version 2.34.0
+*2019-10-01*
+
+* Identification difficulty flags now always raised for benefit of verifiers,
+  even if recorder competent with that species. However, the notification is
+  only sent if the recorder has insufficient track record for that species.
+  (https://github.com/BiologicalRecordsCentre/iRecord/issues/657).
+* Removed inadvertant required flag on person title field in edit form.
+* Tweaks to UKBMS summary builder calculation optimisations.
+
+# Version 2.33.0
+*2019-09-30*
+
+* Higher geography Elasticsearch download fixed.
+* Fix taxon search ordering of results
+  (https://github.com/BiologicalRecordsCentre/iRecord/issues/669).
+* Fixes relating to Elasticsearch scroll mode (pagination) not applying column
+  settings.
+
+# Version 2.32.0
+*2019-09-03*
+
+* Support for loading dynamic attributes for multiple occurrences in one go (required for species checklist). See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/637.
+* Fixes a bug in the Swift mailer class loader which was being too eager on some setups, causing file not found errors.
+
+# Version 2.31.0
+*2019-08-29*
+
+* Refactor of the Summary Builder module to use the work_queue for greater efficiency.
+
+# Version 2.30.0
+*2019-08-28*
+
+* REST API Elasticsearch CSV downloads now support flexible download column templates.
+* When importing against existing taxa, can now match against "Species list and taxon search code".
+
 # Version 2.29.0
 *2019-08-04*
 

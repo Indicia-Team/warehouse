@@ -126,7 +126,7 @@ class Report_Controller extends Data_Service_Base_Controller {
       $this->handle_error($e);
       if (class_exists('request_logging')) {
         request_logging::log('o', 'report', NULL, empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'],
-          $this->website_id, $this->user_id, $tm, $e->getMessage());
+          $this->website_id, $this->user_id, $tm, NULL, $e->getMessage());
       }
     }
   }
@@ -163,18 +163,27 @@ class Report_Controller extends Data_Service_Base_Controller {
    * method when it is ready to receive the data. As well as the returned records array, sets
    * $this->view_columns to the list of columns.
    *
-   * @return array Array of records.
+   * @return array
+   *   Array of records.
    */
   protected function read_data() {
     $src = $_REQUEST['reportSource'];
     $rep = $_REQUEST['report'];
-    $params = json_decode($this->input->post('params', '{}'), true);
-    // NB that for JSON requests (eg from datagrids) the parameters do not get posted, but appear in the url.
-    if(empty($params)){
-      // no params posted so look on URL
+    $params = json_decode($this->input->post('params', '{}'), TRUE);
+    // NB that for JSON requests (eg from datagrids) the parameters do not get
+    // posted, but appear in the url.
+    if (empty($params)) {
+      // No params posted so look on URL.
       $params = $this->getRawGET();
     }
-    $data=$this->reportEngine->requestReport($rep, $src, 'xml', $params);
+    try {
+      $data = $this->reportEngine->requestReport($rep, $src, 'xml', $params);
+    }
+    catch (Exception $e) {
+      // Store the query for debug ease in DwC-a mode.
+      $this->failedRequestDetail = $this->reportEngine->getQuery();
+      throw $e;
+    }
     if (isset($data['content']['columns'])) {
       $this->view_columns = $data['content']['columns'];
       unset($data['content']['columns']);
@@ -209,4 +218,5 @@ class Report_Controller extends Data_Service_Base_Controller {
   protected function record_count() {
     return $this->reportEngine->recordCount();
   }
+
 }

@@ -71,7 +71,7 @@ class request_logging {
     $logged = Kohana::config('request_logging.logged_requests');
     if (in_array("$io.$service", $logged)) {
       // Request is to be logged.
-      $db = new Database();
+      $db = $db === NULL ? new Database() : $db;
       $db->query('START TRANSACTION READ WRITE;');
       $get = empty($_GET) ? NULL : json_encode(self::stripUnloggedParams($_GET));
       if ($overrideStoredPost) {

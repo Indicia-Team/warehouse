@@ -7,7 +7,7 @@ available at https://indicia-docs.readthedocs.io/en/latest/index.html.
 Details of the installation procedure are at
 http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-installation.html.
 
-The latest stable download of the warehouse code is available at https://github.com/Indicia-Team/warehouse/releases/tag/v2.28.0.
+The latest stable download of the warehouse code is available at https://github.com/Indicia-Team/warehouse/releases/tag/v3.0.0
 
 Details of the upgrade procedure are at
 http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-upgrading.html.

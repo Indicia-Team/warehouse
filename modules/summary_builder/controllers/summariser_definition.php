@@ -21,34 +21,8 @@
  * @link 	https://github.com/indicia-team/warehouse/
  */
 
-/* Stage 2
- * TODO: configurable merge taxa with same meaning.
- * TODO: sample attribute averaging. store as json in a period level record.
- * TODO: new download reports.
- * TODO: Store Weeknumber definitions in a period level record
- * TODO: comment functions
- */
-
-/*
- * Proposed development path
- * 1) Currently only week based summarisation, as that is what UKBMS want. Expand to allow Month based summarisation
- * 2) Allow >1 summarisation per survey
- * 3) Currently deals with super/subsample with locations, as that is what UKBMS want. Expand to handle other cases.
- * 4) Amalgamation of raw data into a daily summary. Would need to store sample list.
- * 5) Make 0-1 rounding configurable
- * 6) Configurable end of year processing: Include data for overlap, include periods that overlap
-*/
-
-/*
- * Notes:
- * 1) user level summarisation for taxon is done in back end
- * 2) branch level summarisation to be done in front end (by summing up the locations)
- * 3) year level and species level summarisation (row and column totals) done by the front end
- * 4) links to be handled by front end.
- */
-
 /**
- * Controller providing CRUD access to the surveys list.
+ * Controller providing CRUD access to the summariser_definition list.
  *
  * @package	Core
  * @subpackage Controllers
@@ -59,61 +33,81 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
     parent::__construct('summariser_definition');
     $this->columns = array(
       'title' => 'Survey title',
-      'website'      => ''
+      'website' => ''
     );
     $this->pagetitle = "Survey based data summariser definition";
   }
 
   protected function get_action_columns() {
-  	return array(
-  			array(
-  					'caption'=>'Setup Summariser',
-  					'url'=>'summariser_definition/edit_from_survey/{survey_id}'
-  			)
-  	);
+    return array(
+        array(
+          'caption' => 'Setup Summariser',
+          'url' => 'summariser_definition/edit/{id}',
+        )
+    );
   }
 
-  public function edit_from_survey($id) {
-  	if (!is_null($id) && !is_null($this->auth_filter) && !in_array($id, $this->auth_filter['values'])) {
-  		$this->access_denied();
-  		return;
-  	}
-  	$this->model = new Summariser_definition_Model(array('survey_id' => $id, 'deleted'=>'f'));
-  	$values = $this->getModelValues();
-  	if ( !$this->model->loaded ) {
-  		$values['summariser_definition:survey_id']=$id;
-  		$values['summariser_definition:period_start']='weekday=7';
-  		$values['summariser_definition:period_one_contains']='Jan-01';
-  	}
+  public function edit($id = NULL) {
+    if ( is_null($id) ) {
+      $this->access_denied();
+      return;
+    }
+    $this->model = new Summariser_definition_Model(array('id' => $id, 'deleted'=>'f'));
+    if ( !$this->model->loaded ) {
+      $this->access_denied();
+      return;
+    }
+    $survey = new Survey_Model(array('id' => $this->model->survey_id, 'deleted'=>'f'));
+    if ( !$this->model->loaded ) {
+      $this->access_denied();
+      return;
+    }
+    if ( !is_null($this->auth_filter ) && !in_array($survey->website_id, $this->auth_filter['values']) ) {
+      $this->access_denied();
+      return;
+    }
+
+    $values = $this->getModelValues();
     $other = $this->prepareOtherViewData($values);
-  	$this->setView($this->editViewName(), $this->model->caption(), array(
-  	  'existing'=>$this->model->loaded,
-      'values'=>$values
-     ,'other_data'=>$other
+    $this->setView($this->editViewName(), $this->model->caption(), array(
+      'existing' => TRUE,
+      'values' => $values,
+      'other_data' => $other
     ));
-  	$this->defineEditBreadcrumbs();
+    $this->defineEditBreadcrumbs();
   }
 
-  public function edit($id){
-  	Kohana::show_404();
-  }
   public function create(){
-  	Kohana::show_404();
+      $this->model = new Summariser_definition_Model();
+      $values = $this->getModelValues();
+      $values['summariser_definition:period_start']='weekday=7';
+      $values['summariser_definition:period_one_contains']='Jan-01';
+      $other = $this->prepareOtherViewData($values);
+      if(count($other['surveys'])<1) {
+        $this->access_denied();
+        return;
+      }
+      $this->setView($this->editViewName(), $this->model->caption(), array(
+          'existing'=>FALSE,
+          'values'=>$values,
+          'other_data'=>$other
+      ));
+      $this->defineEditBreadcrumbs();
   }
 
   protected function show_submit_fail()
   {
     $page_errors=$this->model->getPageErrors();
-  	if (count($page_errors)!=0) {
-  		$this->session->set_flash('flash_error', implode('<br/>',$page_errors));
-  	} else {
-  		$this->session->set_flash('flash_error', 'The record could not be saved.');
-  	}
-  	$values = $this->getDefaults();
-  	$values = array_merge($values, $_POST);
-  	$other = $this->prepareOtherViewData($values);
-  	$this->setView($this->editViewName(), $this->model->caption(), array(
-  	  'existing'=>$this->model->loaded,
+    if (count($page_errors)!=0) {
+      $this->session->set_flash('flash_error', implode('<br/>',$page_errors));
+    } else {
+      $this->session->set_flash('flash_error', 'The record could not be saved.');
+    }
+    $values = $this->getDefaults();
+    $values = array_merge($values, $_POST);
+    $other = $this->prepareOtherViewData($values);
+    $this->setView($this->editViewName(), $this->model->caption(), array(
+      'existing'=>$this->model->loaded,
       'values'=>$values
      ,'other_data'=>$other
     ));
@@ -121,27 +115,46 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
   }
 
   protected function prepareOtherViewData(array $values) {
-	$survey = new Survey_Model($values['summariser_definition:survey_id']);
-  	$attrsRet = array(''=>'(Each occurrence has count=1)');
+    $survey = new Survey_Model($values['summariser_definition:survey_id']);
+    $attrsRet = array(''=>'(Each occurrence has count=1)');
 
     $models = ORM::factory('occurrence_attributes_website')->
-    		where(array('restrict_to_survey_id'=>$values['summariser_definition:survey_id'],'deleted'=>'f'))->
-    		find_all();
+                where(array('deleted'=>'f'));
+    if(!empty($values['summariser_definition:survey_id'])) {
+      $models = $models->where(array('restrict_to_survey_id'=>$values['summariser_definition:survey_id']));
+    }
+    $models = $models->find_all();
     if(count($models)>0){
-	    $attrIds = array();
-    	foreach ($models as $model)
-    		$attrIds[] = $model->occurrence_attribute_id;
-	    $attrs = ORM::factory('occurrence_attribute')->
-    			where('deleted','f')->in('data_type',array('I','F'))->in('id',$attrIds)->
-    			orderby('caption')->find_all();
-	    if(count($attrs)>0)
-	    	foreach ($attrs as $attr)
-    			$attrsRet[$attr->id] = $attr->caption.' (ID '.$attr->id.')';
+      $attrIds = array();
+      foreach ($models as $model)
+        $attrIds[] = $model->occurrence_attribute_id;
+      $attrIds = array_unique($attrIds);
+      $attrs = ORM::factory('occurrence_attribute')->
+                where('deleted','f')->in('data_type',array('I','F'))->in('id',$attrIds)->
+                orderby('caption')->find_all();
+      if(count($attrs)>0)
+        foreach ($attrs as $attr)
+          $attrsRet[$attr->id] = $attr->caption.' (ID '.$attr->id.')';
     }
 
+    $surveys = array();
+    $surveyModels = ORM::factory('survey')->where(array('deleted'=>'f'))->find_all();
+    foreach ($surveyModels as $model) {
+      if (is_null($this->auth_filter) || in_array($model->website_id, $this->auth_filter['values'])) {
+        $surveys["".$model->id] = $model->title;
+      }
+    }
+    $existingModels = ORM::factory('summariser_definition')->where(array('deleted'=>'f'))->find_all();
+    foreach ($existingModels as $model) {
+      if(array_key_exists("".$model->id, $surveys)) {
+        unset($surveys["".$model->survey_id]);
+      }
+    }
+    asort($surveys);
     return array(
       'survey_title' => $survey->title,
-      'occAttrs' => $attrsRet
+      'occAttrs' => $attrsRet,
+      'surveys' => $surveys,
     );
   }
 
@@ -149,8 +162,9 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
    * Check access to a survey when editing. The survey's website must be in the list
    * of websites the user is authorised to administer.
    */
-  protected function record_authorised ($id)
+  protected function record_authorised ($id = NULL)
   {
+    $model = new Summariser_definition_Model($id);
     if (!is_null($id) AND !is_null($this->auth_filter))
     {
       $survey = new Survey_Model($id);
@@ -167,7 +181,3 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
   }
 
 }
-/*
- * This is triggered by changes to occurrence records, not by a report.
- * How this is output is determined by the front end.
- */

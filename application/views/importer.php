@@ -22,6 +22,20 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+/**
+ * Retrieve user profile field data.
+ *
+ * Function expected by new importer code.
+ */
+function hostsite_get_user_field($field, $default = FALSE) {
+  if ($field === 'indicia_user_id') {
+    return $_SESSION['auth_user']->id;
+  }
+  else {
+    return $default;
+  }
+}
+
 warehouse::loadHelpers(['import_helper']);
 $auth = import_helper::get_read_write_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 

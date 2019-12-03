@@ -14,17 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Summary builder
+ * @package Summary builder
  * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author  Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link    https://github.com/indicia-team/warehouse/
  */
 
-
 echo $grid;
+?>
+<form action="<?php echo url::site() . 'summariser_definition/create'; ?>" method="post">
+<input type="submit" value="New summariser definition" class="btn btn-primary" />
+</form>
+<?php
 $systemTableEntries = $this->db->select('*')->from('system')->where('name','summary_builder')->get()->as_array(true);
 foreach($systemTableEntries as $systemTableEntry) {
-	echo 'Summary Builder module version : '.$systemTableEntry->version.'<br>Last scheduled tasks ran : '.$systemTableEntry->last_scheduled_task_check.'<span style="display:none;">ID '.$systemTableEntry->id.", last script : ".$systemTableEntry->last_run_script."</span><br>";
+  echo 'Summary Builder module version : '.$systemTableEntry->version.'<br>Last scheduled tasks ran : '.$systemTableEntry->last_scheduled_task_check.'<span style="display:none;">ID '.$systemTableEntry->id.", last script : ".$systemTableEntry->last_run_script."</span><br>";
 }
 ?>

@@ -84,7 +84,7 @@ class config_test {
         );
       }
       else {
-        $problem['description'] .= 'Fix the other issues listed on this page before proceeding to configure and ' .
+        $problem['description'] .= ' Fix the other issues listed on this page before proceeding to configure and ' .
           'install the database.';
       }
       array_push($messages, $problem);
