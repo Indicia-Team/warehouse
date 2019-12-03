@@ -1,3 +1,35 @@
+# Version 3.0.0
+*2019-12-03*
+
+Note that the major version increment reflects the fact that the following
+potentially breaking changes exist in this version:
+
+* Some fields have been removed from the users table as described below.
+  This change is mitigated by the fact that the removed fields were not used by
+  any core Indicia code so could only impact custom developments.
+* The REST API for downloading Elasticsearch data has been changed so clients
+  using the experimental Elasticsearch client helper code will need to be
+  updated in order for downloads to continue working.
+
+These changes are considered low risk for impact on existing sites other than
+those which use the experimental Elasticsearch client code.
+
+* Removed unused fields from the `users` table:
+  * home_entered_sref
+  * home_entered_sref_system
+  * interests
+  * location_name
+  * email_visible
+  * view_common_names
+* HTML Bootstrap style applied for:
+  * User account password fields
+  * User website roles.
+* Consistency of terminology.
+* Fixes for installations where schema name not set to indicia.
+* Updating a survey no longer triggers a complete refresh of cache data due to
+  performance impact.
+* Installation guide updated for recent PostgreSQL/PostGIS versions.
+
 # Version 2.37.0
 *2019-11-07*
 
