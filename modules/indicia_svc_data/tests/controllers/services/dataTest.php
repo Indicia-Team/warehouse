@@ -361,12 +361,11 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(isset($r['success']), 'Submitting a new person did not work');
 
     $personId = $r['success'];
-    $array=array(
+    $array = [
       'user:person_id' => $personId,
-      'user:email_visible' => 'f',
       'user:core_role_id' => 1,
-      'user:username' => 'testUser'
-    );
+      'user:username' => 'testUser',
+    ];
     $s = submission_builder::build_submission($array, array('model' => 'user'));
     $r = data_entry_helper::forward_post_to('user', $s, $this->auth['write_tokens']);
 

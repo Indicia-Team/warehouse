@@ -444,7 +444,7 @@ class ReportEngine {
       }
       $r = array(
         'columns' => $this->columns,
-        'records' => $data,
+        'records' => &$data,
       );
       if (isset($includedParams) && count($includedParams) > 0) {
         $r['parameterRequest'] = $includedParams;
@@ -2074,6 +2074,16 @@ SQL;
     else {
       Kohana::log('debug', "Run report query : " . $this->query);
     }
+  }
+
+  /**
+   * Accessor for the SQL.
+   *
+   * @return string
+   *   Query SQL.
+   */
+  public function getQuery() {
+    return $this->query;
   }
 
 }

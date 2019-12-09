@@ -133,6 +133,6 @@ $config['modules'] = array
          MODPATH.'demo',                  // Demo and test pages
          MODPATH.'data_cleaner',           // automatic record checks
          MODPATH.'cache_builder',         // build a cache for performance reporting
-         MODPATH.'spatial_index_builder', // index of location occurrence overlaps
-//         ,MODPATH.'summary_builder'       // build a cache for improving the performance of reporting summary data
+//         MODPATH.'spatial_index_builder', // index of location occurrence overlaps
+//         MODPATH.'summary_builder'       // build a cache for improving the performance of reporting summary data
 );

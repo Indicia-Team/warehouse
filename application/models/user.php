@@ -53,11 +53,7 @@ class User_Model extends ORM {
       $array->add_rules('password', 'required', 'length[7,30]', 'matches_post[password2]');
     }
     $this->unvalidatedFields = [
-      'interests',
-      'location_name',
       'core_role_id',
-      'email_visible',
-      'view_common_names',
       'person_id',
       'allow_share_for_reporting',
       'allow_share_for_peer_review',

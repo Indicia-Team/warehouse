@@ -77,10 +77,10 @@ class Site_User_Controller extends Service_Base_Controller {
       $this->handle_error($e);
     }
   }
-  
+
   /**
    * Implements the webservice call from remote websites to send a password reset email.
-   * 
+   *
    * Does not support requests from users on the warehouse itself (website_id < 0)
    * Expects HTTP POST with userid, options and usual service credentials.
    * Catches any Exceptions and passes them to handle_error()
@@ -92,9 +92,9 @@ class Site_User_Controller extends Service_Base_Controller {
     try
     {
       $this->authenticate('read');
-      
+
       $username_or_email = $_POST['userid'];
-      
+
       $this->auth = new Auth;
       $returned = $this->auth->user_and_person_by_username_or_email($_POST['userid']);
       if (array_key_exists('error_message', $returned)) {
@@ -104,7 +104,7 @@ class Site_User_Controller extends Service_Base_Controller {
       }
       $user = $returned['user'];
       $person = $returned['person'];
-      
+
       if (! $this->auth->is_website_user($user->id, $this->website_id) )
       {
         $result = array('result' => false,
@@ -112,7 +112,7 @@ class Site_User_Controller extends Service_Base_Controller {
         $this->response = json_encode($result);
         return;
       }
-      
+
       $this->auth->send_forgotten_password_mail($user, $person);
 
       $result = array('result' => true);
@@ -125,47 +125,41 @@ class Site_User_Controller extends Service_Base_Controller {
       $this->handle_error($e);
     }
   }
-  
+
   /**
    * Returns a json string containing user profile data for the supplied use id.
    * The user must have a role on the requesting warehouse and not be logically deleted.
    * Data for banned users is returned.
-   * 
+   *
    * Does not support requests from users on the warehouse itself (website_id < 0)
    * Expects HTTP POST with usual service credentials.
    * User_id is supplied as part of the URI and passed to this function as an argument.
    * Catches any Exceptions and passes them to handle_error()
    *
-   * @return json array with profile data as follows<ul>
-   * <li>title</li>
-   * <li>first_name</li>
-   * <li>surname</li>
-   * <li>initials</li>
-   * <li>email_address</li>
-   * <li>website_url</li>
-   * <li>address</li>
-   * <li>home_entered_sref</li>
-   * <li>home_entered_sref_system</li>
-   * <li>interests</li>
-   * <li>location_name</li>
-   * <li>email_visible</li>
-   * <li>view_common_names</li>
-   * <li>username</li>
-   * <li>default_digest_mode</li>
-   * <li>activated</li>
-   * <li>banned</li>
-   * <li>site_role</li>
-   * <li>registration_datetime</li>
-   * <li>last_login_datetime</li>
-   * <li>preferred_sref_system</li>
-   * </ul>
+   * @return json
+   *   Array with profile data as follows:
+   *   * title
+   *   * first_name
+   *   * surname
+   *   * initials
+   *   * email_address
+   *   * website_url
+   *   * address
+   *   * username
+   *   * default_digest_mode
+   *   * activated
+   *   * banned
+   *   * site_role
+   *   * registration_datetime
+   *   * last_login_datetime
+   *   * preferred_sref_system
    */
 
   public function get_user_profile($user_id) {
     try
     {
       $this->authenticate('read');
-      
+
       $profile = $this->_get_user_profile($user_id);
 
       // set response
@@ -177,7 +171,7 @@ class Site_User_Controller extends Service_Base_Controller {
       $this->handle_error($e);
     }
   }
-  
+
   /**
    * Reusable private implementation of get_user_profile which just returns an array
    * and doesn't authenticate service.
@@ -207,30 +201,24 @@ class Site_User_Controller extends Service_Base_Controller {
       if (is_numeric($website->site_role_id)) {
         $site_role = new Site_Role_Model($website->site_role_id);
       }
-      
+
       $profile = array(
-      'result' => true,
-      'title' => is_numeric($person->title_id) ? $title->title : '',
-      'first_name' => $person->first_name,
-      'surname' => $person->surname,
-      'initials' => $person->initials,
-      'email_address' => $person->email_address,
-      'website_url' => $person->website_url,
-      'address' => $person->address,
-      'home_entered_sref' => $user->home_entered_sref,
-      'home_entered_sref_system' => $user->home_entered_sref_system,
-      'interests' => $user->interests,
-      'location_name' => $user->location_name,
-      'email_visible' => $user->email_visible,
-      'view_common_names' => $user->view_common_names,
-      'username' => $user->username,
-      'default_digest_mode' => $user->default_digest_mode,
-      'activated' => $website->activated,
-      'banned' => $website->banned,
-      'site_role' => is_numeric($website->site_role_id) ? $site_role->title : '',
-      'registration_datetime' => $website->registration_datetime,
-      'last_login_datetime' => $website->last_login_datetime,
-      'preferred_sref_system' => $website->preferred_sref_system,
+        'result' => TRUE,
+        'title' => is_numeric($person->title_id) ? $title->title : '',
+        'first_name' => $person->first_name,
+        'surname' => $person->surname,
+        'initials' => $person->initials,
+        'email_address' => $person->email_address,
+        'website_url' => $person->website_url,
+        'address' => $person->address,
+        'username' => $user->username,
+        'default_digest_mode' => $user->default_digest_mode,
+        'activated' => $website->activated,
+        'banned' => $website->banned,
+        'site_role' => is_numeric($website->site_role_id) ? $site_role->title : '',
+        'registration_datetime' => $website->registration_datetime,
+        'last_login_datetime' => $website->last_login_datetime,
+        'preferred_sref_system' => $website->preferred_sref_system,
       );
 
       return $profile;
@@ -240,5 +228,5 @@ class Site_User_Controller extends Service_Base_Controller {
       $this->handle_error($e);
     }
   }
-  
+
 }

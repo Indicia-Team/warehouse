@@ -518,7 +518,7 @@ function send_out_user_email(
   }
   //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
   $emailContent .= '<br><a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
-    url::base() . '">Click here to update your subscription settings.</a><br/><br/>';
+    url::base() . '">Click here to control which notifications you receive.</a><br/><br/>';
   $cc = NULL;
   $swift = email::connect();
   // Use a transaction to allow us to prevent the email sending and marking of

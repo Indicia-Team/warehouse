@@ -77,7 +77,7 @@ class Survey_comment_Controller extends Gridview_Base_Controller
    * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a taxon list
    */
   protected function defineEditBreadcrumbs() {
-    $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
+    $this->page_breadcrumbs[] = html::anchor('survey', 'Survey datasets');
     if ($this->model->id) {
       // editing an existing item, so our argument is the survey_comment_id
       $survey_id = $this->model->survey_id;

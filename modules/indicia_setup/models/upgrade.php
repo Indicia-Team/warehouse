@@ -141,8 +141,9 @@ class Upgrade_Model extends Model {
     // can run the whole upgrade. If more than 1000, then scripts which perform
     // a lot of processing on occurrences can be marked as slow and run after
     // the upgrade. We use an approx count as it is much faster than count(*).
+
     $this->couldBeSlow = $this->db
-      ->query("SELECT reltuples as approx_count FROM pg_class WHERE oid = 'indicia.occurrences'::regclass;")
+      ->query("SELECT reltuples as approx_count FROM pg_class WHERE oid = 'occurrences'::regclass;")
       ->current()->approx_count > 1000;
     // Run the core upgrade.
     $last_run_script = $system->getLastRunScript('Indicia');

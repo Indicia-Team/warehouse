@@ -673,7 +673,16 @@ class Scheduled_Tasks_Controller extends Controller {
     // take 1 second off current time to use as the end of the scanned time period. Avoids possibilities of records
     // being lost half way through the current second.
     $t = time() - 1;
-    $currentTime = date("Y-m-d H:i:s", $t);
+    $maxTime = date("Y-m-d H:i:s", $t);
+    $latestUnprocessed = $this->db
+      ->select("min(created_on) - '1 second'::interval as maxtime")
+      ->from('work_queue')
+      ->in('task', ['task_spatial_index_builder_sample', ' task_spatial_index_builder_occurrence'])
+      ->where('claimed_by', NULL)
+      ->get()->current();
+    if ($latestUnprocessed->maxtime !== NULL) {
+      $maxTime = $latestUnprocessed->maxtime;
+    }
     $plugins = $this->getScheduledPlugins();
     // Load the plugins and last run date info from the system table. Any not run before will start from the current timepoint.
     // We need this to be sorted, so we can process the list of changed records for each group of plugins with the same timestamp together.
@@ -686,12 +695,12 @@ class Scheduled_Tasks_Controller extends Controller {
     $sortedPlugins = array();
     foreach ($pluginsFromDb as $plugin) {
       $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check === NULL
-        ? $currentTime : $plugin->last_scheduled_task_check;
+        ? $maxTime : $plugin->last_scheduled_task_check;
     }
     // Any new plugins not run before should also be included in the list.
     foreach ($plugins as $plugin) {
       if (!isset($sortedPlugins[$plugin])) {
-        $sortedPlugins[$plugin] = $currentTime;
+        $sortedPlugins[$plugin] = $maxTime;
       }
     }
     // Make sure data_cleaner runs before auto_verify module.
@@ -720,7 +729,7 @@ class Scheduled_Tasks_Controller extends Controller {
       if (in_array('all_modules', $scheduledPlugins) || in_array($plugin, $scheduledPlugins)) {
         require_once MODPATH . "$plugin/plugins/$plugin.php";
         $this->loadPluginMetadata($plugin);
-        $this->loadOccurrencesDelta($timestamp, $currentTime);
+        $this->loadOccurrencesDelta($timestamp, $maxTime);
         // Call the plugin, only if there are records to process, or it doesn't
         // care.
         if (!$this->pluginMetadata['requires_occurrences_delta']
@@ -729,7 +738,7 @@ class Scheduled_Tasks_Controller extends Controller {
           echo "<h2>Running $plugin</h2>";
           echo "<p>Last run at $timestamp</p>";
           $tm = microtime(TRUE);
-          call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $currentTime);
+          call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $maxTime);
           // Log plugins which take more than 5 seconds.
           $took = microtime(TRUE) - $tm;
           if ($took > 5) {
@@ -744,7 +753,7 @@ class Scheduled_Tasks_Controller extends Controller {
         }
         // Mark the time of the last scheduled task check so we can get the
         // correct list of updates next time.
-        $timestamp = $this->pluginMetadata['requires_occurrences_delta'] ? $this->occdeltaEndTimestamp : $currentTime;
+        $timestamp = $this->pluginMetadata['requires_occurrences_delta'] ? $this->occdeltaEndTimestamp : $maxTime;
         if (!$this->db->update('system', array('last_scheduled_task_check' => $timestamp), array('name' => $plugin))->count())
           $this->db->insert('system', array(
             'version' => '0.1.0',
