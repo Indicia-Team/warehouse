@@ -435,13 +435,61 @@ and atr.id not in (
     and aw.{$entity}_attribute_id=attla.{$entity}_attribute_id
     and aw.deleted=false
   where astr.deleted=false
-  and atr.{$entity}_attributes_website_id=atr.id
+  and atr.{$entity}_attributes_website_id=aw.id
   and atr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
   and coalesce(atr.restrict_to_stage_term_meaning_id, 0)=coalesce(astr.restrict_to_stage_term_meaning_id, 0)
 );
 SQL;
       $db->query($qry);
     }
+
+    // taxa_taxon_list_attributes do not use a website table so the above SQL does not work
+    // This code is a version of the above code for taxa_tax_list_attributes
+    $ttlQry = <<<SQL
+    update taxa_taxon_list_attribute_taxon_restrictions atr
+    set deleted=true, updated_on=now(), updated_by_id=$userId
+    from attribute_sets_taxon_restrictions astr
+    join attribute_sets_surveys ass
+      on ass.id=astr.attribute_sets_survey_id
+    join attribute_sets aset
+      on aset.id=ass.attribute_set_id
+    join attribute_sets_taxa_taxon_list_attributes asttla
+      on asttla.attribute_set_id=ass.attribute_set_id
+    join taxon_lists_taxa_taxon_list_attributes tlttla
+      on tlttla.taxon_list_id=aset.taxon_list_id
+      and tlttla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
+    where (astr.deleted or ass.deleted or aset.deleted or asttla.deleted or tlttla.deleted)
+    and $alias.id=$model->id
+    and atr.taxon_lists_taxa_taxon_list_attribute_id=tlttla.id
+    and atr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
+    and coalesce(atr.restrict_to_stage_term_meaning_id, 0)=coalesce(astr.restrict_to_stage_term_meaning_id, 0)
+    and atr.deleted=false
+    and atr.id not in (
+      -- Exclude deletions for any restriction that is still valid because of
+      -- another attribute set.
+      select atr.id
+      from taxa_taxon_list_attribute_taxon_restrictions, attribute_sets_taxon_restrictions astr
+      join attribute_sets_surveys ass
+        on ass.id=astr.attribute_sets_survey_id
+        and ass.deleted=false
+      join attribute_sets aset
+        on aset.id=ass.attribute_set_id
+        and aset.deleted=false
+      join attribute_sets_taxa_taxon_list_attributes asttla
+        on asttla.attribute_set_id=ass.attribute_set_id
+        and asttla.deleted=false
+      join taxon_lists_taxa_taxon_list_attributes tlttla
+        on tlttla.taxon_list_id=aset.taxon_list_id
+        and tlttla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
+        and tlttla.deleted=false
+      where astr.deleted=false
+      --AVB changed this in original code
+      and atr.taxon_lists_taxa_taxon_list_attribute_id=tlttla.id
+      and atr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
+      and coalesce(atr.restrict_to_stage_term_meaning_id, 0)=coalesce(astr.restrict_to_stage_term_meaning_id, 0)
+    );
+SQL;
+    $db->query($ttlQry);
   }
 
   /**
