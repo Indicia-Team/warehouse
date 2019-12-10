@@ -389,6 +389,25 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->db->query("delete from users where id in ($uid1, $uid2)");
   }
 
+  /**
+   * Test the basic functionality of the user_identifier/get_user_id service call.
+   */
+  public function testGetLongUserID() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Identifier_Test::testGetLongUserID");
+    $response = $this->callGetUserIdService($this->auth, [
+        ['type' => 'email', 'identifier' => 'thisisaverylongfirstnamethisisaverylongsurname@test.com'],
+      ],
+      5000,
+      'thisisaverylongfirstname',
+      'thisisaverylongsurname'
+    );
+    $this->assertEquals(1, $response['result'],
+      'The request to the user_identifier/get_user_id merge service failed for long username test.');
+    $output = json_decode($response['output']);
+    // Response should definitely include a user id.
+    $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: ' . $response['output']);
+  }
+
   private function cleanupUsers($userIds) {
     $idList = implode(',', $userIds);
     $cleanupSql = <<<SQL
