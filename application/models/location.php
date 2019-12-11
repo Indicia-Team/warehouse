@@ -251,9 +251,9 @@ SQL;
    */
   public function fixedValuesForm() {
     $srefs = [];
-    $systems = spatial_ref::system_metadata();
-    foreach ($systems as $code => $metadata) {
-      $srefs[] = self::getConvertedOptionValue($code, $metadata['title']);
+    $systems = spatial_ref::system_list();
+    foreach ($systems as $code => $title) {
+      $srefs[] = self::getConvertedOptionValue($code, $title);
     }
 
     $location_types = array(":Defined in file");
