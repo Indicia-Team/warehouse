@@ -238,9 +238,9 @@ SQL;
   }
 
   private static function getConvertedOptionValue($first, $second) {
-    return str_replace(array(',', ':'), array('&#44', '&#56'), $first) .
+    return str_replace(array(',', ':'), array('&#44', '&#58'), $first) .
             ":" .
-            str_replace(array(',', ':'), array('&#44', '&#56'), $second);
+            str_replace(array(',', ':'), array('&#44', '&#58'), $second);
   }
 
   /**

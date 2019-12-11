@@ -574,18 +574,18 @@ SQL;
     $srefs = array();
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title) {
-      $srefs[] = str_replace(array(',', ':'), array('&#44', '&#56'), $code) .
+      $srefs[] = str_replace(array(',', ':'), array('&#44', '&#58'), $code) .
             ":" .
-            str_replace(array(',', ':'), array('&#44', '&#56'), $title);
+            str_replace(array(',', ':'), array('&#44', '&#58'), $title);
     }
 
     $sample_methods = array(":Defined in file");
     $parent_sample_methods = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-      $sample_method = str_replace(array(',', ':'), array('&#44', '&#56'), $term->id) .
+      $sample_method = str_replace(array(',', ':'), array('&#44', '&#58'), $term->id) .
         ":" .
-        str_replace(array(',', ':'), array('&#44', '&#56'), $term->term);
+        str_replace(array(',', ':'), array('&#44', '&#58'), $term->term);
       $sample_methods[] = $sample_method;
       $parent_sample_methods[] = $sample_method;
     }
@@ -593,9 +593,9 @@ SQL;
     $locationTypes = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-      $locationTypes[] = str_replace(array(',', ':'), array('&#44', '&#56'), $term->id) .
+      $locationTypes[] = str_replace(array(',', ':'), array('&#44', '&#58'), $term->id) .
         ":" .
-        str_replace(array(',', ':'), array('&#44', '&#56'), $term->term);
+        str_replace(array(',', ':'), array('&#44', '&#58'), $term->term);
     }
     $retVal = array(
       'website_id' => array(
