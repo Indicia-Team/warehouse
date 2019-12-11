@@ -50,13 +50,13 @@ class Import_Controller extends Service_Base_Controller {
   public function get_import_settings($model) {
     $this->authenticate('read');
     $model = ORM::factory($model);
-    if (method_exists($model, 'fixed_values_form')) {
+    if (method_exists($model, 'fixedValuesForm')) {
       // Pass URL parameters through to the fixed values form in case there are
       // model specific settings.
       $options = array_merge($_GET);
       unset($options['nonce']);
       unset($options['auth_token']);
-      echo json_encode($model->fixed_values_form($options));
+      echo json_encode($model->fixedValuesForm($options));
     }
   }
 
@@ -910,7 +910,7 @@ class Import_Controller extends Service_Base_Controller {
       function ($field) {
         return $field->fieldName;
       }, $fields);
-    $join = self::buildJoin($fieldPrefix,$fields,$table,$saveArray); 
+    $join = self::buildJoin($fieldPrefix,$fields,$table,$saveArray);
     $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
     if ($wheres !== FALSE) {
       $db = Database::instance();
@@ -952,7 +952,7 @@ class Import_Controller extends Service_Base_Controller {
 
   /*
    * Need to build a join so the system works correctly when importing taxa with update existing records selected.
-   * e.g. a problematic scenario would happen if importing new taxa but the external key/search code is still selected 
+   * e.g. a problematic scenario would happen if importing new taxa but the external key/search code is still selected
    * for existing record update, in this case without building a join, the system would keep overwriting the previous record
    * as each new one is imported (as it wasn't checking the search code/external key, the final result would be that only one row would import).
    * Note this function might need improving/generalising for other models, although I did check occurrence/sample import which
@@ -965,7 +965,7 @@ class Import_Controller extends Service_Base_Controller {
     }
     elseif (!empty($saveArray['taxon:search_code']) && $table=='taxa_taxon_lists') {
       $r = "join taxa t on t.id = ".$table.".taxon_id AND t.search_code='".$saveArray['taxon:search_code']."' AND t.deleted=false";
-    } 
+    }
     return $r;
   }
 

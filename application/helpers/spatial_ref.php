@@ -27,38 +27,41 @@ class spatial_ref {
   /**
    * Retrieves the metadata for all the supported spatial reference systems.
    *
-   * @param boolean $refresh Set to true to force a full refresh, otherwise the result is cached.
+   * @param bool $refresh
+   *   Set to true to force a full refresh, otherwise the result is cached.
    */
-  public static function system_metadata($refresh=false) {
+  public static function system_metadata($refresh = FALSE) {
     $cacheId = 'spatial-ref-systems';
     if ($refresh) {
       $cache = Cache::instance();
       $cache->delete($cacheId);
-      self::$system_metadata=false;
+      self::$system_metadata = FALSE;
     }
-    if (self::$system_metadata === false) {
+    if (self::$system_metadata === FALSE) {
       $latlong_systems = Kohana::config('sref_notations.lat_long_systems');
       $cache = Cache::instance();
       if ($cached = $cache->get($cacheId)) {
         self::$system_metadata = $cached;
-      } else {
+      }
+      else {
         self::$system_metadata = array();
         // fetch any systems that are just declared as srids, with no notation module required
         foreach (Kohana::config('sref_notations.sref_notations') as $code => $title) {
           self::$system_metadata["EPSG:$code"] = array(
             'title' => $title,
             'srid' => $code,
-            // make a small assumption here, that a non-lat long system is going to be an x y grid of metres.
-            'treat_srid_as_x_y_metres' => !isset($latlong_systems[$code])
+            // make a small assumption here, that a non-lat long system is
+            // going to be an x y grid of metres.
+            'treat_srid_as_x_y_metres' => !isset($latlong_systems[$code]),
           );
         }
-        // Now look for any modules which extend the sref systems available
+        // Now look for any modules which extend the sref systems available.
         foreach (Kohana::config('config.modules') as $path) {
           $plugin = basename($path);
           if (file_exists("$path/plugins/$plugin.php")) {
-            require_once("$path/plugins/$plugin.php");
-            if (function_exists($plugin.'_sref_systems')) {
-              $metadata = call_user_func($plugin.'_sref_systems');
+            require_once "$path/plugins/$plugin.php";
+            if (function_exists($plugin . '_sref_systems')) {
+              $metadata = call_user_func($plugin . '_sref_systems');
               self::$system_metadata = array_merge(self::$system_metadata, $metadata);
             }
           }

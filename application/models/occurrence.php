@@ -570,7 +570,7 @@ SQL;
    *   * **occurrence_associations** - Set to 't' to enable occurrence associations options. The
    *     relevant warehouse module must also be enabled.
    */
-  public function fixed_values_form($options = array()) {
+  public function fixedValuesForm($options = array()) {
     $srefs = array();
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title) {
