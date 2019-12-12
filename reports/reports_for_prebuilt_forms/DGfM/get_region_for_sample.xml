@@ -1,0 +1,25 @@
+<report
+    title="Get region for sample"
+    description="Get the id of a region for a given sample id, used to automatically select the region in the location select
+on the input forms in edit mode."
+>
+  <query>
+    SELECT #columns#
+    FROM samples s
+      JOIN locations loc on loc.id = s.location_id AND loc.deleted=false
+      JOIN locations region on region.id=loc.parent_id AND region.deleted=false
+    WHERE (s.id = #sample_id#)
+    AND loc.deleted=false
+  </query>
+  <params>
+    <param name="sample_id" display="Todo" datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Region ID' sql="region.id" datatype='integer' visible="false"/>
+    --This report used to return the region ID only, hence the region ID is referred to as simply "id".
+    --Loc_id was introduced later, so left "id" referring to region ID, so other code didn't need changing .
+    <column name='loc_id' display='Loc ID' sql="loc.id" datatype='integer' visible="false"/>
+    <column name='region_name' display='Region name' sql="region.name" datatype='integer' visible="false"/>
+    <column name='loc_name' display='Loc name' sql="loc.name" datatype='integer' visible="false"/>
+  </columns>
+</report>

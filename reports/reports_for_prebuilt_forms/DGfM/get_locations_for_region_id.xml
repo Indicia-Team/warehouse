@@ -1,0 +1,26 @@
+<report
+    title="Get locations for region id"
+    description="Get a list of locations associated with a given region ID."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations location
+      LEFT JOIN locations_websites lw on lw.location_id=location.id AND lw.deleted=false
+      LEFT JOIN termlists_terms ttLocationType on ttLocationType.id = location.location_type_id
+      LEFT JOIN terms termLocationType on termLocationType.id = ttLocationType.term_id
+    WHERE (location.parent_id = #region_id#)
+    AND #website_filter# AND location.deleted=false
+    GROUP BY location.id,termlocationtype.term
+  </query>
+  <order_bys>
+    <order_by>location.id</order_by>
+  </order_bys>
+  <params>
+    <param name="current_user_id" display="Id of the currently logged in user" datatype="integer"/>
+    <param name="region_id" display="Region id to get locations for" datatype="integer" emptyvalue="0"/>
+  </params>
+  <columns>
+    <column name='id' display='Location ID' sql="location.id" datatype='integer' visible="false" in_count="true"/>
+    <column name='name' display='Location Name' sql="location.name" datatype='text'/>
+  </columns>
+</report>
