@@ -763,16 +763,4 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'Data services CSV format response not encoded correctly for new lines.');
   }
 
-  public function testOccurrenceAttrValueWorkQueue() {
-    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testOccurrenceAttrValueWorkQueue");
-    $s = submission_builder::build_submission($array, [
-      'model' => 'termlists_term',
-      'superModels' => [
-        'meaning' => ['fk' => 'meaning_id'],
-        'term' => ['fk' => 'term_id'],
-      ],
-    ]);
-    $r = data_entry_helper::forward_post_to('termlists_term', $s, $this->auth['write_tokens']);
-  }
-
 }
