@@ -617,6 +617,10 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
    * values.
    */
   public function testUpdateOccurrenceWithAttr() {
+    $db = new Database();
+    // Start from fresh.
+    $db->query('delete from work_queue');
+    $q = new WorkQueue();
     // First, create an attribute using ORM.
     $attr = ORM::factory('occurrence_attribute');
     $array = array(
@@ -681,8 +685,35 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $occ->reload();
     $this->assertEquals('This has been partially updated', $occ->comment);
     $this->assertEquals(1, $occ->taxa_taxon_list_id);
+    // Run the work queue task and check attrs_json
+    // Run the task
+    $q->process($db);
+    $attrs = json_decode($db->query(
+      "select attrs_json from cache_occurrences_nonfunctional where id=$occId"
+    )->current()->attrs_json, TRUE);
+    $this->assertEquals('A value', $attrs['271']);
+    // Now test if an update fired at the individual attribute value causes a
+    // work queue task so attrs_json gets updated.
+    $attrVal = $db->query("select id from occurrence_attribute_values where occurrence_attribute_id=$attr->id limit 1")->current();
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'occurrence_attribute_value:id' => $attrVal->id,
+      'occurrence_attribute_value:text_value' => 'Updated',
+    ];
+    $s = submission_builder::build_submission($array, ['model' => 'occurrence_attribute_value']);
+    $r = data_entry_helper::forward_post_to('occurrence_attribute_value', $s, $this->auth['write_tokens']);
+    $qCount = $db->query(
+      "select count(*) from work_queue where task='task_cache_builder_attr_value_occurrence' and record_id=$attrVal->id"
+    )->current();
+    $this->assertEquals(1, $qCount->count, 'Work queue task not generated for attr value update.');
+    // Run the task
+    $q->process($db);
+    $attrs = json_decode($db->query(
+      "select attrs_json from cache_occurrences_nonfunctional where id=$occId"
+    )->current()->attrs_json, TRUE);
+    $this->assertEquals('Updated', $attrs['271']);
     // Clean up.
-    $db = new Database();
     $db->query("delete from occurrence_attribute_values where occurrence_attribute_id=$attr->id");
     $aw->delete();
     $attr->delete();
@@ -731,4 +762,5 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals("Sample for unit testing with a \nline break", $sample['comment'],
       'Data services CSV format response not encoded correctly for new lines.');
   }
+
 }
