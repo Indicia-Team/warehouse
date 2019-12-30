@@ -358,7 +358,7 @@ class Import_Controller extends Service_Base_Controller {
    * Requires a $_GET parameter for uploaded_csv - the uploaded file name.
    */
   public function upload() {
-    $allowCommitToDB = (isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : true);
+    $allowCommitToDB = isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : TRUE;
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     $metadata = $this->getMetadata($_GET['uploaded_csv']);
     if (!empty($metadata['user_id'])) {
@@ -832,7 +832,12 @@ class Import_Controller extends Service_Base_Controller {
       }
       // Get percentage progress.
       $progress = $filepos * 100 / filesize($csvTempFile);
-      $r = "{\"uploaded\":$count,\"progress\":$progress,\"filepos\":$filepos}";
+      $r = json_encode([
+        'uploaded' => $count,
+        'progress' => $progress,
+        'filepos' => $filepos,
+        'errorCount' => $metadata['errorCount'],
+      ]);
       // Allow for a JSONP cross-site request.
       if (array_key_exists('callback', $_GET)) {
         $r = $_GET['callback'] . "(" . $r . ")";
@@ -846,7 +851,7 @@ class Import_Controller extends Service_Base_Controller {
       // An AJAX upload request will just receive the number of records
       // uploaded and progress.
       $this->auto_render = FALSE;
-      if (!empty($allowCommitToDB)&&$allowCommitToDB==true) {
+      if (!empty($allowCommitToDB) && $allowCommitToDB) {
         $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
       }
       if (class_exists('request_logging')) {
