@@ -1,0 +1,38 @@
+<?php
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Modules
+ * @subpackage Spatial index builder
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	https://github.com/indicia-team/warehouse/
+ */
+
+
+$config['location_types']=array(
+
+);
+
+// Of the indexed types, which are layers which have a parent ID that points to
+// another higher level layer that should also be indexed?
+$config['hierarchical_location_types']=array(
+
+);
+
+// If any of the indexed location types only need indexing for certain surveys then that can be configured here.
+// Omit this configuration if not required.
+$config['survey_restrictions']=array(
+
+);
