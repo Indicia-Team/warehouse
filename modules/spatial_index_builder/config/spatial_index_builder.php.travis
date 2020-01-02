@@ -13,22 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
- * @subpackage Spatial index builder
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 
 $config['location_types']=array(
-
+  'Test location type',
 );
 
 // Of the indexed types, which are layers which have a parent ID that points to
 // another higher level layer that should also be indexed?
 $config['hierarchical_location_types']=array(
-
 );
 
 // If any of the indexed location types only need indexing for certain surveys then that can be configured here.
