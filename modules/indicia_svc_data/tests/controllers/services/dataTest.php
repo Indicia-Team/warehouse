@@ -686,12 +686,12 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals('This has been partially updated', $occ->comment);
     $this->assertEquals(1, $occ->taxa_taxon_list_id);
     // Run the work queue task and check attrs_json
-    // Run the task
+    // Run the task.
     $q->process($db);
     $attrs = json_decode($db->query(
       "select attrs_json from cache_occurrences_nonfunctional where id=$occId"
     )->current()->attrs_json, TRUE);
-    $this->assertEquals('A value', $attrs['271']);
+    $this->assertEquals('A value', $attrs[$attr->id]);
     // Now test if an update fired at the individual attribute value causes a
     // work queue task so attrs_json gets updated.
     $attrVal = $db->query("select id from occurrence_attribute_values where occurrence_attribute_id=$attr->id limit 1")->current();
@@ -707,12 +707,12 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       "select count(*) from work_queue where task='task_cache_builder_attr_value_occurrence' and record_id=$attrVal->id"
     )->current();
     $this->assertEquals(1, $qCount->count, 'Work queue task not generated for attr value update.');
-    // Run the task
+    // Run the task.
     $q->process($db);
     $attrs = json_decode($db->query(
       "select attrs_json from cache_occurrences_nonfunctional where id=$occId"
     )->current()->attrs_json, TRUE);
-    $this->assertEquals('Updated', $attrs['271']);
+    $this->assertEquals('Updated', $attrs[$attr->id]);
     // Clean up.
     $db->query("delete from occurrence_attribute_values where occurrence_attribute_id=$attr->id");
     $aw->delete();
