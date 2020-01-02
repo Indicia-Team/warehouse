@@ -90,7 +90,7 @@ SELECT occurrence_id, ('{' || string_agg(
 , ',') || '}')::json AS attrs
 INTO temporary attrs
 FROM (
-  SELECT occurrence_id, a.multi_value,
+  SELECT av.occurrence_id, a.multi_value,
     occurrence_attribute_id::text as f,
     array_agg(
       CASE a.data_type
