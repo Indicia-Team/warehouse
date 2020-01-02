@@ -91,7 +91,8 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'lookupValues' => array(),
       'validation' => array('required'),
     ));
-    // Code currently assumes only taxa_taxon_list_external_key possible in the key options.
+    // Code currently assumes only taxa_taxon_list_external_key possible in the
+    // key options.
     $params = $readAuth;
     if ($listId = warehouse::getMasterTaxonListId()) {
       $params += array('taxon_list_id' => $listId);
@@ -105,6 +106,16 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'speciesIncludeTaxonGroup' => TRUE,
       'extraParams' => $params,
       'validation' => array('required'),
+    ));
+    echo data_entry_helper::select(array(
+      'label' => 'Alternative species checklist',
+      'fieldname' => 'taxon_list_id',
+      'table' => 'taxon_list',
+      'valueField' => 'id',
+      'captionField' => 'title',
+      'default' => $listId,
+      'extraParams' => $readAuth,
+      'helpText' => 'If using taxa not on the master species list, choose the alternative list here before searching.',
     ));
     echo data_entry_helper::hidden_text(array(
       'fieldname' => 'old_workflow_event_event_type',
@@ -131,54 +142,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
     echo $metadata;
     echo html::form_buttons(html::initial_value($values, 'workflow_event:id') != NULL, FALSE, FALSE);
 
-    ?>
-    <script type="text/javascript">
-    jQuery(document).ready(function($) {
-        $("#workflow_event\\:entity").change(function() {
-          var entities =
-    <?php
-    echo json_encode($other_data['entities']);
-    ?>,
-              previous_value = $("#workflow_event\\:event_type").val(),
-              entityKeys = Object.keys(entities);
-          // First build event types list for select.
-          if(previous_value === null || previous_value==="")
-            previous_value = $("#old_workflow_event_event_type").val();
-          $("#workflow_event\\:event_type option").remove();
-          for(var i = 0; i< entityKeys.length; i++) {
-            if(entityKeys[i] == $("#workflow_event\\:entity").val()) {
-              for(var j = 0; j< entities[entityKeys[i]].event_types.length; j++) {
-                $("#workflow_event\\:event_type").append('<option value="'+entities[entityKeys[i]].event_types[j].code+
-                    '">'+entities[entityKeys[i]].event_types[j].title+'</option>');
-              }
-            }
-          }
-          $("#workflow_event\\:event_type").val(previous_value);
-          // now do Keys
-          previous_value = $("#workflow_event\\:key").val();
-          if(previous_value === null || previous_value==="")
-            previous_value = $("#old_workflow_event_key").val();
-          $("#workflow_event\\:key option").remove();
-          for (var i = 0; i< entityKeys.length; i++) {
-            if (entityKeys[i] === $("#workflow_event\\:entity").val()) {
-              for (var j = 0; j< entities[entityKeys[i]].keys.length; j++) {
-                $("#workflow_event\\:key").append('<option value="'+entities[entityKeys[i]].keys[j].db_store_value+
-                    '">'+entities[entityKeys[i]].keys[j].title+'</option>');
-              }
-              if (entities[entityKeys[i]].keys.length === 1) {
-                $('#ctrl-wrap-workflow_event-key').hide();
-              } else {
-                $('#ctrl-wrap-workflow_event-key').show();
-              }
-            }
-          }
-          $("#workflow_event\\:key").val(previous_value);
-        });
-        $("#workflow_event\\:entity").change();
-    });
-
-    </script>
-    <?php
+    data_entry_helper::$indiciaData['entities'] = $other_data['entities'];
 
     data_entry_helper::$dumped_resources[] = 'jquery';
     data_entry_helper::$dumped_resources[] = 'jquery_ui';
