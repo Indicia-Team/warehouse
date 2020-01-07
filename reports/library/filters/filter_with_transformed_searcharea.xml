@@ -5,7 +5,7 @@
   <query>
     SELECT #columns#
     FROM filters f
-    LEFT JOIN locations l ON string_to_array(COALESCE(definition::json->>'location_list', definition::json->>'location_ids'), ',') @> ARRAY[l.id::text ]
+    LEFT JOIN locations l ON l.id = ANY(string_to_array(COALESCE(definition::json-&gt;&gt;'location_list', definition::json-&gt;&gt;'location_ids'), ',')::integer[])
     WHERE (f.website_id in (#website_ids#) OR f.website_id is null)
     AND f.deleted=false
     and f.id=#filter_id#
