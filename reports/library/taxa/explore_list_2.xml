@@ -4,7 +4,7 @@
         Second version has additional parameters."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
-  SELECT distinct #columns#
+  SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
   #agreements_join#
