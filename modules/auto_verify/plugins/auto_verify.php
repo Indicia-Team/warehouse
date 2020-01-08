@@ -13,12 +13,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
- * @subpackage Auto verify
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/Indicia-Team/warehouse
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/warehouse
  */
+
+/**
+ * Returns plugin metadata.
+ *
+ * Identifies that the plugin uses the occdelta table to identify changes.
+ *
+ * @return array
+ *   Metadata.
+ */
+function auto_verify_metadata() {
+  return array(
+    'requires_occurrences_delta' => TRUE,
+    'always_run' => TRUE,
+  );
+}
 
 /**
  * Hook into the task scheduler. When run, the system checks the
@@ -26,8 +39,8 @@
  * marked the record as data_cleaner_result to true, record_status="C", the system
  * then sets the record to verified automatically (subject to taxon restriction
  * tests descrbed below).
- * If the survey associated with the record has a value in its 
- * auto_accept_taxa_filters field, then the taxon_meaning_id associated with 
+ * If the survey associated with the record has a value in its
+ * auto_accept_taxa_filters field, then the taxon_meaning_id associated with
  * the record has to be the same as, or a decendent of, one of the
  * taxa stored in the auto_accept_taxa_filters to qualify for auto verification.
  *
@@ -40,105 +53,107 @@
  */
 function auto_verify_scheduled_task($last_run_date, $db) {
   $autoVerifyNullIdDiff = kohana::config('auto_verify.auto_accept_occurrences_with_null_id_difficulty', FALSE, FALSE);
-
-  $oldestRecordCreatedDateToProcess = kohana::config('auto_verify.oldest_record_created_date_to_process', FALSE, FALSE);
-  $oldestOccurrenceIdToProcess = kohana::config('auto_verify.oldest_occurrence_id_to_process', FALSE, FALSE);
-  $maxRecordsNumber = kohana::config('auto_verify.max_num_records_to_process_at_once', FALSE, FALSE);
-
   if (empty($autoVerifyNullIdDiff)) {
     echo "Unable to automatically verify occurrences when the auto_accept_occurrences_with_null_id_difficulty entry is empty.<br>";
     kohana::log('error', 'Unable to automatically verify occurrences when the auto_accept_occurrences_with_null_id_difficulty configuration entry is empty.');
     return FALSE;
   }
 
+  $oldestRecordCreatedDateToProcess = kohana::config('auto_verify.oldest_record_created_date_to_process', FALSE, FALSE);
   if (empty($oldestRecordCreatedDateToProcess)) {
     echo "Unable to automatically verify occurrences when the oldest_record_created_date_to_process entry is empty.<br>";
     kohana::log('error', 'Unable to automatically verify occurrences when the oldest_record_created_date_to_process configuration entry is empty.');
     return FALSE;
   }
 
-  if (empty($oldestOccurrenceIdToProcess)) {
-    echo "Unable to automatically verify occurrences when the oldest_occurrence_id_to_process entry is empty.<br>";
-    kohana::log('error', 'Unable to automatically verify occurrences when the oldest_occurrence_id_to_process configuration entry is empty.');
-    return FALSE;
-  }
+  $maxRecordsNumber = kohana::config('auto_verify.max_num_records_to_process_at_once', FALSE, FALSE);
+  $maxRecordsNumber = $maxRecordsNumber ? $maxRecordsNumber : 1000;
 
-  if (empty($maxRecordsNumber)) {
-    echo "Unable to automatically verify occurrences when the max_num_records_to_process_at_once entry is empty.<br>";
-    kohana::log('error', 'Unable to automatically verify occurrences when the max_num_records_to_process_at_once configuration entry is empty.');
-    return FALSE;
+  $mode = variable::get('auto_verify_mode', 'initial');
+  if ($mode === 'initial') {
+    // Use ID from last scan or config setting if starting from scratch.
+    $startId = variable::get(
+      'auto_verify_start_at_id',
+      kohana::config('auto_verify.oldest_occurrence_id_to_process', FALSE, FALSE)
+    );
+    // Default lastId to 0 if not configured and first time.
+    $startId = $startId ? $startId : 1;
+    $mainTable = 'cache_occurrences_functional';
+    $qryEnd = <<<SQL
+AND delta.id >= $startId
+AND delta.created_on >= TO_TIMESTAMP('$oldestRecordCreatedDateToProcess', 'DD/MM/YYYY')
+AND delta.updated_on >= TO_TIMESTAMP('$oldestRecordCreatedDateToProcess', 'DD/MM/YYYY')
+ORDER BY delta.id
+LIMIT $maxRecordsNumber
+SQL;
   }
-  
-  $subQuery = "
-    SELECT distinct delta.id
-    FROM cache_occurrences_functional delta
-    JOIN surveys s on s.id = delta.survey_id AND s.auto_accept=true AND s.deleted=false
-    LEFT JOIN cache_taxon_searchterms cts on cts.taxon_meaning_id = delta.taxon_meaning_id
-    WHERE delta.data_cleaner_result=true
-    AND delta.record_status='C' AND delta.record_substatus IS NULL
-        AND delta.created_on >= TO_TIMESTAMP('$oldestRecordCreatedDateToProcess', 'DD/MM/YYYY')
-        AND (($autoVerifyNullIdDiff=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty)
-        OR ($autoVerifyNullIdDiff=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty)))
-    AND (s.auto_accept_taxa_filters is null OR (s.auto_accept_taxa_filters && delta.taxon_path))";
-
-  if (isset($oldestOccurrenceIdToProcess) && $oldestOccurrenceIdToProcess > -1) {
-    $subQuery .= "
-      AND delta.id >= $oldestOccurrenceIdToProcess";
+  else {
+    $mainTable = 'occdelta';
+    // No limit or sort needed, just do contents of occdelta for changes only.
+    $qryEnd = '';
   }
-
-  if (isset($maxRecordsNumber) && $maxRecordsNumber > -1) {
-    $subQuery .= "
-      order by delta.id desc limit $maxRecordsNumber";
-  }
-
   $verificationTime = gmdate("Y\/m\/d H:i:s");
-  //Need to update cache_occurrences_*, as these tables have already been built at this point.
-  $query = "
-    INSERT INTO occurrence_comments (comment, generated_by, occurrence_id,record_status,record_substatus,created_by_id,updated_by_id,created_on,updated_on,auto_generated)
-    SELECT 'Accepted based on automatic checks', 'system', id,'V','2',1,1,'$verificationTime','$verificationTime',true
-    FROM occurrences
-    WHERE id in
-    ($subQuery);
+  $query = <<<SQL
+DROP TABLE IF EXISTS records_to_auto_verify;
 
-    UPDATE occurrences
-    SET
-    record_status='V',
-    record_substatus='2',
-    release_status='R',
-    verified_by_id=1,
-    verified_on='$verificationTime',
-    record_decision_source='M',
-    updated_on = now(),
-    updated_by_id = 1
-    WHERE id in
-    ($subQuery);
+SELECT DISTINCT delta.id
+INTO TEMPORARY records_to_auto_verify
+FROM $mainTable delta
+JOIN surveys s ON s.id = delta.survey_id AND s.auto_accept=true AND s.deleted=false
+LEFT JOIN cache_taxon_searchterms cts on cts.taxon_meaning_id = delta.taxon_meaning_id
+WHERE delta.data_cleaner_result=true
+AND delta.record_status='C' AND delta.record_substatus IS NULL
+AND (($autoVerifyNullIdDiff=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty)
+OR ($autoVerifyNullIdDiff=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty)))
+AND (s.auto_accept_taxa_filters IS NULL OR (s.auto_accept_taxa_filters && delta.taxon_path))
+$qryEnd;
 
-    UPDATE cache_occurrences_functional
-    SET
-    record_status='V',
-    record_substatus='2',
-    release_status='R',
-    verified_on='$verificationTime'
-    WHERE id in
-    ($subQuery);
+INSERT INTO occurrence_comments (comment, generated_by, occurrence_id, record_status, record_substatus, created_by_id, updated_by_id, created_on, updated_on, auto_generated)
+SELECT 'Accepted based on automatic checks', 'system', o.id, 'V', '2', 1, 1, '$verificationTime', '$verificationTime', true
+FROM occurrences o
+JOIN records_to_auto_verify rav ON rav.id=o.id;
 
-    UPDATE cache_occurrences_nonfunctional
-    SET verifier='admin, core'
-    WHERE id in
-    ($subQuery);";
-  $results=$db->query($query)->result_array(FALSE);
-  // Query to return count of records, as I was unable to pursuade the above
-  // query to output the number of updated records correctly.
-  $query = "
-    SELECT count(id)
-    FROM cache_occurrences_functional co
-    WHERE co.verified_on='$verificationTime';";
-  $results = $db->query($query)->result_array(FALSE);
-  if (!empty($results[0]['count']) && $results[0]['count'] > 1) {
-    echo $results[0]['count'] . ' occurrence records have been automatically verified.</br>';
+UPDATE occurrences o
+SET
+  record_status='V',
+  record_substatus='2',
+  release_status='R',
+  verified_by_id=1,
+  verified_on='$verificationTime',
+  record_decision_source='M',
+  updated_on=now(),
+  updated_by_id=1
+FROM records_to_auto_verify rav
+WHERE rav.id=o.id;
+
+UPDATE cache_occurrences_functional o
+SET
+  record_status='V',
+  record_substatus='2',
+  release_status='R',
+  verified_on='$verificationTime'
+FROM records_to_auto_verify rav
+WHERE rav.id=o.id;
+
+UPDATE cache_occurrences_nonfunctional o
+SET verifier='admin, core'
+FROM records_to_auto_verify rav
+WHERE rav.id=o.id;
+
+SQL;
+  $db->query($query);
+  // Grab stats about the records processed.
+  $query = "SELECT count(*), max(id) FROM records_to_auto_verify;";
+  $stats = $db->query($query)->current();
+  echo "$stats->count occurrence record(s) has been automatically verified.</br>";
+  if ($mode === 'initial') {
+    if ($stats->count < $maxRecordsNumber) {
+      // Done, so switch mode.
+      variable::set('auto_verify_mode', 'updates');
+      variable::delete('auto_verify_start_at_id');
+    }
+    else {
+      variable::set('auto_verify_start_at_id', $stats->max + 1);
+    }
   }
-  elseif (!empty($results[0]['count']) && $results[0]['count'] === "1")
-    echo '1 occurrence record has been automatically verified.</br>';
-  else
-    echo 'No occurrence records have been auto-verified.</br>';
 }
