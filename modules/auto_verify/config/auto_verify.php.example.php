@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Species Alerts
- * @subpackage Config
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
-$config['auto_accept_occurrences_with_null_id_difficulty']='true';
-// Note that -1 (or less) is unlimited, 0 processes nothing
-$config['max_num_records_to_process_at_once']=0;
-$config['oldest_record_created_date_to_process']='01/01/2000';
-// 1 (or less) is effectively unlimited
-$config['oldest_occurrence_id_to_process']=1;
+$config['auto_accept_occurrences_with_null_id_difficulty'] = 'true';
+
+// Note that -1 (or less) is unlimited, 0 processes nothing.
+$config['max_num_records_to_process_at_once'] = 0;
+$config['oldest_record_created_date_to_process'] = '01/01/2000';
+
+// 1 (or less) is effectively unlimited.
+$config['oldest_occurrence_id_to_process'] = 1;
