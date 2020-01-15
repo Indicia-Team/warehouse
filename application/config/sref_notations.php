@@ -35,6 +35,8 @@ $config['sref_notations'] = [
   '3109' => 'ETRS89 / Jersey Transverse Mercator',
   '23030' => 'ED50 / UTM zone 30N',
   '29902' => 'TM65 / Irish Grid',
+  '3006' => 'SWEREF99 TM / Swedish Transverse Mercator',
+  '3021' => 'RT90 2.5 gon v / Swedish Grid',
 ];
 
 // Set the internally stored geoms to use spherical mercator projection.
@@ -45,6 +47,8 @@ $config['roundings'] = [
   '4326' => 5,
   '4277' => 5,
   '2169' => 0,
+  '3006' => 0,
+  '3021' => 0,
 ];
 
 // provide a list of systems which translate x,y format into a proper Lat/Long format, and the default ouput format

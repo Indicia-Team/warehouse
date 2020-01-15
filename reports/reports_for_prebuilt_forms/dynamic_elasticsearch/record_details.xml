@@ -3,26 +3,8 @@
     description="Obtain record attributes for verification in Elasticsearch configured forms."
 >
   <query website_filter_field="o.website_id">
-  SELECT 0 as group_weight, null::integer as id, 1 as weight, 'Recorder' as attribute_type, 'full_name' as system_function,
-    'Text'::bpchar as data_type, 'Recorded by' as caption,
-    COALESCE(snf.attr_full_name, snf.attr_last_name || COALESCE(', ' || snf.attr_first_name, ''), p.surname || COALESCE(', ' || p.first_name, '')) as value,
-    COALESCE(snf.attr_full_name, snf.attr_last_name || COALESCE(', ' || snf.attr_first_name, ''), p.surname || COALESCE(', ' || p.first_name, '')) as raw_value
-  FROM cache_samples_nonfunctional snf
-  JOIN occurrences o ON o.sample_id=snf.id AND o.id=#occurrence_id#
-  LEFT JOIN users u ON u.id=o.created_by_id AND u.deleted=false AND u.id&lt;&gt;1
-  LEFT JOIN people p ON p.id=u.person_id AND p.deleted=false
-  UNION
-  SELECT 0 as group_weight, null::integer as id, 2 as weight, 'Recorder' as attribute_type, 'email' as system_function,
-    'Text'::bpchar as data_type, 'Email' as caption,
-    COALESCE(snf.attr_email, p.email_address, 'Email address not available') as value,
-    COALESCE(snf.attr_email, p.email_address, 'Email address not available') as raw_value
-  FROM cache_samples_nonfunctional snf
-  JOIN occurrences o ON o.sample_id=snf.id AND o.id=#occurrence_id#
-  LEFT JOIN users u ON u.id=o.created_by_id AND u.deleted=false AND u.id&lt;&gt;1
-  LEFT JOIN people p ON p.id=u.person_id AND p.deleted=false
-  UNION
-  select
-      1 as group_weight, o.id, oaw.weight, 'Record' as attribute_type, a.system_function,
+  SELECT
+      0 as group_weight, o.id, oaw.weight, 'Additional occurrence' as attribute_type, a.system_function,
       CASE a.data_type
               WHEN 'T'::bpchar THEN 'Text'::bpchar
               WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -56,19 +38,19 @@
               WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
               ELSE NULL::text
           END AS raw_value
-  from occurrences o
-  join samples s on s.id=o.sample_id and s.deleted=false
-  join occurrence_attribute_values av on av.occurrence_id=o.id and av.deleted=false
-  join occurrence_attributes a on a.id=av.occurrence_attribute_id and a.deleted=false
-  left join cache_termlists_terms lookup on lookup.id=av.int_value
-  left join occurrence_attributes_websites oaw on oaw.occurrence_attribute_id=a.id and oaw.restrict_to_survey_id=s.survey_id and oaw.deleted=false
-  where o.id=#occurrence_id#
-  and o.deleted=false
+  FROM occurrences o
+  JOIN samples s on s.id=o.sample_id and s.deleted=false
+  JOIN occurrence_attribute_values av on av.occurrence_id=o.id and av.deleted=false
+  JOIN occurrence_attributes a on a.id=av.occurrence_attribute_id and a.deleted=false
+  LEFT JOIN cache_termlists_terms lookup on lookup.id=av.int_value
+  LEFT JOIN occurrence_attributes_websites oaw on oaw.occurrence_attribute_id=a.id and oaw.restrict_to_survey_id=s.survey_id and oaw.deleted=false
+  WHERE o.id=#occurrence_id#
+  AND o.deleted=false
 
-  union
+  UNION
 
-  select
-    2 as group_weight, o.id, saw.weight, 'Parent sample' as attribute_type, a.system_function,
+  SELECT
+    1 as group_weight, o.id, saw.weight, 'Parent sample' as attribute_type, a.system_function,
     CASE a.data_type
             WHEN 'T'::bpchar THEN 'Text'::bpchar
             WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -99,20 +81,20 @@
             WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
             ELSE NULL::text
         END AS raw_value
-  from occurrences o
-  join samples s on s.id=o.sample_id and s.deleted=false
-  join sample_attribute_values av on av.sample_id=s.parent_id and av.deleted=false
-  join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
-  left join cache_termlists_terms lookup on lookup.id=av.int_value
-  left join sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.restrict_to_survey_id=s.survey_id and saw.deleted=false
-  where o.id=#occurrence_id#
-  and o.deleted=false
-  and (a.system_function not in ('cms_user_id', 'full_name', 'first_name', 'last_name', 'email') or a.system_function is null)
+  FROM occurrences o
+  JOIN samples s on s.id=o.sample_id and s.deleted=false
+  JOIN sample_attribute_values av on av.sample_id=s.parent_id and av.deleted=false
+  JOIN sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
+  LEFT JOIN cache_termlists_terms lookup on lookup.id=av.int_value
+  LEFT JOIN sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.restrict_to_survey_id=s.survey_id and saw.deleted=false
+  WHERE o.id=#occurrence_id#
+  AND o.deleted=false
+  AND (a.system_function not in ('cms_user_id', 'full_name', 'first_name', 'last_name', 'email') or a.system_function is null)
 
-  union
+  UNION
 
-  select
-    3 as group_weight, o.id, saw.weight, 'Sample' as attribute_type, a.system_function,
+  SELECT
+    2 as group_weight, o.id, saw.weight, 'Additional sample' as attribute_type, a.system_function,
     CASE a.data_type
             WHEN 'T'::bpchar THEN 'Text'::bpchar
             WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -143,16 +125,28 @@
             WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
             ELSE NULL::text
         END AS raw_value
-  from occurrences o
-  join samples s on s.id=o.sample_id and s.deleted=false
-  join sample_attribute_values av on av.sample_id=o.sample_id and av.deleted=false
-  join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
-  left join cache_termlists_terms lookup on lookup.id=av.int_value
-  left join sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.restrict_to_survey_id=s.survey_id and saw.deleted=false
-  where o.id=#occurrence_id#
-  and o.deleted=false
-  and (a.system_function not in ('cms_user_id', 'full_name', 'first_name', 'last_name', 'email') or a.system_function is null)
-  order by group_weight, attribute_type, weight, caption
+  FROM occurrences o
+  JOIN samples s on s.id=o.sample_id and s.deleted=false
+  JOIN sample_attribute_values av on av.sample_id=o.sample_id and av.deleted=false
+  JOIN sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
+  LEFT JOIN cache_termlists_terms lookup on lookup.id=av.int_value
+  LEFT JOIN sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.restrict_to_survey_id=s.survey_id and saw.deleted=false
+  WHERE o.id=#occurrence_id#
+  AND o.deleted=false
+  AND (a.system_function not in ('cms_user_id', 'full_name', 'first_name', 'last_name', 'email') or a.system_function is null)
+
+  UNION
+
+  SELECT 3 as group_weight, null::integer as id, 2 as weight, 'Recorder' as attribute_type, 'email' as system_function,
+    'Text'::bpchar as data_type, 'Email' as caption,
+    COALESCE(snf.attr_email, p.email_address, 'Email address not available') as value,
+    COALESCE(snf.attr_email, p.email_address, 'Email address not available') as raw_value
+  FROM cache_samples_nonfunctional snf
+  JOIN occurrences o ON o.sample_id=snf.id AND o.id=#occurrence_id#
+  LEFT JOIN users u ON u.id=o.created_by_id AND u.deleted=false AND u.id&lt;&gt;1
+  LEFT JOIN people p ON p.id=u.person_id AND p.deleted=false
+
+  ORDER BY group_weight, attribute_type, weight, caption
   </query>
   <params>
     <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />

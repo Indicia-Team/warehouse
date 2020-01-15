@@ -325,7 +325,7 @@ SQL;
   /**
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
    */
-  public function fixed_values_form() {
+  public function fixedValuesForm() {
     return array(
         'termlists_term:termlist_id' => array(
             'display' => 'Termlist',
