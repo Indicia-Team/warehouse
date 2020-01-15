@@ -1,3 +1,16 @@
+# Version 3.1.0
+#2020-01-15#
+
+* Support for Swedish reference systems, EPSG:3006 and EPSG:3021.
+* Significant performance enhancements in the auto_verify module.
+* Updates of individual attribute value tables now create work queue tasks to update the
+  cache tables.
+* Bug fixes on the edit form for workflow events.
+* Workflow events can now be linked to species on non-standard species lists if required.
+* Report library/filters/filter_with_transformed_searcharea.xml performance improved.
+* Changes to Elasticsearch record details report to support alterations to the layout of
+  this control.
+
 # Version 3.0.0
 *2019-12-03*
 
