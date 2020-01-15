@@ -971,7 +971,8 @@ class Rest_Controller extends Controller {
         }
         // Clear out the old file.
         if (is_file($files[$i][0])) {
-          unlink($files[$i][0]);
+          // Ignore errors, will try again later if not deleted.
+          @unlink($files[$i][0]);
         }
       }
     }
