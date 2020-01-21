@@ -285,7 +285,16 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     INTO TEMPORARY ttl_path
     FROM q
     GROUP BY child_pref_ttl_id
-    ORDER BY child_pref_ttl_id;",
+    ORDER BY child_pref_ttl_id;
+
+    SELECT DISTINCT ON (cttl.external_key) cttl.external_key, cttlall.id, tp.path
+    INTO TEMPORARY master_list_paths
+    FROM ttl_path tp
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=tp.child_pref_ttl_id
+    JOIN cache_taxa_taxon_lists cttlall ON cttlall.external_key=cttl.external_key
+    WHERE cttl.taxon_list_id=COALESCE(#master_list_id#, cttlall.taxon_list_id)
+    AND cttlall.preferred=true
+    ORDER BY cttl.external_key, cttl.allow_data_entry DESC;",
   'Taxon paths' => "
     UPDATE cache_taxon_paths ctp
     SET path=tp.path, external_key=t.external_key
@@ -313,38 +322,39 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
   'Ranks' => "
     UPDATE cache_taxa_taxon_lists u
     SET family_taxa_taxon_list_id=cttlf.id, family_taxon=cttlf.taxon,
-      order_taxa_taxon_list_id=cttlo.id, order_taxon=cttlo.taxon,
-      kingdom_taxa_taxon_list_id=cttlk.id, kingdom_taxon=cttlk.taxon
-    FROM cache_taxa_taxon_lists cttl
-    -- Ensure only changed taxon concepts are updated
-    JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
-    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
-    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(ctp.path) and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=#master_list_id# AND cttlf.preferred=true
-    LEFT JOIN cache_taxa_taxon_lists cttlo ON cttlo.taxon_meaning_id=ANY(ctp.path) and cttlo.taxon_rank='Order' and cttlo.taxon_list_id=#master_list_id# AND cttlo.preferred=true
-    LEFT JOIN cache_taxa_taxon_lists cttlk ON cttlk.taxon_meaning_id=ANY(ctp.path) and cttlk.taxon_rank='Kingdom' and cttlk.taxon_list_id=#master_list_id# AND cttlk.preferred=true
-    WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
+        order_taxa_taxon_list_id=cttlo.id, order_taxon=cttlo.taxon,
+        kingdom_taxa_taxon_list_id=cttlk.id, kingdom_taxon=cttlk.taxon
+    FROM master_list_paths mlp
+    JOIN descendants nu ON nu.id=mlp.id
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(mlp.path) and cttlf.taxon_rank='Family'
+      AND cttlf.taxon_list_id=#master_list_id# AND cttlf.preferred=true AND cttlf.allow_data_entry=true
+    LEFT JOIN cache_taxa_taxon_lists cttlo ON cttlo.taxon_meaning_id=ANY(mlp.path) and cttlo.taxon_rank='Order'
+      AND cttlo.taxon_list_id=#master_list_id# AND cttlo.preferred=true AND cttlo.allow_data_entry=true
+    LEFT JOIN cache_taxa_taxon_lists cttlk ON cttlk.taxon_meaning_id=ANY(mlp.path) and cttlk.taxon_rank='Kingdom'
+      AND cttlk.taxon_list_id=#master_list_id# AND cttlk.preferred=true AND cttlk.allow_data_entry=true
+    WHERE mlp.external_key=u.external_key
     AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
-      OR COALESCE(u.family_taxon, '')<>COALESCE(cttlf.taxon, '')
-      OR COALESCE(u.order_taxa_taxon_list_id, 0)<>COALESCE(cttlo.id, 0)
-      OR COALESCE(u.order_taxon, '')<>COALESCE(cttlo.taxon, '')
-      OR COALESCE(u.kingdom_taxa_taxon_list_id, 0)<>COALESCE(cttlk.id, 0)
-      OR COALESCE(u.kingdom_taxon, '')<>COALESCE(cttlk.taxon, '')
+        OR COALESCE(u.family_taxon, '')<>COALESCE(cttlf.taxon, '')
+        OR COALESCE(u.order_taxa_taxon_list_id, 0)<>COALESCE(cttlo.id, 0)
+        OR COALESCE(u.order_taxon, '')<>COALESCE(cttlo.taxon, '')
+        OR COALESCE(u.kingdom_taxa_taxon_list_id, 0)<>COALESCE(cttlk.id, 0)
+        OR COALESCE(u.kingdom_taxon, '')<>COALESCE(cttlk.taxon, '')
     );
 
     UPDATE cache_occurrences_functional u
-    SET family_taxa_taxon_list_id=cttlf.id,
-      taxon_path=ctp.path
+    SET family_taxa_taxon_list_id=cttl.family_taxa_taxon_list_id,
+      taxon_path=mlp.path
     FROM cache_taxa_taxon_lists cttl
     -- Ensure only changed taxon concepts are updated
     JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
-    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=COALESCE(#master_list_id#, cttl.taxon_list_id)
-    LEFT JOIN cache_taxa_taxon_lists cttlf ON ctp.path @> ARRAY[cttlf.taxon_meaning_id] and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=#master_list_id# AND cttlf.preferred=true
-    WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
-    AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
-    OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(ctp.path, ARRAY[]::integer[]));",
+    JOIN master_list_paths mlp ON mlp.external_key=cttl.external_key;
+    WHERE cttl.id=u.taxa_taxon_list_id
+    AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttl.family_taxa_taxon_list_id, 0)
+    OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(mlp.path, ARRAY[]::integer[]));",
   "teardown" => "
     DROP TABLE descendants;
-    DROP TABLE ttl_path;",
+    DROP TABLE ttl_path;
+    DROP TABLE master_list_paths;",
 );
 
 // --------------------------------------------------------------------------------------------------------------------------
