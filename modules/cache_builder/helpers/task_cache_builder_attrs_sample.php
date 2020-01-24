@@ -77,7 +77,7 @@ class task_cache_builder_attrs_sample {
   ) ON tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
   WHERE q.entity='sample' AND q.task='task_cache_builder_attrs_sample' AND claimed_by='$procId'
   AND a.data_type='L'
-  GROUP BY sample_id, sample_attribute_id, a.multi_value
+  GROUP BY av.sample_id, av.sample_attribute_id, a.multi_value
 
 SQL;
       }
@@ -90,8 +90,8 @@ SELECT sample_id, ('{' || string_agg(
 , ',') || '}')::json AS attrs
 INTO temporary attrs
 FROM (
-  SELECT sample_id, a.multi_value,
-    sample_attribute_id::text as f,
+  SELECT av.sample_id, a.multi_value,
+    av.sample_attribute_id::text as f,
     array_agg(
       CASE a.data_type
         WHEN 'T' THEN av.text_value
@@ -121,7 +121,7 @@ FROM (
   LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND a.data_type='L' AND tlt.deleted=false
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
   WHERE q.entity='sample' AND q.task='task_cache_builder_attrs_sample' AND claimed_by='$procId'
-  GROUP BY sample_id, sample_attribute_id, a.multi_value
+  GROUP BY av.sample_id, av.sample_attribute_id, a.multi_value
   $langTermSql
 ) AS subquery
 GROUP BY sample_id;
