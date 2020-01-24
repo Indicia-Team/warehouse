@@ -77,7 +77,7 @@ class task_cache_builder_attrs_occurrence {
   ) ON tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
   WHERE q.entity='occurrence' AND q.task='task_cache_builder_attrs_occurrence' AND claimed_by='$procId'
   AND a.data_type='L'
-  GROUP BY occurrence_id, occurrence_attribute_id, a.multi_value
+  GROUP BY av.occurrence_id, av.occurrence_attribute_id, a.multi_value
 
 SQL;
       }
@@ -91,7 +91,7 @@ SELECT occurrence_id, ('{' || string_agg(
 INTO temporary attrs
 FROM (
   SELECT av.occurrence_id, a.multi_value,
-    occurrence_attribute_id::text as f,
+    av.occurrence_attribute_id::text as f,
     array_agg(
       CASE a.data_type
         WHEN 'T' THEN av.text_value
@@ -121,7 +121,7 @@ FROM (
   LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND a.data_type='L' AND tlt.deleted=false
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
   WHERE q.entity='occurrence' AND q.task='task_cache_builder_attrs_occurrence' AND claimed_by='$procId'
-  GROUP BY occurrence_id, occurrence_attribute_id, a.multi_value
+  GROUP BY av.occurrence_id, av.occurrence_attribute_id, a.multi_value
   $langTermSql
 ) AS subquery
 GROUP BY occurrence_id;
