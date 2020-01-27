@@ -857,11 +857,15 @@ class Rest_Controller extends Controller {
           $fields[] = 'location.higher_geography.*';
         }
         elseif (preg_match('/^\[media\]/', $field)) {
-          $fields[] = 'occurrence.associated_media';
+          $fields[] = 'occurrence.media';
         }
         elseif (preg_match('/^\[date string\]/', $field)) {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
+        }
+        elseif (preg_match('/^\[attr value\]\(entity=([a-z_]+)/', $field, $matches)) {
+          $entity = $matches[1] === 'sample' ? 'event' : $matches[1];
+          $fields[] = "$entity.attributes";
         }
         elseif (preg_match('/^\[null if zero\]\(field=([a-z_]+(\.[a-z_]+)*)\)$/', $field, $matches)) {
           $fields[] = $matches[1];
@@ -1400,17 +1404,26 @@ class Rest_Controller extends Controller {
   /**
    * Special field handler for Elasticsearch media.
    *
-   * Concatenates media to a comma separated string.
+   * Concatenates media to a semi-colon separated string.
    *
    * @param array $doc
    *   Elasticsearch document.
    *
    * @return string
-   *   Formatted string
+   *   Formatted string, e.g. "path1.jpg|A photo|CC0;path2.jpg|Another photo|CC-BY-AT".
    */
   private function esGetSpecialFieldMedia(array $doc) {
-    if (!empty($doc['occurrence']['associated_media'])) {
-      return implode('; ', $doc['occurrence']['associated_media']);
+    if (!empty($doc['occurrence']['media'])) {
+      $items = [];
+      foreach ($doc['occurrence']['media'] as $m) {
+        $item = [
+          $m['path'],
+          empty($m['caption']) ? '' : $m['caption'],
+          empty($m['licence']) ? '' : $m['licence'],
+        ];
+        $items[] = implode('|', $item);
+      }
+      return implode('; ', $items);
     }
     return '';
   }
@@ -1428,10 +1441,14 @@ class Rest_Controller extends Controller {
    */
   private function esGetSpecialFieldAttrValue(array $doc, array $params) {
     $r = [];
-    if (in_array($params['entity'], ['occurrence', 'sample'])) {
-      foreach ($doc[$params['entity']]['attributes'] as $attr) {
-        if ($attr['id'] == $params['id']) {
-          $r[] = $attr['value'];
+    if (in_array($params['entity'], ['occurrence', 'sample', 'event'])) {
+      // Tolerate sample or event for sample attributes.
+      $params['entity'] = ($params['entity'] === 'sample' ? 'event' : $params['entity']);
+      if (isset($doc[$params['entity']]['attributes'])) {
+        foreach ($doc[$params['entity']]['attributes'] as $attr) {
+          if ($attr['id'] == $params['id']) {
+            $r[] = $attr['value'];
+          }
         }
       }
     }
