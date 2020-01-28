@@ -143,7 +143,7 @@ $this->failedRequestDetail
 TXT;
         }
         else {
-          $content = $this->queryError ? $records : $this->csv_encode($records);
+          $content = $this->csv_encode($records);
         }
         $zip = new ZipArchive();
         $filename = DOCROOT . 'extract/' . uniqid('dwca-download-') . '.zip';
