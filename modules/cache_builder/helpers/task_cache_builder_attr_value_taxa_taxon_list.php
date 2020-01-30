@@ -89,8 +89,8 @@ SELECT taxa_taxon_list_id, ('{' || string_agg(
 , ',') || '}')::json AS attrs
 INTO temporary attrs
 FROM (
-  SELECT taxa_taxon_list_id, a.multi_value,
-    taxa_taxon_list_attribute_id::text as f,
+  SELECT avfilt.taxa_taxon_list_id, a.multi_value,
+    av.taxa_taxon_list_attribute_id::text as f,
     array_agg(
       CASE a.data_type
         WHEN 'T' THEN av.text_value
@@ -121,7 +121,7 @@ FROM (
   LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND a.data_type='L' AND tlt.deleted=false
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
   WHERE q.entity='taxa_taxon_list' AND q.task='task_cache_builder_attrs_taxa_taxon_list' AND claimed_by='$procId'
-  GROUP BY taxa_taxon_list_id, taxa_taxon_list_attribute_id, a.multi_value
+  GROUP BY avfilt.taxa_taxon_list_id, av.taxa_taxon_list_attribute_id, a.multi_value
   $langTermSql
 ) AS subquery
 GROUP BY taxa_taxon_list_id;
