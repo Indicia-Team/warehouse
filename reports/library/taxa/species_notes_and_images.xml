@@ -70,7 +70,13 @@
       'Stanoviště'  
     ELSE
       external_details
-    END
+    END as external_details,
+        coalesce((exif::json->>'fot')::text, 
+    case when caption like '%Foto: %' then replace(split_part(caption, ',', 1), 'Foto: ', '') else null END,
+    caption,
+    ''
+    ) 
+    as author
     FROM taxon_media
     WHERE taxon_meaning_id=#taxon_meaning_id# and deleted=false
 	order by (
