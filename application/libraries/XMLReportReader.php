@@ -1003,8 +1003,9 @@ TBL;
       // param comes into effect if just a website_list is provided.
       $opParams = $standardParamsHelper::getOperationParameters();
       foreach ($opParams as $param => $cfg) {
-        if (!empty($providedParams[$param]))
+        if (!empty($providedParams[$param])) {
           $this->params["{$param}_op"] = $cfg;
+        }
         if (!empty($providedParams["{$param}_context"])) {
           $this->params["{$param}_op_context"] = $cfg;
         }
@@ -1018,9 +1019,10 @@ TBL;
       }
       $this->defaultParamValues = array_merge($standardParamsHelper::getDefaultParameterValues(), $this->defaultParamValues);
       // Any defaults can be skipped if a context parameter is provided to
-      // override the default.
+      // override the default. Doesn't apply to *_op defaults since these pair
+      // with other parameters.
       foreach (array_keys($this->defaultParamValues) as $param) {
-        if (isset($providedParams[$param . '_context'])) {
+        if (!preg_match('/_op$/', $param) && isset($providedParams[$param . '_context'])) {
           unset($this->defaultParamValues[$param]);
         }
       }
