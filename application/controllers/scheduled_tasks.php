@@ -394,7 +394,7 @@ class Scheduled_Tasks_Controller extends Controller {
         ->update();
       $email_config = Kohana::config('email');
       $userResults = $this->db
-        ->select('people.email_address')
+        ->select('people.email_address, people.first_name, people.surname')
         ->from('people')
         ->join('users', 'users.person_id', 'people.id')
         ->where('users.id', $userId)
@@ -413,7 +413,8 @@ class Scheduled_Tasks_Controller extends Controller {
           'text/html'
         );
         $recipients = new Swift_RecipientList();
-        $recipients->addTo($user->email_address);
+        $name = empty($user->first_name) ? "$user->surname" : "$user->first_name $user->surname";
+        $recipients->addTo($user->email_address, $name);
         $cc = explode(',', $cc);
         foreach ($cc as $ccEmail) {
           $recipients->addCc(trim($ccEmail));
