@@ -694,11 +694,20 @@ class XMLReportReader_Core implements ReportReader {
 
   /**
    * Returns the order by clause for the query.
+   *
+   * @param array $providedParams
+   *   List of parameters provided, allowing the report to selectively order by
+   *   fields specified by param definitions.
    */
-  public function getOrderClause() {
-    if ($this->order_by) {
-      return implode(', ', $this->order_by);
+  public function getOrderClause(array $providedParams) {
+    $paramOrderFields = [];
+    foreach ($providedParams as $param => $value) {
+      if ($value !== '' && isset($this->params[$param]) && isset($this->params[$param]['order_by'])) {
+        $paramOrderFields[] = $this->params[$param]['order_by'];
+      }
     }
+    $r = $paramOrderFields ?: $this->order_by ?: [];
+    return implode(', ', $r);
   }
 
   /**
@@ -929,6 +938,7 @@ TBL;
       'population_call',
       'linked_to',
       'linked_filter_field',
+      'order_by'
     ]);
 
     if ($this->params[$name]['datatype'] === 'lookup') {

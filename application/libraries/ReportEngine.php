@@ -1175,7 +1175,7 @@ SQL;
     // Allow the URL to provide a sort order override.
     if ($includeOrderBy) {
       // Prioritise any URL provided sort order, but still keep any other sort ordering in the report.
-      $orderBy = $this->reportReader->getOrderClause();
+      $orderBy = $this->reportReader->getOrderClause($this->providedParams);
       if ($orderBy) {
         if (isset($this->orderby)) {
           $orderBy = $this->orderby . (isset($this->sortdir) ? ' ' . $this->sortdir : '') . ', ' . $orderBy;
