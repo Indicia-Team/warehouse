@@ -57,7 +57,7 @@ interface ReportReader {
   /**
    * Returns the order by clause for the query.
    */
-  public function getOrderClause();
+  public function getOrderClause(array $providedParams);
 
   /**
    * Gets a list of parameters (name => type).
