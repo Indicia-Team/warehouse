@@ -40,18 +40,18 @@ FROM (
           WHEN 'I'::bpchar THEN
             CASE
                 WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true AND a80v.id IS NOT NULL THEN
-                  '(' || a80v.int_value::text || ') ' || av.int_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text) || COALESCE(' (' || a80v.upper_value::text || ')', '')
+                  '(' || a80v.int_value::text || ') ' || av.int_value::text || COALESCE(' – '::text || av.upper_value::text, ''::text) || COALESCE(' (' || a80v.upper_value::text || ')', '')
                 WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN
-                  av.int_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text)
+                  av.int_value::text || COALESCE(' – '::text || av.upper_value::text, ''::text)
                 ELSE av.int_value::text
             END
           WHEN 'B'::bpchar THEN av.int_value::text
           WHEN 'F'::bpchar THEN
             CASE
                 WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true AND a80v.id IS NOT NULL THEN
-                  '(' || a80v.float_value::text || ') ' || av.float_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text) || COALESCE(' (' || a80v.upper_value::text || ')', '')
+                  '(' || a80v.float_value::text || ') ' || av.float_value::text || COALESCE(' – '::text || av.upper_value::text, ''::text) || COALESCE(' (' || a80v.upper_value::text || ')', '')
                 WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN
-                  av.float_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text)
+                  av.float_value::text || COALESCE(' – '::text || av.upper_value::text, ''::text)
                 ELSE av.float_value::text
             END
           WHEN 'D'::bpchar THEN av.date_start_value::text
