@@ -78,7 +78,7 @@
     <column name="taxon_meaning_id" sql="o.taxon_meaning_id" datatype="integer" />
     <column name="date_start" sql="o.date_start" datatype="date" />
     <column name="date_end" sql="o.date_end" datatype="date" />
-    <column name="day_of_year" sql="case date_type when 'D' then extract(doy from date_start) else null end" datatype="integer" />
+    <column name="day_of_year" sql="case o.date_type when 'D' then extract(doy from o.date_start) else null end" datatype="integer" />
     <column name="week" sql="case
             when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
                 and coalesce(floor(extract(doy from o.date_start)/7+1), 0)=coalesce(floor(extract(doy from o.date_end)/7+1), 0)
@@ -117,12 +117,12 @@
     <column name="coordinate_uncertainty_in_meters"
               sql="CASE
       WHEN snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
-        get_sref_precision(onf.output_sref, onf.output_sref_system, null)
+        get_sref_precision(s.entered_sref, s.entered_sref_system, null)
       ELSE COALESCE(snf.attr_sref_precision, 50)
     END"
             datatype="float"
             term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
-    <column name="given_locality_name" sql="coalesce(s.location_name, l.name)" datatype="text" />
+    <column name="given_locality_name" sql="COALESCE(s.location_name, l.name)" datatype="text" />
     <column name="recorded_location_id" sql="l.id" datatype="integer" />
     <column name="recorded_location_name" sql="l.name" datatype="text" />
     <column name="recorded_parent_location_id" sql="lp.id" datatype="integer" />
