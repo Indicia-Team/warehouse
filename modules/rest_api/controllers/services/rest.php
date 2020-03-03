@@ -2003,7 +2003,8 @@ class Rest_Controller extends Controller {
       }
       elseif (isset($report['content']['parameterRequest'])) {
         // @todo: handle param requests
-        $this->apiResponse->fail('Bad request (parameters missing)', 400, "Missing parameters");
+        $this->apiResponse->fail('Bad request (parameters missing)', 400,
+          "Missing parameters: " . implode(', ', array_keys($report['content']['parameterRequest'])));
       }
     }
     finally {
