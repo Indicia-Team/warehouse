@@ -1171,7 +1171,9 @@ class Rest_Controller extends Controller {
       switch ($format) {
         case 'csv':
           header('Content-type: text/csv');
-          $this->esToCsv($itemList);
+          $out = fopen('php://output', 'w');
+          $this->esToCsv($itemList, $out);
+          fclose($out);
           break;
 
         case 'json':
@@ -1189,7 +1191,7 @@ class Rest_Controller extends Controller {
     else {
       switch ($format) {
         case 'csv':
-          $this->esToCsv($itemList, $file);
+          $this->esToCsv($itemList, $file['handle']);
           break;
 
         case 'json':
@@ -1267,11 +1269,10 @@ class Rest_Controller extends Controller {
    *
    * @param string $itemList
    *   Decoded list of data from an Elasticsearch search.
-   * @param array $file
-   *   File data, or NULL if not writing to a file in which case the output
-   *   is echoed.
+   * @param int $handle
+   *   File or output buffer handle.
    */
-  private function esToCsv($itemList, array $file = NULL) {
+  private function esToCsv($itemList, $handle) {
     if (empty($itemList)) {
       return;
     }
@@ -1281,21 +1282,7 @@ class Rest_Controller extends Controller {
       foreach ($esCsvTemplate as $source) {
         $this->copyIntoCsvRow($item, $source, $row);
       }
-      $row = array_map(function ($cell) {
-        // Cells containing a quote, a comma or a new line will need to be
-        // contained in double quotes.
-        if (preg_match('/["\n,]/', $cell)) {
-          // Double quotes within cells need to be escaped.
-          return '"' . preg_replace('/"/', '""', $cell) . '"';
-        }
-        return $cell;
-      }, $row);
-      if ($file) {
-        fwrite($file['handle'], implode(',', $row) . "\n");
-      }
-      else {
-        echo implode(',', $row) . "\n";
-      }
+      fputcsv($handle, $row);
     };
   }
 
