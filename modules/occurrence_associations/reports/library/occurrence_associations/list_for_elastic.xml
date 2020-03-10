@@ -1,0 +1,42 @@
+<report
+    title="Autofeed occurrences for Elasticsearch associations (standard filters)"
+    description="A list of occurrence association details designed for feeding into Elasticsearch or a similar JSON store."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" training_filter_field=""
+         standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
+    SELECT #columns#
+    FROM cache_occurrences_functional o
+    JOIN occurrence_associations oa ON oa.from_occurrence_id=o.id AND oa.deleted=false
+    JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
+    JOIN cache_occurrences_functional o2 ON o2.id=oa.to_occurrence_id
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    #agreements_join#
+    #filters#
+    #group_bys#
+    UNION
+    SELECT #columns#
+    FROM cache_occurrences_functional o
+    JOIN occurrence_associations oa ON oa.to_occurrence_id=o.id AND oa.deleted=false
+    JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
+    JOIN cache_occurrences_functional o2 ON o2.id=oa.from_occurrence_id
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    #agreements_join#
+    #filters#
+    #group_bys#
+  </query>
+  <params>
+    <param name="last_id" display="Last ID" datatype="integer" default="">
+      <where>oa.id &gt; #last_id#</where>
+    </param>
+    <param name="tracking_date_from" datatype="date" default="">
+      <where>oa.updated_on >= '#tracking_date_from#'</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" sql="o.id" datatype="integer" />
+    <column name="tracking_date" sql="oa.updated_on" datatype="date" />
+    <!-- Required to enable tracking sort -->
+    <column name="tracking" sql="oa.updated_on" datatype="date" />
+    <column name="associations_data" sql="string_agg(o2.id::text || '~' || ctt.term || '~' || cttl.preferred_taxon || '~' || COALESCE(cttl.default_common_name, ''), '@@')" aggregate="true" />
+  </columns>
+</report>
