@@ -7,20 +7,26 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" training_filter_field=""
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
     SELECT #columns#
-    FROM cache_occurrences_functional o
+    FROM (SELECT value::json AS var FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_project#') v,
+      cache_occurrences_functional o
     JOIN occurrence_associations oa ON oa.from_occurrence_id=o.id AND oa.deleted=false
     JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
     JOIN cache_occurrences_functional o2 ON o2.id=oa.to_occurrence_id
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    WHERE o.tracking &lt;= (var#&gt;&gt;'{0,last_tracking_id}')::integer
+    AND var#&gt;&gt;'{0,mode}'='updates'
     #filters#
     #group_bys#
     UNION
     SELECT #columns#
-    FROM cache_occurrences_functional o
+    FROM (SELECT value::json AS var FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_project#') v,
+      cache_occurrences_functional o
     JOIN occurrence_associations oa ON oa.to_occurrence_id=o.id AND oa.deleted=false
     JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
     JOIN cache_occurrences_functional o2 ON o2.id=oa.from_occurrence_id
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    WHERE o.tracking &lt;= (var#&gt;&gt;'{0,last_tracking_id}')::integer
+    AND var#&gt;&gt;'{0,mode}'='updates'
     #filters#
     #group_bys#
   </query>
@@ -31,6 +37,9 @@
     <param name="tracking_date_from" datatype="date" default="">
       <where>oa.updated_on >= '#tracking_date_from#'</where>
     </param>
+    <param name="occurrences_autofeed_project" display="Occurrences autofeed project" datatype="text"
+      description="ID of a project configured in the REST API which feeds the occurrence data into Elasticsearch.
+        Data from this feed will be processed before the associations" />
   </params>
   <columns>
     <column name="id" sql="o.id" datatype="integer" />
