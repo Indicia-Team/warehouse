@@ -702,6 +702,8 @@ ROW;
     $options['notEmpty'] = TRUE;
     // Force preprocessing for the rows we iterate through.
     $options['preprocess'] = TRUE;
+    $lastTrackingId = FALSE;
+    $lastTrackingDate = FALSE;
     // If data returned from db in a pg object, need to iterate it and output 1 row at a time to avoid loading into
     // memory. So we create a JSON string for the rest of the output using a stub for the data, then split it at the
     // stub. We can then output everything up to the stub, followed by the data one row at a time, followed by the
@@ -729,13 +731,20 @@ ROW;
           // report, so we can autofeed the next batch. Also capture the
           // tracking datae for reports that track on updated_on.
           $lastId = $row['id'];
-          $lastTrackingId = isset($row['tracking']) ? $row['tracking'] : 0;
-          $lastTrackingDate = isset($row['tracking_date']) ? $row['tracking_date'] : 0;
+          $lastTrackingId = isset($row['tracking']) ? $row['tracking'] : FALSE;
+          $lastTrackingDate = isset($row['tracking_date']) ? $row['tracking_date'] : FALSE;
         }
       }
       if ($autofeed) {
         echo ']';
         $afSettings = (array) variable::get("rest-autofeed-$_GET[proj_id]", [], FALSE);
+        // Don't store tracking info that's not relevant for this report.
+        if (!$lastTrackingId) {
+          unset($afSettings['last_tracking_id']);
+        }
+        if (!$lastTrackingDate) {
+          unset($afSettings['last_tracking_date']);
+        }
         if ($afSettings['mode'] === 'initialLoad' && isset($lastId) && $dbObject->count() >= AUTOFEED_DEFAULT_PAGE_SIZE) {
           // On initial load mode, we want the next autofeed batch to start on
           // our highest row ID + 1, unless we've reached the end..
@@ -747,13 +756,13 @@ ROW;
           unset($afSettings['last_id']);
         }
         elseif ($afSettings['mode'] === 'updates') {
-          if (isset($lastTrackingId) && preg_match('/^\d+$/', $lastTrackingId)) {
+          if ($lastTrackingId && preg_match('/^\d+$/', $lastTrackingId)) {
             // Whilst in updates only mode, we want to start the next batch
             // after the same tracking ID as the last batch finished so we get
             // no gaps.
             $afSettings['last_tracking_id'] = $lastTrackingId;
           }
-          elseif (isset($lastTrackingDate)) {
+          elseif ($lastTrackingDate) {
             // Or same principle for date tracking mode.
             $afSettings['last_tracking_date'] = $lastTrackingDate;
           }
@@ -880,4 +889,5 @@ ROW;
   function notEmpty($value) {
     return $value !== NULL && $value !== '';
   }
+
 }
