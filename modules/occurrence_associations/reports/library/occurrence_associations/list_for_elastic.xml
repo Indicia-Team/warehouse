@@ -39,6 +39,7 @@ INTO TEMPORARY oa_chunk_2
 
 SELECT oa.id as "id",
 oa.updated_on as "tracking_date",
+oa.updated_on as "tracking",
 string_agg(oa.to_occurrence_id::text || '~' || oa.term || '~' || oa.preferred_taxon || '~' || COALESCE(oa.default_common_name, ''), '@@') as "associations_data"
     FROM oa_chunk_1 oa
   JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
@@ -49,6 +50,7 @@ string_agg(oa.to_occurrence_id::text || '~' || oa.term || '~' || oa.preferred_ta
 UNION
 SELECT oa.id as "id",
 oa.updated_on as "tracking_date",
+oa.updated_on as "tracking",
 string_agg(oa.from_occurrence_id::text || '~&lt;&lt;' || oa.term || '&lt;&lt;~' || oa.preferred_taxon || '~' || COALESCE(oa.default_common_name, ''), '@@') as "associations_data"
     FROM oa_chunk_2 oa
   JOIN cache_occurrences_functional o ON o.id=oa.to_occurrence_id
@@ -58,7 +60,7 @@ string_agg(oa.from_occurrence_id::text || '~&lt;&lt;' || oa.term || '&lt;&lt;~' 
     GROUP BY oa.id, oa.updated_on, oa.updated_on
   </query>
   <order_bys>
-    <order_by>tracking_date ASC</order_by>
+    <order_by>tracking ASC</order_by>
   </order_bys>
   <params>
     <param name="last_id" display="Last ID" datatype="integer" default="">
@@ -73,6 +75,7 @@ string_agg(oa.from_occurrence_id::text || '~&lt;&lt;' || oa.term || '&lt;&lt;~' 
   <columns>
     <column name="id" datatype="integer" />
     <column name="tracking_date"  datatype="date" />
+    <column name="tracking"  datatype="date" />
     <column name="associations_data" aggregate="true" />
   </columns>
 </report>
