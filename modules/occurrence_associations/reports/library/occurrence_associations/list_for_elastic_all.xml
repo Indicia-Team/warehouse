@@ -6,46 +6,74 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" training_filter_field=""
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
-    SELECT #columns#
-    FROM (SELECT value::json AS var FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_project#') v,
-      cache_occurrences_functional o
-    JOIN occurrence_associations oa ON oa.from_occurrence_id=o.id AND oa.deleted=false
-    JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
-    JOIN cache_occurrences_functional o2 ON o2.id=oa.to_occurrence_id
-    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-    WHERE o.tracking &lt;= (var#&gt;&gt;'{0,last_tracking_id}')::integer
-    AND var#&gt;&gt;'{0,mode}'='updates'
-    #filters#
-    #group_bys#
-    UNION
-    SELECT #columns#
-    FROM (SELECT value::json AS var FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_project#') v,
-      cache_occurrences_functional o
-    JOIN occurrence_associations oa ON oa.to_occurrence_id=o.id AND oa.deleted=false
-    JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
-    JOIN cache_occurrences_functional o2 ON o2.id=oa.from_occurrence_id
-    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-    WHERE o.tracking &lt;= (var#&gt;&gt;'{0,last_tracking_id}')::integer
-    AND var#&gt;&gt;'{0,mode}'='updates'
-    #filters#
-    #group_bys#
+DROP TABLE IF EXISTS oa_chunk_1;
+DROP TABLE IF EXISTS oa_chunk_2;
+
+SELECT oa.id, oa.updated_on, oa.from_occurrence_id, oa.to_occurrence_id, ctt.term, cttl.preferred_taxon, cttl.default_common_name
+INTO TEMPORARY oa_chunk_1
+  FROM occurrence_associations oa
+  JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
+  JOIN cache_occurrences_functional o ON o.id=oa.to_occurrence_id
+  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+  WHERE oa.deleted=false
+  AND oa.updated_on &lt; (
+    SELECT max(updated_on) FROM cache_occurrences_functional
+    WHERE tracking&lt;(SELECT (value::json#>>'{0,last_tracking_id}')::integer FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_proj_id#')
+  )
+  AND oa.updated_on &gt;= '#tracking_date_from#'
+  ORDER BY oa.updated_on
+   LIMIT 10000/2;
+
+SELECT oa.id, oa.updated_on, oa.from_occurrence_id, oa.to_occurrence_id, ctt.term, cttl.preferred_taxon, cttl.default_common_name
+INTO TEMPORARY oa_chunk_2
+  FROM occurrence_associations oa
+  JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
+  JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
+  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+  WHERE deleted=false
+  AND oa.updated_on &lt; (
+    SELECT max(updated_on) FROM cache_occurrences_functional
+    WHERE tracking&lt;(SELECT (value::json#>>'{0,last_tracking_id}')::integer FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_proj_id#')
+  )
+  AND oa.updated_on &gt;= '#tracking_date_from#'
+  ORDER BY oa.updated_on
+   LIMIT 10000/2;
+
+SELECT oa.id as "id",
+oa.updated_on as "tracking_date",
+oa.updated_on as "tracking",
+string_agg(oa.to_occurrence_id::text || '~' || oa.term || '~' || oa.preferred_taxon || '~' || COALESCE(oa.default_common_name, ''), '@@') as "associations_data"
+    FROM oa_chunk_1 oa
+  JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
+  WHERE 1=1
+  #filters#
+    GROUP BY oa.id, oa.updated_on, oa.updated_on
+UNION
+SELECT oa.id as "id",
+oa.updated_on as "tracking_date",
+string_agg(oa.from_occurrence_id::text || '~&lt;&lt;' || oa.term || '&lt;&lt;~' || oa.preferred_taxon || '~' || COALESCE(oa.default_common_name, ''), '@@') as "associations_data"
+    FROM oa_chunk_2 oa
+  JOIN cache_occurrences_functional o ON o.id=oa.to_occurrence_id
+  WHERE 1=1
+  #filters#
+    GROUP BY oa.id, oa.updated_on, oa.updated_on
   </query>
+  <order_bys>
+    <order_by>tracking_date ASC</order_by>
+  </order_bys>
   <params>
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>oa.id &gt; #last_id#</where>
     </param>
-    <param name="tracking_date_from" datatype="date" default="">
-      <where>oa.updated_on >= '#tracking_date_from#'</where>
-    </param>
-    <param name="occurrences_autofeed_project" display="Occurrences autofeed project" datatype="text"
+    <param name="tracking_date_from" datatype="date" default="1900-01-01" />
+    <param name="tracking_from" datatype="integer" default="" />
+    <param name="occurrences_autofeed_proj_id" display="Occurrences autofeed project" datatype="text"
       description="ID of a project configured in the REST API which feeds the occurrence data into Elasticsearch.
         Data from this feed will be processed before the associations" />
   </params>
   <columns>
-    <column name="id" sql="o.id" datatype="integer" />
-    <column name="tracking_date" sql="oa.updated_on" datatype="date" />
-    <!-- Required to enable tracking sort -->
-    <column name="tracking" sql="oa.updated_on" datatype="date" />
-    <column name="associations_data" sql="string_agg(o2.id::text || '~' || ctt.term || '~' || cttl.preferred_taxon || '~' || COALESCE(cttl.default_common_name, ''), '@@')" aggregate="true" />
+    <column name="id" datatype="integer" />
+    <column name="tracking_date"  datatype="date" />
+    <column name="associations_data" aggregate="true" />
   </columns>
 </report>
