@@ -2422,15 +2422,16 @@ class Rest_Controller extends Controller {
         // Doing updates of changes only as initial load done.
         // Start at one record after the last one we retrieved, or use the
         // tracking date if the report does not support a tracking ID field.
-        // We just pass both parameters through and allow the report to
-        // implement whichever it chooses.
+        // Pass appropriate parameters depending on whether the report is
+        // tracked on tracking ID or a date field.
         if (isset($afSettings['last_tracking_id'])) {
           $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
+          $params['orderby'] = 'tracking';
         }
         if (isset($afSettings['last_tracking_date'])) {
           $params['tracking_date_from'] = $afSettings['last_tracking_date'];
+          $params['orderby'] = 'tracking_date';
         }
-        $params['orderby'] = 'tracking';
       }
     }
     if (!empty($this->resourceOptions['cached'])) {
