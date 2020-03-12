@@ -41,7 +41,6 @@ INTO TEMPORARY oa_chunk_2
 
 SELECT oa.id as "id",
 oa.updated_on as "tracking_date",
-oa.updated_on as "tracking",
 string_agg(oa.to_occurrence_id::text || '~' || oa.term || '~' || oa.preferred_taxon || '~' || COALESCE(oa.default_common_name, ''), '@@') as "associations_data"
     FROM oa_chunk_1 oa
   JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
