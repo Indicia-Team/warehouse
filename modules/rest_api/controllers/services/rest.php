@@ -2426,12 +2426,12 @@ class Rest_Controller extends Controller {
         // tracked on tracking ID or a date field.
         if (isset($afSettings['last_tracking_id'])) {
           $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
-          $params['orderby'] = 'tracking';
+
         }
         if (isset($afSettings['last_tracking_date'])) {
           $params['tracking_date_from'] = $afSettings['last_tracking_date'];
-          $params['orderby'] = 'tracking_date';
         }
+        $params['orderby'] = 'tracking';
       }
     }
     if (!empty($this->resourceOptions['cached'])) {
