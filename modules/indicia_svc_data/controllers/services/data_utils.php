@@ -139,16 +139,18 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         if (($record['record_status'] !== 'V' || $record['record_substatus'] !== $substatus) &&
           (!empty($record['pass']) || $_POST['ignore'] === 'true')) {
           $ids[$record['occurrence_id']] = $record['occurrence_id'];
-          $db->insert('occurrence_comments', array(
-            'occurrence_id' => $record['occurrence_id'],
-            'comment' => "This record is $status",
-            'created_by_id' => $this->user_id,
-            'created_on' => date('Y-m-d H:i:s'),
-            'updated_by_id' => $this->user_id,
-            'updated_on' => date('Y-m-d H:i:s'),
-            'record_status' => 'V',
-            'record_substatus' => $substatus,
-          ));
+          if (!$dryRun) {
+            $db->insert('occurrence_comments', array(
+              'occurrence_id' => $record['occurrence_id'],
+              'comment' => "This record is $status",
+              'created_by_id' => $this->user_id,
+              'created_on' => date('Y-m-d H:i:s'),
+              'updated_by_id' => $this->user_id,
+              'updated_on' => date('Y-m-d H:i:s'),
+              'record_status' => 'V',
+              'record_substatus' => $substatus,
+            ));
+          }
         }
       }
       if (!$dryRun) {
