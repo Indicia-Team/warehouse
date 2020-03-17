@@ -738,12 +738,14 @@ ROW;
       if ($autofeed) {
         echo ']';
         $afSettings = (array) variable::get("rest-autofeed-$_GET[proj_id]", [], FALSE);
-        // Don't store tracking info that's not relevant for this report.
-        if (!$lastTrackingId) {
-          unset($afSettings['last_tracking_id']);
-        }
-        if (!$lastTrackingDate) {
-          unset($afSettings['last_tracking_date']);
+        if ($dbObject->count() > 0) {
+          // Don't store tracking info that's not relevant for this report.
+          if (!$lastTrackingId) {
+            unset($afSettings['last_tracking_id']);
+          }
+          if (!$lastTrackingDate) {
+            unset($afSettings['last_tracking_date']);
+          }
         }
         if ($afSettings['mode'] === 'initialLoad' && isset($lastId) && $dbObject->count() >= AUTOFEED_DEFAULT_PAGE_SIZE) {
           // On initial load mode, we want the next autofeed batch to start on
