@@ -20,7 +20,7 @@ INTO TEMPORARY oa_chunk_1
     SELECT max(updated_on) FROM cache_occurrences_functional
     WHERE tracking&lt;(SELECT (value::json#>>'{0,last_tracking_id}')::integer FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_proj_id#')
   )
-  AND oa.updated_on &gt;= '#tracking_date_from#'
+  AND oa.updated_on &gt;= '#autofeed_tracking_date_from#'
   ORDER BY oa.updated_on
    LIMIT 10000/2;
 
@@ -35,7 +35,7 @@ INTO TEMPORARY oa_chunk_2
     SELECT max(updated_on) FROM cache_occurrences_functional
     WHERE tracking&lt;(SELECT (value::json#>>'{0,last_tracking_id}')::integer FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_proj_id#')
   )
-  AND oa.updated_on &gt;= '#tracking_date_from#'
+  AND oa.updated_on &gt;= '#autofeed_tracking_date_from#'
   ORDER BY oa.updated_on
    LIMIT 10000/2;
 
@@ -47,7 +47,7 @@ string_agg(oa.to_occurrence_id::text || '~' || oa.term || '~' || oa.preferred_ta
   JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
   WHERE 1=1
   #filters#
-    GROUP BY oa.id, oa.updated_on, oa.updated_on
+    GROUP BY oa.id, oa.updated_on
 UNION
 SELECT oa.id as "id",
 oa.updated_on as "tracking_date",
@@ -57,7 +57,7 @@ string_agg(oa.from_occurrence_id::text || '~&lt;&lt;' || oa.term || '&lt;&lt;~' 
   JOIN cache_occurrences_functional o ON o.id=oa.to_occurrence_id
   WHERE 1=1
   #filters#
-    GROUP BY oa.id, oa.updated_on, oa.updated_on
+    GROUP BY oa.id, oa.updated_on
   </query>
   <order_bys>
     <order_by>tracking ASC</order_by>
@@ -66,16 +66,16 @@ string_agg(oa.from_occurrence_id::text || '~&lt;&lt;' || oa.term || '&lt;&lt;~' 
     <param name="last_id" display="Last ID" datatype="integer" default="">
       <where>oa.id &gt; #last_id#</where>
     </param>
-    <param name="tracking_date_from" datatype="date" default="1900-01-01" />
-    <param name="tracking_from" datatype="integer" default="" />
+    <param name="autofeed_tracking_date_from" datatype="date" default="1900-01-01" />
     <param name="occurrences_autofeed_proj_id" display="Occurrences autofeed project" datatype="text"
       description="ID of a project configured in the REST API which feeds the occurrence data into Elasticsearch.
         Data from this feed will be processed before the associations" />
   </params>
   <columns>
     <column name="id" datatype="integer" />
-    <column name="tracking_date"  datatype="date" />
-    <column name="tracking"  datatype="date" />
+    <column name="tracking_date" datatype="date" />
+    <!-- tracking required for order by -->
+    <column name="tracking" datatype="date" />
     <column name="associations_data" aggregate="true" />
   </columns>
 </report>

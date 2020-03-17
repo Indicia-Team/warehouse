@@ -2425,11 +2425,11 @@ class Rest_Controller extends Controller {
         // Pass appropriate parameters depending on whether the report is
         // tracked on tracking ID or a date field.
         if (isset($afSettings['last_tracking_id'])) {
-          $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
+          $params['autofeed_tracking_from'] = $afSettings['last_tracking_id'] + 1;
 
         }
         if (isset($afSettings['last_tracking_date'])) {
-          $params['tracking_date_from'] = $afSettings['last_tracking_date'];
+          $params['autofeed_tracking_date_from'] = $afSettings['last_tracking_date'];
         }
         $params['orderby'] = 'tracking';
       }
