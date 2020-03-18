@@ -1,0 +1,208 @@
+<report
+    title="Darwin Core occurrences for GBIF (standard filters)"
+    description="A list of occurrences in Darwin Core format."
+    featured="true"
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         standard_params="occurrences" count_field="o.*">
+    SELECT #columns#
+    FROM cache_occurrences_functional o
+    JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id AND ttl.deleted=false
+    JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
+    JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+    AND o.taxa_taxon_list_external_key IS NOT NULL
+    #idlist#
+  </query>
+  <params>
+    <param name="dataset_name"
+           display="Dataset name"
+           datatype="string"
+           default="Indicia"
+           description="Name of the dataset to populate into Dwc datasetName." />
+    <param name="rights_holder"
+           display="Rights holder"
+           datatype="string"
+           default="Not set"
+           description="A person or organisation owning or managing rights over the resource." />
+    <param name="smpattrs"
+           display="Sample attribute list"
+           datatype="smpattrs"
+           default=""
+           description="Comma separated list of sample attribute IDs to include as columns in the report" />
+    <param name="occattrs"
+           display="Occurrence attribute list"
+           datatype="occattrs"
+           default=""
+           description="Comma separated list of occurrence attribute IDs to include as columns in the report" />
+    <param name="occurrence_id_prefix"
+           display="occurrenceID column prefix"
+           default=""
+           description="Prefix added to the Indicia record ID when constructing the output DwC occurrenceID field.
+           Typically the URL of a record details page with an incomplete record ID parameter." />
+    <param name="dataset_id_term"
+           display="DatasetID term"
+           description="DwC Term name of the datasetID attribute, normally leave to the default of datasetID."
+           default="datasetID"
+           preprocess="
+             SELECT id FROM sample_attributes WHERE term_name='datasetID' AND deleted=false
+           " />
+  </params>
+  <columns>
+    <column name="occurrenceID"
+            sql="'#occurrence_id_prefix#' || o.id::text"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/occurrenceID" />
+    <column name="otherCatalogNumbers"
+            sql="o.external_key"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/otherCatalogNumbers" />
+    <column name="eventID"
+            sql="o.sample_id"
+            datatype="integer"
+            term="http://rs.tdwg.org/dwc/terms/eventID" />
+    <column name="scientificName"
+            sql="CASE cttl.language_iso
+              WHEN 'lat' THEN cttl.taxon || COALESCE(' ' || cttl.authority, '')
+              ELSE
+                CASE cttl.preferred_language_iso
+                  WHEN 'lat' THEN cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')
+                  ELSE NULL
+                END
+            END"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/scientificName" />
+    <column name="taxonID"
+            sql="COALESCE(t.search_code, t.external_key)"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/taxonID" />
+    <column name="lifeStage"
+            sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/lifeStage" />
+    <column name="sex"
+            sql="COALESCE(onf.attr_sex, onf.attr_stage)"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/sex" />
+    <column name="individualCount"
+            sql="onf.attr_sex_stage_count"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/individualCount" />
+    <column name="vernacularName"
+            sql="CASE cttl.language_iso
+              WHEN 'lat' THEN null
+              ELSE cttl.taxon
+            END"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/vernacularName" />
+    <column name="eventDate"
+          sql="CASE o.date_type
+  /* DwC cannot cope with a month or season in unknown year. */
+  WHEN 'M' THEN 'Unknown'
+  WHEN 'S' THEN 'Unknown'
+  WHEN 'U' THEN 'Unknown'
+  /* Year */
+  WHEN 'Y' THEN to_char(o.date_start, 'YYYY')
+  /* Year and month */
+  WHEN 'O' THEN to_char(o.date_start, 'YYYY-MM')
+  /* Other formats output using full date variations */
+  ELSE COALESCE(to_char(o.date_start, 'YYYY-MM-DD'), '') || CASE
+    /* exact date - no need for anything else */
+    WHEN COALESCE(to_char(o.date_start, 'YYYY-MM-DD'), '')=COALESCE(to_char(o.date_end, 'YYYY-MM-DD'), '') THEN ''
+    /* if just day in month different and rest same, can add just day in month */
+    WHEN COALESCE(to_char(o.date_start, 'YYYY-MM'), '')=COALESCE(to_char(o.date_end, 'YYYY-MM'), '') THEN '/' || COALESCE(to_char(o.date_end, 'DD'), '')
+    /* otherwise a fully specified date range */
+    ELSE '/' || COALESCE(to_char(o.date_end, 'YYYY-MM-DD'), '')
+  END
+END"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/eventDate" />
+    <!-- @todo formatting on recordedBy -->
+    <column name="recordedBy"
+          sql="snf.recorders"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/recordedBy" />
+    <!-- @todo decide default licence by dataset -->
+    <column name="licence"
+          sql="onf.licence_code"
+          datatype="text"
+          term="http://purl.org/dc/terms/license" />
+    <column name="rightsHolder"
+          sql="'#rights_holder#'"
+          datatype="text"
+          term="http://purl.org/dc/terms/rightsHolder" />
+    <column name="coordinateUncertaintyInMeters"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
+    get_sref_precision(onf.output_sref, onf.output_sref_system, null)
+  ELSE COALESCE(snf.attr_sref_precision, 50)
+END"
+          datatype="float"
+          term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
+    <column name="decimalLatitude"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL THEN null
+  ELSE st_y(st_transform(st_centroid(o.public_geom), 4326))
+END"
+          datatype="integer"
+          term="http://rs.tdwg.org/dwc/terms/decimalLatitude" />
+    <column name="decimalLongitude"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL THEN null
+  ELSE st_x(st_transform(st_centroid(o.public_geom), 4326))
+END"
+          datatype="integer"
+          term="http://rs.tdwg.org/dwc/terms/decimalLongitude" />
+    <column name="datasetName"
+          sql="'#dataset_name#'"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/datasetName" />
+    <column name="datasetID"
+          sql="snf.attrs_json->>'#dataset_id_term#'"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/datasetID" />
+    <column name="collectionCode"
+          sql="snf.website_title || ' | ' || CASE WHEN SUBSTRING(snf.survey_title FROM 1 FOR LENGTH(snf.website_title)) = snf.website_title THEN trim(substring(snf.survey_title FROM LENGTH(snf.website_title)+1)) ELSE snf.survey_title END"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/collectionCode" />
+    <column name="locality"
+          sql="o.location_name"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/locality" />
+    <column name="basisOfRecord"
+          sql="'Occurrence'"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/basisOfRecord" />
+    <column name="identificationVerificationStatus"
+          sql="CASE o.record_status || COALESCE(o.record_substatus::text, '')
+          WHEN 'V' THEN 'Accepted'
+          WHEN 'V1' THEN 'Accepted - correct'
+          WHEN 'V2' THEN 'Accepted - considered correct'
+          WHEN 'C' THEN 'Unconfirmed - not reviewed'
+          WHEN 'C3' THEN 'Unconfirmed - plausible'
+          ELSE null
+          END"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/identificationVerificationStatus" />
+    <column name="identifiedBy"
+          sql="coalesce(attr_det_full_name, attr_det_first_name || ' ' || attr_det_last_name, snf.recorders)"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/identifiedBy" />
+    <column name="occurrenceStatus"
+          sql="'present'"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/occurrenceStatus" />
+    <column name="eventRemarks"
+          sql="snf.comment"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/eventRemarks" />
+    <column name="occurrenceRemarks"
+          sql="onf.comment"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/occurrenceRemarks" />
+  </columns>
+</report>
