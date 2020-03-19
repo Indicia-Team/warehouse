@@ -9,7 +9,7 @@
 DROP TABLE IF EXISTS oa_chunk_1;
 DROP TABLE IF EXISTS oa_chunk_2;
 
-SELECT oa.id, oa.updated_on, oa.from_occurrence_id, oa.to_occurrence_id, ctt.term, cttl.preferred_taxon, cttl.default_common_name
+SELECT oa.id, greatest(oa.updated_on, o.updated_on) as updated_on, oa.from_occurrence_id, oa.to_occurrence_id, ctt.term, cttl.preferred_taxon, cttl.default_common_name
 INTO TEMPORARY oa_chunk_1
   FROM occurrence_associations oa
   JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
@@ -24,7 +24,7 @@ INTO TEMPORARY oa_chunk_1
   ORDER BY oa.updated_on
    LIMIT 10000/2;
 
-SELECT oa.id, oa.updated_on, oa.from_occurrence_id, oa.to_occurrence_id, ctt.term, cttl.preferred_taxon, cttl.default_common_name
+SELECT oa.id, greatest(oa.updated_on, o.updated_on) as updated_on, oa.from_occurrence_id, oa.to_occurrence_id, ctt.term, cttl.preferred_taxon, cttl.default_common_name
 INTO TEMPORARY oa_chunk_2
   FROM occurrence_associations oa
   JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
@@ -39,32 +39,31 @@ INTO TEMPORARY oa_chunk_2
   ORDER BY oa.updated_on
    LIMIT 10000/2;
 
-SELECT oa.id as "id",
-oa.updated_on as "tracking_date",
+SELECT oa.from_occurrence_id as "id",
+max(oa.updated_on) as tracking_date,
+max(oa.updated_on) as tracking,
 string_agg(oa.to_occurrence_id::text || '~' || oa.term || '~' || oa.preferred_taxon || '~' || COALESCE(oa.default_common_name, ''), '@@') as "associations_data"
     FROM oa_chunk_1 oa
   JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
-  WHERE 1=1
+  WHERE from_occurrence_id &gt; #last_id#
   #filters#
-    GROUP BY oa.id, oa.updated_on
+    GROUP BY oa.from_occurrence_id
 UNION
-SELECT oa.id as "id",
-oa.updated_on as "tracking_date",
-oa.updated_on as "tracking",
+SELECT oa.to_occurrence_id as "id",
+max(oa.updated_on) as tracking_date,
+max(oa.updated_on) as tracking,
 string_agg(oa.from_occurrence_id::text || '~&lt;&lt;' || oa.term || '&lt;&lt;~' || oa.preferred_taxon || '~' || COALESCE(oa.default_common_name, ''), '@@') as "associations_data"
     FROM oa_chunk_2 oa
   JOIN cache_occurrences_functional o ON o.id=oa.to_occurrence_id
-  WHERE 1=1
+  WHERE to_occurrence_id &gt; #last_id#
   #filters#
-    GROUP BY oa.id, oa.updated_on
+    GROUP BY oa.to_occurrence_id
   </query>
   <order_bys>
-    <order_by>tracking ASC</order_by>
+    <order_by>id ASC</order_by>
   </order_bys>
   <params>
-    <param name="last_id" display="Last ID" datatype="integer" default="">
-      <where>oa.id &gt; #last_id#</where>
-    </param>
+    <param name="last_id" display="Last ID" datatype="integer" default="0"/>
     <param name="autofeed_tracking_date_from" datatype="date" default="1900-01-01" />
     <param name="occurrences_autofeed_proj_id" display="Occurrences autofeed project" datatype="text"
       description="ID of a project configured in the REST API which feeds the occurrence data into Elasticsearch.
