@@ -16,12 +16,12 @@ INTO TEMPORARY oa_chunk_1
   JOIN cache_occurrences_functional o ON o.id=oa.to_occurrence_id
   JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
   WHERE oa.deleted=false
-  AND oa.updated_on &lt; (
+  AND greatest(oa.updated_on, o.updated_on) &lt; (
     SELECT max(updated_on) FROM cache_occurrences_functional
     WHERE tracking&lt;(SELECT (value::json#>>'{0,last_tracking_id}')::integer FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_proj_id#')
   )
-  AND oa.updated_on &gt;= '#autofeed_tracking_date_from#'
-  ORDER BY oa.updated_on
+  AND greatest(oa.updated_on, o.updated_on) &gt;= '#autofeed_tracking_date_from#'
+  ORDER BY greatest(oa.updated_on, o.updated_on)
    LIMIT 10000/2;
 
 SELECT oa.id, greatest(oa.updated_on, o.updated_on) as updated_on, oa.from_occurrence_id, oa.to_occurrence_id, ctt.term, cttl.preferred_taxon, cttl.default_common_name
@@ -31,12 +31,12 @@ INTO TEMPORARY oa_chunk_2
   JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
   JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
   WHERE deleted=false
-  AND oa.updated_on &lt; (
+  AND greatest(oa.updated_on, o.updated_on) &lt; (
     SELECT max(updated_on) FROM cache_occurrences_functional
     WHERE tracking&lt;(SELECT (value::json#>>'{0,last_tracking_id}')::integer FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_proj_id#')
   )
-  AND oa.updated_on &gt;= '#autofeed_tracking_date_from#'
-  ORDER BY oa.updated_on
+  AND greatest(oa.updated_on, o.updated_on) &gt;= '#autofeed_tracking_date_from#'
+  ORDER BY greatest(oa.updated_on, o.updated_on)
    LIMIT 10000/2;
 
 SELECT oa.from_occurrence_id as "id",
