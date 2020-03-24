@@ -120,7 +120,7 @@ FROM (
   LEFT JOIN sample_attributes a ON a.id=av.sample_attribute_id AND a.deleted=false
   LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND a.data_type='L' AND tlt.deleted=false
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
-  WHERE q.entity='sample' AND q.task='task_cache_builder_attr_value_sample' AND claimed_by='$procId'
+  WHERE q.entity='sample_attribute_value' AND q.task='task_cache_builder_attr_value_sample' AND claimed_by='$procId'
   GROUP BY avfilt.sample_id, av.sample_attribute_id, a.multi_value
   $langTermSql
 ) AS subquery

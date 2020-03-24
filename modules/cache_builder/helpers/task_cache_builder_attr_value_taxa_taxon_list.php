@@ -120,7 +120,7 @@ FROM (
   LEFT JOIN taxa_taxon_list_attributes a ON a.id=av.taxa_taxon_list_attribute_id AND a.deleted=false
   LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND a.data_type='L' AND tlt.deleted=false
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
-  WHERE q.entity='taxa_taxon_list' AND q.task='task_cache_builder_attrs_taxa_taxon_list' AND claimed_by='$procId'
+  WHERE q.entity='taxa_taxon_list_attribute_value' AND q.task='task_cache_builder_attrs_taxa_taxon_list' AND claimed_by='$procId'
   GROUP BY avfilt.taxa_taxon_list_id, av.taxa_taxon_list_attribute_id, a.multi_value
   $langTermSql
 ) AS subquery
