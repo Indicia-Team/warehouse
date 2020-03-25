@@ -51,6 +51,11 @@
            preprocess="
              SELECT id FROM sample_attributes WHERE term_name='datasetID' AND deleted=false
            " />
+    <param name="basis_of_record"
+           display="basisOfRecord"
+           default="HumanObservation"
+           description="If the Darwin Core basisOfRecord value should be something other than HumanObservation then
+           specify it here." />
   </params>
   <columns>
     <column name="occurrenceID"
@@ -174,7 +179,7 @@ END"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/locality" />
     <column name="basisOfRecord"
-          sql="'Occurrence'"
+          sql="'#basis_of_record#'"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/basisOfRecord" />
     <column name="identificationVerificationStatus"
