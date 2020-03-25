@@ -197,11 +197,11 @@ END"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/occurrenceStatus" />
     <column name="eventRemarks"
-          sql="snf.comment"
+          sql="regexp_replace(snf.comment, E'[\\n\\r]+', ' ', 'g')"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/eventRemarks" />
     <column name="occurrenceRemarks"
-          sql="onf.comment"
+          sql="regexp_replace(onf.comment, E'[\\n\\r]+', ' ', 'g')"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/occurrenceRemarks" />
   </columns>
