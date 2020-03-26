@@ -4,60 +4,51 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" training_filter_field=""
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
-DROP TABLE IF EXISTS oa_chunk_1;
-DROP TABLE IF EXISTS oa_chunk_2;
+DROP TABLE IF EXISTS oa_chunk;
 
-SELECT oa.id, greatest(oa.updated_on, o.updated_on) as updated_on, oa.from_occurrence_id, oa.to_occurrence_id, ctt.term, cttl.preferred_taxon, cttl.default_common_name
-INTO TEMPORARY oa_chunk_1
-  FROM occurrence_associations oa
+SELECT distinct greatest(oa.updated_on, o1.updated_on, o2.updated_on) AS updated_on,
+  oa.id, oa.from_occurrence_id,
+  oa.to_occurrence_id,
+  ctt.term AS association_type
+INTO temporary oa_chunk
+FROM occurrence_associations oa
   JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
-  JOIN cache_occurrences_functional o ON o.id=oa.to_occurrence_id
-  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+  JOIN cache_occurrences_functional o1 ON o1.id=oa.from_occurrence_id
+  JOIN cache_occurrences_functional o2 ON o2.id=oa.to_occurrence_id
   WHERE oa.deleted=false
-  AND greatest(oa.updated_on, o.updated_on) &lt; (
-    SELECT max(updated_on) FROM cache_occurrences_functional
-    WHERE tracking&lt;(SELECT (value::json#>>'{0,last_tracking_id}')::integer FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_proj_id#')
+  AND greatest(oa.updated_on, o1.updated_on, o2.updated_on) &lt; (
+     select max(updated_on) from  cache_occurrences_functional
+    WHERE tracking &lt; (select (value::json#>>'{0,last_tracking_id}')::integer  from  variables WHERE name='rest-autofeed-BRC5')
   )
-  AND greatest(oa.updated_on, o.updated_on) &gt;= '#autofeed_tracking_date_from#'
-  ORDER BY greatest(oa.updated_on, o.updated_on)
+  AND greatest(oa.updated_on, o1.updated_on, o2.updated_on) >= '#autofeed_tracking_date_from#'
+  ORDER BY greatest(oa.updated_on, o1.updated_on, o2.updated_on)
    LIMIT 10000/2;
 
-SELECT oa.id, greatest(oa.updated_on, o.updated_on) as updated_on, oa.from_occurrence_id, oa.to_occurrence_id, ctt.term, cttl.preferred_taxon, cttl.default_common_name
-INTO TEMPORARY oa_chunk_2
-  FROM occurrence_associations oa
-  JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
-  JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
-  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-  WHERE deleted=false
-  AND greatest(oa.updated_on, o.updated_on) &lt; (
-    SELECT max(updated_on) FROM cache_occurrences_functional
-    WHERE tracking&lt;(SELECT (value::json#>>'{0,last_tracking_id}')::integer FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_proj_id#')
-  )
-  AND greatest(oa.updated_on, o.updated_on) &gt;= '#autofeed_tracking_date_from#'
-  ORDER BY greatest(oa.updated_on, o.updated_on)
-   LIMIT 10000/2;
-
-SELECT oa.from_occurrence_id as "id",
-max(oa.updated_on) as tracking_date,
-max(oa.updated_on) as tracking,
-string_agg(oa.to_occurrence_id::text || '~' || oa.term || '~' || oa.preferred_taxon || '~' || COALESCE(oa.default_common_name, ''), '@@') as "associations_data"
-    FROM oa_chunk_1 oa
-  JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
-  #agreements_join#
-  WHERE oa.from_occurrence_id &gt; #last_id#
-  #filters#
-    GROUP BY oa.from_occurrence_id
-UNION
-SELECT oa.to_occurrence_id as "id",
-max(oa.updated_on) as tracking_date,
-max(oa.updated_on) as tracking,
-string_agg(oa.from_occurrence_id::text || '~&lt;&lt;' || oa.term || '&lt;&lt;~' || oa.preferred_taxon || '~' || COALESCE(oa.default_common_name, ''), '@@') as "associations_data"
-    FROM oa_chunk_2 oa
+SELECT ch.from_occurrence_id as "id",
+ch.updated_on  as  tracking_date,
+ch.updated_on  as  tracking,
+string_agg(oa.to_occurrence_id::text || '~' || ch.association_type || '~' || cttl.preferred_taxon || '~' || COALESCE(cttl.default_common_name, ''), '@@')  as  "associations_data"
+  FROM oa_chunk ch
+  JOIN occurrence_associations oa on oa.from_occurrence_id=ch.from_occurrence_id
   JOIN cache_occurrences_functional o ON o.id=oa.to_occurrence_id
   #agreements_join#
-  WHERE oa.to_occurrence_id &gt; #last_id#
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  WHERE ch.from_occurrence_id &gt; #last_id#
   #filters#
-    GROUP BY oa.to_occurrence_id
+GROUP BY ch.from_occurrence_id, ch.updated_on
+UNION
+SELECT ch.to_occurrence_id  as  "id",
+ch.updated_on  as  tracking_date,
+ch.updated_on  as  tracking,
+string_agg(oa.from_occurrence_id::text || '~&lt;&lt;' || ch.association_type || '~&lt;&lt;~' || cttl.preferred_taxon || '~' || COALESCE(cttl.default_common_name, ''), '@@')  as  "associations_data"
+  FROM oa_chunk ch
+  JOIN occurrence_associations oa on oa.to_occurrence_id=ch.to_occurrence_id
+  JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
+  #agreements_join#
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  WHERE ch.to_occurrence_id &gt; #last_id#
+  #filters#
+GROUP BY ch.to_occurrence_id, ch.updated_on
   </query>
   <order_bys>
     <order_by>id ASC</order_by>
