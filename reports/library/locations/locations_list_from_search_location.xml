@@ -27,9 +27,9 @@ user is searching for."
   <params>
     <param name="location_id" display="Location ID" />
     <param name="location_type_id" display="Location Type" datatype="lookup" default=""
-       description="Select the location type, or leave blank to not filter by location type."
+       description="Select a single location type, supply a comma separated list of types, or leave blank to not filter by location type."
        population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=">
-    <where>l.location_type_id=#location_type_id#</where>
+    <where>l.location_type_id in (#location_type_id#)</where>
     </param>
   </params>
   <columns>
