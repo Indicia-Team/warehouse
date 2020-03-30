@@ -29,7 +29,7 @@ FROM occurrence_associations oa
 SELECT ch.from_occurrence_id as "id",
 ch.updated_on  as  tracking_date,
 ch.updated_on  as  tracking,
-string_agg(oa.to_occurrence_id::text || '~' || ch.association_type || '~' || cttl.preferred_taxon || '~' || COALESCE(cttl.default_common_name, ''), '@@')  as  "associations_data"
+string_agg(DISTINCT oa.to_occurrence_id::text || '~' || ch.association_type || '~' || cttl.preferred_taxon || '~' || COALESCE(cttl.default_common_name, ''), '@@')  as  "associations_data"
   FROM oa_chunk ch
   JOIN occurrence_associations oa on oa.from_occurrence_id=ch.from_occurrence_id
   JOIN cache_occurrences_functional o ON o.id=oa.to_occurrence_id
@@ -41,7 +41,7 @@ UNION
 SELECT ch.to_occurrence_id  as  "id",
 ch.updated_on  as  tracking_date,
 ch.updated_on  as  tracking,
-string_agg(oa.from_occurrence_id::text || '~&lt;&lt;' || ch.association_type || '~&lt;&lt;~' || cttl.preferred_taxon || '~' || COALESCE(cttl.default_common_name, ''), '@@')  as  "associations_data"
+string_agg(DISTINCT oa.from_occurrence_id::text || '~&lt;&lt;' || ch.association_type || '~&lt;&lt;~' || cttl.preferred_taxon || '~' || COALESCE(cttl.default_common_name, ''), '@@')  as  "associations_data"
   FROM oa_chunk ch
   JOIN occurrence_associations oa on oa.to_occurrence_id=ch.to_occurrence_id
   JOIN cache_occurrences_functional o ON o.id=oa.from_occurrence_id
