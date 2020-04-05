@@ -42,6 +42,103 @@ FROM (
           WHEN 'L'::bpchar THEN COALESCE(t_l.term::text, t.term::text)
           WHEN 'I'::bpchar THEN
             CASE
+            	-- Convert Phenology periods into actual words
+            	WHEN a.id in (714,1315) THEN
+                  	CASE 
+                    	WHEN '#language#' = 'eng' THEN
+                          	(case av.int_value
+                                when 1 then 'January'
+                       			when 2 then 'February'
+                       			when 3 then 'March'
+                       			when 4 then 'April'
+                       			when 5 then 'May'
+                       			when 6 then 'June'
+                       			when 7 then 'July'
+                       			when 8 then 'August'
+                       			when 9 then 'September'
+                       			when 10 then 'October'
+                       			when 11 then 'November'
+                       			when 12 then 'December'
+                       			else '' END)
+                      			::text || COALESCE(' - '::text || 
+                      				(case av.upper_value
+                       					when 1 then 'January'
+                       					when 2 then 'February'
+                       					when 3 then 'March'
+                       					when 4 then 'April'
+                       					when 5 then 'May'
+                       					when 6 then 'June'
+                       					when 7 then 'July'
+                       					when 8 then 'August'
+                       					when 9 then 'September'
+                       					when 10 then 'October'
+                       					when 11 then 'November'
+                       					when 12 then 'December' 
+                       					else '' END)
+                       					::text, ''::text)
+                    	WHEN '#language#' = 'cze' THEN
+                      		(case av.int_value
+                       			when 1 then 'leden'
+                       			when 2 then 'únor'
+                       			when 3 then 'březen'
+                       			when 4 then 'duben'
+                       			when 5 then 'květen'
+                       			when 6 then 'červen'
+                       			when 7 then 'červenec'
+                       			when 8 then 'srpen'
+                       			when 9 then 'září'
+                       			when 10 then 'říjen'
+                       			when 11 then 'listopad'
+                       			when 12 then 'prosinec'
+                       			else '' END)
+                      			::text || COALESCE(' - '::text || 
+                      				(case av.upper_value
+                       					when 1 then 'leden'
+                       					when 2 then 'únor'
+                       					when 3 then 'březen'
+                       					when 4 then 'duben'
+                       					when 5 then 'květen'
+                       					when 6 then 'červen'
+                       					when 7 then 'červenec'
+                       					when 8 then 'srpen'
+                       					when 9 then 'září'
+                       					when 10 then 'říjen'
+                       					when 11 then 'listopad'
+                       					when 12 then 'prosinec' 
+                       					else '' END)
+                       					::text, ''::text)
+                    	ELSE 
+                      		(case av.int_value
+                       			when 1 then 'Januar'
+                       			when 2 then 'Februar'
+                       			when 3 then 'März'
+                       			when 4 then 'April'
+                       			when 5 then 'Mai'
+                       			when 6 then 'Juni'
+                       			when 7 then 'Juli'
+                       			when 8 then 'August'
+                       			when 9 then 'September'
+                       			when 10 then 'Oktober'
+                       			when 11 then 'November'
+                       			when 12 then 'Dezember'
+                       			else '' END)
+                      			::text || COALESCE(' - '::text || 
+                      				(case av.upper_value
+                       					when 1 then 'Januar'
+                       					when 2 then 'Februar'
+                       					when 3 then 'März'
+                       					when 4 then 'April'
+                       					when 5 then 'Mai'
+                       					when 6 then 'Juni'
+                       					when 7 then 'Juli'
+                       					when 8 then 'August'
+                       					when 9 then 'September'
+                       					when 10 then 'Oktober'
+                       					when 11 then 'November'
+                       					when 12 then 'Dezember' 
+                       					else '' END)
+                       					::text, ''::text)
+                  	END
                 WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true AND a80v.id IS NOT NULL THEN
                   '(' || a80v.int_value::text || ') ' || av.int_value::text || COALESCE(' – '::text || av.upper_value::text, ''::text) || COALESCE(' (' || a80v.upper_value::text || ')', '')
                 WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN
