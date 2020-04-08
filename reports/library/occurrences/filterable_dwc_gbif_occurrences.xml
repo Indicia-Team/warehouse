@@ -1,6 +1,6 @@
 <report
-    title="Darwin Core occurrences for NBN Atlas (standard filters)"
-    description="A list of occurrences in Darwin Core format with NBN Atlas specific columns."
+    title="Darwin Core occurrences for GBIF (standard filters)"
+    description="A list of occurrences in Darwin Core format."
     featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
@@ -148,23 +148,16 @@ END"
 END"
           datatype="float"
           term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
-    <column name="gridReference"
-          sql="CASE
-  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN onf.output_sref
-  ELSE null
-END"
-          datatype="text"
-          term="http://data.nbn.org/nbn/terms/gridReference" />
     <column name="decimalLatitude"
           sql="CASE
-  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL THEN null
   ELSE st_y(st_transform(st_centroid(o.public_geom), 4326))
 END"
           datatype="integer"
           term="http://rs.tdwg.org/dwc/terms/decimalLatitude" />
     <column name="decimalLongitude"
           sql="CASE
-  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL THEN null
   ELSE st_x(st_transform(st_centroid(o.public_geom), 4326))
 END"
           datatype="integer"
@@ -209,11 +202,11 @@ END"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/occurrenceStatus" />
     <column name="eventRemarks"
-          sql="snf.comment"
+          sql="regexp_replace(snf.comment, E'[\\n\\r]+', ' ', 'g')"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/eventRemarks" />
     <column name="occurrenceRemarks"
-          sql="onf.comment"
+          sql="regexp_replace(onf.comment, E'[\\n\\r]+', ' ', 'g')"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/occurrenceRemarks" />
   </columns>

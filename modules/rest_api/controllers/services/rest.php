@@ -857,11 +857,15 @@ class Rest_Controller extends Controller {
           $fields[] = 'location.higher_geography.*';
         }
         elseif (preg_match('/^\[media\]/', $field)) {
-          $fields[] = 'occurrence.associated_media';
+          $fields[] = 'occurrence.media';
         }
         elseif (preg_match('/^\[date string\]/', $field)) {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
+        }
+        elseif (preg_match('/^\[attr value\]\(entity=([a-z_]+)/', $field, $matches)) {
+          $entity = $matches[1] === 'sample' ? 'event' : $matches[1];
+          $fields[] = "$entity.attributes";
         }
         elseif (preg_match('/^\[null if zero\]\(field=([a-z_]+(\.[a-z_]+)*)\)$/', $field, $matches)) {
           $fields[] = $matches[1];
@@ -971,7 +975,8 @@ class Rest_Controller extends Controller {
         }
         // Clear out the old file.
         if (is_file($files[$i][0])) {
-          unlink($files[$i][0]);
+          // Ignore errors, will try again later if not deleted.
+          @unlink($files[$i][0]);
         }
       }
     }
@@ -1166,7 +1171,9 @@ class Rest_Controller extends Controller {
       switch ($format) {
         case 'csv':
           header('Content-type: text/csv');
-          $this->esToCsv($itemList);
+          $out = fopen('php://output', 'w');
+          $this->esToCsv($itemList, $out);
+          fclose($out);
           break;
 
         case 'json':
@@ -1184,7 +1191,7 @@ class Rest_Controller extends Controller {
     else {
       switch ($format) {
         case 'csv':
-          $this->esToCsv($itemList, $file);
+          $this->esToCsv($itemList, $file['handle']);
           break;
 
         case 'json':
@@ -1262,11 +1269,10 @@ class Rest_Controller extends Controller {
    *
    * @param string $itemList
    *   Decoded list of data from an Elasticsearch search.
-   * @param array $file
-   *   File data, or NULL if not writing to a file in which case the output
-   *   is echoed.
+   * @param int $handle
+   *   File or output buffer handle.
    */
-  private function esToCsv($itemList, array $file = NULL) {
+  private function esToCsv($itemList, $handle) {
     if (empty($itemList)) {
       return;
     }
@@ -1276,21 +1282,7 @@ class Rest_Controller extends Controller {
       foreach ($esCsvTemplate as $source) {
         $this->copyIntoCsvRow($item, $source, $row);
       }
-      $row = array_map(function ($cell) {
-        // Cells containing a quote, a comma or a new line will need to be
-        // contained in double quotes.
-        if (preg_match('/["\n,]/', $cell)) {
-          // Double quotes within cells need to be escaped.
-          return '"' . preg_replace('/"/', '""', $cell) . '"';
-        }
-        return $cell;
-      }, $row);
-      if ($file) {
-        fwrite($file['handle'], implode(',', $row) . "\n");
-      }
-      else {
-        echo implode(',', $row) . "\n";
-      }
+      fputcsv($handle, $row);
     };
   }
 
@@ -1399,17 +1391,26 @@ class Rest_Controller extends Controller {
   /**
    * Special field handler for Elasticsearch media.
    *
-   * Concatenates media to a comma separated string.
+   * Concatenates media to a semi-colon separated string.
    *
    * @param array $doc
    *   Elasticsearch document.
    *
    * @return string
-   *   Formatted string
+   *   Formatted string, e.g. "path1.jpg|A photo|CC0;path2.jpg|Another photo|CC-BY-AT".
    */
   private function esGetSpecialFieldMedia(array $doc) {
-    if (!empty($doc['occurrence']['associated_media'])) {
-      return implode('; ', $doc['occurrence']['associated_media']);
+    if (!empty($doc['occurrence']['media'])) {
+      $items = [];
+      foreach ($doc['occurrence']['media'] as $m) {
+        $item = [
+          $m['path'],
+          empty($m['caption']) ? '' : $m['caption'],
+          empty($m['licence']) ? '' : $m['licence'],
+        ];
+        $items[] = implode('|', $item);
+      }
+      return implode('; ', $items);
     }
     return '';
   }
@@ -1427,10 +1428,14 @@ class Rest_Controller extends Controller {
    */
   private function esGetSpecialFieldAttrValue(array $doc, array $params) {
     $r = [];
-    if (in_array($params['entity'], ['occurrence', 'sample'])) {
-      foreach ($doc[$params['entity']]['attributes'] as $attr) {
-        if ($attr['id'] == $params['id']) {
-          $r[] = $attr['value'];
+    if (in_array($params['entity'], ['occurrence', 'sample', 'event'])) {
+      // Tolerate sample or event for sample attributes.
+      $params['entity'] = ($params['entity'] === 'sample' ? 'event' : $params['entity']);
+      if (isset($doc[$params['entity']]['attributes'])) {
+        foreach ($doc[$params['entity']]['attributes'] as $attr) {
+          if ($attr['id'] == $params['id']) {
+            $r[] = $attr['value'];
+          }
         }
       }
     }
@@ -1985,7 +1990,8 @@ class Rest_Controller extends Controller {
       }
       elseif (isset($report['content']['parameterRequest'])) {
         // @todo: handle param requests
-        $this->apiResponse->fail('Bad request (parameters missing)', 400, "Missing parameters");
+        $this->apiResponse->fail('Bad request (parameters missing)', 400,
+          "Missing parameters: " . implode(', ', array_keys($report['content']['parameterRequest'])));
       }
     }
     finally {
@@ -2416,13 +2422,14 @@ class Rest_Controller extends Controller {
         // Doing updates of changes only as initial load done.
         // Start at one record after the last one we retrieved, or use the
         // tracking date if the report does not support a tracking ID field.
-        // We just pass both parameters through and allow the report to
-        // implement whichever it chooses.
+        // Pass appropriate parameters depending on whether the report is
+        // tracked on tracking ID or a date field.
         if (isset($afSettings['last_tracking_id'])) {
-          $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
+          $params['autofeed_tracking_from'] = $afSettings['last_tracking_id'] + 1;
+
         }
         if (isset($afSettings['last_tracking_date'])) {
-          $params['tracking_date_from'] = $afSettings['last_tracking_date'];
+          $params['autofeed_tracking_date_from'] = $afSettings['last_tracking_date'];
         }
         $params['orderby'] = 'tracking';
       }

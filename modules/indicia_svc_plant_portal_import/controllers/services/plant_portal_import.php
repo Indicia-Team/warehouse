@@ -45,12 +45,12 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
   public function get_plant_portal_import_settings($model) {
     $this->authenticate('read');
     $model = ORM::factory($model);
-    if (method_exists($model, 'fixed_values_form')) {
+    if (method_exists($model, 'fixedValuesForm')) {
       // Pass URL parameters through to the fixed values form in case there are model specific settings.
       $options = array_merge($_GET);
       unset($options['nonce']);
       unset($options['auth_token']);
-      echo json_encode($model->fixed_values_form($options));
+      echo json_encode($model->fixedValuesForm($options));
     }
   }
 
@@ -869,11 +869,11 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
                 . ",".$userId
                 . "WHERE
                      NOT EXISTS (
-                       SELECT id 
-                       FROM locations 
-                       WHERE 
+                       SELECT id
+                       FROM locations
+                       WHERE
                        name = '".$plotName."' AND
-                       centroid_sref = '".$explodedPlotSrefs[$plotIdx]."' AND 
+                       centroid_sref = '".$explodedPlotSrefs[$plotIdx]."' AND
                        centroid_sref_system = '".$explodedPlotSrefSystems[$plotIdx]."'
                      );"
               . "insert into locations_websites"
@@ -894,16 +894,16 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
                   . ",".$userId
               . "WHERE
                    NOT EXISTS (
-                     SELECT id 
-                     FROM locations_websites 
-                     WHERE 
+                     SELECT id
+                     FROM locations_websites
+                     WHERE
                      location_id = (select id from locations where name = '".$plotName."' AND deleted=false order by id desc limit 1) AND
                      website_id = ".$websiteId."
                    );"
       );
     }
   }
-  
+
   /*
    * Create new groups with data passed in from the website
    */
@@ -923,7 +923,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       }
     }
   }
-  
+
   /*
    * After creating the groups, we actually need to assign the group to the user automatically (as they have just imported the group this makes sense to do)
    */
@@ -933,7 +933,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     //duplicate detection should be much earlier, possibly remove entirely if performance becomes an issue
     $db->query("
       insert into person_attribute_values (person_id,person_attribute_id,int_value, created_on, created_by_id, updated_on, updated_by_id)
-      select ".$personId.", 
+      select ".$personId.",
       ".$personattributeIdToHoldPlotGroups.",
       (select tt.id
       from termlists_terms tt
@@ -947,11 +947,11 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       ".$userId."
       WHERE
         NOT EXISTS (
-          SELECT id 
-          FROM person_attribute_values 
-          WHERE 
+          SELECT id
+          FROM person_attribute_values
+          WHERE
           person_id = ".$personId." AND
-          person_attribute_id = ".$personattributeIdToHoldPlotGroups." AND  
+          person_attribute_id = ".$personattributeIdToHoldPlotGroups." AND
           int_value = (
             select tt.id
             from termlists_terms tt
@@ -962,7 +962,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
           )
       );")->result();
   }
-  
+
   public function create_new_plot_to_group_attachments() {
     $db = new Database();
     $websiteId = (isset($_GET['websiteId']) ? $_GET['websiteId'] : false);
@@ -988,7 +988,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       $db->query($databaseInsertionString)->result_array(false);
     }
   }
-  
+
   private static function get_new_plot_attachments_plot_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$personId) {
     $plotNamesForAttachmentSet = '(';
     foreach ($explodedPlotPairsForPlotGroupAttachment as $plotPairsForPlotGroupAttachment) {
@@ -996,18 +996,18 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       $plotNamesForAttachmentSet.="'".$explodedPlotNameGroupNamePair[0]."',";
     }
     $plotNamesForAttachmentSet=substr($plotNamesForAttachmentSet, 0, -1);
-    $plotNamesForAttachmentSet .= ')';  
+    $plotNamesForAttachmentSet .= ')';
     $returnArray=$db->
     query(
     "select l.id as id, l.name as name
      from locations l
-     join locations_websites lw on lw.location_id = l.id 
+     join locations_websites lw on lw.location_id = l.id
      where l.deleted=false AND l.name in ".$plotNamesForAttachmentSet."
-     order by l.id desc limit ".count($explodedPlotPairsForPlotGroupAttachment)                   
+     order by l.id desc limit ".count($explodedPlotPairsForPlotGroupAttachment)
     )->result_array(false);
     return $returnArray;
   }
-  
+
   private static function get_new_plot_attachments_group_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$personId,$personAttributeIdThatHoldsPlotGroup) {
     $plotGroupNamesForAttachmentSet = '(';
     foreach ($explodedPlotPairsForPlotGroupAttachment as $plotPairsForPlotGroupAttachment) {
@@ -1022,11 +1022,11 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
      from terms t
      join termlists_terms tt on tt.term_id = t.id AND tt.deleted=false
      join person_attribute_values pav on pav.int_value = tt.id AND pav.person_attribute_id = ".$personAttributeIdThatHoldsPlotGroup." AND pav.deleted=false
-     where t.deleted=false AND t.term in ".$plotGroupNamesForAttachmentSet                    
+     where t.deleted=false AND t.term in ".$plotGroupNamesForAttachmentSet
     )->result_array(false);
     return $returnArray;
   }
-  
+
   /*
    * Build a string for inserting the plot location to group attachments
    */
@@ -1046,7 +1046,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     }
     return $insertionString;
   }
-  
+
   private static function get_new_plot_attachments_to_create($explodedPlotPairsForPlotGroupAttachments,$plotIdsToCreateAttachmentsFor,$groupIdsToCreateAttachmentsFor) {
     $explodedPlotPairsForPlotGroupAttachmentAsIds=array();
     foreach ($explodedPlotPairsForPlotGroupAttachments as $plotPairForPlotGroupAttachment) {
@@ -1065,24 +1065,24 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
         }
       }
       $explodedPlotPairsForPlotGroupAttachmentAsIds[]=$plotPairForPlotGroupAttachmentAsIds;
-      
+
     }
     return $explodedPlotPairsForPlotGroupAttachmentAsIds;
   }
-  
+
   private function get_person_from_user_id($db,$userId) {
     $returnObj=$db->query("select u.person_id AS id from users u where u.id = ".$userId.";")->current();
     if (!empty($returnObj->id))
       $returnVal=$returnObj->id;
-    else 
+    else
       $returnVal=null;
     return $returnVal;
   }
-  
-  /* 
-   * If spatial reference is missing then automatically generate one using the vice county name or country name 
+
+  /*
+   * If spatial reference is missing then automatically generate one using the vice county name or country name
    * Note this has an equivalent function with the same name in the Drupal prebuilt form.
-   * Changes to the logic here should also occur in that function 
+   * Changes to the logic here should also occur in that function
    */
   private static function auto_generate_grid_references($saveArray) {
     $viceCountyPairs = explode(',',kohana::config('plant_portal_import.vice_counties_list'));
@@ -1093,8 +1093,8 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       foreach ($viceCountyPairs as $viceCountyNameGridRefPair) {
         $viceCountyNameGridRefPairExploded=explode('|',$viceCountyNameGridRefPair);
         //If we find a match for the vice county then we can set the spatial reference and spatial reference system from the vice county
-        if (!empty($saveArray['smpAttr:'.kohana::config('plant_portal_import.vice_county_attr_id')])&& 
-                !empty($viceCountyNameGridRefPairExploded[0]) && 
+        if (!empty($saveArray['smpAttr:'.kohana::config('plant_portal_import.vice_county_attr_id')])&&
+                !empty($viceCountyNameGridRefPairExploded[0]) &&
                 $saveArray['smpAttr:'.kohana::config('plant_portal_import.vice_county_attr_id')]==$viceCountyNameGridRefPairExploded[0]) {
           $saveArray['sample:entered_sref']=$viceCountyNameGridRefPairExploded[1];
           $saveArray['sample:entered_sref_system']='4326';
@@ -1106,7 +1106,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       foreach ($countryPairs as $countryNameGridRefPair) {
         $countryNameGridRefPairExploded=explode('|',$countryNameGridRefPair);
         if (!empty($saveArray['smpAttr:'.kohana::config('plant_portal_import.country_attr_id')])&&
-                !empty($countryNameGridRefPairExploded[0]) && 
+                !empty($countryNameGridRefPairExploded[0]) &&
                 $saveArray['smpAttr:'.kohana::config('plant_portal_import.country_attr_id')]==$countryNameGridRefPairExploded[0]) {
           $saveArray['sample:entered_sref']=$countryNameGridRefPairExploded[1];
           $saveArray['sample:entered_sref_system']='4326';
@@ -1169,7 +1169,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       function ($field) {
         return $field->fieldName;
       }, $fields);
-    $join = self::buildJoin($fieldPrefix,$fields,$table,$saveArray); 
+    $join = self::buildJoin($fieldPrefix,$fields,$table,$saveArray);
     $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
     if ($wheres !== FALSE) {
       $db = Database::instance();
@@ -1211,7 +1211,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
 
   /*
    * Need to build a join so the system works correctly when importing taxa with update existing records selected.
-   * e.g. a problematic scenario would happen if importing new taxa but the external key/search code is still selected 
+   * e.g. a problematic scenario would happen if importing new taxa but the external key/search code is still selected
    * for existing record update, in this case without building a join, the system would keep overwriting the previous record
    * as each new one is imported (as it wasn't checking the search code/external key, the final result would be that only one row would import).
    * Note this function might need improving/generalising for other models, although I did check occurrence/sample import which
@@ -1224,7 +1224,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     }
     elseif (!empty($saveArray['taxon:search_code']) && $table=='taxa_taxon_lists') {
       $r = "join taxa t on t.id = ".$table.".taxon_id AND t.search_code='".$saveArray['taxon:search_code']."' AND t.deleted=false";
-    } 
+    }
     return $r;
   }
 

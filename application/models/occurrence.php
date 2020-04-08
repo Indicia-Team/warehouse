@@ -129,6 +129,7 @@ class Occurrence_Model extends ORM {
       $metadataFieldChanging = !empty($fields['metadata']) && $fields['metadata']['value'] !== $this->metadata;
       $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
       $isAlreadyReviewed = preg_match('/[RDV]/', $this->record_status) || $this->record_substatus === 3;
+      $sampleUpdating = $this->sample && $this->sample->wantToUpdateMetadata;
       // Is this post going to change the record status or substatus?
       if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {
@@ -143,7 +144,7 @@ class Occurrence_Model extends ORM {
           $array->verified_on = NULL;
         }
       }
-      elseif ($this->wantToUpdateMetadata && $isAlreadyReviewed) {
+      elseif (($sampleUpdating || $this->wantToUpdateMetadata) && $isAlreadyReviewed) {
         // We are making a change to a previously reviewed record that doesn't
         // explicitly set the status. If the change is to the release status
         // or occurrence metadata field, then we don't do anything, otherwise
@@ -570,22 +571,22 @@ SQL;
    *   * **occurrence_associations** - Set to 't' to enable occurrence associations options. The
    *     relevant warehouse module must also be enabled.
    */
-  public function fixed_values_form($options = array()) {
+  public function fixedValuesForm($options = array()) {
     $srefs = array();
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title) {
-      $srefs[] = str_replace(array(',', ':'), array('&#44', '&#56'), $code) .
+      $srefs[] = str_replace(array(',', ':'), array('&#44', '&#58'), $code) .
             ":" .
-            str_replace(array(',', ':'), array('&#44', '&#56'), $title);
+            str_replace(array(',', ':'), array('&#44', '&#58'), $title);
     }
 
     $sample_methods = array(":Defined in file");
     $parent_sample_methods = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-      $sample_method = str_replace(array(',', ':'), array('&#44', '&#56'), $term->id) .
+      $sample_method = str_replace(array(',', ':'), array('&#44', '&#58'), $term->id) .
         ":" .
-        str_replace(array(',', ':'), array('&#44', '&#56'), $term->term);
+        str_replace(array(',', ':'), array('&#44', '&#58'), $term->term);
       $sample_methods[] = $sample_method;
       $parent_sample_methods[] = $sample_method;
     }
@@ -593,9 +594,9 @@ SQL;
     $locationTypes = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-      $locationTypes[] = str_replace(array(',', ':'), array('&#44', '&#56'), $term->id) .
+      $locationTypes[] = str_replace(array(',', ':'), array('&#44', '&#58'), $term->id) .
         ":" .
-        str_replace(array(',', ':'), array('&#44', '&#56'), $term->term);
+        str_replace(array(',', ':'), array('&#44', '&#58'), $term->term);
     }
     $retVal = array(
       'website_id' => array(

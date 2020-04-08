@@ -114,6 +114,28 @@ function cache_builder_orm_work_queue() {
       'cost_estimate' => 30,
       'priority' => 2,
     ],
+    // To trap direct updates to attribute values tables.
+    [
+      'entity' => 'occurrence_attribute_value',
+      'ops' => ['insert', 'update', 'delete'],
+      'task' => 'task_cache_builder_attr_value_occurrence',
+      'cost_estimate' => 30,
+      'priority' => 2,
+    ],
+    [
+      'entity' => 'sample_attribute_value',
+      'ops' => ['insert', 'update', 'delete'],
+      'task' => 'task_cache_builder_attr_value_sample',
+      'cost_estimate' => 30,
+      'priority' => 2,
+    ],
+    [
+      'entity' => 'taxa_taxon_list_attribute_value',
+      'ops' => ['insert', 'update', 'delete'],
+      'task' => 'task_cache_builder_attr_value_taxa_taxon_list',
+      'cost_estimate' => 30,
+      'priority' => 2,
+    ],
     [
       'entity' => 'user',
       'ops' => ['update'],

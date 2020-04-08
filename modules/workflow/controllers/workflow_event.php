@@ -94,7 +94,7 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
       'entitySelectItems' => $entitySelectItems,
       'jsonSchema' => json_encode([
         'type' => 'map',
-        'title' => 'Colunms to set',
+        'title' => 'Columns to set',
         'mapping' => $jsonMapping,
         'desc' => 'List of columns and the values they are to be set to, when event is triggered.',
       ]),

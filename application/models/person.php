@@ -95,6 +95,7 @@ class Person_Model extends ORM {
    */
   public function newUsername() {
     $minLen = 7;
+    $maxLen = 30;
     // Start any uniqueness suffix at 2 deliberately.
     $inc = 2;
     if ($this->first_name === '') {
@@ -105,10 +106,10 @@ class Person_Model extends ORM {
     }
     $baseUsername = strtolower(preg_replace("/[^A-Za-z]/", "_", $baseUsername));
     // Ensure 7 characters long.
-    $username = str_pad($baseUsername, $minLen, '_');
+    $username = str_pad(substr($baseUsername, 0, $maxLen), $minLen, '_');
     // Check for uniqueness.
     while ($this->db->query("SELECT 1 FROM users WHERE LOWER(username)='$username'")->count() > 0) {
-      $username = str_pad($baseUsername, $minLen - strlen($inc), '_') . $inc;
+      $username = str_pad(substr($baseUsername, 0, $maxLen - strlen($inc)), $minLen - strlen($inc), '_') . $inc;
       $inc++;
     }
     return $username;

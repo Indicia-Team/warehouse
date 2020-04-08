@@ -88,27 +88,34 @@ class XMLReportReader_Core implements ReportReader {
    */
   public static function loadMetadata($report) {
     $reader = new XMLReader();
-    if ($reader->open($report)===false)
+    if ($reader->open($report) === FALSE) {
       throw new Exception("Report $report could not be opened.");
+    }
     $metadata = array('title' => 'Untitled (' . $report . ')', 'description' => 'No description provided');
     while($reader->read()) {
-      if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='report') {
+      if ($reader->nodeType == XMLREADER::ELEMENT && $reader->name === 'report') {
         $metadata['title'] = $reader->getAttribute('title');
         $metadata['description'] = $reader->getAttribute('description');
         $metadata['featured'] = $reader->getAttribute('featured');
         $metadata['restricted'] = $reader->getAttribute('restricted');
         $metadata['summary'] = $reader->getAttribute('summary');
-        if (!$metadata['featured'])
+        if (!$metadata['featured']) {
           unset($metadata['featured']);
-        if (!$metadata['restricted'])
+        }
+        if (!$metadata['restricted']) {
           unset($metadata['restricted']);
-        if (!$metadata['summary'])
+        }
+        if (!$metadata['summary']) {
           unset($metadata['summary']);
-        if (!$metadata['title'])
+        }
+        if (!$metadata['title']) {
           $metadata['title'] = 'Untitled (' . basename($report) . ')';
-        if (!$metadata['description'])
+        }
+        if (!$metadata['description']) {
           $metadata['description'] = 'No description provided';
-      } elseif ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='query') {
+        }
+      }
+      elseif ($reader->nodeType==XMLREADER::ELEMENT && $reader->name === 'query') {
         if ($reader->getAttribute('standard_params')) {
           $metadata['standard_params'] = $reader->getAttribute('standard_params');
           if (!$metadata['standard_params'])
@@ -161,11 +168,11 @@ class XMLReportReader_Core implements ReportReader {
                 break;
               case 'query':
                 $this->websiteFilterField = $reader->getAttribute('website_filter_field');
-                if ($this->websiteFilterField===null)
+                if ($this->websiteFilterField=== NULL)
                   // default field name for filtering against websites
                   $this->websiteFilterField = 'w.id';
                 $this->trainingFilterField = $reader->getAttribute('training_filter_field');
-                if ($this->trainingFilterField===null)
+                if ($this->trainingFilterField=== NULL)
                   // default field name for filtering training records
                   $this->trainingFilterField = 'o.training';
                 $this->blockedSharingTasksField = $reader->getAttribute('blocked_sharing_tasks_field');
@@ -681,33 +688,39 @@ class XMLReportReader_Core implements ReportReader {
   }
 
   /**
-  * <p> Uses source-specific validation methods to check whether the report query is valid. </p>
-  */
+   * Uses source-specific validation methods to check whether the report query is valid.
+   */
   public function isValid(){}
 
   /**
-  * <p> Returns the order by clause for the query. </p>
-  */
-  public function getOrderClause()
-  {
-    if ($this->order_by) {
-      return implode(', ', $this->order_by);
+   * Returns the order by clause for the query.
+   *
+   * @param array $providedParams
+   *   List of parameters provided, allowing the report to selectively order by
+   *   fields specified by param definitions.
+   */
+  public function getOrderClause(array $providedParams) {
+    $paramOrderFields = [];
+    foreach ($providedParams as $param => $value) {
+      if ($value !== '' && isset($this->params[$param]) && isset($this->params[$param]['order_by'])) {
+        $paramOrderFields[] = $this->params[$param]['order_by'];
+      }
     }
+    $r = $paramOrderFields ?: $this->order_by ?: [];
+    return implode(', ', $r);
   }
 
   /**
-  * <p> Gets a list of parameters (name => array('display' => display, ...)) </p>
-  */
-  public function getParams()
-  {
+   * Gets a list of parameters.
+   */
+  public function getParams() {
     return $this->params;
   }
 
   /**
-  * <p> Gets a list of the columns (name => array('display' => display, 'style' => style, 'visible' => visible)) </p>
-  */
-  public function getColumns()
-  {
+   * Gets a list of the columns.
+   */
+  public function getColumns() {
     if (empty($this->colsToInclude))
       return $this->columns;
     else {
@@ -723,18 +736,16 @@ class XMLReportReader_Core implements ReportReader {
   }
 
   /**
-  * <p> Returns a description of the report appropriate to the level specified. </p>
-  */
-  public function describeReport($descLevel)
-  {
-    switch ($descLevel)
-    {
+   * Returns a description of the report appropriate to the level specified.
+   */
+  public function describeReport($descLevel) {
+    switch ($descLevel) {
       case (ReportReader::REPORT_DESCRIPTION_BRIEF):
         return array(
-            'name' => $this->name,
-            'title' => $this->getTitle(),
-            'row_class' => $this->getRowClass(),
-            'description' => $this->getDescription());
+          'name' => $this->name,
+          'title' => $this->getTitle(),
+          'row_class' => $this->getRowClass(),
+          'description' => $this->getDescription());
         break;
       case (ReportReader::REPORT_DESCRIPTION_FULL):
         // Everything
@@ -887,62 +898,49 @@ TBL;
   }
 
   /**
+   * Copies attributes from an element to an array.
+   */
+  private function copyOverAttributes($reader, &$arr, $attrs) {
+    foreach ($attrs as $attr) {
+      $val = $reader === NULL ? '' : $reader->getAttribute($attr);
+      // Don't overwrite any existing setting with a blank value.
+      if (!isset($arr[$attr]) || $val !== '') {
+        $arr[$attr] = $val;
+      }
+    }
+  }
+
+  /**
    * Merges a parameter into the list of parameters read for the report. Updates existing
    * ones if there is a name match.
    * @todo Review the handling of $this->surveyParam
    */
-  private function mergeParam($name, $reader=null) {
+  private function mergeParam($name, $reader = NULL) {
     // Some parts of the code assume the survey will be identified by a parameter called survey or survey_id.
-    if ($name==='survey_id' || $name==='survey')
+    if ($name === 'survey_id' || $name === 'survey') {
       $this->surveyParam = $name;
-    $display = ($reader===null) ? '' : $reader->getAttribute('display');
-    $type = ($reader===null) ? '' : $reader->getAttribute('datatype');
-    $allow_buffer = ($reader===null) ? '' : $reader->getAttribute('allow_buffer');
-    $fieldname = ($reader===null) ? '' : $reader->getAttribute('fieldname');
-    $alias = ($reader===null) ? '' : $reader->getAttribute('alias');
-    $emptyvalue = ($reader===null) ? '' : $reader->getAttribute('emptyvalue');
-    $default = ($reader===null) ? null : $reader->getAttribute('default');
-    $description = ($reader===null) ? '' : $reader->getAttribute('description');
-    $query = ($reader===null) ? '' : $reader->getAttribute('query');
-    $preprocess = ($reader===null) ? '' : $reader->getAttribute('preprocess');
-    $lookup_values = ($reader===null) ? '' : $reader->getAttribute('lookup_values');
-    $population_call = ($reader===null) ? '' : $reader->getAttribute('population_call');
-    $linked_to = ($reader===null) ? '' : $reader->getAttribute('linked_to');
-    $linked_filter_field = ($reader===null) ? '' : $reader->getAttribute('linked_filter_field');
-    if (array_key_exists($name, $this->params))
-    {
-      if ($display != '') $this->params[$name]['display'] = $display;
-      if ($type != '') $this->params[$name]['datatype'] = $type;
-      if ($allow_buffer != '') $this->params[$name]['allow_buffer'] = $allow_buffer;
-      if ($fieldname != '') $this->params[$name]['fieldname'] = $fieldname;
-      if ($alias != '') $this->params[$name]['alias'] = $alias;
-      if ($emptyvalue != '') $this->params[$name]['emptyvalue'] = $emptyvalue;
-      if ($default != null) $this->params[$name]['default'] = $default;
-      if ($description != '') $this->params[$name]['description'] = $description;
-      if ($query != '') $this->params[$name]['query'] = $query;
-      if ($preprocess != '') $this->params[$name]['preprocess'] = $preprocess;
-      if ($lookup_values != '') $this->params[$name]['lookup_values'] = $lookup_values;
-      if ($population_call != '') $this->params[$name]['population_call'] = $population_call;
-      if ($linked_to != '') $this->params[$name]['linked_to'] = $linked_to;
-      if ($linked_filter_field != '') $this->params[$name]['linked_filter_field'] = $linked_filter_field;
-    } else {
-      $this->params[$name] = array(
-        'datatype' => $type,
-        'allow_buffer' => $allow_buffer,
-        'fieldname' => $fieldname,
-        'alias' => $alias,
-        'emptyvalue' => $emptyvalue,
-        'default' => $default,
-        'display' => $display,
-        'description' => $description,
-        'query' => $query,
-        'preprocess' => $preprocess,
-        'lookup_values' => $lookup_values,
-        'population_call' => $population_call,
-        'linked_to' => $linked_to,
-        'linked_filter_field' => $linked_filter_field,
-      );
     }
+    if (!array_key_exists($name, $this->params)) {
+      $this->params[$name] = [];
+    }
+    $this->copyOverAttributes($reader, $this->params[$name], [
+      'display',
+      'datatype',
+      'allow_buffer',
+      'fieldname',
+      'alias',
+      'emptyvalue',
+      'default',
+      'description',
+      'query',
+      'preprocess',
+      'lookup_values',
+      'population_call',
+      'linked_to',
+      'linked_filter_field',
+      'order_by'
+    ]);
+
     if ($this->params[$name]['datatype'] === 'lookup') {
       $this->params[$name]['description_extra'] = $this->getLookupValuesAsTable($this->params[$name]);
       $this->params[$name]['description'];
@@ -983,7 +981,6 @@ TBL;
           }
         }
       }
-
     }
   }
 
@@ -1003,8 +1000,9 @@ TBL;
       // param comes into effect if just a website_list is provided.
       $opParams = $standardParamsHelper::getOperationParameters();
       foreach ($opParams as $param => $cfg) {
-        if (!empty($providedParams[$param]))
+        if (!empty($providedParams[$param])) {
           $this->params["{$param}_op"] = $cfg;
+        }
         if (!empty($providedParams["{$param}_context"])) {
           $this->params["{$param}_op_context"] = $cfg;
         }
@@ -1018,9 +1016,10 @@ TBL;
       }
       $this->defaultParamValues = array_merge($standardParamsHelper::getDefaultParameterValues(), $this->defaultParamValues);
       // Any defaults can be skipped if a context parameter is provided to
-      // override the default.
+      // override the default. Doesn't apply to *_op defaults since these pair
+      // with other parameters.
       foreach (array_keys($this->defaultParamValues) as $param) {
-        if (isset($providedParams[$param . '_context'])) {
+        if (!preg_match('/_op$/', $param) && isset($providedParams[$param . '_context'])) {
           unset($this->defaultParamValues[$param]);
         }
       }
@@ -1204,24 +1203,23 @@ TBL;
     }
   }
 
-  private function setTable($tablename, $where)
-  {
-    $this->tables = array();
+  private function setTable($tablename, $where) {
+    $this->tables = [];
     $this->tableIndex = 0;
     $this->nextTableIndex = 1;
-    $this->tables[$this->tableIndex] = array(
-          'tablename' => $tablename,
-          'parent' => -1,
-          'parentKey' => '',
-          'tableKey' => '',
-          'join' => '',
+    $this->tables[$this->tableIndex] = [
+        'tablename' => $tablename,
+        'parent' => -1,
+        'parentKey' => '',
+        'tableKey' => '',
+        'join' => '',
         'attributes' => '',
-          'where' => $where,
-          'columns' => array());
+        'where' => $where,
+        'columns' => []
+    ];
   }
 
-  private function setSubTable($tablename, $parentKey, $tableKey, $join, $where)
-  {
+  private function setSubTable($tablename, $parentKey, $tableKey, $join, $where) {
     if($tableKey == ''){
       if($parentKey == 'id'){
         $tableKey = 'lt'.$this->nextTableIndex.".".(inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
@@ -1249,8 +1247,7 @@ TBL;
     $this->nextTableIndex++;
   }
 
-  private function mergeTabColumn($name, $func = '', $display = '', $style = '', $feature_style = '', $class='', $visible='', $autodef=false)
-  {
+  private function mergeTabColumn($name, $func = '', $display = '', $style = '', $feature_style = '', $class='', $visible='', $autodef=false) {
     $found = false;
     for($r = 0; $r < count($this->tables[$this->tableIndex]['columns']); $r++){
       if($this->tables[$this->tableIndex]['columns'][$r]['name'] == $name) {
