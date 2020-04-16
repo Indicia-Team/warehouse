@@ -94,14 +94,6 @@ class Sample_Model extends ORM_Tree {
       ],
     ],
     [
-      'description' => 'Sample External Key',
-      'fields' => [
-        ['fieldName' => 'survey_id', 'notInMappings' => TRUE],
-        ['fieldName' => 'sample:sample_method_id'],
-        ['fieldName' => 'sample:external_key'],
-      ],
-    ],
-    [
       'description' => 'Grid Ref and Date',
       'fields' => [
         ['fieldName' => 'survey_id', 'notInMappings' => TRUE],
