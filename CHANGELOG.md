@@ -1,3 +1,34 @@
+# Version 3.3.0
+#2020-04-16#
+
+* Reduced likelihood that emails sent by scheduled tasks are detected as spam:
+    * Receipient names correctly added.
+    * HTML structure improvements.
+* Possible to import and update existing samples using their external_key field
+  as a unique row identifier.
+* Improvements to cascading mark-deletion of sample records.
+* New report `library/locations/locations_list_3.xml` which allows the list to
+  be filtered by an intersecting point.
+* Support for remote download into Recorder 6 using the original record creator
+  as the creator of the record in Recorder 6 (rather than the person doing the
+  import).
+* New Darwin Core archive download reports for GBIF IPT compatible data
+  extraction.
+* Darwin Core archive download reports allow BasisOfRecord to be overridden.
+* Darwin Core archive download reports remove line breaks from comments.
+* Bug fixes to the updating of single attribute values into the reporting
+  cache tables in the work queue system.
+* Bug fixes around the auto-feed tracking of data into Elasticsearch.
+* Fixes to CSV formatting when extracting CSV data from Elasticsearch.
+* Bug fixes for upgrades from very old warehouse installations.
+
+
+# Version 3.2.0
+#2020-03-29#
+
+* Report `reports/library/locations/locations_list_from_search_location.xml`
+  allows multiple location_type_ids to be selected.
+
 # Version 3.1.0
 #2020-01-15#
 
