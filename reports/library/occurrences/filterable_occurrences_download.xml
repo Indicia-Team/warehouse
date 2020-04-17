@@ -88,7 +88,7 @@
     <column name='certainty' display="Recorder certainty" sql="CASE o.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
     <column name='attr_sex' display='Sex' sql="onf.attr_sex" datatype='text' />
     <column name='attr_stage' display='Stage' sql="onf.attr_stage" datatype='text' />
-    <column name='attr_sex_stage_count' display='Count of sex or state' sql="onf.attr_sex_stage_count" datatype='text' />
+    <column name='attr_sex_stage_count' display='Count of sex or stage' sql="onf.attr_sex_stage_count" datatype='text' />
     <column name='zeroabundance' display='Zero abundance' sql='upper(cast (o.zero_abundance as character))' datatype="text" />
     <column name='record_comment' display='Comment' sql="onf.comment" datatype="text" />
     <column name='sample_comment' display='Sample comment' sql="snf.comment" datatype="text" />
