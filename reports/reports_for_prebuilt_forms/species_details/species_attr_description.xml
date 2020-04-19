@@ -214,6 +214,12 @@ FROM (
     <column name="category" sql="category" />
     <column name="subcatsort" sql="subcatsort" />
     <column name="subcategory" sql="subcategory" />
-    <column name="values" aggregate="true" sql="STRING_AGG(caption || values, ' ' order by weight, raw_caption)" />
+    <column name="values" aggregate="true" sql="
+    CASE WHEN category = 'Ökologie' OR category = 'Ecology' OR category = 'ekologie' THEN
+      STRING_AGG('&lt;span style=&quot;white-space: nowrap;&quot;&gt;' || caption || '&lt;/span&gt;' || values, ' ' order by weight, raw_caption)
+    ELSE
+      STRING_AGG('&lt;span style=&quot;white-space: nowrap;&quot;&gt;' || caption || values || '&lt;/span&gt;', ' ' order by weight, raw_caption)
+    END
+    " />
   </columns>
 </report>
