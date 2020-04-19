@@ -129,7 +129,6 @@ class Occurrence_Model extends ORM {
       $metadataFieldChanging = !empty($fields['metadata']) && $fields['metadata']['value'] !== $this->metadata;
       $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
       $isAlreadyReviewed = preg_match('/[RDV]/', $this->record_status) || $this->record_substatus === 3;
-      $sampleUpdating = $this->sample && $this->sample->wantToUpdateMetadata;
       // Is this post going to change the record status or substatus?
       if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {
@@ -144,7 +143,7 @@ class Occurrence_Model extends ORM {
           $array->verified_on = NULL;
         }
       }
-      elseif (($sampleUpdating || $this->wantToUpdateMetadata) && $isAlreadyReviewed) {
+      elseif (($this->parentChanging || $this->wantToUpdateMetadata) && $isAlreadyReviewed) {
         // We are making a change to a previously reviewed record that doesn't
         // explicitly set the status. If the change is to the release status
         // or occurrence metadata field, then we don't do anything, otherwise
