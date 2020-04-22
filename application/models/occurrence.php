@@ -48,7 +48,8 @@ class Occurrence_Model extends ORM {
     'occurrence:fk_taxa_taxon_list:specific' => 'Specific name/epithet (builds binomial name)',
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
     'occurrence:fk_taxa_taxon_list:search_code' => 'Species or taxon search code',
-    'occurrence:taxa_taxon_list_id' => 'Species or taxon taxa_taxon_lists.id',
+    // needs to be more complex version so import recognises it as same field as above
+    'occurrence:fk_taxa_taxon_list:id' => 'Species or taxon taxa_taxon_lists.id',
     // Allow details of 4 images to be uploaded in CSV files.
     'occurrence_medium:path:1' => 'Media Path 1',
     'occurrence_medium:caption:1' => 'Media Caption 1',
