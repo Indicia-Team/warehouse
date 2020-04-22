@@ -100,11 +100,10 @@ SELECT DISTINCT delta.id
 INTO TEMPORARY records_to_auto_verify
 FROM $mainTable delta
 JOIN surveys s ON s.id = delta.survey_id AND s.auto_accept=true AND s.deleted=false
-LEFT JOIN cache_taxon_searchterms cts on cts.taxon_meaning_id = delta.taxon_meaning_id
 WHERE delta.data_cleaner_result=true
 AND delta.record_status='C' AND delta.record_substatus IS NULL
-AND (($autoVerifyNullIdDiff=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty)
-OR ($autoVerifyNullIdDiff=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty)))
+AND (($autoVerifyNullIdDiff=false AND delta.identification_difficulty IS NOT NULL AND delta.identification_difficulty<=s.auto_accept_max_difficulty)
+OR ($autoVerifyNullIdDiff=true AND (delta.identification_difficulty IS NULL OR delta.identification_difficulty<=s.auto_accept_max_difficulty)))
 AND (s.auto_accept_taxa_filters IS NULL OR (s.auto_accept_taxa_filters && delta.taxon_path))
 $qryEnd;
 
