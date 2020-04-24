@@ -1578,12 +1578,13 @@ AND o.sensitivity_precision IS NOT NULL
 
 /* Note id_diff verification_rule_data.key forced uppercase by rule postprocessor. */
 $config['occurrences']['update']['id_diff'] = "
-UPDATE cache_occurrences_functional o
+UPDATE cache_occurrences_functional co
 SET identification_difficulty=extkey.value::integer
-FROM needs_update_occurrences nu, verification_rule_data extkey
+FROM occurrences o
+#join_needs_update#, verification_rule_data extkey
 JOIN verification_rules vr ON vr.id=extkey.verification_rule_id AND vr.test_type='IdentificationDifficulty' AND vr.deleted=false
-WHERE extkey.key=UPPER(o.taxa_taxon_list_external_key) AND extkey.header_name='Data' AND extkey.deleted=false
-AND o.id=nu.id";
+WHERE extkey.key=UPPER(co.taxa_taxon_list_external_key) AND extkey.header_name='Data' AND extkey.deleted=false
+AND o.id=co.id";
 
 $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_functional(
             id, sample_id, website_id, survey_id, input_form, location_id,
@@ -1821,12 +1822,13 @@ AND o.sensitivity_precision IS NOT NULL
 
 /* Note id_diff verification_rule_data.key forced uppercase by rule postprocessor. */
 $config['occurrences']['insert']['id_diff'] = "
-UPDATE cache_occurrences_functional o
+UPDATE cache_occurrences_functional co
 SET identification_difficulty=extkey.value::integer
-FROM needs_update_occurrences nu, verification_rule_data extkey
+FROM occurrences o
+#join_needs_update#, verification_rule_data extkey
 JOIN verification_rules vr ON vr.id=extkey.verification_rule_id AND vr.test_type='IdentificationDifficulty' AND vr.deleted=false
-WHERE extkey.key=UPPER(o.taxa_taxon_list_external_key) AND extkey.header_name='Data' AND extkey.deleted=false
-AND o.id=nu.id";
+WHERE extkey.key=UPPER(co.taxa_taxon_list_external_key) AND extkey.header_name='Data' AND extkey.deleted=false
+AND o.id=co.id";
 
 $config['occurrences']['join_needs_update'] = 'join needs_update_occurrences nu on nu.id=o.id and nu.deleted=false';
 $config['occurrences']['key_field'] = 'o.id';
