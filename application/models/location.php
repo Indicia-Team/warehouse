@@ -42,6 +42,7 @@ class Location_Model extends ORM_Tree {
   // Declare additional fields required when posting via CSV.
   protected $additional_csv_fields = array(
     // extra lookup options
+    'location:fk_parent:id' => 'Parent Indicia ID',
     'location:fk_parent:code' => 'Parent location Code',
     'location:fk_parent:external_key' => 'Parent location External key',
   );
