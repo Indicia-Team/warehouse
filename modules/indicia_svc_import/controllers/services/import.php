@@ -659,9 +659,9 @@ class Import_Controller extends Service_Base_Controller {
         foreach ($saveArray as $field => $value) {
           $fkLocationSet |= (!empty($value) && strpos($field, 'sample:fk_location:') !== FALSE);
         }
-        if ($fkLocationSet && empty($saveArray['sample:entered_sef'])) {
-          unset($saveArray['sample:entered_sef']);
-          unset($saveArray['sample:entered_sef_system']);
+        if ($fkLocationSet && empty($saveArray['sample:entered_sref'])) {
+          unset($saveArray['sample:entered_sref']);
+          unset($saveArray['sample:entered_sref_system']);
         }
 
         // Save the record.
