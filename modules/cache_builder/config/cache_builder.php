@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Modules
- * @subpackage Cache builder
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
 $config['termlists_terms']['get_missing_items_query'] = "
@@ -558,6 +556,7 @@ $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterm
     join terms tcategory on tcategory.id=tltcategory.term_id and tcategory.term='searchable'
     where cttl.id=cttl.preferred_taxa_taxon_list_id and cts.taxa_taxon_list_id=cttl.id and cts.name_type = 'C' and cts.source_id=tc.id";
 
+/* Note id_diff verification_rule_data.key forced uppercase by rule postprocessor. */
 $config['taxon_searchterms']['update']['id_diff'] = "update cache_taxon_searchterms cts
     set identification_difficulty=extkey.value::integer, id_diff_verification_rule_id=vr.id
       from cache_taxa_taxon_lists cttl
@@ -655,11 +654,12 @@ $config['taxon_searchterms']['insert']['codes'] = "insert into cache_taxon_searc
     join terms tcategory on tcategory.id=tltcategory.term_id and tcategory.term='searchable' and tcategory.deleted=false
     where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=false";
 
+/* Note id_diff verification_rule_data.key forced uppercase by rule postprocessor. */
 $config['taxon_searchterms']['insert']['id_diff'] = "update cache_taxon_searchterms cts
     set identification_difficulty=extkey.value::integer, id_diff_verification_rule_id=vr.id
       from cache_taxa_taxon_lists cttl
       #join_needs_update#
-      join verification_rule_data extkey ON extkey.key=LOWER(cttl.external_key) AND extkey.header_name='Data' AND extkey.deleted=false
+      join verification_rule_data extkey ON extkey.key=UPPER(cttl.external_key) AND extkey.header_name='Data' AND extkey.deleted=false
       join verification_rules vr ON vr.id=extkey.verification_rule_id AND vr.test_type='IdentificationDifficulty' AND vr.deleted=false
       where cttl.id=cts.taxa_taxon_list_id";
 
@@ -1389,10 +1389,11 @@ SET sample_id=o.sample_id,
   taxon_path=ctp.path,
   parent_sample_id=s.parent_id,
   verification_checks_enabled=w.verification_checks_enabled,
-  media_count=(SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
+  media_count=(SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false),
+  identification_difficulty=(SELECT cts.identification_difficulty FROM cache_taxon_searchterms cts where cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false)
 FROM occurrences o
 #join_needs_update#
-left join cache_occurrences_functional co on co.id=o.id
+LEFT JOIN cache_occurrences_functional co on co.id=o.id
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 JOIN websites w ON w.id=o.website_id AND w.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -1586,7 +1587,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
             training, zero_abundance, licence_id, import_guid, confidential, external_key,
             taxon_path, blocked_sharing_tasks, parent_sample_id, verification_checks_enabled,
-            media_count)
+            media_count, identification_difficulty)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1622,7 +1623,8 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
     END,
     s.parent_id,
     w.verification_checks_enabled,
-    (SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
+    (SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false),
+    (SELECT cts.identification_difficulty FROM cache_taxon_searchterms cts where cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false)
 FROM occurrences o
 #join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
