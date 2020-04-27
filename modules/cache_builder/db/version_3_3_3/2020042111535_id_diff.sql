@@ -3,11 +3,11 @@ DROP TRIGGER trigger_cache_occurrences_functional_changed ON cache_occurrences_f
 CREATE TRIGGER trigger_cache_occurrences_functional_changed
     BEFORE INSERT OR UPDATE
     ON indicia.cache_occurrences_functional
-    FOR EACH ROW WHEN (current_setting('session_replication_role') <> 'local')
+    FOR EACH ROW WHEN (current_setting('application_name') <> 'skiptrigger')
     EXECUTE PROCEDURE indicia.cache_functional_changed();
 
 -- Disable tracking increments, so doesn't force a complete ES refresh.
-SET session_replication_role = 'local';
+SET application_name = 'skiptrigger';
 
 UPDATE cache_occurrences_functional o
 SET identification_difficulty=extkey.value::integer
