@@ -779,7 +779,7 @@ ROW;
         else {
           // In this instance, we don't update the variable, so the next batch
           // will be the same as this one.
-          kohana::log('error', "Max time exceeded: $this->startTime - " . microtime(TRUE) .
+          kohana::log('error', "Max time exceeded: " . (microtime(TRUE) - $this->startTime) .
             " is greater than $_REQUEST[max_time]");
         }
       }
