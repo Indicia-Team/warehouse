@@ -1993,6 +1993,10 @@ class Rest_Controller extends Controller {
         $this->apiResponse->fail('Bad request (parameters missing)', 400,
           "Missing parameters: " . implode(', ', array_keys($report['content']['parameterRequest'])));
       }
+      else {
+        kohana::log('error', 'Rest API getReportOutput method retrieved invalid report response: ' .
+          var_export($report, true));
+      }
     }
     finally {
       if ($this->getAutofeedMode()) {

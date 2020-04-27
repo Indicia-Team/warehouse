@@ -13,7 +13,6 @@
     FROM cache_occurrences_functional o
     #joins#
     WHERE sensitive=true
-    AND (o.tracking IS NULL OR o.tracking&lt;#update_to#)
     #filters#
     #order_by#
     LIMIT #limit#;
@@ -33,32 +32,13 @@
     #order_by#
   </query>
   <params>
-    <param name="last_date" display="Last update date" datatype="date" default="">
-      <where>o.updated_on &gt;= '#last_date#'</where>
-    </param>
     <!-- last_id, autofeed_tracking_from and update_to parameters required for autofeed to work. -->
     <param name="last_id" display="Last ID" datatype="integer" default="" order_by="o.id ASC">
       <where>o.id &gt; #last_id#</where>
     </param>
-    <param name="autofeed_tracking_from" display="Autofeed tracking from" datatype="integer" default="">
+    <param name="autofeed_tracking_from" display="Autofeed tracking from" datatype="integer" default="" order_by="o.tracking ASC">
       <where>o.tracking >= #autofeed_tracking_from#</where>
     </param>
-    <param
-      name="update_to"
-      display="Highest update tracking ID to include"
-      description="Highest tracking ID to include, which will be auto-generated according to the progress of background tasks.
-        Records only included once they have been both spatially indexed and data cleaned."
-      default="1900-01-01"
-      preprocess="SELECT LEAST(
-        (
-          SELECT tracking FROM cache_occurrences_functional
-          WHERE tracking IS NOT NULL
-          AND location_ids IS NOT NULL
-          AND data_cleaner_result IS NOT NULL
-          ORDER BY tracking DESC LIMIT 1
-        ),
-        -(((2^(8*pg_column_size(1::bigint)-2))::bigint &lt;&lt; 1)+1)
-      )"/>
     <param name="limit" datatype="integer" default="10000" />
   </params>
   <columns>
