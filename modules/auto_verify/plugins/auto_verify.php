@@ -87,14 +87,14 @@ LIMIT $maxRecordsNumber
 SQL;
   }
   else {
-    // Use last run date to find lowest possible tracking ID. If based just on
-    // updated_on we would miss other changes (e.g. data cleaner result being
-    // set to true)
+    // Use last run date to find lowest tracking ID since the last run. If
+    // based just on updated_on we would miss other changes (e.g. data cleaner
+    // result being set to true)
     $minTracking = $db
       ->query("select min(tracking) as min_tracking from cache_occurrences_functional where updated_on>='$last_run_date'")
       ->current()
       ->min_tracking;
-    $qryEnd = "AND o.tracking>=$minTracking";
+    $qryEnd = "AND delta.tracking>=$minTracking";
   }
   $verificationTime = gmdate("Y\/m\/d H:i:s");
   $query = <<<SQL
