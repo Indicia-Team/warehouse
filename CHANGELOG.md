@@ -1,3 +1,13 @@
+# Version 4.0.0
+
+Major version update due to breaking changes in the Elasticsearch REST API:
+
+  * addColumns for a download control now an array with each item having a
+    field or agg property plus a caption.
+  * Special fields supported by download changed to match special fields
+    supported by dataGrid columns. This includes changing the way that
+    parameters are provided to the #attr_value# special field.
+
 # Version 3.3.0
 #2020-04-16#
 
