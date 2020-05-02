@@ -13,7 +13,8 @@ FROM (
       subcat_l.sort_order as subcatsort,
       COALESCE(subcat_l.term, subcat.term) as subcategory,
       -- The source_id field holds the language term but only on comment fields. If this is null or the correct language then show the field, else we know it is wrong language so do not display
-      CASE WHEN '#include_captions#' = '1' AND (cat_source_lang.term = '#language#' or cat_source_lang.id IS NULL) THEN
+      -- Never show captions for the Populaname field (IDs 727,940,941) - special formatting case
+      CASE WHEN '#include_captions#' = '1' AND (cat_source_lang.term = '#language#' or cat_source_lang.id IS NULL) AND a.id NOT IN (727,940,941) THEN
           trim(regexp_replace(regexp_replace(
           	  CASE '#language#' WHEN '' THEN 
           		'&lt;b&gt;' || a.caption || '&lt;/b&gt;' 
