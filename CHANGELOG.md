@@ -1,5 +1,16 @@
+# Version 3.4.0
+*2020-05-04*
+
+* Ability to import into the `locations` table whilst referencing the
+  location's parent by `id`.
+* Ability to import into the `samples` table whilst looking up the
+  associated location by `id`.
+* If location ID provided when importing a sample, then the sample's
+  `entered_sref` and `entered_sref_system` fields are not required in the
+  import data as they can be extracted from the location.
+
 # Version 3.3.0
-#2020-04-16#
+*2020-04-16*
 
 * Reduced likelihood that emails sent by scheduled tasks are detected as spam:
     * Receipient names correctly added.
@@ -22,15 +33,14 @@
 * Fixes to CSV formatting when extracting CSV data from Elasticsearch.
 * Bug fixes for upgrades from very old warehouse installations.
 
-
 # Version 3.2.0
-#2020-03-29#
+*2020-03-29*
 
 * Report `reports/library/locations/locations_list_from_search_location.xml`
   allows multiple location_type_ids to be selected.
 
 # Version 3.1.0
-#2020-01-15#
+*2020-01-15*
 
 * Support for Swedish reference systems, EPSG:3006 and EPSG:3021.
 * Significant performance enhancements in the auto_verify module.

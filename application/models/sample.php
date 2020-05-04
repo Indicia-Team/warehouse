@@ -48,6 +48,7 @@ class Sample_Model extends ORM_Tree {
     'survey_id' => 'Survey ID',
     'website_id' => 'Website ID',
     // extra lookup options
+    'sample:fk_location:id' => 'Location Indicia ID',
     'sample:fk_location:code' => 'Location Code',
     'sample:fk_location:external_key' => 'Location external key',
     'sample:fk_parent:external_key' => 'Parent sample external key',

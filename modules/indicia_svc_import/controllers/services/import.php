@@ -654,6 +654,16 @@ class Import_Controller extends Service_Base_Controller {
           }
         }
 
+        // Special case for samples: the sref system is fixed for the file, but is not required in location_id provided
+        $fkLocationSet = !empty($saveArray['sample:fk_location']);
+        foreach ($saveArray as $field => $value) {
+          $fkLocationSet |= (!empty($value) && strpos($field, 'sample:fk_location:') !== FALSE);
+        }
+        if ($fkLocationSet && empty($saveArray['sample:entered_sref'])) {
+          unset($saveArray['sample:entered_sref']);
+          unset($saveArray['sample:entered_sref_system']);
+        }
+
         // Save the record.
         $model->set_submission_data($saveArray, TRUE);
         /*
