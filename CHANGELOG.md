@@ -8,6 +8,15 @@ Major version update due to breaking changes in the Elasticsearch REST API:
     supported by dataGrid columns. This includes changing the way that
     parameters are provided to the #attr_value# special field.
 
+Additional changes to Elasticsearch client code:
+  * In the Elasticsearch [dataGrid] and [download] columns format, media fields
+    are no longer handled by setting `handler` to `media`. Instead, set the
+    field to `#occurrence_media#`.
+  * The [source] no longer has a @buildTableXY option and the [dataGrid] no
+    longer has a @sourceTable option. This functionality can be replicated
+    using @mode=termAggregation using the column field configuration to
+    extract column values from the nested aggregations.
+
 # Version 3.3.0
 #2020-04-16#
 
