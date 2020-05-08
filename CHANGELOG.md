@@ -16,6 +16,7 @@ Additional changes to Elasticsearch client code:
     longer has a @sourceTable option. This functionality can be replicated
     using @mode=termAggregation using the column field configuration to
     extract column values from the nested aggregations.
+  * [dataGrid] @aggregation option removed, use [source] @mode instead.
 
 # Version 3.3.0
 #2020-04-16#

@@ -759,7 +759,7 @@ class Rest_Controller extends Controller {
     ['caption' => 'Location name', 'field' => 'location.verbatim_locality'],
     ['caption' => 'Higher geography', 'field' => '#higher_geography::name#'],
     ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
-    ['caption' => 'Vice County number', 'field' => '#higher geography:Vice County:code#'],
+    ['caption' => 'Vice County number', 'field' => '#higher_geography:Vice County:code#'],
     ['caption' => 'Identified by', 'field' => 'identification.identified_by'],
     ['caption' => 'Taxon accepted name', 'field' => 'taxon.accepted_name'],
     ['caption' => 'Taxon recorded name', 'field' => 'taxon.taxon_name'],
@@ -839,9 +839,7 @@ class Rest_Controller extends Controller {
       $postObj->size = MAX_ES_SCROLL_SIZE;
     }
     elseif ($this->pagingMode === 'composite' && isset($file['after_key'])) {
-      foreach ($postObj->aggs as &$agg) {
-        $agg->composite->after = $file['after_key'];
-      }
+      $postObj->aggs->rows->composite->after = $file['after_key'];
     }
     if ($format === 'csv') {
       $csvTemplate = $this->getEsCsvTemplate();
@@ -1187,8 +1185,11 @@ class Rest_Controller extends Controller {
       }
       // Find the list of documents or aggregation output to add to the CSV.
       $itemList = $this->pagingMode === 'composite'
-        ? $data['aggregations']['samples']['buckets']
+        ? $data['aggregations']['rows']['buckets']
         : $data['hits']['hits'];
+      if ($this->pagingMode === 'composite' && !empty($data['aggregations']['count'])) {
+        $file['total'] = $data['aggregations']['count']['value'];
+      }
     }
     // First response from a scroll, need to grab the scroll ID.
     if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'initial') {
@@ -1248,13 +1249,13 @@ class Rest_Controller extends Controller {
         }
         // Composite aggregation has to run till we get an empty response.
         $data = json_decode($response, TRUE);
-        $list = $data['aggregations'][array_keys($data['aggregations'])[0]]['buckets'];
+        $list = $data['aggregations']['rows']['buckets'];
         $done = count($list) === 0;
-        if (empty($data['aggregations'][array_keys($data['aggregations'])[0]]['after_key'])) {
+        if (empty($data['aggregations']['rows']['after_key'])) {
           unset($file['after_key']);
         }
         else {
-          $file['after_key'] = $data['aggregations'][array_keys($data['aggregations'])[0]]['after_key'];
+          $file['after_key'] = $data['aggregations']['rows']['after_key'];
         }
       }
       $file['state'] = $done ? 'done' : 'nextPage';
@@ -1667,6 +1668,10 @@ class Rest_Controller extends Controller {
         break;
       }
     }
+    if (isset($data['value'])) {
+      // An aggregation response stored in value property.
+      return $data['value'];
+    }
     return $failed ? '' : $data;
   }
 
@@ -1696,7 +1701,7 @@ class Rest_Controller extends Controller {
       }
     }
     else {
-      if (!preg_match('/^[a-z0-9_]+(\.[a-z0-9_]+)*$/', $sourceField)) {
+      if (!preg_match('/^[a-z0-9_]+(\.[a-z0-9_-]+)*$/', $sourceField)) {
         $row[] = "Invalid field $sourceField";
       }
       else {
