@@ -170,12 +170,11 @@ class config_test {
         $version = PHP_VERSION;
         define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
     }
-    if (PHP_VERSION_ID < 50200) {
+    if (PHP_VERSION_ID < 50600) {
       array_push($messages, array(
         'title' => 'PHP Version',
-        'description' => 'Your PHP version is ' . phpversion() . ' which does not support JSON communication with ' .
-          'the online recording websites. Please upgrade the PHP installation on this web server to at least version ' .
-          '5.2.',
+        'description' => 'Your PHP version is ' . phpversion() . ' which is unsupported. Please upgrade the PHP ' .
+          'installation on this web server to version 5.6 or higher.',
         'success' => FALSE,
       ));
     }

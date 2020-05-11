@@ -1,3 +1,23 @@
+# Version 4.0.0
+
+Major version update due to breaking changes in the Elasticsearch REST API:
+
+  * addColumns for a download control now an array with each item having a
+    field or agg property plus a caption.
+  * Special fields supported by download changed to match special fields
+    supported by dataGrid columns. This includes changing the way that
+    parameters are provided to the #attr_value# special field.
+
+Additional changes to Elasticsearch client code:
+  * In the Elasticsearch [dataGrid] and [download] columns format, media fields
+    are no longer handled by setting `handler` to `media`. Instead, set the
+    field to `#occurrence_media#`.
+  * The [source] no longer has a @buildTableXY option and the [dataGrid] no
+    longer has a @sourceTable option. This functionality can be replicated
+    using @mode=termAggregation using the column field configuration to
+    extract column values from the nested aggregations.
+  * [dataGrid] @aggregation option removed, use [source] @mode instead.
+
 # Version 3.4.0
 *2020-05-04*
 
