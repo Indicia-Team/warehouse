@@ -1,3 +1,13 @@
+# Version 4.0.0
+*2020-05-20*
+
+Major version update due to breaking changes in the Elasticsearch REST API:
+
+  * Format for the addColumns parameter in calls to the Elasticsearch REST API
+    endpoints (for CSV downloads) now changed to match the format of the client
+    [dataGrid] control's columns configuration. Therefore custom ES download
+    formats will need reconfiguring on the client.
+
 # Version 3.4.0
 *2020-05-04*
 
