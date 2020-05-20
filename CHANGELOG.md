@@ -8,6 +8,8 @@ Major version update due to breaking changes in the Elasticsearch REST API:
     [dataGrid] control's columns configuration. Therefore custom ES download
     formats will need reconfiguring on the client.
 
+* PHP minimum version supported now 5.6.
+
 # Version 3.4.0
 *2020-05-04*
 
