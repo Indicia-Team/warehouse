@@ -1437,20 +1437,30 @@ class Rest_Controller extends Controller {
   private function esGetSpecialFieldEventDate(array $doc) {
     // Check in case fields are in composite agg key.
     $root = isset($doc['key']) ? $doc['key'] : $doc['event'];
-    if (empty($root['date_start']) && empty($root['date_end'])) {
+    $start = isset($root['date_start']) ? $root['date_start'] :
+      (isset($root['event-date_start']) ? $root['event-date_start'] : '');
+    $end = isset($root['date_end']) ? $root['date_end'] :
+      (isset($root['event-date_end']) ? $root['event-date_end'] : '');
+    if (preg_match('/^\-?\d+$/', $start)) {
+      $start = date('d/m/Y', $start / 1000);
+    }
+    if (preg_match('/^\-?\d+$/', $end)) {
+      $end = date('d/m/Y', $end / 1000);
+    }
+    if (empty($start) && empty($end)) {
       return 'Unknown';
     }
-    elseif (empty($root['date_end'])) {
-      return 'After ' . $root['date_start'];
+    elseif (empty($end)) {
+      return "After $start";
     }
-    elseif (empty($root['date_start'])) {
-      return 'Before ' . $root['date_end'];
+    elseif (empty($start)) {
+      return "Before $end";
     }
-    elseif ($root['date_start'] === $root['date_end']) {
-      return $root['date_start'];
+    elseif ($start === $end) {
+      return $start;
     }
     else {
-      return $root['date_start'] . ' to ' . $root['date_end'];
+      return "$start to $end";
     }
   }
 
