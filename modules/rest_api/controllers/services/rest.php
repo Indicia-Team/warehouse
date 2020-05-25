@@ -1678,7 +1678,11 @@ class Rest_Controller extends Controller {
         break;
       }
     }
-    if (isset($data['value'])) {
+    if (isset($data['value_as_string'])) {
+      // A formatted aggregation response stored in value property.
+      return $data['value_as_string'];
+    }
+    elseif (isset($data['value'])) {
       // An aggregation response stored in value property.
       return $data['value'];
     }
