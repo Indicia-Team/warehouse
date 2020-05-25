@@ -839,7 +839,7 @@ class Rest_Controller extends Controller {
       $postObj->size = MAX_ES_SCROLL_SIZE;
     }
     elseif ($this->pagingMode === 'composite' && isset($file['after_key'])) {
-      $postObj->aggs->rows->composite->after = $file['after_key'];
+      $postObj->aggs->_rows->composite->after = $file['after_key'];
     }
     if ($format === 'csv') {
       $csvTemplate = $this->getEsCsvTemplate();
@@ -1185,10 +1185,10 @@ class Rest_Controller extends Controller {
       }
       // Find the list of documents or aggregation output to add to the CSV.
       $itemList = $this->pagingMode === 'composite'
-        ? $data['aggregations']['rows']['buckets']
+        ? $data['aggregations']['_rows']['buckets']
         : $data['hits']['hits'];
-      if ($this->pagingMode === 'composite' && !empty($data['aggregations']['count'])) {
-        $file['total'] = $data['aggregations']['count']['value'];
+      if ($this->pagingMode === 'composite' && !empty($data['aggregations']['_count'])) {
+        $file['total'] = $data['aggregations']['_count']['value'];
       }
     }
     // First response from a scroll, need to grab the scroll ID.
@@ -1249,13 +1249,13 @@ class Rest_Controller extends Controller {
         }
         // Composite aggregation has to run till we get an empty response.
         $data = json_decode($response, TRUE);
-        $list = $data['aggregations']['rows']['buckets'];
+        $list = $data['aggregations']['_rows']['buckets'];
         $done = count($list) === 0;
-        if (empty($data['aggregations']['rows']['after_key'])) {
+        if (empty($data['aggregations']['_rows']['after_key'])) {
           unset($file['after_key']);
         }
         else {
-          $file['after_key'] = $data['aggregations']['rows']['after_key'];
+          $file['after_key'] = $data['aggregations']['_rows']['after_key'];
         }
       }
       $file['state'] = $done ? 'done' : 'nextPage';
