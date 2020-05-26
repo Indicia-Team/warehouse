@@ -89,9 +89,20 @@ SQL;
   else {
     // Use last run date to find lowest tracking ID since the last run. If
     // based just on updated_on we would miss other changes (e.g. data cleaner
-    // result being set to true)
+    // result being set to true).
+    // Note this script uses a temp table to ensure index on updated_on used
+    // rather than on tracking.
+    $sql = <<<SQL
+DROP TABLE IF EXISTS tracking_values;
+
+SELECT tracking
+INTO TEMPORARY tracking_values
+FROM cache_occurrences_functional WHERE updated_on>='$last_run_date';
+
+SELECT min(tracking) as min_tracking FROM tracking_values;
+SQL;
     $minTracking = $db
-      ->query("select min(tracking) as min_tracking from cache_occurrences_functional where updated_on>='$last_run_date'")
+      ->query($sql)
       ->current()
       ->min_tracking;
     $qryEnd = "AND delta.tracking>=$minTracking";
