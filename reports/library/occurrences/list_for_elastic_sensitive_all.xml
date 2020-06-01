@@ -94,8 +94,22 @@
       sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 2000), 4326)))))" />
     <column name="map_sq_10km_geom" datatype="text"
       sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 10000), 4326)))))" />
-    <column name="output_sref" sql="s.entered_sref" datatype="text" />
-    <column name="output_sref_system" sql="s.entered_sref_system" datatype="text" />
+    <column name="output_sref" sql="get_output_sref(
+      greatest(
+        round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
+        case
+          when snf.attr_sref_precision>=501 then 10000
+          when snf.attr_sref_precision between 51 and 500 then 1000
+          when snf.attr_sref_precision between 6 and 50 then 100
+          else 10
+        end,
+        10
+      ),
+      coalesce(s.geom, l.centroid_geom)
+    )" datatype="text" />
+    <column name="output_sref_system" sql="get_output_system(
+      coalesce(s.geom, l.centroid_geom)
+    )" datatype="text" />
     <column name="coordinate_uncertainty_in_meters"
               sql="CASE
       WHEN snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
