@@ -772,15 +772,16 @@ ROW;
         // Do not set the tracking variable if we have exceeded a time limit
         // specified in the request. Otherwise a failure to process the batch
         // on the client results in a batch being skipped.
-        if (!isset($this->startTime) || !isset($_REQUEST['max_time']) ||
-            microtime(TRUE) - $this->startTime < $_REQUEST['max_time']) {
-          variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
-        }
-        else {
-          // In this instance, we don't update the variable, so the next batch
-          // will be the same as this one.
-          kohana::log('error', "Max time exceeded: " . (microtime(TRUE) - $this->startTime) .
-            " is greater than $_REQUEST[max_time]");
+        if (isset($this->startTime) && isset($_REQUEST['max_time'])) {
+          if (microtime(TRUE) - $this->startTime < $_REQUEST['max_time']) {
+            variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
+          }
+          else {
+            // In this instance, we don't update the variable, so the next batch
+            // will be the same as this one.
+            kohana::log('error', "Max time exceeded: " . (microtime(TRUE) - $this->startTime) .
+              " is greater than $_REQUEST[max_time]");
+          }
         }
       }
       else {
