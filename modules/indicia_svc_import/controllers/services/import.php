@@ -381,11 +381,12 @@ class Import_Controller extends Service_Base_Controller {
       // Create the file pointer, plus one for errors.
       $handle = fopen($csvTempFile, "r");
       $this->checkIfUtf8($metadata, $handle);
+      $existingNoOfProblemsColIdx = FALSE;
       $existingProblemColIdx = FALSE;
       $existingErrorRowNoColIdx = FALSE;
       $existingImportGuidColIdx = FALSE;
       $errorHandle = $this->getErrorFileHandle($csvTempFile, $handle, $supportsImportGuid,
-        $existingProblemColIdx, $existingErrorRowNoColIdx, $existingImportGuidColIdx);
+        $existingNoOfProblemsColIdx, $existingProblemColIdx, $existingErrorRowNoColIdx, $existingImportGuidColIdx);
       $count = 0;
       $limit = (isset($_GET['limit']) ? $_GET['limit'] : FALSE);
       $filepos = (isset($_GET['filepos']) ? $_GET['filepos'] : 0);
@@ -596,8 +597,8 @@ class Import_Controller extends Service_Base_Controller {
           }
           if (!$ok) {
             $this->logError(
-              $data, 'ID specified in import row but not being used to lookup an existing record.',
-              $existingProblemColIdx, $existingErrorRowNoColIdx,
+              $data, 1, 'ID specified in import row but not being used to lookup an existing record.',
+              $existingNoOfProblemsColIdx, $existingProblemColIdx, $existingErrorRowNoColIdx,
               $errorHandle, $count + $offset + 1,
               $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
@@ -617,8 +618,8 @@ class Import_Controller extends Service_Base_Controller {
           }
           catch (Exception $e) {
             $this->logError(
-              $data, $e->getMessage(),
-              $existingProblemColIdx, $existingErrorRowNoColIdx,
+              $data, 1, $e->getMessage(),
+              $existingNoOfProblemsColIdx, $existingProblemColIdx, $existingErrorRowNoColIdx,
               $errorHandle, $count + $offset + 1,
               $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
@@ -651,6 +652,16 @@ class Import_Controller extends Service_Base_Controller {
               $saveArray[$associationRecordPrefix . ':id'] = $assocModel->id;
             }
           }
+        }
+
+        // Special case for samples: the sref system is fixed for the file, but is not required in location_id provided
+        $fkLocationSet = !empty($saveArray['sample:fk_location']);
+        foreach ($saveArray as $field => $value) {
+          $fkLocationSet |= (!empty($value) && strpos($field, 'sample:fk_location:') !== FALSE);
+        }
+        if ($fkLocationSet && empty($saveArray['sample:entered_sref'])) {
+          unset($saveArray['sample:entered_sref']);
+          unset($saveArray['sample:entered_sref_system']);
         }
 
         // Save the record.
@@ -789,16 +800,16 @@ class Import_Controller extends Service_Base_Controller {
           if (($id = $modelToSubmit->submit()) == NULL) {
             // Record has errors - now embedded in model, so dump them into the
             // error file.
-            $errors = array();
+            $errors = [];
             foreach ($modelToSubmit->getAllErrors() as $field => $msg) {
               $fldTitle = array_search($field, $metadata['mappings']);
               $fldTitle = $fldTitle ? $fldTitle : $field;
               $errors[] = "$fldTitle: $msg";
             }
-            $errors = implode("\n", array_unique($errors));
+            $errors = array_unique($errors);
             $this->logError(
-              $data, $errors,
-              $existingProblemColIdx, $existingErrorRowNoColIdx,
+              $data, count($errors), implode("\n", $errors),
+              $existingNoOfProblemsColIdx, $existingProblemColIdx, $existingErrorRowNoColIdx,
               $errorHandle, $count + $offset + 1,
               $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
@@ -819,8 +830,8 @@ class Import_Controller extends Service_Base_Controller {
         else {
           $error = "Could not identify whether record is main record or synonym : " . $saveArray['synonym:tracker'];
           $this->logError(
-            $data, $error,
-            $existingProblemColIdx, $existingErrorRowNoColIdx,
+            $data, 1, $error,
+            $existingNoOfProblemsColIdx, $existingProblemColIdx, $existingErrorRowNoColIdx,
             $errorHandle, $count + $offset + 1,
             $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
             $metadata
@@ -867,13 +878,21 @@ class Import_Controller extends Service_Base_Controller {
    */
   private function logError(
       $data,
+      $noOfProblems,
       $error,
+      $existingNoOfProblemsColIdx,
       $existingProblemColIdx,
       $existingErrorRowNoColIdx,
       $errorHandle,
       $total,
       $importGuidToAppend,
       &$metadata) {
+    if ($existingNoOfProblemsColIdx === FALSE) {
+      $data[] = $noOfProblems;
+    }
+    else {
+      $data[$existingNoOfProblemsColIdx] = $error;
+    }
     if ($existingProblemColIdx === FALSE) {
       $data[] = $error;
     }
@@ -1284,6 +1303,8 @@ class Import_Controller extends Service_Base_Controller {
    * @param bool $supportsImportGuid
    *   True if the model supports tracking imports by GUID, therefore the error
    *   file needs to link the error row to its original GUID.
+   * @param int $existingNoOfProblemsColIdx
+   *   Returns the column index that the current row's number of problems is in.
    * @param int $existingProblemColIdx
    *   Returns the column index that the current row's error message is in.
    * @param int $existingProblemRowNoColIdx
@@ -1298,6 +1319,7 @@ class Import_Controller extends Service_Base_Controller {
   private function getErrorFileHandle($csvTempFile,
                                       $handle,
                                       $supportsImportGuid,
+                                      &$existingNoOfProblemsColIdx,
                                       &$existingProblemColIdx,
                                       &$existingProblemRowNoColIdx,
                                       &$existingImportGuidColIdx) {
@@ -1311,9 +1333,13 @@ class Import_Controller extends Service_Base_Controller {
     $headers = fgetcsv($handle, 1000, ",");
     $existingImportGuidColIdx = FALSE;
     if ($needHeaders) {
-      $existingProblemColIdx = array_search('Problem', $headers);
+      $existingNoOfProblemsColIdx = array_search('Number of problems', $headers);
+      if ($existingNoOfProblemsColIdx === FALSE) {
+        $headers[] = 'Number of problems';
+      }
+      $existingProblemColIdx = array_search('Problem description', $headers);
       if ($existingProblemColIdx === FALSE) {
-        $headers[] = 'Problem';
+        $headers[] = 'Problem description';
       }
       $existingProblemRowNoColIdx = array_search('Row no.', $headers);
       if ($existingProblemRowNoColIdx === FALSE) {

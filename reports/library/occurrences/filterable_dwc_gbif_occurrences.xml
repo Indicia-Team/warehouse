@@ -93,10 +93,15 @@
             sql="COALESCE(onf.attr_sex, onf.attr_stage)"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/sex" />
-    <column name="individualCount"
+    <column name="organismQuantity"
             sql="onf.attr_sex_stage_count"
             datatype="text"
-            term="http://rs.tdwg.org/dwc/terms/individualCount" />
+            term="http://rs.tdwg.org/dwc/terms/organismQuantity" />
+    <!-- @todo make organismQuantityType more intelligent, e.g. if a scale used. -->
+    <column name="organismQuantityType"
+            sql="'individuals'"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/organismQuantityType" />
     <column name="vernacularName"
             sql="CASE cttl.language_iso
               WHEN 'lat' THEN null
@@ -132,6 +137,7 @@ END"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/recordedBy" />
     <!-- @todo decide default licence by dataset -->
+    <!-- @todo expand to full licence URL -->
     <column name="licence"
           sql="onf.licence_code"
           datatype="text"
@@ -162,6 +168,10 @@ END"
 END"
           datatype="integer"
           term="http://rs.tdwg.org/dwc/terms/decimalLongitude" />
+    <column name="geodeticDatum"
+          sql="'WGS84'"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/geodeticDatum" />
     <column name="datasetName"
           sql="'#dataset_name#'"
           datatype="text"

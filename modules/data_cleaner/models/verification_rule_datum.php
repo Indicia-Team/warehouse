@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -14,28 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/warehouse
  */
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the verification_rule_data table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Verification_rule_datum_Model extends ORM {
 
   protected $belongs_to = array(
-      'created_by'=>'user',
-      'updated_by'=>'user',
-      'verification_rule'
+    'created_by' => 'user',
+    'updated_by' => 'user',
+    'verification_rule'
   );
-  
+
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('key', 'required');

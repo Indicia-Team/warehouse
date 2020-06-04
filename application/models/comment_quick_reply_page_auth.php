@@ -28,7 +28,7 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @package Core
  * @subpackage Models
- * @link http://code.google.com/p/indicia/wiki/DataModel
+ * @link https://indicia-docs.readthedocs.io/en/latest/developing/data-model.html
  */
 class Comment_Quick_Reply_Page_Auth_Model extends ORM {
   protected $belongs_to = array(

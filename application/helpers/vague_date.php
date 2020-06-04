@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -23,123 +24,152 @@
 class vague_date {
 
   /**
-   * List of regex strings used to try to capture date ranges. The regex key should, naturally,
-   * point to the regular expression. Start should point to the backreference for the string to
-   * be parsed for the 'start' date, 'end' to the backreference of the string to be parsed
-   * for the 'end' date. -1 means grab the text before the match, 1 means after, 0 means set the
-   * value to empty. Types are not determined here. Should either 'start' or 'end' contain
-   * the string '...', this will be interpreted as one-ended range.
+   * List of regex strings used to try to capture date ranges.
+   *
+   * The regex key should, naturally, point to the regular expression. Start
+   * should point to the backreference for the string to be parsed for the
+   * 'start' date, 'end' to the backreference of the string to be parsed for
+   * the 'end' date. -1 means grab the text before the match, 1 means after, 0
+   * means set the value to empty. Types are not determined here. Should either
+   * 'start' or 'end' contain the string '...', this will be interpreted as
+   * one-ended range.
    */
   private static function dateRangeStrings() {
-    return Array(
-      array(
-          // date to date or date - date
-          'regex' => '/(?P<sep> to | - )/i',
-          'start' => -1,
-          'end' => 1
-      ),
-      array(
-        // dd/mm/yy(yy)-dd/mm/yy(yy) or dd.mm.yy(yy)-dd.mm.yy(yy)
+    return [
+      [
+        // Date to date or date - date.
+        'regex' => '/(?P<sep> to | - )/i',
+        'start' => -1,
+        'end' => 1,
+      ],
+      [
+        // dd/mm/yy(yy)-dd/mm/yy(yy) or dd.mm.yy(yy)-dd.mm.yy(yy).
         'regex' => '/^\d{2}[\/\.]\d{2}[\/\.]\d{2}(\d{2})?(?P<sep>-)\d{2}[\/\.]\d{2}[\/\.]\d{2}(\d{2})?$/',
         'start' => -1,
-        'end' => 1
-      ),
-      array(
-        // mm/yy(yy)-mm/yy(yy) or mm.yy(yy)-mm.yy(yy)
+        'end' => 1,
+      ],
+      [
+        // mm/yy(yy)-mm/yy(yy) or mm.yy(yy)-mm.yy(yy).
         'regex' => '/^\d{2}[\/\.]\d{2}(\d{2})?(?P<sep>-)\d{2}[\/\.]\d{2}(\d{2})?$/',
         'start' => -1,
-        'end' => 1
-      ),
-      array(
-        // yyyy-yyyy
+        'end' => 1,
+      ],
+      [
+        // yyyy-yyyy.
         'regex' => '/^\d{4}(?P<sep>-)\d{4}$/',
         'start' => -1,
-        'end' => 1
-      ),
-      array(
-        // century to century
+        'end' => 1,
+      ],
+      [
+        // Century to century.
         'regex' => '/^\d{2}c-\d{2}c?$/',
         'start' => -1,
-        'end' => 1
-      ),
-      array(
-          'regex' => '/^(?P<sep>to|pre|before[\.]?)/i',
-          'start' => 0,
-          'end' => 1
-      ),
-      array(
-          'regex' => '/(?P<sep>from|after)/i',
-          'start' => 1,
-          'end' => 0
-      ),
-      array(
-          'regex' => '/(?P<sep>-)$/',
-          'start' => -1,
-          'end' => 0
-      ),
-      array(
-          'regex' => '/^(?P<sep>-)/',
-          'start' => 0,
-          'end' => 1
-      ),
-    );
+        'end' => 1,
+      ],
+      [
+        'regex' => '/^(?P<sep>to|pre|before[\.]?)/i',
+        'start' => 0,
+        'end' => 1,
+      ],
+      [
+        'regex' => '/(?P<sep>from|after)/i',
+        'start' => 1,
+        'end' => 0,
+      ],
+      [
+        'regex' => '/(?P<sep>-)$/',
+        'start' => -1,
+        'end' => 0,
+      ],
+      [
+        'regex' => '/^(?P<sep>-)/',
+        'start' => 0,
+        'end' => 1,
+      ],
+    ];
   }
 
   /**
    * Array of formats used to parse a string looking for a single day with the strptime()
    * function - see http://uk2.php.net/manual/en/function.strptime.php
    */
-  private static function singleDayFormats() { return Array(
-    '%Y-%m-%d', // ISO 8601 date format 1997-10-12
-    '%d/%m/%Y', // 12/10/1997
-    '%d/%m/%y', // 12/10/97
-    '%d.%m.%Y', // 12.10.1997
-    '%d.%m.%y', // 12.10.97
-    '%A %e %B %Y', // Monday 12 October 1997
-    '%a %e %B %Y', // Mon 12 October 1997
-    '%A %e %b %Y', // Monday 12 Oct 1997
-    '%a %e %b %Y', // Mon 12 Oct 1997
-    '%A %e %B %y', // Monday 12 October 97
-    '%a %e %B %y', // Mon 12 October 97
-    '%A %e %b %y', // Monday 12 Oct 97
-    '%a %e %b %y', // Mon 12 Oct 97
-    '%A %e %B', // Monday 12 October
-    '%a %e %B', // Mon 12 October
-    '%A %e %b', // Monday 12 Oct
-    '%a %e %b', // Mon 12 Oct
-    '%e %B %Y', // 12 October 1997
-    '%e %b %Y', // 12 Oct 1997
-    '%e %B %y', // 12 October 97
-    '%e %b %y', // 12 Oct 97
-    '%m/%d/%y', // American date format
-  );
+  private static function singleDayFormats() {
+    return [
+      // ISO 8601 date format 1997-10-12.
+      '%Y-%m-%d',
+      // 12/10/1997.
+      '%d/%m/%Y',
+      // 12/10/97.
+      '%d/%m/%y',
+      // 12.10.1997.
+      '%d.%m.%Y',
+      // 12.10.97.
+      '%d.%m.%y',
+      // Monday 12 October 1997.
+      '%A %e %B %Y',
+      // Mon 12 October 1997.
+      '%a %e %B %Y',
+      // Monday 12 Oct 1997.
+      '%A %e %b %Y',
+      // Mon 12 Oct 1997.
+      '%a %e %b %Y',
+      // Monday 12 October 97.
+      '%A %e %B %y',
+      // Mon 12 October 97.
+      '%a %e %B %y',
+      // Monday 12 Oct 97.
+      '%A %e %b %y',
+      // Mon 12 Oct 97.
+      '%a %e %b %y',
+      // Monday 12 October.
+      '%A %e %B',
+      // Mon 12 October.
+      '%a %e %B',
+      // Monday 12 Oct.
+      '%A %e %b',
+      // Mon 12 Oct.
+      '%a %e %b',
+      // 12 October 1997.
+      '%e %B %Y',
+      // 12 Oct 1997.
+      '%e %b %Y',
+      // 12 October 97.
+      '%e %B %y',
+      // 12 Oct 97.
+      '%e %b %y',
+      // American date format.
+      '%m/%d/%y',
+    ];
   }
 
   /**
    * Array of formats used to parse a string looking for a single month in a year
    * with the strptime() function - see http://uk2.php.net/manual/en/function.strptime.php
    */
-  private static function singleMonthInYearFormats() { return Array(
-    '%Y-%m', // ISO 8601 format - truncated to month 1998-06
-    '%m/%Y', // 06/1998
-    '%m/%y', // 06/96
-    '%B %Y', // June 1998
-    '%b %Y', // Jun 1998
-    '%B %y', // June 98
-    '%b %y', // Jun 98
-  );
+  private static function singleMonthInYearFormats() {
+    return [
+      '%Y-%m', // ISO 8601 format - truncated to month 1998-06
+      '%m/%Y', // 06/1998
+      '%m/%y', // 06/96
+      '%B %Y', // June 1998
+      '%b %Y', // Jun 1998
+      '%B %y', // June 98
+      '%b %y', // Jun 98
+    ];
   }
 
-  private static function singleMonthFormats() { return Array(
-    '%B', // October
-    '%b', // Oct
-  );
+  private static function singleMonthFormats() {
+    return [
+      '%B', // October
+      '%b', // Oct
+    ];
   }
 
-  private static function singleYearFormats() { return Array(
-    '%Y', // 1998
-    '%y', // 98
-  );
+  private static function singleYearFormats() {
+    return [
+      '%Y', // 1998
+      '%y', // 98
+    ];
   }
 
   private static function seasonInYearFormats() {
@@ -264,33 +294,37 @@ class vague_date {
     // information. First we consider the potential ways that a range may be
     // represented.
 
-    $range = false;
-    $startDate = false;
-    $endDate = false;
-    $matched = false;
+    $range = FALSE;
+    $startDate = FALSE;
+    $endDate = FALSE;
+    $matched = FALSE;
     foreach (self::dateRangeStrings() as $a) {
-      if (preg_match($a['regex'], $string, $regs) != false) {
+      if (preg_match($a['regex'], $string, $regs) != FALSE) {
         switch ($a['start']) {
-        case -1:
-          $start = trim(substr($string,0,strpos($string, $regs['sep'])));
-          break;
-        case 1:
-          $start = trim(substr($string, strpos($string, $regs['sep']) + strlen($regs['sep'])));
-          break;
-        default:
-          $start = false;
+          case -1:
+            $start = trim(substr($string, 0, strpos($string, $regs['sep'])));
+            break;
+
+          case 1:
+            $start = trim(substr($string, strpos($string, $regs['sep']) + strlen($regs['sep'])));
+            break;
+
+          default:
+            $start = FALSE;
         }
-        switch ($a['end']){
-        case -1:
-          $end = trim(substr($string,0,strpos($string, $regs['sep'])));
-          break;
-        case 1:
-          $end = trim(substr($string, strpos($string, $regs['sep']) + strlen($regs['sep'])));
-          break;
-        default:
-          $end = false;
+        switch ($a['end']) {
+          case -1:
+            $end = trim(substr($string, 0, strpos($string, $regs['sep'])));
+            break;
+
+          case 1:
+            $end = trim(substr($string, strpos($string, $regs['sep']) + strlen($regs['sep'])));
+            break;
+
+          default:
+            $end = FALSE;
         }
-        $range = true;
+        $range = TRUE;
         break;
       }
     }
@@ -299,36 +333,39 @@ class vague_date {
       $a = self::parseSingleDate($string, $parseFormats);
       if ($a) {
         $startDate = $endDate = $a;
-        $matched = true;
+        $matched = TRUE;
       }
-    } else {
+    }
+    else {
       if ($start) {
         $a = self::parseSingleDate($start, $parseFormats);
-        if ($a !== null) {
+        if ($a !== NULL) {
           $startDate = $a;
-          $matched = true;
+          $matched = TRUE;
         }
       }
       if ($end) {
         $a = self::parseSingleDate($end, $parseFormats);
-        if ($a !== null) {
+        if ($a !== NULL) {
           $endDate = $a;
-          $matched = true;
+          $matched = TRUE;
         }
       }
       if ($matched) {
         if ($start && !$end) {
           $endDate = $startDate;
-        } else if ($end && !$start) {
+        }
+        elseif ($end && !$start) {
           $startDate = $endDate;
         }
       }
     }
     if (!$matched) {
-      if (trim($string)=='U' || trim($string)==Kohana::lang('dates.unknown'))
-        return array(null, null, 'U');
+      if (trim($string) === 'U' || trim($string) === Kohana::lang('dates.unknown')) {
+        return array(NULL, NULL, 'U');
+      }
       else {
-        return false;
+        return FALSE;
       }
     }
     // Okay, now we try to determine the type - we look mostly at $endDate because
@@ -337,51 +374,53 @@ class vague_date {
     // or the like.
     try {
 
-      if ($endDate->tm_season !== null){
-        //We're a season. That means we could be P (if we have a year) or
-        //S (if we don't).
-        if ($endDate->tm_year !== null){
-          // We're a P
+      if ($endDate->tm_season !== NULL) {
+        // We're a season. That means we could be P (if we have a year) or
+        // S (if we don't).
+        if ($endDate->tm_year !== NULL) {
+          // We're a P.
           $vagueDate = array(
             $endDate->getImpreciseDateStart(),
             $endDate->getImpreciseDateEnd(),
-            'P'
+            'P',
           );
           return self::validate($vagueDate);
-        } else {
-          // No year, so we're an S
+        }
+        else {
+          // No year, so we're an S.
           $vagueDate = array(
             $endDate->getImpreciseDateStart(),
             $endDate->getImpreciseDateEnd(),
-            'S'
+            'S',
           );
           return self::validate($vagueDate);
         }
       }
       // Do we have day precision?
-
-      if ($endDate->tm_mday !== null) {
+      if ($endDate->tm_mday !== NULL) {
         if (!$range) {
-          // We're a D
+          // We're a D.
           $vagueDate = array(
             $endDate->getIsoDate(),
             $endDate->getIsoDate(),
-            'D'
+            'D',
           );
           return self::validate($vagueDate);
-        } else {
+        }
+        else {
           // Type is DD. We copy across any data not set in the
           // start date.
-          if ($startDate->getPrecision() == $endDate->getPrecision()){
+          if ($startDate->getPrecision() == $endDate->getPrecision()) {
             $vagueDate = array(
               $startDate->getImpreciseDateStart(),
               $endDate->getImpreciseDateEnd(),
-              'DD'
+              'DD',
             );
-          } else {
+          }
+          else {
             // Less precision in the start date -
-            // try and massage them together
-            return false;
+            // try and massage them together.
+            return FALSE;
           }
           return self::validate($vagueDate);
 
@@ -395,40 +434,43 @@ class vague_date {
        * Type 'M' - month, !range
        *
        */
-      if ($endDate->tm_mon !== null) {
+      if ($endDate->tm_mon !== NULL) {
         if (!$range) {
-          // Either a month in a year or just a month
-          if ($endDate->tm_year !== null) {
-            // Then we have a month in a year- type O
+          // Either a month in a year or just a month.
+          if ($endDate->tm_year !== NULL) {
+            // Then we have a month in a year- type O.
             $vagueDate = array(
               $endDate->getImpreciseDateStart(),
               $endDate->getImpreciseDateEnd(),
-              'O'
-            );
-            return self::validate($vagueDate);
-          } else {
-            // Month without a year - type M
-            $vagueDate = array(
-              $endDate->getImpreciseDateStart(),
-              $endDate->getImpreciseDateEnd(),
-              'M'
+              'O',
             );
             return self::validate($vagueDate);
           }
-        } else {
-          // We do have a range, OO
-          if ($endDate->tm_year !== null){
-            // We have a year - so this is OO
+          else {
+            // Month without a year - type M.
+            $vagueDate = array(
+              $endDate->getImpreciseDateStart(),
+              $endDate->getImpreciseDateEnd(),
+              'M',
+            );
+            return self::validate($vagueDate);
+          }
+        }
+        else {
+          // We do have a range, OO.
+          if ($endDate->tm_year !== NULL) {
+            // We have a year - so this is OO.
             $vagueDate = array(
               $startDate->getImpreciseDateStart(),
               $endDate->getImpreciseDateEnd(),
-              'OO'
+              'OO',
             );
             return self::validate($vagueDate);
-          } else {
+          }
+          else {
             // MM is not an allowed type
             // TODO think about this
-            return false;
+            return FALSE;
           }
         }
       }

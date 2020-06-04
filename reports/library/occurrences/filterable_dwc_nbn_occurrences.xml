@@ -16,6 +16,7 @@
     #joins#
     WHERE #sharing_filter#
     AND o.taxa_taxon_list_external_key IS NOT NULL
+    AND onf.output_sref_system IN ('OSGB', 'OSIE')
     #idlist#
   </query>
   <params>

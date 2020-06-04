@@ -72,6 +72,9 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       if ($mode !== 'dwca') {
         throw $e;
       }
+      elseif (!$this->failedRequestDetail) {
+        $this->failedRequestDetail = $e->getMessage();
+      }
     }
     switch ($mode) {
       case 'json':

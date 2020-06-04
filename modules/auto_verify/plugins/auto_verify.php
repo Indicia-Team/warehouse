@@ -78,7 +78,6 @@ function auto_verify_scheduled_task($last_run_date, $db) {
     );
     // Default lastId to 0 if not configured and first time.
     $startId = $startId ? $startId : 1;
-    $mainTable = 'cache_occurrences_functional';
     $qryEnd = <<<SQL
 AND delta.id >= $startId
 AND delta.created_on >= TO_TIMESTAMP('$oldestRecordCreatedDateToProcess', 'DD/MM/YYYY')
@@ -88,9 +87,25 @@ LIMIT $maxRecordsNumber
 SQL;
   }
   else {
-    $mainTable = 'occdelta';
-    // No limit or sort needed, just do contents of occdelta for changes only.
-    $qryEnd = '';
+    // Use last run date to find lowest tracking ID since the last run. If
+    // based just on updated_on we would miss other changes (e.g. data cleaner
+    // result being set to true).
+    // Note this script uses a temp table to ensure index on updated_on used
+    // rather than on tracking.
+    $sql = <<<SQL
+DROP TABLE IF EXISTS tracking_values;
+
+SELECT tracking
+INTO TEMPORARY tracking_values
+FROM cache_occurrences_functional WHERE updated_on>='$last_run_date';
+
+SELECT min(tracking) as min_tracking FROM tracking_values;
+SQL;
+    $minTracking = $db
+      ->query($sql)
+      ->current()
+      ->min_tracking;
+    $qryEnd = "AND delta.tracking>=$minTracking";
   }
   $verificationTime = gmdate("Y\/m\/d H:i:s");
   $query = <<<SQL
@@ -98,13 +113,12 @@ DROP TABLE IF EXISTS records_to_auto_verify;
 
 SELECT DISTINCT delta.id
 INTO TEMPORARY records_to_auto_verify
-FROM $mainTable delta
+FROM cache_occurrences_functional delta
 JOIN surveys s ON s.id = delta.survey_id AND s.auto_accept=true AND s.deleted=false
-LEFT JOIN cache_taxon_searchterms cts on cts.taxon_meaning_id = delta.taxon_meaning_id
 WHERE delta.data_cleaner_result=true
 AND delta.record_status='C' AND delta.record_substatus IS NULL
-AND (($autoVerifyNullIdDiff=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty)
-OR ($autoVerifyNullIdDiff=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty)))
+AND (($autoVerifyNullIdDiff=false AND delta.identification_difficulty IS NOT NULL AND delta.identification_difficulty<=s.auto_accept_max_difficulty)
+OR ($autoVerifyNullIdDiff=true AND (delta.identification_difficulty IS NULL OR delta.identification_difficulty<=s.auto_accept_max_difficulty)))
 AND (s.auto_accept_taxa_filters IS NULL OR (s.auto_accept_taxa_filters && delta.taxon_path))
 $qryEnd;
 

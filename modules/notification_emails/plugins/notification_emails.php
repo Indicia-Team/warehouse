@@ -568,7 +568,7 @@ function send_out_user_email(
       }
       $emailContent .= '<a href="' . $notificationsLinkUrl . '">' . $notificationsLinkText . '</a></br>';
     }
-    $message = new Swift_Message($emailSubject, $emailContent, 'text/html');
+    $message = new Swift_Message($emailSubject, "<html>$emailContent</html>", 'text/html');
     if ($highPriority === TRUE) {
       $message->setPriority(2);
     }

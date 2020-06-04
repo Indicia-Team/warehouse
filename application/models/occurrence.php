@@ -48,7 +48,8 @@ class Occurrence_Model extends ORM {
     'occurrence:fk_taxa_taxon_list:specific' => 'Specific name/epithet (builds binomial name)',
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
     'occurrence:fk_taxa_taxon_list:search_code' => 'Species or taxon search code',
-    'occurrence:taxa_taxon_list_id' => 'Species or taxon taxa_taxon_lists.id',
+    // needs to be more complex version so import recognises it as same field as above
+    'occurrence:fk_taxa_taxon_list:id' => 'Species or taxon taxa_taxon_lists.id',
     // Allow details of 4 images to be uploaded in CSV files.
     'occurrence_medium:path:1' => 'Media Path 1',
     'occurrence_medium:caption:1' => 'Media Caption 1',
@@ -129,7 +130,6 @@ class Occurrence_Model extends ORM {
       $metadataFieldChanging = !empty($fields['metadata']) && $fields['metadata']['value'] !== $this->metadata;
       $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
       $isAlreadyReviewed = preg_match('/[RDV]/', $this->record_status) || $this->record_substatus === 3;
-      $sampleUpdating = $this->sample && $this->sample->wantToUpdateMetadata;
       // Is this post going to change the record status or substatus?
       if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {
@@ -144,7 +144,7 @@ class Occurrence_Model extends ORM {
           $array->verified_on = NULL;
         }
       }
-      elseif (($sampleUpdating || $this->wantToUpdateMetadata) && $isAlreadyReviewed) {
+      elseif (($this->parentChanging || $this->wantToUpdateMetadata) && $isAlreadyReviewed) {
         // We are making a change to a previously reviewed record that doesn't
         // explicitly set the status. If the change is to the release status
         // or occurrence metadata field, then we don't do anything, otherwise

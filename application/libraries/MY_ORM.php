@@ -132,6 +132,13 @@ class ORM extends ORM_Core {
    */
   public $wantToUpdateMetadata = TRUE;
 
+  /**
+   * When submitting a parent with children, flag that the parent is changing.
+   *
+   * @var bool
+   */
+  public $parentChanging = FALSE;
+
   private $attrValModels = array();
 
   /**
@@ -362,8 +369,9 @@ class ORM extends ORM_Core {
     }
 
     // Set the default created/updated information.
-    if ($this->wantToUpdateMetadata)
+    if ($this->wantToUpdateMetadata) {
       $this->set_metadata();
+    }
     // Now look for any modules which alter the submission.
     if ($save) {
       foreach (Kohana::config('config.modules') as $path) {
@@ -1204,6 +1212,8 @@ class ORM extends ORM_Core {
         $m = ORM::factory($modelName);
         // Set the correct parent key in the subModel.
         $fkId = $a['fkId'];
+        // Inform the child if the parent is actually changing.
+        $m->parentChanging = $this->wantToUpdateMetadata;
         if (isset($a['fkField'])) {
           $a['model']['fields'][$fkId] = ['value' => $this->{$a['fkField']}];
         }
