@@ -463,7 +463,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
    * Define a form that is used to capture a set of predetermined values that
    * apply to every record during an import.
    */
-  public function fixed_values_form() {
+  public function fixedValuesForm() {
     return array(
       'taxa_taxon_list:taxon_list_id' => array(
         'display' => 'Species List',

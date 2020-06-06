@@ -394,7 +394,7 @@ class Scheduled_Tasks_Controller extends Controller {
         ->update();
       $email_config = Kohana::config('email');
       $userResults = $this->db
-        ->select('people.email_address')
+        ->select('people.email_address, people.first_name, people.surname')
         ->from('people')
         ->join('users', 'users.person_id', 'people.id')
         ->where('users.id', $userId)
@@ -409,18 +409,19 @@ class Scheduled_Tasks_Controller extends Controller {
           kohana::lang('misc.notification_subject') : kohana::config('email.notification_subject');
         $message = new Swift_Message(
           sprintf($subject, kohana::config('email.server_name')),
-          $emailContent,
+          "<html>$emailContent</html>",
           'text/html'
         );
         $recipients = new Swift_RecipientList();
-        $recipients->addTo($user->email_address);
+        $name = empty($user->first_name) ? "$user->surname" : "$user->first_name $user->surname";
+        $recipients->addTo($user->email_address, $name);
         $cc = explode(',', $cc);
         foreach ($cc as $ccEmail) {
           $recipients->addCc(trim($ccEmail));
         }
         // Send the email.
-        $swift->send($message, $recipients, $email_config['address']);
-        kohana::log('info', 'Email notification sent to ' . $user->email_address);
+        $sent = $swift->send($message, $recipients, $email_config['address']);
+        kohana::log('info', "$sent email notification(s) sent to $user->email_address");
       }
     }
     catch (Exception $e) {
@@ -597,8 +598,11 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->addArrayToEmailTable($email->occurrence_id, $attrArray, $emailContent);
       $emailContent .= "</table>";
 
-      $message = new Swift_Message(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), $emailContent,
-                                     'text/html');
+      $message = new Swift_Message(
+        kohana::lang('misc.notification_subject', kohana::config('email.server_name')),
+        "<html>$emailContent</html>",
+        'text/html'
+      );
       $recipients = new Swift_RecipientList();
       $recipients->addTo($email->email_address);
       // Send the email.

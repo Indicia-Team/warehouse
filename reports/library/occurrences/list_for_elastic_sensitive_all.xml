@@ -13,7 +13,6 @@
     FROM cache_occurrences_functional o
     #joins#
     WHERE sensitive=true
-    AND (o.tracking IS NULL OR o.tracking&lt;#update_to#)
     #filters#
     #order_by#
     LIMIT #limit#;
@@ -26,40 +25,21 @@
     JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id
     JOIN taxa t ON t.id=ttl.taxon_id
     LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-    JOIN samples s on s.id=o.sample_id AND s.deleted=false
+    JOIN samples s ON s.id=o.sample_id AND s.deleted=false
     LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
     LEFT JOIN samples sp ON sp.id=s.parent_id AND sp.deleted=false
     LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
-    #order_by#;
+    #order_by#
   </query>
-  <order_bys>
-    <order_by>o.id</order_by>
-  </order_bys>
   <params>
-    <param name="last_date" display="Last update date" datatype="date" default="">
-      <where>o.updated_on &gt;= '#last_date#'</where>
-    </param>
-    <!-- last_id and update_to parameters required for autofeed to work. -->
-    <param name="last_id" display="Last ID" datatype="integer" default="">
+    <!-- last_id, autofeed_tracking_from and update_to parameters required for autofeed to work. -->
+    <param name="last_id" display="Last ID" datatype="integer" default="" order_by="o.id ASC">
       <where>o.id &gt; #last_id#</where>
     </param>
+    <param name="autofeed_tracking_from" display="Autofeed tracking from" datatype="integer" default="" order_by="o.tracking ASC">
+      <where>o.tracking >= #autofeed_tracking_from#</where>
+    </param>
     <param name="limit" datatype="integer" default="10000" />
-    <param
-      name="update_to"
-      display="Highest update tracking ID to include"
-      description="Highest tracking ID to include, which will be auto-generated according to the progress of background tasks.
-        Records only included once they have been both spatially indexed and data cleaned."
-      default="1900-01-01"
-      preprocess="SELECT LEAST(
-        (
-          SELECT tracking FROM cache_occurrences_functional
-          WHERE tracking IS NOT NULL
-          AND location_ids IS NOT NULL
-          AND data_cleaner_result IS NOT NULL
-          ORDER BY tracking DESC LIMIT 1
-        ),
-        -(((2^(8*pg_column_size(1::bigint)-2))::bigint &lt;&lt; 1)+1)
-      )"/>
   </params>
   <columns>
     <!-- Tracking field called "id" is required for autofeed to work. -->
@@ -80,7 +60,7 @@
     <column name="taxon_meaning_id" sql="o.taxon_meaning_id" datatype="integer" />
     <column name="date_start" sql="o.date_start" datatype="date" />
     <column name="date_end" sql="o.date_end" datatype="date" />
-    <column name="day_of_year" sql="case date_type when 'D' then extract(doy from date_start) else null end" datatype="integer" />
+    <column name="day_of_year" sql="case o.date_type when 'D' then extract(doy from o.date_start) else null end" datatype="integer" />
     <column name="week" sql="case
             when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
                 and coalesce(floor(extract(doy from o.date_start)/7+1), 0)=coalesce(floor(extract(doy from o.date_end)/7+1), 0)
@@ -114,12 +94,26 @@
       sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 2000), 4326)))))" />
     <column name="map_sq_10km_geom" datatype="text"
       sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 10000), 4326)))))" />
-    <column name="output_sref" sql="s.entered_sref" datatype="text" />
-    <column name="output_sref_system" sql="s.entered_sref_system" datatype="text" />
+    <column name="output_sref" sql="get_output_sref(
+      greatest(
+        round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
+        case
+          when snf.attr_sref_precision>=501 then 10000
+          when snf.attr_sref_precision between 51 and 500 then 1000
+          when snf.attr_sref_precision between 6 and 50 then 100
+          else 10
+        end,
+        10
+      ),
+      coalesce(s.geom, l.centroid_geom)
+    )" datatype="text" />
+    <column name="output_sref_system" sql="get_output_system(
+      coalesce(s.geom, l.centroid_geom)
+    )" datatype="text" />
     <column name="coordinate_uncertainty_in_meters"
               sql="CASE
       WHEN snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
-        get_sref_precision(onf.output_sref, onf.output_sref_system, null)
+        get_sref_precision(s.entered_sref, s.entered_sref_system, null)
       ELSE COALESCE(snf.attr_sref_precision, 50)
     END"
             datatype="float"

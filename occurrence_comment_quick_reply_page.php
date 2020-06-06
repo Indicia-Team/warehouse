@@ -1,20 +1,16 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html>
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Post a comment</title>
-<style>
-body { font-family: Verdana, Geneva, sans-serif; max-width: 1200px; margin: auto; }
-td, th { border: solid silver 1px; padding: 0.2em 0.8em; }
-form label { width: 400px !important; }
-fieldset { margin: 1em 0; }
-.fieldset-auto-width { display: inline-block; }
-legend { font-weight: bold; }
-textarea { width: 100%; min-height: 150px; }
-</style>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Post a comment</title>
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+  <link href="vendor/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css" />
+  <link href="modules/rest_api/media/css/rest_api.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
+  <div class="container">
+
 <?php
 if ((empty($_GET['user_id']) && empty($_GET['email_address'])) || empty($_GET['occurrence_id']) || empty($_GET['auth'])) {
   echo '<p>Invalid link</p>';
@@ -51,15 +47,15 @@ else {
       }
       else {
         ?>
-        <fieldset class="fieldset-auto-width">
+        <div class="container">
         <h2>Thank You</h2>
         <p>Your comment has been saved successfully.</p>
         <p>You posted the following comment:</p>
-        <p><?php
+        <blockquote><?php
         $commentText = $_POST['comment-text'];
         echo $commentText;
-        ?><p>
-        </fieldset>
+        ?><blockquote>
+        </div>
         <br>
         <?php
       }
@@ -124,7 +120,6 @@ class OcccurrenceCommentQuickReplyPage {
       $configuration['username'] = $userDetails[0]['username'];
     }
     $configuration['privateKey'] = $privateKey;
-    $configuration['cssPath'] = 'media/css/default_site.css';
     $configuration['dataEntryHelperPath'] = 'client_helpers/data_entry_helper.php';
     if (!empty($_GET['person_name'])) {
       $configuration['person_name'] = $_GET['person_name'];
@@ -139,9 +134,6 @@ class OcccurrenceCommentQuickReplyPage {
    * Display the details of the occurrence.
    */
   public static function displayOccurrenceDetails($configuration, $thisRecord) {
-    echo "<style>\n";
-    include $configuration['cssPath'];
-    echo "</style>\n";
     require_once $configuration['dataEntryHelperPath'];
     ?>
     <fieldset class="fieldset-auto-width"><legend>Details</legend>
@@ -227,9 +219,13 @@ class OcccurrenceCommentQuickReplyPage {
       return <<<HTML
 <form id="comment-form" method="POST" >
   <fieldset>
-    <legend>Add new comment</legend>
-    <textarea id="comment-text" name="comment-text"></textarea><br/>
-    <input type='button' class='default-button' value='Save' onclick="
+    <div class="form-group">
+      <label for="comment-text">Add new comment</label>
+      <textarea id="comment-text" name="comment-text" class="form-control"></textarea>
+    </div>
+    <div class="alert alert-info">Comments will be added to the record on iRecord, and are publicly visible - please do
+      not include personal information such as addresses or phone numbers.</div>
+    <input type="button" class="btn btn-primary" value="Save" onclick="
       if (document.getElementById('comment-text').value) {
         var r = confirm('Are you sure you want to save the comment?');
         if (r == true) {
@@ -386,7 +382,7 @@ HTML;
     // Delete the authorisation from the database as well during submission.
     $submission['submission_list']['entries'][1]['id'] = 'comment_quick_reply_page_auth';
     $submission['submission_list']['entries'][1]['fields']['id']['value'] = $authIdToDelete;
-    $submission['submission_list']['entries'][1]['fields']['deleted']['value'] = TRUE;
+    $submission['submission_list']['entries'][1]['fields']['deleted']['value'] = 't';
     $response = self::doSubmission('save', $submission);
     return $response;
   }
@@ -1269,5 +1265,8 @@ HTML;
 
 }
 ?>
+  </div>
+  <script src="media/js/jquery.js"></script>
+  <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
 </body>
 </html>

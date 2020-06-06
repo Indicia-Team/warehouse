@@ -744,47 +744,47 @@ class Rest_Controller extends Controller {
    * @var array
    */
   private $defaultEsCsvTemplate = [
-    'Record ID' => 'id',
-    'RecordKey' => '_id',
-    'Sample ID' => 'event.event_id',
-    'Date interpreted' => '[date string]',
-    'Date start' => 'event.date_start',
-    'Date end' => 'event.date_end',
-    'Recorded by' => 'event.recorded_by',
-    'Determined by' => 'identification.identified_by',
-    'Grid reference' => 'location.output_sref',
-    'System' => 'location.output_sref_system',
-    'Coordinate uncertainty (m)' => 'location.coordinate_uncertainty_in_meters',
-    'Lat/Long' => 'location.point',
-    'Location name' => 'location.verbatim_locality',
-    'Higher geography' => '[higher geography](field=name,text=true)',
-    'Vice County' => '[higher geography](field=name,text=true,type=Vice County)',
-    'Vice County number' => '[higher geography](field=code,text=true,type=Vice County)',
-    'Identified by' => 'identification.identified_by',
-    'Taxon accepted name' => 'taxon.accepted_name',
-    'Taxon recorded name' => 'taxon.taxon_name',
-    'Taxon common name' => 'taxon.vernacular_name',
-    'Taxon group' => 'taxon.group',
-    'Kindom' => 'taxon.kingdom',
-    'Phylum' => 'taxon.phylum',
-    'Order' => 'taxon.order',
-    'Family' => 'taxon.family',
-    'Genus' => 'taxon.genus',
-    'Taxon Version Key' => 'taxon.taxon_id',
-    'Accepted Taxon Version Key' => 'taxon.accepted_taxon_id',
-    'Sex' => 'occurrence.sex',
-    'Stage' => 'occurrence.life_stage',
-    'Quantity' => 'occurrence.organism_quantity',
-    'Zero abundance' => 'occurrence.zero_abundance',
-    'Sensitive' => 'metadata.sensitive',
-    'Record status' => 'identification.verification_status',
-    'Record substatus' => '[null if zero](field=identification.verification_substatus)',
-    'Query status' => 'identification.query',
-    'Verifier' => 'identification.verifier.name',
-    'Verified on' => 'identification.verified_on',
-    'Website' => 'metadata.website.title',
-    'Survey dataset' => 'metadata.survey.title',
-    'Media' => '[media]',
+    ['caption' => 'Record ID', 'field' => 'id'],
+    ['caption' => 'RecordKey', 'field' => '_id'],
+    ['caption' => 'Sample ID', 'field' => 'event.event_id'],
+    ['caption' => 'Date interpreted', 'field' => '#event_date#'],
+    ['caption' => 'Date start', 'field' => 'event.date_start'],
+    ['caption' => 'Date end', 'field' => 'event.date_end'],
+    ['caption' => 'Recorded by', 'field' => 'event.recorded_by'],
+    ['caption' => 'Determined by', 'field' => 'identification.identified_by'],
+    ['caption' => 'Grid reference', 'field' => 'location.output_sref'],
+    ['caption' => 'System', 'field' => 'location.output_sref_system'],
+    ['caption' => 'Coordinate uncertainty (m)', 'field' => 'location.coordinate_uncertainty_in_meters'],
+    ['caption' => 'Lat/Long', 'field' => 'location.point'],
+    ['caption' => 'Location name', 'field' => 'location.verbatim_locality'],
+    ['caption' => 'Higher geography', 'field' => '#higher_geography::name#'],
+    ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
+    ['caption' => 'Vice County number', 'field' => '#higher_geography:Vice County:code#'],
+    ['caption' => 'Identified by', 'field' => 'identification.identified_by'],
+    ['caption' => 'Taxon accepted name', 'field' => 'taxon.accepted_name'],
+    ['caption' => 'Taxon recorded name', 'field' => 'taxon.taxon_name'],
+    ['caption' => 'Taxon common name', 'field' => 'taxon.vernacular_name'],
+    ['caption' => 'Taxon group', 'field' => 'taxon.group'],
+    ['caption' => 'Kindom', 'field' => 'taxon.kingdom'],
+    ['caption' => 'Phylum', 'field' => 'taxon.phylum'],
+    ['caption' => 'Order', 'field' => 'taxon.order'],
+    ['caption' => 'Family', 'field' => 'taxon.family'],
+    ['caption' => 'Genus', 'field' => 'taxon.genus'],
+    ['caption' => 'Taxon Version Key', 'field' => 'taxon.taxon_id'],
+    ['caption' => 'Accepted Taxon Version Key', 'field' => 'taxon.accepted_taxon_id'],
+    ['caption' => 'Sex', 'field' => 'occurrence.sex'],
+    ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
+    ['caption' => 'Quantity', 'field' => 'occurrence.organism_quantity'],
+    ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
+    ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
+    ['caption' => 'Record status', 'field' => 'identification.verification_status'],
+    ['caption' => 'Record substatus', 'field' => '#null_if_zero:identification.verification_substatus#'],
+    ['caption' => 'Query status', 'field' => 'identification.query'],
+    ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
+    ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
+    ['caption' => 'Website', 'field' => 'metadata.website.title'],
+    ['caption' => 'Survey dataset', 'field' => 'metadata.survey.title'],
+    ['caption' => 'Media', 'field' => '#occurrence_media#'],
   ];
 
   /**
@@ -801,7 +801,8 @@ class Rest_Controller extends Controller {
       unset($postObj->columnsTemplate);
     }
     if (isset($postObj->addColumns)) {
-      $this->esCsvTemplateAddColumns = (array) $postObj->addColumns;
+      // Columns converted to associative array.
+      $this->esCsvTemplateAddColumns = json_decode(json_encode($postObj->addColumns), TRUE);
       unset($postObj->addColumns);
     }
     if (isset($postObj->removeColumns)) {
@@ -838,14 +839,15 @@ class Rest_Controller extends Controller {
       $postObj->size = MAX_ES_SCROLL_SIZE;
     }
     elseif ($this->pagingMode === 'composite' && isset($file['after_key'])) {
-      foreach ($postObj->aggs as &$agg) {
-        $agg->composite->after = $file['after_key'];
-      }
+      $postObj->aggs->_rows->composite->after = $file['after_key'];
     }
     if ($format === 'csv') {
       $csvTemplate = $this->getEsCsvTemplate();
       $fields = [];
-      foreach ($csvTemplate as $field) {
+      // Check for special fields - may need to force the underlying raw fields
+      // into the list of requested fields.
+      foreach ($csvTemplate as $column) {
+        $field = $column['field'];
         if (strpos($field, '_') === 0) {
           // Fields starting _ are not inside _source object.
           continue;
@@ -853,15 +855,38 @@ class Rest_Controller extends Controller {
         if (preg_match('/^[a-z_]+(\.[a-z_]+)*$/', $field)) {
           $fields[] = $field;
         }
-        elseif (preg_match('/^\[higher geography\]/', $field)) {
+        elseif (preg_match('/^#higher geography(.*)#$/', $field)) {
           $fields[] = 'location.higher_geography.*';
         }
-        elseif (preg_match('/^\[media\]/', $field)) {
-          $fields[] = 'occurrence.associated_media';
+        elseif ($field === '#data_cleaner_icons#') {
+          $fields[] = 'identification.auto_checks';
         }
-        elseif (preg_match('/^\[date string\]/', $field)) {
+        elseif ($field === '#datasource_code#') {
+          $fields[] = 'metadata.website';
+          $fields[] = 'metadata.survey';
+        }
+        elseif ($field === '#event_date#') {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
+        }
+        elseif ($field === '#lat_lon#') {
+          $fields[] = 'location.point';
+        }
+        elseif ($field === '#locality#') {
+          $fields[] = 'location.verbatim_locality';
+          $fields[] = 'location.higher_geography';
+        }
+        elseif ($field === '#occurrence_media#') {
+          $fields[] = 'occurrence.media';
+        }
+        elseif ($field === '#status_icons#') {
+          $fields[] = 'metadata';
+          $fields[] = 'identification';
+          $fields[] = 'occurrence.zero_abundance';
+        }
+        elseif (preg_match('/^\[attr value\]\(entity=([a-z_]+)/', $field, $matches)) {
+          $entity = $matches[1] === 'sample' ? 'event' : $matches[1];
+          $fields[] = "$entity.attributes";
         }
         elseif (preg_match('/^\[null if zero\]\(field=([a-z_]+(\.[a-z_]+)*)\)$/', $field, $matches)) {
           $fields[] = $matches[1];
@@ -971,7 +996,8 @@ class Rest_Controller extends Controller {
         }
         // Clear out the old file.
         if (is_file($files[$i][0])) {
-          unlink($files[$i][0]);
+          // Ignore errors, will try again later if not deleted.
+          @unlink($files[$i][0]);
         }
       }
     }
@@ -991,15 +1017,15 @@ class Rest_Controller extends Controller {
   private function getEsOutputHeader($format) {
     if ($format === 'csv') {
       $csvTemplate = $this->getEsCsvTemplate();
-      $row = array_map(function ($cell) {
+      $row = array_map(function ($column) {
         // Cells containing a quote, a comma or a new line will need to be
         // contained in double quotes.
-        if (preg_match('/["\n,]/', $cell)) {
+        if (preg_match('/["\n,]/', $column['caption'])) {
           // Double quotes within cells need to be escaped.
-          return '"' . preg_replace('/"/', '""', $cell) . '"';
+          return '"' . preg_replace('/"/', '""', $column['caption']) . '"';
         }
-        return $cell;
-      }, array_keys($csvTemplate));
+        return $column['caption'];
+      }, array_values($csvTemplate));
       return implode(',', $row) . "\n";
     }
     return '';
@@ -1016,7 +1042,17 @@ class Rest_Controller extends Controller {
     $csvTemplate = $this->esCsvTemplate === 'default' ? $this->defaultEsCsvTemplate : [];
     // Append extra columns.
     if (!empty($this->esCsvTemplateAddColumns)) {
-      $csvTemplate = array_merge($csvTemplate, $this->esCsvTemplateAddColumns);
+      if (isset($this->esCsvTemplateAddColumns[0])) {
+        // New format, v4+.
+        $csvTemplate = array_merge($csvTemplate, $this->esCsvTemplateAddColumns);
+      }
+      else {
+        // Old format <v4.
+        kohana::log('alert', 'Deprecated Elasticsearch download addColumns format detected.');
+        foreach ($this->esCsvTemplateAddColumns as $caption => $field) {
+          $csvTemplate[] = ['caption' => $caption, 'field' => $field];
+        }
+      }
     }
     // Remove any that need to be removed.
     if (!empty($this->esCsvTemplateRemoveColumns)) {
@@ -1149,8 +1185,11 @@ class Rest_Controller extends Controller {
       }
       // Find the list of documents or aggregation output to add to the CSV.
       $itemList = $this->pagingMode === 'composite'
-        ? $data['aggregations']['samples']['buckets']
+        ? $data['aggregations']['_rows']['buckets']
         : $data['hits']['hits'];
+      if ($this->pagingMode === 'composite' && !empty($data['aggregations']['_count'])) {
+        $file['total'] = $data['aggregations']['_count']['value'];
+      }
     }
     // First response from a scroll, need to grab the scroll ID.
     if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'initial') {
@@ -1166,7 +1205,9 @@ class Rest_Controller extends Controller {
       switch ($format) {
         case 'csv':
           header('Content-type: text/csv');
-          $this->esToCsv($itemList);
+          $out = fopen('php://output', 'w');
+          $this->esToCsv($itemList, $out);
+          fclose($out);
           break;
 
         case 'json':
@@ -1184,7 +1225,7 @@ class Rest_Controller extends Controller {
     else {
       switch ($format) {
         case 'csv':
-          $this->esToCsv($itemList, $file);
+          $this->esToCsv($itemList, $file['handle']);
           break;
 
         case 'json':
@@ -1208,13 +1249,13 @@ class Rest_Controller extends Controller {
         }
         // Composite aggregation has to run till we get an empty response.
         $data = json_decode($response, TRUE);
-        $list = $data['aggregations'][array_keys($data['aggregations'])[0]]['buckets'];
+        $list = $data['aggregations']['_rows']['buckets'];
         $done = count($list) === 0;
-        if (empty($data['aggregations'][array_keys($data['aggregations'])[0]]['after_key'])) {
+        if (empty($data['aggregations']['_rows']['after_key'])) {
           unset($file['after_key']);
         }
         else {
-          $file['after_key'] = $data['aggregations'][array_keys($data['aggregations'])[0]]['after_key'];
+          $file['after_key'] = $data['aggregations']['_rows']['after_key'];
         }
       }
       $file['state'] = $done ? 'done' : 'nextPage';
@@ -1262,11 +1303,10 @@ class Rest_Controller extends Controller {
    *
    * @param string $itemList
    *   Decoded list of data from an Elasticsearch search.
-   * @param array $file
-   *   File data, or NULL if not writing to a file in which case the output
-   *   is echoed.
+   * @param int $handle
+   *   File or output buffer handle.
    */
-  private function esToCsv($itemList, array $file = NULL) {
+  private function esToCsv($itemList, $handle) {
     if (empty($itemList)) {
       return;
     }
@@ -1274,31 +1314,119 @@ class Rest_Controller extends Controller {
     foreach ($itemList as $item) {
       $row = [];
       foreach ($esCsvTemplate as $source) {
-        $this->copyIntoCsvRow($item, $source, $row);
+        $this->copyIntoCsvRow($item, $source['field'], $row);
       }
-      $row = array_map(function ($cell) {
-        // Cells containing a quote, a comma or a new line will need to be
-        // contained in double quotes.
-        if (preg_match('/["\n,]/', $cell)) {
-          // Double quotes within cells need to be escaped.
-          return '"' . preg_replace('/"/', '""', $cell) . '"';
-        }
-        return $cell;
-      }, $row);
-      if ($file) {
-        fwrite($file['handle'], implode(',', $row) . "\n");
-      }
-      else {
-        echo implode(',', $row) . "\n";
-      }
+      fputcsv($handle, $row);
     };
   }
 
   /**
-   * Special field handler for Elasticsearch dates.
+   * Special field handler for the associations data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldAssociations(array $doc) {
+    $output = [];
+    if (isset($doc['occurrence']['associations'])) {
+      foreach ($doc['occurrence']['associations'] as $assoc) {
+        $label = $assoc->accepted_name;
+        if (!empty($assoc->vernacular_name)) {
+          $label = $assoc->vernacular_name + " ($label)";
+        }
+      }
+    }
+    return implode('; ', $output);
+  }
+
+  /**
+   * Special field handler for Elasticsearch custom attribute values.
+   *
+   * Concatenates values to a semi-colon separated string. The parameters
+   * should be:
+   * * 0 - the entity (event|occurrence)
+   * * 1 - the attribute ID.
+   * Multiple attribute values are returned joined by semi-colons.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldAttrValue(array $doc, array $params) {
+    $r = [];
+    if (in_array($params[0], ['occurrence', 'sample', 'event'])) {
+      // Tolerate sample or event for sample attributes.
+      $params[0] = ($params[0] === 'sample' ? 'event' : $params[0]);
+      if (isset($doc[$params[0]]['attributes'])) {
+        foreach ($doc[$params[0]]['attributes'] as $attr) {
+          if ($attr['id'] == $params[1]) {
+            $r[] = $attr['value'];
+          }
+        }
+      }
+    }
+    return implode('; ', $r);
+  }
+
+  /**
+   * Special field handler for the datacleaner icons field.
+   *
+   * Text representation of icons for download.
+   */
+  private function esGetSpecialFieldDataCleanerIcons(array $doc) {
+    $autoChecks = $doc['identification']['auto_checks'];
+    $output = [];
+    if ($autoChecks['enabled'] === 'false') {
+      $output[] = 'Automatic rule checks will not be applied to records in this dataset.';
+    }
+    elseif (isset($autoChecks['result'])) {
+      if ($autoChecks['result'] === 'true') {
+        $output[] = 'All automatic rule checks passed.';
+      }
+      elseif ($autoChecks['result'] === 'false') {
+        if (count($autoChecks['output']) > 0) {
+          // Add an icon for each rule violation.
+          foreach($autoChecks['output'] as $violation) {
+            $output[] = $violation['message'];
+          }
+        }
+        else {
+          $output[] = 'Automatic rule checks flagged issues with this record';
+        }
+      }
+    } else {
+      // Not yet checked.
+      $output[] = 'Record not yet checked against rules.';
+    }
+    return implode('; ', $output);
+  }
+
+  /**
+   * Special field handler for datasource codes.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value including website and survey dataset info.
+   */
+  private function esGetSpecialFieldDatasourceCode(array $doc) {
+    $w = $doc['metadata']['website'];
+    $s = $doc['metadata']['survey'];
+    return "$w[id] ($w[title]) | $s[id] ($s[title])";
+  }
+
+  /**
+   * Special field handler for Elasticsearch event dates.
    *
    * Converts event.date_from and event.date_to to a readable date string, e.g.
-   * for inclusion in CSV output.
+   * for inclusion in CSV output. Also handles date fields when prefixed by
+   * `key`, e.g. when used in composite aggregation sources.
    *
    * @param array $doc
    *   Elasticsearch document.
@@ -1306,21 +1434,33 @@ class Rest_Controller extends Controller {
    * @return string
    *   Formatted readable date.
    */
-  private function esGetSpecialFieldDateString(array $doc) {
-    if (empty($doc['event']['date_start']) && empty($doc['event']['date_end'])) {
+  private function esGetSpecialFieldEventDate(array $doc) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['event'];
+    $start = isset($root['date_start']) ? $root['date_start'] :
+      (isset($root['event-date_start']) ? $root['event-date_start'] : '');
+    $end = isset($root['date_end']) ? $root['date_end'] :
+      (isset($root['event-date_end']) ? $root['event-date_end'] : '');
+    if (preg_match('/^\-?\d+$/', $start)) {
+      $start = date('d/m/Y', $start / 1000);
+    }
+    if (preg_match('/^\-?\d+$/', $end)) {
+      $end = date('d/m/Y', $end / 1000);
+    }
+    if (empty($start) && empty($end)) {
       return 'Unknown';
     }
-    elseif (empty($doc['event']['date_end'])) {
-      return 'After ' . $doc['event']['date_start'];
+    elseif (empty($end)) {
+      return "After $start";
     }
-    elseif (empty($doc['event']['date_start'])) {
-      return 'Before ' . $doc['event']['date_end'];
+    elseif (empty($start)) {
+      return "Before $end";
     }
-    elseif ($doc['event']['date_start'] === $doc['event']['date_end']) {
-      return $doc['event']['date_start'];
+    elseif ($start === $end) {
+      return $start;
     }
     else {
-      return $doc['event']['date_start'] . ' to ' . $doc['event']['date_end'];
+      return "$start to $end";
     }
   }
 
@@ -1345,15 +1485,15 @@ class Rest_Controller extends Controller {
    */
   private function esGetSpecialFieldHigherGeography(array $doc, array $params) {
     if (isset($doc['location']) && isset($doc['location']['higher_geography'])) {
-      if (empty($params) || empty($params['type'])) {
+      if (empty($params) || empty($params[0])) {
         $r = $doc['location']['higher_geography'];
       }
       else {
         $r = [];
         foreach ($doc['location']['higher_geography'] as $loc) {
-          if ($loc['type'] === $params['type']) {
-            if (!empty($params['field'])) {
-              $r[] = $loc[$params['field']];
+          if (strcasecmp($loc['type'], $params[0]) === 0) {
+            if (!empty($params[1])) {
+              $r[] = $loc[$params[1]];
             }
             else {
               $r[] = $loc;
@@ -1361,20 +1501,134 @@ class Rest_Controller extends Controller {
           }
         }
       }
-      if (!empty($params['text']) && $params['text'] === 'true') {
-        $outputList = [];
-        foreach ($r as $outputItem) {
-          $outputList[] = is_array($outputItem) ? implode(';', $outputItem) : $outputItem;
-        }
-        return implode('|', $outputList);
+      if (isset($params[2]) && $params[2] === 'json') {
+        return json_encode($r);
       }
       else {
-        return json_encode($r);
+        $outputList = [];
+        foreach ($r as $outputItem) {
+          $outputList[] = is_array($outputItem) ? implode('; ', $outputItem) : $outputItem;
+        }
+        return implode(' | ', $outputList);
       }
     }
     else {
       return '';
     }
+  }
+
+  /**
+   * Special field handler for lat/lon data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldLatLon(array $doc) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    if (empty($root['point'])) {
+      return 'n/a';
+    }
+    $coords = explode(',', $root['point']);
+    $ns = $coords[0] >= 0 ? 'N' : 'S';
+    $ew = $coords[1] >= 0 ? 'E' : 'W';
+    $lat = number_format(abs($coords[0]), 3);
+    $lon = number_format(abs($coords[1]), 3);
+    return "$lat$ns $lon$ew";
+  }
+
+  private function esGetSpecialFieldLocality(array $doc) {
+    $info = [];
+    if (!empty($doc['location']['verbatim_locality'])) {
+      $info[] = $doc['location']['verbatim_locality'];
+      if (!empty($doc['location']['higher_geography'])) {
+        foreach ($doc['location']['higher_geography'] as $loc) {
+          $info[] = "$loc[type]: $loc[name]";
+        }
+      }
+    }
+    return implode('; ', $info);
+  }
+
+  /**
+   * Special field handler for occurrence media data.
+   *
+   * Concatenates media to a string.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldOccurrenceMedia(array $doc) {
+    if (!empty($doc['occurrence']['media'])) {
+      $items = [];
+      foreach ($doc['occurrence']['media'] as $m) {
+        $item = [
+          $m['path'],
+          empty($m['caption']) ? '' : $m['caption'],
+          empty($m['licence']) ? '' : $m['licence'],
+        ];
+        $items[] = implode('; ', $item);
+      }
+      return implode(' | ', $items);
+    }
+    return '';
+  }
+
+  /**
+   * Special field handler for status data.
+   *
+   * Returns text instead of icons (for download purposes).
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldStatusIcons(array $doc) {
+    $terms = [];
+    $recordStatusLookup = [
+      'V' => 'Accepted',
+      'V1' => 'Accepted as correct',
+      'V2' => 'Accepted as considered correct',
+      'C' => 'Not reviewed',
+      'C3' => 'Plausible',
+      'R' => 'Not accepted',
+      'R4' => 'Not accepted as unable to verify',
+      'R5' => 'Not accepted as incorrect',
+    ];
+    if (!empty($doc['identification'])) {
+      $status = $doc['identification']['verification_status'];
+      if (!empty($doc['identification']['verification_substatus']) && $doc['identification']['verification_substatus'] !== 0) {
+        $status .= $doc['identification']['verification_substatus'];
+      }
+      if (isset($recordStatusLookup[$status])) {
+        $terms[] = $recordStatusLookup[$status];
+      }
+      if (!empty($doc['identification']['query'])) {
+        $terms[] = $doc['identification']['query'] === 'A' ? 'Answered' : 'Queried';
+      }
+    }
+    if (!empty($doc['metadata'])) {
+      if (!empty($doc['metadata']['sensitive']) && $doc['metadata']['sensitive'] !== 'false') {
+        $terms[] = 'Sensitive';
+      }
+      if (!empty($doc['metadata']['confidential']) && $doc['metadata']['confidential'] !== 'false') {
+        $terms[] = 'Confidential';
+      }
+    }
+    if (!empty($doc['occurrence'])) {
+      if (!empty($doc['occurrence']['zero_abundance']) && $doc['occurrence']['zero_abundance'] !== 'false') {
+        $terms[] = 'Zero abundance';
+      }
+    }
+    return implode('; ', $terms);
   }
 
   /**
@@ -1392,68 +1646,11 @@ class Rest_Controller extends Controller {
    *   Formatted string
    */
   private function esGetSpecialFieldNullIfZero(array $doc, array $params) {
-    $value = $this->getRawEsFieldValue($doc, $params['field']);
+    if (count($params) !== 1) {
+      return 'Incorrect params for Null If Zero field';
+    }
+    $value = $this->getRawEsFieldValue($doc, $params[0]);
     return ($value === '0' || $value === 0) ? NULL : $value;
-  }
-
-  /**
-   * Special field handler for Elasticsearch media.
-   *
-   * Concatenates media to a comma separated string.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldMedia(array $doc) {
-    if (!empty($doc['occurrence']['associated_media'])) {
-      return implode('; ', $doc['occurrence']['associated_media']);
-    }
-    return '';
-  }
-
-  /**
-   * Special field handler for Elasticsearch custom attribute values.
-   *
-   * Concatenates values to a semi-colon separated string.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldAttrValue(array $doc, array $params) {
-    $r = [];
-    if (in_array($params['entity'], ['occurrence', 'sample'])) {
-      foreach ($doc[$params['entity']]['attributes'] as $attr) {
-        if ($attr['id'] == $params['id']) {
-          $r[] = $attr['value'];
-        }
-      }
-    }
-    return implode('; ', $r);
-  }
-
-  /**
-   * Processes parameters passed to a special field function.
-   *
-   * @param string $params
-   *   Parameters input string, e.g. "type=Country,field=code".
-   *
-   * @return array
-   *   Key value pairs.
-   */
-  private function explodeParams($params) {
-    $list = explode(',', $params);
-    $r = [];
-    foreach ($list as $item) {
-      $tokens = explode('=', $item);
-      $r[trim($tokens[0])] = trim($tokens[1]);
-    }
-    return $r;
   }
 
   /**
@@ -1481,6 +1678,14 @@ class Rest_Controller extends Controller {
         break;
       }
     }
+    if (isset($data['value_as_string'])) {
+      // A formatted aggregation response stored in value property.
+      return $data['value_as_string'];
+    }
+    elseif (isset($data['value'])) {
+      // An aggregation response stored in value property.
+      return $data['value'];
+    }
     return $failed ? '' : $data;
   }
 
@@ -1498,10 +1703,10 @@ class Rest_Controller extends Controller {
     // Fields starting '_' are special fields in the root of the doc. Others
     // are in the _source element.
     $docSource = strpos($sourceField, '_') === 0 || !isset($doc['_source']) ? $doc : $doc['_source'];
-    if (preg_match('/^\[(?P<sourceType>[a-z ]*)\](\((?<params>[a-z0-9]*=[^,=\)]*(,[a-z0-9]*=[^,=\)]*)*)\))?$/', $sourceField, $matches)) {
+    if (preg_match('/^#(?P<sourceType>[a-z_]*):?(?<params>.*)?#$/', $sourceField, $matches)) {
       $fn = 'esGetSpecialField' .
-        str_replace(' ', '', ucwords(str_replace(['['], '', $matches['sourceType'])));
-      $params = empty($matches['params']) ? [] : $this->explodeParams($matches['params']);
+        str_replace('_', '', ucwords($matches['sourceType']));
+      $params = empty($matches['params']) ? [] : explode(':', $matches['params']);
       if (method_exists($this, $fn)) {
         $row[] = $this->$fn($docSource, $params);
       }
@@ -1510,7 +1715,7 @@ class Rest_Controller extends Controller {
       }
     }
     else {
-      if (!preg_match('/^[a-z0-9_]+(\.[a-z0-9_]+)*$/', $sourceField)) {
+      if (!preg_match('/^[a-z0-9_]+(\.[a-z0-9_-]+)*$/', $sourceField)) {
         $row[] = "Invalid field $sourceField";
       }
       else {
@@ -1985,7 +2190,12 @@ class Rest_Controller extends Controller {
       }
       elseif (isset($report['content']['parameterRequest'])) {
         // @todo: handle param requests
-        $this->apiResponse->fail('Bad request (parameters missing)', 400, "Missing parameters");
+        $this->apiResponse->fail('Bad request (parameters missing)', 400,
+          "Missing parameters: " . implode(', ', array_keys($report['content']['parameterRequest'])));
+      }
+      else {
+        kohana::log('error', 'Rest API getReportOutput method retrieved invalid report response: ' .
+          var_export($report, true));
       }
     }
     finally {
@@ -2416,13 +2626,14 @@ class Rest_Controller extends Controller {
         // Doing updates of changes only as initial load done.
         // Start at one record after the last one we retrieved, or use the
         // tracking date if the report does not support a tracking ID field.
-        // We just pass both parameters through and allow the report to
-        // implement whichever it chooses.
+        // Pass appropriate parameters depending on whether the report is
+        // tracked on tracking ID or a date field.
         if (isset($afSettings['last_tracking_id'])) {
-          $params['tracking_from'] = $afSettings['last_tracking_id'] + 1;
+          $params['autofeed_tracking_from'] = $afSettings['last_tracking_id'] + 1;
+
         }
         if (isset($afSettings['last_tracking_date'])) {
-          $params['tracking_date_from'] = $afSettings['last_tracking_date'];
+          $params['autofeed_tracking_date_from'] = $afSettings['last_tracking_date'];
         }
         $params['orderby'] = 'tracking';
       }

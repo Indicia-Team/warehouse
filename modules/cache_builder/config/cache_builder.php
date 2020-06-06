@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Modules
- * @subpackage Cache builder
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
 $config['termlists_terms']['get_missing_items_query'] = "
@@ -285,7 +283,16 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     INTO TEMPORARY ttl_path
     FROM q
     GROUP BY child_pref_ttl_id
-    ORDER BY child_pref_ttl_id;",
+    ORDER BY child_pref_ttl_id;
+
+    SELECT DISTINCT ON (cttl.external_key) cttl.external_key, cttlall.id, tp.path
+    INTO TEMPORARY master_list_paths
+    FROM ttl_path tp
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=tp.child_pref_ttl_id
+    JOIN cache_taxa_taxon_lists cttlall ON cttlall.external_key=cttl.external_key
+    WHERE cttl.taxon_list_id=COALESCE(#master_list_id#, cttlall.taxon_list_id)
+    AND cttlall.preferred=true
+    ORDER BY cttl.external_key, cttl.allow_data_entry DESC;",
   'Taxon paths' => "
     UPDATE cache_taxon_paths ctp
     SET path=tp.path, external_key=t.external_key
@@ -313,38 +320,39 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
   'Ranks' => "
     UPDATE cache_taxa_taxon_lists u
     SET family_taxa_taxon_list_id=cttlf.id, family_taxon=cttlf.taxon,
-      order_taxa_taxon_list_id=cttlo.id, order_taxon=cttlo.taxon,
-      kingdom_taxa_taxon_list_id=cttlk.id, kingdom_taxon=cttlk.taxon
-    FROM cache_taxa_taxon_lists cttl
-    -- Ensure only changed taxon concepts are updated
-    JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
-    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
-    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(ctp.path) and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=#master_list_id# AND cttlf.preferred=true
-    LEFT JOIN cache_taxa_taxon_lists cttlo ON cttlo.taxon_meaning_id=ANY(ctp.path) and cttlo.taxon_rank='Order' and cttlo.taxon_list_id=#master_list_id# AND cttlo.preferred=true
-    LEFT JOIN cache_taxa_taxon_lists cttlk ON cttlk.taxon_meaning_id=ANY(ctp.path) and cttlk.taxon_rank='Kingdom' and cttlk.taxon_list_id=#master_list_id# AND cttlk.preferred=true
-    WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
+        order_taxa_taxon_list_id=cttlo.id, order_taxon=cttlo.taxon,
+        kingdom_taxa_taxon_list_id=cttlk.id, kingdom_taxon=cttlk.taxon
+    FROM master_list_paths mlp
+    JOIN descendants nu ON nu.id=mlp.id
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(mlp.path) and cttlf.taxon_rank='Family'
+      AND cttlf.taxon_list_id=#master_list_id# AND cttlf.preferred=true AND cttlf.allow_data_entry=true
+    LEFT JOIN cache_taxa_taxon_lists cttlo ON cttlo.taxon_meaning_id=ANY(mlp.path) and cttlo.taxon_rank='Order'
+      AND cttlo.taxon_list_id=#master_list_id# AND cttlo.preferred=true AND cttlo.allow_data_entry=true
+    LEFT JOIN cache_taxa_taxon_lists cttlk ON cttlk.taxon_meaning_id=ANY(mlp.path) and cttlk.taxon_rank='Kingdom'
+      AND cttlk.taxon_list_id=#master_list_id# AND cttlk.preferred=true AND cttlk.allow_data_entry=true
+    WHERE mlp.external_key=u.external_key
     AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
-      OR COALESCE(u.family_taxon, '')<>COALESCE(cttlf.taxon, '')
-      OR COALESCE(u.order_taxa_taxon_list_id, 0)<>COALESCE(cttlo.id, 0)
-      OR COALESCE(u.order_taxon, '')<>COALESCE(cttlo.taxon, '')
-      OR COALESCE(u.kingdom_taxa_taxon_list_id, 0)<>COALESCE(cttlk.id, 0)
-      OR COALESCE(u.kingdom_taxon, '')<>COALESCE(cttlk.taxon, '')
+        OR COALESCE(u.family_taxon, '')<>COALESCE(cttlf.taxon, '')
+        OR COALESCE(u.order_taxa_taxon_list_id, 0)<>COALESCE(cttlo.id, 0)
+        OR COALESCE(u.order_taxon, '')<>COALESCE(cttlo.taxon, '')
+        OR COALESCE(u.kingdom_taxa_taxon_list_id, 0)<>COALESCE(cttlk.id, 0)
+        OR COALESCE(u.kingdom_taxon, '')<>COALESCE(cttlk.taxon, '')
     );
 
     UPDATE cache_occurrences_functional u
-    SET family_taxa_taxon_list_id=cttlf.id,
-      taxon_path=ctp.path
+    SET family_taxa_taxon_list_id=cttl.family_taxa_taxon_list_id,
+      taxon_path=mlp.path
     FROM cache_taxa_taxon_lists cttl
     -- Ensure only changed taxon concepts are updated
     JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
-    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=COALESCE(#master_list_id#, cttl.taxon_list_id)
-    LEFT JOIN cache_taxa_taxon_lists cttlf ON ctp.path @> ARRAY[cttlf.taxon_meaning_id] and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=#master_list_id# AND cttlf.preferred=true
-    WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
-    AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
-    OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(ctp.path, ARRAY[]::integer[]));",
+    JOIN master_list_paths mlp ON mlp.external_key=cttl.external_key
+    WHERE cttl.id=u.taxa_taxon_list_id
+    AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttl.family_taxa_taxon_list_id, 0)
+    OR COALESCE(u.taxon_path, ARRAY[]::integer[])<>COALESCE(mlp.path, ARRAY[]::integer[]));",
   "teardown" => "
     DROP TABLE descendants;
-    DROP TABLE ttl_path;",
+    DROP TABLE ttl_path;
+    DROP TABLE master_list_paths;",
 );
 
 // --------------------------------------------------------------------------------------------------------------------------
@@ -548,6 +556,7 @@ $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterm
     join terms tcategory on tcategory.id=tltcategory.term_id and tcategory.term='searchable'
     where cttl.id=cttl.preferred_taxa_taxon_list_id and cts.taxa_taxon_list_id=cttl.id and cts.name_type = 'C' and cts.source_id=tc.id";
 
+/* Note id_diff verification_rule_data.key forced uppercase by rule postprocessor. */
 $config['taxon_searchterms']['update']['id_diff'] = "update cache_taxon_searchterms cts
     set identification_difficulty=extkey.value::integer, id_diff_verification_rule_id=vr.id
       from cache_taxa_taxon_lists cttl
@@ -645,11 +654,12 @@ $config['taxon_searchterms']['insert']['codes'] = "insert into cache_taxon_searc
     join terms tcategory on tcategory.id=tltcategory.term_id and tcategory.term='searchable' and tcategory.deleted=false
     where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=false";
 
+/* Note id_diff verification_rule_data.key forced uppercase by rule postprocessor. */
 $config['taxon_searchterms']['insert']['id_diff'] = "update cache_taxon_searchterms cts
     set identification_difficulty=extkey.value::integer, id_diff_verification_rule_id=vr.id
       from cache_taxa_taxon_lists cttl
       #join_needs_update#
-      join verification_rule_data extkey ON extkey.key=LOWER(cttl.external_key) AND extkey.header_name='Data' AND extkey.deleted=false
+      join verification_rule_data extkey ON extkey.key=UPPER(cttl.external_key) AND extkey.header_name='Data' AND extkey.deleted=false
       join verification_rules vr ON vr.id=extkey.verification_rule_id AND vr.test_type='IdentificationDifficulty' AND vr.deleted=false
       where cttl.id=cts.taxa_taxon_list_id";
 
@@ -1379,10 +1389,11 @@ SET sample_id=o.sample_id,
   taxon_path=ctp.path,
   parent_sample_id=s.parent_id,
   verification_checks_enabled=w.verification_checks_enabled,
-  media_count=(SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
+  media_count=(SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false),
+  identification_difficulty=(SELECT cts.identification_difficulty FROM cache_taxon_searchterms cts where cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false)
 FROM occurrences o
 #join_needs_update#
-left join cache_occurrences_functional co on co.id=o.id
+LEFT JOIN cache_occurrences_functional co on co.id=o.id
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 JOIN websites w ON w.id=o.website_id AND w.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -1576,7 +1587,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
             training, zero_abundance, licence_id, import_guid, confidential, external_key,
             taxon_path, blocked_sharing_tasks, parent_sample_id, verification_checks_enabled,
-            media_count)
+            media_count, identification_difficulty)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1612,7 +1623,8 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
     END,
     s.parent_id,
     w.verification_checks_enabled,
-    (SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
+    (SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false),
+    (SELECT cts.identification_difficulty FROM cache_taxon_searchterms cts where cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false)
 FROM occurrences o
 #join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id

@@ -123,6 +123,8 @@
     <column name='determiner_person_id' sql="case when snf.recorders = onf.attr_det_last_name || ', ' || onf.attr_det_first_name
         or snf.recorders = onf.attr_det_first_name || ' ' || onf.attr_det_last_name
         or snf.recorders = onf.attr_det_full_name then cast(p.id as varchar(20)) else 'unknown' end" />
+    <column name='created_by_person_id' display='Created by person ID' sql="p.id" datatype="integer" />
+    <column name='created_by' display='Created by' sql="p.first_name || ' ' || p.surname" datatype="text" />
     <column name="media" aggregate="true"
       sql="string_agg(om.id::text || '|' || '#uploadFolder#' || om.path || '|' || coalesce(om.caption, '') || '|' || coalesce(l.code, ''), ';')" />
   </columns>

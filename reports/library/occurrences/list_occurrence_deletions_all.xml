@@ -15,11 +15,11 @@
     <order_by>o.id</order_by>
   </order_bys>
   <params>
-    <param name="last_id" display="Last ID" datatype="integer" default="">
+    <param name="last_id" display="Last ID" datatype="integer" default="" order_by="o.id ASC">
       <where>o.id &gt; #last_id#</where>
     </param>
-    <param name="tracking_date_from" datatype="date" default="">
-      <where>o.updated_on >= '#tracking_date_from#'</where>
+    <param name="autofeed_tracking_date_from" datatype="date" default="" order_by="o.updated_on ASC">
+      <where>o.updated_on >= '#autofeed_tracking_date_from#'</where>
     </param>
     <param name="zeros" display="Treat zero abundance records as deleted" datatype="boolean" default="0">
       <where value="0" operator="equal">o.deleted=true</where>
@@ -29,7 +29,6 @@
   <columns>
     <column name="id" sql="o.id" datatype="integer" />
     <column name="tracking_date" sql="o.updated_on" datatype="date" />
-    <!-- Required to enable tracking sort -->
     <column name="tracking" sql="o.updated_on" datatype="date" />
   </columns>
 </report>

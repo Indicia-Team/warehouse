@@ -4,7 +4,7 @@
     SELECT #columns#
     FROM people p
     LEFT JOIN users u ON u.person_id=p.id AND u.deleted=false
-    LEFT JOIN users_websites uw on u.id=uw.user_id
+    LEFT JOIN users_websites uw on u.id=uw.user_id and uw.site_role_id is not null
     LEFT JOIN websites w on w.id=uw.website_id and w.deleted=false
     LEFT JOIN core_roles cr ON cr.id=u.core_role_id AND cr.deleted=false
     #joins#

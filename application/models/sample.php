@@ -48,6 +48,7 @@ class Sample_Model extends ORM_Tree {
     'survey_id' => 'Survey ID',
     'website_id' => 'Website ID',
     // extra lookup options
+    'sample:fk_location:id' => 'Location Indicia ID',
     'sample:fk_location:code' => 'Location Code',
     'sample:fk_location:external_key' => 'Location external key',
     'sample:fk_parent:external_key' => 'Parent sample external key',
@@ -83,14 +84,6 @@ class Sample_Model extends ORM_Tree {
       'fields' => [
         ['fieldName' => 'survey_id', 'notInMappings' => TRUE],
         ['fieldName' => 'sample:id'],
-      ],
-    ],
-    [
-      'description' => 'Sample External Key',
-      'fields' => [
-        ['fieldName' => 'survey_id', 'notInMappings' => TRUE],
-        ['fieldName' => 'sample:sample_method_id'],
-        ['fieldName' => 'sample:external_key'],
       ],
     ],
     [
@@ -346,7 +339,7 @@ class Sample_Model extends ORM_Tree {
   /**
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
    */
-  public function fixed_values_form($options = array()) {
+  public function fixedValuesForm($options = array()) {
     $srefs = array();
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title)

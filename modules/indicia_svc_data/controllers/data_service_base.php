@@ -72,6 +72,9 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       if ($mode !== 'dwca') {
         throw $e;
       }
+      elseif (!$this->failedRequestDetail) {
+        $this->failedRequestDetail = $e->getMessage();
+      }
     }
     switch ($mode) {
       case 'json':
@@ -143,7 +146,7 @@ $this->failedRequestDetail
 TXT;
         }
         else {
-          $content = $this->queryError ? $records : $this->csv_encode($records);
+          $content = $this->csv_encode($records);
         }
         $zip = new ZipArchive();
         $filename = DOCROOT . 'extract/' . uniqid('dwca-download-') . '.zip';

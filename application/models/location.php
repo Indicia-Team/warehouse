@@ -42,6 +42,7 @@ class Location_Model extends ORM_Tree {
   // Declare additional fields required when posting via CSV.
   protected $additional_csv_fields = array(
     // extra lookup options
+    'location:fk_parent:id' => 'Parent Indicia ID',
     'location:fk_parent:code' => 'Parent location Code',
     'location:fk_parent:external_key' => 'Parent location External key',
   );
@@ -238,19 +239,23 @@ SQL;
   }
 
   private static function getConvertedOptionValue($first, $second) {
-    return str_replace(array(',', ':'), array('&#44', '&#56'), $first) .
+    return str_replace(array(',', ':'), array('&#44', '&#58'), $first) .
             ":" .
-            str_replace(array(',', ':'), array('&#44', '&#56'), $second);
+            str_replace(array(',', ':'), array('&#44', '&#58'), $second);
   }
 
   /**
-   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   * Defines inputs required for values that apply to all imported records.
+   *
+   * Define a form that is used to capture a set of predetermined values that
+   * apply to every record during an import.
    */
-  public function fixed_values_form() {
-    $srefs = array();
-    $systems = spatial_ref::system_metadata();
-    foreach ($systems as $code => $metadata)
-        $srefs[] = self::getConvertedOptionValue($code, $metadata['title']);
+  public function fixedValuesForm() {
+    $srefs = [];
+    $systems = spatial_ref::system_list();
+    foreach ($systems as $code => $title) {
+      $srefs[] = self::getConvertedOptionValue($code, $title);
+    }
 
     $location_types = array(":Defined in file");
     $parent_location_types = array(":No filter");
@@ -265,28 +270,28 @@ SQL;
         'display' => 'Website',
         'description' => 'Select the website to import records into.',
         'datatype' => 'lookup',
-        'population_call' => 'direct:website:id:title'
+        'population_call' => 'direct:website:id:title',
       ),
       'location:centroid_sref_system' => array(
         'display' => 'Spatial Ref. System',
         'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
             'column in the import file which is mapped to the Location Spatial Reference System field containing the spatial reference system code.',
         'datatype' => 'lookup',
-        'lookup_values'=>implode(',', $srefs)
+        'lookup_values' => implode(',', $srefs),
       ),
       'location:location_type_id' => array(
         'display' => 'Location Type',
         'description' => 'Select the Location Type for all locations in this import file. Note, if you have a file with a mix of location type then you need a ' .
                          'column in the import file which is mapped to the Location Type field.',
         'datatype' => 'lookup',
-        'lookup_values' => implode(',', $location_types)
+        'lookup_values' => implode(',', $location_types),
       ),
       'fkFilter:location:location_type_id' => array(
         'display' => 'Parent Location Type',
         'description' => 'If this import file includes locations which reference parent locations records, you can restrict the type of parent locations looked ' .
                          'up by setting this location type. It is not currently possible to use a column in the file to do this on a location by location basis.',
         'datatype' => 'lookup',
-        'lookup_values' => implode(',', $parent_location_types)
+        'lookup_values' => implode(',', $parent_location_types),
       ),
     );
   }

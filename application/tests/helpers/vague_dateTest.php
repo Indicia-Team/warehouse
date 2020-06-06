@@ -187,6 +187,7 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
   public function provideStringToVagueDate() {
     $year = date('Y');
     $lastYear = $year - 1;
+    $lastDayInFeb = date('L') === '1' ? '29' : '28';
     return [
       'Date 1997-08-02' => ['1997-08-02', '1997-08-02', '1997-08-02', 'D'],
       'Date 02/08/1997' => ['02/08/1997', '1997-08-02', '1997-08-02', 'D'],
@@ -269,7 +270,7 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
       'Season Autumn 92' => ['Autumn 92', '1992-09-01', '1992-11-30', 'P'],
       // Month only and season only years are always for the current year.
       'Month only March' => ['March', "$year-03-01", "$year-03-31", 'M'],
-      'Season only Winter' => ['Winter', "$lastYear-12-01", "$year-02-28", 'S'],
+      'Season only Winter' => ['Winter', "$lastYear-12-01", "$year-02-$lastDayInFeb", 'S'],
       'Season only Spring' => ['Spring', "$year-03-01", "$year-05-31", 'S'],
       'Season only Summer' => ['Summer', "$year-06-01", "$year-08-31", 'S'],
       'Season only Autumn' => ['Autumn', "$year-09-01", "$year-11-30", 'S'],

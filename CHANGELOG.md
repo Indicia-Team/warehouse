@@ -1,3 +1,69 @@
+# Version 4.0.0
+*2020-05-20*
+
+Major version update due to breaking changes in the Elasticsearch REST API:
+
+  * Format for the addColumns parameter in calls to the Elasticsearch REST API
+    endpoints (for CSV downloads) now changed to match the format of the client
+    [dataGrid] control's columns configuration. Therefore custom ES download
+    formats will need reconfiguring on the client.
+
+* PHP minimum version supported now 5.6.
+
+# Version 3.4.0
+*2020-05-04*
+
+* Ability to import into the `locations` table whilst referencing the
+  location's parent by `id`.
+* Ability to import into the `samples` table whilst looking up the
+  associated location by `id`.
+* If location ID provided when importing a sample, then the sample's
+  `entered_sref` and `entered_sref_system` fields are not required in the
+  import data as they can be extracted from the location.
+
+# Version 3.3.0
+*2020-04-16*
+
+* Reduced likelihood that emails sent by scheduled tasks are detected as spam:
+    * Receipient names correctly added.
+    * HTML structure improvements.
+* Possible to import and update existing samples using their external_key field
+  as a unique row identifier.
+* Improvements to cascading mark-deletion of sample records.
+* New report `library/locations/locations_list_3.xml` which allows the list to
+  be filtered by an intersecting point.
+* Support for remote download into Recorder 6 using the original record creator
+  as the creator of the record in Recorder 6 (rather than the person doing the
+  import).
+* New Darwin Core archive download reports for GBIF IPT compatible data
+  extraction.
+* Darwin Core archive download reports allow BasisOfRecord to be overridden.
+* Darwin Core archive download reports remove line breaks from comments.
+* Bug fixes to the updating of single attribute values into the reporting
+  cache tables in the work queue system.
+* Bug fixes around the auto-feed tracking of data into Elasticsearch.
+* Fixes to CSV formatting when extracting CSV data from Elasticsearch.
+* Bug fixes for upgrades from very old warehouse installations.
+
+# Version 3.2.0
+*2020-03-29*
+
+* Report `reports/library/locations/locations_list_from_search_location.xml`
+  allows multiple location_type_ids to be selected.
+
+# Version 3.1.0
+*2020-01-15*
+
+* Support for Swedish reference systems, EPSG:3006 and EPSG:3021.
+* Significant performance enhancements in the auto_verify module.
+* Updates of individual attribute value tables now create work queue tasks to update the
+  cache tables.
+* Bug fixes on the edit form for workflow events.
+* Workflow events can now be linked to species on non-standard species lists if required.
+* Report library/filters/filter_with_transformed_searcharea.xml performance improved.
+* Changes to Elasticsearch record details report to support alterations to the layout of
+  this control.
+
 # Version 3.0.0
 *2019-12-03*
 

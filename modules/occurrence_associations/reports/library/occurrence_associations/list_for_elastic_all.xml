@@ -1,0 +1,58 @@
+<report
+    title="Autofeed occurrences for Elasticsearch associations (standard filters, no website limit)"
+    description="A list of occurrence association details designed for feeding into Elasticsearch or a similar JSON store.
+      No website limit so designed to collect records from all website registrations."
+    restricted="true"
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" training_filter_field=""
+         standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
+    DROP TABLE IF EXISTS filtered_occurrences;
+    SELECT o.id, o.tracking
+    INTO TEMPORARY filtered_occurrences
+    FROM cache_occurrences_functional o
+    #joins#
+    WHERE o.tracking &lt; #occurrences_autofeed_proj_id#
+    #filters#
+    #order_by#
+    LIMIT #limit#;
+
+    SELECT id, tracking,
+      string_agg(DISTINCT to_occurrence_id::text || '~' || term || '~' || preferred_taxon || '~' || COALESCE(default_common_name, ''), '@@') as "associations_data"
+    FROM (
+      SELECT o.id, o.tracking, o2.id as to_occurrence_id, ctt.term, cttl.preferred_taxon, cttl.default_common_name
+        FROM filtered_occurrences o
+        LEFT JOIN occurrence_associations oa on oa.from_occurrence_id=o.id AND oa.deleted=false
+        LEFT JOIN cache_occurrences_functional o2 ON o2.id=oa.to_occurrence_id
+        LEFT JOIN cache_taxa_taxon_lists cttl on cttl.id=o2.taxa_taxon_list_id
+        LEFT JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
+      UNION
+      SELECT o.id, o.tracking, o2.id as to_occurrence_id, '&lt;&lt;' || ctt.term || '&lt;&lt;', cttl.preferred_taxon, cttl.default_common_name
+        FROM filtered_occurrences o
+        LEFT JOIN occurrence_associations oa on oa.to_occurrence_id=o.id AND oa.deleted=false
+        LEFT JOIN cache_occurrences_functional o2 ON o2.id=oa.from_occurrence_id
+        LEFT JOIN cache_taxa_taxon_lists cttl on cttl.id=o2.taxa_taxon_list_id
+        LEFT JOIN cache_termlists_terms ctt ON ctt.id=oa.association_type_id
+    ) AS sub
+    GROUP BY id, tracking
+    #order_by#
+  </query>
+  <params>
+    <!-- last_id, autofeed_tracking_from parameters required for autofeed to work. -->
+    <param name="last_id" display="Last ID" datatype="integer" default="" order_by="id ASC">
+      <where>o.id &gt; #last_id#</where>
+    </param>
+    <param name="autofeed_tracking_from" display="Autofeed tracking from" datatype="integer" default="" order_by="tracking ASC">
+      <where>o.tracking >= #autofeed_tracking_from#</where>
+    </param>
+    <param name="limit" datatype="integer" default="10000" />
+    <param name="occurrences_autofeed_proj_id" display="Occurrences autofeed project" datatype="text"
+      description="ID of a project configured in the REST API which feeds the occurrence data into Elasticsearch.
+        Data from this feed will be processed before the associations"
+      preprocess="SELECT (value::json#>>'{0,last_tracking_id}')::integer FROM variables WHERE name='rest-autofeed-#occurrences_autofeed_proj_id#'" />
+  </params>
+  <columns>
+    <column name="id" datatype="integer" />
+    <column name="tracking" datatype="date" />
+    <column name="associations_data" aggregate="true" />
+  </columns>
+</report>

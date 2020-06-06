@@ -48,7 +48,8 @@ class Occurrence_Model extends ORM {
     'occurrence:fk_taxa_taxon_list:specific' => 'Specific name/epithet (builds binomial name)',
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
     'occurrence:fk_taxa_taxon_list:search_code' => 'Species or taxon search code',
-    'occurrence:taxa_taxon_list_id' => 'Species or taxon taxa_taxon_lists.id',
+    // needs to be more complex version so import recognises it as same field as above
+    'occurrence:fk_taxa_taxon_list:id' => 'Species or taxon taxa_taxon_lists.id',
     // Allow details of 4 images to be uploaded in CSV files.
     'occurrence_medium:path:1' => 'Media Path 1',
     'occurrence_medium:caption:1' => 'Media Caption 1',
@@ -143,7 +144,7 @@ class Occurrence_Model extends ORM {
           $array->verified_on = NULL;
         }
       }
-      elseif ($this->wantToUpdateMetadata && $isAlreadyReviewed) {
+      elseif (($this->parentChanging || $this->wantToUpdateMetadata) && $isAlreadyReviewed) {
         // We are making a change to a previously reviewed record that doesn't
         // explicitly set the status. If the change is to the release status
         // or occurrence metadata field, then we don't do anything, otherwise
@@ -570,22 +571,22 @@ SQL;
    *   * **occurrence_associations** - Set to 't' to enable occurrence associations options. The
    *     relevant warehouse module must also be enabled.
    */
-  public function fixed_values_form($options = array()) {
+  public function fixedValuesForm($options = array()) {
     $srefs = array();
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title) {
-      $srefs[] = str_replace(array(',', ':'), array('&#44', '&#56'), $code) .
+      $srefs[] = str_replace(array(',', ':'), array('&#44', '&#58'), $code) .
             ":" .
-            str_replace(array(',', ':'), array('&#44', '&#56'), $title);
+            str_replace(array(',', ':'), array('&#44', '&#58'), $title);
     }
 
     $sample_methods = array(":Defined in file");
     $parent_sample_methods = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-      $sample_method = str_replace(array(',', ':'), array('&#44', '&#56'), $term->id) .
+      $sample_method = str_replace(array(',', ':'), array('&#44', '&#58'), $term->id) .
         ":" .
-        str_replace(array(',', ':'), array('&#44', '&#56'), $term->term);
+        str_replace(array(',', ':'), array('&#44', '&#58'), $term->term);
       $sample_methods[] = $sample_method;
       $parent_sample_methods[] = $sample_method;
     }
@@ -593,9 +594,9 @@ SQL;
     $locationTypes = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-      $locationTypes[] = str_replace(array(',', ':'), array('&#44', '&#56'), $term->id) .
+      $locationTypes[] = str_replace(array(',', ':'), array('&#44', '&#58'), $term->id) .
         ":" .
-        str_replace(array(',', ':'), array('&#44', '&#56'), $term->term);
+        str_replace(array(',', ':'), array('&#44', '&#58'), $term->term);
     }
     $retVal = array(
       'website_id' => array(
