@@ -54,18 +54,21 @@ HTML;
 
   /**
    * When outputting HTML this contains the title for the page.
+   *
    * @var string
    */
   public $responseTitle = '';
 
   /**
    * Is an index table required for this response when output as HTML?
+   *
    * @var bool
    */
   public $wantIndex = false;
 
   /**
    * Include empty output cells in HTML?
+   *
    * @var bool
    */
   public $includeEmptyValues = true;
@@ -82,9 +85,11 @@ HTML;
       case 'html':
         $this->indexHtml($resourceConfig);
         break;
+
       case 'csv':
         $this->indexCsv($resourceConfig);
         break;
+
       default:
         $this->indexJson($resourceConfig);
     }
@@ -92,7 +97,9 @@ HTML;
 
   /**
    * Index method in HTML format, which provides top level help for the API resource endpoints.
-   * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
+   *
+   * @param array $resourceConfig
+   *   Configuration for the list of available resources and the methods they support.
    */
   private function indexHtml($resourceConfig) {
     // Output an HTML page header.
@@ -332,7 +339,7 @@ HTML;
    *   * metadata - information to display at top of HTML output
    *   * columns - list of column definitions for tabular output
    *   * attachHref
-   *   * columnsToUnset - an array of columns to remove from tabular output
+   *   * columnsToUnset - an array of columns to remove from tabular output.
    */
   public function succeed($data, $options = array(), $autofeed = FALSE) {
     $format = $this->getResponseFormat();
@@ -360,25 +367,30 @@ HTML;
   /**
    * Returns an HTML error response code, logs a message and aborts the script.
    *
-   * @param string $status HTTP error status message
-   * @param integer $code HTTP error code
-   * @param string $msg Detailed message to log
+   * @param string $status
+   *   HTTP error status message.
+   * @param int $code
+   *   HTTP error code.
+   * @param string $msg
+   *   Detailed message to log.
    */
-  public function fail($status, $code, $msg=NULL) {
+  public function fail($status, $code, $msg = NULL) {
     http_response_code($code);
     $response = array(
       'code' => $code,
-      'status' => $status
+      'status' => $status,
     );
-    if ($msg)
+    if ($msg) {
       $response['message'] = $msg;
+    }
     $format = $this->getResponseFormat();
     if ($format === 'html') {
       header('Content-Type: text/html');
       echo str_replace('{{ base }}', url::base(), $this->htmlHeader);
       $this->outputArrayAsHtml($response);
       echo str_replace('{{ base }}', url::base(), $this->htmlFooter);
-    } else {
+    }
+    else {
       header('Content-Type: application/json');
       echo json_encode($response);
     }
