@@ -35,12 +35,7 @@ class Swift_File
    * @var resource
    */
   protected $handle = null;
-  /**
-   * The status of magic_quotes in php.ini
-   * @var boolean
-   */
-  protected $magic_quotes = false;
-  
+
   /**
    * Constructor
    * @param string The path the the file
@@ -49,7 +44,6 @@ class Swift_File
   public function __construct($path)
   {
     $this->setPath($path);
-    $this->magic_quotes = get_magic_quotes_runtime();
   }
   /**
    * Set the path to the file
@@ -133,16 +127,13 @@ class Swift_File
    */
   public function readln()
   {
-    set_magic_quotes_runtime(0);
     $this->createHandle();
     if (!$this->EOF())
     {
       $ret = fgets($this->handle);
     }
     else $ret = false;
-    
-    set_magic_quotes_runtime($this->magic_quotes);
-    
+
     return $ret;
   }
   /**
@@ -153,9 +144,7 @@ class Swift_File
   public function readFull()
   {
     $ret = "";
-    set_magic_quotes_runtime(0);
     while (false !== $chunk = $this->read(8192, false)) $ret .= $chunk;
-    set_magic_quotes_runtime($this->magic_quotes);
     return $ret;
   }
   /**
@@ -164,18 +153,15 @@ class Swift_File
    * @return string
    * @throws Swift_FileException If the file cannot be read
    */
-  public function read($bytes, $unquote=true)
+  public function read($bytes)
   {
-    if ($unquote) set_magic_quotes_runtime(0);
     $this->createHandle();
     if (!$this->EOF())
     {
       $ret = fread($this->handle, $bytes);
     }
     else $ret = false;
-    
-    if ($unquote) set_magic_quotes_runtime($this->magic_quotes);
-    
+
     return $ret;
   }
   /**
