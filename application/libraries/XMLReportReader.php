@@ -358,7 +358,7 @@ class XMLReportReader_Core implements ReportReader {
             unset($websiteIds[$key]);
         }
       }
-      $idList = implode($websiteIds, ',');
+      $idList = implode(',', $websiteIds);
       // query can either pull in the filter or just the list of website ids.
       $filter = empty($this->websiteFilterField) ? "1=1" : "({$this->websiteFilterField} in ($idList) or {$this->websiteFilterField} is null)";
       $query = str_replace(array('#website_filter#', '#website_ids#'), array($filter, $idList), $query);
