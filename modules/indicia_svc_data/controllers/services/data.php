@@ -1367,7 +1367,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         echo json_encode($response);
       }
       $this->delete_nonce();
-      if (class_exists('request_logging')) {
+      if (class_exists('request_logging') && isset($s)) {
         request_logging::log('i', 'data', $s['id'], 'save', $this->website_id, $this->user_id, $tm, $this->db, NULL, $response);
       }
     }
