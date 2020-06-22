@@ -122,8 +122,10 @@
     <column name="given_locality_name" sql="coalesce(s.location_name, l.name)" datatype="text" />
     <column name="recorded_location_id" sql="l.id" datatype="integer" />
     <column name="recorded_location_name" sql="l.name" datatype="text" />
+    <column name="recorded_location_code" sql="l.code" datatype="text" />
     <column name="recorded_parent_location_id" sql="lp.id" datatype="integer" />
     <column name="recorded_parent_location_name" sql="lp.name" datatype="text" />
+    <column name="recorded_parent_location_code" sql="lp.code" datatype="text" />
     <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
