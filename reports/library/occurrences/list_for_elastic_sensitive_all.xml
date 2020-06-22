@@ -28,6 +28,7 @@
     JOIN samples s ON s.id=o.sample_id AND s.deleted=false
     LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
     LEFT JOIN samples sp ON sp.id=s.parent_id AND sp.deleted=false
+    LEFT JOIN cache_samples_nonfunctional snfp ON snfp.id=sp.id
     LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
     #order_by#
   </query>
@@ -165,6 +166,7 @@
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
     <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />
+    <column name="parent_sample_attrs_json" sql="snfp.attrs_json" datatype="text" />
     <column name="occurrence_attrs_json" sql="onf.attrs_json" datatype="text" />
     <column name="tracking" sql="o.tracking" datatype="integer" />
     <column name="input_form" sql="o.input_form" datatype="text" />
