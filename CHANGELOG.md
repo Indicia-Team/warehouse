@@ -1,6 +1,8 @@
 # Version 4.1.0
 *2020-06-22*
 
+*Important info for Elasticsearch users*
+
 Before updating to this version, if you are using Elasticsearch please add the
 following mappings:
 ```
@@ -11,6 +13,31 @@ PUT <index name>/_mapping/doc
     "location.parent.code": { "type": "keyword" },
     "event.parent_attributes": {
       "type": "nested"
+    }
+  }
+}
+```
+
+After updating to this version, use Kibana Dev to post the following to clean up
+location info for sensitive records:
+
+```
+POST /<index name>/_update_by_query
+{
+  "script": {
+    "source": """
+      ctx._source.remove('location.location_id');
+      ctx._source.remove('location.location_name');
+    """,
+    "lang": "painless"
+  },
+  "query": {
+    "bool": {
+      "must": [{
+        "term": {
+          "metadata.sensitivity_blur.keyword": "B"
+        }
+      }]
     }
   }
 }
