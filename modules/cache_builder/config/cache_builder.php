@@ -1345,9 +1345,10 @@ SET sample_id=o.sample_id,
   website_id=o.website_id,
   survey_id=s.survey_id,
   input_form=COALESCE(sp.input_form, s.input_form),
-  location_id=s.location_id,
-  location_name=case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
-      then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
+  location_id=CASE WHEN o.confidential=true OR o.sensitivity_precision IS NOT NULL OR s.privacy_precision IS NOT NULL
+    THEN null else l.id END,
+  location_name=CASE WHEN o.confidential=true OR o.sensitivity_precision IS NOT NULL OR s.privacy_precision IS NOT NULL
+      THEN null else COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision)),
   date_start=s.date_start,
   date_end=s.date_end,
