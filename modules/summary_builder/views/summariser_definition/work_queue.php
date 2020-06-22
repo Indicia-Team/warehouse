@@ -2,7 +2,7 @@
 
 /**
  * @file
- * View template for the upload Shape file config form.
+ * View template for the summary builder work queue status form.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *

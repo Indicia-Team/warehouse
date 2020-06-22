@@ -181,6 +181,11 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
 
+  /**
+   * Controller action that displays the status of the summary builder work queue.
+   *
+   * Ignores all $_GET and $_POST.
+   */
   public function work_queue() {
       $this->template->title = 'Summariser work queue';
       $this->template->content = new View('summariser_definition/work_queue');
@@ -188,6 +193,12 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
       $this->template->content->errorMessage = '';
   }
 
+  /**
+   * Controller action that submits a sample for processing by the summary builder.
+   * 
+   * Validates a posted 'sample_id' before inserting an entry for it into the work_queue,
+   * then displays the status of the summary builder work queue.
+   */
   public function work_queue_reset_sample() {
       require_once MODPATH . 'summary_builder/plugins/summary_builder.php';
       
