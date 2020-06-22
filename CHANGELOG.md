@@ -26,8 +26,8 @@ POST /<index name>/_update_by_query
 {
   "script": {
     "source": """
-      ctx._source.remove('location.location_id');
-      ctx._source.remove('location.location_name');
+      ctx._source.location.remove('location_id');
+      ctx._source.location.remove('location_name');
     """,
     "lang": "painless"
   },
