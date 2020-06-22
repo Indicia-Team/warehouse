@@ -1,3 +1,24 @@
+# Version 4.1.0
+*2020-06-22*
+
+Before updating to this version, if you are using Elasticsearch please add the
+following mappings:
+```
+PUT <index name>/_mapping/doc
+{
+  "properties": {
+    "location.code": { "type": "keyword" },
+    "location.parent.code": { "type": "keyword" },
+    "event.parent_attributes": {
+      "type": "nested"
+    }
+  }
+}
+```
+
+* Adds location and parent location codes to the Elasticsearch extraction reports.
+* Adds parent sample attributes to the Elasticsearch extraction reports.
+
 # Version 4.0.0
 *2020-05-20*
 

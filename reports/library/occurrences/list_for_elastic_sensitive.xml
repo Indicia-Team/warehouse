@@ -29,6 +29,7 @@
     JOIN samples s on s.id=o.sample_id AND s.deleted=false
     LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
     LEFT JOIN samples sp ON sp.id=s.parent_id AND sp.deleted=false
+    LEFT JOIN cache_samples_nonfunctional snfp ON snfp.id=sp.id
     LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
     #order_by#
   </query>
@@ -122,8 +123,10 @@
     <column name="given_locality_name" sql="COALESCE(s.location_name, l.name)" datatype="text" />
     <column name="recorded_location_id" sql="l.id" datatype="integer" />
     <column name="recorded_location_name" sql="l.name" datatype="text" />
+    <column name="recorded_location_code" sql="l.code" datatype="text" />
     <column name="recorded_parent_location_id" sql="lp.id" datatype="integer" />
     <column name="recorded_parent_location_name" sql="lp.name" datatype="text" />
+    <column name="recorded_parent_location_code" sql="lp.code" datatype="text" />
     <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
@@ -166,6 +169,7 @@
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
     <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />
+    <column name="parent_sample_attrs_json" sql="snfp.attrs_json" datatype="text" />
     <column name="occurrence_attrs_json" sql="onf.attrs_json" datatype="text" />
     <column name="tracking" sql="o.tracking" datatype="integer" />
     <column name="input_form" sql="o.input_form" datatype="text" />
