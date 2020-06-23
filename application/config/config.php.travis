@@ -133,11 +133,10 @@ $config['modules'] = array
   MODPATH.'sref_utm',              // UTM grid notation
   MODPATH.'sref_mtb',              // German grid notation (MTBQQQ)
 
-  MODPATH.'data_cleaner',          // automatic record checks
-	MODPATH.'data_cleaner_period_within_year',
-
-  MODPATH.'demo',                  // Demo and test pages
   MODPATH.'cache_builder',         // build a cache for performance reporting
+  MODPATH.'data_cleaner',          // automatic record checks
+  MODPATH.'data_cleaner_period_within_year',
+
   MODPATH.'rest_api',              // RESTful web service interface
   MODPATH.'spatial_index_builder', // index of location occurrence overlaps
   MODPATH.'taxon_associations',    // data tables for associations between taxa
