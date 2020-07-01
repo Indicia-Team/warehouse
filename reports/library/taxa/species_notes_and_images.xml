@@ -4,51 +4,55 @@
 >
   <query website_filter_field="o.website_id">
     SELECT 'image', path as the_text, 
-	CASE WHEN exif::json->>'bildnummer' IS NOT NULL THEN 'Bildnummer: ' || coalesce((exif::json->>'bildnummer'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'taxRef_gattung' IS NOT NULL THEN 'TaxRef_gattung: ' || coalesce((exif::json->>'taxRef_gattung'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'art' IS NOT NULL THEN 'Art: ' || coalesce((exif::json->>'art'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'taxref_ID' IS NOT NULL THEN 'Taxref_ID: ' || coalesce((exif::json->>'taxref_ID'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'bildkategorie' IS NOT NULL THEN 'Bildkategorie: ' || coalesce((exif::json->>'bildkategorie'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'TKnr' IS NOT NULL THEN 'TKnr: ' || coalesce((exif::json->>'TKnr'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'TKname' IS NOT NULL THEN 'TKname: ' || coalesce((exif::json->>'TKname'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'land' IS NOT NULL THEN 'Land: ' || coalesce((exif::json->>'land'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'bundesland' IS NOT NULL THEN 'Bundesland: ' || coalesce((exif::json->>'bundesland'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'regierungsbezirk' IS NOT NULL THEN 'Regierungsbezirk: ' || coalesce((exif::json->>'regierungsbezirk'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'landkreis' IS NOT NULL THEN 'Landkreis: ' || coalesce((exif::json->>'landkreis'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'fundort_1' IS NOT NULL THEN 'Fundort_1: ' || coalesce((exif::json->>'fundort_1'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'NN_hohe' IS NOT NULL THEN 'NN_hohe: ' || coalesce((exif::json->>'NN_hohe'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'begleitpflanzen' IS NOT NULL THEN 'Begleitpflanzen: ' || coalesce((exif::json->>'begleitpflanzen'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'datum_gesammelt' IS NOT NULL THEN 'Datum_gesammelt: ' || coalesce((exif::json->>'datum_gesammelt'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'leg' IS NOT NULL THEN 'Leg: ' || coalesce((exif::json->>'leg'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'det' IS NOT NULL THEN 'Det: ' || coalesce((exif::json->>'det'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'conf' IS NOT NULL THEN 'Conf: ' || coalesce((exif::json->>'conf'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'fot' IS NOT NULL THEN 'Fot: ' || coalesce((exif::json->>'fot'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'herbar' IS NOT NULL THEN 'Herbar: ' || coalesce((exif::json->>'herbar'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'herbarbelegnr' IS NOT NULL THEN 'Herbarbelegnr: ' || coalesce((exif::json->>'herbarbelegnr'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'anmerkung' IS NOT NULL THEN 'Anmerkung: ' || coalesce((exif::json->>'anmerkung'), '') ELSE '' END as caption,
+    rtrim(
+	CASE WHEN exif::json->>'bildnummer' IS NOT NULL AND exif::json->>'bildnummer' != '' THEN 'Bildnummer: ' || coalesce((exif::json->>'bildnummer'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'taxRef_gattung' IS NOT NULL AND exif::json->>'taxRef_gattung' != '' THEN 'TaxRef_gattung: ' || coalesce((exif::json->>'taxRef_gattung'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'art' IS NOT NULL AND exif::json->>'art' != '' THEN 'Art: ' || coalesce((exif::json->>'art'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'taxref_ID' IS NOT NULL AND exif::json->>'taxref_ID' != '' THEN 'Taxref_ID: ' || coalesce((exif::json->>'taxref_ID'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'bildkategorie' IS NOT NULL AND exif::json->>'bildkategorie' != '' THEN 'Bildkategorie: ' || coalesce((exif::json->>'bildkategorie'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'TKnr' IS NOT NULL AND exif::json->>'TKnr' != '' THEN 'TKnr: ' || coalesce((exif::json->>'TKnr'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'TKname' IS NOT NULL AND exif::json->>'TKname' != '' THEN 'TKname: ' || coalesce((exif::json->>'TKname'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'land' IS NOT NULL AND exif::json->>'land' != '' THEN 'Land: ' || coalesce((exif::json->>'land'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'bundesland' IS NOT NULL AND exif::json->>'bundesland' != '' THEN 'Bundesland: ' || coalesce((exif::json->>'bundesland'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'regierungsbezirk' IS NOT NULL AND exif::json->>'regierungsbezirk' != '' THEN 'Regierungsbezirk: ' || coalesce((exif::json->>'regierungsbezirk'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'landkreis' IS NOT NULL AND exif::json->>'landkreis' != '' THEN 'Landkreis: ' || coalesce((exif::json->>'landkreis'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'fundort_1' IS NOT NULL AND exif::json->>'fundort_1' != '' THEN 'Fundort_1: ' || coalesce((exif::json->>'fundort_1'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'NN_hohe' IS NOT NULL AND exif::json->>'NN_hohe' != '' THEN 'NN_hohe: ' || coalesce((exif::json->>'NN_hohe'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'begleitpflanzen' IS NOT NULL AND exif::json->>'begleitpflanzen' != '' THEN 'Begleitpflanzen: ' || coalesce((exif::json->>'begleitpflanzen'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'datum_gesammelt' IS NOT NULL AND exif::json->>'datum_gesammelt' != '' THEN 'Datum_gesammelt: ' || coalesce((exif::json->>'datum_gesammelt'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'leg' IS NOT NULL AND exif::json->>'leg' != '' THEN 'Leg: ' || coalesce((exif::json->>'leg'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'det' IS NOT NULL AND exif::json->>'det' != '' THEN 'Det: ' || coalesce((exif::json->>'det'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'conf' IS NOT NULL AND exif::json->>'conf' != '' THEN 'Conf: ' || coalesce((exif::json->>'conf'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'fot' IS NOT NULL AND exif::json->>'fot' != '' THEN 'Fot: ' || coalesce((exif::json->>'fot'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'herbar' IS NOT NULL AND exif::json->>'herbar' != '' THEN 'Herbar: ' || coalesce((exif::json->>'herbar'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'herbarbelegnr' IS NOT NULL AND exif::json->>'herbarbelegnr' != '' THEN 'Herbarbelegnr: ' || coalesce((exif::json->>'herbarbelegnr'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'anmerkung' IS NOT NULL AND exif::json->>'anmerkung' != '' THEN 'Anmerkung: ' || coalesce((exif::json->>'anmerkung'), '') ELSE '' END
+	,', ') as caption,
 	
-	CASE WHEN exif::json->>'bildnummer' IS NOT NULL THEN 'Bildnummer: ' || coalesce((exif::json->>'bildnummer'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'taxRef_gattung' IS NOT NULL THEN 'TaxRef_gattung: ' || coalesce((exif::json->>'taxRef_gattung'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'art' IS NOT NULL THEN 'Art: ' || coalesce((exif::json->>'art'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'taxref_ID' IS NOT NULL THEN 'Taxref_ID: ' || coalesce((exif::json->>'taxref_ID'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'bildkategorie' IS NOT NULL THEN 'Bildkategorie: ' || coalesce((exif::json->>'bildkategorie'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'TKnr' IS NOT NULL THEN 'TKnr: ' || coalesce((exif::json->>'TKnr'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'TKname' IS NOT NULL THEN 'TKname: ' || coalesce((exif::json->>'TKname'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'land' IS NOT NULL THEN 'Land: ' || coalesce((exif::json->>'land'), '') || '&lt;br&gt;' ELSE '' END ||
-	CASE WHEN exif::json->>'bundesland' IS NOT NULL THEN 'Bundesland: ' || coalesce((exif::json->>'bundesland'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'regierungsbezirk' IS NOT NULL THEN 'Regierungsbezirk: ' || coalesce((exif::json->>'regierungsbezirk'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'landkreis' IS NOT NULL THEN 'Landkreis: ' || coalesce((exif::json->>'landkreis'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'fundort_1' IS NOT NULL THEN 'Fundort_1: ' || coalesce((exif::json->>'fundort_1'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'NN_hohe' IS NOT NULL THEN 'NN_hohe: ' || coalesce((exif::json->>'NN_hohe'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'begleitpflanzen' IS NOT NULL THEN 'Begleitpflanzen: ' || coalesce((exif::json->>'begleitpflanzen'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'datum_gesammelt' IS NOT NULL THEN 'Datum_gesammelt: ' || coalesce((exif::json->>'datum_gesammelt'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'leg' IS NOT NULL THEN 'Leg: ' || coalesce((exif::json->>'leg'), '') || '&lt;br&gt;' ELSE '' END ||
-	CASE WHEN exif::json->>'det' IS NOT NULL THEN 'Det: ' || coalesce((exif::json->>'det'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'conf' IS NOT NULL THEN 'Conf: ' || coalesce((exif::json->>'conf'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'fot' IS NOT NULL THEN 'Fot: ' || coalesce((exif::json->>'fot'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'herbar' IS NOT NULL THEN 'Herbar: ' || coalesce((exif::json->>'herbar'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'herbarbelegnr' IS NOT NULL THEN 'Herbarbelegnr: ' || coalesce((exif::json->>'herbarbelegnr'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'anmerkung' IS NOT NULL THEN 'Anmerkung: ' || coalesce((exif::json->>'anmerkung'), '') ELSE '' END as caption_html,
+	rtrim(
+	CASE WHEN exif::json->>'bildnummer' IS NOT NULL AND exif::json->>'bildnummer' != '' THEN 'Bildnummer: ' || coalesce((exif::json->>'bildnummer'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'taxRef_gattung' IS NOT NULL AND exif::json->>'taxRef_gattung' != '' THEN 'TaxRef_gattung: ' || coalesce((exif::json->>'taxRef_gattung'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'art' IS NOT NULL AND exif::json->>'art' != '' THEN 'Art: ' || coalesce((exif::json->>'art'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'taxref_ID' IS NOT NULL AND exif::json->>'taxref_ID' != '' THEN 'Taxref_ID: ' || coalesce((exif::json->>'taxref_ID'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'bildkategorie' IS NOT NULL AND exif::json->>'bildkategorie' != '' THEN 'Bildkategorie: ' || coalesce((exif::json->>'bildkategorie'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'TKnr' IS NOT NULL AND exif::json->>'TKnr' != '' THEN 'TKnr: ' || coalesce((exif::json->>'TKnr'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'TKname' IS NOT NULL AND exif::json->>'TKname' != '' THEN 'TKname: ' || coalesce((exif::json->>'TKname'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'land' IS NOT NULL AND exif::json->>'land' != '' THEN 'Land: ' || coalesce((exif::json->>'land'), '') || '&lt;br&gt;' ELSE '&lt;br&gt;' END ||
+	CASE WHEN exif::json->>'bundesland' IS NOT NULL AND exif::json->>'bundesland' != '' THEN 'Bundesland: ' || coalesce((exif::json->>'bundesland'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'regierungsbezirk' IS NOT NULL AND exif::json->>'regierungsbezirk' != '' THEN 'Regierungsbezirk: ' || coalesce((exif::json->>'regierungsbezirk'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'landkreis' IS NOT NULL AND exif::json->>'landkreis' != '' THEN 'Landkreis: ' || coalesce((exif::json->>'landkreis'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'fundort_1' IS NOT NULL AND exif::json->>'fundort_1' != '' THEN 'Fundort_1: ' || coalesce((exif::json->>'fundort_1'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'NN_hohe' IS NOT NULL AND exif::json->>'NN_hohe' != '' THEN 'NN_hohe: ' || coalesce((exif::json->>'NN_hohe'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'begleitpflanzen' IS NOT NULL AND exif::json->>'begleitpflanzen' != '' THEN 'Begleitpflanzen: ' || coalesce((exif::json->>'begleitpflanzen'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'datum_gesammelt' IS NOT NULL AND exif::json->>'datum_gesammelt' != '' THEN 'Datum_gesammelt: ' || coalesce((exif::json->>'datum_gesammelt'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'leg' IS NOT NULL AND exif::json->>'leg' != '' THEN 'Leg: ' || coalesce((exif::json->>'leg'), '') || '&lt;br&gt;' ELSE '&lt;br&gt;' END ||
+	CASE WHEN exif::json->>'det' IS NOT NULL AND exif::json->>'det' != '' THEN 'Det: ' || coalesce((exif::json->>'det'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'conf' IS NOT NULL AND exif::json->>'conf' != '' THEN 'Conf: ' || coalesce((exif::json->>'conf'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'fot' IS NOT NULL AND exif::json->>'fot' != '' THEN 'Fot: ' || coalesce((exif::json->>'fot'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'herbar' IS NOT NULL AND exif::json->>'herbar' != '' THEN 'Herbar: ' || coalesce((exif::json->>'herbar'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'herbarbelegnr' IS NOT NULL AND exif::json->>'herbarbelegnr' != '' THEN 'Herbarbelegnr: ' || coalesce((exif::json->>'herbarbelegnr'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'anmerkung' IS NOT NULL AND exif::json->>'anmerkung' != '' THEN 'Anmerkung: ' || coalesce((exif::json->>'anmerkung'), '') ELSE '' END
+	,', ') as caption_html,
 	
     case
 
