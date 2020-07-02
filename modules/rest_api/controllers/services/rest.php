@@ -1028,7 +1028,7 @@ class Rest_Controller extends Controller {
         }
         return $column['caption'];
       }, array_values($csvTemplate));
-      return implode(',', $row) . "\n";
+      return chr(0xEF) . chr(0xBB) . chr(0xBF) . implode(',', $row) . "\n";
     }
     return '';
   }
