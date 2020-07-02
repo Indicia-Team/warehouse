@@ -1717,7 +1717,7 @@ class Rest_Controller extends Controller {
       }
     }
     else {
-      if (!preg_match('/^[a-z0-9_]+(\.[a-z0-9_-]+)*$/', $sourceField)) {
+      if (!preg_match('/^[a-z0-9_\-]+(\.[a-z0-9_\-]+)*$/', $sourceField)) {
         $row[] = "Invalid field $sourceField";
       }
       else {
