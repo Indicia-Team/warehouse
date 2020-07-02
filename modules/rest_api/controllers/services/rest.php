@@ -884,7 +884,7 @@ class Rest_Controller extends Controller {
           $fields[] = 'identification';
           $fields[] = 'occurrence.zero_abundance';
         }
-        elseif (preg_match('/^#attr_value:(event|sample|parent_event|occurrence):(\d+)$#/', $field, $matches)) {
+        elseif (preg_match('/^#attr_value:(event|sample|parent_event|occurrence):(\d+)#$/', $field, $matches)) {
           $key = $matches[1] === 'parent_event' ? 'parent_attributes' : 'attributes';
           // Tolerate sample or event for entity parameter.
           $entity = in_array($matches[1], ['sample', 'event', 'parent_event']) ? 'event' : 'occurrence';
