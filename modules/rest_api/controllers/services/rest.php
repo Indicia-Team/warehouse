@@ -1361,11 +1361,12 @@ class Rest_Controller extends Controller {
    */
   private function esGetSpecialFieldAttrValue(array $doc, array $params) {
     $r = [];
-    if (in_array($params[0], ['occurrence', 'sample', 'event'])) {
+    if (in_array($params[0], ['occurrence', 'sample', 'event', 'parent_event'])) {
       // Tolerate sample or event for sample attributes.
-      $params[0] = ($params[0] === 'sample' ? 'event' : $params[0]);
-      if (isset($doc[$params[0]]['attributes'])) {
-        foreach ($doc[$params[0]]['attributes'] as $attr) {
+      $key = $params[0] === 'parent_event' ? 'parent_attributes' : 'attributes';
+      $entity = in_array($params[0], ['sample', 'event', 'parent_event']) ? 'event' : 'occurrence';
+      if (isset($doc[$entity][$key])) {
+        foreach ($doc[$entity][$key] as $attr) {
           if ($attr['id'] == $params[1]) {
             $r[] = $attr['value'];
           }
