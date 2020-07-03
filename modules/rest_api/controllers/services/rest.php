@@ -869,7 +869,7 @@ class Rest_Controller extends Controller {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
         }
-        elseif ($field === '#lat_lon#') {
+        elseif ($field === '#lat_lon#' || $field === '#lat#' || $field === '#lon#') {
           $fields[] = 'location.point';
         }
         elseif ($field === '#locality#') {
@@ -1521,6 +1521,27 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Special field handler for latitude data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldLat(array $doc) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    if (empty($root['point'])) {
+      return 'n/a';
+    }
+    $coords = explode(',', $root['point']);
+    $ns = $coords[0] >= 0 ? 'N' : 'S';
+    $lat = number_format(abs($coords[0]), 3);
+    return "$lat$ns $lon$ew";
+  }
+
+  /**
    * Special field handler for lat/lon data.
    *
    * @param array $doc
@@ -1543,6 +1564,37 @@ class Rest_Controller extends Controller {
     return "$lat$ns $lon$ew";
   }
 
+  /**
+   * Special field handler for longitude data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldLon(array $doc) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    if (empty($root['point'])) {
+      return 'n/a';
+    }
+    $coords = explode(',', $root['point']);
+    $ew = $coords[1] >= 0 ? 'E' : 'W';
+    $lon = number_format(abs($coords[1]), 3);
+    return "$lon$ew";
+  }
+
+  /**
+   * Special field handler for locality data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value containing a list of location names associated with the
+   *   record.
+   */
   private function esGetSpecialFieldLocality(array $doc) {
     $info = [];
     if (!empty($doc['location']['verbatim_locality'])) {
