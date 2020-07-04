@@ -7,6 +7,10 @@
     FROM cache_taxa_taxon_lists cttl
     LEFT JOIN taxa_taxon_list_attribute_values ttlav_finished on ttlav_finished.taxa_taxon_list_id = cttl.id 
         AND ttlav_finished.taxa_taxon_list_attribute_id = #finished_fungi_attribute_id# AND ttlav_finished.deleted=false
+    LEFT JOIN taxa_taxon_list_attribute_values ttlav_width on ttlav_width.taxa_taxon_list_id = cttl.id 
+        AND ttlav_width.taxa_taxon_list_attribute_id = #spore_width_attribute_id# AND ttlav_width.deleted=false
+    LEFT JOIN taxa_taxon_list_attribute_values ttlav_length on ttlav_length.taxa_taxon_list_id = cttl.id 
+        AND ttlav_length.taxa_taxon_list_attribute_id = #spore_length_attribute_id# AND ttlav_length.deleted=false
     #joins#
     WHERE cttl.taxon_list_id = #taxon_list_id# and cttl.taxon_rank_id=3
     AND cttl.id in
@@ -29,12 +33,17 @@
         lookup_values='incomplete:Incomplete,complete:Complete'/>
     <param name="taxon_list_id" display="" datatype="integer"/>
     <param name="finished_fungi_attribute_id" display="" datatype="integer"/>
+    <param name="spore_width_attribute_id" display="" datatype="integer"/>
+    <param name="spore_length_attribute_id" display="" datatype="integer"/>
   </params>
   <columns>
     <column name='cttl_id' display='Taxa taxon list ID' sql="cttl.id" datatype='integer' visible="false" in_count="true"/>
     <column name='ttlav_finished_id' display='Taxa taxon list attribute value ID' sql="ttlav_finished.id" datatype='integer' visible="false" />
     <column name='fungi_name' display='Fungi' sql="case when ttlav_finished.int_value = 1 then cttl.taxon else cttl.taxon End" datatype='text'/>
+    <column name='spore_data_complete' display='Spore data complete? (width and length)' sql="
+    case when ttlav_width.float_value IS NOT NULL AND ttlav_length.float_value IS NOT NULL then 'Yes' else 'No' End" datatype='text'/>
     <column name='status' display='Complete?' sql="case when ttlav_finished.int_value = 1 then 'Yes' else 'No' End" datatype='text'/>
-    <column name='status_boolean' sql="case when ttlav_finished.int_value = 1 then true else false End" datatype='boolean' visible="false" />
+    <column name='finished_boolean' sql="case when ttlav_finished.int_value = 1 then true else false End" datatype='boolean' visible="false" />
+    <column name='finished_boolean_inverted' sql="case when ttlav_finished.int_value = 1 then false else true End" datatype='boolean' visible="false" />
   </columns> 
 </report>
