@@ -1677,6 +1677,9 @@ class Rest_Controller extends Controller {
       if (!empty($doc['metadata']['confidential']) && $doc['metadata']['confidential'] !== 'false') {
         $terms[] = 'Confidential';
       }
+      if (!empty($doc['metadata']['created_by_id']) && $doc['metadata']['created_by_id'] === '1') {
+        $terms[] = 'Anonymous user';
+      }
     }
     if (!empty($doc['occurrence'])) {
       if (!empty($doc['occurrence']['zero_abundance']) && $doc['occurrence']['zero_abundance'] !== 'false') {
