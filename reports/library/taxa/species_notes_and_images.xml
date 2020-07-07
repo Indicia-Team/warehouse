@@ -5,53 +5,121 @@
   <query website_filter_field="o.website_id">
     SELECT 'image', path as the_text, 
     rtrim(
-	CASE WHEN exif::json->>'bildnummer' IS NOT NULL AND exif::json->>'bildnummer' != '' THEN 'Bildnummer: ' || coalesce((exif::json->>'bildnummer'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'taxRef_gattung' IS NOT NULL AND exif::json->>'taxRef_gattung' != '' THEN 'TaxRef_gattung: ' || coalesce((exif::json->>'taxRef_gattung'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'art' IS NOT NULL AND exif::json->>'art' != '' THEN 'Art: ' || coalesce((exif::json->>'art'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'bildnummer' IS NOT NULL AND exif::json->>'bildnummer' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Číslo obrázku: ' ELSE 'Bildnummer: ' END
+		|| coalesce((exif::json->>'bildnummer'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'taxRef_gattung' IS NOT NULL AND exif::json->>'taxRef_gattung' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Rodové jméno: ' ELSE 'TaxRef_gattung: ' END
+		|| coalesce((exif::json->>'taxRef_gattung'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'art' IS NOT NULL AND exif::json->>'art' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Druhové jméno: ' ELSE 'Art: ' END
+		|| coalesce((exif::json->>'art'), '') || chr(10) ELSE '' END ||
 	CASE WHEN exif::json->>'taxref_ID' IS NOT NULL AND exif::json->>'taxref_ID' != '' THEN 'Taxref_ID: ' || coalesce((exif::json->>'taxref_ID'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'bildkategorie' IS NOT NULL AND exif::json->>'bildkategorie' != '' THEN 'Bildkategorie: ' || coalesce((exif::json->>'bildkategorie'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'TKnr' IS NOT NULL AND exif::json->>'TKnr' != '' THEN 'TKnr: ' || coalesce((exif::json->>'TKnr'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'TKname' IS NOT NULL AND exif::json->>'TKname' != '' THEN 'TKname: ' || coalesce((exif::json->>'TKname'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'land' IS NOT NULL AND exif::json->>'land' != '' THEN 'Land: ' || coalesce((exif::json->>'land'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'bundesland' IS NOT NULL AND exif::json->>'bundesland' != '' THEN 'Bundesland: ' || coalesce((exif::json->>'bundesland'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'regierungsbezirk' IS NOT NULL AND exif::json->>'regierungsbezirk' != '' THEN 'Regierungsbezirk: ' || coalesce((exif::json->>'regierungsbezirk'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'landkreis' IS NOT NULL AND exif::json->>'landkreis' != '' THEN 'Landkreis: ' || coalesce((exif::json->>'landkreis'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'fundort_1' IS NOT NULL AND exif::json->>'fundort_1' != '' THEN 'Fundort_1: ' || coalesce((exif::json->>'fundort_1'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'NN_hohe' IS NOT NULL AND exif::json->>'NN_hohe' != '' THEN 'NN_hohe: ' || coalesce((exif::json->>'NN_hohe'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'begleitpflanzen' IS NOT NULL AND exif::json->>'begleitpflanzen' != '' THEN 'Begleitpflanzen: ' || coalesce((exif::json->>'begleitpflanzen'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'datum_gesammelt' IS NOT NULL AND exif::json->>'datum_gesammelt' != '' THEN 'Datum_gesammelt: ' || coalesce((exif::json->>'datum_gesammelt'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'bildkategorie' IS NOT NULL AND exif::json->>'bildkategorie' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Kategorie obrázku: ' ELSE 'Bildkategorie: ' END		 
+		|| coalesce((exif::json->>'bildkategorie'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'TKnr' IS NOT NULL AND exif::json->>'TKnr' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Kvadrant: ' ELSE 'TKnr: ' END	 
+		|| coalesce((exif::json->>'TKnr'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'TKname' IS NOT NULL AND exif::json->>'TKname' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Název kvadrantu: ' ELSE 'TKname: ' END	 
+		|| coalesce((exif::json->>'TKname'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'land' IS NOT NULL AND exif::json->>'land' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Stát: ' ELSE 'Land: ' END	 	 
+		|| coalesce((exif::json->>'land'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'bundesland' IS NOT NULL AND exif::json->>'bundesland' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Spolková země: ' ELSE 'Bundesland: ' END	 
+		|| coalesce((exif::json->>'bundesland'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'regierungsbezirk' IS NOT NULL AND exif::json->>'regierungsbezirk' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Vládní okres: ' ELSE 'Regierungsbezirk: ' END 
+		|| coalesce((exif::json->>'regierungsbezirk'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'landkreis' IS NOT NULL AND exif::json->>'landkreis' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Okres: ' ELSE 'Landkreis: ' END 
+		|| coalesce((exif::json->>'landkreis'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'fundort_1' IS NOT NULL AND exif::json->>'fundort_1' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Místo nálezu: ' ELSE 'Fundort_1: ' END 
+		|| coalesce((exif::json->>'fundort_1'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'NN_hohe' IS NOT NULL AND exif::json->>'NN_hohe' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Nadmořská výška: ' ELSE 'NN_hohe: ' END 
+		|| coalesce((exif::json->>'NN_hohe'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'begleitpflanzen' IS NOT NULL AND exif::json->>'begleitpflanzen' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Stanoviště: ' ELSE 'Begleitpflanzen: ' END 
+		|| coalesce((exif::json->>'begleitpflanzen'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'datum_gesammelt' IS NOT NULL AND exif::json->>'datum_gesammelt' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Datum: ' ELSE 'Datum_gesammelt: ' END  
+		|| coalesce((exif::json->>'datum_gesammelt'), '') || chr(10) ELSE '' END ||
 	CASE WHEN exif::json->>'leg' IS NOT NULL AND exif::json->>'leg' != '' THEN 'Leg: ' || coalesce((exif::json->>'leg'), '') || chr(10) ELSE '' END ||
 	CASE WHEN exif::json->>'det' IS NOT NULL AND exif::json->>'det' != '' THEN 'Det: ' || coalesce((exif::json->>'det'), '') || chr(10) ELSE '' END ||
 	CASE WHEN exif::json->>'conf' IS NOT NULL AND exif::json->>'conf' != '' THEN 'Conf: ' || coalesce((exif::json->>'conf'), '') || chr(10) ELSE '' END ||
 	CASE WHEN exif::json->>'fot' IS NOT NULL AND exif::json->>'fot' != '' THEN 'Fot: ' || coalesce((exif::json->>'fot'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'herbar' IS NOT NULL AND exif::json->>'herbar' != '' THEN 'Herbar: ' || coalesce((exif::json->>'herbar'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'herbarbelegnr' IS NOT NULL AND exif::json->>'herbarbelegnr' != '' THEN 'Herbarbelegnr: ' || coalesce((exif::json->>'herbarbelegnr'), '') || chr(10) ELSE '' END ||
-	CASE WHEN exif::json->>'anmerkung' IS NOT NULL AND exif::json->>'anmerkung' != '' THEN 'Anmerkung: ' || coalesce((exif::json->>'anmerkung'), '') ELSE '' END
+	CASE WHEN exif::json->>'herbar' IS NOT NULL AND exif::json->>'herbar' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Sbírka: ' ELSE 'Herbar: '  END
+		|| coalesce((exif::json->>'herbar'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'herbarbelegnr' IS NOT NULL AND exif::json->>'herbarbelegnr' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Číslo ve sbírce: ' ELSE 'Herbarbelegnr: '  END 
+		|| coalesce((exif::json->>'herbarbelegnr'), '') || chr(10) ELSE '' END ||
+	CASE WHEN exif::json->>'anmerkung' IS NOT NULL AND exif::json->>'anmerkung' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Poznámka: ' ELSE 'Anmerkung: '  END  
+		|| coalesce((exif::json->>'anmerkung'), '') ELSE '' END
 	,', ') as caption,
 	
 	rtrim(
-	CASE WHEN exif::json->>'bildnummer' IS NOT NULL AND exif::json->>'bildnummer' != '' THEN 'Bildnummer: ' || coalesce((exif::json->>'bildnummer'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'taxRef_gattung' IS NOT NULL AND exif::json->>'taxRef_gattung' != '' THEN 'TaxRef_gattung: ' || coalesce((exif::json->>'taxRef_gattung'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'art' IS NOT NULL AND exif::json->>'art' != '' THEN 'Art: ' || coalesce((exif::json->>'art'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'bildnummer' IS NOT NULL AND exif::json->>'bildnummer' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Číslo obrázku: ' ELSE 'Bildnummer: ' END
+		|| coalesce((exif::json->>'bildnummer'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'taxRef_gattung' IS NOT NULL AND exif::json->>'taxRef_gattung' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Rodové jméno: ' ELSE 'TaxRef_gattung: ' END 
+		|| coalesce((exif::json->>'taxRef_gattung'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'art' IS NOT NULL AND exif::json->>'art' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Druhové jméno: ' ELSE 'Art: ' END 
+		|| coalesce((exif::json->>'art'), '') || ', ' ELSE '' END ||
 	CASE WHEN exif::json->>'taxref_ID' IS NOT NULL AND exif::json->>'taxref_ID' != '' THEN 'Taxref_ID: ' || coalesce((exif::json->>'taxref_ID'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'bildkategorie' IS NOT NULL AND exif::json->>'bildkategorie' != '' THEN 'Bildkategorie: ' || coalesce((exif::json->>'bildkategorie'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'TKnr' IS NOT NULL AND exif::json->>'TKnr' != '' THEN 'TKnr: ' || coalesce((exif::json->>'TKnr'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'TKname' IS NOT NULL AND exif::json->>'TKname' != '' THEN 'TKname: ' || coalesce((exif::json->>'TKname'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'land' IS NOT NULL AND exif::json->>'land' != '' THEN 'Land: ' || coalesce((exif::json->>'land'), '') || '&lt;br&gt;' ELSE '&lt;br&gt;' END ||
-	CASE WHEN exif::json->>'bundesland' IS NOT NULL AND exif::json->>'bundesland' != '' THEN 'Bundesland: ' || coalesce((exif::json->>'bundesland'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'regierungsbezirk' IS NOT NULL AND exif::json->>'regierungsbezirk' != '' THEN 'Regierungsbezirk: ' || coalesce((exif::json->>'regierungsbezirk'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'landkreis' IS NOT NULL AND exif::json->>'landkreis' != '' THEN 'Landkreis: ' || coalesce((exif::json->>'landkreis'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'fundort_1' IS NOT NULL AND exif::json->>'fundort_1' != '' THEN 'Fundort_1: ' || coalesce((exif::json->>'fundort_1'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'NN_hohe' IS NOT NULL AND exif::json->>'NN_hohe' != '' THEN 'NN_hohe: ' || coalesce((exif::json->>'NN_hohe'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'begleitpflanzen' IS NOT NULL AND exif::json->>'begleitpflanzen' != '' THEN 'Begleitpflanzen: ' || coalesce((exif::json->>'begleitpflanzen'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'datum_gesammelt' IS NOT NULL AND exif::json->>'datum_gesammelt' != '' THEN 'Datum_gesammelt: ' || coalesce((exif::json->>'datum_gesammelt'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'bildkategorie' IS NOT NULL AND exif::json->>'bildkategorie' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Kategorie obrázku: ' ELSE 'Bildkategorie: ' END
+		|| coalesce((exif::json->>'bildkategorie'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'TKnr' IS NOT NULL AND exif::json->>'TKnr' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Kvadrant: ' ELSE 'TKnr: ' END	 
+		|| coalesce((exif::json->>'TKnr'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'TKname' IS NOT NULL AND exif::json->>'TKname' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Název kvadrantu: ' ELSE 'TKname: ' END
+		|| coalesce((exif::json->>'TKname'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'land' IS NOT NULL AND exif::json->>'land' != '' THEN 
+		CASE WHEN '#language#'='cs' THEN 'Stát: ' ELSE 'Land: ' END	 
+		|| coalesce((exif::json->>'land'), '') || '&lt;br&gt;' ELSE '&lt;br&gt;' END ||
+	CASE WHEN exif::json->>'bundesland' IS NOT NULL AND exif::json->>'bundesland' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Spolková země: ' ELSE 'Bundesland: ' END
+		|| coalesce((exif::json->>'bundesland'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'regierungsbezirk' IS NOT NULL AND exif::json->>'regierungsbezirk' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Vládní okres: ' ELSE 'Regierungsbezirk: ' END  
+		|| coalesce((exif::json->>'regierungsbezirk'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'landkreis' IS NOT NULL AND exif::json->>'landkreis' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Okres: ' ELSE 'Landkreis: ' END
+		|| coalesce((exif::json->>'landkreis'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'fundort_1' IS NOT NULL AND exif::json->>'fundort_1' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Místo nálezu: ' ELSE 'Fundort_1: ' END
+		|| coalesce((exif::json->>'fundort_1'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'NN_hohe' IS NOT NULL AND exif::json->>'NN_hohe' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Nadmořská výška: ' ELSE 'NN_hohe: ' END 
+		|| coalesce((exif::json->>'NN_hohe'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'begleitpflanzen' IS NOT NULL AND exif::json->>'begleitpflanzen' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Stanoviště: ' ELSE 'Begleitpflanzen: ' END 
+		|| coalesce((exif::json->>'begleitpflanzen'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'datum_gesammelt' IS NOT NULL AND exif::json->>'datum_gesammelt' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Datum: ' ELSE 'Datum_gesammelt: ' END 
+		|| coalesce((exif::json->>'datum_gesammelt'), '') || ', ' ELSE '' END ||
 	CASE WHEN exif::json->>'leg' IS NOT NULL AND exif::json->>'leg' != '' THEN 'Leg: ' || coalesce((exif::json->>'leg'), '') || '&lt;br&gt;' ELSE '&lt;br&gt;' END ||
 	CASE WHEN exif::json->>'det' IS NOT NULL AND exif::json->>'det' != '' THEN 'Det: ' || coalesce((exif::json->>'det'), '') || ', ' ELSE '' END ||
 	CASE WHEN exif::json->>'conf' IS NOT NULL AND exif::json->>'conf' != '' THEN 'Conf: ' || coalesce((exif::json->>'conf'), '') || ', ' ELSE '' END ||
 	CASE WHEN exif::json->>'fot' IS NOT NULL AND exif::json->>'fot' != '' THEN 'Fot: ' || coalesce((exif::json->>'fot'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'herbar' IS NOT NULL AND exif::json->>'herbar' != '' THEN 'Herbar: ' || coalesce((exif::json->>'herbar'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'herbarbelegnr' IS NOT NULL AND exif::json->>'herbarbelegnr' != '' THEN 'Herbarbelegnr: ' || coalesce((exif::json->>'herbarbelegnr'), '') || ', ' ELSE '' END ||
-	CASE WHEN exif::json->>'anmerkung' IS NOT NULL AND exif::json->>'anmerkung' != '' THEN 'Anmerkung: ' || coalesce((exif::json->>'anmerkung'), '') ELSE '' END
+	CASE WHEN exif::json->>'herbar' IS NOT NULL AND exif::json->>'herbar' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Sbírka: ' ELSE 'Herbar: '  END
+		|| coalesce((exif::json->>'herbar'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'herbarbelegnr' IS NOT NULL AND exif::json->>'herbarbelegnr' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Číslo ve sbírce: ' ELSE 'Herbarbelegnr: '  END 
+		|| coalesce((exif::json->>'herbarbelegnr'), '') || ', ' ELSE '' END ||
+	CASE WHEN exif::json->>'anmerkung' IS NOT NULL AND exif::json->>'anmerkung' != '' THEN
+		CASE WHEN '#language#'='cs' THEN 'Poznámka: ' ELSE 'Anmerkung: '  END
+		|| coalesce((exif::json->>'anmerkung'), '') ELSE '' END
 	,', ') as caption_html,
 	
     case
