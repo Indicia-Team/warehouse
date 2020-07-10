@@ -796,7 +796,7 @@ class Rest_Controller extends Controller {
     ['caption' => 'ID', 'field' => 'id'],
     ['caption' => 'RecordKey', 'field' => '_id'],
     ['caption' => 'External key', 'field' => 'occurrence_external_key'],
-    ['caption' => 'Source', 'field' => ''], //This looks like a composite field in easy download of website | survey | group ?? need to check posible map to ES metadata fields
+    ['caption' => 'Source', 'field' => '#datasource_code#'], // Might not be exactly the same as old ES download which I think includes group
     ['caption' => 'Species', 'field' => 'taxon.accepted_name'],
     ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
     ['caption' => 'Taxon group', 'field' => 'taxon.group'],
@@ -805,21 +805,21 @@ class Rest_Controller extends Controller {
     ['caption' => 'Family', 'field' => 'taxon.family'],
     ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
     ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
-    ['caption' => 'Original map ref', 'field' => ''], // I don't think that this is available in the index
+    ['caption' => 'Original map ref', 'field' => ''], // Unavailable in ES index (entered_sref)
     ['caption' => 'Latitude', 'field' => '#dec_lat#'],
     ['caption' => 'Longitude', 'field' => '#dec_lon#'],
-    ['caption' => 'Projection', 'field' => ''], // No input sref system in ES index
-    ['caption' => 'Precision', 'field' => ''], // This this is output precision - not input
+    ['caption' => 'Projection', 'field' => ''], // Unavailable in ES index (entered_sref)
+    ['caption' => 'Precision', 'field' => 'location.coordinate_uncertainty_in_meters'],
     ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
     ['caption' => 'Output map ref projection', 'field' => 'location.output_sref_system'],
-    ['caption' => 'Biotope', 'field' => ''], // Unavailable in ES index
+    ['caption' => 'Biotope', 'field' => 'event.habitat'],
     ['caption' => 'VC number', 'field' => '#higher_geography:Vice County:code#'],
     ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
     ['caption' => 'Date interpreted', 'field' => '#event_date#'],
     ['caption' => 'Date from', 'field' => 'event.date_start'],
     ['caption' => 'Date to', 'field' => 'event.date_end'], 
-    ['caption' => 'Date type', 'field' => ''], // Unavalable in ES index
-    ['caption' => 'Sample method', 'field' => ''], // Unavalable in ES index
+    ['caption' => 'Date type', 'field' => ''], // Unavalable in ES index (date_type)
+    ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
     ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
     ['caption' => 'Determer', 'field' => 'identification.identified_by'],
     ['caption' => 'Recorder certainty', 'field' => 'identification.recorder_certainty'],
@@ -830,16 +830,16 @@ class Rest_Controller extends Controller {
     ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
     ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
     ['caption' => 'Images', 'field' => '#occurrence_media#'],
-    ['caption' => 'Input on date', 'field' => ''], // Unavalable in ES index
-    ['caption' => 'Last edited on date', 'field' => 'metadata.updated_on'], //Different format?
+    ['caption' => 'Input on date', 'field' => 'metadata.created_on'], // Format ??
+    ['caption' => 'Last edited on date', 'field' => 'metadata.updated_on'], // Format ??
     ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
     ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
-    ['caption' => 'Query', 'field' => ''], // Need to add to index def - already in docs
-    ['caption' => 'Verifier', 'field' => 'identification.verifier.name'], // Must be available in ES for verification page??
-    ['caption' => 'Verified on', 'field' => 'identification.verified_on'], // Must be available in ES for verification page??
-    ['caption' => 'Licence', 'field' => ''], // Not available in ES
-    ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download
-    ['caption' => 'attr_det_full_name', 'field' => ''], // Not available in ES index
+    ['caption' => 'Query', 'field' => 'identification.query'], // Not on dev index (index config)
+    ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
+    ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
+    ['caption' => 'Licence', 'field' => 'metadata.licence_code'], // In GitHyub logstach pgsql conf.template but cant see in kibana on live site (or dev)
+    ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download?
+    ['caption' => 'attr_det_full_name', 'field' => 'identification.identified_by'], // Repeat of Determiner field with ES
   ];
 
   /**
