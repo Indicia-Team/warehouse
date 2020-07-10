@@ -806,7 +806,7 @@ class Rest_Controller extends Controller {
     ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
     ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
     ['caption' => 'Original map ref', 'field' => ''], // I don't think that this is available in the index
-    ['caption' => 'Latitude', 'field' => '#dec_lat#'],
+    ['caption' => 'Latitude', 'field' => 'location.point[1]'],
     ['caption' => 'Longitude', 'field' => '#dec_lon#'],
     ['caption' => 'Projection', 'field' => ''], // No input sref system in ES index
     ['caption' => 'Precision', 'field' => ''], // This this is output precision - not input
