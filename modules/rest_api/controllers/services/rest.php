@@ -829,7 +829,7 @@ class Rest_Controller extends Controller {
     ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'], // Output in easy download was T/F - this will be true/false
     ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
     ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
-    ['caption' => 'Images', 'field' => 'occurrence.media'],
+    ['caption' => 'Images', 'field' => '#occurrence_media#'],
     //['caption' => 'Input on date', 'field' => ''], // Unavalable in ES index
     ['caption' => 'Last edited on date', 'field' => 'metadata.updated_on'], //Different format?
     ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
