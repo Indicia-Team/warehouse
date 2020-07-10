@@ -788,6 +788,61 @@ class Rest_Controller extends Controller {
   ];
 
   /**
+   * Template for CSV download compatible with old easy download format.
+   *
+   * @var array
+   */
+  private $easyDownloadEsCsvTemplate = [
+    ['caption' => 'ID', 'field' => 'id'],
+    ['caption' => 'RecordKey', 'field' => '_id'],
+    ['caption' => 'External key', 'field' => 'occurrence_external_key'],
+    //['caption' => 'Source', 'field' => '??'], //This looks like a composite file in easy download of website | survey | group ?? need to check posible map to ES metadata fields
+    ['caption' => 'Species', 'field' => 'taxon.accepted_name'],
+    ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
+    ['caption' => 'Taxon group', 'field' => 'taxon.group'],
+    ['caption' => 'Kindom', 'field' => 'taxon.kingdom'],
+    ['caption' => 'Order', 'field' => 'taxon.order'],
+    ['caption' => 'Family', 'field' => 'taxon.family'],
+    ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
+    ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
+    //['caption' => 'Original map ref', 'field' => '??'], // I don't think that this is available in the index
+    //['caption' => 'Latitude', 'field' => 'location.point'],  // This is a comma-separated pair - I need a way to extract ALSO this output - in old format, suspect original
+    //['caption' => 'Longitude', 'field' => 'location.point'], // This is a comma-separated pair - I need a way to extract ALSO this output - in old format, suspect original
+    //['caption' => 'Projection', 'field' => 'location.output_sref_system'], // No input sref system in ES index
+    //['caption' => 'Precision', 'field' => 'location.coordinate_uncertainty_in_meters'], // This this is output precision - not input
+    ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
+    ['caption' => 'Output map ref projection', 'field' => 'location.output_sref_system'],
+    //['caption' => 'Biotope', 'field' => ''], // Unavailable in ES index
+    ['caption' => 'VC number', 'field' => '#higher_geography:Vice County:code#'],
+    ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
+    ['caption' => 'Date interpreted', 'field' => '#event_date#'],
+    ['caption' => 'Date from', 'field' => 'event.date_start'],
+    ['caption' => 'Date to', 'field' => 'event.date_end'], 
+    //['caption' => 'Date type', 'field' => ''], // Unavalable in ES index
+    //['caption' => 'Sample method', 'field' => ''], // Unavalable in ES index
+    ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
+    ['caption' => 'Determer', 'field' => 'identification.identified_by'],
+    ['caption' => 'Recorder certainty', 'field' => 'identification.recorder_certainty'],
+    ['caption' => 'Sex', 'field' => 'occurrence.sex'],
+    ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
+    ['caption' => 'Count of sex or stage', 'field' => 'occurrence.organism_quantity'],
+    ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'], // Output in easy download was T/F - this will be true/false
+    ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
+    ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
+    ['caption' => 'Images', 'field' => 'occurrence.media'],
+    //['caption' => 'Input on date', 'field' => ''], // Unavalable in ES index
+    ['caption' => 'Last edited on date', 'field' => 'metadata.updated_on'], //Different format?
+    ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
+    ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
+    //['caption' => 'Query', 'field' => 'identification.query'], // Need to add to index def - already in docs
+    ['caption' => 'Verifier', 'field' => 'identification.verifier.name'], // Must be available in ES for verification page??
+    ['caption' => 'Verified on', 'field' => 'identification.verified_on'], // Must be available in ES for verification page??
+    //['caption' => 'Licence', 'field' => ''], // Not available in ES
+    ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download
+    //['caption' => 'attr_det_full_name', 'field' => ''], // Not available in ES index
+  ];
+
+  /**
    * Works out the list of columns for an ES CSV download.
    *
    * @param obj $postObj
@@ -1040,8 +1095,18 @@ class Rest_Controller extends Controller {
    *   List of column definitions to download.
    */
   private function getEsCsvTemplate() {
-    // Start with the default columns set, or an empty array.
-    $csvTemplate = $this->esCsvTemplate === 'default' ? $this->defaultEsCsvTemplate : [];
+    // Start with the template columns set, or an empty array.
+    //$csvTemplate = $this->esCsvTemplate === 'default' ? $this->defaultEsCsvTemplate : [];
+    switch ($this->esCsvTemplate) {
+      case "default":
+        $csvTemplate = $this->defaultEsCsvTemplate;
+        break;
+      case "easy-download":
+        $csvTemplate = $this->easyDownloadEsCsvTemplate;
+        break;
+      default:
+      $csvTemplate = [];
+    }
     // Append extra columns.
     if (!empty($this->esCsvTemplateAddColumns)) {
       if (isset($this->esCsvTemplateAddColumns[0])) {
