@@ -12,7 +12,7 @@ function failInitialise($msg) {
     <meta name="author" content="Indicia Team">
     <title>Indicia Warehouse installation</title>
     <!-- Bootstrap core CSS -->
-    <link href="$root/vendor/bootstrap/css/bootstrap.css" rel="stylesheet">
+    <link href="$root/vendor-other/bootstrap/css/bootstrap.css" rel="stylesheet">
     <link href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" rel="stylesheet">
     <style>
       .alert {
@@ -40,7 +40,7 @@ function failInitialise($msg) {
       </div>
     </div>
     <script src="$root/media/js/jquery.js"></script>
-    <script src="$root/vendor/bootstrap/js/bootstrap.js"></script>
+    <script src="$root/vendor-other/bootstrap/js/bootstrap.js"></script>
 </body>
 </html>
 HTML;
