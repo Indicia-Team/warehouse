@@ -806,7 +806,7 @@ class Rest_Controller extends Controller {
     ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
     ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
     ['caption' => 'Original map ref', 'field' => ''], // I don't think that this is available in the index
-    ['caption' => 'Latitude', 'field' => 'location.point[1]'],
+    ['caption' => 'Latitude', 'field' => '#dec_lat#'],
     ['caption' => 'Longitude', 'field' => '#dec_lon#'],
     ['caption' => 'Projection', 'field' => ''], // No input sref system in ES index
     ['caption' => 'Precision', 'field' => ''], // This this is output precision - not input
@@ -1648,6 +1648,44 @@ class Rest_Controller extends Controller {
     $ew = $coords[1] >= 0 ? 'E' : 'W';
     $lon = number_format(abs($coords[1]), 3);
     return "$lon$ew";
+  }
+
+  /**
+   * Special field handler for decimal latitude data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return float
+   *   Decimal latitude.
+   */
+  private function esGetSpecialFieldDecLat(array $doc) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    if (empty($root['point'])) {
+      return 'n/a';
+    }
+    $coords = explode(',', $root['point']);
+    return $coords[0];
+  }
+
+  /**
+   * Special field handler for decimal longitude data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return float
+   *   Decimal longitude.
+   */
+  private function esGetSpecialFieldDecLon(array $doc) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    if (empty($root['point'])) {
+      return 'n/a';
+    }
+    $coords = explode(',', $root['point']);
+    return $coords[1];
   }
 
   /**
