@@ -36,7 +36,7 @@ will probably also be used for downloads going forward."
            description="Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key"/>
   </params>
   <columns>
-    <column name='occurrence_id' visible='false' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
+    <column name='occurrence_id' visible='false' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='sample_id' visible='false' sql='case when onf.sensitivity_precision is null then o.sample_id else null end' datatype='integer' />
     <column name='taxon' display='Species'
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
