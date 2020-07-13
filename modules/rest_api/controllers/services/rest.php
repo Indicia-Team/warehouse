@@ -1096,7 +1096,6 @@ class Rest_Controller extends Controller {
    */
   private function getEsCsvTemplate() {
     // Start with the template columns set, or an empty array.
-    //$csvTemplate = $this->esCsvTemplate === 'default' ? $this->defaultEsCsvTemplate : [];
     switch ($this->esCsvTemplate) {
       case "default":
         $csvTemplate = $this->defaultEsCsvTemplate;
