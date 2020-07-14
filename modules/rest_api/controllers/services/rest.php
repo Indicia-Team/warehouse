@@ -1604,6 +1604,8 @@ class Rest_Controller extends Controller {
       case "decimal":
         return $coords[0];
       case "nssuffix":
+        // Implemented as the default.
+      default:
         $ns = $coords[0] >= 0 ? 'N' : 'S';
         $lat = number_format(abs($coords[0]), 3);
         return "$lat$ns $lon$ew";
@@ -1653,6 +1655,8 @@ class Rest_Controller extends Controller {
       case "decimal":
         return $coords[1];
       case "ewsuffix":
+        // Implemented as the default.
+      default:
         $ew = $coords[1] >= 0 ? 'E' : 'W';
         $lon = number_format(abs($coords[1]), 3);
         return "$lon$ew";
