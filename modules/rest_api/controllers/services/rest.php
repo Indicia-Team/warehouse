@@ -1600,7 +1600,8 @@ class Rest_Controller extends Controller {
       return 'n/a';
     }
     $coords = explode(',', $root['point']);
-    switch($params[0]) {
+    $format = isset($params) ? $params[0] : "";
+    switch($format) {
       case "decimal":
         return $coords[0];
       case "nssuffix":
@@ -1651,7 +1652,8 @@ class Rest_Controller extends Controller {
       return 'n/a';
     }
     $coords = explode(',', $root['point']);
-    switch($params[0]) {
+    $format = isset($params) ? $params[0] : "";
+    switch($format) {
       case "decimal":
         return $coords[1];
       case "ewsuffix":
