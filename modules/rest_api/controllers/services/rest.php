@@ -806,8 +806,8 @@ class Rest_Controller extends Controller {
     ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
     ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
     ['caption' => 'Original map ref', 'field' => ''], // Unavailable in ES index (entered_sref)
-    ['caption' => 'Latitude', 'field' => '#dec_lat#'],
-    ['caption' => 'Longitude', 'field' => '#dec_lon#'],
+    ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
+    ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
     ['caption' => 'Projection', 'field' => ''], // Unavailable in ES index (entered_sref)
     ['caption' => 'Precision', 'field' => 'location.coordinate_uncertainty_in_meters'],
     ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
@@ -837,7 +837,7 @@ class Rest_Controller extends Controller {
     ['caption' => 'Query', 'field' => 'identification.query'], // Not on dev index (index config)
     ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
     ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
-    ['caption' => 'Licence', 'field' => 'metadata.licence_code'], // In GitHyub logstach pgsql conf.template but cant see in kibana on live site (or dev)
+    ['caption' => 'Licence', 'field' => 'metadata.licence_code'], // In GitHub logstash pgsql conf.template but cant see in kibana on live site (or dev)
     ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download?
     ['caption' => 'attr_det_full_name', 'field' => 'identification.identified_by'], // Repeat of Determiner field with ES
   ];
@@ -924,7 +924,7 @@ class Rest_Controller extends Controller {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
         }
-        elseif ($field === '#lat_lon#' || $field === '#lat#' || $field === '#lon#' || $field === '#dec_lat#' || $field === '#dec_lon#') {
+        elseif ($field === '#lat_lon#' || $field === '#lat#' || $field === '#lon#') {
           $fields[] = 'location.point';
         }
         elseif ($field === '#locality#') {
@@ -1593,16 +1593,21 @@ class Rest_Controller extends Controller {
    * @return string
    *   Formatted value.
    */
-  private function esGetSpecialFieldLat(array $doc) {
+  private function esGetSpecialFieldLat(array $doc, array $params) {
     // Check in case fields are in composite agg key.
     $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
     if (empty($root['point'])) {
       return 'n/a';
     }
     $coords = explode(',', $root['point']);
-    $ns = $coords[0] >= 0 ? 'N' : 'S';
-    $lat = number_format(abs($coords[0]), 3);
-    return "$lat$ns $lon$ew";
+    switch($params[0]) {
+      case "decimal":
+        return $coords[0];
+      case "nssuffix":
+        $ns = $coords[0] >= 0 ? 'N' : 'S';
+        $lat = number_format(abs($coords[0]), 3);
+        return "$lat$ns $lon$ew";
+    }
   }
 
   /**
@@ -1637,54 +1642,21 @@ class Rest_Controller extends Controller {
    * @return string
    *   Formatted value.
    */
-  private function esGetSpecialFieldLon(array $doc) {
+  private function esGetSpecialFieldLon(array $doc, array $params) {
     // Check in case fields are in composite agg key.
     $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
     if (empty($root['point'])) {
       return 'n/a';
     }
     $coords = explode(',', $root['point']);
-    $ew = $coords[1] >= 0 ? 'E' : 'W';
-    $lon = number_format(abs($coords[1]), 3);
-    return "$lon$ew";
-  }
-
-  /**
-   * Special field handler for decimal latitude data.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return float
-   *   Decimal latitude.
-   */
-  private function esGetSpecialFieldDecLat(array $doc) {
-    // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
-    if (empty($root['point'])) {
-      return 'n/a';
+    switch($params[0]) {
+      case "decimal":
+        return $coords[1];
+      case "ewsuffix":
+        $ew = $coords[1] >= 0 ? 'E' : 'W';
+        $lon = number_format(abs($coords[1]), 3);
+        return "$lon$ew";
     }
-    $coords = explode(',', $root['point']);
-    return $coords[0];
-  }
-
-  /**
-   * Special field handler for decimal longitude data.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return float
-   *   Decimal longitude.
-   */
-  private function esGetSpecialFieldDecLon(array $doc) {
-    // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
-    if (empty($root['point'])) {
-      return 'n/a';
-    }
-    $coords = explode(',', $root['point']);
-    return $coords[1];
   }
 
   /**
