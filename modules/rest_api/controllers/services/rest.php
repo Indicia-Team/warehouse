@@ -924,7 +924,7 @@ class Rest_Controller extends Controller {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
         }
-        elseif ($field === '#lat_lon#' || $field === '#lat#' || $field === '#lon#') {
+        elseif ($field === '#lat_lon#' || preg_match('/^#(lat|lon):(.*)#$/', $field)) {
           $fields[] = 'location.point';
         }
         elseif ($field === '#locality#') {
