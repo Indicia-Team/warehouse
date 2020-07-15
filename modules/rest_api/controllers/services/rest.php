@@ -743,7 +743,7 @@ class Rest_Controller extends Controller {
    *
    * @var array
    */
-  private $sEsCsvTemplates = [
+  private $esCsvTemplates = [
     "default" => [
       ['caption' => 'Record ID', 'field' => 'id'],
       ['caption' => 'RecordKey', 'field' => '_id'],
@@ -920,7 +920,7 @@ class Rest_Controller extends Controller {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
         }
-        elseif ($field === '#lat_lon#' || preg_match('/^#(lat|lon):(.*)#$/', $field)) {
+        elseif (preg_match('/^#(lat_lon|lat|lon)#$/', $field) || preg_match('/^#(lat|lon):(.*)#$/', $field)) {
           $fields[] = 'location.point';
         }
         elseif ($field === '#locality#') {
