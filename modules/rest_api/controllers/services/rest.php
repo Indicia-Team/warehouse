@@ -1600,7 +1600,7 @@ class Rest_Controller extends Controller {
       default:
         $ns = $coords[0] >= 0 ? 'N' : 'S';
         $lat = number_format(abs($coords[0]), 3);
-        return "$lat$ns $lon$ew";
+        return "$lat$ns";
     }
   }
 
