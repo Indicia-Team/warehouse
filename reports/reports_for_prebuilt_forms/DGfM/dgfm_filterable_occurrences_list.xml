@@ -10,11 +10,14 @@ will probably also be used for downloads going forward."
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  LEFT JOIN indicia.occurrence_associations oa on oa.from_occurrence_id = o.id AND oa.deleted = false
+  LEFT JOIN indicia.cache_occurrences_functional o_host on o_host.id = oa.to_occurrence_id
+  LEFT JOIN cache_taxa_taxon_lists cttl_host on cttl_host.id=o_host.taxa_taxon_list_id
   JOIN users u ON u.id=o.created_by_id
   JOIN people p ON p.id=u.person_id
   #agreements_join#
   #joins#
-  WHERE #sharing_filter#
+  WHERE #sharing_filter# AND cttl.taxon_list_id = #taxon_list_id#
   AND (#ownData#=1 OR o.record_status not in ('D','R'))
   #idlist#
   </query>
@@ -34,6 +37,7 @@ will probably also be used for downloads going forward."
            description="Image upload folder on the warehouse including the trailing slash" />
     <param name="warehouse_id" display="Warehouse unique ID" default="iBRC"
            description="Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key"/>
+    <param name="taxon_list_id" display="Id of the species list to filter on" datatype="integer"/>
   </params>
   <columns>
     <column name='occurrence_id' visible='false' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
@@ -46,7 +50,7 @@ will probably also be used for downloads going forward."
       sql="cttl.default_common_name" datatype='text' />
      <column name='family' display='Family' sql='cttl.family_taxon' datatype='text' />
     <column name='order' display='Order' sql='cttl.order_taxon' datatype='text' />
-    <column name='location_name' display='Site name' sql="case when onf.sensitivity_precision is null and onf.privacy_precision is null then o.location_name else 'Sensitive. Lat long is approximate.' end" datatype='text' />
+    <column name='location_name' display='Location' sql="case when onf.sensitivity_precision is null and onf.privacy_precision is null then o.location_name else 'Sensitive. Lat long is approximate.' end" datatype='text' />
     <column name="entered_sref" display="Grid Ref" sql="snf.public_entered_sref" datatype="text" />
     <column name='date_start' sql='o.date_start' visible='false' />
     <column name='date_end' sql='o.date_end' visible='false' />
@@ -56,6 +60,7 @@ will probably also be used for downloads going forward."
       sql="CASE WHEN onf.attr_det_full_name IS NULL THEN
         CASE WHEN onf.attr_det_last_name IS NULL THEN NULL ELSE onf.attr_det_last_name || COALESCE(', ' || onf.attr_det_first_name, '') END
       ELSE onf.attr_det_full_name END" />
+    <column name='host'  display='Host' sql='cttl_host.taxon' datatype="text" />
     <column name='images' display='Images' sql="case when onf.media is null then null else '#uploadFolder#' || replace(onf.media, ',', ', #uploadFolder#') end"/>
   </columns>
 </report>
