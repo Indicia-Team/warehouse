@@ -1591,7 +1591,7 @@ class Rest_Controller extends Controller {
       return 'n/a';
     }
     $coords = explode(',', $root['point']);
-    $format = isset($params) ? $params[0] : "";
+    $format = !empty($params) ? $params[0] : "";
     switch($format) {
       case "decimal":
         return $coords[0];
@@ -1643,7 +1643,7 @@ class Rest_Controller extends Controller {
       return 'n/a';
     }
     $coords = explode(',', $root['point']);
-    $format = isset($params) ? $params[0] : "";
+    $format = !empty($params) ? $params[0] : "";
     switch($format) {
       case "decimal":
         return $coords[1];
