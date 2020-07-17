@@ -11,6 +11,8 @@
     'authMethods' => 'Allowed authentication methods',
     'oauth2User' => 'oAuth2 as warehouse user',
     'oauth2UserHelp' => 'Use oAuth2 password flow to authenticate as a warehouse user',
+    'jwtUser' => 'JWT as warehouse user',
+    'jwtUserHelp' => 'Use JWT access token to authenticate as a warehouse user',
     'hmacClient' => 'HMAC as client system',
     'hmacClientHelp' => 'Use HMAC to authenticate as a configured client system.',
     'hmacClientHelpHeader' => 'Set the authorisation header to <em>USER:[client system ID]:HMAC:[hmac]</em>',
