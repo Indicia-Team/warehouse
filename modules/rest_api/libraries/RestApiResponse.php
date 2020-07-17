@@ -35,8 +35,8 @@ class RestApiResponse {
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Indicia RESTful API</title>
-  <link href="{{ base }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-  <link href="{{ base }}vendor/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css" />
+  <link href="{{ base }}vendor-other/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+  <link href="{{ base }}vendor-other/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css" />
   <link href="{{ base }}modules/rest_api/media/css/rest_api.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -46,7 +46,7 @@ HTML;
   private $htmlFooter = <<<'HTML'
   </div>
   <script src="{{ base }}media/js/jquery.js"></script>
-  <script src="{{ base }}vendor/bootstrap/js/bootstrap.min.js"></script>
+  <script src="{{ base }}vendor-other/bootstrap/js/bootstrap.min.js"></script>
   <script src=""></script>
 </body>
 </html>
