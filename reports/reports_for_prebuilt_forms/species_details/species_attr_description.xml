@@ -14,7 +14,11 @@ FROM (
       COALESCE(subcat_l.term, subcat.term) as subcategory,
       -- The source_id field holds the language term but only on comment fields. If this is null or the correct language then show the field, else we know it is wrong language so do not display
       -- Never show captions for the Populaname field (IDs 727,940,941) - special formatting case
-      CASE WHEN '#include_captions#' = '1' AND (cat_source_lang.term = '#language#' or cat_source_lang.id IS NULL) AND a.id NOT IN (727,940,941) THEN
+      CASE WHEN '#include_captions#' = '1' AND (cat_source_lang.term = '#language#' or cat_source_lang.id IS NULL) AND a.id NOT IN (727,940,941)
+      	-- Also don't show captions for any journal based fields. The exception to this is the "pages"/"Page" captions which we will then remove with 
+      	-- jQuery leaving only the comma behind
+      	AND a.id not in (select id from indicia.taxa_taxon_list_attributes where reporting_category_id in (982,1038,1041,1044,1047) and caption not like '%Seiten%')
+      THEN
           trim(regexp_replace(regexp_replace(
           	  CASE '#language#' WHEN '' THEN 
           		'&lt;b&gt;' || a.caption || '&lt;/b&gt;' 
