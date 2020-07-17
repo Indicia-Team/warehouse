@@ -22,6 +22,8 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
+use \Firebase\JWT;
+
 define("REST_API_DEFAULT_PAGE_SIZE", 100);
 define("AUTOFEED_DEFAULT_PAGE_SIZE", 10000);
 // Max load from ES, keep fairly low to avoid PHP memory overload.
@@ -109,6 +111,12 @@ class Rest_Controller extends Controller {
       ],
     ],
     'oauth2User' => [
+      'resource_options' => [
+        // Grants full access to all reports. Client configs can override this.
+        'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
+      ],
+    ],
+    'jwtUser' => [
       'resource_options' => [
         // Grants full access to all reports. Client configs can override this.
         'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
@@ -2972,12 +2980,32 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Retrieves the Bearer access token from the Authoriztion header.
+   *
+   * @param bool $wantJwt
+   *   Set to TRUE to retrieve JWT format or FALSE for oAuth.
+   *
+   * @return string
+   *   Auth token or empty string.
+   */
+  private function getBearerAuthToken($wantJwt = FALSE) {
+    $headers = apache_request_headers();
+    if (isset($headers['Authorization']) && strpos($headers['Authorization'], 'Bearer ') === 0) {
+      $token = substr($headers['Authorization'], 7);
+      $isJwt = substr_count($token, '.') === 2;
+      if ($isJwt === $wantJwt) {
+        return $token;
+      }
+    }
+    return '';
+  }
+
+  /**
    * Attempts to authenticate using the oAuth2 protocal.
    */
   private function authenticateUsingOauth2User() {
-    $headers = apache_request_headers();
-    if (isset($headers['Authorization']) && strpos($headers['Authorization'], 'Bearer ') === 0) {
-      $suppliedToken = str_replace('Bearer ', '', $headers['Authorization']);
+    $suppliedToken = $this->getBearerAuthToken();
+    if ($suppliedToken) {
       $this->cache = new Cache();
       // Get all cache entries that match this nonce.
       $paths = $this->cache->exists($suppliedToken);
@@ -2998,6 +3026,74 @@ class Rest_Controller extends Controller {
           }
         }
       }
+    }
+  }
+
+  /**
+   * Finds the ID and public key for a website using the URL.
+   *
+   * Allows the iss in a JWT payload to be mapped to the relevant website
+   * details.
+   */
+  private function getWebsiteByUrl($url) {
+    $cache = Cache::instance();
+    $cacheKey = 'website-by-url-' . preg_replace('/[^0-9a-zA-Z]/', '', $url);
+    $website = $cache->get($cacheKey);
+    if (!$website) {
+      $db = new Database();
+      $website = $db
+        ->select('id, public_key')
+        ->from('websites')
+        ->where('url', $url)
+        ->get()->current();
+      $cache->set($cacheKey, $website);
+    }
+    return $website;
+  }
+
+  /**
+   * Attempts to authenticate as a user using a JWT access token.
+   */
+  private function authenticateUsingJwtUser() {
+    require_once 'vendor/autoload.php';
+    $suppliedToken = $this->getBearerAuthToken(TRUE);
+    if ($suppliedToken) {
+      list($jwtHeader, $jwtPayload, $jwtSignature) = explode('.', $suppliedToken);
+      $payload = base64_decode($jwtPayload);
+      if (!$payload) {
+        $this->apiResponse->fail('Bad request', 400);
+      }
+      $payloadValues = json_decode($payload, TRUE);
+      if (!$payloadValues) {
+        $this->apiResponse->fail('Bad request', 400);
+      }
+      if (empty($payloadValues['iss']) || empty($payloadValues['indicia_user_id'])) {
+        $this->apiResponse->fail('Bad request', 400);
+      }
+      $website = $this->getWebsiteByUrl($payloadValues['iss']);
+      if (!$website || empty($website->public_key)) {
+        $this->apiResponse->fail('Unauthorized', 401);
+      }
+      // Allow for minor clock sync problems.
+      JWT\JWT::$leeway = 60;
+      try {
+        $decoded = JWT\JWT::decode($suppliedToken, $website->public_key, ['RS256']);
+      }
+      catch (JWT\SignatureInvalidException $e) {
+        $this->apiResponse->fail('Unauthorized', 401);
+      }
+      catch (JWT\ExpiredException $e) {
+        $this->apiResponse->fail('Unauthorized', 401);
+      }
+      if (isset($payloadValues['email_verified']) && !$payloadValues['email_verified']) {
+        $this->apiResponse->fail('Unauthorized', 401);
+      }
+      if (!isset($payloadValues['indicia_user_id'])) {
+        $this->apiResponse->fail('Bad request', 400);
+      }
+      $this->clientWebsiteId = $website->id;
+      $this->clientUserId = $payloadValues['indicia_user_id'];
+      $this->authenticated = TRUE;
     }
   }
 
