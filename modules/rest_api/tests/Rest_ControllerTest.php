@@ -217,6 +217,22 @@ KEY;
     $this->jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 200);
+    // Make a bogus call - should be unauthorised.
+    $this->jwt = base64_encode('abcdefg1234.123456789.zyx');
+    $response = $this->callService('reports/library/months/filterable_species_counts.xml');
+    $this->assertTrue($response['httpCode'] === 401);
+    // Make a valid call with wrong iss - should be unauthorised.
+    $this->jwt = $this->getJwt($privateKey, 'http://www.indicia.org.ukx', 1, time() + 120);
+    $response = $this->callService('reports/library/months/filterable_species_counts.xml');
+    $this->assertTrue($response['httpCode'] === 401);
+    // Make a valid call with wrong user - should be unauthorised.
+    $this->jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1000, time() + 120);
+    $response = $this->callService('reports/library/months/filterable_species_counts.xml');
+    $this->assertTrue($response['httpCode'] === 401);
+    // Make an expired call - should be unauthorised.
+    $this->jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() - 120);
+    $response = $this->callService('reports/library/months/filterable_species_counts.xml');
+    $this->assertTrue($response['httpCode'] === 401);
   }
 
   public function testProjects_authentication() {
