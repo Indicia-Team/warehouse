@@ -31,7 +31,8 @@ $config['authentication_methods'] = array(
   'directUser' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
   'directClient' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
   'directWebsite' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
-  'oauth2User' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true)))
+  'oauth2User' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
+  'jwtUser' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
 );
 
 $config['allow_auth_tokens_in_url'] = FALSE;

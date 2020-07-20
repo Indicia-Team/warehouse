@@ -158,6 +158,54 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertEquals(401, $response['httpCode'], 'Invalid token oAuth2 request to taxon-observations should fail.');
   }
 
+  private function getJwt() {
+    require_once '../../../vendor/autoload.php';
+    $privateKey = <<<KEY
+-----BEGIN RSA PRIVATE KEY-----
+MIICXAIBAAKBgQC8kGa1pSjbSYZVebtTRBLxBz5H4i2p/llLCrEeQhta5kaQu/Rn
+vuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t0tyazyZ8JXw+KgXTxldMPEL9
+5+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4ehde/zUxo6UvS7UrBQIDAQAB
+AoGAb/MXV46XxCFRxNuB8LyAtmLDgi/xRnTAlMHjSACddwkyKem8//8eZtw9fzxz
+bWZ/1/doQOuHBGYZU8aDzzj59FZ78dyzNFoF91hbvZKkg+6wGyd/LrGVEB+Xre0J
+Nil0GReM2AHDNZUYRv+HYJPIOrB0CRczLQsgFJ8K6aAD6F0CQQDzbpjYdx10qgK1
+cP59UHiHjPZYC0loEsk7s+hUmT3QHerAQJMZWC11Qrn2N+ybwwNblDKv+s5qgMQ5
+5tNoQ9IfAkEAxkyffU6ythpg/H0Ixe1I2rd0GbF05biIzO/i77Det3n4YsJVlDck
+ZkcvY3SK2iRIL4c9yY6hlIhs+K9wXTtGWwJBAO9Dskl48mO7woPR9uD22jDpNSwe
+k90OMepTjzSvlhjbfuPN1IdhqvSJTDychRwn1kIJ7LQZgQ8fVz9OCFZ/6qMCQGOb
+qaGwHmUK6xzpUbbacnYrIM6nLSkXgOAwv7XXCojvY614ILTK3iXiLBOxPu5Eu13k
+eUz9sHyD6vkgZzjtxXECQAkp4Xerf5TGfQXGXhxIX52yH+N2LtujCdkQZjXAsGdm
+B2zNzvrlgRmgBrklMTrMYgm1NPcW+bRLGcwgW2PTvNM=
+-----END RSA PRIVATE KEY-----
+KEY;
+    $payload = [
+      'iss' => 'http://localhost/d8-dev/web',
+      'indicia_user_id' => 1,
+      'exp' => time() + 120,
+    ];
+    return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
+  }
+
+  public function testJwt() {
+    $publicKey = <<<KEY
+-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC8kGa1pSjbSYZVebtTRBLxBz5H
+4i2p/llLCrEeQhta5kaQu/RnvuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t
+0tyazyZ8JXw+KgXTxldMPEL95+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4
+ehde/zUxo6UvS7UrBQIDAQAB
+-----END PUBLIC KEY-----
+KEY;
+    // Store the public key so Indicia can check signed requests.
+    $db = new Database();
+    $db->update(
+      'websites',
+      array('public_key' => $publicKey),
+      array('id' => 1)
+    );
+    $this->authMethod = 'jwtUser';
+    $response = $this->callService('reports/library/months/filterable_species_counts.xml');
+    $this->assertTrue($response['httpCode']===200);
+  }
+
   public function testProjects_authentication() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_clientAuthentication");
 
@@ -660,6 +708,9 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         break;
       case 'oAuth2User':
         $authString = "Bearer " . self::$oAuthAccessToken;
+        break;
+      case 'jwtUser':
+        $authString = "Bearer " . self::getJwt();
         break;
       default:
         $this->fail("$this->authMethod test not implemented");
