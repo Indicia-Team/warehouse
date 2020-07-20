@@ -3051,6 +3051,30 @@ class Rest_Controller extends Controller {
     return $website;
   }
 
+  private function checkWebsiteUser($websiteId, $userId) {
+    $cache = Cache::instance();
+    $cacheKey = "website-user-$websiteId-$userId";
+    $websiteUser = $cache->get($cacheKey);
+    if (!$websiteUser) {
+      $db = new Database();
+      $websiteUser = $db
+        ->select('site_role_id')
+        ->from('users_websites')
+        ->where([
+          'website_id' => $websiteId,
+          'user_id' => $userId,
+          'banned' => FALSE,
+        ])
+        ->get()->current();
+      if ($websiteUser) {
+        $cache->set($cacheKey, $websiteUser);
+      }
+    }
+    if (!$websiteUser) {
+      $this->apiResponse->fail('Unauthorized', 401);
+    }
+  }
+
   /**
    * Attempts to authenticate as a user using a JWT access token.
    */
@@ -3058,6 +3082,7 @@ class Rest_Controller extends Controller {
     require_once 'vendor/autoload.php';
     $suppliedToken = $this->getBearerAuthToken(TRUE);
     if ($suppliedToken) {
+      kohana::log('debug', 'Got JWT');
       list($jwtHeader, $jwtPayload, $jwtSignature) = explode('.', $suppliedToken);
       $payload = base64_decode($jwtPayload);
       if (!$payload) {
@@ -3072,6 +3097,7 @@ class Rest_Controller extends Controller {
       }
       $website = $this->getWebsiteByUrl($payloadValues['iss']);
       if (!$website || empty($website->public_key)) {
+        kohana::log('debug', 'Website has no public key');
         $this->apiResponse->fail('Unauthorized', 401);
       }
       // Allow for minor clock sync problems.
@@ -3080,17 +3106,21 @@ class Rest_Controller extends Controller {
         $decoded = JWT\JWT::decode($suppliedToken, $website->public_key, ['RS256']);
       }
       catch (JWT\SignatureInvalidException $e) {
+        kohana::log('debug', 'Token decode failed');
         $this->apiResponse->fail('Unauthorized', 401);
       }
       catch (JWT\ExpiredException $e) {
+        kohana::log('debug', 'Token expired');
         $this->apiResponse->fail('Unauthorized', 401);
       }
       if (isset($payloadValues['email_verified']) && !$payloadValues['email_verified']) {
+        kohana::log('debug', 'Payload email unverified');
         $this->apiResponse->fail('Unauthorized', 401);
       }
       if (!isset($payloadValues['indicia_user_id'])) {
         $this->apiResponse->fail('Bad request', 400);
       }
+      $this->checkWebsiteUser($website->id, $payloadValues['indicia_user_id']);
       $this->clientWebsiteId = $website->id;
       $this->clientUserId = $payloadValues['indicia_user_id'];
       $this->authenticated = TRUE;
