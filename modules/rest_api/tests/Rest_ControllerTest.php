@@ -15,11 +15,14 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
   private static $userPassword = 'password';
   // In the fixture, the 2nd filter is the one we linked to a user.
   private static $userFilterId = 2;
-  private static $oAuthAccessToken;
 
   private $authMethod = 'hmacClient';
 
   private $additionalRequestHeader = array();
+
+  // Access tokens.
+  private static $jwt;
+  private static $oAuthAccessToken;
 
   public function getDataSet() {
     $ds1 = new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
@@ -203,7 +206,7 @@ KEY;
       array('id' => 1)
     );
     // Make an otherwise valid call - should be unauthorised.
-    $this->jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    self::$jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Store the public key so Indicia can check signed requests.
@@ -214,23 +217,23 @@ KEY;
       array('id' => 1)
     );
     // Make a valid call - should be authorised.
-    $this->jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    self::$jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 200);
     // Make a bogus call - should be unauthorised.
-    $this->jwt = base64_encode('abcdefg1234.123456789.zyx');
+    self::$jwt = base64_encode('abcdefg1234.123456789.zyx');
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Make a valid call with wrong iss - should be unauthorised.
-    $this->jwt = $this->getJwt($privateKey, 'http://www.indicia.org.ukx', 1, time() + 120);
+    self::$jwt = $this->getJwt($privateKey, 'http://www.indicia.org.ukx', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Make a valid call with wrong user - should be unauthorised.
-    $this->jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1000, time() + 120);
+    self::$jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1000, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Make an expired call - should be unauthorised.
-    $this->jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() - 120);
+    self::$jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() - 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
   }
@@ -739,7 +742,7 @@ KEY;
         $authString = "Bearer " . self::$oAuthAccessToken;
         break;
       case 'jwtUser':
-        $authString = "Bearer " . self::getJwt();
+        $authString = "Bearer " . self::$jwt;
         break;
       default:
         $this->fail("$this->authMethod test not implemented");
