@@ -10,7 +10,9 @@
     WHERE a_set.website_id = #website_id# AND a_set.deleted=false
   </query>
   <order_bys>
-    <order_by>a_set.title asc</order_by>
+    -- Sort strings numerically. Need to remove non-numeric characters, however we then need a secondary string sort otherwise
+    -- groups with A, B, C etc in the name might have these sub-groups incorrectly ordered
+    <order_by>NULLIF(regexp_replace(a_set.title, '\D', '', 'g'), '')::int asc, a_set.title asc</order_by>
   </order_bys>
   <params>
     <param name='survey_id' display='Survey' description='Survey ID for report to run against' datatype='integer'/>
