@@ -10,6 +10,8 @@ will probably also be used for downloads going forward."
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  LEFT JOIN cache_taxa_taxon_lists cttl_common on cttl_common.taxon_meaning_id = cttl.taxon_meaning_id 
+  	and cttl_common.preferred = false and cttl_common.language_iso = '#language#' AND cttl_common.taxon_list_id = #taxon_list_id#
   LEFT JOIN indicia.occurrence_associations oa on oa.from_occurrence_id = o.id AND oa.deleted = false
   LEFT JOIN indicia.cache_occurrences_functional o_host on o_host.id = oa.to_occurrence_id
   LEFT JOIN cache_taxa_taxon_lists cttl_host on cttl_host.id=o_host.taxa_taxon_list_id
@@ -38,6 +40,7 @@ will probably also be used for downloads going forward."
     <param name="warehouse_id" display="Warehouse unique ID" default="iBRC"
            description="Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key"/>
     <param name="taxon_list_id" display="Id of the species list to filter on" datatype="integer"/>
+    <param name="language" display="Preferred language" datatype="text" default="deu" />
   </params>
   <columns>
     <column name='occurrence_id' visible='false' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
@@ -45,9 +48,7 @@ will probably also be used for downloads going forward."
     <column name='taxon' display='Species'
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
       sql="cttl.preferred_taxon" datatype='species' />
-    <column name='common' display='Common name'
-      template="&lt;div class='zero-{zero_abundance}'&gt;{common}&lt;/div&gt;"
-      sql="cttl.default_common_name" datatype='text' />
+    <column name='common' display='Common name' sql="string_agg(cttl_common.taxon,',')" datatype='text' aggregate="true"/>
      <column name='family' display='Family' sql='cttl.family_taxon' datatype='text' />
     <column name='order' display='Order' sql='cttl.order_taxon' datatype='text' />
     <column name='location_name' display='Location' sql="case when onf.sensitivity_precision is null and onf.privacy_precision is null then o.location_name else 'Sensitive. Lat long is approximate.' end" datatype='text' />
