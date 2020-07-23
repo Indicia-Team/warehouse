@@ -166,7 +166,10 @@ FROM (
           WHEN a.unit IS NOT NULL THEN
             ' ' || a.unit
           ELSE ''
-      END AS value
+      END 
+      -- Display red list information on separate lines
+      || CASE WHEN a.id in (1076,1077,1920,1921) THEN '&lt;br&gt;' ELSE '' END
+      AS value
     FROM cache_termlists_terms subcat
     LEFT JOIN cache_termlists_terms subcat_l on subcat_l.preferred_termlists_term_id=subcat.preferred_termlists_term_id and subcat_l.language_iso='#language#'
     LEFT JOIN cache_termlists_terms cat ON cat.id=subcat.parent_id
