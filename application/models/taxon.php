@@ -42,7 +42,11 @@ class Taxon_Model extends ORM {
       'deleted',
       'search_code',
       'description',
-      'taxon_rank_id'
+      'taxon_rank_id',
+      'marine_flag',
+      'freshwater_flag',
+      'terrestrial_flag',
+      'non_native_flag',
     );
     return parent::validate($array, $save);
   }
