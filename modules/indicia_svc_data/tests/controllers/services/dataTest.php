@@ -533,6 +533,48 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
   }
 
+  public function testRedetOccurrence() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRedetOccurrence");
+    $array = array(
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'occurrence:taxa_taxon_list_id' => 1,
+      'occAttr:1' => 'Test recorder'
+    );
+    $structure = array(
+      'model' => 'sample',
+      'subModels' => array(
+        'occurrence' => array('fk' => 'sample_id')
+      )
+    );
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+    $db = new Database();
+    $row = $db->select('*')->from('occurrences')->where('id', $r['success'])->get()->current();
+    $id = $row->id;
+    $this->assertEquals(NULL, $row->determiner_id);
+    $val = $db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
+    $this->assertEquals('Test recorder', $val->text_value);
+    $array = array(
+      'website_id' => 1,
+      'survey_id' => 1,
+      'determiner_id' => 2,
+      'occurrence:id' => $row->id,
+      'sample:id' => $row->sample_id,
+      'occurrence:taxa_taxon_list_id' => 2,
+    );
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $row = $db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $this->assertEquals(2, $row->determiner_id);
+    $val = $db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
+    $this->assertEquals('Unknown', $val->text_value);
+  }
+
   public function testCreateOccurrenceComment() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateOccurrenceComment");
     $array = [
