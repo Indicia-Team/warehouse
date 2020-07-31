@@ -5,9 +5,12 @@ require_once 'client_helpers/submission_builder.php';
 
 $postedUserId = 1;
 
-function hostsite_get_user_field() {
-  global $postedUserId;
-  return $postedUserId;
+function hostsite_get_user_field($field) {
+  if ($field === 'indicia_user_id') {
+    global $postedUserId;
+    return $postedUserId;
+  }
+  return NULL;
 }
 
 class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
