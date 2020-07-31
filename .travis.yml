@@ -11,6 +11,7 @@ php:
 env:
   - POSTGRESQL_VERSION=postgresql-9.5-postgis-2.2
   - POSTGRESQL_VERSION=postgresql-10-postgis-2.4
+  - POSTGRESQL_VERSION=postgresql-12-postgis-3.0
 
 
 services:

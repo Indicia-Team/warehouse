@@ -536,8 +536,17 @@ SQL;
     self::stringListOption($options, 'external_key');
     self::integerListOption($options, 'parent_id');
     self::stringListOption($options, 'language');
-    self::checkBooleanOptions($options,
-      ['preferred', 'synonyms', 'abbreviations', 'marine_flag', 'searchAuthors', 'wholeWords']);
+    self::checkBooleanOptions($options, [
+      'preferred',
+      'synonyms',
+      'abbreviations',
+      'marine_flag',
+      'freshwater_flag',
+      'terrestrial_flag',
+      'non_native_flag',
+      'searchAuthors',
+      'wholeWords'
+    ]);
     if (isset($options['commonNames'])) {
       self::assert(is_bool($options['commonNames']) || $options['commonNames'] === 'defaults',
         'The commonNames option must be a boolean or the value defaults');
@@ -651,9 +660,6 @@ SQL;
         $filters[] = "cts.language_iso in ($options[language])";
       }
     }
-    if (isset($options['preferred'])) {
-      $filters[] = 'cts.preferred=' . ($options['preferred'] ? 'true' : 'false');
-    }
     if (isset($options['commonNames'])) {
       if ($options['commonNames'] === 'defaults') {
         $filters[] = "(cts.language_iso='lat' or cts.original=cts.default_common_name)";
@@ -669,8 +675,17 @@ SQL;
           ? "(cts.language_iso='lat' and preferred=false)"
           : "(cts.language_iso<>'lat' or preferred=true)";
     }
-    if (isset($options['marine_flag'])) {
-      $filters[] = 'cts.marine_flag=' . ($options['marine_flag'] ? 'true' : 'false');
+    $boolFields = [
+      'preferred',
+      'marine_flag',
+      'freshwater_flag',
+      'terrestrial_flag',
+      'non_native_flag',
+    ];
+    foreach ($boolFields as $field) {
+      if (isset($options[$field])) {
+        $filters[] = "cts.$field=" . ($options[$field] ? 'true' : 'false');
+      }
     }
     // Disable 3+2 abbreviations if search val is not 5 characters, or
     // abbreviations explicitly disabled.
@@ -949,6 +964,12 @@ SQL;
    *     searching 2+3 character species name abbreviations.
    *   * marine_flag - set to true for only marine associated species, false to
    *     exclude marine-associated species.
+   *   * freshwater_flag - set to true for only freshwater associated species,
+   *     false to exclude freshwater-associated species.
+   *   * terrestrial_flag - set to true for only terrestrial associated species,
+   *     false to exclude terrestrial-associated species.
+   *   * non_native_flag - set to true for only terrestrial associated species,
+   *     false to exclude terrestrial-associated species.
    *   * searchAuthors - boolean, default false. Set to true to include author
    *     strings in the searched text.
    *   * wholeWords - boolean, default false. Set to true to only search whole

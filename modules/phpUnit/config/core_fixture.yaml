@@ -674,6 +674,25 @@ cache_samples_nonfunctional:
     entered_sref_system: "OSGB"
     recorders: "PHPUnit"
 
+occurrence_attributes:
+  -
+    caption: "Identified_by"
+    data_type: "T"
+    public: "false"
+    system_function: "det_full_name"
+    created_on: "2016-07-22:16:00:00"
+    created_by_id: 1,
+    updated_on: "2016-07-22:16:00:00"
+    updated_by_id: 1
+
+occurrence_attributes_websites:
+  -
+    website_id: 1
+    occurrence_attribute_id: 1
+    created_on: "2016-07-22:16:00:00"
+    created_by_id: 1,
+    restrict_to_survey_id: 1
+
 locations:
   -
     name: "Test location"
