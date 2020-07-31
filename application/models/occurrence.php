@@ -127,7 +127,7 @@ class Occurrence_Model extends ORM {
       if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {
           // If verifying or rejecting, then set the verification metadata.
-          $array->verified_by_id = $this->get_current_user_id();
+          $array->verified_by_id = $this->getCurrentUserId();
           $array->verified_on = date("Ymd H:i:s");
         }
         else {
@@ -206,7 +206,6 @@ class Occurrence_Model extends ORM {
           'occurrence_id' => $this->id,
           'deleted' => 'f',
         ))->get()->result_array();
-      kohana::log('debug', 'Query: ' . $this->db->last_query());
     }
     if (count($rows) > 0 && !empty($rows[0]->last_update)) {
       return $rows[0]->last_update;
@@ -257,7 +256,7 @@ class Occurrence_Model extends ORM {
         $redetByUserId = (int) $this->submission['fields']['determiner_id']['value'];
       } else {
         // Redetermination doesn't specify user ID, so use logged in user account.
-        $redetByUserId = $this->get_current_user_id();
+        $redetByUserId = (int) $this->getCurrentUserId();
         if ($redetByUserId !== 1) {
           // Store in the occurrences.determiner_id field.
           $array->determiner_id = $redetByUserId;
@@ -322,7 +321,7 @@ SQL;
   /*
    * Collect the user id for the current user, this will be 1 unless logged into warehouse or Easy Login is enabled in instant-indicia.
    */
-  public function get_current_user_id() {
+  private function getCurrentUserId() {
     if (isset($_SESSION['auth_user']))
       $userId = $_SESSION['auth_user']->id;
     else {
@@ -352,7 +351,7 @@ SQL;
     // priority order.
     // Occurrences.determiner_id
     if (!empty($oldValues['determiner_id'])) {
-      return getPersonNameFromUserId($oldValues['determiner_id']);
+      return $this->getPersonNameFromUserId($oldValues['determiner_id']);
     }
     // Attribute values det_*_name
     $attrValues =  $this->db
@@ -400,11 +399,9 @@ SQL;
       ->select('p.first_name', 'p.surname')
       ->from('people as p')
       ->join('users as u', 'u.person_id', 'p.id')
-      ->where([
-        'u.id', $userId
-      ])
+      ->where('u.id', $userId)
       ->get()->current();
-    return $p->surname . (empty($p->first_name) ? '' : ', ' . p.first_name);
+    return $p->surname . (empty($p->first_name) ? '' : ', ' . $p->first_name);
   }
 
   /**
