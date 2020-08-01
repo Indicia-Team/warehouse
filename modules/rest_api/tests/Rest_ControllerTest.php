@@ -165,7 +165,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     require_once 'vendor/autoload.php';
     $payload = [
       'iss' => $iss,
-      'indicia_user_id' => $userId,
+      'http://indicia.org.uk/user:id' => $userId,
       'exp' => $exp,
     ];
     return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');

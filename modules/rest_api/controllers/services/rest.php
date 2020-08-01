@@ -820,7 +820,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
       ['caption' => 'Date interpreted', 'field' => '#event_date#'],
       ['caption' => 'Date from', 'field' => 'event.date_start'],
-      ['caption' => 'Date to', 'field' => 'event.date_end'], 
+      ['caption' => 'Date to', 'field' => 'event.date_end'],
       ['caption' => 'Date type', 'field' => ''], // Unavalable in ES index (date_type)
       ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
@@ -3163,7 +3163,7 @@ class Rest_Controller extends Controller {
       if (!$payloadValues) {
         $this->apiResponse->fail('Bad request', 400);
       }
-      if (empty($payloadValues['iss']) || empty($payloadValues['indicia_user_id'])) {
+      if (empty($payloadValues['iss']) || empty($payloadValues['http://indicia.org.uk/user:id'])) {
         $this->apiResponse->fail('Bad request', 400);
       }
       $website = $this->getWebsiteByUrl($payloadValues['iss']);
@@ -3188,12 +3188,12 @@ class Rest_Controller extends Controller {
         kohana::log('debug', 'Payload email unverified');
         $this->apiResponse->fail('Unauthorized', 401);
       }
-      if (!isset($payloadValues['indicia_user_id'])) {
+      if (!isset($payloadValues['http://indicia.org.uk/user:id'])) {
         $this->apiResponse->fail('Bad request', 400);
       }
-      $this->checkWebsiteUser($website->id, $payloadValues['indicia_user_id']);
+      $this->checkWebsiteUser($website->id, $payloadValues['http://indicia.org.uk/user:id']);
       $this->clientWebsiteId = $website->id;
-      $this->clientUserId = $payloadValues['indicia_user_id'];
+      $this->clientUserId = $payloadValues['http://indicia.org.uk/user:id'];
       $this->authenticated = TRUE;
     }
   }
