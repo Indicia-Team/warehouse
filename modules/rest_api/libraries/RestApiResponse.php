@@ -395,6 +395,7 @@ HTML;
       echo json_encode($response);
     }
     if ($msg) {
+      $msg = is_array($msg) ? json_encode($msg) : $msg;
       kohana::log('debug', "HTTP code: $code. $msg");
       kohana::log_save();
     }

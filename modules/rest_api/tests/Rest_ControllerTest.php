@@ -7,6 +7,63 @@
  */
 class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
+  private static $privateKey = <<<KEY
+-----BEGIN RSA PRIVATE KEY-----
+MIICXAIBAAKBgQC8kGa1pSjbSYZVebtTRBLxBz5H4i2p/llLCrEeQhta5kaQu/Rn
+vuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t0tyazyZ8JXw+KgXTxldMPEL9
+5+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4ehde/zUxo6UvS7UrBQIDAQAB
+AoGAb/MXV46XxCFRxNuB8LyAtmLDgi/xRnTAlMHjSACddwkyKem8//8eZtw9fzxz
+bWZ/1/doQOuHBGYZU8aDzzj59FZ78dyzNFoF91hbvZKkg+6wGyd/LrGVEB+Xre0J
+Nil0GReM2AHDNZUYRv+HYJPIOrB0CRczLQsgFJ8K6aAD6F0CQQDzbpjYdx10qgK1
+cP59UHiHjPZYC0loEsk7s+hUmT3QHerAQJMZWC11Qrn2N+ybwwNblDKv+s5qgMQ5
+5tNoQ9IfAkEAxkyffU6ythpg/H0Ixe1I2rd0GbF05biIzO/i77Det3n4YsJVlDck
+ZkcvY3SK2iRIL4c9yY6hlIhs+K9wXTtGWwJBAO9Dskl48mO7woPR9uD22jDpNSwe
+k90OMepTjzSvlhjbfuPN1IdhqvSJTDychRwn1kIJ7LQZgQ8fVz9OCFZ/6qMCQGOb
+qaGwHmUK6xzpUbbacnYrIM6nLSkXgOAwv7XXCojvY614ILTK3iXiLBOxPu5Eu13k
+eUz9sHyD6vkgZzjtxXECQAkp4Xerf5TGfQXGXhxIX52yH+N2LtujCdkQZjXAsGdm
+B2zNzvrlgRmgBrklMTrMYgm1NPcW+bRLGcwgW2PTvNM=
+-----END RSA PRIVATE KEY-----
+KEY;
+
+  private static $wrongPrivateKey = <<<KEY
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEAsTlOczkGR9lSFJLQvXS8pdU8bVM0nnGbEch8j0Nw04hR3n6t
+QF2nDkBofhYGTc5mSDhY+XGDuVE8mqG1DbeMlIL8BOR3V7oNZlrew8BhI2Cr8MDE
+SI/Z2Ry+oJLjbrmEdMl0AOwOTnl8V6+cpKIo4OtsZBMMhsPPb0Hj1DKiLjt9uxUo
+Qmi+fpNVjodS3ETpGcrGnH/gj98kScau5ahDAeeb0+zRN6ih3SQQPiKU45P8YqzL
+2OGnjV1u5f1N30hvJhUeVJjC7RDKLe+JTC1g5599Jt0nlosD6liKJidWgzVj1GT6
+QgNoOgMyEUaYy+tRv4st8C5c3+11GVh3az3hDQIDAQABAoIBAC3gXMt89oBA5HuI
+6doxTuhKw8K1KEjftbmrwXrAhYNspWzINAcWdzk8ORBymR0pEdceJwIjfWrKebq5
+o4myewSyx5Roo/AkrHVTjpjzwvGKg9flvqnd+xG13C7q907hXUVyJMJcWPO9hQ+Z
+2R3REG3w43UgbTyxkZAGaXizxsHanAUPJA2NKnyAyeR3nPlxIo94d/bXV57Jlgzd
+DHCFDde60UWIjBs2rOrZsHbfJcS2y0/d0NjzdFZ/qHHFEe3T7NrUkr5p3fSLYnyQ
+LTaT5LkAtnHRZYU+0iTW4tRFfBPv3BbVjinFtX68odShO0oeESnuR0/rPPS4gD/3
+9S6+CyECgYEA5UXwF+1vqoalZtagPcNjYaDziKyxQvLTxRUoINX6muBzKR14+Ai7
+cwhdLFn3c9tKa/siqx4cv0g7zQ60sFFi0krURdiHjc0ryB2qEp16FWr7VfL2ocRY
+VhDMsCDGKDYpsCbaob1dZHKrAGVseiqo4mw8T53xv4YLj8jevq2rIcUCgYEAxeIX
+ZAKQUsrtXkJMrQ0zIqHay+2N18h0ddlDf3nQLU1fIEV2UD8D/zMUXz4gCxvdlJbn
+oQ65ik5WFeQOmW+wbPb/RXqnlnp1fkjJvrXOXJH4xT8KCgtK/4V65UaUCypTJvBo
+ubzFDPYyWuhzvGeQwyJ8UMZrrpG9AF0KzwSJnqkCgYEAmwbxU5yO9wVYbfMOIvUt
+C+SjB3WN3rEHFKo7mghWDcda1yBAnaZ56UxshALJWaOb7OvBA2e3FHgpR3x8HQTL
+B1rlsdy5u95RjlzQlQm6dSUDkZhZwARdnsR5Q1bF5obJJX0ANIEw1yzaB8iM0wZp
+b8Cz/znTLyfaRX0TcGdJ4ekCgYEAk7HLiY7MT688ebT8a9FFUF0D5F97Fgp8uhUe
+Zv/xXE66aGjQBNbz0b87PlctLX1v5d64JaLK4yrS3+Xm66jMQpgcMax5dzwRg98q
+DRi/XKJqzjXd9V82a/8hmg0SpD7D73VShQcbADClpuqGr6GRD8Qmi1d9ub73FVVc
+ouUdHnkCgYEAr8XI6BO45s2WGwRR7rQu9gD6yiiMKU0yxh5SiCfw4t7ozHAC9qn+
+jC+OwtS/Q73xTjlggYovtXy/mXj7w5PW0QlTbpAWbRlSgHlLef/RKI7mBbOe3poK
+zuU4nn90WJxLocAJYXoU37xhvUXI1sYU2SSu2E4ANrngT3ZuoktXgCc=
+-----END RSA PRIVATE KEY-----
+KEY;
+
+  private static $publicKey = <<<KEY
+-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC8kGa1pSjbSYZVebtTRBLxBz5H
+4i2p/llLCrEeQhta5kaQu/RnvuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t
+0tyazyZ8JXw+KgXTxldMPEL95+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4
+ehde/zUxo6UvS7UrBQIDAQAB
+-----END PUBLIC KEY-----
+KEY;
+
   private static $clientUserId;
   private static $config;
   private static $websiteId = 1;
@@ -18,7 +75,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
   private $authMethod = 'hmacClient';
 
-  private $additionalRequestHeader = array();
+  private $additionalRequestHeader = [];
 
   // Access tokens.
   private static $jwt;
@@ -104,6 +161,13 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
   protected function setUp() {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
+    // Make sure public key stored.
+    $db = new Database();
+    $db->update(
+      'websites',
+      ['public_key' => self::$publicKey],
+      ['id' => 1]
+    );
   }
 
   protected function tearDown() {
@@ -172,60 +236,6 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
   }
 
   public function testJwt() {
-    $privateKey = <<<KEY
------BEGIN RSA PRIVATE KEY-----
-MIICXAIBAAKBgQC8kGa1pSjbSYZVebtTRBLxBz5H4i2p/llLCrEeQhta5kaQu/Rn
-vuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t0tyazyZ8JXw+KgXTxldMPEL9
-5+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4ehde/zUxo6UvS7UrBQIDAQAB
-AoGAb/MXV46XxCFRxNuB8LyAtmLDgi/xRnTAlMHjSACddwkyKem8//8eZtw9fzxz
-bWZ/1/doQOuHBGYZU8aDzzj59FZ78dyzNFoF91hbvZKkg+6wGyd/LrGVEB+Xre0J
-Nil0GReM2AHDNZUYRv+HYJPIOrB0CRczLQsgFJ8K6aAD6F0CQQDzbpjYdx10qgK1
-cP59UHiHjPZYC0loEsk7s+hUmT3QHerAQJMZWC11Qrn2N+ybwwNblDKv+s5qgMQ5
-5tNoQ9IfAkEAxkyffU6ythpg/H0Ixe1I2rd0GbF05biIzO/i77Det3n4YsJVlDck
-ZkcvY3SK2iRIL4c9yY6hlIhs+K9wXTtGWwJBAO9Dskl48mO7woPR9uD22jDpNSwe
-k90OMepTjzSvlhjbfuPN1IdhqvSJTDychRwn1kIJ7LQZgQ8fVz9OCFZ/6qMCQGOb
-qaGwHmUK6xzpUbbacnYrIM6nLSkXgOAwv7XXCojvY614ILTK3iXiLBOxPu5Eu13k
-eUz9sHyD6vkgZzjtxXECQAkp4Xerf5TGfQXGXhxIX52yH+N2LtujCdkQZjXAsGdm
-B2zNzvrlgRmgBrklMTrMYgm1NPcW+bRLGcwgW2PTvNM=
------END RSA PRIVATE KEY-----
-KEY;
-    $wrongPrivateKey = <<<KEY
------BEGIN RSA PRIVATE KEY-----
-MIIEpQIBAAKCAQEAsTlOczkGR9lSFJLQvXS8pdU8bVM0nnGbEch8j0Nw04hR3n6t
-QF2nDkBofhYGTc5mSDhY+XGDuVE8mqG1DbeMlIL8BOR3V7oNZlrew8BhI2Cr8MDE
-SI/Z2Ry+oJLjbrmEdMl0AOwOTnl8V6+cpKIo4OtsZBMMhsPPb0Hj1DKiLjt9uxUo
-Qmi+fpNVjodS3ETpGcrGnH/gj98kScau5ahDAeeb0+zRN6ih3SQQPiKU45P8YqzL
-2OGnjV1u5f1N30hvJhUeVJjC7RDKLe+JTC1g5599Jt0nlosD6liKJidWgzVj1GT6
-QgNoOgMyEUaYy+tRv4st8C5c3+11GVh3az3hDQIDAQABAoIBAC3gXMt89oBA5HuI
-6doxTuhKw8K1KEjftbmrwXrAhYNspWzINAcWdzk8ORBymR0pEdceJwIjfWrKebq5
-o4myewSyx5Roo/AkrHVTjpjzwvGKg9flvqnd+xG13C7q907hXUVyJMJcWPO9hQ+Z
-2R3REG3w43UgbTyxkZAGaXizxsHanAUPJA2NKnyAyeR3nPlxIo94d/bXV57Jlgzd
-DHCFDde60UWIjBs2rOrZsHbfJcS2y0/d0NjzdFZ/qHHFEe3T7NrUkr5p3fSLYnyQ
-LTaT5LkAtnHRZYU+0iTW4tRFfBPv3BbVjinFtX68odShO0oeESnuR0/rPPS4gD/3
-9S6+CyECgYEA5UXwF+1vqoalZtagPcNjYaDziKyxQvLTxRUoINX6muBzKR14+Ai7
-cwhdLFn3c9tKa/siqx4cv0g7zQ60sFFi0krURdiHjc0ryB2qEp16FWr7VfL2ocRY
-VhDMsCDGKDYpsCbaob1dZHKrAGVseiqo4mw8T53xv4YLj8jevq2rIcUCgYEAxeIX
-ZAKQUsrtXkJMrQ0zIqHay+2N18h0ddlDf3nQLU1fIEV2UD8D/zMUXz4gCxvdlJbn
-oQ65ik5WFeQOmW+wbPb/RXqnlnp1fkjJvrXOXJH4xT8KCgtK/4V65UaUCypTJvBo
-ubzFDPYyWuhzvGeQwyJ8UMZrrpG9AF0KzwSJnqkCgYEAmwbxU5yO9wVYbfMOIvUt
-C+SjB3WN3rEHFKo7mghWDcda1yBAnaZ56UxshALJWaOb7OvBA2e3FHgpR3x8HQTL
-B1rlsdy5u95RjlzQlQm6dSUDkZhZwARdnsR5Q1bF5obJJX0ANIEw1yzaB8iM0wZp
-b8Cz/znTLyfaRX0TcGdJ4ekCgYEAk7HLiY7MT688ebT8a9FFUF0D5F97Fgp8uhUe
-Zv/xXE66aGjQBNbz0b87PlctLX1v5d64JaLK4yrS3+Xm66jMQpgcMax5dzwRg98q
-DRi/XKJqzjXd9V82a/8hmg0SpD7D73VShQcbADClpuqGr6GRD8Qmi1d9ub73FVVc
-ouUdHnkCgYEAr8XI6BO45s2WGwRR7rQu9gD6yiiMKU0yxh5SiCfw4t7ozHAC9qn+
-jC+OwtS/Q73xTjlggYovtXy/mXj7w5PW0QlTbpAWbRlSgHlLef/RKI7mBbOe3poK
-zuU4nn90WJxLocAJYXoU37xhvUXI1sYU2SSu2E4ANrngT3ZuoktXgCc=
------END RSA PRIVATE KEY-----
-KEY;
-    $publicKey = <<<KEY
------BEGIN PUBLIC KEY-----
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC8kGa1pSjbSYZVebtTRBLxBz5H
-4i2p/llLCrEeQhta5kaQu/RnvuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t
-0tyazyZ8JXw+KgXTxldMPEL95+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4
-ehde/zUxo6UvS7UrBQIDAQAB
------END PUBLIC KEY-----
-KEY;
     $this->authMethod = 'jwtUser';
     $cache = Cache::instance();
     $cacheKey = 'website-by-url-' . preg_replace('/[^0-9a-zA-Z]/', '', 'http://www.indicia.org.uk');
@@ -238,19 +248,19 @@ KEY;
     );
     $cache->delete($cacheKey);
     // Make an otherwise valid call - should be unauthorised.
-    self::$jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Store the public key so Indicia can check signed requests.
     $db = new Database();
     $db->update(
       'websites',
-      array('public_key' => $publicKey),
+      array('public_key' => self::$publicKey),
       array('id' => 1)
     );
     $cache->delete($cacheKey);
     // Make a valid call - should be authorised.
-    self::$jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 200);
     // Make a bogus call - should be unauthorised.
@@ -258,21 +268,143 @@ KEY;
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Make a valid call with wrong iss - should be unauthorised.
-    self::$jwt = $this->getJwt($privateKey, 'http://www.indicia.org.ukx', 1, time() + 120);
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.ukx', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Make an expired call - should be unauthorised.
-    self::$jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 1, time() - 120);
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() - 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Make a valid call with wrong user - should be unauthorised.
-    self::$jwt = $this->getJwt($privateKey, 'http://www.indicia.org.uk', 2, time() + 120);
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 2, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Make an call with wrong key
-    self::$jwt = $this->getJwt($wrongPrivateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    self::$jwt = $this->getJwt(self::$wrongPrivateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
+  }
+
+  public function testJwtSamplePostInvalid() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      [
+        'values' => [
+          // Omit survey ID.
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+        ]
+      ]
+    );
+    $this->assertEquals(400, $response['httpCode']);
+    $this->assertTrue(array_key_exists('message', $response['response'])
+      && array_key_exists('sample:survey_id', $response['response']['message']));
+  }
+
+  private function parseHeaders($string) {
+    $rows = explode("\n", trim($string));
+    // Skip response code at the top.
+    array_shift($rows);
+    $array = [];
+    foreach ($rows as $row) {
+      list($key, $value) = explode(': ', $row, 2);
+      $array[$key] = trim($value);
+    }
+    return $array;
+  }
+
+  public function testJwtSamplePost1() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'survey_id' => 1,
+      'entered_sref' => 'SU1234',
+      'entered_sref_system' => 'OSGB',
+      'date' => '01/08/2020',
+      'comment' => 'A sample comment test',
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      [
+        'values' => $data
+      ]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $headers = $this->parseHeaders($response['headers']);
+    $this->assertTrue(array_key_exists('Location', $headers),
+      'POST samples does not return Location in header.');
+    $this->assertTrue(array_key_exists('values', $response['response']),
+      'POST samples response does not contain values.');
+    $this->assertTrue(array_key_exists('id', $response['response']['values']),
+      'POST samples response does not contain id in values.');
+    $id = $response['response']['values']['id'];
+    $this->assertTrue(array_key_exists('href', $response['response']),
+      'POST samples response does not contain href.');
+    $this->assertEquals($response['response']['href'], $headers['Location'],
+      'POST samples response href does not match header Location.');
+    $this->assertEquals(url::base() . "index.php/services/rest/samples/$id", $response['response']['href'],
+      'POST samples response href inforrect');
+
+    // GET the posted data;
+    $response = $this->callService("samples/$id");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals('A sample comment test', $response['response']['values']['comment']);
+    // POST a bad update with ID mismatch
+    $data = [
+      'id' => $id + 1,
+      'entered_sref' => 'SU121341',
+    ];
+    $response = $this->callService(
+      "samples/$id",
+      FALSE,
+      [
+        'values' => $data
+      ]
+    );
+    $this->assertEquals(400, $response['httpCode']);
+    // POST an update.
+    $data = [
+      'entered_sref' => 'SU121341',
+    ];
+    $response = $this->callService(
+      "samples/$id",
+      FALSE,
+      [
+        'values' => $data
+      ]
+    );
+    $this->assertEquals(200, $response['httpCode']);
+    // Check update worked.
+    $response = $this->callService("samples/$id");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals('SU121341', $response['response']['values']['entered_sref']);
+    // Existing values not removed.
+    $this->assertEquals('A sample comment test', $response['response']['values']['comment']);
+    // Update sample's user ID and try to fetch - ensure not found.
+    $db = new Database();
+    $db->query('update samples set created_by_id=2 where id=' . $response['response']['values']['id']);
+    $response = $this->callService('samples/' . $response['response']['values']['id']);
+    $this->assertEquals(404, $response['httpCode']);
+    // POST update should also fail.
+    $data = [
+      'entered_sref' => 'SU121342',
+    ];
+    $response = $this->callService(
+      "samples/$id",
+      FALSE,
+      [
+        'values' => $data
+      ]
+    );
+    $this->assertEquals(404, $response['httpCode']);
+    // Do a test for missing sample.
+    $response = $this->callService('samples/99999');
+    $this->assertEquals(404, $response['httpCode']);
   }
 
   public function testProjects_authentication() {
@@ -422,8 +554,7 @@ KEY;
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService(
         "annotations",
-        array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'),
-        TRUE
+        array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01')
       );
       $this->assertResponseOk($response, '/annotations');
       $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to annotations');
@@ -530,7 +661,7 @@ KEY;
     $this->assertArrayHasKey('params', $reportDef, 'Report response does not define parameters');
     $this->assertArrayHasKey('href', $reportDef['params'], 'Report parameters missing href');
     // Now grab the params URL output and check it
-    $response = $this->callUrl($reportDef['params']['href'], self::$clientUserId, self::$config['shared_secret']);
+    $response = $this->callUrl($reportDef['params']['href']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml/params');
     $this->assertArrayHasKey('data', $response['response']);
     $this->assertArrayHasKey('smpattrs', $response['response']['data']);
@@ -548,7 +679,7 @@ KEY;
     $this->assertArrayHasKey('columns', $reportDef, 'Report response does not define columns');
     $this->assertArrayHasKey('href', $reportDef['columns'], 'Report columns missing href');
     // Now grab the columns URL output and check it
-    $response = $this->callUrl($reportDef['columns']['href'], self::$clientUserId, self::$config['shared_secret']);
+    $response = $this->callUrl($reportDef['columns']['href']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml/columns');
     $this->assertArrayHasKey('data', $response['response']);
     $this->assertArrayHasKey('occurrence_id', $response['response']['data']);
@@ -565,7 +696,7 @@ KEY;
     $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('href', $reportDef, 'Report response missing href');
     // Now grab the columns URL output and check it
-    $response = $this->callUrl($reportDef['href'], self::$clientUserId, self::$config['shared_secret']);
+    $response = $this->callUrl($reportDef['href']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml');
     $this->assertArrayHasKey('data', $response['response']);
     $this->assertCount(1, $response['response']['data'], 'Report call returns incorrect record count');
@@ -575,23 +706,19 @@ KEY;
   public function testAcceptHeader() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAcceptHeader");
     $projDef = self::$config['projects']['BRC1'];
-    $this->additionalRequestHeader = array('Accept: application/json');
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']), NULL, ['Accept: application/json']);
     $decoded = json_decode($response['response'], TRUE);
     $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response['response']);
     $this->assertEquals(200, $response['httpCode']);
     $this->assertEquals(0, $response['curlErrno']);
-    $this->additionalRequestHeader = array('Accept: text/html');
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']), NULL, ['Accept: text/html']);
     $this->assertRegexp('/^<!DOCTYPE HTML>/', $response['response']);
     $this->assertRegexp('/<html>/', $response['response']);
     $this->assertRegexp('/<\/html>$/', $response['response']);
     $this->assertEquals(200, $response['httpCode']);
     $this->assertEquals(0, $response['curlErrno']);
     // try requesting an invalid content type as first preference - response should select the second.
-    $this->additionalRequestHeader = array('Accept: image/png, application/json');
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']), NULL, ['Accept: image/png, application/json']);
     $decoded = json_decode($response['response'], TRUE);
     $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response['response']);
     $this->assertEquals(200, $response['httpCode']);
@@ -707,7 +834,7 @@ KEY;
     if (!empty($data['statusCode2']))
       $this->assertRegExp('/[1-6]/', $data['statusCode2'], 'Invalid statusCode2 value for annotation');
     // We should be able to request the taxon observation associated with the occurrence
-    $session = $this->initCurl($data['taxonObservation']['href'], self::$clientUserId, self::$config['shared_secret']);
+    $session = $this->initCurl($data['taxonObservation']['href']);
     $response = $this->getCurlResponse($session);
     $this->assertResponseOk($response, $data['taxonObservation']['href']);
     $this->checkValidTaxonObservation($response['response']);
@@ -738,10 +865,11 @@ KEY;
   /**
    * Sets the http header before a request. This includes the Authorization string and can also include additional
    * header data when required.
+   *
    * @param $session
    * @param $url
    */
-  private function setRequestHeader($session, $url) {
+  private function setRequestHeader($session, $url, $additionalRequestHeader) {
     switch ($this->authMethod) {
       case 'hmacUser':
         $user = self::$userId;
@@ -785,66 +913,83 @@ KEY;
         $this->fail("$this->authMethod test not implemented");
         break;
     }
-
     curl_setopt($session, CURLOPT_HTTPHEADER, array_merge(
-      $this->additionalRequestHeader,
+      $additionalRequestHeader,
       array("Authorization: $authString")
     ));
   }
 
-  private function initCurl($url) {
-    $session = curl_init();
-    // Set the POST options.
-    curl_setopt ($session, CURLOPT_URL, $url);
-    curl_setopt($session, CURLOPT_HEADER, false);
+  /**
+   * Set up a CURL session.
+   */
+  private function initCurl($url, $postData = NULL, $additionalRequestHeader = []) {
+    $session = curl_init($url);
+    curl_setopt($session, CURLOPT_HEADER, true);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-
-    $this->setRequestHeader($session, $url);
+    if ($postData) {
+      if (is_array($postData)) {
+        $postData = json_encode($postData);
+        $additionalRequestHeader[] = 'Content-Type: application/json';
+        $additionalRequestHeader[] = 'Content-Length: ' . strlen($postData);
+        kohana::log('debug', 'POST: ' . $postData);
+      }
+      curl_setopt ($session, CURLOPT_POST, TRUE);
+      curl_setopt ($session, CURLOPT_POSTFIELDS, $postData);
+    }
+    $this->setRequestHeader($session, $url, $additionalRequestHeader);
     return $session;
   }
 
-  private function getCurlResponse($session) {
-    // Do the POST
+  /**
+   * Perform a CURL request and get response data.
+   */
+  private function getCurlResponse($session, $additionalRequestHeader = []) {
+    // Do the POST.
     $response = curl_exec($session);
-    // Auto decode the JSON, unless the test is checking the Accept request header in which case format could be
-    // something else.
-    if (empty($this->additionalRequestHeader)
-        || strpos(implode(',', $this->additionalRequestHeader), 'Accept:') === FALSE) {
-      $decoded = json_decode($response, TRUE);
+    $headerSize = curl_getinfo($session, CURLINFO_HEADER_SIZE);
+    $header = substr($response, 0, $headerSize);
+    $body = substr($response, $headerSize);
+    // Auto decode the JSON, unless the test is checking the Accept request
+    // header in which case format could be something else.
+    if (empty($additionalRequestHeader)
+        || strpos(implode(',', $additionalRequestHeader), 'Accept:') === FALSE) {
+      $decoded = json_decode($body, TRUE);
       $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response);
-      $response = $decoded;
+      $body = $decoded;
     }
-
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     $curlErrno = curl_errno($session);
     $message = curl_error($session);
-    return array(
+    kohana::log('debug', "CODE: $httpCode");
+    kohana::log('debug', "BODY: " . substr($response, $headerSize));
+    return [
       'errorMessage' => $message ? $message : 'curl ok',
       'curlErrno' => $curlErrno,
       'httpCode' => $httpCode,
-      'response' => $response
-    );
+      'response' => $body,
+      'headers' => $header,
+    ];
   }
 
-  private function callUrl($url) {
-    $session = $this->initCurl($url);
-    Kohana::log('debug', "Making request to $url");
-    $response = $this->getCurlResponse($session);
+  private function callUrl($url, $postData = NULL, $additionalRequestHeader = []) {
+    $session = $this->initCurl($url, $postData, $additionalRequestHeader);
+    $response = $this->getCurlResponse($session, $additionalRequestHeader);
+    curl_close($session);
     return $response;
   }
 
   /**
    * A generic method to call the REST Api's web services.
+   *
    * @param $method
-   * @param $user
-   * @param $sharedSecret
    * @param mixed|FALSE $query
+   * @param string $postData
    * @return array
    */
-  private function callService($method, $query=false) {
+  private function callService($method, $query = FALSE, $postData = NULL, $additionalRequestHeader = []) {
     $url = url::base(true) . "services/rest/$method";
     if ($query)
       $url .= '?' . http_build_query($query);
-    return $this->callUrl($url);
+    return $this->callUrl($url, $postData, $additionalRequestHeader);
   }
 }

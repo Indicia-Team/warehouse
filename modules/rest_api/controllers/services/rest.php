@@ -455,6 +455,15 @@ class Rest_Controller extends Controller {
               'marine_flag' => [
                 'datatype' => 'boolean',
               ],
+              'freshwater_flag' => [
+                'datatype' => 'boolean',
+              ],
+              'terrestrial_flag' => [
+                'datatype' => 'boolean',
+              ],
+              'non_native_flag' => [
+                'datatype' => 'boolean',
+              ],
               'searchAuthors' => [
                 'datatype' => 'boolean',
               ],
@@ -520,6 +529,28 @@ class Rest_Controller extends Controller {
             'params' => [],
           ],
           '{report_path}.xml/columns' => [
+            'params' => [],
+          ],
+        ],
+      ],
+    ],
+    'samples' => [
+      'get' => [
+        'subresources' => [
+          '' => [
+            'params' => [],
+          ],
+          '{sample ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'post' => [
+        'subresources' => [
+          '' => [
+            'params' => [],
+          ],
+          '{sample ID}' => [
             'params' => [],
           ],
         ],
@@ -684,7 +715,7 @@ class Rest_Controller extends Controller {
           elseif (!$allowSegments && count($arguments) === 1) {
             // We only allow a single argument to request a single resource by
             // ID.
-            if (preg_match('/^[A-Z]{3}\d+$/', $arguments[0])) {
+            if (preg_match('/^([A-Z]{3})?\d+$/', $arguments[0])) {
               $requestForId = $arguments[0];
             }
             else {
@@ -3153,7 +3184,6 @@ class Rest_Controller extends Controller {
     require_once 'vendor/autoload.php';
     $suppliedToken = $this->getBearerAuthToken(TRUE);
     if ($suppliedToken) {
-      kohana::log('debug', 'Got JWT');
       list($jwtHeader, $jwtPayload, $jwtSignature) = explode('.', $suppliedToken);
       $payload = base64_decode($jwtPayload);
       if (!$payload) {
@@ -3439,6 +3469,115 @@ class Rest_Controller extends Controller {
    */
   private function getToken() {
     return sha1(time() . ':' . rand() . $_SERVER['REMOTE_ADDR'] . ':' . kohana::config('indicia.private_key'));
+  }
+
+  /**
+   * Coverts new REST API submission format to old Data Services format.
+   *
+   * @param string $entity
+   *   Model name.
+   * @param array $postObj
+   *   Posted submission to convert.
+   *
+   * @return array
+   *   Converted submission.
+   */
+  private function convertNewToOldSubmission($entity, $postObj) {
+    $s = [
+      'id' => $entity,
+      'fields' => [],
+    ];
+    foreach ($postObj['values'] as $field => $value) {
+      $s['fields'][$field] = ['value' => $value];
+    }
+    return $s;
+  }
+
+  /**
+   * End-point to GET a sample by ID.
+   *
+   * @param int $id
+   *   Sample ID.
+   */
+  public function samplesGetId($id) {
+    $db = new Database();
+    $row = $db->select('*')
+      ->from('samples')
+      ->where([
+        'id' => $id,
+        'created_by_id' => $this->clientUserId
+      ])->get()->current(TRUE);
+    if ($row) {
+      $this->apiResponse->succeed(['values' => $row]);
+    }
+    else {
+      $this->apiResponse->fail('Not found', 404);
+    }
+  }
+
+  /**
+   * Function to save a submission into a sample model.
+   *
+   * The API response is echoed and appropriate http status set.
+   *
+   * @param obj $sample
+   *   Sample model.
+   * @param array $postObj
+   *   Submission data.
+   */
+  private function submitSample($sample, $postObj) {
+    $sample->submission = $this->convertNewToOldSubmission('sample', $postObj);
+    // Different http code for create vs update.
+    $httpCodeOnSuccess = $sample->id ? 200 : 201;
+    $id = $sample->submit();
+    if ($id) {
+      http_response_code($httpCodeOnSuccess);
+      $href = url::base() . "index.php/services/rest/samples/$id";
+      if ($httpCodeOnSuccess === 201) {
+        // Location header points to created resource.
+        header("Location: $href");
+      }
+      // Should include href
+      echo json_encode([
+        'values' => $sample->as_array(),
+        'href' => $href,
+      ]);
+    } else {
+      $this->apiResponse->fail('Bad Request', 400, $sample->getAllErrors());
+    }
+  }
+
+  /**
+   * API end-point to POST a sample to create.
+   */
+  public function samplesPost() {
+    $postData = file_get_contents('php://input');
+    $postObj = json_decode($postData, TRUE);
+    $sample = ORM::factory('sample');
+    $this->submitSample($sample, $postObj);
+  }
+
+  /**
+   * API end-point to POST to a sample ID to update.
+   */
+  public function samplesPostId($id) {
+    $postData = file_get_contents('php://input');
+    $postObj = json_decode($postData, TRUE);
+    // ID is optional, but must match URL segment.
+    if (!empty($postObj['values']['id'])) {
+      if ($postObj['values']['id'] != $id) {
+        $this->apiResponse->fail('Bad Request', 400, json_encode(['sample:id' => 'Provided id does not match URI']));
+      }
+    }
+    $sample = ORM::factory('sample', $id);
+    if ($sample->created_by_id !== $this->clientUserId) {
+      $this->apiResponse->fail('Not Found', 404);
+    }
+    $postObj['values'] = array_merge(
+      $sample->as_array(),
+      $postObj['values']
+    );
+    $this->submitSample($sample, $postObj);
   }
 
 }
