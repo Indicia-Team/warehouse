@@ -1,3 +1,11 @@
+# Version 4.2.0
+*2020-08-03*
+
+* Attributes display additional info for termlists in lookup to help disambiguate similar names.
+* Addition of freshwater_flag, terrestrial_flag, non_native_flag to taxonomic data model.
+* Support for a new easy-download format in Elasticsearch downloads.
+* Summariser module integration with work queue.
+
 # Version 4.1.0
 *2020-06-22*
 
