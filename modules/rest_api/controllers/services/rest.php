@@ -739,52 +739,103 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Template for ES CSV output.
+   * Templates for ES CSV output.
    *
    * @var array
    */
-  private $defaultEsCsvTemplate = [
-    ['caption' => 'Record ID', 'field' => 'id'],
-    ['caption' => 'RecordKey', 'field' => '_id'],
-    ['caption' => 'Sample ID', 'field' => 'event.event_id'],
-    ['caption' => 'Date interpreted', 'field' => '#event_date#'],
-    ['caption' => 'Date start', 'field' => 'event.date_start'],
-    ['caption' => 'Date end', 'field' => 'event.date_end'],
-    ['caption' => 'Recorded by', 'field' => 'event.recorded_by'],
-    ['caption' => 'Determined by', 'field' => 'identification.identified_by'],
-    ['caption' => 'Grid reference', 'field' => 'location.output_sref'],
-    ['caption' => 'System', 'field' => 'location.output_sref_system'],
-    ['caption' => 'Coordinate uncertainty (m)', 'field' => 'location.coordinate_uncertainty_in_meters'],
-    ['caption' => 'Lat/Long', 'field' => 'location.point'],
-    ['caption' => 'Location name', 'field' => 'location.verbatim_locality'],
-    ['caption' => 'Higher geography', 'field' => '#higher_geography::name#'],
-    ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
-    ['caption' => 'Vice County number', 'field' => '#higher_geography:Vice County:code#'],
-    ['caption' => 'Identified by', 'field' => 'identification.identified_by'],
-    ['caption' => 'Taxon accepted name', 'field' => 'taxon.accepted_name'],
-    ['caption' => 'Taxon recorded name', 'field' => 'taxon.taxon_name'],
-    ['caption' => 'Taxon common name', 'field' => 'taxon.vernacular_name'],
-    ['caption' => 'Taxon group', 'field' => 'taxon.group'],
-    ['caption' => 'Kindom', 'field' => 'taxon.kingdom'],
-    ['caption' => 'Phylum', 'field' => 'taxon.phylum'],
-    ['caption' => 'Order', 'field' => 'taxon.order'],
-    ['caption' => 'Family', 'field' => 'taxon.family'],
-    ['caption' => 'Genus', 'field' => 'taxon.genus'],
-    ['caption' => 'Taxon Version Key', 'field' => 'taxon.taxon_id'],
-    ['caption' => 'Accepted Taxon Version Key', 'field' => 'taxon.accepted_taxon_id'],
-    ['caption' => 'Sex', 'field' => 'occurrence.sex'],
-    ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
-    ['caption' => 'Quantity', 'field' => 'occurrence.organism_quantity'],
-    ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
-    ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
-    ['caption' => 'Record status', 'field' => 'identification.verification_status'],
-    ['caption' => 'Record substatus', 'field' => '#null_if_zero:identification.verification_substatus#'],
-    ['caption' => 'Query status', 'field' => 'identification.query'],
-    ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
-    ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
-    ['caption' => 'Website', 'field' => 'metadata.website.title'],
-    ['caption' => 'Survey dataset', 'field' => 'metadata.survey.title'],
-    ['caption' => 'Media', 'field' => '#occurrence_media#'],
+  private $esCsvTemplates = [
+    "default" => [
+      ['caption' => 'Record ID', 'field' => 'id'],
+      ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'Sample ID', 'field' => 'event.event_id'],
+      ['caption' => 'Date interpreted', 'field' => '#event_date#'],
+      ['caption' => 'Date start', 'field' => 'event.date_start'],
+      ['caption' => 'Date end', 'field' => 'event.date_end'],
+      ['caption' => 'Recorded by', 'field' => 'event.recorded_by'],
+      ['caption' => 'Determined by', 'field' => 'identification.identified_by'],
+      ['caption' => 'Grid reference', 'field' => 'location.output_sref'],
+      ['caption' => 'System', 'field' => 'location.output_sref_system'],
+      ['caption' => 'Coordinate uncertainty (m)', 'field' => 'location.coordinate_uncertainty_in_meters'],
+      ['caption' => 'Lat/Long', 'field' => 'location.point'],
+      ['caption' => 'Location name', 'field' => 'location.verbatim_locality'],
+      ['caption' => 'Higher geography', 'field' => '#higher_geography::name#'],
+      ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
+      ['caption' => 'Vice County number', 'field' => '#higher_geography:Vice County:code#'],
+      ['caption' => 'Identified by', 'field' => 'identification.identified_by'],
+      ['caption' => 'Taxon accepted name', 'field' => 'taxon.accepted_name'],
+      ['caption' => 'Taxon recorded name', 'field' => 'taxon.taxon_name'],
+      ['caption' => 'Taxon common name', 'field' => 'taxon.vernacular_name'],
+      ['caption' => 'Taxon group', 'field' => 'taxon.group'],
+      ['caption' => 'Kindom', 'field' => 'taxon.kingdom'],
+      ['caption' => 'Phylum', 'field' => 'taxon.phylum'],
+      ['caption' => 'Order', 'field' => 'taxon.order'],
+      ['caption' => 'Family', 'field' => 'taxon.family'],
+      ['caption' => 'Genus', 'field' => 'taxon.genus'],
+      ['caption' => 'Taxon Version Key', 'field' => 'taxon.taxon_id'],
+      ['caption' => 'Accepted Taxon Version Key', 'field' => 'taxon.accepted_taxon_id'],
+      ['caption' => 'Sex', 'field' => 'occurrence.sex'],
+      ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
+      ['caption' => 'Quantity', 'field' => 'occurrence.organism_quantity'],
+      ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
+      ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
+      ['caption' => 'Record status', 'field' => 'identification.verification_status'],
+      ['caption' => 'Record substatus', 'field' => '#null_if_zero:identification.verification_substatus#'],
+      ['caption' => 'Query status', 'field' => 'identification.query'],
+      ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
+      ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
+      ['caption' => 'Website', 'field' => 'metadata.website.title'],
+      ['caption' => 'Survey dataset', 'field' => 'metadata.survey.title'],
+      ['caption' => 'Media', 'field' => '#occurrence_media#'],
+    ],
+    "easy-download" => [
+      ['caption' => 'ID', 'field' => 'id'],
+      ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'External key', 'field' => 'occurrence_external_key'],
+      ['caption' => 'Source', 'field' => '#datasource_code#'], // Might not be exactly the same as old ES download which I think includes group
+      ['caption' => 'Species', 'field' => 'taxon.accepted_name'],
+      ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
+      ['caption' => 'Taxon group', 'field' => 'taxon.group'],
+      ['caption' => 'Kindom', 'field' => 'taxon.kingdom'],
+      ['caption' => 'Order', 'field' => 'taxon.order'],
+      ['caption' => 'Family', 'field' => 'taxon.family'],
+      ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
+      ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
+      ['caption' => 'Original map ref', 'field' => ''], // Unavailable in ES index (entered_sref)
+      ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
+      ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
+      ['caption' => 'Projection', 'field' => ''], // Unavailable in ES index (entered_sref)
+      ['caption' => 'Precision', 'field' => 'location.coordinate_uncertainty_in_meters'],
+      ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
+      ['caption' => 'Output map ref projection', 'field' => 'location.output_sref_system'],
+      ['caption' => 'Biotope', 'field' => 'event.habitat'],
+      ['caption' => 'VC number', 'field' => '#higher_geography:Vice County:code#'],
+      ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
+      ['caption' => 'Date interpreted', 'field' => '#event_date#'],
+      ['caption' => 'Date from', 'field' => 'event.date_start'],
+      ['caption' => 'Date to', 'field' => 'event.date_end'], 
+      ['caption' => 'Date type', 'field' => ''], // Unavalable in ES index (date_type)
+      ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
+      ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
+      ['caption' => 'Determer', 'field' => 'identification.identified_by'],
+      ['caption' => 'Recorder certainty', 'field' => 'identification.recorder_certainty'],
+      ['caption' => 'Sex', 'field' => 'occurrence.sex'],
+      ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
+      ['caption' => 'Count of sex or stage', 'field' => 'occurrence.organism_quantity'],
+      ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'], // Output in easy download was T/F - this will be true/false
+      ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
+      ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
+      ['caption' => 'Images', 'field' => '#occurrence_media#'],
+      ['caption' => 'Input on date', 'field' => 'metadata.created_on'], // Format ??
+      ['caption' => 'Last edited on date', 'field' => 'metadata.updated_on'], // Format ??
+      ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
+      ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
+      ['caption' => 'Query', 'field' => 'identification.query'], // Not on dev index (index config)
+      ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
+      ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
+      ['caption' => 'Licence', 'field' => 'metadata.licence_code'], // In GitHub logstash pgsql conf.template but cant see in kibana on live site (or dev)
+      ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download?
+      ['caption' => 'attr_det_full_name', 'field' => 'identification.identified_by'], // Repeat of Determiner field with ES
+    ]
   ];
 
   /**
@@ -869,7 +920,7 @@ class Rest_Controller extends Controller {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
         }
-        elseif ($field === '#lat_lon#') {
+        elseif (preg_match('/^#(lat_lon|lat|lon)#$/', $field) || preg_match('/^#(lat|lon):(.*)#$/', $field)) {
           $fields[] = 'location.point';
         }
         elseif ($field === '#locality#') {
@@ -1040,8 +1091,12 @@ class Rest_Controller extends Controller {
    *   List of column definitions to download.
    */
   private function getEsCsvTemplate() {
-    // Start with the default columns set, or an empty array.
-    $csvTemplate = $this->esCsvTemplate === 'default' ? $this->defaultEsCsvTemplate : [];
+    // Start with the template columns set, or an empty array.
+    if (array_key_exists($this->esCsvTemplate, $this->esCsvTemplates)) {
+      $csvTemplate = $this->esCsvTemplates[$this->esCsvTemplate];
+    } else {
+      $csvTemplate = [];
+    }
     // Append extra columns.
     if (!empty($this->esCsvTemplateAddColumns)) {
       if (isset($this->esCsvTemplateAddColumns[0])) {
@@ -1521,6 +1576,35 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Special field handler for latitude data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldLat(array $doc, array $params) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    if (empty($root['point'])) {
+      return 'n/a';
+    }
+    $coords = explode(',', $root['point']);
+    $format = !empty($params) ? $params[0] : "";
+    switch($format) {
+      case "decimal":
+        return $coords[0];
+      case "nssuffix":
+        // Implemented as the default.
+      default:
+        $ns = $coords[0] >= 0 ? 'N' : 'S';
+        $lat = number_format(abs($coords[0]), 3);
+        return "$lat$ns";
+    }
+  }
+
+  /**
    * Special field handler for lat/lon data.
    *
    * @param array $doc
@@ -1543,6 +1627,45 @@ class Rest_Controller extends Controller {
     return "$lat$ns $lon$ew";
   }
 
+  /**
+   * Special field handler for longitude data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldLon(array $doc, array $params) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    if (empty($root['point'])) {
+      return 'n/a';
+    }
+    $coords = explode(',', $root['point']);
+    $format = !empty($params) ? $params[0] : "";
+    switch($format) {
+      case "decimal":
+        return $coords[1];
+      case "ewsuffix":
+        // Implemented as the default.
+      default:
+        $ew = $coords[1] >= 0 ? 'E' : 'W';
+        $lon = number_format(abs($coords[1]), 3);
+        return "$lon$ew";
+    }
+  }
+
+  /**
+   * Special field handler for locality data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value containing a list of location names associated with the
+   *   record.
+   */
   private function esGetSpecialFieldLocality(array $doc) {
     $info = [];
     if (!empty($doc['location']['verbatim_locality'])) {
@@ -1624,6 +1747,9 @@ class Rest_Controller extends Controller {
       }
       if (!empty($doc['metadata']['confidential']) && $doc['metadata']['confidential'] !== 'false') {
         $terms[] = 'Confidential';
+      }
+      if (!empty($doc['metadata']['created_by_id']) && $doc['metadata']['created_by_id'] === '1') {
+        $terms[] = 'Anonymous user';
       }
     }
     if (!empty($doc['occurrence'])) {

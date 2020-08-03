@@ -617,6 +617,63 @@ class report_standard_params_occurrences {
           // The all filter does not need any SQL.
         ],
       ],
+      'freshwater_flag' => [
+        'datatype' => 'lookup',
+        'display' => 'Freshwater flag',
+        'description' => 'Freshwater species filtering?',
+        'lookup_values' => 'A:Include freshwater and non-freshwater species,Y:Only freshwater species,N:Exclude freshwater species',
+        'wheres' => [
+          [
+            'value' => 'Y',
+            'operator' => 'equal',
+            'sql' => "o.freshwater_flag=true",
+          ],
+          [
+            'value' => 'N',
+            'operator' => 'equal',
+            'sql' => "(o.freshwater_flag is null or o.freshwater_flag=false)",
+          ],
+          // The all filter does not need any SQL.
+        ],
+      ],
+      'terrestrial_flag' => [
+        'datatype' => 'lookup',
+        'display' => 'Terrestrial flag',
+        'description' => 'Terrestrial species filtering?',
+        'lookup_values' => 'A:Include terrestrial and non-terrestrial species,Y:Only terrestrial species,N:Exclude terrestrial species',
+        'wheres' => [
+          [
+            'value' => 'Y',
+            'operator' => 'equal',
+            'sql' => "o.terrestrial_flag=true",
+          ],
+          [
+            'value' => 'N',
+            'operator' => 'equal',
+            'sql' => "(o.terrestrial_flag is null or o.terrestrial_flag=false)",
+          ],
+          // The all filter does not need any SQL.
+        ],
+      ],
+      'non_native_flag' => [
+        'datatype' => 'lookup',
+        'display' => 'Non-native flag',
+        'description' => 'Non-native species filtering?',
+        'lookup_values' => 'A:Include non-native and native species,Y:Only non-native species,N:Exclude non-native species',
+        'wheres' => [
+          [
+            'value' => 'Y',
+            'operator' => 'equal',
+            'sql' => "o.non_native_flag=true",
+          ],
+          [
+            'value' => 'N',
+            'operator' => 'equal',
+            'sql' => "(o.non_native_flag is null or o.non_native_flag=false)",
+          ],
+          // The all filter does not need any SQL.
+        ],
+      ],
       'autochecks' => [
         'datatype' => 'lookup',
         'display' => 'Automated checks',
@@ -1020,6 +1077,72 @@ class report_standard_params_occurrences {
             'value' => 'N',
             'operator' => 'equal',
             'sql' => "(prefcttl.marine_flag is null or prefcttl.marine_flag=false)",
+          ],
+          // The all filter does not need any SQL.
+        ],
+      ],
+      'freshwater_flag' => [
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'standard_join' => 'prefcttl',
+          ],
+        ],
+        'wheres' => [
+          [
+            'value' => 'Y',
+            'operator' => 'equal',
+            'sql' => "prefcttl.freshwater_flag=true",
+          ],
+          [
+            'value' => 'N',
+            'operator' => 'equal',
+            'sql' => "(prefcttl.freshwater_flag is null or prefcttl.freshwater_flag=false)",
+          ],
+          // The all filter does not need any SQL.
+        ],
+      ],
+      'terrestrial_flag' => [
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'standard_join' => 'prefcttl',
+          ],
+        ],
+        'wheres' => [
+          [
+            'value' => 'Y',
+            'operator' => 'equal',
+            'sql' => "prefcttl.terrestrial_flag=true",
+          ],
+          [
+            'value' => 'N',
+            'operator' => 'equal',
+            'sql' => "(prefcttl.terrestrial_flag is null or prefcttl.terrestrial_flag=false)",
+          ],
+          // The all filter does not need any SQL.
+        ],
+      ],
+      'non_native_flag' => [
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'standard_join' => 'prefcttl',
+          ],
+        ],
+        'wheres' => [
+          [
+            'value' => 'Y',
+            'operator' => 'equal',
+            'sql' => "prefcttl.non_native_flag=true",
+          ],
+          [
+            'value' => 'N',
+            'operator' => 'equal',
+            'sql' => "(prefcttl.non_native_flag is null or prefcttl.non_native_flag=false)",
           ],
           // The all filter does not need any SQL.
         ],
