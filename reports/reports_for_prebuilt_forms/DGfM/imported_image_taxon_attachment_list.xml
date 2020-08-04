@@ -1,0 +1,20 @@
+<report
+    title="Imported image taxon attachment list"
+    description = "Display a row for each imported image and the preferred taxon it is attached to."
+>
+  <query>
+    SELECT #columns#
+    FROM indicia.taxon_media tm
+    LEFT JOIN indicia.cache_taxa_taxon_lists cttl on cttl.taxon_meaning_id = tm.taxon_meaning_id 
+        and cttl.taxon_list_id = #taxon_list_id#
+    WHERE tm.path not like '%o_%' and tm.deleted=false
+    GROUP BY tm.path,cttl.preferred_taxon
+  </query>
+  <params>
+    <param name='taxon_list_id' display='Taxon list' description='Taxon list for report to run against' datatype='integer'/>
+  </params>
+  <columns>
+    <column name="image_name" display="Image Name" sql="tm.path" datatype="text" in_count="true"/>
+    <column name="preferred_taxon" display="Attached To" sql="cttl.preferred_taxon" datatype="text" />
+  </columns>
+</report>
