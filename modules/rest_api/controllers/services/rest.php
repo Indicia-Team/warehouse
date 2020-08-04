@@ -3032,6 +3032,28 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * If allow_cors set in the auth method options, apply access control header.
+   */
+  private function applyCorsHeader() {
+    if (array_key_exists('allow_cors', $this->authConfig)) {
+      if ($this->authConfig['allow_cors'] === TRUE) {
+        $corsSetting = '*';
+      } elseif (is_array($this->authConfig['allow_cors'])) {
+        // If list of domain patterns specified, allow only if a match.
+        foreach ($this->authConfig['allow_cors'] as $domainRegex) {
+          if (preg_match("/$domainRegex/", $_SERVER['HTTP_ORIGIN'])) {
+            header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+            break;
+          }
+        }
+      }
+      if ($corsSetting) {
+        header("Access-Control-Allow-Origin: $corsSetting");
+      }
+    }
+  }
+
+  /**
    * Checks that the request is authentic.
    */
   private function authenticate() {
@@ -3079,6 +3101,7 @@ class Rest_Controller extends Controller {
       // Either the authentication wrong, or using HTTP instead of HTTPS.
       $this->apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
     }
+    $this->applyCorsHeader();
   }
 
   /**

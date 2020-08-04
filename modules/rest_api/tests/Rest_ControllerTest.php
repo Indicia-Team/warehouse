@@ -338,6 +338,10 @@ KEY;
     $headers = $this->parseHeaders($response['headers']);
     $this->assertTrue(array_key_exists('Location', $headers),
       'POST samples does not return Location in header.');
+    $this->assertTrue(array_key_exists('Access-Control-Allow-Origin', $headers),
+      'POST samples does not return Access-Control-Allow-Origin in header.');
+    $this->assertEquals('*', $headers['Access-Control-Allow-Origin'],
+      'CORS not enabled correctly');
     $this->assertTrue(array_key_exists('values', $response['response']),
       'POST samples response does not contain values.');
     $this->assertTrue(array_key_exists('id', $response['response']['values']),
@@ -960,8 +964,6 @@ KEY;
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     $curlErrno = curl_errno($session);
     $message = curl_error($session);
-    kohana::log('debug', "CODE: $httpCode");
-    kohana::log('debug', "BODY: " . substr($response, $headerSize));
     return [
       'errorMessage' => $message ? $message : 'curl ok',
       'curlErrno' => $curlErrno,

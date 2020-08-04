@@ -92,6 +92,8 @@ $config['authentication_methods'] = [
     ],
   ],
   'jwtUser' => [
+    // TRUE to allow CORS from any domain, or provide an array of domain regexes.
+    'allow_cors' => TRUE,
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
       'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],

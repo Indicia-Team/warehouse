@@ -33,7 +33,8 @@ $config['authentication_methods'] = [
   'directWebsite' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
   'oauth2User' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
   'jwtUser' => [
-    'allow_http',
+    'allow_http' => TRUE,
+    'allow_cors' => TRUE,
     'resource_options' => [
       'reports' => ['featured' => true],
       'entities' => [
