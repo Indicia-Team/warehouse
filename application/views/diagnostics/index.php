@@ -41,6 +41,7 @@ echo report_helper::report_grid([
   'dataSource' => 'library/work_queue/summary'
 ]);
 ?>
+
 <?php if (class_exists('request_logging')) : ?>
 <h3>Request performance - top culprits</h3>
 <div class="alert alert-info">The following are most resource intensive API requests of the last 2000.</div>
@@ -50,7 +51,19 @@ echo report_helper::report_grid([
   'dataSource' => 'library/request_log_entries/main_culprits',
   'itemsPerPage' => 5,
 ]);
+endif;
+?>
+
+<?php if (class_exists('api_persist')) : ?>
+<h3>REST API data feed delays</h3>
+<div class="alert alert-info">The following table shows the number of update tasks behind that REST API feeds are,
+e.g. into Elasticsearch. Note that not all these feeds may be currently enabled.</div>
+<?php
+echo report_helper::report_grid([
+  'readAuth' => $readAuth,
+  'dataSource' => 'rest_api/autofeed_delays',
+]);
+endif;
 
 echo report_helper::dump_javascript();
 
-endif;

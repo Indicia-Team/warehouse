@@ -164,6 +164,7 @@ class Indicia_Controller extends Template_Controller {
       }
       if ($this->auth->logged_in('CoreAdmin')) {
         $menu['Admin']['Website agreements'] = 'website_agreement';
+        $menu['Admin']['Performance diagnostics'] = 'diagnostics';
       }
       $menu['Logged in as ' . $_SESSION['auth_user']->username] = [
         'Set new password' => 'new_password',
