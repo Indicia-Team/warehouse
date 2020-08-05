@@ -179,8 +179,8 @@ KEY;
     $session = curl_init();
     // Set the cUrl options.
     curl_setopt ($session, CURLOPT_URL, $url);
-    curl_setopt($session, CURLOPT_HEADER, false);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($session, CURLOPT_HEADER, TRUE);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
 
     // try a request with no post data
     $r = $this->getCurlResponse($session);
@@ -979,8 +979,8 @@ KEY;
    */
   private function initCurl($url, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL) {
     $session = curl_init($url);
-    curl_setopt($session, CURLOPT_HEADER, true);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($session, CURLOPT_HEADER, TRUE);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
     if ($customMethod) {
       curl_setopt($session, CURLOPT_CUSTOMREQUEST, $customMethod);
     }
