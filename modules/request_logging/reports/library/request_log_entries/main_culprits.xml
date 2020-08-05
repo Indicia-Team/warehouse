@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Work queue summary" description="Performance culprits in the request log.">
+  <query website_filter_field="rle.website_id">
+    select #columns#
+    from request_log_entries rle
+    where id > (select max(id)-2000 from request_log_entries)
+  </query>
+  <order_bys>
+    <order_by>sum(duration) desc</order_by>
+  </order_bys>
+  <columns>
+    <column name="service" display="Service" sql="rle.service" in_count="true" />
+    <column name="resource" display="Resource" sql="rle.resource" in_count="true" />
+    <column name="website_id" display="Website ID" sql="rle.website_id::text" in_count="true" />
+    <column name="sum" display="Total (s)" sql="round(sum(rle.duration)::numeric, 1)" aggregate="true" />
+    <column name="avg" display="Avg (s)" sql="round(avg(rle.duration)::numeric, 1)" aggregate="true" />
+    <column name="max" display="Max (s)" sql="round(max(rle.duration)::numeric, 1)" aggregate="true" />
+    <column name="count" display="Hits" sql="count(rle.*)" aggregate="true" />
+  </columns>
+</report>
