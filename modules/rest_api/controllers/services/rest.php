@@ -550,6 +550,10 @@ class Rest_Controller extends Controller {
           '' => [
             'params' => [],
           ],
+        ],
+      ],
+      'put' => [
+        'subresources' => [
           '{sample ID}' => [
             'params' => [],
           ],
@@ -2673,9 +2677,15 @@ class Rest_Controller extends Controller {
         }
       }
       if (!isset($thisMethod)) {
+        if (!isset($info[''])) {
+          $this->apiResponse->fail('Bad request', 400, "Request method not valid for end-point");
+        }
         // Use the default subresource.
         $thisMethod = $info[''];
       }
+    }
+    if (!isset($thisMethod)) {
+      $this->apiResponse->fail('Bad request', 400, "Request method not valid for end-point");
     }
     // Check through the known list of parameters to ensure data formats are
     // correct and required parameters are provided.
@@ -3529,12 +3539,55 @@ class Rest_Controller extends Controller {
       ->where([
         'id' => $id,
         'created_by_id' => $this->clientUserId
-      ])->get()->current(TRUE);
+      ])->get()->current();
     if ($row) {
-      $this->apiResponse->succeed(['values' => $row]);
+      $this->apiResponse->succeed(['values' => $this->getValuesForResponse($row)]);
     }
     else {
       $this->apiResponse->fail('Not found', 404);
+    }
+  }
+
+  /**
+   * Retrieve the values from an associative data array to return from API.
+   *
+   * Dates will be ISO formatted.
+   *
+   * @param mixed $data
+   *   Associative array or object of field names and values.
+   * @param array $fields Optional list of fields to restrict to.
+   *
+   * @return array
+   *   Associative array of field names and values.
+   */
+  private function getValuesForResponse($data, array $fields = NULL) {
+    if (is_object($data)) {
+      $data = (array) $data;
+    }
+    $values = $fields ?  array_intersect_key($data, array_flip($fields)) : $data;
+    foreach ($values as $field => &$value) {
+      if (substr($field, -3) === '_on') {
+        // Date values need reformatting.
+        $value = date('c', strtotime($value));
+      }
+    }
+    return $values;
+  }
+
+  /**
+   * Fails if there is existing sample with same external key in survey.
+   *
+   * @param int $survey_id
+   *   ID of survey dataset.
+   * @param string $externalKey
+   *   Key to check.
+   */
+  private function checkDuplicateSampleExternalKey($survey_id, $externalKey) {
+    $hit = $this->db
+      ->query("select 1 from samples where external_key='$externalKey' and survey_id=$survey_id")
+      ->current();
+    if ($hit) {
+      $this->apiResponse->fail('Conflict', 409, 'Duplicate external_key would be created');
     }
   }
 
@@ -3560,9 +3613,9 @@ class Rest_Controller extends Controller {
         // Location header points to created resource.
         header("Location: $href");
       }
-      // Should include href
+      // Include href and basic record metadata.
       echo json_encode([
-        'values' => $sample->as_array(),
+        'values' => $this->getValuesForResponse($sample->as_array(), ['id', 'created_on', 'updated_on']),
         'href' => $href,
       ]);
     } else {
@@ -3575,32 +3628,45 @@ class Rest_Controller extends Controller {
    */
   public function samplesPost() {
     $postData = file_get_contents('php://input');
-    $postObj = json_decode($postData, TRUE);
+    $putObj = json_decode($postData, TRUE);
+    $values = $putObj['values'];
+    if (!empty($values['id'])) {
+      $this->apiResponse->fail('Bad Request', 400, json_encode(['sample:id' => 'Cannot POST with id to update, use PUT instead.']));
+    }
+    if (!empty($values['survey_id']) && !empty($values['external_key'])) {
+      // No need to check without survey ID in post as it will fail validation anyway.
+      $this->checkDuplicateSampleExternalKey($values['survey_id'], $values['external_key']);
+    }
     $sample = ORM::factory('sample');
-    $this->submitSample($sample, $postObj);
+    $this->submitSample($sample, $putObj);
   }
 
   /**
-   * API end-point to POST to a sample ID to update.
+   * API end-point to PUT to a sample ID to update.
    */
-  public function samplesPostId($id) {
-    $postData = file_get_contents('php://input');
-    $postObj = json_decode($postData, TRUE);
+  public function samplesPutId($id) {
+    $putData = file_get_contents('php://input');
+    $putObj = json_decode($putData, TRUE);
+    $values = $putObj['values'];
     // ID is optional, but must match URL segment.
-    if (!empty($postObj['values']['id'])) {
-      if ($postObj['values']['id'] != $id) {
+    if (!empty($values['id'])) {
+      if ($values['id'] != $id) {
         $this->apiResponse->fail('Bad Request', 400, json_encode(['sample:id' => 'Provided id does not match URI']));
       }
     }
     $sample = ORM::factory('sample', $id);
+    if (!empty($values['external_key']) && $values['external_key'] !== $sample->external_key) {
+      // No need to check without survey ID in post as it will fail validation anyway.
+      $this->checkDuplicateSampleExternalKey($sample->survey_id, $values['external_key']);
+    }
     if ($sample->created_by_id !== $this->clientUserId) {
       $this->apiResponse->fail('Not Found', 404);
     }
-    $postObj['values'] = array_merge(
+    $putObj['values'] = array_merge(
       $sample->as_array(),
-      $postObj['values']
+      $values
     );
-    $this->submitSample($sample, $postObj);
+    $this->submitSample($sample, $putObj);
   }
 
 }
