@@ -318,6 +318,7 @@ KEY;
   }
 
   public function testJwtSamplePost1() {
+    $isoDateRegex = '/\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z)/';
     $this->authMethod = 'jwtUser';
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $data = [
@@ -346,19 +347,38 @@ KEY;
       'POST samples response does not contain values.');
     $this->assertTrue(array_key_exists('id', $response['response']['values']),
       'POST samples response does not contain id in values.');
+    $this->assertTrue(array_key_exists('created_on', $response['response']['values']),
+      'POST samples response does not contain created_on in values.');
+    $this->assertTrue(preg_match($isoDateRegex, $response['response']['values']['created_on']) === 1);
     $id = $response['response']['values']['id'];
     $this->assertTrue(array_key_exists('href', $response['response']),
       'POST samples response does not contain href.');
     $this->assertEquals($response['response']['href'], $headers['Location'],
       'POST samples response href does not match header Location.');
     $this->assertEquals(url::base() . "index.php/services/rest/samples/$id", $response['response']['href'],
-      'POST samples response href inforrect');
-
+      'POST samples response href incorrect');
+    // Can't overwrite by re-posting.
+    $data['id'] = $response['response']['values']['id'];
+    $data['comment'] = 'Updated comment';
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      [
+        'values' => $data
+      ]
+    );
+    $this->assertEquals(400, $response['httpCode']);
     // GET the posted data;
     $response = $this->callService("samples/$id");
     $this->assertEquals(200, $response['httpCode']);
+    $this->assertTrue(array_key_exists('comment', $response['response']['values']),
+      'GET samples response does not contain comment in values.');
     $this->assertEquals('A sample comment test', $response['response']['values']['comment']);
-    // POST a bad update with ID mismatch
+    $this->assertTrue(array_key_exists('created_on', $response['response']['values']),
+      'GET samples response does not contain created_on in values.');
+    echo "\n" . $response['response']['values']['created_on'];
+    $this->assertTrue(preg_match($isoDateRegex, $response['response']['values']['created_on']) === 1);
+    // PUT a bad update with ID mismatch
     $data = [
       'id' => $id + 1,
       'entered_sref' => 'SU121341',
@@ -366,21 +386,21 @@ KEY;
     $response = $this->callService(
       "samples/$id",
       FALSE,
-      [
-        'values' => $data
-      ]
+      ['values' => $data],
+      [],
+      'PUT'
     );
     $this->assertEquals(400, $response['httpCode']);
-    // POST an update.
+    // PUT an update.
     $data = [
       'entered_sref' => 'SU121341',
     ];
     $response = $this->callService(
       "samples/$id",
       FALSE,
-      [
-        'values' => $data
-      ]
+      ['values' => $data],
+      [],
+      'PUT'
     );
     $this->assertEquals(200, $response['httpCode']);
     // Check update worked.
@@ -394,21 +414,52 @@ KEY;
     $db->query('update samples set created_by_id=2 where id=' . $response['response']['values']['id']);
     $response = $this->callService('samples/' . $response['response']['values']['id']);
     $this->assertEquals(404, $response['httpCode']);
-    // POST update should also fail.
+    // PUT update should also fail.
     $data = [
       'entered_sref' => 'SU121342',
     ];
     $response = $this->callService(
       "samples/$id",
       FALSE,
-      [
-        'values' => $data
-      ]
+      ['values' => $data],
+      [],
+      'PUT'
     );
     $this->assertEquals(404, $response['httpCode']);
     // Do a test for missing sample.
     $response = $this->callService('samples/99999');
     $this->assertEquals(404, $response['httpCode']);
+  }
+
+  public function testJwtSamplePostExtKey() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'survey_id' => 1,
+      'entered_sref' => 'ST1234',
+      'entered_sref_system' => 'OSGB',
+      'date' => '01/08/2020',
+      'external_key' => 'AABBCC',
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => $data]
+    );
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertTrue($response['httpCode'] === 409, 'Duplicate external key did not return 409 Conflict response.');
+    // In a diff survey, not considered a duplicate.
+    $data['survey_id'] = 2;
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertTrue($response['httpCode'] === 201, 'Duplicate external key in different survey not accepted.');
   }
 
   public function testProjects_authentication() {
@@ -926,10 +977,13 @@ KEY;
   /**
    * Set up a CURL session.
    */
-  private function initCurl($url, $postData = NULL, $additionalRequestHeader = []) {
+  private function initCurl($url, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL) {
     $session = curl_init($url);
     curl_setopt($session, CURLOPT_HEADER, true);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    if ($customMethod) {
+      curl_setopt($session, CURLOPT_CUSTOMREQUEST, $customMethod);
+    }
     if ($postData) {
       if (is_array($postData)) {
         $postData = json_encode($postData);
@@ -973,8 +1027,8 @@ KEY;
     ];
   }
 
-  private function callUrl($url, $postData = NULL, $additionalRequestHeader = []) {
-    $session = $this->initCurl($url, $postData, $additionalRequestHeader);
+  private function callUrl($url, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL) {
+    $session = $this->initCurl($url, $postData, $additionalRequestHeader, $customMethod);
     $response = $this->getCurlResponse($session, $additionalRequestHeader);
     curl_close($session);
     return $response;
@@ -988,10 +1042,11 @@ KEY;
    * @param string $postData
    * @return array
    */
-  private function callService($method, $query = FALSE, $postData = NULL, $additionalRequestHeader = []) {
+  private function callService($method, $query = FALSE, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL) {
     $url = url::base(true) . "services/rest/$method";
-    if ($query)
+    if ($query) {
       $url .= '?' . http_build_query($query);
-    return $this->callUrl($url, $postData, $additionalRequestHeader);
+    }
+    return $this->callUrl($url, $postData, $additionalRequestHeader, $customMethod);
   }
 }
