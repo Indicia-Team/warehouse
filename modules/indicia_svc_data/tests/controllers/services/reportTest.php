@@ -161,7 +161,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'tests' => array(
         array(
           'params' => array(),
-          'result' => 1,
+          'result' => 2,
           'valueChecks' => array(
             array(
               'row' => 0,
