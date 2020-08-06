@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Work queue summary" description="Breakdown of records in the work queue.">
+  <query website_filter_field="w.website_id">
+    select #columns#
+    from work_queue w
+  </query>
+  <order_bys>
+    <order_by>processing desc, count(*) desc</order_by>
+  </order_bys>
+  <columns>
+    <column name="task" display="Task" sql="w.task" in_count="true" />
+    <column name="priority" display="Priority" sql="w.priority::text" in_count="true" />
+    <column name="error_detail" display="Error message" sql="w.error_detail" in_count="true" />
+    <column name="processing" display="Processing" sql="case when w.claimed_by is null then 'No' else 'Yes' end" in_count="true" />
+    <column name="max_age" display="Oldest" sql="min(created_on)" aggregate="true" />
+    <column name="count" display="Count" sql="count(w.*)" aggregate="true" />
+  </columns>
+</report>

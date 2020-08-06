@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Scheduled task summary" description="Info on scheculed tasks and where they are up to.">
+  <query website_filter_field="">
+    select #columns#
+    from system s
+    where last_scheduled_task_check is not null
+  </query>
+  <order_bys>
+    <order_by>s.name = 'Indicia' desc, s.name</order_by>
+  </order_bys>
+  <columns>
+    <column name="name" display="Task" sql="s.name" />
+    <column name="last_scheduled_task_check" display="Complete up to" sql="last_scheduled_task_check" />
+  </columns>
+</report>

@@ -1,3 +1,11 @@
+# Version 4.3.0
+
+* Adds `taxon_id` and `search_code` to cache_taxa_taxon_lists.
+* Performance improvements by removing joins that are no longer necessary.
+* Adds a performance diagnostics dashboard to the admin menu.
+* Fixes validation of float attribute values so that negative numbers with zero
+  at end of numbers after decimal point are not rejected.
+
 # Version 4.2.0
 *2020-08-03*
 
