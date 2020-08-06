@@ -354,16 +354,20 @@ KEY;
       'POST samples does not return Location in header.');
     $this->assertTrue(array_key_exists('Access-Control-Allow-Origin', $headers),
       'POST samples does not return Access-Control-Allow-Origin in header.');
+    $this->assertTrue(array_key_exists('Access-Control-Allow-Methods', $headers),
+      'POST samples does not return Access-Control-Allow-Methods in header.');
+    $this->assertTrue(array_key_exists('Access-Control-Headers-Origin', $headers),
+      'POST samples does not return Access-Control-Allow-Headers in header.');
     $this->assertEquals('*', $headers['Access-Control-Allow-Origin'],
       'CORS not enabled correctly - incorrect Access-Control-Allow-Origin');
     $this->assertTrue(count(array_diff(
       ['GET', 'PUT', 'POST', 'OPTIONS', 'DELETE'],
       explode(', ', $headers['Access-Control-Allow-Methods']))) === 0,
       'CORS not enabled correctly - incorrect Access-Control-Allow-Methods');
-      $this->assertTrue(count(array_diff(
-        ['Content-Type', 'Authorization ', 'DELETE'],
-        explode(', ', $headers['Access-Control-Allow-Headers']))) === 0,
-        'CORS not enabled correctly - incorrect Access-Control-Allow-Headers');
+    $this->assertTrue(count(array_diff(
+      ['Content-Type', 'Authorization ', 'DELETE'],
+      explode(', ', $headers['Access-Control-Allow-Headers']))) === 0,
+      'CORS not enabled correctly - incorrect Access-Control-Allow-Headers');
     $this->assertTrue(array_key_exists('values', $response['response']),
       'POST samples response does not contain values.');
     $this->assertTrue(array_key_exists('id', $response['response']['values']),
@@ -482,6 +486,65 @@ KEY;
     // Delete an incorrect ID.
     $response = $this->callService("samples/9999", FALSE, NULL, [], 'DELETE');
     $this->assertEquals(404, $response['httpCode']);
+  }
+
+  public function testJwtSampleETags() {
+    // First post a sample.
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'survey_id' => 1,
+      'entered_sref' => 'SU1234',
+      'entered_sref_system' => 'OSGB',
+      'date' => '01/08/2020',
+      'comment' => 'A sample to delete',
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $headers = $this->parseHeaders($response['headers']);
+    $this->assertTrue(array_key_exists('ETag', $headers),
+      'Sample POST does not return ETag.');
+    $initialETag = $headers['ETag'];
+    // Now update it with incorrect ETag.
+    $id = $response['response']['values']['id'];
+    $data = ['comment' => 'Update fails'];
+    $response = $this->callService(
+      "samples/$id",
+      FALSE,
+      ['values' => $data],
+      ["If-Match: xx$initialETag"],
+      'PUT'
+    );
+    $this->assertEquals(412, $response['httpCode'],
+      'Update with incorrect precondition does not return precondition failed.');
+    // Try with correct If-Match.
+    $data = ['comment' => 'Update works'];
+    $response = $this->callService(
+      "samples/$id",
+      FALSE,
+      ['values' => $data],
+      ["If-Match: $initialETag"],
+      'PUT'
+    );
+    $this->assertEquals(200, $response['httpCode']);
+    $headers = $this->parseHeaders($response['headers']);
+    $this->assertTrue(array_key_exists('ETag', $headers),
+      'PUT to update does not return new ETag.');
+    $this->assertNotEquals($initialETag, $headers['ETag'],
+      'ETag not changed after update.');
+    // Repeat request should now fail.
+    $response = $this->callService(
+      "samples/$id",
+      FALSE,
+      ['values' => $data],
+      ["If-Match: $initialETag"],
+      'PUT'
+    );
+    $this->assertEquals(412, $response['httpCode']);
   }
 
   public function testJwtSamplePostExtKey() {

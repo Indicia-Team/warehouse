@@ -3623,6 +3623,9 @@ class Rest_Controller extends Controller {
         // Location header points to created resource.
         header("Location: $href");
       }
+      // ETag to provide version check on updates.
+      $ETag = $this->db->query("SELECT xmin FROM samples WHERE id=$id")->current()->xmin;
+      header("ETag: $ETag");
       // Include href and basic record metadata.
       echo json_encode([
         'values' => $this->getValuesForResponse($sample->as_array(), ['id', 'created_on', 'updated_on']),
@@ -3665,6 +3668,14 @@ class Rest_Controller extends Controller {
       }
     }
     $sample = ORM::factory('sample', $id);
+    $headers = apache_request_headers();
+    if (isset($headers['If-Match'])) {
+      // A precondition based on ETag which must be met.
+      $ETag = $this->db->query("SELECT xmin FROM samples WHERE id=$id")->current()->xmin;
+      if ($headers['If-Match'] !== $ETag) {
+        $this->apiResponse->fail('Precondition Failed', 412, 'If-Match condition not met. Record may have been updated by another user.');
+      }
+    }
     if (!empty($values['external_key']) && $values['external_key'] !== $sample->external_key) {
       // No need to check without survey ID in post as it will fail validation anyway.
       $this->checkDuplicateSampleExternalKey($sample->survey_id, $values['external_key']);
