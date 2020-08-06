@@ -616,6 +616,7 @@ class Rest_Controller extends Controller {
    * @throws exception
    */
   public function __call($name, $arguments) {
+    $tm = microtime(TRUE);
     try {
       // Undo router's conversion of hyphens and underscores.
       $this->resourceName = str_replace('_', '-', $name);
@@ -711,6 +712,13 @@ class Rest_Controller extends Controller {
     }
     catch (RestApiAbort $e) {
       // No action if a proper abort.
+    }
+    if (class_exists('request_logging')) {
+      $io = in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE']) ? 'i' : 'o';
+      $websiteId = isset($this->clientWebsiteId) ? $this->clientWebsiteId : 0;
+      $userId = isset($this->clientUserId) ? $this->clientUserId : 0;
+      $subTask = implode('/', $arguments);
+      request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, $this->db);
     }
   }
 
@@ -812,7 +820,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
       ['caption' => 'Date interpreted', 'field' => '#event_date#'],
       ['caption' => 'Date from', 'field' => 'event.date_start'],
-      ['caption' => 'Date to', 'field' => 'event.date_end'], 
+      ['caption' => 'Date to', 'field' => 'event.date_end'],
       ['caption' => 'Date type', 'field' => ''], // Unavalable in ES index (date_type)
       ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
