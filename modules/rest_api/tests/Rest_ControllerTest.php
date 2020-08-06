@@ -562,6 +562,7 @@ KEY;
       FALSE,
       ['values' => $data]
     );
+    $id = $response['response']['values']['id'];
     $response = $this->callService(
       'samples',
       FALSE,
@@ -576,6 +577,37 @@ KEY;
       ['values' => $data]
     );
     $this->assertTrue($response['httpCode'] === 201, 'Duplicate external key in different survey not accepted.');
+    // PUT with same external key should be OK.
+    $response = $this->callService(
+      "samples/$id",
+      FALSE,
+      ['values' => ['comment' => 'Updated', 'external_key' => 'AABBCC']],
+      [],
+      'PUT'
+    );
+    $this->assertEquals(200, $response['httpCode']);
+    // Create a sample we can clash extKey against.
+    $data = [
+      'survey_id' => 1,
+      'entered_sref' => 'ST1234',
+      'entered_sref_system' => 'OSGB',
+      'date' => '01/08/2020',
+      'external_key' => 'AABBCCD',
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => $data]
+    );
+    // PUT with clashing external key should fail.
+    $response = $this->callService(
+      "samples/$id",
+      FALSE,
+      ['values' => ['comment' => 'Updated', 'external_key' => 'AABBCCD']],
+      [],
+      'PUT'
+    );
+    $this->assertEquals(409, $response['httpCode']);
   }
 
   public function testProjects_authentication() {
