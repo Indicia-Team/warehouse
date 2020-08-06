@@ -305,6 +305,19 @@ KEY;
       && array_key_exists('sample:survey_id', $response['response']['message']));
   }
 
+  public function testJwtSampleOptions() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService('samples', FALSE, NULL, [], 'OPTIONS');
+    $headers = $this->parseHeaders($response['headers']);
+    $this->assertTrue(array_key_exists('Allow', $headers),
+      'OPTIONS request does not return Allow in header.');
+    $this->assertTrue(count(array_diff(
+      ['GET', 'PUT', 'POST', 'OPTIONS', 'DELETE'],
+      explode(', ', $headers['Allow']))) === 0,
+      'OPTIONS request returns incorrect methods');
+  }
+
   private function parseHeaders($string) {
     $rows = explode("\n", trim($string));
     // Skip response code at the top.
@@ -342,7 +355,15 @@ KEY;
     $this->assertTrue(array_key_exists('Access-Control-Allow-Origin', $headers),
       'POST samples does not return Access-Control-Allow-Origin in header.');
     $this->assertEquals('*', $headers['Access-Control-Allow-Origin'],
-      'CORS not enabled correctly');
+      'CORS not enabled correctly - incorrect Access-Control-Allow-Origin');
+    $this->assertTrue(count(array_diff(
+      ['GET', 'PUT', 'POST', 'OPTIONS', 'DELETE'],
+      explode(', ', $headers['Access-Control-Allow-Methods']))) === 0,
+      'CORS not enabled correctly - incorrect Access-Control-Allow-Methods');
+      $this->assertTrue(count(array_diff(
+        ['Content-Type', 'Authorization ', 'DELETE'],
+        explode(', ', $headers['Access-Control-Allow-Headers']))) === 0,
+        'CORS not enabled correctly - incorrect Access-Control-Allow-Headers');
     $this->assertTrue(array_key_exists('values', $response['response']),
       'POST samples response does not contain values.');
     $this->assertTrue(array_key_exists('id', $response['response']['values']),
@@ -428,6 +449,38 @@ KEY;
     $this->assertEquals(404, $response['httpCode']);
     // Do a test for missing sample.
     $response = $this->callService('samples/99999');
+    $this->assertEquals(404, $response['httpCode']);
+  }
+
+  public function testJwtSampleDelete() {
+    // First post a sample.
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'survey_id' => 1,
+      'entered_sref' => 'SU1234',
+      'entered_sref_system' => 'OSGB',
+      'date' => '01/08/2020',
+      'comment' => 'A sample to delete',
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    // Check it exists.
+    $response = $this->callService("samples/$id");
+    $this->assertEquals(200, $response['httpCode']);
+    // Delete it.
+    $response = $this->callService("samples/$id", FALSE, NULL, [], 'DELETE');
+    $this->assertEquals(204, $response['httpCode']);
+    // Check it doesn't exist.
+    $response = $this->callService("samples/$id");
+    $this->assertEquals(404, $response['httpCode']);
+    // Delete an incorrect ID.
+    $response = $this->callService("samples/9999", FALSE, NULL, [], 'DELETE');
     $this->assertEquals(404, $response['httpCode']);
   }
 
@@ -1009,8 +1062,7 @@ KEY;
     $body = substr($response, $headerSize);
     // Auto decode the JSON, unless the test is checking the Accept request
     // header in which case format could be something else.
-    if (empty($additionalRequestHeader)
-        || strpos(implode(',', $additionalRequestHeader), 'Accept:') === FALSE) {
+    if (!empty($body) && (empty($additionalRequestHeader) || strpos(implode(',', $additionalRequestHeader), 'Accept:') === FALSE)) {
       $decoded = json_decode($body, TRUE);
       $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response);
       $body = $decoded;

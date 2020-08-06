@@ -559,6 +559,13 @@ class Rest_Controller extends Controller {
           ],
         ],
       ],
+      'delete' => [
+        'subresources' => [
+          '{sample ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
     ],
   ];
 
@@ -692,7 +699,7 @@ class Rest_Controller extends Controller {
         $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource.
-          header('allow: ' . strtoupper(implode(',', array_keys($resourceConfig))));
+          header('Allow: ' . strtoupper(implode(', ', array_merge(array_keys($resourceConfig), ['OPTIONS']))));
         }
         else {
           if (!array_key_exists(strtolower($this->method), $resourceConfig)) {
@@ -3059,6 +3066,8 @@ class Rest_Controller extends Controller {
       }
       if ($corsSetting) {
         header("Access-Control-Allow-Origin: $corsSetting");
+        header("Access-Control-Allow-Methods: GET, POST, DELETE, PUT, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type, Authorization");
       }
     }
   }
@@ -3538,7 +3547,8 @@ class Rest_Controller extends Controller {
       ->from('samples')
       ->where([
         'id' => $id,
-        'created_by_id' => $this->clientUserId
+        'created_by_id' => $this->clientUserId,
+        'deleted' => 'f',
       ])->get()->current();
     if ($row) {
       $this->apiResponse->succeed(['values' => $this->getValuesForResponse($row)]);
@@ -3667,6 +3677,22 @@ class Rest_Controller extends Controller {
       $values
     );
     $this->submitSample($sample, $putObj);
+  }
+
+  /**
+   * API end-point to DELETE to a sample.
+   */
+  public function samplesDeleteId($id) {
+    $sample = ORM::factory('sample', $id);
+    // Must exist and belong to the user.
+    if ($sample->id && $sample->created_by_id === $this->clientUserId) {
+      $sample->deleted = 't';
+      $sample->set_metadata();
+      $sample->save();
+      http_response_code(204);
+    } else {
+      $this->apiResponse->fail('Not found', 404);
+    }
   }
 
 }
