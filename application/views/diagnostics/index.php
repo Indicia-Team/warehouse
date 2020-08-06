@@ -32,7 +32,23 @@
 
 warehouse::loadHelpers(['report_helper']);
 $readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+$restApiEnabled = class_exists('api_persist');
 ?>
+<div class="row">
+
+<div class="col-md-6">
+<h3>Scheduled task summary</h3>
+<div class="alert alert-info">The following list of scheduled tasks shows the timestamp each task has processed
+data up to.</div>
+<?php
+echo report_helper::report_grid([
+  'readAuth' => $readAuth,
+  'dataSource' => 'library/system/scheduled_task_summary',
+]);
+?>
+</div>
+
+<div class="col-md-6">
 <h3>Work queue summary</h3>
 <div class="alert alert-info">Summary of current entries in the Work Queue.</div>
 <?php
@@ -41,28 +57,31 @@ echo report_helper::report_grid([
   'dataSource' => 'library/work_queue/summary'
 ]);
 ?>
+</div>
+
+</div>
+
+<?php if ($restApiEnabled) : ?>
+  <h3>REST API data feed delays</h3>
+  <div class="alert alert-info">The following table shows the number of update tasks behind that REST API feeds are,
+  e.g. into Elasticsearch. Note that not all these feeds may be currently enabled.</div>
+  <?php
+  echo report_helper::report_grid([
+    'readAuth' => $readAuth,
+    'dataSource' => 'rest_api/autofeed_delays',
+  ]);
+  ?>
+<?php endif; ?>
 
 <?php if (class_exists('request_logging')) : ?>
-<h3>Request performance - top culprits</h3>
-<div class="alert alert-info">The following are most resource intensive API requests of the last 2000.</div>
-<?php
-echo report_helper::report_grid([
-  'readAuth' => $readAuth,
-  'dataSource' => 'library/request_log_entries/main_culprits',
-  'itemsPerPage' => 5,
-]);
-endif;
-?>
-
-<?php if (class_exists('api_persist')) : ?>
-<h3>REST API data feed delays</h3>
-<div class="alert alert-info">The following table shows the number of update tasks behind that REST API feeds are,
-e.g. into Elasticsearch. Note that not all these feeds may be currently enabled.</div>
-<?php
-echo report_helper::report_grid([
-  'readAuth' => $readAuth,
-  'dataSource' => 'rest_api/autofeed_delays',
-]);
+  <h3>Request performance - top culprits</h3>
+  <div class="alert alert-info">The following are most resource intensive API requests of the last 2000.</div>
+  <?php
+  echo report_helper::report_grid([
+    'readAuth' => $readAuth,
+    'dataSource' => 'library/request_log_entries/main_culprits',
+    'itemsPerPage' => 5,
+  ]);
 endif;
 
 echo report_helper::dump_javascript();
