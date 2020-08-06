@@ -356,7 +356,7 @@ KEY;
       'POST samples does not return Access-Control-Allow-Origin in header.');
     $this->assertTrue(array_key_exists('Access-Control-Allow-Methods', $headers),
       'POST samples does not return Access-Control-Allow-Methods in header.');
-    $this->assertTrue(array_key_exists('Access-Control-Headers-Origin', $headers),
+    $this->assertTrue(array_key_exists('Access-Control-Allow-Headers', $headers),
       'POST samples does not return Access-Control-Allow-Headers in header.');
     $this->assertEquals('*', $headers['Access-Control-Allow-Origin'],
       'CORS not enabled correctly - incorrect Access-Control-Allow-Origin');
@@ -365,7 +365,7 @@ KEY;
       explode(', ', $headers['Access-Control-Allow-Methods']))) === 0,
       'CORS not enabled correctly - incorrect Access-Control-Allow-Methods');
     $this->assertTrue(count(array_diff(
-      ['Content-Type', 'Authorization ', 'DELETE'],
+      ['Content-Type', 'Authorization'],
       explode(', ', $headers['Access-Control-Allow-Headers']))) === 0,
       'CORS not enabled correctly - incorrect Access-Control-Allow-Headers');
     $this->assertTrue(array_key_exists('values', $response['response']),
