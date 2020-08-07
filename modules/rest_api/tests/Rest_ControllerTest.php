@@ -555,7 +555,7 @@ KEY;
       'entered_sref' => 'ST1234',
       'entered_sref_system' => 'OSGB',
       'date' => '01/08/2020',
-      'external_key' => 'AABBCC',
+      'external_key' => 123,
     ];
     $response = $this->callService(
       'samples',
@@ -581,7 +581,7 @@ KEY;
     $response = $this->callService(
       "samples/$id",
       FALSE,
-      ['values' => ['comment' => 'Updated', 'external_key' => 'AABBCC']],
+      ['values' => ['comment' => 'Updated', 'external_key' => 123]],
       [],
       'PUT'
     );
@@ -592,7 +592,7 @@ KEY;
       'entered_sref' => 'ST1234',
       'entered_sref_system' => 'OSGB',
       'date' => '01/08/2020',
-      'external_key' => 'AABBCCD',
+      'external_key' => 124,
     ];
     $response = $this->callService(
       'samples',
@@ -603,7 +603,7 @@ KEY;
     $response = $this->callService(
       "samples/$id",
       FALSE,
-      ['values' => ['comment' => 'Updated', 'external_key' => 'AABBCCD']],
+      ['values' => ['comment' => 'Updated', 'external_key' => 124]],
       [],
       'PUT'
     );
@@ -1150,7 +1150,6 @@ KEY;
         $postData = json_encode($postData);
         $additionalRequestHeader[] = 'Content-Type: application/json';
         $additionalRequestHeader[] = 'Content-Length: ' . strlen($postData);
-        kohana::log('debug', 'POST: ' . $postData);
       }
       curl_setopt ($session, CURLOPT_POST, TRUE);
       curl_setopt ($session, CURLOPT_POSTFIELDS, $postData);

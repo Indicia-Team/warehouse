@@ -3680,9 +3680,7 @@ class Rest_Controller extends Controller {
         $this->apiResponse->fail('Precondition Failed', 412, 'If-Match condition not met. Record may have been updated by another user.');
       }
     }
-    kohana::log('debug', 'PutId values: ' . var_export($values, TRUE));
-    kohana::log('debug', 'Existing extKey: ' . $sample->external_key);
-    if (!empty($values['external_key']) && $values['external_key'] !== $sample->external_key) {
+    if (!empty($values['external_key']) && (string) $values['external_key'] !== $sample->external_key) {
       $this->checkDuplicateSampleExternalKey($sample->survey_id, $values['external_key']);
     }
     if ($sample->created_by_id !== $this->clientUserId) {
