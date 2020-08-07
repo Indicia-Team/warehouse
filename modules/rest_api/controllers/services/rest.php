@@ -678,6 +678,7 @@ class Rest_Controller extends Controller {
         ];
       }
       $this->authenticate();
+      $this->applyCorsHeader();
       if (!isset($this->resourceOptions)
           && isset($this->authConfig['resource_options'])
           && isset($this->authConfig['resource_options'][$this->resourceName])) {
@@ -3052,8 +3053,8 @@ class Rest_Controller extends Controller {
    * If allow_cors set in the auth method options, apply access control header.
    */
   private function applyCorsHeader() {
-    if (array_key_exists('allow_cors', $this->authConfig)) {
-      if ($this->authConfig['allow_cors'] === TRUE) {
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' || array_key_exists('allow_cors', $this->authConfig)) {
+      if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' || $this->authConfig['allow_cors'] === TRUE) {
         $corsSetting = '*';
       } elseif (is_array($this->authConfig['allow_cors'])) {
         // If list of domain patterns specified, allow only if a match.
@@ -3080,6 +3081,10 @@ class Rest_Controller extends Controller {
     $this->serverUserId = Kohana::config('rest.user_id');
     $methods = Kohana::config('rest.authentication_methods');
     $this->authenticated = FALSE;
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+      // No need to authenticate OPTIONS request.
+      return;
+    }
     $this->checkElasticsearchRequest();
     if ($this->authenticated) {
       return;
@@ -3120,7 +3125,6 @@ class Rest_Controller extends Controller {
       // Either the authentication wrong, or using HTTP instead of HTTPS.
       $this->apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
     }
-    $this->applyCorsHeader();
   }
 
   /**

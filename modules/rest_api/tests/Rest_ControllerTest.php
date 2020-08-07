@@ -309,7 +309,6 @@ KEY;
     $this->authMethod = 'none';
     $response = $this->callService('samples', FALSE, NULL, [], 'OPTIONS');
     $this->assertEquals(200, $response['httpCode'], 'OPTIONS request did not return OK');
-    var_export($response);
     $headers = $this->parseHeaders($response['headers']);
     $this->assertTrue(array_key_exists('Allow', $headers),
       'OPTIONS request does not return Allow in header.');
