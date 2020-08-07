@@ -306,9 +306,10 @@ KEY;
   }
 
   public function testJwtSampleOptions() {
-    $this->authMethod = 'jwtUser';
-    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $this->authMethod = 'none';
     $response = $this->callService('samples', FALSE, NULL, [], 'OPTIONS');
+    $this->assertEquals(200, $response['httpCode'], 'OPTIONS request did not return OK');
+    var_export($response);
     $headers = $this->parseHeaders($response['headers']);
     $this->assertTrue(array_key_exists('Allow', $headers),
       'OPTIONS request does not return Allow in header.');
@@ -1080,46 +1081,59 @@ KEY;
         $hmac = hash_hmac("sha1", $url, self::$userPassword, $raw_output = FALSE);
         $authString = "USER_ID:$user:WEBSITE_ID:$website:HMAC:$hmac";
         break;
+
       case 'hmacClient':
         $user = self::$clientUserId;
         $hmac = hash_hmac("sha1", $url, self::$config['shared_secret'], $raw_output = FALSE);
         $authString = "USER:$user:HMAC:$hmac";
         break;
+
       case 'hmacWebsite':
         $user = self::$websiteId;
         $hmac = hash_hmac("sha1", $url, self::$websitePassword, $raw_output = FALSE);
         $authString = "WEBSITE_ID:$user:HMAC:$hmac";
         break;
+
       case 'directUser':
         $user = self::$userId;
         $website = self::$websiteId;
         $password = self::$userPassword;
         $authString = "USER_ID:$user:WEBSITE_ID:$website:SECRET:$password";
         break;
+
       case 'directClient':
         $user = self::$clientUserId;
         $password = self::$websitePassword;
         $authString = "USER:$user:SECRET:$password";
         break;
+
       case 'directWebsite':
         $user = self::$websiteId;
         $password = self::$websitePassword;
         $authString = "WEBSITE_ID:$user:SECRET:$password";
         break;
+
       case 'oAuth2User':
         $authString = "Bearer " . self::$oAuthAccessToken;
         break;
+
       case 'jwtUser':
         $authString = "Bearer " . self::$jwt;
         break;
+
+      case 'none':
+        break;
+
       default:
         $this->fail("$this->authMethod test not implemented");
         break;
     }
-    curl_setopt($session, CURLOPT_HTTPHEADER, array_merge(
-      $additionalRequestHeader,
-      array("Authorization: $authString")
-    ));
+    if (isset($authString)) {
+      curl_setopt($session, CURLOPT_HTTPHEADER, array_merge(
+        $additionalRequestHeader,
+        array("Authorization: $authString")
+      ));
+    }
   }
 
   /**
