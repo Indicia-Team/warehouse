@@ -114,6 +114,12 @@ $site = url::site();
       'fieldname' => 'sample:comment',
       'default' => html::initial_value($values, 'sample:comment'),
     ));
+    echo data_entry_helper::checkbox([
+      'label' => 'Training',
+      'fieldname' => 'sample:training',
+      'default' => html::initial_value($values, 'sample:training'),
+      'helpText' => 'Tick if a fake sample for training purposes',
+    ]);
     echo data_entry_helper::text_input(array(
       'label' => 'External Key',
       'fieldname' => 'sample:external_key',
