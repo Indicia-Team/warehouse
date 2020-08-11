@@ -808,10 +808,10 @@ class Rest_Controller extends Controller {
       ['caption' => 'Family', 'field' => 'taxon.family'],
       ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
       ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
-      ['caption' => 'Original map ref', 'field' => ''], // Unavailable in ES index (entered_sref)
+      ['caption' => 'Original map ref', 'field' => 'location.input_sref'], 
       ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
       ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
-      ['caption' => 'Projection', 'field' => ''], // Unavailable in ES index (entered_sref)
+      ['caption' => 'Projection', 'field' => 'location.input_sref_system'],
       ['caption' => 'Precision', 'field' => 'location.coordinate_uncertainty_in_meters'],
       ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
       ['caption' => 'Output map ref projection', 'field' => 'location.output_sref_system'],
@@ -837,10 +837,10 @@ class Rest_Controller extends Controller {
       ['caption' => 'Last edited on date', 'field' => 'metadata.updated_on'], // Format ??
       ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
       ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
-      ['caption' => 'Query', 'field' => 'identification.query'], // Not on dev index (index config)
+      ['caption' => 'Query', 'field' => 'identification.query'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
       ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
-      ['caption' => 'Licence', 'field' => 'metadata.licence_code'], // In GitHub logstash pgsql conf.template but cant see in kibana on live site (or dev)
+      ['caption' => 'Licence', 'field' => 'metadata.licence_code'], 
       ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download?
       ['caption' => 'attr_det_full_name', 'field' => 'identification.identified_by'], // Repeat of Determiner field with ES
     ]
