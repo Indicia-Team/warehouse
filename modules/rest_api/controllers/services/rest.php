@@ -914,7 +914,7 @@ class Rest_Controller extends Controller {
         if (preg_match('/^[a-z_]+(\.[a-z_]+)*$/', $field)) {
           $fields[] = $field;
         }
-        elseif (preg_match('/^#higher geography(.*)#$/', $field)) {
+        elseif (preg_match('/^#higher_geography(.*)#$/', $field)) {
           $fields[] = 'location.higher_geography.*';
         }
         elseif ($field === '#data_cleaner_icons#') {
