@@ -401,8 +401,15 @@ KEY;
     $this->assertEquals('A sample comment test', $response['response']['values']['comment']);
     $this->assertTrue(array_key_exists('created_on', $response['response']['values']),
       'GET samples response does not contain created_on in values.');
-    echo "\n" . $response['response']['values']['created_on'];
+    $this->assertEquals('POLYGON', substr($response['response']['values']['geom'], 0, 7), 'Geometry not returned as WKT');
     $this->assertTrue(preg_match($isoDateRegex, $response['response']['values']['created_on']) === 1);
+    $this->assertTrue(array_key_exists('date', $response['response']['values']),
+      'GET samples response does not contain processed vague date output.');
+    $this->assertEquals('01/08/2020', $response['response']['values']['date']);
+    $this->assertTrue(array_key_exists('lat', $response['response']['values']),
+      'GET samples response does not contain processed lat output.');
+      $this->assertTrue(array_key_exists('lon', $response['response']['values']),
+      'GET samples response does not contain processed lon output.');
     // PUT a bad update with ID mismatch
     $data = [
       'id' => $id + 1,
@@ -454,6 +461,158 @@ KEY;
     // Do a test for missing sample.
     $response = $this->callService('samples/99999');
     $this->assertEquals(404, $response['httpCode']);
+  }
+
+  public function testJwtSamplePostWithOccurrence() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+          ],
+        ],
+      ],
+    ];
+    $tm = microtime(TRUE);
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    $occCount = $db->query("select count(*) from occurrences where sample_id=$id")
+      ->current()->count;
+    $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
+  }
+
+  /**
+   * Test attempt to upload JS script into media queue.
+   */
+  public function testJwtMediaQueueInvalid() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Try uploading a script.
+    $file = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\js\addRowToGrid.js';
+    $response = $this->callService(
+      "media-queue",
+      FALSE,
+      [
+        'file' => curl_file_create(
+          $file,
+          'application/javascript',
+          basename($file)
+        ),
+      ],
+      [], NULL, TRUE
+    );
+    $this->assertEquals(400, $response['httpCode']);
+    $this->assertArrayHasKey('message', $response['response']);
+    $this->assertArrayHasKey('file', json_decode($response['response']['message'], TRUE));
+  }
+
+  /**
+   * Testing upload of media into queue then subsequent attach to sample.
+   */
+  public function testJwtSamplePostWithMedia() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Post into the media queue.
+    $fileA = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\images\warehouse-banner.jpg';
+    $fileB = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\images\report_piechart.png';
+    $fileC = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\images\delete.png';
+    // Submit 3 files with deliberate mix of by field array and single field value.
+    $response = $this->callService(
+      "media-queue",
+      FALSE,
+      [
+        'file[a]' => curl_file_create(
+          $fileA,
+          'image/jpg',
+          basename($fileA)
+        ),
+        'file[b]' => curl_file_create(
+          $fileB,
+          'image/png',
+          basename($fileB)
+        ),
+        'singlefile' => curl_file_create(
+          $fileC,
+          'image/png',
+          basename($fileC)
+        ),
+      ],
+      [], NULL, TRUE
+    );
+    $this->assertArrayHasKey('filea', $response['response']);
+    $this->assertArrayHasKey('name', $response['response']['filea']);
+    $this->assertArrayHasKey('tempPath', $response['response']['filea']);
+    $uploadedFileName = $response['response']['filea']['name'];
+    // Post a sample which refers to one of the files.
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'media' => [
+        [
+          'values' => [
+            'queued' => $uploadedFileName,
+            'caption' => 'Sample image',
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    $smpMediaCount = $db->query("select count(*) from sample_media where sample_id=$id and path='$uploadedFileName'")
+      ->current()->count;
+    $this->assertEquals(1, $smpMediaCount, 'No media created when submitted with a sample.');
+    $this->assertFileExists(DOCROOT . 'upload/' . $uploadedFileName, 'Uploaded media file does not exist in destination');
+    $this->assertFileExists(DOCROOT . 'upload/thumb-' . $uploadedFileName, 'Uploaded media thumbnail does not exist in destination');
+    // Post a sample which refers to an incorrect file.
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'media' => [
+        [
+          'values' => [
+            'queued' => '123.jpg',
+            'caption' => 'Sample image',
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(400, $response['httpCode']);
+    // Check validation response tells me queued file missing.
+    $this->assertArrayHasKey('message', $response['response']);
+    $this->assertArrayHasKey('sample_medium:queued', $response['response']['message']);
   }
 
   public function testJwtSampleDelete() {
@@ -608,6 +767,49 @@ KEY;
       'PUT'
     );
     $this->assertEquals(409, $response['httpCode']);
+  }
+
+  public function testJwtSamplePostAttr() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'survey_id' => 1,
+      'entered_sref' => 'ST1234',
+      'entered_sref_system' => 'OSGB',
+      'date' => '01/08/2020',
+      'smpAttr:1' => 100
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $db = new Database();
+    $id = $response['response']['values']['id'];
+    $storedAltitude = $db
+      ->query("select int_value from sample_attribute_values where sample_id=$id")
+      ->current()->int_value;
+    $this->assertEquals(100, $storedAltitude);
+    // Update via PUT should overwrite attribute, not create new, as single value.
+    $response = $this->callService(
+      "samples/$id",
+      FALSE,
+      ['values' => ['smpAttr:1' => 150]],
+      [],
+      'PUT'
+    );
+    $attrValCount = $db
+      ->query("select count(*) from sample_attribute_values where sample_id=$id")
+      ->current()->count;
+    $this->assertEquals(1, $attrValCount);
+    $storedAltitude = $db
+      ->query("select int_value from sample_attribute_values where sample_id=$id")
+      ->current()->int_value;
+    $this->assertEquals(150, $storedAltitude);
+    // Do a GET to check we can read the stored altitude.
+    $response = $this->callService("samples/$id");
+    $this->assertEquals(150, $response['response']['values']['smpAttr:1']);
   }
 
   public function testProjects_authentication() {
@@ -1124,7 +1326,7 @@ KEY;
         break;
 
       default:
-        $this->fail("$this->authMethod test not implemented");
+        $this->fail("$this->authMethod auth method not implemented");
         break;
     }
     if (isset($authString)) {
@@ -1138,7 +1340,7 @@ KEY;
   /**
    * Set up a CURL session.
    */
-  private function initCurl($url, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL) {
+  private function initCurl($url, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL, $files = FALSE) {
     $session = curl_init($url);
     curl_setopt($session, CURLOPT_HEADER, TRUE);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
@@ -1146,7 +1348,7 @@ KEY;
       curl_setopt($session, CURLOPT_CUSTOMREQUEST, $customMethod);
     }
     if ($postData) {
-      if (is_array($postData)) {
+      if (is_array($postData) && !$files) {
         $postData = json_encode($postData);
         $additionalRequestHeader[] = 'Content-Type: application/json';
         $additionalRequestHeader[] = 'Content-Length: ' . strlen($postData);
@@ -1186,8 +1388,8 @@ KEY;
     ];
   }
 
-  private function callUrl($url, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL) {
-    $session = $this->initCurl($url, $postData, $additionalRequestHeader, $customMethod);
+  private function callUrl($url, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL, $files = FALSE) {
+    $session = $this->initCurl($url, $postData, $additionalRequestHeader, $customMethod, $files);
     $response = $this->getCurlResponse($session, $additionalRequestHeader);
     curl_close($session);
     return $response;
@@ -1201,11 +1403,11 @@ KEY;
    * @param string $postData
    * @return array
    */
-  private function callService($method, $query = FALSE, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL) {
+  private function callService($method, $query = FALSE, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL, $files = FALSE) {
     $url = url::base(true) . "services/rest/$method";
     if ($query) {
       $url .= '?' . http_build_query($query);
     }
-    return $this->callUrl($url, $postData, $additionalRequestHeader, $customMethod);
+    return $this->callUrl($url, $postData, $additionalRequestHeader, $customMethod, $files);
   }
 }
