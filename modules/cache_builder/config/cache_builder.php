@@ -781,6 +781,7 @@ SET website_id=su.website_id,
   created_by_id=s.created_by_id,
   group_id=s.group_id,
   record_status=s.record_status,
+  training=s.training,
   query=case
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
@@ -952,12 +953,12 @@ $config['samples']['insert']['functional'] = "
 INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
-            group_id, record_status, query, parent_sample_id, media_count)
+            group_id, record_status, training, query, parent_sample_id, media_count)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
-  s.group_id, s.record_status,
+  s.group_id, s.record_status, s.training,
   case
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
