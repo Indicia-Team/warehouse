@@ -190,7 +190,9 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       marine_flag=t.marine_flag,
       freshwater_flag=t.freshwater_flag,
       terrestrial_flag=t.terrestrial_flag,
-      non_native_flag=t.non_native_flag
+      non_native_flag=t.non_native_flag,
+      taxon_id=t.id,
+      search_code=t.search_code
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id
     #join_needs_update#
@@ -217,7 +219,8 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
       taxon_meaning_id, taxon_group_id, taxon_group,
       taxon_rank_id, taxon_rank, taxon_rank_sort_order,
       cache_created_on, cache_updated_on, allow_data_entry,
-      marine_flag, freshwater_flag, terrestrial_flag, non_native_flag
+      marine_flag, freshwater_flag, terrestrial_flag, non_native_flag,
+      taxon_id, search_code
     )
     select distinct on (ttl.id) ttl.id, ttl.preferred,
       tl.id as taxon_list_id, tl.title as taxon_list_title, tl.website_id,
@@ -231,7 +234,8 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
       tpref.external_key, ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
       tr.id, tr.rank, tr.sort_order,
       now(), now(), ttl.allow_data_entry,
-      t.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag
+      t.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag,
+      t.id, t.search_code
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id and ttl.deleted=false
     #join_needs_update#
@@ -446,11 +450,9 @@ $config['taxon_searchterms']['update']['standard terms'] = "update cache_taxon_s
       non_native_flag=cttl.non_native_flag,
       external_key=cttl.external_key,
       authority=cttl.authority,
-      search_code=t.search_code,
+      search_code=cttl.search_code,
       taxonomic_sort_order=cttl.taxonomic_sort_order
     from cache_taxa_taxon_lists cttl
-    join taxa_taxon_lists ttl on ttl.id=cttl.id and ttl.deleted=false
-    join taxa t on t.id=ttl.taxon_id and t.deleted=false
     #join_needs_update#
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=false";
 
@@ -484,12 +486,10 @@ $config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_se
       non_native_flag=cttl.non_native_flag,
       external_key=cttl.external_key,
       authority=cttl.authority,
-      search_code=t.search_code,
+      search_code=cttl.search_code,
       taxonomic_sort_order=cttl.taxonomic_sort_order
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
-    join taxa_taxon_lists ttl on ttl.id=cttl.id and ttl.deleted=false
-    join taxa t on t.id=ttl.taxon_id and t.deleted=false
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type='A' and cttl.language_iso='lat'";
 
 $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon_searchterms cts
@@ -527,12 +527,10 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
       non_native_flag=cttl.non_native_flag,
       external_key=cttl.external_key,
       authority=cttl.authority,
-      search_code=t.search_code,
+      search_code=cttl.search_code,
       taxonomic_sort_order=cttl.taxonomic_sort_order
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
-    join taxa_taxon_lists ttl on ttl.id=cttl.id and ttl.deleted=false
-    join taxa t on t.id=ttl.taxon_id and t.deleted=false
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true";
 
 $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterms cts
@@ -561,12 +559,10 @@ $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterm
       non_native_flag=cttl.non_native_flag,
       external_key=cttl.external_key,
       authority=cttl.authority,
-      search_code=t.search_code,
+      search_code=cttl.search_code,
       taxonomic_sort_order=cttl.taxonomic_sort_order
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
-    join taxa_taxon_lists ttl on ttl.id=cttl.id and ttl.deleted=false
-    join taxa t on t.id=ttl.taxon_id and t.deleted=false
     join taxon_codes tc on tc.taxon_meaning_id=cttl.taxon_meaning_id
     join termlists_terms tlttype on tlttype.id=tc.code_type_id
     join termlists_terms tltcategory on tltcategory.id=tlttype.parent_id
@@ -598,11 +594,9 @@ $config['taxon_searchterms']['insert']['standard terms'] = "insert into cache_ta
         else 'V'
       end, false, null, cttl.preferred, length(cttl.taxon), cttl.parent_id, cttl.preferred_taxa_taxon_list_id,
       cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag,
-      cttl.external_key, cttl.authority, t.search_code, cttl.taxonomic_sort_order
+      cttl.external_key, cttl.authority, cttl.search_code, cttl.taxonomic_sort_order
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
-    join taxa_taxon_lists ttl on ttl.id=cttl.id and ttl.deleted=false
-    join taxa t on t.id=ttl.taxon_id and t.deleted=false
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified='f'
     where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=true";
 
@@ -616,11 +610,9 @@ $config['taxon_searchterms']['insert']['abbreviations'] = "insert into cache_tax
       cttl.default_common_name, cttl.authority, cttl.language_iso,
       'A', null, null, cttl.preferred, length(taxon_abbreviation(cttl.taxon)), cttl.parent_id, cttl.preferred_taxa_taxon_list_id,
       cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag,
-      cttl.external_key, cttl.authority, t.search_code, cttl.taxonomic_sort_order
+      cttl.external_key, cttl.authority, cttl.search_code, cttl.taxonomic_sort_order
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
-    join taxa_taxon_lists ttl on ttl.id=cttl.id and ttl.deleted=false
-    join taxa t on t.id=ttl.taxon_id and t.deleted=false
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='A'
     where cts.taxa_taxon_list_id is null and cttl.language_iso='lat' and cttl.allow_data_entry=true";
 
@@ -646,11 +638,9 @@ $config['taxon_searchterms']['insert']['simplified terms'] = "insert into cache_
         ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       cttl.parent_id, cttl.preferred_taxa_taxon_list_id,
       cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag, cttl.external_key, cttl.authority,
-      t.search_code, cttl.taxonomic_sort_order
+      cttl.search_code, cttl.taxonomic_sort_order
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
-    join taxa_taxon_lists ttl on ttl.id=cttl.id and ttl.deleted=false
-    join taxa t on t.id=ttl.taxon_id and t.deleted=false
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
     where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=true";
 
@@ -666,11 +656,9 @@ $config['taxon_searchterms']['insert']['codes'] = "insert into cache_taxon_searc
       cttl.default_common_name, cttl.authority, null, 'C', null, tc.code_type_id, tc.id, cttl.preferred, length(tc.code),
       cttl.parent_id, cttl.preferred_taxa_taxon_list_id,
       cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag,
-      cttl.external_key, cttl.authority, t.search_code, cttl.taxonomic_sort_order
+      cttl.external_key, cttl.authority, cttl.search_code, cttl.taxonomic_sort_order
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
-    join taxa_taxon_lists ttl on ttl.id=cttl.id and ttl.deleted=false
-    join taxa t on t.id=ttl.taxon_id and t.deleted=false
     join taxon_codes tc on tc.taxon_meaning_id=cttl.taxon_meaning_id and tc.deleted=false
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='C' and cts.source_id=tc.id
     join termlists_terms tlttype on tlttype.id=tc.code_type_id and tlttype.deleted=false

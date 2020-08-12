@@ -25,11 +25,11 @@
  defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Queue worker to update cache_taxa_taxon_lists_nonfunctional.attrs_json.
+ * Queue worker to update cache_taxa_taxon_lists.attrs_json.
  *
  * Class called when a task_cache_builder_attr_value_taxa_taxon_list task
  * encountered in the work queue after a direct update on an attribute value.
- * Updates cache_taxa_taxon_lists_nonfunctional.attrs_json with a json attribute for
+ * Updates cache_taxa_taxon_lists.attrs_json with a json attribute for
  * easy reporting on attribute values.
  */
 class task_cache_builder_attr_value_taxa_taxon_list {
@@ -76,7 +76,7 @@ class task_cache_builder_attr_value_taxa_taxon_list {
   ) ON tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
   WHERE q.entity='taxa_taxon_list' AND q.task='task_cache_builder_attrs_taxa_taxon_list' AND claimed_by='$procId'
   AND a.data_type='L'
-  GROUP BY taxa_taxon_list_id, taxa_taxon_list_attribute_id, a.multi_value
+  GROUP BY av.taxa_taxon_list_id, av.taxa_taxon_list_attribute_id, a.multi_value
 
 SQL;
       }
@@ -126,7 +126,7 @@ FROM (
 ) AS subquery
 GROUP BY taxa_taxon_list_id;
 
-UPDATE cache_taxa_taxon_lists_nonfunctional u
+UPDATE cache_taxa_taxon_lists u
 SET attrs_json=a.attrs
 FROM attrs a
 WHERE a.taxa_taxon_list_id=u.id;

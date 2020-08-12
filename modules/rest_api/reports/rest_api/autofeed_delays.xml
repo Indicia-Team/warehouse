@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Autofeed delay info" description="Info about count of cache table updates not yet proceed in autofeeds.">
+  <query website_filter_field="w.website_id">
+    select #columns#
+    from variables
+    where name like 'rest-autofeed%'
+    and name not like '%-running'
+  </query>
+  <order_bys>
+    <order_by>name</order_by>
+  </order_bys>
+  <columns>
+    <column name="name" display="Feed name" sql="name" in_count="true" />
+    <column name="update_delay" display="Unprocessed update events"
+      sql="(select max(tracking) from cache_occurrences_functional) - (value::json->0->>'last_tracking_id')::integer" />
+  </columns>
+</report>

@@ -1900,7 +1900,7 @@ class ORM extends ORM_Core {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId.");
       }
       else {
-        if ($dataType === 'F' && preg_match('/^\d+(\.\d+)?$/', $value)
+        if ($dataType === 'F' && preg_match('/^-?\d+(\.\d+)?$/', $value)
             && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf ) {
           kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
         } else {

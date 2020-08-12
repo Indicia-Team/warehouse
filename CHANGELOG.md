@@ -1,3 +1,19 @@
+# Version 4.3.0
+
+* Adds `taxon_id` and `search_code` to cache_taxa_taxon_lists.
+* Performance improvements by removing joins that are no longer necessary.
+* Adds a performance diagnostics dashboard to the admin menu.
+* Fixes validation of float attribute values so that negative numbers with zero
+  at end of numbers after decimal point are not rejected.
+
+# Version 4.2.0
+*2020-08-03*
+
+* Attributes display additional info for termlists in lookup to help disambiguate similar names.
+* Addition of freshwater_flag, terrestrial_flag, non_native_flag to taxonomic data model.
+* Support for a new easy-download format in Elasticsearch downloads.
+* Summariser module integration with work queue.
+
 # Version 4.1.0
 *2020-06-22*
 

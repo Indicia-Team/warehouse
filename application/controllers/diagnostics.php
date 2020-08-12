@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Configuration for the request logger.
+ * Controller for a diagnostics dashboard.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -22,22 +22,15 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
-$config['logged_requests'] = [
-  // Read (output) data.
-  'o.report',
-  // Read (output) data.
-  'o.data',
-  // Any update to data (input).
-  'i.data',
-  // Other data actions.
-  'a.data',
-  // Imports.
-  'i.import',
-  // Scheduled tasks.
-  'a.scheduled_tasks',
-  // Security (e.g. get_user_id).
-  'a.security',
-  // REST API
-  'o.rest',
-  'i.rest',
-];
+/**
+ * Controller class for a diagnostics dashboard.
+ */
+class Diagnostics_Controller extends Indicia_Controller {
+
+  public function index() {
+    $reportEngine = new ReportEngine();
+    $this->template->title = 'Warehouse diagnostics';
+    $this->template->content = new View('diagnostics/index');
+  }
+
+}
