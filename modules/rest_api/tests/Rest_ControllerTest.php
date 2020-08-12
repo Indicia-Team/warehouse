@@ -615,6 +615,9 @@ KEY;
     $this->assertArrayHasKey('sample_medium:queued', $response['response']['message']);
   }
 
+  /**
+   * Testing delete of a sample.
+   */
   public function testJwtSampleDelete() {
     // First post a sample.
     $this->authMethod = 'jwtUser';
@@ -647,6 +650,9 @@ KEY;
     $this->assertEquals(404, $response['httpCode']);
   }
 
+  /**
+   * Test behaviuor around REST support for ETags.
+   */
   public function testJwtSampleETags() {
     // First post a sample.
     $this->authMethod = 'jwtUser';
@@ -706,6 +712,9 @@ KEY;
     $this->assertEquals(412, $response['httpCode']);
   }
 
+  /**
+   * Test behaviour around duplicate check with external key.
+   */
   public function testJwtSamplePostExtKey() {
     $this->authMethod = 'jwtUser';
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
@@ -769,6 +778,9 @@ KEY;
     $this->assertEquals(409, $response['httpCode']);
   }
 
+  /**
+   * Test submission of a single attribute value.
+   */
   public function testJwtSamplePostAttr() {
     $this->authMethod = 'jwtUser';
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
@@ -809,7 +821,10 @@ KEY;
     $this->assertEquals(150, $storedAltitude);
     // Do a GET to check we can read the stored altitude.
     $response = $this->callService("samples/$id");
+    var_export($response['response']['values']);
     $this->assertEquals(150, $response['response']['values']['smpAttr:1']);
+    $response = $this->callService("samples/$id?verbose");
+    var_export($response['response']['values']);
   }
 
   public function testProjects_authentication() {
