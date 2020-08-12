@@ -944,9 +944,9 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->authenticate();
       // We will be using a POST array to send data, and presumably a FILES array for the
       // media.
-      // Upload size
+      // Upload size.
       $ups = Kohana::config('indicia.maxUploadSize');
-      // Get comma separated list of allowed file types
+      // Get comma separated list of allowed file types.
       $config = kohana::config('indicia.upload_file_type');
       if (!$config) {
         // Default list if no entry in config.
@@ -963,8 +963,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         'media_upload', 'upload::valid', 'upload::required',
         "upload::type[$types]", "upload::size[$ups]"
       );
-      if ($_FILES->validate())
-      {
+      if ($_FILES->validate()) {
         if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true')
           $finalName = strtolower($_FILES['media_upload']['name']);
         else
