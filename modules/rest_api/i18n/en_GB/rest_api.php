@@ -31,6 +31,14 @@
     'directWebsiteHelp' => 'Directly pass the ID and password of a website registered on the warehouse.',
     'directWebsiteHelpHeader' => 'Set the authorisation header to <em>WEBSITE_ID:[website ID]:SECRET:[password]</em>',
     'directWebsiteHelpUrl' => 'Add the following to the URL: <em>?website_id=[website ID]&secret=[password]</em>',
+    'jwtUser' => 'Use a Java Web Token (JWT) to authenticate as a user.',
+    'jwtUserHelp' => 'To use JWT to authenticate, you need to:<ul>' .
+      '<li>Generate a public/private key pair and store the private key in the Warehouse website settings.</li>' .
+      '<li>Provide a JWT token signed with the public key which provides the following claims:<ul>' .
+      '  <li>iss - the website URL</li>' .
+      '  <li>http://indicia.org.uk/user:id</li> set to the warehouse ID of the user issuing the request.</li>' .
+      '</ul></ul>',
+    'jwtUserHelpHeader' => 'Set the authorisation header to "Bearer <JWT token>"',
     'genericHelpHeader' => 'Specify an authorisation header with a list of token name/value pairs, using colons as a ' .
       'separator, for example <em>TOKEN1:value1:TOKEN2:value2</em>.',
     'genericHelpUrl' => 'Add the tokens to the URL as parameters, using lowercase token names',
