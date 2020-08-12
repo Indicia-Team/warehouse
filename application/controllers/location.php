@@ -337,7 +337,11 @@ class Location_Controller extends Gridview_Base_Controller {
       try {
         $locationName = $_POST['prepend'] . $this->getDbaseRecordFieldValue($record, $_POST['name']);
         if (in_array($locationName, $doneNames)) {
-          throw new Exception('Multiple entries present for this location in the SHP file. Only the first has been imported. Please merge to a single multi-polygon and re-import.');
+          $suffix = 1;
+          while (in_array("$locationName - $suffix", $doneNames)) {
+            $suffix++;
+          }
+          $locationName = "$locationName - $suffix";
         }
         $doneNames[] = $locationName;
         $this->loadFromFile($handle);

@@ -37,6 +37,7 @@ $config['sref_notations'] = [
   '29902' => 'TM65 / Irish Grid',
   '3006' => 'SWEREF99 TM / Swedish Transverse Mercator',
   '3021' => 'RT90 2.5 gon v / Swedish Grid',
+  '3857' => 'Web Mercator',
 ];
 
 // Set the internally stored geoms to use spherical mercator projection.
