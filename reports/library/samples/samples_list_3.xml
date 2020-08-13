@@ -2,7 +2,7 @@
     title="Top level samples list for a warehouse user"
     description="A general purpose list of top level samples filtered according to the ID of the user as registered on the warehouse. Top level means that the parent_id field of the samples is null."
 >
-<query website_filter_field="" training_filter_field="" >
+<query website_filter_field="" training_filter_field="s.training" >
   SELECT #columns#
   FROM samples s
   JOIN surveys su on su.id=s.survey_id and su.deleted=false
