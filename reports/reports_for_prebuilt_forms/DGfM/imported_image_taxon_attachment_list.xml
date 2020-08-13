@@ -7,7 +7,7 @@
     FROM indicia.taxon_media tm
     LEFT JOIN indicia.cache_taxa_taxon_lists cttl on cttl.taxon_meaning_id = tm.taxon_meaning_id 
         and cttl.taxon_list_id = #taxon_list_id#
-    WHERE tm.path not like '%o_%' and tm.deleted=false
+    WHERE tm.path not like 'o_%' and tm.deleted=false
     GROUP BY tm.path,cttl.preferred_taxon
   </query>
   <params>
