@@ -482,7 +482,6 @@ KEY;
         ],
       ],
     ];
-    $tm = microtime(TRUE);
     $response = $this->callService(
       'samples',
       FALSE,
@@ -530,34 +529,29 @@ KEY;
     // Post into the media queue.
     $fileA = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\images\warehouse-banner.jpg';
     $fileB = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\images\report_piechart.png';
-    $fileC = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\images\delete.png';
-    // Submit 3 files with deliberate mix of by field array and single field value.
+    // Submit 2 files with deliberate mix of by field array and single field value.
     $response = $this->callService(
       "media-queue",
       FALSE,
       [
-        'file[a]' => curl_file_create(
+        'file[]' => curl_file_create(
           $fileA,
           'image/jpg',
           basename($fileA)
         ),
-        'file[b]' => curl_file_create(
+        'singlefile' => curl_file_create(
           $fileB,
           'image/png',
           basename($fileB)
         ),
-        'singlefile' => curl_file_create(
-          $fileC,
-          'image/png',
-          basename($fileC)
-        ),
       ],
       [], NULL, TRUE
     );
-    $this->assertArrayHasKey('filea', $response['response']);
-    $this->assertArrayHasKey('name', $response['response']['filea']);
-    $this->assertArrayHasKey('tempPath', $response['response']['filea']);
-    $uploadedFileName = $response['response']['filea']['name'];
+    $this->assertArrayHasKey('file[0]', $response['response']);
+    $this->assertArrayHasKey('singlefile', $response['response']);
+    $this->assertArrayHasKey('name', $response['response']['file[0]']);
+    $this->assertArrayHasKey('tempPath', $response['response']['file[0]']);
+    $uploadedFileName = $response['response']['file[0]']['name'];
     // Post a sample which refers to one of the files.
     $data = [
       'values' => [
@@ -613,6 +607,64 @@ KEY;
     // Check validation response tells me queued file missing.
     $this->assertArrayHasKey('message', $response['response']);
     $this->assertArrayHasKey('sample_medium:queued', $response['response']['message']);
+  }
+
+  public function testJwtSampleOccurrenceMediaPost() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Post into the media queue.
+    $file = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\images\warehouse-banner.jpg';
+    // Submit 3 files with deliberate mix of by field array and single field value.
+    $response = $this->callService(
+      "media-queue",
+      FALSE,
+      [
+        'file[]' => curl_file_create(
+          $file,
+          'image/jpg',
+          basename($file)
+        )
+      ],
+      [], NULL, TRUE
+    );
+    $uploadedFileName = $response['response']['file[0]']['name'];
+    // Post a sample and occurrence which refers to the queued file.
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+          ],
+          'media' => [
+            [
+              'values' => [
+                'queued' => $uploadedFileName,
+                'caption' => 'Occurrence image',
+              ],
+            ],
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    $occurrences = $db->query("select id from occurrences where sample_id=$id");
+    $this->assertEquals(1, count($occurrences), 'Posting a sample with occurrence did not create the occurrence');
+    $occurrenceId = $occurrences->current()->id;
+    $occurrences = $db->query("select id from occurrence_media where occurrence_id=$occurrenceId");
+    $this->assertEquals(1, count($occurrences), 'Posting a sample with occurrence and media did not create the media');
   }
 
   /**
@@ -821,10 +873,15 @@ KEY;
     $this->assertEquals(150, $storedAltitude);
     // Do a GET to check we can read the stored altitude.
     $response = $this->callService("samples/$id");
-    var_export($response['response']['values']);
     $this->assertEquals(150, $response['response']['values']['smpAttr:1']);
+    // Redo the call, this time in verbose mode for attribute details.
     $response = $this->callService("samples/$id?verbose");
-    var_export($response['response']['values']);
+    $this->assertArrayHasKey('smpAttr:1', $response['response']['values']);
+    $attrVal = $response['response']['values']['smpAttr:1'];
+    $this->assertArrayHasKey('attribute_id', $attrVal);
+    $this->assertArrayHasKey('value_id', $attrVal);
+    $this->assertArrayHasKey('value', $attrVal);
+    $this->assertEquals(150, $attrVal['value']);
   }
 
   public function testProjects_authentication() {

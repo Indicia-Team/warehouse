@@ -266,37 +266,15 @@ SQL;
             // Media submodel doesn't need prefix for simplicity.
             $submodel = "{$entity}_media";
           }
-          self::addSubmodel($s, inflector::singular($submodel), $fk, $obj);
+          $subModel = [
+            'fkId' => $fk,
+            'model' => self::convertNewToOldSubmission(inflector::singular($submodel), $obj, $websiteId),
+          ];
+          $s['subModels'][] = $subModel;
         }
       }
     }
     return $s;
-  }
-
-  /**
-   * Adds a submodel into a submission.
-   *
-   * @param array $s
-   *   Submission to add to.
-   * @param string $entity
-   *   Submodel entity name.
-   * @param string $fk
-   *   Foreign key name.
-   * @param array $instance
-   *   Submodel data to attach.
-   */
-  private static function addSubmodel(array &$s, $entity, $fk, array $instance) {
-    $values = [];
-    foreach ($instance['values'] as $field => $value) {
-      $values[$field] = ['value' => $value];
-    }
-    $s['subModels'][] = [
-      'fkId' => $fk,
-      'model' => [
-        'id' => $entity,
-        'fields' => $values,
-      ],
-    ];
   }
 
   /**
@@ -364,6 +342,41 @@ SQL;
   }
 
   /**
+   * Converts submission response metadata provided by ORM into a REST response object.
+   *
+   * @param array $responseMetadata
+   *   Data provided describing the results of a submission.
+   *
+   * @return array
+   *   Reformatted data.
+   */
+  private static function getResponseMetadata(array $responseMetadata) {
+    $entity = $responseMetadata['model'];
+    $table = inflector::plural($entity);
+    $href = url::base() . "index.php/services/rest/$table/$responseMetadata[id]";
+    $r = [
+      'values' => self::getValuesForResponse($responseMetadata, ['id', 'created_on', 'updated_on']),
+      'href' => $href,
+    ];
+    // Recursively process sub-model info.
+    if (!empty(self::$submodelsForEntities[$entity]) && !empty($responseMetadata['children'])) {
+      foreach ($responseMetadata['children'] as $child) {
+        $subTable = inflector::plural($child['model']);
+        if (preg_match('/_media$/', $subTable)) {
+          $subTable = 'media';
+        }
+        if (array_key_exists($subTable, self::$submodelsForEntities[$entity])) {
+          if (!isset($r[$subTable])) {
+            $r[$subTable] = [];
+          }
+          $r[$subTable][] = self::getResponseMetadata($child);
+        }
+      }
+    }
+    return $r;
+  }
+
+  /**
    * Function to save a submission into a sample model.
    *
    * The API response is echoed and appropriate http status set.
@@ -377,25 +390,21 @@ SQL;
     $obj->submission = rest_crud::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
     // Different http code for create vs update.
     $httpCodeOnSuccess = $obj->id ? 200 : 201;
-    $tm = microtime(TRUE);
     $id = $obj->submit();
-    kohana::log('debug', 'Submit time: ' . (microtime(TRUE) - $tm));
     if ($id) {
       http_response_code($httpCodeOnSuccess);
       $table = inflector::plural($entity);
-      $href = url::base() . "index.php/services/rest/$table/$id";
-      if ($httpCodeOnSuccess === 201) {
-        // Location header points to created resource.
-        header("Location: $href");
-      }
       // ETag to provide version check on updates.
       $ETag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=$id")->current()->xmin;
       header("ETag: $ETag");
       // Include href and basic record metadata.
-      echo json_encode([
-        'values' => self::getValuesForResponse($obj->as_array(), ['id', 'created_on', 'updated_on']),
-        'href' => $href,
-      ]);
+      $responseMetadata = $obj->getSubmissionResponseMetadata();
+      $reformattedResponse = self::getResponseMetadata($responseMetadata);
+      if ($httpCodeOnSuccess === 201) {
+        // Location header points to created resource.
+        header("Location: $reformattedResponse[href]");
+      }
+      echo json_encode($reformattedResponse);
     } else {
       RestObjects::$apiResponse->fail('Bad Request', 400, $obj->getAllErrors());
     }

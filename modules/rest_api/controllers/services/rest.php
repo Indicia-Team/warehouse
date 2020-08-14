@@ -560,7 +560,11 @@ class Rest_Controller extends Controller {
             'params' => [],
           ],
           '{sample ID}' => [
-            'params' => [],
+            'params' => [
+              'verbose' => [
+                'datatype' => 'integer',
+              ],
+            ],
           ],
         ],
       ],
@@ -791,7 +795,7 @@ class Rest_Controller extends Controller {
       $websiteId = isset($this->clientWebsiteId) ? $this->clientWebsiteId : 0;
       $userId = isset($this->clientUserId) ? $this->clientUserId : 0;
       $subTask = implode('/', $arguments);
-      request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, $this->db);
+      request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db);
     }
   }
 
@@ -881,7 +885,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Family', 'field' => 'taxon.family'],
       ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
       ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
-      ['caption' => 'Original map ref', 'field' => 'location.input_sref'], 
+      ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
       ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
       ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
       ['caption' => 'Projection', 'field' => 'location.input_sref_system'],
@@ -913,7 +917,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Query', 'field' => 'identification.query'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
       ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
-      ['caption' => 'Licence', 'field' => 'metadata.licence_code'], 
+      ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
       ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download?
       ['caption' => 'attr_det_full_name', 'field' => 'identification.identified_by'], // Repeat of Determiner field with ES
     ]
@@ -3500,7 +3504,7 @@ class Rest_Controller extends Controller {
         if (is_array($valueArr)) {
           // File input by array field.
           foreach ($valueArr as $i => $value) {
-            $filesByInput["$input$i"][$key] = $value;
+            $filesByInput[$input . "[$i]"][$key] = $value;
           }
         }
         else {
