@@ -1415,7 +1415,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     if (!$result)
       throw new ValidationError('Validation error', 2003, $model->getAllErrors());
     // return the outermost model's id
-    return array('id'=>$model->id, 'struct'=>$model->get_submission_response_metadata());
+    return array('id'=>$model->id, 'struct'=>$model->getSubmissionResponseMetadata());
   }
 
  /**
