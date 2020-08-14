@@ -3,7 +3,7 @@
     description="Download samples with standardised filtering parameters."
 >
   <query website_filter_field="su.website_id" standard_params="samples"
-         created_by_field="s.created_by_id" training_filter_field="s.training">
+         created_by_field="s.created_by_id">
   SELECT #columns#
   FROM samples s
   JOIN surveys su on su.id=s.survey_id and su.deleted=false
