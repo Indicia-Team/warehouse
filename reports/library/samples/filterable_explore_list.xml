@@ -3,7 +3,7 @@
     description="Explore samples with standardised filtering parameters."
 >
   <query website_filter_field="s.website_id" standard_params="samples"
-         created_by_field="s.created_by_id" training_filter_field="">
+         created_by_field="s.created_by_id">
   SELECT #columns#
   FROM cache_samples_functional s
   JOIN cache_samples_nonfunctional snf ON snf.id=s.id

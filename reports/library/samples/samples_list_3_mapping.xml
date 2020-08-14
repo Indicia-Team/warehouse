@@ -2,7 +2,7 @@
     title="Top level samples list for a warehouse user - mapping"
     description="Report designed for mapping alongside the Top level samples list for a warehouse user report."
 >
-<query website_filter_field="" training_filter_field="">
+<query website_filter_field="" training_filter_field="s.training">
   SELECT #columns#
   FROM samples s
   JOIN surveys su on su.id=s.survey_id and su.deleted=false
