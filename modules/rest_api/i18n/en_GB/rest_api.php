@@ -133,6 +133,18 @@ Note that queued items will be stored for at least 1 day and attempts to submit 
 that have expired will result in an error. Therefore if a pending submission is stored on the client for more than one
 day the media should be re-posted to /media-queue before sending the submission.
 TXT;
+$lang['resources']['occurrences'] = [];
+$lang['resources']['occurrences/{occurrence ID}']['get'] = <<<TXT
+Retrieve the fields for a single occurrence. In addition to the database fields, the response values include the
+following: <ul>
+  <li>taxa_taxon_list_id - recorded taxon's key</li>
+  <li>taxon - recorded taxon name</li>
+  <li>preferred_taxon - accepted name for the taxon</li>
+  <li>default_common_name - common name for the taxon</li>
+  <li>taxon_group - group for the taxon</li>
+  <li>taxa_taxon_list_external_key - key for the taxon</li>
+</ul>
+TXT;
 $lang['resources']['samples'] = [];
 $lang['resources']['samples']['post'] = 'Create a new sample, associated occurrences and media. Posted values should
 match database fields in the samples table (or equivalent table for sub-models).
@@ -285,6 +297,31 @@ ID.
 TXT;
 
 // Lang strings for URL parameters for each end-point.
+$lang['occurrences'] = [];
+$lang['occurrences']['verbose'] = <<<TXT
+Add &verbose to the URL to retrieve attribute values as an array with additional information
+including the attribute ID, caption, data type, value ID and raw value information as shown in the
+following example response (shortened):
+<pre><code>
+200 OK
+{
+  "values": {
+    "id": "3",
+    ...
+    "occAttr:1": [{
+      "attribute_id": "1",
+      "value_id": "4",
+      "caption": "Count",
+      "data_type": "I",
+      "value": "4 - 6",
+      "raw_value": "4",
+      "upper_value": 6
+    }],
+    ...
+  }
+}
+</code></pre>
+TXT;
 $lang['samples'] = [];
 $lang['samples']['verbose'] = <<<TXT
 Add &verbose to the URL to retrieve attribute values as an array with additional information

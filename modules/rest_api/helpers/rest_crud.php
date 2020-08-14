@@ -51,11 +51,24 @@ class rest_crud {
    * @var array
    */
   private static $fieldsForEntitySelects = [
-    'sample' => 'id, survey_id, location_id, date_start, date_end, sample_method_id, st_astext(geom) as geom, parent_id, ' .
-      'group_id, privacy_precision, verified_by_id, verified_on, licence_id, created_on, created_by_id, updated_on, ' .
-      'updated_by_id, date_type, entered_sref, entered_sref_system, location_name, external_key, recorder_names, ' .
-      'record_status, input_form, comment, ' .
-      'st_y(st_transform(st_centroid(geom), 4326)) as lat, st_y(st_transform(st_centroid(geom), 4326)) as lon',
+    'occurrence' => 't1.id, t1.sample_id, t1.determiner_id, t1.confidential, t1.created_on, t1.created_by_id, ' .
+      't1.updated_on, t1.updated_by_id, t1.website_id, t1.external_key, t1.comment, t1.taxa_taxon_list_id, ' .
+      't1.record_status, t1.verified_by_id, t1.verified_on, t1.downloaded_flag, t1.downloaded_on, ' .
+      't1.all_info_in_determinations, t1.zero_abundance, t1.last_verification_check_date, t1.training, ' .
+      't1.sensitivity_precision, t1.release_status, t1.record_substatus, t1.record_decision_source, t1.import_guid, ' .
+      't1.metadata, t2.id as taxa_taxon_list_id, t2.taxon, t2.preferred_taxon, t2.default_common_name, ' .
+      't2.taxon_group, t2.external_key as taxa_taxon_list_external_key',
+    'sample' => 't1.id, t1.survey_id, t1.location_id, t1.date_start, t1.date_end, t1.sample_method_id, ' .
+      't1.st_astext(geom) as geom, t1.parent_id, t1.group_id, t1.privacy_precision, t1.verified_by_id, ' .
+      't1.verified_on, t1.licence_id, t1.created_on, t1.created_by_id, t1.updated_on, t1.updated_by_id, ' .
+      't1.date_type, t1.entered_sref, t1.entered_sref_system, t1.location_name, t1.external_key, t1.recorder_names, ' .
+      't1.record_status, t1.input_form, t1.comment, t1.' .
+      'st_y(st_transform(st_centroid(geom), t1.4326)) as lat, st_y(st_transform(st_centroid(geom), 4326)) as lon',
+  ];
+
+  private static $joinsForEntitySelects = [
+    'sample' => '',
+    'occurrence' => 'JOIN cache_taxa_taxon_lists t2 on t2.id=t1.taxa_taxon_list_id'
   ];
 
   private static $entitiesWithAttributes = [
@@ -98,12 +111,14 @@ class rest_crud {
     $clientUserId = RestObjects::$clientUserId;
     $table = inflector::plural($entity);
     $fields = self::$fieldsForEntitySelects[$entity];
+    $joins = self::$joinsForEntitySelects[$entity];
     $qry = <<<SQL
 SELECT $fields
-FROM $table
-WHERE id=$id
-AND created_by_id=$clientUserId
-AND deleted=false;
+FROM $table t1
+$joins
+WHERE t1.id=$id
+AND t1.created_by_id=$clientUserId
+AND t1.deleted=false;
 SQL;
     $row = RestObjects::$db->query($qry)->current();
     if ($row) {

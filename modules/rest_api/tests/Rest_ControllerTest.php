@@ -665,6 +665,9 @@ KEY;
     $occurrenceId = $occurrences->current()->id;
     $occurrences = $db->query("select id from occurrence_media where occurrence_id=$occurrenceId");
     $this->assertEquals(1, count($occurrences), 'Posting a sample with occurrence and media did not create the media');
+    // Check occurrence exists.
+    $response = $this->callService("occurrences/$occurrenceId");
+    $this->assertEquals(200, $response['httpCode']);
   }
 
   /**

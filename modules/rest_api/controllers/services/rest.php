@@ -553,12 +553,22 @@ class Rest_Controller extends Controller {
         ],
       ],
     ],
+    'occurrences' => [
+      'get' => [
+        'subresources' => [
+          '{occurrence ID}' => [
+            'params' => [
+              'verbose' => [
+                'datatype' => 'integer',
+              ],
+            ],
+          ],
+        ],
+      ],
+    ],
     'samples' => [
       'get' => [
         'subresources' => [
-          '' => [
-            'params' => [],
-          ],
           '{sample ID}' => [
             'params' => [
               'verbose' => [
@@ -3557,6 +3567,16 @@ class Rest_Controller extends Controller {
       $response[$key] = ['name' => $fileName, 'tempPath' => url::base() . "upload-queue/$fileName"];
     }
     RestObjects::$apiResponse->succeed($response);
+  }
+
+  /**
+   * End-point to GET an occurrence by ID.
+   *
+   * @param int $id
+   *   Occurrence ID.
+   */
+  public function occurrencesGetId($id) {
+    rest_crud::read('occurrence', $id);
   }
 
   /**
