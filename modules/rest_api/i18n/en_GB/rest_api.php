@@ -66,18 +66,169 @@ $lang['format_param_help'] = 'Request a response in this format, either html or 
 
 // Help text for each end-point/method combination.
 $lang['resources'] = [];
+$lang['resources']['media-queue'] = [];
+$lang['resources']['media-queue']['post'] = <<<TXT
+Adds a media file such as a photo to the queue of media files available to attach to a subsequent submission. Several
+files can be sent in each request but note that server limits on submission size will limit the number possible. Files
+can be named with a single field name or an array field name with '[]' appended. The response will be an array, where
+each item provides the `name` of the stored file and the `tempPath` where the file is located. For example:
+<pre><code>
+POST /index.php/services/rest/media-queue
+myfirstfile=IMAGE FILE
+mysecondfile=IMAGE FILE
+
+Response:
+{
+  "myfirstfile": {
+    "name": "5f3698a2e587b1.59610000.png",
+    "tempPath": "http://localhost/warehouse-test/upload-queue/5f3698a2e587b1.59610000.png"
+  },
+  "mysecondfile": {
+    "name": "5f3698a2e587c1.59610000.png",
+    "tempPath": "http://localhost/warehouse-test/upload-queue/5f3698a2e587c1.59610000.png"
+  }
+}
+</pre></code>
+
+Or:
+<pre><code>
+POST /index.php/services/rest/media-queue
+myfile[]=IMAGE FILE
+myfile[]=IMAGE FILE
+
+Response:
+{
+  "file[0]": {
+    "name": "5f3698a2e587b1.59610000.png",
+    "tempPath": "http://localhost/warehouse-test/upload-queue/5f3698a2e587b1.59610000.png"
+  },
+  "file[1]": {
+    "name": "5f3698a2e587c1.59610000.png",
+    "tempPath": "http://localhost/warehouse-test/upload-queue/5f3698a2e587c1.59610000.png"
+  }
+}
+</pre></code>
+
+The client must store the name of each queued entry then include that in the subsequent submission when the record data
+are posted. For example:
+<pre><code>
+POST /index.php/services/rest/samples
+{
+  "values": {
+    "survey_id": 1,
+    "entered_sref": "SU1234",
+    "entered_sref_system": "OSGB",
+    "date": "01\/08\/2020"
+  },
+  "media": [{
+    "values": {
+      "queued": "5f369a7776c833.86062034.jpg",
+      "caption": "Sample image"
+    }
+  }]
+}
+</pre></code>
+
+Note that queued items will be stored for at least 1 day and attempts to submit record data referring to queued items
+that have expired will result in an error. Therefore if a pending submission is stored on the client for more than one
+day the media should be re-posted to /media-queue before sending the submission.
+TXT;
 $lang['resources']['samples'] = [];
-$lang['resources']['samples']['post'] = 'Create a new sample, associated occurrences and media.';
+$lang['resources']['samples']['post'] = 'Create a new sample, associated occurrences and media. Posted values should
+match database fields in the samples table (or equivalent table for sub-models).
+
+<pre><code>
+POST /index.php/services/rest/samples
+{
+  "values": {
+    "survey_id": 1,
+    "entered_sref": "SU1234",
+    "entered_sref_system": "OSGB",
+    "date": "01\/08\/2020"
+  },
+  "occurrences": [{
+    "values": {
+      "taxa_taxon_list_id": 2,
+      "occAttr:8": "4 adults",
+    },
+    "media": [{
+      "values": {
+        "queued": "5f36a6d2b51472.42086512.jpg",
+        "caption": "Occurrence image"
+      }
+    }]
+  }]
+}
+
+Response:
+{
+  "values": {
+    "id": "3",
+    "created_on": "2020-08-14T17:57:32+02:00",
+    "updated_on": "2020-08-14T17:57:32+02:00"
+  },
+  "href": "http:\/\/localhost\/warehouse-test\/index.php\/services\/rest\/samples\/3",
+  "occurrences": [{
+    "values": {
+      "id": "3",
+      "created_on": "2020-08-14T17:57:32+02:00",
+      "updated_on": "2020-08-14T17:57:32+02:00"
+    },
+    "href": "http:\/\/localhost\/warehouse-test\/index.php\/services\/rest\/occurrences\/3",
+    "media": [{
+      "values": {
+        "id": "15",
+        "created_on": "2020-08-14T17:57:32+02:00",
+        "updated_on": "2020-08-14T17:57:32+02:00"
+      },
+      "href": "http:\/\/localhost\/warehouse-test\/index.php\/services\/rest\/occurrence_media\/15"
+    }]
+  }]
+}
+</code></pre>
+';
 $lang['resources']['samples/{sample ID}']['get'] = <<<TXT
 Read the data for a single sample. If using jwtUser or directUser authentication then the sample
 must be created by the authenticated user or 404 Not Found will be returned. Response contains a
-values entry with a list of key/value pairs including custom attributes. Example response:
+values entry with a list of key/value pairs including custom attributes. An additional field called
+`date` is added with the formatted date string created from the vague date fields. Example:
 <pre><code>
+GET /index.php/services/rest/samples/3
+
+Response:
 200 OK
 {
   "values": {
-    "id": 3,
-    @TODO
+    "id": "3",
+    "survey_id": "1",
+    "location_id": null,
+    "date_start": "2020-08-01",
+    "date_end": "2020-08-01",
+    "sample_method_id": null,
+    "geom": "POLYGON((-362693.424306773 6638740.7043692,-362720.601545824 6640334.45652272,-361130.912140383 6640361.5584498,-361104.043056924 6638767.79238341,-362693.424306773 6638740.7043692))",
+    "parent_id": null,
+    "group_id": null,
+    "privacy_precision": null,
+    "verified_by_id": null,
+    "verified_on": "1970-01-01T01:00:00+01:00",
+    "licence_id": null,
+    "created_on": "2020-08-14T15:23:46+02:00",
+    "created_by_id": "1",
+    "updated_on": "2020-08-14T15:23:46+02:00",
+    "updated_by_id": "1",
+    "date_type": "D",
+    "entered_sref": "ST1234",
+    "entered_sref_system": "OSGB",
+    "location_name": null,
+    "external_key": null,
+    "recorder_names": null,
+    "record_status": "C",
+    "input_form": null,
+    "comment": null,
+    "lat": "51.10309961727583",
+    "lon": "51.10309961727583",
+    "smpAttr:1": "150",
+    "date": "01\/08\/2020"
   }
 }
 </code></pre>
@@ -87,8 +238,11 @@ Update an existing sample by replacing the provided values.
 TXT;
 $lang['resources']['samples/{sample ID}']['delete'] = <<<TXT
 Delete a single sample.  If using jwtUser or directUser authentication then the sample must be
-created by the authenticated user or 404 Not Found will be returned. Response on success:
+created by the authenticated user or 404 Not Found will be returned. Example:
 <pre><code>
+DELETE /index.php/services/rest/samples/3
+
+Response:
 204 No Content
 </code></pre>
 TXT;
@@ -134,7 +288,27 @@ TXT;
 $lang['samples'] = [];
 $lang['samples']['verbose'] = <<<TXT
 Add &verbose to the URL to retrieve attribute values as an array with additional information
-including the attribute ID, caption, data type, value ID and raw value information.
+including the attribute ID, caption, data type, value ID and raw value information as shown in the
+following example response (shortened):
+<pre><code>
+200 OK
+{
+  "values": {
+    "id": "3",
+    ...
+    "smpAttr:1": [{
+      "attribute_id": "1",
+      "value_id": "4",
+      "caption": "Altitude",
+      "data_type": "I",
+      "value": "150",
+      "raw_value": "150",
+      "upper_value": null
+    }],
+    ...
+  }
+}
+</code></pre>
 TXT;
 $lang['taxon-observations'] = [];
 $lang['taxon-observations']['proj_id'] = <<<TXT
