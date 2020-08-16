@@ -146,7 +146,7 @@
     <column name="attr_stage" sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)" datatype="text" />
     <column name="attr_sex" sql="onf.attr_sex" datatype="text" />
     <column name="attr_sex_stage_count" sql="onf.attr_sex_stage_count" datatype="text" />
-    <column name="attr_sex_stage_count_exact" sql="case when onf.attr_sex_stage_count similar to '\d{1,9}' then onf.attr_sex_stage_count::integer else null end" />
+    <column name="attr_sex_stage_count_exact" sql="case when onf.attr_sex_stage_count similar to '[0-9]{1,9}' then onf.attr_sex_stage_count::integer else null end" />
     <column name="attr_certainty" sql="onf.attr_certainty" datatype="text" />
     <column name="attr_det_name" sql="coalesce(onf.attr_det_full_name, coalesce(onf.attr_det_first_name, '') || ' ' || onf.attr_det_last_name)" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
