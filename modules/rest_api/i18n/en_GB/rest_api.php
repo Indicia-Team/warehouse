@@ -122,8 +122,16 @@ POST /index.php/services/rest/samples
   },
   "media": [{
     "values": {
-      "queued": "5f369a7776c833.86062034.jpg",
+      "queued": "5f3698a2e587b1.59610000.png",
       "caption": "Sample image"
+    },
+  },
+  {
+    {
+      "values": {
+        "queued": "5f3698a2e587c1.59610000.png",
+        "caption": "2nd sample image"
+      }
     }
   }]
 }

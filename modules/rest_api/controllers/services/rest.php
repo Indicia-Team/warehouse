@@ -553,6 +553,43 @@ class Rest_Controller extends Controller {
         ],
       ],
     ],
+    'locations' => [
+      'get' => [
+        'subresources' => [
+          '{location ID}' => [
+            'params' => [
+              'verbose' => [
+                'datatype' => 'integer',
+              ],
+            ],
+          ],
+        ],
+      ],
+      'post' => [
+        'options' => [
+          'segments' => TRUE,
+        ],
+        'subresources' => [
+          '' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'put' => [
+        'subresources' => [
+          '{location ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'delete' => [
+        'subresources' => [
+          '{location ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+    ],
     'occurrences' => [
       'get' => [
         'subresources' => [
@@ -562,6 +599,30 @@ class Rest_Controller extends Controller {
                 'datatype' => 'integer',
               ],
             ],
+          ],
+        ],
+      ],
+      'post' => [
+        'options' => [
+          'segments' => TRUE,
+        ],
+        'subresources' => [
+          '' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'put' => [
+        'subresources' => [
+          '{occurrence ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'delete' => [
+        'subresources' => [
+          '{occurrence ID}' => [
+            'params' => [],
           ],
         ],
       ],
@@ -802,8 +863,8 @@ class Rest_Controller extends Controller {
     }
     if (class_exists('request_logging')) {
       $io = in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE']) ? 'i' : 'o';
-      $websiteId = isset($this->clientWebsiteId) ? $this->clientWebsiteId : 0;
-      $userId = isset($this->clientUserId) ? $this->clientUserId : 0;
+      $websiteId = isset(RestObjects::$clientWebsiteId) ? RestObjects::$clientWebsiteId : 0;
+      $userId = isset(RestObjects::$clientUserId) ? RestObjects::$clientUserId : 0;
       $subTask = implode('/', $arguments);
       request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db);
     }
@@ -3580,6 +3641,95 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * API end-point to POST an occurrence to create within existing sample.
+   */
+  public function occurrencesPost() {
+    $segments = $this->uri->segment_array();
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    // Autofill website ID.
+    if (isset($postArray['values'])) {
+      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
+      if (!empty($postArray['values']['sample_id'])) {
+        // Sample must be for same user.
+        $sampleCheck = RestObjects::$db->query('select count(*) from samples ' .
+          "where id='" . $postArray['values']['sample_id'] .
+          "' and created_by_id=" . RestObjects::$clientUserId)
+          ->current()->count;
+        if ($sampleCheck !== '1') {
+          kohana::log('debug', RestObjects::$db->last_query());
+          RestObjects::$apiResponse->fail('Bad Request', 400, ['occurrence:sample_id' => 'Attempt to create occurrence in invalid sample.']);
+        }
+      }
+    }
+    rest_crud::create('occurrence', $postArray);
+  }
+
+  /**
+   * API end-point to PUT to an existing occurrence to update.
+   *
+   * @param int $id
+   *   Occurrence ID.
+   */
+  public function occurrencesPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    rest_crud::update('occurrence', $id, $putArray);
+  }
+
+  /**
+   * API end-point to DELETE an occurrence.
+   *
+   * Will only be deleted if the occurrence was created by the current user.
+   *
+   * @param int $id
+   *   Occurrence ID to delete.
+   */
+  public function occurrencesDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('occurrence', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
+  public function locationsGetId($id) {
+    rest_crud::read('location', $id);
+  }
+
+  /**
+   * API end-point to POST a sample to create.
+   */
+  public function locationsPost() {
+    $segments = $this->uri->segment_array();
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    rest_crud::create('location', $postArray);
+  }
+
+  public function locationsPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    rest_crud::update('location', $id, $putArray);
+  }
+
+  /**
+   * API end-point to DELETE a location.
+   *
+   * Will only be deleted if the location was created by the current user.
+   *
+   * @param int $id
+   *   Location ID to delete.
+   */
+  public function locationsDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('location', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
+  /**
    * End-point to GET a sample by ID.
    *
    * @param int $id
@@ -3592,7 +3742,7 @@ class Rest_Controller extends Controller {
   /**
    * API end-point to POST a sample to create.
    */
-  public function samplesPost($id) {
+  public function samplesPost() {
     $segments = $this->uri->segment_array();
     $post = file_get_contents('php://input');
     $postArray = json_decode($post, TRUE);
@@ -3600,7 +3750,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * API end-point to PUT to a sample ID to update.
+   * API end-point to PUT to an existin sample to update.
    */
   public function samplesPutId($id) {
     $put = file_get_contents('php://input');
@@ -3609,7 +3759,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * API end-point to DELETE to a sample.
+   * API end-point to DELETE a sample.
    *
    * Will only be deleted if the sample was created by the current user.
    *
