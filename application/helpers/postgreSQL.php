@@ -260,9 +260,10 @@ SELECT DISTINCT s.id,
   coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system,
   $fieldsForEachSquare
 FROM samples s
-JOIN occurrences o ON o.sample_id=s.id
+JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false
 LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
 WHERE $alias.id IN ($idlist)
+AND s.deleted=false
 SQL;
       $smpInfo = $db->query($query)->result_array(TRUE);
       foreach ($smpInfo as $s) {

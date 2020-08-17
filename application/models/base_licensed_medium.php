@@ -27,6 +27,13 @@
 class Base_licensed_medium_Model extends ORM {
 
   /**
+   * Files uploaded by REST API's media queue pending transfer to upload dir.
+   *
+   * @var string
+   */
+  private $queuedFile;
+
+  /**
    * Fill in licence link and media type default before submission.
    *
    * If a submission is for an insert and does not contain the licence ID for
@@ -77,6 +84,46 @@ class Base_licensed_medium_Model extends ORM {
         $this->submission['fields']['media_type_id'] = ['value' => $mediaTypeId];
       }
     }
+    // If using a queued media file, store this in the path. After validation
+    // we'll copy it over.
+    if (!empty($this->submission['fields']['queued'])) {
+      $this->submission['fields']['path'] = $this->submission['fields']['queued'];
+      $this->queuedFile = $this->submission['fields']['queued']['value'];
+    }
+  }
+
+  /**
+   * Overreide Validate() to add check that any queued file exists.
+   */
+  public function validate(Validation $array, $save = FALSE) {
+    $r = TRUE;
+    // If a queued file in submission, check it exists.
+    if (isset($this->queuedFile)) {
+      if (!file_exists(DOCROOT . 'upload-queue/' . $this->queuedFile)) {
+        $this->errors['queued'] = "Requested file does not exist in the queue: $this->queuedFile";
+        $r = FALSE;
+      }
+    }
+    return $r && parent::validate($array, $save);
+  }
+
+  /**
+   * Override postSubmit to copy queued file from queue to final destination.
+   */
+  public function postSubmit($isInsert) {
+    if (isset($this->queuedFile)) {
+      $queuedFile = DOCROOT . 'upload-queue/' . $this->queuedFile;
+      $destDir = Kohana::config('upload.directory', TRUE);
+      $destFile = "$destDir$this->queuedFile";
+      // Move the file.
+      $r = rename($queuedFile, $destFile);
+      if (!$r) {
+        $this->errors['queued'] = "Failed to move queued file to upload folder: $this->queuedFile";
+      }
+      // Create thumbnails and other versions.
+      Image::create_image_files($destDir, $this->queuedFile, '', $this->identifiers['website_id']);
+    }
+    return $r;
   }
 
 }

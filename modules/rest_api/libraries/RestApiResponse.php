@@ -35,8 +35,8 @@ class RestApiResponse {
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Indicia RESTful API</title>
-  <link href="{{ base }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-  <link href="{{ base }}vendor/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css" />
+  <link href="{{ base }}vendor-other/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+  <link href="{{ base }}vendor-other/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css" />
   <link href="{{ base }}modules/rest_api/media/css/rest_api.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -46,7 +46,7 @@ HTML;
   private $htmlFooter = <<<'HTML'
   </div>
   <script src="{{ base }}media/js/jquery.js"></script>
-  <script src="{{ base }}vendor/bootstrap/js/bootstrap.min.js"></script>
+  <script src="{{ base }}vendor-other/bootstrap/js/bootstrap.min.js"></script>
   <script src=""></script>
 </body>
 </html>
@@ -124,12 +124,32 @@ HTML;
       if (isset($cfg['resource_options'])) {
         foreach ($cfg['resource_options'] as $resource => $options) {
           if (!empty($options)) {
-            $note = kohana::lang('rest_api.resourceOptionInfo', '<em>' . $resource . '</em>') . ':';
+            // Look for a resource specific note.
+            $note = kohana::lang("rest_api.resourceOptionInfo-$resource");
+            if ($note === "rest_api.resourceOptionInfo-$resource") {
+              // Revert to generic note if not available.
+              $note = kohana::lang('rest_api.resourceOptionInfo', '<em>' . $resource . '</em>');
+            }
             $optionTexts = [];
             foreach ($options as $option => $value) {
-              $optionTexts[] = '<li>' . kohana::lang("rest_api.resourceOptionInfo-$option") . '</li>';
+              if (is_array($value)) {
+                foreach ($value as $subValue) {
+                  $optionTexts[] = '<li>' . $subValue . '</li>';
+                }
+              }
+              else {
+                $key = "rest_api.resourceOptionInfo-$resource-" . (is_int($option) ? '' : "$option-");
+                if ($value === TRUE) {
+                  $key .= 'true';
+                } elseif ($value === TRUE) {
+                  $key .= 'false';
+                } else  {
+                  $key .= json_encode($value);
+                }
+                $optionTexts[] = '<li>' . kohana::lang($key) . '</li>';
+              }
             }
-            $methodNotes[] = "<p>$note</p><ul>" . implode('', $optionTexts) . '</ul>';
+            $methodNotes[] = '<p>' . str_replace('{{ list }}', '<ul>' . implode('', $optionTexts) . '</ul>', $note) . '</p>';
           }
         }
       }
@@ -177,7 +197,7 @@ HTML;
               ($urlSuffix ? "/$urlSuffix" : '') . '</h4>';
           // Note we can't have full stops in a lang key
           $extra = $urlSuffix ? str_replace('.', '-', "/$urlSuffix") : '';
-          $help = kohana::lang("rest_api.resources.$resource$extra");
+          $help = kohana::lang("rest_api.resources.$resource$extra.$method");
           echo "<p>$help</p>";
           // splice in the format parameter which is always accepted.
           $resourceDef['params'] = array_merge(
@@ -268,12 +288,32 @@ HTML;
       if (isset($cfg['resource_options'])) {
         foreach ($cfg['resource_options'] as $resource => $options) {
           if (!empty($options)) {
-            $note = kohana::lang('rest_api.resourceOptionInfo', $resource);
-            $optionTexts = array();
-            foreach ($options as $option => $value) {
-              $optionTexts[] = kohana::lang("rest_api.resourceOptionInfo-$option");
+            // Look for a resource specific note.
+            $note = kohana::lang("rest_api.resourceOptionInfo-$resource");
+            if ($note === "rest_api.resourceOptionInfo-$resource") {
+              // Revert to generic note if not available.
+              $note = kohana::lang('rest_api.resourceOptionInfo', $resource);
             }
-            $methodNotes[] = "$note: " . implode('; ', $optionTexts) . '. ';
+            $optionTexts = [];
+            foreach ($options as $option => $value) {
+              if (is_array($value)) {
+                foreach ($value as $subValue) {
+                  $optionTexts[] = '<li>' . $subValue . '</li>';
+                }
+              }
+              else {
+                $key = "rest_api.resourceOptionInfo-$resource-" . (is_int($option) ? '' : "$option-");
+                if ($value === TRUE) {
+                  $key .= 'true';
+                } elseif ($value === TRUE) {
+                  $key .= 'false';
+                } else  {
+                  $key .= json_encode($value);
+                }
+                $optionTexts[] = kohana::lang($key);
+              }
+            }
+            $methodNotes[] = str_replace('{{ list }}', implode('; ', $optionTexts), $note);
           }
         }
       }
@@ -395,6 +435,7 @@ HTML;
       echo json_encode($response);
     }
     if ($msg) {
+      $msg = is_array($msg) ? json_encode($msg) : $msg;
       kohana::log('debug', "HTTP code: $code. $msg");
       kohana::log_save();
     }

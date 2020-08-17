@@ -22,6 +22,8 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
+use \Firebase\JWT;
+
 define("REST_API_DEFAULT_PAGE_SIZE", 100);
 define("AUTOFEED_DEFAULT_PAGE_SIZE", 10000);
 // Max load from ES, keep fairly low to avoid PHP memory overload.
@@ -61,6 +63,16 @@ if (!function_exists('apache_request_headers')) {
  * Exception class for aborting.
  */
 class RestApiAbort extends Exception {}
+
+/**
+ * Simple object to keep globally useful stuff in.
+ */
+class RestObjects {
+  public static $db;
+  public static $apiResponse;
+  public static $clientWebsiteId;
+  public static $clientUserId;
+}
 
 /**
  * Controller class for the RESTful API.
@@ -109,6 +121,12 @@ class Rest_Controller extends Controller {
       ],
     ],
     'oauth2User' => [
+      'resource_options' => [
+        // Grants full access to all reports. Client configs can override this.
+        'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
+      ],
+    ],
+    'jwtUser' => [
       'resource_options' => [
         // Grants full access to all reports. Client configs can override this.
         'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
@@ -447,6 +465,15 @@ class Rest_Controller extends Controller {
               'marine_flag' => [
                 'datatype' => 'boolean',
               ],
+              'freshwater_flag' => [
+                'datatype' => 'boolean',
+              ],
+              'terrestrial_flag' => [
+                'datatype' => 'boolean',
+              ],
+              'non_native_flag' => [
+                'datatype' => 'boolean',
+              ],
               'searchAuthors' => [
                 'datatype' => 'boolean',
               ],
@@ -517,6 +544,126 @@ class Rest_Controller extends Controller {
         ],
       ],
     ],
+    'media-queue' => [
+      'post' => [
+        'subresources' => [
+          '' => [
+            'params' => [],
+          ],
+        ],
+      ],
+    ],
+    'locations' => [
+      'get' => [
+        'subresources' => [
+          '{location ID}' => [
+            'params' => [
+              'verbose' => [
+                'datatype' => 'integer',
+              ],
+            ],
+          ],
+        ],
+      ],
+      'post' => [
+        'options' => [
+          'segments' => TRUE,
+        ],
+        'subresources' => [
+          '' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'put' => [
+        'subresources' => [
+          '{location ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'delete' => [
+        'subresources' => [
+          '{location ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+    ],
+    'occurrences' => [
+      'get' => [
+        'subresources' => [
+          '{occurrence ID}' => [
+            'params' => [
+              'verbose' => [
+                'datatype' => 'integer',
+              ],
+            ],
+          ],
+        ],
+      ],
+      'post' => [
+        'options' => [
+          'segments' => TRUE,
+        ],
+        'subresources' => [
+          '' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'put' => [
+        'subresources' => [
+          '{occurrence ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'delete' => [
+        'subresources' => [
+          '{occurrence ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+    ],
+    'samples' => [
+      'get' => [
+        'subresources' => [
+          '{sample ID}' => [
+            'params' => [
+              'verbose' => [
+                'datatype' => 'integer',
+              ],
+            ],
+          ],
+        ],
+      ],
+      'post' => [
+        'options' => [
+          'segments' => TRUE,
+        ],
+        'subresources' => [
+          '' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'put' => [
+        'subresources' => [
+          '{sample ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'delete' => [
+        'subresources' => [
+          '{sample ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+    ],
   ];
 
   /**
@@ -524,8 +671,8 @@ class Rest_Controller extends Controller {
    */
   public function __construct() {
     // Ensure we have a db instance and response object ready.
-    $this->db = new Database();
-    $this->apiResponse = new RestApiResponse();
+    RestObjects::$db = new Database();
+    RestObjects::$apiResponse = new RestApiResponse();
     parent::__construct();
   }
 
@@ -539,7 +686,7 @@ class Rest_Controller extends Controller {
     // for versioning.
     $arguments = [$this->uri->last_segment()];
     $this->checkVersion($arguments);
-    $this->apiResponse->index($this->resourceConfig);
+    RestObjects::$apiResponse->index($this->resourceConfig);
   }
 
   /**
@@ -553,15 +700,15 @@ class Rest_Controller extends Controller {
       if (empty($_POST['grant_type']) || empty($_POST['username']) ||
         empty($_POST['password']) || empty($_POST['client_id'])
       ) {
-        $this->apiResponse->fail('Bad request', 400, 'Missing required parameters');
+        RestObjects::$apiResponse->fail('Bad request', 400, 'Missing required parameters');
       }
       if ($_POST['grant_type'] !== 'password') {
-        $this->apiResponse->fail('Not implemented', 501, 'Grant type not implemented: ' . $_POST['grant_type']);
+        RestObjects::$apiResponse->fail('Not implemented', 501, 'Grant type not implemented: ' . $_POST['grant_type']);
       }
       $matchField = strpos($_POST['username'], '@') === FALSE ? 'u.username' : 'email_address';
       $websiteId = preg_replace('/^website_id:/', '', $_POST['client_id']);
       // @todo Test for is the user a member of this website?
-      $users = $this->db->select('u.id, u.password, u.core_role_id, uw.site_role_id')
+      $users = RestObjects::$db->select('u.id, u.password, u.core_role_id, uw.site_role_id')
         ->from('users as u')
         ->join('people as p', 'p.id', 'u.person_id')
         ->join('users_websites as uw', 'uw.user_id', 'u.id', 'LEFT')
@@ -572,24 +719,24 @@ class Rest_Controller extends Controller {
         ))
         ->get()->result_array(FALSE);
       if (count($users) !== 1) {
-        $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
       }
       if ($users[0]['site_role_id'] === NULL && $users[0]['core_role_id'] === NULL) {
-        $this->apiResponse->fail('Unauthorized', 401, 'User does not have access to website.');
+        RestObjects::$apiResponse->fail('Unauthorized', 401, 'User does not have access to website.');
       }
       $auth = new Auth();
       if (!$auth->checkPasswordAgainstHash($_POST['password'], $users[0]['password'])) {
-        $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
       }
       if (substr($_POST['client_id'], 0, 11) !== 'website_id:') {
-        $this->apiResponse->fail('Unauthorized', 401, 'Invalid client_id format. ' . var_export($_POST, TRUE));
+        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Invalid client_id format. ' . var_export($_POST, TRUE));
       }
       $accessToken = $this->getToken();
       $cache = new Cache();
       $uid = $users[0]['id'];
       $data = "USER_ID:$uid:WEBSITE_ID:$websiteId";
       $cache->set($accessToken, $data, 'oAuthUserAccessToken', Kohana::config('indicia.nonce_life'));
-      $this->apiResponse->succeed(array(
+      RestObjects::$apiResponse->succeed(array(
         'access_token' => $accessToken,
         'token_type' => 'bearer',
         'expires_in' => Kohana::config('indicia.nonce_life'),
@@ -629,6 +776,7 @@ class Rest_Controller extends Controller {
         ];
       }
       $this->authenticate();
+      $this->applyCorsHeader();
       if (!isset($this->resourceOptions)
           && isset($this->authConfig['resource_options'])
           && isset($this->authConfig['resource_options'][$this->resourceName])) {
@@ -650,11 +798,11 @@ class Rest_Controller extends Controller {
         $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource.
-          header('allow: ' . strtoupper(implode(',', array_keys($resourceConfig))));
+          header('Allow: ' . strtoupper(implode(', ', array_merge(array_keys($resourceConfig), ['OPTIONS']))));
         }
         else {
           if (!array_key_exists(strtolower($this->method), $resourceConfig)) {
-            $this->apiResponse->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
+            RestObjects::$apiResponse->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
           }
           $methodConfig = $resourceConfig[strtolower($this->method)];
           // If segments allowed, the URL can be .../resource/x/y/z etc.
@@ -672,16 +820,16 @@ class Rest_Controller extends Controller {
           $requestForId = NULL;
 
           if (!$allowSegments && count($arguments) > 1) {
-            $this->apiResponse->fail('Bad request', 400, 'Incorrect number of arguments');
+            RestObjects::$apiResponse->fail('Bad request', 400, 'Incorrect number of arguments');
           }
           elseif (!$allowSegments && count($arguments) === 1) {
             // We only allow a single argument to request a single resource by
             // ID.
-            if (preg_match('/^[A-Z]{3}\d+$/', $arguments[0])) {
+            if (preg_match('/^([A-Z]{3})?\d+$/', $arguments[0])) {
               $requestForId = $arguments[0];
             }
             else {
-              $this->apiResponse->fail('Bad request', 400, 'Invalid ID requested ' . $arguments[0]);
+              RestObjects::$apiResponse->fail('Bad request', 400, 'Invalid ID requested ' . $arguments[0]);
             }
           }
           // When using a client system ID, we also want a project ID if
@@ -689,7 +837,7 @@ class Rest_Controller extends Controller {
           if (isset($this->clientSystemId) && ($name === 'taxon_observations' || $name === 'annotations')) {
             if (empty($this->request['proj_id'])) {
               // Should not have got this far - just in case.
-              $this->apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
+              RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
             }
             else {
               $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
@@ -707,7 +855,7 @@ class Rest_Controller extends Controller {
         }
       }
       else {
-        $this->apiResponse->fail('Not Found', 404, "Resource $name not known");
+        RestObjects::$apiResponse->fail('Not Found', 404, "Resource $name not known");
       }
     }
     catch (RestApiAbort $e) {
@@ -715,10 +863,10 @@ class Rest_Controller extends Controller {
     }
     if (class_exists('request_logging')) {
       $io = in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE']) ? 'i' : 'o';
-      $websiteId = isset($this->clientWebsiteId) ? $this->clientWebsiteId : 0;
-      $userId = isset($this->clientUserId) ? $this->clientUserId : 0;
+      $websiteId = isset(RestObjects::$clientWebsiteId) ? RestObjects::$clientWebsiteId : 0;
+      $userId = isset(RestObjects::$clientUserId) ? RestObjects::$clientUserId : 0;
       $subTask = implode('/', $arguments);
-      request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, $this->db);
+      request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db);
     }
   }
 
@@ -741,7 +889,7 @@ class Rest_Controller extends Controller {
     if (isset($this->projects[$proj_id]['resources'])) {
       if (!in_array($resourceName, $this->projects[$proj_id]['resources'])) {
         kohana::log('debug', "Disallowed resource $resourceName for $proj_id");
-        $this->apiResponse->fail('No Content', 204);
+        RestObjects::$apiResponse->fail('No Content', 204);
       }
     }
   }
@@ -808,7 +956,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Family', 'field' => 'taxon.family'],
       ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
       ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
-      ['caption' => 'Original map ref', 'field' => 'location.input_sref'], 
+      ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
       ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
       ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
       ['caption' => 'Projection', 'field' => 'location.input_sref_system'],
@@ -840,7 +988,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Query', 'field' => 'identification.query'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
       ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
-      ['caption' => 'Licence', 'field' => 'metadata.licence_code'], 
+      ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
       ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download?
       ['caption' => 'attr_det_full_name', 'field' => 'identification.identified_by'], // Repeat of Determiner field with ES
     ]
@@ -1002,69 +1150,6 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Custom sort function for date comparison of files.
-   *
-   * @param int $a
-   *   Date value 1 as Unix timestamp.
-   * @param int $b
-   *   Date value 2 as Unix timestamp.
-   */
-  private static function dateCmp($a, $b) {
-    if ($a[1] < $b[1]) {
-      $r = -1;
-    }
-    elseif ($a[1] > $b[1]) {
-      $r = 1;
-    }
-    else {
-      $r = 0;
-    }
-    return $r;
-  }
-
-  /**
-   * Functionality for purging the old download files.
-   *
-   * Anything older than 1 hour is a candidate for deletion.
-   */
-  private static function purgeDownloadFiles() {
-    // don't do this every time.
-    if (TRUE || rand(1, 10) === 1) {
-      // First, get an array of files sorted by date.
-      $files = array();
-      $folder = DOCROOT . 'download/';
-      $dir = opendir($folder);
-      // Skip certain file names.
-      $exclude = array('.', '..', '.htaccess', 'web.config', '.gitignore');
-      if ($dir) {
-        while ($filename = readdir($dir)) {
-          if (is_dir($filename) || in_array($filename, $exclude)) {
-            continue;
-          }
-          $lastModified = filemtime($folder . $filename);
-          $files[] = array($folder . $filename, $lastModified);
-        }
-      }
-      // Sort the file array by date, oldest first.
-      usort($files, array('Rest_Controller', 'dateCmp'));
-      // Iterate files, ignoring the number of files we allow in the cache
-      // without caring.
-      for ($i = 0; $i < count($files); $i++) {
-        // If we have reached a file that is not old enough to expire, don't
-        // go any further. Expiry set to 1 hour.
-        if ($files[$i][1] > (time() - 3600)) {
-          break;
-        }
-        // Clear out the old file.
-        if (is_file($files[$i][0])) {
-          // Ignore errors, will try again later if not deleted.
-          @unlink($files[$i][0]);
-        }
-      }
-    }
-  }
-
-  /**
    * Builds the header for the top of a scrolled Elasticsearch output.
    *
    * For example, adds the CSV row.
@@ -1138,7 +1223,7 @@ class Rest_Controller extends Controller {
    *   File array containing the name and handle.
    */
   private function preparePagingFile($format) {
-    $this->purgeDownloadFiles();
+    rest_utils::purgeOldFiles('download', 3600);
     $uniqId = uniqid('', TRUE);
     $filename = "download-$uniqId.$format";
     // Reopen file for appending.
@@ -1166,7 +1251,7 @@ class Rest_Controller extends Controller {
     $cache = Cache::instance();
     $info = $cache->get("es-paging-$uniqId");
     if ($info === NULL) {
-      $this->apiResponse->fail('Bad request', 400, 'Invalid scroll_id or uniq_id parameter.');
+      RestObjects::$apiResponse->fail('Bad request', 400, 'Invalid scroll_id or uniq_id parameter.');
     }
     $info['handle'] = fopen(DOCROOT . "download/$info[filename]", 'a');
     return $info;
@@ -1237,7 +1322,7 @@ class Rest_Controller extends Controller {
       kohana::log('error', 'URL: ' . $actualUrl);
       kohana::log('error', 'Query: ' . $postData);
       kohana::log('error', 'Response: ' . $response);
-      $this->apiResponse->fail('Internal server error', 500, json_encode($error));
+      RestObjects::$apiResponse->fail('Internal server error', 500, json_encode($error));
     }
     curl_close($session);
     // Will need decoded data for processing CSV.
@@ -1246,7 +1331,7 @@ class Rest_Controller extends Controller {
       if (!empty($data['error'])) {
         kohana::log('error', 'Bad ES Rest query response: ' . json_encode($data['error']));
         kohana::log('error', 'Query: ' . $postData);
-        $this->apiResponse->fail('Bad request', 400, json_encode($data['error']));
+        RestObjects::$apiResponse->fail('Bad request', 400, json_encode($data['error']));
       }
       // Find the list of documents or aggregation output to add to the CSV.
       $itemList = $this->pagingMode === 'composite'
@@ -1878,7 +1963,7 @@ class Rest_Controller extends Controller {
         }
       }
       if (!$allowed) {
-        $this->apiResponse->fail('Bad request', 400,
+        RestObjects::$apiResponse->fail('Bad request', 400,
           "Elasticsearch request $resource ($_SERVER[REQUEST_METHOD]) disallowed by Warehouse REST API proxy configuration.");
       }
     }
@@ -1896,9 +1981,9 @@ class Rest_Controller extends Controller {
    */
   private function projectsGetId($id) {
     if (!array_key_exists($id, $this->projects)) {
-      $this->apiResponse->fail('No Content', 204);
+      RestObjects::$apiResponse->fail('No Content', 204);
     }
-    $this->apiResponse->succeed($this->projects[$id], array(
+    RestObjects::$apiResponse->succeed($this->projects[$id], array(
       'columnsToUnset' => ['filter_id', 'website_id', 'sharing', 'resources'],
       'attachHref' => ['projects', 'id'],
     ));
@@ -1911,7 +1996,7 @@ class Rest_Controller extends Controller {
    * etc is just stub code.
    */
   private function projectsGet() {
-    $this->apiResponse->succeed([
+    RestObjects::$apiResponse->succeed([
       'data' => array_values($this->projects),
       'paging' => [
         'self' => $this->generateLink(['page' => 1]),
@@ -1944,14 +2029,14 @@ class Rest_Controller extends Controller {
 
     $report = $this->loadReport('rest_api/filterable_taxon_observations', $params);
     if (empty($report['content']['records'])) {
-      $this->apiResponse->fail('No Content', 204);
+      RestObjects::$apiResponse->fail('No Content', 204);
     }
     elseif (count($report['content']['records']) > 1) {
       kohana::log('error', 'Internal error. Request for single record returned multiple');
-      $this->apiResponse->fail('Internal Server Error', 500);
+      RestObjects::$apiResponse->fail('Internal Server Error', 500);
     }
     else {
-      $this->apiResponse->succeed(
+      RestObjects::$apiResponse->succeed(
         $report['content']['records'][0],
         array(
           'attachHref' => array('taxon-observations', 'id'),
@@ -1984,7 +2069,7 @@ class Rest_Controller extends Controller {
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
     $report = $this->loadReport('rest_api/filterable_taxon_observations', $params);
-    $this->apiResponse->succeed(
+    RestObjects::$apiResponse->succeed(
       $this->listResponseStructure($report['content']['records']),
       [
         'attachHref' => array('taxon-observations', 'id'),
@@ -2005,11 +2090,11 @@ class Rest_Controller extends Controller {
     $params = array('id' => $id);
     $report = $this->loadReport('rest_api/filterable_annotations', $params);
     if (empty($report['content']['records'])) {
-      $this->apiResponse->fail('No Content', 204);
+      RestObjects::$apiResponse->fail('No Content', 204);
     }
     elseif (count($report['content']['records']) > 1) {
       kohana::log('error', 'Internal error. Request for single annotation returned multiple');
-      $this->apiResponse->fail('Internal Server Error', 500);
+      RestObjects::$apiResponse->fail('Internal Server Error', 500);
     }
     else {
       $record = $report['content']['records'][0];
@@ -2017,7 +2102,7 @@ class Rest_Controller extends Controller {
         'id' => $record['taxon_observation_id'],
         // @todo href
       );
-      $this->apiResponse->succeed($record, array(
+      RestObjects::$apiResponse->succeed($record, array(
         'attachHref' => [
           'annotations',
           'id',
@@ -2058,7 +2143,7 @@ class Rest_Controller extends Controller {
     }
     $report = $this->loadReport('rest_api/filterable_annotations', $params);
     $records = $report['content']['records'];
-    $this->apiResponse->succeed(
+    RestObjects::$apiResponse->succeed(
       $this->listResponseStructure($records),
       [
         'attachHref' => [
@@ -2087,7 +2172,7 @@ class Rest_Controller extends Controller {
   private function taxaGet() {
     $segments = $this->uri->segment_array();
     if (count($segments) !== 4 || $segments[4] !== 'search') {
-      $this->apiResponse->fail('Bad request', 404, "Resource taxa not known, try taxa/search");
+      RestObjects::$apiResponse->fail('Bad request', 404, "Resource taxa not known, try taxa/search");
     }
     $params = array_merge(array(
       'limit' => REST_API_DEFAULT_PAGE_SIZE,
@@ -2098,7 +2183,7 @@ class Rest_Controller extends Controller {
       $query = postgreSQL::taxonSearchQuery($params);
     }
     catch (Exception $e) {
-      $this->apiResponse->fail('Bad request', 400, $e->getMessage());
+      RestObjects::$apiResponse->fail('Bad request', 400, $e->getMessage());
       error_logger::log_error('REST Api exception during build of taxon search query', $e);
     }
     $db = new Database();
@@ -2147,7 +2232,7 @@ class Rest_Controller extends Controller {
       $result['columns'] = $columns;
     }
     $resultOptions = array('columns' => $columns);
-    $this->apiResponse->succeed(
+    RestObjects::$apiResponse->succeed(
       $result,
       $resultOptions
     );
@@ -2186,7 +2271,7 @@ class Rest_Controller extends Controller {
    *   warehouse user only.
    */
   private function reportsGet() {
-    $this->apiResponse->trackTime();
+    RestObjects::$apiResponse->trackTime();
     $segments = $this->uri->segment_array();
     // Remove services/rest/reports from the URL segments.
     array_shift($segments);
@@ -2295,7 +2380,7 @@ class Rest_Controller extends Controller {
       // Check the semaphore to ensure we don't run the same autofeed query
       // twice at one time. Could happen if a query runs slowly.
       if (variable::get("rest-autofeed-$_GET[proj_id]-running") === TRUE) {
-        $this->apiResponse->fail('Service still processing prior request for feed.', 503, "Service unavailable");
+        RestObjects::$apiResponse->fail('Service still processing prior request for feed.', 503, "Service unavailable");
         throw new RestApiAbort("Autofeed for $_GET[proj_id] already running");
       }
       // Set a semaphore so we know this feed is querying.
@@ -2307,13 +2392,13 @@ class Rest_Controller extends Controller {
       if (isset($report['content']['records'])) {
         if ($this->getAutofeedMode()) {
           // Autofeed mode - no need for pagination info.
-          $this->apiResponse->succeed([
+          RestObjects::$apiResponse->succeed([
             'data' => $report['content']['records'],
           ], [], TRUE);
         }
         else {
           $pagination = $this->getPagination($report['count']);
-          $this->apiResponse->succeed(
+          RestObjects::$apiResponse->succeed(
             [
               'count' => $report['count'],
               'paging' => $pagination,
@@ -2327,7 +2412,7 @@ class Rest_Controller extends Controller {
       }
       elseif (isset($report['content']['parameterRequest'])) {
         // @todo: handle param requests
-        $this->apiResponse->fail('Bad request (parameters missing)', 400,
+        RestObjects::$apiResponse->fail('Bad request (parameters missing)', 400,
           "Missing parameters: " . implode(', ', array_keys($report['content']['parameterRequest'])));
       }
       else {
@@ -2354,7 +2439,7 @@ class Rest_Controller extends Controller {
    *   Description to include in the response metadata (for HTML only)
    */
   private function getReportMetadataItem(array $segments, $item, $description) {
-    $this->apiResponse->includeEmptyValues = FALSE;
+    RestObjects::$apiResponse->includeEmptyValues = FALSE;
     // The last segment is the /params or /columns action.
     array_pop($segments);
     $reportFile = $this->getReportFileNameFromSegments($segments);
@@ -2378,9 +2463,9 @@ class Rest_Controller extends Controller {
         }
       }
     }
-    $this->apiResponse->responseTitle = ucfirst("$item for $reportFile");
-    $this->apiResponse->wantIndex = TRUE;
-    $this->apiResponse->succeed(array('data' => $list), array('metadata' => array('description' => $description)));
+    RestObjects::$apiResponse->responseTitle = ucfirst("$item for $reportFile");
+    RestObjects::$apiResponse->wantIndex = TRUE;
+    RestObjects::$apiResponse->succeed(array('data' => $list), array('metadata' => array('description' => $description)));
   }
 
   /**
@@ -2467,7 +2552,7 @@ class Rest_Controller extends Controller {
         }
         else {
           $path = empty($relativePath) ? $key : "$relativePath/$key";
-          $metadata['href'] = $this->apiResponse->getUrlWithCurrentParams("reports/$path");
+          $metadata['href'] = RestObjects::$apiResponse->getUrlWithCurrentParams("reports/$path");
         }
         $response[$key] = $metadata;
       }
@@ -2477,7 +2562,7 @@ class Rest_Controller extends Controller {
     $relativePath = '/reports/' . ($relativePath ? "$relativePath/" : '');
     $description = 'A list of reports and report folders stored on the warehouse under ' .
       "the folder <em>$relativePath</em>. $folderReadme";
-    $this->apiResponse->succeed($response, array('metadata' => array('description' => $description)));
+    RestObjects::$apiResponse->succeed($response, array('metadata' => array('description' => $description)));
   }
 
   /**
@@ -2524,9 +2609,9 @@ class Rest_Controller extends Controller {
    *   Report metadata about to be output.
    */
   private function addReportLinks(array &$metadata) {
-    $metadata['href'] = $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml");
+    $metadata['href'] = RestObjects::$apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml");
     $metadata['params'] = [
-      'href' => $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml/params"),
+      'href' => RestObjects::$apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml/params"),
     ];
     if (!empty($metadata['standard_params'])) {
       // Reformat the info that the report supports standard paramenters into
@@ -2538,7 +2623,7 @@ class Rest_Controller extends Controller {
       unset($metadata['standard_params']);
     }
     $metadata['columns'] = array(
-      'href' => $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml/columns"),
+      'href' => RestObjects::$apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml/columns"),
     );
   }
 
@@ -2581,7 +2666,7 @@ class Rest_Controller extends Controller {
     $datatype = preg_replace('/\[\]$/', '', $paramDef['datatype']);
     $trimmed = trim($value);
     if ($datatype === 'integer' && !preg_match('/^\d+$/', $trimmed)) {
-      $this->apiResponse->fail('Bad request', 400, "Invalid integer format for $paramName parameter");
+      RestObjects::$apiResponse->fail('Bad request', 400, "Invalid integer format for $paramName parameter");
     }
     elseif ($datatype === 'date') {
       if (strpos($value, 'T') === FALSE) {
@@ -2591,12 +2676,12 @@ class Rest_Controller extends Controller {
         $dt = DateTime::createFromFormat("Y-m-d\TH:i:s", $trimmed);
       }
       if ($dt === FALSE || array_sum($dt->getLastErrors())) {
-        $this->apiResponse->fail('Bad request', 400, "Invalid date for $paramName parameter");
+        RestObjects::$apiResponse->fail('Bad request', 400, "Invalid date for $paramName parameter");
       }
     }
     elseif ($datatype === 'boolean') {
       if (!preg_match('/^(true|false)$/', $trimmed)) {
-        $this->apiResponse->fail('Bad request', 400,
+        RestObjects::$apiResponse->fail('Bad request', 400,
             "Invalid boolean for $paramName parameter, value should be true or false");
       }
       // Set the value to a real bool.
@@ -2604,7 +2689,7 @@ class Rest_Controller extends Controller {
     }
     // If a limited options set available then check the value is in the list.
     if (!empty($paramDef['options']) && !in_array($trimmed, $paramDef['options'])) {
-      $this->apiResponse->fail('Bad request', 400, "Invalid value for $paramName parameter");
+      RestObjects::$apiResponse->fail('Bad request', 400, "Invalid value for $paramName parameter");
     }
   }
 
@@ -2642,15 +2727,21 @@ class Rest_Controller extends Controller {
         }
       }
       if (!isset($thisMethod)) {
+        if (!isset($info[''])) {
+          RestObjects::$apiResponse->fail('Bad request', 400, "Request method not valid for end-point");
+        }
         // Use the default subresource.
         $thisMethod = $info[''];
       }
+    }
+    if (!isset($thisMethod)) {
+      RestObjects::$apiResponse->fail('Bad request', 400, "Request method not valid for end-point");
     }
     // Check through the known list of parameters to ensure data formats are
     // correct and required parameters are provided.
     foreach ($thisMethod['params'] as $paramName => $paramDef) {
       if (!empty($paramDef['required']) && empty($this->request[$paramName])) {
-        $this->apiResponse->fail('Bad request', 400, "Missing $paramName parameter");
+        RestObjects::$apiResponse->fail('Bad request', 400, "Missing $paramName parameter");
       }
       if (!empty($this->request[$paramName])) {
         $datatype = $paramDef['datatype'];
@@ -2707,7 +2798,7 @@ class Rest_Controller extends Controller {
     // Should also return an object to iterate rather than loading the full
     // array.
     if (!isset($this->reportEngine)) {
-      $this->reportEngine = new ReportEngine(array($this->clientWebsiteId));
+      $this->reportEngine = new ReportEngine(array(RestObjects::$clientWebsiteId));
       // Resource configuration can provide a list of restricted reports that
       // are allowed for this client.
       if (isset($this->resourceOptions['authorise'])) {
@@ -2743,7 +2834,7 @@ class Rest_Controller extends Controller {
         // First use of this autofeed, so we need to store the tracking point to
         // ensure we capture all changes after the initial sweep up of records
         // is done. Switch state to initial loading.
-        $lastTrackingInfo = $this->db
+        $lastTrackingInfo = RestObjects::$db
           ->query('SELECT max(tracking) as max_tracking FROM cache_occurrences_functional')
           ->current();
         $afSettings = [
@@ -2823,7 +2914,7 @@ class Rest_Controller extends Controller {
     if (isset($this->clientSystemId)) {
       $filter = $this->loadFilterForProject($this->request['proj_id']);
     }
-    elseif (isset($this->clientUserId)) {
+    elseif (isset(RestObjects::$clientUserId)) {
       // When authenticating a user, you can use one of the permissions filters
       // for the user to gain access to a wider pool of records, e.g. for a
       // verifier to access all records they have rights to.
@@ -2833,17 +2924,17 @@ class Rest_Controller extends Controller {
       else {
         // Default filter - the user's records for this website only.
         $filter = array(
-          'website_list' => $this->clientWebsiteId,
-          'created_by_id' => $this->clientUserId,
+          'website_list' => RestObjects::$clientWebsiteId,
+          'created_by_id' => RestObjects::$clientUserId,
         );
       }
     }
     else {
-      if (!isset($this->clientWebsiteId)) {
-        $this->apiResponse->fail('Internal server error', 500, 'Minimal filter on website ID not provided.');
+      if (!isset(RestObjects::$clientWebsiteId)) {
+        RestObjects::$apiResponse->fail('Internal server error', 500, 'Minimal filter on website ID not provided.');
       }
       $filter = array(
-        'website_list' => $this->clientWebsiteId,
+        'website_list' => RestObjects::$clientWebsiteId,
       );
     }
     // The project's filter acts as a context for the report, meaning it
@@ -2899,14 +2990,14 @@ class Rest_Controller extends Controller {
    */
   private function loadFilterForProject($id) {
     if (!isset($this->projects[$id])) {
-      $this->apiResponse->fail('Bad request', 400, "Invalid project requested");
+      RestObjects::$apiResponse->fail('Bad request', 400, "Invalid project requested");
     }
     if (isset($this->projects[$id]['filter_id'])) {
       $filterId = $this->projects[$id]['filter_id'];
-      $filters = $this->db->select('definition')->from('filters')->where(array('id' => $filterId, 'deleted' => 'f'))
+      $filters = RestObjects::$db->select('definition')->from('filters')->where(array('id' => $filterId, 'deleted' => 'f'))
         ->get()->result_array();
       if (count($filters) !== 1) {
-        $this->apiResponse->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
+        RestObjects::$apiResponse->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
       }
       return json_decode($filters[0]->definition, TRUE);
     }
@@ -2928,7 +3019,7 @@ class Rest_Controller extends Controller {
    *   Filter definition or empty array.
    */
   private function getPermissionsFilterDefinition() {
-    $filters = $this->db->select('definition')
+    $filters = RestObjects::$db->select('definition')
       ->from('filters')
       ->join('filters_users', array(
         'filters_users.filter_id' => 'filters.id',
@@ -2937,12 +3028,12 @@ class Rest_Controller extends Controller {
         'filters.id' => $_GET['filter_id'],
         'filters.deleted' => 'f',
         'filters.defines_permissions' => 't',
-        'filters_users.user_id' => $this->clientUserId,
+        'filters_users.user_id' => RestObjects::$clientUserId,
         'filters_users.deleted' => 'f',
       ))
       ->get()->result_array();
     if (count($filters) !== 1) {
-      $this->apiResponse->fail('Bad request', 400, 'Filter ID missing or not a permissions filter for the user');
+      RestObjects::$apiResponse->fail('Bad request', 400, 'Filter ID missing or not a permissions filter for the user');
     }
     return json_decode($filters[0]->definition, TRUE);
   }
@@ -2962,7 +3053,7 @@ class Rest_Controller extends Controller {
       array_pop($arguments);
       // Check not asking for an invalid version.
       if (!in_array($matches['major'] . '.' . $matches['minor'], $this->supportedApiVersions)) {
-        $this->apiResponse->fail('Bad request', 400, 'Unsupported API version');
+        RestObjects::$apiResponse->fail('Bad request', 400, 'Unsupported API version');
       }
       $this->apiMajorVersion = $matches['major'];
       $this->apiMinorVersion = $matches['minor'];
@@ -3001,6 +3092,30 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * If allow_cors set in the auth method options, apply access control header.
+   */
+  private function applyCorsHeader() {
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' || array_key_exists('allow_cors', $this->authConfig)) {
+      if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' || $this->authConfig['allow_cors'] === TRUE) {
+        $corsSetting = '*';
+      } elseif (is_array($this->authConfig['allow_cors'])) {
+        // If list of domain patterns specified, allow only if a match.
+        foreach ($this->authConfig['allow_cors'] as $domainRegex) {
+          if (preg_match("/$domainRegex/", $_SERVER['HTTP_ORIGIN'])) {
+            header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+            break;
+          }
+        }
+      }
+      if ($corsSetting) {
+        header("Access-Control-Allow-Origin: $corsSetting");
+        header("Access-Control-Allow-Methods: GET, POST, DELETE, PUT, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type, Authorization");
+      }
+    }
+  }
+
+  /**
    * Checks that the request is authentic.
    */
   private function authenticate() {
@@ -3008,6 +3123,10 @@ class Rest_Controller extends Controller {
     $this->serverUserId = Kohana::config('rest.user_id');
     $methods = Kohana::config('rest.authentication_methods');
     $this->authenticated = FALSE;
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+      // No need to authenticate OPTIONS request.
+      return;
+    }
     $this->checkElasticsearchRequest();
     if ($this->authenticated) {
       return;
@@ -3030,12 +3149,12 @@ class Rest_Controller extends Controller {
           if ($this->elasticProxy) {
             if (empty($cfg['resource_options']['elasticsearch']) || !in_array($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
-              $this->apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+              RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
             }
             if (!empty($this->clientConfig) && empty($this->clientConfig['elasticsearch']) ||
                 !in_array($this->elasticProxy, $this->clientConfig['elasticsearch'])) {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for client");
-              $this->apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+              RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
             }
           }
           kohana::log('debug', "authenticated via $method");
@@ -3046,17 +3165,37 @@ class Rest_Controller extends Controller {
     }
     if (!$this->authenticated) {
       // Either the authentication wrong, or using HTTP instead of HTTPS.
-      $this->apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
     }
+  }
+
+  /**
+   * Retrieves the Bearer access token from the Authoriztion header.
+   *
+   * @param bool $wantJwt
+   *   Set to TRUE to retrieve JWT format or FALSE for oAuth.
+   *
+   * @return string
+   *   Auth token or empty string.
+   */
+  private function getBearerAuthToken($wantJwt = FALSE) {
+    $headers = apache_request_headers();
+    if (isset($headers['Authorization']) && strpos($headers['Authorization'], 'Bearer ') === 0) {
+      $token = substr($headers['Authorization'], 7);
+      $isJwt = substr_count($token, '.') === 2;
+      if ($isJwt === $wantJwt) {
+        return $token;
+      }
+    }
+    return '';
   }
 
   /**
    * Attempts to authenticate using the oAuth2 protocal.
    */
   private function authenticateUsingOauth2User() {
-    $headers = apache_request_headers();
-    if (isset($headers['Authorization']) && strpos($headers['Authorization'], 'Bearer ') === 0) {
-      $suppliedToken = str_replace('Bearer ', '', $headers['Authorization']);
+    $suppliedToken = $this->getBearerAuthToken();
+    if ($suppliedToken) {
       $this->cache = new Cache();
       // Get all cache entries that match this nonce.
       $paths = $this->cache->exists($suppliedToken);
@@ -3067,16 +3206,113 @@ class Rest_Controller extends Controller {
         if ($tokens[1] === 'oAuthUserAccessToken') {
           $data = $this->cache->get($tokens[0]);
           if (preg_match('/^USER_ID:(?P<user_id>\d+):WEBSITE_ID:(?P<website_id>\d+)$/', $data, $matches)) {
-            $this->clientWebsiteId = $matches['website_id'];
+            RestObjects::$clientWebsiteId = $matches['website_id'];
             // If option limit_to_own_data set, then only allow access to own
             // records.
             if (!empty($this->resourceOptions['limit_to_own_data'])) {
-              $this->clientUserId = $matches['user_id'];
+              RestObjects::$clientUserId = $matches['user_id'];
             }
             $this->authenticated = TRUE;
           }
         }
       }
+    }
+  }
+
+  /**
+   * Finds the ID and public key for a website using the URL.
+   *
+   * Allows the iss in a JWT payload to be mapped to the relevant website
+   * details.
+   */
+  private function getWebsiteByUrl($url) {
+    $cache = Cache::instance();
+    $cacheKey = 'website-by-url-' . preg_replace('/[^0-9a-zA-Z]/', '', $url);
+    $website = $cache->get($cacheKey);
+    if (!$website) {
+      $db = new Database();
+      $website = $db
+        ->select('id, public_key')
+        ->from('websites')
+        ->where('url', $url)
+        ->get()->current();
+      $cache->set($cacheKey, $website);
+    }
+    return $website;
+  }
+
+  private function checkWebsiteUser($websiteId, $userId) {
+    $cache = Cache::instance();
+    $cacheKey = "website-user-$websiteId-$userId";
+    $websiteUser = $cache->get($cacheKey);
+    if (!$websiteUser) {
+      $db = new Database();
+      $websiteUser = $db
+        ->select('site_role_id')
+        ->from('users_websites')
+        ->where([
+          'website_id' => $websiteId,
+          'user_id' => $userId,
+          'banned' => FALSE,
+        ])
+        ->get()->current();
+      if ($websiteUser) {
+        $cache->set($cacheKey, $websiteUser);
+      }
+    }
+    if (!$websiteUser) {
+      RestObjects::$apiResponse->fail('Unauthorized', 401);
+    }
+  }
+
+  /**
+   * Attempts to authenticate as a user using a JWT access token.
+   */
+  private function authenticateUsingJwtUser() {
+    require_once 'vendor/autoload.php';
+    $suppliedToken = $this->getBearerAuthToken(TRUE);
+    if ($suppliedToken) {
+      list($jwtHeader, $jwtPayload, $jwtSignature) = explode('.', $suppliedToken);
+      $payload = base64_decode($jwtPayload);
+      if (!$payload) {
+        RestObjects::$apiResponse->fail('Bad request', 400);
+      }
+      $payloadValues = json_decode($payload, TRUE);
+      if (!$payloadValues) {
+        RestObjects::$apiResponse->fail('Bad request', 400);
+      }
+      if (empty($payloadValues['iss']) || empty($payloadValues['http://indicia.org.uk/user:id'])) {
+        RestObjects::$apiResponse->fail('Bad request', 400);
+      }
+      $website = $this->getWebsiteByUrl($payloadValues['iss']);
+      if (!$website || empty($website->public_key)) {
+        kohana::log('debug', 'Website has no public key');
+        RestObjects::$apiResponse->fail('Unauthorized', 401);
+      }
+      // Allow for minor clock sync problems.
+      JWT\JWT::$leeway = 60;
+      try {
+        $decoded = JWT\JWT::decode($suppliedToken, $website->public_key, ['RS256']);
+      }
+      catch (JWT\SignatureInvalidException $e) {
+        kohana::log('debug', 'Token decode failed');
+        RestObjects::$apiResponse->fail('Unauthorized', 401);
+      }
+      catch (JWT\ExpiredException $e) {
+        kohana::log('debug', 'Token expired');
+        RestObjects::$apiResponse->fail('Unauthorized', 401);
+      }
+      if (isset($payloadValues['email_verified']) && !$payloadValues['email_verified']) {
+        kohana::log('debug', 'Payload email unverified');
+        RestObjects::$apiResponse->fail('Unauthorized', 401);
+      }
+      if (!isset($payloadValues['http://indicia.org.uk/user:id'])) {
+        RestObjects::$apiResponse->fail('Bad request', 400);
+      }
+      $this->checkWebsiteUser($website->id, $payloadValues['http://indicia.org.uk/user:id']);
+      RestObjects::$clientWebsiteId = $website->id;
+      RestObjects::$clientUserId = $payloadValues['http://indicia.org.uk/user:id'];
+      $this->authenticated = TRUE;
     }
   }
 
@@ -3098,13 +3334,13 @@ class Rest_Controller extends Controller {
           $this->projects = $config[$clientSystemId]['projects'];
           $this->clientConfig = $config[$clientSystemId];
           if (!empty($_REQUEST['proj_id'])) {
-            $this->clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
+            RestObjects::$clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
           }
           // Apart from the projects resource, other end-points will need a
           // proj_id if using client system based authorisation.
           if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
               (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {
-            $this->apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
+            RestObjects::$apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
           }
           $this->authenticated = TRUE;
         }
@@ -3122,9 +3358,9 @@ class Rest_Controller extends Controller {
       if ($u === 'WEBSITE_ID' && $h === 'HMAC') {
         // Input validation.
         if (!preg_match('/^\d+$/', $websiteId)) {
-          $this->apiResponse->fail('Unauthorized', 401, 'Website ID incorrect format.');
+          RestObjects::$apiResponse->fail('Unauthorized', 401, 'Website ID incorrect format.');
         }
-        $websites = $this->db->select('password')
+        $websites = RestObjects::$db->select('password')
           ->from('websites')
           ->where(array('id' => $websiteId))
           ->get()->result_array();
@@ -3133,15 +3369,15 @@ class Rest_Controller extends Controller {
           $request_url = "$protocol://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
           $correct_hmac = hash_hmac("sha1", $request_url, $websites[0]->password, $raw_output = FALSE);
           if ($supplied_hmac === $correct_hmac) {
-            $this->clientWebsiteId = $websiteId;
+            RestObjects::$clientWebsiteId = $websiteId;
             $this->authenticated = TRUE;
           }
           else {
-            $this->apiResponse->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect.');
+            RestObjects::$apiResponse->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect.');
           }
         }
         else {
-          $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised website ID.');
+          RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised website ID.');
         }
       }
     }
@@ -3172,27 +3408,27 @@ class Rest_Controller extends Controller {
     }
     // Input validation.
     if (!preg_match('/^\d+$/', $userId) || !preg_match('/^\d+$/', $websiteId)) {
-      $this->apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
     }
-    $users = $this->db->select('password')
+    $users = RestObjects::$db->select('password')
       ->from('users')
       ->where(array('id' => $userId))
       ->get()->result_array(FALSE);
     if (count($users) !== 1) {
-      $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
     }
     $auth = new Auth();
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
       // If option limit_to_own_data set, then only allow access to own records.
       if (!empty($this->resourceOptions['limit_to_own_data'])) {
-        $this->clientUserId = $userId;
+        RestObjects::$clientUserId = $userId;
       }
-      $this->clientWebsiteId = $websiteId;
+      RestObjects::$clientWebsiteId = $websiteId;
       // @todo Is this user a member of the website?
       $this->authenticated = TRUE;
     }
     else {
-      $this->apiResponse->fail('Unauthorized', 401, 'Incorrect password for user.');
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect password for user.');
     }
     // @todo Apply user ID limit to data, limit to filterable reports
   }
@@ -3218,10 +3454,10 @@ class Rest_Controller extends Controller {
       return;
     }
     if (!array_key_exists($clientSystemId, $config)) {
-      $this->apiResponse->fail('Unauthorized', 401, 'Invalid client system ID');
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Invalid client system ID');
     }
     if ($secret !== $config[$clientSystemId]['shared_secret']) {
-      $this->apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
     $this->clientSystemId = $clientSystemId;
     $this->projects = $config[$clientSystemId]['projects'];
@@ -3230,11 +3466,11 @@ class Rest_Controller extends Controller {
     // proj_id if using client system based authorisation.
     if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
         (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {
-      $this->apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
+      RestObjects::$apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
     }
     if (!empty($_REQUEST['proj_id'])) {
       $projectConfig = $this->projects[$_REQUEST['proj_id']];
-      $this->clientWebsiteId = $projectConfig['website_id'];
+      RestObjects::$clientWebsiteId = $projectConfig['website_id'];
       // The client project config can override the resource options, e.g.
       // access to summary or featured reports.
       if (isset($projectConfig['resource_options']) &&
@@ -3266,17 +3502,17 @@ class Rest_Controller extends Controller {
     }
     // Input validation.
     if (!preg_match('/^\d+$/', $websiteId)) {
-      $this->apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
     }
     $password = pg_escape_string($password);
-    $websites = $this->db->select('id')
+    $websites = RestObjects::$db->select('id')
       ->from('websites')
       ->where(array('id' => $websiteId, 'password' => $password))
       ->get()->result_array();
     if (count($websites) !== 1) {
-      $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised website ID or password.');
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised website ID or password.');
     }
-    $this->clientWebsiteId = $websiteId;
+    RestObjects::$clientWebsiteId = $websiteId;
     $this->authenticated = TRUE;
     // @todo Apply website ID limit to data
   }
@@ -3293,7 +3529,7 @@ class Rest_Controller extends Controller {
    */
   private function checkInteger($value, $param) {
     if (!preg_match('/^\d+$/', $value)) {
-      $this->apiResponse->fail('Bad request', 400, "Parameter $param is not an integer");
+      RestObjects::$apiResponse->fail('Bad request', 400, "Parameter $param is not an integer");
     }
   }
 
@@ -3309,7 +3545,7 @@ class Rest_Controller extends Controller {
    */
   private function checkDate($value, $param) {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
-      $this->apiResponse->fail('Bad request', 400, "Parameter $param is not an valid date");
+      RestObjects::$apiResponse->fail('Bad request', 400, "Parameter $param is not an valid date");
     }
   }
 
@@ -3321,6 +3557,221 @@ class Rest_Controller extends Controller {
    */
   private function getToken() {
     return sha1(time() . ':' . rand() . $_SERVER['REMOTE_ADDR'] . ':' . kohana::config('indicia.private_key'));
+  }
+
+  /**
+   * Converts $_FILES to a simple array.
+   *
+   * Accounts for several files being posted as an array or different fields.
+   *
+   * @return array
+   *   List of files.
+   */
+  private function getFiles() {
+    $files = [];
+    foreach ($_FILES as $input => $infoArr) {
+      $filesByInput = [];
+      foreach ($infoArr as $key => $valueArr) {
+        if (is_array($valueArr)) {
+          // File input by array field.
+          foreach ($valueArr as $i => $value) {
+            $filesByInput[$input . "[$i]"][$key] = $value;
+          }
+        }
+        else {
+          // File input by single fields.
+          $filesByInput[$input] = $infoArr;
+          break;
+        }
+      }
+      $files = array_merge($files, $filesByInput);
+    }
+    return $files;
+}
+
+  public function mediaQueuePost() {
+    // Upload size.
+    $ups = Kohana::config('indicia.maxUploadSize');
+    // Get comma separated list of allowed file types.
+    $config = kohana::config('indicia.upload_file_type');
+    if (!$config) {
+      // Default list if no entry in config.
+      $types = 'png,gif,jpg,jpeg,mp3,wav,pdf';
+    }
+    else {
+      // Implode array of arrays.
+      $types = implode(',', array_map(function($a){
+        return implode(',', $a);
+      }, $config));
+    }
+    $fileList = $this->getFiles();
+    $files = Validation::factory($fileList);
+    foreach (array_keys($fileList) as $fileKey) {
+      $files->add_rules(
+        $fileKey, 'upload::valid', 'upload::required',
+        "upload::type[$types]", "upload::size[$ups]"
+      );
+    }
+    if (!$files->validate()) {
+      $errors = $files->errors();
+      // Need to translate error messages manually due to file (field) names being variable.
+      foreach ($errors as &$error) {
+        $error = Kohana::lang("form_error_messages.media_upload.$error");
+      }
+      RestObjects::$apiResponse->fail('Bad Request', 400, json_encode($errors));
+    }
+    foreach ($files as $key => $file) {
+      kohana::log('debug', var_export($file, TRUE));
+      $typeParts = explode('/', $file['type']);
+      $fileName = uniqid('', TRUE) . '.' . $typeParts[1];
+      upload::save($file, $fileName, 'upload-queue');
+      $response[$key] = ['name' => $fileName, 'tempPath' => url::base() . "upload-queue/$fileName"];
+    }
+    RestObjects::$apiResponse->succeed($response);
+  }
+
+  /**
+   * End-point to GET an occurrence by ID.
+   *
+   * @param int $id
+   *   Occurrence ID.
+   */
+  public function occurrencesGetId($id) {
+    rest_crud::read('occurrence', $id);
+  }
+
+  /**
+   * API end-point to POST an occurrence to create within existing sample.
+   */
+  public function occurrencesPost() {
+    $segments = $this->uri->segment_array();
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    // Autofill website ID.
+    if (isset($postArray['values'])) {
+      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
+      if (!empty($postArray['values']['sample_id'])) {
+        // Sample must be for same user.
+        $sampleCheck = RestObjects::$db->query('select count(*) from samples ' .
+          "where id='" . $postArray['values']['sample_id'] .
+          "' and created_by_id=" . RestObjects::$clientUserId)
+          ->current()->count;
+        if ($sampleCheck !== '1') {
+          kohana::log('debug', RestObjects::$db->last_query());
+          RestObjects::$apiResponse->fail('Bad Request', 400, ['occurrence:sample_id' => 'Attempt to create occurrence in invalid sample.']);
+        }
+      }
+    }
+    rest_crud::create('occurrence', $postArray);
+  }
+
+  /**
+   * API end-point to PUT to an existing occurrence to update.
+   *
+   * @param int $id
+   *   Occurrence ID.
+   */
+  public function occurrencesPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    rest_crud::update('occurrence', $id, $putArray);
+  }
+
+  /**
+   * API end-point to DELETE an occurrence.
+   *
+   * Will only be deleted if the occurrence was created by the current user.
+   *
+   * @param int $id
+   *   Occurrence ID to delete.
+   */
+  public function occurrencesDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('occurrence', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
+  public function locationsGetId($id) {
+    rest_crud::read('location', $id);
+  }
+
+  /**
+   * API end-point to POST a sample to create.
+   */
+  public function locationsPost() {
+    $segments = $this->uri->segment_array();
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    rest_crud::create('location', $postArray);
+  }
+
+  public function locationsPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    rest_crud::update('location', $id, $putArray);
+  }
+
+  /**
+   * API end-point to DELETE a location.
+   *
+   * Will only be deleted if the location was created by the current user.
+   *
+   * @param int $id
+   *   Location ID to delete.
+   */
+  public function locationsDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('location', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
+  /**
+   * End-point to GET a sample by ID.
+   *
+   * @param int $id
+   *   Sample ID.
+   */
+  public function samplesGetId($id) {
+    rest_crud::read('sample', $id);
+  }
+
+  /**
+   * API end-point to POST a sample to create.
+   */
+  public function samplesPost() {
+    $segments = $this->uri->segment_array();
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    rest_crud::create('sample', $postArray);
+  }
+
+  /**
+   * API end-point to PUT to an existin sample to update.
+   */
+  public function samplesPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    rest_crud::update('sample', $id, $putArray);
+  }
+
+  /**
+   * API end-point to DELETE a sample.
+   *
+   * Will only be deleted if the sample was created by the current user.
+   *
+   * @param int $id
+   *   Sample ID to delete.
+   */
+  public function samplesDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('sample', $id, ['created_by_id' => RestObjects::$clientUserId]);
   }
 
 }

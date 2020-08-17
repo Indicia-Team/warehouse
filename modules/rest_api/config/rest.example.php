@@ -40,6 +40,8 @@ $config['dataset_name_attr_id'] = 99;
  * * oauth2User - for authenticating warehouse user accounts to access their
  *   own records via oauth, or with a filter_id to define a wider set of
  *   records.
+ * * jwtUser - fora authenticating warehouse user accounts to access their
+ *   own records via a JWT access token.
  * * hmacClient - authorise a client in the list below using HMAC in the http
  *   header
  * * hmacWebsite - authorise as a website registered on the warehouse using
@@ -84,6 +86,14 @@ $config['authentication_methods'] = [
     ],
   ],
   'oauth2User' => [
+    'resource_options' => [
+      // Grants full access to all reports. Client configs can override this.
+      'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
+    ],
+  ],
+  'jwtUser' => [
+    // TRUE to allow CORS from any domain, or provide an array of domain regexes.
+    'allow_cors' => TRUE,
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
       'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],

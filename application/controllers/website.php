@@ -53,6 +53,16 @@ class Website_Controller extends Gridview_Base_Controller
   }
 
   /**
+   * Ensure that cached public key data cleared after save.
+   */
+  public function save() {
+    $cacheKey = 'website-by-url-' . preg_replace('/[^0-9a-zA-Z]/', '', $_POST['website:url']);
+    $cache = Cache::instance();
+    $cache->delete($cacheKey);
+    parent::save();
+  }
+
+  /**
    * If trying to edit an existing website record, ensure the user has rights to this website.
    */
   public function record_authorised($id) {
