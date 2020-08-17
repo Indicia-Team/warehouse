@@ -362,7 +362,7 @@ KEY;
     $expectedValues = array_merge($exampleData, $updateData);
     foreach ($expectedValues as $field => $value) {
       $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
-      $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
+      $this->assertEquals($value, $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
     }
   }
 
@@ -501,7 +501,7 @@ KEY;
    * A basic test of samples POST.
    */
   public function testJwtSamplePost() {
-    $this->postTest($sample, [
+    $this->postTest('samples', [
       'survey_id' => 1,
       'entered_sref' => 'SU1234',
       'entered_sref_system' => 'OSGB',
@@ -1035,7 +1035,6 @@ KEY;
 
   public function testJwtLocationPost() {
     $this->postTest('locations', [
-      'survey_id' => 1,
       'name' => 'Test location',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB'
@@ -1047,7 +1046,6 @@ KEY;
    */
   public function testJwtLocationPut() {
     $this->putTest('locations', [
-      'survey_id' => 1,
       'name' => 'Location test',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB'
@@ -1061,7 +1059,6 @@ KEY;
    */
   public function testJwtLocationGet() {
     $this->getTest('locations', [
-      'survey_id' => 1,
       'name' => 'Location GET test',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB'
@@ -1073,7 +1070,6 @@ KEY;
    */
   public function testJwtLocationDelete() {
     $this->deleteTest('locations', [
-      'survey_id' => 1,
       'name' => 'Location GET test',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
@@ -1092,7 +1088,6 @@ KEY;
    */
   public function testJwtLocationETags() {
     $this->eTagsTest('locations',  [
-      'survey_id' => 1,
       'name' => 'Location GET test',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
