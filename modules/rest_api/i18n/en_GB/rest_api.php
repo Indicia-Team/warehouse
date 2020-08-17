@@ -4,11 +4,11 @@ $lang = [];
 $lang['title'] = 'Indicia RESTful API';
 $lang['introduction'] = 'Provides RESTful access to data in the Indicia warehouse database.';
 $lang['authenticationTitle'] = 'Authentication';
-$lang['authIntroduction'] = <<<TXT
-For information on authentication, see the ' .
+$lang['authIntroduction'] = <<<HTML
+For information on authentication, see the
 <a href="http://indicia-docs.readthedocs.io/en/latest/developing/rest-web-services/authentication.html">
 authentication documentation.</a> The available authentication options are described in the table below.
-TXT;
+HTML;
 $lang['resourcesTitle'] = 'Resources';
 $lang['authMethods'] = 'Allowed authentication methods';
 $lang['oauth2User'] = 'oAuth2 as warehouse user';
