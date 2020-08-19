@@ -68,7 +68,8 @@
     <column name="survey_title" sql="snf.survey_title" datatype="text" />
     <column name="group_title" sql="snf.group_title" datatype="text" />
     <column name="recorders" sql="snf.recorders" datatype="text" />
-    <column name="taxon_key" sql="coalesce(cttl.search_code, o.taxa_taxon_list_external_key)" datatype="text" />
+    <column name="taxon_key" sql="coalesce(cttl.search_code, cttl.external_key)" datatype="text" />
+    <column name="accepted_taxon_key" sql="cttl.external_key" datatype="text" />
     <column name="taxa_taxon_list_id" sql="o.taxa_taxon_list_id" datatype="integer" />
     <column name="taxon_meaning_id" sql="o.taxon_meaning_id" datatype="integer" />
     <column name="date_start" sql="o.date_start" datatype="date" />
