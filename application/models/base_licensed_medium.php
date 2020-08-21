@@ -123,7 +123,7 @@ class Base_licensed_medium_Model extends ORM {
       // Create thumbnails and other versions.
       Image::create_image_files($destDir, $this->queuedFile, '', $this->identifiers['website_id']);
     }
-    return $r;
+    return TRUE;
   }
 
 }
