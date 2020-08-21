@@ -58,6 +58,7 @@ class Website_Model extends ORM {
       'description',
       'deleted',
       'verification_checks_enabled',
+      'public_key',
     );
 
     return parent::validate($array, $save);

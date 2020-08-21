@@ -62,6 +62,17 @@ Warehouse instance.</p>
       'label' => 'Retype password',
       'fieldname' => 'password2',
       'default' => html::initial_value($values, 'password2'),
+      'helpText' => 'Password for linking Drupal Iform module implementations ' .
+        'to this website registration. Also used for nonce + auth_token based ' .
+        'API access, see <a href="https://indicia-docs.readthedocs.io/en/latest/developing/web-services/authentication-overview.html">documentation</a> for more info.',
+    ]);
+
+    echo data_entry_helper::textarea([
+      'label' => 'Public key',
+      'fieldname' => 'website:public_key',
+      'default' => html::initial_value($values, 'website:public_key'),
+      'helpText' => 'Paste the public key from a private/public key pair here ' .
+        'to enable JWT API authentication.',
     ]);
 
     echo data_entry_helper::checkbox([

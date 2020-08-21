@@ -25,14 +25,26 @@
  */
 $config['user_id'] = 'BRC';
 
-$config['authentication_methods'] = array(
-  'hmacClient'  => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
-  'hmacWebsite' => array('allow_http', 'resource_options' => array('reports' => array())),
-  'directUser' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
-  'directClient' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
-  'directWebsite' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
-  'oauth2User' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true)))
-);
+$config['authentication_methods'] = [
+  'hmacClient'  => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
+  'hmacWebsite' => ['allow_http', 'resource_options' => ['reports' => []]],
+  'directUser' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
+  'directClient' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
+  'directWebsite' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
+  'oauth2User' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
+  'jwtUser' => [
+    'allow_http' => TRUE,
+    'allow_cors' => TRUE,
+    'resource_options' => [
+      'reports' => ['featured' => true],
+      'entities' => [
+        'samples',
+        'occurrences',
+        'locations',
+      ],
+    ],
+  ],
+];
 
 $config['allow_auth_tokens_in_url'] = FALSE;
 
@@ -46,13 +58,13 @@ $config['dataset_name_attr_id'] = 99;
 // The following configuration is a temporary definition of the projects available for
 // each website.
 // @todo Move this configuration into a database table.
-$config['clients']=array(
+$config['clients'] = [
   // keyed by client system ID
-  'BTO' => array(
+  'BTO' => [
     'shared_secret' => 'password',
-    'projects' => array(
+    'projects' => [
       // list of available projects keyed by project ID
-      'BRC1' => array(
+      'BRC1' => [
         'id' => 'BRC1',
         'website_id' => 1,
         'title'=>'BRC birds',
@@ -61,8 +73,8 @@ $config['clients']=array(
         'filter_id' => 1,
         'sharing' => 'verification',
         // optional, which resources are available? Default is all.
-        'resources' => array('taxon-observations', 'annotations', 'reports')
-      )
-    )
-  )
-);
+        'resources' => ['taxon-observations', 'annotations', 'reports']
+      ]
+    ]
+  ]
+];

@@ -25,7 +25,7 @@
     #order_by#
   </query>
   <params>
-    <!-- last_id, autofeed_tracking_from and update_to parameters required for autofeed to work. -->
+    <!-- last_id and autofeed_tracking_from parameters required for autofeed to work. -->
     <param name="last_id" display="Last ID" datatype="integer" default="" order_by="o.id ASC">
       <where>o.id &gt; #last_id#</where>
     </param>

@@ -4,8 +4,8 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Post a comment</title>
-  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-  <link href="vendor/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css" />
+  <link href="vendor-other/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+  <link href="vendor-other/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css" />
   <link href="modules/rest_api/media/css/rest_api.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -1267,6 +1267,6 @@ HTML;
 ?>
   </div>
   <script src="media/js/jquery.js"></script>
-  <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+  <script src="vendor-other/bootstrap/js/bootstrap.min.js"></script>
 </body>
 </html>

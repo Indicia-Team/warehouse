@@ -167,17 +167,22 @@ class XMLReportReader_Core implements ReportReader {
                 $this->row_class = $reader->getAttribute('row_class');
                 break;
               case 'query':
+                $sp = $reader->getAttribute('standard_params');
                 $this->websiteFilterField = $reader->getAttribute('website_filter_field');
                 if ($this->websiteFilterField=== NULL)
                   // default field name for filtering against websites
                   $this->websiteFilterField = 'w.id';
                 $this->trainingFilterField = $reader->getAttribute('training_filter_field');
-                if ($this->trainingFilterField=== NULL)
+                if ($this->trainingFilterField === NULL) {
                   // default field name for filtering training records
-                  $this->trainingFilterField = 'o.training';
+                  if (!empty($sp) && $sp === 'samples') {
+                    $this->trainingFilterField = 's.training';
+                  } else {
+                    $this->trainingFilterField = 'o.training';
+                  }
+                }
                 $this->blockedSharingTasksField = $reader->getAttribute('blocked_sharing_tasks_field');
                 if ($this->blockedSharingTasksField === NULL) {
-                  $sp = $reader->getAttribute('standard_params');
                   if (!empty($sp)) {
                     $this->blockedSharingTasksField = $sp === 'samples' ? 's.blocked_sharing_tasks' : 'o.blocked_sharing_tasks';
                   }

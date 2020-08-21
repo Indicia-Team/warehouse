@@ -42,8 +42,8 @@ $siteTitle = html::specialchars($warehouseTitle);
 <?php
 echo html::stylesheet(
   array(
-    'vendor/bootstrap/css/bootstrap.min.css',
-    'vendor/bootstrap/css/bootstrap-theme.min.css',
+    'vendor-other/bootstrap/css/bootstrap.min.css',
+    'vendor-other/bootstrap/css/bootstrap-theme.min.css',
     'media/css/warehouse',
     'media/js/fancybox/source/jquery.fancybox.css',
     'media/css/jquery-ui.min',
@@ -61,7 +61,7 @@ echo html::script(
     'media/js/fancybox/source/jquery.fancybox.pack.js',
     'media/js/hasharray.js',
     'media/js/jquery-ui.min.js?v=1.12.1',
-    'vendor/bootstrap/js/bootstrap.min.js',
+    'vendor-other/bootstrap/js/bootstrap.min.js',
   ), FALSE
 );
 if (isset($jsFile)) {
