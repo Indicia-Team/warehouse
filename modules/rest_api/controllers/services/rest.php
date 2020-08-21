@@ -2843,6 +2843,7 @@ class Rest_Controller extends Controller {
           'last_tracking_date' => date('c'),
           'last_id' => 0,
         ];
+        $params['last_id'] = 0;
         variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
       }
       elseif ($afSettings['mode'] === 'initialLoad') {
