@@ -1,3 +1,21 @@
+# Version 4.4.0
+*2020-08-21*
+
+* The training flag can now be applied to samples, not just occurrences.
+* Add support for importing locations from SHP files in Web Mercator projection.
+* Importing a location with multiple entries in the SHP file *.dbf file now results in multiple
+  locations, rather than only the first being imported. They can be manually merged afterwards if
+  required.
+* Rest API supports JWT authentication, including support for storing a public key in website
+  registration details that can be used for JWT authentication in the REST API.
+* Rest API supports creating, updating and reading samples, occurrences and locations. See
+  /index.php/services/rest after upgrading the warehouse for details.
+* Rest API suports a media-queue endpoint which allows images to be posted first then attached to
+  subsequent data submissions.
+* Submissions of any media data can include a `queue` field value instead of a path. If supplied,
+  then a matching file will be copied from the media queue if it exists and linked to the
+  submission.
+
 # Version 4.3.0
 
 * Adds `taxon_id` and `search_code` to cache_taxa_taxon_lists.
