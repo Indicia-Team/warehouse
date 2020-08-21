@@ -804,7 +804,8 @@ KEY;
     $this->authMethod = 'jwtUser';
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     // Try uploading a script.
-    $file = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\js\addRowToGrid.js';
+    $rootFolder = dirname(dirname(dirname(dirname(__FILE__))));
+    $file = "$rootFolder/media/js/addRowToGrid.js";
     $response = $this->callService(
       "media-queue",
       FALSE,
@@ -830,8 +831,9 @@ KEY;
     $db = new Database();
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     // Post into the media queue.
-    $fileA = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\images\warehouse-banner.jpg';
-    $fileB = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\images\report_piechart.png';
+    $rootFolder = dirname(dirname(dirname(dirname(__FILE__))));
+    $fileA = "$rootFolder/media/images/warehouse-banner.jpg";
+    $fileB = "$rootFolder/media/images/report_piechart.png";
     // Submit 2 files with deliberate mix of by field array and single field value.
     $response = $this->callService(
       "media-queue",
@@ -920,7 +922,8 @@ KEY;
     $db = new Database();
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     // Post into the media queue.
-    $file = str_replace('modules\rest_api\tests', '', dirname(__FILE__)) . 'media\images\warehouse-banner.jpg';
+    $rootFolder = dirname(dirname(dirname(dirname(__FILE__))));
+    $file = "$rootFolder/media/images/warehouse-banner.jpg";
     // Submit 3 files with deliberate mix of by field array and single field value.
     $response = $this->callService(
       "media-queue",
