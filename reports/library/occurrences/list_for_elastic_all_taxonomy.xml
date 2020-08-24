@@ -21,7 +21,7 @@
 
     SELECT #columns#
     FROM filtered_occurrences o
-    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
     #order_by#
   </query>
   <params>
