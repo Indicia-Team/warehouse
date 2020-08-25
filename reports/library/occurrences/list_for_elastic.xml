@@ -6,6 +6,8 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" training_filter_field=""
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
     DROP TABLE IF EXISTS filtered_occurrences;
+    DROP TABLE IF EXISTS output_rows;
+
     SELECT o.*
     INTO TEMPORARY filtered_occurrences
     FROM cache_occurrences_functional o
@@ -17,16 +19,26 @@
     LIMIT #limit#;
 
     SELECT #columns#
+    INTO TEMPORARY output_rows
     FROM filtered_occurrences o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
-    JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id
-    JOIN taxa t ON t.id=ttl.taxon_id
-    LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-    LEFT JOIN locations l ON l.id=o.location_id AND l.deleted=false
-    LEFT JOIN samples sp ON sp.id=o.parent_sample_id AND sp.deleted=false
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    LEFT JOIN locations l ON l.id=o.location_id AND l.deleted=false;
+
+    UPDATE output_rows o
+    SET recorded_parent_location_id = lp.id,
+      recorded_parent_location_name = lp.name,
+      recorded_parent_location_code = lp.code,
+      parent_sample_attrs_json=snfp.attrs_json
+    FROM samples sp
+    JOIN cache_samples_nonfunctional snfp ON snfp.id=sp.id
     LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
+    WHERE sp.id=o.parent_sample_id AND sp.deleted=false;
+
+    SELECT *
+    FROM output_rows o
     #order_by#
   </query>
   <params>
@@ -53,7 +65,8 @@
     <column name="survey_title" sql="snf.survey_title" datatype="text" />
     <column name="group_title" sql="snf.group_title" datatype="text" />
     <column name="recorders" sql="snf.recorders" datatype="text" />
-    <column name="taxon_key" sql="coalesce(t.search_code, o.taxa_taxon_list_external_key)" datatype="text" />
+    <column name="taxon_key" sql="coalesce(cttl.search_code, cttl.external_key)" datatype="text" />
+    <column name="accepted_taxon_key" sql="cttl.external_key" datatype="text" />
     <column name="taxa_taxon_list_id" sql="o.taxa_taxon_list_id" datatype="integer" />
     <column name="taxon_meaning_id" sql="o.taxon_meaning_id" datatype="integer" />
     <column name="date_start" sql="o.date_start" datatype="date" />
@@ -98,6 +111,8 @@
       WHEN onf.sensitivity_precision > 10000 THEN NULL
       ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(o.public_geom, false, 10000), 4326)))))
     END" datatype="text" />
+    <column name="input_sref" sql="COALESCE(snf.public_entered_sref, onf.output_sref)" datatype="text" />
+    <column name="input_sref_system" sql="CASE WHEN snf.public_entered_sref IS NULL THEN onf.output_sref_system ELSE snf.entered_sref_system END" datatype="text" />
     <column name="output_sref" sql="onf.output_sref" datatype="text" />
     <column name="output_sref_system" sql="onf.output_sref_system" datatype="text" />
     <column name="coordinate_uncertainty_in_meters"
@@ -111,8 +126,10 @@
     <column name="given_locality_name" sql="o.location_name" datatype="text" />
     <column name="recorded_location_id" sql="l.id" datatype="integer" />
     <column name="recorded_location_name" sql="l.name" datatype="text" />
-    <column name="recorded_parent_location_id" sql="lp.id" datatype="integer" />
-    <column name="recorded_parent_location_name" sql="lp.name" datatype="text" />
+    <column name="recorded_location_code" sql="l.code" datatype="text" />
+    <column name="recorded_parent_location_id" sql="null::integer" datatype="integer" />
+    <column name="recorded_parent_location_name" sql="null::text" datatype="text" />
+    <column name="recorded_parent_location_code" sql="null::text" datatype="text" />
     <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
@@ -120,7 +137,7 @@
     <column name="attr_stage" sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)" datatype="text" />
     <column name="attr_sex" sql="onf.attr_sex" datatype="text" />
     <column name="attr_sex_stage_count" sql="onf.attr_sex_stage_count" datatype="text" />
-    <column name="attr_sex_stage_count_exact" sql="case when onf.attr_sex_stage_count similar to '\d{1,9}' then onf.attr_sex_stage_count::integer else null end" />
+    <column name="attr_sex_stage_count_exact" sql="case when onf.attr_sex_stage_count similar to '[0-9]{1,9}' then onf.attr_sex_stage_count::integer else null end" />
     <column name="attr_certainty" sql="onf.attr_certainty" datatype="text" />
     <column name="attr_det_name" sql="coalesce(onf.attr_det_full_name, coalesce(onf.attr_det_first_name, '') || ' ' || onf.attr_det_last_name)" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
@@ -135,7 +152,7 @@
       ELSE null
       END" datatype="text" />
     <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
-    <column name="updated_on" sql="to_char(greatest(o.updated_on, ttl.updated_on), 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
+    <column name="updated_on" sql="to_char(o.updated_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="record_status" sql="o.record_status" datatype="text" />
     <column name="record_substatus" sql="coalesce(o.record_substatus, 0)" datatype="integer" />
     <column name="record_decision_source" sql="occ.record_decision_source" datatype="text" />
@@ -155,6 +172,7 @@
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
     <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />
+    <column name="parent_sample_attrs_json" sql="null::json" datatype="text" />
     <column name="occurrence_attrs_json" sql="onf.attrs_json" datatype="text" />
     <column name="tracking" sql="o.tracking" datatype="integer" />
     <column name="input_form" sql="o.input_form" datatype="text" />

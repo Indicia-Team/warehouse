@@ -3,6 +3,16 @@
 require_once 'client_helpers/data_entry_helper.php';
 require_once 'client_helpers/submission_builder.php';
 
+$postedUserId = 1;
+
+function hostsite_get_user_field($field) {
+  if ($field === 'indicia_user_id') {
+    global $postedUserId;
+    return $postedUserId;
+  }
+  return NULL;
+}
+
 class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
   protected $auth;
@@ -531,6 +541,85 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
     Kohana::log('debug', "Submission response to sample 1 save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+  }
+
+  public function testRedetOccurrence() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRedetOccurrence");
+    $array = array(
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'occurrence:taxa_taxon_list_id' => 1,
+      'occAttr:1' => 'Test recorder'
+    );
+    $structure = array(
+      'model' => 'sample',
+      'subModels' => array(
+        'occurrence' => array('fk' => 'sample_id')
+      )
+    );
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+    $db = new Database();
+    $row = $db->select('*')->from('occurrences')->where('id', $r['success'])->get()->current();
+    $id = $row->id;
+    $this->assertEquals(NULL, $row->determiner_id);
+    $val = $db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
+    $this->assertEquals('Test recorder', $val->text_value);
+    // Specify determiner should alter the stored det info.
+    $array = array(
+      'website_id' => 1,
+      'survey_id' => 1,
+      'determiner_id' => 2,
+      'occurrence:id' => $row->id,
+      'sample:id' => $row->sample_id,
+      'occurrence:taxa_taxon_list_id' => 2,
+    );
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $row = $db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $this->assertEquals(2, $row->determiner_id);
+    $val = $db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
+    $this->assertEquals('Unknown', $val->text_value);
+    // Reset.
+    $db->query("UPDATE occurrence_attribute_values SET text_value='Test recorder' WHERE id=$val->id");
+    $db->query("UPDATE occurrences SET determiner_id=1 WHERE id=$id");
+    $row = $db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $this->assertEquals(1, $row->determiner_id);
+    // Specify different user should also alter the determiner.
+    global $postedUserId;
+    $postedUserId = 2;
+    $array = array(
+      'website_id' => 1,
+      'survey_id' => 1,
+      'occurrence:id' => $row->id,
+      'sample:id' => $row->sample_id,
+      'occurrence:taxa_taxon_list_id' => 1,
+    );
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $row = $db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $this->assertEquals(2, $row->determiner_id, 'Failed to use posted user_id to update determiner_id');
+    $val = $db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
+    $this->assertEquals('Unknown', $val->text_value);
+    // Make anonymous user change - won't alter the determiner.
+    $postedUserId = 1;
+    $array = array(
+      'website_id' => 1,
+      'survey_id' => 1,
+      'occurrence:id' => $row->id,
+      'sample:id' => $row->sample_id,
+      'occurrence:taxa_taxon_list_id' => 2,
+    );
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $row = $db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $this->assertEquals(2, $row->determiner_id);
+    $val = $db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
+    $this->assertEquals('Unknown', $val->text_value);
   }
 
   public function testCreateOccurrenceComment() {

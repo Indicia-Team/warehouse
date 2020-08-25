@@ -944,9 +944,9 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->authenticate();
       // We will be using a POST array to send data, and presumably a FILES array for the
       // media.
-      // Upload size
+      // Upload size.
       $ups = Kohana::config('indicia.maxUploadSize');
-      // Get comma separated list of allowed file types
+      // Get comma separated list of allowed file types.
       $config = kohana::config('indicia.upload_file_type');
       if (!$config) {
         // Default list if no entry in config.
@@ -963,8 +963,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         'media_upload', 'upload::valid', 'upload::required',
         "upload::type[$types]", "upload::size[$ups]"
       );
-      if ($_FILES->validate())
-      {
+      if ($_FILES->validate()) {
         if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true')
           $finalName = strtolower($_FILES['media_upload']['name']);
         else
@@ -1367,7 +1366,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         echo json_encode($response);
       }
       $this->delete_nonce();
-      if (class_exists('request_logging')) {
+      if (class_exists('request_logging') && isset($s)) {
         request_logging::log('i', 'data', $s['id'], 'save', $this->website_id, $this->user_id, $tm, $this->db, NULL, $response);
       }
     }
@@ -1416,7 +1415,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     if (!$result)
       throw new ValidationError('Validation error', 2003, $model->getAllErrors());
     // return the outermost model's id
-    return array('id'=>$model->id, 'struct'=>$model->get_submission_response_metadata());
+    return array('id'=>$model->id, 'struct'=>$model->getSubmissionResponseMetadata());
   }
 
  /**

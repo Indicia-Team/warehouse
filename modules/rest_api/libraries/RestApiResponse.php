@@ -35,8 +35,8 @@ class RestApiResponse {
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Indicia RESTful API</title>
-  <link href="{{ base }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-  <link href="{{ base }}vendor/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css" />
+  <link href="{{ base }}vendor-other/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+  <link href="{{ base }}vendor-other/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css" />
   <link href="{{ base }}modules/rest_api/media/css/rest_api.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -46,7 +46,7 @@ HTML;
   private $htmlFooter = <<<'HTML'
   </div>
   <script src="{{ base }}media/js/jquery.js"></script>
-  <script src="{{ base }}vendor/bootstrap/js/bootstrap.min.js"></script>
+  <script src="{{ base }}vendor-other/bootstrap/js/bootstrap.min.js"></script>
   <script src=""></script>
 </body>
 </html>
@@ -54,18 +54,21 @@ HTML;
 
   /**
    * When outputting HTML this contains the title for the page.
+   *
    * @var string
    */
   public $responseTitle = '';
 
   /**
    * Is an index table required for this response when output as HTML?
+   *
    * @var bool
    */
   public $wantIndex = false;
 
   /**
    * Include empty output cells in HTML?
+   *
    * @var bool
    */
   public $includeEmptyValues = true;
@@ -82,9 +85,11 @@ HTML;
       case 'html':
         $this->indexHtml($resourceConfig);
         break;
+
       case 'csv':
         $this->indexCsv($resourceConfig);
         break;
+
       default:
         $this->indexJson($resourceConfig);
     }
@@ -92,7 +97,9 @@ HTML;
 
   /**
    * Index method in HTML format, which provides top level help for the API resource endpoints.
-   * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
+   *
+   * @param array $resourceConfig
+   *   Configuration for the list of available resources and the methods they support.
    */
   private function indexHtml($resourceConfig) {
     // Output an HTML page header.
@@ -117,12 +124,32 @@ HTML;
       if (isset($cfg['resource_options'])) {
         foreach ($cfg['resource_options'] as $resource => $options) {
           if (!empty($options)) {
-            $note = kohana::lang('rest_api.resourceOptionInfo', '<em>' . $resource . '</em>') . ':';
+            // Look for a resource specific note.
+            $note = kohana::lang("rest_api.resourceOptionInfo-$resource");
+            if ($note === "rest_api.resourceOptionInfo-$resource") {
+              // Revert to generic note if not available.
+              $note = kohana::lang('rest_api.resourceOptionInfo', '<em>' . $resource . '</em>');
+            }
             $optionTexts = [];
             foreach ($options as $option => $value) {
-              $optionTexts[] = '<li>' . kohana::lang("rest_api.resourceOptionInfo-$option") . '</li>';
+              if (is_array($value)) {
+                foreach ($value as $subValue) {
+                  $optionTexts[] = '<li>' . $subValue . '</li>';
+                }
+              }
+              else {
+                $key = "rest_api.resourceOptionInfo-$resource-" . (is_int($option) ? '' : "$option-");
+                if ($value === TRUE) {
+                  $key .= 'true';
+                } elseif ($value === TRUE) {
+                  $key .= 'false';
+                } else  {
+                  $key .= json_encode($value);
+                }
+                $optionTexts[] = '<li>' . kohana::lang($key) . '</li>';
+              }
             }
-            $methodNotes[] = "<p>$note</p><ul>" . implode('', $optionTexts) . '</ul>';
+            $methodNotes[] = '<p>' . str_replace('{{ list }}', '<ul>' . implode('', $optionTexts) . '</ul>', $note) . '</p>';
           }
         }
       }
@@ -170,7 +197,7 @@ HTML;
               ($urlSuffix ? "/$urlSuffix" : '') . '</h4>';
           // Note we can't have full stops in a lang key
           $extra = $urlSuffix ? str_replace('.', '-', "/$urlSuffix") : '';
-          $help = kohana::lang("rest_api.resources.$resource$extra");
+          $help = kohana::lang("rest_api.resources.$resource$extra.$method");
           echo "<p>$help</p>";
           // splice in the format parameter which is always accepted.
           $resourceDef['params'] = array_merge(
@@ -261,12 +288,32 @@ HTML;
       if (isset($cfg['resource_options'])) {
         foreach ($cfg['resource_options'] as $resource => $options) {
           if (!empty($options)) {
-            $note = kohana::lang('rest_api.resourceOptionInfo', $resource);
-            $optionTexts = array();
-            foreach ($options as $option => $value) {
-              $optionTexts[] = kohana::lang("rest_api.resourceOptionInfo-$option");
+            // Look for a resource specific note.
+            $note = kohana::lang("rest_api.resourceOptionInfo-$resource");
+            if ($note === "rest_api.resourceOptionInfo-$resource") {
+              // Revert to generic note if not available.
+              $note = kohana::lang('rest_api.resourceOptionInfo', $resource);
             }
-            $methodNotes[] = "$note: " . implode('; ', $optionTexts) . '. ';
+            $optionTexts = [];
+            foreach ($options as $option => $value) {
+              if (is_array($value)) {
+                foreach ($value as $subValue) {
+                  $optionTexts[] = '<li>' . $subValue . '</li>';
+                }
+              }
+              else {
+                $key = "rest_api.resourceOptionInfo-$resource-" . (is_int($option) ? '' : "$option-");
+                if ($value === TRUE) {
+                  $key .= 'true';
+                } elseif ($value === TRUE) {
+                  $key .= 'false';
+                } else  {
+                  $key .= json_encode($value);
+                }
+                $optionTexts[] = kohana::lang($key);
+              }
+            }
+            $methodNotes[] = str_replace('{{ list }}', implode('; ', $optionTexts), $note);
           }
         }
       }
@@ -332,7 +379,7 @@ HTML;
    *   * metadata - information to display at top of HTML output
    *   * columns - list of column definitions for tabular output
    *   * attachHref
-   *   * columnsToUnset - an array of columns to remove from tabular output
+   *   * columnsToUnset - an array of columns to remove from tabular output.
    */
   public function succeed($data, $options = array(), $autofeed = FALSE) {
     $format = $this->getResponseFormat();
@@ -360,29 +407,35 @@ HTML;
   /**
    * Returns an HTML error response code, logs a message and aborts the script.
    *
-   * @param string $status HTTP error status message
-   * @param integer $code HTTP error code
-   * @param string $msg Detailed message to log
+   * @param string $status
+   *   HTTP error status message.
+   * @param int $code
+   *   HTTP error code.
+   * @param string $msg
+   *   Detailed message to log.
    */
-  public function fail($status, $code, $msg=NULL) {
+  public function fail($status, $code, $msg = NULL) {
     http_response_code($code);
     $response = array(
       'code' => $code,
-      'status' => $status
+      'status' => $status,
     );
-    if ($msg)
+    if ($msg) {
       $response['message'] = $msg;
+    }
     $format = $this->getResponseFormat();
     if ($format === 'html') {
       header('Content-Type: text/html');
       echo str_replace('{{ base }}', url::base(), $this->htmlHeader);
       $this->outputArrayAsHtml($response);
       echo str_replace('{{ base }}', url::base(), $this->htmlFooter);
-    } else {
+    }
+    else {
       header('Content-Type: application/json');
       echo json_encode($response);
     }
     if ($msg) {
+      $msg = is_array($msg) ? json_encode($msg) : $msg;
       kohana::log('debug', "HTTP code: $code. $msg");
       kohana::log_save();
     }

@@ -22,7 +22,7 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
-$config['logged_requests'] = array(
+$config['logged_requests'] = [
   // Read (output) data.
   'o.report',
   // Read (output) data.
@@ -37,4 +37,7 @@ $config['logged_requests'] = array(
   'a.scheduled_tasks',
   // Security (e.g. get_user_id).
   'a.security',
-);
+  // REST API
+  'o.rest',
+  'i.rest',
+];

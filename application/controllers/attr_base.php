@@ -63,15 +63,18 @@ abstract class Attr_Base_Controller extends Gridview_Base_Controller {
    * associated with a particular record.
    */
   protected function prepareOtherViewData(array $values) {
+    $query = $this->db->select('termlists.id, termlists.title, websites.title as website_title')
+      ->from('termlists')
+      ->join('websites', 'websites.id', 'termlists.website_id', 'LEFT')
+      ->orderby('termlists.title')
+      ->where('termlists.deleted', 'f');
     if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
-      $termlists = ORM::factory('termlist')->where('deleted', 'f')->in('website_id', $this->auth_filter['values'])->orderby('title', 'asc')->find_all();
-    }
-    else {
-      $termlists = ORM::factory('termlist')->where('deleted', 'f')->orderby('title', 'asc')->find_all();
+      $query->in('termlists.website_id', $this->auth_filter['values']);
     }
     $termlistArray = [];
-    foreach ($termlists as $list) {
-      $termlistArray[$list->id] = $list->title;
+    foreach ($query->get()->result() as $list) {
+      $website = $list->website_title ? ", Website=$list->website_title" : '';
+      $termlistArray[$list->id] = "$list->title (ID=$list->id$website)";
     }
     return array(
       'name' => ucwords(str_replace('_', ' ', $this->prefix)),

@@ -27,6 +27,7 @@
  * @package	Core
  * @subpackage Controllers
  */
+
 class Summariser_definition_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
@@ -178,6 +179,67 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
    */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
+  }
+
+  /**
+   * Controller action that displays the status of the summary builder work queue.
+   *
+   * Ignores all $_GET and $_POST.
+   */
+  public function work_queue() {
+      $this->template->title = 'Summariser work queue';
+      $this->template->content = new View('summariser_definition/work_queue');
+      $this->template->content->successMessage = '';
+      $this->template->content->errorMessage = '';
+  }
+
+  /**
+   * Controller action that submits a sample for processing by the summary builder.
+   * 
+   * Validates a posted 'sample_id' before inserting an entry for it into the work_queue,
+   * then displays the status of the summary builder work queue.
+   */
+  public function work_queue_reset_sample() {
+      require_once MODPATH . 'summary_builder/plugins/summary_builder.php';
+      
+      $this->template->title = 'Summariser work queue';
+      $this->template->content = new View('summariser_definition/work_queue');
+      $this->template->content->successMessage = '';
+      $this->template->content->errorMessage = '';
+      
+      if (empty($_POST['sample_id'])) {
+          $this->template->content->errorMessage = 'The sample ID must be provided';
+          return;
+      }
+      if (!ctype_digit($_POST['sample_id'])) {
+          $this->template->content->errorMessage = 'The sample ID must be an integer';
+          return;
+      }
+      $sample = ORM::Factory('sample', $_POST['sample_id']);
+      if (!$sample->loaded || $sample->deleted === 't') {
+          $this->template->content->errorMessage = 'The sample ID ' . $_POST['sample_id'] . ' is not a valid sample';
+          return;
+      }
+      
+      $task = 'task_summary_builder_sample';
+      $costEstimate = 50;
+      $priority = 3;
+      foreach (summary_builder_orm_work_queue() as $taskDefn) {
+          if ($task === $taskDefn['task']) {
+              $costEstimate = $taskDefn['cost_estimate'];
+              $priority = $taskDefn['priority'];
+              break;
+          }
+      }
+      $q = new WorkQueue();
+      $q->enqueue($this->db, [
+          'task' => 'task_summary_builder_sample',
+          'entity' => 'sample',
+          'record_id' => $_POST['sample_id'],
+          'cost_estimate' => $costEstimate,
+          'priority' => $priority,
+      ]);
+      $this->template->content->successMessage = 'The sample ID ' . $_POST['sample_id'] . ' has been queued for processing';
   }
 
 }

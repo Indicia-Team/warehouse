@@ -22,10 +22,10 @@
  defined('SYSPATH') or die('No direct script access.');
 
 // dBase file parsing classes.
-require 'vendor/php-xbase/src/XBase/Memo.php';
-require 'vendor/php-xbase/src/XBase/Table.php';
-require 'vendor/php-xbase/src/XBase/Column.php';
-require 'vendor/php-xbase/src/XBase/Record.php';
+require 'vendor-other/php-xbase/src/XBase/Memo.php';
+require 'vendor-other/php-xbase/src/XBase/Table.php';
+require 'vendor-other/php-xbase/src/XBase/Column.php';
+require 'vendor-other/php-xbase/src/XBase/Record.php';
 
 use XBase\Table;
 use XBase\Record;
@@ -337,7 +337,11 @@ class Location_Controller extends Gridview_Base_Controller {
       try {
         $locationName = $_POST['prepend'] . $this->getDbaseRecordFieldValue($record, $_POST['name']);
         if (in_array($locationName, $doneNames)) {
-          throw new Exception('Multiple entries present for this location in the SHP file. Only the first has been imported. Please merge to a single multi-polygon and re-import.');
+          $suffix = 1;
+          while (in_array("$locationName - $suffix", $doneNames)) {
+            $suffix++;
+          }
+          $locationName = "$locationName - $suffix";
         }
         $doneNames[] = $locationName;
         $this->loadFromFile($handle);

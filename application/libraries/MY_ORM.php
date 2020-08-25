@@ -202,10 +202,13 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Returns an array structure which describes this model, identifier and timestamp fields, plus the saved child models
-   * that were created during a submission operation.
+   * Returns an array structure which describes the results of a submission.
+   *
+   * Includes key information about this model, identifier and timestamp
+   * fields, plus the saved child models that were created during a submission
+   * operation.
    */
-  public function get_submission_response_metadata() {
+  public function getSubmissionResponseMetadata() {
     $r = array(
       'model' => $this->object_name,
       'id' => $this->id,
@@ -1174,7 +1177,7 @@ class ORM extends ORM_Core {
         // Copy up the website id and survey id.
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
-        $this->nestedParentModelIds[] = $m->get_submission_response_metadata();
+        $this->nestedParentModelIds[] = $m->getSubmissionResponseMetadata();
         // Copy the submission back so we pick up updated foreign keys that have
         // been looked up. E.g. if submitting a taxa taxon list, and the taxon
         // supermodel has an fk lookup, we need to keep it so that it gets
@@ -1233,7 +1236,7 @@ class ORM extends ORM_Core {
         // copy down the website id and survey id
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
-        $this->nestedChildModelIds[] = $m->get_submission_response_metadata();
+        $this->nestedChildModelIds[] = $m->getSubmissionResponseMetadata();
         if ($m->wantToUpdateMetadata && !$this->wantToUpdateMetadata && preg_match('/_(image|medium)$/', $m->object_name)) {
           // we didn't update the parent's metadata. But a child image has been changed, so we want to update the parent record metadata.
           // i.e. adding an image to a record causes the record to be edited and therefore to get its status reset.
@@ -1899,15 +1902,13 @@ class ORM extends ORM_Core {
           ($dataType === 'G' && !empty($attrValueModel->$vf))) {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId.");
       }
-      else {
-        if ($dataType === 'F' && preg_match('/^\d+(\.\d+)?$/', $value)
-            && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf ) {
-          kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
-        } else {
-          $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
-          kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
-          return FALSE;
-        }
+      elseif ($dataType === 'F' && preg_match('/^-?\d+(\.\d+)?$/', $value)
+          && abs($attrValueModel->$vf - $value) < abs(0.00001 * $attrValueModel->$vf)) {
+        kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
+      } else {
+        $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
+        kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
+        return FALSE;
       }
     }
     // set metadata
@@ -1945,7 +1946,7 @@ class ORM extends ORM_Core {
       $this->set_metadata();
       $this->validate(new Validation($this->as_array()), TRUE);
     }
-    $this->nestedChildModelIds[] = $attrValueModel->get_submission_response_metadata();
+    $this->nestedChildModelIds[] = $attrValueModel->getSubmissionResponseMetadata();
 
     return [$attrValueModel->id];
   }
