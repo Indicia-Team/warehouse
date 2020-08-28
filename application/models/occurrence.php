@@ -246,7 +246,7 @@ class Occurrence_Model extends ORM {
           'updated_on' => date("Ymd H:i:s"),
           'person_name' => $this->getPreviousDeterminerName(),
         ];
-        $insert = $this->db
+        $this->db
           ->from('determinations')
           ->set($determination)
           ->insert();
@@ -349,12 +349,12 @@ SQL;
     $determinerName = '';
     // Work through a list of possible places to find a determiner name in
     // priority order.
-    // Occurrences.determiner_id
+    // Occurrences.determiner_id.
     if (!empty($oldValues['determiner_id'])) {
       return $this->getPersonNameFromUserId($oldValues['determiner_id']);
     }
-    // Attribute values det_*_name
-    $attrValues =  $this->db
+    // Attribute values det_*_name.
+    $attrValues = $this->db
       ->select('v.text_value', 'a.system_function')
       ->from('occurrence_attribute_values as v')
       ->join('occurrence_attributes as a', 'a.id', 'v.occurrence_attribute_id')
@@ -387,7 +387,8 @@ SQL;
     if (!empty($recorders) && !empty($recorders->recorders)) {
       return $recorders->recorders;
     }
-    // If after working through all the rules we still haven't found a person name, the set to 'Unknown'.
+    // If after working through all the rules we still haven't found a person
+    // name, then set to 'Unknown'.
     if (empty($determinerName)) {
       $determinerName = 'Unknown';
     }
@@ -405,7 +406,7 @@ SQL;
   }
 
   /**
-   * If this occurrence record status was reset after an edit, then log a comment.
+   * If this record status was reset after an edit then log a comment.
    */
   public function postSubmit($isInsert) {
     if ($this->requeuedForVerification && !$isInsert) {
@@ -421,7 +422,12 @@ SQL;
   }
 
   /**
-   * Defines a submission structure for occurrences that lets samples be submitted at the same time, e.g. during CSV upload.
+   * Defines a submission structure for occurrences.
+   *
+   * Lets samples be submitted at the same time, e.g. during CSV upload.
+   *
+   * @return array
+   *   Submission structure.
    */
   public function get_submission_structure() {
     return array(
