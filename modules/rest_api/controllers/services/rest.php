@@ -3096,7 +3096,8 @@ class Rest_Controller extends Controller {
    * If allow_cors set in the auth method options, apply access control header.
    */
   private function applyCorsHeader() {
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' || array_key_exists('allow_cors', $this->authConfig)) {
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' ||
+        (isset($this->authConfig) && array_key_exists('allow_cors', $this->authConfig))) {
       if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' || $this->authConfig['allow_cors'] === TRUE) {
         $corsSetting = '*';
       } elseif (is_array($this->authConfig['allow_cors'])) {
@@ -3461,7 +3462,7 @@ class Rest_Controller extends Controller {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
     $this->clientSystemId = $clientSystemId;
-    $this->projects = $config[$clientSystemId]['projects'];
+    $this->projects = isset($config[$clientSystemId]['projects']) ? $config[$clientSystemId]['projects'] : [];
     $this->clientConfig = $config[$clientSystemId];
     // Taxon observations and annotations resource end-points will need a
     // proj_id if using client system based authorisation.
