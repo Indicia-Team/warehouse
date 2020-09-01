@@ -1,0 +1,104 @@
+<report
+    title="Explore occurrences map (standard filters, low resolution) for Fungi Without Borders"
+    description="A list of occurrences including geometry information designed for mapping output. Output is aggregated
+    to grid squares suitable for lower resolution output when zoomed out."
+    featured="true"
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
+  SELECT #columns#
+  FROM cache_occurrences_functional o
+  JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
+  JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  LEFT JOIN indicia.sample_attribute_values sav_zonation on sav_zonation.sample_id = o.sample_id and sav_zonation.sample_attribute_id = 21 and sav_zonation.deleted=false
+  LEFT JOIN indicia.cache_termlists_terms ctt_zonation on ctt_zonation.id = sav_zonation.int_value
+  LEFT JOIN indicia.cache_termlists_terms ctt_zonation_lang on ctt_zonation_lang.meaning_id = ctt_zonation.meaning_id
+  	and ctt_zonation_lang.language_iso = '#language#'
+  LEFT JOIN indicia.occurrence_attribute_values oav on oav.occurrence_id = o.id and oav.occurrence_attribute_id = 2293 and oav.deleted=false
+  LEFT JOIN indicia.occurrence_attribute_values oav_collect on oav_collect.occurrence_id = o.id and oav_collect.occurrence_attribute_id = 7 and oav_collect.deleted=false
+  LEFT JOIN indicia.occurrence_attribute_values oav_decay on oav_decay.occurrence_id = o.id and oav_decay.occurrence_attribute_id = 4 and oav_decay.deleted=false
+  LEFT JOIN indicia.cache_termlists_terms ctt_decay on ctt_decay.id = oav_decay.int_value
+  LEFT JOIN indicia.cache_termlists_terms ctt_decay_lang on ctt_decay_lang.meaning_id = ctt_decay.meaning_id
+  	and ctt_decay_lang.language_iso = '#language#'
+  LEFT JOIN indicia.occurrence_attribute_values oav_organ on oav_organ.occurrence_id = o.id and oav_organ.occurrence_attribute_id = 5 and oav_organ.deleted=false
+  LEFT JOIN indicia.cache_termlists_terms ctt_organ on ctt_organ.id = oav_organ.int_value 
+  LEFT JOIN indicia.cache_termlists_terms ctt_organ_lang on ctt_organ_lang.meaning_id = ctt_organ.meaning_id
+  	and ctt_organ_lang.language_iso = '#language#'
+  LEFT JOIN cache_taxa_taxon_lists cttl_common on cttl_common.taxon_meaning_id = cttl.taxon_meaning_id 
+  	and cttl_common.preferred = false and cttl_common.language_iso = '#language#' AND cttl_common.taxon_list_id = #taxon_list_id#
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  #idlist#
+  </query>
+  <params>
+    <param name='default_input_form' display='Default input form' default=''
+           description='Input form path to use when no other available. Can be used to generate the path in report_grid action links.' />
+    <param name="force_default_input_form" display="Force default input form" default="0"
+           description="Force the defaault input form to be used instead of the one specified by the record" />
+    <param name="sq_size" display="Grid square size" description="Specify either 1000, 2000 or 10000 for the grid square resolution as 1km, 2km or 10km grid" datatype="integer">
+      <joins>
+        <join value="1000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_1km_id and (msq.size=1000 or o.sensitive=true)</join>
+        <join value="2000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_2km_id and (msq.size=2000 or o.sensitive=true)</join>
+        <join value="10000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_10km_id and (msq.size=10000 or o.sensitive=true)</join>
+      </joins>
+    </param>
+    <param name="max_sq_size" display="Max square size" description="Specify either 1000, 2000 or 10000 for the max square size to show if low precision grid refs in dataset" datatype="integer" default="">
+      <wheres>
+        <where value="2000" operator="equal">o.map_sq_2km_id&lt;&gt;o.map_sq_10km_id</where>
+        <where value="1000" operator="equal">o.map_sq_1km_id&lt;&gt;o.map_sq_2km_id</where>
+      </wheres>
+      <joins>
+        <join value="10000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_10km_id and msq.size=10000</join>
+      </joins>
+    </param>
+    <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
+      <where>st_intersects(msq.geom, st_geomfromtext('#bounds#', 900913))</where>
+    </param>
+    <param name="taxon_list_id" display="Id of the species list to filter on" datatype="integer"/>
+    <param name="language" display="Preferred language" datatype="text" default="deu" />
+  </params>
+  <columns>
+    <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
+    <column name='source' on_demand="true" datatype="text"
+        sql="snf.website_title || ' | ' || case when substring(snf.survey_title from 1 for length(snf.website_title)) = snf.website_title then trim(substring(snf.survey_title from length(snf.website_title)+1)) else snf.survey_title end" />
+    <column name='source_id' on_demand="true" datatype="text" sql="o.website_id::varchar || '.' || o.survey_id::varchar" />
+    <column name='sample_id' sql='o.sample_id' on_demand="true" datatype="integer" />
+    <column name='taxon' sql="cttl.preferred_taxon" on_demand="true" datatype="species" />
+    <column name='common' display='Common name' sql="string_agg(cttl_common.taxon,',')" datatype='text' on_demand="true" aggregate="true"/>
+    <column name='family' display='Family' sql='cttl.family_taxon' on_demand="true" datatype='text' />
+    <column name='order' display='Order' sql='cttl.order_taxon' on_demand="true" datatype='text' />
+    <column name='taxon_group' sql='cttl.taxon_group' on_demand="true" datatype="text" />
+    <column name='taxon_group_id' sql='o.taxon_group_id' on_demand="true" datatype="integer" />
+    <column name='taxa_taxon_list_id' sql='o.taxa_taxon_list_id' on_demand="true" datatype="integer" />
+    <column name='location_name' sql='o.location_name' on_demand="true" datatype="text" />
+    <column name='entered_sref' on_demand="true" display='Original grid ref' datatype="text" visible="false"
+        sql="coalesce(regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g'), snf.public_entered_sref, onf.output_sref)" />
+    <column name="output_sref" sql="onf.output_sref" on_demand="true" display="Grid ref" datatype="text" />
+    <column name='date_start' sql='o.date_start' on_demand="true" visible='false' />
+    <column name='date_end' sql='o.date_end' on_demand="true" visible='false' />
+    <column name='date_type' sql='o.date_type' on_demand="true" visible='false' />
+    <column name='date' on_demand="true" datatype="date" />
+    <column name='cache_created_on' sql='o.created_on' on_demand="true" datatype="date" />
+    <column name='cache_updated_on' sql='o.updated_on' on_demand="true" />
+    <column name='recorder' on_demand="true" sql="CASE WHEN (TRIM(snf.recorders) !~ ' ' AND LENGTH(snf.recorders)>30) THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
+    <column name='created_by_id' visible='false' sql='o.created_by_id' on_demand="true" datatype="integer" />
+    <column name='input_form' visible="false" on_demand="true" sql="case
+    when canEdit.id is null then null
+    when o.input_form is null or o.website_id not in (#website_ids#) or #force_default_input_form#=1 then '#default_input_form#'
+    else o.input_form
+end" datatype="text" />
+    <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
+    <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(case when msq.size > #sq_size# then #sample_geom_field# else msq.geom end)" in_count="true" />
+    <column name='host'  display='Host' sql='oav.text_value' on_demand="true" datatype="text" />
+    <column name="altitudinal_zonation" display="Altitudinal zonation" sql="coalesce(ctt_zonation_lang.term, ctt_zonation.term)" on_demand="true" datatype="text" />
+    <column name="collector" display="Collector" sql="oav_collect.text_value" on_demand="true" datatype="text" />
+    <column name='determiner' display='Determiner' datatype="text"
+      sql="CASE WHEN onf.attr_det_full_name IS NULL THEN
+        CASE WHEN onf.attr_det_last_name IS NULL THEN NULL ELSE onf.attr_det_last_name || COALESCE(', ' || onf.attr_det_first_name, '') END
+      ELSE onf.attr_det_full_name END" on_demand="true"  />
+    <column name="decay_grade" display="Decay grade" sql="coalesce(ctt_decay_lang.term, ctt_decay.term)" on_demand="true" datatype="text" />
+    <column name="organ_substrate" display="Organ substrate" sql="coalesce(ctt_organ_lang.term, ctt_organ.term)" on_demand="true" datatype="text" />
+  </columns>
+</report>
