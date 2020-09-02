@@ -3669,10 +3669,9 @@ class Rest_Controller extends Controller {
         // Sample must be for same user.
         $sampleCheck = RestObjects::$db->query('select count(*) from samples ' .
           "where id='" . $postArray['values']['sample_id'] .
-          "' and created_by_id=" . RestObjects::$clientUserId)
+          "' and deleted=false and created_by_id=" . RestObjects::$clientUserId)
           ->current()->count;
         if ($sampleCheck !== '1') {
-          kohana::log('debug', RestObjects::$db->last_query());
           RestObjects::$apiResponse->fail('Bad Request', 400, ['occurrence:sample_id' => 'Attempt to create occurrence in invalid sample.']);
         }
       }

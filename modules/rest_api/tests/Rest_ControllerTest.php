@@ -1248,7 +1248,26 @@ KEY;
       FALSE,
       ['values' => $data]
     );
-    $this->assertTrue($response['httpCode'] === 409, 'Duplicate external key did not return 409 Conflict response.');
+    $this->assertEquals(409, $response['httpCode'], 'Duplicate external key did not return 409 Conflict response.');
+  }
+
+  /**
+   * Test /occurrences POST in isolation.
+   */
+  public function testJwtOccurrencePostDeletedSample() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $db = new Database();
+    $db->query("update samples set deleted=true where id=$sampleId");
+    $data = [
+      'taxa_taxon_list_id' => 1,
+      'sample_id' => $sampleId,
+    ];
+    $response = $this->callService(
+      'occurrences',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertEquals(400, $response['httpCode'], 'Adding occurrence to deleted sample did not return 400 Bad request response.');
   }
 
   public function testProjects_authentication() {
