@@ -351,6 +351,7 @@ KEY;
       $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
       $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
     }
+    return $id;
   }
 
   /**
@@ -1066,11 +1067,15 @@ KEY;
   }
 
   public function testJwtLocationPost() {
-    $this->postTest('locations', [
+    $id = $this->postTest('locations', [
       'name' => 'Test location',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB'
     ], 'name');
+    $db = new Database();
+    $locationsWebsitesCount = $db->query("select count(*) from locations_websites where location_id=$id")
+      ->current()->count;
+    $this->assertEquals(1, $locationsWebsitesCount, 'No locations_websites record created for a location POST.');
   }
 
   /**

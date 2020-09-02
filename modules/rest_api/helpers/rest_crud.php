@@ -34,16 +34,25 @@ class rest_crud {
    */
   private static $submodelsForEntities = [
     'sample' => [
-      'samples' => 'parent_id',
-      'occurrences' => 'sample_id',
-      'media' => 'sample_id',
+      'samples' => ['fk' => 'parent_id'],
+      'occurrences' => ['fk' => 'sample_id'],
+      'media' => ['fk' => 'sample_id'],
     ],
     'occurrence' => [
-      'media' => 'occurrence_id',
+      'media' => ['fk' => 'occurrence_id'],
     ],
     'location' => [
-      'locations' => 'parent_id',
-      'media' => 'location_id',
+      'locations' => ['fk' => 'parent_id'],
+      'media' => ['fk' => 'location_id'],
+    ],
+  ];
+
+  /**
+   * Submodels which need to be enforced, e.g. to attach location to correct website.
+   */
+  private static $enforcedSubmodelsForEntities = [
+    'location' => [
+      'locations_website' => ['fk' => 'location_id', 'values' => ['website_id' => '{website_id}']],
     ],
   ];
 
@@ -276,26 +285,37 @@ SQL;
     foreach ($postObj['values'] as $field => $value) {
       $s['fields'][$field] = ['value' => $value];
     }
+    if (isset(self::$submodelsForEntities[$entity]) || isset(self::$enforcedSubmodelsForEntities[$entity])) {
+      $s['subModels'] = [];
+    }
     if (isset(self::$submodelsForEntities[$entity])) {
       $submodels = array_intersect_key(self::$submodelsForEntities[$entity], $postObj);
-      if (!isset($s['subModels'])) {
-        $s['subModels'] = [];
-      }
-      foreach ($submodels as $submodel => $fk) {
+      foreach ($submodels as $submodelTable => $submodelCfg) {
         foreach ($postObj[$submodel] as $obj) {
-          if ($submodel === 'occurrences') {
+          if ($submodelTable === 'occurrences') {
             $obj['values']['website_id'] = $websiteId;
           }
-          elseif ($submodel === 'media') {
+          elseif ($submodelTable === 'media') {
             // Media submodel doesn't need prefix for simplicity.
-            $submodel = "{$entity}_media";
+            $submodelTable = "{$entity}_media";
           }
-          $subModel = [
-            'fkId' => $fk,
-            'model' => self::convertNewToOldSubmission(inflector::singular($submodel), $obj, $websiteId),
+          $s['subModels'][] = [
+            'fkId' => $submodelCfg['fk'],
+            'model' => self::convertNewToOldSubmission(inflector::singular($submodelTable), $obj, $websiteId),
           ];
-          $s['subModels'][] = $subModel;
         }
+      }
+    }
+    if (isset(self::$enforcedSubmodelsForEntities[$entity])) {
+      foreach (self::$enforcedSubmodelsForEntities[$entity] as $submodelTable => $submodelCfg) {
+        $values = isset($submodelCfg['values']) ? $submodelCfg['values'] : [];
+        $values = array_map(function ($v) use ($websiteId) {
+          return $v === '{website_id}' ? $websiteId : $v;
+        }, $values);
+        $s['subModels'][] = [
+          'fkId' => $submodelCfg['fk'],
+          'model' => self::convertNewToOldSubmission(inflector::singular($submodelTable), ['values' => $values], $websiteId),
+        ];
       }
     }
     return $s;
