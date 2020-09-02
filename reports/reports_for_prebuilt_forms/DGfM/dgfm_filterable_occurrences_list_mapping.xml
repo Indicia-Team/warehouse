@@ -61,7 +61,7 @@
     <column name='source_id' on_demand="true" datatype="text" sql="o.website_id::varchar || '.' || o.survey_id::varchar" />
     <column name='sample_id' sql='o.sample_id' on_demand="true" datatype="integer" />
     <column name='taxon' sql="cttl.preferred_taxon" on_demand="true" datatype="species" />
-    <column name='common' display='Common name' sql="string_agg(cttl_common.taxon,',')" datatype='text' on_demand="true" aggregate="true"/>
+    <column name='common' display='Common name' sql="cttl_common.taxon" datatype='text' on_demand="true"/>
     <column name='family' display='Family' sql='cttl.family_taxon' on_demand="true" datatype='text' />
     <column name='order' display='Order' sql='cttl.order_taxon' on_demand="true" datatype='text' />
     <column name='taxon_group' sql='cttl.taxon_group' on_demand="true" datatype="text" />
