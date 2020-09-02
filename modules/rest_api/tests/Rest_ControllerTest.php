@@ -408,9 +408,15 @@ KEY;
     );
     $this->assertEquals(201, $response['httpCode']);
     $id = $response['response']['values']['id'];
+    $headers = $this->parseHeaders($response['headers']);
+    $this->assertTrue(array_key_exists('ETag', $headers), "$table POST does not return ETag.");
+    $insertedRecordETag = $headers['ETag'];
     // Now GET to check values stored OK.
     $storedObj = $this->callService("$table/$id");
     $this->assertResponseOk($storedObj, "/$table/$id GET");
+    $headers = $this->parseHeaders($storedObj['headers']);
+    $this->assertTrue(array_key_exists('ETag', $headers), "$table GET does not return ETag.");
+    $this->assertEquals($insertedRecordETag, $headers['ETag'], 'GET returns ETag which does not match expected');
     foreach ($exampleData as $field => $value) {
       $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
       $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
