@@ -6,10 +6,12 @@
     SELECT #columns#
     FROM indicia.taxon_media tm
     LEFT JOIN indicia.cache_taxa_taxon_lists cttl on cttl.taxon_meaning_id = tm.taxon_meaning_id 
-        and cttl.taxon_list_id = #taxon_list_id#
+        and cttl.taxon_list_id = #taxon_list_id# and preferred = true
     WHERE tm.path not like 'o_%' and tm.deleted=false
-    GROUP BY tm.path,cttl.preferred_taxon
   </query>
+  <order_bys>
+  	<order_by>tm.path,cttl.preferred_taxon</order_by>
+  </order_bys>
   <params>
     <param name='taxon_list_id' display='Taxon list' description='Taxon list for report to run against' datatype='integer'/>
   </params>
