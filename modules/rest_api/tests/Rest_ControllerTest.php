@@ -285,6 +285,29 @@ KEY;
     $this->assertTrue($response['httpCode'] === 401);
   }
 
+  public function testJwtHeaderCaseInsensitive() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // First POST to create.
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+        'comment' => 'A sample to delete',
+      ]]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    // Now GET to check values stored OK using manually set auth header in lowercase.
+    $this->authMethod = 'none';
+    $storedObj = $this->callService("samples/$id", FALSE, NULL, ['authorization: bearer ' . self::$jwt]);
+    $this->assertResponseOk($storedObj, "/samples/$id GET");
+  }
+
   /**
    * A generic test for POST end-points.
    *
@@ -387,7 +410,7 @@ KEY;
     $id = $response['response']['values']['id'];
     // Now GET to check values stored OK.
     $storedObj = $this->callService("$table/$id");
-    $this->assertResponseOk($storedObj, "/locations/$id GET");
+    $this->assertResponseOk($storedObj, "/$table/$id GET");
     foreach ($exampleData as $field => $value) {
       $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
       $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
@@ -1650,7 +1673,7 @@ KEY;
    * @param $session
    * @param $url
    */
-  private function setRequestHeader($session, $url, $additionalRequestHeader) {
+  private function setRequestHeader($session, $url, $additionalRequestHeader = []) {
     switch ($this->authMethod) {
       case 'hmacUser':
         $user = self::$userId;
@@ -1706,10 +1729,10 @@ KEY;
         break;
     }
     if (isset($authString)) {
-      curl_setopt($session, CURLOPT_HTTPHEADER, array_merge(
-        $additionalRequestHeader,
-        array("Authorization: $authString")
-      ));
+      $additionalRequestHeader[] = "Authorization: $authString";
+    }
+    if (count($additionalRequestHeader) > 0) {
+      curl_setopt($session, CURLOPT_HTTPHEADER, $additionalRequestHeader);
     }
   }
 
