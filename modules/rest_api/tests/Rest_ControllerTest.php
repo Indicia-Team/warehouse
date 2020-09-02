@@ -452,6 +452,9 @@ KEY;
     // Check it doesn't exist.
     $response = $this->callService("$table/$id");
     $this->assertEquals(404, $response['httpCode']);
+    // Delete it again - it should be not found.
+    $response = $this->callService("$table/$id", FALSE, NULL, [], 'DELETE');
+    $this->assertEquals(404, $response['httpCode']);
     // Delete an incorrect ID.
     $response = $this->callService("$table/999999", FALSE, NULL, [], 'DELETE');
     $this->assertEquals(404, $response['httpCode']);
@@ -1220,6 +1223,32 @@ KEY;
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
     ]);
+  }
+
+  /**
+   * Test behaviour around duplicate check with external key.
+   */
+  public function testJwtOccurrencePostExtKey() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $data = [
+      'taxa_taxon_list_id' => 1,
+      'sample_id' => $sampleId,
+      'external_key' => 123,
+    ];
+    $response = $this->callService(
+      'occurrences',
+      FALSE,
+      ['values' => $data]
+    );
+    $id = $response['response']['values']['id'];
+    $response = $this->callService(
+      'occurrences',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertTrue($response['httpCode'] === 409, 'Duplicate external key did not return 409 Conflict response.');
   }
 
   public function testProjects_authentication() {

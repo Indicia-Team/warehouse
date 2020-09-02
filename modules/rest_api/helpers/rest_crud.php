@@ -108,9 +108,7 @@ class rest_crud {
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Cannot POST with id to update, use PUT instead.']));
     }
     $obj = ORM::factory($entity);
-    if (!empty($values['survey_id']) && !empty($values['external_key'])) {
-      kohana::log('debug', 'Checking for duplicate external key');
-      // No need to check without survey ID in post as it will fail validation anyway.
+    if (in_array($entity, ['occurrence', 'sample']) && !empty($values['external_key'])) {
       self::checkDuplicateExternalKey($entity, $values);
     }
     self::submit($entity, $obj, $data);
@@ -248,7 +246,7 @@ SQL;
     $obj = ORM::factory($entity, $id);
     $proceed = TRUE;
     // Must exist and belong to the user.
-    if (!$obj->id) {
+    if (!$obj->id || $obj->deleted === 't') {
       $proceed = FALSE;
     }
     if ($proceed) {
@@ -291,7 +289,7 @@ SQL;
     if (isset(self::$submodelsForEntities[$entity])) {
       $submodels = array_intersect_key(self::$submodelsForEntities[$entity], $postObj);
       foreach ($submodels as $submodelTable => $submodelCfg) {
-        foreach ($postObj[$submodel] as $obj) {
+        foreach ($postObj[$submodelTable] as $obj) {
           if ($submodelTable === 'occurrences') {
             $obj['values']['website_id'] = $websiteId;
           }
@@ -333,7 +331,18 @@ SQL;
     $table = inflector::plural($entity);
     // Sample external key only needs to be unique within survey.
     // @todo Same for occurrences.
-    $extraFilter = $entity === 'sample' ? " and survey_id=$values[survey_id]" : '';
+    switch ($entity) {
+      case 'sample':
+        $extraFilter = " and survey_id=$values[survey_id]";
+        break;
+
+      case 'occurrence':
+        $extraFilter = " and website_id=$values[website_id]";
+        break;
+
+      default:
+        $extraFilter = '';
+    }
     $hit = RestObjects::$db
       ->query("select 1 from $table where external_key='$values[external_key]'$extraFilter")
       ->current();
