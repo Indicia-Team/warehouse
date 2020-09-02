@@ -3172,6 +3172,20 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Retrieves the authorization header (case insensitive).
+   *
+   * @return string
+   *   Authorization header or empty string if not present.
+   */
+  private function getAuthHeader() {
+    $headers = array_change_key_case(apache_request_headers());
+    if (array_key_exists('authorization', $headers)) {
+      return $headers['authorization'];
+    }
+    return '';
+  }
+
+  /**
    * Retrieves the Bearer access token from the Authoriztion header.
    *
    * @param bool $wantJwt
@@ -3181,9 +3195,9 @@ class Rest_Controller extends Controller {
    *   Auth token or empty string.
    */
   private function getBearerAuthToken($wantJwt = FALSE) {
-    $headers = apache_request_headers();
-    if (isset($headers['Authorization']) && strpos($headers['Authorization'], 'Bearer ') === 0) {
-      $token = substr($headers['Authorization'], 7);
+    $authHeader = $this->getAuthHeader();
+    if (stripos($authHeader, 'Bearer ') === 0) {
+      $token = substr($authHeader, 7);
       $isJwt = substr_count($token, '.') === 2;
       if ($isJwt === $wantJwt) {
         return $token;
@@ -3322,9 +3336,9 @@ class Rest_Controller extends Controller {
    * Attempts to authenticate using the HMAC client protocal.
    */
   private function authenticateUsingHmacClient() {
-    $headers = apache_request_headers();
-    if (isset($headers['Authorization']) &&  substr_count($headers['Authorization'], ':') === 3) {
-      list($u, $clientSystemId, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
+    $authHeader = $this->getAuthHeader();
+    if (substr_count($authHeader, ':') === 3) {
+      list($u, $clientSystemId, $h, $supplied_hmac) = explode(':', $authHeader);
       $config = Kohana::config('rest.clients');
       // @todo Should this be CLIENT not USER?
       if ($u === 'USER' && $h === 'HMAC' && array_key_exists($clientSystemId, $config)) {
@@ -3354,9 +3368,9 @@ class Rest_Controller extends Controller {
    * Attempts to authenticate using the HMAC website protocal.
    */
   private function authenticateUsingHmacWebsite() {
-    $headers = apache_request_headers();
-    if (isset($headers['Authorization']) && substr_count($headers['Authorization'], ':') === 3) {
-      list($u, $websiteId, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
+    $authHeader = $this->getAuthHeader();
+    if (substr_count($authHeader, ':') === 3) {
+      list($u, $websiteId, $h, $supplied_hmac) = explode(':', $authHeader);
       if ($u === 'WEBSITE_ID' && $h === 'HMAC') {
         // Input validation.
         if (!preg_match('/^\d+$/', $websiteId)) {
@@ -3389,12 +3403,11 @@ class Rest_Controller extends Controller {
    * Attempts to authenticate using the direct user protocal.
    */
   private function authenticateUsingDirectUser() {
-    $headers = apache_request_headers();
-    if (isset($headers['Authorization']) &&
-        substr_count($headers['Authorization'], ':') === 5) {
+    $authHeader = $this->getAuthHeader();
+    if (substr_count($authHeader, ':') === 5) {
       // 6 parts to authorisation required for user ID, website ID and password
       // pairs.
-      list($u, $userId, $w, $websiteId, $h, $password) = explode(':', $headers['Authorization']);
+      list($u, $userId, $w, $websiteId, $h, $password) = explode(':', $authHeader);
       if ($u !== 'USER_ID' || $w !== 'WEBSITE_ID' || $h !== 'SECRET') {
         return;
       }
@@ -3439,10 +3452,10 @@ class Rest_Controller extends Controller {
    * Attempts to authenticate using the direct client protocal.
    */
   private function authenticateUsingDirectClient() {
-    $headers = apache_request_headers();
     $config = Kohana::config('rest.clients');
-    if (isset($headers['Authorization']) && substr_count($headers['Authorization'], ':') === 3) {
-      list($u, $clientSystemId, $h, $secret) = explode(':', $headers['Authorization']);
+    $authHeader = $this->getAuthHeader();
+    if ($authHeader && substr_count($authHeader, ':') === 3) {
+      list($u, $clientSystemId, $h, $secret) = explode(':', $authHeader);
       if ($u !== 'USER' || $h !== 'SECRET') {
         return;
       }
@@ -3487,9 +3500,9 @@ class Rest_Controller extends Controller {
    * Attempts to authenticate using the direct website protocal.
    */
   private function authenticateUsingDirectWebsite() {
-    $headers = apache_request_headers();
-    if (isset($headers['Authorization']) && substr_count($headers['Authorization'], ':') === 3) {
-      list($u, $websiteId, $h, $password) = explode(':', $headers['Authorization']);
+    $authHeader = $this->getAuthHeader();
+    if (substr_count($authHeader, ':') === 3) {
+      list($u, $websiteId, $h, $password) = explode(':', $authHeader);
       if ($u !== 'WEBSITE_ID' || $h !== 'SECRET') {
         return;
       }
