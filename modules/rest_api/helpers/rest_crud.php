@@ -121,7 +121,7 @@ class rest_crud {
     $fields = self::$fieldsForEntitySelects[$entity];
     $joins = self::$joinsForEntitySelects[$entity];
     $qry = <<<SQL
-SELECT $fields
+SELECT t1.xmin, $fields
 FROM $table t1
 $joins
 WHERE t1.id=$id
@@ -130,6 +130,9 @@ AND t1.deleted=false;
 SQL;
     $row = RestObjects::$db->query($qry)->current();
     if ($row) {
+      // Transaction ID that last updated row is returned as ETag header.
+      header("ETag: $row->xmin");
+      unset($row->xmin);
       if (in_array($entity, self::$entitiesWithAttributes)) {
         // @todo Support for multi-value attributes.
         $qry = <<<SQL
@@ -179,9 +182,7 @@ SQL;
           $attrs["smpAttr:$attr->attribute_id"] = $val;
         }
         $row = array_merge((array) $row, $attrs);
-
       }
-
       RestObjects::$apiResponse->succeed(['values' => self::getValuesForResponse($row)]);
     }
     else {
