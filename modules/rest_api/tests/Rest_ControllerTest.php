@@ -734,7 +734,11 @@ KEY;
       FALSE,
       ['values' => $data]
     );
-    $this->assertTrue($response['httpCode'] === 409, 'Duplicate external key did not return 409 Conflict response.');
+    $this->assertEquals(409, $response['httpCode'], 'Duplicate external key did not return 409 Conflict response.');
+    $this->assertArrayHasKey('duplicate_of', $response['response']);
+    $this->assertArrayHasKey('id', $response['response']['duplicate_of']);
+    $this->assertArrayHasKey('href', $response['response']['duplicate_of']);
+    $this->assertEquals($id, $response['response']['duplicate_of']['id']);
     // In a diff survey, not considered a duplicate.
     $data['survey_id'] = 2;
     $response = $this->callService(
@@ -742,7 +746,7 @@ KEY;
       FALSE,
       ['values' => $data]
     );
-    $this->assertTrue($response['httpCode'] === 201, 'Duplicate external key in different survey not accepted.');
+    $this->assertEquals(201, $response['httpCode'], 'Duplicate external key in different survey not accepted.');
     // PUT with same external key should be OK.
     $response = $this->callService(
       "samples/$id",

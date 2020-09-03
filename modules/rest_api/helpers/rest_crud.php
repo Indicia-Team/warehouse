@@ -344,11 +344,14 @@ SQL;
         $extraFilter = '';
     }
     $hit = RestObjects::$db
-      ->query("select 1 from $table where external_key='$values[external_key]'$extraFilter")
+      ->query("select id from $table where external_key='$values[external_key]'$extraFilter")
       ->current();
-    kohana::log('debug', RestObjects::$db->last_query());
     if ($hit) {
-      RestObjects::$apiResponse->fail('Conflict', 409, 'Duplicate external_key would be created');
+      $href = url::base() . "index.php/services/rest/$table/$hit->id";
+      RestObjects::$apiResponse->fail('Conflict', 409, 'Duplicate external_key would be created', ['duplicate_of' => [
+        'id' => $hit->id,
+        'href' => $href,
+      ]]);
     }
   }
 
