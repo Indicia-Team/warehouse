@@ -62,6 +62,11 @@ class rest_crud {
    * @var array
    */
   private static $fieldsForEntitySelects = [
+    'location' => 't1.id, t1.name, t1.code, t1.parent_id, t1.centroid_sref, t1.centroid_sref_system, t1.created_on, ' .
+      't1.created_by_id, t1.updated_on, t1.updated_by_id, t1.comment, t1.external_key, t1.deleted, ' .
+      'st_astext(t1.centroid_geom), st_astext(t1.boundary_geom), t1.location_type_id, t1.public, ' .
+      'st_y(st_transform(st_centroid(t1.centroid_geom), 4326)) as lat, ' .
+      'st_y(st_transform(st_centroid(t1.centroid_geom), 4326)) as lon',
     'occurrence' => 't1.id, t1.sample_id, t1.determiner_id, t1.confidential, t1.created_on, t1.created_by_id, ' .
       't1.updated_on, t1.updated_by_id, t1.website_id, t1.external_key, t1.comment, t1.taxa_taxon_list_id, ' .
       't1.record_status, t1.verified_by_id, t1.verified_on, t1.downloaded_flag, t1.downloaded_on, ' .
@@ -75,11 +80,8 @@ class rest_crud {
       't1.date_type, t1.entered_sref, t1.entered_sref_system, t1.location_name, t1.external_key, t1.recorder_names, ' .
       't1.record_status, t1.input_form, t1.comment, ' .
       'st_y(st_transform(st_centroid(t1.geom), 4326)) as lat, st_y(st_transform(st_centroid(t1.geom), 4326)) as lon',
-    'location' => 't1.id, t1.name, t1.code, t1.parent_id, t1.centroid_sref, t1.centroid_sref_system, t1.created_on, ' .
-      't1.created_by_id, t1.updated_on, t1.updated_by_id, t1.comment, t1.external_key, t1.deleted, ' .
-      'st_astext(t1.centroid_geom), st_astext(t1.boundary_geom), t1.location_type_id, t1.public, ' .
-      'st_y(st_transform(st_centroid(t1.centroid_geom), 4326)) as lat, ' .
-      'st_y(st_transform(st_centroid(t1.centroid_geom), 4326)) as lon',
+    'survey' => 't1.id, t1.title, t1.description, t1.website_id,  t1.created_on, t1.created_by_id, t1.updated_on, ' .
+      't1.updated_by_id, t1.parent_id, t1.core_validation_rules',
   ];
 
   private static $joinsForEntitySelects = [
@@ -89,6 +91,7 @@ class rest_crud {
   ];
 
   private static $entitiesWithAttributes = [
+    'survey',
     'sample',
     'occurrence',
     'location',

@@ -664,6 +664,43 @@ class Rest_Controller extends Controller {
         ],
       ],
     ],
+    'surveys' => [
+      'get' => [
+        'subresources' => [
+          '{survey ID}' => [
+            'params' => [
+              'verbose' => [
+                'datatype' => 'integer',
+              ],
+            ],
+          ],
+        ],
+      ],
+      'post' => [
+        'options' => [
+          'segments' => TRUE,
+        ],
+        'subresources' => [
+          '' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'put' => [
+        'subresources' => [
+          '{survey ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+      'delete' => [
+        'subresources' => [
+          '{survey ID}' => [
+            'params' => [],
+          ],
+        ],
+      ],
+    ],
   ];
 
   /**
@@ -3712,7 +3749,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * API end-point to POST a sample to create.
+   * API end-point to POST a location to create.
    */
   public function locationsPost() {
     $segments = $this->uri->segment_array();
@@ -3721,6 +3758,9 @@ class Rest_Controller extends Controller {
     rest_crud::create('location', $postArray);
   }
 
+  /**
+   * API end-point to PUT an existing location to update.
+   */
   public function locationsPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
@@ -3764,7 +3804,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * API end-point to PUT to an existin sample to update.
+   * API end-point to PUT to an existing sample to update.
    */
   public function samplesPutId($id) {
     $put = file_get_contents('php://input');
@@ -3787,5 +3827,53 @@ class Rest_Controller extends Controller {
     // Delete as long as created by this user.
     rest_crud::delete('sample', $id, ['created_by_id' => RestObjects::$clientUserId]);
   }
+
+  /**
+   * End-point to GET a survey by ID.
+   *
+   * @param int $id
+   *   Survey ID.
+   */
+  public function surveysGetId($id) {
+    rest_crud::read('survey', $id);
+  }
+
+  /**
+   * API end-point to POST a survey to create.
+   */
+  public function surveysPost() {
+    $segments = $this->uri->segment_array();
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    rest_crud::create('survey', $postArray);
+  }
+
+  /**
+   * API end-point to PUT to an existing survey to update.
+   */
+  public function surveysPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    rest_crud::update('survey', $id, $putArray);
+  }
+
+  /**
+   * API end-point to DELETE a survey.
+   *
+   * Will only be deleted if the survey was created by the current user.
+   *
+   * @param int $id
+   *   Survey ID to delete.
+   *
+   * @todo Additional check that user is a site admin for website.
+   */
+  public function surveysDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('survey', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
 
 }
