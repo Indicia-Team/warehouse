@@ -391,7 +391,7 @@ KEY;
   }
 
   /**
-   * A generic test for entity end-points with a GET method.
+   * A generic test for entity end-points with a GET method for single items.
    *
    * @param string $table
    *   End-point (table) name.
@@ -422,6 +422,44 @@ KEY;
       $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
       $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
     }
+  }
+
+  /**
+   * A generic test for entity end-points with a GET method for a list.
+   *
+   * @param string $table
+   *   End-point (table) name.
+   * @param array $exampleData
+   *   Example values to POST then GET to check.
+   */
+  private function getListTest($table, $exampleData) {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // First POST to create.
+    $response = $this->callService(
+      $table,
+      FALSE,
+      ['values' => $exampleData]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    // Now GET to check values stored OK.
+    $surveys = $this->callService("$table");
+    $this->assertResponseOk($surveys, "/$table GET");
+    // Search for the one we posted.
+    $found = FALSE;
+    foreach ($surveys['response'] as $survey) {
+      $allMatch = $survey['values']['id'] === $id;
+      foreach ($exampleData as $field => $value) {
+        $allMatch = $allMatch && ($value === $survey['values'][$field]);
+      }
+      if ($allMatch) {
+        $found = TRUE;
+        // from foreach.
+        break;
+      }
+    }
+    $this->assertTrue($found, 'POSTed survey not found in retrieved list using GET.');
   }
 
   /**
@@ -1163,6 +1201,16 @@ KEY;
   public function testJwtSurveyGet() {
     $this->getTest('surveys',  [
       'title' => 'Test survey',
+      'description' => 'A test',
+    ]);
+  }
+
+  /**
+   * A basic test of /surveys GET.
+   */
+  public function testJwtSurveysGetList() {
+    $this->getListTest('surveys',  [
+      'title' => 'Test survey ' . microtime(TRUE),
       'description' => 'A test',
     ]);
   }

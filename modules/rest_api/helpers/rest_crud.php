@@ -134,6 +134,16 @@ class rest_crud {
     $fields = self::$fieldsForEntitySelects[$entity];
     $joins = isset(self::$joinsForEntitySelects[$entity]) ? self::$joinsForEntitySelects[$entity] : '';
     $createdByFilter = $userFilter ? 'AND t1.created_by_id=' . RestObjects::$clientUserId : '';
+    $sql =  <<<SQL
+SELECT t1.xmin, $fields
+FROM $table t1
+$joins
+WHERE t1.deleted=false
+$createdByFilter
+$extraFilter
+
+SQL;
+    kohana::log('debug', $sql);
     return <<<SQL
 SELECT t1.xmin, $fields
 FROM $table t1
