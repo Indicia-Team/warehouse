@@ -667,6 +667,13 @@ class Rest_Controller extends Controller {
     'surveys' => [
       'get' => [
         'subresources' => [
+          '' => [
+            'params' => [
+              'verbose' => [
+                'datatype' => 'integer',
+              ],
+            ],
+          ],
           '{survey ID}' => [
             'params' => [
               'verbose' => [
@@ -3875,13 +3882,20 @@ SQL;
   }
 
   /**
+   * End-point to GET a list of available surveys.
+   */
+  public function surveysGet() {
+    rest_crud::readList('survey', 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+  }
+
+  /**
    * End-point to GET a survey by ID.
    *
    * @param int $id
    *   Survey ID.
    */
   public function surveysGetId($id) {
-    rest_crud::read('survey', $id, 't1.website_id=' . RestObjects::$clientWebsiteId);
+    rest_crud::read('survey', $id, 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**

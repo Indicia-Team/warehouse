@@ -116,6 +116,61 @@ class rest_crud {
   }
 
   /**
+   * Builds the SQL required for a read operation.
+   *
+   * @param string $entity
+   *   Singular name of the entity being read.
+   * @param string $extraFilter
+   *   SQL for any additional filters required.
+   * @param bool $userFilter
+   *   Set to TRUE to restrict the output to rows where created_by_id is the
+   *   authenticated user.
+   *
+   * @return string
+   *   SQL statement.
+   */
+  private static function getReadSql($entity, $extraFilter, $userFilter) {
+    $table = inflector::plural($entity);
+    $fields = self::$fieldsForEntitySelects[$entity];
+    $joins = isset(self::$joinsForEntitySelects[$entity]) ? self::$joinsForEntitySelects[$entity] : '';
+    $createdByFilter = $userFilter ? 'AND t1.created_by_id=' . RestObjects::$clientUserId : '';
+    return <<<SQL
+SELECT t1.xmin, $fields
+FROM $table t1
+$joins
+WHERE t1.deleted=false
+$createdByFilter
+$extraFilter
+
+SQL;
+  }
+
+  /**
+   * Read (GET) operation for a list.
+   *
+   * @param string $entity
+   *   Entity name (singular).
+   * @param string $extraFilter
+   *   Additional filter SQL, e.g. where a website ID limit required.
+   * @param bool $userFilter
+   *   Should a filter on created_by_id be applied? Default TRUE.
+   *
+   * @todo Support for attribute values + verbose option.
+   * @todo Support for reading a survey structure including attribute metadata.
+   * @todo Add test case
+   */
+  public static function readList($entity, $extraFilter, $userFilter = TRUE) {
+    $qry = self::getReadSql($entity, $extraFilter, $userFilter);
+    $rows = RestObjects::$db->query($qry);
+    $r = [];
+    foreach ($rows as $row) {
+      unset($row->xmin);
+      $r[] = ['values' => (array) $row];
+    }
+    RestObjects::$apiResponse->succeed($r);
+  }
+
+  /**
    * Read (GET) operation.
    *
    * @param string $entity
@@ -124,21 +179,12 @@ class rest_crud {
    *   Record ID to read.
    * @param string $extraFilter
    *   Additional filter SQL, e.g. where a website ID limit required.
+   * @param bool $userFilter
+   *   Should a filter on created_by_id be applied? Default TRUE.
    */
-  public static function read($entity, $id, $extraFilter = '') {
-    $clientUserId = RestObjects::$clientUserId;
-    $table = inflector::plural($entity);
-    $fields = self::$fieldsForEntitySelects[$entity];
-    $joins = isset(self::$joinsForEntitySelects[$entity]) ? self::$joinsForEntitySelects[$entity] : '';
-    $qry = <<<SQL
-SELECT t1.xmin, $fields
-FROM $table t1
-$joins
-WHERE t1.id=$id
-AND t1.created_by_id=$clientUserId
-AND t1.deleted=false
-$extraFilter;
-SQL;
+  public static function read($entity, $id, $extraFilter = '', $userFilter = TRUE) {
+    $qry = self::getReadSql($entity, $extraFilter, $userFilter);
+    $qry .= "AND t1.id=$id";
     $row = RestObjects::$db->query($qry)->current();
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
