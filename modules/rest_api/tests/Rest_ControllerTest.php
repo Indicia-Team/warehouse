@@ -1138,6 +1138,121 @@ KEY;
     ]);
   }
 
+  public function testJwtSurveyPost() {
+    $id = $this->postTest('surveys', [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ], 'title');
+  }
+
+  /**
+   * Test /surveys PUT behaviour.
+   */
+  public function testJwtSurveyPut() {
+    $this->putTest('surveys',  [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ], [
+      'title' => 'Survey test updated',
+    ]);
+  }
+
+  /**
+   * A basic test of /surveys GET.
+   */
+  public function testJwtSurveyGet() {
+    $this->getTest('surveys',  [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ]);
+  }
+
+  /**
+   * Test DELETE for a survey.
+   */
+  public function testJwtSurveyDelete() {
+    $this->deleteTest('surveys',  [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ]);
+  }
+
+  public function testJwtSurveyPostPermissions() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data =  [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ];
+    $db = new Database();
+    // Should fail if we are not an admin.
+    $db->query('UPDATE users SET core_role_id=null WHERE id=1');
+    $response = $this->callService(
+      'surveys',
+      FALSE,
+      ['values' => $data]
+    );
+    // Should succeed if we are a site admin
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      ' VALUES (1, 1, 3, 1, now(), 1, now())');
+    $this->assertEquals(401, $response['httpCode']);
+    $response = $this->callService(
+      'surveys',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $db->query('DELETE FROM users_websites WHERE user_id=1 AND website_id=1');
+    // Should succeed if we are a core admin.
+    $db->query('UPDATE users SET core_role_id=1 WHERE id=1');
+    $response = $this->callService(
+      'surveys',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    // PUT should succeed initially.
+    $response = $this->callService(
+      "surveys/$id",
+      FALSE,
+      ['values' => $data],
+      [], 'PUT'
+    );
+    $this->assertEquals(200, $response['httpCode']);
+    // PUT should fail if we first hack the website ID to a different website.
+    $sql = <<<SQL
+INSERT INTO websites (title, created_on, created_by_id, updated_on, updated_by_id, url, password)
+VALUES ('additional', now(), 1, now(), 1, 'http://example.com', '1234567');
+UPDATE surveys SET website_id=(select max(id) FROM websites) WHERE id=$id;
+SQL;
+    $db->query($sql);
+    $response = $this->callService(
+      "surveys/$id",
+      FALSE,
+      ['values' => $data],
+      [], 'PUT'
+    );
+    $this->assertEquals(401, $response['httpCode']);
+  }
+
+  /**
+   * Testing fetching OPTIONS for surveys end-point.
+   */
+  public function testJwtSurveyOptions() {
+    $this->optionsTest('surveys');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtSurveyETags() {
+    $this->eTagsTest('surveys',  [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ]);
+  }
+
   /**
    * Create a sample we can add occurrences to.
    *
@@ -1212,7 +1327,7 @@ KEY;
   }
 
   /**
-   * Testing fetching OPTIONS for locations end-point.
+   * Testing fetching OPTIONS for occurrences end-point.
    */
   public function testJwtOccurrenceOptions() {
     $this->optionsTest('occurrences');

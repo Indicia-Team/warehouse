@@ -3805,6 +3805,8 @@ class Rest_Controller extends Controller {
 
   /**
    * API end-point to PUT to an existing sample to update.
+   *
+   * @todo Safety check it's from the correct website.
    */
   public function samplesPutId($id) {
     $put = file_get_contents('php://input');
@@ -3819,6 +3821,8 @@ class Rest_Controller extends Controller {
    *
    * @param int $id
    *   Sample ID to delete.
+   *
+   * @todo Safety check it's from the correct website.
    */
   public function samplesDeleteId($id) {
     if (empty(RestObjects::$clientUserId)) {
@@ -3829,22 +3833,69 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Check that authenticated user has admin access to the authenticated website.
+   *
+   * E.g. before CRUD operation on a privileged resource.
+   */
+  private function assertUserHasWebsiteAdminAccess() {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown.');
+    }
+    $websiteId = RestObjects::$clientWebsiteId;
+    $userId = RestObjects::$clientUserId;
+    $sql = <<<SQL
+SELECT u.id, u.core_role_id, uw.site_role_id
+FROM users u
+LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=$websiteId and uw.site_role_id=3
+WHERE u.id=$userId;
+SQL;
+    $user = RestObjects::$db->query($sql)->current();
+    if (!$user) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user not found.');
+    }
+    if (empty($user->site_role_id) && empty($user->core_role_id)) {
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'User does not have access to website.');
+    }
+  }
+
+  /**
+   * Simple check that a record's website ID is the authenticated one.
+   *
+   * E.g. before an UPDATE or DELETE.
+   */
+  private function assertRecordFromCurrentWebsite($table, $id) {
+    $websiteId = RestObjects::$clientWebsiteId;
+    $sql = <<<SQL
+SELECT count(*) FROM $table WHERE id=$id AND website_id=$websiteId;
+SQL;
+    $check = RestObjects::$db->query($sql)->current();
+    if ($check->count === '0') {
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Attempt to PUT or DELETE record from another website.');
+    }
+  }
+
+  /**
    * End-point to GET a survey by ID.
    *
    * @param int $id
    *   Survey ID.
    */
   public function surveysGetId($id) {
-    rest_crud::read('survey', $id);
+    rest_crud::read('survey', $id, 't1.website_id=' . RestObjects::$clientWebsiteId);
   }
 
   /**
    * API end-point to POST a survey to create.
    */
   public function surveysPost() {
+    $this->assertUserHasWebsiteAdminAccess();
     $segments = $this->uri->segment_array();
     $post = file_get_contents('php://input');
     $postArray = json_decode($post, TRUE);
+    // Autofill website ID.
+    if (isset($postArray['values'])) {
+      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
+    }
     rest_crud::create('survey', $postArray);
   }
 
@@ -3852,6 +3903,8 @@ class Rest_Controller extends Controller {
    * API end-point to PUT to an existing survey to update.
    */
   public function surveysPutId($id) {
+    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertRecordFromCurrentWebsite('surveys', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
     rest_crud::update('survey', $id, $putArray);
@@ -3864,13 +3917,10 @@ class Rest_Controller extends Controller {
    *
    * @param int $id
    *   Survey ID to delete.
-   *
-   * @todo Additional check that user is a site admin for website.
    */
   public function surveysDeleteId($id) {
-    if (empty(RestObjects::$clientUserId)) {
-      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
-    }
+    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertRecordFromCurrentWebsite('surveys', $id);
     // Delete as long as created by this user.
     rest_crud::delete('survey', $id, ['created_by_id' => RestObjects::$clientUserId]);
   }

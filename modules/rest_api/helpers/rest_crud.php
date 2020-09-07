@@ -85,9 +85,7 @@ class rest_crud {
   ];
 
   private static $joinsForEntitySelects = [
-    'sample' => '',
     'occurrence' => 'JOIN cache_taxa_taxon_lists t2 on t2.id=t1.taxa_taxon_list_id',
-    'location' => '',
   ];
 
   private static $entitiesWithAttributes = [
@@ -124,19 +122,22 @@ class rest_crud {
    *   Entity name (singular).
    * @param int $id
    *   Record ID to read.
+   * @param string $extraFilter
+   *   Additional filter SQL, e.g. where a website ID limit required.
    */
-  public static function read($entity, $id) {
+  public static function read($entity, $id, $extraFilter = '') {
     $clientUserId = RestObjects::$clientUserId;
     $table = inflector::plural($entity);
     $fields = self::$fieldsForEntitySelects[$entity];
-    $joins = self::$joinsForEntitySelects[$entity];
+    $joins = isset(self::$joinsForEntitySelects[$entity]) ? self::$joinsForEntitySelects[$entity] : '';
     $qry = <<<SQL
 SELECT t1.xmin, $fields
 FROM $table t1
 $joins
 WHERE t1.id=$id
 AND t1.created_by_id=$clientUserId
-AND t1.deleted=false;
+AND t1.deleted=false
+$extraFilter;
 SQL;
     $row = RestObjects::$db->query($qry)->current();
     if ($row) {
