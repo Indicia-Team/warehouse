@@ -3873,10 +3873,19 @@ SQL;
   private function assertRecordFromCurrentWebsite($table, $id) {
     $websiteId = RestObjects::$clientWebsiteId;
     $sql = <<<SQL
-SELECT count(*) FROM $table WHERE id=$id AND website_id=$websiteId;
+SELECT count(*) FROM $table WHERE deleted=false AND id=$id AND website_id=$websiteId;
 SQL;
     $check = RestObjects::$db->query($sql)->current();
     if ($check->count === '0') {
+      // Determine if record missing or permissions so we can return correct
+      // error.
+      $sql = <<<SQL
+SELECT count(*) FROM $table WHERE deleted=false AND id=$id
+SQL;
+      $check = RestObjects::$db->query($sql)->current();
+      if ($check->count === '0') {
+        RestObjects::$apiResponse->fail('Not Found', 404, 'Attempt to DELETE missing or already deleted record.');
+      }
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Attempt to PUT or DELETE record from another website.');
     }
   }

@@ -239,7 +239,8 @@ SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type,
 FROM {$entity}_attribute_values av
 JOIN {$entity}_attributes a on a.id=av.{$entity}_attribute_id and a.deleted=false
 LEFT JOIN cache_termlists_terms t on a.data_type='L' and t.id=av.int_value
-WHERE av.deleted=false;
+WHERE av.deleted=false
+AND av.{$entity}_id=$id;
 SQL;
         $attrValues = RestObjects::$db->query($qry);
         $attrs = [];
