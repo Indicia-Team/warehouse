@@ -3889,7 +3889,6 @@ SQL;
    */
   public function surveysPost() {
     $this->assertUserHasWebsiteAdminAccess();
-    $segments = $this->uri->segment_array();
     $post = file_get_contents('php://input');
     $postArray = json_decode($post, TRUE);
     // Autofill website ID.
