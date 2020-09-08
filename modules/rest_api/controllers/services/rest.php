@@ -3000,8 +3000,15 @@ class Rest_Controller extends Controller {
     // Get the output, setting the option to load a pg result object rather
     // than populated array unless we are going to cache the result in which
     // case we need it all.
-    $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml',
-      $params, !empty($this->resourceOptions['cached']));
+    try {
+      $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml',
+        $params, !empty($this->resourceOptions['cached']));
+    }
+    catch (Exception $e) {
+      $code = (substr($e->getMessage(), 0, 21) === 'Unable to find report') ? 404 : 500;
+      $status = ($code === 404) ? 'Not Found' : 'Internal Server Error';
+      RestObjects::$apiResponse->fail($status, $code, $e->getMessage());
+    }
     // Include count query results if not already known from a previous
     // request.
     $output['count'] = empty($_GET['known_count']) ? $this->reportEngine->recordCount() : $_GET['known_count'];

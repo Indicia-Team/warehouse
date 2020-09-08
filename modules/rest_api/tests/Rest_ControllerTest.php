@@ -1680,6 +1680,13 @@ SQL;
     $this->checkReportInReponse($response['response'], 'filterable_explore_list');
   }
 
+  public function testMissingReportFile() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService('reports/some_random_report_name.xml', []);
+    $this->assertEquals(404, $response['httpCode'], 'Request for a missing report does not return 404.');
+  }
+
   public function testReportParams_get() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportParams_get");
 
@@ -1758,12 +1765,16 @@ SQL;
   /**
    * Tests authentication against a resource, by passing incorrect user or secret, then
    * finally passing the correct details to check a valid response returns.
+   *
    * @param $resource
-   * @param string $user User identifier, either client system ID, user ID or website ID.
-   * @param string $secret Secret or password to go with the $user.
-   * @param array $query Query parameters to pass in the URL
+   * @param string $user
+   *   User identifier, either client system ID, user ID or website ID.
+   * @param string $secret
+   *   Secret or password to go with the $user.
+   * @param array $query
+   *   Query parameters to pass in the URL
    */
-  private function checkResourceAuthentication($resource, $query = array()) {
+  private function checkResourceAuthentication($resource, $query = []) {
     $correctClientUserId = self::$clientUserId;
     $correctWebsiteId = self::$websiteId;
     $correctUserId = self::$userId;
