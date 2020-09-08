@@ -3369,6 +3369,14 @@ class Rest_Controller extends Controller {
         kohana::log('debug', 'Token expired');
         RestObjects::$apiResponse->fail('Unauthorized', 401);
       }
+      catch (ErrorException $e) {
+        if (substr($e->getMessage(), 0, 16) === 'openssl_verify()') {
+          kohana::log('debug', 'Public key format incorrect.');
+          RestObjects::$apiResponse->fail('Internal Server Error', 500);
+        }
+        // Fallback.
+        throw $e;
+      }
       if (isset($payloadValues['email_verified']) && !$payloadValues['email_verified']) {
         kohana::log('debug', 'Payload email unverified');
         RestObjects::$apiResponse->fail('Unauthorized', 401);

@@ -235,7 +235,7 @@ KEY;
     return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
   }
 
-  public function testJwt() {
+  public function testJwtxx() {
     $this->authMethod = 'jwtUser';
     $cache = Cache::instance();
     $cacheKey = 'website-by-url-' . preg_replace('/[^0-9a-zA-Z]/', '', 'http://www.indicia.org.uk');
@@ -251,6 +251,18 @@ KEY;
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
+    // Make sure there is invalid public key stored.
+    $db = new Database();
+    $db->update(
+      'websites',
+      array('public_key' => 'INVALID!!!'),
+      array('id' => 1)
+    );
+    $cache->delete($cacheKey);
+    // Make an otherwise valid call - should be unauthorised.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService('reports/library/months/filterable_species_counts.xml');
+    $this->assertTrue($response['httpCode'] === 500);
     // Store the public key so Indicia can check signed requests.
     $db = new Database();
     $db->update(
