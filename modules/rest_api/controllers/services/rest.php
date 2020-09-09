@@ -3422,7 +3422,6 @@ class Rest_Controller extends Controller {
     if (substr_count($authHeader, ':') === 3) {
       list($u, $clientSystemId, $h, $supplied_hmac) = explode(':', $authHeader);
       $config = Kohana::config('rest.clients');
-      // @todo Should this be CLIENT not USER?
       if ($u === 'USER' && $h === 'HMAC' && array_key_exists($clientSystemId, $config)) {
         $protocol = $this->isHttps ? 'https' : 'http';
         $request_url = "$protocol://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";

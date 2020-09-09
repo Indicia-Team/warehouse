@@ -241,7 +241,6 @@ SQL;
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $qry .= "AND t1.id=$id";
     $row = RestObjects::$db->query($qry)->current();
-    kohana::log('debug', $qry);
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
       header("ETag: $row->xmin");
