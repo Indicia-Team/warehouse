@@ -32,7 +32,7 @@ class rest_crud {
    *
    * @var array
    */
-  private static $submodelsForEntities = [
+  private static $subModelsForEntities = [
     'sample' => [
       'samples' => ['fk' => 'parent_id'],
       'occurrences' => ['fk' => 'sample_id'],
@@ -54,6 +54,37 @@ class rest_crud {
     'location' => [
       'locations_website' => ['fk' => 'location_id', 'values' => ['website_id' => '{website_id}']],
     ],
+    'sample_attribute' => [
+      'sample_attributes_website' => [
+        'fk' => 'sample_attribute_id',
+        'values' => [
+          'website_id' => '{website_id}',
+        ],
+      ],
+    ],
+    'occurrence_attribute' => [
+      'occurrence_attributes_website' => [
+        'fk' => 'occurrence_attribute_id',
+        'values' => [
+          'website_id' => '{website_id}',
+        ],
+      ],
+    ]
+  ];
+
+  private static $enforcedValuesOnCreate = [
+    'location' => [
+      // Cannot create a public location via API.
+      'public' => 'f',
+    ],
+    'occurrence_attributes' => [
+      // Cannot create a public attribute via API.
+      'public' => 'f',
+    ],
+    'sample_attributes' => [
+      // Cannot create a public attribute via API.
+      'public' => 'f',
+    ],
   ];
 
   /**
@@ -74,6 +105,10 @@ class rest_crud {
       't1.sensitivity_precision, t1.release_status, t1.record_substatus, t1.record_decision_source, t1.import_guid, ' .
       't1.metadata, t2.id as taxa_taxon_list_id, t2.taxon, t2.preferred_taxon, t2.default_common_name, ' .
       't2.taxon_group, t2.external_key as taxa_taxon_list_external_key',
+    'occurrence_attribute' => 't1.id, t1.caption, t1.caption_i18n, t1.description, t1.description_i18n, t1.data_type, ' .
+      't1.created_on, t1.created_by_id, t1.updated_on, t1.updated_by_id, t1.validation_rules, t1.termlist_id, ' .
+      't1.system_function, t1.term_name, t1.term_identifier, t1.allow_ranges, t1.unit, t1.image_path, ' .
+      't2.restrict_to_survey_id, t2.validation_rules as survey_validation_rules',
     'sample' => 't1.id, t1.survey_id, t1.location_id, t1.date_start, t1.date_end, t1.sample_method_id, ' .
       'st_astext(geom) as geom, t1.parent_id, t1.group_id, t1.privacy_precision, t1.verified_by_id, ' .
       't1.verified_on, t1.licence_id, t1.created_on, t1.created_by_id, t1.updated_on, t1.updated_by_id, ' .
@@ -82,10 +117,17 @@ class rest_crud {
       'st_y(st_transform(st_centroid(t1.geom), 4326)) as lat, st_y(st_transform(st_centroid(t1.geom), 4326)) as lon',
     'survey' => 't1.id, t1.title, t1.description, t1.website_id,  t1.created_on, t1.created_by_id, t1.updated_on, ' .
       't1.updated_by_id, t1.parent_id, t1.core_validation_rules',
+    'sample_attribute' => 't1.id, t1.caption, t1.caption_i18n, t1.description, t1.description_i18n, t1.data_type, ' .
+       't1.created_on, t1.created_by_id, t1.updated_on, t1.updated_by_id, t1.validation_rules, t1.termlist_id, ' .
+       't1.applies_to_location, t1.applies_to_recorder, t1.system_function, t1.term_name, t1.term_identifier, ' .
+       't1.allow_ranges, t1.unit, t1.image_path, ' .
+       't2.restrict_to_survey_id, t2.validation_rules as survey_validation_rules',
   ];
 
   private static $joinsForEntitySelects = [
     'occurrence' => 'JOIN cache_taxa_taxon_lists t2 on t2.id=t1.taxa_taxon_list_id',
+    'occurrence_attribute' => 'JOIN occurrence_attributes_websites t2 on t2.occurrence_attribute_id=t1.id',
+    'sample_attribute' => 'JOIN sample_attributes_websites t2 on t2.sample_attribute_id=t1.id',
   ];
 
   private static $entitiesWithAttributes = [
@@ -111,6 +153,9 @@ class rest_crud {
     $obj = ORM::factory($entity);
     if (in_array($entity, ['occurrence', 'sample']) && !empty($values['external_key'])) {
       self::checkDuplicateExternalKey($entity, $values);
+    }
+    if (isset(self::$enforcedValuesOnCreate[$entity])) {
+      $data['values'] = array_merge($data['values'], self::$enforcedValuesOnCreate[$entity]);
     }
     self::submit($entity, $obj, $data);
   }
@@ -196,6 +241,7 @@ SQL;
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $qry .= "AND t1.id=$id";
     $row = RestObjects::$db->query($qry)->current();
+    kohana::log('debug', $qry);
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
       header("ETag: $row->xmin");
@@ -306,7 +352,7 @@ SQL;
   public static function delete($entity, $id, array $preconditions = []) {
     $obj = ORM::factory($entity, $id);
     $proceed = TRUE;
-    // Must exist and belong to the user.
+    // Must exist and match preconditions (e.g. belong to user).
     if (!$obj->id || $obj->deleted === 't') {
       $proceed = FALSE;
     }
@@ -322,6 +368,60 @@ SQL;
       http_response_code(204);
     } else {
       RestObjects::$apiResponse->fail('Not found', 404);
+    }
+  }
+
+  private static function includeSubmodelsFromPostObj($entity, array $postObj, $websiteId, &$s) {
+    if (isset(self::$subModelsForEntities[$entity])) {
+      $subModels = array_intersect_key(self::$subModelsForEntities[$entity], $postObj);
+      foreach ($subModels as $subModelTable => $subModelCfg) {
+        foreach ($postObj[$subModelTable] as $obj) {
+          if ($subModelTable === 'occurrences') {
+            $obj['values']['website_id'] = $websiteId;
+          }
+          elseif ($subModelTable === 'media') {
+            // Media submodel doesn't need prefix for simplicity.
+            $subModelTable = "{$entity}_media";
+          }
+          $s['subModels'][] = [
+            'fkId' => $subModelCfg['fk'],
+            'model' => self::convertNewToOldSubmission(inflector::singular($subModelTable), $obj, $websiteId),
+          ];
+        }
+      }
+    }
+  }
+
+  private static function includeEnforcedSubmodels($entity, array $postObj, $websiteId, &$s) {
+    if (isset(self::$enforcedSubmodelsForEntities[$entity])) {
+      foreach (self::$enforcedSubmodelsForEntities[$entity] as $subModelTable => $subModelCfg) {
+        $subModelEntity = inflector::singular($subModelTable);
+        $values = isset($subModelCfg['values']) ? $subModelCfg['values'] : [];
+        $values = array_map(function ($v) use ($websiteId) {
+          // Default value as supplied, or replace {website_id} token.
+          return $v === '{website_id}' ? $websiteId : $v;;
+        }, $values);
+        $subModelSubmission = self::convertNewToOldSubmission($subModelEntity, ['values' => $values], $websiteId);
+        // Are there already submodels for this entity in the post? If so merge
+        // enforced values into them.
+        $found = FALSE;
+        foreach ($s['subModels'] as $postedSubModel) {
+          if ($postedSubModel['model']['id'] === $subModelEntity) {
+            $found = TRUE;
+            $postedSubModel['model']['fields'] = array_merge(
+              $postedSubModel['model']['fields'],
+              $subModelSubmission['fields'],
+            );
+          }
+        }
+        if (!$found) {
+          // SubModel not included in submission so we need to enforce it.
+          $s['subModels'][] = [
+            'fkId' => $subModelCfg['fk'],
+            'model' => $subModelSubmission,
+          ];
+        }
+      }
     }
   }
 
@@ -344,39 +444,11 @@ SQL;
     foreach ($postObj['values'] as $field => $value) {
       $s['fields'][$field] = ['value' => $value];
     }
-    if (isset(self::$submodelsForEntities[$entity]) || isset(self::$enforcedSubmodelsForEntities[$entity])) {
+    if (isset(self::$subModelsForEntities[$entity]) || isset(self::$enforcedSubmodelsForEntities[$entity])) {
       $s['subModels'] = [];
     }
-    if (isset(self::$submodelsForEntities[$entity])) {
-      $submodels = array_intersect_key(self::$submodelsForEntities[$entity], $postObj);
-      foreach ($submodels as $submodelTable => $submodelCfg) {
-        foreach ($postObj[$submodelTable] as $obj) {
-          if ($submodelTable === 'occurrences') {
-            $obj['values']['website_id'] = $websiteId;
-          }
-          elseif ($submodelTable === 'media') {
-            // Media submodel doesn't need prefix for simplicity.
-            $submodelTable = "{$entity}_media";
-          }
-          $s['subModels'][] = [
-            'fkId' => $submodelCfg['fk'],
-            'model' => self::convertNewToOldSubmission(inflector::singular($submodelTable), $obj, $websiteId),
-          ];
-        }
-      }
-    }
-    if (isset(self::$enforcedSubmodelsForEntities[$entity])) {
-      foreach (self::$enforcedSubmodelsForEntities[$entity] as $submodelTable => $submodelCfg) {
-        $values = isset($submodelCfg['values']) ? $submodelCfg['values'] : [];
-        $values = array_map(function ($v) use ($websiteId) {
-          return $v === '{website_id}' ? $websiteId : $v;
-        }, $values);
-        $s['subModels'][] = [
-          'fkId' => $submodelCfg['fk'],
-          'model' => self::convertNewToOldSubmission(inflector::singular($submodelTable), ['values' => $values], $websiteId),
-        ];
-      }
-    }
+    self::includeSubmodelsFromPostObj($entity, $postObj, $websiteId, $s);
+    self::includeEnforcedSubmodels($entity, $postObj, $websiteId, $s);
     return $s;
   }
 
@@ -476,13 +548,13 @@ SQL;
       'href' => $href,
     ];
     // Recursively process sub-model info.
-    if (!empty(self::$submodelsForEntities[$entity]) && !empty($responseMetadata['children'])) {
+    if (!empty(self::$subModelsForEntities[$entity]) && !empty($responseMetadata['children'])) {
       foreach ($responseMetadata['children'] as $child) {
         $subTable = inflector::plural($child['model']);
         if (preg_match('/_media$/', $subTable)) {
           $subTable = 'media';
         }
-        if (array_key_exists($subTable, self::$submodelsForEntities[$entity])) {
+        if (array_key_exists($subTable, self::$subModelsForEntities[$entity])) {
           if (!isset($r[$subTable])) {
             $r[$subTable] = [];
           }

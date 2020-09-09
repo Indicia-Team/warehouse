@@ -223,24 +223,6 @@ class Rest_Controller extends Controller {
   private $clientSystemId;
 
   /**
-   * The client's website ID (i.e. the caller).
-   *
-   * Only set if authenticated against the websites table.
-   *
-   * @var string
-   */
-  private $clientWebsiteId;
-
-  /**
-   * The client's user ID (i.e. the caller)
-   *
-   * Only set if authenticated against the users table.
-   *
-   * @var string
-   */
-  private $clientUserId;
-
-  /**
    * The latest API major version number. Unversioned calls will map to this.
    *
    * @var int
@@ -684,27 +666,64 @@ class Rest_Controller extends Controller {
         ],
       ],
       'post' => [
-        'options' => [
-          'segments' => TRUE,
-        ],
         'subresources' => [
-          '' => [
-            'params' => [],
-          ],
+          '' => [],
         ],
       ],
       'put' => [
         'subresources' => [
-          '{survey ID}' => [
-            'params' => [],
-          ],
+          '{survey ID}' => [],
         ],
       ],
       'delete' => [
         'subresources' => [
-          '{survey ID}' => [
-            'params' => [],
-          ],
+          '{survey ID}' => [],
+        ],
+      ],
+    ],
+    'sample-attributes' => [
+      'get' => [
+        'subresources' => [
+          '' => [],
+          '{attribute ID}' => [],
+        ],
+      ],
+      'post' => [
+        'subresources' => [
+          '' => [],
+        ],
+      ],
+      'put' => [
+        'subresources' => [
+          '{survey ID}' => [],
+        ],
+      ],
+      'delete' => [
+        'subresources' => [
+          '{survey ID}' => [],
+        ],
+      ],
+    ],
+    'occurrence-attributes' => [
+      'get' => [
+        'subresources' => [
+          '' => [],
+          '{attribute ID}' => [],
+        ],
+      ],
+      'post' => [
+        'subresources' => [
+          '' => [],
+        ],
+      ],
+      'put' => [
+        'subresources' => [
+          '{survey ID}' => [],
+        ],
+      ],
+      'delete' => [
+        'subresources' => [
+          '{survey ID}' => [],
         ],
       ],
     ],
@@ -2783,23 +2802,25 @@ class Rest_Controller extends Controller {
     }
     // Check through the known list of parameters to ensure data formats are
     // correct and required parameters are provided.
-    foreach ($thisMethod['params'] as $paramName => $paramDef) {
-      if (!empty($paramDef['required']) && empty($this->request[$paramName])) {
-        RestObjects::$apiResponse->fail('Bad request', 400, "Missing $paramName parameter");
-      }
-      if (!empty($this->request[$paramName])) {
-        $datatype = $paramDef['datatype'];
-        // If an array datatype, attempt to decode the JSON array parameter. If
-        // not JSON, convert parameter value to the only element in an array.
-        if (preg_match('/\[\]$/', $paramDef['datatype'])) {
-          $decoded = json_decode($this->request[$paramName]);
-          $this->request[$paramName] = $decoded && is_array($decoded) ? $decoded : [$this->request[$paramName]];
-          foreach ($this->request[$paramName] as &$value) {
-            $this->checkParamDatatype($paramName, $value, $paramDef);
-          }
+    if (isset($thisMethod['params'])) {
+      foreach ($thisMethod['params'] as $paramName => $paramDef) {
+        if (!empty($paramDef['required']) && empty($this->request[$paramName])) {
+          RestObjects::$apiResponse->fail('Bad request', 400, "Missing $paramName parameter");
         }
-        else {
-          $this->checkParamDatatype($paramName, $this->request[$paramName], $paramDef);
+        if (!empty($this->request[$paramName])) {
+          $datatype = $paramDef['datatype'];
+          // If an array datatype, attempt to decode the JSON array parameter. If
+          // not JSON, convert parameter value to the only element in an array.
+          if (preg_match('/\[\]$/', $paramDef['datatype'])) {
+            $decoded = json_decode($this->request[$paramName]);
+            $this->request[$paramName] = $decoded && is_array($decoded) ? $decoded : [$this->request[$paramName]];
+            foreach ($this->request[$paramName] as &$value) {
+              $this->checkParamDatatype($paramName, $value, $paramDef);
+            }
+          }
+          else {
+            $this->checkParamDatatype($paramName, $this->request[$paramName], $paramDef);
+          }
         }
       }
     }
@@ -2954,6 +2975,7 @@ class Rest_Controller extends Controller {
    */
   private function loadReportFromDb($report, array $params) {
     $this->loadReportEngine();
+    $filter = [];
     // @todo Apply permissions for user or website & write tests
     // load the filter associated with the project ID
     if (isset($this->clientSystemId)) {
@@ -2966,7 +2988,7 @@ class Rest_Controller extends Controller {
       if (!empty($_GET['filter_id'])) {
         $filter = $this->getPermissionsFilterDefinition();
       }
-      else {
+      elseif (!empty($this->resourceOptions['limit_to_own_data'])) {
         // Default filter - the user's records for this website only.
         $filter = array(
           'website_list' => RestObjects::$clientWebsiteId,
@@ -3274,11 +3296,10 @@ class Rest_Controller extends Controller {
           $data = $this->cache->get($tokens[0]);
           if (preg_match('/^USER_ID:(?P<user_id>\d+):WEBSITE_ID:(?P<website_id>\d+)$/', $data, $matches)) {
             RestObjects::$clientWebsiteId = $matches['website_id'];
-            // If option limit_to_own_data set, then only allow access to own
-            // records.
-            if (!empty($this->resourceOptions['limit_to_own_data'])) {
-              RestObjects::$clientUserId = $matches['user_id'];
-            }
+            RestObjects::$clientUserId = $matches['user_id'];
+            // Pass through to ORM.
+            global $remoteUserId;
+            $remoteUserId = RestObjects::$clientUserId;
             $this->authenticated = TRUE;
           }
         }
@@ -3387,6 +3408,8 @@ class Rest_Controller extends Controller {
       $this->checkWebsiteUser($website->id, $payloadValues['http://indicia.org.uk/user:id']);
       RestObjects::$clientWebsiteId = $website->id;
       RestObjects::$clientUserId = $payloadValues['http://indicia.org.uk/user:id'];
+      global $remoteUserId;
+      $remoteUserId = RestObjects::$clientUserId;
       $this->authenticated = TRUE;
     }
   }
@@ -3493,11 +3516,11 @@ class Rest_Controller extends Controller {
     }
     $auth = new Auth();
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
-      // If option limit_to_own_data set, then only allow access to own records.
-      if (!empty($this->resourceOptions['limit_to_own_data'])) {
-        RestObjects::$clientUserId = $userId;
-      }
       RestObjects::$clientWebsiteId = $websiteId;
+      RestObjects::$clientUserId = $userId;
+      // Pass through to ORM.
+      global $remoteUserId;
+      $remoteUserId = $userId;
       // @todo Is this user a member of the website?
       $this->authenticated = TRUE;
     }
@@ -3884,12 +3907,21 @@ SQL;
    * Simple check that a record's website ID is the authenticated one.
    *
    * E.g. before an UPDATE or DELETE.
+   *
+   * @param string $table
+   *   Table name.
+   * @param int $id
+   *   Record ID.
+   * @param string $sql
+   *   Pass SQL for check, only required if not standard.
    */
-  private function assertRecordFromCurrentWebsite($table, $id) {
+  private function assertRecordFromCurrentWebsite($table, $id, $sql = NULL) {
     $websiteId = RestObjects::$clientWebsiteId;
-    $sql = <<<SQL
-SELECT count(*) FROM $table WHERE deleted=false AND id=$id AND website_id=$websiteId;
+    if (!$sql) {
+      $sql = <<<SQL
+SELECT COUNT(*) FROM $table WHERE deleted=false AND id=$id AND website_id=$websiteId;
 SQL;
+    }
     $check = RestObjects::$db->query($sql)->current();
     if ($check->count === '0') {
       // Determine if record missing or permissions so we can return correct
@@ -3958,8 +3990,192 @@ SQL;
   public function surveysDeleteId($id) {
     $this->assertUserHasWebsiteAdminAccess();
     $this->assertRecordFromCurrentWebsite('surveys', $id);
-    // Delete as long as created by this user.
-    rest_crud::delete('survey', $id, ['created_by_id' => RestObjects::$clientUserId]);
+    // Delete - no need to check user as admin of website.
+    rest_crud::delete('survey', $id);
+  }
+
+  /**
+   * Assert that a sample or occurrence attribute is from the current website.
+   *
+   * Also checks the attribute is not public. Therefore access only granted if
+   * the attribute is unique to the authorised website.
+   *
+   * @param string $table
+   *   Table name.
+   * @param int $id
+   *   Record ID.
+   */
+  private function assertAttributeFromCurrentWebsite($table, $id) {
+    $entity = inflector::singular($table);
+    $websiteId = RestObjects::$clientWebsiteId;
+    $checkSql = <<<SQL
+SELECT COUNT(a.*) FROM $table a
+JOIN {$table}_websites aw ON aw.{$entity}_id=a.id AND aw.website_id=$websiteId AND aw.deleted=false
+WHERE a.deleted=false AND a.id=$id AND a.public=false;
+SQL;
+    $this->assertRecordFromCurrentWebsite($table, $id, $checkSql);
+  }
+
+  /**
+   * Assert that an attribute being deleted or updated has no values.
+   *
+   * @param string $table
+   *   Table name.
+   * @param int $id
+   *   Record ID.
+   */
+  private function assertAttributeHasNoValues($table, $id) {
+    $entity = inflector::singular($table);
+    $checkSql = <<<SQL
+SELECT id FROM {$entity}_values WHERE {$entity}_id=$id AND deleted=false LIMIT 1;
+SQL;
+    if (RestObjects::$db->query($checkSql)->current()) {
+      RestObjects::$apiResponse->fail('Forbidden', 403, 'Attempt to DELETE attribute with values.');
+    }
+  }
+
+  /**
+   * Check if a PUT attribute alters the type.
+   *
+   * If so we want to disallow if any existing data.
+   *
+   * @todo TEST
+   */
+  private function attributeTypeChanging($table, $id, $putArray) {
+    if (!empty($putArray['values']['data_type'])) {
+      $newType = $putArray['values']['data_type'];
+      $checkSql = <<<SQL
+SELECT id FROM {$table} WHERE id=$id AND data_type<>'$newType';
+SQL;
+      return !empty(RestObjects::$db->query($checkSql)->current());
+    }
+    return FALSE;
+  }
+
+  /**
+   * End-point to GET a list of available sample attributes.
+   */
+  public function sampleAttributesGet() {
+    rest_crud::readList('sample_attribute', 'AND t2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+  }
+
+  /**
+   * End-point to GET a sample attribute by ID.
+   *
+   * @param int $id
+   *   Sample attribute ID.
+   */
+  public function sampleAttributesGetId($id) {
+    rest_crud::read('sample_attribute', $id, 'AND t2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+  }
+
+  /**
+   * API end-point to POST a sample_attribute to create.
+   */
+  public function sampleAttributesPost() {
+    $this->assertUserHasWebsiteAdminAccess();
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    // Autofill website ID.
+    if (isset($postArray['values'])) {
+      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
+    }
+    rest_crud::create('sample_attribute', $postArray);
+  }
+
+  /**
+   * API end-point to PUT to an existing sample attribute to update.
+   */
+  public function sampleAttributesPutId($id) {
+    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertAttributeFromCurrentWebsite('sample_attributes', $id);
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    if ($this->attributeTypeChanging('sample_attributes', $id, $putArray)) {
+      $this->assertAttributeHasNoValues('sample_attributes', $id);
+    }
+    rest_crud::update('sample_attribute', $id, $putArray);
+  }
+
+  /**
+   * API end-point to DELETE a sample attribute.
+   *
+   * Will only be deleted if the survey was created by the current user.
+   *
+   * @param int $id
+   *   Survey ID to delete.
+   */
+  public function sampleAttributesDeleteId($id) {
+    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertAttributeFromCurrentWebsite('sample_attributes', $id);
+    $this->assertAttributeHasNoValues('sample_attributes', $id);
+    // Delete - no need to check user as admin of website.
+    rest_crud::delete('sample_attribute', $id);
+    // Also delete links.
+    RestObjects::$db->query("UPDATE sample_attributes_websites SET deleted=TRUE WHERE sample_attribute_id=$id");
+  }
+
+  /**
+   * End-point to GET a list of available occurrence attributes.
+   */
+  public function occurrenceAttributesGet() {
+    rest_crud::readList('occurrence_attribute', 'AND t2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+  }
+
+  /**
+   * End-point to GET an occurrence attribute by ID.
+   *
+   * @param int $id
+   *   Occurrence attribute ID.
+   */
+  public function occurrenceAttributesGetId($id) {
+    rest_crud::read('occurrence_attribute', $id, 'AND t2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+  }
+
+  /**
+   * API end-point to POST a occurrence_attribute to create.
+   */
+  public function occurrenceAttributesPost() {
+    $this->assertUserHasWebsiteAdminAccess();
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    // Autofill website ID.
+    if (isset($postArray['values'])) {
+      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
+    }
+    rest_crud::create('occurrence_attribute', $postArray);
+  }
+
+  /**
+   * API end-point to PUT to an existing occurrence attribute to update.
+   */
+  public function occurrenceAttributesPutId($id) {
+    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertAttributeFromCurrentWebsite('occurrence_attributes', $id);
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    if ($this->attributeTypeChanging('occurrence_attributes', $id, $putArray)) {
+      $this->assertAttributeHasNoValues('occurrence_attributes', $id);
+    }
+    rest_crud::update('occurrence_attribute', $id, $putArray);
+  }
+
+  /**
+   * API end-point to DELETE an occurrence attribute.
+   *
+   * Will only be deleted if the survey was created by the current user.
+   *
+   * @param int $id
+   *   Survey ID to delete.
+   */
+  public function occurrenceAttributesDeleteId($id) {
+    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertAttributeFromCurrentWebsite('occurrence_attributes', $id);
+    $this->assertAttributeHasNoValues('occurrence_attributes', $id);
+    // Delete - no need to check user as admin of website.
+    rest_crud::delete('occurrence_attribute', $id);
+    // Also delete links.
+    RestObjects::$db->query("UPDATE occurrence_attributes_websites SET deleted=TRUE WHERE occurrence_attribute_id=$id");
   }
 
 

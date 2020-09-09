@@ -235,7 +235,7 @@ KEY;
     return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
   }
 
-  public function testJwtxx() {
+  public function testJwt() {
     $this->authMethod = 'jwtUser';
     $cache = Cache::instance();
     $cacheKey = 'website-by-url-' . preg_replace('/[^0-9a-zA-Z]/', '', 'http://www.indicia.org.uk');
@@ -331,11 +331,13 @@ KEY;
    *   Example values to post.
    * @param string $requiredFieldToTest
    *   A field which is mandatory that can be used to check validation.
+   * @param int $userId
+   *   Warehouse user ID to authenticate as. Default is 1.
    */
-  private function postTest($table, array $exampleData, $requiredFieldToTest) {
+  private function postTest($table, array $exampleData, $requiredFieldToTest, $userId = 1) {
     $entity = inflector::singular($table);
     $this->authMethod = 'jwtUser';
-    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
     // First a submission with a validation failure.
     $invalidData = array_merge($exampleData);
     unset($invalidData[$requiredFieldToTest]);
@@ -591,6 +593,61 @@ KEY;
       'date' => '01/08/2020',
       'comment' => 'A sample comment test',
     ], 'survey_id');
+  }
+
+  /**
+   * A test of samples POST with user checks.
+   */
+  public function testJwtSamplePostUserAuth() {
+    $db = new Database();
+    // Create a different user to post with.
+    $db->query("insert into people(first_name, surname, created_on, created_by_id, updated_on, updated_by_id) " .
+      "values ('test', 'extrauser', now(), 1, now(), 1)");
+    $tm = microtime(TRUE);
+    $db->query("insert into users (username, person_id,  created_on, created_by_id, updated_on, updated_by_id) " .
+    "values ('test_extrauser$tm', (select max(id) from people), now(), 1, now(), 1)");
+    $userId = $db->query('select max(id) from users')->current()->max;
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    // Post a sample should fail until we give website access.
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+        'comment' => 'A sample comment test',
+      ]]
+    );
+    $this->assertEquals(401, $response['httpCode']);
+    // Grant website access.
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userId, 1, 3, 1, now(), 1, now())");
+    // Try again.
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+        'comment' => 'A sample comment test',
+      ]]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    // Check created_by_id.
+    $response = $this->callService("samples/$id");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals($userId, $response['response']['values']['created_by_id'], 'Created_by_id not set correctly for sample');
+    // Re-authenticate as user 1.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // They shouldn't have access.
+    $response = $this->callService("samples/$id");
+    $this->assertEquals(404, $response['httpCode']);
   }
 
   /**
@@ -1189,7 +1246,7 @@ KEY;
   }
 
   public function testJwtSurveyPost() {
-    $id = $this->postTest('surveys', [
+    $this->postTest('surveys', [
       'title' => 'Test survey',
       'description' => 'A test',
     ], 'title');
@@ -1310,6 +1367,138 @@ SQL;
     $this->eTagsTest('surveys',  [
       'title' => 'Test survey',
       'description' => 'A test',
+    ]);
+  }
+
+  public function testJwtSampleAttributePost() {
+    $this->postTest('sample_attributes', [
+      'caption' => 'Test sample attribute',
+      'data_type' => 'T',
+    ], 'caption');
+  }
+
+  /**
+   * Test /sample_attributes PUT behaviour.
+   */
+  public function testJwtSampleAttributePut() {
+    $this->putTest('sample_attributes',  [
+      'caption' => 'Test sample attribute',
+      'data_type' => 'T',
+    ], [
+      'caption' => 'Test sample attribute updated',
+    ]);
+  }
+
+  /**
+   * A basic test of /sample_attributes GET.
+   */
+  public function testJwtSampleAttributeGet() {
+    $this->getTest('sample_attributes',  [
+      'caption' => 'Test sample attribute',
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * A basic test of /sample_attributes GET.
+   */
+  public function testJwtSampleAttributeGetList() {
+    $this->getListTest('sample_attributes',  [
+      'caption' => 'Test sample attribute ' . microtime(TRUE),
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * Test DELETE for a sample_attribute.
+   */
+  public function testJwtSampleAttributeDelete() {
+    $this->deleteTest('sample_attributes', [
+      'caption' => 'Test sample attribute',
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * Testing fetching OPTIONS for sample_attributes end-point.
+   */
+  public function testJwtSampleAttributeOptions() {
+    $this->optionsTest('sample_attributes');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtSampleAttributeETags() {
+    $this->eTagsTest('sample_attributes',  [
+      'caption' => 'Test sample attribute',
+      'data_type' => 'T',
+    ]);
+  }
+
+  public function testJwtOccurrenceAttributePost() {
+    $this->postTest('occurrence_attributes', [
+      'caption' => 'Test occurrence attribute',
+      'data_type' => 'T',
+    ], 'caption');
+  }
+
+  /**
+   * Test /occurrence_attributes PUT behaviour.
+   */
+  public function testJwtOccurrenceAttributePut() {
+    $this->putTest('occurrence_attributes',  [
+      'caption' => 'Test occurrence attribute',
+      'data_type' => 'T',
+    ], [
+      'caption' => 'Test occurrence attribute updated',
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrence_attributes GET.
+   */
+  public function testJwtOccurrenceAttributeGet() {
+    $this->getTest('occurrence_attributes',  [
+      'caption' => 'Test occurrence attribute',
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrence_attributes GET.
+   */
+  public function testJwtOccurrenceAttributeGetList() {
+    $this->getListTest('occurrence_attributes',  [
+      'caption' => 'Test occurrence attribute ' . microtime(TRUE),
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * Test DELETE for a occurrence_attribute.
+   */
+  public function testJwtOccurrenceAttributeDelete() {
+    $this->deleteTest('occurrence_attributes', [
+      'caption' => 'Test occurrence attribute',
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * Testing fetching OPTIONS for occurrence_attributes end-point.
+   */
+  public function testJwtOccurrenceAttributeOptions() {
+    $this->optionsTest('occurrence_attributes');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtOccurrenceAttributeETags() {
+    $this->eTagsTest('occurrence_attributes',  [
+      'caption' => 'Test occurrence attribute',
+      'data_type' => 'T',
     ]);
   }
 
