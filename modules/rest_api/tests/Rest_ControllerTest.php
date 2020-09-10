@@ -474,6 +474,41 @@ KEY;
       }
     }
     $this->assertTrue($found, 'POSTed survey not found in retrieved list using GET.');
+    // Repeat with a filter
+    $filterField = array_keys($exampleData)[0];
+    $surveys = $this->callService($table, [$filterField => $exampleData[$filterField]]);
+    $this->assertResponseOk($surveys, "/$table GET");
+    // Search for the one we posted.
+    $found = FALSE;
+    foreach ($surveys['response'] as $survey) {
+      $allMatch = $survey['values']['id'] === $id;
+      foreach ($exampleData as $field => $value) {
+        $allMatch = $allMatch && ($value === $survey['values'][$field]);
+      }
+      if ($allMatch) {
+        $found = TRUE;
+        // from foreach.
+        break;
+      }
+    }
+    $this->assertTrue($found, 'POSTed survey not found in filtered retrieved list using GET.');
+    // Repeat with a filter that should exclude the record.
+    $surveys = $this->callService($table, [$filterField => microtime(TRUE)]);
+    $this->assertResponseOk($surveys, "/$table GET");
+    // Search for the one we posted.
+    $found = FALSE;
+    foreach ($surveys['response'] as $survey) {
+      $allMatch = $survey['values']['id'] === $id;
+      foreach ($exampleData as $field => $value) {
+        $allMatch = $allMatch && ($value === $survey['values'][$field]);
+      }
+      if ($allMatch) {
+        $found = TRUE;
+        // from foreach.
+        break;
+      }
+    }
+    $this->assertFalse($found, 'POSTed survey found in filtered retrieved list using GET which it should be excluded from.');
   }
 
   /**
