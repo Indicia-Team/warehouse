@@ -28,24 +28,11 @@
 class rest_crud {
 
   /**
-   * Defines submodels allowed in submission for each supported entity.
+   * Cache parsed entity configurations loaded from JSON files.
    *
    * @var array
    */
-  private static $subModelsForEntities = [
-    'sample' => [
-      'samples' => ['fk' => 'parent_id'],
-      'occurrences' => ['fk' => 'sample_id'],
-      'media' => ['fk' => 'sample_id'],
-    ],
-    'occurrence' => [
-      'media' => ['fk' => 'occurrence_id'],
-    ],
-    'location' => [
-      'locations' => ['fk' => 'parent_id'],
-      'media' => ['fk' => 'location_id'],
-    ],
-  ];
+  private static $entityConfig = [];
 
   /**
    * Submodels which need to be enforced, e.g. to attach location to correct website.
@@ -72,71 +59,6 @@ class rest_crud {
     ]
   ];
 
-  private static $enforcedValuesOnCreate = [
-    'location' => [
-      // Cannot create a public location via API.
-      'public' => 'f',
-    ],
-    'occurrence_attributes' => [
-      // Cannot create a public attribute via API.
-      'public' => 'f',
-    ],
-    'sample_attributes' => [
-      // Cannot create a public attribute via API.
-      'public' => 'f',
-    ],
-  ];
-
-  /**
-   * Defines SQL for fields selected by a GET for each entity.
-   *
-   * @var array
-   */
-  private static $fieldsForEntitySelects = [
-    'location' => 't1.id, t1.name, t1.code, t1.parent_id, t1.centroid_sref, t1.centroid_sref_system, t1.created_on, ' .
-      't1.created_by_id, t1.updated_on, t1.updated_by_id, t1.comment, t1.external_key, t1.deleted, ' .
-      'st_astext(t1.centroid_geom), st_astext(t1.boundary_geom), t1.location_type_id, t1.public, ' .
-      'st_y(st_transform(st_centroid(t1.centroid_geom), 4326)) as lat, ' .
-      'st_y(st_transform(st_centroid(t1.centroid_geom), 4326)) as lon',
-    'occurrence' => 't1.id, t1.sample_id, t1.determiner_id, t1.confidential, t1.created_on, t1.created_by_id, ' .
-      't1.updated_on, t1.updated_by_id, t1.website_id, t1.external_key, t1.comment, t1.taxa_taxon_list_id, ' .
-      't1.record_status, t1.verified_by_id, t1.verified_on, t1.downloaded_flag, t1.downloaded_on, ' .
-      't1.all_info_in_determinations, t1.zero_abundance, t1.last_verification_check_date, t1.training, ' .
-      't1.sensitivity_precision, t1.release_status, t1.record_substatus, t1.record_decision_source, t1.import_guid, ' .
-      't1.metadata, t2.id as taxa_taxon_list_id, t2.taxon, t2.preferred_taxon, t2.default_common_name, ' .
-      't2.taxon_group, t2.external_key as taxa_taxon_list_external_key',
-    'occurrence_attribute' => 't1.id, t1.caption, t1.caption_i18n, t1.description, t1.description_i18n, t1.data_type, ' .
-      't1.created_on, t1.created_by_id, t1.updated_on, t1.updated_by_id, t1.validation_rules, t1.termlist_id, ' .
-      't1.system_function, t1.term_name, t1.term_identifier, t1.allow_ranges, t1.unit, t1.image_path, ' .
-      't2.restrict_to_survey_id, t2.validation_rules as survey_validation_rules',
-    'sample' => 't1.id, t1.survey_id, t1.location_id, t1.date_start, t1.date_end, t1.sample_method_id, ' .
-      'st_astext(geom) as geom, t1.parent_id, t1.group_id, t1.privacy_precision, t1.verified_by_id, ' .
-      't1.verified_on, t1.licence_id, t1.created_on, t1.created_by_id, t1.updated_on, t1.updated_by_id, ' .
-      't1.date_type, t1.entered_sref, t1.entered_sref_system, t1.location_name, t1.external_key, t1.recorder_names, ' .
-      't1.record_status, t1.input_form, t1.comment, ' .
-      'st_y(st_transform(st_centroid(t1.geom), 4326)) as lat, st_y(st_transform(st_centroid(t1.geom), 4326)) as lon',
-    'survey' => 't1.id, t1.title, t1.description, t1.website_id,  t1.created_on, t1.created_by_id, t1.updated_on, ' .
-      't1.updated_by_id, t1.parent_id, t1.core_validation_rules',
-    'sample_attribute' => 't1.id, t1.caption, t1.caption_i18n, t1.description, t1.description_i18n, t1.data_type, ' .
-       't1.created_on, t1.created_by_id, t1.updated_on, t1.updated_by_id, t1.validation_rules, t1.termlist_id, ' .
-       't1.applies_to_location, t1.applies_to_recorder, t1.system_function, t1.term_name, t1.term_identifier, ' .
-       't1.allow_ranges, t1.unit, t1.image_path, ' .
-       't2.restrict_to_survey_id, t2.validation_rules as survey_validation_rules',
-  ];
-
-  private static $joinsForEntitySelects = [
-    'occurrence' => 'JOIN cache_taxa_taxon_lists t2 on t2.id=t1.taxa_taxon_list_id',
-    'occurrence_attribute' => 'JOIN occurrence_attributes_websites t2 on t2.occurrence_attribute_id=t1.id',
-    'sample_attribute' => 'JOIN sample_attributes_websites t2 on t2.sample_attribute_id=t1.id',
-  ];
-
-  private static $entitiesWithAttributes = [
-    'survey',
-    'sample',
-    'occurrence',
-    'location',
-  ];
-
   /**
    * Create (POST) operation.
    *
@@ -146,6 +68,7 @@ class rest_crud {
    *   Submitted data, including values.
    */
   public static function create($entity, array $data) {
+    self::loadEntityConfig($entity);
     $values = $data['values'];
     if (!empty($values['id'])) {
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Cannot POST with id to update, use PUT instead.']));
@@ -154,10 +77,136 @@ class rest_crud {
     if (in_array($entity, ['occurrence', 'sample']) && !empty($values['external_key'])) {
       self::checkDuplicateExternalKey($entity, $values);
     }
-    if (isset(self::$enforcedValuesOnCreate[$entity])) {
-      $data['values'] = array_merge($data['values'], self::$enforcedValuesOnCreate[$entity]);
+    if (isset(self::$entityConfig[$entity]->forceValuesOnCreate)) {
+      $data['values'] = array_merge($data['values'], (array) self::$entityConfig[$entity]->forceValuesOnCreate);
     }
     self::submit($entity, $obj, $data);
+  }
+
+  /**
+   * Retrieve the configuration for the current entity from JSON file.
+   *
+   * @param string $entity
+   *   Entity name (singular).
+   */
+  private static function loadEntityConfig($entity) {
+    if (!isset(self::$entityConfig[$entity])) {
+      $config = json_decode(file_get_contents(dirname(dirname(__FILE__)) . "../entities/$entity.json"));
+      if (!$config) {
+        RestObjects::$apiResponse->fail('Internal Server Error', 500, "JSON entity definition for $entity invalid.");
+      }
+      self::$entityConfig[$entity] = $config;
+    }
+  }
+
+  /**
+   * Gets the list of SQL field strings for one table in a query.
+   *
+   * @param array $fields
+   *   Field list from configuration for entity or join.
+   * @param string $alias
+   *   Table alias to use.
+   *
+   * @return array
+   *   List of SQL field strings to include in SELECT.
+   */
+  private static function getSqlFieldsForOneTable($fields, $alias) {
+    $list = [];
+    foreach ($fields as $fieldDef) {
+      // If field SQL is a simple fieldname we can alias it to the table.
+      $fieldSql = preg_match('/^[a-z_]+$/', $fieldDef->sql) ? "$alias.$fieldDef->sql" : $fieldDef->sql;
+      // Add named alias if required.
+      if (!empty($fieldDef->name)) {
+        $fieldSql .= " AS $fieldDef->name";
+      }
+      $list[] = $fieldSql;
+    }
+    return $list;
+  }
+
+  /**
+   * Retrieves the SQL for a list of fields for an entity's SELECT.
+   *
+   * @param string $entity
+   *   Entity name.
+   */
+  private static function getSqlFields($entity) {
+    self::loadEntityConfig($entity);
+    $list = self::getSqlFieldsForOneTable(self::$entityConfig[$entity]->fields, 't1');
+    if (!empty(self::$entityConfig[$entity]->joins)) {
+      foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
+        // Joined table alias starts at 2.
+        $alias = 't' . ($idx + 2);
+        $list = array_merge($list, self::getSqlFieldsForOneTable($joinDef->fields, $alias));
+      }
+    }
+    return implode(', ', $list);
+  }
+
+  /**
+   * Retrieves the SQL for a list of joins for an entity's SELECT.
+   *
+   * @param string $entity
+   *   Entity name.
+   */
+  private static function getSqlJoins($entity) {
+    self::loadEntityConfig($entity);
+    $list = [];
+    if (!empty(self::$entityConfig[$entity]->joins)) {
+      foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
+        $list[] = $joinDef->sql;
+      }
+    }
+    return implode ("\n", $list);
+  }
+
+  /**
+   * Gets the list of SQL field definitions for filtering one table in a query.
+   *
+   * @param array $fields
+   *   Field list from configuration for entity or join.
+   * @param string $alias
+   *   Table alias to use.
+   *
+   * @return array
+   *   List of SQL field definitions containing information required to filter,
+   *   keyed by field name.
+   */
+  private static function getFilterFieldsForOneTable($fields, $alias) {
+    $list = [];
+    foreach ($fields as $fieldDef) {
+      // If field SQL is a simple fieldname we can alias it to the table.
+      $fieldSql = preg_match('/^[a-z_]+$/', $fieldDef->sql) ? "$alias.$fieldDef->sql" : $fieldDef->sql;
+      $fieldName = empty($fieldDef->name) ? $fieldDef->sql : $fieldDef->name;
+      $list[$fieldName] = [
+        'sql' => $fieldSql,
+        'type' => $fieldDef->type,
+      ];
+    }
+    return $list;
+  }
+
+  /**
+   * Gets the SQL field definitions for filtering against any table in a query.
+   *
+   * @param string $entity
+   *   Entity name.
+   *
+   * @return array
+   *   List of SQL field definitions containing information required to filter,
+   *   keyed by field name.
+   */
+  private static function getAvailableFilterFields($entity) {
+    self::loadEntityConfig($entity);
+    $list = self::getFilterFieldsForOneTable(self::$entityConfig[$entity]->fields, 't1');
+    if (!empty(self::$entityConfig[$entity]->joins)) {
+      foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
+        // Joined table alias starts at 2.
+        $alias = 't' . ($idx + 2);
+        $list = array_merge($list, self::getFilterFieldsForOneTable($joinDef->fields, $alias));
+      }
+    }
+    return $list;
   }
 
   /**
@@ -176,19 +225,29 @@ class rest_crud {
    */
   private static function getReadSql($entity, $extraFilter, $userFilter) {
     $table = inflector::plural($entity);
-    $fields = self::$fieldsForEntitySelects[$entity];
-    $joins = isset(self::$joinsForEntitySelects[$entity]) ? self::$joinsForEntitySelects[$entity] : '';
+    $fields = self::getSqlFields($entity);
+    $joins = self::getSqlJoins($entity);
     $createdByFilter = $userFilter ? 'AND t1.created_by_id=' . RestObjects::$clientUserId : '';
-    $sql =  <<<SQL
-SELECT t1.xmin, $fields
-FROM $table t1
-$joins
-WHERE t1.deleted=false
-$createdByFilter
-$extraFilter
-
-SQL;
-    kohana::log('debug', $sql);
+    if (!empty($_GET)) {
+      // Apply query string parameters.
+      $availableFilterFields = self::getAvailableFilterFields($entity);
+      foreach ($_GET as $param => $value) {
+        if (isset($availableFilterFields[$param])) {
+          if (in_array($availableFilterFields[$param]['type'], ['string', 'date', 'json'])) {
+            $value = pg_escape_literal($value);
+          }
+          elseif (in_array($availableFilterFields[$param]['type'], ['integer', 'float'])) {
+            if (!is_numeric($value)) {
+              RestObjects::$apiResponse->fail('Bad Request', 400, "Invalid filter on numeric field $param");
+            }
+          }
+          else {
+            RestObjects::$apiResponse->fail('Internal Server Error', 400, "Unsupported field type for $param");
+          }
+          $extraFilter .= "\nAND " . $availableFilterFields[$param]['sql'] . "=$value";
+        }
+      }
+    }
     return <<<SQL
 SELECT t1.xmin, $fields
 FROM $table t1
@@ -245,7 +304,7 @@ SQL;
       // Transaction ID that last updated row is returned as ETag header.
       header("ETag: $row->xmin");
       unset($row->xmin);
-      if (in_array($entity, self::$entitiesWithAttributes)) {
+      if (!empty(self::$entityConfig[$entity]->attributes)) {
         // @todo Support for multi-value attributes.
         $qry = <<<SQL
 SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type,
@@ -370,11 +429,15 @@ SQL;
     }
   }
 
+  /**
+   * Adds submodels from the POSTed data into a submission.
+   */
   private static function includeSubmodelsFromPostObj($entity, array $postObj, $websiteId, &$s) {
-    if (isset(self::$subModelsForEntities[$entity])) {
-      $subModels = array_intersect_key(self::$subModelsForEntities[$entity], $postObj);
+    if (isset(self::$entityConfig[$entity]->subModels)) {
+      $subModels = array_intersect_key((array) self::$entityConfig[$entity]->subModels, $postObj);
       foreach ($subModels as $subModelTable => $subModelCfg) {
         foreach ($postObj[$subModelTable] as $obj) {
+          kohana::log('debug', 'SubModels object: ' . var_export($obj, TRUE));
           if ($subModelTable === 'occurrences') {
             $obj['values']['website_id'] = $websiteId;
           }
@@ -383,7 +446,7 @@ SQL;
             $subModelTable = "{$entity}_media";
           }
           $s['subModels'][] = [
-            'fkId' => $subModelCfg['fk'],
+            'fkId' => $subModelCfg->fk,
             'model' => self::convertNewToOldSubmission(inflector::singular($subModelTable), $obj, $websiteId),
           ];
         }
@@ -391,6 +454,9 @@ SQL;
     }
   }
 
+  /**
+   * Adds mandatory (enforced) submodels into a submission.
+   */
   private static function includeEnforcedSubmodels($entity, array $postObj, $websiteId, &$s) {
     if (isset(self::$enforcedSubmodelsForEntities[$entity])) {
       foreach (self::$enforcedSubmodelsForEntities[$entity] as $subModelTable => $subModelCfg) {
@@ -443,7 +509,7 @@ SQL;
     foreach ($postObj['values'] as $field => $value) {
       $s['fields'][$field] = ['value' => $value];
     }
-    if (isset(self::$subModelsForEntities[$entity]) || isset(self::$enforcedSubmodelsForEntities[$entity])) {
+    if (isset(self::$entityConfig[$entity]->subModels) || isset(self::$enforcedSubmodelsForEntities[$entity])) {
       $s['subModels'] = [];
     }
     self::includeSubmodelsFromPostObj($entity, $postObj, $websiteId, $s);
@@ -547,13 +613,13 @@ SQL;
       'href' => $href,
     ];
     // Recursively process sub-model info.
-    if (!empty(self::$subModelsForEntities[$entity]) && !empty($responseMetadata['children'])) {
+    if (!empty(self::$entityConfig[$entity]->subModels) && !empty($responseMetadata['children'])) {
       foreach ($responseMetadata['children'] as $child) {
         $subTable = inflector::plural($child['model']);
         if (preg_match('/_media$/', $subTable)) {
           $subTable = 'media';
         }
-        if (array_key_exists($subTable, self::$subModelsForEntities[$entity])) {
+        if (array_key_exists($subTable, self::$entityConfig[$entity]->subModels)) {
           if (!isset($r[$subTable])) {
             $r[$subTable] = [];
           }
@@ -575,6 +641,7 @@ SQL;
    *   Submission data.
    */
   private static function submit($entity, $obj, $postObj) {
+    self::loadEntityConfig($entity);
     $obj->submission = rest_crud::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
     // Different http code for create vs update.
     $httpCodeOnSuccess = $obj->id ? 200 : 201;
