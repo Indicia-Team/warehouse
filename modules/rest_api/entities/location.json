@@ -22,8 +22,15 @@
   ],
   "subModels": {
     "locations": { "fk": "parent_id" },
-    "media": { "fk": "sample_id" }
-  ],
+    "media": { "fk": "location_id" },
+    "locations_website": {
+      "fk": "location_id",
+      "required": true,
+      "values": {
+        "website_id": "{website_id}"
+      }
+    }
+  },
   "attributes": true,
   "forceValuesOnCreate": {
     "public": "f"

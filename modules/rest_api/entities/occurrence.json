@@ -39,6 +39,9 @@
   ],
   "subModels": {
     "media": { "fk": "occurrence_id" }
-  ],
-  "attributes": true
+  },
+  "attributes": true,
+  "forceValuesOnCreate": {
+    "website_id": "{website_id}"
+  }
 }

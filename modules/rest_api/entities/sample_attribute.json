@@ -30,6 +30,15 @@
       ]
     }
   ],
+  "subModels": {
+    "sample_attributes_website": {
+      "fk": "sample_attribute_id",
+      "required": true,
+      "values": {
+        "website_id": "{website_id}"
+      }
+    }
+  },
   "forceValuesOnCreate": {
     "public": "f"
   }

@@ -35,31 +35,6 @@ class rest_crud {
   private static $entityConfig = [];
 
   /**
-   * Submodels which need to be enforced, e.g. to attach location to correct website.
-   */
-  private static $enforcedSubmodelsForEntities = [
-    'location' => [
-      'locations_website' => ['fk' => 'location_id', 'values' => ['website_id' => '{website_id}']],
-    ],
-    'sample_attribute' => [
-      'sample_attributes_website' => [
-        'fk' => 'sample_attribute_id',
-        'values' => [
-          'website_id' => '{website_id}',
-        ],
-      ],
-    ],
-    'occurrence_attribute' => [
-      'occurrence_attributes_website' => [
-        'fk' => 'occurrence_attribute_id',
-        'values' => [
-          'website_id' => '{website_id}',
-        ],
-      ],
-    ]
-  ];
-
-  /**
    * Create (POST) operation.
    *
    * @param string $entity
@@ -76,9 +51,6 @@ class rest_crud {
     $obj = ORM::factory($entity);
     if (in_array($entity, ['occurrence', 'sample']) && !empty($values['external_key'])) {
       self::checkDuplicateExternalKey($entity, $values);
-    }
-    if (isset(self::$entityConfig[$entity]->forceValuesOnCreate)) {
-      $data['values'] = array_merge($data['values'], (array) self::$entityConfig[$entity]->forceValuesOnCreate);
     }
     self::submit($entity, $obj, $data);
   }
@@ -429,20 +401,48 @@ SQL;
     }
   }
 
+  private static function includeSubmodels($entity, array $postObj, $websiteId, &$s) {
+    $subModels = [];
+    if (isset(self::$entityConfig[$entity]->subModels)) {
+      $subModels = array_intersect_key((array) self::$entityConfig[$entity]->subModels, $postObj);
+      // Include missing subModels if tagged as required.
+      foreach (self::$entityConfig[$entity]->subModels as $subModelTable => $subModel) {
+        if (!empty($subModel->required) && empty($subModels[$subModelTable])) {
+          $subModels[$subModelTable] = $subModel;
+          // Add a stub to make code simpler.
+          $postObj[$subModelTable] = [
+            ['values' => []]
+          ];
+        }
+      }
+    }
+    foreach ($subModels as $subModelTable => $subModelCfg) {
+      foreach ($postObj[$subModelTable] as $obj) {
+        if ($subModelTable === 'media') {
+          // Media subModel doesn't need prefix for simplicity.
+          $subModelTable = "{$entity}_media";
+        }
+        $s['subModels'][] = [
+          'fkId' => $subModelCfg->fk,
+          'model' => self::convertNewToOldSubmission(inflector::singular($subModelTable), $obj, $websiteId),
+        ];
+      }
+    }
+  }
+
   /**
-   * Adds submodels from the POSTed data into a submission.
+   * Adds subModels from the POSTed data into a submission.
    */
   private static function includeSubmodelsFromPostObj($entity, array $postObj, $websiteId, &$s) {
     if (isset(self::$entityConfig[$entity]->subModels)) {
       $subModels = array_intersect_key((array) self::$entityConfig[$entity]->subModels, $postObj);
       foreach ($subModels as $subModelTable => $subModelCfg) {
         foreach ($postObj[$subModelTable] as $obj) {
-          kohana::log('debug', 'SubModels object: ' . var_export($obj, TRUE));
           if ($subModelTable === 'occurrences') {
             $obj['values']['website_id'] = $websiteId;
           }
           elseif ($subModelTable === 'media') {
-            // Media submodel doesn't need prefix for simplicity.
+            // Media subModel doesn't need prefix for simplicity.
             $subModelTable = "{$entity}_media";
           }
           $s['subModels'][] = [
@@ -455,7 +455,7 @@ SQL;
   }
 
   /**
-   * Adds mandatory (enforced) submodels into a submission.
+   * Adds mandatory (enforced) subModels into a submission.
    */
   private static function includeEnforcedSubmodels($entity, array $postObj, $websiteId, &$s) {
     if (isset(self::$enforcedSubmodelsForEntities[$entity])) {
@@ -467,7 +467,7 @@ SQL;
           return $v === '{website_id}' ? $websiteId : $v;;
         }, $values);
         $subModelSubmission = self::convertNewToOldSubmission($subModelEntity, ['values' => $values], $websiteId);
-        // Are there already submodels for this entity in the post? If so merge
+        // Are there already subModels for this entity in the post? If so merge
         // enforced values into them.
         $found = FALSE;
         foreach ($s['subModels'] as $postedSubModel) {
@@ -502,6 +502,7 @@ SQL;
    *   Converted submission.
    */
   public static function convertNewToOldSubmission($entity, array $postObj, $websiteId) {
+    self::loadEntityConfig($entity);
     $s = [
       'id' => $entity,
       'fields' => [],
@@ -509,11 +510,16 @@ SQL;
     foreach ($postObj['values'] as $field => $value) {
       $s['fields'][$field] = ['value' => $value];
     }
-    if (isset(self::$entityConfig[$entity]->subModels) || isset(self::$enforcedSubmodelsForEntities[$entity])) {
+    if (isset(self::$entityConfig[$entity]->forceValuesOnCreate)) {
+      foreach ((array) self::$entityConfig[$entity]->forceValuesOnCreate as $field => $value) {
+        $value = ($value === '{website_id}') ? RestObjects::$clientWebsiteId : $value;
+        $s['fields'][$field] = ['value' => $value];
+      }
+    }
+    if (isset(self::$entityConfig[$entity]->subModels)) {
       $s['subModels'] = [];
     }
-    self::includeSubmodelsFromPostObj($entity, $postObj, $websiteId, $s);
-    self::includeEnforcedSubmodels($entity, $postObj, $websiteId, $s);
+    self::includeSubmodels($entity, $postObj, $websiteId, $s);
     return $s;
   }
 
@@ -641,7 +647,6 @@ SQL;
    *   Submission data.
    */
   private static function submit($entity, $obj, $postObj) {
-    self::loadEntityConfig($entity);
     $obj->submission = rest_crud::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
     // Different http code for create vs update.
     $httpCodeOnSuccess = $obj->id ? 200 : 201;

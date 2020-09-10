@@ -28,6 +28,12 @@
       ]
     }
   ],
+  "subModels": {
+    "occurrence_attributes_website": {
+      "fk": "occurrence_attribute_id",
+      "required": true
+    }
+  },
   "forceValuesOnCreate": {
     "public": "f"
   }
