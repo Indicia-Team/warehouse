@@ -29,7 +29,7 @@
     }
   ],
   "subModels": {
-    "occurrence_attributes_website": {
+    "occurrence_attributes_websites": {
       "fk": "occurrence_attribute_id",
       "required": true
     }

@@ -31,7 +31,7 @@
     }
   ],
   "subModels": {
-    "sample_attributes_website": {
+    "sample_attributes_websites": {
       "fk": "sample_attribute_id",
       "required": true,
       "values": {

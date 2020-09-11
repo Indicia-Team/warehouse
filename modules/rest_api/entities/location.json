@@ -23,7 +23,7 @@
   "subModels": {
     "locations": { "fk": "parent_id" },
     "media": { "fk": "location_id" },
-    "locations_website": {
+    "locations_websites": {
       "fk": "location_id",
       "required": true,
       "values": {
