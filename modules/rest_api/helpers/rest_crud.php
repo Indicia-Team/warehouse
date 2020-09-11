@@ -405,6 +405,7 @@ SQL;
     $subModels = [];
     if (isset(self::$entityConfig[$entity]->subModels)) {
       $subModels = array_intersect_key((array) self::$entityConfig[$entity]->subModels, $postObj);
+      unset($subModels['values']);
       // Include missing subModels if tagged as required.
       foreach (self::$entityConfig[$entity]->subModels as $subModelTable => $subModel) {
         if (!empty($subModel->required) && empty($subModels[$subModelTable])) {
@@ -431,66 +432,6 @@ SQL;
   }
 
   /**
-   * Adds subModels from the POSTed data into a submission.
-   */
-  private static function includeSubmodelsFromPostObj($entity, array $postObj, $websiteId, &$s) {
-    if (isset(self::$entityConfig[$entity]->subModels)) {
-      $subModels = array_intersect_key((array) self::$entityConfig[$entity]->subModels, $postObj);
-      foreach ($subModels as $subModelTable => $subModelCfg) {
-        foreach ($postObj[$subModelTable] as $obj) {
-          if ($subModelTable === 'occurrences') {
-            $obj['values']['website_id'] = $websiteId;
-          }
-          elseif ($subModelTable === 'media') {
-            // Media subModel doesn't need prefix for simplicity.
-            $subModelTable = "{$entity}_media";
-          }
-          $s['subModels'][] = [
-            'fkId' => $subModelCfg->fk,
-            'model' => self::convertNewToOldSubmission(inflector::singular($subModelTable), $obj, $websiteId),
-          ];
-        }
-      }
-    }
-  }
-
-  /**
-   * Adds mandatory (enforced) subModels into a submission.
-   */
-  private static function includeEnforcedSubmodels($entity, array $postObj, $websiteId, &$s) {
-    if (isset(self::$enforcedSubmodelsForEntities[$entity])) {
-      foreach (self::$enforcedSubmodelsForEntities[$entity] as $subModelTable => $subModelCfg) {
-        $subModelEntity = inflector::singular($subModelTable);
-        $values = isset($subModelCfg['values']) ? $subModelCfg['values'] : [];
-        $values = array_map(function ($v) use ($websiteId) {
-          // Default value as supplied, or replace {website_id} token.
-          return $v === '{website_id}' ? $websiteId : $v;;
-        }, $values);
-        $subModelSubmission = self::convertNewToOldSubmission($subModelEntity, ['values' => $values], $websiteId);
-        // Are there already subModels for this entity in the post? If so merge
-        // enforced values into them.
-        $found = FALSE;
-        foreach ($s['subModels'] as $postedSubModel) {
-          if ($postedSubModel['model']['id'] === $subModelEntity) {
-            $found = TRUE;
-            $postedSubModel['model']['fields'] = array_merge(
-              $postedSubModel['model']['fields'],
-              $subModelSubmission['fields'],
-            );
-          }
-        }
-        if (!$found) {
-          // SubModel not included in submission so we need to enforce it.
-          $s['subModels'][] = [
-            'fkId' => $subModelCfg['fk'],
-            'model' => $subModelSubmission,
-          ];
-        }
-      }
-    }
-  }
-
-  /**
    * Coverts new REST API submission format to old Data Services format.
    *
    * @param string $entity
@@ -507,6 +448,9 @@ SQL;
       'id' => $entity,
       'fields' => [],
     ];
+    if (!isset($postObj['values'])) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Incorrect submission format');
+    }
     foreach ($postObj['values'] as $field => $value) {
       $s['fields'][$field] = ['value' => $value];
     }
