@@ -63,7 +63,7 @@ class rest_crud {
    */
   private static function loadEntityConfig($entity) {
     if (!isset(self::$entityConfig[$entity])) {
-      $config = json_decode(file_get_contents(dirname(dirname(__FILE__)) . "../entities/$entity.json"));
+      $config = json_decode(file_get_contents(dirname(dirname(__FILE__)) . "/entities/$entity.json"));
       if (!$config) {
         RestObjects::$apiResponse->fail('Internal Server Error', 500, "JSON entity definition for $entity invalid.");
       }
