@@ -1652,7 +1652,7 @@ class Rest_Controller extends Controller {
     // No need to duplicate work of esGetSpecialFieldEventDate.
     // Use that function to format the date initially then
     // modify for MapMate.
-    $date = esGetSpecialFieldEventDate($doc);
+    $date = $this->esGetSpecialFieldEventDate($doc);
     if (startsWith($date, "Before ")) {
       // Mapmate can't deal with unbound ranges
       // - replace with date of known bound.
