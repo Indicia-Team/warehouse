@@ -1776,14 +1776,14 @@ class Rest_Controller extends Controller {
    */
   private function esGetSpecialFieldOrganismQuantity(array $doc, array $params) {
     $format = !empty($params) ? $params[0] : "";
-    $zero = isset($doc['occurrence']['zero_abundance']) ? $doc['occurrence']['zero_abundance'] : 'false';
+    $zero = isset($doc['occurrence']['zero_abundance']) ? $doc['occurrence']['zero_abundance'] : false;
     $quantity = isset($doc['occurrence']['organism_quantity']) ? $doc['occurrence']['organism_quantity'] : '';
     switch($format) {
       case "mapmate":
         // Mapmate will only accept integer values and uses a value 
         // of -7 to indicate a negative record. MapMate interprets
         // a quantity of 0 to mean 'present'.
-        if ($zero === 'true' || $quantity === '0') {
+        if ($zero || $quantity === '0') {
           return -7;
         }
         elseif(preg_match('/^\d+$/', $quantity)) {
