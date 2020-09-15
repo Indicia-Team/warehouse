@@ -1102,7 +1102,7 @@ class Rest_Controller extends Controller {
         elseif ($field === '#mapmate_vc#') {
           $fields[] = 'location.higher_geography';
         }
-        elseif ($field === '#organism_quantity#') {
+        elseif (preg_match('/^#organism_quantity(.*)#$/', $field)) {
           $fields[] = 'occurrence.organism_quantity';
           $fields[] = 'occurrence.zero_abundance';
         }
