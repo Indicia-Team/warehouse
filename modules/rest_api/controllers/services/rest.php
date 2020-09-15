@@ -997,6 +997,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Site', 'field' => 'location.verbatim_locality'],
       ['caption' => 'Gridref', 'field' => 'location.output_sref'],
       ['caption' => 'VC', 'field' => '#higher_geography:Vice County:code#'],
+      ['caption' => 'MMVC', 'field' => '#mapmate_vc#'],
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
       ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
       ['caption' => 'Date', 'field' => '#mapmate_date#'],
@@ -1096,6 +1097,9 @@ class Rest_Controller extends Controller {
         elseif ($field === '#mapmate_date#') {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
+        }
+        elseif ($field === '#mapmate_vc#') {
+          $fields[] = 'location.higher_geography';
         }
         elseif (preg_match('/^#(lat_lon|lat|lon)#$/', $field) || preg_match('/^#(lat|lon):(.*)#$/', $field)) {
           $fields[] = 'location.point';
@@ -1722,6 +1726,33 @@ class Rest_Controller extends Controller {
     }
     else {
       return '';
+    }
+  }
+
+  /**
+   * Special field handler for Elasticsearch location VC number formatted for MapMate.
+   *
+   * Converts Vice County code to formats preferred by MapMate
+   * for inclusion in CSV output suitable for MapMate import.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   VC number. If Irish, it is prefixed with H. If unknown, set to zero.
+   */
+  private function esGetSpecialFieldMapmateVc(array $doc) {
+    // No need to duplicate work of esGetSpecialFieldHigherGeography.
+    // Use that function to format the date initially then
+    // modify for MapMate.
+    $vc = $this->esGetSpecialFieldHigherGeography($doc, array("Vice County", "code"));
+    if ($vc === "") {
+      // Where unable to assign VC, return 0. This will 
+      // cause MapMate to work out the VC itself..
+      return "0";
+    } 
+    else {
+      return $vc;
     }
   }
 
