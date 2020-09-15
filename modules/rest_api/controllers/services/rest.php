@@ -1663,7 +1663,7 @@ class Rest_Controller extends Controller {
       // - replace with date of known bound.
       return substr($date, 6);
     }
-    elseif (strpos($a, ' to ') !== false) {
+    elseif (strpos($date, ' to ') !== false) {
       // Mapmate uses a hyphen in date ranges.
       return str_replace(" to ","-",$date);
     }
