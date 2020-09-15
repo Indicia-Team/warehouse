@@ -1785,7 +1785,7 @@ class Rest_Controller extends Controller {
     }
     switch($format) {
       case "mapmate":
-        return $zero ? "zero" : "not zero";
+        return $doc['occurrence']['zero_abundance'];
         // Mapmate will only accept integer values and uses a value 
         // of -7 to indicate a negative record. MapMate interprets
         // a quantity of 0 to mean 'present'.
