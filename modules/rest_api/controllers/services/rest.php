@@ -991,6 +991,23 @@ class Rest_Controller extends Controller {
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
       ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download?
       ['caption' => 'attr_det_full_name', 'field' => 'identification.identified_by'], // Repeat of Determiner field with ES
+    ],
+    "mapmate" => [
+      ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
+      ['caption' => 'Site', 'field' => 'location.verbatim_locality'],
+      ['caption' => 'Gridref', 'field' => 'location.output_sref'],
+      ['caption' => 'VC', 'field' => '#higher_geography:Vice County:code#'],
+      ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
+      ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
+      ['caption' => 'Date', 'field' => '#mapmate_date#'],
+      ['caption' => 'Quantity', 'field' => 'occurrence.organism_quantity'],
+      ['caption' => 'Method', 'field' => 'event.sampling_protocol'],
+      ['caption' => 'Sex', 'field' => 'occurrence.sex'],
+      ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
+      ['caption' => 'Status', 'field' => ''],
+      ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
+      ['caption' => 'ID', 'field' => 'id'],
+      ['caption' => 'RecordKey', 'field' => '_id'],
     ]
   ];
 
@@ -1073,6 +1090,10 @@ class Rest_Controller extends Controller {
           $fields[] = 'metadata.survey';
         }
         elseif ($field === '#event_date#') {
+          $fields[] = 'event.date_start';
+          $fields[] = 'event.date_end';
+        }
+        elseif ($field === '#mapmate_date#') {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
         }
@@ -1612,6 +1633,42 @@ class Rest_Controller extends Controller {
     }
     else {
       return "$start to $end";
+    }
+  }
+
+   /**
+   * Special field handler for Elasticsearch event dates compatible for MapMate.
+   *
+   * Converts event.date_from and event.date_to to a readable date string, e.g.
+   * for inclusion in CSV output suitable for MapMate import.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   MapMate formatted date.
+   */
+  private function esGetSpecialFieldMapmateDate(array $doc) {
+    // No need to duplicate work of esGetSpecialFieldEventDate.
+    // Use that function to format the date initially then
+    // modify for MapMate.
+    $date = esGetSpecialFieldEventDate($doc);
+    if (startsWith($date, "Before ")) {
+      // Mapmate can't deal with unbound ranges
+      // - replace with date of known bound.
+      return substr($date, 7);
+    } 
+    elseif (startsWith($date, "After ")) {
+      // Mapmate can't deal with unbound ranges
+      // - replace with date of known bound.
+      return substr($date, 6);
+    }
+    elseif (strpos($a, ' to ') !== false) {
+      // Mapmate uses a hyphen in date ranges.
+      return str_replace(" to ","-",$date);
+    }
+    else {
+      return $date;
     }
   }
 
