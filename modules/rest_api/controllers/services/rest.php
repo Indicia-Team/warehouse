@@ -1779,12 +1779,13 @@ class Rest_Controller extends Controller {
     $quantity = !empty($doc['occurrence']['organism_quantity']) ? $doc['occurrence']['organism_quantity'] : '';
     if (!empty($doc['occurrence']['zero_abundance']) && $doc['occurrence']['zero_abundance'] !== 'false') {
       $zero = True;
-    } else {
+    } 
+    else {
       $zero = False;
     }
     switch($format) {
       case "mapmate":
-        return $zero;
+        return $zero ? "zero" : "not zero";
         // Mapmate will only accept integer values and uses a value 
         // of -7 to indicate a negative record. MapMate interprets
         // a quantity of 0 to mean 'present'.
