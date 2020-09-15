@@ -1797,6 +1797,14 @@ class Rest_Controller extends Controller {
         else {
           return '';
         }
+      case "integer":
+        // Only return the value if it is an iteger.
+        if(preg_match('/^\d+$/', $quantity)) {
+          return $quantity;
+        }
+        else {
+          return '';
+        }
       case "non-integer":
         // Only return the value if it is not an iteger.
         if(!preg_match('/^\d+$/', $quantity)) {
