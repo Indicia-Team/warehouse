@@ -1776,8 +1776,12 @@ class Rest_Controller extends Controller {
    */
   private function esGetSpecialFieldOrganismQuantity(array $doc, array $params) {
     $format = !empty($params) ? $params[0] : "";
-    $zero = isset($doc['occurrence']['zero_abundance']) ? $doc['occurrence']['zero_abundance'] : false;
-    $quantity = isset($doc['occurrence']['organism_quantity']) ? $doc['occurrence']['organism_quantity'] : '';
+    $quantity = !empty($doc['occurrence']['organism_quantity']) ? $doc['occurrence']['organism_quantity'] : '';
+    if (!empty($doc['occurrence']['zero_abundance']) && $doc['occurrence']['zero_abundance'] !== 'false') {
+      $zero = True;
+    } else {
+      $zero = False;
+    }
     switch($format) {
       case "mapmate":
         // Mapmate will only accept integer values and uses a value 
