@@ -996,12 +996,12 @@ class Rest_Controller extends Controller {
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Site', 'field' => 'location.verbatim_locality'],
       ['caption' => 'Gridref', 'field' => 'location.output_sref'],
-      ['caption' => 'VC', 'field' => '#higher_geography:Vice County:code#'],
-      ['caption' => 'MMVC', 'field' => '#mapmate_vc#'],
+      ['caption' => 'VC', 'field' => '#mapmate_vc#'],
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
       ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
       ['caption' => 'Date', 'field' => '#mapmate_date#'],
       ['caption' => 'Quantity', 'field' => 'occurrence.organism_quantity'],
+      ['caption' => 'Quantity', 'field' => '#organism_quantity:mapmate#'],
       ['caption' => 'Method', 'field' => 'event.sampling_protocol'],
       ['caption' => 'Sex', 'field' => 'occurrence.sex'],
       ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
@@ -1009,6 +1009,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
       ['caption' => 'ID', 'field' => 'id'],
       ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:non-integer#'],
     ]
   ];
 
@@ -1100,6 +1101,10 @@ class Rest_Controller extends Controller {
         }
         elseif ($field === '#mapmate_vc#') {
           $fields[] = 'location.higher_geography';
+        }
+        elseif ($field === '#organism_quantity#') {
+          $fields[] = 'occurrence.organism_quantity';
+          $fields[] = 'occurrence.zero_abundance';
         }
         elseif (preg_match('/^#(lat_lon|lat|lon)#$/', $field) || preg_match('/^#(lat|lon):(.*)#$/', $field)) {
           $fields[] = 'location.point';
@@ -1732,18 +1737,18 @@ class Rest_Controller extends Controller {
   /**
    * Special field handler for Elasticsearch location VC number formatted for MapMate.
    *
-   * Converts Vice County code to formats preferred by MapMate
+   * Converts Vice County code to values required by MapMate
    * for inclusion in CSV output suitable for MapMate import.
    *
    * @param array $doc
    *   Elasticsearch document.
    *
    * @return string
-   *   VC number. If Irish, it is prefixed with H. If unknown, set to zero.
+   *   VC number. If unknown, set to zero.
    */
   private function esGetSpecialFieldMapmateVc(array $doc) {
     // No need to duplicate work of esGetSpecialFieldHigherGeography.
-    // Use that function to format the date initially then
+    // Use that function to get the VC number initially then
     // modify for MapMate.
     $vc = $this->esGetSpecialFieldHigherGeography($doc, array("Vice County", "code"));
     if ($vc === "") {
@@ -1753,6 +1758,50 @@ class Rest_Controller extends Controller {
     } 
     else {
       return $vc;
+    }
+  }
+
+  /**
+   * Special field handler for Elasticsearch organism quantity.
+   *
+   * Allows organism quanities to be filtered/formatted according to params.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters in field definition.
+   *
+   * @return string
+   *   A quantity formatted/filtered as indicated by passed parameter.
+   */
+  private function esGetSpecialFieldOrganismQuantity(array $doc, array $params) {
+    $format = !empty($params) ? $params[0] : "";
+    $zero = isset($doc['occurrence']['zero_abundance']) ? $doc['occurrence']['zero_abundance'] : 'false';
+    $quantity = isset($doc['occurrence']['organism_quantity']) ? $doc['occurrence']['organism_quantity'] : '';
+    switch($format) {
+      case "mapmate":
+        // Mapmate will only accept integer values and uses a value 
+        // of -7 to indicate a negative record. MapMate interprets
+        // a quantity of 0 to mean 'present'.
+        if ($zero === 'true' || $quantity === '0') {
+          return -7;
+        }
+        elseif(preg_match('/^\d+$/', $quantity)) {
+          return (int)$quantity;
+        }
+        else {
+          return '';
+        }
+      case "non-integer":
+        // Only return the value if it is not an iteger.
+        if(!preg_match('/^\d+$/', $quantity)) {
+          return $quantity;
+        }
+        else {
+          return '';
+        }
+      default:
+        return $quantity;
     }
   }
 
