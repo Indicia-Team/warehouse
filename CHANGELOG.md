@@ -1,3 +1,13 @@
+# Version 4.5.0
+*2020-09-16*
+
+* Bugfix for saving an occurrence via the warehouse UI.
+* Refactoring of way entities are configured in the REST API.
+* REST API now supports creation of surveys, sample and occurrence attributes for users with site
+  admin role.
+* Several bugfixes relating to RESTful API behaviour.
+* Support for creating DINTY tetrad references from server-side database code (e.g. in reports).
+
 # Version 4.4.0
 *2020-08-21*
 
