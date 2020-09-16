@@ -1010,8 +1010,8 @@ class Rest_Controller extends Controller {
       ['caption' => 'RecordKey', 'field' => '_id'],
       ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:non-integer#'],
       ['caption' => 'Habitat', 'field' => 'event.habitat'],
-      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y G:i:s#'],
-      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G:i:s#'],
+      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y G-i-s#'],
+      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G-i-s#'],
       ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
       ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
       ['caption' => 'Query', 'field' => 'identification.query'],
@@ -1146,7 +1146,7 @@ class Rest_Controller extends Controller {
         elseif (preg_match('/^#null_if_zero:([a-z_]+(\.[a-z_]+)*)#$/', $field, $matches)) {
           $fields[] = $matches[1];
         }
-        elseif (preg_match('/^#datetime:([a-z_]+(\.[a-z_]+)*)#$/', $field, $matches)) {
+        elseif (preg_match('/^#datetime:([a-z_]+(\.[a-z_]+)*):.*#$/', $field, $matches)) {
           $fields[] = $matches[1];
         }
       }
