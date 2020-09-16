@@ -2072,7 +2072,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * GET handler for the taxon-observations/n resource.
+   * GET handler for the taxon-observations resource.
    *
    * Outputs a single taxon observations's details.
    *
