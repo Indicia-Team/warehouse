@@ -1000,16 +1000,22 @@ class Rest_Controller extends Controller {
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
       ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
       ['caption' => 'Date', 'field' => '#mapmate_date#'],
-      ['caption' => 'Quantity', 'field' => 'occurrence.organism_quantity'],
       ['caption' => 'Quantity', 'field' => '#organism_quantity:mapmate#'],
       ['caption' => 'Method', 'field' => 'event.sampling_protocol'],
       ['caption' => 'Sex', 'field' => '#mapmate_sex#'],
       ['caption' => 'Stage', 'field' => '#mapmate_life_stage#'],
-      ['caption' => 'Status', 'field' => ''],
-      ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
+      ['caption' => 'Status', 'field' => '#blank#'],
+      ['caption' => 'Comment', 'field' => '#sample_occurrence_comment#'],
       ['caption' => 'ID', 'field' => 'id'],
       ['caption' => 'RecordKey', 'field' => '_id'],
       ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:non-integer#'],
+      ['caption' => 'Habitat', 'field' => 'event.habitat'],
+      // ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y G:i:s#'],
+      // ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G:i:s#'],
+      ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
+      ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
+      ['caption' => 'Query', 'field' => 'identification.query'],
+      ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
     ]
   ];
 
@@ -1108,6 +1114,10 @@ class Rest_Controller extends Controller {
         elseif ($field === '#mapmate_life_stage#') {
           $fields[] = 'occurrence.life_stage';
         }
+        elseif ($field ==='#sample_occurrence_comment#') {
+          $fields[] = 'event.event_remarks';
+          $fields[] = 'occurrence.occurrence_remarks';
+        }
         elseif (preg_match('/^#organism_quantity(.*)#$/', $field)) {
           $fields[] = 'occurrence.organism_quantity';
           $fields[] = 'occurrence.zero_abundance';
@@ -1134,6 +1144,9 @@ class Rest_Controller extends Controller {
           $fields[] = "$entity.$key";
         }
         elseif (preg_match('/^#null_if_zero:([a-z_]+(\.[a-z_]+)*)#$/', $field, $matches)) {
+          $fields[] = $matches[1];
+        }
+        elseif (preg_match('/^#datetime:([a-z_]+(\.[a-z_]+)*)#$/', $field, $matches)) {
           $fields[] = $matches[1];
         }
       }
@@ -1504,6 +1517,48 @@ class Rest_Controller extends Controller {
       }
       fputcsv($handle, $row);
     };
+  }
+
+   /**
+   * Special field handler returns an empty string. This is useful
+   * where the output CSV must contain a column to which no
+   * useful data can be mapped.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Empty string.
+   */
+  private function esGetSpecialFieldBlank(array $doc) {
+    return '';
+  }
+
+   /**
+   * Special field handler for Elasticsearch to combine
+   * the sample and occurrence comment.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Combined comment string.
+   */
+  private function esGetSpecialFieldSampleOccurrenceComment(array $doc) {
+    $oComment = isset($doc['occurrence']['occurrence_remarks']) ? $doc['occurrence']['occurrence_remarks'] : '';
+    $sComment = isset($doc['event']['event_remarks']) ? $doc['event']['event_remarks'] : '';
+    if ($oComment !== "" && $sComment !== "") {
+      return "Record comment: $oComment Sample comment: $sComment";
+    }
+    elseif ($oComment !== "") {
+      return "Record comment: $oComment";
+    }
+    elseif ($sComment !== "") {
+      return "Sample comment: $sComment";
+    }
+    else {
+      return '';
+    }
   }
 
   /**
