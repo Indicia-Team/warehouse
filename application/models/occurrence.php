@@ -246,7 +246,7 @@ class Occurrence_Model extends ORM {
           'updated_on' => date("Ymd H:i:s"),
           'person_name' => $this->getPreviousDeterminerName(),
         ];
-        $insert = $this->db
+        $this->db
           ->from('determinations')
           ->set($determination)
           ->insert();
@@ -349,12 +349,12 @@ SQL;
     $determinerName = '';
     // Work through a list of possible places to find a determiner name in
     // priority order.
-    // Occurrences.determiner_id
+    // Occurrences.determiner_id.
     if (!empty($oldValues['determiner_id'])) {
       return $this->getPersonNameFromUserId($oldValues['determiner_id']);
     }
-    // Attribute values det_*_name
-    $attrValues =  $this->db
+    // Attribute values det_*_name.
+    $attrValues = $this->db
       ->select('v.text_value', 'a.system_function')
       ->from('occurrence_attribute_values as v')
       ->join('occurrence_attributes as a', 'a.id', 'v.occurrence_attribute_id')
@@ -387,7 +387,8 @@ SQL;
     if (!empty($recorders) && !empty($recorders->recorders)) {
       return $recorders->recorders;
     }
-    // If after working through all the rules we still haven't found a person name, the set to 'Unknown'.
+    // If after working through all the rules we still haven't found a person
+    // name, then set to 'Unknown'.
     if (empty($determinerName)) {
       $determinerName = 'Unknown';
     }
@@ -405,7 +406,7 @@ SQL;
   }
 
   /**
-   * If this occurrence record status was reset after an edit, then log a comment.
+   * If this record status was reset after an edit then log a comment.
    */
   public function postSubmit($isInsert) {
     if ($this->requeuedForVerification && !$isInsert) {
@@ -421,28 +422,33 @@ SQL;
   }
 
   /**
-   * Defines a submission structure for occurrences that lets samples be submitted at the same time, e.g. during CSV upload.
+   * Defines a submission structure for occurrences.
+   *
+   * Lets samples be submitted at the same time, e.g. during CSV upload.
+   *
+   * @return array
+   *   Submission structure.
    */
   public function get_submission_structure() {
-    return array(
-        'model' => $this->object_name,
-        'superModels' => array(
-          'sample' => array('fk' => 'sample_id')
-        )
-    );
+    return [
+      'model' => $this->object_name,
+      'superModels' => [
+        'sample' => ['fk' => 'sample_id'],
+      ],
+    ];
   }
 
   /**
    * Returns details of attributes for this model.
    */
   public function get_attr_details() {
-    return array('attrs_field_prefix' => $this->attrs_field_prefix);
+    return ['attrs_field_prefix' => $this->attrs_field_prefix];
   }
 
   /*
    * Determines if the provided module has been activated in the indicia configuration.
    */
-  private function _check_module_active($module) {
+  private function checkModuleActive($module) {
     $config = kohana::config_load('core');
     foreach ($config['modules'] as $path) {
       if (strlen($path) >= strlen($module) &&
@@ -461,43 +467,43 @@ SQL;
    *   * **occurrence_associations** - Set to 't' to enable occurrence associations options. The
    *     relevant warehouse module must also be enabled.
    */
-  public function fixedValuesForm($options = array()) {
-    $srefs = array();
+  public function fixedValuesForm($options = []) {
+    $srefs = [];
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title) {
-      $srefs[] = str_replace(array(',', ':'), array('&#44', '&#58'), $code) .
+      $srefs[] = str_replace([',', ':'], ['&#44', '&#58'], $code) .
             ":" .
-            str_replace(array(',', ':'), array('&#44', '&#58'), $title);
+            str_replace([',', ':'], ['&#44', '&#58'], $title);
     }
 
-    $sample_methods = array(":Defined in file");
-    $parent_sample_methods = array(":No filter");
+    $sample_methods = [":Defined in file"];
+    $parent_sample_methods = [":No filter"];
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-      $sample_method = str_replace(array(',', ':'), array('&#44', '&#58'), $term->id) .
+      $sample_method = str_replace([',', ':'], ['&#44', '&#58'], $term->id) .
         ":" .
-        str_replace(array(',', ':'), array('&#44', '&#58'), $term->term);
+        str_replace([',', ':'], ['&#44', '&#58'], $term->term);
       $sample_methods[] = $sample_method;
       $parent_sample_methods[] = $sample_method;
     }
 
-    $locationTypes = array(":No filter");
+    $locationTypes = [":No filter"];
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-      $locationTypes[] = str_replace(array(',', ':'), array('&#44', '&#58'), $term->id) .
+      $locationTypes[] = str_replace([',', ':'], ['&#44', '&#58'], $term->id) .
         ":" .
-        str_replace(array(',', ':'), array('&#44', '&#58'), $term->term);
+        str_replace([',', ':'], ['&#44', '&#58'], $term->term);
     }
-    $retVal = array(
-      'website_id' => array(
+    $retVal = [
+      'website_id' => [
         'display' => 'Website',
         'description' => 'Select the website to import records into.',
         'datatype' => 'lookup',
         'population_call' => 'direct:website:id:title' ,
         'filterIncludesNulls' => TRUE,
         'validation' => ['required'],
-      ),
-      'survey_id' => array(
+      ],
+      'survey_id' => [
         'display' => 'Survey dataset',
         'description' => 'Select the survey dataset to import records into.',
         'datatype' => 'lookup',
@@ -505,17 +511,17 @@ SQL;
         'linked_to' => 'website_id',
         'linked_filter_field' => 'website_id',
         'validation' => ['required'],
-      ),
-      'sample:entered_sref_system' => array(
+      ],
+      'sample:entered_sref_system' => [
         'display' => 'Spatial ref. system',
         'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
             'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $srefs)
-      ),
+      ],
       // Also allow a field to be defined which defines the taxon list to look in when searching for species during a
       // csv upload.
-      'occurrence:fkFilter:taxa_taxon_list:taxon_list_id' => array(
+      'occurrence:fkFilter:taxa_taxon_list:taxon_list_id' => [
         'display' => 'Species list',
         'description' => 'Select the species checklist which will be used when attempting to match species names.',
         'datatype' => 'lookup',
@@ -523,51 +529,51 @@ SQL;
         'linked_to' => 'website_id',
         'linked_filter_field' => 'website_id',
         'filterIncludesNulls' => TRUE
-      ),
-      'occurrence:record_status' => array(
+      ],
+      'occurrence:record_status' => [
         'display' => 'Record status',
         'description' => 'Select the initial status for imported species records',
         'datatype' => 'lookup',
         'lookup_values' => 'C:Unconfirmed - not reviewed,V:Accepted,I:Data entry still in progress',
         'default' => 'C'
-      )
-    );
+      ]
+    ];
     if (!empty($options['activate_global_sample_method']) && ($options['activate_global_sample_method'] === 't' || $options['activate_global_sample_method'] === true)) {
-      $retVal['sample:sample_method_id'] = array(
+      $retVal['sample:sample_method_id'] = [
         'display' => 'Sample Method',
         'description' => 'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a ' .
         'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $sample_methods)
-      );
+      ];
     }
     if (!empty($options['activate_parent_sample_method_filter']) && ($options['activate_parent_sample_method_filter']==='t' || $options['activate_parent_sample_method_filter']=== true)) {
-      $retVal['fkFilter:sample:sample_method_id'] = array(
+      $retVal['fkFilter:sample:sample_method_id'] = [
         'display' => 'Parent Sample Method',
         'description' => 'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked ' .
         'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $parent_sample_methods)
-      );
+      ];
     }
     if (!empty($options['activate_location_location_type_filter']) && $options['activate_location_location_type_filter']==='t') {
-      $retVal['fkFilter:location:location_type_id'] = array(
+      $retVal['fkFilter:location:location_type_id'] = [
         'display' => 'Location Type',
         'description' => 'If this import file includes samples which reference locations records, you can restrict the type of locations looked ' .
         'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $locationTypes)
-      );
+      ];
     }
 
     if (!empty($options['occurrence_associations']) && ($options['occurrence_associations'] === 't' || $options['occurrence_associations'] === TRUE) &&
-        self::_check_module_active('occurrence_associations')) {
-      $retVal['useAssociations'] = array(
+        $this->checkModuleActive('occurrence_associations')) {
+      $retVal['useAssociations'] = [
         'display' => 'Use associations',
         'description' => 'Select if this import uses occurrence associations: implies two species records uploaded for each entry in the file.',
         'datatype' => 'checkbox'
-      ); // default off
-      $retVal['occurrence_association:fkFilter:association_type:termlist_id'] = array(
+      ]; // default off
+      $retVal['occurrence_association:fkFilter:association_type:termlist_id'] = [
         'display' => 'Term list for association types',
         'description' => 'Select the term list which will be used to match the association types.',
         'datatype' => 'lookup',
@@ -575,8 +581,8 @@ SQL;
         // ,'linked_to' => 'website_id',
         // 'linked_filter_field' => 'website_id',
         // 'filterIncludesNulls' => TRUE
-      );
-      $retVal['occurrence_2:fkFilter:taxa_taxon_list:taxon_list_id'] = array(
+      ];
+      $retVal['occurrence_2:fkFilter:taxa_taxon_list:taxon_list_id'] = [
         'display' => 'Second species list',
         'description' => 'Select the species checklist which will be used when attempting to match second species names.',
         'datatype' => 'lookup',
@@ -584,14 +590,14 @@ SQL;
         'linked_to' => 'website_id',
         'linked_filter_field' => 'website_id',
         'filterIncludesNulls' => TRUE
-      );
-      $retVal['occurrence_2:record_status'] = array(
+      ];
+      $retVal['occurrence_2:record_status'] = [
         'display' => 'Record status',
         'description' => 'Select the initial status for second imported species records',
         'datatype' => 'lookup',
         'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
         'default' => 'C'
-      );
+      ];
     }
     return $retVal;
   }

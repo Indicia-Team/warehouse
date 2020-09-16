@@ -101,10 +101,10 @@ $(document).ready(function() {
     $defaultDeterminer = '';
     if ($model->determiner_id) {
       if (!empty($model->determiner->first_name)) {
-        $defaultDeterminer = $model->determiner->first_name . ' ' . $model->determiner->last_name;
+        $defaultDeterminer = $model->determiner->first_name . ' ' . $model->determiner->surname;
       }
       else {
-        $defaultDeterminer = $model->determiner->last_name;
+        $defaultDeterminer = $model->determiner->surname;
       }
     }
     echo data_entry_helper::autocomplete([
