@@ -1582,7 +1582,7 @@ class Rest_Controller extends Controller {
     }
     $dtvalue = $this->getRawEsFieldValue($doc, $params[0]);
     $dt = DateTime::createFromFormat("M dS Y, G:i:s.u", $dtvalue);
-    return  DateTime::format($params[1], $dt);
+    return  $dt.format($params[1]);
   }
 
   /**
