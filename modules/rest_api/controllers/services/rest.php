@@ -1010,8 +1010,8 @@ class Rest_Controller extends Controller {
       ['caption' => 'RecordKey', 'field' => '_id'],
       ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:non-integer#'],
       ['caption' => 'Habitat', 'field' => 'event.habitat'],
-      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y G-i-s#'],
-      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G-i-s#'],
+      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H^i^s#'], // Can't use : in format spec here - use ^ instead which is translated to :
+      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G^i^s#'], // Can't use : in format spec here - use ^ instead which is translated to :
       ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
       ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
       ['caption' => 'Query', 'field' => 'identification.query'],
@@ -1582,10 +1582,12 @@ class Rest_Controller extends Controller {
     }
     $dtvalue = $this->getRawEsFieldValue($doc, $params[0]);
     $dt = DateTime::createFromFormat("Y-m-d G:i:s.u", $dtvalue);
+    // Replace any ^ characters in format with :
+    $format = str_replace("^", ":", $params[1]);
     if ($dt === FALSE) {
       return  $dtvalue;
     } else {
-      return $dt->format($params[1]);
+      return $dt->format($format);
     }
   }
 
