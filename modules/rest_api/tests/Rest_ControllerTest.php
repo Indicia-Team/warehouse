@@ -251,6 +251,18 @@ KEY;
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
+    // Make sure there is invalid public key stored.
+    $db = new Database();
+    $db->update(
+      'websites',
+      array('public_key' => 'INVALID!!!'),
+      array('id' => 1)
+    );
+    $cache->delete($cacheKey);
+    // Make an otherwise valid call - should be unauthorised.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService('reports/library/months/filterable_species_counts.xml');
+    $this->assertTrue($response['httpCode'] === 500);
     // Store the public key so Indicia can check signed requests.
     $db = new Database();
     $db->update(
@@ -285,6 +297,29 @@ KEY;
     $this->assertTrue($response['httpCode'] === 401);
   }
 
+  public function testJwtHeaderCaseInsensitive() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // First POST to create.
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+        'comment' => 'A sample to delete',
+      ]]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    // Now GET to check values stored OK using manually set auth header in lowercase.
+    $this->authMethod = 'none';
+    $storedObj = $this->callService("samples/$id", FALSE, NULL, ['authorization: bearer ' . self::$jwt]);
+    $this->assertResponseOk($storedObj, "/samples/$id GET");
+  }
+
   /**
    * A generic test for POST end-points.
    *
@@ -296,11 +331,13 @@ KEY;
    *   Example values to post.
    * @param string $requiredFieldToTest
    *   A field which is mandatory that can be used to check validation.
+   * @param int $userId
+   *   Warehouse user ID to authenticate as. Default is 1.
    */
-  private function postTest($table, array $exampleData, $requiredFieldToTest) {
+  private function postTest($table, array $exampleData, $requiredFieldToTest, $userId = 1) {
     $entity = inflector::singular($table);
     $this->authMethod = 'jwtUser';
-    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
     // First a submission with a validation failure.
     $invalidData = array_merge($exampleData);
     unset($invalidData[$requiredFieldToTest]);
@@ -328,6 +365,7 @@ KEY;
       $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
       $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
     }
+    return $id;
   }
 
   /**
@@ -367,7 +405,7 @@ KEY;
   }
 
   /**
-   * A generic test for entity end-points with a GET method.
+   * A generic test for entity end-points with a GET method for single items.
    *
    * @param string $table
    *   End-point (table) name.
@@ -385,13 +423,92 @@ KEY;
     );
     $this->assertEquals(201, $response['httpCode']);
     $id = $response['response']['values']['id'];
+    $headers = $this->parseHeaders($response['headers']);
+    $this->assertTrue(array_key_exists('ETag', $headers), "$table POST does not return ETag.");
+    $insertedRecordETag = $headers['ETag'];
     // Now GET to check values stored OK.
     $storedObj = $this->callService("$table/$id");
-    $this->assertResponseOk($storedObj, "/locations/$id GET");
+    $this->assertResponseOk($storedObj, "/$table/$id GET");
+    $headers = $this->parseHeaders($storedObj['headers']);
+    $this->assertTrue(array_key_exists('ETag', $headers), "$table GET does not return ETag.");
+    $this->assertEquals($insertedRecordETag, $headers['ETag'], 'GET returns ETag which does not match expected');
     foreach ($exampleData as $field => $value) {
       $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
       $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
     }
+  }
+
+  /**
+   * A generic test for entity end-points with a GET method for a list.
+   *
+   * @param string $table
+   *   End-point (table) name.
+   * @param array $exampleData
+   *   Example values to POST then GET to check.
+   */
+  private function getListTest($table, $exampleData) {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // First POST to create.
+    $response = $this->callService(
+      $table,
+      FALSE,
+      ['values' => $exampleData]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    // Now GET to check values stored OK.
+    $surveys = $this->callService("$table");
+    $this->assertResponseOk($surveys, "/$table GET");
+    // Search for the one we posted.
+    $found = FALSE;
+    foreach ($surveys['response'] as $survey) {
+      $allMatch = $survey['values']['id'] === $id;
+      foreach ($exampleData as $field => $value) {
+        $allMatch = $allMatch && ($value === $survey['values'][$field]);
+      }
+      if ($allMatch) {
+        $found = TRUE;
+        // from foreach.
+        break;
+      }
+    }
+    $this->assertTrue($found, 'POSTed survey not found in retrieved list using GET.');
+    // Repeat with a filter
+    $filterField = array_keys($exampleData)[0];
+    $surveys = $this->callService($table, [$filterField => $exampleData[$filterField]]);
+    $this->assertResponseOk($surveys, "/$table GET");
+    // Search for the one we posted.
+    $found = FALSE;
+    foreach ($surveys['response'] as $survey) {
+      $allMatch = $survey['values']['id'] === $id;
+      foreach ($exampleData as $field => $value) {
+        $allMatch = $allMatch && ($value === $survey['values'][$field]);
+      }
+      if ($allMatch) {
+        $found = TRUE;
+        // from foreach.
+        break;
+      }
+    }
+    $this->assertTrue($found, 'POSTed survey not found in filtered retrieved list using GET.');
+    // Repeat with a filter that should exclude the record.
+    $surveys = $this->callService($table, [$filterField => microtime(TRUE)]);
+    $this->assertResponseOk($surveys, "/$table GET");
+    // Search for the one we posted.
+    $found = FALSE;
+    foreach ($surveys['response'] as $survey) {
+      $allMatch = $survey['values']['id'] === $id;
+      foreach ($exampleData as $field => $value) {
+        $allMatch = $allMatch && ($value === $survey['values'][$field]);
+      }
+      if ($allMatch) {
+        $found = TRUE;
+        // from foreach.
+        break;
+      }
+    }
+    $this->assertFalse($found, 'POSTed survey found in filtered retrieved list using GET which it should be excluded from.');
   }
 
   /**
@@ -421,6 +538,9 @@ KEY;
     $this->assertEquals(204, $response['httpCode']);
     // Check it doesn't exist.
     $response = $this->callService("$table/$id");
+    $this->assertEquals(404, $response['httpCode']);
+    // Delete it again - it should be not found.
+    $response = $this->callService("$table/$id", FALSE, NULL, [], 'DELETE');
     $this->assertEquals(404, $response['httpCode']);
     // Delete an incorrect ID.
     $response = $this->callService("$table/999999", FALSE, NULL, [], 'DELETE');
@@ -508,6 +628,61 @@ KEY;
       'date' => '01/08/2020',
       'comment' => 'A sample comment test',
     ], 'survey_id');
+  }
+
+  /**
+   * A test of samples POST with user checks.
+   */
+  public function testJwtSamplePostUserAuth() {
+    $db = new Database();
+    // Create a different user to post with.
+    $db->query("insert into people(first_name, surname, created_on, created_by_id, updated_on, updated_by_id) " .
+      "values ('test', 'extrauser', now(), 1, now(), 1)");
+    $tm = microtime(TRUE);
+    $db->query("insert into users (username, person_id,  created_on, created_by_id, updated_on, updated_by_id) " .
+    "values ('test_extrauser$tm', (select max(id) from people), now(), 1, now(), 1)");
+    $userId = $db->query('select max(id) from users')->current()->max;
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    // Post a sample should fail until we give website access.
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+        'comment' => 'A sample comment test',
+      ]]
+    );
+    $this->assertEquals(401, $response['httpCode']);
+    // Grant website access.
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userId, 1, 3, 1, now(), 1, now())");
+    // Try again.
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      ['values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+        'comment' => 'A sample comment test',
+      ]]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    // Check created_by_id.
+    $response = $this->callService("samples/$id");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals($userId, $response['response']['values']['created_by_id'], 'Created_by_id not set correctly for sample');
+    // Re-authenticate as user 1.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // They shouldn't have access.
+    $response = $this->callService("samples/$id");
+    $this->assertEquals(404, $response['httpCode']);
   }
 
   /**
@@ -701,7 +876,11 @@ KEY;
       FALSE,
       ['values' => $data]
     );
-    $this->assertTrue($response['httpCode'] === 409, 'Duplicate external key did not return 409 Conflict response.');
+    $this->assertEquals(409, $response['httpCode'], 'Duplicate external key did not return 409 Conflict response.');
+    $this->assertArrayHasKey('duplicate_of', $response['response']);
+    $this->assertArrayHasKey('id', $response['response']['duplicate_of']);
+    $this->assertArrayHasKey('href', $response['response']['duplicate_of']);
+    $this->assertEquals($id, $response['response']['duplicate_of']['id']);
     // In a diff survey, not considered a duplicate.
     $data['survey_id'] = 2;
     $response = $this->callService(
@@ -709,7 +888,7 @@ KEY;
       FALSE,
       ['values' => $data]
     );
-    $this->assertTrue($response['httpCode'] === 201, 'Duplicate external key in different survey not accepted.');
+    $this->assertEquals(201, $response['httpCode'], 'Duplicate external key in different survey not accepted.');
     // PUT with same external key should be OK.
     $response = $this->callService(
       "samples/$id",
@@ -1037,11 +1216,15 @@ KEY;
   }
 
   public function testJwtLocationPost() {
-    $this->postTest('locations', [
+    $id = $this->postTest('locations', [
       'name' => 'Test location',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB'
     ], 'name');
+    $db = new Database();
+    $locationsWebsitesCount = $db->query("select count(*) from locations_websites where location_id=$id")
+      ->current()->count;
+    $this->assertEquals(1, $locationsWebsitesCount, 'No locations_websites record created for a location POST.');
   }
 
   /**
@@ -1094,6 +1277,263 @@ KEY;
       'name' => 'Location GET test',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
+    ]);
+  }
+
+  public function testJwtSurveyPost() {
+    $this->postTest('surveys', [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ], 'title');
+  }
+
+  /**
+   * Test /surveys PUT behaviour.
+   */
+  public function testJwtSurveyPut() {
+    $this->putTest('surveys',  [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ], [
+      'title' => 'Survey test updated',
+    ]);
+  }
+
+  /**
+   * A basic test of /surveys GET.
+   */
+  public function testJwtSurveyGet() {
+    $this->getTest('surveys',  [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ]);
+  }
+
+  /**
+   * A basic test of /surveys GET.
+   */
+  public function testJwtSurveysGetList() {
+    $this->getListTest('surveys',  [
+      'title' => 'Test survey ' . microtime(TRUE),
+      'description' => 'A test',
+    ]);
+  }
+
+  /**
+   * Test DELETE for a survey.
+   */
+  public function testJwtSurveyDelete() {
+    $this->deleteTest('surveys',  [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ]);
+  }
+
+  public function testJwtSurveyPostPermissions() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data =  [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ];
+    $db = new Database();
+    // Should fail if we are not an admin.
+    $db->query('UPDATE users SET core_role_id=null WHERE id=1');
+    $response = $this->callService(
+      'surveys',
+      FALSE,
+      ['values' => $data]
+    );
+    // Should succeed if we are a site admin
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      ' VALUES (1, 1, 3, 1, now(), 1, now())');
+    $this->assertEquals(401, $response['httpCode']);
+    $response = $this->callService(
+      'surveys',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $db->query('DELETE FROM users_websites WHERE user_id=1 AND website_id=1');
+    // Should succeed if we are a core admin.
+    $db->query('UPDATE users SET core_role_id=1 WHERE id=1');
+    $response = $this->callService(
+      'surveys',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    // PUT should succeed initially.
+    $response = $this->callService(
+      "surveys/$id",
+      FALSE,
+      ['values' => $data],
+      [], 'PUT'
+    );
+    $this->assertEquals(200, $response['httpCode']);
+    // PUT should fail if we first hack the website ID to a different website.
+    $sql = <<<SQL
+INSERT INTO websites (title, created_on, created_by_id, updated_on, updated_by_id, url, password)
+VALUES ('additional', now(), 1, now(), 1, 'http://example.com', '1234567');
+UPDATE surveys SET website_id=(select max(id) FROM websites) WHERE id=$id;
+SQL;
+    $db->query($sql);
+    $response = $this->callService(
+      "surveys/$id",
+      FALSE,
+      ['values' => $data],
+      [], 'PUT'
+    );
+    $this->assertEquals(401, $response['httpCode']);
+  }
+
+  /**
+   * Testing fetching OPTIONS for surveys end-point.
+   */
+  public function testJwtSurveyOptions() {
+    $this->optionsTest('surveys');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtSurveyETags() {
+    $this->eTagsTest('surveys',  [
+      'title' => 'Test survey',
+      'description' => 'A test',
+    ]);
+  }
+
+  public function testJwtSampleAttributePost() {
+    $this->postTest('sample_attributes', [
+      'caption' => 'Test sample attribute',
+      'data_type' => 'T',
+    ], 'caption');
+  }
+
+  /**
+   * Test /sample_attributes PUT behaviour.
+   */
+  public function testJwtSampleAttributePut() {
+    $this->putTest('sample_attributes',  [
+      'caption' => 'Test sample attribute',
+      'data_type' => 'T',
+    ], [
+      'caption' => 'Test sample attribute updated',
+    ]);
+  }
+
+  /**
+   * A basic test of /sample_attributes GET.
+   */
+  public function testJwtSampleAttributeGet() {
+    $this->getTest('sample_attributes',  [
+      'caption' => 'Test sample attribute',
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * A basic test of /sample_attributes GET.
+   */
+  public function testJwtSampleAttributeGetList() {
+    $this->getListTest('sample_attributes',  [
+      'caption' => 'Test sample attribute ' . microtime(TRUE),
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * Test DELETE for a sample_attribute.
+   */
+  public function testJwtSampleAttributeDelete() {
+    $this->deleteTest('sample_attributes', [
+      'caption' => 'Test sample attribute',
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * Testing fetching OPTIONS for sample_attributes end-point.
+   */
+  public function testJwtSampleAttributeOptions() {
+    $this->optionsTest('sample_attributes');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtSampleAttributeETags() {
+    $this->eTagsTest('sample_attributes',  [
+      'caption' => 'Test sample attribute',
+      'data_type' => 'T',
+    ]);
+  }
+
+  public function testJwtOccurrenceAttributePost() {
+    $this->postTest('occurrence_attributes', [
+      'caption' => 'Test occurrence attribute',
+      'data_type' => 'T',
+    ], 'caption');
+  }
+
+  /**
+   * Test /occurrence_attributes PUT behaviour.
+   */
+  public function testJwtOccurrenceAttributePut() {
+    $this->putTest('occurrence_attributes',  [
+      'caption' => 'Test occurrence attribute',
+      'data_type' => 'T',
+    ], [
+      'caption' => 'Test occurrence attribute updated',
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrence_attributes GET.
+   */
+  public function testJwtOccurrenceAttributeGet() {
+    $this->getTest('occurrence_attributes',  [
+      'caption' => 'Test occurrence attribute',
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrence_attributes GET.
+   */
+  public function testJwtOccurrenceAttributeGetList() {
+    $this->getListTest('occurrence_attributes',  [
+      'caption' => 'Test occurrence attribute ' . microtime(TRUE),
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * Test DELETE for a occurrence_attribute.
+   */
+  public function testJwtOccurrenceAttributeDelete() {
+    $this->deleteTest('occurrence_attributes', [
+      'caption' => 'Test occurrence attribute',
+      'data_type' => 'T',
+    ]);
+  }
+
+  /**
+   * Testing fetching OPTIONS for occurrence_attributes end-point.
+   */
+  public function testJwtOccurrenceAttributeOptions() {
+    $this->optionsTest('occurrence_attributes');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtOccurrenceAttributeETags() {
+    $this->eTagsTest('occurrence_attributes',  [
+      'caption' => 'Test occurrence attribute',
+      'data_type' => 'T',
     ]);
   }
 
@@ -1171,7 +1611,7 @@ KEY;
   }
 
   /**
-   * Testing fetching OPTIONS for locations end-point.
+   * Testing fetching OPTIONS for occurrences end-point.
    */
   public function testJwtOccurrenceOptions() {
     $this->optionsTest('occurrences');
@@ -1186,6 +1626,51 @@ KEY;
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
     ]);
+  }
+
+  /**
+   * Test behaviour around duplicate check with external key.
+   */
+  public function testJwtOccurrencePostExtKey() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $data = [
+      'taxa_taxon_list_id' => 1,
+      'sample_id' => $sampleId,
+      'external_key' => 123,
+    ];
+    $response = $this->callService(
+      'occurrences',
+      FALSE,
+      ['values' => $data]
+    );
+    $id = $response['response']['values']['id'];
+    $response = $this->callService(
+      'occurrences',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertEquals(409, $response['httpCode'], 'Duplicate external key did not return 409 Conflict response.');
+  }
+
+  /**
+   * Test /occurrences POST in isolation.
+   */
+  public function testJwtOccurrencePostDeletedSample() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $db = new Database();
+    $db->query("update samples set deleted=true where id=$sampleId");
+    $data = [
+      'taxa_taxon_list_id' => 1,
+      'sample_id' => $sampleId,
+    ];
+    $response = $this->callService(
+      'occurrences',
+      FALSE,
+      ['values' => $data]
+    );
+    $this->assertEquals(400, $response['httpCode'], 'Adding occurrence to deleted sample did not return 400 Bad request response.');
   }
 
   public function testProjects_authentication() {
@@ -1431,6 +1916,13 @@ KEY;
     $this->checkReportInReponse($response['response'], 'filterable_explore_list');
   }
 
+  public function testMissingReportFile() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService('reports/some_random_report_name.xml', []);
+    $this->assertEquals(404, $response['httpCode'], 'Request for a missing report does not return 404.');
+  }
+
   public function testReportParams_get() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportParams_get");
 
@@ -1509,12 +2001,16 @@ KEY;
   /**
    * Tests authentication against a resource, by passing incorrect user or secret, then
    * finally passing the correct details to check a valid response returns.
+   *
    * @param $resource
-   * @param string $user User identifier, either client system ID, user ID or website ID.
-   * @param string $secret Secret or password to go with the $user.
-   * @param array $query Query parameters to pass in the URL
+   * @param string $user
+   *   User identifier, either client system ID, user ID or website ID.
+   * @param string $secret
+   *   Secret or password to go with the $user.
+   * @param array $query
+   *   Query parameters to pass in the URL
    */
-  private function checkResourceAuthentication($resource, $query = array()) {
+  private function checkResourceAuthentication($resource, $query = []) {
     $correctClientUserId = self::$clientUserId;
     $correctWebsiteId = self::$websiteId;
     $correctUserId = self::$userId;
@@ -1650,7 +2146,7 @@ KEY;
    * @param $session
    * @param $url
    */
-  private function setRequestHeader($session, $url, $additionalRequestHeader) {
+  private function setRequestHeader($session, $url, $additionalRequestHeader = []) {
     switch ($this->authMethod) {
       case 'hmacUser':
         $user = self::$userId;
@@ -1706,10 +2202,10 @@ KEY;
         break;
     }
     if (isset($authString)) {
-      curl_setopt($session, CURLOPT_HTTPHEADER, array_merge(
-        $additionalRequestHeader,
-        array("Authorization: $authString")
-      ));
+      $additionalRequestHeader[] = "Authorization: $authString";
+    }
+    if (count($additionalRequestHeader) > 0) {
+      curl_setopt($session, CURLOPT_HTTPHEADER, $additionalRequestHeader);
     }
   }
 

@@ -413,8 +413,10 @@ HTML;
    *   HTTP error code.
    * @param string $msg
    *   Detailed message to log.
+   * @param array $extra
+   *   Additional info to include in the response if required.
    */
-  public function fail($status, $code, $msg = NULL) {
+  public function fail($status, $code, $msg = NULL, array $extra = NULL) {
     http_response_code($code);
     $response = array(
       'code' => $code,
@@ -422,6 +424,9 @@ HTML;
     );
     if ($msg) {
       $response['message'] = $msg;
+    }
+    if ($extra) {
+      $response = array_merge($response, $extra);
     }
     $format = $this->getResponseFormat();
     if ($format === 'html') {
