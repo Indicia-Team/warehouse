@@ -1581,9 +1581,12 @@ class Rest_Controller extends Controller {
       return 'Incorrect params for Datetime field';
     }
     $dtvalue = $this->getRawEsFieldValue($doc, $params[0]);
-    $dt = DateTime::createFromFormat("M dS Y, G:i:s.u", $dtvalue);
-    // $dt->format($params[1]);
-    return  "$dtvalue # $params[1]";
+    $dt = DateTime::createFromFormat("Y-m-d G:i:s.u", $dtvalue);
+    if ($dt === FALSE) {
+      return  $dtvalue;
+    } else {
+      return $dt->format($params[1]);
+    }
   }
 
   /**
