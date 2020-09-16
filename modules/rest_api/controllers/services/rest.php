@@ -1003,8 +1003,8 @@ class Rest_Controller extends Controller {
       ['caption' => 'Quantity', 'field' => 'occurrence.organism_quantity'],
       ['caption' => 'Quantity', 'field' => '#organism_quantity:mapmate#'],
       ['caption' => 'Method', 'field' => 'event.sampling_protocol'],
-      ['caption' => 'Sex', 'field' => 'occurrence.sex'],
-      ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
+      ['caption' => 'Sex', 'field' => '#mapmate_sex#'],
+      ['caption' => 'Stage', 'field' => '#mapmate_life_stage#'],
       ['caption' => 'Status', 'field' => ''],
       ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
       ['caption' => 'ID', 'field' => 'id'],
@@ -1101,6 +1101,12 @@ class Rest_Controller extends Controller {
         }
         elseif ($field === '#mapmate_vc#') {
           $fields[] = 'location.higher_geography';
+        }
+        elseif ($field === '#mapmate_sex#') {
+          $fields[] = 'occurrence.sex';
+        }
+        elseif ($field === '#mapmate_life_stage#') {
+          $fields[] = 'occurrence.life_stage';
         }
         elseif (preg_match('/^#organism_quantity(.*)#$/', $field)) {
           $fields[] = 'occurrence.organism_quantity';
@@ -1761,10 +1767,76 @@ class Rest_Controller extends Controller {
     }
   }
 
+ /**
+   * Special field handler for Elasticsearch sex formatted for MapMate.
+   *
+   * Converts occurrence.sex to values acceptable for
+   * inclusion in CSV output suitable for MapMate import.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   MapMate Sex code.
+   */
+  private function esGetSpecialFieldMapmateSex(array $doc) {
+    $sex = isset($doc['occurrence']['sex']) ? strtolower($doc['occurrence']['sex']) : '';
+    switch($sex) {
+      case "female":
+        return "f";
+      case "male":
+        return "m";
+      case "mixed":
+        return "g";
+      case "queen":
+        return "q";
+      case "not recorded":
+      case "not known":
+      case "unknown":
+      case "unsexed:":
+        return "u";
+      default:
+        return $sex;
+    }
+  }
+
+ /**
+   * Special field handler for Elasticsearch life_stage formatted for MapMate.
+   *
+   * Converts occurrence.life_stage to values acceptable for
+   * inclusion in CSV output suitable for MapMate import.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   MapMate Stage value.
+   */
+  private function esGetSpecialFieldMapmateLifeStage(array $doc) {
+    $stage = isset($doc['occurrence']['life_stage']) ? strtolower($doc['occurrence']['life_stage']) : '';
+    switch($stage) {
+      case "adult":
+      case "adults":
+      case "adult female":
+      case "adult male":
+        return "Adult";
+      case "larva":
+        return "Larval";
+      case "not recorded":
+        return "Not recorded";
+      case "pre-adult":
+        return "Subadult";
+      case "In flower":
+        return "Flowering";
+      default:
+        return $stage;
+    }
+  }
+
   /**
    * Special field handler for Elasticsearch organism quantity.
    *
-   * Allows organism quanities to be filtered/formatted according to params.
+   * Allows organism quanities to be filtered/formatted as directed by params.
    *
    * @param array $doc
    *   Elasticsearch document.
