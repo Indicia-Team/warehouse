@@ -1519,7 +1519,7 @@ class Rest_Controller extends Controller {
     };
   }
 
-   /**
+  /**
    * Special field handler returns an empty string. This is useful
    * where the output CSV must contain a column to which no
    * useful data can be mapped.
@@ -1534,7 +1534,7 @@ class Rest_Controller extends Controller {
     return '';
   }
 
-   /**
+  /**
    * Special field handler for Elasticsearch to combine
    * the sample and occurrence comment.
    *
@@ -1736,7 +1736,7 @@ class Rest_Controller extends Controller {
     }
   }
 
-   /**
+  /**
    * Special field handler for Elasticsearch event dates compatible for MapMate.
    *
    * Converts event.date_from and event.date_to to a readable date string, e.g.
@@ -1844,7 +1844,7 @@ class Rest_Controller extends Controller {
     $vc = $this->esGetSpecialFieldHigherGeography($doc, array("Vice County", "code"));
     if ($vc === "") {
       // Where unable to assign VC, return 0. This will 
-      // cause MapMate to work out the VC itself..
+      // cause MapMate to work out the VC itself.
       return "0";
     } 
     else {
@@ -1852,7 +1852,7 @@ class Rest_Controller extends Controller {
     }
   }
 
- /**
+  /**
    * Special field handler for Elasticsearch sex formatted for MapMate.
    *
    * Converts occurrence.sex to values acceptable for
@@ -1885,7 +1885,7 @@ class Rest_Controller extends Controller {
     }
   }
 
- /**
+  /**
    * Special field handler for Elasticsearch life_stage formatted for MapMate.
    *
    * Converts occurrence.life_stage to values acceptable for
