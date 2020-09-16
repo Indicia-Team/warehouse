@@ -1010,8 +1010,8 @@ class Rest_Controller extends Controller {
       ['caption' => 'RecordKey', 'field' => '_id'],
       ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:non-integer#'],
       ['caption' => 'Habitat', 'field' => 'event.habitat'],
-      // ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y G:i:s#'],
-      // ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G:i:s#'],
+      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y G:i:s#'],
+      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G:i:s#'],
       ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
       ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
       ['caption' => 'Query', 'field' => 'identification.query'],
@@ -1559,6 +1559,30 @@ class Rest_Controller extends Controller {
     else {
       return '';
     }
+  }
+
+  /**
+   * Special field handler ES datetime fields to output with provided format.
+   *
+   * Return the datetime as a string formatted as specified.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters: 
+   *   1. ES field
+   *   2. datetime format
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldDatetime(array $doc, array $params) {
+    if (count($params) !== 2) {
+      return 'Incorrect params for Datetime field';
+    }
+    $dtvalue = $this->getRawEsFieldValue($doc, $params[0]);
+    $dt = DateTime::createFromFormat("M dS Y, G:i:s.u", $dtvalue);
+    return  DateTime::format($params[1], $dt);
   }
 
   /**
