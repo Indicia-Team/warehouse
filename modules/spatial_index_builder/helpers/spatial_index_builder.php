@@ -101,18 +101,19 @@ class spatial_index_builder {
     $locationTypeIds = $cache->get('spatial-index-hierarchical-location-types');
     if (!$locationTypeIds) {
       $config = kohana::config_load('spatial_index_builder');
-      if (!array_key_exists('hierarchical_location_types', $config)) {
+      if (!array_key_exists('hierarchical_location_types', $config) || count($config['hierarchical_location_types']) === 0) {
         // This effectively cancels the hierarchical querying.
         return '0';
       }
-      $idQuery = $db->query("select id, term from cache_termlists_terms where preferred_term in ('" .
-        implode("','", $config['location_types']) . "') and termlist_title ilike 'location types'")
-        ->result();
-      $locationTypeIds = [];
-      foreach ($idQuery as $row) {
-        $locationTypeIds[$row->term] = $row->id;
-      }
-      $locationTypeIds = implode(', ', $locationTypeIds);
+      $typeTerms = "'" . implode("','", $config['hierarchical_location_types']) . "'";
+      $sql = <<<SQL
+SELECT string_agg(id::text, ', ') as ids
+FROM cache_termlists_terms
+WHERE preferred_term IN ($typeTerms)
+AND termlist_title ilike 'location types';
+SQL;
+      $idQuery = $db->query($sql)->current();
+      $locationTypeIds = empty($idQuery->ids) ? '0' : $idQuery->ids;
       $cache->set('spatial-index-hierarchical-location-types', $locationTypeIds);
     }
     return $locationTypeIds;

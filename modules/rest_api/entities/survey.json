@@ -1,0 +1,15 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "title", "type": "string" },
+    { "sql": "description", "type": "string" },
+    { "sql": "website_id", "type": "integer" },
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" },
+    { "sql": "updated_on", "type": "date" },
+    { "sql": "updated_by_id", "type": "integer" },
+    { "sql": "parent_id", "type": "integer" },
+    { "sql": "core_validation_rules", "type": "string" }
+  ],
+  "attributes": true
+}

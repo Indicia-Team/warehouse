@@ -66,10 +66,6 @@ $config['authentication_methods'] = [
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
       'reports' => [],
-      // Grant access to elasticsearch. Provide empty array to enable all
-      // end-points. Configure the clients which can access each index in
-      // the clients config entry.
-      'elasticsearch' => ['es'],
     ],
   ],
   'hmacWebsite' => [
@@ -83,6 +79,10 @@ $config['authentication_methods'] = [
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
       'reports' => [],
+      // Grant access to elasticsearch. Provide empty array to enable all
+      // end-points. Configure the clients which can access each index in
+      // the clients config entry.
+      'elasticsearch' => ['es'],
     ],
   ],
   'oauth2User' => [

@@ -199,7 +199,7 @@ abstract class ATTR_ORM extends Valid_ORM {
   }
 
   /**
-   * Code to run after submission.
+   * Code to run after submission from warehouse UI.
    *
    * After saving, ensures that the join records linking the attribute to a
    * website & survey combination are created or deleted.
@@ -211,22 +211,25 @@ abstract class ATTR_ORM extends Valid_ORM {
    *   Returns true to indicate success.
    */
   protected function postSubmit($isInsert) {
-    // Only save for the websites we have access to.
-    if (empty($_POST['restricted-to-websites'])) {
-      $websites = ORM::factory('website')->find_all();
-    }
-    else {
-      $websites = ORM::factory('website')->in('id', explode(',', $_POST['restricted-to-websites']))->find_all();
-    }
-    foreach ($websites as $website) {
-      // First check for non survey specific checkbox.
-      $this->setAttributeWebsiteRecord($this->id, $website->id, NULL, isset($_POST["website_$website->id"]));
-      // Then if attributes on this model are restricted by survey, check the
-      // survey checkboxes.
-      if ($this->hasSurveyRestriction) {
-        $surveys = ORM::factory('survey')->where('website_id', $website->id)->find_all();
-        foreach ($surveys as $survey) {
-          $this->setAttributeWebsiteRecord($this->id, $website->id, $survey->id, isset($_POST["website_{$website->id}_{$survey->id}"]));
+    global $remoteUserId;
+    if (!isset($remoteUserId)) {
+      // Only save for the websites we have access to.
+      if (empty($_POST['restricted-to-websites'])) {
+        $websites = ORM::factory('website')->find_all();
+      }
+      else {
+        $websites = ORM::factory('website')->in('id', explode(',', $_POST['restricted-to-websites']))->find_all();
+      }
+      foreach ($websites as $website) {
+        // First check for non survey specific checkbox.
+        $this->setAttributeWebsiteRecord($this->id, $website->id, NULL, isset($_POST["website_$website->id"]));
+        // Then if attributes on this model are restricted by survey, check the
+        // survey checkboxes.
+        if ($this->hasSurveyRestriction) {
+          $surveys = ORM::factory('survey')->where('website_id', $website->id)->find_all();
+          foreach ($surveys as $survey) {
+            $this->setAttributeWebsiteRecord($this->id, $website->id, $survey->id, isset($_POST["website_{$website->id}_{$survey->id}"]));
+          }
         }
       }
     }

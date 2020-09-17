@@ -1,0 +1,38 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "survey_id", "type": "integer" },
+    { "sql": "location_id", "type": "integer" },
+    { "sql": "sample_method_id", "type": "integer" },
+    { "sql": "parent_id", "type": "integer" },
+    { "sql": "group_id", "type": "integer" },
+    { "sql": "licence_id", "type": "integer" },
+    { "sql": "external_key", "type": "string" },
+    { "sql": "date_start", "type": "date" },
+    { "sql": "date_end", "type": "date" },
+    { "sql": "date_type", "type": "string" },
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" },
+    { "sql": "updated_on", "type": "date" },
+    { "sql": "updated_by_id", "type": "integer" },
+    { "sql": "verified_on", "type": "date" },
+    { "sql": "verified_by_id", "type": "integer" },
+    { "sql": "comment", "type": "string" },
+    { "sql": "record_status", "type": "string" },
+    { "sql": "entered_sref", "type": "string" },
+    { "sql": "entered_sref_system", "type": "string" },
+    { "sql": "location_name", "type": "string" },
+    { "sql": "st_astext(t1.geom)", "name": "geom", "type": "geom" },
+    { "sql": "privacy_precision", "type": "integer" },
+    { "sql": "recorder_names", "type": "string" },
+    { "sql": "input_form", "type": "string" },
+    { "sql": "st_y(st_transform(st_centroid(t1.geom), 4326))", "name": "lat", "type": "float" },
+    { "sql": "st_x(st_transform(st_centroid(t1.geom), 4326))", "name": "lon", "type": "float" }
+  ],
+  "subModels": {
+    "samples": { "fk": "parent_id" },
+    "occurrences": { "fk": "sample_id" },
+    "media": { "fk": "sample_id" }
+  },
+  "attributes": true
+}
