@@ -232,7 +232,7 @@ class Occurrence_Model extends ORM {
       // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
       // and the config setting must be enabled.
       if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
-        $oldDeterminerId = empty($this->determiner_id) ? $this->updated_by_id : $this->determiner_id;
+        $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->determiner_id;
         $determination = [
           // We log the old taxon.
           'taxa_taxon_list_id' => $this->taxa_taxon_list_id,
@@ -241,8 +241,8 @@ class Occurrence_Model extends ORM {
           // Last change to the occurrence is really the create metadata for this
           // determination, since we are copying it out of the existing
           // occurrence record.
-          'created_by_id' => $oldDeterminerId,
-          'updated_by_id' => $oldDeterminerId,
+          'created_by_id' => $oldDeterminerUserId,
+          'updated_by_id' => $oldDeterminerUserId,
           'created_on' => $this->getWhenRecordLastDetermined(),
           'updated_on' => date("Ymd H:i:s"),
           'person_name' => $this->getPreviousDeterminerName(),
