@@ -255,11 +255,9 @@ class Occurrence_Model extends ORM {
       if (!empty($this->submission['fields']['determiner_id']) && !empty($this->submission['fields']['determiner_id']['value'])) {
         // Redetermination by user ID provided in submission.
         $redetByUserId = (int) $this->submission['fields']['determiner_id']['value'];
-        kohana::log('debug', "258: $redetByUserId");
       } else {
         // Redetermination doesn't specify user ID, so use logged in user account.
         $redetByUserId = (int) $this->getCurrentUserId();
-        kohana::log('debug', "262: $redetByUserId");
         if ($redetByUserId !== 1) {
           // Store in the occurrences.determiner_id field.
           $array->determiner_id = $redetByUserId;
@@ -270,10 +268,8 @@ class Occurrence_Model extends ORM {
         // name on redet.
         unset($this->submission['fields']['determiner_id']);
         unset($array->determiner_id);
-        kohana::log('debug', "unset");
       }
       elseif ($redetByUserId !== 1) {
-        kohana::log('debug', "value updated");
         // Update any determiner occurrence attributes.
         $sql = <<<SQL
 UPDATE occurrence_attribute_values v
