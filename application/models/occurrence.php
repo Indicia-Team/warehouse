@@ -232,6 +232,7 @@ class Occurrence_Model extends ORM {
       // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
       // and the config setting must be enabled.
       if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
+        $oldDeterminerId = empty($this->determiner_id) ? $this->updated_by_id : $this->determiner_id;
         $determination = [
           // We log the old taxon.
           'taxa_taxon_list_id' => $this->taxa_taxon_list_id,
@@ -240,8 +241,8 @@ class Occurrence_Model extends ORM {
           // Last change to the occurrence is really the create metadata for this
           // determination, since we are copying it out of the existing
           // occurrence record.
-          'created_by_id' => $this->updated_by_id,
-          'updated_by_id' => $this->updated_by_id,
+          'created_by_id' => $oldDeterminerId,
+          'updated_by_id' => $oldDeterminerId,
           'created_on' => $this->getWhenRecordLastDetermined(),
           'updated_on' => date("Ymd H:i:s"),
           'person_name' => $this->getPreviousDeterminerName(),
@@ -254,16 +255,26 @@ class Occurrence_Model extends ORM {
       if (!empty($this->submission['fields']['determiner_id']) && !empty($this->submission['fields']['determiner_id']['value'])) {
         // Redetermination by user ID provided in submission.
         $redetByUserId = (int) $this->submission['fields']['determiner_id']['value'];
+        kohana::log('debug', "258: $redetByUserId");
       } else {
         // Redetermination doesn't specify user ID, so use logged in user account.
         $redetByUserId = (int) $this->getCurrentUserId();
+        kohana::log('debug', "262: $redetByUserId");
         if ($redetByUserId !== 1) {
           // Store in the occurrences.determiner_id field.
           $array->determiner_id = $redetByUserId;
         }
       }
-      // Update any determiner occurrence attributes.
-      if ($redetByUserId !== 1) {
+      if ($redetByUserId === -1) {
+        // Determiner ID -1 is special case, means don't assign new determiner
+        // name on redet.
+        unset($this->submission['fields']['determiner_id']);
+        unset($array->determiner_id);
+        kohana::log('debug', "unset");
+      }
+      elseif ($redetByUserId !== 1) {
+        kohana::log('debug', "value updated");
+        // Update any determiner occurrence attributes.
         $sql = <<<SQL
 UPDATE occurrence_attribute_values v
 SET text_value=CASE a.system_function
