@@ -232,6 +232,7 @@ class Occurrence_Model extends ORM {
       // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
       // and the config setting must be enabled.
       if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
+        $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->determiner_id;
         $determination = [
           // We log the old taxon.
           'taxa_taxon_list_id' => $this->taxa_taxon_list_id,
@@ -240,8 +241,8 @@ class Occurrence_Model extends ORM {
           // Last change to the occurrence is really the create metadata for this
           // determination, since we are copying it out of the existing
           // occurrence record.
-          'created_by_id' => $this->updated_by_id,
-          'updated_by_id' => $this->updated_by_id,
+          'created_by_id' => $oldDeterminerUserId,
+          'updated_by_id' => $oldDeterminerUserId,
           'created_on' => $this->getWhenRecordLastDetermined(),
           'updated_on' => date("Ymd H:i:s"),
           'person_name' => $this->getPreviousDeterminerName(),
@@ -253,17 +254,27 @@ class Occurrence_Model extends ORM {
       }
       if (!empty($this->submission['fields']['determiner_id']) && !empty($this->submission['fields']['determiner_id']['value'])) {
         // Redetermination by user ID provided in submission.
-        $redetByUserId = (int) $this->submission['fields']['determiner_id']['value'];
+        $redetByPersonId = (int) $this->submission['fields']['determiner_id']['value'];
+        $userInfo = $this->db->select('id')->from('users')->where('person_id', $redetByPersonId)->get()->current();
+        $redetByUserId = $userInfo->id;
       } else {
         // Redetermination doesn't specify user ID, so use logged in user account.
         $redetByUserId = (int) $this->getCurrentUserId();
+        $userInfo = $this->db->select('person_id')->from('users')->where('id', $redetByUserId)->get()->current();
+        $redetByPersonId = $userInfo->person_id;
         if ($redetByUserId !== 1) {
           // Store in the occurrences.determiner_id field.
-          $array->determiner_id = $redetByUserId;
+          $array->determiner_id = $redetByPersonId;
         }
       }
-      // Update any determiner occurrence attributes.
-      if ($redetByUserId !== 1) {
+      if ($redetByPersonId === -1) {
+        // Determiner person ID -1 is special case, means don't assign new determiner
+        // name on redet.
+        unset($this->submission['fields']['determiner_id']);
+        unset($array->determiner_id);
+      }
+      elseif ($redetByUserId !== 1) {
+        // Update any determiner occurrence attributes.
         $sql = <<<SQL
 UPDATE occurrence_attribute_values v
 SET text_value=CASE a.system_function
@@ -402,7 +413,7 @@ SQL;
       ->join('users as u', 'u.person_id', 'p.id')
       ->where('u.id', $userId)
       ->get()->current();
-    return $p->surname . (empty($p->first_name) ? '' : ', ' . $p->first_name);
+    return "$p->surname, $p->first_name";
   }
 
   /**
