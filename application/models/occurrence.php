@@ -254,17 +254,21 @@ class Occurrence_Model extends ORM {
       }
       if (!empty($this->submission['fields']['determiner_id']) && !empty($this->submission['fields']['determiner_id']['value'])) {
         // Redetermination by user ID provided in submission.
-        $redetByUserId = (int) $this->submission['fields']['determiner_id']['value'];
+        $redetByPersonId = (int) $this->submission['fields']['determiner_id']['value'];
+        $userInfo = $this->db->select('u.id')->from('users')->where('person_id', $redetByPersonId)->current();
+        $redetByUserId = $userInfo->id;
       } else {
         // Redetermination doesn't specify user ID, so use logged in user account.
         $redetByUserId = (int) $this->getCurrentUserId();
+        $userInfo = $this->db->select('u.person_id')->from('users')->where('id', $redetByUserId)->current();
+        $redetByPersonId = $userInfo->person_id;
         if ($redetByUserId !== 1) {
           // Store in the occurrences.determiner_id field.
-          $array->determiner_id = $redetByUserId;
+          $array->determiner_id = $redetByPersonId;
         }
       }
-      if ($redetByUserId === -1) {
-        // Determiner ID -1 is special case, means don't assign new determiner
+      if ($redetByPersonId === -1) {
+        // Determiner person ID -1 is special case, means don't assign new determiner
         // name on redet.
         unset($this->submission['fields']['determiner_id']);
         unset($array->determiner_id);
