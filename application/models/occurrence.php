@@ -409,7 +409,7 @@ SQL;
       ->join('users as u', 'u.person_id', 'p.id')
       ->where('u.id', $userId)
       ->get()->current();
-    return $p->surname . (empty($p->first_name) ? '' : ', ' . $p->first_name);
+    return "$p->surname, $p->first_name";
   }
 
   /**
