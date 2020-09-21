@@ -62,6 +62,7 @@
     <column name='wkt' visible="false" sql='st_astext(coalesce(s.geom, l.centroid_geom))' />
     <!--The following output columns are hidden but required by the system-->
     <column name="created_by_id" sql="o.created_by_id" visible="false" />
+    <column name="created_by_person_id" sql="p.id" visible="false" />
     <column name="input_by_first_name" sql="p.first_name" visible="false" />
     <column name="input_by_surname" sql="p.surname" visible="false" />
     <column name="survey_id" sql="o.survey_id" visible="false" />
