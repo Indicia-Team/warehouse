@@ -1,4 +1,4 @@
---#slow script#
+-- #slow script#
 
 -- Script to fix occurrences.determiner_id when it points to a users record
 -- (incorrect) so it points to a people record (correct).
