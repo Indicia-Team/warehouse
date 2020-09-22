@@ -327,7 +327,7 @@ class ReportEngine {
         $value = $this->providedParams[$param];
         $checked_value = security::checkParam($value, $check['type'], $check['regex']);
         if ($checked_value !== FALSE) {
-          $this->$param = $param === 'orderby' ? pg_escape_identifier($checked_value) : $checked_value;
+          $this->$param = $param === 'orderby' ? $this->reportDb->escape_identifier($checked_value) : $checked_value;
         }
         else {
           Kohana::log('alert', "Invalid parameter, $param, with value '$value' in request for report, $report.");
@@ -1037,14 +1037,14 @@ SQL;
             // Sanitise.
             if ($paramDefs[$name]['datatype'] === 'text' || $paramDefs[$name]['datatype'] === 'string') {
               // Ensure value is escaped for apostrophes.
-              $value = pg_escape_string($value);
+              $value = $this->reportDb->escape_str($value);
             }
             elseif ($paramDefs[$name]['datatype'] === 'text[]' || $paramDefs[$name]['datatype'] === 'string[]') {
               // array check on text parameter values.
               if (strlen($value)) {
                 $arr = str_getcsv($value, ",", "'");
                 foreach ($arr as &$item) {
-                  $item = pg_escape_string($item);
+                  $item = $this->reportDb->escape_str($item);
                 }
                 $value = "'" . implode("','", $arr) . "'";
               }
@@ -1351,7 +1351,7 @@ SQL;
     }
     if ($datatype === 'text' || $datatype === 'species') {
       // Ensure value is escaped for apostrophes.
-      $value = pg_escape_string($value);
+      $value = $this->reportDb->escape_str($value);
       // Quote text and date values.
       $value = "'" . $value . "'";
     }
