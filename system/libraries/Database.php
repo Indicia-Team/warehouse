@@ -1283,6 +1283,18 @@ class Database_Core {
 	}
 
 	/**
+	 * Escapes an identifier for a query.
+	 *
+	 * @param   string  string to escape
+	 * @return  string
+	 */
+	public function escape_identifier($str)
+	{
+		return $this->driver->escape_identifier($str);
+	}
+
+
+	/**
 	 * Escapes a table name for a query.
 	 *
 	 * @param   string  string to escape
