@@ -515,7 +515,7 @@ class XMLReportReader_Core implements ReportReader {
         continue;
       if (isset($def['sql'])) {
         if (!isset($def['on_demand']) || $def['on_demand'] !== "true")
-          $sql[] = $def['sql'] . ' as ' . pg_escape_identifier($col);
+          $sql[] = $def['sql'] . ' as ' . $this->db->escape_identifier($col);
         if (isset($def['distincton']) && $def['distincton'] == 'true') {
           $distinctSql[] = $def['internal_sql'];
           // in_count lets the xml file exclude distinct on columns from the count query
