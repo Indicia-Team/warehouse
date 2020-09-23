@@ -1502,7 +1502,7 @@ SET comment=o.comment,
   attr_det_first_name=COALESCE(CASE a_det_first_name.data_type
       WHEN 'T'::bpchar THEN v_det_first_name.text_value
       ELSE NULL::text
-  END, pd.surname || ', ' || pd.first_name),
+  END, pd.first_name),
   attr_det_last_name=COALESCE(CASE a_det_last_name.data_type
       WHEN 'T'::bpchar THEN v_det_last_name.text_value
       ELSE NULL::text
@@ -1510,7 +1510,7 @@ SET comment=o.comment,
   attr_det_full_name=COALESCE(CASE a_det_full_name.data_type
       WHEN 'T'::bpchar THEN v_det_full_name.text_value
       ELSE NULL::text
-  END, pd.first_name)
+  END, pd.surname || ', ' || pd.first_name)
 FROM occurrences o
 #join_needs_update#
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
