@@ -1,0 +1,15 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "sample_id", "type": "integer"},
+    { "sql": "path", "type": "string"},
+    { "sql": "caption", "type": "string"},
+    { "sql": "media_type_id", "type": "integer"},
+    { "sql": "exif", "type": "string"},
+    { "sql": "licence_id", "type": "integer"},
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" },
+    { "sql": "updated_on", "type": "date" },
+    { "sql": "updated_by_id", "type": "integer" }
+  ]
+}

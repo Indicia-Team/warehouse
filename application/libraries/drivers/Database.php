@@ -370,6 +370,14 @@ abstract class Database_Driver {
   abstract public function escape_str($str);
 
   /**
+   * Escapes an identifier for a query.
+   *
+   * @param   mixed   value to escape
+   * @return  string
+   */
+  abstract public function escape_identifier($str);
+
+  /**
    * Lists all tables in the database.
    *
    * @return  array

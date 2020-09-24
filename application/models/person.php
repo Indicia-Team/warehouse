@@ -82,7 +82,7 @@ class Person_Model extends ORM {
    * For People, this should be a combination of the Firstname and Surname.
    */
   public function caption() {
-    return ($this->first_name.' '.$this->surname);
+    return ("$this->first_name $this->surname");
   }
 
   /**
@@ -98,13 +98,7 @@ class Person_Model extends ORM {
     $maxLen = 30;
     // Start any uniqueness suffix at 2 deliberately.
     $inc = 2;
-    if ($this->first_name === '') {
-      $baseUsername = $this->surname;
-    }
-    else {
-      $baseUsername = "$this->first_name $this->surname";
-    }
-    $baseUsername = strtolower(preg_replace("/[^A-Za-z]/", "_", $baseUsername));
+    $baseUsername = strtolower(preg_replace("/[^A-Za-z]/", "_", "$this->first_name $this->surname"));
     // Ensure 7 characters long.
     $username = str_pad(substr($baseUsername, 0, $maxLen), $minLen, '_');
     // Check for uniqueness.

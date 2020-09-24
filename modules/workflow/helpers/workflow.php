@@ -438,6 +438,7 @@ class workflow {
     $entityConfig = self::getEntityConfig($entity);
     $columnDeltaList = [];
     $valuesToApply = [];
+    $newUndoRecord = [];
     $setColumns = json_decode($event->values, TRUE);
     if ($event->mimic_rewind_first === 't' && !empty($oldValues['id'])) {
       self::mimicRewind($entity, $oldValues['id'], $columnDeltaList, $state);

@@ -1,0 +1,38 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "code", "type": "string" },
+    { "sql": "parent_id", "type": "string" },
+    { "sql": "centroid_sref", "type": "string" },
+    { "sql": "centroid_sref_system", "type": "string" },
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" },
+    { "sql": "updated_on", "type": "date" },
+    { "sql": "updated_by_id", "type": "integer" },
+    { "sql": "comment", "type": "string" },
+    { "sql": "external_key", "type": "string" },
+    { "sql": "st_astext(t1.centroid_geom)", "name": "centroid_geom", "type": "geom" },
+    { "sql": "st_astext(t1.boundary_geom)", "name": "boundary_geom", "type": "geom" },
+    { "sql": "location_type_id", "type": "string" },
+    { "sql": "public", "type": "boolean" },
+    { "sql": "st_y(st_transform(st_centroid(t1.centroid_geom), 4326))", "name": "lat", "type": "float" },
+    { "sql": "st_x(st_transform(st_centroid(t1.centroid_geom), 4326))", "name": "lon", "type": "float" },
+    { "sql": "name", "type": "string" },
+    { "sql": "name", "type": "string" }
+  ],
+  "subModels": {
+    "locations": { "fk": "parent_id" },
+    "media": { "fk": "location_id" },
+    "locations_websites": {
+      "fk": "location_id",
+      "required": true,
+      "values": {
+        "website_id": "{website_id}"
+      }
+    }
+  },
+  "attributes": true,
+  "forceValuesOnCreate": {
+    "public": "f"
+  }
+}

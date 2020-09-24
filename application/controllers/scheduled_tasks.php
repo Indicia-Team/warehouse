@@ -413,7 +413,7 @@ class Scheduled_Tasks_Controller extends Controller {
           'text/html'
         );
         $recipients = new Swift_RecipientList();
-        $name = empty($user->first_name) ? "$user->surname" : "$user->first_name $user->surname";
+        $name = "$user->first_name $user->surname";
         $recipients->addTo($user->email_address, $name);
         $cc = explode(',', $cc);
         foreach ($cc as $ccEmail) {

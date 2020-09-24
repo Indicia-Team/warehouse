@@ -1,0 +1,45 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "caption", "type": "string" },
+    { "sql": "caption_i18n", "type": "json" },
+    { "sql": "description", "type": "string" },
+    { "sql": "description_i18n", "type": "json" },
+    { "sql": "data_type", "type": "string" },
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" },
+    { "sql": "updated_on", "type": "date" },
+    { "sql": "updated_by_id", "type": "integer" },
+    { "sql": "validation_rules", "type": "string" },
+    { "sql": "termlist_id", "type": "integer" },
+    { "sql": "applies_to_location", "type": "boolean" },
+    { "sql": "applies_to_recorder", "type": "boolean" },
+    { "sql": "system_function", "type": "string" },
+    { "sql": "term_name", "type": "string" },
+    { "sql": "term_identifier", "type": "string" },
+    { "sql": "allow_ranges", "type": "boolean" },
+    { "sql": "unit", "type": "string" },
+    { "sql": "image_path", "type": "string" }
+  ],
+  "joins": [
+    {
+      "sql": "JOIN sample_attributes_websites t2 on t2.sample_attribute_id=t1.id AND t2.deleted=false",
+      "fields": [
+        { "sql": "restrict_to_survey_id", "type": "integer" },
+        { "sql": "validation_rules", "name": "survey_validation_rules", "type": "string" }
+      ]
+    }
+  ],
+  "subModels": {
+    "sample_attributes_websites": {
+      "fk": "sample_attribute_id",
+      "required": true,
+      "values": {
+        "website_id": "{website_id}"
+      }
+    }
+  },
+  "forceValuesOnCreate": {
+    "public": "f"
+  }
+}
