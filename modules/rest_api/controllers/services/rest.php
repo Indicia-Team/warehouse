@@ -945,13 +945,13 @@ class Rest_Controller extends Controller {
     ],
     "easy-download" => [
       ['caption' => 'ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'RecordKey', 'field' => '#backward_key#'],
       ['caption' => 'External key', 'field' => 'occurrence_external_key'],
-      ['caption' => 'Source', 'field' => '#datasource_code#'], // Might not be exactly the same as old ES download which I think includes group
+      ['caption' => 'Source', 'field' => '#backward_datasource_code#'], // Might not be exactly the same as old ES download which I think includes group
       ['caption' => 'Species', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
       ['caption' => 'Taxon group', 'field' => 'taxon.group'],
-      ['caption' => 'Kindom', 'field' => 'taxon.kingdom'],
+      ['caption' => 'Kingdom', 'field' => 'taxon.kingdom'],
       ['caption' => 'Order', 'field' => 'taxon.order'],
       ['caption' => 'Family', 'field' => 'taxon.family'],
       ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
@@ -959,10 +959,10 @@ class Rest_Controller extends Controller {
       ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
       ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
       ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
-      ['caption' => 'Projection', 'field' => 'location.input_sref_system'],
+      ['caption' => 'Projection', 'field' => '#backward:location.input_sref_system'],
       ['caption' => 'Precision', 'field' => 'location.coordinate_uncertainty_in_meters'],
       ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
-      ['caption' => 'Output map ref projection', 'field' => 'location.output_sref_system'],
+      ['caption' => 'Projection', 'field' => '#backward:location.output_sref_system'],
       ['caption' => 'Biotope', 'field' => 'event.habitat'],
       ['caption' => 'VC number', 'field' => '#higher_geography:Vice County:code#'],
       ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
@@ -972,7 +972,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Date type', 'field' => ''], // Unavalable in ES index (date_type)
       ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
-      ['caption' => 'Determer', 'field' => 'identification.identified_by'],
+      ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
       ['caption' => 'Recorder certainty', 'field' => 'identification.recorder_certainty'],
       ['caption' => 'Sex', 'field' => 'occurrence.sex'],
       ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
@@ -981,8 +981,8 @@ class Rest_Controller extends Controller {
       ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
       ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
-      ['caption' => 'Input on date', 'field' => 'metadata.created_on'], // Format ??
-      ['caption' => 'Last edited on date', 'field' => 'metadata.updated_on'], // Format ??
+      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H^i#'], // Can't use : in format spec here - use ^ instead which is translated to :
+      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y H^i#'], // Can't use : in format spec here - use ^ instead which is translated to :
       ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
       ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
       ['caption' => 'Query', 'field' => 'identification.query'],
@@ -990,7 +990,6 @@ class Rest_Controller extends Controller {
       ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
       ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download?
-      ['caption' => 'attr_det_full_name', 'field' => 'identification.identified_by'], // Repeat of Determiner field with ES
     ],
     "mapmate" => [
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
@@ -1097,6 +1096,11 @@ class Rest_Controller extends Controller {
           $fields[] = 'metadata.website';
           $fields[] = 'metadata.survey';
         }
+        elseif ($field === '#backward_datasource_code#') {
+          $fields[] = 'metadata.website';
+          $fields[] = 'metadata.survey';
+          $fields[] = 'metadata.group';
+        }
         elseif ($field === '#event_date#') {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
@@ -1113,6 +1117,9 @@ class Rest_Controller extends Controller {
         }
         elseif ($field === '#mapmate_life_stage#') {
           $fields[] = 'occurrence.life_stage';
+        }
+        elseif ($field ==='#backward_key#') {
+          $fields[] = '_id';
         }
         elseif ($field ==='#sample_occurrence_comment#') {
           $fields[] = 'event.event_remarks';
@@ -1147,6 +1154,9 @@ class Rest_Controller extends Controller {
           $fields[] = $matches[1];
         }
         elseif (preg_match('/^#datetime:([a-z_]+(\.[a-z_]+)*):.*#$/', $field, $matches)) {
+          $fields[] = $matches[1];
+        }
+        elseif (preg_match('/^#backward:([a-z_]+(\.[a-z_]+)*)#$/', $field, $matches)) {
           $fields[] = $matches[1];
         }
       }
@@ -1694,6 +1704,27 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Special field handler for datasource codes for backward-compatibility format.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value including website, survey dataset and recording group info.
+   */
+  private function esGetSpecialFieldBackwardDatasourceCode(array $doc) {
+    $w = $doc['metadata']['website']['title'];
+    $s = $doc['metadata']['survey']['title'];
+    if (isset($doc['metadata']['group'])) {
+      $g = $doc['metadata']['group']['title'];
+      return "$w | $s | $g";
+    }
+    else {
+      return "$w | $s";
+    }
+  }
+
+  /**
    * Special field handler for Elasticsearch event dates.
    *
    * Converts event.date_from and event.date_to to a readable date string, e.g.
@@ -1915,6 +1946,48 @@ class Rest_Controller extends Controller {
         return "Flowering";
       default:
         return $stage;
+    }
+  }
+
+  /**
+   * Special field handler for Elasticsearch record key formatted for 
+   * backward-compatible (easy_download) format.
+   *
+   * If key demotes brc1 index, change formatting
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Record key.
+   */
+  private function esGetSpecialFieldBackwardKey(array $doc) {
+    return preg_replace('/^brc1\|/', 'iBRC', $doc['_id']);
+  }
+
+  /**
+   * Special field handler to provide backward-compatible (easy download) 
+   * formats for several fields.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Record key.
+   */
+  private function esGetSpecialFieldBackward(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for backward compatibility field';
+    }
+    $value = strval($this->getRawEsFieldValue($doc, $params[0]));
+    if ($value === '4326') {
+      return 'WGS84'
+    }
+    else if ($value === '27700') {
+      return 'OSGB36'
+    }
+    else {
+      return strtoupper($value)
     }
   }
 
