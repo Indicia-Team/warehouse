@@ -1046,13 +1046,13 @@ class Rest_Controller extends Controller {
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
       ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H^i#'], // Can't use : in format spec here - use ^ instead which is translated to :
       ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y H^i#'], // Can't use : in format spec here - use ^ instead which is translated to :
-      ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
-      ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
-      ['caption' => 'Query', 'field' => 'identification.query'],
+      ['caption' => 'Verification status 1', 'field' => '#backward:identification.verification_status"'],
+      ['caption' => 'Verification status 2', 'field' => '#backward:identification.verification_substatus#'],
+      ['caption' => 'Query', 'field' => '#backward:identification.query#'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
       ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
-      ['caption' => 'Automated checks', 'field' => '#null_if_zero:identification.verification_substatus#'], // Output probably different from easy download?
+      ['caption' => 'Automated checks', 'field' => '#backward:identification.verification_substatus#'], // Output probably different from easy download?
     ],
     "mapmate" => [
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
@@ -2030,8 +2030,78 @@ class Rest_Controller extends Controller {
         else {
           return "$w | $s";
         }
+      case "identification.verification_status":
+        $value = $this->getRawEsFieldValue($doc, $field);
+        if($value === 'V'){
+          return 'Accepted';
+        }
+        elseif ($value === 'C'){
+          return 'Unconfirmed';
+        }
+        elseif ($value === 'R'){
+          return 'Rejected';
+        }
+        elseif ($value === 'I'){
+          return 'Input still in progress';
+        }
+        elseif ($value === 'D'){
+          return 'Queried';
+        }
+        elseif ($value === 'S'){
+          return 'Awaiting check';
+        }
+        else {
+          return $value;
+        }
+      case "identification.verification_substatus":
+        $status = $this->getRawEsFieldValue($doc, 'identification.verification_status');
+        $value = strval($this->getRawEsFieldValue($doc, $field));
+        if($status === 'V'){
+          if ($value === '1') {
+            return 'correct';
+          }
+          elseif ($value === '2') {
+            return 'Considered correct';
+          }
+          else {
+            return NULL;
+          }
+        }
+        elseif ($status === 'C'){
+          if ($value === '3') {
+            return 'Plausible';
+          }
+          else {
+            return 'Not reviewed';
+          }
+        }
+        elseif ($status === 'R'){
+          if ($value === '4') {
+            return 'Unable to verify';
+          }
+          elseif ($value === '5') {
+            return 'Incorrect';
+          }
+          else {
+            return NULL;
+          }
+        }
+        else {
+          return NULL;
+        }
+      case "identification.query":
+        $value = $this->getRawEsFieldValue($doc, $field);
+        if($value === 'A'){
+          return 'Answered';
+        }
+        elseif ($value === 'Q'){
+          return 'Queried';
+        }
+        else {
+          return $value;
+        }
       default:
-        return 'No backward compatibility for $field';
+        return 'No backward compatibility for ' . $field;
     }
   }
 
@@ -2354,7 +2424,7 @@ class Rest_Controller extends Controller {
         str_replace('_', '', ucwords($matches['sourceType']));
       $params = empty($matches['params']) ? [] : explode(':', $matches['params']);
       if (count($params) > 0 && strpos($params[0], '_') === 0) {
-        // Resets docsource to root if first param (field) startus with '_'.
+        // Resets docSource to root if first param (field) startus with '_'.
         $docSource = $doc;
       }
       if (method_exists($this, $fn)) {
