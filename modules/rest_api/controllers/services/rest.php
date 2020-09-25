@@ -1046,7 +1046,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
       ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H^i#'], // Can't use : in format spec here - use ^ instead which is translated to :
       ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y H^i#'], // Can't use : in format spec here - use ^ instead which is translated to :
-      ['caption' => 'Verification status 1', 'field' => '#backward:identification.verification_status"'],
+      ['caption' => 'Verification status 1', 'field' => '#backward:identification.verification_status#"'],
       ['caption' => 'Verification status 2', 'field' => '#backward:identification.verification_substatus#'],
       ['caption' => 'Query', 'field' => '#backward:identification.query#'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
