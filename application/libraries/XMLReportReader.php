@@ -30,6 +30,7 @@ class XMLReportReader_Core implements ReportReader {
   private $description;
   private $row_class;
   private $query;
+  private $countQuery;
   private $countQueryBase = NULL;
   private $countFields;
   private $field_sql;
@@ -228,6 +229,10 @@ class XMLReportReader_Core implements ReportReader {
                 $reader->read();
                 $this->query = $reader->value;
                 break;
+              case 'count_query':
+                $reader->read();
+                $this->countQuery = $reader->value;
+                break;
               case 'field_sql':
                 $reader->read();
                 $field_sql = $reader->value;
@@ -316,15 +321,25 @@ class XMLReportReader_Core implements ReportReader {
         }
       }
       $reader->close();
-      // Add a token to mark where additional filters can insert in the WHERE clause.
+      // Add a token to mark where additional filters can insert in the WHERE
+      // clause.
       if ($this->query && strpos($this->query, '#filters#') === false) {
         if (strpos($this->query, '#order_by#') !== false)
           $this->query = str_replace('#order_by#', "#filters#\n#order_by#", $this->query);
         else
           $this->query .= '#filters#';
       }
+      // Also for count query if specified.
+      if ($this->countQuery) {
+        if (strpos($this->countQuery, '#filters#') === false) {
+          $this->countQuery .= '#filters#';
+        }
+      } elseif ($this->query) {
+        $this->countQuery = $this->query;
+      }
       if ($this->hasColumnsSql) {
-        // column sql is defined in the list of column elements, so autogenerate the query.
+        // Column sql is defined in the list of column elements, so
+        // autogenerate the query.
         $this->autogenColumns();
         if ($this->hasAggregates) {
           $this->buildGroupBy();
@@ -334,7 +349,7 @@ class XMLReportReader_Core implements ReportReader {
         // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
         // otherwise the same.
         if (!empty($field_sql)) {
-          $this->countQueryBase = str_replace('#field_sql#', '#count#', $this->query);
+          $this->countQueryBase = str_replace('#field_sql#', '#count#', $this->countQuery);
           $this->countFields = $this->count_field;
           $this->query = str_replace('#field_sql#', $field_sql, $this->query);
         }
@@ -344,6 +359,7 @@ class XMLReportReader_Core implements ReportReader {
       }
       if ($this->query) {
         $this->query = str_replace('#master_list_id', warehouse::getMasterTaxonListId(), $this->query);
+        $this->countQueryBase = str_replace('#master_list_id', warehouse::getMasterTaxonListId(), $this->countQueryBase);
       }
     }
     catch (Exception $e)
@@ -540,7 +556,7 @@ class XMLReportReader_Core implements ReportReader {
     else {
       $distincton = '';
     }
-    $this->countQueryBase = str_replace('#columns#', '#count#', $this->query);
+    $this->countQueryBase = str_replace('#columns#', '#count#', $this->countQuery);
     if (count($countSql) > 1) {
       // Concatenate the fields so we can get a distinct list.
       $this->countFields = 'coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')";
