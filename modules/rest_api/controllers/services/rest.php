@@ -2353,6 +2353,10 @@ class Rest_Controller extends Controller {
       $fn = 'esGetSpecialField' .
         str_replace('_', '', ucwords($matches['sourceType']));
       $params = empty($matches['params']) ? [] : explode(':', $matches['params']);
+      if (count($params) > 0 && strpos($params[0], '_') === 0) {
+        // Resets docsource to root if first param (field) startus with '_'.
+        $docSource = $doc;
+      }
       if (method_exists($this, $fn)) {
         $row[] = $this->$fn($docSource, $params);
       }
