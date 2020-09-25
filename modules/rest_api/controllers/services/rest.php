@@ -1008,9 +1008,9 @@ class Rest_Controller extends Controller {
     ],
     "easy-download" => [
       ['caption' => 'ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '#backward_key#'],
+      ['caption' => 'RecordKey', 'field' => '#backward:_id#'],
       ['caption' => 'External key', 'field' => 'occurrence_external_key'],
-      ['caption' => 'Source', 'field' => '#backward_datasource_code#'], // Might not be exactly the same as old ES download which I think includes group
+      ['caption' => 'Source', 'field' => '#backward:datasource_code#'],
       ['caption' => 'Species', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
       ['caption' => 'Taxon group', 'field' => 'taxon.group'],
@@ -1022,10 +1022,10 @@ class Rest_Controller extends Controller {
       ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
       ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
       ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
-      ['caption' => 'Projection', 'field' => '#backward:location.input_sref_system'],
+      ['caption' => 'Projection', 'field' => '#backward:location.input_sref_system#'],
       ['caption' => 'Precision', 'field' => 'location.coordinate_uncertainty_in_meters'],
       ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
-      ['caption' => 'Projection', 'field' => '#backward:location.output_sref_system'],
+      ['caption' => 'Projection', 'field' => '#backward:location.output_sref_system#'],
       ['caption' => 'Biotope', 'field' => 'event.habitat'],
       ['caption' => 'VC number', 'field' => '#higher_geography:Vice County:code#'],
       ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
@@ -1159,11 +1159,6 @@ class Rest_Controller extends Controller {
           $fields[] = 'metadata.website';
           $fields[] = 'metadata.survey';
         }
-        elseif ($field === '#backward_datasource_code#') {
-          $fields[] = 'metadata.website';
-          $fields[] = 'metadata.survey';
-          $fields[] = 'metadata.group';
-        }
         elseif ($field === '#event_date#') {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
@@ -1180,9 +1175,6 @@ class Rest_Controller extends Controller {
         }
         elseif ($field === '#mapmate_life_stage#') {
           $fields[] = 'occurrence.life_stage';
-        }
-        elseif ($field ==='#backward_key#') {
-          $fields[] = '_id';
         }
         elseif ($field ==='#sample_occurrence_comment#') {
           $fields[] = 'event.event_remarks';
@@ -1220,7 +1212,14 @@ class Rest_Controller extends Controller {
           $fields[] = $matches[1];
         }
         elseif (preg_match('/^#backward:([a-z_]+(\.[a-z_]+)*)#$/', $field, $matches)) {
-          $fields[] = $matches[1];
+          if ($matches[1] === 'datasource_code') {
+            $fields[] = 'metadata.website';
+            $fields[] = 'metadata.survey';
+            $fields[] = 'metadata.group';
+          } 
+          else {
+            $fields[] = $matches[1];
+          }
         }
       }
       $postObj->_source = array_values(array_unique($fields));
@@ -1767,27 +1766,6 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Special field handler for datasource codes for backward-compatibility format.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted value including website, survey dataset and recording group info.
-   */
-  private function esGetSpecialFieldBackwardDatasourceCode(array $doc) {
-    $w = $doc['metadata']['website']['title'];
-    $s = $doc['metadata']['survey']['title'];
-    if (isset($doc['metadata']['group'])) {
-      $g = $doc['metadata']['group']['title'];
-      return "$w | $s | $g";
-    }
-    else {
-      return "$w | $s";
-    }
-  }
-
-  /**
    * Special field handler for Elasticsearch event dates.
    *
    * Converts event.date_from and event.date_to to a readable date string, e.g.
@@ -2013,22 +1991,6 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Special field handler for Elasticsearch record key formatted for 
-   * backward-compatible (easy_download) format.
-   *
-   * If key demotes brc1 index, change formatting
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Record key.
-   */
-  private function esGetSpecialFieldBackwardKey(array $doc) {
-    return preg_replace('/^brc1\|/', 'iBRC', $doc['_id']);
-  }
-
-  /**
    * Special field handler to provide backward-compatible (easy download) 
    * formats for several fields.
    *
@@ -2036,21 +1998,40 @@ class Rest_Controller extends Controller {
    *   Elasticsearch document.
    *
    * @return string
-   *   Record key.
+   *   Backward compatible string value.
    */
   private function esGetSpecialFieldBackward(array $doc, array $params) {
     if (count($params) !== 1) {
       return 'Incorrect params for backward compatibility field';
     }
-    $value = strval($this->getRawEsFieldValue($doc, $params[0]));
-    if ($value === '4326') {
-      return 'WGS84'
-    }
-    else if ($value === '27700') {
-      return 'OSGB36'
-    }
-    else {
-      return strtoupper($value)
+    $field = $params[0];
+    switch($field) {
+      case "_id":
+        return preg_replace('/^brc1\|/', 'iBRC', $doc['_id']);
+      case "location.input_sref_system":
+      case "location.output_sref_system":
+        $value = strval($this->getRawEsFieldValue($doc, $field));
+        if ($value === '4326') {
+          return 'WGS84';
+        }
+        else if ($value === '27700') {
+          return 'OSGB36';
+        }
+        else {
+          return strtoupper($value);
+        }
+      case "datasource_code":
+        $w = $doc['metadata']['website']['title'];
+        $s = $doc['metadata']['survey']['title'];
+        if (isset($doc['metadata']['group'])) {
+          $g = $doc['metadata']['group']['title'];
+          return "$w | $s | $g";
+        }
+        else {
+          return "$w | $s";
+        }
+      default:
+        return 'No backward compatibility for $field';
     }
   }
 
