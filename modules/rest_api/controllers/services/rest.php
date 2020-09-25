@@ -1050,9 +1050,9 @@ class Rest_Controller extends Controller {
       ['caption' => 'Verification status 2', 'field' => '#backward:identification.verification_substatus#'],
       ['caption' => 'Query', 'field' => '#backward:identification.query#'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
-      ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
+      ['caption' => 'Verified on', 'field' => '#datetime:identification.verified_on:d/m/Y H^i#'], // Can't use : in format spec here - use ^ instead which is translated to :
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
-      ['caption' => 'Automated checks', 'field' => '#backward:identification.verification_substatus#'], // Output probably different from easy download?
+      ['caption' => 'Automated checks', 'field' => 'identification.auto_checks.result'], 
     ],
     "mapmate" => [
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
