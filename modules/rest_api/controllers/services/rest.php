@@ -1619,13 +1619,13 @@ class Rest_Controller extends Controller {
   private function esGetSpecialFieldSampleOccurrenceComment(array $doc) {
     $oComment = isset($doc['occurrence']['occurrence_remarks']) ? $doc['occurrence']['occurrence_remarks'] : '';
     $sComment = isset($doc['event']['event_remarks']) ? $doc['event']['event_remarks'] : '';
-    if ($oComment !== "" && $sComment !== "") {
+    if ($oComment !== '' && $sComment !== '') {
       return "Record comment: $oComment Sample comment: $sComment";
     }
-    elseif ($oComment !== "") {
+    elseif ($oComment !== '') {
       return "Record comment: $oComment";
     }
-    elseif ($sComment !== "") {
+    elseif ($sComment !== '') {
       return "Sample comment: $sComment";
     }
     else {
@@ -1653,9 +1653,7 @@ class Rest_Controller extends Controller {
       return 'Incorrect params for Datetime field';
     }
     $dtvalue = $this->getRawEsFieldValue($doc, $params[0]);
-    $dt = DateTime::createFromFormat("Y-m-d G:i:s.u", $dtvalue);
-    // Replace any ^ characters in format with :
-    $format = str_replace("^", ":", $params[1]);
+    $dt = DateTime::createFromFormat('Y-m-d G:i:s.u', $dtvalue);
     if ($dt === FALSE) {
       return  $dtvalue;
     } else {
@@ -1825,19 +1823,19 @@ class Rest_Controller extends Controller {
     // Use that function to format the date initially then
     // modify for MapMate.
     $date = $this->esGetSpecialFieldEventDate($doc);
-    if (substr($date,0,7) === "Before ") {
+    if (substr($date,0,7) === 'Before ') {
       // Mapmate can't deal with unbound ranges
       // - replace with date of known bound.
       return substr($date, 7);
     } 
-    elseif (substr($date,0,6) === "After ") {
+    elseif (substr($date,0,6) === 'After ') {
       // Mapmate can't deal with unbound ranges
       // - replace with date of known bound.
       return substr($date, 6);
     }
     elseif (strpos($date, ' to ') !== false) {
       // Mapmate uses a hyphen in date ranges.
-      return str_replace(" to ","-",$date);
+      return str_replace(' to ','-',$date);
     }
     else {
       return $date;
@@ -1913,11 +1911,11 @@ class Rest_Controller extends Controller {
     // No need to duplicate work of esGetSpecialFieldHigherGeography.
     // Use that function to get the VC number initially then
     // modify for MapMate.
-    $vc = $this->esGetSpecialFieldHigherGeography($doc, array("Vice County", "code"));
-    if ($vc === "") {
+    $vc = $this->esGetSpecialFieldHigherGeography($doc, array('Vice County', 'code'));
+    if ($vc === '') {
       // Where unable to assign VC, return 0. This will 
       // cause MapMate to work out the VC itself.
-      return "0";
+      return '0';
     } 
     else {
       return $vc;
@@ -1939,23 +1937,23 @@ class Rest_Controller extends Controller {
   private function esGetSpecialFieldMapmateSex(array $doc) {
     $sex = isset($doc['occurrence']['sex']) ? strtolower($doc['occurrence']['sex']) : '';
     switch($sex) {
-      case "female":
-        return "f";
+      case 'female':
+        return 'f';
 
-      case "male":
-        return "m";
+      case 'male':
+        return 'm';
 
-      case "mixed":
-        return "g";
+      case 'mixed':
+        return 'g';
 
-      case "queen":
-        return "q";
+      case 'queen':
+        return 'q';
 
-      case "not recorded":
-      case "not known":
-      case "unknown":
-      case "unsexed:":
-        return "u";
+      case 'not recorded':
+      case 'not known':
+      case 'unknown':
+      case 'unsexed:':
+        return 'u';
 
       default:
         return $sex;
@@ -1977,23 +1975,23 @@ class Rest_Controller extends Controller {
   private function esGetSpecialFieldMapmateLifeStage(array $doc) {
     $stage = isset($doc['occurrence']['life_stage']) ? strtolower($doc['occurrence']['life_stage']) : '';
     switch($stage) {
-      case "adult":
-      case "adults":
-      case "adult female":
-      case "adult male":
-        return "Adult";
+      case 'adult':
+      case 'adults':
+      case 'adult female':
+      case 'adult male':
+        return 'Adult';
 
-      case "larva":
-        return "Larval";
+      case 'larva':
+        return 'Larval';
 
-      case "not recorded":
-        return "Not recorded";
+      case 'not recorded':
+        return 'Not recorded';
 
-      case "pre-adult":
-        return "Subadult";
+      case 'pre-adult':
+        return 'Subadult';
 
-      case "In flower":
-        return "Flowering";
+      case 'In flower':
+        return 'Flowering';
 
       default:
         return $stage;
@@ -2016,11 +2014,11 @@ class Rest_Controller extends Controller {
     }
     $field = $params[0];
     switch($field) {
-      case "_id":
+      case '_id':
         return preg_replace('/^brc1\|/', 'iBRC', $doc['_id']);
 
-      case "location.input_sref_system":
-      case "location.output_sref_system":
+      case 'location.input_sref_system':
+      case 'location.output_sref_system':
         $value = strval($this->getRawEsFieldValue($doc, $field));
         if ($value === '4326') {
           return 'WGS84';
@@ -2032,7 +2030,7 @@ class Rest_Controller extends Controller {
           return strtoupper($value);
         }
 
-      case "datasource_code":
+      case 'datasource_code':
         $w = $doc['metadata']['website']['title'];
         $s = $doc['metadata']['survey']['title'];
         if (isset($doc['metadata']['group'])) {
@@ -2043,7 +2041,7 @@ class Rest_Controller extends Controller {
           return "$w | $s";
         }
 
-      case "identification.verification_status":
+      case 'identification.verification_status':
         $value = $this->getRawEsFieldValue($doc, $field);
         if($value === 'V'){
           return 'Accepted';
@@ -2067,7 +2065,7 @@ class Rest_Controller extends Controller {
           return $value;
         }
 
-      case "identification.verification_substatus":
+      case 'identification.verification_substatus':
         $status = $this->getRawEsFieldValue($doc, 'identification.verification_status');
         $value = strval($this->getRawEsFieldValue($doc, $field));
         if($status === 'V'){
@@ -2104,7 +2102,7 @@ class Rest_Controller extends Controller {
           return NULL;
         }
 
-      case "identification.query":
+      case 'identification.query':
         $value = $this->getRawEsFieldValue($doc, $field);
         if($value === 'A'){
           return 'Answered';
@@ -2135,7 +2133,7 @@ class Rest_Controller extends Controller {
    *   A quantity formatted/filtered as indicated by passed parameter.
    */
   private function esGetSpecialFieldOrganismQuantity(array $doc, array $params) {
-    $format = !empty($params) ? $params[0] : "";
+    $format = !empty($params) ? $params[0] : '';
     $quantity = !empty($doc['occurrence']['organism_quantity']) ? $doc['occurrence']['organism_quantity'] : '';
     if (!empty($doc['occurrence']['zero_abundance']) && $doc['occurrence']['zero_abundance'] !== 'false') {
       $zero = True;
@@ -2144,7 +2142,7 @@ class Rest_Controller extends Controller {
       $zero = False;
     }
     switch($format) {
-      case "mapmate":
+      case 'mapmate':
         // Mapmate will only accept integer values and uses a value 
         // of -7 to indicate a negative record. MapMate interprets
         // a quantity of 0 to mean 'present'.
@@ -2158,7 +2156,7 @@ class Rest_Controller extends Controller {
           return '';
         }
 
-      case "integer":
+      case 'integer':
         // Only return the value if it is an iteger.
         if(preg_match('/^\d+$/', $quantity)) {
           return $quantity;
@@ -2167,7 +2165,7 @@ class Rest_Controller extends Controller {
           return '';
         }
 
-      case "non-integer":
+      case 'non-integer':
         // Only return the value if it is not an iteger.
         if(!preg_match('/^\d+$/', $quantity)) {
           return $quantity;
@@ -2197,12 +2195,12 @@ class Rest_Controller extends Controller {
       return 'n/a';
     }
     $coords = explode(',', $root['point']);
-    $format = !empty($params) ? $params[0] : "";
+    $format = !empty($params) ? $params[0] : '';
     switch($format) {
-      case "decimal":
+      case 'decimal':
         return $coords[0];
 
-      case "nssuffix": // Implemented as the default.
+      case 'nssuffix': // Implemented as the default.
       default:
         $ns = $coords[0] >= 0 ? 'N' : 'S';
         $lat = number_format(abs($coords[0]), 3);
