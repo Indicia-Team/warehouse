@@ -1044,13 +1044,13 @@ class Rest_Controller extends Controller {
       ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
       ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
-      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H^i#'], // Can't use : in format spec here - use ^ instead which is translated to :
-      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y H^i#'], // Can't use : in format spec here - use ^ instead which is translated to :
+      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i#'],
+      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y H\:i#'],
       ['caption' => 'Verification status 1', 'field' => '#backward:identification.verification_status#'],
       ['caption' => 'Verification status 2', 'field' => '#backward:identification.verification_substatus#'],
       ['caption' => 'Query', 'field' => '#backward:identification.query#'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
-      ['caption' => 'Verified on', 'field' => '#datetime:identification.verified_on:d/m/Y H^i#'], // Can't use : in format spec here - use ^ instead which is translated to :
+      ['caption' => 'Verified on', 'field' => '#datetime:identification.verified_on:d/m/Y H\:i#'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
       ['caption' => 'Automated checks', 'field' => 'identification.auto_checks.result'], 
     ],
@@ -1072,8 +1072,8 @@ class Rest_Controller extends Controller {
       ['caption' => 'RecordKey', 'field' => '_id'],
       ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:non-integer#'],
       ['caption' => 'Habitat', 'field' => 'event.habitat'],
-      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H^i^s#'], // Can't use : in format spec here - use ^ instead which is translated to :
-      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G^i^s#'], // Can't use : in format spec here - use ^ instead which is translated to :
+      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i\:s#'],
+      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G\:i\:s#'],
       ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
       ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
       ['caption' => 'Query', 'field' => 'identification.query'],
@@ -2441,7 +2441,14 @@ class Rest_Controller extends Controller {
     if (preg_match('/^#(?P<sourceType>[a-z_]*):?(?<params>.*)?#$/', $sourceField, $matches)) {
       $fn = 'esGetSpecialField' .
         str_replace('_', '', ucwords($matches['sourceType']));
-      $params = empty($matches['params']) ? [] : explode(':', $matches['params']);
+
+      // Split $matches['params'] into an array using colon as a separator.
+      // First replace escaped colons ('\:') with another marker ('EscapedColon')
+      // converting back to colons in the resulting array elements.
+      $params = empty($matches['params']) ? [] : explode(':', str_replace('\:', 'EscapedColon', $matches['params']));
+      foreach ($params as &$param) {
+        $param = str_replace('EscapedColon', ':', $param);
+      }
       if (count($params) > 0 && strpos($params[0], '_') === 0) {
         // Resets docSource to root if first param (field) startus with '_'.
         $docSource = $doc;
