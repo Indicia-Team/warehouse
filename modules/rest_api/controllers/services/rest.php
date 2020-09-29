@@ -1941,17 +1941,22 @@ class Rest_Controller extends Controller {
     switch($sex) {
       case "female":
         return "f";
+
       case "male":
         return "m";
+
       case "mixed":
         return "g";
+
       case "queen":
         return "q";
+
       case "not recorded":
       case "not known":
       case "unknown":
       case "unsexed:":
         return "u";
+
       default:
         return $sex;
     }
@@ -1977,14 +1982,19 @@ class Rest_Controller extends Controller {
       case "adult female":
       case "adult male":
         return "Adult";
+
       case "larva":
         return "Larval";
+
       case "not recorded":
         return "Not recorded";
+
       case "pre-adult":
         return "Subadult";
+
       case "In flower":
         return "Flowering";
+
       default:
         return $stage;
     }
@@ -2008,6 +2018,7 @@ class Rest_Controller extends Controller {
     switch($field) {
       case "_id":
         return preg_replace('/^brc1\|/', 'iBRC', $doc['_id']);
+
       case "location.input_sref_system":
       case "location.output_sref_system":
         $value = strval($this->getRawEsFieldValue($doc, $field));
@@ -2020,6 +2031,7 @@ class Rest_Controller extends Controller {
         else {
           return strtoupper($value);
         }
+
       case "datasource_code":
         $w = $doc['metadata']['website']['title'];
         $s = $doc['metadata']['survey']['title'];
@@ -2030,6 +2042,7 @@ class Rest_Controller extends Controller {
         else {
           return "$w | $s";
         }
+
       case "identification.verification_status":
         $value = $this->getRawEsFieldValue($doc, $field);
         if($value === 'V'){
@@ -2053,6 +2066,7 @@ class Rest_Controller extends Controller {
         else {
           return $value;
         }
+
       case "identification.verification_substatus":
         $status = $this->getRawEsFieldValue($doc, 'identification.verification_status');
         $value = strval($this->getRawEsFieldValue($doc, $field));
@@ -2089,6 +2103,7 @@ class Rest_Controller extends Controller {
         else {
           return NULL;
         }
+
       case "identification.query":
         $value = $this->getRawEsFieldValue($doc, $field);
         if($value === 'A'){
@@ -2100,6 +2115,7 @@ class Rest_Controller extends Controller {
         else {
           return $value;
         }
+
       default:
         return 'No backward compatibility for ' . $field;
     }
@@ -2141,6 +2157,7 @@ class Rest_Controller extends Controller {
         else {
           return '';
         }
+
       case "integer":
         // Only return the value if it is an iteger.
         if(preg_match('/^\d+$/', $quantity)) {
@@ -2149,6 +2166,7 @@ class Rest_Controller extends Controller {
         else {
           return '';
         }
+
       case "non-integer":
         // Only return the value if it is not an iteger.
         if(!preg_match('/^\d+$/', $quantity)) {
@@ -2157,6 +2175,7 @@ class Rest_Controller extends Controller {
         else {
           return '';
         }
+
       default:
         return $quantity;
     }
@@ -2182,8 +2201,8 @@ class Rest_Controller extends Controller {
     switch($format) {
       case "decimal":
         return $coords[0];
-      case "nssuffix":
-        // Implemented as the default.
+
+      case "nssuffix": // Implemented as the default.
       default:
         $ns = $coords[0] >= 0 ? 'N' : 'S';
         $lat = number_format(abs($coords[0]), 3);
@@ -2234,8 +2253,8 @@ class Rest_Controller extends Controller {
     switch($format) {
       case "decimal":
         return $coords[1];
-      case "ewsuffix":
-        // Implemented as the default.
+
+      case "ewsuffix": // Implemented as the default.
       default:
         $ew = $coords[1] >= 0 ? 'E' : 'W';
         $lon = number_format(abs($coords[1]), 3);
