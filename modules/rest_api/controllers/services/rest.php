@@ -1008,9 +1008,9 @@ class Rest_Controller extends Controller {
     ],
     "easy-download" => [
       ['caption' => 'ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '#backward:_id#'],
+      ['caption' => 'RecordKey', 'field' => '#id:easy#'],
       ['caption' => 'External key', 'field' => 'occurrence_external_key'],
-      ['caption' => 'Source', 'field' => '#backward:datasource_code#'],
+      ['caption' => 'Source', 'field' => '#datasource_code:with_group#'],
       ['caption' => 'Species', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
       ['caption' => 'Taxon group', 'field' => 'taxon.group'],
@@ -1022,10 +1022,10 @@ class Rest_Controller extends Controller {
       ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
       ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
       ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
-      ['caption' => 'Projection', 'field' => '#backward:location.input_sref_system#'],
+      ['caption' => 'Projection', 'field' => '#sref_system:location.input_sref_system:alphanumeric#'],
       ['caption' => 'Precision', 'field' => 'location.coordinate_uncertainty_in_meters'],
       ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
-      ['caption' => 'Projection', 'field' => '#backward:location.output_sref_system#'],
+      ['caption' => 'Projection', 'field' => '#sref_system:location.output_sref_system:alphanumeric#'],
       ['caption' => 'Biotope', 'field' => 'event.habitat'],
       ['caption' => 'VC number', 'field' => '#higher_geography:Vice County:code#'],
       ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
@@ -1046,9 +1046,9 @@ class Rest_Controller extends Controller {
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
       ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i#'],
       ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y H\:i#'],
-      ['caption' => 'Verification status 1', 'field' => '#backward:identification.verification_status#'],
-      ['caption' => 'Verification status 2', 'field' => '#backward:identification.verification_substatus#'],
-      ['caption' => 'Query', 'field' => '#backward:identification.query#'],
+      ['caption' => 'Verification status 1', 'field' => '#verification_status:standard#'],
+      ['caption' => 'Verification status 2', 'field' => '#verification_substatus:standard#'],
+      ['caption' => 'Query', 'field' => '#query:standard#'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
       ['caption' => 'Verified on', 'field' => '#datetime:identification.verified_on:d/m/Y H\:i#'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
@@ -1058,14 +1058,14 @@ class Rest_Controller extends Controller {
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Site', 'field' => 'location.verbatim_locality'],
       ['caption' => 'Gridref', 'field' => 'location.output_sref'],
-      ['caption' => 'VC', 'field' => '#mapmate_vc#'],
+      ['caption' => 'VC', 'field' => '#vc:mapmate#'],
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
       ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
-      ['caption' => 'Date', 'field' => '#mapmate_date#'],
+      ['caption' => 'Date', 'field' => '#record_date:mapmate#'],
       ['caption' => 'Quantity', 'field' => '#organism_quantity:mapmate#'],
       ['caption' => 'Method', 'field' => 'event.sampling_protocol'],
-      ['caption' => 'Sex', 'field' => '#mapmate_sex#'],
-      ['caption' => 'Stage', 'field' => '#mapmate_life_stage#'],
+      ['caption' => 'Sex', 'field' => '#sex:mapmate#'],
+      ['caption' => 'Stage', 'field' => '#life_stage:mapmate#'],
       ['caption' => 'Status', 'field' => '#blank#'],
       ['caption' => 'Comment', 'field' => '#sample_occurrence_comment#'],
       ['caption' => 'ID', 'field' => 'id'],
@@ -1074,9 +1074,9 @@ class Rest_Controller extends Controller {
       ['caption' => 'Habitat', 'field' => 'event.habitat'],
       ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i\:s#'],
       ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G\:i\:s#'],
-      ['caption' => 'Verification status 1', 'field' => 'identification.verification_status'],
-      ['caption' => 'Verification status 2', 'field' => '#null_if_zero:identification.verification_substatus#'],
-      ['caption' => 'Query', 'field' => 'identification.query'],
+      ['caption' => 'Verification status 1', 'field' => '#verification_status:standard#'],
+      ['caption' => 'Verification status 2', 'field' => '#verification_substatus:standard#'],
+      ['caption' => 'Query', 'field' => '#query:standard#'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
     ]
   ];
@@ -1155,25 +1155,26 @@ class Rest_Controller extends Controller {
         elseif ($field === '#data_cleaner_icons#') {
           $fields[] = 'identification.auto_checks';
         }
-        elseif ($field === '#datasource_code#') {
+        elseif (preg_match('/^#datasource_code(:.+)*#$/', $field)) {
           $fields[] = 'metadata.website';
           $fields[] = 'metadata.survey';
+          $fields[] = 'metadata.group';
         }
         elseif ($field === '#event_date#') {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
         }
-        elseif ($field === '#mapmate_date#') {
+        elseif (preg_match('/^#record_date(.*)#$/', $field)) {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
         }
-        elseif ($field === '#mapmate_vc#') {
+        elseif (preg_match('/^#vc(.*)#$/', $field)) {
           $fields[] = 'location.higher_geography';
         }
-        elseif ($field === '#mapmate_sex#') {
+        elseif (preg_match('/^#sex(.*)#$/', $field)) {
           $fields[] = 'occurrence.sex';
         }
-        elseif ($field === '#mapmate_life_stage#') {
+        elseif (preg_match('/^#life_stage(.*)#$/', $field)) {
           $fields[] = 'occurrence.life_stage';
         }
         elseif ($field ==='#sample_occurrence_comment#') {
@@ -1199,6 +1200,15 @@ class Rest_Controller extends Controller {
           $fields[] = 'identification';
           $fields[] = 'occurrence.zero_abundance';
         }
+        elseif (preg_match('/^#verification_status(.*)#$/', $field)) {
+          $fields[] = 'identification.verification_status';
+        }
+        elseif (preg_match('/^#verification_substatus(.*)#$/', $field)) {
+          $fields[] = 'identification.verification_substatus';
+        }
+        elseif (preg_match('/^#query(.*)#$/', $field)) {
+          $fields[] = 'identification.query';
+        }
         elseif (preg_match('/^#attr_value:(event|sample|parent_event|occurrence):(\d+)#$/', $field, $matches)) {
           $key = $matches[1] === 'parent_event' ? 'parent_attributes' : 'attributes';
           // Tolerate sample or event for entity parameter.
@@ -1211,15 +1221,8 @@ class Rest_Controller extends Controller {
         elseif (preg_match('/^#datetime:([a-z_]+(\.[a-z_]+)*):.*#$/', $field, $matches)) {
           $fields[] = $matches[1];
         }
-        elseif (preg_match('/^#backward:([a-z_]+(\.[a-z_]+)*)#$/', $field, $matches)) {
-          if ($matches[1] === 'datasource_code') {
-            $fields[] = 'metadata.website';
-            $fields[] = 'metadata.survey';
-            $fields[] = 'metadata.group';
-          } 
-          else {
-            $fields[] = $matches[1];
-          }
+        elseif (preg_match('/^#sref_system:([a-z_]+(\.[a-z_]+)*):.*#$/', $field, $matches)) {
+          $fields[] = $matches[1];
         }
       }
       $postObj->_source = array_values(array_unique($fields));
@@ -1607,6 +1610,28 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Special field handler to format record ID.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted ID value.
+   */
+  private function esGetSpecialFieldId(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for formatted ID field';
+    }
+    if ($params[0] === 'easy') {
+      // Provides backward compatibility with pre-ES download format ('easy download').
+      return preg_replace('/^brc1\|/', 'iBRC', $doc['_id']);
+    }
+    else {
+      return $doc['_id'];
+    }
+  }
+
+  /**
    * Special field handler for Elasticsearch to combine
    * the sample and occurrence comment.
    *
@@ -1657,7 +1682,187 @@ class Rest_Controller extends Controller {
     if ($dt === FALSE) {
       return  $dtvalue;
     } else {
-      return $dt->format($format);
+      return $dt->format($params[1]);
+    }
+  }
+
+  /**
+   * Special field handler for ES spatial ref system fields.
+   *
+   * Return the spatial ref system formatted as specified.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters: 
+   *   1. ES field
+   *   2. format identifier
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldSrefSystem(array $doc, array $params) {
+    if (count($params) !== 2) {
+      return 'Incorrect params for sref system field';
+    }
+    $value = strval($this->getRawEsFieldValue($doc, $params[0]));
+    if ($params[1] === 'alphanumeric') {
+      // Ensure that EPSG codes are converted to alphanumeric string.
+      // Provides backward compatibility with pre-ES downloads.
+      if ($value === '4326') {
+        return 'WGS84';
+      }
+      else if ($value === '27700') {
+        return 'OSGB36';
+      }
+      else {
+        return strtoupper($value);
+      }
+    }
+    else {
+      return $value;
+    }
+  }
+
+  /**
+   * Special field handler for ES verification status.
+   *
+   * Return the verification status formatted as specified.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldVerificationStatus(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for verification status field';
+    }
+    $value = $this->getRawEsFieldValue($doc, 'identification.verification_status');
+    if ($params[0] === 'standard') {
+      // Provides backward compatibility with pre-ES downloads.
+      if($value === 'V'){
+        return 'Accepted';
+      }
+      elseif ($value === 'C'){
+        return 'Unconfirmed';
+      }
+      elseif ($value === 'R'){
+        return 'Rejected';
+      }
+      elseif ($value === 'I'){
+        return 'Input still in progress';
+      }
+      elseif ($value === 'D'){
+        return 'Queried';
+      }
+      elseif ($value === 'S'){
+        return 'Awaiting check';
+      }
+      else {
+        return $value;
+      }
+    }
+    else {
+      return $value;
+    }
+  }
+
+  /**
+   * Special field handler for ES verification status.
+   *
+   * Return the verification status formatted as specified.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldVerificationSubstatus(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for verification substatus field';
+    }
+    $status = $this->getRawEsFieldValue($doc, 'identification.verification_status');
+    $value = $this->getRawEsFieldValue($doc, 'identification.verification_substatus');
+    if ($params[0] === 'standard') {
+      // Provides backward compatibility with pre-ES downloads.
+      if($status === 'V'){
+        if ($value === '1') {
+          return 'Correct';
+        }
+        elseif ($value === '2') {
+          return 'Considered correct';
+        }
+        else {
+          return NULL;
+        }
+      }
+      elseif ($status === 'C'){
+        if ($value === '3') {
+          return 'Plausible';
+        }
+        else {
+          return 'Not reviewed';
+        }
+      }
+      elseif ($status === 'R'){
+        if ($value === '4') {
+          return 'Unable to verify';
+        }
+        elseif ($value === '5') {
+          return 'Incorrect';
+        }
+        else {
+          return NULL;
+        }
+      }
+      else {
+        return NULL;
+      }
+    }
+    else {
+      return $value;
+    }
+  }
+
+  /**
+   * Special field handler for ES identification query status.
+   *
+   * Return the identification query status formatted as specified.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldQuery(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for query field';
+    }
+    $value = $this->getRawEsFieldValue($doc, 'identification.query');
+    if ($params[0] === 'standard') {
+      // Provides backward compatibility with pre-ES downloads.
+      if($value === 'A'){
+        return 'Answered';
+      }
+      elseif ($value === 'Q'){
+        return 'Queried';
+      }
+      else {
+        return $value;
+      }
+    }
+    else {
+      return $value;
     }
   }
 
@@ -1755,12 +1960,29 @@ class Rest_Controller extends Controller {
    *   Elasticsearch document.
    *
    * @return string
-   *   Formatted value including website and survey dataset info.
+   *   Formatted value including website, survey dataset and,
+   *   optionally, group info.
    */
-  private function esGetSpecialFieldDatasourceCode(array $doc) {
+  private function esGetSpecialFieldDatasourceCode(array $doc, $params) {
+    if (count($params) > 1) {
+      return 'Incorrect params for non-standard datasource field (must be 0 or 1)';
+    }
     $w = $doc['metadata']['website'];
     $s = $doc['metadata']['survey'];
-    return "$w[id] ($w[title]) | $s[id] ($s[title])";
+    if (count($params) && $params[0] === 'with_group') {
+      // Provides backward compatibility with pre-ES downloads.
+      if (isset($doc['metadata']['group'])) {
+        $g = $doc['metadata']['group'];
+        return "$w[title] | $s[title] | $g[title]";
+      }
+      else {
+        return "$w[title] | $s[title]";
+      }
+    }
+    else {
+      // Default format uses id and title for both website and dataset.
+      return "$w[id] ($w[title]) | $s[id] ($s[title])";
+    }
   }
 
   /**
@@ -1806,36 +2028,45 @@ class Rest_Controller extends Controller {
     }
   }
 
+
   /**
-   * Special field handler for Elasticsearch event dates compatible for MapMate.
+   * Special field handler for Elasticsearch event dates with format options.
    *
-   * Converts event.date_from and event.date_to to a readable date string, e.g.
-   * for inclusion in CSV output suitable for MapMate import.
-   *
+   * Converts event.date_from and/or event.date_to to a date string
+   * with the identified format.
+   * 
    * @param array $doc
    *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
    *
    * @return string
-   *   MapMate formatted date.
+   *   Formatted date.
    */
-  private function esGetSpecialFieldMapmateDate(array $doc) {
-    // No need to duplicate work of esGetSpecialFieldEventDate.
-    // Use that function to format the date initially then
-    // modify for MapMate.
-    $date = $this->esGetSpecialFieldEventDate($doc);
-    if (substr($date,0,7) === 'Before ') {
-      // Mapmate can't deal with unbound ranges
-      // - replace with date of known bound.
-      return substr($date, 7);
-    } 
-    elseif (substr($date,0,6) === 'After ') {
-      // Mapmate can't deal with unbound ranges
-      // - replace with date of known bound.
-      return substr($date, 6);
+  private function esGetSpecialFieldRecordDate(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for formatted date';
     }
-    elseif (strpos($date, ' to ') !== false) {
-      // Mapmate uses a hyphen in date ranges.
-      return str_replace(' to ','-',$date);
+    $date = $this->esGetSpecialFieldEventDate($doc);
+    if ($params[0] === 'mapmate') {
+      // Provides compatibility for import to MapMate.
+      if (substr($date,0,7) === 'Before ') {
+        // Mapmate can't deal with unbound ranges
+        // - replace with date of known bound.
+        return substr($date, 7);
+      } 
+      elseif (substr($date,0,6) === 'After ') {
+        // Mapmate can't deal with unbound ranges
+        // - replace with date of known bound.
+        return substr($date, 6);
+      }
+      elseif (strpos($date, ' to ') !== false) {
+        // Mapmate uses a hyphen in date ranges.
+        return str_replace(' to ','-',$date);
+      }
+      else {
+        return $date;
+      }
     }
     else {
       return $date;
@@ -1896,226 +2127,137 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Special field handler for Elasticsearch location VC number formatted for MapMate.
+   * Special field handler for Elasticsearch location VC with format options.
    *
-   * Converts Vice County code to values required by MapMate
-   * for inclusion in CSV output suitable for MapMate import.
-   *
+   * Converts Vice County code to values as specified in format option.
+   * 
    * @param array $doc
    *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
    *
    * @return string
-   *   VC number. If unknown, set to zero.
+   *   Formatted VC.
    */
-  private function esGetSpecialFieldMapmateVc(array $doc) {
-    // No need to duplicate work of esGetSpecialFieldHigherGeography.
-    // Use that function to get the VC number initially then
-    // modify for MapMate.
-    $vc = $this->esGetSpecialFieldHigherGeography($doc, array('Vice County', 'code'));
-    if ($vc === '') {
-      // Where unable to assign VC, return 0. This will 
-      // cause MapMate to work out the VC itself.
-      return '0';
-    } 
-    else {
-      return $vc;
-    }
-  }
-
-  /**
-   * Special field handler for Elasticsearch sex formatted for MapMate.
-   *
-   * Converts occurrence.sex to values acceptable for
-   * inclusion in CSV output suitable for MapMate import.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   MapMate Sex code.
-   */
-  private function esGetSpecialFieldMapmateSex(array $doc) {
-    $sex = isset($doc['occurrence']['sex']) ? strtolower($doc['occurrence']['sex']) : '';
-    switch($sex) {
-      case 'female':
-        return 'f';
-
-      case 'male':
-        return 'm';
-
-      case 'mixed':
-        return 'g';
-
-      case 'queen':
-        return 'q';
-
-      case 'not recorded':
-      case 'not known':
-      case 'unknown':
-      case 'unsexed:':
-        return 'u';
-
-      default:
-        return $sex;
-    }
-  }
-
-  /**
-   * Special field handler for Elasticsearch life_stage formatted for MapMate.
-   *
-   * Converts occurrence.life_stage to values acceptable for
-   * inclusion in CSV output suitable for MapMate import.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   MapMate Stage value.
-   */
-  private function esGetSpecialFieldMapmateLifeStage(array $doc) {
-    $stage = isset($doc['occurrence']['life_stage']) ? strtolower($doc['occurrence']['life_stage']) : '';
-    switch($stage) {
-      case 'adult':
-      case 'adults':
-      case 'adult female':
-      case 'adult male':
-        return 'Adult';
-
-      case 'larva':
-        return 'Larval';
-
-      case 'not recorded':
-        return 'Not recorded';
-
-      case 'pre-adult':
-        return 'Subadult';
-
-      case 'In flower':
-        return 'Flowering';
-
-      default:
-        return $stage;
-    }
-  }
-
-  /**
-   * Special field handler to provide backward-compatible (easy download) 
-   * formats for several fields.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Backward compatible string value.
-   */
-  private function esGetSpecialFieldBackward(array $doc, array $params) {
+  private function esGetSpecialFieldVc(array $doc, array $params) {
     if (count($params) !== 1) {
-      return 'Incorrect params for backward compatibility field';
+      return 'Incorrect params for formatted VC';
     }
-    $field = $params[0];
-    switch($field) {
-      case '_id':
-        return preg_replace('/^brc1\|/', 'iBRC', $doc['_id']);
+    $vcnum = $this->esGetSpecialFieldHigherGeography($doc, array('Vice County', 'code'));
+    if ($params[0] === 'mapmate') {
+      // Provides compatibility for import to MapMate
+      if ($vcnum === '') {
+        // Where unable to assign VC, return 0. This will 
+        // cause MapMate to work out the VC itself.
+        return '0';
+      } 
+      elseif(strpos($vcnum, '|') > 0) {
+        // More than one VC returned, set to zer to let
+        // MapMate decide where to place the record.
+        return '0';
+      }
+      else {
+        return $vcnum;
+      }
+    }
+    else {
+      return vcnum;
+    }
+  }
 
-      case 'location.input_sref_system':
-      case 'location.output_sref_system':
-        $value = strval($this->getRawEsFieldValue($doc, $field));
-        if ($value === '4326') {
-          return 'WGS84';
-        }
-        else if ($value === '27700') {
-          return 'OSGB36';
-        }
-        else {
-          return strtoupper($value);
-        }
+  /**
+   * Special field handler for Elasticsearch sex with format options.
+   *
+   * Converts occurrence.sex to values as specified in format option.
+   * 
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted sex.
+   */
+  private function esGetSpecialFieldSex(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for formatted sex';
+    }
+    $value = isset($doc['occurrence']['sex']) ? strtolower($doc['occurrence']['sex']) : '';
+    if ($params[0] === 'mapmate') {
+      // Provides compatibility for import to MapMate
+      switch($value) {
+        case 'female':
+          return 'f';
 
-      case 'datasource_code':
-        $w = $doc['metadata']['website']['title'];
-        $s = $doc['metadata']['survey']['title'];
-        if (isset($doc['metadata']['group'])) {
-          $g = $doc['metadata']['group']['title'];
-          return "$w | $s | $g";
-        }
-        else {
-          return "$w | $s";
-        }
+        case 'male':
+          return 'm';
 
-      case 'identification.verification_status':
-        $value = $this->getRawEsFieldValue($doc, $field);
-        if($value === 'V'){
-          return 'Accepted';
-        }
-        elseif ($value === 'C'){
-          return 'Unconfirmed';
-        }
-        elseif ($value === 'R'){
-          return 'Rejected';
-        }
-        elseif ($value === 'I'){
-          return 'Input still in progress';
-        }
-        elseif ($value === 'D'){
-          return 'Queried';
-        }
-        elseif ($value === 'S'){
-          return 'Awaiting check';
-        }
-        else {
+        case 'mixed':
+          return 'g';
+
+        case 'queen':
+          return 'q';
+
+        case 'not recorded':
+        case 'not known':
+        case 'unknown':
+        case 'unsexed:':
+          return 'u';
+
+        default:
           return $value;
-        }
+      }
+    }
+    else {
+      return $value;
+    }
+  }
 
-      case 'identification.verification_substatus':
-        $status = $this->getRawEsFieldValue($doc, 'identification.verification_status');
-        $value = strval($this->getRawEsFieldValue($doc, $field));
-        if($status === 'V'){
-          if ($value === '1') {
-            return 'correct';
-          }
-          elseif ($value === '2') {
-            return 'Considered correct';
-          }
-          else {
-            return NULL;
-          }
-        }
-        elseif ($status === 'C'){
-          if ($value === '3') {
-            return 'Plausible';
-          }
-          else {
-            return 'Not reviewed';
-          }
-        }
-        elseif ($status === 'R'){
-          if ($value === '4') {
-            return 'Unable to verify';
-          }
-          elseif ($value === '5') {
-            return 'Incorrect';
-          }
-          else {
-            return NULL;
-          }
-        }
-        else {
-          return NULL;
-        }
+  /**
+   * Special field handler for Elasticsearch life stage with format options.
+   *
+   * Converts occurrence.life_stage to values as specified in format option.
+   * 
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted life stage.
+   */
+  private function esGetSpecialFieldLifeStage(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for formatted life stage';
+    }
+    $value = isset($doc['occurrence']['life_stage']) ? strtolower($doc['occurrence']['life_stage']) : '';
+    if ($params[0] === 'mapmate') {
+      // Provides compatibility for import to MapMate
+      switch($value) {
+        case 'adult':
+        case 'adults':
+        case 'adult female':
+        case 'adult male':
+          return 'Adult';
 
-      case 'identification.query':
-        $value = $this->getRawEsFieldValue($doc, $field);
-        if($value === 'A'){
-          return 'Answered';
-        }
-        elseif ($value === 'Q'){
-          return 'Queried';
-        }
-        else {
+        case 'larva':
+          return 'Larval';
+
+        case 'not recorded':
+          return 'Not recorded';
+
+        case 'pre-adult':
+          return 'Subadult';
+
+        case 'In flower':
+          return 'Flowering';
+
+        default:
           return $value;
-        }
-
-      default:
-        return 'No backward compatibility for ' . $field;
+      }
+    }
+    else {
+      return $value;
     }
   }
 
@@ -2447,8 +2589,8 @@ class Rest_Controller extends Controller {
       foreach ($params as &$param) {
         $param = str_replace('EscapedColon', ':', $param);
       }
-      if (count($params) > 0 && strpos($params[0], '_') === 0) {
-        // Resets docSource to root if first param (field) startus with '_'.
+      if ($matches['sourceType'] === 'id') {
+        // Resets docSource to root if special function to format doc ID.
         $docSource = $doc;
       }
       if (method_exists($this, $fn)) {
