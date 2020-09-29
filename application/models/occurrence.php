@@ -255,6 +255,13 @@ class Occurrence_Model extends ORM {
       if (!empty($this->submission['fields']['determiner_id']) && !empty($this->submission['fields']['determiner_id']['value'])) {
         // Redetermination by user ID provided in submission.
         $redetByPersonId = (int) $this->submission['fields']['determiner_id']['value'];
+        if ($redetByPersonId === -1) {
+          // Determiner person ID -1 is special case, means don't assign new determiner
+          // name on redet.
+          unset($this->submission['fields']['determiner_id']);
+          unset($array->determiner_id);
+          return;
+        }
         $userInfo = $this->db->select('id')->from('users')->where('person_id', $redetByPersonId)->get()->current();
         $redetByUserId = $userInfo->id;
       } else {
@@ -267,15 +274,8 @@ class Occurrence_Model extends ORM {
           $array->determiner_id = $redetByPersonId;
         }
       }
-      if ($redetByPersonId === -1) {
-        // Determiner person ID -1 is special case, means don't assign new determiner
-        // name on redet.
-        unset($this->submission['fields']['determiner_id']);
-        unset($array->determiner_id);
-      }
-      elseif ($redetByUserId !== 1) {
-        // Update any determiner occurrence attributes.
-        $sql = <<<SQL
+      // Update any determiner occurrence attributes.
+      $sql = <<<SQL
 UPDATE occurrence_attribute_values v
 SET text_value=CASE a.system_function
   WHEN 'det_full_name' THEN TRIM(COALESCE(p.first_name || ' ', '') || p.surname)
@@ -293,8 +293,7 @@ AND a.system_function in ('det_full_name', 'det_first_name', 'det_last_name')
 AND u.id=$redetByUserId
 AND u.deleted=false
 SQL;
-        $this->db->query($sql);
-      }
+      $this->db->query($sql);
     }
   }
 
