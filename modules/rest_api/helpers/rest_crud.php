@@ -44,6 +44,9 @@ class rest_crud {
    */
   public static function create($entity, array $data) {
     self::loadEntityConfig($entity);
+    if (empty($data['values'])) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Values not submitted when attempting to POST.']));
+    }
     $values = $data['values'];
     if (!empty($values['id'])) {
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Cannot POST with id to update, use PUT instead.']));
