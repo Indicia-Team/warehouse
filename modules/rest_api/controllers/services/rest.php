@@ -1008,9 +1008,9 @@ class Rest_Controller extends Controller {
     ],
     "easy-download" => [
       ['caption' => 'ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '#id:easy#'],
+      ['caption' => 'RecordKey', 'field' => '_id'],
       ['caption' => 'External key', 'field' => 'occurrence_external_key'],
-      ['caption' => 'Source', 'field' => '#datasource_code:with_group#'],
+      ['caption' => 'Source', 'field' => '#datasource_code:<wt> | <st> {|} <gt>#'],
       ['caption' => 'Species', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
       ['caption' => 'Taxon group', 'field' => 'taxon.group'],
@@ -1046,9 +1046,9 @@ class Rest_Controller extends Controller {
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
       ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i#'],
       ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y H\:i#'],
-      ['caption' => 'Verification status 1', 'field' => '#verification_status:standard#'],
-      ['caption' => 'Verification status 2', 'field' => '#verification_substatus:standard#'],
-      ['caption' => 'Query', 'field' => '#query:standard#'],
+      ['caption' => 'Verification status 1', 'field' => '#verification_status:astext#'],
+      ['caption' => 'Verification status 2', 'field' => '#verification_substatus:astext#'],
+      ['caption' => 'Query', 'field' => '#query:astext#'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
       ['caption' => 'Verified on', 'field' => '#datetime:identification.verified_on:d/m/Y H\:i#'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
@@ -1058,10 +1058,10 @@ class Rest_Controller extends Controller {
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Site', 'field' => 'location.verbatim_locality'],
       ['caption' => 'Gridref', 'field' => 'location.output_sref'],
-      ['caption' => 'VC', 'field' => '#vc:mapmate#'],
+      ['caption' => 'VC', 'field' => '#higher_geography:Vice County:code:mapmate#'],
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
       ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
-      ['caption' => 'Date', 'field' => '#record_date:mapmate#'],
+      ['caption' => 'Date', 'field' => '#event_date:mapmate#'],
       ['caption' => 'Quantity', 'field' => '#organism_quantity:mapmate#'],
       ['caption' => 'Method', 'field' => 'event.sampling_protocol'],
       ['caption' => 'Sex', 'field' => '#sex:mapmate#'],
@@ -1070,13 +1070,13 @@ class Rest_Controller extends Controller {
       ['caption' => 'Comment', 'field' => '#sample_occurrence_comment#'],
       ['caption' => 'ID', 'field' => 'id'],
       ['caption' => 'RecordKey', 'field' => '_id'],
-      ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:non-integer#'],
+      ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:exclude_integer#'],
       ['caption' => 'Habitat', 'field' => 'event.habitat'],
       ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i\:s#'],
       ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G\:i\:s#'],
-      ['caption' => 'Verification status 1', 'field' => '#verification_status:standard#'],
-      ['caption' => 'Verification status 2', 'field' => '#verification_substatus:standard#'],
-      ['caption' => 'Query', 'field' => '#query:standard#'],
+      ['caption' => 'Verification status 1', 'field' => '#verification_status:astext#'],
+      ['caption' => 'Verification status 2', 'field' => '#verification_substatus:astext#'],
+      ['caption' => 'Query', 'field' => '#query:astext#'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
     ]
   ];
@@ -1155,16 +1155,12 @@ class Rest_Controller extends Controller {
         elseif ($field === '#data_cleaner_icons#') {
           $fields[] = 'identification.auto_checks';
         }
-        elseif (preg_match('/^#datasource_code(:.+)*#$/', $field)) {
+        elseif (preg_match('/^#datasource_code(.*)#$/', $field)) {
           $fields[] = 'metadata.website';
           $fields[] = 'metadata.survey';
           $fields[] = 'metadata.group';
         }
-        elseif ($field === '#event_date#') {
-          $fields[] = 'event.date_start';
-          $fields[] = 'event.date_end';
-        }
-        elseif (preg_match('/^#record_date(.*)#$/', $field)) {
+        elseif (preg_match('/^#event_date(.*)#$/', $field)) {
           $fields[] = 'event.date_start';
           $fields[] = 'event.date_end';
         }
@@ -1742,7 +1738,7 @@ class Rest_Controller extends Controller {
       return 'Incorrect params for verification status field';
     }
     $value = $this->getRawEsFieldValue($doc, 'identification.verification_status');
-    if ($params[0] === 'standard') {
+    if ($params[0] === 'astext') {
       // Provides backward compatibility with pre-ES downloads.
       if($value === 'V'){
         return 'Accepted';
@@ -1790,7 +1786,7 @@ class Rest_Controller extends Controller {
     }
     $status = $this->getRawEsFieldValue($doc, 'identification.verification_status');
     $value = $this->getRawEsFieldValue($doc, 'identification.verification_substatus');
-    if ($params[0] === 'standard') {
+    if ($params[0] === 'astext') {
       // Provides backward compatibility with pre-ES downloads.
       if($status === 'V'){
         if ($value === '1') {
@@ -1849,7 +1845,7 @@ class Rest_Controller extends Controller {
       return 'Incorrect params for query field';
     }
     $value = $this->getRawEsFieldValue($doc, 'identification.query');
-    if ($params[0] === 'standard') {
+    if ($params[0] === 'astext') {
       // Provides backward compatibility with pre-ES downloads.
       if($value === 'A'){
         return 'Answered';
@@ -1965,24 +1961,31 @@ class Rest_Controller extends Controller {
    */
   private function esGetSpecialFieldDatasourceCode(array $doc, $params) {
     if (count($params) > 1) {
-      return 'Incorrect params for non-standard datasource field (must be 0 or 1)';
+      return 'Incorrect params for datasource code field (must be 0 or 1)';
     }
     $w = $doc['metadata']['website'];
     $s = $doc['metadata']['survey'];
-    if (count($params) && $params[0] === 'with_group') {
-      // Provides backward compatibility with pre-ES downloads.
-      if (isset($doc['metadata']['group'])) {
-        $g = $doc['metadata']['group'];
-        return "$w[title] | $s[title] | $g[title]";
-      }
-      else {
-        return "$w[title] | $s[title]";
-      }
+    if (isset($doc['metadata']['group'])) {
+      $g = $doc['metadata']['group'];
     }
     else {
-      // Default format uses id and title for both website and dataset.
-      return "$w[id] ($w[title]) | $s[id] ($s[title])";
+      $g = array('title' => '', 'id' => '');
     }
+    if (count($params)) {
+      $pattern = $params[0];
+    }
+    else {
+      $pattern = '<wi> (<wt>) | <si> (<st>)';
+    }
+    $regpatterns = array('/<wi>/', '/<wt>/', '/<si>/' , '/<st>/', '/<gi>/', '/<gt>/');
+    $replacements = array($w['id'], $w['title'], $s['id'], $s['title'], $g['id'] , $g['title']);
+    $output = preg_replace($regpatterns, $replacements, $pattern);
+    // Disregarding whitespace, if the output string ends in something in curly braces,
+    // then remove it. Allows us to conditionally remove a separator if there's no group.
+    $output = preg_replace('/\s*{.*}\s*$/', '', $output);
+    // Remvove curly braces from output.
+    $output = preg_replace('/({|})/', '', $output);
+    return $output;
   }
 
   /**
@@ -1994,11 +1997,23 @@ class Rest_Controller extends Controller {
    *
    * @param array $doc
    *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters in field definition.
+   *   Can be empty or a string to specify a format.
    *
    * @return string
    *   Formatted readable date.
    */
-  private function esGetSpecialFieldEventDate(array $doc) {
+  private function esGetSpecialFieldEventDate(array $doc, array $params) {
+    if (count($params) > 1) {
+      return 'Incorrect params for formatted date (must be zero or one)';
+    }
+    if (count($params)) {
+      $format = $params[0];
+    } 
+    else {
+      $format = "";
+    }
     // Check in case fields are in composite agg key.
     $root = isset($doc['key']) ? $doc['key'] : $doc['event'];
     $start = isset($root['date_start']) ? $root['date_start'] :
@@ -2011,65 +2026,46 @@ class Rest_Controller extends Controller {
     if (preg_match('/^\-?\d+$/', $end)) {
       $end = date('d/m/Y', $end / 1000);
     }
+    if (preg_match('/^(\d\d\d\d)-(\d\d)-(\d\d)$/', $start, $matches)) {
+      $start = $matches[3] . '/' . $matches[2] . '/' . $matches[1];
+    }
+    if (preg_match('/^(\d\d\d\d)-(\d\d)-(\d\d)$/', $end, $matches)) {
+      $end = $matches[3] . '/' . $matches[2] . '/' . $matches[1];
+    }
     if (empty($start) && empty($end)) {
-      return 'Unknown';
+      if ($format === 'mapmate') {
+        return '';
+      } else {
+        return 'Unknown';
+      }
     }
     elseif (empty($end)) {
-      return "After $start";
+      if ($format === 'mapmate') {
+        // Mapmate can't deal with unbound ranges
+        // - replace with date of known bound.
+        return $start;
+      } else {
+        return "After $start";
+      }
     }
     elseif (empty($start)) {
-      return "Before $end";
+      if ($format === 'mapmate') {
+        // Mapmate can't deal with unbound ranges
+        // - replace with date of known bound.
+        return $end;
+      } else {
+        return "Before $end";
+      }
     }
     elseif ($start === $end) {
       return $start;
     }
     else {
-      return "$start to $end";
-    }
-  }
-
-
-  /**
-   * Special field handler for Elasticsearch event dates with format options.
-   *
-   * Converts event.date_from and/or event.date_to to a date string
-   * with the identified format.
-   * 
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted date.
-   */
-  private function esGetSpecialFieldRecordDate(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for formatted date';
-    }
-    $date = $this->esGetSpecialFieldEventDate($doc);
-    if ($params[0] === 'mapmate') {
-      // Provides compatibility for import to MapMate.
-      if (substr($date,0,7) === 'Before ') {
-        // Mapmate can't deal with unbound ranges
-        // - replace with date of known bound.
-        return substr($date, 7);
-      } 
-      elseif (substr($date,0,6) === 'After ') {
-        // Mapmate can't deal with unbound ranges
-        // - replace with date of known bound.
-        return substr($date, 6);
+      if ($format === 'mapmate') {
+        return $start . '-' . $end;
+      } else {
+        return "$start to $end";
       }
-      elseif (strpos($date, ' to ') !== false) {
-        // Mapmate uses a hyphen in date ranges.
-        return str_replace(' to ','-',$date);
-      }
-      else {
-        return $date;
-      }
-    }
-    else {
-      return $date;
     }
   }
 
@@ -2080,7 +2076,7 @@ class Rest_Controller extends Controller {
    * output. Configurable output by passing parameters:
    * * type - limit output to this type.
    * * field - limit output to content of this field (name, id, type or code).
-   * * text - set to true to convert the resultant JSON to text.
+   * * format - can be left empty or set to either json or mapmate.
    * E.g. pass type=Country, field=name, text=true to convert to a plaintext
    * Country name.
    *
@@ -2118,50 +2114,26 @@ class Rest_Controller extends Controller {
         foreach ($r as $outputItem) {
           $outputList[] = is_array($outputItem) ? implode('; ', $outputItem) : $outputItem;
         }
-        return implode(' | ', $outputList);
+        if (isset($params[2]) && $params[2] === 'mapmate') {
+          if (count($outputList) === 1) {
+            return $outputList[0];
+          }
+          else {
+            return 0;
+          }
+        }
+        else {
+          return implode(' | ', $outputList);
+        }
       }
     }
     else {
-      return '';
-    }
-  }
-
-  /**
-   * Special field handler for Elasticsearch location VC with format options.
-   *
-   * Converts Vice County code to values as specified in format option.
-   * 
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted VC.
-   */
-  private function esGetSpecialFieldVc(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for formatted VC';
-    }
-    $vcnum = $this->esGetSpecialFieldHigherGeography($doc, array('Vice County', 'code'));
-    if ($params[0] === 'mapmate') {
-      // Provides compatibility for import to MapMate
-      if ($vcnum === '') {
-        // Where unable to assign VC, return 0. This will 
-        // cause MapMate to work out the VC itself.
-        return '0';
-      } 
-      elseif(strpos($vcnum, '|') > 0) {
-        // More than one VC returned, set to zer to let
-        // MapMate decide where to place the record.
-        return '0';
+      if (isset($params[2]) && $params[2] === 'mapmate') {
+        return 0;
       }
       else {
-        return $vcnum;
+        return '';
       }
-    }
-    else {
-      return vcnum;
     }
   }
 
@@ -2299,7 +2271,7 @@ class Rest_Controller extends Controller {
         }
 
       case 'integer':
-        // Only return the value if it is an iteger.
+        // Only return the value if it is an integer.
         if(preg_match('/^\d+$/', $quantity)) {
           return $quantity;
         }
@@ -2307,8 +2279,8 @@ class Rest_Controller extends Controller {
           return '';
         }
 
-      case 'non-integer':
-        // Only return the value if it is not an iteger.
+      case 'exclude_integer':
+        // Only return the value if it is not an integer.
         if(!preg_match('/^\d+$/', $quantity)) {
           return $quantity;
         }
