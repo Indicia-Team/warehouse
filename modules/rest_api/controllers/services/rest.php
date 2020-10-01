@@ -548,9 +548,6 @@ class Rest_Controller extends Controller {
         ],
       ],
       'post' => [
-        'options' => [
-          'segments' => TRUE,
-        ],
         'subresources' => [
           '' => [
             'params' => [],
@@ -585,9 +582,6 @@ class Rest_Controller extends Controller {
         ],
       ],
       'post' => [
-        'options' => [
-          'segments' => TRUE,
-        ],
         'subresources' => [
           '' => [
             'params' => [],
@@ -622,9 +616,6 @@ class Rest_Controller extends Controller {
         ],
       ],
       'post' => [
-        'options' => [
-          'segments' => TRUE,
-        ],
         'subresources' => [
           '' => [
             'params' => [],
