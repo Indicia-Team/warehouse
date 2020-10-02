@@ -852,6 +852,62 @@ KEY;
     $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
   }
 
+  public function testJwtSamplePostList() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+        ],
+        'occurrences' => [
+          [
+            'values' => [
+              'taxa_taxon_list_id' => 1,
+            ],
+          ],
+        ],
+      ], [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU2345',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+        ],
+        'occurrences' => [
+          [
+            'values' => [
+              'taxa_taxon_list_id' => 2,
+            ],
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(400, $response['httpCode'], 'POSTing a list to normal endpoint should fail');
+    $response = $this->callService(
+      'samples/list',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    foreach ($response['response'] as $idx => $item) {
+      $this->assertTrue(is_numeric($idx), 'Response from list post should be a simple list array');
+      $id = $item['values']['id'];
+      $occCount = $db->query("select count(*) from occurrences where sample_id=$id")
+        ->current()->count;
+      $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample in a list.');
+    }
+  }
+
   /**
    * Test behaviour around duplicate check with external key.
    */

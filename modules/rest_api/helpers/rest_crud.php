@@ -55,7 +55,7 @@ class rest_crud {
     if (in_array($entity, ['occurrence', 'sample']) && !empty($values['external_key'])) {
       self::checkDuplicateExternalKey($entity, $values);
     }
-    self::submit($entity, $obj, $data);
+    return self::submit($entity, $obj, $data);
   }
 
   /**
@@ -326,7 +326,7 @@ SQL;
         foreach ($attrValues as $attr) {
           // @Todo test
           $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
-          $attrs["smpAttr:$attr->attribute_id"] = $val;
+          $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
         }
         $row = array_merge((array) $row, $attrs);
       }
@@ -368,7 +368,7 @@ SQL;
       $obj->as_array(),
       $values
     );
-    self::submit($entity, $obj, $data);
+    return self::submit($entity, $obj, $data);
   }
 
   /**
@@ -595,23 +595,15 @@ SQL;
    */
   private static function submit($entity, $obj, $postObj) {
     $obj->submission = rest_crud::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
-    // Different http code for create vs update.
-    $httpCodeOnSuccess = $obj->id ? 200 : 201;
     $id = $obj->submit();
     if ($id) {
-      http_response_code($httpCodeOnSuccess);
       $table = inflector::plural($entity);
       // ETag to provide version check on updates.
       $ETag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=$id")->current()->xmin;
       header("ETag: $ETag");
       // Include href and basic record metadata.
       $responseMetadata = $obj->getSubmissionResponseMetadata();
-      $reformattedResponse = self::getResponseMetadata($responseMetadata);
-      if ($httpCodeOnSuccess === 201) {
-        // Location header points to created resource.
-        header("Location: $reformattedResponse[href]");
-      }
-      echo json_encode($reformattedResponse);
+      return self::getResponseMetadata($responseMetadata);
     } else {
       RestObjects::$apiResponse->fail('Bad Request', 400, $obj->getAllErrors());
     }

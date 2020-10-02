@@ -289,435 +289,378 @@ class Rest_Controller extends Controller {
    * @var array
    */
   private $resourceConfig = [
-    'projects' => [
-      'get' => [
-        'subresources' => [
-          '' => [
-            'params' => [],
-          ],
-          '{project ID}' => [
-            'params' => [],
-          ],
-        ],
-      ],
-    ],
-    'taxon-observations' => [
-      'get' => [
-        'subresources' => [
-          '' => [
-            'params' => [
-              'proj_id' => [
-                'datatype' => 'text',
-              ],
-              'filter_id' => [
-                'datatype' => 'integer',
-              ],
-              'page' => [
-                'datatype' => 'integer',
-              ],
-              'page_size' => [
-                'datatype' => 'integer',
-              ],
-              'edited_date_from' => [
-                'datatype' => 'date',
-                'required' => TRUE,
-              ],
-              'edited_date_to' => [
-                'datatype' => 'date',
-              ],
-            ],
-          ],
-          '{taxon-observation ID}' => [
-            'params' => [
-              'proj_id' => [
-                'datatype' => 'text',
-                'required' => TRUE,
-              ],
-              'filter_id' => [
-                'datatype' => 'integer',
-              ],
-            ],
-          ],
-        ],
-      ],
-      'post' => [
-        'subresources' => [
-          '' => [
-            'params' => [],
-          ],
-        ],
-      ],
-    ],
     'annotations' => [
-      'get' => [
-        'subresources' => [
-          '' => [
-            'params' => [
-              'proj_id' => [
-                'datatype' => 'text',
-              ],
-              'filter_id' => [
-                'datatype' => 'integer',
-              ],
-              'page' => [
-                'datatype' => 'integer',
-              ],
-              'page_size' => [
-                'datatype' => 'integer',
-              ],
-              'edited_date_from' => [
-                'datatype' => 'date',
-              ],
-              'edited_date_to' => [
-                'datatype' => 'date',
-              ],
+      'GET' => [
+        'annotations' => [
+          'deprecated' => TRUE,
+          'params' => [
+            'proj_id' => [
+              'datatype' => 'text',
             ],
-          ],
-          '{annotation ID}' => [
-            'params' => [
-              'proj_id' => [
-                'datatype' => 'text',
-                'required' => TRUE,
-              ],
-              'filter_id' => [
-                'datatype' => 'integer',
-              ],
+            'filter_id' => [
+              'datatype' => 'integer',
+            ],
+            'page' => [
+              'datatype' => 'integer',
+            ],
+            'page_size' => [
+              'datatype' => 'integer',
+            ],
+            'edited_date_from' => [
+              'datatype' => 'date',
+            ],
+            'edited_date_to' => [
+              'datatype' => 'date',
             ],
           ],
         ],
-      ],
-    ],
-    'taxa' => [
-      'get' => [
-        'options' => [
-          'segments' => TRUE,
-        ],
-        'subresources' => [
-          '' => [
-            'params' => [],
-          ],
-          'search' => [
-            'params' => [
-              'taxon_list_id' => [
-                'datatype' => 'integer[]',
-                'required' => TRUE,
-              ],
-              'searchQuery' => [
-                'datatype' => 'text',
-              ],
-              'taxon_group_id' => [
-                'datatype' => 'integer[]',
-              ],
-              'taxon_group' => [
-                'datatype' => 'text[]',
-              ],
-              'taxon_meaning_id' => [
-                'datatype' => 'integer[]',
-              ],
-              'taxa_taxon_list_id' => [
-                'datatype' => 'integer[]',
-              ],
-              'preferred_taxa_taxon_list_id' => [
-                'datatype' => 'integer[]',
-              ],
-              'preferred_taxon' => [
-                'datatype' => 'text[]',
-              ],
-              'external_key' => [
-                'datatype' => 'text[]',
-              ],
-              'parent_id' => [
-                'datatype' => 'integer[]',
-              ],
-              'language' => [
-                'datatype' => 'text[]',
-              ],
-              'preferred' => [
-                'datatype' => 'boolean',
-              ],
-              'commonNames' => [
-                'datatype' => 'boolean',
-              ],
-              'synonyms' => [
-                'datatype' => 'boolean',
-              ],
-              'abbreviations' => [
-                'datatype' => 'boolean',
-              ],
-              'marine_flag' => [
-                'datatype' => 'boolean',
-              ],
-              'freshwater_flag' => [
-                'datatype' => 'boolean',
-              ],
-              'terrestrial_flag' => [
-                'datatype' => 'boolean',
-              ],
-              'non_native_flag' => [
-                'datatype' => 'boolean',
-              ],
-              'searchAuthors' => [
-                'datatype' => 'boolean',
-              ],
-              'wholeWords' => [
-                'datatype' => 'boolean',
-              ],
-              'min_taxon_rank_sort_order' => [
-                'datatype' => 'integer',
-              ],
-              'max_taxon_rank_sort_order' => [
-                'datatype' => 'integer',
-              ],
-              'limit' => [
-                'datatype' => 'integer',
-              ],
-              'offset' => [
-                'datatype' => 'integer',
-              ],
-              'include' => [
-                'datatype' => 'text[]',
-                'options' => ['data', 'count', 'paging', 'columns'],
-              ],
+        'annotations/{id}' => [
+          'deprecated' => TRUE,
+          'params' => [
+            'proj_id' => [
+              'datatype' => 'text',
+              'required' => TRUE,
             ],
-          ],
-        ],
-      ],
-    ],
-    'reports' => [
-      'get' => [
-        'options' => [
-          'segments' => TRUE,
-        ],
-        'subresources' => [
-          '' => [
-            'params' => [],
-          ],
-          '{report_path}.xml' => [
-            'params' => [
-              'filter_id' => [
-                'datatype' => 'integer',
-              ],
-              'limit' => [
-                'datatype' => 'integer',
-              ],
-              'offset' => [
-                'datatype' => 'integer',
-              ],
-              'sortby' => [
-                'datatype' => 'text',
-              ],
-              'sortdir' => [
-                'datatype' => 'text',
-              ],
-              'columns' => [
-                'datatype' => 'text',
-              ],
-              'cached' => [
-                'datatype' => 'boolean',
-              ],
+            'filter_id' => [
+              'datatype' => 'integer',
             ],
-          ],
-          '{report_path}.xml/params' => [
-            'params' => [],
-          ],
-          '{report_path}.xml/columns' => [
-            'params' => [],
           ],
         ],
       ],
     ],
     'media-queue' => [
-      'post' => [
-        'subresources' => [
-          '' => [
-            'params' => [],
-          ],
-        ],
+      'POST' => [
+        'media-queue' => [],
       ],
     ],
     'locations' => [
-      'get' => [
-        'subresources' => [
-          '{location ID}' => [
-            'params' => [
-              'verbose' => [
-                'datatype' => 'integer',
-              ],
+      'GET' => [
+        'locations' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
+        'locations/{id}' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
             ],
           ],
         ],
       ],
-      'post' => [
-        'subresources' => [
-          '' => [
-            'params' => [],
-          ],
-        ],
+      'POST' => [
+        'locations' => [],
       ],
-      'put' => [
-        'subresources' => [
-          '{location ID}' => [
-            'params' => [],
-          ],
-        ],
+      'PUT' => [
+        'locations/{id}' => [],
       ],
-      'delete' => [
-        'subresources' => [
-          '{location ID}' => [
-            'params' => [],
-          ],
-        ],
-      ],
-    ],
-    'occurrences' => [
-      'get' => [
-        'subresources' => [
-          '{occurrence ID}' => [
-            'params' => [
-              'verbose' => [
-                'datatype' => 'integer',
-              ],
-            ],
-          ],
-        ],
-      ],
-      'post' => [
-        'subresources' => [
-          '' => [
-            'params' => [],
-          ],
-        ],
-      ],
-      'put' => [
-        'subresources' => [
-          '{occurrence ID}' => [
-            'params' => [],
-          ],
-        ],
-      ],
-      'delete' => [
-        'subresources' => [
-          '{occurrence ID}' => [
-            'params' => [],
-          ],
-        ],
-      ],
-    ],
-    'samples' => [
-      'get' => [
-        'subresources' => [
-          '{sample ID}' => [
-            'params' => [
-              'verbose' => [
-                'datatype' => 'integer',
-              ],
-            ],
-          ],
-        ],
-      ],
-      'post' => [
-        'subresources' => [
-          '' => [
-            'params' => [],
-          ],
-        ],
-      ],
-      'put' => [
-        'subresources' => [
-          '{sample ID}' => [
-            'params' => [],
-          ],
-        ],
-      ],
-      'delete' => [
-        'subresources' => [
-          '{sample ID}' => [
-            'params' => [],
-          ],
-        ],
-      ],
-    ],
-    'surveys' => [
-      'get' => [
-        'subresources' => [
-          '' => [
-            'params' => [
-              'verbose' => [
-                'datatype' => 'integer',
-              ],
-            ],
-          ],
-          '{survey ID}' => [
-            'params' => [
-              'verbose' => [
-                'datatype' => 'integer',
-              ],
-            ],
-          ],
-        ],
-      ],
-      'post' => [
-        'subresources' => [
-          '' => [],
-        ],
-      ],
-      'put' => [
-        'subresources' => [
-          '{survey ID}' => [],
-        ],
-      ],
-      'delete' => [
-        'subresources' => [
-          '{survey ID}' => [],
-        ],
-      ],
-    ],
-    'sample-attributes' => [
-      'get' => [
-        'subresources' => [
-          '' => [],
-          '{attribute ID}' => [],
-        ],
-      ],
-      'post' => [
-        'subresources' => [
-          '' => [],
-        ],
-      ],
-      'put' => [
-        'subresources' => [
-          '{survey ID}' => [],
-        ],
-      ],
-      'delete' => [
-        'subresources' => [
-          '{survey ID}' => [],
-        ],
+      'DELETE' => [
+        'locations/{id}' => [],
       ],
     ],
     'occurrence-attributes' => [
-      'get' => [
-        'subresources' => [
-          '' => [],
-          '{attribute ID}' => [],
+      'GET' => [
+        'occurrence-attributes' => [],
+        'occurrence-attributes/{id}' => [],
+      ],
+      'POST' => [
+        'occurrence-attributes' => [],
+      ],
+      'PUT' => [
+        'occurrence-attributes/{id}' => [],
+      ],
+      'DELETE' => [
+        'occurrence-attributes/{id}' => [],
+      ],
+    ],
+    'occurrences' => [
+      'GET' => [
+        'occurrences' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
+        'occurrences/{id}' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
         ],
       ],
-      'post' => [
-        'subresources' => [
-          '' => [],
+      'POST' => [
+        'occurrences' => [],
+        'occurrences/list' => [],
+      ],
+      'PUT' => [
+        'occurrences/{id}' => [],
+      ],
+      'DELETE' => [
+        'occurrences/{id}' => [],
+      ],
+    ],
+    'projects' => [
+      'GET' => [
+        'projects' => ['deprecated' => TRUE],
+        'projects/{id}' => ['deprecated' => TRUE],
+      ],
+    ],
+    'reports' => [
+      'GET' => [
+        'reports' => [],
+        'reports/featured' => [],
+        'reports/{path}' => [],
+        'reports/{path}/{file.xml}' => [
+          'params' => [
+            'filter_id' => [
+              'datatype' => 'integer',
+            ],
+            'limit' => [
+              'datatype' => 'integer',
+            ],
+            'offset' => [
+              'datatype' => 'integer',
+            ],
+            'sortby' => [
+              'datatype' => 'text',
+            ],
+            'sortdir' => [
+              'datatype' => 'text',
+            ],
+            'columns' => [
+              'datatype' => 'text',
+            ],
+            'cached' => [
+              'datatype' => 'boolean',
+            ],
+          ],
+        ],
+        'reports/{path}/{file.xml}/params' => [],
+        'reports/{path}/{file.xml}/columns' => [],
+      ]
+    ],
+    'sample-attributes' => [
+      'GET' => [
+        'sample-attributes' => [],
+        'sample-attributes/{id}' => [],
+      ],
+      'POST' => [
+        'sample-attributes' => [],
+      ],
+      'PUT' => [
+        'sample-attributes/{id}' => [],
+      ],
+      'DELETE' => [
+        'sample-attributes/{id}' => [],
+      ],
+    ],
+    'samples' => [
+      'GET' => [
+        'samples' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
+        'samples/{id}' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
         ],
       ],
-      'put' => [
-        'subresources' => [
-          '{survey ID}' => [],
+      'POST' => [
+        'samples' => [],
+        'samples/list' => [],
+      ],
+      'PUT' => [
+        'samples/{id}' => [],
+      ],
+      'DELETE' => [
+        'samples/{id}' => [],
+      ],
+    ],
+    'surveys' => [
+      'GET' => [
+        'surveys' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
+        'surveys/{id}' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
         ],
       ],
-      'delete' => [
-        'subresources' => [
-          '{survey ID}' => [],
+      'POST' => [
+        'surveys' => [],
+      ],
+      'PUT' => [
+        'surveys/{id}' => [],
+      ],
+      'DELETE' => [
+        'surveys/{id}' => [],
+      ],
+    ],
+    'taxa' => [
+      'GET' => [
+        'taxa/search' => [
+          'params' => [
+            'taxon_list_id' => [
+              'datatype' => 'integer[]',
+              'required' => TRUE,
+            ],
+            'searchQuery' => [
+              'datatype' => 'text',
+            ],
+            'taxon_group_id' => [
+              'datatype' => 'integer[]',
+            ],
+            'taxon_group' => [
+              'datatype' => 'text[]',
+            ],
+            'taxon_meaning_id' => [
+              'datatype' => 'integer[]',
+            ],
+            'taxa_taxon_list_id' => [
+              'datatype' => 'integer[]',
+            ],
+            'preferred_taxa_taxon_list_id' => [
+              'datatype' => 'integer[]',
+            ],
+            'preferred_taxon' => [
+              'datatype' => 'text[]',
+            ],
+            'external_key' => [
+              'datatype' => 'text[]',
+            ],
+            'parent_id' => [
+              'datatype' => 'integer[]',
+            ],
+            'language' => [
+              'datatype' => 'text[]',
+            ],
+            'preferred' => [
+              'datatype' => 'boolean',
+            ],
+            'commonNames' => [
+              'datatype' => 'boolean',
+            ],
+            'synonyms' => [
+              'datatype' => 'boolean',
+            ],
+            'abbreviations' => [
+              'datatype' => 'boolean',
+            ],
+            'marine_flag' => [
+              'datatype' => 'boolean',
+            ],
+            'freshwater_flag' => [
+              'datatype' => 'boolean',
+            ],
+            'terrestrial_flag' => [
+              'datatype' => 'boolean',
+            ],
+            'non_native_flag' => [
+              'datatype' => 'boolean',
+            ],
+            'searchAuthors' => [
+              'datatype' => 'boolean',
+            ],
+            'wholeWords' => [
+              'datatype' => 'boolean',
+            ],
+            'min_taxon_rank_sort_order' => [
+              'datatype' => 'integer',
+            ],
+            'max_taxon_rank_sort_order' => [
+              'datatype' => 'integer',
+            ],
+            'limit' => [
+              'datatype' => 'integer',
+            ],
+            'offset' => [
+              'datatype' => 'integer',
+            ],
+            'include' => [
+              'datatype' => 'text[]',
+              'options' => ['data', 'count', 'paging', 'columns'],
+            ],
+          ],
         ],
       ],
     ],
+    'taxon-observations' => [
+      'GET' => [
+        'taxon-observations' => [
+          'deprecated' => TRUE,
+          'params' => [
+            'proj_id' => [
+              'datatype' => 'text',
+            ],
+            'filter_id' => [
+              'datatype' => 'integer',
+            ],
+            'page' => [
+              'datatype' => 'integer',
+            ],
+            'page_size' => [
+              'datatype' => 'integer',
+            ],
+            'edited_date_from' => [
+              'datatype' => 'date',
+              'required' => TRUE,
+            ],
+            'edited_date_to' => [
+              'datatype' => 'date',
+            ],
+          ],
+        ],
+        'taxon-observations/{id}' => [
+          'deprecated' => TRUE,
+          'params' => [
+            'proj_id' => [
+              'datatype' => 'text',
+              'required' => TRUE,
+            ],
+            'filter_id' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
+      ],
+      'POST' => [
+        'taxon-observations' => ['deprecated' => TRUE],
+      ],
+    ],
+    'GET occurrence-attributes' => [
+      'params' => [
+        'verbose' => [
+          'datatype' => 'integer',
+        ],
+      ],
+    ],
+    'GET occurrence-attributes/{id}' => [
+      'params' => [
+        'verbose' => [
+          'datatype' => 'integer',
+        ],
+      ],
+    ],
+    'POST occurrence-attributes' => [],
+    'PUT occurrence-attributes/{id}' => [],
+    'DELETE occurrence-attributes/{id}' => [],
   ];
 
   /**
@@ -855,36 +798,19 @@ class Rest_Controller extends Controller {
           header('Allow: ' . strtoupper(implode(', ', array_merge(array_keys($resourceConfig), ['OPTIONS']))));
         }
         else {
-          if (!array_key_exists(strtolower($this->method), $resourceConfig)) {
+          if (!array_key_exists($this->method, $resourceConfig)) {
             RestObjects::$apiResponse->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
           }
-          $methodConfig = $resourceConfig[strtolower($this->method)];
-          // If segments allowed, the URL can be .../resource/x/y/z etc.
-          $allowSegments = isset($methodConfig['options']) &&
-            !empty($methodConfig['options']['segments']);
-          if ($this->method === 'GET') {
-            $this->request = $_GET;
-          }
-          elseif ($this->method === 'POST') {
-            $this->request = $_POST;
-          }
-          $methodName = lcfirst(str_replace('_', '', ucwords($name, '_'))) . ucfirst(strtolower($this->method));
+          $this->request = $this->method === 'GET' ? $_GET : $_POST;
           $this->checkVersion($arguments);
-
+          $methodConfig = $resourceConfig[$this->method];
+          $pathConfigPattern = $this->getPathConfigPatternMatch($methodConfig, $arguments);
+          $pathConfig = $methodConfig[$pathConfigPattern];
+          $methodName = $this->getMethodName($arguments, strpos($pathConfigPattern, '{path}') !== FALSE);
           $requestForId = NULL;
-
-          if (!$allowSegments && count($arguments) > 1) {
-            RestObjects::$apiResponse->fail('Bad request', 400, 'Incorrect number of arguments');
-          }
-          elseif (!$allowSegments && count($arguments) === 1) {
-            // We only allow a single argument to request a single resource by
-            // ID.
-            if (preg_match('/^([A-Z]{3})?\d+$/', $arguments[0])) {
-              $requestForId = $arguments[0];
-            }
-            else {
-              RestObjects::$apiResponse->fail('Bad request', 400, 'Invalid ID requested ' . $arguments[0]);
-            }
+          $ids = preg_grep('/^([A-Z]{3})?\d+$/', $arguments);
+          if (count($ids) > 0) {
+            $requestForId = $ids[0];
           }
           // When using a client system ID, we also want a project ID if
           // accessing taxon observations or annotations.
@@ -897,15 +823,13 @@ class Rest_Controller extends Controller {
               $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
             }
           }
-          if ($requestForId) {
-            $methodName .= 'Id';
+          $this->validateParameters($pathConfig);
+          if (method_exists($this, $methodName)) {
+            call_user_func(array($this, $methodName), $requestForId);
           }
-          $this->validateParameters($this->resourceName, strtolower($this->method), $requestForId);
-          if (isset($this->clientSystemId) &&
-              ($name === 'taxon_observations' || $name === 'annotations')) {
-            $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
+          else {
+            RestObjects::$apiResponse->fail('Not Found', 404, "Resource $name not known for method $this->method");
           }
-          call_user_func(array($this, $methodName), $requestForId);
         }
       }
       else {
@@ -923,6 +847,70 @@ class Rest_Controller extends Controller {
       request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db);
     }
   }
+
+  /**
+   * Finds the key in the method config which matches the path.
+   *
+   * In $resourceConfig, an endpoint contains a list of different HTTP methods,
+   * e.g. GET, POST. Within these are configurations for each path pattern
+   * possible for that endpoint. Matches the current URL arguments to locate
+   * the correct path pattern to apply. E.g. "occurrences/123" would map to
+   * path pattern "occurrences/{id}" or "reports/library/occurrences" would map
+   * to "reports/{path}".
+   *
+   * @param array $methodConfig
+   *   Current resource endpoint and HTTP method combination's resource config.
+   * @param array $arguments
+   *   URL path sections as an array.
+   *
+   * @return string
+   *   Name of the key in the current HTTP method's config to use.
+   */
+  private function getPathConfigPatternMatch($methodConfig, $arguments) {
+    // Build an array to help locate the correct bit of configuration for
+    // this path inside the resource config's method key.
+    $searchArr = array_merge($arguments);
+    $searchArr = preg_replace('/^([A-Z]{3})?\d+$/', '{id}', $searchArr);
+    $searchArr = preg_replace('/^[a-zA-Z0-9_-]+\.xml$/', '{file.xml}', $searchArr);
+    $searchStr = implode('/', array_merge([$this->resourceName], $searchArr));
+    if (!isset($methodConfig[$searchStr])) {
+      // Failed to find the configuration for this path. Segments that
+      // aren't in braces can all be replaced by {path} as an
+      // alternative.
+      $searchStr = "$this->resourceName/" . preg_replace('/^[^{]*(?!{.+})/', '{path}', implode('/', $searchArr));
+      if (!isset($methodConfig[$searchStr])) {
+        RestObjects::$apiResponse->fail('Bad request', 404, 'Resource path ' . implode('/', $arguments) . ' not found');
+      }
+    }
+    return $searchStr;
+  }
+
+  /**
+   * Works out the class method to call which matches the current request.
+   *
+   * @param array $arguments
+   *   URL path sections as an array.
+   * @param bool $usingPath
+   *   TRUE if the current URL includes a group of path parts that maps to
+   *   {path} in the configuration key.
+   *
+   * @return string
+   *   Method name.
+   */
+  private function getMethodName($arguments, $usingPath) {
+    $methodNamePartsArr = array_merge($arguments);
+    $methodNamePartsArr = preg_replace('/^([A-Z]{3})?\d+$/', 'id', $methodNamePartsArr);
+    $methodNamePartsArr = preg_replace('/^[a-zA-Z0-9_-]+\.xml$/', 'file', $methodNamePartsArr);
+    array_map(function ($item) { return ucFirst($item); }, $methodNamePartsArr);
+    $methodName = implode('', $methodNamePartsArr);
+    if ($usingPath) {
+      $methodName = preg_replace('/^[^{]*(?!{.+})/', 'Path', $methodName);
+    }
+    // Add the resource and method prefix to the method name.
+    $methodName = lcfirst(str_replace('-', '', ucwords($this->resourceName, '-'))) . ucfirst(strtolower($this->method)) . $methodName;
+    return $methodName;
+  }
+
 
   /**
    * Check if resource allowed for project.
@@ -2223,11 +2211,7 @@ class Rest_Controller extends Controller {
    * @todo option to limit columns in results
    * @todo caching option
    */
-  private function taxaGet() {
-    $segments = $this->uri->segment_array();
-    if (count($segments) !== 4 || $segments[4] !== 'search') {
-      RestObjects::$apiResponse->fail('Bad request', 404, "Resource taxa not known, try taxa/search");
-    }
+  private function taxaGetSearch() {
     $params = array_merge(array(
       'limit' => REST_API_DEFAULT_PAGE_SIZE,
       'include' => ['data', 'count', 'paging', 'columns'],
@@ -2324,7 +2308,7 @@ class Rest_Controller extends Controller {
    *   are included in report output. Applies when authenticating as a
    *   warehouse user only.
    */
-  private function reportsGet() {
+  private function reportsGet($featured = FALSE) {
     RestObjects::$apiResponse->trackTime();
     $segments = $this->uri->segment_array();
     // Remove services/rest/reports from the URL segments.
@@ -2345,9 +2329,18 @@ class Rest_Controller extends Controller {
       }
     }
     else {
-      $this->getReportHierarchy($segments);
+      $this->getReportHierarchy($segments, $featured);
     }
   }
+
+  private function reportsGetFeatured() {
+    $this->reportsGet(TRUE);
+  }
+
+  private function reportsGetPath() {
+    $this->reportsGet();
+  }
+
 
   /**
    * Converts the segments in the URL to a full report path.
@@ -2559,14 +2552,13 @@ class Rest_Controller extends Controller {
    * @param array $segments
    *   URL segments.
    */
-  private function getReportHierarchy(array $segments) {
+  private function getReportHierarchy(array $segments, $featured) {
     $this->loadReportEngine();
     // @todo Cache this
     $reportHierarchy = $this->reportEngine->reportList();
     $response = array();
     $folderReadme = '';
-    $featuredFolder = (count($segments) === 1 && $segments[0] === 'featured');
-    if ($featuredFolder) {
+    if ($featured) {
       $folderReadme = kohana::lang("rest_api.reports.featured_folder_description");
     }
     else {
@@ -2594,7 +2586,7 @@ class Rest_Controller extends Controller {
         ),
       ) + $reportHierarchy;
     }
-    if ($featuredFolder) {
+    if ($featured) {
       $response = array();
       $this->getFeaturedReports($reportHierarchy, $response);
     }
@@ -2760,41 +2752,11 @@ class Rest_Controller extends Controller {
    * @param bool $requestForId
    *   ID of resource being requested if any.
    */
-  private function validateParameters($resourceName, $method, $requestForId) {
-    $info = $this->resourceConfig[$resourceName][$method]['subresources'];
-    // If requesting a list, then use the entry keyed '', else use the named
-    // entry.
-    if ($requestForId) {
-      foreach ($info as $key => $method) {
-        if ($key !== '') {
-          $thisMethod = $method;
-          break;
-        }
-      }
-    }
-    else {
-      if (!empty($this->resourceConfig[$resourceName][$method]['options']['segments'])) {
-        $segments = $this->uri->segment_array();
-        if (count($segments) === 4 && isset($info[$segments[4]])) {
-          // Path indicates a subresource.
-          $thisMethod = $info[$segments[4]];
-        }
-      }
-      if (!isset($thisMethod)) {
-        if (!isset($info[''])) {
-          RestObjects::$apiResponse->fail('Bad request', 400, "Request method not valid for end-point");
-        }
-        // Use the default subresource.
-        $thisMethod = $info[''];
-      }
-    }
-    if (!isset($thisMethod)) {
-      RestObjects::$apiResponse->fail('Bad request', 400, "Request method not valid for end-point");
-    }
+  private function validateParameters($methodConfig) {
     // Check through the known list of parameters to ensure data formats are
     // correct and required parameters are provided.
-    if (isset($thisMethod['params'])) {
-      foreach ($thisMethod['params'] as $paramName => $paramDef) {
+    if (isset($methodConfig['params'])) {
+      foreach ($methodConfig['params'] as $paramName => $paramDef) {
         if (!empty($paramDef['required']) && empty($this->request[$paramName])) {
           RestObjects::$apiResponse->fail('Bad request', 400, "Missing $paramName parameter");
         }
@@ -3674,7 +3636,7 @@ class Rest_Controller extends Controller {
       $files = array_merge($files, $filesByInput);
     }
     return $files;
-}
+  }
 
   public function mediaQueuePost() {
     // Upload size.
@@ -3728,27 +3690,52 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Validates an occurrence values array before saving.
+   *
+   * * Assigns the website ID.
+   * * Checks the sample is valid and belongs to the user.
+   */
+  private function checkOccurrenceBeforeSave(&$values) {
+    // Autofill website ID.
+    $values['website_id'] = RestObjects::$clientWebsiteId;
+    if (!empty($values['sample_id'])) {
+      // Sample must be for same user.
+      $sampleCheck = RestObjects::$db->query('select count(*) from samples ' .
+        "where id='" . $values['sample_id'] .
+        "' and deleted=false and created_by_id=" . RestObjects::$clientUserId)
+        ->current()->count;
+      if ($sampleCheck !== '1') {
+        RestObjects::$apiResponse->fail('Bad Request', 400, ['occurrence:sample_id' => 'Attempt to create occurrence in invalid sample.']);
+      }
+    }
+  }
+
+  /**
    * API end-point to POST an occurrence to create within existing sample.
    */
   public function occurrencesPost() {
-    $segments = $this->uri->segment_array();
     $post = file_get_contents('php://input');
     $postArray = json_decode($post, TRUE);
-    // Autofill website ID.
-    if (isset($postArray['values'])) {
-      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
-      if (!empty($postArray['values']['sample_id'])) {
-        // Sample must be for same user.
-        $sampleCheck = RestObjects::$db->query('select count(*) from samples ' .
-          "where id='" . $postArray['values']['sample_id'] .
-          "' and deleted=false and created_by_id=" . RestObjects::$clientUserId)
-          ->current()->count;
-        if ($sampleCheck !== '1') {
-          RestObjects::$apiResponse->fail('Bad Request', 400, ['occurrence:sample_id' => 'Attempt to create occurrence in invalid sample.']);
-        }
-      }
+    $this->checkOccurrenceBeforeSave($postArray['values']);
+    $r = rest_crud::create('occurrence', $postArray);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to POST an occurrence to create within existing sample.
+   */
+  public function occurrencesPostList() {
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    $r = [];
+    foreach ($postArray as $key => $item) {
+      $this->checkOccurrenceBeforeSave($postArray['values']);
+      $r[] = rest_crud::create('occurrence', $postArray);
     }
-    rest_crud::create('occurrence', $postArray);
+    echo json_encode($r);
+    http_response_code(201);
   }
 
   /**
@@ -3760,7 +3747,7 @@ class Rest_Controller extends Controller {
   public function occurrencesPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    rest_crud::update('occurrence', $id, $putArray);
+    return rest_crud::update('occurrence', $id, $putArray);
   }
 
   /**
@@ -3787,10 +3774,12 @@ class Rest_Controller extends Controller {
    * API end-point to POST a location to create.
    */
   public function locationsPost() {
-    $segments = $this->uri->segment_array();
     $post = file_get_contents('php://input');
-    $postArray = json_decode($post, TRUE);
-    rest_crud::create('location', $postArray);
+    $item = json_decode($post, TRUE);
+    $r = rest_crud::create('location', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
   }
 
   /**
@@ -3799,7 +3788,7 @@ class Rest_Controller extends Controller {
   public function locationsPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    rest_crud::update('location', $id, $putArray);
+    return rest_crud::update('location', $id, $putArray);
   }
 
   /**
@@ -3832,10 +3821,26 @@ class Rest_Controller extends Controller {
    * API end-point to POST a sample to create.
    */
   public function samplesPost() {
-    $segments = $this->uri->segment_array();
     $post = file_get_contents('php://input');
-    $postArray = json_decode($post, TRUE);
-    rest_crud::create('sample', $postArray);
+    $item = json_decode($post, TRUE);
+    $r = rest_crud::create('sample', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to POST a sample to create.
+   */
+  public function samplesPostList() {
+    $post = file_get_contents('php://input');
+    $list = json_decode($post, TRUE);
+    $r = [];
+    foreach ($list as $key => $item) {
+      $r[$key] = rest_crud::create('sample', $item);
+    }
+    echo json_encode($r);
+    http_response_code(201);
   }
 
   /**
@@ -3846,7 +3851,7 @@ class Rest_Controller extends Controller {
   public function samplesPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    rest_crud::update('sample', $id, $putArray);
+    return rest_crud::update('sample', $id, $putArray);
   }
 
   /**
@@ -3950,12 +3955,15 @@ SQL;
   public function surveysPost() {
     $this->assertUserHasWebsiteAdminAccess();
     $post = file_get_contents('php://input');
-    $postArray = json_decode($post, TRUE);
+    $item = json_decode($post, TRUE);
     // Autofill website ID.
-    if (isset($postArray['values'])) {
-      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
+    if (isset($item['values'])) {
+      $item['values']['website_id'] = RestObjects::$clientWebsiteId;
     }
-    rest_crud::create('survey', $postArray);
+    $r = rest_crud::create('survey', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
   }
 
   /**
@@ -3966,7 +3974,7 @@ SQL;
     $this->assertRecordFromCurrentWebsite('surveys', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    rest_crud::update('survey', $id, $putArray);
+    return rest_crud::update('survey', $id, $putArray);
   }
 
   /**
@@ -4065,12 +4073,15 @@ SQL;
   public function sampleAttributesPost() {
     $this->assertUserHasWebsiteAdminAccess();
     $post = file_get_contents('php://input');
-    $postArray = json_decode($post, TRUE);
+    $item = json_decode($post, TRUE);
     // Autofill website ID.
-    if (isset($postArray['values'])) {
-      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
+    if (isset($item['values'])) {
+      $item['values']['website_id'] = RestObjects::$clientWebsiteId;
     }
-    rest_crud::create('sample_attribute', $postArray);
+    $r = rest_crud::create('sample_attribute', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
   }
 
   /**
@@ -4084,7 +4095,7 @@ SQL;
     if ($this->attributeTypeChanging('sample_attributes', $id, $putArray)) {
       $this->assertAttributeHasNoValues('sample_attributes', $id);
     }
-    rest_crud::update('sample_attribute', $id, $putArray);
+    return rest_crud::update('sample_attribute', $id, $putArray);
   }
 
   /**
@@ -4128,12 +4139,15 @@ SQL;
   public function occurrenceAttributesPost() {
     $this->assertUserHasWebsiteAdminAccess();
     $post = file_get_contents('php://input');
-    $postArray = json_decode($post, TRUE);
+    $item = json_decode($post, TRUE);
     // Autofill website ID.
-    if (isset($postArray['values'])) {
-      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
+    if (isset($item['values'])) {
+      $item['values']['website_id'] = RestObjects::$clientWebsiteId;
     }
-    rest_crud::create('occurrence_attribute', $postArray);
+    $r = rest_crud::create('occurrence_attribute', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
   }
 
   /**
@@ -4147,7 +4161,7 @@ SQL;
     if ($this->attributeTypeChanging('occurrence_attributes', $id, $putArray)) {
       $this->assertAttributeHasNoValues('occurrence_attributes', $id);
     }
-    rest_crud::update('occurrence_attribute', $id, $putArray);
+    return rest_crud::update('occurrence_attribute', $id, $putArray);
   }
 
   /**
