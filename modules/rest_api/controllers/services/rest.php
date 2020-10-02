@@ -1032,7 +1032,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Date interpreted', 'field' => '#event_date#'],
       ['caption' => 'Date from', 'field' => 'event.date_start'],
       ['caption' => 'Date to', 'field' => 'event.date_end'],
-      ['caption' => 'Date type', 'field' => ''], // Unavalable in ES index (date_type)
+      ['caption' => 'Date type', 'field' => 'event.date_type'], 
       ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
       ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
@@ -1040,7 +1040,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Sex', 'field' => 'occurrence.sex'],
       ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
       ['caption' => 'Count of sex or stage', 'field' => 'occurrence.organism_quantity'],
-      ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'], // Output in easy download was T/F - this will be true/false
+      ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'], 
       ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
       ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
