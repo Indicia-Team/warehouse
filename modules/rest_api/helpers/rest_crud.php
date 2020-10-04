@@ -208,7 +208,7 @@ class rest_crud {
       $availableFilterFields = self::getAvailableFilterFields($entity);
       foreach ($_GET as $param => $value) {
         if (isset($availableFilterFields[$param])) {
-          if (in_array($availableFilterFields[$param]['type'], ['string', 'date', 'json'])) {
+          if (in_array($availableFilterFields[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
             $value = pg_escape_literal($value);
           }
           elseif (in_array($availableFilterFields[$param]['type'], ['integer', 'float'])) {
