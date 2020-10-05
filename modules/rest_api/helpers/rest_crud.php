@@ -66,7 +66,8 @@ class rest_crud {
    */
   private static function loadEntityConfig($entity) {
     if (!isset(self::$entityConfig[$entity])) {
-      $config = json_decode(file_get_contents(dirname(dirname(__FILE__)) . "/entities/$entity.json"));
+      $folder = dirname(dirname(dirname(__FILE__))) . '/' . RestObjects::$handlerModule;
+      $config = json_decode(file_get_contents("$folder/entities/$entity.json"));
       if (!$config) {
         RestObjects::$apiResponse->fail('Internal Server Error', 500, "JSON entity definition for $entity invalid.");
       }
@@ -106,7 +107,6 @@ class rest_crud {
    *   Entity name.
    */
   private static function getSqlFields($entity) {
-    self::loadEntityConfig($entity);
     $list = self::getSqlFieldsForOneTable(self::$entityConfig[$entity]->fields, 't1');
     if (!empty(self::$entityConfig[$entity]->joins)) {
       foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
@@ -125,7 +125,6 @@ class rest_crud {
    *   Entity name.
    */
   private static function getSqlJoins($entity) {
-    self::loadEntityConfig($entity);
     $list = [];
     if (!empty(self::$entityConfig[$entity]->joins)) {
       foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
@@ -172,7 +171,6 @@ class rest_crud {
    *   keyed by field name.
    */
   private static function getAvailableFilterFields($entity) {
-    self::loadEntityConfig($entity);
     $list = self::getFilterFieldsForOneTable(self::$entityConfig[$entity]->fields, 't1');
     if (!empty(self::$entityConfig[$entity]->joins)) {
       foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
@@ -200,6 +198,7 @@ class rest_crud {
    */
   private static function getReadSql($entity, $extraFilter, $userFilter) {
     $table = inflector::plural($entity);
+    self::loadEntityConfig($entity);
     $fields = self::getSqlFields($entity);
     $joins = self::getSqlJoins($entity);
     $createdByFilter = $userFilter ? 'AND t1.created_by_id=' . RestObjects::$clientUserId : '';
@@ -348,6 +347,7 @@ SQL;
    *   Submitted data, including values.
    */
   public static function update($entity, $id, array $data) {
+    self::loadEntityConfig($entity);
     $values = $data['values'];
     // ID is optional, but must match URL segment.
     if (!empty($values['id'])) {
@@ -446,7 +446,6 @@ SQL;
    *   Converted submission.
    */
   public static function convertNewToOldSubmission($entity, array $postObj, $websiteId) {
-    self::loadEntityConfig($entity);
     $s = [
       'id' => $entity,
       'fields' => [],

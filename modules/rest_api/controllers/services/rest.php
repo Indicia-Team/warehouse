@@ -72,6 +72,7 @@ class RestObjects {
   public static $apiResponse;
   public static $clientWebsiteId;
   public static $clientUserId;
+  public static $handlerModule;
 }
 
 /**
@@ -790,8 +791,11 @@ class Rest_Controller extends Controller {
       if ($this->elasticProxy) {
         $this->elasticRequest();
       }
-      elseif (array_key_exists($this->resourceName, $this->resourceConfig)) {
-        $resourceConfig = $this->resourceConfig[$this->resourceName];
+      else {
+        $resourceConfig = $this->findResourceConfig($this->resourceName);
+        if (!$resourceConfig) {
+          RestObjects::$apiResponse->fail('Not Found', 404, "Resource $this->resourceName not known");
+        }
         $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource.
@@ -824,16 +828,18 @@ class Rest_Controller extends Controller {
             }
           }
           $this->validateParameters($pathConfig);
-          if (method_exists($this, $methodName)) {
-            call_user_func(array($this, $methodName), $requestForId);
+          if (RestObjects::$handlerModule === 'rest_api' && method_exists($this, $methodName)) {
+            $class = $this;
+          }
+          elseif (RestObjects::$handlerModule !== 'rest_api' && method_exists(RestObjects::$handlerModule . '_rest', $methodName)) {
+            // Expect any modules extending the API to implement a helper class <module name>_rest.
+            $class = RestObjects::$handlerModule . '_rest';
           }
           else {
             RestObjects::$apiResponse->fail('Not Found', 404, "Resource $name not known for method $this->method");
           }
+          call_user_func([$class, $methodName], $requestForId);
         }
-      }
-      else {
-        RestObjects::$apiResponse->fail('Not Found', 404, "Resource $name not known");
       }
     }
     catch (RestApiAbort $e) {
@@ -846,6 +852,72 @@ class Rest_Controller extends Controller {
       $subTask = implode('/', $arguments);
       request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db);
     }
+  }
+
+  /**
+   * Finds the configuration for a named resource.
+   *
+   * For core entities, the resources are listed in $this->resourceConfig.
+   * Resources may also be exposed by warehouse modules implementing the
+   * `<module>_extend_rest_api` plugin function in which case the config is
+   * provided by the module.
+   *
+   * @param string $resourceName
+   *   Resource name to look up in the configuration.
+   *
+   * @return array
+   *   Configuration for this resource.
+   */
+  private function findResourceConfig($resourceName) {
+    if (array_key_exists($this->resourceName, $this->resourceConfig)) {
+      RestObjects::$handlerModule = 'rest_api';
+      return $this->resourceConfig[$this->resourceName];
+    }
+    else {
+      // load from plugin or fail
+      $pluginConfigs = $this->getRestPluginConfigs();
+      if (array_key_exists($this->resourceName, $pluginConfigs)) {
+        RestObjects::$handlerModule = $pluginConfigs[$this->resourceName]['module'];
+        return $pluginConfigs[$this->resourceName];
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Retrieves the resource configuration exposed by other warehouse modules.
+   *
+   * Warehouse modules implementing the`<module>_extend_rest_api` plugin
+   * function can provide configuration for additional entities.
+   *
+   * @return array
+   *   List of resource configuration keyed by resource name. See
+   *   $this->resourceConfig for an example of the structure.
+   */
+  private function getRestPluginConfigs() {
+    $cacheId = 'rest-plugin-config';
+    $cache = Cache::instance();
+    // Get list of plugins which integrate with the REST API. Use cache so
+    // we avoid loading all module files unnecessarily.
+    if (!($pluginConfig = $cache->get($cacheId))) {
+      $pluginConfig = [];
+      foreach (Kohana::config('config.modules') as $path) {
+        $plugin = basename($path);
+        if (file_exists("$path/plugins/$plugin.php")) {
+          require_once "$path/plugins/$plugin.php";
+          if (function_exists($plugin . '_extend_rest_api')) {
+            $config = call_user_func($plugin . '_extend_rest_api');
+            // Attach the module name to the config, so easy to find functions and entity data.
+            foreach ($config as &$entityConfig) {
+              $entityConfig['module'] = $plugin;
+            }
+            $pluginConfig = array_merge($pluginConfig, $config);
+          }
+        }
+      }
+      $cache->set($cacheId, $pluginConfig);
+    }
+    return $pluginConfig;
   }
 
   /**
@@ -3766,6 +3838,12 @@ class Rest_Controller extends Controller {
     rest_crud::delete('occurrence', $id, ['created_by_id' => RestObjects::$clientUserId]);
   }
 
+  /**
+   * API end-point to retrieve a location by ID.
+   *
+   * @param integer $id
+   *   ID of the location.
+   */
   public function locationsGetId($id) {
     rest_crud::read('location', $id);
   }
