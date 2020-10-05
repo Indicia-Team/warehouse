@@ -3399,7 +3399,7 @@ class Rest_Controller extends Controller {
       }
       $website = $this->getWebsiteByUrl($payloadValues['iss']);
       if (!$website || empty($website->public_key)) {
-        kohana::log('debug', 'Website has no public key');
+        kohana::log('debug', 'Website not found or has no public key: ' . $payloadValues['iss']);
         RestObjects::$apiResponse->fail('Unauthorized', 401);
       }
       // Allow for minor clock sync problems.
@@ -3803,8 +3803,8 @@ class Rest_Controller extends Controller {
     $postArray = json_decode($post, TRUE);
     $r = [];
     foreach ($postArray as $key => $item) {
-      $this->checkOccurrenceBeforeSave($postArray['values']);
-      $r[] = rest_crud::create('occurrence', $postArray);
+      $this->checkOccurrenceBeforeSave($item['values']);
+      $r[$key] = rest_crud::create('occurrence', $item);
     }
     echo json_encode($r);
     http_response_code(201);
