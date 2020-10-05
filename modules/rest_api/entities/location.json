@@ -32,6 +32,7 @@
     }
   },
   "attributes": true,
+  "attributePrefix": "loc",
   "forceValuesOnCreate": {
     "public": "f"
   }

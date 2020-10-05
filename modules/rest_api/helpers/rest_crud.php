@@ -44,6 +44,9 @@ class rest_crud {
    */
   public static function create($entity, array $data) {
     self::loadEntityConfig($entity);
+    if (empty($data['values'])) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Values not submitted when attempting to POST.']));
+    }
     $values = $data['values'];
     if (!empty($values['id'])) {
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Cannot POST with id to update, use PUT instead.']));
@@ -52,7 +55,7 @@ class rest_crud {
     if (in_array($entity, ['occurrence', 'sample']) && !empty($values['external_key'])) {
       self::checkDuplicateExternalKey($entity, $values);
     }
-    self::submit($entity, $obj, $data);
+    return self::submit($entity, $obj, $data);
   }
 
   /**
@@ -63,7 +66,8 @@ class rest_crud {
    */
   private static function loadEntityConfig($entity) {
     if (!isset(self::$entityConfig[$entity])) {
-      $config = json_decode(file_get_contents(dirname(dirname(__FILE__)) . "/entities/$entity.json"));
+      $folder = dirname(dirname(dirname(__FILE__))) . '/' . RestObjects::$handlerModule;
+      $config = json_decode(file_get_contents("$folder/entities/$entity.json"));
       if (!$config) {
         RestObjects::$apiResponse->fail('Internal Server Error', 500, "JSON entity definition for $entity invalid.");
       }
@@ -103,7 +107,6 @@ class rest_crud {
    *   Entity name.
    */
   private static function getSqlFields($entity) {
-    self::loadEntityConfig($entity);
     $list = self::getSqlFieldsForOneTable(self::$entityConfig[$entity]->fields, 't1');
     if (!empty(self::$entityConfig[$entity]->joins)) {
       foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
@@ -122,7 +125,6 @@ class rest_crud {
    *   Entity name.
    */
   private static function getSqlJoins($entity) {
-    self::loadEntityConfig($entity);
     $list = [];
     if (!empty(self::$entityConfig[$entity]->joins)) {
       foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
@@ -169,7 +171,6 @@ class rest_crud {
    *   keyed by field name.
    */
   private static function getAvailableFilterFields($entity) {
-    self::loadEntityConfig($entity);
     $list = self::getFilterFieldsForOneTable(self::$entityConfig[$entity]->fields, 't1');
     if (!empty(self::$entityConfig[$entity]->joins)) {
       foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
@@ -197,6 +198,7 @@ class rest_crud {
    */
   private static function getReadSql($entity, $extraFilter, $userFilter) {
     $table = inflector::plural($entity);
+    self::loadEntityConfig($entity);
     $fields = self::getSqlFields($entity);
     $joins = self::getSqlJoins($entity);
     $createdByFilter = $userFilter ? 'AND t1.created_by_id=' . RestObjects::$clientUserId : '';
@@ -205,7 +207,7 @@ class rest_crud {
       $availableFilterFields = self::getAvailableFilterFields($entity);
       foreach ($_GET as $param => $value) {
         if (isset($availableFilterFields[$param])) {
-          if (in_array($availableFilterFields[$param]['type'], ['string', 'date', 'json'])) {
+          if (in_array($availableFilterFields[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
             $value = pg_escape_literal($value);
           }
           elseif (in_array($availableFilterFields[$param]['type'], ['integer', 'float'])) {
@@ -323,7 +325,7 @@ SQL;
         foreach ($attrValues as $attr) {
           // @Todo test
           $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
-          $attrs["smpAttr:$attr->attribute_id"] = $val;
+          $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
         }
         $row = array_merge((array) $row, $attrs);
       }
@@ -345,6 +347,7 @@ SQL;
    *   Submitted data, including values.
    */
   public static function update($entity, $id, array $data) {
+    self::loadEntityConfig($entity);
     $values = $data['values'];
     // ID is optional, but must match URL segment.
     if (!empty($values['id'])) {
@@ -365,7 +368,7 @@ SQL;
       $obj->as_array(),
       $values
     );
-    self::submit($entity, $obj, $data);
+    return self::submit($entity, $obj, $data);
   }
 
   /**
@@ -443,7 +446,6 @@ SQL;
    *   Converted submission.
    */
   public static function convertNewToOldSubmission($entity, array $postObj, $websiteId) {
-    self::loadEntityConfig($entity);
     $s = [
       'id' => $entity,
       'fields' => [],
@@ -592,23 +594,15 @@ SQL;
    */
   private static function submit($entity, $obj, $postObj) {
     $obj->submission = rest_crud::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
-    // Different http code for create vs update.
-    $httpCodeOnSuccess = $obj->id ? 200 : 201;
     $id = $obj->submit();
     if ($id) {
-      http_response_code($httpCodeOnSuccess);
       $table = inflector::plural($entity);
       // ETag to provide version check on updates.
       $ETag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=$id")->current()->xmin;
       header("ETag: $ETag");
       // Include href and basic record metadata.
       $responseMetadata = $obj->getSubmissionResponseMetadata();
-      $reformattedResponse = self::getResponseMetadata($responseMetadata);
-      if ($httpCodeOnSuccess === 201) {
-        // Location header points to created resource.
-        header("Location: $reformattedResponse[href]");
-      }
-      echo json_encode($reformattedResponse);
+      return self::getResponseMetadata($responseMetadata);
     } else {
       RestObjects::$apiResponse->fail('Bad Request', 400, $obj->getAllErrors());
     }
