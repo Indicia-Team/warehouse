@@ -4115,6 +4115,74 @@ SQL;
   }
 
   /**
+   * End-point to GET a list of available sample attributes websites.
+   */
+  public function sampleAttributesWebsitesGet() {
+    rest_crud::readList('sample_attributes_website', 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+  }
+
+  /**
+   * End-point to GET a sample attribute by ID.
+   *
+   * @param int $id
+   *   Sample attribute ID.
+   */
+  public function sampleAttributesWebsitesGetId($id) {
+    rest_crud::read('sample_attributes_website', $id, 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+  }
+
+  /**
+   * API end-point to POST a sample attributes website to create.
+   */
+  public function sampleAttributesWebsitesPost() {
+    $this->assertUserHasWebsiteAdminAccess();
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    // Autofill website ID.
+    if (isset($postArray['values'])) {
+      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
+    }
+    // Duplicate check.
+    $existing = RestObjects::$db->select('aw.id')
+        ->from('sample_attributes_websites aw')
+        ->where([
+          'website_id' => $postArray['values']['website_id'],
+          'sample_attribute_id' => $postArray['values']['sample_attribute_id'],
+          'restrict_to_survey_id' => $postArray['values']['restrict_to_survey_id'],
+        ])
+        ->get()->current();
+      if ($existing) {
+        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+      }
+    rest_crud::create('sample_attributes_website', $postArray);
+  }
+
+  /**
+   * API end-point to PUT to an existing sample attributes website to update.
+   */
+  public function sampleAttributesWebsitesPutId($id) {
+    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertRecordFromCurrentWebsite('sample_attributes_website', $id);
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    rest_crud::update('sample_attributes_website', $id, $putArray);
+  }
+
+  /**
+   * API end-point to DELETE a sample attribute.
+   *
+   * Will only be deleted if the survey was created by the current user.
+   *
+   * @param int $id
+   *   Survey ID to delete.
+   */
+  public function sampleAttributesWebsitesDeleteId($id) {
+    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertRecordFromCurrentWebsite('sample_attributes_website', $id);
+    rest_crud::delete('sample_attributes_website', $id);
+  }
+
+  /**
    * End-point to GET a list of available occurrence attributes.
    */
   public function occurrenceAttributesGet() {
@@ -4177,5 +4245,72 @@ SQL;
     RestObjects::$db->query("UPDATE occurrence_attributes_websites SET deleted=TRUE WHERE occurrence_attribute_id=$id");
   }
 
+  /**
+   * End-point to GET a list of available occurrence attributes websites.
+   */
+  public function occurrenceAttributesWebsitesGet() {
+    rest_crud::readList('occurrence_attributes_website', 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+  }
+
+  /**
+   * End-point to GET a occurrence attribute by ID.
+   *
+   * @param int $id
+   *   Occurrence attribute ID.
+   */
+  public function occurrenceAttributesWebsitesGetId($id) {
+    rest_crud::read('occurrence_attributes_website', $id, 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+  }
+
+  /**
+   * API end-point to POST a occurrence attributes website to create.
+   */
+  public function occurrenceAttributesWebsitesPost() {
+    $this->assertUserHasWebsiteAdminAccess();
+    $post = file_get_contents('php://input');
+    $postArray = json_decode($post, TRUE);
+    // Autofill website ID.
+    if (isset($postArray['values'])) {
+      $postArray['values']['website_id'] = RestObjects::$clientWebsiteId;
+    }
+    // Duplicate check.
+    $existing = RestObjects::$db->select('aw.id')
+        ->from('occurrence_attributes_websites aw')
+        ->where([
+          'website_id' => $postArray['values']['website_id'],
+          'occurrence_attribute_id' => $postArray['values']['occurrence_attribute_id'],
+          'restrict_to_survey_id' => $postArray['values']['restrict_to_survey_id'],
+        ])
+        ->get()->current();
+      if ($existing) {
+        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+      }
+    rest_crud::create('occurrence_attributes_website', $postArray);
+  }
+
+  /**
+   * API end-point to PUT to an existing occurrence attributes website to update.
+   */
+  public function occurrenceAttributesWebsitesPutId($id) {
+    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    rest_crud::update('occurrence_attributes_website', $id, $putArray);
+  }
+
+  /**
+   * API end-point to DELETE a occurrence attribute.
+   *
+   * Will only be deleted if the survey was created by the current user.
+   *
+   * @param int $id
+   *   Survey ID to delete.
+   */
+  public function occurrenceAttributesWebsitesDeleteId($id) {
+    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
+    rest_crud::delete('occurrence_attributes_website', $id);
+  }
 
 }

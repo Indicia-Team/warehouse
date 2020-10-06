@@ -1,4 +1,11 @@
 {
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "sample_attribute_id", "type": "integer" },
+    { "sql": "website_id", "type": "integer" },
+    { "sql": "restrict_to_survey_id", "type": "integer" },
+    { "sql": "validation_rules", "type": "string" }
+  ],
   "forceValuesOnCreate": {
     "website_id": "{website_id}"
   }
