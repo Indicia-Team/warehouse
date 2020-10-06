@@ -81,37 +81,34 @@ HTML;
    *   support.
    */
   public function index(array $resourceConfig) {
-    switch ($this->getResponseFormat()) {
-      case 'html':
-        $this->indexHtml($resourceConfig);
-        break;
-
-      case 'csv':
-        $this->indexCsv($resourceConfig);
-        break;
-
-      default:
-        $this->indexJson($resourceConfig);
+    if ($this->getResponseFormat() === 'html') {
+      $this->indexHtml($resourceConfig);
+    }
+    else {
+      $this->fail('Bad request', 400, 'Invalid format requested for index operation. Only HTML is supported.');
     }
   }
 
   /**
-   * Index method in HTML format, which provides top level help for the API resource endpoints.
+   * Index method in HTML format.
+   *
+   * Provides top level help for the API resource endpoints.
    *
    * @param array $resourceConfig
-   *   Configuration for the list of available resources and the methods they support.
+   *   Configuration for the list of available resources and the methods they
+   *   support.
    */
   private function indexHtml($resourceConfig) {
     // Output an HTML page header.
     echo str_replace('{{ base }}', url::base(), $this->htmlHeader);
-    $lang = array(
+    $lang = [
       'title' => kohana::lang("rest_api.title"),
       'intro' => kohana::lang("rest_api.introduction"),
       'authentication' => kohana::lang("rest_api.authenticationTitle"),
       'authIntro' => kohana::lang("rest_api.authIntroduction"),
       'authMethods' => kohana::lang("rest_api.authMethods"),
       'resources' => kohana::lang("rest_api.resourcesTitle"),
-    );
+    ];
     $authRows = '';
     $extraInfo = Kohana::config('rest.allow_auth_tokens_in_url')
         ? kohana::lang("rest_api.allowAuthTokensInUrl") : kohana::lang("rest_api.dontAllowAuthTokensInUrl");
@@ -188,49 +185,77 @@ HTML;
 <h2>$lang[resources]</h2>
 HTML;
 
+    $apiRoot = url::base() . 'index.php/services/rest';
+    $collapseId = 0;
     // Loop the resource names and output each of the available methods.
-    foreach ($resourceConfig as $resource => $methods) {
-      echo "<h3>$resource</h3>";
-      foreach ($methods as $method => $methodConfig) {
-        foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
-          echo '<h4>' . strtoupper($method) . ' ' . url::base() . "index.php/services/rest/$resource" .
-              ($urlSuffix ? "/$urlSuffix" : '') . '</h4>';
-          // Note we can't have full stops in a lang key
-          $extra = $urlSuffix ? str_replace('.', '-', "/$urlSuffix") : '';
-          $help = kohana::lang("rest_api.resources.$resource$extra.$method");
-          echo "<p>$help</p>";
-          // splice in the format parameter which is always accepted.
-          $resourceDef['params'] = array_merge(
-            $resourceDef['params'],
-            array('format' => array(
-              'datatype' => 'text'
-            ))
-          );
-          // output the documentation for parameters.
-          echo '<table class="table table-bordered table-responsive"><caption>Parameters</caption>';
-          echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
-          echo '<tbody>';
-          foreach ($resourceDef['params'] as $name => $paramDef) {
-            echo "<tr><th scope=\"row\">$name</th>";
-            $datatype = preg_match('/\[\]$/', $paramDef['datatype']) ?
-                'Single or JSON array of ' . substr($paramDef['datatype'], 0, -2) : $paramDef['datatype'];
-            echo "<td>$datatype</td>";
-            if ($name === 'format') {
-              $help = kohana::lang('rest_api.format_param_help');
-            } else {
-              $help = kohana::lang("rest_api.$resource.$name");
-            }
-            if (!empty($paramDef['options'])) {
-              $help .= ' Options available are ' . json_encode($paramDef['options']) . '.';
-            }
-            if (!empty($paramDef['required'])) {
-              $help .= ' <strong>' . kohana::lang('Required.') . '</strong>';
-            }
-            echo "<td>$help</td>";
-            echo "</tr>";
+    foreach ($resourceConfig as $endpoint => $methods) {
+      $endpointOutput = '';
+      foreach ($methods as $method => $endpointPaths) {
+        foreach ($endpointPaths as $endpointPath => $endpointPathOptions) {
+          // Deprecated end-points skipped unless ?deprecated in request query.
+          if (!empty($endpointPathOptions['deprecated']) && !isset($_GET['deprecated'])) {
+            continue;
           }
-          echo '</tbody></table>';
+          $badge = empty($endpointPathOptions['deprecated']) ? '' : ' <span class="label label-warning">deprecated</span>';
+          $endpointOutput .= "<h4>$method $endpointPath$badge</h4>";
+          $endpointOutput .= "<p>Example URL: $apiRoot/" . str_replace(
+            ['{id}', '{path}', '{file.xml}'],
+            ['123', 'library/occurrences', 'filterable_explore_list.xml'],
+            $endpointPath) . '</p>';
+          $helpKey = "rest_api.resources.$method " . str_replace('.', '-', $endpointPath);
+          $help = kohana::lang($helpKey);
+          if ($help !== $helpKey) {
+            $endpointOutput .= "<p>$help</p>";
+          }
+          if (!isset($endpointPathOptions['params'])) {
+            $endpointPathOptions['params'] = [];
+          }
+          if ($method === 'GET') {
+            $endpointPathOptions['params'] = array_merge([
+              'format' => ['datatype' => 'text'],
+              ], $endpointPathOptions['params']);
+          }
+          if (count($endpointPathOptions['params']) > 0) {
+            $endpointOutput .= '<table class="table table-bordered table-responsive"><caption>Parameters</caption>';
+            $endpointOutput .= '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
+            $endpointOutput .= '<tbody>';
+            foreach ($endpointPathOptions['params'] as $name => $paramDef) {
+              $endpointOutput .= "<tr><th scope=\"row\">$name</th>";
+              $datatype = preg_match('/\[\]$/', $paramDef['datatype']) ?
+                  'Single or JSON array of ' . substr($paramDef['datatype'], 0, -2) : $paramDef['datatype'];
+                  $endpointOutput .= "<td>$datatype</td>";
+              if ($name === 'format') {
+                $help = kohana::lang('rest_api.format_param_help');
+              } else {
+                $help = kohana::lang("rest_api.$method " . str_replace('.', '-', $endpointPath) . ".$name");
+              }
+              if (!empty($paramDef['options'])) {
+                $help .= ' Options available are ' . json_encode($paramDef['options']) . '.';
+              }
+              if (!empty($paramDef['required'])) {
+                $help .= ' <strong>' . kohana::lang('Required.') . '</strong>';
+              }
+              $endpointOutput .= "<td>$help</td>";
+              $endpointOutput .= "</tr>";
+            }
+            $endpointOutput .= '</tbody></table>';
+          }
+
         }
+      }
+      if (!empty($endpointOutput)) {
+        $helpKey = "rest_api.resources.$endpoint";
+        $help = kohana::lang($helpKey);
+        $help = $help === $helpKey ? '' : "<div>$help</div>";
+        echo <<<HTML
+<h3>$endpoint</h3>
+$help
+<button data-toggle="collapse" data-target="#collapse-$collapseId" class="btn btn-info btn-xs">More info</button></h3>
+<div id="collapse-$collapseId" class="collapse">
+$endpointOutput
+</div>
+HTML;
+        $collapseId++;
       }
     }
     $es = Kohana::config('rest.elasticsearch');
@@ -253,111 +278,6 @@ HTML;
       }
     }
     echo str_replace('{{ base }}', url::base(), $this->htmlFooter);
-  }
-
-  /**
-   * Index method in CSV format, which provides top level help for the API resource endpoints.
-   * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
-   */
-  private function indexCsv($resourceConfig) {
-    // Header row
-    echo "Method,Resource,Params\r\n";
-    foreach ($resourceConfig as $resource => $methods) {
-      foreach ($methods as $method => $methodConfig) {
-        foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
-          echo strtoupper($method) . ',' .
-               $resource . (empty($urlSuffix) ? '' : "/$urlSuffix") . ',' .
-               json_encode($resourceDef['params']);
-          echo "\r\n";
-        }
-      }
-    }
-  }
-
-  /**
-   * Index method in JSON format, which provides top level help for the API resource endpoints.
-   * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
-   */
-  private function indexJson($http_methods) {
-    $r = array('authorisation' => [], 'resources' => []);
-    foreach (Kohana::config('rest.authentication_methods') as $method => $cfg) {
-      $methodNotes = [];
-      if (!in_array('allow_http', $cfg))
-        $methodNotes[] = kohana::lang("rest_api.onlyAllowHttps") .
-          ' (' . str_replace('http:', 'https:', url::base()) . 'index.php/services/rest).';
-      if (isset($cfg['resource_options'])) {
-        foreach ($cfg['resource_options'] as $resource => $options) {
-          if (!empty($options)) {
-            // Look for a resource specific note.
-            $note = kohana::lang("rest_api.resourceOptionInfo-$resource");
-            if ($note === "rest_api.resourceOptionInfo-$resource") {
-              // Revert to generic note if not available.
-              $note = kohana::lang('rest_api.resourceOptionInfo', $resource);
-            }
-            $optionTexts = [];
-            foreach ($options as $option => $value) {
-              if (is_array($value)) {
-                foreach ($value as $subValue) {
-                  $optionTexts[] = '<li>' . $subValue . '</li>';
-                }
-              }
-              else {
-                $key = "rest_api.resourceOptionInfo-$resource-" . (is_int($option) ? '' : "$option-");
-                if ($value === TRUE) {
-                  $key .= 'true';
-                } elseif ($value === TRUE) {
-                  $key .= 'false';
-                } else  {
-                  $key .= json_encode($value);
-                }
-                $optionTexts[] = kohana::lang($key);
-              }
-            }
-            $methodNotes[] = str_replace('{{ list }}', implode('; ', $optionTexts), $note);
-          }
-        }
-      }
-      $r['authorisation'][$method] = array(
-        'name' => kohana::lang("rest_api.$method"),
-        'help' => kohana::lang("rest_api.{$method}Help") . ' ' . implode(' ', $methodNotes)
-      );
-    }
-    // Loop the resource names and output each of the available methods.
-    foreach($http_methods as $resource => $methods) {
-      $resourceInfo = [];
-      foreach ($methods as $method => $methodConfig) {
-        foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
-          // Note we can't have full stops in a lang key
-          $extra = $urlSuffix ? str_replace('.', '-', "/$urlSuffix") : '';
-          $help = kohana::lang("rest_api.resources.$resource$extra");
-          $resourceDef['params'] = array_merge(
-            $resourceDef['params'],
-            array('format' => array(
-              'datatype' => 'text'
-            ))
-          );
-          foreach ($resourceDef['params'] as $name => &$paramDef) {
-            if ($name === 'format') {
-              $help = kohana::lang('rest_api.format_param_help');
-            } else {
-              $help = kohana::lang("rest_api.$resource.$name");
-            }
-            if (!empty($paramDef['required'])) {
-              $help .= ' ' . kohana::lang('Required.');
-            }
-            $paramDef['help'] = $help;
-          }
-          $resourceInfo[] = array(
-            'resource' => url::base() . "index.php/services/rest/$resource" . ($urlSuffix ? "/$urlSuffix" : ''),
-            'method' => strtoupper($method),
-            'help' => $help,
-            'params' => $resourceDef['params']
-          );
-        }
-      }
-      $r['resources'][$resource] = $resourceInfo;
-    }
-    echo json_encode($r);
   }
 
   /**

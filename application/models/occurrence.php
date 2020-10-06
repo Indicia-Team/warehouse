@@ -274,8 +274,9 @@ class Occurrence_Model extends ORM {
           $array->determiner_id = $redetByPersonId;
         }
       }
-      // Update any determiner occurrence attributes.
-      $sql = <<<SQL
+      if ($redetByUserId !== 1) {
+        // Update any determiner occurrence attributes.
+        $sql = <<<SQL
 UPDATE occurrence_attribute_values v
 SET text_value=CASE a.system_function
   WHEN 'det_full_name' THEN TRIM(COALESCE(p.first_name || ' ', '') || p.surname)
@@ -293,7 +294,8 @@ AND a.system_function in ('det_full_name', 'det_first_name', 'det_last_name')
 AND u.id=$redetByUserId
 AND u.deleted=false
 SQL;
-      $this->db->query($sql);
+        $this->db->query($sql);
+      }
     }
   }
 
