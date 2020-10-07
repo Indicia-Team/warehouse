@@ -1606,28 +1606,6 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Special field handler to format record ID.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted ID value.
-   */
-  private function esGetSpecialFieldId(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for formatted ID field';
-    }
-    if ($params[0] === 'easy') {
-      // Provides backward compatibility with pre-ES download format ('easy download').
-      return preg_replace('/^brc1\|/', 'iBRC', $doc['_id']);
-    }
-    else {
-      return $doc['_id'];
-    }
-  }
-
-  /**
    * Special field handler for Elasticsearch to combine
    * the sample and occurrence comment.
    *
