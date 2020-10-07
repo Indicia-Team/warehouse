@@ -1130,6 +1130,41 @@ class Rest_Controller extends Controller {
       $this->esCsvTemplateRemoveColumns = (array) $postObj->removeColumns;
       unset($postObj->removeColumns);
     }
+    if (isset($postObj->columnsSurveyId)) {
+      $this->esCsvSurveySampleColumns = $this->getSurveyAttributes('sample', $postObj->columnsSurveyId);
+      $this->esCsvSurveyOccurrenceColumns = $this->getSurveyAttributes('occurrence', $postObj->columnsSurveyId);
+      unset($postObj->columnsSurveyId);
+    }
+  }
+
+  /**
+   * Retrieve the columns associated with a survey.
+   *
+   * @param string $type
+   *   Either 'sample' or 'occurrence'.
+   * 
+   * @param string $id
+   *   The survey ID.
+   * 
+   * @return array
+   *   Array of associative arrays describing each attribute.
+   */
+  private function getSurveyAttributes($type, $id) {
+    $sql = <<<SQL
+SELECT a.caption, a.id
+FROM ${type}_attributes_websites aw
+JOIN ${type}_attributes a on a.id = aw.${type}_attribute_id
+WHERE restrict_to_survey_id=$id;
+SQL;
+    $columns = array();
+    $attrs = RestObjects::$db->query($sql)->result_array();
+    foreach ($attrs as $attr) {
+      $columns[] = array(
+        'id' => $attr->id,
+        'caption' => $attr->caption
+      );
+    }
+    return $columns;
   }
 
   /**
@@ -1215,6 +1250,12 @@ class Rest_Controller extends Controller {
           $fields[] = $matches[1];
         }
       }
+      if (isset($this->esCsvSurveySampleColumns)) {
+        $fields[] = 'event.attributes';
+      }
+      if (isset($this->esCsvSurveyOccurrenceColumns)) {
+        $fields[] = 'occurrence.attributes';
+      }
       $postObj->_source = array_values(array_unique($fields));
     }
     $r = json_encode($postObj, JSON_UNESCAPED_SLASHES);
@@ -1276,7 +1317,16 @@ class Rest_Controller extends Controller {
    */
   private function getEsOutputHeader($format) {
     if ($format === 'csv') {
-      $csvTemplate = $this->getEsCsvTemplate();
+      // CSV template fields
+      $csvTemplate = array_values($this->getEsCsvTemplate());
+      // Survey specific sample fields
+      if (isset($this->esCsvSurveySampleColumns)) {
+        $csvTemplate = array_merge($csvTemplate, array_values($this->esCsvSurveySampleColumns));
+      }
+      // Survey specific occurrence fields
+      if (isset($this->esCsvSurveyOccurrenceColumns)) {
+        $csvTemplate = array_merge($csvTemplate, array_values($this->esCsvSurveyOccurrenceColumns));
+      }
       $row = array_map(function ($column) {
         // Cells containing a quote, a comma or a new line will need to be
         // contained in double quotes.
@@ -1285,7 +1335,7 @@ class Rest_Controller extends Controller {
           return '"' . preg_replace('/"/', '""', $column['caption']) . '"';
         }
         return $column['caption'];
-      }, array_values($csvTemplate));
+      }, $csvTemplate);
       return chr(0xEF) . chr(0xBB) . chr(0xBF) . implode(',', $row) . "\n";
     }
     return '';
@@ -1579,6 +1629,18 @@ class Rest_Controller extends Controller {
       $row = [];
       foreach ($esCsvTemplate as $source) {
         $this->copyIntoCsvRow($item, $source['field'], $row);
+      }
+      // Survey specific sample fields
+      if (isset($this->esCsvSurveySampleColumns)) {
+        foreach ($this->esCsvSurveySampleColumns as $attr) {
+          $row[] = $this->getCustomAttrValue($item, 'event', $attr['id']);
+        }
+      }
+      // Survey specific occurrence fields
+      if (isset($this->esCsvSurveyOccurrenceColumns)) {
+        foreach ($this->esCsvSurveyOccurrenceColumns as $attr) {
+          $row[] = $this->getCustomAttrValue($item, 'occurrence', $attr['id']);
+        }
       }
       fputcsv($handle, $row);
     };
@@ -2023,6 +2085,32 @@ class Rest_Controller extends Controller {
       return $data['value'];
     }
     return $failed ? '' : $data;
+  }
+
+  /**
+   * Function to find the value stored in an ES doc for a custom attribute.
+   *
+   * @param array $doc
+   *   Document extracted from Elasticsearch.
+   * @param string $type
+   *   Either 'event' or 'occurrence'.
+   * @param string $id
+   *   The ID of the custom attribute.
+   *
+   * @return mixed
+   *   Data value or empty string if not found.
+   */
+  private function getCustomAttrValue(array $doc, $type, $id) {
+    if (isset($doc['_source'][$type]) && isset($doc['_source'][$type]['attributes'])) {
+      $attrs = $doc['_source'][$type]['attributes'];
+      foreach ($attrs as $attr) {
+        if ($attr['id'] === $id) {
+          $value = $attr['value'];
+          break;
+        }
+      }
+    }
+    return isset($value) ? $value : '';
   }
 
   /**
