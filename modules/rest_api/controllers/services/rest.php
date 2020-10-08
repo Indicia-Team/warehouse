@@ -376,6 +376,21 @@ class Rest_Controller extends Controller {
         'occurrence-attributes/{id}' => [],
       ],
     ],
+    'occurrence-attributes-websites' => [
+      'GET' => [
+        'occurrence-attributes-websites' => [],
+        'occurrence-attributes-websites/{id}' => [],
+      ],
+      'POST' => [
+        'occurrence-attributes-websites' => [],
+      ],
+      'PUT' => [
+        'occurrence-attributes-websites/{id}' => [],
+      ],
+      'DELETE' => [
+        'occurrence-attributes-websites/{id}' => [],
+      ],
+    ],
     'occurrences' => [
       'GET' => [
         'occurrences' => [
@@ -457,6 +472,21 @@ class Rest_Controller extends Controller {
       ],
       'DELETE' => [
         'sample-attributes/{id}' => [],
+      ],
+    ],
+    'sample-attributes-websites' => [
+      'GET' => [
+        'sample-attributes-websites' => [],
+        'sample-attributes-websites/{id}' => [],
+      ],
+      'POST' => [
+        'sample-attributes-websites' => [],
+      ],
+      'PUT' => [
+        'sample-attributes-websites/{id}' => [],
+      ],
+      'DELETE' => [
+        'sample-attributes-websites/{id}' => [],
       ],
     ],
     'samples' => [
@@ -645,23 +675,6 @@ class Rest_Controller extends Controller {
         'taxon-observations' => ['deprecated' => TRUE],
       ],
     ],
-    'GET occurrence-attributes' => [
-      'params' => [
-        'verbose' => [
-          'datatype' => 'integer',
-        ],
-      ],
-    ],
-    'GET occurrence-attributes/{id}' => [
-      'params' => [
-        'verbose' => [
-          'datatype' => 'integer',
-        ],
-      ],
-    ],
-    'POST occurrence-attributes' => [],
-    'PUT occurrence-attributes/{id}' => [],
-    'DELETE occurrence-attributes/{id}' => [],
   ];
 
   /**
@@ -3251,8 +3264,8 @@ class Rest_Controller extends Controller {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
               RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
             }
-            if (!empty($this->clientConfig) && empty($this->clientConfig['elasticsearch']) ||
-                !in_array($this->elasticProxy, $this->clientConfig['elasticsearch'])) {
+            if (!empty($this->clientConfig) && (empty($this->clientConfig['elasticsearch']) ||
+                !in_array($this->elasticProxy, $this->clientConfig['elasticsearch']))) {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for client");
               RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
             }
