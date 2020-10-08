@@ -30,9 +30,6 @@ $config['authentication_methods'] = [
       // Grants full access to all reports. Client configs can override this.
       'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
       // Grant access to Elasticsearch but in this case, apply website and user ID filters.
-      // Limit to own data can be overridden by adding claim http://indicia.org.uk/allow_full_dataset=true.
-      // Best practice is to set both of these to TRUE, then in the Indicia settings enable
-      // the option to allow users to access all data if appropriate for the website.
       'elasticsearch' => ['es' => ['limit_to_website' => TRUE, 'limit_to_own_data' => TRUE]],
     ],
   ],
@@ -52,7 +49,7 @@ $config['allow_auth_tokens_in_url'] = FALSE;
 $config['elasticsearch'] = [
   'es' => [
     'open' => FALSE,
-    'index' => 'occurrence',
+    'index' => 'my-index',
     'url' => 'http://my.elastic.url:9200',
     'allowed' => [
       'get' => [
