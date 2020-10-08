@@ -762,11 +762,20 @@ class Rest_Controller extends Controller {
    * Outputs help text to describe the available API resources.
    */
   public function index() {
-    // A temporary array to simulate the arguments, which we can use to check
-    // for versioning.
-    $arguments = [$this->uri->last_segment()];
-    $this->checkVersion($arguments);
-    RestObjects::$apiResponse->index($this->resourceConfig);
+    try {
+      if (!file_exists(MODPATH . 'rest_api/config/rest.php')) {
+        RestObjects::$apiResponse->fail('Internal Server Error', 500,
+          'Missing config file. See https://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/modules/rest-api.html for more info.');
+      }
+      // A temporary array to simulate the arguments, which we can use to check
+      // for versioning.
+      $arguments = [$this->uri->last_segment()];
+      $this->checkVersion($arguments);
+      RestObjects::$apiResponse->index($this->resourceConfig);
+    }
+    catch (RestApiAbort $e) {
+      // No action if a proper abort.
+    }
   }
 
   /**
@@ -843,6 +852,9 @@ class Rest_Controller extends Controller {
    * @throws exception
    */
   public function __call($name, $arguments) {
+    if (!file_exists(MODPATH . 'rest_api/config/rest.php')) {
+      $this->fail('Internal Server Error', 500, 'Missing config file.');
+    }
     $tm = microtime(TRUE);
     try {
       // Undo router's conversion of hyphens and underscores.
