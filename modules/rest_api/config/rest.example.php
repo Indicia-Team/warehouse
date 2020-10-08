@@ -79,9 +79,15 @@ $config['authentication_methods'] = [
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
       'reports' => [],
-      // Grant access to elasticsearch. Provide empty array to enable all
-      // end-points. Configure the clients which can access each index in
-      // the clients config entry.
+      // Grant access to elasticsearch via the listed endpoints. Either a
+      // simple array of endpoint names, or a associative array keyed by name
+      // containing config in the values. Set config option limit_to_website
+      // to TRUE to limit to data accessible to this website. Set
+      // limit_to_own_data to TRUE to restrict to the user's own data. Each
+      // endpoint needs to be added to the 'elasticsearch' configuration entry
+      // to define how it maps to Elasticsearch. If using directClient
+      // authentication, also configure the clients which can access each index
+      // in the clients config entry.
       'elasticsearch' => ['es'],
     ],
   ],
@@ -97,6 +103,11 @@ $config['authentication_methods'] = [
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
       'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
+      // Grant access to Elasticsearch but in this case, apply website and user ID filters.
+      // Limit to own data can be overridden by adding claim http://indicia.org.uk/allow_full_dataset=true.
+      // Best practice is to set both of these to TRUE, then in the Indicia settings enable
+      // the option to allow users to access all data if appropriate for the website.
+      'elasticsearch' => ['es' => ['limit_to_website' => TRUE, 'limit_to_own_data' => TRUE]],
     ],
   ],
 ];

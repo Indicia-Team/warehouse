@@ -163,11 +163,28 @@ class Rest_Controller extends Controller {
   private $authenticated = FALSE;
 
   /**
+   * Name of the authentication method.
+   *
+   * @var string
+   */
+  private $authMethod;
+
+  /**
    * Config settings relating to the selected auth method.
    *
    * @var array
    */
   private $authConfig;
+
+  /**
+   * Allow override of default ES filters on record created_by_id
+   *
+   * When using user based auth (jwtUser or oAuth2User), default is for ES to
+   * limit records in response to user's own data.
+   *
+   * @var bool
+   */
+  private $allowAllData = FALSE;
 
   /**
    * Config settings relating to the authenticated client if any.
@@ -1082,6 +1099,39 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Adds permissions filters to ES search, based on website ID and user ID.
+   *
+   * If the authentication method configuration (e.g. jwtUser) includes the
+   * option limit_to_website in the settings for the Elasticsearch endpoint,
+   * then automatically adds a terms filter on metadata.website.id. Also,
+   * if the settings include limit_to_own_data for the endpoint, then adds a
+   * terms filter on metadata.created_by_id. This can be overridden by
+   * including the claim http://indicia.org.uk/alldata in the JWT access token.
+   */
+  private function applyEsPermissionsQuery(&$postObj) {
+    $filters = [];
+    if ($this->esConfig['limit_to_own_data'] && !$this->allowAllData && RestObjects::$clientUserId) {
+      $filters[] = ['term' => ['metadata.created_by_id' => RestObjects::$clientUserId]];
+    }
+    if ($this->esConfig['limit_to_website'] && RestObjects::$clientWebsiteId) {
+      // @todo Expand to include record sharing.
+      $filters[] = ['term' => ['metadata.website.id' => RestObjects::$clientWebsiteId]];
+    }
+    if (count($filters) > 0) {
+      if (!isset($postObj->query)) {
+        $postObj->query = new stdClass();
+      }
+      if (!isset($postObj->query->bool)) {
+        $postObj->query->bool = new stdClass();
+      }
+      if (!isset($postObj->query->bool->must)) {
+        $postObj->query->bool->must = [];
+      }
+      $postObj->query->bool->must = array_merge($postObj->query->bool->must, $filters);
+    }
+  }
+
+  /**
    * Calculate the data to post to an Elasticsearch search.
    *
    * @param obj $postObj
@@ -1095,7 +1145,7 @@ class Rest_Controller extends Controller {
    * @return string
    *   Data to post.
    */
-  private function getEsPostData($postObj, $format, $file) {
+  private function getEsPostData($postObj, $format, $file, $isSearch) {
     if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'nextPage') {
       // A subsequent hit on a scrolled request.
       $postObj = [
@@ -1110,6 +1160,9 @@ class Rest_Controller extends Controller {
     }
     elseif ($this->pagingMode === 'composite' && isset($file['after_key'])) {
       $postObj->aggs->_rows->composite->after = $file['after_key'];
+    }
+    if ($isSearch) {
+      $this->applyEsPermissionsQuery($postObj);
     }
     if ($format === 'csv') {
       $csvTemplate = $this->getEsCsvTemplate();
@@ -1361,7 +1414,7 @@ class Rest_Controller extends Controller {
     else {
       echo $this->getEsOutputHeader($format);
     }
-    $postData = $this->getEsPostData($postObj, $format, $file);
+    $postData = $this->getEsPostData($postObj, $format, $file, preg_match('/\/_search/', $url));
     $actualUrl = $this->getEsActualUrl($url);
     $session = curl_init($actualUrl);
     if (!empty($postData) && $postData !== '[]') {
@@ -3220,9 +3273,22 @@ class Rest_Controller extends Controller {
         // Try this authentication method.
         call_user_func(array($this, "authenticateUsing$method"));
         if ($this->authenticated) {
+          $this->authMethod = $method;
           // Double checking required for Elasticsearch proxy.
           if ($this->elasticProxy) {
-            if (empty($cfg['resource_options']['elasticsearch']) || !in_array($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
+            if (empty($cfg['resource_options']['elasticsearch'])) {
+              kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
+              RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+            }
+            if (in_array($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
+              // Simple array of ES endpoints with no config.
+              $this->esConfig = [];
+            }
+            elseif (array_key_exists($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
+              // Endpoints are keys with array values holding config.
+              $this->esConfig = $cfg['resource_options']['elasticsearch'][$this->elasticProxy];
+            }
+            else {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
               RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
             }
@@ -3371,6 +3437,10 @@ class Rest_Controller extends Controller {
       }
       if (empty($payloadValues['iss']) || empty($payloadValues['http://indicia.org.uk/user:id'])) {
         RestObjects::$apiResponse->fail('Bad request', 400);
+      }
+      // Check for claim that stops ES filtering to just user's own records.
+      if (!empty($payloadValues['http://indicia.org.uk/alldata'])) {
+        $this->allowAllData = TRUE;
       }
       $website = $this->getWebsiteByUrl($payloadValues['iss']);
       if (!$website || empty($website->public_key)) {
