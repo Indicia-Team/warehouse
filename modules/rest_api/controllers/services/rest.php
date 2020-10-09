@@ -164,11 +164,29 @@ class Rest_Controller extends Controller {
   private $authenticated = FALSE;
 
   /**
+   * Name of the authentication method.
+   *
+   * @var string
+   */
+  private $authMethod;
+
+  /**
    * Config settings relating to the selected auth method.
    *
    * @var array
    */
   private $authConfig;
+
+  /**
+   * Allow override of default ES filters on record created_by_id
+   *
+   * When using user based auth (jwtUser or oAuth2User), configuration can
+   * included limit_to_own_data which applies an automatic user filter unless
+   * the request access token includes a claim that alldata access is allowed.
+   *
+   * @var bool
+   */
+  private $allowAllData = FALSE;
 
   /**
    * Config settings relating to the authenticated client if any.
@@ -693,11 +711,20 @@ class Rest_Controller extends Controller {
    * Outputs help text to describe the available API resources.
    */
   public function index() {
-    // A temporary array to simulate the arguments, which we can use to check
-    // for versioning.
-    $arguments = [$this->uri->last_segment()];
-    $this->checkVersion($arguments);
-    RestObjects::$apiResponse->index($this->resourceConfig);
+    try {
+      if (!file_exists(MODPATH . 'rest_api/config/rest.php')) {
+        RestObjects::$apiResponse->fail('Internal Server Error', 500,
+          'Missing config file. See https://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/modules/rest-api.html for more info.');
+      }
+      // A temporary array to simulate the arguments, which we can use to check
+      // for versioning.
+      $arguments = [$this->uri->last_segment()];
+      $this->checkVersion($arguments);
+      RestObjects::$apiResponse->index($this->resourceConfig);
+    }
+    catch (RestApiAbort $e) {
+      // No action if a proper abort.
+    }
   }
 
   /**
@@ -774,6 +801,9 @@ class Rest_Controller extends Controller {
    * @throws exception
    */
   public function __call($name, $arguments) {
+    if (!file_exists(MODPATH . 'rest_api/config/rest.php')) {
+      $this->fail('Internal Server Error', 500, 'Missing config file.');
+    }
     $tm = microtime(TRUE);
     try {
       // Undo router's conversion of hyphens and underscores.
@@ -1145,6 +1175,73 @@ class Rest_Controller extends Controller {
     }
   }
 
+   /**
+   * A cached lookup of the websites that are available for a sharing mode.
+   *
+   * @param integer $websiteId
+   *   ID of the website that is receiving the shared data.
+   *
+   * @return array
+   *   List of website IDs that will share their data.
+   */
+  private function getSharedWebsiteList($websiteId, $sharing = 'reporting') {
+    $tag = "website-shares-$websiteId";
+    $cacheId = "$tag-$sharing";
+    $cache = Cache::instance();
+    if ($cached = $cache->get($cacheId)) {
+      return explode(',', $cached);
+    }
+    $qry = $this->db->select('to_website_id')
+      ->from('index_websites_website_agreements')
+      ->where([
+        "receive_for_$sharing" => 't',
+        'from_website_id' => $websiteId
+      ])
+      ->get()->result();
+    $ids = array();
+    foreach ($qry as $row) {
+      $ids[] = $row->to_website_id;
+    }
+    // Tag all cache entries for this website so they can be cleared together
+    // when changes are saved. Also note the cached entry is an imploded string
+    // so we benefit from sharing cache hits with the reporting engine.
+    $cache->set($cacheId, implode(',', $ids), $tag);
+    return $ids;
+  }
+
+  /**
+   * Adds permissions filters to ES search, based on website ID and user ID.
+   *
+   * If the authentication method configuration (e.g. jwtUser) includes the
+   * option limit_to_website in the settings for the Elasticsearch endpoint,
+   * then automatically adds a terms filter on metadata.website.id. Also,
+   * if the settings include limit_to_own_data for the endpoint, then adds a
+   * terms filter on metadata.created_by_id. This can be overridden by
+   * including the claim http://indicia.org.uk/alldata in the JWT access token.
+   */
+  private function applyEsPermissionsQuery(&$postObj) {
+    $filters = [];
+    if (!empty($this->esConfig['limit_to_own_data']) && !$this->allowAllData && RestObjects::$clientUserId) {
+      $filters[] = ['term' => ['metadata.created_by_id' => RestObjects::$clientUserId]];
+    }
+    if (!empty($this->esConfig['limit_to_website']) && RestObjects::$clientWebsiteId) {
+      // @todo Support for other sharing modes in JWT claims.
+      $filters[] = ['terms' => ['metadata.website.id' => $this->getSharedWebsiteList(RestObjects::$clientWebsiteId)]];
+    }
+    if (count($filters) > 0) {
+      if (!isset($postObj->query)) {
+        $postObj->query = new stdClass();
+      }
+      if (!isset($postObj->query->bool)) {
+        $postObj->query->bool = new stdClass();
+      }
+      if (!isset($postObj->query->bool->must)) {
+        $postObj->query->bool->must = [];
+      }
+      $postObj->query->bool->must = array_merge($postObj->query->bool->must, $filters);
+    }
+  }
+
   /**
    * Calculate the data to post to an Elasticsearch search.
    *
@@ -1159,7 +1256,7 @@ class Rest_Controller extends Controller {
    * @return string
    *   Data to post.
    */
-  private function getEsPostData($postObj, $format, $file) {
+  private function getEsPostData($postObj, $format, $file, $isSearch) {
     if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'nextPage') {
       // A subsequent hit on a scrolled request.
       $postObj = [
@@ -1174,6 +1271,9 @@ class Rest_Controller extends Controller {
     }
     elseif ($this->pagingMode === 'composite' && isset($file['after_key'])) {
       $postObj->aggs->_rows->composite->after = $file['after_key'];
+    }
+    if ($isSearch) {
+      $this->applyEsPermissionsQuery($postObj);
     }
     if ($format === 'csv') {
       $csvTemplate = $this->getEsCsvTemplate();
@@ -1425,7 +1525,7 @@ class Rest_Controller extends Controller {
     else {
       echo $this->getEsOutputHeader($format);
     }
-    $postData = $this->getEsPostData($postObj, $format, $file);
+    $postData = $this->getEsPostData($postObj, $format, $file, preg_match('/\/_search/', $url));
     $actualUrl = $this->getEsActualUrl($url);
     $session = curl_init($actualUrl);
     if (!empty($postData) && $postData !== '[]') {
@@ -3258,12 +3358,28 @@ class Rest_Controller extends Controller {
         // Try this authentication method.
         call_user_func(array($this, "authenticateUsing$method"));
         if ($this->authenticated) {
+          $this->authMethod = $method;
           // Double checking required for Elasticsearch proxy.
           if ($this->elasticProxy) {
-            if (empty($cfg['resource_options']['elasticsearch']) || !in_array($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
+            if (empty($cfg['resource_options']['elasticsearch'])) {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
               RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
             }
+<<<<<<< HEAD
+=======
+            if (in_array($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
+              // Simple array of ES endpoints with no config.
+              $this->esConfig = [];
+            }
+            elseif (array_key_exists($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
+              // Endpoints are keys with array values holding config.
+              $this->esConfig = $cfg['resource_options']['elasticsearch'][$this->elasticProxy];
+            }
+            else {
+              kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
+              RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+            }
+>>>>>>> hotfeature-rest_jwt
             if (!empty($this->clientConfig) && (empty($this->clientConfig['elasticsearch']) ||
                 !in_array($this->elasticProxy, $this->clientConfig['elasticsearch']))) {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for client");
@@ -3409,6 +3525,10 @@ class Rest_Controller extends Controller {
       }
       if (empty($payloadValues['iss']) || empty($payloadValues['http://indicia.org.uk/user:id'])) {
         RestObjects::$apiResponse->fail('Bad request', 400);
+      }
+      // Check for claim that stops ES filtering to just user's own records.
+      if (!empty($payloadValues['http://indicia.org.uk/alldata'])) {
+        $this->allowAllData = TRUE;
       }
       $website = $this->getWebsiteByUrl($payloadValues['iss']);
       if (!$website || empty($website->public_key)) {

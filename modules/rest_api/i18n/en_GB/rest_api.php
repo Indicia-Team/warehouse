@@ -38,7 +38,8 @@ $lang['jwtUserHelp'] = 'To use JWT to authenticate, you need to:<ul>' .
       '<li>Generate a public/private key pair and store the private key in the Warehouse website settings.</li>' .
       '<li>Provide a JWT token signed with the public key which provides the following claims:<ul>' .
       '  <li>iss - the website URL</li>' .
-      '  <li>http://indicia.org.uk/user:id</li> set to the warehouse ID of the user issuing the request.</li>' .
+      '  <li>http://indicia.org.uk/user:id - set to the warehouse ID of the user issuing the request.</li>' .
+      '  <li>http://indicia.org.uk/alldata - set to true if claiming that the user is allowed to access all the website records, not just their own.</li>' .
       '</ul></ul>';
 $lang['jwtUserHelpHeader'] = 'Set the authorisation header to "Bearer <JWT token>"';
 $lang['genericHelpHeader'] = 'Specify an authorisation header with a list of token name/value pairs, using colons as a ' .
