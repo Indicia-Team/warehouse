@@ -179,8 +179,9 @@ class Rest_Controller extends Controller {
   /**
    * Allow override of default ES filters on record created_by_id
    *
-   * When using user based auth (jwtUser or oAuth2User), default is for ES to
-   * limit records in response to user's own data.
+   * When using user based auth (jwtUser or oAuth2User), configuration can
+   * included limit_to_own_data which applies an automatic user filter unless
+   * the request access token includes a claim that alldata access is allowed.
    *
    * @var bool
    */
