@@ -3365,8 +3365,6 @@ class Rest_Controller extends Controller {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
               RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
             }
-<<<<<<< HEAD
-=======
             if (in_array($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
               // Simple array of ES endpoints with no config.
               $this->esConfig = [];
@@ -3379,7 +3377,6 @@ class Rest_Controller extends Controller {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
               RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
             }
->>>>>>> hotfeature-rest_jwt
             if (!empty($this->clientConfig) && (empty($this->clientConfig['elasticsearch']) ||
                 !in_array($this->elasticProxy, $this->clientConfig['elasticsearch']))) {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for client");
