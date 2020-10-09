@@ -1111,6 +1111,40 @@ class Rest_Controller extends Controller {
     }
   }
 
+   /**
+   * A cached lookup of the websites that are available for a sharing mode.
+   *
+   * @param integer $websiteId
+   *   ID of the website that is receiving the shared data.
+   *
+   * @return array
+   *   List of website IDs that will share their data.
+   */
+  private function getSharedWebsiteList($websiteId, $sharing = 'reporting') {
+    $tag = "website-shares-$websiteId";
+    $cacheId = "$tag-$sharing";
+    $cache = Cache::instance();
+    if ($cached = $cache->get($cacheId)) {
+      return explode(',', $cached);
+    }
+    $qry = $this->db->select('to_website_id')
+      ->from('index_websites_website_agreements')
+      ->where([
+        "receive_for_$sharing" => 't',
+        'from_website_id' => $websiteId
+      ])
+      ->get()->result();
+    $ids = array();
+    foreach ($qry as $row) {
+      $ids[] = $row->to_website_id;
+    }
+    // Tag all cache entries for this website so they can be cleared together
+    // when changes are saved. Also note the cached entry is an imploded string
+    // so we benefit from sharing cache hits with the reporting engine.
+    $cache->set($cacheId, implode(',', $ids), $tag);
+    return $ids;
+  }
+
   /**
    * Adds permissions filters to ES search, based on website ID and user ID.
    *
@@ -1123,12 +1157,12 @@ class Rest_Controller extends Controller {
    */
   private function applyEsPermissionsQuery(&$postObj) {
     $filters = [];
-    if ($this->esConfig['limit_to_own_data'] && !$this->allowAllData && RestObjects::$clientUserId) {
+    if (!empty($this->esConfig['limit_to_own_data']) && !$this->allowAllData && RestObjects::$clientUserId) {
       $filters[] = ['term' => ['metadata.created_by_id' => RestObjects::$clientUserId]];
     }
-    if ($this->esConfig['limit_to_website'] && RestObjects::$clientWebsiteId) {
-      // @todo Expand to include record sharing.
-      $filters[] = ['term' => ['metadata.website.id' => RestObjects::$clientWebsiteId]];
+    if (!empty($this->esConfig['limit_to_website']) && RestObjects::$clientWebsiteId) {
+      // @todo Support for other sharing modes in JWT claims.
+      $filters[] = ['terms' => ['metadata.website.id' => $this->getSharedWebsiteList(RestObjects::$clientWebsiteId)]];
     }
     if (count($filters) > 0) {
       if (!isset($postObj->query)) {
@@ -3305,8 +3339,8 @@ class Rest_Controller extends Controller {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
               RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
             }
-            if (!empty($this->clientConfig) && empty($this->clientConfig['elasticsearch']) ||
-                !in_array($this->elasticProxy, $this->clientConfig['elasticsearch'])) {
+            if (!empty($this->clientConfig) && (empty($this->clientConfig['elasticsearch']) ||
+                !in_array($this->elasticProxy, $this->clientConfig['elasticsearch']))) {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for client");
               RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
             }
