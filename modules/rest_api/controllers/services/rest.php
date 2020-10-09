@@ -1153,21 +1153,29 @@ class Rest_Controller extends Controller {
    *   Array of associative arrays describing each attribute.
    */
   private function getSurveyAttributes($type, $id) {
-    $sql = <<<SQL
+    $cacheId = "survey-attrs-$type-$id";
+    $cache = Cache::instance();
+    if ($cached = $cache->get($cacheId)) {
+      return unserialize($cached, array('field', 'caption'));
+    }
+    else {
+      $sql = <<<SQL
 SELECT a.caption, a.id
 FROM ${type}_attributes_websites aw
 JOIN ${type}_attributes a on a.id = aw.${type}_attribute_id
 WHERE restrict_to_survey_id=$id;
 SQL;
-    $columns = array();
-    $attrs = RestObjects::$db->query($sql)->result_array();
-    foreach ($attrs as $attr) {
-      $columns[] = array(
-        'field' => "#attr_value:$type:$attr->id#",
-        'caption' => $attr->caption
-      );
+      $columns = array();
+      $attrs = RestObjects::$db->query($sql)->result_array();
+      foreach ($attrs as $attr) {
+        $columns[] = array(
+          'field' => "#attr_value:$type:$attr->id#",
+          'caption' => $attr->caption
+        );
+      }
+      $cache->set($cacheId, serialize($columns));
+      return $columns;
     }
-    return $columns;
   }
 
   /**
