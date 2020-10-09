@@ -446,6 +446,7 @@ SQL;
    *   Converted submission.
    */
   public static function convertNewToOldSubmission($entity, array $postObj, $websiteId) {
+    self::loadEntityConfig($entity);
     $s = [
       'id' => $entity,
       'fields' => [],
