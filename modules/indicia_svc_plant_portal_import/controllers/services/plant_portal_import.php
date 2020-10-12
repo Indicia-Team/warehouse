@@ -872,6 +872,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
                        SELECT id
                        FROM locations
                        WHERE
+                       deleted = FALSE AND
                        name = '".$plotName."' AND
                        centroid_sref = '".$explodedPlotSrefs[$plotIdx]."' AND
                        centroid_sref_system = '".$explodedPlotSrefSystems[$plotIdx]."'
@@ -950,6 +951,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
           SELECT id
           FROM person_attribute_values
           WHERE
+          deleted = FALSE AND
           person_id = ".$personId." AND
           person_attribute_id = ".$personattributeIdToHoldPlotGroups." AND
           int_value = (
@@ -1039,8 +1041,9 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       $insertionString.=$explodedPlotPairForPlotGroupAttachmentAsIds['0'].','.$locationAttributeIdThatHoldsPlotGroup.','.$explodedPlotPairForPlotGroupAttachmentAsIds['1'].','.'now()'.','.$userId.','.'now()'.','.$userId;
       //Double check the attachment doesn't already exist
       $insertionString.=' WHERE NOT EXISTS ('
-              . 'select id from location_attribute_values'
-              . ' WHERE location_id ='.$explodedPlotPairForPlotGroupAttachmentAsIds['0']
+              . ' select id from location_attribute_values'
+              . ' WHERE deleted = FALSE'
+              . ' AND location_id = '.$explodedPlotPairForPlotGroupAttachmentAsIds['0']
               . ' AND location_attribute_id = '.$locationAttributeIdThatHoldsPlotGroup
               . ' AND int_value = '.$explodedPlotPairForPlotGroupAttachmentAsIds['1'].");\n";
     }
