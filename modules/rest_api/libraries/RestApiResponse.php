@@ -262,19 +262,16 @@ HTML;
     if ($es) {
       echo '<h3>Elasticsearch end-points</h3>';
       foreach ($es as $endpoint => $esConfig) {
-        // Also allow if authentication provided.
-        if ($esConfig['open'] === TRUE) {
-          echo '<h4>' . url::base() . "index.php/services/rest/$endpoint</h4>";
-          echo '<table class="table table-bordered table-responsive"><caption>Allowed methods</caption>';
-          echo '<thead><tr><th>HTTP method</th><th>Expression</th><th>Description</th></tr></thead>';
-          echo '<tbody>';
-          foreach ($esConfig['allowed'] as $method => $patterns) {
-            foreach ($patterns as $expr => $desc) {
-              echo "<tr><td>$method</td><td>$expr</td><td>$desc</desc></tr>";
-            }
+        echo '<h4>' . url::base() . "index.php/services/rest/$endpoint</h4>";
+        echo '<table class="table table-bordered table-responsive"><caption>Allowed methods</caption>';
+        echo '<thead><tr><th>HTTP method</th><th>Expression</th><th>Description</th></tr></thead>';
+        echo '<tbody>';
+        foreach ($esConfig['allowed'] as $method => $patterns) {
+          foreach ($patterns as $expr => $desc) {
+            echo "<tr><td>$method</td><td>$expr</td><td>$desc</desc></tr>";
           }
-          echo '</tbody></table>';
         }
+        echo '</tbody></table>';
       }
     }
     echo str_replace('{{ base }}', url::base(), $this->htmlFooter);
@@ -501,7 +498,7 @@ ROW;
           $this->outputArrayAsHtml($value, $options);
         } else {
           // a simple value to output. If it contains an internal link then process it to hide user/secret data.
-          if (preg_match('/http(s)?:\/\//', $value)) {
+          if (preg_match('/^http(s)?:\/\//', $value)) {
             $parts = explode('?', $value);
             $displayUrl = $parts[0];
             if (count($parts)>1) {
