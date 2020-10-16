@@ -150,6 +150,18 @@ class ORM extends ORM_Core {
   private $dynamicRowIdReferences = array();
 
   /**
+   * Indicates database trigger on table which accesses a sequence.
+   *
+   * Kohana relies on PostgreSQL lastval() to find the ID for inserted records,
+   * this fails if the table has a trigger on it which uses a sequence during
+   * the insert. Setting this to TRUE causes a more reliable method of
+   * detecting the inserted record ID to be used which avoids this problem.
+   *
+   * @var bool
+   */
+  protected $hasTriggerWithSequence = FALSE;
+
+  /**
    * Constructor allows plugins to modify the data model.
    * @var int $id ID of the record to load. If null then creates a new record. If -1 then the ORM
    * object is not initialised, providing access to the variables only.
@@ -990,6 +1002,7 @@ class ORM extends ORM_Core {
     }
     Kohana::log("debug", "About to validate the following array in model $this->object_name");
     Kohana::log("debug", kohana::debug($this->sanitise($vArray)));
+    $isInsert = empty($this->id) && (empty($this->submission['fields']['id']) || empty($this->submission['fields']['id']['value']));
     try {
       if (array_key_exists('deleted', $vArray) && $vArray['deleted'] === 't') {
         // For a record deletion, we don't want to validate and save anything. Just mark delete it.
@@ -1008,7 +1021,12 @@ class ORM extends ORM_Core {
       error_logger::log_error('Exception during validation', $e);
     }
     if ($v) {
-      // Record has successfully validated so return the id.
+      // Record has successfully validated so return the id. If the entity uses
+      // a trigger containing a sequence, we have to recalculate the ID as the
+      // Kohana reliance on lastval() doesn't work.
+      if ($isInsert && !empty($this->hasTriggerWithSequence)) {
+        $this->id = $this->db->query("SELECT currval(pg_get_serial_sequence('$this->object_plural','id')) as last_id")->current()->last_id;
+      }
       Kohana::log("debug", "Record $this->id has validated successfully");
       $return = $this->id;
     }
