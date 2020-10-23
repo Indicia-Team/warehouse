@@ -489,6 +489,10 @@ SQL;
       $filters[] = "id<>$values[id]";
     }
     foreach (self::$entityConfig[$entity]->duplicateCheckFields as $field) {
+      if (empty($values[$field])) {
+        // No need for check if some duplicate check values missing.
+        return;
+      }
       $value = $values[$field];
       $filters[] = "$field='$value'";
     }
