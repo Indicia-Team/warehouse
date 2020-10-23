@@ -52,8 +52,8 @@ class rest_crud {
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Cannot POST with id to update, use PUT instead.']));
     }
     $obj = ORM::factory($entity);
-    if (in_array($entity, ['occurrence', 'sample']) && !empty($values['external_key'])) {
-      self::checkDuplicateExternalKey($entity, $values);
+    if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
+      self::checkDuplicateFields($entity, $values);
     }
     return self::submit($entity, $obj, $data);
   }
@@ -357,8 +357,8 @@ SQL;
     }
     $obj = ORM::factory($entity, $id);
     self::checkETags($entity, $id);
-    if (!empty($values['external_key']) && (string) $values['external_key'] !== $obj->external_key) {
-      self::checkDuplicateExternalKey($entity, array_merge($obj->as_array(), $values));
+    if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
+      self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values));
     }
     if ($obj->created_by_id !== RestObjects::$clientUserId) {
       RestObjects::$apiResponse->fail('Not Found', 404);
@@ -471,31 +471,29 @@ SQL;
   }
 
   /**
-   * Fails if there is existing record with same external key.
+   * Fails if there is an existing record.
    *
-   * @param int $survey_id
-   *   ID of survey dataset.
+   * Duplicate check uses fields defined in entity's duplicateCheckFields
+   * setting.
+   *
+   * @param int $entity
+   *   Entity name.
    * @param array $values
-   *   VAalues, including the external_key.
+   *   Values for the record being checked.
    */
-  private static function checkDuplicateExternalKey($entity, $values) {
+  private static function checkDuplicateFields($entity, $values) {
     $table = inflector::plural($entity);
-    // Sample external key only needs to be unique within survey.
-    // @todo Same for occurrences.
-    switch ($entity) {
-      case 'sample':
-        $extraFilter = " and survey_id=$values[survey_id]";
-        break;
-
-      case 'occurrence':
-        $extraFilter = " and website_id=$values[website_id]";
-        break;
-
-      default:
-        $extraFilter = '';
+    $filters = [];
+    // If we are updating, then don't match the same record.
+    if (!empty($values['id'])) {
+      $filters[] = "id<>$values[id]";
+    }
+    foreach (self::$entityConfig[$entity]->duplicateCheckFields as $field) {
+      $value = $values[$field];
+      $filters[] = "$field='$value'";
     }
     $hit = RestObjects::$db
-      ->query("select id from $table where external_key='$values[external_key]'$extraFilter")
+      ->query("select id from $table where " . implode(' and ', $filters))
       ->current();
     if ($hit) {
       $href = url::base() . "index.php/services/rest/$table/$hit->id";
