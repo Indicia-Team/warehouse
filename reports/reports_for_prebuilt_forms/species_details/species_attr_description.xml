@@ -40,7 +40,7 @@ FROM (
               WHEN av.text_value LIKE '#%' THEN '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || av.text_value || '"&gt; &lt;/span&gt;'
               -- any other value.
               -- The source_id field holds the language term but only on comment fields. If this is null or the correct language then show the field, else we know it is wrong language so do not display
-              WHEN cat_source_lang.term = '#language#' or cat_source_lang.id IS NULL THEN av.text_value
+              WHEN cat_source_lang.term = '#language#' or cat_source_lang.id IS NULL THEN '&lt;span class="text-translate"&gt;' || av.text_value || '&lt;/span&gt;'
               ELSE ''
             END
           WHEN 'L'::bpchar THEN COALESCE(t_l.term::text, t.term::text)
