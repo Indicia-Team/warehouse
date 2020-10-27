@@ -35,6 +35,11 @@ class rest_crud {
   private static $entityConfig = [];
 
   /**
+   *
+   */
+  private static $fieldDefs;
+
+  /**
    * Create (POST) operation.
    *
    * @param string $entity
@@ -76,6 +81,28 @@ class rest_crud {
   }
 
   /**
+   * Retrieves a list of definitions for fields required by a GET request.
+   *
+   * @param string $entity
+   *   Entity name.
+   *
+   * @return array
+   *   List of SQL field definitions keyed by field name.
+   */
+  private static function loadFieldDefs($entity) {
+    if (empty(self::$fieldDefs)) {
+      self::getFieldDefsForOneTable(self::$entityConfig[$entity]->fields, 't1');
+      if (!empty(self::$entityConfig[$entity]->joins)) {
+        foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
+          // Joined table alias starts at 2.
+          $alias = 't' . ($idx + 2);
+          self::getFieldDefsForOneTable($joinDef->fields, $alias);
+        }
+      }
+    }
+  }
+
+  /**
    * Gets the list of SQL field strings for one table in a query.
    *
    * @param array $fields
@@ -91,9 +118,16 @@ class rest_crud {
     foreach ($fields as $fieldDef) {
       // If field SQL is a simple fieldname we can alias it to the table.
       $fieldSql = preg_match('/^[a-z_]+$/', $fieldDef->sql) ? "$alias.$fieldDef->sql" : $fieldDef->sql;
+      // Arrays can be json formatted.
+      if (!empty($fieldDef->array)) {
+        $fieldSql = 'array_to_json(' . $fieldSql . ')';
+      }
       // Add named alias if required.
       if (!empty($fieldDef->name)) {
         $fieldSql .= " AS $fieldDef->name";
+      }
+      elseif (!empty($fieldDef->array)) {
+        $fieldSql .= " AS $fieldDef->sql";
       }
       $list[] = $fieldSql;
     }
@@ -127,7 +161,7 @@ class rest_crud {
   private static function getSqlJoins($entity) {
     $list = [];
     if (!empty(self::$entityConfig[$entity]->joins)) {
-      foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
+      foreach (self::$entityConfig[$entity]->joins as $joinDef) {
         $list[] = $joinDef->sql;
       }
     }
@@ -146,40 +180,13 @@ class rest_crud {
    *   List of SQL field definitions containing information required to filter,
    *   keyed by field name.
    */
-  private static function getFilterFieldsForOneTable($fields, $alias) {
-    $list = [];
+  private static function getFieldDefsForOneTable($fields, $alias) {
     foreach ($fields as $fieldDef) {
       // If field SQL is a simple fieldname we can alias it to the table.
       $fieldSql = preg_match('/^[a-z_]+$/', $fieldDef->sql) ? "$alias.$fieldDef->sql" : $fieldDef->sql;
       $fieldName = empty($fieldDef->name) ? $fieldDef->sql : $fieldDef->name;
-      $list[$fieldName] = [
-        'sql' => $fieldSql,
-        'type' => $fieldDef->type,
-      ];
+      self::$fieldDefs[$fieldName] = array_merge((array) $fieldDef, ['sql' => $fieldSql]);
     }
-    return $list;
-  }
-
-  /**
-   * Gets the SQL field definitions for filtering against any table in a query.
-   *
-   * @param string $entity
-   *   Entity name.
-   *
-   * @return array
-   *   List of SQL field definitions containing information required to filter,
-   *   keyed by field name.
-   */
-  private static function getAvailableFilterFields($entity) {
-    $list = self::getFilterFieldsForOneTable(self::$entityConfig[$entity]->fields, 't1');
-    if (!empty(self::$entityConfig[$entity]->joins)) {
-      foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
-        // Joined table alias starts at 2.
-        $alias = 't' . ($idx + 2);
-        $list = array_merge($list, self::getFilterFieldsForOneTable($joinDef->fields, $alias));
-      }
-    }
-    return $list;
   }
 
   /**
@@ -199,18 +206,18 @@ class rest_crud {
   private static function getReadSql($entity, $extraFilter, $userFilter) {
     $table = inflector::plural($entity);
     self::loadEntityConfig($entity);
+    self::loadFieldDefs($entity);
     $fields = self::getSqlFields($entity);
     $joins = self::getSqlJoins($entity);
     $createdByFilter = $userFilter ? 'AND t1.created_by_id=' . RestObjects::$clientUserId : '';
     if (!empty($_GET)) {
       // Apply query string parameters.
-      $availableFilterFields = self::getAvailableFilterFields($entity);
       foreach ($_GET as $param => $value) {
-        if (isset($availableFilterFields[$param])) {
-          if (in_array($availableFilterFields[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
+        if (isset(self::$fieldDefs[$param])) {
+          if (in_array(self::$fieldDefs[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
             $value = pg_escape_literal($value);
           }
-          elseif (in_array($availableFilterFields[$param]['type'], ['integer', 'float'])) {
+          elseif (in_array(self::$fieldDefs[$param]['type'], ['integer', 'float'])) {
             if (!is_numeric($value)) {
               RestObjects::$apiResponse->fail('Bad Request', 400, "Invalid filter on numeric field $param");
             }
@@ -218,7 +225,7 @@ class rest_crud {
           else {
             RestObjects::$apiResponse->fail('Internal Server Error', 400, "Unsupported field type for $param");
           }
-          $extraFilter .= "\nAND " . $availableFilterFields[$param]['sql'] . "=$value";
+          $extraFilter .= "\nAND " . self::$fieldDefs[$param]['sql'] . "=$value";
         }
       }
     }
@@ -525,6 +532,8 @@ SQL;
    *
    * Dates will be ISO formatted.
    *
+   * @param string $entity
+   *   Entity name.
    * @param mixed $data
    *   Associative array or object of field names and values.
    * @param array $fields Optional list of fields to restrict to.
@@ -538,9 +547,14 @@ SQL;
     }
     $values = $fields ?  array_intersect_key($data, array_flip($fields)) : $data;
     foreach ($values as $field => &$value) {
-      if (substr($field, -3) === '_on') {
-        // Date values need reformatting.
-        $value = date('c', strtotime($value));
+      if (isset(self::$fieldDefs[$field])) {
+        if (self::$fieldDefs[$field]['type'] === 'date') {
+          // Date values need reformatting.
+          $value = date('c', strtotime($value));
+        }
+        if (!empty(self::$fieldDefs[$field]['array']) && preg_match('/^\[.+\]$/', $value)) {
+          $value = json_decode($value);
+        }
       }
       if (substr($field, -10) === 'date_start') {
         $prefix = substr($field, 0, strlen($field) - 10);
@@ -561,6 +575,7 @@ SQL;
    */
   private static function getResponseMetadata(array $responseMetadata) {
     $entity = $responseMetadata['model'];
+    self::loadFieldDefs($entity);
     $table = inflector::plural($entity);
     $href = url::base() . "index.php/services/rest/$table/$responseMetadata[id]";
     $r = [
