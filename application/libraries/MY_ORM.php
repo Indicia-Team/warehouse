@@ -2393,4 +2393,35 @@ class ORM extends ORM_Core {
     }
     return $wheres;
   }
+
+  /**
+   * Override __set to process array fields.
+   *
+   * * Incoming data for ORM int[] fields will be decoded as an array of
+   *   strings. Change back to integers in order for the SQL value to be cast
+   *   correctly by ORM.
+   * * Single values submitted for array fields are converted to arrays.
+   *
+   * @param string $column
+   *   Column name.
+   * @param mixed $value
+   *   Value to set.
+   */
+  public function __set($column, $value) {
+    if (!empty($value) && !empty($this->table_columns[$column])) {
+      $colDef = $this->table_columns[$column];
+      if (!empty($colDef['array'])) {
+        if (!is_array($value)) {
+          $value = [$value];
+        }
+        if ($colDef['subtype'] === 'int') {
+          foreach ($value as $i => $single) {
+            $value[$i] = (int) $single;
+          }
+        }
+      }
+    }
+    return parent::__set($column, $value);
+  }
+
 }

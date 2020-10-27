@@ -301,6 +301,33 @@ SQL;
   }
 
   /**
+   * PostgreSQL arrays are set to type string, so need a subtype.
+   *
+   * Allows other code to act on the field type contained within the array.
+   * Currently supports character varying and integer fields in arrays for ORM
+   * entities.
+   *
+   * @param string $udtName
+   *   Field subtype as loaded from PostgreSQL's information_schema.columns
+   *   table udt_name field.
+   *
+   * @return string
+   *   ORM type name for the values in the array.
+   */
+  private static function getArraySubtype($udtName) {
+    if ($udtName === '_varchar') {
+      return 'string';
+    }
+    elseif (substr($udtName, 0, 4) === '_int') {
+      return 'int';
+    }
+    else {
+      // This could of course be extended to support new types.
+      throw new exception('Unsupported array field sub-type');
+    }
+  }
+
+  /**
    * List fields for an entity.
    *
    * A clone of the list_fields methods provided by the Kohana database object,
@@ -332,31 +359,32 @@ SQL;
       ');
 
       $cols = $result->result_array(TRUE);
-      $result = NULL;
+      $fieldInfo = [];
 
       foreach ($cols as $row) {
-        // Make an associative array.
-        $result[$row->column_name] = self::sql_type($row->data_type);
+        // Grab config data for this data type.
+        $fieldInfo[$row->column_name] = self::sql_type($row->data_type);
 
         if (!strncmp($row->column_default, 'nextval(', 8)) {
-          $result[$row->column_name]['sequenced'] = TRUE;
+          $fieldInfo[$row->column_name]['sequenced'] = TRUE;
         }
 
         if ($row->is_nullable === 'YES') {
-          $result[$row->column_name]['null'] = TRUE;
+          $fieldInfo[$row->column_name]['null'] = TRUE;
         }
-        if (strtolower(trim($row->data_type)) === 'array' && $row->udt_name === '_varchar') {
-          $result[$row->column_name]['type'] = 'string';
+
+        if (!empty($fieldInfo[$row->column_name]['array'])) {
+          $fieldInfo[$row->column_name]['subtype'] = self::getArraySubtype($row->udt_name);
         }
       }
-      if (!isset($result)) {
+      if (empty($fieldInfo)) {
         throw new Kohana_Database_Exception('database.table_not_found', $entity);
       }
       else {
-        $cache->set($key, $result);
+        $cache->set($key, $fieldInfo);
       }
     }
-    return $result;
+    return $fieldInfo;
   }
 
   /**

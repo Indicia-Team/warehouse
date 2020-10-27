@@ -45,7 +45,9 @@ $config = array(
   'varbinary' => array('type' => 'string', 'binary' => TRUE),
   'blob' => array('type' => 'string', 'binary' => TRUE),
   'text' => array('type' => 'string'),
-  'array' => array('type' => 'int'),
+  // Arrays map to strings as they can be written and read as strings as long
+  // as encoding correct.
+  'array' => array('type' => 'string', 'array' => TRUE),
   'json' => array('type' => 'string'),
   'jsonb' => array('type' => 'string', 'binary' => TRUE),
 );
