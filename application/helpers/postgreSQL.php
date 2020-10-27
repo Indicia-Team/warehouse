@@ -345,8 +345,8 @@ SQL;
   public static function list_fields($entity, $db = NULL) {
     $key = "list_fields$entity";
     $cache = Cache::instance();
-    $result = $cache->get($key);
-    if ($result === NULL) {
+    $fieldInfo = $cache->get($key);
+    if ($fieldInfo === NULL) {
       if (!$db) {
         $db = new Database();
       }
