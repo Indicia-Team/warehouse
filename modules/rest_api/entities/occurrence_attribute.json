@@ -23,6 +23,7 @@
     {
       "sql": "JOIN occurrence_attributes_websites t2 on t2.occurrence_attribute_id=t1.id AND t2.deleted=false",
       "fields": [
+        { "sql": "id", "name": "occurrence_attributes_website_id", "type": "integer" },
         { "sql": "restrict_to_survey_id", "type": "integer" },
         { "sql": "validation_rules", "name": "survey_validation_rules", "type": "string" }
       ]
@@ -32,6 +33,12 @@
     "occurrence_attributes_websites": {
       "fk": "occurrence_attribute_id",
       "required": true
+    }
+  },
+  "extras": {
+    "terms": {
+      "sql": "SELECT json_agg(term ORDER BY sort_order, term) AS extra FROM list_termlists_terms WHERE termlist_id={{ termlist_id }} AND allow_data_entry=true",
+      "parameter": "termlist_id"
     }
   },
   "forceValuesOnCreate": {

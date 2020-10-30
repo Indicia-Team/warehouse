@@ -280,11 +280,11 @@ SQL;
   public static function read($entity, $id, $extraFilter = '', $userFilter = TRUE) {
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $qry .= "AND t1.id=$id";
-    $row = RestObjects::$db->query($qry)->current();
+    $row = RestObjects::$db->query($qry)->result(FALSE)->current();
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
-      header("ETag: $row->xmin");
-      unset($row->xmin);
+      header("ETag: $row[xmin]");
+      unset($row['xmin']);
       if (!empty(self::$entityConfig[$entity]->attributes)) {
         // @todo Support for multi-value attributes.
         $qry = <<<SQL
@@ -336,7 +336,7 @@ SQL;
         }
         $row = array_merge((array) $row, $attrs);
       }
-      RestObjects::$apiResponse->succeed(['values' => self::getValuesForResponse($row)]);
+      RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
     }
     else {
       RestObjects::$apiResponse->fail('Not found', 404);
@@ -367,7 +367,7 @@ SQL;
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
       self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values));
     }
-    if ($obj->created_by_id !== RestObjects::$clientUserId) {
+    if ($obj->created_by_id != RestObjects::$clientUserId) {
       RestObjects::$apiResponse->fail('Not Found', 404);
     }
     // Keep existing values unless replaced by PUT data.
@@ -409,6 +409,36 @@ SQL;
     } else {
       RestObjects::$apiResponse->fail('Not found', 404);
     }
+  }
+
+  /**
+   * For some entities, include extra data in the GET response.
+   *
+   * An example is lookup terms which are included in the response for
+   * attributes. Extra data can be defined in the entity json config files,
+   * e.g. see sample_attribute.json.
+   *
+   * @param string $entity
+   *   Entity name.
+   * @param array $row
+   *   Attribute data from database.
+   *
+   * @return array
+   *   List of key/value pairs to include in the response.
+   */
+  private static function getExtraData($entity, array $row) {
+    $extraData = [];
+    if (!empty(self::$entityConfig[$entity]->extras)) {
+      // Attach extra information to the GET response such as termlist terms.
+      foreach (self::$entityConfig[$entity]->extras as $name => $extraCfg) {
+        // If parameter field filled in, use it to run the query to get extra data.
+        if (!empty($row[$extraCfg->parameter])) {
+          $sql = str_replace("{{ $extraCfg->parameter }}", $row[$extraCfg->parameter], $extraCfg->sql);
+          $extraData[$name] = json_decode(RestObjects::$db->query($sql)->current()->extra);
+        }
+      }
+    }
+    return $extraData;
   }
 
   private static function includeSubmodels($entity, array $postObj, $websiteId, &$s) {
