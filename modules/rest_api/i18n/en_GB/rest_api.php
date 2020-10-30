@@ -173,12 +173,31 @@ $lang['resources']['GET occurrence-attributes'] = <<<TXT
 Retrieves a list of custom attributes defined to capture information about occurrences.
 TXT;
 $lang['resources']['GET occurrence-attributes/{id}'] = <<<TXT
-Retrieves a single custom attribute defined to capture information about occurrences.
+Retrieves a single custom attribute defined to capture information about occurrences. Lookup attributes include a
+"terms" element in the response containing an ordered array of terms, excluding any that are allow_data_entry=false.
 TXT;
 $lang['resources']['POST occurrence-attributes'] = <<<TXT
-Creates a custom attribute defined to capture information about occurrences.
+Creates a custom attribute defined to capture information about occurrences. If the attribute is a lookup
+(data_type=L) then provide "terms" as a sibling of the values to auto-generate a termlist. For example:
+<pre><code>
+POST /index.php/services/rest/occurrence-attributes
+{
+  "values": {
+    "caption": "Stage",
+    "data_type": "L",
+  },
+  "terms": [
+    "Egg",
+    "Larva",
+    "Adult"
+  ]
+}
+</code></pre>
 TXT;
-$lang['resources']['PUT occurrence-attributes/{id}'] = 'Updates a single occurrence custom attribute.';
+$lang['resources']['PUT occurrence-attributes/{id}'] = <<<TXT
+Updates a single occurrence custom attribute. Lookups can update the termlist content by passing a "terms" element in
+the same way as a POST.
+TXT;
 $lang['resources']['DELETE occurrence-attributes/{id}'] = 'Deletes a single occurrence custom attribute.';
 $lang['resources']['occurrences'] = "A list of a user's occurrences.";
 $lang['resources']['GET occurrences'] = <<<TXT
@@ -216,12 +235,31 @@ $lang['resources']['GET sample-attributes'] = <<<TXT
 Retrieves a list of custom attributes defined to capture information about samples.
 TXT;
 $lang['resources']['GET sample-attributes/{id}'] = <<<TXT
-Retrieves a single custom attribute defined to capture information about samples.
+Retrieves a single custom attribute defined to capture information about samples. Lookup attributes include a
+"terms" element in the response containing an ordered array of terms, excluding any that are allow_data_entry=false.
 TXT;
 $lang['resources']['POST sample-attributes'] = <<<TXT
-Creates a custom attribute defined to capture information about samples.
+Creates a custom attribute defined to capture information about samples. If the attribute is a lookup
+(data_type=L) then provide "terms" as a sibling of the values to auto-generate a termlist. For example:
+<pre><code>
+POST /index.php/services/rest/sample-attributes
+{
+  "values": {
+    "caption": "Site features",
+    "data_type": "L",
+  },
+  "terms": [
+    "Pond",
+    "Wildflower patch",
+    "Wood pile"
+  ]
+}
+</code></pre>
 TXT;
-$lang['resources']['PUT sample-attributes/{id}'] = 'Updates a single sample custom attribute.';
+$lang['resources']['PUT sample-attributes/{id}'] = <<<TXT
+Updates a single sample custom attribute. Lookups can update the termlist content by passing a "terms" element in
+the same way as a POST.
+TXT;
 $lang['resources']['DELETE sample-attributes/{id}'] = 'Deletes a single sample custom attribute.';
 $lang['resources']['samples'] = 'A list of the user\'s samples data, each of which can contain any number of occurrences.';
 $lang['resources']['GET samples'] = 'Retrieve a list of the user\'s samples data.';
