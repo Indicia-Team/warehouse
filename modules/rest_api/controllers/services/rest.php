@@ -4869,10 +4869,9 @@ SQL;
     if ($this->attributeTypeChanging('sample_attributes', $id, $putArray)) {
       $this->assertAttributeHasNoValues('sample_attributes', $id);
     }
-    if (isset($putArray['values'])) {
-      if ($putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
-        $this->updateAttributeTermlist($putArray);
-      }
+    if (isset($putArray['values']) && isset($putArray['values']['data_type'])
+        && $putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
+      $this->updateAttributeTermlist($putArray);
     }
     $r = rest_crud::update('sample_attribute', $id, $putArray);
     echo json_encode($r);
@@ -5113,10 +5112,9 @@ SQL;
     if ($this->attributeTypeChanging('occurrence_attributes', $id, $putArray)) {
       $this->assertAttributeHasNoValues('occurrence_attributes', $id);
     }
-    if (isset($putArray['values'])) {
-      if ($putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
-        $this->updateAttributeTermlist($putArray);
-      }
+    if (isset($putArray['values']) && isset($putArray['values']['data_type'])
+        && $putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
+      $this->updateAttributeTermlist($putArray);
     }
     $r = rest_crud::update('occurrence_attribute', $id, $putArray);
     echo json_encode($r);
