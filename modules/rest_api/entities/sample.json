@@ -34,5 +34,7 @@
     "occurrences": { "fk": "sample_id" },
     "media": { "fk": "sample_id" }
   },
-  "attributes": true
+  "attributes": true,
+  "attributePrefix": "smp",
+  "duplicateCheckFields": ["external_key", "survey_id"]
 }

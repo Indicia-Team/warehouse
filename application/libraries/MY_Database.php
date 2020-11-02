@@ -218,32 +218,4 @@ class Database extends Database_Core {
     }
   }
 
-  public function set($key, $value = '')
-  {
-    if (!is_array($key)) {
-      $key = array($key => $value);
-    }
-
-    foreach ($key as $k => $v) {
-      // have to preprocess the value for arrays: we need to be able to distinguish between arrays of text and
-      // arrays of numbers, as the escape function can't tell if a number as text is a number or text.
-      // if the field name contains "_id", then we assume it holds integers, otherwise it holds text
-      // problem comes if the array is empty: if this case we put a single empty string in
-      // As escpae does not have access to the key, we must set the content type here
-      if (is_array($v)) {
-        if(strpos($k, '_id') !== false) {// ID, so assume ints else strings
-          foreach ($v as $i => $single) {
-            $v[$i] = (int) $single;
-          }
-        }
-      }
-      // Add a table prefix if the column includes the table.
-      if (strpos($k, '.')) {
-        $k = $this->config['table_prefix'].$k;
-      }
-      $this->set[$k] = $this->driver->escape($v);
-    }
-    return $this;
-  }
-
 }

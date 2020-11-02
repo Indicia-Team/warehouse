@@ -53,6 +53,12 @@ $lang['dontAllowAuthTokensInUrl'] = 'Tokens required for authorisation must be p
 $lang['onlyAllowHttps'] = 'This authentication method requires you to access the web service via https';
 $lang['resourceOptionInfo'] = 'The %s resource: {{ list }}';
 $lang['resourceOptionInfo-entities'] = 'Access to data entities is limited to: {{ list }}';
+$lang['resourceOptionInfo-entities-"locations"'] = 'locations';
+$lang['resourceOptionInfo-entities-"occurrence_attributes"'] = 'occurrence_attributes';
+$lang['resourceOptionInfo-entities-"occurrences"'] = 'occurences';
+$lang['resourceOptionInfo-entities-"sample_attributes"'] = 'sample_attributes';
+$lang['resourceOptionInfo-entities-"samples"'] = 'samples';
+$lang['resourceOptionInfo-entities-"surveys"'] = 'surveys';
 $lang['resourceOptionInfo-elasticsearch'] = 'Elasticsearch is enabled via end-points mapped to Elasticsearch aliases.';
 $lang['resourceOptionInfo-reports-featured-true'] = 'is limited to reports which have been vetted and flagged as featured';
 $lang['resourceOptionInfo-reports-featured-false'] = 'is not limited to reports which have been vetted and flagged as featured';
@@ -67,8 +73,26 @@ $lang['format_param_help'] = 'Request a response in this format, either html or 
 
 // Help text for each end-point/method combination.
 $lang['resources'] = [];
-$lang['resources']['media-queue'] = [];
-$lang['resources']['media-queue']['post'] = <<<TXT
+$lang['resources']['annotations'] = <<<TXT
+A list of comments and verification decisions attached to taxon-observation resources.
+TXT;
+$lang['resources']['GET annotations'] = 'Retrieve a list of annotations available to this client ID.';
+$lang['resources']['GET annotations/{id}'] = <<<TXT
+Retrieve the details of a single annotation where {id} is replaced by the observation
+ID.
+TXT;
+$lang['resources']['locations'] = 'A list of a user\'s saved sites and other locations.';
+$lang['resources']['GET locations'] = 'Retrieves a list of a user\'s saved sites and other locations.';
+$lang['resources']['GET locations/{id}'] = 'Retrieves the user\'s saved site or other location identified by {id}.';
+$lang['resources']['POST locations'] = 'Creates a saved site or and other location.';
+$lang['resources']['PUT locations/{id}'] = 'Updates the user\'s saved site or other location identified by {id}.';
+$lang['resources']['DELETE locations/{id}'] = 'Deletes the user\'s saved site or other location identified by {id}.';
+$lang['resources']['media-queue'] = <<<TXT
+Endpoint which allows media files such as record photos to be cached on the server prior to submitting the associated
+records. This allows files to be sent to the server during data entry, reducing the time a user has to wait for image
+uploads.
+TXT;
+$lang['resources']['POST media-queue'] = <<<TXT
 Adds a media file such as a photo to the queue of media files available to attach to a subsequent submission. Several
 files can be sent in each request but note that server limits on submission size will limit the number possible. Files
 can be named with a single field name or an array field name with '[]' appended. The response will be an array, where
@@ -142,8 +166,52 @@ Note that queued items will be stored for at least 1 day and attempts to submit 
 that have expired will result in an error. Therefore if a pending submission is stored on the client for more than one
 day the media should be re-posted to /media-queue before sending the submission.
 TXT;
-$lang['resources']['occurrences'] = [];
-$lang['resources']['occurrences/{occurrence ID}']['get'] = <<<TXT
+$lang['resources']['occurrence-attributes'] = <<<TXT
+A list of custom attributes defined to capture information about occurrences.
+TXT;
+$lang['resources']['GET occurrence-attributes'] = <<<TXT
+Retrieves a list of custom attributes defined to capture information about occurrences.
+TXT;
+$lang['resources']['GET occurrence-attributes/{id}'] = <<<TXT
+Retrieves a single custom attribute defined to capture information about occurrences. Lookup attributes include a
+"terms" element in the response containing an ordered array of terms, excluding any that are allow_data_entry=false.
+TXT;
+$lang['resources']['POST occurrence-attributes'] = <<<TXT
+Creates a custom attribute defined to capture information about occurrences. If the attribute is a lookup
+(data_type=L) then provide "terms" as a sibling of the values to auto-generate a termlist. For example:
+<pre><code>
+POST /index.php/services/rest/occurrence-attributes
+{
+  "values": {
+    "caption": "Stage",
+    "data_type": "L",
+  },
+  "terms": [
+    "Egg",
+    "Larva",
+    "Adult"
+  ]
+}
+</code></pre>
+TXT;
+$lang['resources']['PUT occurrence-attributes/{id}'] = <<<TXT
+Updates a single occurrence custom attribute. Lookups can update the termlist content by passing a "terms" element in
+the same way as a POST.
+TXT;
+$lang['resources']['DELETE occurrence-attributes/{id}'] = 'Deletes a single occurrence custom attribute.';
+$lang['resources']['occurrences'] = "A list of a user's occurrences.";
+$lang['resources']['GET occurrences'] = <<<TXT
+Retrieve a list of occurrences owned by the logged in user. In addition to the database fields, the response values
+include the following: <ul>
+  <li>taxa_taxon_list_id - recorded taxon's key</li>
+  <li>taxon - recorded taxon name</li>
+  <li>preferred_taxon - accepted name for the taxon</li>
+  <li>default_common_name - common name for the taxon</li>
+  <li>taxon_group - group for the taxon</li>
+  <li>taxa_taxon_list_external_key - key for the taxon</li>
+</ul>
+TXT;
+$lang['resources']['GET occurrences/{id}'] = <<<TXT
 Retrieve the fields for a single occurrence. In addition to the database fields, the response values include the
 following: <ul>
   <li>taxa_taxon_list_id - recorded taxon's key</li>
@@ -154,8 +222,94 @@ following: <ul>
   <li>taxa_taxon_list_external_key - key for the taxon</li>
 </ul>
 TXT;
-$lang['resources']['samples'] = [];
-$lang['resources']['samples']['post'] = 'Create a new sample, associated occurrences and media. Posted values should
+$lang['resources']['POST occurrences'] = 'Creates an occurrence on the system within an existing sample.';
+$lang['resources']['PUT occurrences/{id}'] = 'Updates a single occurrence belonging to the user.';
+$lang['resources']['DELETE occurrences/{id}'] = 'Deletes a single occurrence belonging to the user.';
+$lang['resources']['reports'] = <<<TXT
+Provides access to data generated by predefined report queries and metadata about the reports.
+TXT;
+$lang['resources']['sample-attributes'] = <<<TXT
+A list of custom attributes defined to capture information about samples.
+TXT;
+$lang['resources']['GET sample-attributes'] = <<<TXT
+Retrieves a list of custom attributes defined to capture information about samples.
+TXT;
+$lang['resources']['GET sample-attributes/{id}'] = <<<TXT
+Retrieves a single custom attribute defined to capture information about samples. Lookup attributes include a
+"terms" element in the response containing an ordered array of terms, excluding any that are allow_data_entry=false.
+TXT;
+$lang['resources']['POST sample-attributes'] = <<<TXT
+Creates a custom attribute defined to capture information about samples. If the attribute is a lookup
+(data_type=L) then provide "terms" as a sibling of the values to auto-generate a termlist. For example:
+<pre><code>
+POST /index.php/services/rest/sample-attributes
+{
+  "values": {
+    "caption": "Site features",
+    "data_type": "L",
+  },
+  "terms": [
+    "Pond",
+    "Wildflower patch",
+    "Wood pile"
+  ]
+}
+</code></pre>
+TXT;
+$lang['resources']['PUT sample-attributes/{id}'] = <<<TXT
+Updates a single sample custom attribute. Lookups can update the termlist content by passing a "terms" element in
+the same way as a POST.
+TXT;
+$lang['resources']['DELETE sample-attributes/{id}'] = 'Deletes a single sample custom attribute.';
+$lang['resources']['samples'] = 'A list of the user\'s samples data, each of which can contain any number of occurrences.';
+$lang['resources']['GET samples'] = 'Retrieve a list of the user\'s samples data.';
+$lang['resources']['GET samples/{id}'] = <<<TXT
+Read the data for a single sample. If using jwtUser or directUser authentication then the sample
+must be created by the authenticated user or 404 Not Found will be returned. Response contains a
+values entry with a list of key/value pairs including custom attributes. An additional field called
+`date` is added with the formatted date string created from the vague date fields. Example:
+<pre><code>
+GET /index.php/services/rest/samples/3
+
+Response:
+200 OK
+{
+  "values": {
+    "id": "3",
+    "survey_id": "1",
+    "location_id": null,
+    "date_start": "2020-08-01",
+    "date_end": "2020-08-01",
+    "sample_method_id": null,
+    "geom": "POLYGON((-362693.424306773 6638740.7043692,-362720.601545824 6640334.45652272,-361130.912140383 6640361.5584498,-361104.043056924 6638767.79238341,-362693.424306773 6638740.7043692))",
+    "parent_id": null,
+    "group_id": null,
+    "privacy_precision": null,
+    "verified_by_id": null,
+    "verified_on": "1970-01-01T01:00:00+01:00",
+    "licence_id": null,
+    "created_on": "2020-08-14T15:23:46+02:00",
+    "created_by_id": "1",
+    "updated_on": "2020-08-14T15:23:46+02:00",
+    "updated_by_id": "1",
+    "date_type": "D",
+    "entered_sref": "ST1234",
+    "entered_sref_system": "OSGB",
+    "location_name": null,
+    "external_key": null,
+    "recorder_names": null,
+    "record_status": "C",
+    "input_form": null,
+    "comment": null,
+    "lat": "51.10309961727583",
+    "lon": "51.10309961727583",
+    "smpAttr:1": "150",
+    "date": "01\/08\/2020"
+  }
+}
+</code></pre>
+TXT;
+$lang['resources']['POST samples'] = 'Create a new sample, associated occurrences and media. Posted values should
 match database fields in the samples table (or equivalent table for sub-models).
 
 <pre><code>
@@ -208,56 +362,15 @@ Response:
 }
 </code></pre>
 ';
-$lang['resources']['samples/{sample ID}']['get'] = <<<TXT
-Read the data for a single sample. If using jwtUser or directUser authentication then the sample
-must be created by the authenticated user or 404 Not Found will be returned. Response contains a
-values entry with a list of key/value pairs including custom attributes. An additional field called
-`date` is added with the formatted date string created from the vague date fields. Example:
-<pre><code>
-GET /index.php/services/rest/samples/3
-
-Response:
-200 OK
-{
-  "values": {
-    "id": "3",
-    "survey_id": "1",
-    "location_id": null,
-    "date_start": "2020-08-01",
-    "date_end": "2020-08-01",
-    "sample_method_id": null,
-    "geom": "POLYGON((-362693.424306773 6638740.7043692,-362720.601545824 6640334.45652272,-361130.912140383 6640361.5584498,-361104.043056924 6638767.79238341,-362693.424306773 6638740.7043692))",
-    "parent_id": null,
-    "group_id": null,
-    "privacy_precision": null,
-    "verified_by_id": null,
-    "verified_on": "1970-01-01T01:00:00+01:00",
-    "licence_id": null,
-    "created_on": "2020-08-14T15:23:46+02:00",
-    "created_by_id": "1",
-    "updated_on": "2020-08-14T15:23:46+02:00",
-    "updated_by_id": "1",
-    "date_type": "D",
-    "entered_sref": "ST1234",
-    "entered_sref_system": "OSGB",
-    "location_name": null,
-    "external_key": null,
-    "recorder_names": null,
-    "record_status": "C",
-    "input_form": null,
-    "comment": null,
-    "lat": "51.10309961727583",
-    "lon": "51.10309961727583",
-    "smpAttr:1": "150",
-    "date": "01\/08\/2020"
-  }
-}
-</code></pre>
+$lang['resources']['POST samples/list'] = <<<TXT
+Allows posting of a list of samples to create multiple in one request. Identical to the POST samples endpoint but
+the request body should be an array containing the list of samples to create. The response will similarly have an
+outer array wrapping the response for each sample in the same order.
 TXT;
-$lang['resources']['samples/{sample ID}']['put'] = <<<TXT
+$lang['resources']['PUT samples/{id}'] = <<<TXT
 Update an existing sample by replacing the provided values.
 TXT;
-$lang['resources']['samples/{sample ID}']['delete'] = <<<TXT
+$lang['resources']['DELETE samples/{id}'] = <<<TXT
 Delete a single sample.  If using jwtUser or directUser authentication then the sample must be
 created by the authenticated user or 404 Not Found will be returned. Example:
 <pre><code>
@@ -267,47 +380,58 @@ Response:
 204 No Content
 </code></pre>
 TXT;
-$lang['resources']['taxa'] = 'Base resource for taxon interactions. Not currently implemented.';
-$lang['resources']['taxa/search'] = <<<TXT
+$lang['resources']['surveys'] = 'A list of metadata about available survey datasets.';
+$lang['resources']['GET surveys'] = 'Retrieves a list of metadata about available survey datasets.';
+$lang['resources']['GET surveys/{id}'] = 'Retrieves the metadata for a single survey dataset.';
+$lang['resources']['POST surveys'] = 'Creates a survey dataset.';
+$lang['resources']['PUT surveys/{id}'] = 'Updates the metadata for a survey dataset.';
+$lang['resources']['DELETE surveys/{id}'] = 'Deletes a survey dataset.';
+$lang['resources']['taxa'] = 'Provides search for taxonomy data.';
+$lang['resources']['GET taxa/search'] = <<<TXT
 Search resource for taxa. Perform full text searches against the taxonomy information held in the
 warehouse.
 TXT;
-$lang['resources']['reports'] = <<<TXT
+$lang['resources']['taxon-observations'] = 'Occurrence data provided in the deprecated NBN Gateway exchange format.';
+$lang['resources']['POST taxon-observations'] = 'Creates an occurrence using the deprecated NBN Gateway exchange format.';
+$lang['resources']['GET reports'] = <<<TXT
 Retrieves the contents of the top level of the reports directory on the warehouse. Can retrieve the
 output for a subfolder in the directory or a specific report by appending the path to the resource
 URL.
 TXT;
-$lang['resources']['reports/{report_path}-xml'] = 'Access the output for a report specified by the supplied path.';
-$lang['resources']['reports/{report_path}-xml/params'] = <<<TXT
+$lang['resources']['GET reports/{path}'] = <<<TXT
+Retrieves the contents of the folder specified by {path} of the reports directory on the warehouse.
+URL.
+TXT;
+$lang['resources']['GET reports/{path}/{file-xml}'] = 'Access the output for a report specified by the supplied path.';
+$lang['resources']['GET reports/{path}/{file-xml}/params'] = <<<TXT
 Get metadata about the list of parameters available to filter this report by.
 TXT;
-$lang['resources']['reports/{report_path}-xml/columns'] = 'Get metadata about the list of columns available for this report.';
+$lang['resources']['GET reports/{path}/{file-xml}/columns'] = 'Get metadata about the list of columns available for this report.';
 $lang['resources']['projects'] = <<<TXT
+A pre-configured list of projects available to the authenticated client. Each project defines permissions including the
+filtered set of records available.
+TXT;
+$lang['resources']['GET projects'] = <<<TXT
 Retrieve a list of projects available to this client system ID. Only available when authenticating
 as a client system defined in the REST API's configuration file.
 TXT;
-$lang['resources']['projects/{project ID}'] = <<<TXT
-Retrieve the details of a single project where {project id} is replaced by the project ID as
+$lang['resources']['GET projects/{id}'] = <<<TXT
+Retrieve the details of a single project where {id} is replaced by the project ID as
 retreived from an earlier request to /projects.
 TXT;
-$lang['resources']['taxon-observations'] = <<<TXT
+$lang['resources']['GET taxon-observations'] = <<<TXT
 Retrieve a list of taxon-observations available to this client ID for a project indicated by a
 supplied proj_id parameter.
 TXT;
-$lang['resources']['taxon-observations/{taxon-observation ID}'] = <<<TXT
-Retrieve the details of a single taxon-observation where {taxon-observation ID} is replaced by the
+$lang['resources']['GET taxon-observations/{id}'] = <<<TXT
+Retrieve the details of a single taxon-observation where {id} is replaced by the
 observation ID. A proj_id parameter must be provided and the observation should be available within
 that project's records.
 TXT;
-$lang['resources']['annotations'] = 'Retrieve a list of annotations available to this client ID.';
-$lang['resources']['annotations/{annotation ID}'] = <<<TXT
-Retrieve the details of a single annotation where {annotation ID} is replaced by the observation
-ID.
-TXT;
 
 // Lang strings for URL parameters for each end-point.
-$lang['occurrences'] = [];
-$lang['occurrences']['verbose'] = <<<TXT
+$lang['GET occurrences'] = [];
+$lang['GET occurrences']['verbose'] = <<<TXT
 Add &verbose to the URL to retrieve attribute values as an array with additional information
 including the attribute ID, caption, data type, value ID and raw value information as shown in the
 following example response (shortened):
@@ -331,8 +455,9 @@ following example response (shortened):
 }
 </code></pre>
 TXT;
-$lang['samples'] = [];
-$lang['samples']['verbose'] = <<<TXT
+$lang['GET occurrences/{id}']['verbose'] = $lang['GET occurrences']['verbose'];
+$lang['GET samples'] = [];
+$lang['GET samples']['verbose'] = <<<TXT
 Add &verbose to the URL to retrieve attribute values as an array with additional information
 including the attribute ID, caption, data type, value ID and raw value information as shown in the
 following example response (shortened):
@@ -356,147 +481,224 @@ following example response (shortened):
 }
 </code></pre>
 TXT;
-$lang['taxon-observations'] = [];
-$lang['taxon-observations']['proj_id'] = <<<TXT
+$lang['GET samples/{id}']['verbose'] = $lang['GET samples']['verbose'];
+$lang['GET surveys'] = [];
+$lang['GET surveys']['verbose'] = <<<TXT
+Add &verbose to the URL to retrieve attribute values as an array with additional information
+including the attribute ID, caption, data type, value ID and raw value information as shown in the
+following example response (shortened):
+<pre><code>
+200 OK
+{
+  "values": {
+    "id": "3",
+    ...
+    "srvAttr:1": [{
+      "attribute_id": "1",
+      "value_id": "4",
+      "caption": "Altitude",
+      "data_type": "I",
+      "value": "150",
+      "raw_value": "150",
+      "upper_value": null
+    }],
+    ...
+  }
+}
+</code></pre>
+TXT;
+$lang['GET surveys/{id}']['verbose'] = $lang['GET surveys']['verbose'];
+$lang['GET taxon-observations'] = [];
+$lang['GET taxon-observations']['proj_id'] = <<<TXT
 Required when authenticated using a client system. Identifier for the project that contains the
 observations the client is requesting.
 TXT;
-$lang['taxon-observations']['filter_id'] = <<<TXT
+$lang['GET taxon-observations']['filter_id'] = <<<TXT
 Optional when authenticated as a warehouse user. Must point to the ID of a filter in the filters
 table which has defines_permissions set to true and is linked to the authenticated user. When used,
 switches the set of records that are accessible from those created by the current user to the set
 of records identified by the filter.
 TXT;
-$lang['taxon-observations']['page'] = <<<TXT
+$lang['GET taxon-observations']['page'] = <<<TXT
 The page of records to retrieve when there are more records available than page_size. The first
 page is page 1. Defaults to 1 if not provided.
 TXT;
-$lang['taxon-observations']['page_size'] = <<<TXT
+$lang['GET taxon-observations']['page_size'] = <<<TXT
 The maximum number of records to retrieve. Defaults to 100 if not provided.
 TXT;
-$lang['taxon-observations']['edited_date_from'] = <<<TXT
+$lang['GET taxon-observations']['edited_date_from'] = <<<TXT
 Restricts the records to those created or edited on or after the date provided. Format yyyy-mm-dd.
 TXT;
-$lang['taxon-observations']['edited_date_to'] = <<<TXT
+$lang['GET taxon-observations']['edited_date_to'] = <<<TXT
 Restricts the records to those created or edited on or before the date provided. Format yyyy-mm-dd.
 TXT;
-$lang['annotations'] = [];
-$lang['annotations']['proj_id'] = <<<TXT
+$lang['GET taxon-observations/{id}']['proj_id'] = $lang['GET taxon-observations']['proj_id'];
+$lang['GET taxon-observations/{id}']['filter_id'] = $lang['GET taxon-observations']['filter_id'];
+$lang['GET annotations'] = [];
+$lang['GET annotations']['proj_id'] = <<<TXT
 Required when authenticated using a client system. Identifier for the project that contains the
 observations the client is requesting.
 TXT;
-$lang['annotations']['filter_id'] = <<<TXT
+$lang['GET annotations']['filter_id'] = <<<TXT
 Optional when authenticated as a warehouse user. Must point to the ID of a filter in the filters
 table which has defines_permissions set to true and is linked to the authenticated user. When used,
 switches the set of records that are accessible from those created by the current user to the set
 of records identified by the filter.
 TXT;
-$lang['annotations']['page'] = <<<TXT
+$lang['GET annotations']['page'] = <<<TXT
 The page of records to retrieve when there are more records available than page_size. The first
 page is page 1. Defaults to 1 if not provided.
 TXT;
-$lang['annotations']['page_size'] = <<<TXT
+$lang['GET annotations']['page_size'] = <<<TXT
 The maximum number of records to retrieve. Defaults to 100 if not provided.
 TXT;
-$lang['annotations']['edited_date_from'] = <<<TXT
+$lang['GET annotations']['edited_date_from'] = <<<TXT
 Restricts the annotations to those created or edited on or after the date provided. Format
 yyyy-mm-dd.
 TXT;
-$lang['annotations']['edited_date_to'] = <<<TXT
+$lang['GET annotations']['edited_date_to'] = <<<TXT
 Restricts the annotations to those created or edited on or before the date provided. Format
 yyyy-mm-dd.
 TXT;
-$lang['taxa'] = [];
-$lang['taxa']['taxon_list_id'] = 'ID or list o IDs of taxon list to search against.';
-$lang['taxa']['searchQuery'] = <<<TXT
+$lang['GET annotations/{id}']['proj_id'] = <<<TXT
+Required when authenticated using a client system. Identifier for the project that contains the
+observations the client is requesting.
+TXT;
+$lang['GET annotations/{id}']['filter_id'] = <<<TXT
+Optional when authenticated as a warehouse user. Must point to the ID of a filter in the filters
+table which has defines_permissions set to true and is linked to the authenticated user. When used,
+switches the set of records that are accessible from those created by the current user to the set
+of records identified by the filter.
+TXT;
+$lang['GET locations']['verbose'] = <<<TXT
+Add &verbose to the URL to retrieve attribute values as an array with additional information
+including the attribute ID, caption, data type, value ID and raw value information as shown in the
+following example response (shortened):
+<pre><code>
+200 OK
+{
+  "values": {
+    "id": "3",
+    ...
+    "locAttr:1": [{
+      "attribute_id": "1",
+      "value_id": "4",
+      "caption": "Count",
+      "data_type": "I",
+      "value": "4 - 6",
+      "raw_value": "4",
+      "upper_value": 6
+    }],
+    ...
+  }
+}
+</code></pre>
+TXT;
+$lang['GET locations/{id}']['verbose'] = $lang['GET locations']['verbose'];
+$lang['GET taxa/search'] = [];
+$lang['GET taxa/search']['taxon_list_id'] = 'ID or list o IDs of taxon list to search against.';
+$lang['GET taxa/search']['searchQuery'] = <<<TXT
 Search text which will be used to look up species and taxon names.
 TXT;
-$lang['taxa']['taxon_group_id'] = 'ID or array of IDs of taxon groups to limit the search to.';
-$lang['taxa']['taxon_group'] = <<<TXT
+$lang['GET taxa/search']['taxon_group_id'] = 'ID or array of IDs of taxon groups to limit the search to.';
+$lang['GET taxa/search']['taxon_group'] = <<<TXT
 Taxon group name or array of taxon group names to limit the search to, an alternative to using
 taxon_group_id.
 TXT;
-$lang['taxa']['taxon_meaning_id'] = 'ID or array of IDs of taxon meanings to limit the search to.';
-$lang['taxa']['taxa_taxon_list_id'] = <<<TXT
+$lang['GET taxa/search']['scratchpad_list_id'] = <<<TXT
+ID of a taxa_taxon_list related scratchpad list to limit the search to.
+TXT;
+$lang['GET taxa/search']['taxon_meaning_id'] = 'ID or array of IDs of taxon meanings to limit the search to.';
+$lang['GET taxa/search']['taxa_taxon_list_id'] = <<<TXT
 ID or array of IDs of taxa taxon list records to limit the search to.
 TXT;
-$lang['taxa']['preferred_taxa_taxon_list_id'] = <<<TXT
+$lang['GET taxa/search']['preferred_taxa_taxon_list_id'] = <<<TXT
 ID or array of IDs of taxa taxon list records to limit the search to, using the preferred name's ID
 to filter against, therefore including synonyms and common names in the search.
 TXT;
-$lang['taxa']['preferred_taxon'] = <<<TXT
+$lang['GET taxa/search']['preferred_taxon'] = <<<TXT
 Preferred taxon name or array of preferred names to limit the search to (e.g. limit to a list of
 species names). Exact matches required.
 TXT;
-$lang['taxa']['external_key'] = <<<TXT
+$lang['GET taxa/search']['external_key'] = <<<TXT
 External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).
 TXT;
-$lang['taxa']['parent_id'] = <<<TXT
+$lang['GET taxa/search']['parent_id'] = <<<TXT
 ID of a taxa_taxon_list record limit the search to children of, e.g. a species when searching the
 subspecies. May be set to null to force top level species only.
 TXT;
-$lang['taxa']['language'] = <<<TXT
+$lang['GET taxa/search']['language'] = <<<TXT
 Languages of names to include in search results. Pass a 3 character iso code for the language, e.g.
 "lat" for Latin names or "eng" for English names. Alternatively set this to "common" to filter for
 all common names (i.e. non-Latin names).
 TXT;
-$lang['taxa']['preferred'] = <<<TXT
+$lang['GET taxa/search']['preferred'] = <<<TXT
 Set to true to limit to preferred names, false to limit to non-preferred names.
 TXT;
-$lang['taxa']['commonNames'] = <<<TXT
+$lang['GET taxa/search']['commonNames'] = <<<TXT
 Set to true to limit to common names, false to exclude common names.
 TXT;
-$lang['taxa']['synonyms'] = 'Set to true to limit to syonyms, false to exclude synonyms.';
-$lang['taxa']['abbreviations'] = <<<TXT
+$lang['GET taxa/search']['synonyms'] = 'Set to true to limit to syonyms, false to exclude synonyms.';
+$lang['GET taxa/search']['abbreviations'] = <<<TXT
 Set to false to disable searching 2+3 character species name abbreviations.
 TXT;
-$lang['taxa']['marine_flag'] = <<<TXT
+$lang['GET taxa/search']['marine_flag'] = <<<TXT
 Set to true for only marine associated species, false to exclude marine-associated species.
 TXT;
-$lang['taxa']['searchAuthors'] = 'Set to true to include author strings in the searched text.';
-$lang['taxa']['wholeWords'] = <<<TXT
+$lang['GET taxa/search']['freshwater_flag'] = <<<TXT
+Set to true for only freshwater associated species, false to exclude freshwater-associated species.
+TXT;
+$lang['GET taxa/search']['terrestrial_flag'] = <<<TXT
+Set to true for only terrestrial associated species, false to exclude terrestrial-associated species.
+TXT;
+$lang['GET taxa/search']['non_native_flag'] = <<<TXT
+Set to true for only non-native species, false to exclude non-native species.
+TXT;
+$lang['GET taxa/search']['searchAuthors'] = 'Set to true to include author strings in the searched text.';
+$lang['GET taxa/search']['wholeWords'] = <<<TXT
 Set to true to only search whole words in the full text index, otherwise searches the start of
 words.
 TXT;
-$lang['taxa']['min_taxon_rank_sort_order'] = <<<TXT
+$lang['GET taxa/search']['min_taxon_rank_sort_order'] = <<<TXT
 Set to the minimum sort order of the taxon ranks to include in the results.
 TXT;
-$lang['taxa']['max_taxon_rank_sort_order'] = <<<TXT
+$lang['GET taxa/search']['max_taxon_rank_sort_order'] = <<<TXT
 Set to the maximum sort order of the taxon ranks to include in the results.
 TXT;
-$lang['taxa']['limit'] = 'Limit the number of records in the response.';
-$lang['taxa']['offset'] = 'Offset from the start of the dataset that the response will start.';
-$lang['taxa']['include'] = <<<TXT
+$lang['GET taxa/search']['limit'] = 'Limit the number of records in the response.';
+$lang['GET taxa/search']['offset'] = 'Offset from the start of the dataset that the response will start.';
+$lang['GET taxa/search']['include'] = <<<TXT
 Defines which parts of the response structure to include. If the count and paging data are not
 required then exclude them for better performance.
 TXT;
-$lang['reports'] = [];
+
 $lang['reports']['featured_folder_description'] = <<<TXT
 Provides a list of well maintained reports which are recommended as a starting point when exploring
 the library of reports.
 TXT;
-$lang['reports']['filter_id'] = <<<TXT
+$lang['GET reports/{path}/{file-xml}'] = [];
+$lang['GET reports/{path}/{file-xml}']['filter_id'] = <<<TXT
 Optional when authenticated as a warehouse user. Must point to the ID of a filter in the filters
 table which has defines_permissions set to true and is linked to the authenticated user. When used,
 switches the set of records that are accessible from those created by the current user to the set
 of records identified by the filter.
 TXT;
-$lang['reports']['limit'] = 'Limit the number of records in the response.';
-$lang['reports']['offset'] = 'Offset from the start of the dataset that the response will start.';
-$lang['reports']['sortby'] = <<<TXT
+$lang['GET reports/{path}/{file-xml}']['limit'] = 'Limit the number of records in the response.';
+$lang['GET reports/{path}/{file-xml}']['offset'] = 'Offset from the start of the dataset that the response will start.';
+$lang['GET reports/{path}/{file-xml}']['sortby'] = <<<TXT
 The field to sort by. Must be compatible with the SQL generated for the report.
 TXT;
-$lang['reports']['sortdir'] = 'Direction of sort, ASC or DESC';
-$lang['reports']['columns'] = <<<TXT
+$lang['GET reports/{path}/{file-xml}']['sortdir'] = 'Direction of sort, ASC or DESC';
+$lang['GET reports/{path}/{file-xml}']['columns'] = <<<TXT
 Comma separated list of column fieldnames to include in the report output. Default is all
 available in the report.
 TXT;
-$lang['reports']['cached'] = <<<TXT
+$lang['GET reports/{path}/{file-xml}']['cached'] = <<<TXT
 Set to true to enable server side caching of the report output. Repeated requests with for the same
 report and parameters will be fast but data will not be fully up to date.
 TXT;
-$lang['reports']['{report parameter}'] = <<<TXT
+$lang['GET reports/{path}/{file-xml}']['{report parameter}'] = <<<TXT
 Supply report parameter values for filtering as defined by the report /params resource.
 TXT;
-$lang['reports/{report_path}.xml/params'] = [];
-$lang['reports/{report_path}.xml/columns'] = [];
+$lang['GET reports/{path}/{file-xml}/{path}/{file-xml}/params'] = [];
+$lang['GET reports/{path}/{file-xml}/{path}/{file-xml}/columns'] = [];

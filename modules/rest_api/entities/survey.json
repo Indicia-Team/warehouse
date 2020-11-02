@@ -11,5 +11,6 @@
     { "sql": "parent_id", "type": "integer" },
     { "sql": "core_validation_rules", "type": "string" }
   ],
-  "attributes": true
+  "attributes": true,
+  "attributePrefix": "srv"
 }
