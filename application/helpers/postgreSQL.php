@@ -552,6 +552,7 @@ SQL;
     self::assert(!empty($options['taxon_list_id']) || !empty($options['taxa_taxon_list_id']),
         'taxonSearchQuery requires a taxon_list_id or taxa_taxa_list_id option.');
     self::integerListOption($options, 'taxon_list_id');
+    self::integerListOption($options, 'scratchpad_list_id');
     self::integerListOption($options, 'taxon_group_id');
     self::stringListOption($options, 'taxon_group');
     self::integerListOption($options, 'taxon_meaning_id');
@@ -629,13 +630,17 @@ SQL;
   private static function taxonSearchGetQueryContextFilter(array $options) {
     $filters = [];
     $params = [
-      'taxon_list_id', 'taxon_group_id', 'taxon_group', 'taxon_meaning_id', 'taxa_taxon_list_id',
-      'preferred_taxa_taxon_list_id', 'exclude_taxon_meaning_id', 'exclude_taxa_taxon_list_id',
+      'taxon_list_id', 'scratchpad_list_id', 'taxon_group_id', 'taxon_group', 'taxon_meaning_id',
+      'taxa_taxon_list_id', 'preferred_taxa_taxon_list_id', 'exclude_taxon_meaning_id', 'exclude_taxa_taxon_list_id',
       'exclude_preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'parent_id',
     ];
     foreach ($params as $param) {
       if (!empty($options[$param])) {
-        if ($options[$param] === 'null') {
+        if ($param === 'scratchpad_list_id') {
+          $filters[] = 'cts.taxa_taxon_list_id in ' .
+            '(select entry_id from scratchpad_list_entries where scratchpad_list_id=' . $options[$param] . ')';
+        }
+        elseif ($options[$param] === 'null') {
           $filters[] = "cts.$param is null";
         }
         else {
@@ -948,6 +953,8 @@ SQL;
    *   * taxon_list_id - required unless filtering by a specific list of
    *     taxa_Taxon_lists_ids. ID of the taxon list or an array of list IDs
    *     to search.
+   *   * scratchpad_list_id - ID of a scratchpad list containing the names to
+   *     filter to within the list identified by taxon_list_id.
    *   * searchQuery - text to search for.
    *   * taxon_group_id - ID or array of IDs of taxon groups to limit the
    *     search to.

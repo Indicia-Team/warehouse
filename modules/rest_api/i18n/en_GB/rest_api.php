@@ -605,6 +605,9 @@ $lang['GET taxa/search']['taxon_group'] = <<<TXT
 Taxon group name or array of taxon group names to limit the search to, an alternative to using
 taxon_group_id.
 TXT;
+$lang['GET taxa/search']['scratchpad_list_id'] = <<<TXT
+ID of a taxa_taxon_list related scratchpad list to limit the search to.
+TXT;
 $lang['GET taxa/search']['taxon_meaning_id'] = 'ID or array of IDs of taxon meanings to limit the search to.';
 $lang['GET taxa/search']['taxa_taxon_list_id'] = <<<TXT
 ID or array of IDs of taxa taxon list records to limit the search to.

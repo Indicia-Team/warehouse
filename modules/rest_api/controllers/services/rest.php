@@ -576,6 +576,9 @@ class Rest_Controller extends Controller {
             'taxon_group_id' => [
               'datatype' => 'integer[]',
             ],
+            'scratchpad_list_id' => [
+              'datatype' => 'integer[]',
+            ],
             'taxon_group' => [
               'datatype' => 'text[]',
             ],
