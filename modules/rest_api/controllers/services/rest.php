@@ -4902,6 +4902,8 @@ SQL;
             'Error occurred creating new termlist: ' . implode("\n", $termlist->getAllErrors()));
     }
     $item['values']['termlist_id'] = $termlist->id;
+    // Also add the terms.
+    $this->updateAttributeTermlist($item);
   }
 
   /**
