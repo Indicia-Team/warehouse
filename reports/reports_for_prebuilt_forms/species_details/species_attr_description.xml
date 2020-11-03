@@ -13,7 +13,7 @@ FROM (
       subcat_l.sort_order as subcatsort,
       COALESCE(subcat_l.term, subcat.term) as subcategory,
       -- The source_id field holds the language term but only on comment fields. If this is null or the correct language then show the field, else we know it is wrong language so do not display
-      CASE WHEN '#include_captions#' = '1' AND (cat_source_lang.term = '#language#' or cat_source_lang.id IS NULL)
+      CASE WHEN '#include_captions#' = '1' AND (cat_source_lang.term = '#language#' or cat_source_lang.term = 'trn' or cat_source_lang.id IS NULL)
       	-- Also don't show captions for any journal based fields. The exception to this is the "pages"/"Page" captions which we will then remove with 
       	-- jQuery leaving only the comma behind
       	AND a.id not in (select id from indicia.taxa_taxon_list_attributes where reporting_category_id in (982,1038,1041,1044,1047) and caption not like '%Seiten%')
@@ -40,7 +40,7 @@ FROM (
               WHEN av.text_value LIKE '#%' THEN '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || av.text_value || '"&gt; &lt;/span&gt;'
               -- any other value.
               -- The source_id field holds the language term but only on comment fields. If this is null or the correct language then show the field, else we know it is wrong language so do not display
-              WHEN cat_source_lang.term = '#language#' or cat_source_lang.id IS NULL THEN '&lt;span class="text-translate"&gt;' || av.text_value || '&lt;/span&gt;'
+              WHEN cat_source_lang.term = '#language#' or cat_source_lang.term = 'trn' or cat_source_lang.id IS NULL THEN '&lt;span class="text-translate"&gt;' || av.text_value || '&lt;/span&gt;'
               ELSE ''
             END
           WHEN 'L'::bpchar THEN COALESCE(t_l.term::text, t.term::text)
