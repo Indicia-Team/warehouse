@@ -4643,11 +4643,16 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Check that authenticated user has admin access to the authenticated website.
+   * Website permissions check.
    *
-   * E.g. before CRUD operation on a privileged resource.
+   * Check that authenticated user has admin or edit access to the
+   * authenticated website, e.g. before CRUD operation on a privileged
+   * resource.
+   *
+   * @param int $level
+   *   Level required (1 = user, 2 = editor, 3 = admin). Default 2.
    */
-  private function assertUserHasWebsiteAdminAccess() {
+  private function assertUserHasWebsiteAccess($level = 2) {
     if (empty(RestObjects::$clientUserId)) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown.');
     }
@@ -4656,7 +4661,7 @@ class Rest_Controller extends Controller {
     $sql = <<<SQL
 SELECT u.id, u.core_role_id, uw.site_role_id
 FROM users u
-LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=$websiteId and uw.site_role_id=3
+LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=$websiteId and uw.site_role_id>=$level
 WHERE u.id=$userId;
 SQL;
     $user = RestObjects::$db->query($sql)->current();
@@ -4723,7 +4728,7 @@ SQL;
    * API end-point to POST a survey to create.
    */
   public function surveysPost() {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $post = file_get_contents('php://input');
     $item = json_decode($post, TRUE);
     // Autofill website ID.
@@ -4740,7 +4745,7 @@ SQL;
    * API end-point to PUT to an existing survey to update.
    */
   public function surveysPutId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('surveys', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
@@ -4757,7 +4762,7 @@ SQL;
    *   Survey ID to delete.
    */
   public function surveysDeleteId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('surveys', $id);
     // Delete - no need to check user as admin of website.
     rest_crud::delete('survey', $id);
@@ -4842,7 +4847,7 @@ SQL;
    * API end-point to POST a sample_attribute to create.
    */
   public function sampleAttributesPost() {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $post = file_get_contents('php://input');
     $item = json_decode($post, TRUE);
     // Autofill website ID.
@@ -4862,7 +4867,7 @@ SQL;
    * API end-point to PUT to an existing sample attribute to update.
    */
   public function sampleAttributesPutId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertAttributeFromCurrentWebsite('sample_attributes', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
@@ -4897,6 +4902,8 @@ SQL;
             'Error occurred creating new termlist: ' . implode("\n", $termlist->getAllErrors()));
     }
     $item['values']['termlist_id'] = $termlist->id;
+    // Also add the terms.
+    $this->updateAttributeTermlist($item);
   }
 
   /**
@@ -4979,7 +4986,7 @@ SQL;
    *   Survey ID to delete.
    */
   public function sampleAttributesDeleteId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertAttributeFromCurrentWebsite('sample_attributes', $id);
     $this->assertAttributeHasNoValues('sample_attributes', $id);
     // Delete - no need to check user as admin of website.
@@ -5009,7 +5016,7 @@ SQL;
    * API end-point to POST a sample attributes website to create.
    */
   public function sampleAttributesWebsitesPost() {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $post = file_get_contents('php://input');
     $postArray = json_decode($post, TRUE);
     // Autofill website ID.
@@ -5042,7 +5049,7 @@ SQL;
    * API end-point to PUT to an existing sample attributes website to update.
    */
   public function sampleAttributesWebsitesPutId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('sample_attributes_website', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
@@ -5059,7 +5066,7 @@ SQL;
    *   Survey ID to delete.
    */
   public function sampleAttributesWebsitesDeleteId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('sample_attributes_website', $id);
     rest_crud::delete('sample_attributes_website', $id);
   }
@@ -5085,7 +5092,7 @@ SQL;
    * API end-point to POST a occurrence_attribute to create.
    */
   public function occurrenceAttributesPost() {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $post = file_get_contents('php://input');
     $item = json_decode($post, TRUE);
     // Autofill website ID.
@@ -5105,7 +5112,7 @@ SQL;
    * API end-point to PUT to an existing occurrence attribute to update.
    */
   public function occurrenceAttributesPutId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertAttributeFromCurrentWebsite('occurrence_attributes', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
@@ -5129,7 +5136,7 @@ SQL;
    *   Survey ID to delete.
    */
   public function occurrenceAttributesDeleteId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertAttributeFromCurrentWebsite('occurrence_attributes', $id);
     $this->assertAttributeHasNoValues('occurrence_attributes', $id);
     // Delete - no need to check user as admin of website.
@@ -5159,7 +5166,7 @@ SQL;
    * API end-point to POST a occurrence attributes website to create.
    */
   public function occurrenceAttributesWebsitesPost() {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $post = file_get_contents('php://input');
     $postArray = json_decode($post, TRUE);
     // Autofill website ID.
@@ -5192,7 +5199,7 @@ SQL;
    * API end-point to PUT to an existing occurrence attributes website to update.
    */
   public function occurrenceAttributesWebsitesPutId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
@@ -5209,7 +5216,7 @@ SQL;
    *   Survey ID to delete.
    */
   public function occurrenceAttributesWebsitesDeleteId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
     rest_crud::delete('occurrence_attributes_website', $id);
   }
