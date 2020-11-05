@@ -286,9 +286,8 @@ SQL;
       header("ETag: $row[xmin]");
       unset($row['xmin']);
       if (!empty(self::$entityConfig[$entity]->attributes)) {
-        // @todo Support for multi-value attributes.
         $qry = <<<SQL
-SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type,
+SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type, a.multi_value,
   CASE a.data_type
     WHEN 'T'::bpchar THEN av.text_value
     WHEN 'L'::bpchar THEN t.term::text
@@ -330,9 +329,16 @@ SQL;
         $attrValues = RestObjects::$db->query($qry);
         $attrs = [];
         foreach ($attrValues as $attr) {
-          // @Todo test
           $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
-          $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
+          if ($attr->multi_value === 't') {
+            if (!isset($attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"])) {
+              $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = [];
+            }
+            $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"][] = $val;
+          }
+          else {
+            $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
+          }
         }
         $row = array_merge((array) $row, $attrs);
       }
