@@ -1218,7 +1218,7 @@ class Rest_Controller extends Controller {
     if ($cached = $cache->get($cacheId)) {
       return explode(',', $cached);
     }
-    $qry = $this->db->select('to_website_id')
+    $qry = RestObjects::$db->select('to_website_id')
       ->from('index_websites_website_agreements')
       ->where([
         "receive_for_$sharing" => 't',
@@ -1684,10 +1684,14 @@ class Rest_Controller extends Controller {
         if ($format === 'csv') {
           $file['done'] = $file['done'] + count($itemList);
         }
-        // Composite aggregation has to run till we get an empty response.
         $data = json_decode($response, TRUE);
-        $list = $data['aggregations']['_rows']['buckets'];
-        $done = count($list) === 0;
+        // If we know the total, use that to set done state, otherwise wait for empty response.
+        if (isset($file['total'])) {
+          $done = $file['done'] >= $file['total'];
+        }
+        else {
+          $done = count($data['aggregations']['_rows']['buckets']) === 0;
+        }
         if (empty($data['aggregations']['_rows']['after_key'])) {
           unset($file['after_key']);
         }
