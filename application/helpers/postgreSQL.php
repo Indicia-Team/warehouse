@@ -315,7 +315,7 @@ SQL;
    *   ORM type name for the values in the array.
    */
   private static function getArraySubtype($udtName) {
-    if ($udtName === '_varchar') {
+    if ($udtName === '_varchar' || $udtName === '_bpchar') {
       return 'string';
     }
     elseif (substr($udtName, 0, 4) === '_int') {
@@ -323,7 +323,7 @@ SQL;
     }
     else {
       // This could of course be extended to support new types.
-      throw new exception('Unsupported array field sub-type');
+      throw new exception('Unsupported array field sub-type ' . $udtName);
     }
   }
 
