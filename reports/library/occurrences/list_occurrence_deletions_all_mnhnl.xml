@@ -1,8 +1,7 @@
 <report
-    title="Delete occurrences list (no website limit)"
+    title="Delete occurrences list (no website limit, MNHNL)"
     description="A list of occurrences IDs that have been deleted.
       No website limit so designed to collect records from all website registrations."
-    restricted="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          count_field="o.*">
