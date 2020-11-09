@@ -102,15 +102,15 @@
     <column name="map_sq_srid" sql="COALESCE(get_output_srid(o.public_geom), 3857)" datatype="integer" />
     <column name="map_sq_1km" sql="CASE
       WHEN onf.sensitivity_precision > 1000 THEN NULL
-      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(o.public_geom, false, 1000), 4326)))))
+      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(o.public_geom), false, 1000), 4326)))))
     END" datatype="text" />
     <column name="map_sq_2km" sql="CASE
       WHEN onf.sensitivity_precision > 2000 THEN NULL
-      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(o.public_geom, false, 2000), 4326)))))
+      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(o.public_geom), false, 2000), 4326)))))
     END" datatype="text" />
     <column name="map_sq_10km" sql="CASE
       WHEN onf.sensitivity_precision > 10000 THEN NULL
-      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(o.public_geom, false, 10000), 4326)))))
+      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(o.public_geom), false, 10000), 4326)))))
     END" datatype="text" />
     <column name="input_sref" sql="COALESCE(snf.public_entered_sref, onf.output_sref)" datatype="text" />
     <column name="input_sref_system" sql="CASE WHEN snf.public_entered_sref IS NULL THEN onf.output_sref_system ELSE snf.entered_sref_system END" datatype="text" />
