@@ -26,7 +26,7 @@ BEGIN
     END IF;
     -- If lower precision than requested, then can return as it is.
     -- If same precision allowing for rounding errors, then re-calculate to ensure
-    -- all square geoms are consistent.
+    -- all square geoms are consistent for aggregation purposes.
     IF floor(sqrt(st_area(geom))) > precisionM THEN
       r = geom_in;
     ELSE
