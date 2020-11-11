@@ -23,7 +23,7 @@ defined('SYSPATH') or die('No direct script access.');
 
 class task_summary_builder_sample {
 
-  public const BATCH_SIZE = 200;
+  public const BATCH_SIZE = 1000;
 
   /**
    * Perform the processing for a task batch found in the queue.
