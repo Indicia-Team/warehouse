@@ -35,6 +35,11 @@ class rest_crud {
   private static $entityConfig = [];
 
   /**
+   *
+   */
+  private static $fieldDefs;
+
+  /**
    * Create (POST) operation.
    *
    * @param string $entity
@@ -52,8 +57,8 @@ class rest_crud {
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Cannot POST with id to update, use PUT instead.']));
     }
     $obj = ORM::factory($entity);
-    if (in_array($entity, ['occurrence', 'sample']) && !empty($values['external_key'])) {
-      self::checkDuplicateExternalKey($entity, $values);
+    if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
+      self::checkDuplicateFields($entity, $values);
     }
     return self::submit($entity, $obj, $data);
   }
@@ -76,6 +81,28 @@ class rest_crud {
   }
 
   /**
+   * Retrieves a list of definitions for fields required by a GET request.
+   *
+   * @param string $entity
+   *   Entity name.
+   *
+   * @return array
+   *   List of SQL field definitions keyed by field name.
+   */
+  private static function loadFieldDefs($entity) {
+    if (empty(self::$fieldDefs)) {
+      self::getFieldDefsForOneTable(self::$entityConfig[$entity]->fields, 't1');
+      if (!empty(self::$entityConfig[$entity]->joins)) {
+        foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
+          // Joined table alias starts at 2.
+          $alias = 't' . ($idx + 2);
+          self::getFieldDefsForOneTable($joinDef->fields, $alias);
+        }
+      }
+    }
+  }
+
+  /**
    * Gets the list of SQL field strings for one table in a query.
    *
    * @param array $fields
@@ -91,9 +118,16 @@ class rest_crud {
     foreach ($fields as $fieldDef) {
       // If field SQL is a simple fieldname we can alias it to the table.
       $fieldSql = preg_match('/^[a-z_]+$/', $fieldDef->sql) ? "$alias.$fieldDef->sql" : $fieldDef->sql;
+      // Arrays can be json formatted.
+      if (!empty($fieldDef->array)) {
+        $fieldSql = 'array_to_json(' . $fieldSql . ')';
+      }
       // Add named alias if required.
       if (!empty($fieldDef->name)) {
         $fieldSql .= " AS $fieldDef->name";
+      }
+      elseif (!empty($fieldDef->array)) {
+        $fieldSql .= " AS $fieldDef->sql";
       }
       $list[] = $fieldSql;
     }
@@ -127,7 +161,7 @@ class rest_crud {
   private static function getSqlJoins($entity) {
     $list = [];
     if (!empty(self::$entityConfig[$entity]->joins)) {
-      foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
+      foreach (self::$entityConfig[$entity]->joins as $joinDef) {
         $list[] = $joinDef->sql;
       }
     }
@@ -146,40 +180,13 @@ class rest_crud {
    *   List of SQL field definitions containing information required to filter,
    *   keyed by field name.
    */
-  private static function getFilterFieldsForOneTable($fields, $alias) {
-    $list = [];
+  private static function getFieldDefsForOneTable($fields, $alias) {
     foreach ($fields as $fieldDef) {
       // If field SQL is a simple fieldname we can alias it to the table.
       $fieldSql = preg_match('/^[a-z_]+$/', $fieldDef->sql) ? "$alias.$fieldDef->sql" : $fieldDef->sql;
       $fieldName = empty($fieldDef->name) ? $fieldDef->sql : $fieldDef->name;
-      $list[$fieldName] = [
-        'sql' => $fieldSql,
-        'type' => $fieldDef->type,
-      ];
+      self::$fieldDefs[$fieldName] = array_merge((array) $fieldDef, ['sql' => $fieldSql]);
     }
-    return $list;
-  }
-
-  /**
-   * Gets the SQL field definitions for filtering against any table in a query.
-   *
-   * @param string $entity
-   *   Entity name.
-   *
-   * @return array
-   *   List of SQL field definitions containing information required to filter,
-   *   keyed by field name.
-   */
-  private static function getAvailableFilterFields($entity) {
-    $list = self::getFilterFieldsForOneTable(self::$entityConfig[$entity]->fields, 't1');
-    if (!empty(self::$entityConfig[$entity]->joins)) {
-      foreach (self::$entityConfig[$entity]->joins as $idx => $joinDef) {
-        // Joined table alias starts at 2.
-        $alias = 't' . ($idx + 2);
-        $list = array_merge($list, self::getFilterFieldsForOneTable($joinDef->fields, $alias));
-      }
-    }
-    return $list;
   }
 
   /**
@@ -199,18 +206,18 @@ class rest_crud {
   private static function getReadSql($entity, $extraFilter, $userFilter) {
     $table = inflector::plural($entity);
     self::loadEntityConfig($entity);
+    self::loadFieldDefs($entity);
     $fields = self::getSqlFields($entity);
     $joins = self::getSqlJoins($entity);
     $createdByFilter = $userFilter ? 'AND t1.created_by_id=' . RestObjects::$clientUserId : '';
     if (!empty($_GET)) {
       // Apply query string parameters.
-      $availableFilterFields = self::getAvailableFilterFields($entity);
       foreach ($_GET as $param => $value) {
-        if (isset($availableFilterFields[$param])) {
-          if (in_array($availableFilterFields[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
+        if (isset(self::$fieldDefs[$param])) {
+          if (in_array(self::$fieldDefs[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
             $value = pg_escape_literal($value);
           }
-          elseif (in_array($availableFilterFields[$param]['type'], ['integer', 'float'])) {
+          elseif (in_array(self::$fieldDefs[$param]['type'], ['integer', 'float'])) {
             if (!is_numeric($value)) {
               RestObjects::$apiResponse->fail('Bad Request', 400, "Invalid filter on numeric field $param");
             }
@@ -218,7 +225,7 @@ class rest_crud {
           else {
             RestObjects::$apiResponse->fail('Internal Server Error', 400, "Unsupported field type for $param");
           }
-          $extraFilter .= "\nAND " . $availableFilterFields[$param]['sql'] . "=$value";
+          $extraFilter .= "\nAND " . self::$fieldDefs[$param]['sql'] . "=$value";
         }
       }
     }
@@ -273,15 +280,14 @@ SQL;
   public static function read($entity, $id, $extraFilter = '', $userFilter = TRUE) {
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $qry .= "AND t1.id=$id";
-    $row = RestObjects::$db->query($qry)->current();
+    $row = RestObjects::$db->query($qry)->result(FALSE)->current();
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
-      header("ETag: $row->xmin");
-      unset($row->xmin);
+      header("ETag: $row[xmin]");
+      unset($row['xmin']);
       if (!empty(self::$entityConfig[$entity]->attributes)) {
-        // @todo Support for multi-value attributes.
         $qry = <<<SQL
-SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type,
+SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type, a.multi_value,
   CASE a.data_type
     WHEN 'T'::bpchar THEN av.text_value
     WHEN 'L'::bpchar THEN t.term::text
@@ -323,13 +329,20 @@ SQL;
         $attrValues = RestObjects::$db->query($qry);
         $attrs = [];
         foreach ($attrValues as $attr) {
-          // @Todo test
           $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
-          $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
+          if ($attr->multi_value === 't') {
+            if (!isset($attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"])) {
+              $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = [];
+            }
+            $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"][] = $val;
+          }
+          else {
+            $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
+          }
         }
         $row = array_merge((array) $row, $attrs);
       }
-      RestObjects::$apiResponse->succeed(['values' => self::getValuesForResponse($row)]);
+      RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
     }
     else {
       RestObjects::$apiResponse->fail('Not found', 404);
@@ -357,10 +370,10 @@ SQL;
     }
     $obj = ORM::factory($entity, $id);
     self::checkETags($entity, $id);
-    if (!empty($values['external_key']) && (string) $values['external_key'] !== $obj->external_key) {
-      self::checkDuplicateExternalKey($entity, array_merge($obj->as_array(), $values));
+    if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
+      self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values));
     }
-    if ($obj->created_by_id !== RestObjects::$clientUserId) {
+    if ($obj->created_by_id != RestObjects::$clientUserId) {
       RestObjects::$apiResponse->fail('Not Found', 404);
     }
     // Keep existing values unless replaced by PUT data.
@@ -402,6 +415,36 @@ SQL;
     } else {
       RestObjects::$apiResponse->fail('Not found', 404);
     }
+  }
+
+  /**
+   * For some entities, include extra data in the GET response.
+   *
+   * An example is lookup terms which are included in the response for
+   * attributes. Extra data can be defined in the entity json config files,
+   * e.g. see sample_attribute.json.
+   *
+   * @param string $entity
+   *   Entity name.
+   * @param array $row
+   *   Attribute data from database.
+   *
+   * @return array
+   *   List of key/value pairs to include in the response.
+   */
+  private static function getExtraData($entity, array $row) {
+    $extraData = [];
+    if (!empty(self::$entityConfig[$entity]->extras)) {
+      // Attach extra information to the GET response such as termlist terms.
+      foreach (self::$entityConfig[$entity]->extras as $name => $extraCfg) {
+        // If parameter field filled in, use it to run the query to get extra data.
+        if (!empty($row[$extraCfg->parameter])) {
+          $sql = str_replace("{{ $extraCfg->parameter }}", $row[$extraCfg->parameter], $extraCfg->sql);
+          $extraData[$name] = json_decode(RestObjects::$db->query($sql)->current()->extra);
+        }
+      }
+    }
+    return $extraData;
   }
 
   private static function includeSubmodels($entity, array $postObj, $websiteId, &$s) {
@@ -471,31 +514,33 @@ SQL;
   }
 
   /**
-   * Fails if there is existing record with same external key.
+   * Fails if there is an existing record.
    *
-   * @param int $survey_id
-   *   ID of survey dataset.
+   * Duplicate check uses fields defined in entity's duplicateCheckFields
+   * setting.
+   *
+   * @param int $entity
+   *   Entity name.
    * @param array $values
-   *   VAalues, including the external_key.
+   *   Values for the record being checked.
    */
-  private static function checkDuplicateExternalKey($entity, $values) {
+  private static function checkDuplicateFields($entity, $values) {
     $table = inflector::plural($entity);
-    // Sample external key only needs to be unique within survey.
-    // @todo Same for occurrences.
-    switch ($entity) {
-      case 'sample':
-        $extraFilter = " and survey_id=$values[survey_id]";
-        break;
-
-      case 'occurrence':
-        $extraFilter = " and website_id=$values[website_id]";
-        break;
-
-      default:
-        $extraFilter = '';
+    $filters = [];
+    // If we are updating, then don't match the same record.
+    if (!empty($values['id'])) {
+      $filters[] = "id<>$values[id]";
+    }
+    foreach (self::$entityConfig[$entity]->duplicateCheckFields as $field) {
+      if (empty($values[$field])) {
+        // No need for check if some duplicate check values missing.
+        return;
+      }
+      $value = $values[$field];
+      $filters[] = "$field='$value'";
     }
     $hit = RestObjects::$db
-      ->query("select id from $table where external_key='$values[external_key]'$extraFilter")
+      ->query("select id from $table where " . implode(' and ', $filters))
       ->current();
     if ($hit) {
       $href = url::base() . "index.php/services/rest/$table/$hit->id";
@@ -523,6 +568,8 @@ SQL;
    *
    * Dates will be ISO formatted.
    *
+   * @param string $entity
+   *   Entity name.
    * @param mixed $data
    *   Associative array or object of field names and values.
    * @param array $fields Optional list of fields to restrict to.
@@ -536,9 +583,14 @@ SQL;
     }
     $values = $fields ?  array_intersect_key($data, array_flip($fields)) : $data;
     foreach ($values as $field => &$value) {
-      if (substr($field, -3) === '_on') {
-        // Date values need reformatting.
-        $value = date('c', strtotime($value));
+      if (isset(self::$fieldDefs[$field])) {
+        if (self::$fieldDefs[$field]['type'] === 'date') {
+          // Date values need reformatting.
+          $value = date('c', strtotime($value));
+        }
+        if (!empty(self::$fieldDefs[$field]['array']) && preg_match('/^\[.+\]$/', $value)) {
+          $value = json_decode($value);
+        }
       }
       if (substr($field, -10) === 'date_start') {
         $prefix = substr($field, 0, strlen($field) - 10);
@@ -559,6 +611,7 @@ SQL;
    */
   private static function getResponseMetadata(array $responseMetadata) {
     $entity = $responseMetadata['model'];
+    self::loadFieldDefs($entity);
     $table = inflector::plural($entity);
     $href = url::base() . "index.php/services/rest/$table/$responseMetadata[id]";
     $r = [

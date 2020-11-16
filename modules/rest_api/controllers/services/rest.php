@@ -576,6 +576,9 @@ class Rest_Controller extends Controller {
             'taxon_group_id' => [
               'datatype' => 'integer[]',
             ],
+            'scratchpad_list_id' => [
+              'datatype' => 'integer[]',
+            ],
             'taxon_group' => [
               'datatype' => 'text[]',
             ],
@@ -1126,7 +1129,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Date interpreted', 'field' => '#event_date#'],
       ['caption' => 'Date from', 'field' => 'event.date_start'],
       ['caption' => 'Date to', 'field' => 'event.date_end'],
-      ['caption' => 'Date type', 'field' => 'event.date_type'], 
+      ['caption' => 'Date type', 'field' => 'event.date_type'],
       ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
       ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
@@ -1134,7 +1137,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Sex', 'field' => 'occurrence.sex'],
       ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
       ['caption' => 'Count of sex or stage', 'field' => 'occurrence.organism_quantity'],
-      ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'], 
+      ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
       ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
       ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
@@ -1146,7 +1149,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
       ['caption' => 'Verified on', 'field' => '#datetime:identification.verified_on:d/m/Y H\:i#'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
-      ['caption' => 'Automated checks', 'field' => 'identification.auto_checks.result'], 
+      ['caption' => 'Automated checks', 'field' => 'identification.auto_checks.result'],
     ],
     "mapmate" => [
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
@@ -1261,7 +1264,7 @@ SQL;
     if ($cached = $cache->get($cacheId)) {
       return explode(',', $cached);
     }
-    $qry = $this->db->select('to_website_id')
+    $qry = RestObjects::$db->select('to_website_id')
       ->from('index_websites_website_agreements')
       ->where([
         "receive_for_$sharing" => 't',
@@ -1727,10 +1730,14 @@ SQL;
         if ($format === 'csv') {
           $file['done'] = $file['done'] + count($itemList);
         }
-        // Composite aggregation has to run till we get an empty response.
         $data = json_decode($response, TRUE);
-        $list = $data['aggregations']['_rows']['buckets'];
-        $done = count($list) === 0;
+        // If we know the total, use that to set done state, otherwise wait for empty response.
+        if (isset($file['total'])) {
+          $done = $file['done'] >= $file['total'];
+        }
+        else {
+          $done = count($data['aggregations']['_rows']['buckets']) === 0;
+        }
         if (empty($data['aggregations']['_rows']['after_key'])) {
           unset($file['after_key']);
         }
@@ -1850,7 +1857,7 @@ SQL;
    * @param array $doc
    *   Elasticsearch document.
    * @param array $params
-   *   Provided parameters: 
+   *   Provided parameters:
    *   1. ES field
    *   2. datetime format
    *
@@ -1878,7 +1885,7 @@ SQL;
    * @param array $doc
    *   Elasticsearch document.
    * @param array $params
-   *   Provided parameters: 
+   *   Provided parameters:
    *   1. ES field
    *   2. format identifier
    *
@@ -2198,7 +2205,7 @@ SQL;
     }
     if (count($params)) {
       $format = $params[0];
-    } 
+    }
     else {
       $format = "";
     }
@@ -2329,7 +2336,7 @@ SQL;
    * Special field handler for Elasticsearch sex with format options.
    *
    * Converts occurrence.sex to values as specified in format option.
-   * 
+   *
    * @param array $doc
    *   Elasticsearch document.
    * @param array $params
@@ -2377,7 +2384,7 @@ SQL;
    * Special field handler for Elasticsearch life stage with format options.
    *
    * Converts occurrence.life_stage to values as specified in format option.
-   * 
+   *
    * @param array $doc
    *   Elasticsearch document.
    * @param array $params
@@ -2439,13 +2446,13 @@ SQL;
     $quantity = !empty($doc['occurrence']['organism_quantity']) ? $doc['occurrence']['organism_quantity'] : '';
     if (!empty($doc['occurrence']['zero_abundance']) && $doc['occurrence']['zero_abundance'] !== 'false') {
       $zero = True;
-    } 
+    }
     else {
       $zero = False;
     }
     switch($format) {
       case 'mapmate':
-        // Mapmate will only accept integer values and uses a value 
+        // Mapmate will only accept integer values and uses a value
         // of -7 to indicate a negative record. MapMate interprets
         // a quantity of 0 to mean 'present'.
         if ($zero || $quantity === '0') {
@@ -4003,6 +4010,11 @@ SQL;
     if (array_key_exists('authorization', $headers)) {
       return $headers['authorization'];
     }
+    elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+      // Sometimes on Apache, necessary to redirect the Auth header into the $_SERVER superglobal.
+      // See https://stackoverflow.com/questions/26475885/authorization-header-missing-in-php-post-request.
+      return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
     return '';
   }
 
@@ -4546,7 +4558,8 @@ SQL;
   public function occurrencesPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    return rest_crud::update('occurrence', $id, $putArray);
+    $r = rest_crud::update('occurrence', $id, $putArray);
+    echo json_encode($r);
   }
 
   /**
@@ -4593,7 +4606,8 @@ SQL;
   public function locationsPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    return rest_crud::update('location', $id, $putArray);
+    $r = rest_crud::update('location', $id, $putArray);
+    echo json_encode($r);
   }
 
   /**
@@ -4656,7 +4670,8 @@ SQL;
   public function samplesPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    return rest_crud::update('sample', $id, $putArray);
+    $r = rest_crud::update('sample', $id, $putArray);
+    echo json_encode($r);
   }
 
   /**
@@ -4678,11 +4693,16 @@ SQL;
   }
 
   /**
-   * Check that authenticated user has admin access to the authenticated website.
+   * Website permissions check.
    *
-   * E.g. before CRUD operation on a privileged resource.
+   * Check that authenticated user has admin or edit access to the
+   * authenticated website, e.g. before CRUD operation on a privileged
+   * resource.
+   *
+   * @param int $level
+   *   Level required (1 = user, 2 = editor, 3 = admin). Default 2.
    */
-  private function assertUserHasWebsiteAdminAccess() {
+  private function assertUserHasWebsiteAccess($level = 2) {
     if (empty(RestObjects::$clientUserId)) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown.');
     }
@@ -4691,7 +4711,7 @@ SQL;
     $sql = <<<SQL
 SELECT u.id, u.core_role_id, uw.site_role_id
 FROM users u
-LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=$websiteId and uw.site_role_id=3
+LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=$websiteId and uw.site_role_id>=$level
 WHERE u.id=$userId;
 SQL;
     $user = RestObjects::$db->query($sql)->current();
@@ -4758,7 +4778,7 @@ SQL;
    * API end-point to POST a survey to create.
    */
   public function surveysPost() {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $post = file_get_contents('php://input');
     $item = json_decode($post, TRUE);
     // Autofill website ID.
@@ -4775,11 +4795,12 @@ SQL;
    * API end-point to PUT to an existing survey to update.
    */
   public function surveysPutId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('surveys', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    return rest_crud::update('survey', $id, $putArray);
+    $r = rest_crud::update('survey', $id, $putArray);
+    echo json_encode($r);
   }
 
   /**
@@ -4791,7 +4812,7 @@ SQL;
    *   Survey ID to delete.
    */
   public function surveysDeleteId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('surveys', $id);
     // Delete - no need to check user as admin of website.
     rest_crud::delete('survey', $id);
@@ -4876,12 +4897,15 @@ SQL;
    * API end-point to POST a sample_attribute to create.
    */
   public function sampleAttributesPost() {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $post = file_get_contents('php://input');
     $item = json_decode($post, TRUE);
     // Autofill website ID.
     if (isset($item['values'])) {
       $item['values']['website_id'] = RestObjects::$clientWebsiteId;
+      if ($item['values']['data_type'] === 'L' && empty($item['values']['termlist_id']) && !empty($item['terms'])) {
+        $this->createAttributeTermlist($item);
+      }
     }
     $r = rest_crud::create('sample_attribute', $item);
     echo json_encode($r);
@@ -4893,14 +4917,114 @@ SQL;
    * API end-point to PUT to an existing sample attribute to update.
    */
   public function sampleAttributesPutId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertAttributeFromCurrentWebsite('sample_attributes', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
     if ($this->attributeTypeChanging('sample_attributes', $id, $putArray)) {
       $this->assertAttributeHasNoValues('sample_attributes', $id);
     }
-    return rest_crud::update('sample_attribute', $id, $putArray);
+    if (isset($putArray['values']) && isset($putArray['values']['data_type'])
+        && $putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
+      $this->updateAttributeTermlist($putArray);
+    }
+    $r = rest_crud::update('sample_attribute', $id, $putArray);
+    echo json_encode($r);
+  }
+
+  /**
+   * When creating an attribute, create a termlist if it has terms.
+   *
+   * @param array $item
+   *   Attribute submission including values and optional terms elements.
+   */
+  private function createAttributeTermlist(array &$item) {
+    // Create a new termlist.
+    $termlist = ORM::factory('termlist');
+    $termlist->set_submission_data(array(
+      'title' => 'Termlist for ' . $item['values']['caption'],
+      'description' => 'Termlist created by the REST API for attribute ' . $item['values']['caption'],
+      'website_id' => RestObjects::$clientWebsiteId,
+      'deleted' => 'f',
+    ));
+    if (!$termlist->submit()) {
+      RestObjects::$apiResponse->fail('Internal Server Error', 500,
+            'Error occurred creating new termlist: ' . implode("\n", $termlist->getAllErrors()));
+    }
+    $item['values']['termlist_id'] = $termlist->id;
+    // Also add the terms.
+    $this->updateAttributeTermlist($item);
+  }
+
+  /**
+   * If a lookup attribute has child terms, make sure the termlist is updated.
+   *
+   * Performs the following tasks:
+   * * Marks existing terms as not for data entry if missing from new list
+   * * Adds new terms.
+   * * Updates sort order of existing terms.
+   *
+   * @param array $item
+   *   Attribute submission including values and optional terms elements.
+   */
+  private function updateAttributeTermlist(array $item) {
+    $existing = [];
+    $existingRows = RestObjects::$db
+      ->select('tlt.id, t.term, tlt.sort_order')
+      ->from('termlists_terms AS tlt')
+      ->join('terms AS t', 't.id', 'tlt.term_id')
+      ->where(['tlt.deleted' => 'f', 't.deleted' => 'f', 'tlt.termlist_id' => $item['values']['termlist_id']])
+      ->orderby(['tlt.sort_order' => 'ASC', 't.term' => 'ASC'])
+      ->get()->result();
+    foreach ($existingRows as $row) {
+      $existing[$row->term] = $row;
+    }
+    // Tidy submitted terms.
+    foreach ($item['terms'] as &$term) {
+      $term = trim($term);
+    }
+    // Don't leave reference to last term hanging.
+    unset($term);
+    foreach ($item['terms'] as $idx => $term) {
+      if (array_key_exists($term, $existing)) {
+        if ($existing[$term]->sort_order != $idx + 1) {
+          // Update existing term sort order.
+          RestObjects::$db->update(
+            'termlists_terms',
+            ['sort_order' => $idx + 1],
+            ['id' => $existing[$term]->id]
+          );
+        }
+      }
+      else {
+        // Create new term.
+        $termlists_term = ORM::factory('termlists_term');
+        $termlists_term->set_submission_data(array(
+          'term:term' => $term,
+          'term:fk_language:iso' => kohana::config('indicia.default_lang'),
+          'sort_order' => $idx + 1,
+          'termlist_id' => $item['values']['termlist_id'],
+          'preferred' => 't',
+        ));
+        if (!$termlists_term->submit()) {
+          RestObjects::$apiResponse->fail('Internal Server Error', 500,
+            'Error occurred creating new term: ' . implode("\n", $termlists_term->getAllErrors()));
+        };
+      }
+    }
+    foreach ($existing as $row) {
+      if (!in_array($row->term, $item['terms'])) {
+        // Remove existing term by marking as not for data entry.
+        RestObjects::$db->update(
+          'termlists_terms', [
+            'allow_data_entry' => 'f',
+            'updated_on' => "'" . date('c', time()) . "'",
+            'updated_by_id' => RestObjects::$clientUserId,
+          ],
+          ['id' => $row->id]
+        );
+      }
+    }
   }
 
   /**
@@ -4912,7 +5036,7 @@ SQL;
    *   Survey ID to delete.
    */
   public function sampleAttributesDeleteId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertAttributeFromCurrentWebsite('sample_attributes', $id);
     $this->assertAttributeHasNoValues('sample_attributes', $id);
     // Delete - no need to check user as admin of website.
@@ -4942,7 +5066,7 @@ SQL;
    * API end-point to POST a sample attributes website to create.
    */
   public function sampleAttributesWebsitesPost() {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $post = file_get_contents('php://input');
     $postArray = json_decode($post, TRUE);
     // Autofill website ID.
@@ -4956,23 +5080,31 @@ SQL;
           'website_id' => $postArray['values']['website_id'],
           'sample_attribute_id' => $postArray['values']['sample_attribute_id'],
           'restrict_to_survey_id' => $postArray['values']['restrict_to_survey_id'],
+          'deleted' => 'f',
         ])
         ->get()->current();
-      if ($existing) {
-        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
-      }
-    rest_crud::create('sample_attributes_website', $postArray);
+    if ($existing) {
+      $r = rest_crud::update('sample_attributes_website', $existing->id, $postArray);
+      echo json_encode($r);
+    }
+    else {
+      $r = rest_crud::create('sample_attributes_website', $postArray);
+      echo json_encode($r);
+      http_response_code(201);
+      header("Location: $r[href]");
+    }
   }
 
   /**
    * API end-point to PUT to an existing sample attributes website to update.
    */
   public function sampleAttributesWebsitesPutId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('sample_attributes_website', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    rest_crud::update('sample_attributes_website', $id, $putArray);
+    $r = rest_crud::update('sample_attributes_website', $id, $putArray);
+    echo json_encode($r);
   }
 
   /**
@@ -4984,7 +5116,7 @@ SQL;
    *   Survey ID to delete.
    */
   public function sampleAttributesWebsitesDeleteId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('sample_attributes_website', $id);
     rest_crud::delete('sample_attributes_website', $id);
   }
@@ -5010,12 +5142,15 @@ SQL;
    * API end-point to POST a occurrence_attribute to create.
    */
   public function occurrenceAttributesPost() {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $post = file_get_contents('php://input');
     $item = json_decode($post, TRUE);
     // Autofill website ID.
     if (isset($item['values'])) {
       $item['values']['website_id'] = RestObjects::$clientWebsiteId;
+      if ($item['values']['data_type'] === 'L' && empty($item['values']['termlist_id']) && !empty($item['terms'])) {
+        $this->createAttributeTermlist($item);
+      }
     }
     $r = rest_crud::create('occurrence_attribute', $item);
     echo json_encode($r);
@@ -5027,14 +5162,19 @@ SQL;
    * API end-point to PUT to an existing occurrence attribute to update.
    */
   public function occurrenceAttributesPutId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertAttributeFromCurrentWebsite('occurrence_attributes', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
     if ($this->attributeTypeChanging('occurrence_attributes', $id, $putArray)) {
       $this->assertAttributeHasNoValues('occurrence_attributes', $id);
     }
-    return rest_crud::update('occurrence_attribute', $id, $putArray);
+    if (isset($putArray['values']) && isset($putArray['values']['data_type'])
+        && $putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
+      $this->updateAttributeTermlist($putArray);
+    }
+    $r = rest_crud::update('occurrence_attribute', $id, $putArray);
+    echo json_encode($r);
   }
 
   /**
@@ -5046,7 +5186,7 @@ SQL;
    *   Survey ID to delete.
    */
   public function occurrenceAttributesDeleteId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertAttributeFromCurrentWebsite('occurrence_attributes', $id);
     $this->assertAttributeHasNoValues('occurrence_attributes', $id);
     // Delete - no need to check user as admin of website.
@@ -5076,7 +5216,7 @@ SQL;
    * API end-point to POST a occurrence attributes website to create.
    */
   public function occurrenceAttributesWebsitesPost() {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $post = file_get_contents('php://input');
     $postArray = json_decode($post, TRUE);
     // Autofill website ID.
@@ -5090,23 +5230,31 @@ SQL;
           'website_id' => $postArray['values']['website_id'],
           'occurrence_attribute_id' => $postArray['values']['occurrence_attribute_id'],
           'restrict_to_survey_id' => $postArray['values']['restrict_to_survey_id'],
+          'deleted' => 'f',
         ])
         ->get()->current();
-      if ($existing) {
-        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
-      }
-    rest_crud::create('occurrence_attributes_website', $postArray);
+    if ($existing) {
+      $r = rest_crud::update('occurrence_attributes_website', $existing->id, $postArray);
+      echo json_encode($r);
+    }
+    else {
+      $r = rest_crud::create('occurrence_attributes_website', $postArray);
+      echo json_encode($r);
+      http_response_code(201);
+      header("Location: $r[href]");
+    }
   }
 
   /**
    * API end-point to PUT to an existing occurrence attributes website to update.
    */
   public function occurrenceAttributesWebsitesPutId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    rest_crud::update('occurrence_attributes_website', $id, $putArray);
+    $r = rest_crud::update('occurrence_attributes_website', $id, $putArray);
+    echo json_encode($r);
   }
 
   /**
@@ -5118,7 +5266,7 @@ SQL;
    *   Survey ID to delete.
    */
   public function occurrenceAttributesWebsitesDeleteId($id) {
-    $this->assertUserHasWebsiteAdminAccess();
+    $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
     rest_crud::delete('occurrence_attributes_website', $id);
   }

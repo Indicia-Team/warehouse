@@ -336,6 +336,10 @@ MSG;
           dirname(dirname(dirname(dirname(__file__)))) . '/upload',
           'images to be uploaded',
           'images cannot be uploaded');
+      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'image upload queue',
+          dirname(dirname(dirname(dirname(__file__)))) . '/upload-queue',
+          'queued images to be uploaded',
+          'queued images cannot be uploaded');
       self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
           dirname(dirname(dirname(dirname(__file__)))) . '/client_helpers',
           'the settings for the data entry helper classes to be stored',

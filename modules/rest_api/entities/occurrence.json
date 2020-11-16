@@ -44,5 +44,6 @@
   "attributePrefix": "occ",
   "forceValuesOnCreate": {
     "website_id": "{website_id}"
-  }
+  },
+  "duplicateCheckFields": ["external_key", "website_id"]
 }

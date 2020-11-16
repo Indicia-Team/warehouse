@@ -35,5 +35,6 @@
     "media": { "fk": "sample_id" }
   },
   "attributes": true,
-  "attributePrefix": "smp"
+  "attributePrefix": "smp",
+  "duplicateCheckFields": ["external_key", "survey_id"]
 }
