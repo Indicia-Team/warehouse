@@ -14,9 +14,6 @@ class Input_Core {
 	// Enable or disable automatic XSS cleaning
 	protected $use_xss_clean = FALSE;
 
-	// Are magic quotes enabled?
-	protected $magic_quotes_gpc = FALSE;
-
 	// IP address of current user
 	public $ip_address;
 
@@ -42,7 +39,7 @@ class Input_Core {
 
 	/**
 	 * Sanitizes global GET, POST and COOKIE data. Also takes care of
-	 * magic_quotes and register_globals, if they have been enabled.
+	 * register_globals, if they have been enabled.
 	 *
 	 * @return  void
 	 */
@@ -53,20 +50,6 @@ class Input_Core {
 
 		if (Input::$instance === NULL)
 		{
-			// magic_quotes_runtime is enabled
-			if (get_magic_quotes_runtime())
-			{
-				set_magic_quotes_runtime(0);
-				Kohana::log('debug', 'Disable magic_quotes_runtime! It is evil and deprecated: http://php.net/magic_quotes');
-			}
-
-			// magic_quotes_gpc is enabled
-			if (get_magic_quotes_gpc())
-			{
-				$this->magic_quotes_gpc = TRUE;
-				Kohana::log('debug', 'Disable magic_quotes_gpc! It is evil and deprecated: http://php.net/magic_quotes');
-			}
-
 			// register_globals is enabled
 			if (ini_get('register_globals'))
 			{
@@ -427,12 +410,6 @@ class Input_Core {
 				$new_array[$this->clean_input_keys($key)] = $this->clean_input_data($val);
 			}
 			return $new_array;
-		}
-
-		if ($this->magic_quotes_gpc === TRUE)
-		{
-			// Remove annoying magic quotes
-			$str = stripslashes($str);
 		}
 
 		if ($this->use_xss_clean === TRUE)

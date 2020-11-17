@@ -1,0 +1,14 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "location_id", "type": "integer"},
+    { "sql": "website_id", "type": "integer"},
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" },
+    { "sql": "updated_on", "type": "date" },
+    { "sql": "updated_by_id", "type": "integer" }
+  ],
+  "forceValuesOnCreate": {
+    "website_id": "{website_id}"
+  }
+}

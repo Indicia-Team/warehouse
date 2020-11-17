@@ -30,6 +30,7 @@ class XMLReportReader_Core implements ReportReader {
   private $description;
   private $row_class;
   private $query;
+  private $countQuery;
   private $countQueryBase = NULL;
   private $countFields;
   private $field_sql;
@@ -167,17 +168,22 @@ class XMLReportReader_Core implements ReportReader {
                 $this->row_class = $reader->getAttribute('row_class');
                 break;
               case 'query':
+                $sp = $reader->getAttribute('standard_params');
                 $this->websiteFilterField = $reader->getAttribute('website_filter_field');
                 if ($this->websiteFilterField=== NULL)
                   // default field name for filtering against websites
                   $this->websiteFilterField = 'w.id';
                 $this->trainingFilterField = $reader->getAttribute('training_filter_field');
-                if ($this->trainingFilterField=== NULL)
+                if ($this->trainingFilterField === NULL) {
                   // default field name for filtering training records
-                  $this->trainingFilterField = 'o.training';
+                  if (!empty($sp) && $sp === 'samples') {
+                    $this->trainingFilterField = 's.training';
+                  } else {
+                    $this->trainingFilterField = 'o.training';
+                  }
+                }
                 $this->blockedSharingTasksField = $reader->getAttribute('blocked_sharing_tasks_field');
                 if ($this->blockedSharingTasksField === NULL) {
-                  $sp = $reader->getAttribute('standard_params');
                   if (!empty($sp)) {
                     $this->blockedSharingTasksField = $sp === 'samples' ? 's.blocked_sharing_tasks' : 'o.blocked_sharing_tasks';
                   }
@@ -222,6 +228,10 @@ class XMLReportReader_Core implements ReportReader {
                   $this->loadLegacyStandardParamsSet = true;
                 $reader->read();
                 $this->query = $reader->value;
+                break;
+              case 'count_query':
+                $reader->read();
+                $this->countQuery = $reader->value;
                 break;
               case 'field_sql':
                 $reader->read();
@@ -311,15 +321,25 @@ class XMLReportReader_Core implements ReportReader {
         }
       }
       $reader->close();
-      // Add a token to mark where additional filters can insert in the WHERE clause.
+      // Add a token to mark where additional filters can insert in the WHERE
+      // clause.
       if ($this->query && strpos($this->query, '#filters#') === false) {
         if (strpos($this->query, '#order_by#') !== false)
           $this->query = str_replace('#order_by#', "#filters#\n#order_by#", $this->query);
         else
           $this->query .= '#filters#';
       }
+      // Also for count query if specified.
+      if ($this->countQuery) {
+        if (strpos($this->countQuery, '#filters#') === false) {
+          $this->countQuery .= '#filters#';
+        }
+      } elseif ($this->query) {
+        $this->countQuery = $this->query;
+      }
       if ($this->hasColumnsSql) {
-        // column sql is defined in the list of column elements, so autogenerate the query.
+        // Column sql is defined in the list of column elements, so
+        // autogenerate the query.
         $this->autogenColumns();
         if ($this->hasAggregates) {
           $this->buildGroupBy();
@@ -329,7 +349,7 @@ class XMLReportReader_Core implements ReportReader {
         // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
         // otherwise the same.
         if (!empty($field_sql)) {
-          $this->countQueryBase = str_replace('#field_sql#', '#count#', $this->query);
+          $this->countQueryBase = str_replace('#field_sql#', '#count#', $this->countQuery);
           $this->countFields = $this->count_field;
           $this->query = str_replace('#field_sql#', $field_sql, $this->query);
         }
@@ -339,6 +359,7 @@ class XMLReportReader_Core implements ReportReader {
       }
       if ($this->query) {
         $this->query = str_replace('#master_list_id', warehouse::getMasterTaxonListId(), $this->query);
+        $this->countQueryBase = str_replace('#master_list_id', warehouse::getMasterTaxonListId(), $this->countQueryBase);
       }
     }
     catch (Exception $e)
@@ -358,7 +379,7 @@ class XMLReportReader_Core implements ReportReader {
             unset($websiteIds[$key]);
         }
       }
-      $idList = implode($websiteIds, ',');
+      $idList = implode(',', $websiteIds);
       // query can either pull in the filter or just the list of website ids.
       $filter = empty($this->websiteFilterField) ? "1=1" : "({$this->websiteFilterField} in ($idList) or {$this->websiteFilterField} is null)";
       $query = str_replace(array('#website_filter#', '#website_ids#'), array($filter, $idList), $query);
@@ -510,7 +531,7 @@ class XMLReportReader_Core implements ReportReader {
         continue;
       if (isset($def['sql'])) {
         if (!isset($def['on_demand']) || $def['on_demand'] !== "true")
-          $sql[] = $def['sql'] . ' as ' . pg_escape_identifier($col);
+          $sql[] = $def['sql'] . ' as ' . $this->db->escape_identifier($col);
         if (isset($def['distincton']) && $def['distincton'] == 'true') {
           $distinctSql[] = $def['internal_sql'];
           // in_count lets the xml file exclude distinct on columns from the count query
@@ -535,7 +556,7 @@ class XMLReportReader_Core implements ReportReader {
     else {
       $distincton = '';
     }
-    $this->countQueryBase = str_replace('#columns#', '#count#', $this->query);
+    $this->countQueryBase = str_replace('#columns#', '#count#', $this->countQuery);
     if (count($countSql) > 1) {
       // Concatenate the fields so we can get a distinct list.
       $this->countFields = 'coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')";

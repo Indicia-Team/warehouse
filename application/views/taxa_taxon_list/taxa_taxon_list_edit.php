@@ -161,6 +161,26 @@ TXT;
       'default' => html::initial_value($values, 'taxa_taxon_list:taxonomic_sort_order'),
     ]);
     echo data_entry_helper::checkbox([
+      'label' => 'Marine',
+      'fieldname' => 'taxon:marine_flag',
+      'default' => html::initial_value($values, 'taxon:marine_flag'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Freshwater',
+      'fieldname' => 'taxon:freshwater_flag',
+      'default' => html::initial_value($values, 'taxon:freshwater_flag'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Terrestrial',
+      'fieldname' => 'taxon:terrestrial_flag',
+      'default' => html::initial_value($values, 'taxon:terrestrial_flag'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Non-native',
+      'fieldname' => 'taxon:non_native_flag',
+      'default' => html::initial_value($values, 'taxon:non_native_flag'),
+    ]);
+    echo data_entry_helper::checkbox([
       'label' => 'Allow data entry',
       'fieldname' => 'taxa_taxon_list:allow_data_entry',
       'default' => html::initial_value($values, 'taxa_taxon_list:allow_data_entry'),

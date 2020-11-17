@@ -107,13 +107,6 @@ class Occurrence_Model extends ORM {
   ];
 
   /**
-   * Should a determination be logged if this is a changed record?
-   *
-   * @var bool
-   */
-  protected $logDetermination = FALSE;
-
-  /**
    * Returns a caption to identify this model instance.
    */
   public function caption() {
@@ -134,7 +127,7 @@ class Occurrence_Model extends ORM {
       if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {
           // If verifying or rejecting, then set the verification metadata.
-          $array->verified_by_id = $this->get_current_user_id();
+          $array->verified_by_id = $this->getCurrentUserId();
           $array->verified_on = date("Ymd H:i:s");
         }
         else {
@@ -213,7 +206,6 @@ class Occurrence_Model extends ORM {
           'occurrence_id' => $this->id,
           'deleted' => 'f',
         ))->get()->result_array();
-      kohana::log('debug', 'Query: ' . $this->db->last_query());
     }
     if (count($rows) > 0 && !empty($rows[0]->last_update)) {
       return $rows[0]->last_update;
@@ -239,36 +231,55 @@ class Occurrence_Model extends ORM {
       // Only log a determination for the occurrence if the species is changed.
       // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
       // and the config setting must be enabled.
-      $currentUserId = $this->get_current_user_id();
       if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
-        $this->logDetermination = TRUE;
-        // We log the old taxon.
-        $rowToAdd['taxa_taxon_list_id'] = $this->taxa_taxon_list_id;
-        $rowToAdd['determination_type'] = 'B';
-        $rowToAdd['occurrence_id'] = $this->id;
-        // Last change to the occurrence is really the create metadata for this
-        // determination, since we are copying it out of the existing
-        // occurrence record.
-        $rowToAdd['created_by_id'] = $this->updated_by_id;
-        $rowToAdd['updated_by_id'] = $this->updated_by_id;
-        $rowToAdd['created_on'] = $this->getWhenRecordLastDetermined();
-        $rowToAdd['updated_on'] = date("Ymd H:i:s");
-        $rowToAdd['person_name'] = $this->get_person_name_and_update_determiner($this->as_array(), $this->updated_by_id);
-
-        $insert = $this->db
+        $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->determiner_id;
+        $determination = [
+          // We log the old taxon.
+          'taxa_taxon_list_id' => $this->taxa_taxon_list_id,
+          'determination_type' => 'B',
+          'occurrence_id' => $this->id,
+          // Last change to the occurrence is really the create metadata for this
+          // determination, since we are copying it out of the existing
+          // occurrence record.
+          'created_by_id' => $oldDeterminerUserId,
+          'updated_by_id' => $oldDeterminerUserId,
+          'created_on' => $this->getWhenRecordLastDetermined(),
+          'updated_on' => date("Ymd H:i:s"),
+          'person_name' => $this->getPreviousDeterminerName(),
+        ];
+        $this->db
           ->from('determinations')
-          ->set($rowToAdd)
+          ->set($determination)
           ->insert();
-
-        if ($currentUserId !== 1) {
-          $this->submission['fields']['determiner_id']['value'] = $currentUserId;
+      }
+      if (!empty($this->submission['fields']['determiner_id']) && !empty($this->submission['fields']['determiner_id']['value'])) {
+        // Redetermination by user ID provided in submission.
+        $redetByPersonId = (int) $this->submission['fields']['determiner_id']['value'];
+        if ($redetByPersonId === -1) {
+          // Determiner person ID -1 is special case, means don't assign new determiner
+          // name on redet.
+          unset($this->submission['fields']['determiner_id']);
+          unset($array->determiner_id);
+          return;
+        }
+        $userInfo = $this->db->select('id')->from('users')->where('person_id', $redetByPersonId)->get()->current();
+        $redetByUserId = $userInfo->id;
+      } else {
+        // Redetermination doesn't specify user ID, so use logged in user account.
+        $redetByUserId = (int) $this->getCurrentUserId();
+        $userInfo = $this->db->select('person_id')->from('users')->where('id', $redetByUserId)->get()->current();
+        $redetByPersonId = $userInfo->person_id;
+        if ($redetByUserId !== 1) {
+          // Store in the occurrences.determiner_id field.
+          $array->determiner_id = $redetByPersonId;
         }
       }
-      // Update any determiner occurrence attributes.
-      $sql = <<<SQL
+      if ($redetByUserId !== 1) {
+        // Update any determiner occurrence attributes.
+        $sql = <<<SQL
 UPDATE occurrence_attribute_values v
 SET text_value=CASE a.system_function
-  WHEN 'det_full_name' THEN COALESCE(p.first_name || ' ', '') || p.surname
+  WHEN 'det_full_name' THEN TRIM(COALESCE(p.first_name || ' ', '') || p.surname)
   WHEN 'det_first_name' THEN p.first_name
   WHEN 'det_last_name' THEN p.surname
 END
@@ -280,10 +291,11 @@ AND v.deleted=false
 AND v.occurrence_attribute_id=a.id
 AND v.occurrence_id=$this->id
 AND a.system_function in ('det_full_name', 'det_first_name', 'det_last_name')
-AND u.id=$currentUserId
+AND u.id=$redetByUserId
 AND u.deleted=false
 SQL;
-      $this->db->query($sql);
+        $this->db->query($sql);
+      }
     }
   }
 
@@ -321,7 +333,7 @@ SQL;
   /*
    * Collect the user id for the current user, this will be 1 unless logged into warehouse or Easy Login is enabled in instant-indicia.
    */
-  public function get_current_user_id() {
+  private function getCurrentUserId() {
     if (isset($_SESSION['auth_user']))
       $userId = $_SESSION['auth_user']->id;
     else {
@@ -338,184 +350,75 @@ SQL;
     return $userId;
   }
 
-  /*
-   * Method that is called when attempting to fill in determinations.person_name using a determination
-   * occurrence attribute value. Code has its own method as the code could be called several times for
-   * different determination occurrence attributes (first name, last name, full name)
+  /**
+   * Calculates the value to populate in determinations.person_name.
+   *
+   * @return string
+   *   Name to store for previous determination.
    */
-  public function get_and_update_occ_attr_determiner($determinerNameAttrId, $occurrenceId, $detNameType, $currentUserNames) {
-    // Firstly try and get the determiner for the occurrence from an attribute value.
-    $determinerNameAttempt = $this->db
-      ->select('id', 'text_value')
-      ->from('occurrence_attribute_values')
-      ->where(array(
-        'occurrence_attribute_id' => $determinerNameAttrId,
-        'occurrence_id' => $occurrenceId
-      ))
-      ->get()->as_array();
-    if (!empty($determinerNameAttempt)) {
-      $determinerNameAttrValId = $determinerNameAttempt[0]->id;
-      $determinerName = $determinerNameAttempt[0]->text_value;
+  private function getPreviousDeterminerName() {
+    $oldValues = $this->as_array();
+    $determinerName = '';
+    // Work through a list of possible places to find a determiner name in
+    // priority order.
+    // Occurrences.determiner_id.
+    if (!empty($oldValues['determiner_id'])) {
+      return $this->getPersonNameFromUserId($oldValues['determiner_id']);
     }
-    // If we have successfully retrieved a determiner name that we can log into the determinations table
-    // then we can overwrite the determiner attribute with the current user (who is changing the occurrence
-    // species so becomes the new determiner).
-    if (!empty($determinerName)) {
-      switch ($detNameType) {
-        case 'det_full_name':
-          $theNameToAdd = $currentUserNames->surname . ', ' . $currentUserNames->first_name;
-          break;
-
-        case 'det_last_name':
-          $theNameToAdd = $currentUserNames->surname;
-          break;
-
-        case 'det_first_name':
-          $theNameToAdd = $currentUserNames->first_name;
-          break;
-
-        default:
-          $theNameToAdd = 'Unknown';
-      }
-
-      $nameToAddRow = array('text_value' => $theNameToAdd);
-      $this->set_metadata_for_row_array($nameToAddRow, 'occurrence_attribute_values');
-      $update = $this->db
-        ->from('occurrence_attribute_values')
-        ->set($nameToAddRow)
-        ->where(array('id' => $determinerNameAttrValId))
-        ->update();
-      return $determinerName;
+    // Attribute values det_*_name.
+    $attrValues = $this->db
+      ->select('v.text_value', 'a.system_function')
+      ->from('occurrence_attribute_values as v')
+      ->join('occurrence_attributes as a', 'a.id', 'v.occurrence_attribute_id')
+      ->where([
+        'v.occurrence_id' => $oldValues['id']
+      ])
+      ->like('a.system_function', 'det_%')
+      ->get();
+    $detData = [];
+    foreach ($attrValues as $attrValue) {
+      $detData[$attrValue['system_function']] = $attrValue['text_value'];
     }
-  }
-
-  /*
-   * When logging species into the determinations table, this method uses various rules to
-   * work out what the determinations.person_name field will be.
-   * It also calls get_and_update_occ_attr_determiner to update the occurrence attribute
-   * determiner to the current user (who is changing the occurrence species).
-   */
-  public function get_person_name_and_update_determiner($oldValues, $currentUserId) {
-    // We can only set the person name from an determiner system function occurrence attribute
-    // if we have easy login enable ($currentUserId !== 1) because after we have logged the determination
-    // we need to update the determiner for the original occurrence to the current user as the current
-    // user has changed the occurrence.
-    if ($currentUserId !== 1) {
-      $currentUserNames = $this->get_user_firstname_and_surname($currentUserId);
-      // Find the occurrence attributes that have a determiner name system function set.
-      $occurrenceAttributesWithDetFuncs = $this->db
-        ->select('id', 'system_function')
-        ->from('occurrence_attributes')
-        ->where(array('system_function' => 'det_first_name'))
-        ->orwhere(array('system_function' => 'det_last_name'))
-        ->orwhere(array('system_function' => 'det_full_name'))
-        ->get()->as_array();
-
-      // Go through all the occurrence attributes with determiner name system functions
-      // and split them up into a first name, a surname name and a full name function.
-      // As the system can actually have more than one occurrence_attribute with each
-      // determiner name type system function, then we just take the first one we come accross.
-      // In practice there will probably be only one.
-      foreach ($occurrenceAttributesWithDetFuncs as $occurrenceAttrRow) {
-        if ($occurrenceAttrRow->system_function === 'det_full_name' && empty($determinerFullNameAttributeId)) {
-          $determinerFullNameAttributeId = $occurrenceAttrRow->id;
-        }
-        if ($occurrenceAttrRow->system_function === 'det_last_name' && empty($determinerLastNameAttributeId)) {
-          $determinerLastNameAttributeId = $occurrenceAttrRow->id;
-        }
-
-        if ($occurrenceAttrRow->system_function === 'det_first_name' && empty($determinerFirstNameAttributeId)) {
-          $determinerFirstNameAttributeId = $occurrenceAttrRow->id;
-        }
-      }
-      // There are several rules we can use to collect the name for the person_name field in the determination.
-      // The first rule is to see if we can collected it from the occurrence attribute with the determiner full name
-      // system function.
-      $occurrenceId = $oldValues['id'];
-      if (!empty($determinerFullNameAttributeId)) {
-        // Try and get the name from the occurrence attribute with the full name system function first.
-        $determinerName = $this->get_and_update_occ_attr_determiner($determinerFullNameAttributeId, $occurrenceId, 'det_full_name', $currentUserNames);
-      }
-      // if we can't set the person_name from the fullname occurrence attribute, see if we can do it with the last name
-      if (!empty($determinerLastNameAttributeId) && empty($determinerName)) {
-        $determinerName = $this->get_and_update_occ_attr_determiner($determinerLastNameAttributeId, $occurrenceId, 'det_last_name', $currentUserNames);
-        // If we have managed to find a surname then we can attempt to find their first name
-        if (!empty($determinerName)) {
-          $determinerFirstName = $this->get_and_update_occ_attr_determiner($determinerFirstNameAttributeId, $occurrenceId, 'det_first_name', $currentUserNames);
-          // If we have found a first name then add it to the variable we are going to put in
-          // determinations.person_name.
-          if (!empty($determinerFirstName))
-            $determinerName = $determinerName . ', ' . $determinerFirstName;
-        }
-      }
+    if (!empty($detData['det_full_name'])) {
+      return $detData['det_full_name'];
     }
-    // if we still haven't found a person name, apply further rules to find one.
-    if (empty($determinerName)) {
-      // If there aren't currently any logged determinations for the occurrence we want to
-      // attempt to get a person_name from recorders in cache_occurrences.
-      $determinationsForOccurrence = $this->db
-        ->select('id')
-        ->from('determinations')
-        ->where(array('occurrence_id' => $oldValues['id']))
-        ->get()->as_array();
-      if (empty($determinationsForOccurrence)) {
-        $determinerNameArray = $this->db
-          ->select('recorders')
-          ->from('cache_occurrences')
-          ->where(array('id' => $oldValues['id']))
-          ->get()->as_array();
-        if (!empty($determinerNameArray[0]->recorders))
-          $determinerName = $determinerNameArray[0]->recorders;
-      }
+    if (!empty($detData['det_surname']) && !empty($detData['det_first_name'])) {
+      return $detData['det_surname'] . ', ' . $detData['det_first_name'];
     }
-    // If we still haven't got a person name, try to get the previous updater's name.
-    if (empty($determinerName)) {
-      if ($oldValues['updated_by_id'] !== 1) {
-        $determinerNames = $this->get_user_firstname_and_surname($oldValues['updated_by_id']);
-        $determinerName = $determinerNames->surname . ', ' . $determinerNames->first_name;
-      }
+    if (!empty($detData['det_surname'])) {
+      return $detData['det_surname'];
     }
-    // If after working through all the rules we still haven't found a person name, the set to 'Unknown'.
+    // Cached recorders - this gets the value from multiple possible sources so
+    // simplifies the code required here.
+    $recorders = $this->db
+      ->select('recorders')
+      ->from('cache_samples_nonfunctional')
+      ->where('id', $oldValues['sample_id'])
+      ->get()
+      ->current();
+    if (!empty($recorders) && !empty($recorders->recorders)) {
+      return $recorders->recorders;
+    }
+    // If after working through all the rules we still haven't found a person
+    // name, then set to 'Unknown'.
     if (empty($determinerName)) {
       $determinerName = 'Unknown';
     }
     return $determinerName;
   }
 
-  /*
-   * Return a single row array which contains an object with surname and first_name properties.
-   * It is more flexible to have the first and surnames seperately like this as we can use them seperately
-   * or format them as surname, first name etc
-   */
-  public function get_user_firstname_and_surname($userId) {
-    $updatedByPersonId = $this->db
-      ->select('person_id')
-      ->from('users')
-      ->where(array('id' => $userId))
-      ->get()->as_array();
-    $determinerNameArray = $this->db
-      ->select('first_name', 'surname')
-      ->from('people')
-      ->where(array('id' => $updatedByPersonId[0]->person_id))
-      ->get()->as_array();
-    return $determinerNameArray[0];
-  }
-
-  // Override preSubmit to add in the verifier (verified_by_id) and verification date (verified_on) if the
-  // occurrence is being set to status=V(erified) or R(ejected).
-  protected function preSubmit() {
-    // If determination logging is on and the occurrence species has changed ($logDetermination is true), we can
-    // set the determiner_id on the occurrence to the current user providing easy login is on ($currentUserId!==1).
-    if ($this->logDetermination) {
-      $currentUserId = $this->get_current_user_id();
-      if ($currentUserId !==1 )
-        $this->submission['fields']['determiner_id']['value'] = $currentUserId;
-    }
-    parent::preSubmit();
+  private function getPersonNameFromUserId($userId) {
+    $p = $this->db
+      ->select('p.first_name', 'p.surname')
+      ->from('people as p')
+      ->join('users as u', 'u.person_id', 'p.id')
+      ->where('u.id', $userId)
+      ->get()->current();
+    return "$p->surname, $p->first_name";
   }
 
   /**
-   * If this occurrence record status was reset after an edit, then log a comment.
+   * If this record status was reset after an edit then log a comment.
    */
   public function postSubmit($isInsert) {
     if ($this->requeuedForVerification && !$isInsert) {
@@ -531,28 +434,33 @@ SQL;
   }
 
   /**
-   * Defines a submission structure for occurrences that lets samples be submitted at the same time, e.g. during CSV upload.
+   * Defines a submission structure for occurrences.
+   *
+   * Lets samples be submitted at the same time, e.g. during CSV upload.
+   *
+   * @return array
+   *   Submission structure.
    */
   public function get_submission_structure() {
-    return array(
-        'model' => $this->object_name,
-        'superModels' => array(
-          'sample' => array('fk' => 'sample_id')
-        )
-    );
+    return [
+      'model' => $this->object_name,
+      'superModels' => [
+        'sample' => ['fk' => 'sample_id'],
+      ],
+    ];
   }
 
   /**
    * Returns details of attributes for this model.
    */
   public function get_attr_details() {
-    return array('attrs_field_prefix' => $this->attrs_field_prefix);
+    return ['attrs_field_prefix' => $this->attrs_field_prefix];
   }
 
   /*
    * Determines if the provided module has been activated in the indicia configuration.
    */
-  private function _check_module_active($module) {
+  private function checkModuleActive($module) {
     $config = kohana::config_load('core');
     foreach ($config['modules'] as $path) {
       if (strlen($path) >= strlen($module) &&
@@ -571,43 +479,43 @@ SQL;
    *   * **occurrence_associations** - Set to 't' to enable occurrence associations options. The
    *     relevant warehouse module must also be enabled.
    */
-  public function fixedValuesForm($options = array()) {
-    $srefs = array();
+  public function fixedValuesForm($options = []) {
+    $srefs = [];
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title) {
-      $srefs[] = str_replace(array(',', ':'), array('&#44', '&#58'), $code) .
+      $srefs[] = str_replace([',', ':'], ['&#44', '&#58'], $code) .
             ":" .
-            str_replace(array(',', ':'), array('&#44', '&#58'), $title);
+            str_replace([',', ':'], ['&#44', '&#58'], $title);
     }
 
-    $sample_methods = array(":Defined in file");
-    $parent_sample_methods = array(":No filter");
+    $sample_methods = [":Defined in file"];
+    $parent_sample_methods = [":No filter"];
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-      $sample_method = str_replace(array(',', ':'), array('&#44', '&#58'), $term->id) .
+      $sample_method = str_replace([',', ':'], ['&#44', '&#58'], $term->id) .
         ":" .
-        str_replace(array(',', ':'), array('&#44', '&#58'), $term->term);
+        str_replace([',', ':'], ['&#44', '&#58'], $term->term);
       $sample_methods[] = $sample_method;
       $parent_sample_methods[] = $sample_method;
     }
 
-    $locationTypes = array(":No filter");
+    $locationTypes = [":No filter"];
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-      $locationTypes[] = str_replace(array(',', ':'), array('&#44', '&#58'), $term->id) .
+      $locationTypes[] = str_replace([',', ':'], ['&#44', '&#58'], $term->id) .
         ":" .
-        str_replace(array(',', ':'), array('&#44', '&#58'), $term->term);
+        str_replace([',', ':'], ['&#44', '&#58'], $term->term);
     }
-    $retVal = array(
-      'website_id' => array(
+    $retVal = [
+      'website_id' => [
         'display' => 'Website',
         'description' => 'Select the website to import records into.',
         'datatype' => 'lookup',
         'population_call' => 'direct:website:id:title' ,
         'filterIncludesNulls' => TRUE,
         'validation' => ['required'],
-      ),
-      'survey_id' => array(
+      ],
+      'survey_id' => [
         'display' => 'Survey dataset',
         'description' => 'Select the survey dataset to import records into.',
         'datatype' => 'lookup',
@@ -615,17 +523,17 @@ SQL;
         'linked_to' => 'website_id',
         'linked_filter_field' => 'website_id',
         'validation' => ['required'],
-      ),
-      'sample:entered_sref_system' => array(
+      ],
+      'sample:entered_sref_system' => [
         'display' => 'Spatial ref. system',
         'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
             'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $srefs)
-      ),
+      ],
       // Also allow a field to be defined which defines the taxon list to look in when searching for species during a
       // csv upload.
-      'occurrence:fkFilter:taxa_taxon_list:taxon_list_id' => array(
+      'occurrence:fkFilter:taxa_taxon_list:taxon_list_id' => [
         'display' => 'Species list',
         'description' => 'Select the species checklist which will be used when attempting to match species names.',
         'datatype' => 'lookup',
@@ -633,51 +541,51 @@ SQL;
         'linked_to' => 'website_id',
         'linked_filter_field' => 'website_id',
         'filterIncludesNulls' => TRUE
-      ),
-      'occurrence:record_status' => array(
+      ],
+      'occurrence:record_status' => [
         'display' => 'Record status',
         'description' => 'Select the initial status for imported species records',
         'datatype' => 'lookup',
         'lookup_values' => 'C:Unconfirmed - not reviewed,V:Accepted,I:Data entry still in progress',
         'default' => 'C'
-      )
-    );
+      ]
+    ];
     if (!empty($options['activate_global_sample_method']) && ($options['activate_global_sample_method'] === 't' || $options['activate_global_sample_method'] === true)) {
-      $retVal['sample:sample_method_id'] = array(
+      $retVal['sample:sample_method_id'] = [
         'display' => 'Sample Method',
         'description' => 'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a ' .
         'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $sample_methods)
-      );
+      ];
     }
     if (!empty($options['activate_parent_sample_method_filter']) && ($options['activate_parent_sample_method_filter']==='t' || $options['activate_parent_sample_method_filter']=== true)) {
-      $retVal['fkFilter:sample:sample_method_id'] = array(
+      $retVal['fkFilter:sample:sample_method_id'] = [
         'display' => 'Parent Sample Method',
         'description' => 'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked ' .
         'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $parent_sample_methods)
-      );
+      ];
     }
     if (!empty($options['activate_location_location_type_filter']) && $options['activate_location_location_type_filter']==='t') {
-      $retVal['fkFilter:location:location_type_id'] = array(
+      $retVal['fkFilter:location:location_type_id'] = [
         'display' => 'Location Type',
         'description' => 'If this import file includes samples which reference locations records, you can restrict the type of locations looked ' .
         'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $locationTypes)
-      );
+      ];
     }
 
     if (!empty($options['occurrence_associations']) && ($options['occurrence_associations'] === 't' || $options['occurrence_associations'] === TRUE) &&
-        self::_check_module_active('occurrence_associations')) {
-      $retVal['useAssociations'] = array(
+        $this->checkModuleActive('occurrence_associations')) {
+      $retVal['useAssociations'] = [
         'display' => 'Use associations',
         'description' => 'Select if this import uses occurrence associations: implies two species records uploaded for each entry in the file.',
         'datatype' => 'checkbox'
-      ); // default off
-      $retVal['occurrence_association:fkFilter:association_type:termlist_id'] = array(
+      ]; // default off
+      $retVal['occurrence_association:fkFilter:association_type:termlist_id'] = [
         'display' => 'Term list for association types',
         'description' => 'Select the term list which will be used to match the association types.',
         'datatype' => 'lookup',
@@ -685,8 +593,8 @@ SQL;
         // ,'linked_to' => 'website_id',
         // 'linked_filter_field' => 'website_id',
         // 'filterIncludesNulls' => TRUE
-      );
-      $retVal['occurrence_2:fkFilter:taxa_taxon_list:taxon_list_id'] = array(
+      ];
+      $retVal['occurrence_2:fkFilter:taxa_taxon_list:taxon_list_id'] = [
         'display' => 'Second species list',
         'description' => 'Select the species checklist which will be used when attempting to match second species names.',
         'datatype' => 'lookup',
@@ -694,14 +602,14 @@ SQL;
         'linked_to' => 'website_id',
         'linked_filter_field' => 'website_id',
         'filterIncludesNulls' => TRUE
-      );
-      $retVal['occurrence_2:record_status'] = array(
+      ];
+      $retVal['occurrence_2:record_status'] = [
         'display' => 'Record status',
         'description' => 'Select the initial status for second imported species records',
         'datatype' => 'lookup',
         'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
         'default' => 'C'
-      );
+      ];
     }
     return $retVal;
   }

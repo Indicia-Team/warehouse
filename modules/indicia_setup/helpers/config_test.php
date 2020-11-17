@@ -164,12 +164,6 @@ class config_test {
    *   False reports both failures and successes.
    */
   private static function check_php_version(&$messages, $problems_only) {
-    // PHP_VERSION_ID is available as of PHP 5.2.7, if our
-    // version is lower than that, then emulate it.
-    if (!defined('PHP_VERSION_ID')) {
-        $version = PHP_VERSION;
-        define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
-    }
     if (PHP_VERSION_ID < 50600) {
       array_push($messages, array(
         'title' => 'PHP Version',

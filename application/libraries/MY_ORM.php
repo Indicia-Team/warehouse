@@ -150,6 +150,18 @@ class ORM extends ORM_Core {
   private $dynamicRowIdReferences = array();
 
   /**
+   * Indicates database trigger on table which accesses a sequence.
+   *
+   * Kohana relies on PostgreSQL lastval() to find the ID for inserted records,
+   * this fails if the table has a trigger on it which uses a sequence during
+   * the insert. Setting this to TRUE causes a more reliable method of
+   * detecting the inserted record ID to be used which avoids this problem.
+   *
+   * @var bool
+   */
+  protected $hasTriggerWithSequence = FALSE;
+
+  /**
    * Constructor allows plugins to modify the data model.
    * @var int $id ID of the record to load. If null then creates a new record. If -1 then the ORM
    * object is not initialised, providing access to the variables only.
@@ -202,10 +214,13 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Returns an array structure which describes this model, identifier and timestamp fields, plus the saved child models
-   * that were created during a submission operation.
+   * Returns an array structure which describes the results of a submission.
+   *
+   * Includes key information about this model, identifier and timestamp
+   * fields, plus the saved child models that were created during a submission
+   * operation.
    */
-  public function get_submission_response_metadata() {
+  public function getSubmissionResponseMetadata() {
     $r = array(
       'model' => $this->object_name,
       'id' => $this->id,
@@ -987,6 +1002,7 @@ class ORM extends ORM_Core {
     }
     Kohana::log("debug", "About to validate the following array in model $this->object_name");
     Kohana::log("debug", kohana::debug($this->sanitise($vArray)));
+    $isInsert = empty($this->id) && (empty($this->submission['fields']['id']) || empty($this->submission['fields']['id']['value']));
     try {
       if (array_key_exists('deleted', $vArray) && $vArray['deleted'] === 't') {
         // For a record deletion, we don't want to validate and save anything. Just mark delete it.
@@ -1005,7 +1021,12 @@ class ORM extends ORM_Core {
       error_logger::log_error('Exception during validation', $e);
     }
     if ($v) {
-      // Record has successfully validated so return the id.
+      // Record has successfully validated so return the id. If the entity uses
+      // a trigger containing a sequence, we have to recalculate the ID as the
+      // Kohana reliance on lastval() doesn't work.
+      if ($isInsert && !empty($this->hasTriggerWithSequence)) {
+        $this->id = $this->db->query("SELECT currval(pg_get_serial_sequence('$this->object_plural','id')) as last_id")->current()->last_id;
+      }
       Kohana::log("debug", "Record $this->id has validated successfully");
       $return = $this->id;
     }
@@ -1174,7 +1195,7 @@ class ORM extends ORM_Core {
         // Copy up the website id and survey id.
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
-        $this->nestedParentModelIds[] = $m->get_submission_response_metadata();
+        $this->nestedParentModelIds[] = $m->getSubmissionResponseMetadata();
         // Copy the submission back so we pick up updated foreign keys that have
         // been looked up. E.g. if submitting a taxa taxon list, and the taxon
         // supermodel has an fk lookup, we need to keep it so that it gets
@@ -1233,7 +1254,7 @@ class ORM extends ORM_Core {
         // copy down the website id and survey id
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
-        $this->nestedChildModelIds[] = $m->get_submission_response_metadata();
+        $this->nestedChildModelIds[] = $m->getSubmissionResponseMetadata();
         if ($m->wantToUpdateMetadata && !$this->wantToUpdateMetadata && preg_match('/_(image|medium)$/', $m->object_name)) {
           // we didn't update the parent's metadata. But a child image has been changed, so we want to update the parent record metadata.
           // i.e. adding an image to a record causes the record to be edited and therefore to get its status reset.
@@ -1899,15 +1920,13 @@ class ORM extends ORM_Core {
           ($dataType === 'G' && !empty($attrValueModel->$vf))) {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId.");
       }
-      else {
-        if ($dataType === 'F' && preg_match('/^\d+(\.\d+)?$/', $value)
-            && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf ) {
-          kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
-        } else {
-          $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
-          kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
-          return FALSE;
-        }
+      elseif ($dataType === 'F' && preg_match('/^-?\d+(\.\d+)?$/', $value)
+          && abs($attrValueModel->$vf - $value) < abs(0.00001 * $attrValueModel->$vf)) {
+        kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
+      } else {
+        $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
+        kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
+        return FALSE;
       }
     }
     // set metadata
@@ -1945,7 +1964,7 @@ class ORM extends ORM_Core {
       $this->set_metadata();
       $this->validate(new Validation($this->as_array()), TRUE);
     }
-    $this->nestedChildModelIds[] = $attrValueModel->get_submission_response_metadata();
+    $this->nestedChildModelIds[] = $attrValueModel->getSubmissionResponseMetadata();
 
     return [$attrValueModel->id];
   }
@@ -2374,4 +2393,35 @@ class ORM extends ORM_Core {
     }
     return $wheres;
   }
+
+  /**
+   * Override __set to process array fields.
+   *
+   * * Incoming data for ORM int[] fields will be decoded as an array of
+   *   strings. Change back to integers in order for the SQL value to be cast
+   *   correctly by ORM.
+   * * Single values submitted for array fields are converted to arrays.
+   *
+   * @param string $column
+   *   Column name.
+   * @param mixed $value
+   *   Value to set.
+   */
+  public function __set($column, $value) {
+    if (!empty($value) && !empty($this->table_columns[$column])) {
+      $colDef = $this->table_columns[$column];
+      if (!empty($colDef['array'])) {
+        if (!is_array($value)) {
+          $value = [$value];
+        }
+        if ($colDef['subtype'] === 'int') {
+          foreach ($value as $i => $single) {
+            $value[$i] = (int) $single;
+          }
+        }
+      }
+    }
+    return parent::__set($column, $value);
+  }
+
 }

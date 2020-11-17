@@ -7,6 +7,8 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" training_filter_field=""
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
     DROP TABLE IF EXISTS filtered_occurrences;
+    DROP TABLE IF EXISTS output_rows;
+
     SELECT o.*
     INTO TEMPORARY filtered_occurrences
     FROM cache_occurrences_functional o
@@ -19,21 +21,31 @@
     LIMIT #limit#;
 
     SELECT #columns#
+    INTO TEMPORARY output_rows
     FROM filtered_occurrences o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
-    JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id
-    JOIN taxa t ON t.id=ttl.taxon_id
-    LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
     JOIN samples s on s.id=o.sample_id AND s.deleted=false
-    LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
-    LEFT JOIN samples sp ON sp.id=s.parent_id AND sp.deleted=false
+    LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false;
+
+    UPDATE output_rows o
+    SET recorded_parent_location_id = lp.id,
+      recorded_parent_location_name = lp.name,
+      recorded_parent_location_code = lp.code,
+      parent_sample_attrs_json=snfp.attrs_json
+    FROM samples sp
+    JOIN cache_samples_nonfunctional snfp ON snfp.id=sp.id
     LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
+    WHERE sp.id=o.parent_sample_id AND sp.deleted=false;
+
+    SELECT *
+    FROM output_rows o
     #order_by#
   </query>
   <params>
-    <!-- last_id, autofeed_tracking_from and update_to parameters required for autofeed to work. -->
+    <!-- last_id and autofeed_tracking_from parameters required for autofeed to work. -->
     <param name="last_id" display="Last ID" datatype="integer" default="" order_by="o.id ASC">
       <where>o.id &gt; #last_id#</where>
     </param>
@@ -56,11 +68,13 @@
     <column name="survey_title" sql="snf.survey_title" datatype="text" />
     <column name="group_title" sql="snf.group_title" datatype="text" />
     <column name="recorders" sql="snf.recorders" datatype="text" />
-    <column name="taxon_key" sql="coalesce(t.search_code, o.taxa_taxon_list_external_key)" datatype="text" />
+    <column name="taxon_key" sql="coalesce(cttl.search_code, cttl.external_key)" datatype="text" />
+    <column name="accepted_taxon_key" sql="cttl.external_key" datatype="text" />
     <column name="taxa_taxon_list_id" sql="o.taxa_taxon_list_id" datatype="integer" />
     <column name="taxon_meaning_id" sql="o.taxon_meaning_id" datatype="integer" />
     <column name="date_start" sql="o.date_start" datatype="date" />
     <column name="date_end" sql="o.date_end" datatype="date" />
+    <column name="date_type" sql="o.date_type" datatype="text" />
     <column name="day_of_year" sql="case o.date_type when 'D' then extract(doy from o.date_start) else null end" datatype="integer" />
     <column name="week" sql="case
             when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0)
@@ -90,11 +104,13 @@
     <column name="point" sql="st_y(st_transform(st_centroid(s.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.geom), 4326))::text" datatype="text" />
     <column name="map_sq_srid" sql="COALESCE(get_output_srid(o.public_geom), 3857)" datatype="integer" />
     <column name="map_sq_1km_geom" datatype="text"
-      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 1000), 4326)))))" />
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(s.geom), false, 1000), 4326)))))" />
     <column name="map_sq_2km_geom" datatype="text"
-      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 2000), 4326)))))" />
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(s.geom), false, 2000), 4326)))))" />
     <column name="map_sq_10km_geom" datatype="text"
-      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 10000), 4326)))))" />
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(s.geom), false, 10000), 4326)))))" />
+    <column name="input_sref" sql="s.entered_sref" datatype="text" />
+    <column name="input_sref_system" sql="s.entered_sref_system" datatype="text" />
     <column name="output_sref" sql="get_output_sref(
       greatest(
         round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
@@ -122,8 +138,10 @@
     <column name="given_locality_name" sql="COALESCE(s.location_name, l.name)" datatype="text" />
     <column name="recorded_location_id" sql="l.id" datatype="integer" />
     <column name="recorded_location_name" sql="l.name" datatype="text" />
-    <column name="recorded_parent_location_id" sql="lp.id" datatype="integer" />
-    <column name="recorded_parent_location_name" sql="lp.name" datatype="text" />
+    <column name="recorded_location_code" sql="l.code" datatype="text" />
+    <column name="recorded_parent_location_id" sql="null::integer" datatype="integer" />
+    <column name="recorded_parent_location_name" sql="null::text" datatype="text" />
+    <column name="recorded_parent_location_code" sql="null::text" datatype="text" />
     <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
@@ -131,7 +149,7 @@
     <column name="attr_stage" sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)" datatype="text" />
     <column name="attr_sex" sql="onf.attr_sex" datatype="text" />
     <column name="attr_sex_stage_count" sql="onf.attr_sex_stage_count" datatype="text" />
-    <column name="attr_sex_stage_count_exact" sql="case when onf.attr_sex_stage_count similar to '\d{1,9}' then onf.attr_sex_stage_count::integer else null end" />
+    <column name="attr_sex_stage_count_exact" sql="case when onf.attr_sex_stage_count similar to '[0-9]{1,9}' then onf.attr_sex_stage_count::integer else null end" />
     <column name="attr_certainty" sql="onf.attr_certainty" datatype="text" />
     <column name="attr_det_name" sql="coalesce(onf.attr_det_full_name, coalesce(onf.attr_det_first_name, '') || ' ' || onf.attr_det_last_name)" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
@@ -146,7 +164,7 @@
       ELSE null
       END" datatype="text" />
     <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
-    <column name="updated_on" sql="to_char(greatest(o.updated_on, ttl.updated_on), 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
+    <column name="updated_on" sql="to_char(o.updated_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="record_status" sql="o.record_status" datatype="text" />
     <column name="record_substatus" sql="coalesce(o.record_substatus, 0)" datatype="integer" />
     <column name="record_decision_source" sql="occ.record_decision_source" datatype="text" />
@@ -166,6 +184,7 @@
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
     <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />
+    <column name="parent_sample_attrs_json" sql="null::json" datatype="text" />
     <column name="occurrence_attrs_json" sql="onf.attrs_json" datatype="text" />
     <column name="tracking" sql="o.tracking" datatype="integer" />
     <column name="input_form" sql="o.input_form" datatype="text" />

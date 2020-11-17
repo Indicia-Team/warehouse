@@ -1,7 +1,7 @@
 /* CSS styles to support the REST API help page */
 
 $heading-colour: #0066AA;
-$heading-background-colour: #C1DAD7;
+$heading-background-colour: #dbdbdb;
 $label-col-background-colour: #e6e6e6;
 $gap: 1em;
 
@@ -11,6 +11,13 @@ body {
 
 h1, h2, h3 {
   color: $heading-colour;
+}
+
+.collapse {
+  margin-bottom: 3em;
+  h4 {
+    margin-top: 2em;
+  }
 }
 
 table {

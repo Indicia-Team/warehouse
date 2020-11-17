@@ -1,5 +1,5 @@
 <report
-    title="Locations list 2"
+    title="Locations list 3"
     description="A general purpose list of locations including option to filter by an intersecting point."
 >
   <query website_filter_field="" training_filter_field="">

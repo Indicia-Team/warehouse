@@ -50,6 +50,22 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
   }
 
   /**
+   * Return the action columns for the grid.
+   */
+  protected function get_action_columns() {
+    return [
+      [
+        'caption' => 'edit',
+        'url' => $this->controllerpath . "/edit/{id}"
+      ],
+      [
+        'caption' => 'list taxa',
+        'url' => $this->controllerpath . "/edit/{id}?tab=taxa"
+      ]
+    ];
+  }
+
+  /**
    *  Setup the default values to use when loading this controller to edit a new page.
    *  In this case, the parent_id and website_id are passed as $_POST data if creating
    *  a new sublist.

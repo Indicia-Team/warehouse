@@ -1,27 +1,41 @@
 /* CSS styles to support the REST API help page */
 body {
-  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif; }
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+}
 
 h1, h2, h3 {
-  color: #0066AA; }
+  color: #0066AA;
+}
+
+.collapse {
+  margin-bottom: 3em;
+}
+.collapse h4 {
+  margin-top: 2em;
+}
 
 table caption {
   padding: 0.25em;
-  background-color: #C1DAD7;
+  background-color: #dbdbdb;
   border: solid silver 1px;
   border-bottom: none;
-  font-weight: bold; }
+  font-weight: bold;
+}
 table th[scope=col] {
-  background-color: #C1DAD7; }
+  background-color: #dbdbdb;
+}
 table th[scope=row] {
-  background-color: #e6e6e6; }
-  table th[scope=row].type-report {
-    background: #e6e6e6 url(../../../../media/images/report_datatable.png) no-repeat 4px 2px;
-    background-size: 25px 25px;
-    padding-left: 32px; }
-  table th[scope=row].type-folder {
-    background: #e6e6e6 url(../../../../media/images/folder.gif) no-repeat 4px 2px;
-    background-size: 25px 25px;
-    padding-left: 32px; }
+  background-color: #e6e6e6;
+}
+table th[scope=row].type-report {
+  background: #e6e6e6 url(../../../../media/images/report_datatable.png) no-repeat 4px 2px;
+  background-size: 25px 25px;
+  padding-left: 32px;
+}
+table th[scope=row].type-folder {
+  background: #e6e6e6 url(../../../../media/images/folder.gif) no-repeat 4px 2px;
+  background-size: 25px 25px;
+  padding-left: 32px;
+}
 
 /*# sourceMappingURL=rest_api.css.map */

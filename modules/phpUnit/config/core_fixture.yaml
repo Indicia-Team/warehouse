@@ -14,6 +14,16 @@ websites:
     password: "password"
     verification_checks_enabled: "true"
 
+users_websites:
+  -
+    user_id: 1
+    website_id: 1
+    site_role_id: 1
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+
 
 surveys:
   -
@@ -24,7 +34,14 @@ surveys:
     created_by_id: 1
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
-
+  -
+    title: "Test survey 2"
+    description: "Additional survey for unit testing"
+    website_id: 1
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
 
 taxon_meanings:
   # No support for INSERT INTO table DEFAULT VALUES.
@@ -260,6 +277,8 @@ meanings:
     id: 10004
   -
     id: 10005
+  -
+    id: 10006
 
 
 termlists:
@@ -304,6 +323,14 @@ termlists:
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
     external_key: "indicia:group_types"
+  -
+    title: "Media types"
+    description: "Term list for media types"
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+    external_key: "indicia:media_types"
 
 
 terms:
@@ -349,7 +376,13 @@ terms:
     created_by_id: 1
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
-
+  -
+    term: "Image:Local"
+    language_id: 1
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
 
 termlists_terms:
   -
@@ -412,6 +445,16 @@ termlists_terms:
     meaning_id: 10005
     preferred: "true"
     sort_order: 2
+  -
+    termlist_id: 6                          #Media types
+    term_id: 7                              #Image:Local
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+    meaning_id: 10005
+    preferred: "true"
+    sort_order: 1
 
 
 cache_termlists_terms:
@@ -515,6 +558,23 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10005
+    cache_created_on: 2016-07-22:16:00:00
+    cache_updated_on: 2016-07-22:16:00:00
+  -
+    id: 7
+    preferred: "true"
+    termlist_id: 6
+    termlist_title: "Media types"
+    website_id:
+    preferred_termlists_term_id: 7
+    sort_order: 1
+    term: "Image:Local"
+    language_iso: "eng"
+    language: "English"
+    preferred_term: "Image:Local"
+    preferred_language_iso: "eng"
+    preferred_language: "English"
+    meaning_id: 10006
     cache_created_on: 2016-07-22:16:00:00
     cache_updated_on: 2016-07-22:16:00:00
 
@@ -663,6 +723,43 @@ cache_samples_nonfunctional:
     public_entered_sref: "SU01"
     entered_sref_system: "OSGB"
     recorders: "PHPUnit"
+
+sample_attributes:
+  -
+    caption: "Altitude"
+    data_type: "I"
+    created_on: "2016-07-22:16:00:00"
+    created_by_id: 1,
+    updated_on: "2016-07-22:16:00:00"
+    updated_by_id: 1
+    public: "false"
+
+sample_attributes_websites:
+  -
+    website_id: 1
+    sample_attribute_id: 1
+    created_on: "2016-07-22:16:00:00"
+    created_by_id: 1,
+    restrict_to_survey_id: 1
+
+occurrence_attributes:
+  -
+    caption: "Identified_by"
+    data_type: "T"
+    public: "false"
+    system_function: "det_full_name"
+    created_on: "2016-07-22:16:00:00"
+    created_by_id: 1,
+    updated_on: "2016-07-22:16:00:00"
+    updated_by_id: 1
+
+occurrence_attributes_websites:
+  -
+    website_id: 1
+    occurrence_attribute_id: 1
+    created_on: "2016-07-22:16:00:00"
+    created_by_id: 1,
+    restrict_to_survey_id: 1
 
 locations:
   -

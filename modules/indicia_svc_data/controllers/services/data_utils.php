@@ -47,35 +47,43 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       }
       $action = $actions[$name];
       $db = new Database();
+      if (!empty($_POST)) {
+        $post = $_POST;
+      }
+      elseif (!empty(file_get_contents('php://input'))) {
+        $post = json_decode(file_get_contents('php://input'));
+      }
       // Build the stored procedure params.
       foreach ($action['parameters'] as &$param) {
         if (is_string($param)) {
-          // Integer parameters load from URL if config defined like [1].
-          if (preg_match('/^\[(?P<index>\d+)\]$/', $param, $matches)) {
-            if (isset($arguments[$matches['index'] - 1])) {
-              if (!preg_match('/^\d+$/', $arguments[$matches['index'] - 1])) {
-                throw new exception("Invalid argument at position $matches[index]");
-              }
-              $param = $arguments[$matches['index'] - 1];
+          // Integer parameters in square brackets or string parameters in braces.
+          if (preg_match('/^(?P<bracketType>[\[\{])(?P<paramName>[a-zA-Z0-9\-_]+)[\]\}]$/', $param, $matches)) {
+            if (preg_match('/^\d+$/', $matches['paramName']) && isset($arguments[$matches['paramName'] - 1])) {
+              // Parameter is numeric so grab the value from the URL segment at
+              // the indicated index position.
+              $param = $arguments[$matches['paramName'] - 1];
+            }
+            elseif (!empty($_GET[$matches['paramName']])) {
+              // Other parameters should be in URL query parameters.
+              $param = $_GET[$matches['paramName']];
+            }
+            elseif (!empty($post[$matches['paramName']])) {
+              // Other parameters should be in URL query parameters.
+              $param = $post[$matches['paramName']];
             }
             else {
-              throw new Exception('Required arguments not provided');
+              throw new Exception('Required parameters not provided.');
             }
-          }
-          // String parameters load from URL if config defined like {1}.
-          elseif (preg_match('/^{(?P<index>\d+)}$/', $param, $matches)) {
-            if (isset($arguments[$matches['index'] - 1])) {
-              $param = "'" . pg_escape_string($arguments[$matches['index'] - 1]) . "'";
+            if ($matches['bracketType'] === '{') {
+              // Escape string parameters.
+              $param = "'" . pg_escape_string($param) . "'";
             }
-            else
-              throw new Exception('Required arguments not provided');
           }
           else {
-            // Fixed string defined in config.
+            // Non-bracketed parameters are fixed strings defined in config.
             $param = "'" . pg_escape_string($param) . "'";
           }
         }
-        // Numeric parameters don't need processing or sanitising.
       }
       $params = implode(', ', $action['parameters']);
       echo json_encode($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));

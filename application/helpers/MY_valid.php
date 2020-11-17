@@ -69,7 +69,6 @@ class Valid extends valid_Core {
   * Validates that a date is not in the future.
   */
   public static function date_in_past($date) {
-  	kohana::log('debug', 'date in past being checked');
     return ($date == null || strtotime($date) <= time());
   }
 

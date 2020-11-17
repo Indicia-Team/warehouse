@@ -1,0 +1,47 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "caption", "type": "string" },
+    { "sql": "caption_i18n", "type": "json" },
+    { "sql": "description", "type": "string" },
+    { "sql": "description_i18n", "type": "json" },
+    { "sql": "data_type", "type": "string" },
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" },
+    { "sql": "updated_on", "type": "date" },
+    { "sql": "updated_by_id", "type": "integer" },
+    { "sql": "validation_rules", "type": "string" },
+    { "sql": "termlist_id", "type": "integer" },
+    { "sql": "system_function", "type": "string" },
+    { "sql": "term_name", "type": "string" },
+    { "sql": "term_identifier", "type": "string" },
+    { "sql": "allow_ranges", "type": "boolean" },
+    { "sql": "unit", "type": "string" },
+    { "sql": "image_path", "type": "string" }
+  ],
+  "joins": [
+    {
+      "sql": "JOIN occurrence_attributes_websites t2 on t2.occurrence_attribute_id=t1.id AND t2.deleted=false",
+      "fields": [
+        { "sql": "id", "name": "occurrence_attributes_website_id", "type": "integer" },
+        { "sql": "restrict_to_survey_id", "type": "integer" },
+        { "sql": "validation_rules", "name": "survey_validation_rules", "type": "string" }
+      ]
+    }
+  ],
+  "subModels": {
+    "occurrence_attributes_websites": {
+      "fk": "occurrence_attribute_id",
+      "required": true
+    }
+  },
+  "extras": {
+    "terms": {
+      "sql": "SELECT json_agg(term ORDER BY sort_order, term) AS extra FROM list_termlists_terms WHERE termlist_id={{ termlist_id }} AND allow_data_entry=true",
+      "parameter": "termlist_id"
+    }
+  },
+  "forceValuesOnCreate": {
+    "public": "f"
+  }
+}

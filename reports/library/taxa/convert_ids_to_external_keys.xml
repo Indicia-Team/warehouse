@@ -1,0 +1,26 @@
+<report
+  title="Convert IDs to external keys"
+  description="Converts a list of taxa taxon list IDs or taxon meaning IDs to preferred name external keys from the master checklist.
+               Useful to standardise filtering, e.g. against an Elasticsearch index."
+>
+<query website_filter_field="">
+    SELECT DISTINCT cttlout.external_key
+    FROM cache_taxa_taxon_lists cttlin
+    JOIN cache_taxa_taxon_lists cttlout ON cttlout.search_code=cttlin.external_key AND cttlout.taxon_list_id=#master_checklist_id#
+    WHERE 1=1
+    #filters#
+  </query>
+  <params>
+    <param name="id" data_type="integer[]" default="">
+      <where>cttlin.id in (#id#)</where>
+    </param>
+    <param name="taxon_meaning_id" data_type="integer[]" default="">
+      <where>cttlin.taxon_meaning_id in (#taxon_meaning_id#)</where>
+    </param>
+    <param name="master_checklist_id" data_type="integer" />
+  </params>
+  <columns>
+    <column name="external_key" />
+  </columns>
+</report>
+
