@@ -1871,25 +1871,32 @@ class ORM extends ORM_Core {
         // Lookup list
         $vf = 'int_value';
         if (!empty($value)) {
-          if ($fk) {
-            // value must be looked up
-            $r = $this->fkLookup(array(
-              'fkTable' => 'lookup_term',
-              'fkSearchField' => 'term',
-              'fkSearchValue' => $value,
-              'fkSearchFilterField' => 'termlist_id',
-              'fkSearchFilterValue' => $attrDef->termlist_id,
-            ));
-            if ($r) {
-              $value = $r;
-            } else {
-              $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
-              kohana::log('debug', "Could not accept value $value into field $vf  for attribute $fieldId.");
-              return FALSE;
-            }
+          $creatingTerm = $allowTermCreationLang && substr($value, 0, 11) === 'createTerm:';
+          if ($creatingTerm) {
+            // Chop off prefix.
+            $value = substr($value, 11);
           }
-          if ($allowTermCreationLang && substr($value, 0, 11) === 'createTerm:') {
-            $escapedTerm = pg_escape_string(substr($value, 11));
+          // Find existing value.
+          $r = $this->fkLookup(array(
+            'fkTable' => 'lookup_term',
+            'fkSearchField' => 'term',
+            'fkSearchValue' => $value,
+            'fkSearchFilterField' => 'termlist_id',
+            'fkSearchFilterValue' => $attrDef->termlist_id,
+          ));
+          if (($fk || $creatingTerm) && $r) {
+            // Term lookup succeeded and we are submitting fk_field, or a
+            // normal field that allows term creation. In the latter case
+            // we use the lookup to avoid duplication.
+            $value = $r;
+          }
+          elseif ($fk) {
+            $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
+            kohana::log('debug', "Could not accept value $value into field $vf  for attribute $fieldId.");
+            return FALSE;
+          }
+          elseif ($creatingTerm) {
+            $escapedTerm = pg_escape_string($value);
             $value = $this->db
               ->query("select insert_term('$escapedTerm', '$allowTermCreationLang', null, $attrDef->termlist_id, null);")
               ->insert_id();
