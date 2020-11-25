@@ -4654,7 +4654,7 @@ class Rest_Controller extends Controller {
    * resource.
    *
    * @param int $level
-   *   Level required (1 = user, 2 = editor, 3 = admin). Default 2.
+   *   Level required (1 = admin, 2 = editor, 3 = user). Default 2.
    */
   private function assertUserHasWebsiteAccess($level = 2) {
     if (empty(RestObjects::$clientUserId)) {
@@ -4665,7 +4665,7 @@ class Rest_Controller extends Controller {
     $sql = <<<SQL
 SELECT u.id, u.core_role_id, uw.site_role_id
 FROM users u
-LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=$websiteId and uw.site_role_id>=$level
+LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=$websiteId and uw.site_role_id<=$level
 WHERE u.id=$userId;
 SQL;
     $user = RestObjects::$db->query($sql)->current();
