@@ -399,7 +399,7 @@ JS;
       else {
         echo <<<HTML
 <div class="alert alert-warning">
-Set the taxon_list_id configuration in application/config/indicia.php to enable linking attributes to taxa.
+Set the master_list_id configuration in application/config/indicia.php to enable linking attributes to taxa.
 </div>
 HTML;
       }
