@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="User users websites list" description="A list of websites associated with a user, cannot return this data using get_population_data from
+    the table as the data is automatically filtered by website so we only every get 1 row maximum when running from iForm.">
+  <query>
+    SELECT #columns#
+    FROM users u
+    JOIN people p ON p.id=u.person_id AND p.deleted = false
+    JOIN users_websites uw on u.id = uw.user_id
+    JOIN indicia.websites w on w.id = uw.website_id AND w.deleted = false
+    WHERE u.deleted=false and u.id = #user_id#
+  </query>
+  <orderbys>
+    <orderby>u.id desc</orderby>
+  </orderbys>
+  <params>
+    <param name="user_id" display="User Id" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="id" display="Users Websites ID" sql="uw.id" datatype="integer" in_count="true"/>
+    <column name="person_id" sql="p.id" datatype="integer" visible="false"/>
+    <column name="website" display="Website" sql="w.title" datatype="text" />
+    </columns>
+</report>
