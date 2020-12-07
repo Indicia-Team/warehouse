@@ -116,7 +116,7 @@ echo html::error_message($model->getError('deleted'));
       'helpText' => 'Description which applies only to this taxon within the context of this list.',
     ]);
     $helpText = <<<TXT
-Unique identifier for this taxon concept as defined by an external source. For example in the UK this field is
+Unique identifier for the accepted name for this taxon as defined by an external source. For example in the UK this field is
 typically used to store an NBN Taxon Version Key for the accepted name.
 TXT;
     echo data_entry_helper::text_input([
@@ -135,6 +135,16 @@ TXT;
       'label' => 'Taxon name unique identifier (search code)',
       'fieldname' => 'taxon:search_code',
       'default' => html::initial_value($values, 'taxon:search_code'),
+      'helpText' => $helpText,
+    ]);
+    $helpText = <<<TXT
+Unique identifier for this taxon concept as defined by an external source. When linking to UKSI, this
+field is used to store the Organism Key.
+TXT;
+    echo data_entry_helper::text_input([
+      'fieldname' => 'taxon:organism_key',
+      'label' => 'Organism unique identifier (organism key)',
+      'default' => html::initial_value($values, 'taxon:organism_key'),
       'helpText' => $helpText,
     ]);
     echo data_entry_helper::text_input([
