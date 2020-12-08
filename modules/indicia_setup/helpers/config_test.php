@@ -195,7 +195,7 @@ class config_test {
       array_push($messages, array(
         'title' => 'PostgreSQL PHP Extensions',
         'description' => 'The PostgreSQL extensions are not available on this installation of PHP. To fix this, find your php.ini file in the PHP installation folder and ' .
-            'find the line <strong>;extension=php_pgsql.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
+            'find the line <strong>;extension=php_pgsql.dll</strong> or <strong>;extension=pgsql</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
             'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.',
         'success' => FALSE,
       ));
