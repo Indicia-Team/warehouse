@@ -86,6 +86,7 @@ class serverStatus {
       ->select('count(*)')
       ->from('system')
       ->where('last_scheduled_task_check is not null')
+      ->where("name<>'indicia'")
       ->get()->current();
     if ($query->count === '0') {
       $description = <<<DESC
