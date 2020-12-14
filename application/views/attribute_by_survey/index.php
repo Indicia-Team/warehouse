@@ -228,4 +228,5 @@ foreach ($existingAttrs as $attr) {
   $attrs["id$attr->id"] = $attr->caption;
 }
 data_entry_helper::$javascript .= "indiciaData.existingAttrs = " . json_encode($attrs) . ";\n";
+data_entry_helper::add_resource('indiciaFns');
 echo data_entry_helper::dump_javascript();
