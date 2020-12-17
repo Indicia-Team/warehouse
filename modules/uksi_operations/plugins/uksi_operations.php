@@ -1,9 +1,6 @@
 <?php
 
 /**
- * @file
- * Warehouse version configuration.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,28 +16,29 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @link https://github.com/indicia-team/warehouse/
  */
-
-defined('SYSPATH') or die('No direct script access.');
 
 /**
- * The application files' version number.
- *
- * @var string
+ * Create a menu item for the list of taxon designations.
  */
-$config['version'] = '4.10.0';
+function uksi_operations_alter_menu($menu, $auth) {
+  if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin'))
+    $menu['Taxonomy']['UKSI operations'] = 'uksi_operation';
+  return $menu;
+}
 
 /**
- * Version release date.
- *
- * @var string
+ * Hook to ORM enable the relationship between taxon designations and taxa from the taxon end.
  */
-$config['release_date'] = '2020-12-14';
+function uksi_operations_extend_orm() {
+  return [
+    'uksi_operation' => [],
+  ];
+}
 
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+function uksi_operations_extend_data_services() {
+  return array(
+    'uksi_operations' => [],
+  );
+}
