@@ -34,6 +34,7 @@ class Uksi_operation_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('sequence', 'required', 'integer');
     $array->add_rules('operation', 'required');
+    $array->add_rules('batch_processed_on', 'required');
     $this->unvalidatedFields = [
       'operation_processed',
       'error_detail',
@@ -45,6 +46,7 @@ class Uksi_operation_Model extends ORM {
       'attribute',
       'parent_organism_key',
       'parent_name',
+      'synonym',
       'output_group',
       'marine',
       'terrestrial',

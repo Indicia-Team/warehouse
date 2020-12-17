@@ -1,4 +1,3 @@
--- @todo Do we need synonym field?
 
 CREATE TABLE uksi_operations
 (
@@ -14,6 +13,7 @@ CREATE TABLE uksi_operations
     attribute character varying,
     parent_organism_key character(16),
     parent_name character varying,
+    synonym character varying,
     output_group character varying,
     marine boolean,
     terrestrial boolean,
@@ -22,7 +22,7 @@ CREATE TABLE uksi_operations
     redundant boolean,
     deleted_date date,
     operation_processed boolean NOT NULL default false,
-    batch_processed_on timestamp without time zone,
+    batch_processed_on timestamp without time zone NOT NULL,
     processed_on timestamp without time zone,
     created_on timestamp without time zone NOT NULL,
     created_by_id integer NOT NULL,
@@ -41,7 +41,7 @@ COMMENT ON COLUMN uksi_operations.id IS '';
 COMMENT ON COLUMN uksi_operations.sequence IS '';
 COMMENT ON COLUMN uksi_operations.operation IS '';
 COMMENT ON COLUMN uksi_operations.error_detail IS '';
-COMMENT ON COLUMN uksi_operations.organism_key IS '';
+COMMENT ON COLUMN uksi_operations.organism_key IS 'Organism key for operations which affect a taxon concept.';
 COMMENT ON COLUMN uksi_operations.taxon_version_key IS '';
 COMMENT ON COLUMN uksi_operations.rank IS '';
 COMMENT ON COLUMN uksi_operations.taxon_name IS '';
@@ -49,6 +49,7 @@ COMMENT ON COLUMN uksi_operations.authority IS '';
 COMMENT ON COLUMN uksi_operations.attribute IS '';
 COMMENT ON COLUMN uksi_operations.parent_organism_key IS '';
 COMMENT ON COLUMN uksi_operations.parent_name IS '';
+COMMENT ON COLUMN uksi_operations.synonym IS 'For promote name operations, the TVK of the name being promoted. For merge taxa operations, the organism key of the taxon being merged into another and relegated to junior synonym.';
 COMMENT ON COLUMN uksi_operations.output_group IS '';
 COMMENT ON COLUMN uksi_operations.marine IS '';
 COMMENT ON COLUMN uksi_operations.terrestrial IS '';

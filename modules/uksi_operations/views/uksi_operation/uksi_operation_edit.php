@@ -68,7 +68,11 @@ $id = html::initial_value($values, 'uksi_operation:id');
       'fieldname' => 'uksi_operation:operation',
       'default' => html::initial_value($values, 'uksi_operation:operation'),
       'lookupValues' => [
+        'Amend metadata' => 'Amend metadata',
+        'Merge taxa' => 'Merge taxa',
         'New taxon' => 'New taxon',
+        'Promote name' => 'Promote name',
+        'Rename taxon' => 'Rename taxon',
       ],
       'validation' => ['required'],
     ]);
@@ -117,8 +121,15 @@ $id = html::initial_value($values, 'uksi_operation:id');
     echo data_entry_helper::text_input([
       'label' => 'Parent Name',
       'fieldname' => 'uksi_operation:parent_name',
-      'default' => html::initial_value($values, 'uksi_operation:parent'),
+      'default' => html::initial_value($values, 'uksi_operation:parent_name'),
       'helpText' => 'Alternative to Parent Organism Key. Must refer to a previous New Taxon operation.',
+    ]);
+    echo data_entry_helper::text_input([
+      'label' => 'Synonym',
+      'fieldname' => 'uksi_operation:synonym',
+      'default' => html::initial_value($values, 'uksi_operation:synonym'),
+      'helpText' => 'For promote name operations, the TVK of the name being promoted. For merge taxa ' . 
+          'operations, the organism key of the taxon being merged into another and relegated to junior synonym.',
     ]);
     echo data_entry_helper::text_input([
       'label' => 'Output group',
