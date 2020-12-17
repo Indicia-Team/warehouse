@@ -33,6 +33,5 @@ jQuery(document).ready(function($) {
 
   var done = 0;
   jQuery('#progress-bar').progressbar ({value: 0});
-  alert('here');
   processOperation();
 });

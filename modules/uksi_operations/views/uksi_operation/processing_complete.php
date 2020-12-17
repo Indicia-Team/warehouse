@@ -22,4 +22,10 @@
  * @link http://code.google.com/p/indicia/
  */
 ?>
-<div class="alert alert-info"><?php echo $_GET['total'] ?> operation<?php echo ($_GET['total'] === '1') ? ' was' : 's were'; ?> processed.</div>
+<div class="alert alert-info">
+  <h2><?php echo $_GET['total'] ?> operation<?php echo ($_GET['total'] === '1') ? ' was' : 's were'; ?> processed.</h2>
+  <p>If you are using Elasticsearch with this warehouse, please refresh the Logstash taxonomy lookups then restart 
+    Logstash. See <a href="https://github.com/Indicia-Team/support_files/tree/master/Elasticsearch#prepare-the-lookups-for-taxon-data">
+    Indicia Elasticsearch documentation</a> for more information.</p>
+  <p><a class="btn btn-success" href="<?php echo url::site() . "uksi_operation"; ?>">Return to the UKSI operations list</a></p>
+</div>
