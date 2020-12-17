@@ -1200,6 +1200,52 @@ class Rest_Controller extends Controller {
       $this->esCsvTemplateRemoveColumns = (array) $postObj->removeColumns;
       unset($postObj->removeColumns);
     }
+    if (isset($postObj->columnsSurveyId)) {
+      if (!isset ($this->esCsvTemplateAddColumns)) {
+        $this->esCsvTemplateAddColumns = array();
+      }
+      $this->esCsvTemplateAddColumns = array_merge($this->esCsvTemplateAddColumns, $this->getSurveyAttributes('sample', $postObj->columnsSurveyId));
+      $this->esCsvTemplateAddColumns = array_merge($this->esCsvTemplateAddColumns, $this->getSurveyAttributes('occurrence', $postObj->columnsSurveyId));
+      unset($postObj->columnsSurveyId);
+    }
+  }
+
+   /**
+   * Retrieve the columns associated with a survey.
+   *
+   * @param string $type
+   *   Either 'sample' or 'occurrence'.
+   * 
+   * @param string $id
+   *   The survey ID.
+   * 
+   * @return array
+   *   Array of associative arrays describing each attribute.
+   */
+  private function getSurveyAttributes($type, $id) {
+    $cacheId = "survey-attrs-$type-$id";
+    $cache = Cache::instance();
+    if ($cached = $cache->get($cacheId)) {
+      return unserialize($cached, array('field', 'caption'));
+    }
+    else {
+      $sql = <<<SQL
+SELECT a.caption, a.id
+FROM ${type}_attributes_websites aw
+JOIN ${type}_attributes a on a.id = aw.${type}_attribute_id
+WHERE restrict_to_survey_id=$id;
+SQL;
+      $columns = array();
+      $attrs = RestObjects::$db->query($sql)->result_array();
+      foreach ($attrs as $attr) {
+        $columns[] = array(
+          'field' => "#attr_value:$type:$attr->id#",
+          'caption' => $attr->caption
+        );
+      }
+      $cache->set($cacheId, serialize($columns));
+      return $columns;
+    }
   }
 
    /**

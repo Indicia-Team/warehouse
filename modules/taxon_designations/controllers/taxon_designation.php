@@ -51,7 +51,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
    * As the designations list is global, need to be admin to change it.
    */
   protected function page_authorised() {
-    return $this->auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin');
+    return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
   }
 
   /**

@@ -47,6 +47,7 @@ class Taxon_Model extends ORM {
       'freshwater_flag',
       'terrestrial_flag',
       'non_native_flag',
+      'organism_key',
     );
     return parent::validate($array, $save);
   }

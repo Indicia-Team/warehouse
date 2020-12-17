@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Warehouse version configuration.
+ * View template for the Data Cleaner CSV upload progress.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -19,28 +19,20 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @link http://code.google.com/p/indicia/
  */
+?>
 
-defined('SYSPATH') or die('No direct script access.');
+<div id="progress-text" class="alert alert-info">
+  <p>Processed <span id="done">0</span> out of <?php echo $totalToProcess; ?>.</p>
+  <p>Operation: <span id="operation">Initialising</span></p>
+</div>
 
-/**
- * The application files' version number.
- *
- * @var string
- */
-$config['version'] = '4.10.0';
+<div id="progress-bar" style="width: 100%" />
 
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2020-12-17';
+<script type="text/javascript">
+window.totalToProcess = <?php echo $totalToProcess; ?>;
+window.baseUrl = '<?php echo url::base(); ?>';
+</script>
 
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+

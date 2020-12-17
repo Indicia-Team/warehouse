@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Warehouse version configuration.
+ * Configuration for the workflow module.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -19,28 +19,10 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @link https://github.com/Indicia-Team/warehouse/
  */
 
-defined('SYSPATH') or die('No direct script access.');
-
-/**
- * The application files' version number.
- *
- * @var string
- */
-$config['version'] = '4.10.0';
-
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2020-12-17';
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+ /**
+  * ID of the list containing UKSI.
+  */
+$config['taxon_list_id'] = 1;

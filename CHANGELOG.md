@@ -1,3 +1,20 @@
+# Version 4.10.0 
+*2020-12-17*
+
+* New uksi_operations module allows update logs for UKSI to be directly imported, with support for
+  new taxon, amend metadata, promote name, merge taxa, rename taxon operations.
+* Addition of organism_key to taxon table for improved links with UKSI.
+* Generation of taxon path data now more reliable (report filtering by higher taxa).
+* New work queue task for efficient updates of taxonomy related fields in occurrence cache tables.
+* Server status message on home page fixed immediately after install.
+* Minor tweaks to improve the install process.
+* Support for dynamic addition of termlist terms when inserting attribute values (tag style, e.g.
+  using the data_entry_helper::sublist control).
+* Fix to check constraint for unique email addresses. Excludes deleted records.
+* Fixes a problem where importing to update existing records caused duplicates.
+* Elasticsearch downloads now support automatic inclusion of custom attributes for a survey.
+* Fix for importing anonymous records into Recorder 6 using Indicia2Recorder.
+
 # Version 4.5.0
 *2020-09-16*
 

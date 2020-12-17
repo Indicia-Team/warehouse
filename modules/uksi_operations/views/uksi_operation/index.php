@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Warehouse version configuration.
+ * View template for the list of taxon designations.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -19,28 +19,28 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @link https://github.com/indicia-team/warehouse/
  */
 
-defined('SYSPATH') or die('No direct script access.');
-
-/**
- * The application files' version number.
- *
- * @var string
- */
-$config['version'] = '4.10.0';
+warehouse::loadHelpers(['data_entry_helper']);
+echo $grid;
 
 /**
- * Version release date.
- *
- * @var string
+ * Function shim.
  */
-$config['release_date'] = '2020-12-17';
+function hostsite_get_user_field($field, $default = FALSE) {
+  if ($field === 'indicia_user_id') {
+    return $_SESSION['auth_user']->id;
+  }
+  else {
+    return $default;
+  }
+}
 
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+$returnPath = url::site() . "uksi_operation/importer";
+?>
+<form enctype="multipart/form-data" class="form-inline" method="post" action="<?php echo $returnPath; ?>">
+  <label for="csv_upload">Upload a CSV file into this list:</label>
+  <input type="file" name="csv_upload" id="csv_upload" class="form-control" />
+  <input type="submit" value="Upload CSV File" class="btn btn-default" />
+</form>

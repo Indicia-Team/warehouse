@@ -104,11 +104,11 @@
     <column name="point" sql="st_y(st_transform(st_centroid(s.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.geom), 4326))::text" datatype="text" />
     <column name="map_sq_srid" sql="COALESCE(get_output_srid(o.public_geom), 3857)" datatype="integer" />
     <column name="map_sq_1km_geom" datatype="text"
-      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(s.geom), false, 1000), 4326)))))" />
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 1000), 4326)))))" />
     <column name="map_sq_2km_geom" datatype="text"
-      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(s.geom), false, 2000), 4326)))))" />
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 2000), 4326)))))" />
     <column name="map_sq_10km_geom" datatype="text"
-      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(s.geom), false, 10000), 4326)))))" />
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 10000), 4326)))))" />
     <column name="input_sref" sql="s.entered_sref" datatype="text" />
     <column name="input_sref_system" sql="s.entered_sref_system" datatype="text" />
     <column name="output_sref" sql="get_output_sref(

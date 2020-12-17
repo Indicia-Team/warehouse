@@ -260,6 +260,7 @@ $config['taxa_taxon_lists']['key_field'] = 'ttl.id';
 
 $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
   'setup' => "
+    -- Find children of updated taxa to ensure they are also changed.
     WITH RECURSIVE q AS (
       SELECT ttl.id
       FROM taxa_taxon_lists ttl
@@ -274,25 +275,35 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     INTO TEMPORARY descendants FROM q;
 
     WITH RECURSIVE q AS (
-      SELECT distinct ttlpref.id AS child_pref_ttl_id, ttlpref.parent_id,
-      ttlpref.taxon_meaning_id AS rank_taxon_meaning_id, ttlpref.taxon_list_id, 0 as distance
+      SELECT distinct ttlpref.id AS child_pref_ttl_id, ttlpref.allow_data_entry as child_pref_allow_data_entry,
+      ttlpref.taxon_meaning_id as child_pref_taxon_meaning_id, ttlpref.taxon_list_id as child_pref_taxon_list_id,
+      ttlpref.parent_id, ttlpref.taxon_meaning_id AS rank_taxon_meaning_id, ttlpref.taxon_list_id, 0 as distance
       FROM taxa_taxon_lists ttlpref
       JOIN taxa t ON t.id=ttlpref.taxon_id and t.deleted=false
       JOIN descendants d ON d.id=ttlpref.id
       WHERE ttlpref.preferred=true
       AND ttlpref.deleted=false
       UNION ALL
-      SELECT q.child_pref_ttl_id, ttl.parent_id,
-          ttl.taxon_meaning_id AS rank_taxon_meaning_id, ttl.taxon_list_id, q.distance+1
+      SELECT q.child_pref_ttl_id, q.child_pref_allow_data_entry, q.child_pref_taxon_meaning_id, q.child_pref_taxon_list_id,
+          ttl.parent_id, ttl.taxon_meaning_id AS rank_taxon_meaning_id, ttl.taxon_list_id, q.distance+1
       FROM q
       JOIN taxa_taxon_lists ttl ON ttl.id=q.parent_id and ttl.deleted=false and ttl.taxon_list_id=q.taxon_list_id
       JOIN taxa t ON t.id=ttl.taxon_id and t.deleted=false
     )
-    SELECT child_pref_ttl_id, array_agg(rank_taxon_meaning_id order by distance desc) as path
+    SELECT child_pref_ttl_id, child_pref_allow_data_entry, child_pref_taxon_meaning_id, child_pref_taxon_list_id,
+	    array_agg(rank_taxon_meaning_id order by distance desc) as path
     INTO TEMPORARY ttl_path
     FROM q
-    GROUP BY child_pref_ttl_id
+    GROUP BY child_pref_ttl_id, child_pref_allow_data_entry, child_pref_taxon_meaning_id, child_pref_taxon_list_id
     ORDER BY child_pref_ttl_id;
+
+    -- Remove any for redundant taxa where path covered by a non-redundant taxa.
+    DELETE FROM ttl_path t1
+    USING ttl_path t2
+    WHERE t1.child_pref_allow_data_entry=false
+    AND t2.child_pref_allow_data_entry=true
+    AND t2.child_pref_taxon_meaning_id=t1.child_pref_taxon_meaning_id
+    AND t2.child_pref_taxon_list_id=t1.child_pref_taxon_list_id;
 
     SELECT DISTINCT ON (cttl.external_key) cttl.external_key, cttlall.id, tp.path
     INTO TEMPORARY master_list_paths

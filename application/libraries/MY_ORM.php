@@ -1676,7 +1676,9 @@ class ORM extends ORM_Core {
                 && !empty($this->submission['fields']["$field:upper"]['value'])) {
               $value .= ' - ' . $this->submission['fields']["$field:upper"]['value'];
             }
-            $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef);
+            $allowTermCreationLang = empty($this->submission['fields']["$this->attrs_field_prefix:$attrId:allowTermCreationLang"])
+              ? NULL : $this->submission['fields']["$this->attrs_field_prefix:$attrId:allowTermCreationLang"]['value'];
+            $attr = $this->createAttributeRecord($attrId, $valueId, $value, $attrDef, $allowTermCreationLang);
             if ($attr === FALSE) {
               // Failed to create attribute so drop out.
               return FALSE;
@@ -1750,7 +1752,7 @@ class ORM extends ORM_Core {
    * @return mixed
    *   FALSE on fail, else array of attribute value IDs objects.
    */
-  protected function createAttributeRecord($attrId, $valueId, $value, $attrDef) {
+  protected function createAttributeRecord($attrId, $valueId, $value, $attrDef, $allowTermCreationLang = NULL) {
     // There are particular circumstances when $value is actually an array: when a attribute is multi value,
     // AND has yet to be created, AND is passed in as multiple ***Attr:<n>[] POST variables. This should only happen when
     // the attribute has yet to be created, as after this point the $valueID is filled in and that specific attribute POST variable
@@ -1761,7 +1763,7 @@ class ORM extends ORM_Core {
       if (is_null($valueId)) {
         $r = [];
         foreach($value as $singlevalue) { // recurse over array.
-          $attrIds = $this->createAttributeRecord($attrId, $valueId, $singlevalue, $attrDef);
+          $attrIds = $this->createAttributeRecord($attrId, $valueId, $singlevalue, $attrDef, $allowTermCreationLang);
           if ($attrIds === FALSE) {
             return FALSE;
           }
@@ -1868,8 +1870,13 @@ class ORM extends ORM_Core {
       case 'L':
         // Lookup list
         $vf = 'int_value';
-        if (!empty($value) && $fk) {
-          // value must be looked up
+        if (!empty($value)) {
+          $creatingTerm = $allowTermCreationLang && substr($value, 0, 11) === 'createTerm:';
+          if ($creatingTerm) {
+            // Chop off prefix.
+            $value = substr($value, 11);
+          }
+          // Find existing value.
           $r = $this->fkLookup(array(
             'fkTable' => 'lookup_term',
             'fkSearchField' => 'term',
@@ -1877,12 +1884,22 @@ class ORM extends ORM_Core {
             'fkSearchFilterField' => 'termlist_id',
             'fkSearchFilterValue' => $attrDef->termlist_id,
           ));
-          if ($r) {
+          if (($fk || $creatingTerm) && $r) {
+            // Term lookup succeeded and we are submitting fk_field, or a
+            // normal field that allows term creation. In the latter case
+            // we use the lookup to avoid duplication.
             $value = $r;
-          } else {
+          }
+          elseif ($fk) {
             $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
             kohana::log('debug', "Could not accept value $value into field $vf  for attribute $fieldId.");
             return FALSE;
+          }
+          elseif ($creatingTerm) {
+            $escapedTerm = pg_escape_string($value);
+            $value = $this->db
+              ->query("select insert_term('$escapedTerm', '$allowTermCreationLang', null, $attrDef->termlist_id, null);")
+              ->insert_id();
           }
         }
         break;

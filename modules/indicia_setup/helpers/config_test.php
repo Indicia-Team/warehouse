@@ -195,7 +195,7 @@ class config_test {
       array_push($messages, array(
         'title' => 'PostgreSQL PHP Extensions',
         'description' => 'The PostgreSQL extensions are not available on this installation of PHP. To fix this, find your php.ini file in the PHP installation folder and ' .
-            'find the line <strong>;extension=php_pgsql.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
+            'find the line <strong>;extension=php_pgsql.dll</strong> or <strong>;extension=pgsql</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
             'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.',
         'success' => FALSE,
       ));
@@ -336,6 +336,10 @@ MSG;
           dirname(dirname(dirname(dirname(__file__)))) . '/upload',
           'images to be uploaded',
           'images cannot be uploaded');
+      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'image upload queue',
+          dirname(dirname(dirname(dirname(__file__)))) . '/upload-queue',
+          'queued images to be uploaded',
+          'queued images cannot be uploaded');
       self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
           dirname(dirname(dirname(dirname(__file__)))) . '/client_helpers',
           'the settings for the data entry helper classes to be stored',

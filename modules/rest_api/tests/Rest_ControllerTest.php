@@ -1395,15 +1395,15 @@ KEY;
     $db = new Database();
     // Should fail if we are not an admin.
     $db->query('UPDATE users SET core_role_id=null WHERE id=1');
+    // Should succeed if we are a site admin
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      ' VALUES (1, 1, 3, 1, now(), 1, now())');
     $response = $this->callService(
       'surveys',
       FALSE,
       ['values' => $data]
     );
-    // Should succeed if we are a site admin
-    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
-      ' VALUES (1, 1, 3, 1, now(), 1, now())');
-    $this->assertEquals(401, $response['httpCode']);
+    $this->assertEquals(201, $response['httpCode']);
     $response = $this->callService(
       'surveys',
       FALSE,

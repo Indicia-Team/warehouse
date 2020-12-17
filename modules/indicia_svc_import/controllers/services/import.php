@@ -939,7 +939,7 @@ class Import_Controller extends Service_Base_Controller {
     if ($wheres !== FALSE) {
       $db = Database::instance();
       // Have to use a db as this may have a join.
-      $existing = $db->query("SELECT $table.id FROM $table $join WHERE " . $wheres)->result_array(FALSE);
+      $existing = $db->query("SELECT DISTINCT $table.id FROM $table $join WHERE " . $wheres)->result_array(FALSE);
       if (count($existing) > 0) {
         // If an previous record exists, we have to check for existing
         // attributes.

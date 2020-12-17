@@ -908,36 +908,40 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-   * Retrieve the records for a read request. Also sets the list of columns into $this->columns.
+   * Retrieve the records for a read request.
    *
-   * @return Array Query results array.
+   * Also sets the list of columns into $this->columns.
+   *
+   * @return array
+   *   Query results array.
    */
   protected function read_data() {
     if (!$this->db) {
       $this->db = new Database();
     }
     if ($this->entity === 'taxa_search') {
-      // special case for taxa_search end-point as it uses a custom query.
+      // Special case for taxa_search end-point as it uses a custom query.
       $result = $this->getDataTaxaSearch();
-      kohana::log('debug', 'Query ran for service call: '.$this->db->last_query());
+      kohana::log('debug', "Query ran for service call:\n" . $this->db->last_query());
     } else {
-      // Store the entity in class member, so less recursion overhead when building XML
+      // Store the entity in class member, so less recursion overhead when building XML.
       $this->viewname = $this->get_view_name();
       $this->view_columns=postgreSQL::list_fields($this->viewname, $this->db);
       $result=$this->build_query_results();
-      kohana::log('debug', 'Query ran for service call: '.$this->db->last_query());
+      kohana::log('debug', "Query ran for service call:\n" . $this->db->last_query());
     }
-    return array('records'=>$result);
+    return ['records' => $result];
   }
 
   /**
-   * Handle uploaded files in the $_FILES array by moving them to the upload folder. Images
-   * get resized and duplicated as specified in the indicia config file.
-   * If the $_POST array contains name_is_guid=true, then the media file will not be renamed as the name
-   * should already be globally unique. Otherwise the current time is prefixed to the name to make it unique.
+   * Handle uploaded files by moving them to the upload folder.
+   *
+   * Images get resized and duplicated as specified in the indicia config file.
+   * If the $_POST array contains name_is_guid=true, then the media file will
+   * not be renamed as the name should already be globally unique. Otherwise
+   * the current time is prefixed to the name to make it unique.
    */
-  public function handle_media()
-  {
+  public function handle_media() {
     try
     {
       // Ensure we have write permissions.
@@ -993,27 +997,29 @@ class Data_Controller extends Data_Service_Base_Controller {
         $this->send_response();
         kohana::log('debug', 'Successfully uploaded media to '. $subdir.basename($fTmp));
       }
-      else
-      {
+      else {
         kohana::log('info', 'Validation errors uploading media '. $_FILES['media_upload']['name']);
         Throw new ValidationError('Validation error', 2003, $_FILES->errors('form_error_messages'));
       }
     }
-    catch (Exception $e)
-    {
+    catch (Exception $e) {
       $this->handle_error($e);
     }
   }
 
   /**
-  * Builds a query to extract data from the requested entity, and also
-  * include relationships to foreign key tables and the caption fields from those tables.
-  * @param boolean $count if set to true then just returns a record count.
+  * Builds a query to extract data from the requested entity.
+  *
+  * Also include relationships to foreign key tables and the caption fields
+  * from those tables.
+  *
+  * @param bool $count
+  *   If set to true then just returns a record count.
+  *
   * @todo Review this code for SQL Injection attack!
   * @todo Basic website filter done, but not clever enough.
   */
-  protected function build_query_results($count=false)
-  {
+  protected function build_query_results($count = FALSE) {
     $this->foreign_keys = array();
     $this->db->from($this->viewname);
     // Select all the table columns from the view
@@ -1050,10 +1056,12 @@ class Data_Controller extends Data_Service_Base_Controller {
       Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
       throw new EntityAccessError('No access to entity '.$this->entity.' allowed through view '.$this->viewname, 1004);
     }
-    if (array_key_exists ('website_id', $this->view_columns))
+    if (array_key_exists ('website_id', $this->view_columns)) {
       $websiteFilterField = 'website_id';
-    elseif (array_key_exists ('from_website_id', $this->view_columns))
+    }
+    elseif (array_key_exists ('from_website_id', $this->view_columns)) {
       $websiteFilterField = 'from_website_id';
+    }
     // Loading a list of records (no record ID argument)
     if (isset($websiteFilterField)) {
       // we have a filter on website_id to apply
@@ -1113,8 +1121,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * associated with the entity, but prefixed by either list, gv or max depending
   * on the GET view parameter, or as is if the table has no views.
   */
-  protected function get_view_name($table='', $prefix='')
-  {
+  protected function get_view_name($table='', $prefix='') {
     if (!$table)
       $table = $this->entity;
     $table = inflector::plural($table);
@@ -1134,18 +1141,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   * $_REQUEST parameters currently available, when retrieving a list of items.
   * @param boolean $count set to true when doing a count query, so the limit and offset are skipped
   */
-  protected function apply_get_parameters_to_db($count=false)
-  {
-    $sortdir=array();
-    $orderby=array();
-    $like=array();
-    $where=array();
+  protected function apply_get_parameters_to_db($count=false) {
+    $sortdir = [];
+    $orderby = [];
+    $like = [];
+    $where = [];
     // don't use $_REQUEST as it has a tendency to escape values in different ways on different PHP versions.
     $request=array_merge($_GET, $_POST);
-    foreach ($request as $param => $value)
-    {
-      switch ($param)
-      {
+    foreach ($request as $param => $value) {
+      switch ($param) {
         case 'sortdir':
           if ($count) break;
           $sortdir=explode(',', strtoupper($value));
@@ -1223,14 +1227,11 @@ class Data_Controller extends Data_Service_Base_Controller {
         }
       }
     }
-    if (isset($qfield) && isset($q))
-    {
-      if ($this->view_columns[$qfield]['type']=='int' || $this->view_columns[$qfield]['type']=='bool')
-      {
+    if (isset($qfield) && isset($q)) {
+      if ($this->view_columns[$qfield]['type']=='int' || $this->view_columns[$qfield]['type']=='bool') {
         $where[$qfield]=$q;
       }
-      else
-      {
+      else {
         // When using qfield and q parameters, it is from an AJAX call for an autocomplete, so append a wildcard and
         // also switch any service wildcards (*) for sql wildcards (%).
         $searchTerm = str_replace('*', '%', $q) . '%';
