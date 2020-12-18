@@ -40,6 +40,17 @@
     LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
     WHERE sp.id=o.parent_sample_id AND sp.deleted=false;
 
+    -- Use parents of locations if no parent sample location.
+    UPDATE output_rows o
+    SET recorded_parent_location_id = lp.id,
+      recorded_parent_location_name = lp.name,
+      recorded_parent_location_code = lp.code
+      FROM samples sc
+    JOIN locations lc ON lc.id=sc.location_id AND lc.deleted=false
+      JOIN locations lp ON lp.id = lc.parent_id AND lp.deleted=false
+      WHERE sc.id=o.sample_id AND sc.deleted=false
+    AND o.recorded_parent_location_id IS NULL;
+
     SELECT *
     FROM output_rows o
     #order_by#
