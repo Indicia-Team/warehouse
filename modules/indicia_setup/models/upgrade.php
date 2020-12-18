@@ -169,6 +169,22 @@ class Upgrade_Model extends Model {
     }
     // In case the upgrade involves changes to supported spatial systems...
     $this->populate_spatial_systems_table();
+    // Also clear some cache entries so changes get picked up.
+    $this->refreshCache();
+  }
+
+  /**
+   * Clears old cache entries that might need rebuild after an upgrade.
+   */
+  private function refreshCache() {
+    $cache = Cache::instance();
+    $cache->delete('extend-data-services');
+    $cache->delete('scheduled-plugin-names');
+    $cache->delete('spatial-ref-systems');
+    $cache->delete('work-queue-helpers');
+    $cache->delete_tag('orm');
+    $cache->delete_tag('required-fields');    
+    $cache->delete_tag('ui');
   }
 
   /**

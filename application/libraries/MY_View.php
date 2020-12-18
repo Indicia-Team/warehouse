@@ -137,7 +137,7 @@ HTML;
           }
         }
         $tabs = array_merge(array('General'=>$this->viewname), $tabs);
-        $cache->set($cacheId, $tabs);
+        $cache->set($cacheId, $tabs, ['ui']);
         return $tabs;
       }
     }

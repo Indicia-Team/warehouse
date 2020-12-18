@@ -180,7 +180,7 @@ class Indicia_Controller extends Template_Controller {
           }
         }
       }
-      $cache->set($cacheId, $menu);
+      $cache->set($cacheId, $menu, ['ui']);
     }
     return $menu;
   }

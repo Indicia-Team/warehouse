@@ -381,7 +381,7 @@ SQL;
         throw new Kohana_Database_Exception('database.table_not_found', $entity);
       }
       else {
-        $cache->set($key, $fieldInfo);
+        $cache->set($key, $fieldInfo, ['orm']);
       }
     }
     return $fieldInfo;

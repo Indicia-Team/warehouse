@@ -201,7 +201,7 @@ class ORM extends ORM_Core {
           'belongs_to' => $this->belongs_to,
           'has_and_belongs_to_many' => $this->has_and_belongs_to_many
         );
-        $this->cache->set($cacheId, $cacheArray);
+        $this->cache->set($cacheId, $cacheArray, ['orm']);
       }
       else {
         $this->has_one = $ormRelations['has_one'];
