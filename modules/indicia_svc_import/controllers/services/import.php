@@ -720,7 +720,7 @@ class Import_Controller extends Service_Base_Controller {
         // If a possible previous record, attempt to find the relevant IDs.
         if (isset($metadata['mappings']['lookupSelect' . $_GET['model']]) && $metadata['mappings']['lookupSelect' . $_GET['model']] !== '') {
           try {
-            self::mergeExistingRecordIds($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, '', $metadata,
+            $this->mergeExistingRecordIds($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, '', $metadata,
               $mustExist, $model, $saveArray);
           }
           catch (Exception $e) {
@@ -951,8 +951,9 @@ class Import_Controller extends Service_Base_Controller {
           $filepos = ftell($file);
         }
       }
-      // Get percentage progress.
-      $progress = $ext = 'csv' ? $filepos * 100 / $metadata['fileSize'] : ($count + $offset) / $metadata['fileSize'];
+      // Get percentage progress, based on file size (CSV) or rows done
+      // (PHPSpreadsheet).
+      $progress = $ext === 'csv' ? ($filepos * 100 / $metadata['fileSize']) : (($count + $offset) * 100 / $metadata['fileSize']);
       $r = json_encode([
         'uploaded' => $count,
         'progress' => $progress,
