@@ -21,6 +21,42 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
+require 'vendor/autoload.php';
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
+
+/**
+ * PHPSpreadsheet filter for reading the header row.
+ */
+class FirstRowReadFilter implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
+
+  public function readCell($column, $row, $worksheetName = '') {
+    return $row == 1;
+  }
+}
+
+/**
+ * PHPSpreadsheet filter for reading a range of data rows.
+ */
+class RangeReadFilter implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
+
+  private $offset;
+
+  private $limit;
+
+  public function __construct($offset, $limit) {
+    $this->offset = $offset;
+    $this->limit = $limit;
+  }
+
+  /**
+   * Limit range of rows.
+   */
+  public function readCell($column, $row, $worksheetName = '') {
+    return $row >= $this->offset && $row < $this->offset + $this->limit;
+  }
+}
 /**
  * Controller class for import web services.
  */
@@ -165,11 +201,20 @@ class Import_Controller extends Service_Base_Controller {
   /**
    * Handle the upload of a CSV file.
    *
-   * Handle uploaded files in the $_FILES array by moving them to the upload
+   * Deprecated - for legacy client support only. Delegates to upload_file().
+   */
+  public function upload_csv() {
+    $this->upload_file();
+  }
+
+  /**
+   * Handle the upload of an import file.
+   *
+   * Handle uploaded files in the $_FILES array by moving them to the import
    * folder. The current time is prefixed to the  name to make it unique. The
    * uploaded file should be in a field called media_upload.
    */
-  public function upload_csv() {
+  public function upload_file() {
     try {
       // Ensure we have write permissions.
       $this->authenticate();
@@ -179,7 +224,7 @@ class Import_Controller extends Service_Base_Controller {
       $ups = Kohana::config('indicia.maxUploadSize');
       $_FILES = Validation::factory($_FILES)->add_rules(
         'media_upload', 'upload::valid', 'upload::required',
-        'upload::type[csv]', "upload::size[$ups]"
+        'upload::type[csv,xls,xlsx]', "upload::size[$ups]"
       );
       if (count($_FILES) === 0) {
         echo "No file was uploaded.";
@@ -191,7 +236,7 @@ class Import_Controller extends Service_Base_Controller {
         else {
           $finalName = time() . strtolower($_FILES['media_upload']['name']);
         }
-        $fTmp = upload::save('media_upload', $finalName);
+        $fTmp = upload::save('media_upload', $finalName, DOCROOT.'import');
         $this->response = basename($fTmp);
         $this->send_response();
         kohana::log('debug', 'Successfully uploaded file to ' . basename($fTmp));
@@ -210,6 +255,74 @@ class Import_Controller extends Service_Base_Controller {
     catch (Exception $e) {
       $this->handle_error($e);
     }
+  }
+
+  /**
+   * Retrieves the extension from a file name.
+   *
+   * @param string $fileName
+   *   Name of the file.
+   *
+   * @return string
+   *   Extension in lowercase.
+   */
+  private function getFileExt($fileName) {
+    $parts = explode('.', $fileName);
+    $ext = array_pop($parts);
+    return strtolower($ext);
+  }
+
+  /**
+   * Get the array of column names from a file.
+   *
+   * @param string $fileName
+   *   Name of the file.
+   *
+   * @return array
+   *   Array of column header titles.
+   */
+  private function getColumns($fileName) {
+    $ext = $this->getFileExt($fileName);
+    if ($ext === 'csv') {
+      // For simple CSV, don't need overhead of PHPSpreadsheet.
+      $handle = fopen($fileName, 'r');
+      $columns = fgetcsv($handle);
+      fclose($handle);
+      return $columns;
+    }
+    elseif ($ext === 'xlsx') {
+      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+    }
+    elseif ($ext === 'xls') {
+      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+    }
+    else {
+      throw new exception('Unsupported file type');
+    }
+    $reader->setReadDataOnly(true);
+    // Minimise data read from spreadsheet - first sheet only.
+    $worksheetData = $reader->listWorksheetInfo($fileName);
+    if (count($worksheetData) === 0) {
+      throw new exception('Spreadsheet contains no worksheets');
+    }
+    $reader->setLoadSheetsOnly($worksheetData[0]['worksheetName']);
+    // Only read first row.
+    $reader->setReadFilter(new FirstRowReadFilter());
+    $file = $reader->load($fileName);
+    $data = $file->getActiveSheet()->toArray();
+    if (count($data) === 0) {
+      throw new exception('The spreadsheet file is empty');
+    }
+    return $data[0];
+  }
+
+  /**
+   * Controller action to read column names for the uploaded file.
+   */
+  public function get_column_names() {
+    // Ensure we have read permissions.
+    $this->authenticate('read');
+    echo json_encode($this->getColumns(DOCROOT . "import/$_GET[file]"));
   }
 
   /**
@@ -240,7 +353,7 @@ class Import_Controller extends Service_Base_Controller {
 
     // The metadata can also hold auth tokens and user_id, though they do not
     // need decoding.
-    self::internalCacheUploadMetadata($metadata);
+    $this->internalCacheUploadMetadata($metadata);
     echo "OK";
   }
 
@@ -287,11 +400,13 @@ class Import_Controller extends Service_Base_Controller {
    * Allows the metadata to persist across requests.
    */
   private function internalCacheUploadMetadata($metadata) {
-    $previous = self::getMetadata($_GET['uploaded_csv']);
-    $metadata = array_merge($previous, $metadata);
+    $previous = $this->getMetadata($_GET['uploaded_csv']);
+    if ($previous) {
+      $metadata = array_merge($previous, $metadata);
+    }
     $this->auto_render = FALSE;
-    $mappingFile = str_replace('.csv', '-metadata.txt', $_GET['uploaded_csv']);
-    $mappingHandle = fopen(DOCROOT . "upload/$mappingFile", "w");
+    $mappingFile = str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
+    $mappingHandle = fopen(DOCROOT . "import/$mappingFile", "w");
     fwrite($mappingHandle, json_encode($metadata));
     fclose($mappingHandle);
   }
@@ -301,10 +416,10 @@ class Import_Controller extends Service_Base_Controller {
    * This is the mapping between the synonym identifier column and the indicia meaning id.
    */
   private function cacheStoredMeanings($meanings) {
-    $previous = self::retrieveCachedStoredMeanings();
-    $metadata = array_merge($previous, $meanings);
-    $meaningsFile = str_replace('.csv', '-meanings.txt', $_GET['uploaded_csv']);
-    $meaningsHandle = fopen(DOCROOT . "upload/$meaningsFile", "w");
+    $previous = $this->retrieveCachedStoredMeanings();
+    $meanings = array_merge($previous, $meanings);
+    $meaningsFile = str_replace(['.csv', '.xlsx', '.xls'], '-meanings.txt', $_GET['uploaded_csv']);
+    $meaningsHandle = fopen(DOCROOT . "import/$meaningsFile", "w");
     fwrite($meaningsHandle, json_encode($meanings));
     fclose($meaningsHandle);
   }
@@ -313,7 +428,7 @@ class Import_Controller extends Service_Base_Controller {
    * Internal function that retrieves the meanings for a CSV upload.
    */
   private function retrieveCachedStoredMeanings() {
-    $meaningsFile = DOCROOT . "upload/" . str_replace('.csv', '-meanings.txt', $_GET['uploaded_csv']);
+    $meaningsFile = DOCROOT . "import/" . str_replace(['.csv', '.xlsx', '.xls'], '-meanings.txt', $_GET['uploaded_csv']);
     if (file_exists($meaningsFile)) {
       $meaningsHandle = fopen($meaningsFile, "r");
       $meanings = fgets($meaningsHandle);
@@ -359,7 +474,8 @@ class Import_Controller extends Service_Base_Controller {
    */
   public function upload() {
     $allowCommitToDB = isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : TRUE;
-    $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
+    $importTempFile = DOCROOT . "import/" . $_GET['uploaded_csv'];
+    $ext = $this->getFileExt($_GET['uploaded_csv']);
     $metadata = $this->getMetadata($_GET['uploaded_csv']);
     if (!empty($metadata['user_id'])) {
       global $remoteUserId;
@@ -372,36 +488,25 @@ class Import_Controller extends Service_Base_Controller {
     // Enable caching of things like language lookups.
     ORM::$cacheFkLookups = TRUE;
     // Make sure the file still exists.
-    if (file_exists($csvTempFile)) {
+    if (file_exists($importTempFile)) {
       $tm = microtime(TRUE);
       // Following helps for files from Macs.
       ini_set('auto_detect_line_endings', 1);
       $model = ORM::Factory($_GET['model']);
       $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
-      // Create the file pointer, plus one for errors.
-      $handle = fopen($csvTempFile, "r");
-      $this->checkIfUtf8($metadata, $handle);
+      // Create an error file pointer.
       $existingNoOfProblemsColIdx = FALSE;
       $existingProblemColIdx = FALSE;
       $existingErrorRowNoColIdx = FALSE;
       $existingImportGuidColIdx = FALSE;
-      $errorHandle = $this->getErrorFileHandle($csvTempFile, $handle, $supportsImportGuid,
+      $errorHandle = $this->getErrorFileHandle($importTempFile, $supportsImportGuid,
         $existingNoOfProblemsColIdx, $existingProblemColIdx, $existingErrorRowNoColIdx, $existingImportGuidColIdx);
-      $count = 0;
+      // Create the import file pointer.
       $limit = (isset($_GET['limit']) ? $_GET['limit'] : FALSE);
       $filepos = (isset($_GET['filepos']) ? $_GET['filepos'] : 0);
       $offset = (isset($_GET['offset']) ? $_GET['offset'] : 0);
-      if ($filepos == 0) {
-        // First row, so skip the header.
-        fseek($handle, 0);
-        fgetcsv($handle, 10000, ",");
-        // Also clear the lookup cache.
-        $cache->delete_tag('lookup');
-      }
-      else {
-        // Skip rows to allow for the last file position.
-        fseek($handle, $filepos);
-      }
+      $file = $this->openSpreadsheet($importTempFile, $metadata, $filepos, $offset, $limit);
+      $count = 0;
       $this->submissionStruct = $model->get_submission_structure();
 
       // Check if the conditions for special field processing are met - all the
@@ -461,8 +566,8 @@ class Import_Controller extends Service_Base_Controller {
           }
         }
       }
-      $storedMeanings = self::retrieveCachedStoredMeanings();
-      while (($data = fgetcsv($handle, 10000, ",")) !== FALSE && ($limit === FALSE || $count < $limit)) {
+      $storedMeanings = $this->retrieveCachedStoredMeanings();
+      while (($limit === FALSE || $count < $limit) && ($data = $this->getNextRow($file, $count + $offset + 1, $metadata))) {
         if (!array_filter($data)) {
           // Skip empty rows.
           continue;
@@ -562,7 +667,7 @@ class Import_Controller extends Service_Base_Controller {
         $originalRecordPrefix = $this->submissionStruct['model'];
         $originalAttributePrefix = (isset($model->attrs_field_prefix) ? $model->attrs_field_prefix : '');
         $originalMediaPrefix = $originalRecordPrefix . '_media';
-        if (self::checkModuleActive($this->submissionStruct['model'] . '_associations')) {
+        if ($this->checkModuleActive($this->submissionStruct['model'] . '_associations')) {
           // Assume model has attributes.
           $associatedSuffix = '_2';
           $associatedRecordSubmissionStructure = $this->submissionStruct;
@@ -605,7 +710,9 @@ class Import_Controller extends Service_Base_Controller {
             );
             // Get file position here otherwise the fgetcsv in the while loop
             // will move it one record too far.
-            $filepos = ftell($handle);
+            if ($ext === 'csv') {
+              $filepos = ftell($file);
+            }
             continue;
           }
           $mustExist = TRUE;
@@ -626,7 +733,9 @@ class Import_Controller extends Service_Base_Controller {
             );
             // Get file position here otherwise the fgetcsv in the while loop
             // will move it one record too far.
-            $filepos = ftell($handle);
+            if ($ext === 'csv') {
+              $filepos = ftell($file);
+            }
             continue;
           }
         }
@@ -638,7 +747,7 @@ class Import_Controller extends Service_Base_Controller {
         $updatedPreviousCsvSupermodelDetails = $this->checkForSameSupermodel($saveArray, $model, $associationExists, $metadata);
         if ($associationExists && isset($metadata['mappings']['lookupSelect' . $associatedRecordPrefix]) && $metadata['mappings']['lookupSelect' . $associatedRecordPrefix] !== '') {
           $assocModel = ORM::Factory($_GET['model']);
-          self::mergeExistingRecordIds($_GET['model'], $associatedRecordPrefix, $associatedAttributePrefix, $associatedSuffix,
+          $this->mergeExistingRecordIds($_GET['model'], $associatedRecordPrefix, $associatedAttributePrefix, $associatedSuffix,
             $metadata, FALSE, $assocModel, $saveArray);
           if (isset($saveArray[$originalRecordPrefix . ':id']) && isset($saveArray[$associatedRecordPrefix . ':id'])) {
             $assocModel = ORM::Factory($associationRecordPrefix)
@@ -776,7 +885,6 @@ class Import_Controller extends Service_Base_Controller {
         }
         if (!$error && $mainOrSynonym === "synonym") {
           $modelToSubmit->submission['fields']['preferred']['value'] = 'f';
-          kohana::log('debug', 'Synonym detected');
           if (array_key_exists($saveArray['synonym:identifier'], $storedMeanings)) {
             // Meaning is held on supermodel.
             foreach ($modelToSubmit->submission['superModels'] as $idx => $superModel) {
@@ -839,10 +947,12 @@ class Import_Controller extends Service_Base_Controller {
         }
         // Get file position here otherwise the fgetcsv in the while loop will
         // move it one record too far.
-        $filepos = ftell($handle);
+        if ($ext === 'csv') {
+          $filepos = ftell($file);
+        }
       }
       // Get percentage progress.
-      $progress = $filepos * 100 / filesize($csvTempFile);
+      $progress = $ext = 'csv' ? $filepos * 100 / $metadata['fileSize'] : ($count + $offset) / $metadata['fileSize'];
       $r = json_encode([
         'uploaded' => $count,
         'progress' => $progress,
@@ -854,16 +964,16 @@ class Import_Controller extends Service_Base_Controller {
         $r = $_GET['callback'] . "(" . $r . ")";
       }
       echo $r;
-      fclose($handle);
+      $this->closeFile($file);
       fclose($errorHandle);
-      self::internalCacheUploadMetadata($metadata);
-      self::cacheStoredMeanings($storedMeanings);
+      $this->internalCacheUploadMetadata($metadata);
+      $this->cacheStoredMeanings($storedMeanings);
 
       // An AJAX upload request will just receive the number of records
       // uploaded and progress.
       $this->auto_render = FALSE;
       if (!empty($allowCommitToDB) && $allowCommitToDB) {
-        $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
+        $cache->set(basename($importTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
       }
       if (class_exists('request_logging')) {
         request_logging::log('i', 'import', NULL, 'upload',
@@ -910,7 +1020,6 @@ class Import_Controller extends Service_Base_Controller {
       $data[] = $importGuidToAppend;
     }
     fputcsv($errorHandle, $data);
-    kohana::log('debug', 'Failed to import CSV row: ' . $error);
     $metadata['errorCount'] = $metadata['errorCount'] + 1;
   }
 
@@ -1004,23 +1113,23 @@ class Import_Controller extends Service_Base_Controller {
    */
   public function get_upload_result() {
     $this->authenticate('read');
-    $metadataFile = str_replace('.csv', '-metadata.txt', $_GET['uploaded_csv']);
-    $errorFile = str_replace('.csv', '-errors.csv', $_GET['uploaded_csv']);
+    $metadataFile = str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
+    $errorFile = str_replace(['.csv', '.xlsx', '.xls'], '-errors.csv', $_GET['uploaded_csv']);
     $metadata = $this->getMetadata($_GET['uploaded_csv']);
     echo json_encode(array(
       'problems' => $metadata['errorCount'],
-      'file' => url::base() . 'upload/' . basename($errorFile),
+      'file' => url::base() . 'import/' . basename($errorFile),
     ));
     // Clean up the uploaded file and mapping file, but only remove the error
     // file if no errors, otherwise we make it downloadable.
-    if (file_exists(DOCROOT . "upload/" . $_GET['uploaded_csv'])) {
-      unlink(DOCROOT . "upload/" . $_GET['uploaded_csv']);
+    if (file_exists(DOCROOT . "import/" . $_GET['uploaded_csv'])) {
+      unlink(DOCROOT . "import/" . $_GET['uploaded_csv']);
     }
-    if (file_exists(DOCROOT . "upload/" . $metadataFile)) {
-      unlink(DOCROOT . "upload/" . $metadataFile);
+    if (file_exists(DOCROOT . "import/" . $metadataFile)) {
+      unlink(DOCROOT . "import/" . $metadataFile);
     }
-    if ($metadata['errorCount'] == 0 && file_exists(DOCROOT . "upload/" . $errorFile)) {
-      unlink(DOCROOT . "upload/" . $errorFile);
+    if ($metadata['errorCount'] == 0 && file_exists(DOCROOT . "import/" . $errorFile)) {
+      unlink(DOCROOT . "import/" . $errorFile);
     }
     // Clean up cached lookups.
     $cache = Cache::instance();
@@ -1263,13 +1372,42 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
+   * Return a useful descriptor of file size.
+   *
+   * For CSV, the file size in bytes which can be compared with filepos to get
+   * progress info. For PHPSpreadsheet files, the worksheet's size.
+   */
+  private function getFileSize($file) {
+    $ext = $this->getFileExt($file);
+    if ($ext === 'csv') {
+      return filesize($file);
+    }
+    elseif ($ext === 'xlsx') {
+      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+    }
+    elseif ($ext === 'xls') {
+      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+    }
+    else {
+      throw new exception('Unsupported file type');
+    }
+    $reader->setReadDataOnly(true);
+    // Minimise data read from spreadsheet - first sheet only.
+    $worksheetData = $reader->listWorksheetInfo($file);
+    if (count($worksheetData) === 0) {
+      throw new exception('Spreadsheet contains no worksheets');
+    }
+    return $worksheetData[0]['totalRows'] - 1;
+  }
+
+  /**
    * Internal function that retrieves the metadata for a CSV upload.
    *
    * For AJAX requests, this comes from a cached file. For normal requests, the
    * mappings should be in the $_POST data.
    */
-  private function getMetadata($csvTempFile) {
-    $metadataFile = DOCROOT . "upload/" . str_replace('.csv', '-metadata.txt', $csvTempFile);
+  private function getMetadata($importTempFile) {
+    $metadataFile = DOCROOT . "import/" . str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $importTempFile);
     if (file_exists($metadataFile)) {
       $metadataHandle = fopen($metadataFile, "r");
       $metadata = fgets($metadataHandle);
@@ -1282,6 +1420,7 @@ class Import_Controller extends Service_Base_Controller {
         'mappings' => [],
         'settings' => [],
         'errorCount' => 0,
+        'fileSize' => $this->getFileSize(DOCROOT . "import/$importTempFile"),
         'guid' => $this->createGuid(),
       ];
     }
@@ -1296,10 +1435,10 @@ class Import_Controller extends Service_Base_Controller {
    * handle) are copied into the first row of the new error file along with a
    * header for the problem description and row number.
    *
-   * @param string $csvTempFile
+   * @param string $importTempFile
    *   File name of the imported CSV file.
-   * @param resource $handle
-   *   File handle.
+   * @param resource $importFile
+   *   Either CSV file handle or PHPSpreadsheet activeSheet instance.
    * @param bool $supportsImportGuid
    *   True if the model supports tracking imports by GUID, therefore the error
    *   file needs to link the error row to its original GUID.
@@ -1316,23 +1455,18 @@ class Import_Controller extends Service_Base_Controller {
    * @return resource
    *   The error file's handle.
    */
-  private function getErrorFileHandle($csvTempFile,
-                                      $handle,
+  private function getErrorFileHandle($importTempFile,
                                       $supportsImportGuid,
                                       &$existingNoOfProblemsColIdx,
                                       &$existingProblemColIdx,
                                       &$existingProblemRowNoColIdx,
                                       &$existingImportGuidColIdx) {
-    // Move the file to the beginning, so we can load the first row of headers.
-    fseek($handle, 0);
-    $errorFile = str_replace('.csv', '-errors.csv', $csvTempFile);
+    $errorFile = str_replace(['.csv', '.xlsx', '.xls'], '-errors.csv', $importTempFile);
     $needHeaders = !file_exists($errorFile);
-    $errorHandle = fopen($errorFile, "a");
-    // Skip the header row, but add it to the errors file with additional field
-    // for row number unless already present.
-    $headers = fgetcsv($handle, 1000, ",");
+    $errorHandle = fopen($errorFile, 'a');
     $existingImportGuidColIdx = FALSE;
     if ($needHeaders) {
+      $headers = $this->getColumns($importTempFile);
       $existingNoOfProblemsColIdx = array_search('Number of problems', $headers);
       if ($existingNoOfProblemsColIdx === FALSE) {
         $headers[] = 'Number of problems';
@@ -1400,4 +1534,84 @@ class Import_Controller extends Service_Base_Controller {
     }
   }
 
+  private function openSpreadsheet($fileName, &$metadata, $filepos, $offset, $limit) {
+    $ext = $this->getFileExt($fileName);
+    if ($ext === 'csv') {
+      $handle = fopen($fileName, "r");
+      $this->checkIfUtf8($metadata, $handle);
+      if ($filepos == 0) {
+        // First row, so skip the header.
+        fseek($handle, 0);
+        fgetcsv($handle, 10000, ",");
+        // Also clear the lookup cache.
+        $cache = new Cache();
+        $cache->delete_tag('lookup');
+      }
+      else {
+        fseek($handle, $filepos);
+      }
+      return $handle;
+    }
+    elseif ($ext === 'xlsx') {
+      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+    }
+    elseif ($ext === 'xls') {
+      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+    }
+    else {
+      throw new exception('Unsupported file type');
+    }
+    $metadata['isUtf8'] = FALSE;
+    // @todo Check the following doesn't damage dates.
+    $reader->setReadDataOnly(true);
+    // Minimise data read from spreadsheet - first sheet only.
+    $worksheetData = $reader->listWorksheetInfo($fileName);
+    if (count($worksheetData) === 0) {
+      throw new exception('Spreadsheet contains no worksheets');
+    }
+    $reader->setLoadSheetsOnly($worksheetData[0]['worksheetName']);
+    // Limit rows read. First row to read is row 2.
+    $reader->setReadFilter(new RangeReadFilter($offset + 2, $limit));
+    $file = $reader->load($fileName);
+    return $file->getActiveSheet()->toArray();
+  }
+
+  /**
+   * Reads the next row from the data file.
+   *
+   * @param resource $file
+   *   File handle (CSV) or data array (PHPSpreadsheet).
+   * @param int $row
+   *   Row to fetch (PHPSpreadsheet). For CSV just reads the next from the file
+   *   pointer.
+   * @param array $metadata
+   *   Metadata including file size info.
+   *
+   * @return array
+   *   Data array.
+   */
+  private function getNextRow($file, $row, $metadata) {
+    if (is_array($file)) {
+      return ($row <= $metadata['fileSize']) ? $file[$row] : FALSE;
+    }
+    else {
+      return fgetcsv($file, 10000, ",");
+    }
+  }
+
+  /**
+   * Closes the file.
+   *
+   * If CSV, calls fclose on the handle. For PHPSpreadsheet files nothing to
+   * do.
+   *
+   * @file
+   *   File information (handle or data read via PHPSpreadsheet).
+   */
+  private function closeFile($file) {
+    if (!is_array($file)) {
+      fclose($file);
+    }
+  }
 }
+
