@@ -212,6 +212,7 @@ $config = array
 	'xlc'   => array('application/excel', 'application/vnd.ms-excel'),
 	'xlm'   => array('application/excel', 'application/vnd.ms-excel'),
 	'xls'   => array('application/excel', 'application/vnd.ms-excel'),
+	'xlsx'  => array('application/excel', 'application/vnd.ms-excel'),
 	'xlt'   => array('application/excel', 'application/vnd.ms-excel'),
 	'xml'   => array('text/xml'),
 	'xof'   => array('x-world/x-vrml'),
