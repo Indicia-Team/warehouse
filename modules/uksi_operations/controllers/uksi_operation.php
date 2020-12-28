@@ -75,7 +75,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     header('Content-type: application/json');
     $this->auto_render = FALSE;
     $operation = $this->db
-      ->query('SELECT * FROM uksi_operations WHERE operation_processed=false ORDER BY sequence ASC;')
+      ->query('SELECT * FROM uksi_operations WHERE operation_processed=false ORDER BY batch_processed_on ASC, sequence ASC;')
       ->current();
     if (!$operation) {
       echo json_encode(['message' => 'Nothing to do']);
@@ -99,7 +99,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     $this->operationErrors = [];
     try {
       $message = $this->$fn($operation);
-    } 
+    }
     catch (Exception $e) {
       $this->operationErrors[] = $e->getMessage();
     }
@@ -109,7 +109,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       $this->db
         ->query("UPDATE uksi_operations SET error_detail=$errors WHERE id=$operation->id;");
       echo json_encode(['error' => "Operation $operationLink failed. More details provided in the error_detail field."]);
-    } 
+    }
     else {
       $this->db
         ->query("UPDATE uksi_operations SET operation_processed=true, processed_on=now() WHERE id=$operation->id;");
@@ -120,15 +120,15 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
 
   /**
    * Implements the New taxon operation.
-   * 
+   *
    * Add a completely new taxon to an existing parent.
-   * 
-   * @param object $operation 
+   *
+   * @param object $operation
    *   Operation details.
    */
   public function processNewTaxon($operation) {
     $this->checkOperationRequiredFields('New taxon', $operation, ['taxon_name', 'organism_key', 'taxon_version_key', 'rank', 'output_group']);
-    $this->assertOrganismKeyIsNew('New taxon', $operation->organism_key);    
+    $this->assertOrganismKeyIsNew('New taxon', $operation->organism_key);
     $fields = $this->getCreateTaxonFields($operation);
     if (count($this->operationErrors) > 0) {
       return 'Error';
@@ -144,13 +144,13 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
 
   /**
    * Implements the Rename taxon operation.
-   * 
-   * Add a new recommended scientific name to a taxon – the old recommended 
-   * name will become a junior synonym. If the name exists already but is a 
-   * junior synonym of this taxon then use a Promote name operation (below). 
+   *
+   * Add a new recommended scientific name to a taxon – the old recommended
+   * name will become a junior synonym. If the name exists already but is a
+   * junior synonym of this taxon then use a Promote name operation (below).
    * You can assign a new parent with this operation.
-   * 
-   * @param object $operation 
+   *
+   * @param object $operation
    *   Operation details.
    */
   public function processRenameTaxon($operation) {
@@ -208,11 +208,11 @@ SQL;
 
   /**
    * Implements the Promote name operation.
-   * 
-   * Promote an existing junior synonym to be the recommended scientific name 
+   *
+   * Promote an existing junior synonym to be the recommended scientific name
    * on the same taxon. You can assign a new parent with this operation.
-   * 
-   * @param object $operation 
+   *
+   * @param object $operation
    *   Operation details.
    */
   public function processPromoteName($operation) {
@@ -246,7 +246,7 @@ SQL;
           $ttl->parent_id = $parentId;
         }
         $ttl->set_metadata();
-        $ttl->save();        
+        $ttl->save();
       }
       // Taxa need external key updated.
       if ($existingNameInfo->external_key !== $operation->synonym) {
@@ -268,11 +268,11 @@ SQL;
 
   /**
    * Implements the Merge taxa operation.
-   * 
-   * Merge 2 things together. The senior taxon will persist but the names on 
+   *
+   * Merge 2 things together. The senior taxon will persist but the names on
    * the junior taxon will become junior synonyms of it.
-   * 
-   * @param object $operation 
+   *
+   * @param object $operation
    *   Operation details.
    */
   public function processMergeTaxa($operation) {
@@ -297,7 +297,7 @@ SQL;
       $ttl->preferred = 'f';
       $ttl->taxon_meaning_id = $taxonMeaningId;
       $ttl->set_metadata();
-      $ttl->save(); 
+      $ttl->save();
       $ttl->taxon->external_key = $externalKey;
       $ttl->taxon->organism_key = $operation->organism_key;
       $ttl->taxon->set_metadata();
@@ -313,13 +313,13 @@ SQL;
     return "$juniorName merged into $seniorName";
   }
 
-  /** 
+  /**
    * Implements the Amend metadata operation.
-   * 
-   * Change the data associated with a taxon and/or reparent it without adding 
+   *
+   * Change the data associated with a taxon and/or reparent it without adding
    * or changing a name.
-   * 
-   * @param object $operation 
+   *
+   * @param object $operation
    *   Operation details.
    */
   public function processAmendMetadata($operation) {
@@ -376,11 +376,11 @@ SQL;
 
   /**
    * Create an array of fields and values ready to submit a new taxon.
-   * 
+   *
    * @param obj $operation
    *   Object defining any operation which requires the addition of a new taxon.
-   * 
-   * @return array 
+   *
+   * @return array
    *   Associative array of fields & values.
    */
   private function getCreateTaxonFields($operation) {
@@ -411,10 +411,10 @@ SQL;
 
   /**
    * Map from Y/N values in spreadsheet to t/f for database.
-   * 
+   *
    * @param string $val
    *   Provided value.
-   * 
+   *
    * @return string
    *   Value for database bool field (t/f).
    */
@@ -431,7 +431,7 @@ SQL;
    *
    * @param string $organismKey
    *   Key to fetch names for.
-   *  
+   *
    * @return object
    *   Query result which can be iterated.
    */
@@ -451,7 +451,7 @@ SQL;
 
   /**
    * Generates an error message if provided organism key exists.
-   * 
+   *
    * @param string $operationName
    *   Name of the operation for the error message.
    * @param string $organismKey
@@ -462,16 +462,16 @@ SQL;
     if (count($existing) > 0) {
       $this->operationErrors[] = "$operationName operation has provided an organism_key which is not new";
     }
-  } 
+  }
 
   /**
    * Generates an error for any required fields missing for an operation.
-   * 
+   *
    * @param string $operationName
    *   Name of the operation for the error message.
    * @param object $operation
    *   Operation details object.
-   * @param array $requiredFields 
+   * @param array $requiredFields
    *   List of required field names.
    */
   private function checkOperationRequiredFields($operationName, $operation, array $requiredFields) {
@@ -487,7 +487,7 @@ SQL;
       kohana::log('debug', 'Parent name lookup');
       // Parent identified by name which must refer to a recently added taxa.
       // So use the new taxon operation to find the parent's organism key.
-      // @todo This query should filter to the current batch if possible 
+      // @todo This query should filter to the current batch if possible
       // rather than use the date.
       $qry = <<<SQL
 SELECT organism_key
@@ -534,7 +534,7 @@ SQL;
 
   /**
    * Retrieve the configured main taxon list's ID.
-   * 
+   *
    * @return int
    *   Taxon_list_id pointing to the copy of UKSI.
    */
@@ -548,11 +548,11 @@ SQL;
 
   /**
    * Finds the ID of a taxon rank described in an operation.
-   * 
+   *
    * @param object $operation
-   *   Details of an operation including a rank property containing the rank 
+   *   Details of an operation including a rank property containing the rank
    *   name.
-   * 
+   *
    * @return int
    *   ID, or NULL if not found.
    */
@@ -570,15 +570,15 @@ SQL;
 
   /**
    * Finds the ID of a taxon group described in an operation.
-   * 
+   *
    * @param object $operation
    *   Details of an operation including an output_group property containing
    *   the group name.
-   * 
+   *
    * @return int
    *   ID, or NULL if not found.
    */
-  private function getTaxonGroupId($operation) { 
+  private function getTaxonGroupId($operation) {
     $group = $this->db->select('id')
       ->from('taxon_groups')
       ->where(['title' => $operation->output_group, 'deleted' => 'f'])
@@ -592,14 +592,14 @@ SQL;
 
   /**
    * Retrieves the ID for a language's ISO code.
-   * 
+   *
    * @param string $iso
    *   ISO language code which should be in the languages table.
-   * 
+   *
    * @return int
    *   ID, or NULL if not found.
    */
-  private function getLanguageId($iso) { 
+  private function getLanguageId($iso) {
     $language = $this->db->select('id')
       ->from('languages')
       ->where(['iso' => $iso, 'deleted' => 'f'])
