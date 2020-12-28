@@ -35,13 +35,13 @@ CREATE TABLE uksi_operations
         ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
-COMMENT ON TABLE uksi_operations IS '';
+COMMENT ON TABLE uksi_operations IS 'List of operations to apply to the UKSI taxonomy information on this warehouse.';
 
-COMMENT ON COLUMN uksi_operations.id IS '';
-COMMENT ON COLUMN uksi_operations.sequence IS '';
-COMMENT ON COLUMN uksi_operations.operation IS '';
-COMMENT ON COLUMN uksi_operations.error_detail IS '';
-COMMENT ON COLUMN uksi_operations.organism_key IS 'Organism key for operations which affect a taxon concept.';
+COMMENT ON COLUMN uksi_operations.id IS 'Primary key and unique identifier for the table.';
+COMMENT ON COLUMN uksi_operations.sequence IS 'Sequence order the operation should be applied in, within the operations where batch_processed_on indicates they were processed on the same date.';
+COMMENT ON COLUMN uksi_operations.operation IS 'Name of the operation to apply.';
+COMMENT ON COLUMN uksi_operations.error_detail IS 'For operations that have been applied but failed, details of the error.';
+COMMENT ON COLUMN uksi_operations.organism_key IS 'Organism key for operations which affect a taxon concept, where a new organism_key was generated during processeing.';
 COMMENT ON COLUMN uksi_operations.taxon_version_key IS '';
 COMMENT ON COLUMN uksi_operations.rank IS '';
 COMMENT ON COLUMN uksi_operations.taxon_name IS '';

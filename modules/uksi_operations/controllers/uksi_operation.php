@@ -143,6 +143,38 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
   }
 
   /**
+   * Implements the  Add synonyn operation.
+   *
+   * Add a new junior synonym (scientific or vernacular) to an existing taxon.
+   * Currently always added in English.
+   *
+   * @param object $operation
+   *   Operation details.
+   */
+  public function processAddSynonym($operation) {
+    $this->checkOperationRequiredFields('Add synonym', $operation, ['current_organism_key', 'taxon_version_key', 'taxon_name', 'name_type']);
+    // Find other taxa with same organism key.
+    $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key, false);
+    // Fail if none found.
+    if (count($allExistingNames) === 0) {
+      $this->operationErrors[] = "Organism key $operation->current_organism_key not found for add synonym operation";
+      return 'Error';
+    }
+    // Add the taxon as per new taxon, using the existing taxon meaning Id.
+    $fields = $this->getCreateTaxonFields($operation, FALSE);
+    $fields['taxa_taxon_list:taxon_meaning_id'] = $allExistingNames->current()->taxon_meaning_id;
+    if (count($this->operationErrors) > 0) {
+      return 'Error';
+    }
+    $taxa_taxon_list = ORM::factory('taxa_taxon_list');
+    $taxa_taxon_list->set_submission_data($fields);
+    if (!$taxa_taxon_list->submit()) {
+      $this->operationErrors[] = implode("\n", $taxa_taxon_list->getAllErrors());
+      return 'Error';
+    }
+  }
+
+  /**
    * Implements the Rename taxon operation.
    *
    * Add a new recommended scientific name to a taxon – the old recommended
@@ -154,12 +186,12 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
    *   Operation details.
    */
   public function processRenameTaxon($operation) {
-    $this->checkOperationRequiredFields('Rename taxon', $operation, ['taxon_name', 'organism_key', 'taxon_version_key', 'rank', 'output_group']);
+    $this->checkOperationRequiredFields('Rename taxon', $operation, ['taxon_name', 'current_organism_key', 'taxon_version_key', 'rank', 'output_group']);
     // Find other taxa with same organism key.
-    $allExistingNames = $this->getTaxaForOrganismKey($operation->organism_key);
+    $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key);
     // Fail if none found.
     if (count($allExistingNames) === 0) {
-      $this->operationErrors[] = "Organism key $operation->organism_key not found for rename taxon operation";
+      $this->operationErrors[] = "Organism key $operation->current_organism_key not found for rename taxon operation";
       return 'Error';
     }
     $originalName = $allExistingNames->current()->taxon;
@@ -216,8 +248,8 @@ SQL;
    *   Operation details.
    */
   public function processPromoteName($operation) {
-    $this->checkOperationRequiredFields('Promote name', $operation, ['organism_key', 'synonym']);
-    $allExistingNames = $this->getTaxaForOrganismKey($operation->organism_key);
+    $this->checkOperationRequiredFields('Promote name', $operation, ['current_organism_key', 'synonym']);
+    $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key);
     $foundNameToPromote = FALSE;
     foreach ($allExistingNames as $existingNameInfo) {
       $foundNameToPromote = $foundNameToPromote || ($existingNameInfo->search_code === $operation->synonym);
@@ -276,8 +308,8 @@ SQL;
    *   Operation details.
    */
   public function processMergeTaxa($operation) {
-    $this->checkOperationRequiredFields('Merge taxa', $operation, ['organism_key', 'synonym']);
-    $namesToKeep = $this->getTaxaForOrganismKey($operation->organism_key);
+    $this->checkOperationRequiredFields('Merge taxa', $operation, ['current_organism_key', 'synonym']);
+    $namesToKeep = $this->getTaxaForOrganismKey($operation->current_organism_key);
     $allNamesToMerge = $this->getTaxaForOrganismKey($operation->synonym);
     if (count($namesToKeep) === 0) {
       $this->operationErrors[] = 'Organism key not found';
@@ -299,7 +331,7 @@ SQL;
       $ttl->set_metadata();
       $ttl->save();
       $ttl->taxon->external_key = $externalKey;
-      $ttl->taxon->organism_key = $operation->organism_key;
+      $ttl->taxon->organism_key = $operation->current_organism_key;
       $ttl->taxon->set_metadata();
       $ttl->taxon->save();
       // Occurrences will need a cache table refresh as new preferred name details.
@@ -323,27 +355,38 @@ SQL;
    *   Operation details.
    */
   public function processAmendMetadata($operation) {
-    $this->checkOperationRequiredFields('Amend metadata', $operation, ['organism_key']);
-    $namesToUpdate = $this->getTaxaForOrganismKey($operation->organism_key);
+    $this->checkOperationRequiredFields('Amend metadata', $operation, ['current_organism_key']);
+    $namesToUpdate = $this->getTaxaForOrganismKey($operation->current_organism_key);
     if (count($namesToUpdate) === 0) {
       $this->operationErrors[] = 'Organism key not found';
     }
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    // If parent changing, lookup the parent.
-    if (!empty($operation->parent_name) || !empty($operation->parent_organism_key)) {
-      $parentId = $this->getParentTtlId($operation);
-      // Apply parent to existing taxa_taxon_lists.
+    $parentChanging = !empty($operation->parent_name) || !empty($operation->parent_organism_key);
+    $redundantChanging = !empty($operation->redundant);
+    $flagsChanging = !empty($operation->marine) || !empty($operation->terrestrial) || !empty($operation->freshwater) || !empty($operation->non_native);
+    // Find any changes to taxa_taxon_lists data.
+    if ($parentChanging || $redundantChanging) {
+      if ($parentChanging) {
+        // If parent changing, lookup the parent.
+        $parentId = $this->getParentTtlId($operation);
+      }
+      // Apply parent and redundancy to existing taxa_taxon_lists.
       foreach ($namesToUpdate as $nameInfo) {
         $ttl = ORM::factory('taxa_taxon_list', $nameInfo->id);
-        $ttl->parent_id = $parentId;
+        if ($parentChanging) {
+          $ttl->parent_id = $parentId;
+        }
+        if ($redundantChanging) {
+          $ttl->allow_data_entry = $operation->redundant ? 'f' : 't';
+        }
         $ttl->set_metadata();
         $ttl->save();
       }
     }
     // If taxon flags changing, apply the changes.
-    if (!empty($operation->marine) || !empty($operation->terrestrial) || !empty($operation->freshwater) || !empty($operation->non_native)) {
+    if ($flagsChanging) {
       foreach ($namesToUpdate as $nameInfo) {
         $tx = ORM::factory('taxon', $nameInfo->taxon_id);
         if (!empty($operation->marine)) {
@@ -379,11 +422,13 @@ SQL;
    *
    * @param obj $operation
    *   Object defining any operation which requires the addition of a new taxon.
+   * @param bool $preferred
+   *   Default TRUE, set to FALSE if creating a non-preferred name.
    *
    * @return array
    *   Associative array of fields & values.
    */
-  private function getCreateTaxonFields($operation) {
+  private function getCreateTaxonFields($operation, $preferred = TRUE) {
     $taxonListId = $this->getTaxonListId();
     $parentId = $this->getParentTtlId($operation);
     $rankId = $this->getTaxonRankId($operation);
@@ -391,7 +436,7 @@ SQL;
     return [
       'taxa_taxon_list:taxon_list_id' => $taxonListId,
       'taxa_taxon_list:parent_id' => $parentId,
-      'taxa_taxon_list:preferred' => 't',
+      'taxa_taxon_list:preferred' => $preferred ? 't' : 'f',
       'taxon:taxon' => $operation->taxon_name,
       'taxon:authority' => $operation->authority,
       'taxon:attribute' => $operation->attribute,
