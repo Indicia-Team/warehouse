@@ -81,6 +81,10 @@ class Indicia_Controller extends Template_Controller {
     if (file_exists($jsFile)) {
       $this->template->jsFile = str_replace(str_replace('\\', '/', DOCROOT), '', $jsFile);
     }
+    $cssFile = str_replace('.js', '.css', $jsFile);
+    if (file_exists($cssFile)) {
+      $this->template->cssFile = str_replace(str_replace('\\', '/', DOCROOT), '', $cssFile);
+    }
     $title = kohana::config('indicia.warehouse_title');
     $this->template->warehouseTitle = $title ? $title : 'Indicia Warehouse';
   }
