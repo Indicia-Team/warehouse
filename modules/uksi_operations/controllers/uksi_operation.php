@@ -81,7 +81,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       echo json_encode(['message' => 'Nothing to do']);
       return;
     }
-    $operationLink = '<a href="' . url::base(true) . "uksi_operation/edit/$operation->id\">$operation->sequence ($operation->operation)</a>";
+    $operationLink = '<a href="' . url::base(true) . "uksi_operation/edit/$operation->id\">$operation->batch_processed_on:$operation->sequence ($operation->operation)</a>";
     if (!empty($operation->error_detail)) {
       http_response_code(400);
       echo json_encode(['error' => "Operation $operationLink had previously failed. Clear errors before proceeding."]);
