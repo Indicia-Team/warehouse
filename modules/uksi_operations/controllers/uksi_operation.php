@@ -47,7 +47,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
    * As the UKSI list is global, need to be admin to change it.
    */
   protected function page_authorised() {
-    return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
+    return $this->auth->logged_in('CoreAdmin') || $this->auth->logged_in('UKSIAdmin');
   }
 
   public function importer() {

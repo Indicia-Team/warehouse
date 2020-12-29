@@ -23,8 +23,10 @@
  * Create a menu item for the list of taxon designations.
  */
 function uksi_operations_alter_menu($menu, $auth) {
-  if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin'))
+  if ($auth->logged_in('CoreAdmin') || $auth->logged_in('UKSIAdmin')) {
     $menu['Taxonomy']['UKSI operations'] = 'uksi_operation';
+    $menu['Taxonomy']['UKSI taxa search'] = 'taxa_search';
+  }
   return $menu;
 }
 
