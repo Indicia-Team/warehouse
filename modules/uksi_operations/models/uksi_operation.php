@@ -47,7 +47,7 @@ class Uksi_operation_Model extends ORM {
       'parent_organism_key',
       'parent_name',
       'synonym',
-      'output_group',
+      'taxon_group_key',
       'marine',
       'terrestrial',
       'freshwater',

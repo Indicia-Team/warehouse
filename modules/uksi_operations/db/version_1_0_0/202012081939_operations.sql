@@ -14,7 +14,7 @@ CREATE TABLE uksi_operations
     parent_organism_key character(16),
     parent_name character varying,
     synonym character varying,
-    output_group character varying,
+    taxon_group_key character(16),
     marine boolean,
     terrestrial boolean,
     freshwater boolean,
@@ -50,7 +50,7 @@ COMMENT ON COLUMN uksi_operations.attribute IS 'Taxon attribute, if needed by th
 COMMENT ON COLUMN uksi_operations.parent_organism_key IS 'Taxon parent organism key, if needed by the operation.';
 COMMENT ON COLUMN uksi_operations.parent_name IS 'Taxon parent name, if needed by the operation.';
 COMMENT ON COLUMN uksi_operations.synonym IS 'For promote name operations, the TVK of the name being promoted. For merge taxa operations, the organism key of the taxon being merged into another and relegated to junior synonym.';
-COMMENT ON COLUMN uksi_operations.output_group IS 'Taxon group, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.taxon_group_key IS 'UKSI key for the taxon group, if needed by the operation.';
 COMMENT ON COLUMN uksi_operations.marine IS 'Taxon marine flag, if needed by the operation.';
 COMMENT ON COLUMN uksi_operations.terrestrial IS 'Taxon terrestrial flag, if needed by the operation.';
 COMMENT ON COLUMN uksi_operations.freshwater IS 'Taxon freshwater flag, if needed by the operation.';

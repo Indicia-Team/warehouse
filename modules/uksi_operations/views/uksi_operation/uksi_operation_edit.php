@@ -52,7 +52,7 @@ $id = html::initial_value($values, 'uksi_operation:id');
         'label' => 'Error detail',
         'fieldname' => 'uksi_operation:error_detail',
         'default' => html::initial_value($values, 'uksi_operation:error_detail'),
-        'helpText' => 'Processing errors will be shown here. Once you have resolved the issues please clear the ' . 
+        'helpText' => 'Processing errors will be shown here. Once you have resolved the issues please clear the ' .
             'errors and save the operation. It will then be reattempted next time you process operations.',
       ]);
       ?>
@@ -128,13 +128,13 @@ $id = html::initial_value($values, 'uksi_operation:id');
       'label' => 'Synonym',
       'fieldname' => 'uksi_operation:synonym',
       'default' => html::initial_value($values, 'uksi_operation:synonym'),
-      'helpText' => 'For promote name operations, the TVK of the name being promoted. For merge taxa ' . 
+      'helpText' => 'For promote name operations, the TVK of the name being promoted. For merge taxa ' .
           'operations, the organism key of the taxon being merged into another and relegated to junior synonym.',
     ]);
     echo data_entry_helper::text_input([
-      'label' => 'Output group',
-      'fieldname' => 'uksi_operation:output_group',
-      'default' => html::initial_value($values, 'uksi_operation:output_group'),
+      'label' => 'Taxon group key',
+      'fieldname' => 'uksi_operation:taxon_group_key',
+      'default' => html::initial_value($values, 'uksi_operation:taxon_group_key'),
     ]);
     echo data_entry_helper::checkbox([
       'label' => 'Marine',
@@ -169,7 +169,7 @@ $id = html::initial_value($values, 'uksi_operation:id');
     ]);
     ?>
   </fieldset>
-  
+
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
   data_entry_helper::enable_validation('uksi-operation-edit');

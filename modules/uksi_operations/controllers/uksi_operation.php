@@ -81,7 +81,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       echo json_encode(['message' => 'Nothing to do']);
       return;
     }
-    $operationLink = '<a href="' . url::base(true) . "uksi_operation/edit/$operation->id\">$operation->batch_processed_on:$operation->sequence ($operation->operation)</a>";
+    $operationLink = '<a href="' . url::base(true) . "uksi_operation/edit/$operation->id\">$operation->batch_processed_on : $operation->sequence ($operation->operation)</a>";
     if (!empty($operation->error_detail)) {
       http_response_code(400);
       echo json_encode(['error' => "Operation $operationLink had previously failed. Clear errors before proceeding."]);
@@ -127,7 +127,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
    *   Operation details.
    */
   public function processNewTaxon($operation) {
-    $this->checkOperationRequiredFields('New taxon', $operation, ['taxon_name', 'organism_key', 'taxon_version_key', 'rank', 'output_group']);
+    $this->checkOperationRequiredFields('New taxon', $operation, ['taxon_name', 'organism_key', 'taxon_version_key', 'rank', 'taxon_group_key']);
     $this->assertOrganismKeyIsNew('New taxon', $operation->organism_key);
     $fields = $this->getCreateTaxonFields($operation);
     if (count($this->operationErrors) > 0) {
@@ -186,7 +186,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
    *   Operation details.
    */
   public function processRenameTaxon($operation) {
-    $this->checkOperationRequiredFields('Rename taxon', $operation, ['taxon_name', 'current_organism_key', 'taxon_version_key', 'rank', 'output_group']);
+    $this->checkOperationRequiredFields('Rename taxon', $operation, ['taxon_name', 'current_organism_key', 'taxon_version_key', 'rank', 'taxon_group_key']);
     // Find other taxa with same organism key.
     $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key);
     // Fail if none found.
@@ -617,8 +617,8 @@ SQL;
    * Finds the ID of a taxon group described in an operation.
    *
    * @param object $operation
-   *   Details of an operation including an output_group property containing
-   *   the group name.
+   *   Details of an operation including an taxon_group_key property to lookup
+   *   against.
    *
    * @return int
    *   ID, or NULL if not found.
@@ -626,12 +626,12 @@ SQL;
   private function getTaxonGroupId($operation) {
     $group = $this->db->select('id')
       ->from('taxon_groups')
-      ->where(['title' => $operation->output_group, 'deleted' => 'f'])
+      ->where(['external_key' => $operation->taxon_group_key, 'deleted' => 'f'])
       ->get()->current();
     if ($group) {
       return $group->id;
     }
-    $this->operationErrors[] = "Could not find taxon group $operation->output_group in the database.";
+    $this->operationErrors[] = "Could not find taxon group $operation->taxon_group_key in the database.";
     return NULL;
   }
 
