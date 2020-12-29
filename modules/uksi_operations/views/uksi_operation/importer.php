@@ -5,7 +5,6 @@ $auth = import_helper::get_read_write_auth(0 - $_SESSION['auth_user']->id, kohan
 
 $fieldMappings = <<<TXT
 uksi_operation:parent_organism_key=parent_orgkey
-uksi_operation:taxon_group_key=taxon_group_key
 uksi_operation:organism_key=org_key
 uksi_operation:taxon_version_key=new_tv_key
 uksi_operation:batch_processed_on=processed_date
