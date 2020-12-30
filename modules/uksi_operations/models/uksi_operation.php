@@ -56,6 +56,8 @@ class Uksi_operation_Model extends ORM {
       'redundant',
       'deleted_date',
       'batch_processed_on',
+      'notes',
+      'testing_comment',
     ];
     return parent::validate($array, $save);
   }

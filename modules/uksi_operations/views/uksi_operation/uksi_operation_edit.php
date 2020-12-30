@@ -176,6 +176,16 @@ function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
       'default' => html::initial_value($values, 'uksi_operation:deleted_date'),
       'allowFuture' => TRUE,
     ]);
+    echo data_entry_helper::textarea([
+      'label' => 'Notes',
+      'fieldname' => 'uksi_operation:notes',
+      'default' => html::initial_value($values, 'uksi_operation:notes'),
+    ]);
+    echo data_entry_helper::textarea([
+      'label' => 'Testing comment',
+      'fieldname' => 'uksi_operation:testing_coment',
+      'default' => html::initial_value($values, 'uksi_operation:testing_comment'),
+    ]);
     ?>
   </fieldset>
 
