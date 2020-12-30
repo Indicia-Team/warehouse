@@ -45,7 +45,7 @@ HTML;
 $organismLink = url::site() . 'taxa_search?filter-param_organism_key={organism_key}';
 $template = <<<HTML
       <li style="margin-left: {margin}px">
-        <a href="$organismLink">{rank}: <span class="{name_class}">{taxon}</span> {attribute} {authority}</a>
+        {rank}: <a href="$organismLink"><span class="{name_class}">{taxon}</span> {attribute} {authority}</a>
       </li>
 HTML;
 echo report_helper::freeform_report([
