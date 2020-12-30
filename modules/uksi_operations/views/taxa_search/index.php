@@ -63,11 +63,20 @@ echo report_helper::freeform_report([
   ],
 ]);
 
-$template = <<<HTML
+$header = <<<HTML
 <div class="panel panel-info">
-  <div class="panel-heading"><span class="{name_class}">{taxon}</span> {attribute} {authority}</div>
+  <div class="panel-heading">Names</div>
   <div class="panel-body">
+HTML;
+$footer = <<<HTML
+  </div>
+</div>
+HTML;
+$template = <<<HTML
     <dl class="dl-horizontal">
+      <dt>Name</dt>
+      <dd><span class="{name_class}">{taxon}</span> {attribute} {authority}</dd>
+
       <dt>Name type</dt>
       <dd>{name_type}</dd>
 
@@ -89,8 +98,6 @@ $template = <<<HTML
       <dt>Redundant</dt>
       <dd>{redundant}</dd>
     </dl>
-  </div>
-</div>
 HTML;
 echo report_helper::freeform_report([
   'readAuth' => $readAuth,
@@ -98,6 +105,8 @@ echo report_helper::freeform_report([
   'autoParamsForm' => FALSE,
   'reportGroup' => 'filter',
   'extraParams' => ['param_taxon_list_id' => $listId],
+  'header' => $header,
+  'footer' => $footer,
   'bands' => [
     [
       'content' => $template,

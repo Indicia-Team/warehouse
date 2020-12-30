@@ -10,6 +10,7 @@
     WHERE t.organism_key='#param_organism_key#'
     AND ttl.taxon_list_id=#param_taxon_list_id#
     AND t.deleted=false
+    AND ttl.preferred=true
     UNION
     SELECT t2.taxon, t2.organism_key, ttl2.parent_id, nodes.level+1 as level,
       CASE WHEN tr2.sort_order >= 300 AND t2.language_id=2 THEN 'name-italic' ELSE '' END AS name_class
