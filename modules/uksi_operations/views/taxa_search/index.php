@@ -33,16 +33,20 @@ $readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana:
 
 $header = <<<HTML
 <div class="panel panel-info">
-  <div class="panel-heading">Parents</div>
+  <div class="panel-heading">Taxonomy</div>
   <div class="panel-body">
+    <ul>
 HTML;
 $footer = <<<HTML
+    </ul>
   </div>
 </div>
 HTML;
 $organismLink = url::site() . 'taxa_search?filter-param_organism_key={organism_key}';
 $template = <<<HTML
-<a href="$organismLink">{taxon}</a>
+      <li style="margin-left: {margin}px">
+        <a href="$organismLink"><span class="{name_class}">{taxon}</span> {attribute} {authority}</a>
+      </li>
 HTML;
 echo report_helper::freeform_report([
   'readAuth' => $readAuth,
