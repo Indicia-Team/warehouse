@@ -24,6 +24,21 @@
 
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'uksi_operation:id');
+data_entry_helper::add_resource('font_awesome');
+
+function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
+  $options = [
+    'label' => $label,
+    'fieldname' => "uksi_operation:$fieldName",
+    'default' => html::initial_value($values, "uksi_operation:$fieldName"),
+    'helpText' => $helpText,
+  ];
+  if (!empty($values["uksi_operation:$fieldName"])) {
+    $organismLink = url::site() . 'taxa_search?filter-param_organism_key=' . $values["uksi_operation:$fieldName"];
+    $options['afterControl'] = "<a href=\"$organismLink\" target=\"_blank\" title=\"View names for this organism key\"><span class=\"fas fa-eye\"></span></a>";
+  }
+  return data_entry_helper::text_input($options);
+}
 ?>
 <p>This page allows you to specify the details of a UKSI operation.</p>
 <?php if ($values['uksi_operation:operation_processed'] === 't') : ?>
@@ -83,11 +98,9 @@ $id = html::initial_value($values, 'uksi_operation:id');
       'validation' => ['required', 'integer'],
       'helpText' => 'Sequence number defining the order in which operations are applied.',
     ]);
-    echo data_entry_helper::text_input([
-      'label' => 'Organism Key',
-      'fieldname' => 'uksi_operation:organism_key',
-      'default' => html::initial_value($values, 'uksi_operation:organism_key'),
-    ]);
+    echo getOrganismKeyControl('organism_key', 'Organism Key', 'Organism Key created by this operation', $values);
+    echo getOrganismKeyControl('current_organism_key', 'Current Organism Key', 'Existing Organism Key affected by this operation', $values);
+
     echo data_entry_helper::text_input([
       'label' => 'Taxon Version Key',
       'fieldname' => 'uksi_operation:taxon_version_key',
@@ -113,11 +126,7 @@ $id = html::initial_value($values, 'uksi_operation:id');
       'fieldname' => 'uksi_operation:attribute',
       'default' => html::initial_value($values, 'uksi_operation:attribute'),
     ]);
-    echo data_entry_helper::text_input([
-      'label' => 'Parent Organism Key',
-      'fieldname' => 'uksi_operation:parent_organism_key',
-      'default' => html::initial_value($values, 'uksi_operation:parent_organism_key'),
-    ]);
+    echo getOrganismKeyControl('parent_organism_key', 'Parent Organism Key', 'Organism Key of parent concept for this operation', $values);
     echo data_entry_helper::text_input([
       'label' => 'Parent Name',
       'fieldname' => 'uksi_operation:parent_name',

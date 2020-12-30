@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="UKSI taxon search parents" description="Quick way of reviewing parents of UKSI changes.">
+  <query>
+  WITH RECURSIVE nodes(taxon, organism_key, parent_id, level) AS (
+    SELECT t.taxon, t.organism_key, ttl.parent_id, 1 as level
+    FROM taxa t
+    JOIN taxa_taxon_lists ttl ON ttl.taxon_id=t.id AND ttl.deleted=false
+    WHERE t.organism_key='#param_organism_key#'
+    AND ttl.taxon_list_id=#param_taxon_list_id#
+    AND t.deleted=false
+    UNION
+    SELECT t2.taxon, t2.organism_key, ttl2.parent_id, nodes.level+1 as level
+    FROM nodes, taxa t2
+    JOIN taxa_taxon_lists ttl2 ON ttl2.taxon_id=t2.id AND ttl2.deleted=false
+    WHERE ttl2.id = nodes.parent_id
+    AND ttl2.taxon_list_id=#param_taxon_list_id#
+    AND t2.deleted=false
+  )
+  SELECT * FROM nodes order by level desc;
+  </query>
+  <params>
+    <param name="param_taxon_list_id" display="Taxon list ID" datatype="integer" />
+    <param name="param_organism_key" display="Organism key" datatype="text" />
+  </params>
+  <columns>
+    <column name="taxon" display="Taxon" datatype="text" />
+    <column name="organism_key" display="Organism Key" datatype="text" />
+  </columns>
+</report>

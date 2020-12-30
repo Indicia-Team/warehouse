@@ -30,6 +30,35 @@
 <?php
 warehouse::loadHelpers(['report_helper']);
 $readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+
+$header = <<<HTML
+<div class="panel panel-info">
+  <div class="panel-heading">Parents</div>
+  <div class="panel-body">
+HTML;
+$footer = <<<HTML
+  </div>
+</div>
+HTML;
+$organismLink = url::site() . 'taxa_search?filter-param_organism_key={organism_key}';
+$template = <<<HTML
+<a href="$organismLink">{taxon}</a>
+HTML;
+echo report_helper::freeform_report([
+  'readAuth' => $readAuth,
+  'dataSource' => 'library/taxa/uksi_taxa_search_parents',
+  'autoParamsForm' => FALSE,
+  'reportGroup' => 'filter',
+  'extraParams' => ['param_taxon_list_id' => $listId],
+  'header' => $header,
+  'footer' => $footer,
+  'bands' => [
+    [
+      'content' => $template,
+    ],
+  ],
+]);
+
 $template = <<<HTML
 <div class="panel panel-info">
   <div class="panel-heading"><span class="{name_class}">{taxon}</span> {attribute} {authority}</div>
