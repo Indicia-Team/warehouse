@@ -183,7 +183,7 @@ function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
     ]);
     echo data_entry_helper::textarea([
       'label' => 'Testing comment',
-      'fieldname' => 'uksi_operation:testing_coment',
+      'fieldname' => 'uksi_operation:testing_comment',
       'default' => html::initial_value($values, 'uksi_operation:testing_comment'),
     ]);
     ?>
