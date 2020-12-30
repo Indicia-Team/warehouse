@@ -73,7 +73,7 @@ $footer = <<<HTML
 </div>
 HTML;
 $template = <<<HTML
-    <dl class="dl-horizontal">
+    <dl class="dl-horizontal taxon-{name_type}">
       <dt>Name</dt>
       <dd><span class="{name_class}">{taxon}</span> {attribute} {authority}</dd>
 
