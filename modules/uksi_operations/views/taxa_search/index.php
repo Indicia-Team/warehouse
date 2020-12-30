@@ -23,9 +23,11 @@
  */
 
 ?>
-<form method="post" action="<?php echo url::site(); ?>taxa_search">
-  <input type="text" name="filter-param_organism_key" />
-  <input type="submit" value="Search" />
+<form method="post" class="form-inline" action="<?php echo url::site(); ?>taxa_search">
+  <div class="form-group">
+    <label for="filter-param_organism_key">Organism Key:</label>
+    <input type="text" name="filter-param_organism_key" id="filter-param_organism_key" class="form-control" />
+    <input type="submit" class="btn btn-primary" value="Search" />
 </form>
 <?php
 warehouse::loadHelpers(['report_helper']);
