@@ -176,6 +176,11 @@ function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
       'default' => html::initial_value($values, 'uksi_operation:deleted_date'),
       'allowFuture' => TRUE,
     ]);
+    echo data_entry_helper::date_picker([
+      'label' => 'Batch processed on date',
+      'fieldname' => 'uksi_operation:batch_processed_on',
+      'default' => html::initial_value($values, 'uksi_operation:batch_processed_on'),
+    ]);
     echo data_entry_helper::textarea([
       'label' => 'Notes',
       'fieldname' => 'uksi_operation:notes',
