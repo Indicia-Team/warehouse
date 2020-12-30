@@ -6,6 +6,7 @@
   join taxa t on t.id=ttl.taxon_id and t.deleted=false
   join taxa_taxon_lists ttlc on ttlc.parent_id=ttl.id AND ttlc.deleted=false
     and ttlc.taxon_list_id=#param_taxon_list_id#
+    and ttlc.preferred=true
   join taxa tc on tc.id=ttlc.taxon_id and tc.deleted=false
   join taxon_ranks trc on trc.id=tc.taxon_rank_id
   where ttl.taxon_list_id=#param_taxon_list_id#
