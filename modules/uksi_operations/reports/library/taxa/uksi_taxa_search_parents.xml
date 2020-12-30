@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="UKSI taxon search parents" description="Quick way of reviewing parents of UKSI changes.">
   <query>
-  WITH RECURSIVE nodes(taxon, organism_key, parent_id, level, name_class) AS (
-    SELECT t.taxon, t.organism_key, ttl.parent_id, 1 as level,
+  WITH RECURSIVE nodes(taxon, attribute, authority, organism_key, parent_id, level, name_class) AS (
+    SELECT t.taxon, t.attribute, t.authority, t.organism_key, ttl.parent_id, 1 as level,
       CASE WHEN tr.sort_order >= 300 AND t.language_id=2 THEN 'name-italic' ELSE '' END AS name_class
     FROM taxa t
     JOIN taxa_taxon_lists ttl ON ttl.taxon_id=t.id AND ttl.deleted=false
@@ -12,7 +12,7 @@
     AND t.deleted=false
     AND ttl.preferred=true
     UNION
-    SELECT t2.taxon, t2.organism_key, ttl2.parent_id, nodes.level+1 as level,
+    SELECT t2.taxon, t2.attribute, t2.authority, t2.organism_key, ttl2.parent_id, nodes.level+1 as level,
       CASE WHEN tr2.sort_order >= 300 AND t2.language_id=2 THEN 'name-italic' ELSE '' END AS name_class
     FROM nodes, taxa t2
     JOIN taxa_taxon_lists ttl2 ON ttl2.taxon_id=t2.id AND ttl2.deleted=false
@@ -29,6 +29,8 @@
   </params>
   <columns>
     <column name="taxon" display="Taxon" datatype="text" />
+    <column name="attribute" display="Attribute" datatype="text" />
+    <column name="authority" display="Authority" datatype="text" />
     <column name="organism_key" display="Organism Key" datatype="text" />
     <column name="margin" display="Margin" datatype="integer" />
     <column name="name_class" display="Class" datatype="text" />

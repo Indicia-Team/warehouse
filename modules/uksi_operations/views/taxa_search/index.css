@@ -5,3 +5,6 @@
   border: solid silver 1px;
   border-radius: 4px;
 }
+.taxon-Accepted {
+  font-weight: bold;
+}
