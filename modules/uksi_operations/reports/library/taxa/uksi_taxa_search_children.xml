@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="UKSI taxon search children" description="Quick way of reviewing children involved in UKSI changes.">
   <query>
-  select #columns#
+  select distinct #columns#
   from taxa_taxon_lists ttl
   join taxa t on t.id=ttl.taxon_id and t.deleted=false
   join taxa_taxon_lists ttlc on ttlc.parent_id=ttl.id AND ttlc.deleted=false
