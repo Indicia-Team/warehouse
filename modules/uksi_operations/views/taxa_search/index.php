@@ -113,3 +113,35 @@ echo report_helper::freeform_report([
     ],
   ],
 ]);
+
+$header = <<<HTML
+<div class="panel panel-info">
+  <div class="panel-heading">Names</div>
+  <div class="panel-body">
+    <ul class="horizontal">
+HTML;
+$footer = <<<HTML
+    </ul>
+  </div>
+</div>
+HTML;
+$organismLink = url::site() . 'taxa_search?filter-param_organism_key={organism_key}';
+$template = <<<HTML
+      <li>
+        <a href="$organismLink"><span class="{name_class}">{taxon}</span> {attribute} {authority}</a>
+      </li>
+HTML;
+echo report_helper::freeform_report([
+  'readAuth' => $readAuth,
+  'dataSource' => 'library/taxa/uksi_taxa_search_children',
+  'autoParamsForm' => FALSE,
+  'reportGroup' => 'filter',
+  'extraParams' => ['param_taxon_list_id' => $listId],
+  'header' => $header,
+  'footer' => $footer,
+  'bands' => [
+    [
+      'content' => $template,
+    ],
+  ],
+]);
