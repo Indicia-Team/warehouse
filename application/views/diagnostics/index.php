@@ -32,7 +32,7 @@
 
 warehouse::loadHelpers(['report_helper']);
 $readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-$restApiEnabled = class_exists('api_persist');
+$restApiEnabled = in_array(MODPATH . 'rest_api', kohana::config('config.modules'));
 ?>
 <div class="row">
 
