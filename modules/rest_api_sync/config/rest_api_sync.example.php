@@ -54,7 +54,7 @@ $config['servers'] = [
     'resources' => array('taxon-observations', 'annotations'),
     // Should existing records get overwritten by remote updates when verified?
     // Default true.
-    'allowUpdateWhenVerified' => false,
+    'allowUpdateWhenVerified' => TRUE,
   ],
   'INAT' => [
     'website_id' => 123,
@@ -72,6 +72,6 @@ $config['servers'] = [
       'controlled_attribute:1' => 'occAttr:768',
       'controlled_attribute:9' => 'occAttr:346',
     ],
-    'allowUpdateWhenVerified' => false,
+    'allowUpdateWhenVerified' => FALSE,
   ],
 ];

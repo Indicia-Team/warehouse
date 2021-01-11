@@ -238,8 +238,17 @@ class rest_api_sync_indicia {
           unset($observation['datasetName']);
         }
         try {
-          $is_new = api_persist::taxonObservation(self::$db, $observation, $server['website_id'], $survey_id, $taxon_list_id);
-          $tracker[$is_new ? 'inserts' : 'updates']++;
+          $is_new = api_persist::taxonObservation(
+            self::$db,
+            $observation, 
+            $server['website_id'], 
+            $survey_id, 
+            $taxon_list_id, 
+            $server['allowUpdateWhenVerified']
+          );
+          if ($is_new !== NULL) {
+            $tracker[$is_new ? 'inserts' : 'updates']++;
+          }
         }
         catch (exception $e) {
           rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .

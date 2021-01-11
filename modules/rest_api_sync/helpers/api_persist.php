@@ -53,13 +53,17 @@ class api_persist {
    *   Survey dataset ID being saved into.
    * @param int $taxon_list_id
    *   Taxon list used for species name lookups.
+   * @param bool $allowUpdateWhenVerified
+   *   Should existing verified records be overwritten?
    *
    * @return bool
-   *   True if a new record was creates, false if an existing one was updated.
+   *   True if a new record was creates, false if an existing one was updated,
+   *   NULL if no action (e.g. existing verified record which was skipped due
+   *   to $allowUpdateWhenVerified setting).
    *
    * @throws \exception
    */
-  public static function taxonObservation($db, array $observation, $website_id, $survey_id, $taxon_list_id) {
+  public static function taxonObservation($db, array $observation, $website_id, $survey_id, $taxon_list_id, $allowUpdateWhenVerified) {
     if (!empty($observation['taxonVersionKey'])) {
       $lookup = ['search_code' => $observation['taxonVersionKey']];
     }
@@ -75,6 +79,10 @@ class api_persist {
     self::checkMandatoryFields($observation, 'taxon-observation');
     $existing = self::findExistingObservation($db, $observation['id'], $survey_id);
     if (count($existing)) {
+      if ($existing[0]['record_status'] === 'V' && $allowUpdateWhenVerified === FALSE) {
+        // Skip overwrite of a verified record.
+        return NULL;
+      }
       $values['occurrence:id'] = $existing[0]['id'];
       $values['sample:id'] = $existing[0]['sample_id'];
       self::applyExistingImageIds($db, $values);
@@ -424,8 +432,8 @@ SQL;
    *   The database survey ID value to lookup within.
    *
    * @return array
-   *   Array containing occurrence and sample ID for any existing matching
-   *   records.
+   *   Array containing occurrence and sample ID plus record_status for any
+   *   existing matching records.
    */
   private static function findExistingObservation($db, $id, $survey_id) {
     $thisSystemUserId = Kohana::config('rest_api_sync.user_id');
@@ -444,7 +452,7 @@ SQL;
       $filter['o.external_key'] = (string) $id;
       $filter['s.survey_id'] = $survey_id;
     }
-    $existing = $db->select('o.id, o.sample_id')
+    $existing = $db->select('o.id, o.sample_id, o.record_status')
       ->from('occurrences o')
       ->join('samples as s', 'o.sample_id', 's.id')
       ->where($filter)
