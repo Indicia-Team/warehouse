@@ -1156,7 +1156,7 @@ class Rest_Controller extends Controller {
       ['caption' => 'Site', 'field' => '#sitename:mapmate#'],
       ['caption' => 'Gridref', 'field' => 'location.output_sref'],
       ['caption' => 'VC', 'field' => '#higher_geography:Vice County:code:mapmate#'],
-      ['caption' => 'Recorder', 'field' => '#truncate:event.recorded_by:64#'],
+      ['caption' => 'Recorder', 'field' => '#truncate:event.recorded_by:62#'],
       ['caption' => 'Determiner', 'field' => '#determiner:mapmate#'],
       ['caption' => 'Date', 'field' => '#event_date:mapmate#'],
       ['caption' => 'Quantity', 'field' => '#organism_quantity:mapmate#'],
@@ -1166,8 +1166,8 @@ class Rest_Controller extends Controller {
       ['caption' => 'Status', 'field' => '#constant:Not recorded#'],
       ['caption' => 'Comment', 'field' => '#sample_occurrence_comment:nonewline:notab:addref#'],
       ['caption' => 'RecordKey', 'field' => '_id'],
+      ['caption' => 'Source', 'field' => '#datasource_code:<wt> | <st> {|} <gt>#'],
       ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:exclude_integer#'],
-      ['caption' => 'Habitat', 'field' => 'event.habitat'],
       ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i\:s#'],
       ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G\:i\:s#'],
       ['caption' => 'Verification status 1', 'field' => '#verification_status:astext#'],
@@ -1419,9 +1419,7 @@ SQL;
         elseif (preg_match('/^#sample_occurrence_comment(.*)#$/', $field)) {
           $fields[] = 'event.event_remarks';
           $fields[] = 'occurrence.occurrence_remarks';
-          $fields[] = '_id';
           $fields[] = 'id';
-          $fields[] = 'occurrence.id';
         }
         elseif (preg_match('/^#verification_status(.*)#$/', $field)) {
           $fields[] = 'identification.verification_status';
@@ -1880,11 +1878,11 @@ SQL;
       $comment = '';
     }
     if (!empty($params) && in_array("addref", $params)) {
-      //$ref = $doc['_id'];
-      //$ref = $doc['id'];
-      //$ref = $doc['occurrence']['id'];
-      $ref = '';
-      $comment = trim("$comment $ref");
+      // Can't access '_id' here so, for now, hard-coding
+      // appending 'brc1|' to ref. This will need to be addressed
+      // if we add another warehouse. 
+      $ref = $doc['id'];
+      $comment = trim("$comment brc1|$ref");
     }
     return $comment;
   }
@@ -2172,8 +2170,8 @@ SQL;
       if ($value === '') {
         $value = 'unnamed site';
       }
-      // Truncation to 64 characters required for MapMate.
-      $value = substr($value, 0, 64);
+      // Truncation to 62 characters required for MapMate.
+      $value = substr($value, 0, 62);
     }
     return $value;
   }
@@ -2203,8 +2201,8 @@ SQL;
       if ($value === '') {
         $value = $recorder;
       }
-      // Truncation to 64 characters required for MapMate.
-      $value = substr($value, 0, 64);
+      // Truncation to 62 characters required for MapMate.
+      $value = substr($value, 0, 62);
     }
     return $value;
   }
@@ -2232,8 +2230,8 @@ SQL;
       if ($value === '') {
         $value = 'Unknown';
       }
-      // Truncation to 64 characters required for MapMate.
-      $value = substr($value, 0, 64);
+      // Truncation to 62 characters required for MapMate.
+      $value = substr($value, 0, 62);
     }
     return $value;
   }
