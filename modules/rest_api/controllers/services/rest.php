@@ -1149,23 +1149,22 @@ class Rest_Controller extends Controller {
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
       ['caption' => 'Verified on', 'field' => '#datetime:identification.verified_on:d/m/Y H\:i#'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
-      ['caption' => 'Automated checks', 'field' => 'identification.auto_checks.result'],
+      ['caption' => 'Automated checks', 'field' => '#true_false:identification.auto_checks.result:Passed checks:Failed checks#'],
     ],
     "mapmate" => [
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
-      ['caption' => 'Site', 'field' => 'location.verbatim_locality'],
+      ['caption' => 'Site', 'field' => '#sitename:mapmate#'],
       ['caption' => 'Gridref', 'field' => 'location.output_sref'],
       ['caption' => 'VC', 'field' => '#higher_geography:Vice County:code:mapmate#'],
-      ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
-      ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
+      ['caption' => 'Recorder', 'field' => '#truncate:event.recorded_by:64#'],
+      ['caption' => 'Determiner', 'field' => '#determiner:mapmate#'],
       ['caption' => 'Date', 'field' => '#event_date:mapmate#'],
       ['caption' => 'Quantity', 'field' => '#organism_quantity:mapmate#'],
-      ['caption' => 'Method', 'field' => 'event.sampling_protocol'],
+      ['caption' => 'Method', 'field' => '#method:mapmate#'],
       ['caption' => 'Sex', 'field' => '#sex:mapmate#'],
       ['caption' => 'Stage', 'field' => '#life_stage:mapmate#'],
-      ['caption' => 'Status', 'field' => '#blank#'],
-      ['caption' => 'Comment', 'field' => '#sample_occurrence_comment#'],
-      ['caption' => 'ID', 'field' => 'id'],
+      ['caption' => 'Status', 'field' => '#constant:Not recorded#'],
+      ['caption' => 'Comment', 'field' => '#sample_occurrence_comment:nonewline:notab:addref#'],
       ['caption' => 'RecordKey', 'field' => '_id'],
       ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:exclude_integer#'],
       ['caption' => 'Habitat', 'field' => 'event.habitat'],
@@ -1175,6 +1174,8 @@ class Rest_Controller extends Controller {
       ['caption' => 'Verification status 2', 'field' => '#verification_substatus:astext#'],
       ['caption' => 'Query', 'field' => '#query:astext#'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
+      ['caption' => 'Verified by', 'field' => 'identification.verifier.name'],
+      ['caption' => 'Rank', 'field' => 'taxon.taxon_rank'],
     ]
   ];
 
@@ -1386,10 +1387,6 @@ SQL;
         elseif (preg_match('/^#life_stage(.*)#$/', $field)) {
           $fields[] = 'occurrence.life_stage';
         }
-        elseif ($field ==='#sample_occurrence_comment#') {
-          $fields[] = 'event.event_remarks';
-          $fields[] = 'occurrence.occurrence_remarks';
-        }
         elseif (preg_match('/^#organism_quantity(.*)#$/', $field)) {
           $fields[] = 'occurrence.organism_quantity';
           $fields[] = 'occurrence.zero_abundance';
@@ -1408,6 +1405,23 @@ SQL;
           $fields[] = 'metadata';
           $fields[] = 'identification';
           $fields[] = 'occurrence.zero_abundance';
+        }
+        elseif (preg_match('/^#determiner(.*)#$/', $field)) {
+          $fields[] = 'event.recorded_by';
+          $fields[] = 'identification.identified_by';
+        }
+        elseif (preg_match('/^#sitename(.*)#$/', $field)) {
+          $fields[] = 'location.verbatim_locality';
+        }
+        elseif (preg_match('/^#method(.*)#$/', $field)) {
+          $fields[] = 'event.sampling_protocol';
+        }
+        elseif (preg_match('/^#sample_occurrence_comment(.*)#$/', $field)) {
+          $fields[] = 'event.event_remarks';
+          $fields[] = 'occurrence.occurrence_remarks';
+          $fields[] = '_id';
+          $fields[] = 'id';
+          $fields[] = 'occurrence.id';
         }
         elseif (preg_match('/^#verification_status(.*)#$/', $field)) {
           $fields[] = 'identification.verification_status';
@@ -1431,6 +1445,12 @@ SQL;
           $fields[] = $matches[1];
         }
         elseif (preg_match('/^#sref_system:([a-z_]+(\.[a-z_]+)*):.*#$/', $field, $matches)) {
+          $fields[] = $matches[1];
+        }
+        elseif (preg_match('/^#truncate:([a-z_]+(\.[a-z_]+)*):.*#$/', $field, $matches)) {
+          $fields[] = $matches[1];
+        }
+        elseif (preg_match('/^#true_false:([a-z_]+(\.[a-z_]+)*):.*#$/', $field, $matches)) {
           $fields[] = $matches[1];
         }
       }
@@ -1808,18 +1828,22 @@ SQL;
   }
 
   /**
-   * Special field handler returns an empty string. This is useful
-   * where the output CSV must contain a column to which no
+   * Special field handler returns a constant value.
+   * For an empty column set the second argument to and empty string.
+   * Useful where the output CSV must contain a column to which no
    * useful data can be mapped.
    *
    * @param array $doc
    *   Elasticsearch document.
    *
    * @return string
-   *   Empty string.
+   *   Returns constant passed as argument.
    */
-  private function esGetSpecialFieldBlank(array $doc) {
-    return '';
+  private function esGetSpecialFieldConstant(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for query field';
+    }
+    return $params[0];
   }
 
   /**
@@ -1832,19 +1856,88 @@ SQL;
    * @return string
    *   Combined comment string.
    */
-  private function esGetSpecialFieldSampleOccurrenceComment(array $doc) {
+  private function esGetSpecialFieldSampleOccurrenceComment(array $doc, array $params) {
     $oComment = isset($doc['occurrence']['occurrence_remarks']) ? $doc['occurrence']['occurrence_remarks'] : '';
     $sComment = isset($doc['event']['event_remarks']) ? $doc['event']['event_remarks'] : '';
+    if (!empty($params) && in_array("notab", $params)) {
+      $oComment = str_replace("\t", ' ', $oComment);
+      $sComment = str_replace("\t", ' ', $sComment);
+    }
+    if (!empty($params) && in_array("nonewline", $params)) {
+      $oComment = str_replace(array("\r\n", "\n", "\r"), ' ', $oComment);
+      $sComment = str_replace(array("\r\n", "\n", "\r"), ' ', $sComment);
+    }
     if ($oComment !== '' && $sComment !== '') {
-      return "Record comment: $oComment Sample comment: $sComment";
+      $comment = "$oComment $sComment";
     }
     elseif ($oComment !== '') {
-      return "Record comment: $oComment";
+      $comment =  $oComment;
     }
     elseif ($sComment !== '') {
-      return "Sample comment: $sComment";
+      $comment = $sComment;
     }
     else {
+      $comment = '';
+    }
+    if (!empty($params) && in_array("addref", $params)) {
+      //$ref = $doc['_id'];
+      //$ref = $doc['id'];
+      //$ref = $doc['occurrence']['id'];
+      $ref = '';
+      $comment = trim("$comment $ref");
+    }
+    return $comment;
+  }
+
+  /**
+   * Special field handler to truncate output to specified number of characters.
+   *
+   * Return the a string no longer than specified number of characters.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters:
+   *   1. ES field
+   *   2. Number of characters
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldTruncate(array $doc, array $params) {
+    if (count($params) !== 2) {
+      return 'Incorrect params for truncate field';
+    }
+    $value = $this->getRawEsFieldValue($doc, $params[0]);
+    return substr($value, 0, intval($params[1]));
+  }
+
+  /**
+   * Special field handler to translate true/false values to specified output.
+   *
+   * Return the translated value.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters:
+   *   1. ES field
+   *   2. Translated string for 'true' values
+   *   3. Translated string for 'false' values
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldTrueFalse(array $doc, array $params) {
+    if (count($params) !== 3) {
+      return 'Incorrect params for true_false field';
+    }
+    $value = $this->getRawEsFieldValue($doc, $params[0]);
+    if ($value === 'true') {
+      return $params[1];
+    } elseif ($value === 'false') {
+      return $params[2];
+    } else {
       return '';
     }
   }
@@ -2055,6 +2148,94 @@ SQL;
     else {
       return $value;
     }
+  }
+
+  /**
+   * Special field handler for ES sitename.
+   *
+   * Return location.verbatim_locality formatted as specified.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldSitename(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for query field';
+    }
+    $value = $this->getRawEsFieldValue($doc, 'location.verbatim_locality');
+    if ($params[0] === 'mapmate') {
+      if ($value === '') {
+        $value = 'unnamed site';
+      }
+      // Truncation to 64 characters required for MapMate.
+      $value = substr($value, 0, 64);
+    }
+    return $value;
+  }
+
+  /**
+   * Special field handler for determiner.
+   *
+   * Return name of determiner as specified by formatter.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldDeterminer(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for query field';
+    }
+    $recorder = $this->getRawEsFieldValue($doc, 'event.recorded_by');
+    $value = $this->getRawEsFieldValue($doc, 'identification.identified_by');
+
+    if ($params[0] === 'mapmate') {
+      // If no determiner recorded, set value to recorder.
+      if ($value === '') {
+        $value = $recorder;
+      }
+      // Truncation to 64 characters required for MapMate.
+      $value = substr($value, 0, 64);
+    }
+    return $value;
+  }
+
+  /**
+   * Special field handler for method.
+   *
+   * Return name of sampling method as specified by formatter.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldMethod(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for query field';
+    }
+    $value = $this->getRawEsFieldValue($doc, 'event.sampling_protocol');
+
+    if ($params[0] === 'mapmate') {
+      if ($value === '') {
+        $value = 'Unknown';
+      }
+      // Truncation to 64 characters required for MapMate.
+      $value = substr($value, 0, 64);
+    }
+    return $value;
   }
 
   /**
@@ -2368,9 +2549,9 @@ SQL;
         case 'not recorded':
         case 'not known':
         case 'unknown':
-        case 'unsexed:':
+        case 'unsexed':
+        case '':
           return 'u';
-
         default:
           return $value;
       }
@@ -2411,12 +2592,13 @@ SQL;
           return 'Larval';
 
         case 'not recorded':
+        case '':
           return 'Not recorded';
 
         case 'pre-adult':
           return 'Subadult';
 
-        case 'In flower':
+        case 'in flower':
           return 'Flowering';
 
         default:
@@ -2462,7 +2644,8 @@ SQL;
           return (int)$quantity;
         }
         else {
-          return '';
+          // Zero in MapMate denotes present
+          return '0';
         }
 
       case 'integer':
