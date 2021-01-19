@@ -1,5 +1,4 @@
 -- #slow script#
-DROP INDEX CONCURRENTLY IF EXISTS ix_notifications_count_for_user;
 
 CREATE INDEX ix_notifications_count_for_user
     ON notifications USING btree
