@@ -27,6 +27,14 @@ defined('SYSPATH') or die('No direct script access.');
 $config['warehouse_title'] = 'Indicia Warehouse';
 
 /**
+ * Prefix identifying Warehouse to add occurrence IDs in ES index
+ * to make unique across different warehouses.
+ * Uncomment this and set to the appropriate value if you want 
+ * want IDs to be prefixed in report downloads. 
+ */
+//$config['es_key_prefix'] = 'iBRC';
+
+/**
  * Key used for generation of security tokens. For maximum security, change this
  * to a unique value for each Indicia install.
  *
