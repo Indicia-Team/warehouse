@@ -14,7 +14,7 @@ CREATE TABLE uksi_operations
     parent_organism_key character(16),
     parent_name character varying,
     synonym character varying,
-    output_group character varying,
+    taxon_group_key character(16),
     marine boolean,
     terrestrial boolean,
     freshwater boolean,
@@ -35,27 +35,27 @@ CREATE TABLE uksi_operations
         ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
-COMMENT ON TABLE uksi_operations IS '';
+COMMENT ON TABLE uksi_operations IS 'List of operations to apply to the UKSI taxonomy information on this warehouse.';
 
-COMMENT ON COLUMN uksi_operations.id IS '';
-COMMENT ON COLUMN uksi_operations.sequence IS '';
-COMMENT ON COLUMN uksi_operations.operation IS '';
-COMMENT ON COLUMN uksi_operations.error_detail IS '';
-COMMENT ON COLUMN uksi_operations.organism_key IS 'Organism key for operations which affect a taxon concept.';
-COMMENT ON COLUMN uksi_operations.taxon_version_key IS '';
-COMMENT ON COLUMN uksi_operations.rank IS '';
-COMMENT ON COLUMN uksi_operations.taxon_name IS '';
-COMMENT ON COLUMN uksi_operations.authority IS '';
-COMMENT ON COLUMN uksi_operations.attribute IS '';
-COMMENT ON COLUMN uksi_operations.parent_organism_key IS '';
-COMMENT ON COLUMN uksi_operations.parent_name IS '';
+COMMENT ON COLUMN uksi_operations.id IS 'Primary key and unique identifier for the table.';
+COMMENT ON COLUMN uksi_operations.sequence IS 'Sequence order the operation should be applied in, within the operations where batch_processed_on indicates they were processed on the same date.';
+COMMENT ON COLUMN uksi_operations.operation IS 'Name of the operation to apply.';
+COMMENT ON COLUMN uksi_operations.error_detail IS 'For operations that have been applied but failed, details of the error.';
+COMMENT ON COLUMN uksi_operations.organism_key IS 'Organism key for operations which affect a taxon concept, where a new organism_key was generated during processeing.';
+COMMENT ON COLUMN uksi_operations.taxon_version_key IS 'For operations that affect a specific name, Taxon Version Key of the name.';
+COMMENT ON COLUMN uksi_operations.rank IS 'Taxon rank, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.taxon_name IS 'Taxon name, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.authority IS 'Taxon authority, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.attribute IS 'Taxon attribute, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.parent_organism_key IS 'Taxon parent organism key, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.parent_name IS 'Taxon parent name, if needed by the operation.';
 COMMENT ON COLUMN uksi_operations.synonym IS 'For promote name operations, the TVK of the name being promoted. For merge taxa operations, the organism key of the taxon being merged into another and relegated to junior synonym.';
-COMMENT ON COLUMN uksi_operations.output_group IS '';
-COMMENT ON COLUMN uksi_operations.marine IS '';
-COMMENT ON COLUMN uksi_operations.terrestrial IS '';
-COMMENT ON COLUMN uksi_operations.freshwater IS '';
-COMMENT ON COLUMN uksi_operations.non_native IS '';
-COMMENT ON COLUMN uksi_operations.redundant IS '';
+COMMENT ON COLUMN uksi_operations.taxon_group_key IS 'UKSI key for the taxon group, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.marine IS 'Taxon marine flag, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.terrestrial IS 'Taxon terrestrial flag, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.freshwater IS 'Taxon freshwater flag, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.non_native IS 'Taxon non-native flag, if needed by the operation.';
+COMMENT ON COLUMN uksi_operations.redundant IS 'Taxon redundant, if needed by the operation.';
 COMMENT ON COLUMN uksi_operations.deleted_date IS 'For deprecate name operations, date the name was deprecated.';
 COMMENT ON COLUMN uksi_operations.operation_processed IS 'True if this operation has been applied to the database.';
 COMMENT ON COLUMN uksi_operations.processed_on IS 'Date and time the operation was applied.';

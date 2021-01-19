@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="UKSI taxon search children" description="Quick way of reviewing children involved in UKSI changes.">
+  <query>
+  select distinct #columns#
+  from taxa_taxon_lists ttl
+  join taxa t on t.id=ttl.taxon_id and t.deleted=false
+  join taxa_taxon_lists ttlc on ttlc.parent_id=ttl.id AND ttlc.deleted=false
+    and ttlc.taxon_list_id=#param_taxon_list_id#
+    and ttlc.preferred=true
+  join taxa tc on tc.id=ttlc.taxon_id and tc.deleted=false
+  join taxon_ranks trc on trc.id=tc.taxon_rank_id
+  where ttl.taxon_list_id=#param_taxon_list_id#
+  and ttl.deleted=false
+  and t.organism_key='#param_organism_key#'
+  </query>
+  <order_bys>
+    <order_by>
+      tc.taxon, tc.attribute, tc.authority
+    </order_by>
+  </order_bys>
+  <params>
+    <param name="param_taxon_list_id" display="Taxon list ID" datatype="integer" />
+    <param name="param_organism_key" display="Organism key" datatype="text" />
+  </params>
+  <columns>
+    <column name="taxon" display="Taxon" datatype="text" sql="tc.taxon" />
+    <column name="attribute" display="Attribute" datatype="text" sql="tc.attribute" />
+    <column name="authority" display="Authority" datatype="text" sql="tc.authority" />
+    <column name="organism_key" display="Organism Key" datatype="text" sql="tc.organism_key" />
+    <column name="name_class" display="Class" datatype="text" sql="case when trc.sort_order >= 300 and tc.language_id=2 then 'name-italic' else '' end" />
+  </columns>
+</report>

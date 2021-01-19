@@ -80,9 +80,11 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     $serverIdx = empty($_GET['serverIdx']) ? 1 : $_GET['serverIdx'];
     $page = empty($_GET['page']) ? 1 : $_GET['page'];
     $serverId = array_keys($servers)[$serverIdx - 1];
-    $server = $servers[$serverId];
-    $serverType = isset($server['serverType']) ? $server['serverType'] : 'indicia';
-    $helperClass = 'rest_api_sync_' . strtolower($serverType);
+    $server = array_merge([
+      'serverType' => 'Indicia', 
+      'allowUpdateWhenVerified' => TRUE,
+    ], $servers[$serverId]);
+    $helperClass = 'rest_api_sync_' . strtolower($server['serverType']);
     $helperClass::loadControlledTerms($serverId, $server);
     // For performance, just notify work_queue to update cache entries.
     if (class_exists('cache_builder')) {

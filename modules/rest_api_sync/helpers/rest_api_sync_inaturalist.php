@@ -199,9 +199,12 @@ class rest_api_sync_inaturalist {
           $observation,
           $server['website_id'],
           $server['survey_id'],
-          $taxon_list_id
+          $taxon_list_id, 
+          $server['allowUpdateWhenVerified']
         );
-        $tracker[$is_new ? 'inserts' : 'updates']++;
+        if ($is_new !== NULL) {
+          $tracker[$is_new ? 'inserts' : 'updates']++;
+        }
         $db->query("UPDATE rest_api_sync_skipped_records SET current=false " .
           "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
       }

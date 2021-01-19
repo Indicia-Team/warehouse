@@ -24,6 +24,21 @@
 
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'uksi_operation:id');
+data_entry_helper::add_resource('font_awesome');
+
+function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
+  $options = [
+    'label' => $label,
+    'fieldname' => "uksi_operation:$fieldName",
+    'default' => html::initial_value($values, "uksi_operation:$fieldName"),
+    'helpText' => $helpText,
+  ];
+  if (!empty($values["uksi_operation:$fieldName"])) {
+    $organismLink = url::site() . 'taxa_search?filter-param_organism_key=' . $values["uksi_operation:$fieldName"];
+    $options['afterControl'] = "<a href=\"$organismLink\" target=\"_blank\" title=\"View names for this organism key\"><span class=\"fas fa-eye\"></span></a>";
+  }
+  return data_entry_helper::text_input($options);
+}
 ?>
 <p>This page allows you to specify the details of a UKSI operation.</p>
 <?php if ($values['uksi_operation:operation_processed'] === 't') : ?>
@@ -52,7 +67,7 @@ $id = html::initial_value($values, 'uksi_operation:id');
         'label' => 'Error detail',
         'fieldname' => 'uksi_operation:error_detail',
         'default' => html::initial_value($values, 'uksi_operation:error_detail'),
-        'helpText' => 'Processing errors will be shown here. Once you have resolved the issues please clear the ' . 
+        'helpText' => 'Processing errors will be shown here. Once you have resolved the issues please clear the ' .
             'errors and save the operation. It will then be reattempted next time you process operations.',
       ]);
       ?>
@@ -83,11 +98,9 @@ $id = html::initial_value($values, 'uksi_operation:id');
       'validation' => ['required', 'integer'],
       'helpText' => 'Sequence number defining the order in which operations are applied.',
     ]);
-    echo data_entry_helper::text_input([
-      'label' => 'Organism Key',
-      'fieldname' => 'uksi_operation:organism_key',
-      'default' => html::initial_value($values, 'uksi_operation:organism_key'),
-    ]);
+    echo getOrganismKeyControl('organism_key', 'Organism Key', 'Organism Key created by this operation', $values);
+    echo getOrganismKeyControl('current_organism_key', 'Current Organism Key', 'Existing Organism Key affected by this operation', $values);
+
     echo data_entry_helper::text_input([
       'label' => 'Taxon Version Key',
       'fieldname' => 'uksi_operation:taxon_version_key',
@@ -113,11 +126,7 @@ $id = html::initial_value($values, 'uksi_operation:id');
       'fieldname' => 'uksi_operation:attribute',
       'default' => html::initial_value($values, 'uksi_operation:attribute'),
     ]);
-    echo data_entry_helper::text_input([
-      'label' => 'Parent Organism Key',
-      'fieldname' => 'uksi_operation:parent_organism_key',
-      'default' => html::initial_value($values, 'uksi_operation:parent_organism_key'),
-    ]);
+    echo getOrganismKeyControl('parent_organism_key', 'Parent Organism Key', 'Organism Key of parent concept for this operation', $values);
     echo data_entry_helper::text_input([
       'label' => 'Parent Name',
       'fieldname' => 'uksi_operation:parent_name',
@@ -128,13 +137,13 @@ $id = html::initial_value($values, 'uksi_operation:id');
       'label' => 'Synonym',
       'fieldname' => 'uksi_operation:synonym',
       'default' => html::initial_value($values, 'uksi_operation:synonym'),
-      'helpText' => 'For promote name operations, the TVK of the name being promoted. For merge taxa ' . 
+      'helpText' => 'For promote name operations, the TVK of the name being promoted. For merge taxa ' .
           'operations, the organism key of the taxon being merged into another and relegated to junior synonym.',
     ]);
     echo data_entry_helper::text_input([
-      'label' => 'Output group',
-      'fieldname' => 'uksi_operation:output_group',
-      'default' => html::initial_value($values, 'uksi_operation:output_group'),
+      'label' => 'Taxon group key',
+      'fieldname' => 'uksi_operation:taxon_group_key',
+      'default' => html::initial_value($values, 'uksi_operation:taxon_group_key'),
     ]);
     echo data_entry_helper::checkbox([
       'label' => 'Marine',
@@ -167,9 +176,24 @@ $id = html::initial_value($values, 'uksi_operation:id');
       'default' => html::initial_value($values, 'uksi_operation:deleted_date'),
       'allowFuture' => TRUE,
     ]);
+    echo data_entry_helper::date_picker([
+      'label' => 'Batch processed on date',
+      'fieldname' => 'uksi_operation:batch_processed_on',
+      'default' => html::initial_value($values, 'uksi_operation:batch_processed_on'),
+    ]);
+    echo data_entry_helper::textarea([
+      'label' => 'Notes',
+      'fieldname' => 'uksi_operation:notes',
+      'default' => html::initial_value($values, 'uksi_operation:notes'),
+    ]);
+    echo data_entry_helper::textarea([
+      'label' => 'Testing comment',
+      'fieldname' => 'uksi_operation:testing_comment',
+      'default' => html::initial_value($values, 'uksi_operation:testing_comment'),
+    ]);
     ?>
   </fieldset>
-  
+
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
   data_entry_helper::enable_validation('uksi-operation-edit');

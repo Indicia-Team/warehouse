@@ -39,6 +39,7 @@ class Uksi_operation_Model extends ORM {
       'operation_processed',
       'error_detail',
       'organism_key',
+      'current_organism_key',
       'taxon_version_key',
       'rank',
       'taxon_name',
@@ -47,7 +48,7 @@ class Uksi_operation_Model extends ORM {
       'parent_organism_key',
       'parent_name',
       'synonym',
-      'output_group',
+      'taxon_group_key',
       'marine',
       'terrestrial',
       'freshwater',
@@ -55,6 +56,8 @@ class Uksi_operation_Model extends ORM {
       'redundant',
       'deleted_date',
       'batch_processed_on',
+      'notes',
+      'testing_comment',
     ];
     return parent::validate($array, $save);
   }

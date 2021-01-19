@@ -47,7 +47,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
    * As the UKSI list is global, need to be admin to change it.
    */
   protected function page_authorised() {
-    return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
+    return $this->auth->logged_in('CoreAdmin') || $this->auth->logged_in('UKSIAdmin');
   }
 
   public function importer() {
@@ -75,13 +75,13 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     header('Content-type: application/json');
     $this->auto_render = FALSE;
     $operation = $this->db
-      ->query('SELECT * FROM uksi_operations WHERE operation_processed=false ORDER BY sequence ASC;')
+      ->query('SELECT * FROM uksi_operations WHERE operation_processed=false ORDER BY batch_processed_on ASC, sequence ASC;')
       ->current();
     if (!$operation) {
       echo json_encode(['message' => 'Nothing to do']);
       return;
     }
-    $operationLink = '<a href="' . url::base(true) . "uksi_operation/edit/$operation->id\">$operation->sequence ($operation->operation)</a>";
+    $operationLink = '<a href="' . url::base(true) . "uksi_operation/edit/$operation->id\">$operation->batch_processed_on : $operation->sequence ($operation->operation)</a>";
     if (!empty($operation->error_detail)) {
       http_response_code(400);
       echo json_encode(['error' => "Operation $operationLink had previously failed. Clear errors before proceeding."]);
@@ -99,7 +99,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     $this->operationErrors = [];
     try {
       $message = $this->$fn($operation);
-    } 
+    }
     catch (Exception $e) {
       $this->operationErrors[] = $e->getMessage();
     }
@@ -109,7 +109,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       $this->db
         ->query("UPDATE uksi_operations SET error_detail=$errors WHERE id=$operation->id;");
       echo json_encode(['error' => "Operation $operationLink failed. More details provided in the error_detail field."]);
-    } 
+    }
     else {
       $this->db
         ->query("UPDATE uksi_operations SET operation_processed=true, processed_on=now() WHERE id=$operation->id;");
@@ -120,15 +120,15 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
 
   /**
    * Implements the New taxon operation.
-   * 
+   *
    * Add a completely new taxon to an existing parent.
-   * 
-   * @param object $operation 
+   *
+   * @param object $operation
    *   Operation details.
    */
   public function processNewTaxon($operation) {
-    $this->checkOperationRequiredFields('New taxon', $operation, ['taxon_name', 'organism_key', 'taxon_version_key', 'rank', 'output_group']);
-    $this->assertOrganismKeyIsNew('New taxon', $operation->organism_key);    
+    $this->checkOperationRequiredFields('New taxon', $operation, ['taxon_name', 'organism_key', 'taxon_version_key', 'rank', 'taxon_group_key']);
+    $this->assertOrganismKeyIsNew('New taxon', $operation->organism_key);
     $fields = $this->getCreateTaxonFields($operation);
     if (count($this->operationErrors) > 0) {
       return 'Error';
@@ -143,23 +143,55 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
   }
 
   /**
+   * Implements the  Add synonyn operation.
+   *
+   * Add a new junior synonym (scientific or vernacular) to an existing taxon.
+   * Currently always added in English.
+   *
+   * @param object $operation
+   *   Operation details.
+   */
+  public function processAddSynonym($operation) {
+    $this->checkOperationRequiredFields('Add synonym', $operation, ['current_organism_key', 'taxon_version_key', 'taxon_name', 'name_type']);
+    // Find other taxa with same organism key.
+    $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key, false);
+    // Fail if none found.
+    if (count($allExistingNames) === 0) {
+      $this->operationErrors[] = "Organism key $operation->current_organism_key not found for add synonym operation";
+      return 'Error';
+    }
+    // Add the taxon as per new taxon, using the existing taxon meaning Id.
+    $fields = $this->getCreateTaxonFields($operation, FALSE);
+    $fields['taxa_taxon_list:taxon_meaning_id'] = $allExistingNames->current()->taxon_meaning_id;
+    if (count($this->operationErrors) > 0) {
+      return 'Error';
+    }
+    $taxa_taxon_list = ORM::factory('taxa_taxon_list');
+    $taxa_taxon_list->set_submission_data($fields);
+    if (!$taxa_taxon_list->submit()) {
+      $this->operationErrors[] = implode("\n", $taxa_taxon_list->getAllErrors());
+      return 'Error';
+    }
+  }
+
+  /**
    * Implements the Rename taxon operation.
-   * 
-   * Add a new recommended scientific name to a taxon – the old recommended 
-   * name will become a junior synonym. If the name exists already but is a 
-   * junior synonym of this taxon then use a Promote name operation (below). 
+   *
+   * Add a new recommended scientific name to a taxon – the old recommended
+   * name will become a junior synonym. If the name exists already but is a
+   * junior synonym of this taxon then use a Promote name operation (below).
    * You can assign a new parent with this operation.
-   * 
-   * @param object $operation 
+   *
+   * @param object $operation
    *   Operation details.
    */
   public function processRenameTaxon($operation) {
-    $this->checkOperationRequiredFields('Rename taxon', $operation, ['taxon_name', 'organism_key', 'taxon_version_key', 'rank', 'output_group']);
+    $this->checkOperationRequiredFields('Rename taxon', $operation, ['taxon_name', 'current_organism_key', 'taxon_version_key', 'rank', 'taxon_group_key']);
     // Find other taxa with same organism key.
-    $allExistingNames = $this->getTaxaForOrganismKey($operation->organism_key);
+    $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key);
     // Fail if none found.
     if (count($allExistingNames) === 0) {
-      $this->operationErrors[] = "Organism key $operation->organism_key not found for rename taxon operation";
+      $this->operationErrors[] = "Organism key $operation->current_organism_key not found for rename taxon operation";
       return 'Error';
     }
     $originalName = $allExistingNames->current()->taxon;
@@ -208,16 +240,16 @@ SQL;
 
   /**
    * Implements the Promote name operation.
-   * 
-   * Promote an existing junior synonym to be the recommended scientific name 
+   *
+   * Promote an existing junior synonym to be the recommended scientific name
    * on the same taxon. You can assign a new parent with this operation.
-   * 
-   * @param object $operation 
+   *
+   * @param object $operation
    *   Operation details.
    */
   public function processPromoteName($operation) {
-    $this->checkOperationRequiredFields('Promote name', $operation, ['organism_key', 'synonym']);
-    $allExistingNames = $this->getTaxaForOrganismKey($operation->organism_key);
+    $this->checkOperationRequiredFields('Promote name', $operation, ['current_organism_key', 'synonym']);
+    $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key);
     $foundNameToPromote = FALSE;
     foreach ($allExistingNames as $existingNameInfo) {
       $foundNameToPromote = $foundNameToPromote || ($existingNameInfo->search_code === $operation->synonym);
@@ -246,7 +278,7 @@ SQL;
           $ttl->parent_id = $parentId;
         }
         $ttl->set_metadata();
-        $ttl->save();        
+        $ttl->save();
       }
       // Taxa need external key updated.
       if ($existingNameInfo->external_key !== $operation->synonym) {
@@ -268,16 +300,16 @@ SQL;
 
   /**
    * Implements the Merge taxa operation.
-   * 
-   * Merge 2 things together. The senior taxon will persist but the names on 
+   *
+   * Merge 2 things together. The senior taxon will persist but the names on
    * the junior taxon will become junior synonyms of it.
-   * 
-   * @param object $operation 
+   *
+   * @param object $operation
    *   Operation details.
    */
   public function processMergeTaxa($operation) {
-    $this->checkOperationRequiredFields('Merge taxa', $operation, ['organism_key', 'synonym']);
-    $namesToKeep = $this->getTaxaForOrganismKey($operation->organism_key);
+    $this->checkOperationRequiredFields('Merge taxa', $operation, ['current_organism_key', 'synonym']);
+    $namesToKeep = $this->getTaxaForOrganismKey($operation->current_organism_key);
     $allNamesToMerge = $this->getTaxaForOrganismKey($operation->synonym);
     if (count($namesToKeep) === 0) {
       $this->operationErrors[] = 'Organism key not found';
@@ -297,9 +329,9 @@ SQL;
       $ttl->preferred = 'f';
       $ttl->taxon_meaning_id = $taxonMeaningId;
       $ttl->set_metadata();
-      $ttl->save(); 
+      $ttl->save();
       $ttl->taxon->external_key = $externalKey;
-      $ttl->taxon->organism_key = $operation->organism_key;
+      $ttl->taxon->organism_key = $operation->current_organism_key;
       $ttl->taxon->set_metadata();
       $ttl->taxon->save();
       // Occurrences will need a cache table refresh as new preferred name details.
@@ -313,37 +345,48 @@ SQL;
     return "$juniorName merged into $seniorName";
   }
 
-  /** 
+  /**
    * Implements the Amend metadata operation.
-   * 
-   * Change the data associated with a taxon and/or reparent it without adding 
+   *
+   * Change the data associated with a taxon and/or reparent it without adding
    * or changing a name.
-   * 
-   * @param object $operation 
+   *
+   * @param object $operation
    *   Operation details.
    */
   public function processAmendMetadata($operation) {
-    $this->checkOperationRequiredFields('Amend metadata', $operation, ['organism_key']);
-    $namesToUpdate = $this->getTaxaForOrganismKey($operation->organism_key);
+    $this->checkOperationRequiredFields('Amend metadata', $operation, ['current_organism_key']);
+    $namesToUpdate = $this->getTaxaForOrganismKey($operation->current_organism_key);
     if (count($namesToUpdate) === 0) {
       $this->operationErrors[] = 'Organism key not found';
     }
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    // If parent changing, lookup the parent.
-    if (!empty($operation->parent_name) || !empty($operation->parent_organism_key)) {
-      $parentId = $this->getParentTtlId($operation);
-      // Apply parent to existing taxa_taxon_lists.
+    $parentChanging = !empty($operation->parent_name) || !empty($operation->parent_organism_key);
+    $redundantChanging = !empty($operation->redundant);
+    $flagsChanging = !empty($operation->marine) || !empty($operation->terrestrial) || !empty($operation->freshwater) || !empty($operation->non_native);
+    // Find any changes to taxa_taxon_lists data.
+    if ($parentChanging || $redundantChanging) {
+      if ($parentChanging) {
+        // If parent changing, lookup the parent.
+        $parentId = $this->getParentTtlId($operation);
+      }
+      // Apply parent and redundancy to existing taxa_taxon_lists.
       foreach ($namesToUpdate as $nameInfo) {
         $ttl = ORM::factory('taxa_taxon_list', $nameInfo->id);
-        $ttl->parent_id = $parentId;
+        if ($parentChanging) {
+          $ttl->parent_id = $parentId;
+        }
+        if ($redundantChanging) {
+          $ttl->allow_data_entry = $operation->redundant ? 'f' : 't';
+        }
         $ttl->set_metadata();
         $ttl->save();
       }
     }
     // If taxon flags changing, apply the changes.
-    if (!empty($operation->marine) || !empty($operation->terrestrial) || !empty($operation->freshwater) || !empty($operation->non_native)) {
+    if ($flagsChanging) {
       foreach ($namesToUpdate as $nameInfo) {
         $tx = ORM::factory('taxon', $nameInfo->taxon_id);
         if (!empty($operation->marine)) {
@@ -376,14 +419,16 @@ SQL;
 
   /**
    * Create an array of fields and values ready to submit a new taxon.
-   * 
+   *
    * @param obj $operation
    *   Object defining any operation which requires the addition of a new taxon.
-   * 
-   * @return array 
+   * @param bool $preferred
+   *   Default TRUE, set to FALSE if creating a non-preferred name.
+   *
+   * @return array
    *   Associative array of fields & values.
    */
-  private function getCreateTaxonFields($operation) {
+  private function getCreateTaxonFields($operation, $preferred = TRUE) {
     $taxonListId = $this->getTaxonListId();
     $parentId = $this->getParentTtlId($operation);
     $rankId = $this->getTaxonRankId($operation);
@@ -391,7 +436,7 @@ SQL;
     return [
       'taxa_taxon_list:taxon_list_id' => $taxonListId,
       'taxa_taxon_list:parent_id' => $parentId,
-      'taxa_taxon_list:preferred' => 't',
+      'taxa_taxon_list:preferred' => $preferred ? 't' : 'f',
       'taxon:taxon' => $operation->taxon_name,
       'taxon:authority' => $operation->authority,
       'taxon:attribute' => $operation->attribute,
@@ -411,10 +456,10 @@ SQL;
 
   /**
    * Map from Y/N values in spreadsheet to t/f for database.
-   * 
+   *
    * @param string $val
    *   Provided value.
-   * 
+   *
    * @return string
    *   Value for database bool field (t/f).
    */
@@ -431,7 +476,7 @@ SQL;
    *
    * @param string $organismKey
    *   Key to fetch names for.
-   *  
+   *
    * @return object
    *   Query result which can be iterated.
    */
@@ -451,7 +496,7 @@ SQL;
 
   /**
    * Generates an error message if provided organism key exists.
-   * 
+   *
    * @param string $operationName
    *   Name of the operation for the error message.
    * @param string $organismKey
@@ -462,16 +507,16 @@ SQL;
     if (count($existing) > 0) {
       $this->operationErrors[] = "$operationName operation has provided an organism_key which is not new";
     }
-  } 
+  }
 
   /**
    * Generates an error for any required fields missing for an operation.
-   * 
+   *
    * @param string $operationName
    *   Name of the operation for the error message.
    * @param object $operation
    *   Operation details object.
-   * @param array $requiredFields 
+   * @param array $requiredFields
    *   List of required field names.
    */
   private function checkOperationRequiredFields($operationName, $operation, array $requiredFields) {
@@ -487,7 +532,7 @@ SQL;
       kohana::log('debug', 'Parent name lookup');
       // Parent identified by name which must refer to a recently added taxa.
       // So use the new taxon operation to find the parent's organism key.
-      // @todo This query should filter to the current batch if possible 
+      // @todo This query should filter to the current batch if possible
       // rather than use the date.
       $qry = <<<SQL
 SELECT organism_key
@@ -534,7 +579,7 @@ SQL;
 
   /**
    * Retrieve the configured main taxon list's ID.
-   * 
+   *
    * @return int
    *   Taxon_list_id pointing to the copy of UKSI.
    */
@@ -548,11 +593,11 @@ SQL;
 
   /**
    * Finds the ID of a taxon rank described in an operation.
-   * 
+   *
    * @param object $operation
-   *   Details of an operation including a rank property containing the rank 
+   *   Details of an operation including a rank property containing the rank
    *   name.
-   * 
+   *
    * @return int
    *   ID, or NULL if not found.
    */
@@ -570,36 +615,36 @@ SQL;
 
   /**
    * Finds the ID of a taxon group described in an operation.
-   * 
+   *
    * @param object $operation
-   *   Details of an operation including an output_group property containing
-   *   the group name.
-   * 
+   *   Details of an operation including an taxon_group_key property to lookup
+   *   against.
+   *
    * @return int
    *   ID, or NULL if not found.
    */
-  private function getTaxonGroupId($operation) { 
+  private function getTaxonGroupId($operation) {
     $group = $this->db->select('id')
       ->from('taxon_groups')
-      ->where(['title' => $operation->output_group, 'deleted' => 'f'])
+      ->where(['external_key' => $operation->taxon_group_key, 'deleted' => 'f'])
       ->get()->current();
     if ($group) {
       return $group->id;
     }
-    $this->operationErrors[] = "Could not find taxon group $operation->output_group in the database.";
+    $this->operationErrors[] = "Could not find taxon group $operation->taxon_group_key in the database.";
     return NULL;
   }
 
   /**
    * Retrieves the ID for a language's ISO code.
-   * 
+   *
    * @param string $iso
    *   ISO language code which should be in the languages table.
-   * 
+   *
    * @return int
    *   ID, or NULL if not found.
    */
-  private function getLanguageId($iso) { 
+  private function getLanguageId($iso) {
     $language = $this->db->select('id')
       ->from('languages')
       ->where(['iso' => $iso, 'deleted' => 'f'])

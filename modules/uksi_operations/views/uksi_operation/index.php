@@ -42,5 +42,5 @@ $returnPath = url::site() . "uksi_operation/importer";
 <form enctype="multipart/form-data" class="form-inline" method="post" action="<?php echo $returnPath; ?>">
   <label for="csv_upload">Upload a CSV file into this list:</label>
   <input type="file" name="csv_upload" id="csv_upload" class="form-control" />
-  <input type="submit" value="Upload CSV File" class="btn btn-default" />
+  <input type="submit" value="Upload file" class="btn btn-default" />
 </form>

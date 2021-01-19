@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="UKSI taxon search parents" description="Quick way of reviewing parents of UKSI changes.">
+  <query>
+  WITH RECURSIVE nodes(taxon, attribute, authority, rank, organism_key, parent_id, level, name_class) AS (
+    SELECT t.taxon, t.attribute, t.authority, tr.rank, t.organism_key, ttl.parent_id, 1 as level,
+      CASE WHEN tr.sort_order >= 300 AND t.language_id=2 THEN 'name-italic' ELSE '' END AS name_class
+    FROM taxa t
+    JOIN taxa_taxon_lists ttl ON ttl.taxon_id=t.id AND ttl.deleted=false
+    JOIN taxon_ranks tr ON tr.id=t.taxon_rank_id
+    WHERE t.organism_key='#param_organism_key#'
+    AND ttl.taxon_list_id=#param_taxon_list_id#
+    AND t.deleted=false
+    AND ttl.preferred=true
+    UNION
+    SELECT t2.taxon, t2.attribute, t2.authority, tr2.rank, t2.organism_key, ttl2.parent_id, nodes.level+1 as level,
+      CASE WHEN tr2.sort_order >= 300 AND t2.language_id=2 THEN 'name-italic' ELSE '' END AS name_class
+    FROM nodes, taxa t2
+    JOIN taxa_taxon_lists ttl2 ON ttl2.taxon_id=t2.id AND ttl2.deleted=false
+    JOIN taxon_ranks tr2 ON tr2.id=t2.taxon_rank_id
+    WHERE ttl2.id = nodes.parent_id
+    AND ttl2.taxon_list_id=#param_taxon_list_id#
+    AND t2.deleted=false
+  )
+  SELECT *, 160 - level * 10 AS margin FROM nodes order by level desc;
+  </query>
+  <params>
+    <param name="param_taxon_list_id" display="Taxon list ID" datatype="integer" />
+    <param name="param_organism_key" display="Organism key" datatype="text" />
+  </params>
+  <columns>
+    <column name="taxon" display="Taxon" datatype="text" />
+    <column name="attribute" display="Attribute" datatype="text" />
+    <column name="authority" display="Authority" datatype="text" />
+    <column name="rank" display="Rank" datatype="text" />
+    <column name="organism_key" display="Organism Key" datatype="text" />
+    <column name="margin" display="Margin" datatype="integer" />
+    <column name="name_class" display="Class" datatype="text" />
+  </columns>
+</report>

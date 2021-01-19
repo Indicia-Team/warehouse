@@ -54,6 +54,9 @@ echo html::stylesheet(
   ),
   array('screen')
 );
+if (isset($cssFile)) {
+  echo html::stylesheet([$cssFile], ['screen']);
+}
 echo html::script(
   array(
     'media/js/jquery.js?v=3.2.1',

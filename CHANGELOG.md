@@ -1,3 +1,19 @@
+# Version 4.11.0
+*2021-01-19*
+
+* New UKSI operations warehouse module which accepts a log of taxonomic updates in the same format
+  as used to update the master copy of the UKSI taxon list. This reduces the need for periodic and
+  complex full updates of the UKSI taxonomy.
+* New `es_key_prefix` option in `application/config/indicia.php` which allows a prefix to be added
+  to IDs in Elasticsearch downloads (to uniquely ID the warehouse).
+* Support for Excel (*.xls or *.xlsx) files in the importer (experimental).
+* After upgrades, now more effectively clears appropriate parts of the cache so that UI and ORM 
+  updates are immediate.
+* Performance improvement by indexing notifications table for count of user's outstanding 
+  notifications.
+* Improvements to Elasticsearch download column templates, e.g. for better MapMate export support.
+* Option to skip overwrite of verified records in the Rest API sync module (e.g. for iNaturalist
+  synchronisation), see https://github.com/BiologicalRecordsCentre/iRecord/issues/972.
 # Version 4.10.0 
 *2020-12-17*
 

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * View template for the upload a CSV file forms added below lists of data.
+ * View template for the upload a spreadsheet file forms added below lists of data.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -32,7 +32,7 @@ $returnPath = url::site() . "$controllerpath/importer/$returnPage";
     }
   }
   ?>
-  <label for="csv_upload">Upload a CSV file into this list:</label>
+  <label for="csv_upload">Upload a CSV or Excel file into this list:</label>
   <input type="file" name="csv_upload" id="csv_upload" class="form-control" />
-  <input type="submit" value="Upload CSV File" class="btn btn-default" />
+  <input type="submit" value="Upload file" class="btn btn-default" />
 </form>
