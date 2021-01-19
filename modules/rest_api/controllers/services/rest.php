@@ -1878,11 +1878,8 @@ SQL;
       $comment = '';
     }
     if (!empty($params) && in_array("addref", $params)) {
-      // Can't access '_id' here so, for now, hard-coding
-      // appending 'brc1|' to ref. This will need to be addressed
-      // if we add another warehouse. 
-      $ref = $doc['id'];
-      $comment = trim("$comment brc1|$ref");
+      $ref = kohana::config('indicia.es_key_prefix') . $doc['id'];
+      $comment = trim("$comment $ref");
     }
     return $comment;
   }
