@@ -18,7 +18,8 @@
     <param name="group_id" display="Group ID" datatype="integer" />
   </params>
   <columns>
+    <column name="type" datatype="text" sql="ST_GeometryType(COALESCE(St_GeomFromText(f.definition::json->>'searchArea', 3857), l.boundary_geom, l.centroid_geom))" />
     <column name="boundary" datatype="text" aggregate="true"
-       sql="ST_AsText(ST_Union(ST_Transform(coalesce(ST_GeomFromText(f.definition::json->>'searchArea', 3857), l.boundary_geom, l.centroid_geom), 4326)))" />
+       sql="ST_AsText(ST_Union(ST_Transform(COALESCE(ST_GeomFromText(f.definition::json->>'searchArea', 3857), l.boundary_geom, l.centroid_geom), 4326)))" />
   </columns>
 </report>
