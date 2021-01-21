@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Groups boundary in GPS lat long" description="Retrieves the boundary(ies) for a group, transformed to WGS84 for use on a Leaflet map.">
+  <query website_filter_field="g.website_id">
+    SELECT #columns#
+    FROM groups g
+    JOIN filters f on f.id=g.filter_id
+    LEFT JOIN locations l ON l.id = ANY(string_to_array(coalesce(
+      f.definition::json->>'location_list',
+      f.definition::json->>'indexed_location_list',
+      f.definition::json->>'location_id',
+      f.definition::json->>'indexed_location_id'
+    ), ',')::int[])
+    WHERE g.deleted = false
+    AND #website_filter#
+    AND g.id=#group_id#
+  </query>
+  <params>
+    <param name="group_id" display="Group ID" datatype="integer" />
+  </params>
+  <columns>
+    <column name="boundary" datatype="text" aggregate="true"
+       sql="ST_AsText(ST_Union(ST_Transform(coalesce(ST_GeomFromText(f.definition::json->>'searchArea', 3857), l.boundary_geom, l.centroid_geom), 4326)))" />
+  </columns>
+</report>
