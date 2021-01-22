@@ -13,6 +13,7 @@
     WHERE g.deleted = false
     AND #website_filter#
     AND g.id=#group_id#
+    AND COALESCE(St_GeomFromText(f.definition::json->>'searchArea', 3857), l.boundary_geom, l.centroid_geom) IS NOT NULL
   </query>
   <params>
     <param name="group_id" display="Group ID" datatype="integer" />
