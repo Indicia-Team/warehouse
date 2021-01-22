@@ -5,10 +5,10 @@
     FROM groups g
     JOIN filters f on f.id=g.filter_id
     LEFT JOIN locations l ON l.id = ANY(string_to_array(coalesce(
-      f.definition::json->>'location_list',
-      f.definition::json->>'indexed_location_list',
-      f.definition::json->>'location_id',
-      f.definition::json->>'indexed_location_id'
+      NULLIF(f.definition::json->>'location_list', ''),
+      NULLIF(f.definition::json->>'indexed_location_list', ''),
+      NULLIF(f.definition::json->>'location_id', ''),
+      NULLIF(f.definition::json->>'indexed_location_id', '')
     ), ',')::int[])
     WHERE g.deleted = false
     AND #website_filter#
