@@ -1408,23 +1408,27 @@ class Import_Controller extends Service_Base_Controller {
    * mappings should be in the $_POST data.
    */
   private function getMetadata($importTempFile) {
-    $metadataFile = DOCROOT . "import/" . str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $importTempFile);
+    $metadataFile = DOCROOT . 'import' . DIRECTORY_SEPARATOR  . str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $importTempFile);
     if (file_exists($metadataFile)) {
       $metadataHandle = fopen($metadataFile, "r");
-      $metadata = fgets($metadataHandle);
+      $fileContents = fgets($metadataHandle);
       fclose($metadataHandle);
-      return json_decode($metadata, TRUE);
+      $metadata = json_decode($fileContents, TRUE);
     }
     else {
       // No previous file, so create default new metadata.
-      return [
+      $metadata = [
         'mappings' => [],
         'settings' => [],
         'errorCount' => 0,
-        'fileSize' => $this->getFileSize(DOCROOT . "import/$importTempFile"),
         'guid' => $this->createGuid(),
       ];
     }
+    if (empty($metadata['fileSize']) && file_exists(DOCROOT . 'import' . DIRECTORY_SEPARATOR  . $importTempFile)) {
+      // If file uploaded, we can report it's size.
+      $metadata['fileSize'] = $this->getFileSize(DOCROOT . 'import' . DIRECTORY_SEPARATOR . $importTempFile);
+    }
+    return $metadata;
   }
 
   /**
