@@ -1213,15 +1213,14 @@ class Rest_Controller extends Controller {
     }
   }
 
-   /**
+  /**
    * Retrieve the columns associated with a survey.
    *
    * @param string $type
    *   Either 'sample' or 'occurrence'.
-   * 
    * @param string $id
    *   The survey ID.
-   * 
+   *
    * @return array
    *   Array of associative arrays describing each attribute.
    */
@@ -1241,21 +1240,23 @@ SQL;
       $columns = array();
       $attrs = RestObjects::$db->query($sql)->result_array();
       foreach ($attrs as $attr) {
-        $columns[] = array(
+        $columns[] = [
           'field' => "#attr_value:$type:$attr->id#",
-          'caption' => $attr->caption
-        );
+          'caption' => $attr->caption,
+        ];
       }
       $cache->set($cacheId, serialize($columns));
       return $columns;
     }
   }
 
-   /**
+  /**
    * A cached lookup of the websites that are available for a sharing mode.
    *
    * @param integer $websiteId
    *   ID of the website that is receiving the shared data.
+   * @param string $sharing
+   *   Sharing mode.
    *
    * @return array
    *   List of website IDs that will share their data.
@@ -1271,10 +1272,10 @@ SQL;
       ->from('index_websites_website_agreements')
       ->where([
         "receive_for_$sharing" => 't',
-        'from_website_id' => $websiteId
+        'from_website_id' => $websiteId,
       ])
       ->get()->result();
-    $ids = array();
+    $ids = [];
     foreach ($qry as $row) {
       $ids[] = $row->to_website_id;
     }
@@ -1300,9 +1301,10 @@ SQL;
     if (!empty($this->esConfig['limit_to_own_data']) && !$this->allowAllData && RestObjects::$clientUserId) {
       $filters[] = ['term' => ['metadata.created_by_id' => RestObjects::$clientUserId]];
     }
-    if (!empty($this->esConfig['limit_to_website']) && RestObjects::$clientWebsiteId) {
+    if ((!empty($this->esConfig['limit_to_website']) || $this->authMethod === 'DirectWebsite') && RestObjects::$clientWebsiteId) {
       // @todo Support for other sharing modes in JWT claims.
-      $filters[] = ['terms' => ['metadata.website.id' => $this->getSharedWebsiteList(RestObjects::$clientWebsiteId)]];
+      $sharing = isset($_GET['sharing']) ? $_GET['sharing'] : 'R';
+      $filters[] = ['terms' => ['metadata.website.id' => $this->getSharedWebsiteList(RestObjects::$clientWebsiteId, $sharing)]];
     }
     if (count($filters) > 0) {
       if (!isset($postObj->query)) {
@@ -1492,6 +1494,7 @@ SQL;
         unset($params['aggregation_type']);
         unset($params['state']);
         unset($params['uniq_id']);
+        unset($params['sharing']);
         unset($params['_']);
         if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'initial') {
           $params['scroll'] = SCROLL_TIMEOUT;
@@ -4063,10 +4066,10 @@ SQL;
    * either parameter is not an integer.
    */
   private function checkPaginationParams() {
-    $this->request = array_merge(array(
+    $this->request = array_merge([
       'page' => 1,
       'page_size' => REST_API_DEFAULT_PAGE_SIZE,
-    ), $this->request);
+    ], $this->request);
     $this->checkInteger($this->request['page'], 'page');
     $this->checkInteger($this->request['page_size'], 'page_size');
   }
@@ -4095,7 +4098,8 @@ SQL;
         (isset($this->authConfig) && array_key_exists('allow_cors', $this->authConfig))) {
       if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' || $this->authConfig['allow_cors'] === TRUE) {
         $corsSetting = '*';
-      } elseif (is_array($this->authConfig['allow_cors'])) {
+      }
+      elseif (is_array($this->authConfig['allow_cors'])) {
         // If list of domain patterns specified, allow only if a match.
         foreach ($this->authConfig['allow_cors'] as $domainRegex) {
           if (preg_match("/$domainRegex/", $_SERVER['HTTP_ORIGIN'])) {
@@ -4547,7 +4551,7 @@ SQL;
     $password = pg_escape_string($password);
     $websites = RestObjects::$db->select('id')
       ->from('websites')
-      ->where(array('id' => $websiteId, 'password' => $password))
+      ->where(['id' => $websiteId, 'password' => $password])
       ->get()->result_array();
     if (count($websites) !== 1) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised website ID or password.');

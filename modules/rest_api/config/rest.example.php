@@ -127,8 +127,7 @@ $config['elasticsearch'] = [
   // Name of the end-point, e.g. /index.php/services/rest/es.
   'es' => [
     // Set open = TRUE if this end-point is available without authentication.
-    // Otherwise it must be attached to a configured client.
-    'open' => TRUE,
+    'open' => FALSE,
     // Name of the elasticsearch index or alias this end-point points to.
     'index' => 'occurrence',
     // URL of the Elasticsearch index.
