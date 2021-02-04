@@ -335,10 +335,10 @@ HTML;
    */
   public function fail($status, $code, $msg = NULL, array $extra = NULL) {
     http_response_code($code);
-    $response = array(
+    $response = [
       'code' => $code,
       'status' => $status,
-    );
+    ];
     if ($msg) {
       $response['message'] = $msg;
     }
