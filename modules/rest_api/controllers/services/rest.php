@@ -2347,6 +2347,19 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Implement base64-url decode support for JWT tokens.
+   *
+   * @param string $str
+   *   String to decode.
+   *
+   * @return string
+   *   Decoded response.
+   */
+  private function base64urlDecode($str) {
+    return base64_decode(str_replace(['-', '_'], ['+', '/'], $str));
+  }
+
+  /**
    * Attempts to authenticate as a user using a JWT access token.
    */
   private function authenticateUsingJwtUser() {
@@ -2354,7 +2367,7 @@ class Rest_Controller extends Controller {
     $suppliedToken = $this->getBearerAuthToken(TRUE);
     if ($suppliedToken) {
       list($jwtHeader, $jwtPayload, $jwtSignature) = explode('.', $suppliedToken);
-      $payload = base64_decode($jwtPayload);
+      $payload = $this->base64urlDecode($jwtPayload);
       if (!$payload) {
         RestObjects::$apiResponse->fail('Bad request', 400);
       }
