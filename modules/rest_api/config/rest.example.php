@@ -188,6 +188,8 @@ $config['clients'] = [
         // pages of data. Useful when the client is a dumb poller for the data
         // such as the Elastic Stack's Logstash.
         'autofeed' => FALSE,
+        // Other options may be stored here which are specific to the exposed
+        // resource.
       ],
     ],
     // This client can access the es elasticsearch proxy end-point.
