@@ -34,6 +34,25 @@ function rest_api_sync_alter_menu($menu, $auth) {
 
 function rest_api_sync_extend_data_services() {
   return array(
-    'rest_api_sync_skipped_records' => array(),
+    'rest_api_sync_skipped_records' => [],
   );
+}
+
+function rest_api_sync_extend_rest_api() {
+  return [
+    'sync-taxon-observations' => [
+      'GET' => [
+        'sync-taxon-observations' => [
+          'params' => [
+            'proj_id' => [
+              'datatype' => 'text',
+            ],
+            'tracking' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
+      ],
+    ],
+  ];
 }

@@ -1509,6 +1509,7 @@ class RestApiElasticsearch {
         unset($params['aggregation_type']);
         unset($params['state']);
         unset($params['uniq_id']);
+        unset($params['proj_id']);
         unset($params['sharing']);
         unset($params['_']);
         if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'initial') {
