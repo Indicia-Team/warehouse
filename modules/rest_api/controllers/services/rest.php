@@ -838,18 +838,19 @@ class Rest_Controller extends Controller {
           $methodName = $this->getMethodName($arguments, strpos($pathConfigPattern, '{path}') !== FALSE);
           $requestForId = NULL;
           $ids = preg_grep('/^([A-Z]{3})?\d+$/', $arguments);
+          $projectId = NULL;
           if (count($ids) > 0) {
             $requestForId = $ids[0];
           }
-          // When using a client system ID, we also want a project ID if
-          // accessing taxon observations or annotations.
-          if (isset($this->clientSystemId) && ($name === 'taxon_observations' || $name === 'annotations')) {
+          // When using a client system ID, we also want a project ID.
+          if (isset($this->clientSystemId)) {
             if (empty($this->request['proj_id'])) {
               // Should not have got this far - just in case.
               RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
             }
             else {
               $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
+              $projectId = $this->request['proj_id'];
             }
           }
           $this->validateParameters($pathConfig);
@@ -864,7 +865,7 @@ class Rest_Controller extends Controller {
           else {
             RestObjects::$apiResponse->fail('Not Found', 404, "Resource $name not known for method $this->method");
           }
-          call_user_func([$class, $methodName], $requestForId, $this->clientConfig);
+          call_user_func([$class, $methodName], $requestForId, $this->clientConfig, $projectId);
         }
       }
     }
