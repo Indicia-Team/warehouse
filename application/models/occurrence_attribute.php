@@ -53,6 +53,10 @@ class Occurrence_Attribute_Model extends ATTR_ORM {
    */
   public function get_system_functions() {
     return [
+      'behaviour' => [
+        'title' => 'Behaviour',
+        'description' => 'The behavior shown by the subject at the time the Occurrence was recorded.',
+      ],
       'certainty' => [
         'title' => 'Certainty of the record accuracy',
         'friendly' => 'Certainty',
@@ -77,6 +81,10 @@ class Occurrence_Attribute_Model extends ATTR_ORM {
       'sex_stage' => [
         'title' => 'Sex/stage',
         'description' => 'A text or lookup attribute where the value corresponds to the sex or life stage of the recorded organism(s).',
+      ],
+      'reproductive_condition' => [
+        'title' => 'Reproductive condition',
+        'description' => 'The reproductive condition of the biological individual(s) represented in the Occurrence.',
       ],
       'sex' => [
         'title' => 'Sex',

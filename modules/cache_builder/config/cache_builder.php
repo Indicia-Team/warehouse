@@ -1480,6 +1480,16 @@ SET comment=o.comment,
   ),
   verifier=pv.surname || ', ' || pv.first_name,
   licence_code=li.code,
+  attr_behaviour=CASE a_behaviour.data_type
+    WHEN 'T'::bpchar THEN v_behaviour.text_value
+    WHEN 'L'::bpchar THEN t_behaviour.term
+    ELSE NULL::text
+  END,
+  attr_reproductive_condition=CASE a_reproductive_condition.data_type
+    WHEN 'T'::bpchar THEN v_reproductive_condition.text_value
+    WHEN 'L'::bpchar THEN t_reproductive_condition.term
+    ELSE NULL::text
+  END,
   attr_sex_stage=CASE a_sex_stage.data_type
       WHEN 'T'::bpchar THEN v_sex_stage.text_value
       WHEN 'L'::bpchar THEN t_sex_stage.term
@@ -1536,6 +1546,14 @@ LEFT JOIN (sample_attribute_values spv
   JOIN sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
       and spa.system_function='sref_precision'
 ) on spv.sample_id=s.id and spv.deleted=false
+LEFT JOIN (occurrence_attribute_values v_behaviour
+  JOIN occurrence_attributes a_behaviour on a_behaviour.id=v_behaviour.occurrence_attribute_id and a_behaviour.deleted=false and a_behaviour.system_function='behaviour'
+  LEFT JOIN cache_termlists_terms t_behaviour on a_behaviour.data_type='L' and t_behaviour.id=v_behaviour.int_value
+) on v_behaviour.occurrence_id=o.id and v_behaviour.deleted=false
+LEFT JOIN (occurrence_attribute_values v_reproductive_condition
+  JOIN occurrence_attributes a_reproductive_condition on a_reproductive_condition.id=v_reproductive_condition.occurrence_attribute_id and a_reproductive_condition.deleted=false and a_reproductive_condition.system_function='reproductive_condition'
+  LEFT JOIN cache_termlists_terms t_reproductive_condition on a_reproductive_condition.data_type='L' and t_reproductive_condition.id=v_reproductive_condition.int_value
+) on v_reproductive_condition.occurrence_id=o.id and v_reproductive_condition.deleted=false
 LEFT JOIN (occurrence_attribute_values v_sex_stage
   JOIN occurrence_attributes a_sex_stage on a_sex_stage.id=v_sex_stage.occurrence_attribute_id and a_sex_stage.deleted=false and a_sex_stage.system_function='sex_stage'
   LEFT JOIN cache_termlists_terms t_sex_stage on a_sex_stage.data_type='L' and t_sex_stage.id=v_sex_stage.int_value
@@ -1728,6 +1746,16 @@ AND co.id IS NULL
 $config['occurrences']['insert']['nonfunctional_attrs'] = "
 UPDATE cache_occurrences_nonfunctional
 SET
+  attr_behaviour=CASE a_behaviour.data_type
+      WHEN 'T'::bpchar THEN v_behaviour.text_value
+      WHEN 'L'::bpchar THEN t_behaviour.term
+      ELSE NULL::text
+  END,
+  attr_reproductive_condition=CASE a_reproductive_condition.data_type
+      WHEN 'T'::bpchar THEN v_reproductive_condition.text_value
+      WHEN 'L'::bpchar THEN t_reproductive_condition.term
+      ELSE NULL::text
+  END,
   attr_sex_stage=CASE a_sex_stage.data_type
       WHEN 'T'::bpchar THEN v_sex_stage.text_value
       WHEN 'L'::bpchar THEN t_sex_stage.term
@@ -1772,6 +1800,14 @@ SET
   END
 FROM occurrences o
 #join_needs_update#
+LEFT JOIN (occurrence_attribute_values v_behaviour
+  JOIN occurrence_attributes a_behaviour on a_behaviour.id=v_behaviour.occurrence_attribute_id and a_behaviour.deleted=false and a_behaviour.system_function='behaviour'
+  LEFT JOIN cache_termlists_terms t_behaviour on a_behaviour.data_type='L' and t_behaviour.id=v_behaviour.int_value
+) on v_behaviour.occurrence_id=o.id and v_behaviour.deleted=false
+LEFT JOIN (occurrence_attribute_values v_reproductive_condition
+  JOIN occurrence_attributes a_reproductive_condition on a_reproductive_condition.id=v_reproductive_condition.occurrence_attribute_id and a_reproductive_condition.deleted=false and a_reproductive_condition.system_function='reproductive_condition'
+  LEFT JOIN cache_termlists_terms t_reproductive_condition on a_reproductive_condition.data_type='L' and t_reproductive_condition.id=v_reproductive_condition.int_value
+) on v_reproductive_condition.occurrence_id=o.id and v_reproductive_condition.deleted=false
 LEFT JOIN (occurrence_attribute_values v_sex_stage
   JOIN occurrence_attributes a_sex_stage on a_sex_stage.id=v_sex_stage.occurrence_attribute_id and a_sex_stage.deleted=false and a_sex_stage.system_function='sex_stage'
   LEFT JOIN cache_termlists_terms t_sex_stage on a_sex_stage.data_type='L' and t_sex_stage.id=v_sex_stage.int_value
