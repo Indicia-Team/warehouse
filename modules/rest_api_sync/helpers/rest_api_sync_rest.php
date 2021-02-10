@@ -172,7 +172,12 @@ class rest_api_sync_rest {
         $obj['record-level']['licence'] = $doc->metadata->licence_code;
       }
       echo json_encode($obj, JSON_PRETTY_PRINT);
-      echo $idx < $total - 1 ? ',' : '';
+      if ($idx < $total - 1) {
+        echo ',';
+      }
+      else {
+        variable::set("rest-api-sync-tx-obs-$projectId", $doc->metadata->tracking);
+      }
     }
     echo "\n]";
   }
@@ -183,10 +188,26 @@ class rest_api_sync_rest {
   private static function getEsTaxonObservationsResponse($clientConfig, $project) {
     $es = new RestApiElasticsearch($clientConfig['elasticsearch'][0]);
     $format = 'json';
+    if (isset($_GET['tracking_from']) ) {
+      if (!preg_match('/^\d+$/', $_GET['tracking_from'])) {
+        RestObjects::$apiResponse->fail('Bad Request', 400, 'Invalid tracking from parameter');
+      }
+      $trackingFrom = $_GET['tracking_from'];
+      unset($_GET['tracking_from']);
+    }
+    else {
+      $trackingFrom = variable::get("rest-api-sync-tx-obs-$project[id]", 0);
+    }
     $query = [
       'bool' => [
         'must' => [
           ['exists' => ['field' => 'taxon.taxon_id']],
+
+
+// Sensitivity_blur empty or F/B.
+
+
+
         ],
       ],
     ];
@@ -205,10 +226,11 @@ class rest_api_sync_rest {
       }
     }
     return json_decode($es->elasticRequest((object) [
-      'size' => 2000,
+      'size' => 2,
       'sort' => [
         ['metadata.tracking' => ['order' => 'asc']],
       ],
+      'search_after' => [$trackingFrom],
       'query' => $query,
     ], $format, TRUE, '_search'));
   }
@@ -234,6 +256,9 @@ class rest_api_sync_rest {
         'identificationVerificationStatus' => self::$statuses[$doc->identification->verification_status . $doc->identification->verification_substatus],
       ],
       'location' => [],
+      'metadata' => [
+        'tracking' => $doc->metadata->tracking,
+      ],
       'occurrence' => [
         'occurrenceID' => (!empty($project['id_prefix']) ? $project['id_prefix'] : '') . $doc->id,
         'occurrenceStatus' => 'Present',
