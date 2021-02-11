@@ -818,8 +818,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->authenticate();
     $mode = $this->get_input_mode();
-    switch ($mode)
-    {
+    switch ($mode) {
       case 'json':
         $s = json_decode($_POST['submission'], true);
     }
@@ -839,9 +838,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       kohana::log('debug', "Model submit: $model->object_name $model->id");
       $id = $model->id;
     }
-    if ($result)
-    {
-      $this->response=json_encode(array('success'=>$id));
+    if ($result) {
+      $this->respons = json_encode(['success' => $id]);
       $this->delete_nonce();
     }
     else if (isset($model) && is_array($model->getAllErrors())) {
