@@ -163,19 +163,83 @@ SQL;
    *   Submission structure for a location entry.
    */
   public function get_submission_structure() {
-    return array(
+    return [
       'model' => 'location',
-      'joinsTo' => array('websites'),
-    );
+      'joinsTo' => ['websites'],
+      'metaFields' => [
+        // SRID can be specified if if geom fields are not in 3857 format.
+        'srid',
+        // Allow updates to combine added boundary to existing.
+        'mergeBoundary',
+      ],
+    ];
   }
 
   /**
-   * Handle the case where a new record is created with a centroid_sref but without the geom being pre-calculated.
-   * E.g. when importing from a shape file, or when JS is disabled on the client.
+   * If srid metaField supplied, transform incoming geometry.
+   *
+   * Allows a location to be submitted with a projection other than 900913.
+   */
+  private function transformSubmissionUsingSrid() {
+    // Transform geoms if srid metaField is specified.
+    if (!empty($this->submission['fields']['centroid_geom']['value'])) {
+      $this->submission['fields']['centroid_geom']['value'] = postgreSQL::transformWkt(
+        $this->submission['fields']['centroid_geom']['value'],
+        $this->submission['metaFields']['srid']['value'],
+        kohana::config('sref_notations.internal_srid'),
+        $this->db
+      );
+    }
+    if (!empty($this->submission['fields']['boundary_geom']['value'])) {
+      $this->submission['fields']['boundary_geom']['value'] = postgreSQL::transformWkt(
+        $this->submission['fields']['boundary_geom']['value'],
+        $this->submission['metaFields']['srid']['value'],
+        kohana::config('sref_notations.internal_srid'),
+        $this->db
+      );
+    }
+  }
+
+  /**
+   * Merge existing boundary into submission.
+   *
+   * Result of submission for existing locations is combining rather than
+   * replacing boundary.
+   */
+  private function mergeSubmittedBoundaryWithExisting() {
+    $srid = kohana::config('sref_notations.internal_srid');
+    $incomingGeom = $this->submission['fields']['boundary_geom']['value'];
+    $id = $this->submission['fields']['id']['value'];
+    $sql = <<<SQL
+SELECT ST_AsText(ST_Union((select ST_MakeValid(boundary_geom) from locations where id=$id), ST_MakeValid(ST_GeomFromText('$incomingGeom', $srid)))) as merged_geom;
+SQL;
+    $merged = $this->db->query($sql)->current();
+    $this->submission['fields']['boundary_geom']['value'] = $merged->merged_geom;
+    kohana::log('debug', "Merged boundary set to $merged->merged_geom");
+  }
+
+  /**
+   * Handle location data before processing submission.
+   *
+   * Handle the case where a new record is created with a centroid_sref but
+   * without the geom being pre-calculated. E.g. when importing from a shape
+   * file, or when JS is disabled on the client.
+   *
+   * Also handles srid and mergeGeometry metaField settings for the incoming
+   * geometry data handling.
    */
   protected function preSubmit() {
-    // Allow a location to be submitted with a spatial ref and system but no centroid_geom. If so we
-    // can work out the Geom
+    if (isset($this->submission['metaFields'])) {
+      if (!empty($this->submission['metaFields']['srid'])
+          && kohana::config('sref_notations.internal_srid') !== $this->submission['metaFields']['srid']['value']) {
+        $this->transformSubmissionUsingSrid();
+      }
+      if (!empty($this->submission['metaFields']['mergeBoundary']) && !empty($this->submission['fields']['id']['value'])) {
+        $this->mergeSubmittedBoundaryWithExisting();
+      }
+    }
+    // Allow a location to be submitted with a spatial ref and system but no
+    // centroid_geom. If so we can work out the Geom.
     if (!empty($this->submission['fields']['centroid_sref']['value']) &&
         !empty($this->submission['fields']['centroid_sref_system']['value']) &&
         empty($this->submission['fields']['centroid_geom']['value'])) {
