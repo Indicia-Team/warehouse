@@ -763,7 +763,7 @@ class Data_Controller extends Data_Service_Base_Controller {
    * @param string $name
    *   Called controller function name (entity).
    */
-  public function __call($name) {
+  public function __call($name, $arguments) {
     $extensions = $this->loadExtensions($name);
     if (array_key_exists(inflector::plural($name), $extensions)) {
       $this->handle_call($name);
