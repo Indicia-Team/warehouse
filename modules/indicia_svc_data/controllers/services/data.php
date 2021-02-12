@@ -14,14 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @subpackage Data
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/warehouse
  */
 
+ /**
+  * Controller class for data services request.
+  */
 class Data_Controller extends Data_Service_Base_Controller {
+
   protected $model;
   protected $entity;
   protected $viewname;
@@ -56,7 +58,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   //    There is no public function with the name of the entity in this file
   //
   // default to no updates allowed - must explicity allow updates.
-  protected $allow_updates = array(
+  protected $allow_updates = [
     'attribute_sets_survey',
     'attribute_sets_taxon_restriction',
     'comment_quick_reply_page_auth',
@@ -102,13 +104,13 @@ class Data_Controller extends Data_Service_Base_Controller {
     'user',
     'user_trust',
     'users_website',
-  );
+  ];
 
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
   // and website_id, so that we can work out whether access to a particular record is allowed.
   // There is a potential issues with this: We may want everyone to have complete access to a particular dataset
   // So if we wish total access to a given dataset, the entity must appear in the following list.
-  protected $allow_full_access = array(
+  protected $allow_full_access = [
     'attribute_sets_taxon_restriction',
     'filter',
     'filters_user',
@@ -126,116 +128,128 @@ class Data_Controller extends Data_Service_Base_Controller {
     'cache_taxon_searchterm',
     'cache_taxa_taxon_list',
     'verification_rule_datum',
-  );
+  ];
 
   // List of tables that do not use views to expose their data.
-  protected $tables_without_views = array(
+  protected $tables_without_views = [
     'cache_taxon_searchterms',
     'cache_taxa_taxon_lists',
     'index_websites_website_agreements',
     'verification_rule_data',
     'users_websites',
-  );
+  ];
 
   /**
-  * Provides the /services/data/cache_taxa_taxon_list service.
-  * Retrieves details of a single taxon searchterm.
-  */
+   * Provides the /services/data/cache_taxa_taxon_list service.
+   *
+   * Retrieves details of a single taxon searchterm.
+   */
   public function cache_taxa_taxon_list() {
     $this->handle_call('cache_taxa_taxon_list');
   }
 
-
   /**
-  * Provides the /services/data/cache_taxon_searchterm service.
-  * Retrieves details of a single taxon searchterm.
-  */
+   * Provides the /services/data/cache_taxon_searchterm service.
+   *
+   * Retrieves details of a single taxon searchterm.
+   */
   public function cache_taxon_searchterm() {
     $this->handle_call('cache_taxon_searchterm');
   }
 
   /**
-  * Provides the /services/data/filter service.
-  * Retrieves details of a single filter.
-  */
+   * Provides the /services/data/filter service.
+   *
+   * Retrieves details of a single filter.
+   */
   public function filter() {
     $this->handle_call('filter');
   }
 
   /**
-  * Provides the /services/data/filters_user service.
-  * Retrieves details of a single filters_user join record.
-  */
+   * Provides the /services/data/filters_user service.
+   *
+   * Retrieves details of a single filters_user join record.
+   */
   public function filters_user() {
     $this->handle_call('filters_user');
   }
 
   /**
-  * Provides the /services/data/group service.
-  * Retrieves details of a single group.
-  */
+   * Provides the /services/data/group service.
+   *
+   * Retrieves details of a single group.
+   */
   public function group() {
     $this->handle_call('group');
   }
 
   /**
-  * Provides the /services/data/group_page service.
-  * Retrieves details of a single group.
-  */
+   * Provides the /services/data/group_page service.
+   *
+   * Retrieves details of a single group.
+   */
   public function group_page() {
     $this->handle_call('group_page');
   }
 
   /**
-  * Provides the /services/data/group_invitation service.
-  * Retrieves details of a single group_invitation.
-  */
+   * Provides the /services/data/group_invitation service.
+   *
+   * Retrieves details of a single group_invitation.
+   */
   public function group_invitation() {
     $this->handle_call('group_invitation');
   }
 
   /**
-  * Provides the /services/data/group_relation service.
-  * Retrieves details of a single group_relation.
-  */
+   * Provides the /services/data/group_relation service.
+   *
+   * Retrieves details of a single group_relation.
+   */
   public function group_relation() {
     $this->handle_call('group_relation');
   }
 
   /**
-  * Provides the /services/data/groups_location service.
-  * Retrieves details of a single groups_location.
-  */
+   * Provides the /services/data/groups_location service.
+   *
+   * Retrieves details of a single groups_location.
+   */
   public function groups_location() {
     $this->handle_call('groups_location');
   }
 
   /**
-  * Provides the /services/data/groups_user service.
-  * Retrieves details of a single groups_user.
-  */
+   * Provides the /services/data/groups_user service.
+   *
+   * Retrieves details of a single groups_user.
+   */
   public function groups_user() {
     $this->handle_call('groups_user');
   }
 
   /**
-  * Provides the /services/data/index_websites_website_agreements service.
-  * Retrieves details of a single index_websites_website_agreements record.
-  */
+   * Provides the /services/data/index_websites_website_agreements service.
+   *
+   * Retrieves details of a single index_websites_website_agreements record.
+   */
   public function index_websites_website_agreement() {
     $this->handle_call('index_websites_website_agreement');
   }
 
   /**
-  * Provides the /services/data/language service.
-  * Retrieves details of a single language.
-  */
+   * Provides the /services/data/language service.
+   *
+   * Retrieves details of a single language.
+   */
   public function language() {
     $this->handle_call('language');
   }
 
   /**
    * Provides the /services/data/licence service.
+   *
    * Retrieves details of a single location.
    */
   public function licence() {
@@ -244,6 +258,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
    * Provides the /services/data/licences_website service.
+   *
    * Retrieves details of a single location.
    */
   public function licences_website() {
@@ -252,100 +267,111 @@ class Data_Controller extends Data_Service_Base_Controller {
 
 
   /**
-  * Provides the /services/data/location service.
-  * Retrieves details of a single location.
-  */
+   * Provides the /services/data/location service.
+   * Retrieves details of a single location.
+   */
   public function location() {
     $this->handle_call('location');
   }
 
   /**
-  * Provides the /service/data/location_attribute service.
-  * Retrieves details of location attributes.
-  */
+   * Provides the /service/data/location_attribute service.
+   *
+   * Retrieves details of location attributes.
+   */
   public function location_attribute() {
     $this->handle_call('location_attribute');
   }
 
   /**
-  * Provides the /service/data/location_attribute_value service.
-  * Retrieves details of location attribute values.
-  */
+   * Provides the /service/data/location_attribute_value service.
+   *
+   * Retrieves details of location attribute values.
+   */
   public function location_attribute_value() {
     $this->handle_call('location_attribute_value');
   }
 
   /**
-  * Provides the /service/data/location_image service.
-  * Retrieves details of location media.
-  * @deprecated
-  */
+   * Provides the /service/data/location_image service.
+   *
+   * Retrieves details of location media.
+   * @deprecated
+   */
   public function location_image() {
     $this->handle_call('location_medium');
   }
 
   /**
-  * Provides the /service/data/location_medium service.
-  * Retrieves details of location media.
-  */
+   * Provides the /service/data/location_medium service.
+   *
+   * Retrieves details of location media.
+   */
   public function location_medium() {
     $this->handle_call('location_medium');
   }
 
   /**
-  * Provides the /service/data/sample_image service.
-  * Retrieves details of sample media.
-  * @deprecated
-  */
+   * Provides the /service/data/sample_image service.
+   *
+   * Retrieves details of sample media.
+   * @deprecated
+   */
   public function sample_image() {
     $this->handle_call('sample_medium');
   }
 
   /**
-  * Provides the /service/data/sample_medium service.
-  * Retrieves details of sample media.
-  */
+   * Provides the /service/data/sample_medium service.
+   *
+   * Retrieves details of sample media.
+   */
   public function sample_medium() {
     $this->handle_call('sample_medium');
   }
 
   /**
-  * Provides the /services/data/occurrence service.
-  * Retrieves details of notifications.
-  */
+   * Provides the /services/data/occurrence service.
+   *
+   * Retrieves details of notifications.
+   */
   public function notification() {
     $this->handle_call('notification');
   }
 
   /**
-  * Provides the /services/data/occurrence service.
-  * Retrieves details of occurrences.
-  */
+   * Provides the /services/data/occurrence service.
+   *
+   * Retrieves details of occurrences.
+   */
   public function occurrence() {
     $this->handle_call('occurrence');
   }
 
   /**
-  * Provides the /service/data/occurrence_attribute service.
-  * Retrieves details of occurrence attributes.
-  */
+   * Provides the /service/data/occurrence_attribute service.
+   *
+   * Retrieves details of occurrence attributes.
+   */
   public function occurrence_attribute() {
     $this->handle_call('occurrence_attribute');
   }
 
   /**
-  * Provides the /service/data/occurrence_attribute_value service.
-  * Retrieves details of occurrence attribute values.
-  */
+   * Provides the /service/data/occurrence_attribute_value service.
+   *
+   * Retrieves details of occurrence attribute values.
+   */
   public function occurrence_attribute_value() {
     $this->handle_call('occurrence_attribute_value');
   }
 
- /**
-  * Provides the /service/data/occurrence_images service.
-  * Retrieves details of occurrence media. This is an alias for occurrence_medium,
-  * for backwards compatibility.
-  */
+  /**
+   * Provides the /service/data/occurrence_images service.
+   *
+   * Retrieves details of occurrence media. This is an alias for
+   * occurrence_medium, for backwards compatibility.
+   */
   public function occurrence_image() {
     $this->handle_call('occurrence_medium');
   }
@@ -359,86 +385,94 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Provides the /service/data/determination service.
-  * Retrieves details of occurrence attributes.
-  */
+   * Provides the /service/data/determination service.
+   *
+   * Retrieves details of occurrence attributes.
+   */
   public function determination() {
     $this->handle_call('determination');
   }
 
   /**
-  * Provides the /services/data/person service.
-  * Retrieves details of a single person.
-  */
+   * Provides the /services/data/person service.
+   *
+   * Retrieves details of a single person.
+   */
   public function person() {
     $this->handle_call('person');
   }
 
 
   /**
-  * Provides the /service/data/person_attribute service.
-  * Retrieves details of person attributes.
-  */
+   * Provides the /service/data/person_attribute service.
+   *
+   * Retrieves details of person attributes.
+   */
   public function person_attribute() {
     $this->handle_call('person_attribute');
   }
 
 
   /**
-  * Provides the /service/data/person_attribute_value service.
-  * Retrieves details of person attribute values.
-  */
+   * Provides the /service/data/person_attribute_value service.
+   *
+   * Retrieves details of person attribute values.
+   */
   public function person_attribute_value() {
     $this->handle_call('person_attribute_value');
   }
 
   /**
-  * Provides the /services/data/sample service.
-  * Retrieves details of a sample.
-  */
+   * Provides the /services/data/sample service.
+   *
+   * Retrieves details of a sample.
+   */
   public function sample() {
     $this->handle_call('sample');
   }
 
   /**
-  * Provides the /service/data/sample_attribute service.
-  * Retrieves details of sample attributes.
-  */
+   * Provides the /service/data/sample_attribute service.
+   *
+   * Retrieves details of sample attributes.
+   */
   public function sample_attribute() {
     $this->handle_call('sample_attribute');
   }
 
   /**
-  * Provides the /service/data/sample_attribute_value service.
-  * Retrieves details of sample attribute values.
-  */
+   * Provides the /service/data/sample_attribute_value service.
+   *
+   * Retrieves details of sample attribute values.
+   */
   public function sample_attribute_value() {
     $this->handle_call('sample_attribute_value');
   }
 
-
   /**
-  * Provides the /services/data/survey service.
-  * Retrieves details of a single survey.
-  */
+   * Provides the /services/data/survey service.
+   *
+   * Retrieves details of a single survey.
+   */
   public function survey() {
     $this->handle_call('survey');
   }
 
   /**
-  * Provides the /service/data/survey_attribute service.
-  * Retrieves details of location attributes.
-  */
+   * Provides the /service/data/survey_attribute service.
+   *
+   * Retrieves details of location attributes.
+   */
   public function survey_attribute() {
     $this->handle_call('survey_attribute');
   }
 
   /**
-  * Provides the /service/data/survey_attribute_value service.
-  * Retrieves details of location attribute values.
-  */
-  public function survey_attribute_value()
-  {
+   * Provides the /service/data/survey_attribute_value service.
+   *
+   * Retrieves details of location attribute values.
+   */
+  public function survey_attribute_value() {
     $this->handle_call('survey_attribute_value');
   }
 
@@ -451,58 +485,57 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Provides the /service/data/survey_medium service.
-  * Retrieves details of sample media.
-  */
-  public function survey_medium()
-  {
+   * Provides the /service/data/survey_medium service.
+   * Retrieves details of sample media.
+   */
+  public function survey_medium() {
     $this->handle_call('survey_medium');
   }
 
   /**
-  * Provides the /service/data/taxon_code service.
-  * Retrieves details of taxon codes.
-  */
-  public function taxon_code()
-  {
+   * Provides the /service/data/taxon_code service.
+   *
+   * Retrieves details of taxon codes.
+   */
+  public function taxon_code() {
     $this->handle_call('taxon_code');
   }
 
   /**
-  * Provides the /services/data/taxon_group service.
-  * Retrieves details of a single taxon_group.
-  */
-  public function taxon_group()
-  {
+   * Provides the /services/data/taxon_group service.
+   *
+   * Retrieves details of a single taxon_group.
+   */
+  public function taxon_group() {
     $this->handle_call('taxon_group');
   }
 
   /**
-  * Provides the /service/data/taxon_image service.
-  * Retrieves details of taxon media.
-  * @deprecated
-  */
-  public function taxon_image()
-  {
+   * Provides the /service/data/taxon_image service.
+   *
+   * Retrieves details of taxon media.
+   * @deprecated
+   */
+  public function taxon_image() {
     $this->handle_call('taxon_medium');
   }
 
   /**
-  * Provides the /service/data/taxon_medium service.
-  * Retrieves details of taxon media.
-  */
-  public function taxon_medium()
-  {
+   * Provides the /service/data/taxon_medium service.
+   *
+   * Retrieves details of taxon media.
+   */
+  public function taxon_medium() {
     $this->handle_call('taxon_medium');
   }
 
 
   /**
-  * Provides the /services/data/taxon_list service.
-  * Provides access to taxon_lists.
-  */
-  public function taxon_list()
-  {
+   * Provides the /services/data/taxon_list service.
+   *
+   * Provides access to taxon_lists.
+   */
+  public function taxon_list() {
     $this->handle_call('taxon_list');
   }
 
@@ -643,63 +676,60 @@ class Data_Controller extends Data_Service_Base_Controller {
   /**
    * Provides the /services/data/users_website service.
    */
-  public function users_website()
-  {
+  public function users_website() {
     $this->handle_call('users_website');
   }
 
-  public function user_trust()
-  {
+  public function user_trust() {
     $this->handle_call('user_trust');
   }
 
-  public function comment_quick_reply_page_auth()
-  {
+  public function comment_quick_reply_page_auth() {
     $this->handle_call('comment_quick_reply_page_auth');
   }
 
   /**
-  * Provides the /services/data/verification_rule_data service.
-  * Retrieves details of a single taxon searchterm.
-  */
-  public function verification_rule_datum()
-  {
+   * Provides the /services/data/verification_rule_data service.
+   *
+   * Retrieves details of a single taxon searchterm.
+   */
+  public function verification_rule_datum() {
     $this->handle_call('verification_rule_datum');
   }
 
   /**
-  * Provides the /services/data/website service.
-  * Retrieves details of a single website.
-  */
-  public function website()
-  {
+   * Provides the /services/data/website service.
+   *
+   * Retrieves details of a single website.
+   */
+  public function website() {
     $this->handle_call('website');
   }
 
   /**
-  * Provides the /services/data/website_agreement service.
-  * Retrieves details of a single website.
-  */
-  public function website_agreement()
-  {
+   * Provides the /services/data/website_agreement service.
+   *
+   * Retrieves details of a single website.
+   */
+  public function website_agreement() {
     $this->handle_call('website_agreement');
   }
 
   /**
-  * Provides the /services/data/websites_website_agreement service.
-  * Retrieves details of a single website.
-  */
-  public function websites_website_agreement()
-  {
+   * Provides the /services/data/websites_website_agreement service.
+   *
+   * Retrieves details of a single website.
+   */
+  public function websites_website_agreement() {
     $this->handle_call('websites_website_agreement');
   }
 
   /**
-  * Provides the /services/data/trigger service.
-  * Retrieves details of a single trigger.
-  */
-  public function trigger()
-  {
+   * Provides the /services/data/trigger service.
+   *
+   * Retrieves details of a single trigger.
+   */
+  public function trigger() {
     $this->handle_call('trigger');
   }
 
@@ -720,28 +750,37 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-   * Magic method which accepts data service calls for non-core entities that are
-   * handled by plugins. Checks to see if the any plugins expose a model which
-   * matches the requested entity and checks if the model is only read only
-   * then only read requests are accepted.
-   * Plugins can use the extend_data_services hook to declare their models to expose
-   * via data services.
+   * Catch calls to non-core entities.
+   *
+   * Magic method which accepts data service calls for non-core entities that
+   * are handled by plugins. Checks to see if the any plugins expose a model
+   * which matches the requested entity and checks if the model is only read
+   * only then only read requests are accepted.
+   * Plugins can use the extend_data_services hook to declare their models to
+   * expose via data services.
    * @link http://code.google.com/p/indicia/wiki/WarehousePluginArchitecture
-   * @param <type> $name
-   * @param <type> $arguments
+   *
+   * @param string $name
+   *   Called controller function name (entity).
    */
-  public function __call($name, $arguments) {
+  public function __call($name) {
     $extensions = $this->loadExtensions($name);
     if (array_key_exists(inflector::plural($name), $extensions)) {
       $this->handle_call($name);
-    } else {
+    }
+    else {
       echo "Unrecognised entity $name";
     }
   }
 
   /**
    * Load any warehouse modules which extend the data services entity list.
-   * @return Array list of extension definitions.
+   *
+   * @param string $entity
+   *   Entity name for this services call.
+   *
+   * @return array
+   *   List of extension definitions.
    */
   protected function loadExtensions($entity) {
     // use caching, so things don't slow down if there are lots of plugins
@@ -812,25 +851,22 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Internal method for handling a generic submission to a particular model.
-  */
-  protected function handle_submit()
-  {
+   * Internal method for handling a generic submission to a particular model.
+   */
+  protected function handle_submit() {
     $this->authenticate();
     $mode = $this->get_input_mode();
     switch ($mode) {
       case 'json':
-        $s = json_decode($_POST['submission'], true);
+        $s = json_decode($_POST['submission'], TRUE);
     }
 
-    if (array_key_exists('submission', $s))
-    {
+    if (array_key_exists('submission', $s)) {
       $id = $this->submit($s);
-      // TODO: proper handling of result checking
+      // @todo proper handling of result checking.
       $result = TRUE;
     }
-    else
-    {
+    else {
       $this->check_update_access($this->entity, $s);
       $model = ORM::factory($this->entity);
       $model->submission = $s;
@@ -839,23 +875,34 @@ class Data_Controller extends Data_Service_Base_Controller {
       $id = $model->id;
     }
     if ($result) {
-      $this->respons = json_encode(['success' => $id]);
+      $this->response = json_encode(['success' => $id]);
       $this->delete_nonce();
     }
-    else if (isset($model) && is_array($model->getAllErrors())) {
-      if ($model->uniqueKeyViolation)
+    elseif (isset($model) && is_array($model->getAllErrors())) {
+      if ($model->uniqueKeyViolation) {
         Throw new ValidationError('Duplicate key violation', 2004, $model->getAllErrors());
-      else
+      }
+      else {
         Throw new ValidationError('Error occurred on model submission', 2003, $model->getAllErrors());
-    } else
+      }
+    }
+    else {
       Throw new Exception('Unknown error on submission of the model');
+    }
 
   }
 
   /**
-   * Checks that a parameter for the taxon search contains a single parameter value or a valid JSON array.
+   * Decoding of array parameters.
+   *
+   * Checks that a parameter for the taxon search contains a single parameter
+   * value or a valid JSON array.
+   *
    * @param string $value
+   *   Value to decode.
+   *
    * @return mixed
+   *   Decoded value.
    */
   private function decodeArrayParameter($value) {
     $decoded = json_decode($value);
@@ -1006,37 +1053,39 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Builds a query to extract data from the requested entity.
-  *
-  * Also include relationships to foreign key tables and the caption fields
-  * from those tables.
-  *
-  * @param bool $count
-  *   If set to true then just returns a record count.
-  *
-  * @todo Review this code for SQL Injection attack!
-  * @todo Basic website filter done, but not clever enough.
-  */
+   * Builds a query to extract data from the requested entity.
+   *
+   * Also include relationships to foreign key tables and the caption fields
+   * from those tables.
+   *
+   * @param bool $count
+   *   If set to true then just returns a record count.
+   *
+   * @todo Review this code for SQL Injection attack!
+   * @todo Basic website filter done, but not clever enough.
+   */
   protected function build_query_results($count = FALSE) {
-    $this->foreign_keys = array();
+    $this->foreign_keys = [];
     $this->db->from($this->viewname);
-    // Select all the table columns from the view
+    // Select all the table columns from the view.
     if (!$count) {
       $fields = array_keys(postgreSQL::list_fields($this->viewname, $this->db));
-      $usedFields = array();
-      $request=array_merge($_GET, $_POST);
-      $columns = isset($request['columns']) ? explode(',',$request['columns']) : false;
-      foreach($fields as &$field) {
-        if(!$columns || in_array($field, $columns)) {
-          // geom binary data is no good to anyone. So convert to WKT.
-          if (preg_match('/^(.+_)?geom$/', $field))
+      $usedFields = [];
+      $request = array_merge($_GET, $_POST);
+      $columns = isset($request['columns']) ? explode(',', $request['columns']) : false;
+      foreach ($fields as &$field) {
+        if (!$columns || in_array($field, $columns)) {
+          // Geom binary data is no good to anyone. So convert to WKT.
+          if (preg_match('/^(.+_)?geom$/', $field)) {
             $usedFields[] = 'st_astext('.$this->viewname.".$field) as $field";
-          else
+          }
+          else {
             $usedFields[] = $this->viewname.'.'.$field;
+          }
         }
       }
       if (!empty($_REQUEST['attrs'])) {
-        $attrTables = array('survey', 'sample', 'occurrence', 'people', 'taxa_taxon_list');
+        $attrTables = ['survey', 'sample', 'occurrence', 'people', 'taxa_taxon_list'];
         if (in_array($this->entity, $attrTables)) {
           $attrs = explode(',', $_REQUEST['attrs']);
           foreach ($attrs as $attr) {
@@ -1049,10 +1098,10 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     // If not in the warehouse, then the entity must explicitly allow full access, or contain a website ID to filter on.
     if (!$this->in_warehouse && !array_key_exists ('website_id', $this->view_columns) &&
-        !array_key_exists ('from_website_id', $this->view_columns) && !in_array($this->entity, $this->allow_full_access)) {
+        !array_key_exists('from_website_id', $this->view_columns) && !in_array($this->entity, $this->allow_full_access)) {
       // If access is from remote website, then either table allows full access or exposes a website ID to filter on.
-      Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
-      throw new EntityAccessError('No access to entity '.$this->entity.' allowed through view '.$this->viewname, 1004);
+      Kohana::log('info', "$this->viewname does not have a website_id - access denied");
+      throw new EntityAccessError("No access to entity $this->entity allowed through view $this->viewname", 1004);
     }
     if (array_key_exists ('website_id', $this->view_columns)) {
       $websiteFilterField = 'website_id';
@@ -1115,23 +1164,26 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Returns the name of the view for the request. This is a view
-  * associated with the entity, but prefixed by either list, gv or max depending
-  * on the GET view parameter, or as is if the table has no views.
-  */
-  protected function get_view_name($table='', $prefix='') {
-    if (!$table)
+   * Returns the name of the view for the request. This is a view
+   * associated with the entity, but prefixed by either list, gv or max depending
+   * on the GET view parameter, or as is if the table has no views.
+   */
+  protected function get_view_name($table = '', $prefix = '') {
+    if (!$table) {
       $table = $this->entity;
+    }
     $table = inflector::plural($table);
     if (in_array($table, $this->tables_without_views)) {
       return $table;
     }
-    if (!$prefix && array_key_exists('view', $_REQUEST))
+    if (!$prefix && array_key_exists('view', $_REQUEST)) {
       $prefix = $_REQUEST['view'];
-    // Check for allowed view prefixes, and use 'list' as the default
-    if ($prefix!='gv' && $prefix!='detail' && $prefix!='cache')
-      $prefix='list';
-    return $prefix.'_'.$table;
+    }
+    // Check for allowed view prefixes, and use 'list' as the default.
+    if ($prefix !== 'gv' && $prefix !== 'detail' && $prefix !== 'cache') {
+      $prefix = 'list';
+    }
+    return $prefix . '_' . $table;
   }
 
   /**
@@ -1157,25 +1209,31 @@ class Data_Controller extends Data_Service_Base_Controller {
               $sortdir[$idx]='ASC';
           }
           break;
+
         case 'orderby':
-          if ($count) break;
-          $orderby=explode(',', strtolower($value));
-          // strip any which are not field names for safety
-          foreach ($orderby as $idx=>$field) {
-            if (!array_key_exists($field, $this->view_columns))
-              unset($orderby[$idx]);
+          if (!$count) {
+            $orderby = explode(',', strtolower($value));
+            // Strip any which are not field names for safety.
+            foreach ($orderby as $idx => $field) {
+              if (!array_key_exists($field, $this->view_columns)) {
+                unset($orderby[$idx]);
+              }
+            }
           }
           break;
+
         case 'limit':
-          if ($count) break;
-          if (is_numeric($value))
+          if (!$count && is_numeric($value)) {
             $this->db->limit($value);
+          }
           break;
+
         case 'offset':
-          if ($count) break;
-          if (is_numeric($value))
-          $this->db->offset($value);
+          if (!$count && is_numeric($value)) {
+            $this->db->offset($value);
+          }
           break;
+
         case 'qfield':
           if (array_key_exists(strtolower($value), $this->view_columns))
           {
@@ -1185,6 +1243,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         case 'q':
           $q = $value;
           break;
+
         case 'attrs':
           // Check that we're dealing with 'occurrence', 'location' or 'sample' here
           // TODO check this works - looks like it does nothing...
@@ -1193,12 +1252,15 @@ class Data_Controller extends Data_Service_Base_Controller {
             $attrs = explode(',', $value);
           }
           break;
+
         case 'query':
-          // A fix for a bug in data_entry_helper where the query passed in the getAttributes method is double urlencoded.
-          if (substr($value, 0, 3)==='%7B')
+          // A fix for a bug in data_entry_helper where the query passed in the
+          // getAttributes method is double urlencoded.
+          if (substr($value, 0, 3) === '%7B')
             $value = urldecode($value);
           $this->apply_query_def_to_db($value);
           break;
+
         case 'mode':
         case 'view':
         case 'nonce':
@@ -1208,16 +1270,18 @@ class Data_Controller extends Data_Service_Base_Controller {
         case 'columns':
         case '_':
           break;
+
       default:
         if (array_key_exists(strtolower($param), $this->view_columns)) {
           // A parameter has been supplied which specifies the field name of a filter field
           if ($value == 'NULL')
             $value = NULL;
           // Build a where for ints, bools or if there is no * in the search string.
-          if ($this->view_columns[$param]['type']=='int' || $this->view_columns[$param]['type']=='bool' ||
-              strpos($value, '*')===false) {
+          if ($this->view_columns[$param]['type'] === 'int' || $this->view_columns[$param]['type'] === 'bool' ||
+              strpos($value, '*') === FALSE) {
             $where["$this->viewname.$param"] = $value;
-          } else {
+          }
+          else {
             $like["$this->viewname.$param"] = str_replace('*', '%', $value);
           }
         } else {
@@ -1226,24 +1290,26 @@ class Data_Controller extends Data_Service_Base_Controller {
       }
     }
     if (isset($qfield) && isset($q)) {
-      if ($this->view_columns[$qfield]['type']=='int' || $this->view_columns[$qfield]['type']=='bool') {
-        $where[$qfield]=$q;
+      if ($this->view_columns[$qfield]['type'] === 'int' || $this->view_columns[$qfield]['type'] === 'bool') {
+        $where[$qfield] = $q;
       }
       else {
-        // When using qfield and q parameters, it is from an AJAX call for an autocomplete, so append a wildcard and
-        // also switch any service wildcards (*) for sql wildcards (%).
+        // When using qfield and q parameters, it is from an AJAX call for an
+        // autocomplete, so append a wildcard and also switch any service
+        // wildcards (*) for sql wildcards (%).
         $searchTerm = str_replace('*', '%', $q) . '%';
-        // special case for taxon searchterm. If the searchterm might be for an abbreviation, we need to use the
+        // Special case for taxon searchterm. If the searchterm might be for an abbreviation, we need to use the
         // unsimplified version to search to avoid problems with simplification of ae -> a breaking the abbreviation.
         if ($this->entity === 'cache_taxon_searchterm' && $qfield === 'searchterm'
             // only bother for 5 char searches that might be abbreviations
             && !empty($_GET['unsimplified']) && strlen($_GET['unsimplified']) === 5
             // and only bother if searches against abbreviations (which don't use the simplified flag) are allowed.
             && (empty($_GET['query']) || strpos(strtolower($_GET['query']), 'simplified') === FALSE
-              || strpos(strtolower($_GET['query']), 'simplified is null') !== false)
+              || strpos(strtolower($_GET['query']), 'simplified is null') !== FALSE)
         ) {
           $this->db->where("($qfield like '$searchTerm' or ($qfield='$_GET[unsimplified]' AND name_type='A'))");
-        } else {
+        }
+        else {
           $like[$qfield] = $searchTerm;
         }
       }
@@ -1251,16 +1317,17 @@ class Data_Controller extends Data_Service_Base_Controller {
     if (count($orderby)) {
       // Build a multi-field order array according to Kohana db builder spec.
       // Default missing sort directions to ASC.
-      $order=array_combine($orderby, array_pad($sortdir, count($orderby), 'ASC'));
+      $order = array_combine($orderby, array_pad($sortdir, count($orderby), 'ASC'));
       $this->db->orderby($order);
     }
     if (count($like)) {
       foreach ($like as $field => $value) {
-        $this->db->like($field, $value, false);
+        $this->db->like($field, $value, FALSE);
       }
     }
-    if (count($where))
+    if (count($where)) {
       $this->db->where($where);
+    }
     if (isset($attrs)) {
       $attrValTable = "list_{$this->entity}_attribute_values";
       foreach ($attrs as $attr) {
