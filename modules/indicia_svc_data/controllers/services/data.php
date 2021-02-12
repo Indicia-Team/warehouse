@@ -839,7 +839,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $id = $model->id;
     }
     if ($result) {
-      $this->respons = json_encode(['success' => $id]);
+      $this->response = json_encode(['success' => $id]);
       $this->delete_nonce();
     }
     else if (isset($model) && is_array($model->getAllErrors())) {
