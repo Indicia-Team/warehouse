@@ -299,7 +299,7 @@ class Import_Controller extends Service_Base_Controller {
     else {
       throw new exception('Unsupported file type');
     }
-    $reader->setReadDataOnly(true);
+    $reader->setReadDataOnly(TRUE);
     // Minimise data read from spreadsheet - first sheet only.
     $worksheetData = $reader->listWorksheetInfo($fileName);
     if (count($worksheetData) === 0) {
@@ -405,7 +405,7 @@ class Import_Controller extends Service_Base_Controller {
       $metadata = array_merge($previous, $metadata);
     }
     $this->auto_render = FALSE;
-    $mappingFile = str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
+    $mappingFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
     $mappingHandle = fopen(DOCROOT . "import/$mappingFile", "w");
     fwrite($mappingHandle, json_encode($metadata));
     fclose($mappingHandle);
@@ -418,7 +418,7 @@ class Import_Controller extends Service_Base_Controller {
   private function cacheStoredMeanings($meanings) {
     $previous = $this->retrieveCachedStoredMeanings();
     $meanings = array_merge($previous, $meanings);
-    $meaningsFile = str_replace(['.csv', '.xlsx', '.xls'], '-meanings.txt', $_GET['uploaded_csv']);
+    $meaningsFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-meanings.txt', $_GET['uploaded_csv']);
     $meaningsHandle = fopen(DOCROOT . "import/$meaningsFile", "w");
     fwrite($meaningsHandle, json_encode($meanings));
     fclose($meaningsHandle);
@@ -428,7 +428,7 @@ class Import_Controller extends Service_Base_Controller {
    * Internal function that retrieves the meanings for a CSV upload.
    */
   private function retrieveCachedStoredMeanings() {
-    $meaningsFile = DOCROOT . "import/" . str_replace(['.csv', '.xlsx', '.xls'], '-meanings.txt', $_GET['uploaded_csv']);
+    $meaningsFile = DOCROOT . "import/" . str_ireplace(['.csv', '.xlsx', '.xls'], '-meanings.txt', $_GET['uploaded_csv']);
     if (file_exists($meaningsFile)) {
       $meaningsHandle = fopen($meaningsFile, "r");
       $meanings = fgets($meaningsHandle);
@@ -963,6 +963,10 @@ class Import_Controller extends Service_Base_Controller {
       // Allow for a JSONP cross-site request.
       if (array_key_exists('callback', $_GET)) {
         $r = $_GET['callback'] . "(" . $r . ")";
+        header('Content-Type: application/javascript');
+      }
+      else {
+        header('Content-Type: application/json');
       }
       echo $r;
       $this->closeFile($file);
@@ -1044,7 +1048,7 @@ class Import_Controller extends Service_Base_Controller {
       function ($field) {
         return $field->fieldName;
       }, $fields);
-    $join = self::buildJoin($fieldPrefix,$fields,$table,$saveArray);
+    $join = self::buildJoin($fieldPrefix, $fields, $table, $saveArray);
     $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
     if ($wheres !== FALSE) {
       $db = Database::instance();
@@ -1057,10 +1061,10 @@ class Import_Controller extends Service_Base_Controller {
         $saveArray[$fieldPrefix . ':id'] = $existing[0]['id'];
         if (isset($model->attrs_field_prefix)) {
           if ($setSupermodel) {
-            $this->previousCsvSupermodel['attributeIds'][$modelName] = array();
+            $this->previousCsvSupermodel['attributeIds'][$modelName] = [];
           }
           $attributes = ORM::Factory($modelName . '_attribute_value')
-            ->where(array($modelName . '_id' => $existing[0]['id'], 'deleted' => 'f'))->find_all();
+            ->where([$modelName . '_id' => $existing[0]['id'], 'deleted' => 'f'])->find_all();
           foreach ($attributes as $attribute) {
             if ($setSupermodel) {
               $this->previousCsvSupermodel['attributeIds'][$modelName][$attribute->__get($modelName . '_attribute_id')] = $attribute->id;
@@ -1092,13 +1096,13 @@ class Import_Controller extends Service_Base_Controller {
    * Note this function might need improving/generalising for other models, although I did check occurrence/sample import which
    * did not seem to show the same issue.
    */
-  public static function buildJoin($fieldPrefix,$fields,$table,$saveArray) {
+  public static function buildJoin($fieldPrefix, $fields, $table, $saveArray) {
     $r = '';
-    if (!empty($saveArray['taxon:external_key']) && $table=='taxa_taxon_lists') {
-      $r = "join taxa t on t.id = ".$table.".taxon_id AND t.external_key='".$saveArray['taxon:external_key']."' AND t.deleted=false";
+    if (!empty($saveArray['taxon:external_key']) && $table === 'taxa_taxon_lists') {
+      $r = "join taxa t on t.id = $table.taxon_id AND t.external_key='" . $saveArray['taxon:external_key'] . "' AND t.deleted=false";
     }
-    elseif (!empty($saveArray['taxon:search_code']) && $table=='taxa_taxon_lists') {
-      $r = "join taxa t on t.id = ".$table.".taxon_id AND t.search_code='".$saveArray['taxon:search_code']."' AND t.deleted=false";
+    elseif (!empty($saveArray['taxon:search_code']) && $table === 'taxa_taxon_lists') {
+      $r = "join taxa t on t.id = $table.taxon_id AND t.search_code='" . $saveArray['taxon:search_code'] . "' AND t.deleted=false";
     }
     return $r;
   }
@@ -1114,13 +1118,13 @@ class Import_Controller extends Service_Base_Controller {
    */
   public function get_upload_result() {
     $this->authenticate('read');
-    $metadataFile = str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
-    $errorFile = str_replace(['.csv', '.xlsx', '.xls'], '-errors.csv', $_GET['uploaded_csv']);
+    $metadataFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
+    $errorFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-errors.csv', $_GET['uploaded_csv']);
     $metadata = $this->getMetadata($_GET['uploaded_csv']);
-    echo json_encode(array(
+    echo json_encode([
       'problems' => $metadata['errorCount'],
       'file' => url::base() . 'import/' . basename($errorFile),
-    ));
+    ]);
     // Clean up the uploaded file and mapping file, but only remove the error
     // file if no errors, otherwise we make it downloadable.
     if (file_exists(DOCROOT . "import/" . $_GET['uploaded_csv'])) {
@@ -1151,8 +1155,8 @@ class Import_Controller extends Service_Base_Controller {
    * which case we just set the id, rather than remove all the supermodel
    * entries.
    */
-  private function checkForSameSupermodel(&$saveArray, $model, $linkOnly = FALSE, $metadata = array()) {
-    $updatedPreviousCsvSupermodelDetails = array();
+  private function checkForSameSupermodel(&$saveArray, $model, $linkOnly = FALSE, $metadata = []) {
+    $updatedPreviousCsvSupermodelDetails = [];
     if (isset($this->submissionStruct['superModels'])) {
       // Loop through the supermodels.
       foreach ($this->submissionStruct['superModels'] as $modelName => $modelDetails) {
@@ -1408,7 +1412,7 @@ class Import_Controller extends Service_Base_Controller {
    * mappings should be in the $_POST data.
    */
   private function getMetadata($importTempFile) {
-    $metadataFile = DOCROOT . 'import' . DIRECTORY_SEPARATOR  . str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $importTempFile);
+    $metadataFile = DOCROOT . 'import' . DIRECTORY_SEPARATOR  . str_ireplace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $importTempFile);
     if (file_exists($metadataFile)) {
       $metadataHandle = fopen($metadataFile, "r");
       $fileContents = fgets($metadataHandle);
@@ -1466,7 +1470,7 @@ class Import_Controller extends Service_Base_Controller {
                                       &$existingProblemColIdx,
                                       &$existingProblemRowNoColIdx,
                                       &$existingImportGuidColIdx) {
-    $errorFile = str_replace(['.csv', '.xlsx', '.xls'], '-errors.csv', $importTempFile);
+    $errorFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-errors.csv', $importTempFile);
     $needHeaders = !file_exists($errorFile);
     $errorHandle = fopen($errorFile, 'a');
     $existingImportGuidColIdx = FALSE;
