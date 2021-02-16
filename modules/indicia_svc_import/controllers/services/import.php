@@ -405,7 +405,7 @@ class Import_Controller extends Service_Base_Controller {
       $metadata = array_merge($previous, $metadata);
     }
     $this->auto_render = FALSE;
-    $mappingFile = str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
+    $mappingFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
     $mappingHandle = fopen(DOCROOT . "import/$mappingFile", "w");
     fwrite($mappingHandle, json_encode($metadata));
     fclose($mappingHandle);
@@ -418,7 +418,7 @@ class Import_Controller extends Service_Base_Controller {
   private function cacheStoredMeanings($meanings) {
     $previous = $this->retrieveCachedStoredMeanings();
     $meanings = array_merge($previous, $meanings);
-    $meaningsFile = str_replace(['.csv', '.xlsx', '.xls'], '-meanings.txt', $_GET['uploaded_csv']);
+    $meaningsFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-meanings.txt', $_GET['uploaded_csv']);
     $meaningsHandle = fopen(DOCROOT . "import/$meaningsFile", "w");
     fwrite($meaningsHandle, json_encode($meanings));
     fclose($meaningsHandle);
@@ -428,7 +428,7 @@ class Import_Controller extends Service_Base_Controller {
    * Internal function that retrieves the meanings for a CSV upload.
    */
   private function retrieveCachedStoredMeanings() {
-    $meaningsFile = DOCROOT . "import/" . str_replace(['.csv', '.xlsx', '.xls'], '-meanings.txt', $_GET['uploaded_csv']);
+    $meaningsFile = DOCROOT . "import/" . str_ireplace(['.csv', '.xlsx', '.xls'], '-meanings.txt', $_GET['uploaded_csv']);
     if (file_exists($meaningsFile)) {
       $meaningsHandle = fopen($meaningsFile, "r");
       $meanings = fgets($meaningsHandle);
@@ -963,6 +963,10 @@ class Import_Controller extends Service_Base_Controller {
       // Allow for a JSONP cross-site request.
       if (array_key_exists('callback', $_GET)) {
         $r = $_GET['callback'] . "(" . $r . ")";
+        header('Content-Type: application/javascript');
+      }
+      else {
+        header('Content-Type: application/json');
       }
       echo $r;
       $this->closeFile($file);
@@ -1114,8 +1118,8 @@ class Import_Controller extends Service_Base_Controller {
    */
   public function get_upload_result() {
     $this->authenticate('read');
-    $metadataFile = str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
-    $errorFile = str_replace(['.csv', '.xlsx', '.xls'], '-errors.csv', $_GET['uploaded_csv']);
+    $metadataFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
+    $errorFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-errors.csv', $_GET['uploaded_csv']);
     $metadata = $this->getMetadata($_GET['uploaded_csv']);
     echo json_encode(array(
       'problems' => $metadata['errorCount'],
@@ -1408,7 +1412,7 @@ class Import_Controller extends Service_Base_Controller {
    * mappings should be in the $_POST data.
    */
   private function getMetadata($importTempFile) {
-    $metadataFile = DOCROOT . 'import' . DIRECTORY_SEPARATOR  . str_replace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $importTempFile);
+    $metadataFile = DOCROOT . 'import' . DIRECTORY_SEPARATOR  . str_ireplace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $importTempFile);
     if (file_exists($metadataFile)) {
       $metadataHandle = fopen($metadataFile, "r");
       $fileContents = fgets($metadataHandle);
@@ -1466,7 +1470,7 @@ class Import_Controller extends Service_Base_Controller {
                                       &$existingProblemColIdx,
                                       &$existingProblemRowNoColIdx,
                                       &$existingImportGuidColIdx) {
-    $errorFile = str_replace(['.csv', '.xlsx', '.xls'], '-errors.csv', $importTempFile);
+    $errorFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-errors.csv', $importTempFile);
     $needHeaders = !file_exists($errorFile);
     $errorHandle = fopen($errorFile, 'a');
     $existingImportGuidColIdx = FALSE;
