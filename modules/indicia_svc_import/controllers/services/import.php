@@ -299,7 +299,7 @@ class Import_Controller extends Service_Base_Controller {
     else {
       throw new exception('Unsupported file type');
     }
-    $reader->setReadDataOnly(true);
+    $reader->setReadDataOnly(TRUE);
     // Minimise data read from spreadsheet - first sheet only.
     $worksheetData = $reader->listWorksheetInfo($fileName);
     if (count($worksheetData) === 0) {
@@ -1048,7 +1048,7 @@ class Import_Controller extends Service_Base_Controller {
       function ($field) {
         return $field->fieldName;
       }, $fields);
-    $join = self::buildJoin($fieldPrefix,$fields,$table,$saveArray);
+    $join = self::buildJoin($fieldPrefix, $fields, $table, $saveArray);
     $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
     if ($wheres !== FALSE) {
       $db = Database::instance();
@@ -1061,10 +1061,10 @@ class Import_Controller extends Service_Base_Controller {
         $saveArray[$fieldPrefix . ':id'] = $existing[0]['id'];
         if (isset($model->attrs_field_prefix)) {
           if ($setSupermodel) {
-            $this->previousCsvSupermodel['attributeIds'][$modelName] = array();
+            $this->previousCsvSupermodel['attributeIds'][$modelName] = [];
           }
           $attributes = ORM::Factory($modelName . '_attribute_value')
-            ->where(array($modelName . '_id' => $existing[0]['id'], 'deleted' => 'f'))->find_all();
+            ->where([$modelName . '_id' => $existing[0]['id'], 'deleted' => 'f'])->find_all();
           foreach ($attributes as $attribute) {
             if ($setSupermodel) {
               $this->previousCsvSupermodel['attributeIds'][$modelName][$attribute->__get($modelName . '_attribute_id')] = $attribute->id;
@@ -1096,13 +1096,13 @@ class Import_Controller extends Service_Base_Controller {
    * Note this function might need improving/generalising for other models, although I did check occurrence/sample import which
    * did not seem to show the same issue.
    */
-  public static function buildJoin($fieldPrefix,$fields,$table,$saveArray) {
+  public static function buildJoin($fieldPrefix, $fields, $table, $saveArray) {
     $r = '';
-    if (!empty($saveArray['taxon:external_key']) && $table=='taxa_taxon_lists') {
-      $r = "join taxa t on t.id = ".$table.".taxon_id AND t.external_key='".$saveArray['taxon:external_key']."' AND t.deleted=false";
+    if (!empty($saveArray['taxon:external_key']) && $table === 'taxa_taxon_lists') {
+      $r = "join taxa t on t.id = $table.taxon_id AND t.external_key='" . $saveArray['taxon:external_key'] . "' AND t.deleted=false";
     }
-    elseif (!empty($saveArray['taxon:search_code']) && $table=='taxa_taxon_lists') {
-      $r = "join taxa t on t.id = ".$table.".taxon_id AND t.search_code='".$saveArray['taxon:search_code']."' AND t.deleted=false";
+    elseif (!empty($saveArray['taxon:search_code']) && $table === 'taxa_taxon_lists') {
+      $r = "join taxa t on t.id = $table.taxon_id AND t.search_code='" . $saveArray['taxon:search_code'] . "' AND t.deleted=false";
     }
     return $r;
   }
@@ -1121,10 +1121,10 @@ class Import_Controller extends Service_Base_Controller {
     $metadataFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
     $errorFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-errors.csv', $_GET['uploaded_csv']);
     $metadata = $this->getMetadata($_GET['uploaded_csv']);
-    echo json_encode(array(
+    echo json_encode([
       'problems' => $metadata['errorCount'],
       'file' => url::base() . 'import/' . basename($errorFile),
-    ));
+    ]);
     // Clean up the uploaded file and mapping file, but only remove the error
     // file if no errors, otherwise we make it downloadable.
     if (file_exists(DOCROOT . "import/" . $_GET['uploaded_csv'])) {
@@ -1155,8 +1155,8 @@ class Import_Controller extends Service_Base_Controller {
    * which case we just set the id, rather than remove all the supermodel
    * entries.
    */
-  private function checkForSameSupermodel(&$saveArray, $model, $linkOnly = FALSE, $metadata = array()) {
-    $updatedPreviousCsvSupermodelDetails = array();
+  private function checkForSameSupermodel(&$saveArray, $model, $linkOnly = FALSE, $metadata = []) {
+    $updatedPreviousCsvSupermodelDetails = [];
     if (isset($this->submissionStruct['superModels'])) {
       // Loop through the supermodels.
       foreach ($this->submissionStruct['superModels'] as $modelName => $modelDetails) {
