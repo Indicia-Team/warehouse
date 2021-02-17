@@ -843,7 +843,7 @@ class Rest_Controller extends Controller {
             $requestForId = $ids[0];
           }
           // When using a client system ID, we also want a project ID.
-          if (isset($this->clientSystemId)) {
+          if (isset($this->clientSystemId) && $name !== 'projects') {
             if (empty($this->request['proj_id'])) {
               // Should not have got this far - just in case.
               RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
