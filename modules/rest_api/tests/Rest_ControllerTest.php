@@ -1897,41 +1897,41 @@ SQL;
     $response = $this->callService('taxa/search');
     $this->assertEquals(400, $response['httpCode'],
           'Requesting taxa/search without search_term should be a bad request');
-    $response = $this->callService('taxa/search', array(
-      'searchQuery' => 'test'
-    ));
+    $response = $this->callService('taxa/search', [
+      'searchQuery' => 'test',
+    ]);
     $this->assertEquals(400, $response['httpCode'],
           'Requesting taxa/search without taxon_list_id should be a bad request');
-    $response = $this->callService('taxa/search', array(
+    $response = $this->callService('taxa/search', [
       'searchQuery' => 'test',
-      'taxon_list_id' => 1
-    ));
+      'taxon_list_id' => 1,
+    ]);
     $this->assertResponseOk($response, '/taxa/search');
     $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
     $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
     $data = $response['response']['data'];
     $this->assertInternalType('array', $data, 'taxa/search data invalid.');
     $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
-    $response = $this->callService('taxa/search', array(
+    $response = $this->callService('taxa/search', [
       'searchQuery' => 'test taxon 2',
-      'taxon_list_id' => 1
-    ));
+      'taxon_list_id' => 1,
+    ]);
     $this->assertResponseOk($response, '/taxa/search');
     $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
     $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
     $data = $response['response']['data'];
     $this->assertInternalType('array', $data, 'taxa/search data invalid.');
     $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
-    $response = $this->callService('taxa/search', array(
-      'taxon_list_id' => 1
-    ));
+    $response = $this->callService('taxa/search', [
+      'taxon_list_id' => 1,
+    ]);
     $this->assertResponseOk($response, '/taxa/search');
     $data = $response['response']['data'];
     $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
-    $response = $this->callService('taxa/search', array(
+    $response = $this->callService('taxa/search', [
       'taxon_list_id' => 1,
-      'min_taxon_rank_sort_order' => 300
-    ));
+      'min_taxon_rank_sort_order' => 300,
+    ]);
     $this->assertResponseOk($response, '/taxa/search');
     $data = $response['response']['data'];
     $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
