@@ -100,6 +100,14 @@
             sql="'individuals'"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/organismQuantityType" />
+    <column name="behavior"
+            sql="onf.attr_behavior"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/behavior" />
+    <column name="reproductiveCondition"
+            sql="onf.attr_reproductive_condition"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/reproductiveCondition" />
     <column name="vernacularName"
             sql="CASE cttl.language_iso
               WHEN 'lat' THEN null
