@@ -6,6 +6,7 @@
         query='SELECT id, title as caption FROM surveys' />
     <param name='userID_attr_id' display='CMS User ID Sample Attribute ID' description='Sample Attribute ID used to Identify User' datatype='int' />
     <param name='userID' display='CMS User ID' description='CMS User ID' datatype='int' />
+    <param name='userName' display='CMS User Name' description='CMS User Name' datatype='string' />
   </params>
   <table tablename="samples" where="#this#.deleted = FALSE
       and #this#.parent_id IS NULL
@@ -18,7 +19,7 @@
     <tabColumn name='date' func="''" display='Visit date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
     <tabColumn name='comment' display='Conditions comment'/>
     <subTable tablename="sample_attribute_values" tableKey="sample_id" parentKey="id"
-      where="#this#.sample_attribute_id = #userID_attr_id# AND #this#.int_value = #userID#" > 
+      where="#this#.sample_attribute_id = #userID_attr_id# AND (#this#.int_value = #userID# OR lt0.recorder_names LIKE '%#userName#%')" > 
     </subTable>
     <subTable tablename="locations" > // allow deleted Sites!
       <tabColumn name='id' visible='true' display='Site_ID' />

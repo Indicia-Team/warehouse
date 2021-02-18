@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <report title="MNHNL Amphibian Conditions Download Report" description="Lists all conditions associated with saved samples. Normally invoked from Reports tab on the form.">
   <params>
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
@@ -9,10 +8,11 @@
     <param name='target_species_attr_list' display='Target Species Attribute List : ' description='Enter a comma separated List of attribute ID used in the target species grid:' datatype='text' />
     <param name='userID_attr_id' display='CMS User ID Sample Attribute ID' description='Sample Attribute ID used to Identify User' datatype='int' />
     <param name='userID' display='CMS User ID' description='CMS User ID' datatype='int' />
+    <param name='userName' display='CMS User Name' description='CMS User Name' datatype='string' />
   </params>
   <table tablename="samples" where="#this#.deleted = FALSE
       and #this#.parent_id IS NULL
-      and #this#.survey_id = #survey_id#" >
+      and #this#.survey_id = #survey_id#">
     <tabColumn name='id' display='Survey ID' visible='true'/>
     <tabColumn name='recorder_names' display='Recorder names' />
     <tabColumn name='date_start' visible='false'/>
@@ -40,8 +40,8 @@
   LEFT JOIN samples sX ON (sX.parent_id = #this#.id and sX.deleted='f' AND EXISTS (SELECT 1 from sample_attribute_values sav2 where sav2.sample_attribute_id = #target_species_attr# and sav2.int_value= tt.meaning_id and sav2.sample_id=sX.id and sav2.deleted='f'))
   WHERE tt.termlist_id = #target_species_termlist#)::text, '[{}\x22]', '', 'g'))" display='Target species'/>
     <tabColumn name='comment' display='Conditions comment'/>
-    <subTable tablename="sample_attribute_values" tableKey="sample_id" parentKey="id"
-      where="#this#.sample_attribute_id = #userID_attr_id# AND #this#.int_value = #userID#" > 
+    <subTable tablename="sample_attribute_values" tableKey="sample_id" parentKey="id"  
+      where="#this#.sample_attribute_id = #userID_attr_id# AND (#this#.int_value = #userID# OR lt0.recorder_names LIKE '%#userName#%')"> 
     </subTable>
     <subTable tablename="locations" > // allow deleted Sites!
       <tabColumn name='id' visible='true' display='Site_ID' />

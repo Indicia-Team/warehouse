@@ -5,6 +5,7 @@
         query='SELECT id, title as caption FROM surveys' />
     <param name='userID_attr_id' display='CMS User ID Sample Attribute ID' description='Sample Attribute ID used to Identify User' datatype='int' />
     <param name='userID' display='CMS User ID' description='CMS User ID' datatype='int' />
+    <param name='userName' display='CMS User Name' description='CMS User Name' datatype='string' />
   </params>
   <table tablename="samples" where="#this#.deleted = FALSE and #this#.parent_id IS NULL and #this#.survey_id = #survey_id#" >
     <tabColumn name='id' visible='true' display='Square survey sample ID' />
@@ -13,7 +14,7 @@
     <tabColumn name='recorder_names' display='Recorder names' />
     <attributes separator='|' meaningIdLanguage='preferred'/>
     <subTable tablename="sample_attribute_values" tableKey="sample_id" parentKey="id"
-      where="#this#.sample_attribute_id = #userID_attr_id# AND #this#.int_value = #userID#" > 
+      where="#this#.sample_attribute_id = #userID_attr_id# AND (#this#.int_value = #userID# OR lt0.recorder_names LIKE '%#userName#%')" > 
     </subTable>
     <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
       <subTable tablename="locations" > // allow deleted Sites!
