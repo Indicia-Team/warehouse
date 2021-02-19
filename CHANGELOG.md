@@ -1,3 +1,15 @@
+# Version 5.0.0
+
+* Dropped support for oAuth2 password authentication as no longer recommended in the oAuth 2.0
+  Security Best Current Practice. See https://oauth.net/2/grant-types/password/.
+* JWT authentication on the REST API - dropped http://indicia.org.uk/alldata token in the payload.
+  Now, default is to return user's own data only, but this can be expanded by specifying scope
+  in the payload with a space separated list of scopes (sharing modes) - defining which website's
+  records will appear in the response. Options include: userWithinWebsite, user (all records for
+  user across all websites), reporting, verification, data_flow, editing, peer_review, moderation.
+  If a JWT token claims multiple scopes, the URL parameter scope can select the active one for a
+  request.
+
 # Version 4.11.0
 *2021-01-19*
 
@@ -7,14 +19,14 @@
 * New `es_key_prefix` option in `application/config/indicia.php` which allows a prefix to be added
   to IDs in Elasticsearch downloads (to uniquely ID the warehouse).
 * Support for Excel (*.xls or *.xlsx) files in the importer (experimental).
-* After upgrades, now more effectively clears appropriate parts of the cache so that UI and ORM 
+* After upgrades, now more effectively clears appropriate parts of the cache so that UI and ORM
   updates are immediate.
-* Performance improvement by indexing notifications table for count of user's outstanding 
+* Performance improvement by indexing notifications table for count of user's outstanding
   notifications.
 * Improvements to Elasticsearch download column templates, e.g. for better MapMate export support.
 * Option to skip overwrite of verified records in the Rest API sync module (e.g. for iNaturalist
   synchronisation), see https://github.com/BiologicalRecordsCentre/iRecord/issues/972.
-# Version 4.10.0 
+# Version 4.10.0
 *2020-12-17*
 
 * New uksi_operations module allows update logs for UKSI to be directly imported, with support for

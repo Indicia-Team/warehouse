@@ -37,9 +37,6 @@ $config['dataset_name_attr_id'] = 99;
  *
  * Default options exclude direct passing of id and password which should be
  * enabled on development servers only.
- * * oauth2User - for authenticating warehouse user accounts to access their
- *   own records via oauth, or with a filter_id to define a wider set of
- *   records.
  * * jwtUser - fora authenticating warehouse user accounts to access their
  *   own records via a JWT access token.
  * * hmacClient - authorise a client in the list below using HMAC in the http
@@ -89,12 +86,6 @@ $config['authentication_methods'] = [
       // authentication, also configure the clients which can access each index
       // in the clients config entry.
       'elasticsearch' => ['es'],
-    ],
-  ],
-  'oauth2User' => [
-    'resource_options' => [
-      // Grants full access to all reports. Client configs can override this.
-      'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
     ],
   ],
   'jwtUser' => [

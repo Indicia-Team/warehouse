@@ -34,7 +34,7 @@ if (!function_exists('apache_request_headers')) {
    * Polyfill for apache_request_headers function if not available.
    */
   function apache_request_headers() {
-    $arh = array();
+    $arh = [];
     $rx_http = '/\AHTTP_/';
     foreach ($_SERVER as $key => $val) {
       if (preg_match($rx_http, $key)) {
@@ -66,10 +66,16 @@ class RestApiAbort extends Exception {}
  */
 class RestObjects {
   public static $db;
-  public static $apiResponse;
   public static $clientWebsiteId;
   public static $clientUserId;
   public static $handlerModule;
+
+  /**
+   * RestApiResponse class instance.
+   *
+   * @var RestApiResponse
+   */
+  public static $apiResponse;
 
   /**
    * Name of the authentication method.
@@ -77,6 +83,23 @@ class RestObjects {
    * @var string
    */
   public static $authMethod;
+
+  /**
+   * The client's system ID (i.e. the caller).
+   *
+   * Set if authenticated against the list of configured clients.
+   *
+   * @var string
+   */
+  public $clientSystemId;
+
+  /**
+   * Current request's scope (sharing mode), e.g. reporting.
+   *
+   * @var string
+   */
+  public static $scope = 'reporting';
+
 }
 
 /**
@@ -116,12 +139,6 @@ class Rest_Controller extends Controller {
         'reports' => [],
       ],
     ],
-    'oauth2User' => [
-      'resource_options' => [
-        // Grants full access to all reports. Client configs can override this.
-        'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
-      ],
-    ],
     'jwtUser' => [
       'resource_options' => [
         // Grants full access to all reports. Client configs can override this.
@@ -129,13 +146,6 @@ class Rest_Controller extends Controller {
       ],
     ],
   ];
-
-  /**
-   * RestApiResponse class instance.
-   *
-   * @var RestApiResponse
-   */
-  private $apiResponse;
 
   /**
    * The request method (GET, POST etc).
@@ -164,17 +174,6 @@ class Rest_Controller extends Controller {
    * @var array
    */
   private $authConfig;
-
-  /**
-   * Allow override of default ES filters on record created_by_id
-   *
-   * When using user based auth (jwtUser or oAuth2User), configuration can
-   * included limit_to_own_data which applies an automatic user filter unless
-   * the request access token includes a claim that alldata access is allowed.
-   *
-   * @var bool
-   */
-  private $allowAllData = FALSE;
 
   /**
    * Config settings relating to the authenticated client if any.
@@ -219,15 +218,6 @@ class Rest_Controller extends Controller {
    * @var string
    */
   private $serverUserId;
-
-  /**
-   * The client's system ID (i.e. the caller).
-   *
-   * Set if authenticated against the list of configured clients.
-   *
-   * @var string
-   */
-  private $clientSystemId;
 
   /**
    * The latest API major version number. Unversioned calls will map to this.
@@ -707,59 +697,10 @@ class Rest_Controller extends Controller {
   /**
    * Implement the oAuth2 token endpoint for password grant flow.
    *
-   * @todo Also implement the client_credentials grant type for website level
-   *   access and client system level access.
+   * No longer implemented due to being not-recommended best practice.
    */
   public function token() {
-    try {
-      if (empty($_POST['grant_type']) || empty($_POST['username']) ||
-        empty($_POST['password']) || empty($_POST['client_id'])
-      ) {
-        RestObjects::$apiResponse->fail('Bad request', 400, 'Missing required parameters');
-      }
-      if ($_POST['grant_type'] !== 'password') {
-        RestObjects::$apiResponse->fail('Not implemented', 501, 'Grant type not implemented: ' . $_POST['grant_type']);
-      }
-      $matchField = strpos($_POST['username'], '@') === FALSE ? 'u.username' : 'email_address';
-      $websiteId = preg_replace('/^website_id:/', '', $_POST['client_id']);
-      // @todo Test for is the user a member of this website?
-      $users = RestObjects::$db->select('u.id, u.password, u.core_role_id, uw.site_role_id')
-        ->from('users as u')
-        ->join('people as p', 'p.id', 'u.person_id')
-        ->join('users_websites as uw', 'uw.user_id', 'u.id', 'LEFT')
-        ->where([
-          $matchField => $_POST['username'],
-          'u.deleted' => 'f',
-          'p.deleted' => 'f',
-        ])
-        ->get()->result_array(FALSE);
-      if (count($users) !== 1) {
-        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
-      }
-      if ($users[0]['site_role_id'] === NULL && $users[0]['core_role_id'] === NULL) {
-        RestObjects::$apiResponse->fail('Unauthorized', 401, 'User does not have access to website.');
-      }
-      $auth = new Auth();
-      if (!$auth->checkPasswordAgainstHash($_POST['password'], $users[0]['password'])) {
-        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
-      }
-      if (substr($_POST['client_id'], 0, 11) !== 'website_id:') {
-        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Invalid client_id format. ' . var_export($_POST, TRUE));
-      }
-      $accessToken = $this->getToken();
-      $cache = new Cache();
-      $uid = $users[0]['id'];
-      $data = "USER_ID:$uid:WEBSITE_ID:$websiteId";
-      $cache->set($accessToken, $data, 'oAuthUserAccessToken', Kohana::config('indicia.nonce_life'));
-      RestObjects::$apiResponse->succeed([
-        'access_token' => $accessToken,
-        'token_type' => 'bearer',
-        'expires_in' => Kohana::config('indicia.nonce_life'),
-      ]);
-    }
-    catch (RestApiAbort $e) {
-      // No action if a proper abort.
-    }
+    RestObjects::$apiResponse->fail('Not Implemented', 501, 'oAuth 2.0 Password authentication not supported');
   }
 
   /**
@@ -843,7 +784,7 @@ class Rest_Controller extends Controller {
             $requestForId = $ids[0];
           }
           // When using a client system ID, we also want a project ID in most cases.
-          if (isset($this->clientSystemId) && !in_array($name, ['projects', 'taxa'])) {
+          if (isset(RestObjects::$clientSystemId) && !in_array($name, ['projects', 'taxa'])) {
             if (empty($this->request['proj_id'])) {
               // Should not have got this far - just in case.
               RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
@@ -1953,7 +1894,7 @@ class Rest_Controller extends Controller {
     $filter = [];
     // @todo Apply permissions for user or website & write tests
     // load the filter associated with the project ID
-    if (isset($this->clientSystemId)) {
+    if (isset(RestObjects::$clientSystemId)) {
       $filter = $this->loadFilterForProject($this->request['proj_id']);
     }
     elseif (isset(RestObjects::$clientUserId)) {
@@ -1965,19 +1906,19 @@ class Rest_Controller extends Controller {
       }
       elseif (!empty($this->resourceOptions['limit_to_own_data'])) {
         // Default filter - the user's records for this website only.
-        $filter = array(
+        $filter = [
           'website_list' => RestObjects::$clientWebsiteId,
           'created_by_id' => RestObjects::$clientUserId,
-        );
+        ];
       }
     }
     else {
       if (!isset(RestObjects::$clientWebsiteId)) {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'Minimal filter on website ID not provided.');
       }
-      $filter = array(
+      $filter = [
         'website_list' => RestObjects::$clientWebsiteId,
-      );
+      ];
     }
     // The project's filter acts as a context for the report, meaning it
     // defines the limit of all the records that are available for this project.
@@ -1985,13 +1926,14 @@ class Rest_Controller extends Controller {
       $params["{$key}_context"] = $value;
     }
     $params['system_user_id'] = $this->serverUserId;
-    if (isset($this->clientSystemId)) {
-      // For client systems, the project defines how records are allowed to be
-      // shared with this client.
-      $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
-    }
+
+
+    // @todo Implement user and userWithinWebsite scopes.
+
+
+    $params['sharing'] = RestObjects::$scope;
     $params = array_merge(
-      array('limit' => REST_API_DEFAULT_PAGE_SIZE),
+      ['limit' => REST_API_DEFAULT_PAGE_SIZE],
       $params
     );
     // Get the output, setting the option to load a pg result object rather
@@ -2197,6 +2139,11 @@ class Rest_Controller extends Controller {
         call_user_func(array($this, "authenticateUsing$method"));
         if ($this->authenticated) {
           RestObjects::$authMethod = $method;
+          if (!empty(RestObjects::$clientUserId)) {
+            // Pass through to ORM.
+            global $remoteUserId;
+            $remoteUserId = RestObjects::$clientUserId;
+          }
           // Double checking required for Elasticsearch proxy.
           if ($this->elasticProxy) {
             if (empty($cfg['resource_options']['elasticsearch'])) {
@@ -2253,52 +2200,17 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Retrieves the Bearer access token from the Authoriztion header.
-   *
-   * @param bool $wantJwt
-   *   Set to TRUE to retrieve JWT format or FALSE for oAuth.
+   * Retrieves the Bearer access token from the Authorization header.
    *
    * @return string
    *   Auth token or empty string.
    */
-  private function getBearerAuthToken($wantJwt = FALSE) {
+  private function getBearerAuthToken() {
     $authHeader = $this->getAuthHeader();
     if (stripos($authHeader, 'Bearer ') === 0) {
-      $token = substr($authHeader, 7);
-      $isJwt = substr_count($token, '.') === 2;
-      if ($isJwt === $wantJwt) {
-        return $token;
-      }
+      return substr($authHeader, 7);
     }
     return '';
-  }
-
-  /**
-   * Attempts to authenticate using the oAuth2 protocal.
-   */
-  private function authenticateUsingOauth2User() {
-    $suppliedToken = $this->getBearerAuthToken();
-    if ($suppliedToken) {
-      $this->cache = new Cache();
-      // Get all cache entries that match this nonce.
-      $paths = $this->cache->exists($suppliedToken);
-      foreach ($paths as $path) {
-        // Find the parts of each file name, which is the cache entry ID, then
-        // the mode.
-        $tokens = explode('~', basename($path));
-        if ($tokens[1] === 'oAuthUserAccessToken') {
-          $data = $this->cache->get($tokens[0]);
-          if (preg_match('/^USER_ID:(?P<user_id>\d+):WEBSITE_ID:(?P<website_id>\d+)$/', $data, $matches)) {
-            RestObjects::$clientWebsiteId = $matches['website_id'];
-            RestObjects::$clientUserId = $matches['user_id'];
-            // Pass through to ORM.
-            global $remoteUserId;
-            $remoteUserId = RestObjects::$clientUserId;
-            $this->authenticated = TRUE;
-          }
-        }
-      }
-    }
   }
 
   /**
@@ -2362,6 +2274,8 @@ class Rest_Controller extends Controller {
 
   /**
    * Attempts to authenticate as a user using a JWT access token.
+   *
+   * @todo Allow claims for full precision data.
    */
   private function authenticateUsingJwtUser() {
     require_once 'vendor/autoload.php';
@@ -2376,12 +2290,8 @@ class Rest_Controller extends Controller {
       if (!$payloadValues) {
         RestObjects::$apiResponse->fail('Bad request', 400);
       }
-      if (empty($payloadValues['iss']) || empty($payloadValues['http://indicia.org.uk/user:id'])) {
+      if (empty($payloadValues['iss'])) {
         RestObjects::$apiResponse->fail('Bad request', 400);
-      }
-      // Check for claim that stops ES filtering to just user's own records.
-      if (!empty($payloadValues['http://indicia.org.uk/alldata'])) {
-        $this->allowAllData = TRUE;
       }
       $website = $this->getWebsiteByUrl($payloadValues['iss']);
       if (!$website || empty($website->public_key)) {
@@ -2413,14 +2323,29 @@ class Rest_Controller extends Controller {
         kohana::log('debug', 'Payload email unverified');
         RestObjects::$apiResponse->fail('Unauthorized', 401);
       }
-      if (!isset($payloadValues['http://indicia.org.uk/user:id'])) {
-        RestObjects::$apiResponse->fail('Bad request', 400);
+      if (isset($payloadValues['http://indicia.org.uk/user:id'])) {
+        $this->checkWebsiteUser($website->id, $payloadValues['http://indicia.org.uk/user:id']);
+        RestObjects::$clientUserId = $payloadValues['http://indicia.org.uk/user:id'];
+        // If authenticated as a user, change default scope.
+        RestObjects::$scope = 'userWithinWebsite';
       }
-      $this->checkWebsiteUser($website->id, $payloadValues['http://indicia.org.uk/user:id']);
       RestObjects::$clientWebsiteId = $website->id;
-      RestObjects::$clientUserId = $payloadValues['http://indicia.org.uk/user:id'];
-      global $remoteUserId;
-      $remoteUserId = RestObjects::$clientUserId;
+      // Allow URL parameter to override default reporting scope as long as
+      // this scope has been claimed by the token.
+      if (!empty($payloadValues['scope'])) {
+        $allowedScopes = $payloadValues['scope'];
+        if (!empty($_GET['scope'])) {
+          if (!in_array($_GET['scope'], $allowedScopes)) {
+            RestObjects::$apiResponse->fail('Forbidden', 403, 'Attempt to access disallowed scope');
+          }
+          RestObjects::$scope = $_GET['scope'];
+        }
+        else {
+          // The first specified scope in the token is default if not specified
+          // in query parameters.
+          RestObjects::$scope = $allowedScopes[0];
+        }
+      }
       $this->authenticated = TRUE;
     }
   }
@@ -2438,12 +2363,15 @@ class Rest_Controller extends Controller {
         $request_url = "$protocol://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
         $correct_hmac = hash_hmac("sha1", $request_url, $config[$clientSystemId]['shared_secret'], $raw_output = FALSE);
         if ($supplied_hmac === $correct_hmac) {
-          $this->clientSystemId = $clientSystemId;
+          RestObjects::$clientSystemId = $clientSystemId;
           $this->projects = $config[$clientSystemId]['projects'];
           $this->clientConfig = $config[$clientSystemId];
           unset($this->clientConfig['shared_secret']);
           if (!empty($_REQUEST['proj_id'])) {
             RestObjects::$clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
+            // For client systems, the project defines how records are allowed to be
+            // shared with this client.
+            RestObjects::$scope = $this->projects[$_REQUEST['proj_id']]['sharing'];
           }
           // Apart from the projects resource, other end-points will need a
           // proj_id if using client system based authorisation.
@@ -2471,7 +2399,7 @@ class Rest_Controller extends Controller {
         }
         $websites = RestObjects::$db->select('password')
           ->from('websites')
-          ->where(array('id' => $websiteId))
+          ->where(['id' => $websiteId])
           ->get()->result_array();
         if (count($websites) === 1) {
           $protocol = $this->isHttps ? 'https' : 'http';
@@ -2479,6 +2407,14 @@ class Rest_Controller extends Controller {
           $correct_hmac = hash_hmac("sha1", $request_url, $websites[0]->password, $raw_output = FALSE);
           if ($supplied_hmac === $correct_hmac) {
             RestObjects::$clientWebsiteId = $websiteId;
+            // Scope mode and user_id allowed as URL parameters, as if
+            // intercepted and changed the HMAC breaks.
+            if (!empty($_GET['scope'])) {
+              RestObjects::$scope = $_GET['scope'];
+            }
+            if (!empty($_GET['user_id'])) {
+              RestObjects::$clientUserId = $_GET['user_id'];
+            }
             $this->authenticated = TRUE;
           }
           else {
@@ -2497,19 +2433,24 @@ class Rest_Controller extends Controller {
    */
   private function authenticateUsingDirectUser() {
     $authHeader = $this->getAuthHeader();
-    if (substr_count($authHeader, ':') === 5) {
-      // 6 parts to authorisation required for user ID, website ID and password
-      // pairs.
-      list($u, $userId, $w, $websiteId, $h, $password) = explode(':', $authHeader);
-      if ($u !== 'USER_ID' || $w !== 'WEBSITE_ID' || $h !== 'SECRET') {
+    // 6 or 8 colon separated tokens possible in auth header.
+    $tokens = explode(':', $authHeader);
+    if (in_array(count($tokens), [6, 8])) {
+      if ($tokens[0] !== 'USER_ID' || $tokens[2] !== 'WEBSITE_ID' || $tokens[4] !== 'SECRET' || (count($tokens) === 8 && $tokens[4] !== 'SCOPE')) {
+        // Not a valid header for this auth method.
         return;
       }
+      $userId = $tokens[1];
+      $websiteId = $tokens[3];
+      $password = $tokens[5];
+      $scope = count($tokens) === 8 ? $tokens[7] : NULL;
     }
     elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
-          !empty($_GET['user_id']) && !empty($_GET['secret'])) {
+          !empty($_GET['user_id']) && !empty($_GET['website_id']) && !empty($_GET['secret'])) {
       $userId = $_GET['user_id'];
       $websiteId = $_GET['website_id'];
       $password = $_GET['secret'];
+      $scope = !empty($_GET['scope']) ? $_GET['scope'] : NULL;
     }
     else {
       return;
@@ -2520,7 +2461,8 @@ class Rest_Controller extends Controller {
     }
     $users = RestObjects::$db->select('password')
       ->from('users')
-      ->where(array('id' => $userId))
+      ->join('users_websites', 'users_websites.user_id', 'users.id')
+      ->where(['users.id' => $userId, 'users_websites.website_id' => $websiteId])
       ->get()->result_array(FALSE);
     if (count($users) !== 1) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
@@ -2529,16 +2471,12 @@ class Rest_Controller extends Controller {
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
       RestObjects::$clientWebsiteId = $websiteId;
       RestObjects::$clientUserId = $userId;
-      // Pass through to ORM.
-      global $remoteUserId;
-      $remoteUserId = $userId;
-      // @todo Is this user a member of the website?
+      RestObjects::$scope = $scope === NULL ? 'userWithinWebsite' : $scope;
       $this->authenticated = TRUE;
     }
     else {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect password for user.');
     }
-    // @todo Apply user ID limit to data, limit to filterable reports
   }
 
   /**
@@ -2567,7 +2505,7 @@ class Rest_Controller extends Controller {
     if ($secret !== $config[$clientSystemId]['shared_secret']) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
-    $this->clientSystemId = $clientSystemId;
+    RestObjects::$clientSystemId = $clientSystemId;
     $this->projects = isset($config[$clientSystemId]['projects']) ? $config[$clientSystemId]['projects'] : [];
     $this->clientConfig = $config[$clientSystemId];
     unset($this->clientConfig['shared_secret']);
@@ -2586,6 +2524,9 @@ class Rest_Controller extends Controller {
           isset($projectConfig['resource_options'][$this->resourceName])) {
         $this->resourceOptions = $projectConfig['resource_options'][$this->resourceName];
       }
+      // For client systems, the project defines how records are allowed to be
+      // shared with this client.
+      RestObjects::$scope = $projectConfig['sharing'];
     }
     $this->authenticated = TRUE;
   }
@@ -2595,22 +2536,30 @@ class Rest_Controller extends Controller {
    */
   private function authenticateUsingDirectWebsite() {
     $authHeader = $this->getAuthHeader();
-    if (substr_count($authHeader, ':') === 3) {
-      list($u, $websiteId, $h, $password) = explode(':', $authHeader);
-      if ($u !== 'WEBSITE_ID' || $h !== 'SECRET') {
+    // 4, 6 or 8 colon separated tokens possible in auth header.
+    $tokens = explode(':', $authHeader);
+    if (in_array(count($tokens), [4, 6, 8])) {
+      if ($tokens[0] !== 'WEBSITE_ID' || $tokens[2] !== 'SECRET' || (count($tokens) >= 6 && $tokens[4] !== 'SCOPE') || (count($tokens) === 8 && $tokens[6] !== 'USER_ID')) {
+        // Not a valid header for this auth method.
         return;
       }
+      $websiteId = $tokens[1];
+      $password = $tokens[3];
+      $scope = count($tokens) >= 6 ? $tokens[5] : NULL;
+      $userId = count($tokens) === 8 ? $tokens[7] : NULL;
     }
     elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
-        !empty($_GET['website_id']) && !empty($_GET['secret'])) {
+          !empty($_GET['user_id']) && !empty($_GET['secret'])) {
       $websiteId = $_GET['website_id'];
       $password = $_GET['secret'];
+      $scope = !empty($_GET['scope']) ? $_GET['scope'] : NULL;
+      $userId = !empty($_GET['user_id']) ? $_GET['user_id'] : NULL;
     }
     else {
       return;
     }
     // Input validation.
-    if (!preg_match('/^\d+$/', $websiteId)) {
+    if (($userId !== NULL && !preg_match('/^\d+$/', $userId)) || !preg_match('/^\d+$/', $websiteId)) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
     }
     $password = pg_escape_string($password);
@@ -2618,12 +2567,18 @@ class Rest_Controller extends Controller {
       ->from('websites')
       ->where(['id' => $websiteId, 'password' => $password])
       ->get()->result_array();
-    if (count($websites) !== 1) {
+    if (count($websites) === 1) {
+      RestObjects::$clientWebsiteId = $websiteId;
+      if ($userId !== NULL) {
+        // @todo Is this user a member of the website?
+        RestObjects::$clientUserId = $userId;
+      }
+      RestObjects::$scope = $scope === NULL ? 'reporting' : $scope;
+      $this->authenticated = TRUE;
+    }
+    else {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised website ID or password.');
     }
-    RestObjects::$clientWebsiteId = $websiteId;
-    $this->authenticated = TRUE;
-    // @todo Apply website ID limit to data
   }
 
   /**
@@ -2656,16 +2611,6 @@ class Rest_Controller extends Controller {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
       RestObjects::$apiResponse->fail('Bad request', 400, "Parameter $param is not an valid date");
     }
-  }
-
-  /**
-   * Generates a unique token, e.g. for oAuth2.
-   *
-   * @return string
-   *   Token.
-   */
-  private function getToken() {
-    return sha1(time() . ':' . rand() . $_SERVER['REMOTE_ADDR'] . ':' . kohana::config('indicia.private_key'));
   }
 
   /**

@@ -233,19 +233,39 @@ class RestApiElasticsearch {
    * If the authentication method configuration (e.g. jwtUser) includes the
    * option limit_to_website in the settings for the Elasticsearch endpoint,
    * then automatically adds a terms filter on metadata.website.id. Also,
-   * if the settings include limit_to_own_data for the endpoint, then adds a
-   * terms filter on metadata.created_by_id. This can be overridden by
-   * including the claim http://indicia.org.uk/alldata in the JWT access token.
+   * if the settings include limit_to_own_data for the endpoint or the sharing
+   * mode is "me", then adds a terms filter on metadata.created_by_id.
    */
   private function applyEsPermissionsQuery(&$postObj) {
     $filters = [];
-    if (!empty($this->esConfig['limit_to_own_data']) && !$this->allowAllData && RestObjects::$clientUserId) {
-      $filters[] = ['term' => ['metadata.created_by_id' => RestObjects::$clientUserId]];
+    // Apply limit to current user if appropriate.
+    if (!empty($this->esConfig['limit_to_own_data']) || RestObjects::$scope === 'user'  || RestObjects::$scope === 'userWithinWebsite') {
+      if (empty(RestObjects::$clientUserId)) {
+        RestObjects::$apiResponse->fail('Internal server error', 500, 'No user_id available for my records report.');
+      }
+      $filters[] = [
+        'term' => ['metadata.created_by_id' => RestObjects::$clientUserId],
+      ];
     }
-    if ((!empty($this->esConfig['limit_to_website']) || RestObjects::$authMethod === 'DirectWebsite') && RestObjects::$clientWebsiteId) {
-      // @todo Support for other sharing modes in JWT claims.
-      $sharing = isset($_GET['sharing']) ? $_GET['sharing'] : 'R';
-      $filters[] = ['terms' => ['metadata.website.id' => $this->getSharedWebsiteList(RestObjects::$clientWebsiteId, $sharing)]];
+
+    // Apply limit to current website if appropriate.
+    if (RestObjects::$scope === 'userWithinWebsite' || !empty($this->esConfig['limit_to_website'])) {
+      if (!RestObjects::$clientWebsiteId) {
+        RestObjects::$apiResponse->fail('Internal server error', 500, 'No website_id available for website limited report.');
+      }
+      $filters[] = [
+        'term' => ['metadata.website.id', RestObjects::$clientWebsiteId],
+      ];
+    }
+    // Apply limit to websites identified by scope if appropriate.
+    if (substr(RestObjects::$authMethod, -6, 6) !== 'Client' && RestObjects::$scope !== 'user') {
+      if (!RestObjects::$clientWebsiteId) {
+        RestObjects::$apiResponse->fail('Internal server error', 500, 'No user_id available for website limited report.');
+      }
+      $filters[] = ['terms' => ['metadata.website.id' => $this->getSharedWebsiteList(RestObjects::$clientWebsiteId, RestObjects::$scope)]];
+      // Only verification gets full precision.
+      $blur = RestObjects::$scope === 'verification' ? 'F' : 'B';
+      $filters[] = ['query_string' => ['query' => "metadata.confidential:false AND metadata.release_status:R AND ((metadata.sensitivity_blur:$blur) OR (!metadata.sensitivity_blur:*))"]];
     }
     if (count($filters) > 0) {
       if (!isset($postObj->query)) {
@@ -1511,6 +1531,7 @@ class RestApiElasticsearch {
         unset($params['uniq_id']);
         unset($params['proj_id']);
         unset($params['sharing']);
+        unset($params['user_id']);
         unset($params['_']);
         if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'initial') {
           $params['scroll'] = SCROLL_TIMEOUT;
@@ -1751,15 +1772,15 @@ class RestApiElasticsearch {
    *
    * @param int $websiteId
    *   ID of the website that is receiving the shared data.
-   * @param string $sharing
+   * @param string $scope
    *   Sharing mode.
    *
    * @return array
    *   List of website IDs that will share their data.
    */
-  private function getSharedWebsiteList($websiteId, $sharing = 'reporting') {
+  private function getSharedWebsiteList($websiteId, $scope = 'reporting') {
     $tag = "website-shares-$websiteId";
-    $cacheId = "$tag-$sharing";
+    $cacheId = "$tag-$scope";
     $cache = Cache::instance();
     if ($cached = $cache->get($cacheId)) {
       return explode(',', $cached);
@@ -1767,7 +1788,7 @@ class RestApiElasticsearch {
     $qry = RestObjects::$db->select('to_website_id')
       ->from('index_websites_website_agreements')
       ->where([
-        "receive_for_$sharing" => 't',
+        "receive_for_$scope" => 't',
         'from_website_id' => $websiteId,
       ])
       ->get()->result();
