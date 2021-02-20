@@ -2053,7 +2053,7 @@ SQL;
     $this->assertEquals('Unauthorized', $response['response']['status'],
         "Incorrect userId passed to /$resource but data still returned. " . var_export($response, true));
 
-    // now test with everything correct
+    // Now test with everything correct.
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;
     self::$userId = $correctUserId;
@@ -2067,8 +2067,11 @@ SQL;
   /**
    * An assertion that the response object returned by a call to getCurlResponse
    * indicates a successful request.
-   * @param array $response Response data returned by getCurlReponse().
-   * @param string $apiCall Name of the API method being called, e.g. /projects
+   *
+   * @param array $response
+   *   Response data returned by getCurlReponse().
+   * @param string $apiCall
+   *   Name of the API method being called, e.g. /projects
    */
   private function assertResponseOk($response, $apiCall) {
     $this->assertEquals(200, $response['httpCode'],
@@ -2086,7 +2089,8 @@ SQL;
   private function checkValidTaxonObservation($data) {
     $this->assertInternalType('array', $data, 'Taxon-observation object invalid. ' . var_export($data, true));
     $mustHave = array('id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
-        'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate');
+        'startDate', 'endDat
+        e', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate');
     foreach ($mustHave as $key) {
       $this->assertArrayHasKey($key, $data,
           "Missing $key from taxon-observation resource. " . var_export($data, true));

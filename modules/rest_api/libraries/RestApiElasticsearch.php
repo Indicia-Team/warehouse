@@ -258,9 +258,9 @@ class RestApiElasticsearch {
       ];
     }
     // Apply limit to websites identified by scope if appropriate.
-    if (substr(RestObjects::$authMethod, -6, 6) !== 'Client' && RestObjects::$scope !== 'user') {
+    if (substr(RestObjects::$authMethod, -6, 6) !== 'Client' && substr(RestObjects::$scope, 0, 4) !== 'user') {
       if (!RestObjects::$clientWebsiteId) {
-        RestObjects::$apiResponse->fail('Internal server error', 500, 'No user_id available for website limited report.');
+        RestObjects::$apiResponse->fail('Internal server error', 500, 'No website_id available for website limited report.');
       }
       $filters[] = ['terms' => ['metadata.website.id' => $this->getSharedWebsiteList(RestObjects::$clientWebsiteId, RestObjects::$scope)]];
       // Only verification gets full precision.

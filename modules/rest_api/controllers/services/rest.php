@@ -1904,10 +1904,16 @@ class Rest_Controller extends Controller {
       if (!empty($_GET['filter_id'])) {
         $filter = $this->getPermissionsFilterDefinition();
       }
-      elseif (!empty($this->resourceOptions['limit_to_own_data'])) {
+      elseif (!empty($this->resourceOptions['limit_to_own_data']) || RestObjects::$scope === 'userWithinWebsite') {
         // Default filter - the user's records for this website only.
         $filter = [
           'website_list' => RestObjects::$clientWebsiteId,
+          'created_by_id' => RestObjects::$clientUserId,
+        ];
+      }
+      elseif (RestObjects::$scope === 'user') {
+        // Default filter - the user's records for this website only.
+        $filter = [
           'created_by_id' => RestObjects::$clientUserId,
         ];
       }
@@ -1926,12 +1932,10 @@ class Rest_Controller extends Controller {
       $params["{$key}_context"] = $value;
     }
     $params['system_user_id'] = $this->serverUserId;
-
-
-    // @todo Implement user and userWithinWebsite scopes.
-
-
-    $params['sharing'] = RestObjects::$scope;
+    if (substr(RestObjects::$scope, 0, 4) !== 'user') {
+      // User based scope handled above - others map to sharing mode.
+      $params['sharing'] = RestObjects::$scope;
+    }
     $params = array_merge(
       ['limit' => REST_API_DEFAULT_PAGE_SIZE],
       $params
@@ -2136,7 +2140,9 @@ class Rest_Controller extends Controller {
       if ($this->isHttps || array_key_exists('allow_http', $cfg) || in_array('allow_http', $cfg)) {
         $method = ucfirst($method);
         // Try this authentication method.
-        call_user_func(array($this, "authenticateUsing$method"));
+        if (method_exists($this, "authenticateUsing$method")) {
+          call_user_func(array($this, "authenticateUsing$method"));
+        }
         if ($this->authenticated) {
           RestObjects::$authMethod = $method;
           if (!empty(RestObjects::$clientUserId)) {
