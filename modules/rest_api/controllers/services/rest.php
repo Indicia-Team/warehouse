@@ -2286,7 +2286,7 @@ class Rest_Controller extends Controller {
   private function authenticateUsingJwtUser() {
     require_once 'vendor/autoload.php';
     $suppliedToken = $this->getBearerAuthToken(TRUE);
-    if ($suppliedToken) {
+    if ($suppliedToken && substr_count($suppliedToken, '.') === 2) {
       list($jwtHeader, $jwtPayload, $jwtSignature) = explode('.', $suppliedToken);
       $payload = $this->base64urlDecode($jwtPayload);
       if (!$payload) {
