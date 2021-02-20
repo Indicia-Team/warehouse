@@ -91,7 +91,7 @@ class RestObjects {
    *
    * @var string
    */
-  public $clientSystemId;
+  public static $clientSystemId;
 
   /**
    * Current request's scope (sharing mode), e.g. reporting.
