@@ -2089,8 +2089,7 @@ SQL;
   private function checkValidTaxonObservation($data) {
     $this->assertInternalType('array', $data, 'Taxon-observation object invalid. ' . var_export($data, true));
     $mustHave = array('id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
-        'startDate', 'endDat
-        e', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate');
+        'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate');
     foreach ($mustHave as $key) {
       $this->assertArrayHasKey($key, $data,
           "Missing $key from taxon-observation resource. " . var_export($data, true));
