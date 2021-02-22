@@ -101,7 +101,7 @@
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/organismQuantityType" />
     <column name="behavior"
-            sql="onf.attr_behavior"
+            sql="onf.attr_behaviour"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/behavior" />
     <column name="reproductiveCondition"
