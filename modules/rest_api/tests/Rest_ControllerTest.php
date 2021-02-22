@@ -79,7 +79,6 @@ KEY;
 
   // Access tokens.
   private static $jwt;
-  private static $oAuthAccessToken;
 
   public function getDataSet() {
     $ds1 = new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
@@ -172,57 +171,6 @@ KEY;
 
   protected function tearDown() {
 
-  }
-
-  public function testoAuth2() {
-    $url = url::base(true) . "services/rest/token";
-    $session = curl_init();
-    // Set the cUrl options.
-    curl_setopt ($session, CURLOPT_URL, $url);
-    curl_setopt($session, CURLOPT_HEADER, TRUE);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
-
-    // try a request with no post data
-    $r = $this->getCurlResponse($session);
-    $this->assertEquals(400, $r['httpCode'], 'Token request without parameters should be a bad request');
-
-    // Now try some post data, but use an invalid password
-    curl_setopt($session, CURLOPT_POST, 1);
-    $post = 'grant_type=password&username=admin&password=sunnyday&client_id=website_id:1';
-    curl_setopt($session, CURLOPT_POSTFIELDS, $post);
-    $r = $this->getCurlResponse($session);
-    $this->assertEquals(401, $r['httpCode'], 'Incorrect password in token request should result in Unauthorised');
-
-    // Try again with the correct password
-    curl_setopt($session, CURLOPT_POST, 1);
-    $post = 'grant_type=password&username=admin&password=password&client_id=website_id:1';
-    curl_setopt($session, CURLOPT_POSTFIELDS, $post);
-    $r = $this->getCurlResponse($session);
-    $this->assertEquals(200, $r['httpCode'], 'Valid request to /token failed.');
-    self::$oAuthAccessToken = $r['response']['access_token'];
-    $this->assertNotEmpty(self::$oAuthAccessToken, 'No oAuth access token returned');
-
-    // Check oAuth2 doesn't allow access to incorrect resources
-    $this->authMethod = 'oAuth2User';
-    $response = $this->callService('projects');
-    $this->assertEquals(401, $response['httpCode'], 'Invalid authentication method oAuth2 for projects  ' .
-        "but response still OK. Http response $response[httpCode].");
-
-    // Now try a valid request with the access token
-    $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01', 'proj_id' => 'BRC1'));
-    $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to taxon-observations failed.');
-
-    // Now try a valid request with the access token for the reports endpoint
-    $response = $this->callService('reports', array());
-    $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to reports failed.');
-
-    $response = $this->callService('reports/library/occurrences/filterable_explore_list.xml', array());
-    $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to the filterable_explore_list report failed.');
-
-    // Now try a bad access token
-    self::$oAuthAccessToken = '---';
-    $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01'));
-    $this->assertEquals(401, $response['httpCode'], 'Invalid token oAuth2 request to taxon-observations should fail.');
   }
 
   private function getJwt($privateKey, $iss, $userId, $exp) {
@@ -1897,41 +1845,41 @@ SQL;
     $response = $this->callService('taxa/search');
     $this->assertEquals(400, $response['httpCode'],
           'Requesting taxa/search without search_term should be a bad request');
-    $response = $this->callService('taxa/search', array(
-      'searchQuery' => 'test'
-    ));
+    $response = $this->callService('taxa/search', [
+      'searchQuery' => 'test',
+    ]);
     $this->assertEquals(400, $response['httpCode'],
           'Requesting taxa/search without taxon_list_id should be a bad request');
-    $response = $this->callService('taxa/search', array(
+    $response = $this->callService('taxa/search', [
       'searchQuery' => 'test',
-      'taxon_list_id' => 1
-    ));
+      'taxon_list_id' => 1,
+    ]);
     $this->assertResponseOk($response, '/taxa/search');
     $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
     $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
     $data = $response['response']['data'];
     $this->assertInternalType('array', $data, 'taxa/search data invalid.');
     $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
-    $response = $this->callService('taxa/search', array(
+    $response = $this->callService('taxa/search', [
       'searchQuery' => 'test taxon 2',
-      'taxon_list_id' => 1
-    ));
+      'taxon_list_id' => 1,
+    ]);
     $this->assertResponseOk($response, '/taxa/search');
     $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
     $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
     $data = $response['response']['data'];
     $this->assertInternalType('array', $data, 'taxa/search data invalid.');
     $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
-    $response = $this->callService('taxa/search', array(
-      'taxon_list_id' => 1
-    ));
+    $response = $this->callService('taxa/search', [
+      'taxon_list_id' => 1,
+    ]);
     $this->assertResponseOk($response, '/taxa/search');
     $data = $response['response']['data'];
     $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
-    $response = $this->callService('taxa/search', array(
+    $response = $this->callService('taxa/search', [
       'taxon_list_id' => 1,
-      'min_taxon_rank_sort_order' => 300
-    ));
+      'min_taxon_rank_sort_order' => 300,
+    ]);
     $this->assertResponseOk($response, '/taxa/search');
     $data = $response['response']['data'];
     $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
@@ -2105,7 +2053,7 @@ SQL;
     $this->assertEquals('Unauthorized', $response['response']['status'],
         "Incorrect userId passed to /$resource but data still returned. " . var_export($response, true));
 
-    // now test with everything correct
+    // Now test with everything correct.
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;
     self::$userId = $correctUserId;
@@ -2119,8 +2067,11 @@ SQL;
   /**
    * An assertion that the response object returned by a call to getCurlResponse
    * indicates a successful request.
-   * @param array $response Response data returned by getCurlReponse().
-   * @param string $apiCall Name of the API method being called, e.g. /projects
+   *
+   * @param array $response
+   *   Response data returned by getCurlReponse().
+   * @param string $apiCall
+   *   Name of the API method being called, e.g. /projects
    */
   private function assertResponseOk($response, $apiCall) {
     $this->assertEquals(200, $response['httpCode'],
@@ -2240,10 +2191,6 @@ SQL;
         $user = self::$websiteId;
         $password = self::$websitePassword;
         $authString = "WEBSITE_ID:$user:SECRET:$password";
-        break;
-
-      case 'oAuth2User':
-        $authString = "Bearer " . self::$oAuthAccessToken;
         break;
 
       case 'jwtUser':

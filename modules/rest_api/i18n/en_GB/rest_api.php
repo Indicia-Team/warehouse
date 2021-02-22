@@ -7,40 +7,94 @@ $lang['authenticationTitle'] = 'Authentication';
 $lang['authIntroduction'] = <<<HTML
 For information on authentication, see the
 <a href="http://indicia-docs.readthedocs.io/en/latest/developing/rest-web-services/authentication.html">
-authentication documentation.</a> The available authentication options are described in the table below.
+authentication documentation.</a> The available authentication options are described in the table below.<br/>
+Where the details below refer to the scope of the request, the possible options are:
+<ul>
+  <li>userInWebsite - default. Returns the user's records which have been input into this specific website.</li>
+  <li>user - returns the user's records input into any website.</li>
+  <li>reporting - returns records where the source website has elected to share its data to the authenticated
+  website for reporting purposes.</li>
+  <li>verification - returns records where the source website has elected to share its data to the authenticated
+  website for verification purposes.</li>
+  <li>data_flow - returns records where the source website has elected to share its data to the authenticated
+  website for data flow purposes, e.g. onward transfer to GBIF or the NBN Atlas.</li>
+  <li>moderation - returns records where the source website has elected to share its data to the authenticated
+  website for moderation purposes.</li>
+  <li>peer_review - returns records where the source website has elected to share its data to the authenticated
+  website for peer review purposes.</li>
+  <li>editing - returns records where the source website has elected to share its data to the authenticated
+  website for editing purposes, e.g. to allow an expert to correct a record during the verification process.</li>
+ </ul>
 HTML;
 $lang['resourcesTitle'] = 'Resources';
 $lang['authMethods'] = 'Allowed authentication methods';
-$lang['oauth2User'] = 'oAuth2 as warehouse user';
-$lang['oauth2UserHelp'] = 'Use oAuth2 password flow to authenticate as a warehouse user';
 $lang['jwtUser'] = 'JWT as warehouse user';
 $lang['jwtUserHelp'] = 'Use JWT access token to authenticate as a warehouse user';
 $lang['hmacClient'] = 'HMAC as client system';
-$lang['hmacClientHelp'] = 'Use HMAC to authenticate as a configured client system.';
+$lang['hmacClientHelp'] = <<<HTML
+Use HMAC to authenticate as a configured client system. The configuration must be specified in the
+<code>\$config['clients']</code> section of the REST API's configuration file on the warehouse.
+HTML;
 $lang['hmacClientHelpHeader'] = 'Set the authorisation header to <em>USER:[client system ID]:HMAC:[hmac]</em>';
 $lang['hmacWebsite'] = 'HMAC as website';
-$lang['hmacWebsiteHelp'] = 'Use HMAC to authenticate as a website registered on the warehouse.';
+$lang['hmacWebsiteHelp'] = <<<HTML
+Use HMAC to authenticate as a website registered on the warehouse. The scope of the request defaults to "reporting"
+which includes records from all websites which share their records to the authenticated website for public reports.
+This can be overridden by setting the URL parameter <em>scope</em>, e.g. <em>scope=verification</em> and optionally
+<em>user_id=<warehouse user ID></em> where the scope requires a known user.
+HTML;
 $lang['hmacWebsiteHelpHeader'] = 'Set the authorisation header to <em>WEBSITE_ID:[website ID]:HMAC:[hmac]</em>';
 $lang['directUser'] = 'Direct authentication as warehouse user';
-$lang['directUserHelp'] = 'Directly pass the username and password of a warehouse user account.';
-$lang['directClientHelpHeader'] = 'Set the authorisation header to <em>USER_ID:[user ID]:WEBSITE_ID:[website id]:SECRET:[user warehouse password]</em>';
-$lang['directClientHelpUrl'] = 'Add the following to the URL: <em>?user_id=[user ID]&website_id=[website ID]&secret=[user warehouse password]</em>';
+$lang['directUserHelp'] = <<<HTML
+Directly pass the user ID, website ID and password of a warehouse user account to authenticate. The scope of the
+request defaults to <em>userWithinWebsite</em> but can be overridden by including the required scope in the
+authentication header.
+HTML;
+$lang['directUserHelpHeader'] = <<<HTML
+Set the authorisation header to <em>USER_ID:[user ID]:WEBSITE_ID:[website id]:SECRET:[user warehouse password]</em>.
+Optionally append <em>:SCOPE:[scope name]</em> to override the default scope of the request.
+HTML;
+$lang['directUserHelpUrl'] = <<<HTML
+Add the following to the URL: <em>?user_id=[user ID]&website_id=[website ID]&secret=[user warehouse password]</em> and,
+optionally, <em>&scope=[scope name]</em>
+HTML;
 $lang['directClient'] = 'Direct authentication as client system';
-$lang['directClientHelp'] = 'Directly pass the ID and secret of a configured client system.';
+$lang['directClientHelp'] = <<<HTML
+Directly pass the ID and secret of a configured client system. The configuration must be specified in the
+<code>\$config['clients']</code> section of the REST API's configuration file on the warehouse.
+HTML;
 $lang['directClientHelpHeader'] = 'Set the authorisation header to <em>USER:[client system ID]:SECRET:[secret]</em>';
 $lang['directClientHelpUrl'] = 'Add the following to the URL: <em>?user=[client system ID]&secret=[secret]</em>';
 $lang['directWebsite'] = 'Direct authentication as website';
 $lang['directWebsiteHelp'] = 'Directly pass the ID and password of a website registered on the warehouse.';
-$lang['directWebsiteHelpHeader'] = 'Set the authorisation header to <em>WEBSITE_ID:[website ID]:SECRET:[password]</em>';
-$lang['directWebsiteHelpUrl'] = 'Add the following to the URL: <em>?website_id=[website ID]&secret=[password]</em>';
+$lang['directWebsiteHelpHeader'] = <<<HTML
+Set the authorisation header to <em>WEBSITE_ID:[website ID]:SECRET:[password]</em>. Optionally append
+<em>:SCOPE:[scope name]</em> to override the default scope of the request and <em>:USER_ID:[user's warehouse ID]</em>
+where the scope requires a user for it's definition.
+HTML;
+$lang['directWebsiteHelpUrl'] = <<<HTML
+Add the following to the URL: <em>?website_id=[website ID]&secret=[password]</em> and, optionally,
+<em>&scope=[scope name]</em> to override the default scope of the request, plus <em>&user_id=[user's warehouse ID]</em>
+where the scope requires a user for it's definition.
+HTML;
 $lang['jwtUser'] = 'Use a Java Web Token (JWT) to authenticate as a user.';
-$lang['jwtUserHelp'] = 'To use JWT to authenticate, you need to:<ul>' .
-      '<li>Generate a public/private key pair and store the private key in the Warehouse website settings.</li>' .
-      '<li>Provide a JWT token signed with the public key which provides the following claims:<ul>' .
-      '  <li>iss - the website URL</li>' .
-      '  <li>http://indicia.org.uk/user:id - set to the warehouse ID of the user issuing the request.</li>' .
-      '  <li>http://indicia.org.uk/alldata - set to true if claiming that the user is allowed to access all the website records, not just their own.</li>' .
-      '</ul></ul>';
+$lang['jwtUserHelp'] = <<<HTML
+To use JWT to authenticate, you need to:<ul>
+  <li>Generate a public/private key pair and store the private key in the Warehouse website settings.</li>
+  <li>Provide a JWT token signed with the public key which provides the following claims:<ul>
+    <li>iss - the website URL</li>
+    <li>http://indicia.org.uk/user:id - set to the warehouse ID of the user issuing the request, or skip this claim if
+    the token is issued on behalf of the website rather than a specific user.</li>
+    <li>scope - Optional scopes available for requests made using this token. Multiple scopes can be specified
+    separated by a space in which case the scope used by a request can be specified in a URL parameter called "scope".
+    Each scope defines the list of websites which make their data available to this request as well as the user filter.
+    If multiple scopes are claimed by a token, then a request can provide `scope=<scope name>` in the URL parameters to
+    select the active scope for a request. Default is "userInWebsite", or "reporting" if the
+    `http://indicia.org.uk/user:id` claim is excluded from the JWT token.
+    </li>
+  </ul>
+</ul>
+HTML;
 $lang['jwtUserHelpHeader'] = 'Set the authorisation header to "Bearer <JWT token>"';
 $lang['genericHelpHeader'] = 'Specify an authorisation header with a list of token name/value pairs, using colons as a ' .
       'separator, for example <em>TOKEN1:value1:TOKEN2:value2</em>.';

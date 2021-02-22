@@ -375,31 +375,36 @@ class XMLReportReader_Core implements ReportReader {
     if ($websiteIds) {
       if (in_array('', $websiteIds)) {
         foreach ($websiteIds as $key => $value) {
-          if (empty($value))
+          if (empty($value)) {
             unset($websiteIds[$key]);
+          }
         }
       }
       $idList = implode(',', $websiteIds);
-      // query can either pull in the filter or just the list of website ids.
+      // Query can either pull in the filter or just the list of website ids.
       $filter = empty($this->websiteFilterField) ? "1=1" : "({$this->websiteFilterField} in ($idList) or {$this->websiteFilterField} is null)";
-      $query = str_replace(array('#website_filter#', '#website_ids#'), array($filter, $idList), $query);
-    } else
-      // use a dummy filter to return all websites if core admin
-      $query = str_replace(array('#website_filter#', '#website_ids#'), array('1=1', 'SELECT id FROM websites'), $query);
+      $query = str_replace(['#website_filter#', '#website_ids#'], [$filter, $idList], $query);
+    }
+    else {
+      // Use a dummy filter to return all websites if core admin.
+      $query = str_replace(['#website_filter#', '#website_ids#'], ['1=1', 'SELECT id FROM websites'], $query);
+    }
     if (!empty($this->trainingFilterField)) {
       $boolStr = $providedParams['training'] ==='true' ? 'true' : 'false';
       $query = str_replace('#sharing_filter#', "{$this->trainingFilterField}=$boolStr AND #sharing_filter#", $query);
     }
-    // an alternative way to inform a query about training mode....
+    // An alternative way to inform a query about training mode....
     $query = str_replace('#training#', $providedParams['training'], $query);
-    // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
-    if ($sharing==='me' && empty($userId))
-      // revert to website type sharing if we have no known user Id.
-      $sharing='website';
-    $agreementsJoins = array();
-    $sharingFilters = array();
-    if ($sharing==='me') {
-      // my data only so use the UserId if we have it.
+    // Select the appropriate type of sharing arrangement (i.e. are we
+    // reporting, verifying, moderating etc?)
+    if ($sharing === 'me' && empty($userId)) {
+      // Revert to website type sharing if we have no known user Id.
+      $sharing = 'website';
+    }
+    $agreementsJoins = [];
+    $sharingFilters = [];
+    if ($sharing === 'me') {
+      // My data only so use the UserId if we have it.
       $sharingFilters[] = "{$this->createdByField}=$userId";
       // 'me' is a subtype of reporting
       $sharing = 'reporting';
@@ -430,7 +435,7 @@ class XMLReportReader_Core implements ReportReader {
         }
         // If scope not controlled by a survey standard parameter filter, then
         // apply a website_id filter. Avoid doing this unnecessary as it
-        // affects performance
+        // affects performance.
         if (!$this->coveringSurveyFilter($providedParams, $sharedWebsiteIdList)) {
           $sharingFilters[] = "$this->websiteFilterField in ($sharedWebsiteIdList)";
         }
@@ -439,11 +444,12 @@ class XMLReportReader_Core implements ReportReader {
 
     }
     // Add a dummy sharing filter if nothing else set, for the sake of syntax.
-    if (empty($sharingFilters))
+    if (empty($sharingFilters)) {
       $sharingFilters[] = '1=1';
+    }
     $query = str_replace(
-      array('#agreements_join#', '#sharing_filter#', '#sharing#'),
-      array(implode("\n", $agreementsJoins), implode("\n AND ", $sharingFilters), $sharing),
+      ['#agreements_join#', '#sharing_filter#', '#sharing#'],
+      [implode("\n", $agreementsJoins), implode("\n AND ", $sharingFilters), $sharing],
       $query
     );
   }
@@ -488,12 +494,12 @@ class XMLReportReader_Core implements ReportReader {
   }
 
   /**
-   * A cached lookup of the websites that are available for a certain sharing mode.
+   * A cached lookup of the websites that are available for a sharing mode.
    *
-   * Only bother to cache the lookup if there is only 1 website (i.e. we are running a
-   * report from a client website or the warehouse user can only see 1 website). Otherwise
-   * there are too many possibilities to be worth it. This is mainly to speed up client
-   * website reporting anyway.
+   * Only bother to cache the lookup if there is only 1 website (i.e. we are
+   * running a report from a client website or the warehouse user can only see
+   * 1 website). Otherwise there are too many possibilities to be worth it.
+   * This is mainly to speed up client website reporting anyway.
    */
   private function getSharedWebsiteList($websiteIds, $sharing) {
     if (count($websiteIds) === 1) {
@@ -509,12 +515,13 @@ class XMLReportReader_Core implements ReportReader {
       ->where("receive_for_$sharing", 't')
       ->in('from_website_id', $websiteIds)
       ->get()->result();
-    $ids = array();
+    $ids = [];
     foreach ($qry as $row) {
       $ids[] = $row->to_website_id;
     }
     $r = implode(',', $ids);
-    // Tag all cache entries for this website so they can be cleared together when changes are saved.
+    // Tag all cache entries for this website so they can be cleared together
+    // when changes are saved.
     $cache->set($cacheId, $r, $tag);
     return $r;
   }
@@ -523,9 +530,9 @@ class XMLReportReader_Core implements ReportReader {
    * Use the sql attributes from the list of columns to auto generate the columns SQL.
    */
   private function autogenColumns() {
-    $sql = array();
-    $distinctSql = array();
-    $countSql = array();
+    $sql = [];
+    $distinctSql = [];
+    $countSql = [];
     foreach ($this->columns as $col => $def) {
       if (!empty($this->colsToInclude) && !in_array($col, $this->colsToInclude))
         continue;
