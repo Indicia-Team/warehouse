@@ -9,6 +9,7 @@
   user across all websites), reporting, verification, data_flow, editing, peer_review, moderation.
   If a JWT token claims multiple scopes, the URL parameter scope can select the active one for a
   request.
+* Adds occurrence custom attribute system functions for behaviour and reproductive_condition.
 
 # Version 4.11.0
 *2021-01-19*
