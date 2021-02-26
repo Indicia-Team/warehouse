@@ -90,7 +90,7 @@ class rest_api_sync_rest {
       if (!empty($doc->location->coordinate_uncertainty_in_meters)) {
         $obj['location']['coordinateUncertaintyInMeters'] = $doc->location->coordinate_uncertainty_in_meters;
       }
-      if (in_array($doc->location->input_sref_system, ['OSGB', 'OSI'])) {
+      if (isset($doc->location->input_sref_system) && in_array($doc->location->input_sref_system, ['OSGB', 'OSI'])) {
         $obj['location']['gridReference'] = $doc->location->input_sref;
       }
       else {
