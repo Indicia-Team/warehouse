@@ -224,7 +224,8 @@ class rest_api_sync_rest {
     }
     $size = 100;
     if (isset($_GET['page_size']) && preg_match('/^\d+$/', trim($_GET['page_size']))) {
-      $size = $_GET['page_size'];
+      $size = trim($_GET['page_size']);
+      unset($_GET['page_size']);
     }
     return json_decode($es->elasticRequest((object) [
       'size' => $size,
