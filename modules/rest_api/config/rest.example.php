@@ -155,35 +155,25 @@ $config['clients'] = [
     'shared_secret' => 'password',
     'projects' => [
       // List of available projects keyed by project ID.
-      'BRC1' => [
-        'id' => 'BRC1',
-        'website_id' => 1,
-        'title' => 'BRC birds',
+      'BTOSYNC' => [
+        'id' => 'BTOSYNC',
+        'website_id' => 2,
+        'title' => 'iRecord avian records to BTO',
+        'resources' => ['sync-taxon-observations', 'sync-annotations'],
         'description' => 'Bird records entered onto the BRC warehouse made available for verification on iRecord.',
-        // Optional filter ID.
-        'filter_id' => 53,
-        'sharing' => 'verification',
-        // Optional, which resources are available? Default is all.
-        'resources' => ['taxon-observations', 'annotations', 'reports'],
-        'resource_options' => [
-          'reports' => [
-            'raw_data',
-            'featured',
-            'authorise' => [
-              // Authorise a normally restricted report for this project.
-              'library/occurrences/list_for_elastic_all.xml',
-            ],
+        // Other paraneters available here will depend on the requested
+        // resource. Some resources may support filter_id for example.
+        'id_prefix' => 'iBRC',
+        'dataset_id_attr_id' => 22,
+        'blur' => 'F',
+        'es_bool_query' => [
+          'must' => [
+            ['term' => ['taxon.class.keyword' => 'Aves']],
+            ['term' => ['metadata.website.id' => 2]],
           ],
         ],
-        // Set the following to TRUE for Indicia to automatically feed through
-        // pages of data. Useful when the client is a dumb poller for the data
-        // such as the Elastic Stack's Logstash.
-        'autofeed' => FALSE,
-        // Other options may be stored here which are specific to the exposed
-        // resource.
       ],
     ],
-    // This client can access the es elasticsearch proxy end-point.
     'elasticsearch' => ['es'],
   ],
 ];
