@@ -74,7 +74,7 @@ class rest_api_sync_rest {
     $project = ($clientConfig && $projectId) ? $clientConfig['projects'][$projectId] : [];
     $response = self::getEsTaxonObservationsResponse($clientConfig, $project);
     $total = count($response->hits->hits);
-    echo "[\n";
+    echo "{\"data\":[\n";
     foreach ($response->hits->hits as $idx => $hit) {
       $doc = $hit->_source;
       $obj = self::getBasicObservationStructure($doc);
@@ -176,10 +176,10 @@ class rest_api_sync_rest {
         echo ',';
       }
       else {
-        variable::set("rest-api-sync-tx-obs-$projectId", $doc->metadata->tracking);
+        $nextFrom = $doc->metadata->tracking;
       }
     }
-    echo "\n]";
+    echo "\n],\"paging\":{\"next\":{\"tracking_from\":$nextFrom}}}";
   }
 
   /**
@@ -196,18 +196,15 @@ class rest_api_sync_rest {
       unset($_GET['tracking_from']);
     }
     else {
-      $trackingFrom = variable::get("rest-api-sync-tx-obs-$project[id]", 0);
+      $trackingFrom = 0;
     }
+    $blur = isset($project['blur']) ? $project['blur'] : 'B';
+    $permissionsQuery = "metadata.confidential:false AND metadata.release_status:R AND ((metadata.sensitivity_blur:$blur) OR (!metadata.sensitivity_blur:*))";
     $query = [
       'bool' => [
         'must' => [
           ['exists' => ['field' => 'taxon.taxon_id']],
-
-
-// Sensitivity_blur empty or F/B.
-
-
-
+          ['query_string' => ['query' => $permissionsQuery]],
         ],
       ],
     ];
@@ -225,8 +222,12 @@ class rest_api_sync_rest {
         }
       }
     }
+    $size = 100;
+    if (isset($_GET['page_size']) && preg_match('/^\d+$/', trim($_GET['page_size']))) {
+      $size = $_GET['page_size'];
+    }
     return json_decode($es->elasticRequest((object) [
-      'size' => 2,
+      'size' => $size,
       'sort' => [
         ['metadata.tracking' => ['order' => 'asc']],
       ],
@@ -256,9 +257,6 @@ class rest_api_sync_rest {
         'identificationVerificationStatus' => self::$statuses[$doc->identification->verification_status . $doc->identification->verification_substatus],
       ],
       'location' => [],
-      'metadata' => [
-        'tracking' => $doc->metadata->tracking,
-      ],
       'occurrence' => [
         'occurrenceID' => (!empty($project['id_prefix']) ? $project['id_prefix'] : '') . $doc->id,
         'occurrenceStatus' => 'Present',
