@@ -20,13 +20,13 @@
   * metaFields:mergeBoundary - if set to 't' then when updating an existing location with a new
     submission, the provided boundary is merged with the existing boundary rather than the provided
     boundary overwriting the existing boundary.
-  * Additional system functions added for occurrences - behaviour and reproductive_condition,
-    reflecting Darwin Core terms of the same names.
-  * Base 64 decoding used to read JWT authentication tokens in the REST API now uses Base 64 URL
-    decoding, fixing problems with some characters in tokens.
-  * REST API and Elasticsearch API now support Website ID and password based authentication with
-    automatic application of appropriate website sharing permissions. This reduces the need to
-    create multiple Elasticsearch aliases to control website sharing.
+* Additional system functions added for occurrences - behaviour and reproductive_condition,
+  reflecting Darwin Core terms of the same names.
+* Base 64 decoding used to read JWT authentication tokens in the REST API now uses Base 64 URL
+  decoding, fixing problems with some characters in tokens.
+* REST API and Elasticsearch API now support Website ID and password based authentication with
+  automatic application of appropriate website sharing permissions. This reduces the need to
+  create multiple Elasticsearch aliases to control website sharing.
 
 # Version 4.11.0
 *2021-01-19*
