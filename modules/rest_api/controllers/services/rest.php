@@ -2337,9 +2337,14 @@ class Rest_Controller extends Controller {
       }
       RestObjects::$clientWebsiteId = $website->id;
       // Allow URL parameter to override default reporting scope as long as
-      // this scope has been claimed by the token.
+      // this scope has been claimed by the token. We allow scope as a standard
+      // claim or custom claim and as an array or space separated string for
+      // wider compatibility with auth servers.
+      if (isset($payloadValues['http://indicia.org.uk/scope']) && !isset($payloadValues['scope'])) {
+        $payloadValues['scope'] = $payloadValues['http://indicia.org.uk/scope'];
+      }
       if (!empty($payloadValues['scope'])) {
-        $allowedScopes = $payloadValues['scope'];
+        $allowedScopes = is_array($payloadValues['scope']) ? $payloadValues['scope'] : explode(' ', $payloadValues['scope']);
         if (!empty($_GET['scope'])) {
           if (!in_array($_GET['scope'], $allowedScopes)) {
             RestObjects::$apiResponse->fail('Forbidden', 403, 'Attempt to access disallowed scope');
