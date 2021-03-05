@@ -1408,6 +1408,28 @@ class RestApiElasticsearch {
   }
 
   /**
+   * Special field handler for taxon labels.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldTaxonLabel(array $doc) {
+    $name = empty($doc['taxon']['accepted_name']) ? $doc['taxon']['taxon_name'] : $doc['taxon']['accepted_name'];
+    // Append vernacular when available.
+    if (!empty($doc['taxon']['vernacular_name']) && $doc['taxon']['vernacular_name'] !== $name) {
+      $name .= ' | ' . $doc['taxon']['vernacular_name'];
+    }
+    // Prepend taxon rank if above species.
+    if (!empty($doc['taxon']['taxon_rank_sort_order']) && $doc['taxon']['taxon_rank_sort_order'] < 290) {
+      $name = $doc['taxon']['taxon_rank'] . " $name";
+    }
+    return $name;
+  }
+
+  /**
    * Special field handler for ES fields that should treat zero as null.
    *
    * If the field value (fieldname in params) is zero, then return null, else
@@ -1698,6 +1720,13 @@ class RestApiElasticsearch {
           $fields[] = 'metadata';
           $fields[] = 'identification';
           $fields[] = 'occurrence.zero_abundance';
+        }
+        elseif ($field === '#taxon_label#') {
+          $fields[] = 'taxon.taxon_name';
+          $fields[] = 'taxon.vernacular_name';
+          $fields[] = 'taxon.accepted_name';
+          $fields[] = 'taxon.taxon_rank_sort_order';
+          $fields[] = 'taxon.taxon_rank';
         }
         elseif (preg_match('/^#determiner(.*)#$/', $field)) {
           $fields[] = 'event.recorded_by';
