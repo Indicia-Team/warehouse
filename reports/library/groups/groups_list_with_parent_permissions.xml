@@ -98,9 +98,9 @@
     <column name="private_records" display="Records released" sql="not g.private_records" datatype="boolean" />
     <column name="role" display="My role" sql="case when gu.administrator=true then 'Administrator' when gu.id is not null and gu.pending=false then 'Member' when gu.id is not null and gu.pending=true then 'Awaiting approval' else 'Non-member' end" datatype="text" />
     <column name="joining_method" display="Can anyone join?" sql="case g.joining_method when 'P' then 'Yes' when 'R' then 'By request only' when 'I' then 'By invite only' end" datatype="text" />
-    <column name="members" display="Members" datatype="text" aggregate="true"
+    <column name="members" display="Members" aggregate="true"
             sql="case when gu.administrator=true and '#pending_path#'&lt;&gt;'' then '&lt;a href=&quot;#pending_path#' || g.id || '&quot;&gt;' else '' end
-|| count(DISTINCT guc.user_id)::varchar 
+|| count(DISTINCT guc.user_id)::varchar
 || case when count(DISTINCT gucp.user_id)&gt;0 and gu.administrator=true then ' (' || count(DISTINCT gucp.user_id)::varchar || ' pending)' else '' end
 || case when gu.administrator=true and '#pending_path#'&lt;&gt;'' then '&lt;/a&gt;' else '' end" />
     <column name="pages" display="Links" sql="array_to_string(array_agg(distinct '&lt;a class=&quot;button ' || lower(regexp_replace(gp.path, '[^a-zA-Z0-9]', '-')) || '&quot; href=&quot;{rootFolder}' || gp.path || '{sep}group_id=' || g.id || '&amp;implicit=' || coalesce(g.implicit_record_inclusion::char, '') || '&quot;&gt;' || gp.caption || '&lt;/a&gt;'), ' ')"
