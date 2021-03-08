@@ -77,12 +77,15 @@ class rest_api_sync_rest {
     echo "{\"data\":[\n";
     foreach ($response->hits->hits as $idx => $hit) {
       $doc = $hit->_source;
-      $obj = self::getBasicObservationStructure($doc);
+      $obj = self::getBasicObservationStructure($doc, $project);
       if (!empty($doc->identification->identified_by)) {
         $obj['identification']['identifiedBy'] = $doc->identification->identified_by;
       }
       if (!empty($doc->event->event_remarks)) {
         $obj['event']['eventRemarks'] = $doc->event->event_remarks;
+      }
+      if (!empty($doc->event->recorded_by)) {
+        $obj['event']['recordedBy'] = $doc->event->recorded_by;
       }
       if (!empty($doc->event->sampling_protocol)) {
         $obj['event']['samplingProtocol'] = $doc->event->sampling_protocol;
@@ -115,7 +118,7 @@ class rest_api_sync_rest {
       elseif (!empty($doc->occurrence->organism_quantity)) {
         $obj['occurrence']['individualCount'] = $doc->occurrence->organism_quantity;
       }
-      if (!empty($doc->occurrence->life_stage)) {
+      if (!empty($doc->occurrence->life_stage) && $doc->occurrence->life_stage !== 'not recorded') {
         $obj['occurrence']['lifeStage'] = $doc->occurrence->life_stage;
       }
       if (!empty($doc->occurrence->occurrence_remarks)) {
@@ -124,17 +127,14 @@ class rest_api_sync_rest {
       if (!empty($doc->occurrence->source_system_key)) {
         $obj['occurrence']['otherCatalogNumbers'] = $doc->occurrence->source_system_key;
       }
-      if (!empty($doc->occurrence->recorded_by)) {
-        $obj['occurrence']['recordedBy'] = $doc->occurrence->recorded_by;
-      }
       if (!empty($doc->occurrence->reproductive_condition)) {
         $obj['occurrence']['reproductiveCondition'] = $doc->occurrence->reproductive_condition;
       }
       if (!empty($doc->occurrence->sensitivity_precision)) {
         $obj['occurrence']['sensitivityBlur'] = $doc->occurrence->sensitivity_precision;
       }
-      if (!empty($doc->occurrence->sex)) {
-        $obj['occurrence']['sex'] = $doc->occurrence->sex;
+      if (!empty($doc->occurrence->sex) && !empty(self::sexTerm($doc->occurrence->sex))) {
+        $obj['occurrence']['sex'] = self::sexTerm($doc->occurrence->sex);
       }
       if (!empty($project['dataset_id_attr_id']) && !empty($doc->event->attributes)) {
         foreach ($doc->event->attributes as $attr) {
@@ -180,6 +180,21 @@ class rest_api_sync_rest {
       }
     }
     echo "\n],\"paging\":{\"next\":{\"tracking_from\":$nextFrom}}}";
+  }
+
+  /**
+   * Returns male or female for sex term.
+   *
+   * Cleans up prefixes such as adult etc.
+   */
+  private static function sexTerm($term) {
+    if (preg_match($term, '/\bmale\b/i')) {
+      return 'male';
+    }
+    elseif (preg_match($term, '/\bfemale\b/i')) {
+      return 'male';
+    }
+    return NULL;
   }
 
   /**
@@ -244,15 +259,14 @@ class rest_api_sync_rest {
    *
    * @param object $doc
    *   Elasticsearch document.
-   *
-   * @return array
-   *   Taxon observation structure.
+   * @param array $project
+   *   Configuration file options for this project.
    */
-  private static function getBasicObservationStructure($doc) {
+  private static function getBasicObservationStructure($doc, array $project) {
     return [
       'event' => [
-        'eventDate' => $doc->event->date_start || ($doc->event->date_end === $doc->event->date_start ? '' : '|' . $doc->event->date_end),
-        'eventId' => (!empty($project['id_prefix']) ? $project['id_prefix'] : '') . $doc->event->event_id,
+        'eventDate' => $doc->event->date_start . ($doc->event->date_end === $doc->event->date_start ? '' : '|' . $doc->event->date_end),
+        'eventID' => (!empty($project['id_prefix']) ? $project['id_prefix'] : '') . $doc->event->event_id,
       ],
       'identification' => [
         'identificationVerificationStatus' => self::$statuses[$doc->identification->verification_status . $doc->identification->verification_substatus],
