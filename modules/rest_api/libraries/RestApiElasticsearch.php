@@ -54,7 +54,9 @@ class RestApiElasticsearch {
   private $pagingMode = 'off';
 
   /**
-   * For ES paged downloads, holds the current request state (initial or nextPage).
+   * For ES paged downloads, holds the current request state.
+   *
+   * Either initial or nextPage.
    *
    * @var string
    */
@@ -77,12 +79,21 @@ class RestApiElasticsearch {
       ['caption' => 'Determined by', 'field' => 'identification.identified_by'],
       ['caption' => 'Grid reference', 'field' => 'location.output_sref'],
       ['caption' => 'System', 'field' => 'location.output_sref_system'],
-      ['caption' => 'Coordinate uncertainty (m)', 'field' => 'location.coordinate_uncertainty_in_meters'],
+      [
+        'caption' => 'Coordinate uncertainty (m)',
+        'field' => 'location.coordinate_uncertainty_in_meters',
+      ],
       ['caption' => 'Lat/Long', 'field' => 'location.point'],
       ['caption' => 'Location name', 'field' => 'location.verbatim_locality'],
       ['caption' => 'Higher geography', 'field' => '#higher_geography::name#'],
-      ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
-      ['caption' => 'Vice County number', 'field' => '#higher_geography:Vice County:code#'],
+      [
+        'caption' => 'Vice County',
+        'field' => '#higher_geography:Vice County:name#',
+      ],
+      [
+        'caption' => 'Vice County number',
+        'field' => '#higher_geography:Vice County:code#',
+      ],
       ['caption' => 'Identified by', 'field' => 'identification.identified_by'],
       ['caption' => 'Taxon accepted name', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Taxon recorded name', 'field' => 'taxon.taxon_name'],
@@ -94,14 +105,23 @@ class RestApiElasticsearch {
       ['caption' => 'Family', 'field' => 'taxon.family'],
       ['caption' => 'Genus', 'field' => 'taxon.genus'],
       ['caption' => 'Taxon Version Key', 'field' => 'taxon.taxon_id'],
-      ['caption' => 'Accepted Taxon Version Key', 'field' => 'taxon.accepted_taxon_id'],
+      [
+        'caption' => 'Accepted Taxon Version Key',
+        'field' => 'taxon.accepted_taxon_id',
+      ],
       ['caption' => 'Sex', 'field' => 'occurrence.sex'],
       ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
       ['caption' => 'Quantity', 'field' => 'occurrence.organism_quantity'],
       ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
       ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
-      ['caption' => 'Record status', 'field' => 'identification.verification_status'],
-      ['caption' => 'Record substatus', 'field' => '#null_if_zero:identification.verification_substatus#'],
+      [
+        'caption' => 'Record status',
+        'field' => 'identification.verification_status',
+      ],
+      [
+        'caption' => 'Record substatus',
+        'field' => '#null_if_zero:identification.verification_substatus#',
+      ],
       ['caption' => 'Query status', 'field' => 'identification.query'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
       ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
@@ -113,7 +133,10 @@ class RestApiElasticsearch {
       ['caption' => 'ID', 'field' => 'id'],
       ['caption' => 'RecordKey', 'field' => '_id'],
       ['caption' => 'External key', 'field' => 'occurrence.source_system_key'],
-      ['caption' => 'Source', 'field' => '#datasource_code:<wt> | <st> {|} <gt>#'],
+      [
+        'caption' => 'Source',
+        'field' => '#datasource_code:<wt> | <st> {|} <gt>#',
+      ],
       ['caption' => 'Rank', 'field' => 'taxon.taxon_rank'],
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
@@ -126,13 +149,28 @@ class RestApiElasticsearch {
       ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
       ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
       ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
-      ['caption' => 'Projection (input)', 'field' => '#sref_system:location.input_sref_system:alphanumeric#'],
-      ['caption' => 'Precision', 'field' => 'location.coordinate_uncertainty_in_meters'],
+      [
+        'caption' => 'Projection (input)',
+        'field' => '#sref_system:location.input_sref_system:alphanumeric#',
+      ],
+      [
+        'caption' => 'Precision',
+        'field' => 'location.coordinate_uncertainty_in_meters',
+      ],
       ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
-      ['caption' => 'Projection (output)', 'field' => '#sref_system:location.output_sref_system:alphanumeric#'],
+      [
+        'caption' => 'Projection (output)',
+        'field' => '#sref_system:location.output_sref_system:alphanumeric#',
+      ],
       ['caption' => 'Biotope', 'field' => 'event.habitat'],
-      ['caption' => 'VC number', 'field' => '#higher_geography:Vice County:code#'],
-      ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
+      [
+        'caption' => 'VC number',
+        'field' => '#higher_geography:Vice County:code#',
+      ],
+      [
+        'caption' => 'Vice County',
+        'field' => '#higher_geography:Vice County:name#',
+      ],
       ['caption' => 'Date interpreted', 'field' => '#event_date#'],
       ['caption' => 'Date from', 'field' => 'event.date_start'],
       ['caption' => 'Date to', 'field' => 'event.date_end'],
@@ -140,29 +178,56 @@ class RestApiElasticsearch {
       ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
       ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
       ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
-      ['caption' => 'Recorder certainty', 'field' => 'identification.recorder_certainty'],
+      [
+        'caption' => 'Recorder certainty',
+        'field' => 'identification.recorder_certainty',
+      ],
       ['caption' => 'Sex', 'field' => 'occurrence.sex'],
       ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
-      ['caption' => 'Count of sex or stage', 'field' => 'occurrence.organism_quantity'],
+      [
+        'caption' => 'Count of sex or stage',
+        'field' => 'occurrence.organism_quantity',
+      ],
       ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
       ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
       ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
-      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i#'],
-      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y H\:i#'],
-      ['caption' => 'Verification status 1', 'field' => '#verification_status:astext#'],
-      ['caption' => 'Verification status 2', 'field' => '#verification_substatus:astext#'],
+      [
+        'caption' => 'Input on date',
+        'field' => '#datetime:metadata.created_on:d/m/Y H\:i#',
+      ],
+      [
+        'caption' => 'Last edited on date',
+        'field' => '#datetime:metadata.updated_on:d/m/Y H\:i#',
+      ],
+      [
+        'caption' => 'Verification status 1',
+        'field' => '#verification_status:astext#',
+      ],
+      [
+        'caption' => 'Verification status 2',
+        'field' => '#verification_substatus:astext#',
+      ],
       ['caption' => 'Query', 'field' => '#query:astext#'],
       ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
-      ['caption' => 'Verified on', 'field' => '#datetime:identification.verified_on:d/m/Y H\:i#'],
+      [
+        'caption' => 'Verified on',
+        'field' => '#datetime:identification.verified_on:d/m/Y H\:i#',
+      ],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
-      ['caption' => 'Automated checks', 'field' => '#true_false:identification.auto_checks.result:Passed checks:Failed checks#'],
+      [
+        'caption' => 'Automated checks',
+        'field' => '#true_false:identification.auto_checks.result:Passed checks:Failed checks#',
+      ],
     ],
     "mapmate" => [
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Site', 'field' => '#sitename:mapmate#'],
       ['caption' => 'Gridref', 'field' => 'location.output_sref'],
-      ['caption' => 'VC', 'field' => '#higher_geography:Vice County:code:mapmate#'],
+      [
+        'caption' => 'VC',
+        'field' => '#higher_geography:Vice County:code:mapmate#',
+      ],
       ['caption' => 'Recorder', 'field' => '#truncate:event.recorded_by:62#'],
       ['caption' => 'Determiner', 'field' => '#determiner:mapmate#'],
       ['caption' => 'Date', 'field' => '#event_date:mapmate#'],
@@ -171,15 +236,36 @@ class RestApiElasticsearch {
       ['caption' => 'Sex', 'field' => '#sex:mapmate#'],
       ['caption' => 'Stage', 'field' => '#life_stage:mapmate#'],
       ['caption' => 'Status', 'field' => '#constant:Not recorded#'],
-      ['caption' => 'Comment', 'field' => '#sample_occurrence_comment:nonewline:notab:addref#'],
+      [
+        'caption' => 'Comment',
+        'field' => '#sample_occurrence_comment:nonewline:notab:addref#',
+      ],
       ['caption' => 'RecordKey', 'field' => '_id'],
       ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
-      ['caption' => 'Source', 'field' => '#datasource_code:<wt> | <st> {|} <gt>#'],
-      ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:exclude_integer#'],
-      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i\:s#'],
-      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G\:i\:s#'],
-      ['caption' => 'Verification status 1', 'field' => '#verification_status:astext#'],
-      ['caption' => 'Verification status 2', 'field' => '#verification_substatus:astext#'],
+      [
+        'caption' => 'Source',
+        'field' => '#datasource_code:<wt> | <st> {|} <gt>#',
+      ],
+      [
+        'caption' => 'NonNumericQuantity',
+        'field' => '#organism_quantity:exclude_integer#',
+      ],
+      [
+        'caption' => 'Input on date',
+        'field' => '#datetime:metadata.created_on:d/m/Y H\:i\:s#',
+      ],
+      [
+        'caption' => 'Last edited on date',
+        'field' => '#datetime:metadata.updated_on:d/m/Y G\:i\:s#',
+      ],
+      [
+        'caption' => 'Verification status 1',
+        'field' => '#verification_status:astext#',
+      ],
+      [
+        'caption' => 'Verification status 2',
+        'field' => '#verification_substatus:astext#',
+      ],
       ['caption' => 'Query', 'field' => '#query:astext#'],
       ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
       ['caption' => 'Verified by', 'field' => 'identification.verifier.name'],
@@ -353,7 +439,7 @@ class RestApiElasticsearch {
   /**
    * Special field handler which returns a constant value.
    *
-   * For an empty column set the second argument to and empty string.
+   * For an empty column set the second argument to an empty string.
    * Useful where the output CSV must contain a column to which no
    * useful data can be mapped.
    *
