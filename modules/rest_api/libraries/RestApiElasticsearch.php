@@ -453,7 +453,7 @@ class RestApiElasticsearch {
    */
   private function esGetSpecialFieldConstant(array $doc, array $params) {
     if (count($params) !== 1) {
-      return 'Incorrect params for query field';
+      return 'Incorrect params for constant field';
     }
     return $params[0];
   }
@@ -778,7 +778,7 @@ class RestApiElasticsearch {
    */
   private function esGetSpecialFieldSitename(array $doc, array $params) {
     if (count($params) !== 1) {
-      return 'Incorrect params for query field';
+      return 'Incorrect params for sitename field';
     }
     $value = $this->getRawEsFieldValue($doc, 'location.verbatim_locality');
     if ($params[0] === 'mapmate') {
@@ -806,7 +806,7 @@ class RestApiElasticsearch {
    */
   private function esGetSpecialFieldDeterminer(array $doc, array $params) {
     if (count($params) !== 1) {
-      return 'Incorrect params for query field';
+      return 'Incorrect params for determiner field';
     }
     $recorder = $this->getRawEsFieldValue($doc, 'event.recorded_by');
     $value = $this->getRawEsFieldValue($doc, 'identification.identified_by');
@@ -837,7 +837,7 @@ class RestApiElasticsearch {
    */
   private function esGetSpecialFieldMethod(array $doc, array $params) {
     if (count($params) !== 1) {
-      return 'Incorrect params for query field';
+      return 'Incorrect params for method field';
     }
     $value = $this->getRawEsFieldValue($doc, 'event.sampling_protocol');
 
