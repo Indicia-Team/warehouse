@@ -437,421 +437,6 @@ class RestApiElasticsearch {
   }
 
   /**
-   * Special field handler which returns a constant value.
-   *
-   * For an empty column set the second argument to an empty string.
-   * Useful where the output CSV must contain a column to which no
-   * useful data can be mapped.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Parameters defined for the special field.
-   *
-   * @return string
-   *   Returns constant passed as argument.
-   */
-  private function esGetSpecialFieldConstant(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for constant field';
-    }
-    return $params[0];
-  }
-
-  /**
-   * Special field handler which combines the sample and occurrence comment.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Parameters defined for the special field.
-   *
-   * @return string
-   *   Combined comment string.
-   */
-  private function esGetSpecialFieldSampleOccurrenceComment(array $doc, array $params) {
-    $oComment = isset($doc['occurrence']['occurrence_remarks']) ? $doc['occurrence']['occurrence_remarks'] : '';
-    $sComment = isset($doc['event']['event_remarks']) ? $doc['event']['event_remarks'] : '';
-    if (!empty($params) && in_array("notab", $params)) {
-      $oComment = str_replace("\t", ' ', $oComment);
-      $sComment = str_replace("\t", ' ', $sComment);
-    }
-    if (!empty($params) && in_array("nonewline", $params)) {
-      $oComment = str_replace(["\r\n", "\n", "\r"], ' ', $oComment);
-      $sComment = str_replace(["\r\n", "\n", "\r"], ' ', $sComment);
-    }
-    if ($oComment !== '' && $sComment !== '') {
-      $comment = "$oComment $sComment";
-    }
-    elseif ($oComment !== '') {
-      $comment = $oComment;
-    }
-    elseif ($sComment !== '') {
-      $comment = $sComment;
-    }
-    else {
-      $comment = '';
-    }
-    if (!empty($params) && in_array("addref", $params)) {
-      $ref = kohana::config('indicia.es_key_prefix') . $doc['id'];
-      $comment = trim("$comment $ref");
-    }
-    return $comment;
-  }
-
-  /**
-   * Special field handler to truncate output to specified number of characters.
-   *
-   * Return the a string no longer than specified number of characters.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Provided parameters:
-   *   1. ES field
-   *   2. Number of characters.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldTruncate(array $doc, array $params) {
-    if (count($params) !== 2) {
-      return 'Incorrect params for truncate field';
-    }
-    $value = $this->getRawEsFieldValue($doc, $params[0]);
-    return substr($value, 0, intval($params[1]));
-  }
-
-  /**
-   * Special field handler to translate true/false values to specified output.
-   *
-   * Return the translated value.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Provided parameters:
-   *   1. ES field
-   *   2. Translated string for 'true' values
-   *   3. Translated string for 'false' values.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldTrueFalse(array $doc, array $params) {
-    if (count($params) !== 3) {
-      return 'Incorrect params for true_false field';
-    }
-    $value = $this->getRawEsFieldValue($doc, $params[0]);
-    if ($value === 'true') {
-      return $params[1];
-    }
-    elseif ($value === 'false') {
-      return $params[2];
-    }
-    else {
-      return '';
-    }
-  }
-
-  /**
-   * Special field handler ES datetime fields to output with provided format.
-   *
-   * Return the datetime as a string formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Provided parameters:
-   *   1. ES field
-   *   2. datetime format.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldDatetime(array $doc, array $params) {
-    if (count($params) !== 2) {
-      return 'Incorrect params for Datetime field';
-    }
-    $dtvalue = $this->getRawEsFieldValue($doc, $params[0]);
-    $dt = DateTime::createFromFormat('Y-m-d G:i:s.u', $dtvalue);
-    if ($dt === FALSE) {
-      return $dtvalue;
-    }
-    else {
-      return $dt->format($params[1]);
-    }
-  }
-
-  /**
-   * Special field handler for ES spatial ref system fields.
-   *
-   * Return the spatial ref system formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Provided parameters:
-   *   1. ES field
-   *   2. format identifier.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldSrefSystem(array $doc, array $params) {
-    if (count($params) !== 2) {
-      return 'Incorrect params for sref system field';
-    }
-    $value = strval($this->getRawEsFieldValue($doc, $params[0]));
-    if ($params[1] === 'alphanumeric') {
-      // Ensure that EPSG codes are converted to alphanumeric string.
-      // Provides backward compatibility with pre-ES downloads.
-      if ($value === '4326') {
-        return 'WGS84';
-      }
-      elseif ($value === '27700') {
-        return 'OSGB36';
-      }
-      else {
-        return strtoupper($value);
-      }
-    }
-    else {
-      return $value;
-    }
-  }
-
-  /**
-   * Special field handler for ES verification status.
-   *
-   * Return the verification status formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldVerificationStatus(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for verification status field';
-    }
-    $value = $this->getRawEsFieldValue($doc, 'identification.verification_status');
-    if ($params[0] === 'astext') {
-      // Provides backward compatibility with pre-ES downloads.
-      if ($value === 'V') {
-        return 'Accepted';
-      }
-      elseif ($value === 'C') {
-        return 'Unconfirmed';
-      }
-      elseif ($value === 'R') {
-        return 'Rejected';
-      }
-      elseif ($value === 'I') {
-        return 'Input still in progress';
-      }
-      elseif ($value === 'D') {
-        return 'Queried';
-      }
-      elseif ($value === 'S') {
-        return 'Awaiting check';
-      }
-      else {
-        return $value;
-      }
-    }
-    else {
-      return $value;
-    }
-  }
-
-  /**
-   * Special field handler for ES verification status.
-   *
-   * Return the verification status formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldVerificationSubstatus(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for verification substatus field';
-    }
-    $status = $this->getRawEsFieldValue($doc, 'identification.verification_status');
-    $value = $this->getRawEsFieldValue($doc, 'identification.verification_substatus');
-    if ($params[0] === 'astext') {
-      // Provides backward compatibility with pre-ES downloads.
-      if ($status === 'V') {
-        if ($value === '1') {
-          return 'Correct';
-        }
-        elseif ($value === '2') {
-          return 'Considered correct';
-        }
-        else {
-          return NULL;
-        }
-      }
-      elseif ($status === 'C') {
-        if ($value === '3') {
-          return 'Plausible';
-        }
-        else {
-          return 'Not reviewed';
-        }
-      }
-      elseif ($status === 'R') {
-        if ($value === '4') {
-          return 'Unable to verify';
-        }
-        elseif ($value === '5') {
-          return 'Incorrect';
-        }
-        else {
-          return NULL;
-        }
-      }
-      else {
-        return NULL;
-      }
-    }
-    else {
-      return $value;
-    }
-  }
-
-  /**
-   * Special field handler for ES identification query status.
-   *
-   * Return the identification query status formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldQuery(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for query field';
-    }
-    $value = $this->getRawEsFieldValue($doc, 'identification.query');
-    if ($params[0] === 'astext') {
-      // Provides backward compatibility with pre-ES downloads.
-      if ($value === 'A') {
-        return 'Answered';
-      }
-      elseif ($value === 'Q') {
-        return 'Queried';
-      }
-      else {
-        return $value;
-      }
-    }
-    else {
-      return $value;
-    }
-  }
-
-  /**
-   * Special field handler for ES sitename.
-   *
-   * Return location.verbatim_locality formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldSitename(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for sitename field';
-    }
-    $value = $this->getRawEsFieldValue($doc, 'location.verbatim_locality');
-    if ($params[0] === 'mapmate') {
-      if ($value === '') {
-        $value = 'unnamed site';
-      }
-      // Truncation to 62 characters required for MapMate.
-      $value = substr($value, 0, 62);
-    }
-    return $value;
-  }
-
-  /**
-   * Special field handler for determiner.
-   *
-   * Return name of determiner as specified by formatter.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldDeterminer(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for determiner field';
-    }
-    $recorder = $this->getRawEsFieldValue($doc, 'event.recorded_by');
-    $value = $this->getRawEsFieldValue($doc, 'identification.identified_by');
-
-    if ($params[0] === 'mapmate') {
-      // If no determiner recorded, set value to recorder.
-      if ($value === '') {
-        $value = $recorder;
-      }
-      // Truncation to 62 characters required for MapMate.
-      $value = substr($value, 0, 62);
-    }
-    return $value;
-  }
-
-  /**
-   * Special field handler for method.
-   *
-   * Return name of sampling method as specified by formatter.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldMethod(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for method field';
-    }
-    $value = $this->getRawEsFieldValue($doc, 'event.sampling_protocol');
-
-    if ($params[0] === 'mapmate') {
-      if ($value === '') {
-        $value = 'Unknown';
-      }
-      // Truncation to 62 characters required for MapMate.
-      $value = substr($value, 0, 62);
-    }
-    return $value;
-  }
-
-  /**
    * Special field handler for the associations data.
    *
    * @param array $doc
@@ -905,6 +490,29 @@ class RestApiElasticsearch {
       }
     }
     return implode('; ', $r);
+  }
+
+  /**
+   * Special field handler which returns a constant value.
+   *
+   * For an empty column set the second argument to an empty string.
+   * Useful where the output CSV must contain a column to which no
+   * useful data can be mapped.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Parameters defined for the special field.
+   *
+   * @return string
+   *   Returns constant passed as argument.
+   */
+  private function esGetSpecialFieldConstant(array $doc, array $params) {
+    // No params = blank, 1 param is constant value, 2 or more is a mistake.
+    if (count($params) > 1) {
+      return 'Incorrect params for constant field';
+    }
+    return count($params) ? $params[0] : '';
   }
 
   /**
@@ -988,6 +596,66 @@ class RestApiElasticsearch {
     // Remvove curly braces from output.
     $output = preg_replace('/({|})/', '', $output);
     return $output;
+  }
+
+  /**
+   * Special field handler ES datetime fields to output with provided format.
+   *
+   * Return the datetime as a string formatted as specified.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters:
+   *   1. ES field
+   *   2. datetime format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldDatetime(array $doc, array $params) {
+    if (count($params) !== 2) {
+      return 'Incorrect params for Datetime field';
+    }
+    $dtvalue = $this->getRawEsFieldValue($doc, $params[0]);
+    $dt = DateTime::createFromFormat('Y-m-d G:i:s.u', $dtvalue);
+    if ($dt === FALSE) {
+      return $dtvalue;
+    }
+    else {
+      return $dt->format($params[1]);
+    }
+  }
+
+  /**
+   * Special field handler for determiner.
+   *
+   * Return name of determiner as specified by formatter.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldDeterminer(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for determiner field';
+    }
+    $recorder = $this->getRawEsFieldValue($doc, 'event.recorded_by');
+    $value = $this->getRawEsFieldValue($doc, 'identification.identified_by');
+
+    if ($params[0] === 'mapmate') {
+      // If no determiner recorded, set value to recorder.
+      if ($value === '') {
+        $value = $recorder;
+      }
+      // Truncation to 62 characters required for MapMate.
+      $value = substr($value, 0, 62);
+    }
+    return $value;
   }
 
   /**
@@ -1144,52 +812,58 @@ class RestApiElasticsearch {
   }
 
   /**
-   * Special field handler for Elasticsearch sex with format options.
-   *
-   * Converts occurrence.sex to values as specified in format option.
+   * Special field handler for latitude data.
    *
    * @param array $doc
    *   Elasticsearch document.
    * @param array $params
-   *   An identifier for the format.
+   *   Format parameter.
    *
    * @return string
-   *   Formatted sex.
+   *   Formatted value.
    */
-  private function esGetSpecialFieldSex(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for formatted sex';
+  private function esGetSpecialFieldLat(array $doc, array $params) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    if (empty($root['point'])) {
+      return 'n/a';
     }
-    $value = isset($doc['occurrence']['sex']) ? strtolower($doc['occurrence']['sex']) : '';
-    if ($params[0] === 'mapmate') {
-      // Provides compatibility for import to MapMate.
-      switch ($value) {
-        case 'female':
-          return 'f';
+    $coords = explode(',', $root['point']);
+    $format = !empty($params) ? $params[0] : '';
+    switch ($format) {
+      case 'decimal':
+        return $coords[0];
 
-        case 'male':
-          return 'm';
-
-        case 'mixed':
-          return 'g';
-
-        case 'queen':
-          return 'q';
-
-        case 'not recorded':
-        case 'not known':
-        case 'unknown':
-        case 'unsexed':
-        case '':
-          return 'u';
-
-        default:
-          return $value;
-      }
+      // Implemented as the default.
+      case 'nssuffix':
+      default:
+        $ns = $coords[0] >= 0 ? 'N' : 'S';
+        $lat = number_format(abs($coords[0]), 3);
+        return "$lat$ns";
     }
-    else {
-      return $value;
+  }
+
+  /**
+   * Special field handler for lat/lon data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldLatLon(array $doc) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    if (empty($root['point'])) {
+      return 'n/a';
     }
+    $coords = explode(',', $root['point']);
+    $ns = $coords[0] >= 0 ? 'N' : 'S';
+    $ew = $coords[1] >= 0 ? 'E' : 'W';
+    $lat = number_format(abs($coords[0]), 3);
+    $lon = number_format(abs($coords[1]), 3);
+    return "$lat$ns $lon$ew";
   }
 
   /**
@@ -1239,6 +913,139 @@ class RestApiElasticsearch {
     else {
       return $value;
     }
+  }
+
+  /**
+   * Special field handler for locality data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value containing a list of location names associated with the
+   *   record.
+   */
+  private function esGetSpecialFieldLocality(array $doc) {
+    $info = [];
+    if (!empty($doc['location']['verbatim_locality'])) {
+      $info[] = $doc['location']['verbatim_locality'];
+      if (!empty($doc['location']['higher_geography'])) {
+        foreach ($doc['location']['higher_geography'] as $loc) {
+          $info[] = "$loc[type]: $loc[name]";
+        }
+      }
+    }
+    return implode('; ', $info);
+  }
+
+  /**
+   * Special field handler for longitude data.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Format parameter.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldLon(array $doc, array $params) {
+    // Check in case fields are in composite agg key.
+    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    if (empty($root['point'])) {
+      return 'n/a';
+    }
+    $coords = explode(',', $root['point']);
+    $format = !empty($params) ? $params[0] : "";
+    switch ($format) {
+      case "decimal":
+        return $coords[1];
+
+      // Implemented as the default.
+      case "ewsuffix":
+      default:
+        $ew = $coords[1] >= 0 ? 'E' : 'W';
+        $lon = number_format(abs($coords[1]), 3);
+        return "$lon$ew";
+    }
+  }
+
+  /**
+   * Special field handler for ES fields that should treat zero as null.
+   *
+   * If the field value (fieldname in params) is zero, then return null, else
+   * return the original value.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldNullIfZero(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for Null If Zero field';
+    }
+    $value = $this->getRawEsFieldValue($doc, $params[0]);
+    return ($value === '0' || $value === 0) ? NULL : $value;
+  }
+
+  /**
+   * Special field handler for method.
+   *
+   * Return name of sampling method as specified by formatter.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldMethod(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for method field';
+    }
+    $value = $this->getRawEsFieldValue($doc, 'event.sampling_protocol');
+
+    if ($params[0] === 'mapmate') {
+      if ($value === '') {
+        $value = 'Unknown';
+      }
+      // Truncation to 62 characters required for MapMate.
+      $value = substr($value, 0, 62);
+    }
+    return $value;
+  }
+
+  /**
+   * Special field handler for occurrence media data.
+   *
+   * Concatenates media to a string.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldOccurrenceMedia(array $doc) {
+    if (!empty($doc['occurrence']['media'])) {
+      $items = [];
+      foreach ($doc['occurrence']['media'] as $m) {
+        $item = [
+          $m['path'],
+          empty($m['caption']) ? '' : $m['caption'],
+          empty($m['licence']) ? '' : $m['licence'],
+        ];
+        $items[] = implode('; ', $item);
+      }
+      return implode(' | ', $items);
+    }
+    return '';
   }
 
   /**
@@ -1303,140 +1110,194 @@ class RestApiElasticsearch {
   }
 
   /**
-   * Special field handler for latitude data.
+   * Special field handler for ES identification query status.
+   *
+   * Return the identification query status formatted as specified.
    *
    * @param array $doc
    *   Elasticsearch document.
    * @param array $params
-   *   Format parameter.
+   *   An identifier for the format.
    *
    * @return string
-   *   Formatted value.
+   *   Formatted string
    */
-  private function esGetSpecialFieldLat(array $doc, array $params) {
-    // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
-    if (empty($root['point'])) {
-      return 'n/a';
+  private function esGetSpecialFieldQuery(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for query field';
     }
-    $coords = explode(',', $root['point']);
-    $format = !empty($params) ? $params[0] : '';
-    switch ($format) {
-      case 'decimal':
-        return $coords[0];
-
-      // Implemented as the default.
-      case 'nssuffix':
-      default:
-        $ns = $coords[0] >= 0 ? 'N' : 'S';
-        $lat = number_format(abs($coords[0]), 3);
-        return "$lat$ns";
+    $value = $this->getRawEsFieldValue($doc, 'identification.query');
+    if ($params[0] === 'astext') {
+      // Provides backward compatibility with pre-ES downloads.
+      if ($value === 'A') {
+        return 'Answered';
+      }
+      elseif ($value === 'Q') {
+        return 'Queried';
+      }
+      else {
+        return $value;
+      }
+    }
+    else {
+      return $value;
     }
   }
 
   /**
-   * Special field handler for lat/lon data.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted value.
-   */
-  private function esGetSpecialFieldLatLon(array $doc) {
-    // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
-    if (empty($root['point'])) {
-      return 'n/a';
-    }
-    $coords = explode(',', $root['point']);
-    $ns = $coords[0] >= 0 ? 'N' : 'S';
-    $ew = $coords[1] >= 0 ? 'E' : 'W';
-    $lat = number_format(abs($coords[0]), 3);
-    $lon = number_format(abs($coords[1]), 3);
-    return "$lat$ns $lon$ew";
-  }
-
-  /**
-   * Special field handler for longitude data.
+   * Special field handler which combines the sample and occurrence comment.
    *
    * @param array $doc
    *   Elasticsearch document.
    * @param array $params
-   *   Format parameter.
+   *   Parameters defined for the special field.
    *
    * @return string
-   *   Formatted value.
+   *   Combined comment string.
    */
-  private function esGetSpecialFieldLon(array $doc, array $params) {
-    // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
-    if (empty($root['point'])) {
-      return 'n/a';
+  private function esGetSpecialFieldSampleOccurrenceComment(array $doc, array $params) {
+    $oComment = isset($doc['occurrence']['occurrence_remarks']) ? $doc['occurrence']['occurrence_remarks'] : '';
+    $sComment = isset($doc['event']['event_remarks']) ? $doc['event']['event_remarks'] : '';
+    if (!empty($params) && in_array("notab", $params)) {
+      $oComment = str_replace("\t", ' ', $oComment);
+      $sComment = str_replace("\t", ' ', $sComment);
     }
-    $coords = explode(',', $root['point']);
-    $format = !empty($params) ? $params[0] : "";
-    switch ($format) {
-      case "decimal":
-        return $coords[1];
+    if (!empty($params) && in_array("nonewline", $params)) {
+      $oComment = str_replace(["\r\n", "\n", "\r"], ' ', $oComment);
+      $sComment = str_replace(["\r\n", "\n", "\r"], ' ', $sComment);
+    }
+    if ($oComment !== '' && $sComment !== '') {
+      $comment = "$oComment $sComment";
+    }
+    elseif ($oComment !== '') {
+      $comment = $oComment;
+    }
+    elseif ($sComment !== '') {
+      $comment = $sComment;
+    }
+    else {
+      $comment = '';
+    }
+    if (!empty($params) && in_array("addref", $params)) {
+      $ref = kohana::config('indicia.es_key_prefix') . $doc['id'];
+      $comment = trim("$comment $ref");
+    }
+    return $comment;
+  }
 
-      // Implemented as the default.
-      case "ewsuffix":
-      default:
-        $ew = $coords[1] >= 0 ? 'E' : 'W';
-        $lon = number_format(abs($coords[1]), 3);
-        return "$lon$ew";
+  /**
+   * Special field handler for Elasticsearch sex with format options.
+   *
+   * Converts occurrence.sex to values as specified in format option.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted sex.
+   */
+  private function esGetSpecialFieldSex(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for formatted sex';
+    }
+    $value = isset($doc['occurrence']['sex']) ? strtolower($doc['occurrence']['sex']) : '';
+    if ($params[0] === 'mapmate') {
+      // Provides compatibility for import to MapMate.
+      switch ($value) {
+        case 'female':
+          return 'f';
+
+        case 'male':
+          return 'm';
+
+        case 'mixed':
+          return 'g';
+
+        case 'queen':
+          return 'q';
+
+        case 'not recorded':
+        case 'not known':
+        case 'unknown':
+        case 'unsexed':
+        case '':
+          return 'u';
+
+        default:
+          return $value;
+      }
+    }
+    else {
+      return $value;
     }
   }
 
   /**
-   * Special field handler for locality data.
+   * Special field handler for ES sitename.
+   *
+   * Return location.verbatim_locality formatted as specified.
    *
    * @param array $doc
    *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
    *
    * @return string
-   *   Formatted value containing a list of location names associated with the
-   *   record.
+   *   Formatted string
    */
-  private function esGetSpecialFieldLocality(array $doc) {
-    $info = [];
-    if (!empty($doc['location']['verbatim_locality'])) {
-      $info[] = $doc['location']['verbatim_locality'];
-      if (!empty($doc['location']['higher_geography'])) {
-        foreach ($doc['location']['higher_geography'] as $loc) {
-          $info[] = "$loc[type]: $loc[name]";
-        }
-      }
+  private function esGetSpecialFieldSitename(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for sitename field';
     }
-    return implode('; ', $info);
+    $value = $this->getRawEsFieldValue($doc, 'location.verbatim_locality');
+    if ($params[0] === 'mapmate') {
+      if ($value === '') {
+        $value = 'unnamed site';
+      }
+      // Truncation to 62 characters required for MapMate.
+      $value = substr($value, 0, 62);
+    }
+    return $value;
   }
 
   /**
-   * Special field handler for occurrence media data.
+   * Special field handler for ES spatial ref system fields.
    *
-   * Concatenates media to a string.
+   * Return the spatial ref system formatted as specified.
    *
    * @param array $doc
    *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters:
+   *   1. ES field
+   *   2. format identifier.
    *
    * @return string
-   *   Formatted value.
+   *   Formatted string
    */
-  private function esGetSpecialFieldOccurrenceMedia(array $doc) {
-    if (!empty($doc['occurrence']['media'])) {
-      $items = [];
-      foreach ($doc['occurrence']['media'] as $m) {
-        $item = [
-          $m['path'],
-          empty($m['caption']) ? '' : $m['caption'],
-          empty($m['licence']) ? '' : $m['licence'],
-        ];
-        $items[] = implode('; ', $item);
-      }
-      return implode(' | ', $items);
+  private function esGetSpecialFieldSrefSystem(array $doc, array $params) {
+    if (count($params) !== 2) {
+      return 'Incorrect params for sref system field';
     }
-    return '';
+    $value = strval($this->getRawEsFieldValue($doc, $params[0]));
+    if ($params[1] === 'alphanumeric') {
+      // Ensure that EPSG codes are converted to alphanumeric string.
+      // Provides backward compatibility with pre-ES downloads.
+      if ($value === '4326') {
+        return 'WGS84';
+      }
+      elseif ($value === '27700') {
+        return 'OSGB36';
+      }
+      else {
+        return strtoupper($value);
+      }
+    }
+    else {
+      return $value;
+    }
   }
 
   /**
@@ -1516,25 +1377,165 @@ class RestApiElasticsearch {
   }
 
   /**
-   * Special field handler for ES fields that should treat zero as null.
+   * Special field handler to translate true/false values to specified output.
    *
-   * If the field value (fieldname in params) is zero, then return null, else
-   * return the original value.
+   * Return the translated value.
    *
    * @param array $doc
    *   Elasticsearch document.
    * @param array $params
-   *   Provided parameters.
+   *   Provided parameters:
+   *   1. ES field
+   *   2. Translated string for 'true' values
+   *   3. Translated string for 'false' values.
    *
    * @return string
    *   Formatted string
    */
-  private function esGetSpecialFieldNullIfZero(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for Null If Zero field';
+  private function esGetSpecialFieldTrueFalse(array $doc, array $params) {
+    if (count($params) !== 3) {
+      return 'Incorrect params for true_false field';
     }
     $value = $this->getRawEsFieldValue($doc, $params[0]);
-    return ($value === '0' || $value === 0) ? NULL : $value;
+    if ($value === 'true') {
+      return $params[1];
+    }
+    elseif ($value === 'false') {
+      return $params[2];
+    }
+    else {
+      return '';
+    }
+  }
+
+  /**
+   * Special field handler to truncate output to specified number of characters.
+   *
+   * Return the a string no longer than specified number of characters.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters:
+   *   1. ES field
+   *   2. Number of characters.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldTruncate(array $doc, array $params) {
+    if (count($params) !== 2) {
+      return 'Incorrect params for truncate field';
+    }
+    $value = $this->getRawEsFieldValue($doc, $params[0]);
+    return substr($value, 0, intval($params[1]));
+  }
+
+  /**
+   * Special field handler for ES verification status.
+   *
+   * Return the verification status formatted as specified.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldVerificationStatus(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for verification status field';
+    }
+    $value = $this->getRawEsFieldValue($doc, 'identification.verification_status');
+    if ($params[0] === 'astext') {
+      // Provides backward compatibility with pre-ES downloads.
+      if ($value === 'V') {
+        return 'Accepted';
+      }
+      elseif ($value === 'C') {
+        return 'Unconfirmed';
+      }
+      elseif ($value === 'R') {
+        return 'Rejected';
+      }
+      elseif ($value === 'I') {
+        return 'Input still in progress';
+      }
+      elseif ($value === 'D') {
+        return 'Queried';
+      }
+      elseif ($value === 'S') {
+        return 'Awaiting check';
+      }
+      else {
+        return $value;
+      }
+    }
+    else {
+      return $value;
+    }
+  }
+
+  /**
+   * Special field handler for ES verification status.
+   *
+   * Return the verification status formatted as specified.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldVerificationSubstatus(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for verification substatus field';
+    }
+    $status = $this->getRawEsFieldValue($doc, 'identification.verification_status');
+    $value = $this->getRawEsFieldValue($doc, 'identification.verification_substatus');
+    if ($params[0] === 'astext') {
+      // Provides backward compatibility with pre-ES downloads.
+      if ($status === 'V') {
+        if ($value === '1') {
+          return 'Correct';
+        }
+        elseif ($value === '2') {
+          return 'Considered correct';
+        }
+        else {
+          return NULL;
+        }
+      }
+      elseif ($status === 'C') {
+        if ($value === '3') {
+          return 'Plausible';
+        }
+        else {
+          return 'Not reviewed';
+        }
+      }
+      elseif ($status === 'R') {
+        if ($value === '4') {
+          return 'Unable to verify';
+        }
+        elseif ($value === '5') {
+          return 'Incorrect';
+        }
+        else {
+          return NULL;
+        }
+      }
+      else {
+        return NULL;
+      }
+    }
+    else {
+      return $value;
+    }
   }
 
   /**
