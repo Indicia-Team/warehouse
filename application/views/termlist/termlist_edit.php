@@ -37,7 +37,7 @@ if ($parent_id != NULL) : ?>
 </a>
 </h1>
 <?php endif; ?>
-<form action="<?php echo url::site() . 'termlist/save'; ?>" method="post">
+<form id="termlist-edit" action="<?php echo url::site() . 'termlist/save'; ?>" method="post">
   <fieldset>
   <legend>List Details<?php echo $metadata ?></legend>
     <input type="hidden" name="termlist:id" value="<?php echo $id; ?>" />

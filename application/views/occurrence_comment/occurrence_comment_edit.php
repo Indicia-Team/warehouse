@@ -125,7 +125,7 @@ $id = html::initial_value($values, 'occurrence_comment:id');
   </fieldset>
   <?php
   echo html::form_buttons($id != NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('licence-edit');
+  data_entry_helper::enable_validation('occurrence-comment-edit');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

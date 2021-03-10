@@ -273,7 +273,7 @@ TXT;
   </fieldset>
   <?php
   echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id') !== NULL);
-  data_entry_helper::enable_validation('taxa_taxon_list-edit');
+  data_entry_helper::enable_validation('taxa-taxon-list-edit');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>
