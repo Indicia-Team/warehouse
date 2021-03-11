@@ -22,10 +22,10 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-warehouse::loadHelpers(['data_entry_helper']);
-$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+warehouse::loadHelpers(['report_helper']);
+$readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
-<form action="<?php echo url::site() . 'trigger/save'; ?>" method="post">
+<form action="<?php echo url::site() . 'trigger/save'; ?>" method="post" id="entry_form">
   <fieldset>
     <legend>Enter the parameters for the trigger</legend>
     <?php
@@ -36,7 +36,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       }
     }
     // Ask the report grid code to build us a parameters form.
-    echo data_entry_helper::report_grid(array(
+    echo report_helper::report_grid(array(
       'id' => 'params',
       'paramsOnly' => TRUE,
       'dataSource' => $_POST['trigger:trigger_template_file'],
@@ -49,6 +49,6 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   </fieldset>
   <?php
   echo html::form_buttons(TRUE);
-  echo data_entry_helper::dump_javascript();
+  echo report_helper::dump_javascript();
   ?>
 </form>

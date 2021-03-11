@@ -25,7 +25,7 @@
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'taxon_relation_type:id');
 ?>
-<form id="taxon-relation-type-edit" action="<?php echo url::site() . 'taxon_relation_type/save' ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'taxon_relation_type/save' ?>" method="post">
   <fieldset>
     <legend>Taxon relation details<?php echo $metadata; ?></legend>
     <input type="hidden" name="taxon_relation_type:id" value="<?php echo $id; ?>" />
@@ -66,7 +66,7 @@ $id = html::initial_value($values, 'taxon_relation_type:id');
   </fieldset>
   <?php
   echo html::form_buttons($id != NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('taxon-relation-type-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

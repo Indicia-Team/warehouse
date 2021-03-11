@@ -26,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'licence:id');
 ?>
 <p>This page allows you to specify the details of a licence that can be applied to records.</p>
-<form id="licence-edit" action="<?php echo url::site() . 'licence/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'licence/save'; ?>" method="post">
   <?php echo $metadata; ?>
   <fieldset>
     <input type="hidden" name="licence:id" value="<?php echo $id ?>" />
@@ -70,7 +70,7 @@ $id = html::initial_value($values, 'licence:id');
   </fieldset>
   <?php
   echo html::form_buttons($id != NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('licence-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

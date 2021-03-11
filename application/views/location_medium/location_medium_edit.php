@@ -28,7 +28,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
 ?>
 <p>This page allows you to specify the details of an location media file.</p>
 <form action="<?php echo url::site() . 'location_medium/save'; ?>" method="post"
-      enctype="multipart/form-data" id="location-medium-edit">
+      enctype="multipart/form-data" id="entry_form">
   <fieldset>
     <legend>Media file details<?php echo $metadata; ?></legend>
     <?php
@@ -96,7 +96,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('location-medium-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

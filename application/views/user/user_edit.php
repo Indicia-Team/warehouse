@@ -26,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'user:id');
 ?>
 <p>This page allows you to specify a users details.</p>
-<form id="user-edit" action="<?php echo url::site() . 'user/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'user/save'; ?>" method="post">
   <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
   <input type="hidden" name="person_id" id="person_id" value="<?php echo html::specialchars($model->person_id); ?>" />
   <?php
@@ -117,7 +117,7 @@ HTML;
   </fieldset>
   <?php
   echo html::form_buttons($id != NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('user-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

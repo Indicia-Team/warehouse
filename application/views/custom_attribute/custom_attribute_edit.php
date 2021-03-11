@@ -37,7 +37,7 @@ $enabled = ($disabled_input === 'YES') ? 'disabled="disabled"' : '';
   <?php echo strtolower($other_data['name']); ?> data.</div>
 <?php endif; ?>
 <?php echo $metadata; ?>
-<form id="custom-attribute-edit"
+<form id="entry_form"
       enctype="multipart/form-data"
       action="<?php echo url::site() . "$other_data[controllerpath]/save"; ?>"
       method="post">
@@ -413,7 +413,7 @@ HTML;
   $this->associationsView->model = $model;
   echo $this->associationsView;
   echo html::form_buttons(!empty($id), FALSE, FALSE);
-  data_entry_helper::enable_validation('custom-attribute-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

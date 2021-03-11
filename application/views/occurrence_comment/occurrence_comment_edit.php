@@ -26,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'occurrence_comment:id');
 ?>
 <p>This page allows you to specify the details of an occurrence comment.</p>
-<form id="occurrence-comment-edit" action="<?php echo url::site() . 'occurrence_comment/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'occurrence_comment/save'; ?>" method="post">
   <fieldset>
     <input type="hidden" name="occurrence_comment:id" value="<?php echo $id ?>" />
     <input type="hidden" name="occurrence_comment:occurrence_id" value="<?php echo html::initial_value($values, 'occurrence_comment:occurrence_id'); ?>" />
@@ -125,7 +125,7 @@ $id = html::initial_value($values, 'occurrence_comment:id');
   </fieldset>
   <?php
   echo html::form_buttons($id != NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('occurrence-comment-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

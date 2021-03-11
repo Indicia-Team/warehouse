@@ -26,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'taxon_rank:id');
 ?>
 <p>This page allows you to specify the details of a rank in the taxon hierarchy.</p>
-<form id="rank-edit" action="<?php echo url::site() . 'taxon_rank/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'taxon_rank/save'; ?>" method="post">
   <fieldset>
     <input type="hidden" name="taxon_rank:id" value="<?php echo $id ?>" />
     <legend>Taxon rank details<?php echo $metadata; ?></legend>
@@ -62,7 +62,7 @@ $id = html::initial_value($values, 'taxon_rank:id');
   </fieldset>
   <?php
   echo html::form_buttons(!empty($id), FALSE, FALSE);
-  data_entry_helper::enable_validation('rank-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

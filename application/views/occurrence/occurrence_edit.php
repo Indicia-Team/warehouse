@@ -34,7 +34,7 @@ $(document).ready(function() {
   jQuery('.date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
 });
 </script>
-<form action="<?php echo url::site() . 'occurrence/save' ?>" method="post" id="occurrence-edit">
+<form action="<?php echo url::site() . 'occurrence/save' ?>" method="post" id="entry_form">
   <fieldset class="readonly">
     <legend>Sample summary<?php echo $metadata; ?></legend>
     <label>Sample link:</label>
@@ -256,7 +256,7 @@ $(document).ready(function() {
 
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('occurrence-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

@@ -27,8 +27,8 @@ $id = html::initial_value($values, 'survey_medium:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify the details of an survey media file.</p>
-<form action="<?php echo url::site() . 'survey_medium/save'; ?>" method="post"
-      enctype="multipart/form-data" id="survey-medium-edit">
+<form id="entry_form" action="<?php echo url::site() . 'survey_medium/save'; ?>" method="post"
+      enctype="multipart/form-data">
   <fieldset>
     <legend>Media file details<?php echo $metadata; ?></legend>
     <?php
@@ -99,7 +99,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('survey-medium-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

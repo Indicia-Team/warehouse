@@ -24,7 +24,7 @@
 
 warehouse::loadHelpers(['data_entry_helper']);
 ?>
-<form id="new-password" action="<?php echo url::site(); ?>new_password/save" method="post">
+<form id="entry_form" action="<?php echo url::site(); ?>new_password/save" method="post">
   <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($user_model->id); ?>" />
   <input type="hidden" name="email_key" id="email_key" value="<?php echo html::specialchars($email_key); ?>" />
   <fieldset>
@@ -61,7 +61,7 @@ warehouse::loadHelpers(['data_entry_helper']);
   </fieldset>
   <input type="submit" value="Submit new password" class="btn btn-primary" />
   <?php
-  data_entry_helper::enable_validation('new-password');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

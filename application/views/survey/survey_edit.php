@@ -26,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify the details of a survey in which samples and records can be organised.</p>
-<form action="<?php echo url::site() . 'survey/save'; ?>" method="post" id="survey-edit">
+<form action="<?php echo url::site() . 'survey/save'; ?>" method="post" id="entry_form">
   <fieldset>
     <legend>Survey dataset details<?php echo $metadata ?></legend>
     <?php
@@ -142,7 +142,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       $masterListId = warehouse::getMasterTaxonListId();
       echo <<<HTML
 <div class="alert alert-info">
- <p>You can use the taxon selection control below to 
+ <p>You can use the taxon selection control below to
  select one or more higher level taxa to which recorded taxa must belong in order to
  quality for auto-verification. Leave the list empty for no filtering. You must also
  check the Auto Accept box for these filters to take effect.</p>
@@ -223,7 +223,7 @@ HTML;
   <?php
   endif;
   echo html::form_buttons(html::initial_value($values, 'survey:id') !== NULL);
-  data_entry_helper::enable_validation('survey-edit');
+  data_entry_helper::enable_validation('entry_form');
   data_entry_helper::$javascript .= <<<JS
 // ensure the parent lookup does not allow an inappropriate survey to be selected (i.e. self or wrong website)
 function setParentFilter() {
