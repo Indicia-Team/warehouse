@@ -73,7 +73,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'fieldname' => 'taxon_medium:caption',
       'default' => html::initial_value($values, 'taxon_medium:caption'),
     ]);
-    echo data_entry_helper::select(array(
+    echo data_entry_helper::select([
       'label' => 'Licence',
       'helpText' => 'Licence which applies to this photo if set.',
       'fieldname' => 'taxon_medium:licence_id',
@@ -83,7 +83,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'captionField' => 'title',
       'blankText' => '<Please select>',
       'extraParams' => $readAuth,
-    ));
+    ]);
     if ($mediaTypeId && $mediaType !== 'Image:Local') {
       echo data_entry_helper::select([
         'label' => 'Media type',
