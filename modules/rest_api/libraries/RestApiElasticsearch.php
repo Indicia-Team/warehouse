@@ -280,6 +280,12 @@ class RestApiElasticsearch {
     $this->elasticProxy = $elasticProxy;
   }
 
+  /**
+   * Ensures a requested ES resource name is allowed.
+   *
+   * Checks against the 'allowed' entry in the config, which contains regular
+   * expressions for resource patterns that are allowed.
+   */
   public function checkResourceAllowed() {
     $esConfig = kohana::config('rest.elasticsearch');
     $thisProxyCfg = $esConfig[$this->elasticProxy];
@@ -1627,7 +1633,7 @@ class RestApiElasticsearch {
     else {
       if (!empty($_GET)) {
         $params = array_merge($_GET);
-        // Don't pass on the auth tokens.
+        // Don't pass on the auth tokens and other non-elasticsearch tags.
         unset($params['user']);
         unset($params['website_id']);
         unset($params['secret']);
@@ -2007,6 +2013,12 @@ SQL;
    *
    * @param string $url
    *   URL to proxy to.
+   * @param string $requestBody
+   *   Request data.
+   * @param string $format
+   *   Response format, e.g. 'csv', 'json'.
+   * @param bool $ret
+   *   Set to TRUE if the response should be returned rather than echoed.
    */
   private function proxyToEs($url, $requestBody, $format, $ret) {
     $this->getPagingMode($format);
