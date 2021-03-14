@@ -354,7 +354,11 @@ class RestApiElasticsearch {
       if (!RestObjects::$clientWebsiteId) {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'No website_id available for website limited report.');
       }
-      $filters[] = ['terms' => ['metadata.website.id' => $this->getSharedWebsiteList(RestObjects::$clientWebsiteId, RestObjects::$scope)]];
+      $filters[] = [
+        'terms' => [
+          'metadata.website.id' => warehouse::getSharedWebsiteList([RestObjects::$clientWebsiteId], RestObjects::$db, RestObjects::$scope),
+        ],
+      ];
       // Only verification gets full precision.
       $blur = RestObjects::$scope === 'verification' ? 'F' : 'B';
       $filters[] = ['query_string' => ['query' => "metadata.confidential:false AND metadata.release_status:R AND ((metadata.sensitivity_blur:$blur) OR (!metadata.sensitivity_blur:*))"]];
@@ -1887,42 +1891,6 @@ class RestApiElasticsearch {
     elseif ($format === 'csv') {
       $this->pagingMode = 'scroll';
     }
-  }
-
-  /**
-   * A cached lookup of the websites that are available for a sharing mode.
-   *
-   * @param int $websiteId
-   *   ID of the website that is receiving the shared data.
-   * @param string $scope
-   *   Sharing mode.
-   *
-   * @return array
-   *   List of website IDs that will share their data.
-   */
-  private function getSharedWebsiteList($websiteId, $scope = 'reporting') {
-    $tag = "website-shares-$websiteId";
-    $cacheId = "$tag-$scope";
-    $cache = Cache::instance();
-    if ($cached = $cache->get($cacheId)) {
-      return explode(',', $cached);
-    }
-    $qry = RestObjects::$db->select('to_website_id')
-      ->from('index_websites_website_agreements')
-      ->where([
-        "receive_for_$scope" => 't',
-        'from_website_id' => $websiteId,
-      ])
-      ->get()->result();
-    $ids = [];
-    foreach ($qry as $row) {
-      $ids[] = $row->to_website_id;
-    }
-    // Tag all cache entries for this website so they can be cleared together
-    // when changes are saved. Also note the cached entry is an imploded string
-    // so we benefit from sharing cache hits with the reporting engine.
-    $cache->set($cacheId, implode(',', $ids), $tag);
-    return $ids;
   }
 
   /**
