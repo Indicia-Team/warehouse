@@ -139,6 +139,7 @@ function verifier_notifications_process_task_type($type, array $params, $db) {
     if (!empty($url['linkText'])) {
       $params['notificationComment'] = $url['linkText'];
     }
+    acknowledge_stale_notifications($db, $params);
     // Get all filters where the user for the filter does not already have an
     // unacknowledged notification of that type and the user is associated
     // with the website of the moderation page.
@@ -146,6 +147,48 @@ function verifier_notifications_process_task_type($type, array $params, $db) {
     // Fire the notifications for records matching these filters.
     loop_through_workflows_and_filters_and_create_notifications($db, $filters, $params);
   }
+}
+
+/**
+ * Acknowledge stale verifier notifications so they are re-sent.
+ *
+ * If a verifier receives a notification, then forgets about it and doesn't
+ * acknowledge it, they may not realise their verification record pool is
+ * growing. Avoid this by acknowledging these stale notifications so they are
+ * sent out again.
+ *
+ * @param object $db
+ *   Database connection.
+ * @param array $params
+ *   Parameters defining the notification type.
+ */
+function acknowledge_stale_notifications($db, array $params) {
+  // Define a date after which we consider a notification still "fresh" - 1 day
+  // ago.
+  $date = new DateTime();
+  $date->sub(new DateInterval('P1D'));
+  $freshDate = $date->format('c');
+  // Automatically refresh stale notifications so they don't build up.
+  $sql = <<<SQL
+    UPDATE notifications n SET acknowledged=true
+    FROM filters f
+    JOIN filters_users AS fu ON (fu.filter_id = f.id)
+    JOIN users AS u ON (u.id = fu.user_id)
+    JOIN users_websites AS uw ON (uw.user_id = u.id)
+    WHERE f.sharing = '$params[sharingFilter]'
+    AND f.defines_permissions = 't'
+    AND uw.website_id = $params[website_id]
+    AND f.deleted = 'f'
+    AND fu.deleted = 'f'
+    AND u.deleted = 'f'
+    AND n.user_id=fu.user_id
+    AND n.source_type='$params[notificationSourceType]'
+    AND n.source='$params[notificationSource]'
+    AND n.acknowledged=false
+    AND n.linked_id is null
+    AND n.triggered_on<='$freshDate'
+SQL;
+  $db->query($sql);
 }
 
 /**
@@ -165,11 +208,6 @@ function verifier_notifications_process_task_type($type, array $params, $db) {
  *   List of filters
  */
 function get_filters_without_existing_notification($db, array $params) {
-  // Define a date after which we consider a notification still "fresh" - 1 day
-  // ago.
-  $date = new DateTime();
-  $date->sub(new DateInterval('P1D'));
-  $freshDate = $date->format('c');
   $filters = $db
     ->select('DISTINCT f.id,f.definition,fu.user_id,u.username')
     ->from('filters f')
@@ -177,8 +215,7 @@ function get_filters_without_existing_notification($db, array $params) {
     ->join('users as u', 'u.id', 'fu.user_id')
     ->join('users_websites as uw', 'uw.user_id', 'u.id')
     ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='$params[notificationSourceType]' " .
-      "and n.source='$params[notificationSource]'  and n.acknowledged=false and n.linked_id is null ".
-      "and n.triggered_on>'$freshDate')", '', 'LEFT')
+      "and n.source='$params[notificationSource]' and n.acknowledged=false and n.linked_id is null)", '', 'LEFT')
     ->where([
       'f.sharing' => $params['sharingFilter'],
       'f.defines_permissions' => 't',
