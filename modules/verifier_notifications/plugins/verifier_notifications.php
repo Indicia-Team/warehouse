@@ -152,8 +152,9 @@ function verifier_notifications_process_task_type($type, array $params, $db) {
  * Retrieve filters that detect changes which have not already been notified.
  *
  * Get all filters where the user for the filter does not already have a
- * notification of the type we are interested in (the source is different
- * on the overdue notification).
+ * "fresh" notification of the type we are interested in (the source is
+ * different on the overdue notification). A "fresh" notification is considered
+ * as any triggered in the last 24 hours.
  *
  * @param object $db
  *   Database connection object.
@@ -164,14 +165,20 @@ function verifier_notifications_process_task_type($type, array $params, $db) {
  *   List of filters
  */
 function get_filters_without_existing_notification($db, array $params) {
+  // Define a date after which we consider a notification still "fresh" - 1 day
+  // ago.
+  $date = new DateTime();
+  $date->sub(new DateInterval('P1D'));
+  $freshDate = $date->format('c');
   $filters = $db
     ->select('DISTINCT f.id,f.definition,fu.user_id,u.username')
     ->from('filters f')
     ->join('filters_users as fu', 'fu.filter_id', 'f.id')
     ->join('users as u', 'u.id', 'fu.user_id')
     ->join('users_websites as uw', 'uw.user_id', 'u.id')
-    ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='" . $params['notificationSourceType'] .
-      "' and n.source='" . $params['notificationSource'] . "'  and n.acknowledged=false and n.linked_id is null)", '', 'LEFT')
+    ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='$params[notificationSourceType]' " .
+      "and n.source='$params[notificationSource]'  and n.acknowledged=false and n.linked_id is null ".
+      "and n.triggered_on>'$freshDate')", '', 'LEFT')
     ->where([
       'f.sharing' => $params['sharingFilter'],
       'f.defines_permissions' => 't',
