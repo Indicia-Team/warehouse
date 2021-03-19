@@ -21,7 +21,13 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/
  */
+?>
 
+<p class="alert alert-info">
+For information on configuration of workflow events, see
+<a href="https://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/modules/workflow.html">the Workflow module documentation</a>.
+<p>
+<?php
 echo $grid;
 ?>
 <form action="<?php echo url::site() . 'workflow_event/create'; ?>" method="post">
