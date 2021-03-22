@@ -1,0 +1,77 @@
+<report
+    title="Explore occurrences (standard filters)"
+    description="A list of occurrences designed for tabular output."
+    featured="true"
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         standard_params="occurrences" count_field="o.*">
+  SELECT #columns#
+  FROM cache_occurrences_functional o
+  JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  LEFT JOIN index_websites_website_agreements canEdit on canEdit.from_website_id=o.website_id
+    and canEdit.to_website_id in (#website_ids#) and canEdit.provide_for_editing=true
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  AND o.sample_id=#sample_id#
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>cttl.taxon_group, cttl.preferred_taxon</order_by>
+  </order_bys>
+  <params>
+    <param name="occattrs" display="Occurrence attribute list" datatype="occattrs" default=""
+           description="Comma separated list of occurrence attribute IDs to include as columns in the report" />
+    <param name="sample_id" datatype="integer" />
+    <param name="default_input_form" display="Default input form" default=""
+           description="Input form path to use when no other available. Can be used to generate the path in report_grid action links." />
+    <param name="force_default_input_form" display="Force default input form" default="0"
+           description="Force the defaault input form to be used instead of the one specified by the record" />
+  </params>
+  <columns>
+    <column name="occurrence_id" display="ID" sql="o.id" datatype="integer"
+        template='&lt;span class="status-icon status-{record_status} release-{release_status} substatus-{record_substatus} query-{query} certainty-{certainty}" title="{status_hint}"&gt;&lt;/span&gt;&lt;span class="record-id"&gt;{occurrence_id}&lt;/span&gt;' />
+    <column name="taxon" display="Species" datatype="species" sql="cttl.preferred_taxon" template='&lt;span class="zero-{zero_abundance}"&gt;{taxon}&lt;/span&gt;' />
+    <column name="common" display="Common name" datatype="text" sql="cttl.default_common_name" template='&lt;span class="zero-{zero_abundance}"&gt;{common}&lt;/span&gt;' />
+    <column name="taxon_group" display="Taxon group" sql="cttl.taxon_group" datatype="text" />
+    <column name="zero_abundance" display="Zero abundance" sql="o.zero_abundance" visible="false" />
+    <column name="record_status" display="State" sql="o.record_status" visible="false" />
+    <column name="record_substatus" display="State" sql="o.record_substatus" visible="false" />
+    <column name="release_status" display="State" sql="o.release_status" visible="false" />
+    <column name="sensitive" display="Sensitive" sql="o.sensitive" visible="false" />
+    <column name="certainty" display="Certainty" sql="o.certainty" visible="false" />
+    <column name="attr_sex_stage" display="Sex or stage" sql="onf.attr_sex_stage" visible="false" />
+    <column name="attr_sex" display="Sex" sql="onf.attr_sex" visible="false" />
+    <column name="attr_stage" display="Stage" sql="onf.attr_stage" visible="false" />
+    <column name="attr_sex_stage_count" display="Quantity" sql="onf.attr_sex_stage_count" visible="false" />
+    <column name="attr_det_first_name" display="Determiner first name" sql="onf.attr_det_first_name" visible="false" />
+    <column name="attr_det_last_name" display="Determiner last name" sql="onf.attr_det_last_name" visible="false" />
+    <column name="attr_det_full_name" display="Determiner name" sql="onf.attr_det_full_name" visible="false" />
+    <column name="attr_behaviour" display="Determiner name" sql="onf.attr_behaviour" visible="false" />
+    <column name="attr_reproductive_condition" display="Determiner name" sql="onf.attr_reproductive_condition" visible="false" />
+    <column name="images" display="Images" sql="onf.media" img="true" />
+    <column name="input_form" visible="false" sql="case
+    when canEdit.id is null then null
+    when o.input_form is null or o.website_id not in (#website_ids#) or #force_default_input_form#=1 then '#default_input_form#'
+    else o.input_form
+end" datatype="text" />
+    <column name="pass" visible="false" sql="CASE
+      WHEN o.data_cleaner_result='t' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;Passes all auto-checks.&quot;&gt;&lt;/div&gt;'
+      WHEN true and o.verification_checks_enabled='f' THEN '&lt;div class=&quot;auto-check-disabled-icon&quot; title=&quot;Auto-check disabled.&quot;&gt;-&lt;/div&gt;'
+      WHEN o.verification_checks_enabled='t' AND o.data_cleaner_result IS NULL THEN '&lt;div class=&quot;pending-icon&quot; title=&quot;Pending auto-check.&quot;&gt;...&lt;/div&gt;'
+    END" />
+    <column name="fails" display="Auto check" template="{pass}{fails}"
+        sql="case when o.data_cleaner_result='f' then
+            replace(replace(replace(replace(onf.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;')
+        end"
+    />
+    <column name="query" visible="false" sql="o.query" />
+    <column name="status_hint" visible="false"
+            sql="case o.record_status when 'V' then 'Accepted' when 'R' then 'Not accepted' when 'T' then 'Test'
+              when 'C' then case when record_substatus=3 then 'Plausible' when o.certainty='C' then 'Recorder considered this certain' when o.certainty='L' then 'Recorder considered this likely' when o.certainty='U' then 'Recorder considered this uncertain' else 'Not reviewed' end
+            end ||
+            case o.record_substatus when 1 then ' as correct' when 2 then ' as considered correct' when 4 then ' as unable to verify' when 5 then ' as incorrect' else '' end ||
+            case o.query when 'A' then ', query raised and answered' when 'Q' then ', query raised' else '' end" />
+  </columns>
+</report>

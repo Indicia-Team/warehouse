@@ -1,4 +1,10 @@
+# Version 5.1.0
+*2021-03-22*
+
+* Adds reports to support a new sample_details prebuilt form.
+
 # Version 5.0.0
+*2021-02-28*
 
 * Dropped support for oAuth2 password authentication as no longer recommended in the oAuth 2.0
   Security Best Current Practice. See https://oauth.net/2/grant-types/password/.
