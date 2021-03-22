@@ -18,7 +18,7 @@
   #idlist#
   </query>
   <order_bys>
-    <order_by>o.id DESC</order_by>
+    <order_by>cttl.taxon_group, cttl.preferred_taxon</order_by>
   </order_bys>
   <params>
     <param name="occattrs" display="Occurrence attribute list" datatype="occattrs" default=""
@@ -39,6 +39,7 @@
     <column name="record_status" display="State" sql="o.record_status" visible="false" />
     <column name="record_substatus" display="State" sql="o.record_substatus" visible="false" />
     <column name="release_status" display="State" sql="o.release_status" visible="false" />
+    <column name="sensitive" display="Sensitive" sql="o.sensitive" visible="false" />
     <column name="certainty" display="Certainty" sql="o.certainty" visible="false" />
     <column name="attr_sex_stage" display="Sex or stage" sql="onf.attr_sex_stage" visible="false" />
     <column name="attr_sex" display="Sex" sql="onf.attr_sex" visible="false" />
@@ -47,6 +48,8 @@
     <column name="attr_det_first_name" display="Determiner first name" sql="onf.attr_det_first_name" visible="false" />
     <column name="attr_det_last_name" display="Determiner last name" sql="onf.attr_det_last_name" visible="false" />
     <column name="attr_det_full_name" display="Determiner name" sql="onf.attr_det_full_name" visible="false" />
+    <column name="attr_behaviour" display="Determiner name" sql="onf.attr_behaviour" visible="false" />
+    <column name="attr_reproductive_condition" display="Determiner name" sql="onf.attr_reproductive_condition" visible="false" />
     <column name="images" display="Images" sql="onf.media" img="true" />
     <column name="input_form" visible="false" sql="case
     when canEdit.id is null then null
