@@ -1,0 +1,66 @@
+<report
+    title="Sample data for sample details"
+    description="Report used to retrieve details of a sample excluding custom attributes for the sample details prebuilt form."
+>
+  <query website_filter_field="su.website_id">
+  select #columns#
+  from samples smp
+  join cache_samples_functional s on s.id=smp.id
+  join cache_samples_nonfunctional snf on snf.id=s.id
+  join cache_occurrences_functional o on o.sample_id=s.id
+  join surveys su on su.id=smp.survey_id and su.deleted=false
+  join users u on u.id=s.created_by_id
+  join people p on p.id=u.person_id
+
+  #agreements_join#
+  #joins#
+  where smp.id=#sample_id#
+  and smp.deleted=false
+  and #sharing_filter#
+  </query>
+  <params>
+    <param name='sample_id' display='Sample ID' description='ID of the sample to load' datatype='text' />
+    <param name="geom_precision" display="Geometry precision" description="in km, 1, 2 or 10" default="" datatype="integer">
+      <join operator="notequal" value="">join map_squares msq on msq.id = o.map_sq_#geom_precision#km_id</join>
+      <join operator="equal" value="">join map_squares msq on msq.id = o.map_sq_1km_id</join>
+    </param>
+    <param name="allow_sensitive_full_precision" datatype="boolean" default="0"
+           description="Allow viewing of sensitive records at full precision" />
+    <param name="includes_confidential" datatype="integer" default="0" />
+    <param name="includes_unreleased" datatype="integer" default="0" />
+  </params>
+  <columns>
+    <column name="sample_id" sql="s.id" />
+    <column name="parent_sample_id" sql="smp.parent_id" />
+    <column name="survey_id" sql="su.id" />
+    <column name="sample_external_key" sql="smp.external_key" />
+    <column name="survey_title" sql="snf.survey_title" />
+    <column name="recorder" sql="snf.recorders" />
+    <column name="inputter" sql="case p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end
+        when snf.recorders then null
+        else p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end end" />
+    <column name="date_start" sql="s.date_start" visible="false" />
+    <column name="date_end" sql="s.date_end" visible="false" />
+    <column name="date_type" sql="s.date_type" visible="false" />
+    <column name="date" display="Date" datatype="date" />
+    <column name="entered_sref" sql="case #allow_sensitive_full_precision# when '1' then smp.entered_sref else snf.public_entered_sref end" />
+    <column name="sref_precision" sql="snf.attr_sref_precision" />
+    <column name="location_name" sql="s.location_name" />
+    <column name="sample_comment" sql="case when o.sensitive=false or #allow_sensitive_full_precision#='1' then snf.comment else null end" />
+    <column name="geom" sql="case
+      when #allow_sensitive_full_precision#='1' then st_astext(smp.geom)
+      when '#geom_precision#'='' then st_astext(s.public_geom)
+      else st_astext(msq.geom)
+    end" />
+    <column name="lat" sql="st_y(st_transform(st_centroid(s.public_geom), 4326))" />
+    <column name="long" sql="st_x(st_transform(st_centroid(s.public_geom), 4326))" />
+    <column name="created_by_id" sql="s.created_by_id" />
+    <column name="website_id" sql="s.website_id" />
+    <column name="input_form" sql="max(o.input_form)" aggregate="true" />
+    <column name="taxon_meaning_id" sql="o.taxon_meaning_id" />
+    <column name="created_on" sql="s.created_on" />
+    <column name="updated_on" sql="s.updated_on" />
+    <column name="includes_confidential" sql="max(o.confidential::integer)" aggregate="true" />
+    <column name="includes_unreleased" sql="max((o.release_status&lt;&gt;'R')::integer)" aggregate="true" />
+  </columns>
+</report>
