@@ -1,0 +1,113 @@
+
+<report
+    title="Sample attributes wih hiddens"
+    description="Report used to retrieve custom attributes of an sample which are not included in a list of attributes to ignore."
+>
+  <query website_filter_field="o.website_id">
+  select
+    DISTINCT ON (av.id) s.id, 'Parent sample' as attribute_type, a.system_function, a.id as attr_id, saw.weight as w1, fsb1.weight as w2, fsb2.weight as w3,
+    CASE a.data_type
+            WHEN 'T' THEN 'Text'
+            WHEN 'L' THEN 'Lookup List'
+            WHEN 'I' THEN 'Integer'
+            WHEN 'B' THEN 'Boolean'
+            WHEN 'F' THEN 'Float'
+            WHEN 'D' THEN 'Specific Date'
+            WHEN 'V' THEN 'Vague Date'
+            ELSE a.data_type
+        END AS data_type,
+        CASE '#language#' WHEN '' THEN a.caption ELSE COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) END AS caption,
+        CASE a.data_type
+            WHEN 'T' THEN av.text_value
+            WHEN 'L' THEN lookup.term::text
+            WHEN 'I' THEN coalesce(l.name, av.int_value::varchar)
+            WHEN 'B' THEN av.int_value::varchar
+            WHEN 'F' THEN av.float_value::varchar
+            WHEN 'D' THEN av.date_start_value::varchar
+            WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
+            ELSE NULL::text
+        END || CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN COALESCE(' - ' || av.upper_value::text, '') ELSE '' END AS value,
+        CASE a.data_type
+            WHEN 'T' THEN av.text_value
+            WHEN 'L' THEN av.int_value::varchar
+            WHEN 'I' THEN av.int_value::varchar
+            WHEN 'B' THEN av.int_value::varchar
+            WHEN 'F' THEN av.float_value::varchar
+            WHEN 'D' THEN av.date_start_value::varchar
+            WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
+            ELSE NULL::text
+        END AS raw_value,
+        CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN av.upper_value ELSE null END AS upper_value
+  from samples s
+  join sample_attribute_values av on av.sample_id=s.parent_id and av.deleted=false
+  join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
+  left join sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.deleted=false
+  left join form_structure_blocks fsb1 on fsb1.id=saw.form_structure_block_id
+  left join form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id
+  left join cache_termlists_terms lookup on a.data_type='L' and lookup.id=av.int_value
+  left join locations l on a.system_function='linked_location_id' and l.id=av.int_value and l.deleted=false
+  where s.id=#sample_id#
+  and s.deleted=false
+  and lower(coalesce(#testagainst#,'')) #operator# (#attrs#)
+  union
+
+  select
+    DISTINCT ON (av.id) av.sample_id, 'Sample' as attribute_type, a.system_function, a.id as attr_id, saw.weight, fsb1.weight, fsb2.weight,
+    CASE a.data_type
+            WHEN 'T' THEN 'Text'
+            WHEN 'L' THEN 'Lookup List'
+            WHEN 'I' THEN 'Integer'
+            WHEN 'B' THEN 'Boolean'
+            WHEN 'F' THEN 'Float'
+            WHEN 'D' THEN 'Specific Date'
+            WHEN 'V' THEN 'Vague Date'
+            ELSE a.data_type
+        END AS data_type,
+        CASE '#language#' WHEN '' THEN a.caption ELSE COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) END AS caption,
+        CASE a.data_type
+            WHEN 'T' THEN av.text_value
+            WHEN 'L' THEN lookup.term::text
+            WHEN 'I' THEN coalesce(l.name, av.int_value::varchar)
+            WHEN 'B' THEN av.int_value::varchar
+            WHEN 'F' THEN av.float_value::varchar
+            WHEN 'D' THEN av.date_start_value::varchar
+            WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
+            ELSE NULL::text
+        END || CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN COALESCE(' - ' || av.upper_value::text, '') ELSE '' END AS value,
+        CASE a.data_type
+            WHEN 'T' THEN av.text_value
+            WHEN 'L' THEN av.int_value::varchar
+            WHEN 'I' THEN av.int_value::varchar
+            WHEN 'B' THEN av.int_value::varchar
+            WHEN 'F' THEN av.float_value::varchar
+            WHEN 'D' THEN av.date_start_value::varchar
+            WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
+            ELSE NULL::text
+        END AS raw_value,
+        CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN av.upper_value ELSE null END AS upper_value
+  from sample_attribute_values av
+  join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
+  left join cache_termlists_terms lookup on a.data_type='L' and lookup.id=av.int_value
+  left join sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.deleted=false
+  left join form_structure_blocks fsb1 on fsb1.id=saw.form_structure_block_id
+  left join form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id
+  left join locations l on a.system_function='linked_location_id' and l.id=av.int_value and l.deleted=false
+  where av.sample_id=#sample_id#
+  and av.deleted=false
+  and (a.system_function&lt;&gt;'cms_user_id' or a.system_function is null)
+  and lower(coalesce(#testagainst#,'')) #operator# (#attrs#)
+  </query>
+  <order_bys>
+    <order_by>w3, w2, w1, attr_id</order_by>
+  </order_bys>
+  <params>
+    <param name='sample_id' display='Sample ID' description='ID of the sample to load' datatype='text' />
+    <param name='attrs' display='Attributes' description='CSV list of attributes to include or exclude. Lowercase.' datatype='text[]' />
+    <param name='testagainst' display='Test against' description='Test for fields to include or exclude using the caption or the system function of the custom attribute'
+        datatype='lookup' lookup_values='caption:Caption,system_function:System Function, e.g. email' />
+    <param name='operator' display='Include or exclude' description="Do you want to include only the list of attributes you've defined, or exclude them?"
+        datatype='lookup' lookup_values='in:Include,not in:Exclude' />
+    <param name='language' display='Language' description="ISO 3 letter code of language to use for captions if available."
+        datatype='text' default='' />
+  </params>
+</report>
