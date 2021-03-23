@@ -1888,17 +1888,18 @@ SQL;
    *   columns.
    *
    * @return string
-   *   The name of the datat type to use (e.g. text, integer)
+   *   The name of the data type to use (e.g. text, integer)
    */
   private function handleCustomAttributeAs($attr, $jsonAttrs = FALSE) {
     // Multi-values have to be treated as text as they are several values
-    // joined into a string. Simmilar for range attributes.
+    // joined into a string. Similar for range attributes.
     if (($jsonAttrs && $attr->multi_value === 't') || $attr->allow_ranges === 't') {
       return 'text';
     }
     switch ($attr->data_type) {
       case 'I':
-        return 'integer';
+      case 'B':
+          return 'integer';
 
       case 'F':
         return 'float';
