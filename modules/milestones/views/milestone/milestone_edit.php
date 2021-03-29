@@ -130,10 +130,10 @@ else {
 var existingFilterData = $jsFilterData;
 $('#pane-filter_who').hide();
 $('#milestones-form').submit(function() {
-  $('#filter-title-val').val('Filter for milestone ' + $('#milestone\\:title').val());
+  $('#filter-title-val').val('Filter for milestone ' + $('#milestone\\\\:title').val());
   for (var i = 0; i<existingFilterData.length;i++) {
     //Note we must allow a duplicate title in the situaton where the duplicate title is for the already existing item
-    if (existingFilterData[i]['title'] == $('#filter-title-val').val() && existingFilterData[i]['id'] != $('#filter\\:id').val()) {
+    if (existingFilterData[i]['title'] == $('#filter-title-val').val() && existingFilterData[i]['id'] != $('#filter\\\\:id').val()) {
       alert('The filter title is generated from the milestone title you have entered and would cause a duplicate ' +
         'filter title, please choose a different title');
       return false;
