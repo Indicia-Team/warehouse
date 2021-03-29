@@ -82,6 +82,8 @@
     <column name="accepted_taxon_key" sql="cttl.external_key" datatype="text" />
     <column name="taxa_taxon_list_id" sql="o.taxa_taxon_list_id" datatype="integer" />
     <column name="taxon_meaning_id" sql="o.taxon_meaning_id" datatype="integer" />
+    <column name="taxon_list_id" sql="cttl.taxon_list_id" datatype="integer" />
+    <column name="taxon_list_title" sql="cttl.taxon_list_title" datatype="text" />
     <column name="date_start" sql="o.date_start" datatype="date" />
     <column name="date_end" sql="o.date_end" datatype="date" />
     <column name="date_type" sql="o.date_type" datatype="text" />
@@ -204,8 +206,12 @@
       properly mapped -->
     <column name="taxon_name" sql="cttl.taxon" datatype="text" />
     <column name="taxon_authority" sql="cttl.authority" datatype="text" />
+    <column name="accepted_taxon_name" sql="cttl.preferred_taxon" datatype="text" />
+    <column name="accepted_taxon_authority" sql="cttl.preferred_authority" datatype="text" />
     <column name="taxon_group_id" sql="cttl.taxon_group_id" datatype="integer" />
     <column name="taxon_group" sql="cttl.taxon_group" datatype="text" />
+    <column name="input_taxon_group_id" sql="cttl.taxon_group_id" datatype="integer" />
+    <column name="input_taxon_group" sql="cttl.taxon_group" datatype="text" />
     <column name="common_name" sql="cttl.default_common_name" datatype="text" />
     <column name="taxon_rank" sql="cttl.taxon_rank" datatype="text" />
     <column name="taxon_rank_sort_order" sql="cttl.taxon_rank_sort_order" datatype="integer" />
