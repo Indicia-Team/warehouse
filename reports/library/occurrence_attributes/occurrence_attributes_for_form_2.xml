@@ -1,0 +1,88 @@
+<report
+    title="List of occurrence attributes for dynamic input form section v2"
+    description="Lists occurrence attributes and, for existing records, value data for part of an input form dynamically loaded for a selected taxon."
+>
+  <query website_filter_field="aw.website_id" count_field="a.*">
+    SELECT #columns#
+    FROM occurrence_attributes_websites aw
+    JOIN occurrence_attributes a on a.id=aw.occurrence_attribute_id and a.deleted=false
+    JOIN occurrence_attribute_taxon_restrictions tr ON tr.occurrence_attributes_website_id=aw.id AND tr.deleted=false
+    JOIN cache_taxon_paths ctp on ctp.path @> ARRAY[tr.restrict_to_taxon_meaning_id]
+    JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
+      AND cttlany.id in (#taxa_taxon_list_id#)
+    JOIN cache_taxa_taxon_lists cttlattrlink ON cttlattrlink.taxon_meaning_id=tr.restrict_to_taxon_meaning_id
+      AND cttlattrlink.preferred=true AND cttlattrlink.taxon_list_id=#master_checklist_id#
+    LEFT JOIN cache_termlists_terms tdefault ON tdefault.id=aw.default_int_value AND a.data_type='L'
+    LEFT JOIN cache_termlists_terms tdefault_l ON tdefault_l.id=tdefault.preferred_termlists_term_id AND a.data_type='L' AND tdefault.language_iso='#language#'
+    LEFT JOIN form_structure_blocks fsb on fsb.id=aw.form_structure_block_id
+    LEFT JOIN form_structure_blocks fsbp on fsbp.id=fsb.parent_id
+    LEFT JOIN control_types ct ON ct.id = aw.control_type_id
+    LEFT JOIN cache_termlists_terms l2cat on l2cat.id=a.reporting_category_id
+    LEFT JOIN cache_termlists_terms l2cati18n on l2cati18n.meaning_id=l2cat.meaning_id
+      AND l2cati18n.language_iso='#language#'
+    LEFT JOIN cache_termlists_terms l1cat on l1cat.id=l2cat.parent_id and l1cat.preferred=true
+    LEFT JOIN cache_termlists_terms l1cati18n on l1cati18n.meaning_id=l1cat.meaning_id
+      AND l1cati18n.language_iso='#language#'
+    #joins#
+    WHERE aw.deleted=false
+  </query>
+  <order_bys>
+    <order_by>l1cat.sort_order, COALESCE(l1cati18n.term, l1cat.term), l2cat.sort_order, COALESCE(l2cati18n.term, l2cat.term), fsbp.weight, fsb.weight, aw.weight, a.caption</order_by>
+  </order_bys>
+  <params>
+    <param name="survey_id" display="Survey ID" datatype="integer">
+      <where>aw.restrict_to_survey_id=#survey_id#</where>
+    </param>
+    <param name="master_checklist_id" display="Taxon list ID of the master checklist" datatype="integer" />
+    <param name="taxa_taxon_list_id" display="Taxa taxon list ID or IDs" datatype="integer[]" />
+    <param name="stage_termlists_term_ids" display="Life stage termlists term IDs" datatype="integer[]" default="">
+      <join>LEFT JOIN cache_termlists_terms stage on stage.meaning_id=tr.restrict_to_stage_term_meaning_id</join>>
+      <where>(stage.id IN (#stage_termlists_term_ids#) OR stage.id IS NULL)</where>
+    </param>
+  </params>
+  <columns>
+    <column name="attribute_id" display="ID" sql="a.id" datatype="integer" />
+    <column name="taxa_taxon_list_id" display="Matched taxa taxon list ID" sql="cttlany.id" datatype="integer" />
+    <column name="caption" display="Caption" sql="a.caption" datatype="text" />
+    <column name="caption_i18n" display="Caption i18n" sql="a.caption_i18n::text" datatype="text" />
+    <column name="l1_category" display="Level 1 Category" sql="COALESCE(l1cati18n.term, l1cat.term)" datatype="text" />
+    <column name="l1_category_order" sql="l1cat.sort_order" />
+    <column name="l2_category_order" sql="l2cat.sort_order" />
+    <column name="l2_category" display="Level 2 Category" sql="COALESCE(l2cati18n.term, l2cat.term)" datatype="text" />
+    <column name="description" display="Description" sql="a.description" datatype="text" />
+    <column name="description_i18n" display="Description i18n" sql="a.description_i18n::text" datatype="text" />
+    <column name="image_path" display="Image" sql="a.image_path" datatype="text" />
+    <column name="data_type" display="Data type" sql="a.data_type" datatype="text" />
+    <column name="termlist_id" display="Termlist ID" sql="a.termlist_id" datatype="integer" />
+    <column name="validation_rules" display="Validation rules" datatype="text"
+      sql="COALESCE(aw.validation_rules::text || E'\n', ''::text) || COALESCE(a.validation_rules::text, ''::text)" />
+    <column name="multi_value" display="Multi value" sql="a.multi_value" datatype="boolean" />
+    <column name="allow_ranges" display="Allow range" sql="a.allow_ranges" datatype="boolean" />
+    <column name="term_name" display="Term name" sql="a.term_name" datatype="text" />
+    <column name="system_function" display="System function" sql="a.system_function" datatype="text" />
+    <column name="outer_block_weight" display="Outer block weight" sql="fsbp.weight" datatype="integer" />
+    <column name="inner_block_weight" display="Inner block weight" sql="fsb.weight" datatype="integer" />
+    <column name="control_weight" display="Control weight" sql="aw.weight" datatype="integer" />
+    <column name="outer_block_name" display="Outer block name" sql="fsbp.name" datatype="text" />
+    <column name="inner_block_name" display="Inner block name" sql="fsb.name" datatype="text" />
+    <column name="default_value" display="Default value" sql="CASE a.data_type
+            WHEN 'T'::bpchar THEN aw.default_text_value
+            WHEN 'L'::bpchar THEN COALESCE(tdefault_l.id, tdefault.id)::text
+            WHEN 'I'::bpchar THEN aw.default_int_value::text
+            WHEN 'B'::bpchar THEN aw.default_int_value::text
+            WHEN 'F'::bpchar THEN aw.default_float_value::text
+            WHEN 'D'::bpchar THEN aw.default_date_start_value::text
+            WHEN 'V'::bpchar THEN vague_date_to_raw_string(aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value)::text
+            ELSE null::text
+          END" />
+    <column name="default_upper_value" display="Default upper value" sql="CASE
+            WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN aw.default_upper_value
+            ELSE null::float
+          END" />
+    <column name="default_value_caption" display="Default value caption" sql="tdefault.term" datatype="text" />
+    <column name="inner_block_name" display="Inner block name" sql="fsb.name" datatype="text" />
+    <column name="control_type" display="Control type" sql="ct.control" datatype="text" />
+    <column name="attr_taxon_rank_sort_order" display="Attribute link rank sort order" aggregate="true"
+      sql="max(cttlattrlink.taxon_rank_sort_order)"/>
+  </columns>
+</report>
