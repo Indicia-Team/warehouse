@@ -221,5 +221,6 @@ $config = array
 	'xvid'  => array('video/x-xvid'),
 	'xwd'   => array('image/x-xwindowdump'),
 	'z'     => array('application/x-compress'),
-	'zip'   => array('application/x-zip', 'application/zip', 'application/x-zip-compressed')
+	'zc'     => array('application/octet-stream'),
+	'zip'   => array('application/x-zip', 'application/zip', 'application/x-zip-compressed'),
 );
