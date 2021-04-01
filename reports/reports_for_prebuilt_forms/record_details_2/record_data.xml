@@ -18,7 +18,7 @@
   and #sharing_filter#
   </query>
   <params>
-    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
+    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='integer' />
     <param name="geom_precision" display="Geometry precision" description="in km, 1, 2 or 10" default="" datatype="integer">
       <join operator="notequal" value="">join map_squares msq on msq.id = o.map_sq_#geom_precision#km_id</join>
       <join operator="equal" value="">join map_squares msq on msq.id = o.map_sq_1km_id</join>
