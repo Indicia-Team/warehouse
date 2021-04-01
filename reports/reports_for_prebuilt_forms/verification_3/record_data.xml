@@ -21,7 +21,7 @@
   where o.id=#occurrence_id#
   </query>
   <params>
-    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
+    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='integer' />
     <param name='locality_type_id' display='Locality Type ID' description='ID of the location type used for verification localities' datatype='text' emptyvalue="0"/>
   </params>
   <columns>

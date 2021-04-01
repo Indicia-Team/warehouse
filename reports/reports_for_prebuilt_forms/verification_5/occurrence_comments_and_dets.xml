@@ -57,6 +57,6 @@
       order by updated_on desc
   </query>
   <params>
-    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
+    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='integer' />
   </params>
 </report>
