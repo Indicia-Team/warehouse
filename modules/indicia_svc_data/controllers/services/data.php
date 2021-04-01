@@ -1294,12 +1294,27 @@ class Data_Controller extends Data_Service_Base_Controller {
             }
             // Build a where for ints, bools or if there is no * in the search
             // string.
-            if ($this->view_columns[$param]['type'] === 'int' || $this->view_columns[$param]['type'] === 'bool' ||
-                strpos($value, '*') === FALSE) {
+            if ($param === 'occurrence_id') {
+              kohana::log('debug', var_export($this->view_columns[$param], TRUE));
+              kohana::log('debug', $value);
+            }
+            if ($this->view_columns[$param]['type'] === 'int') {
+              if (!preg_match('/^\d+$/', trim($value))) {
+                throw new ValidationError('Validation error', 2003, 'Invalid format for integer column filter.');
+              }
               $where["$this->viewname.$param"] = $value;
             }
+            if ($this->view_columns[$param]['type'] === 'bool') {
+              if (!preg_match('/^[tf]$/i', trim($value))) {
+                throw new ValidationError('Validation error', 2003, 'Invalid format for boolean column filter.');
+              }
+              $where["$this->viewname.$param"] = $value;
+            }
+            elseif (strpos($value, '*') === FALSE) {
+              $where["$this->viewname.$param"] = pg_escape_string($value);
+            }
             else {
-              $like["$this->viewname.$param"] = str_replace('*', '%', $value);
+              $like["$this->viewname.$param"] = pg_escape_string(str_replace('*', '%', $value));
             }
           }
           else {
