@@ -968,11 +968,13 @@ class Data_Controller extends Data_Service_Base_Controller {
       // Special case for taxa_search end-point as it uses a custom query.
       $result = $this->getDataTaxaSearch();
       kohana::log('debug', "Query ran for service call:\n" . $this->db->last_query());
-    } else {
-      // Store the entity in class member, so less recursion overhead when building XML.
+    }
+    else {
+      // Store the entity in class member, so less recursion overhead when
+      // building XML.
       $this->viewname = $this->get_view_name();
-      $this->view_columns=postgreSQL::list_fields($this->viewname, $this->db);
-      $result=$this->build_query_results();
+      $this->view_columns = postgreSQL::list_fields($this->viewname, $this->db);
+      $result = $this->build_query_results();
       kohana::log('debug', "Query ran for service call:\n" . $this->db->last_query());
     }
     return ['records' => $result];
@@ -1077,10 +1079,10 @@ class Data_Controller extends Data_Service_Base_Controller {
         if (!$columns || in_array($field, $columns)) {
           // Geom binary data is no good to anyone. So convert to WKT.
           if (preg_match('/^(.+_)?geom$/', $field)) {
-            $usedFields[] = 'st_astext('.$this->viewname.".$field) as $field";
+            $usedFields[] = 'st_astext(' . $this->viewname . ".$field) as $field";
           }
           else {
-            $usedFields[] = $this->viewname.'.'.$field;
+            $usedFields[] = "$this->viewname.$field";
           }
         }
       }
@@ -1097,57 +1099,61 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->db->select($select);
     }
     // If not in the warehouse, then the entity must explicitly allow full access, or contain a website ID to filter on.
-    if (!$this->in_warehouse && !array_key_exists ('website_id', $this->view_columns) &&
+    if (!$this->in_warehouse && !array_key_exists('website_id', $this->view_columns) &&
         !array_key_exists('from_website_id', $this->view_columns) && !in_array($this->entity, $this->allow_full_access)) {
       // If access is from remote website, then either table allows full access or exposes a website ID to filter on.
       Kohana::log('info', "$this->viewname does not have a website_id - access denied");
       throw new EntityAccessError("No access to entity $this->entity allowed through view $this->viewname", 1004);
     }
-    if (array_key_exists ('website_id', $this->view_columns)) {
+    if (array_key_exists('website_id', $this->view_columns)) {
       $websiteFilterField = 'website_id';
     }
-    elseif (array_key_exists ('from_website_id', $this->view_columns)) {
+    elseif (array_key_exists('from_website_id', $this->view_columns)) {
       $websiteFilterField = 'from_website_id';
     }
     // Loading a list of records (no record ID argument)
     if (isset($websiteFilterField)) {
-      // we have a filter on website_id to apply
+      // We have a filter on website_id to apply.
       if ($this->website_id) {
-        // check if a request for shared data is being made. Also check this is valid to prevent injection.
+        // Check if a request for shared data is being made. Also check this is
+        // valid to prevent injection.
         if (isset($_REQUEST['sharing']) && preg_match('/(reporting|peer_review|verification|data_flow|moderation|editing)/', $_REQUEST['sharing'])) {
           // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So
           // we can use this to work out access to other website data.
-          $this->db->join('index_websites_website_agreements as iwwa', array(
-              'iwwa.from_website_id'=>$this->viewname.'.'.$websiteFilterField,
-              'iwwa.provide_for_'.$_REQUEST['sharing']."='t'"=>''
-          ), NULL, 'LEFT');
-          $this->db->where('(' . $this->viewname.'.'.$websiteFilterField.' IS NULL OR iwwa.to_website_id=' . $this->website_id . ')');
-        } else {
-          $this->db->in($this->viewname.'.'.$websiteFilterField, array(null, $this->website_id));
+          $this->db->join('index_websites_website_agreements as iwwa', [
+            'iwwa.from_website_id' => $this->viewname . '.' . $websiteFilterField,
+            'iwwa.provide_for_' . $_REQUEST['sharing'] . "='t'" => '',
+          ], NULL, 'LEFT');
+          $this->db->where('(' . $this->viewname . '.' . $websiteFilterField . ' IS NULL OR iwwa.to_website_id=' . $this->website_id . ')');
         }
-      } elseif ($this->in_warehouse && !$this->user_is_core_admin) {
+        else {
+          $this->db->in($this->viewname . '.'  .$websiteFilterField, [NULL, $this->website_id]);
+        }
+      }
+      elseif ($this->in_warehouse && !$this->user_is_core_admin) {
         // User is on Warehouse, but not core admin, so do a filter to all their websites.
         $allowedWebsiteValues = array_merge($this->user_websites);
-        $allowedWebsiteValues[] = null;
+        $allowedWebsiteValues[] = NULL;
         $this->db->in('website_id', $allowedWebsiteValues);
       }
     }
-    if ($this->uri->total_arguments()==0) {
-      // filter the list according to the parameters in the call
+    if ($this->uri->total_arguments() == 0) {
+      // Filter the list according to the parameters in the call.
       $this->apply_get_parameters_to_db($count);
     }
     else {
-      $this->db->where($this->viewname.'.id', $this->uri->argument(1));
+      $this->db->where("$this->viewname.id", $this->uri->argument(1));
     }
     try {
-      if ($count)
+      if ($count) {
         return $this->db->count_records();
+      }
       else {
         $r = $this->db->get()->result_array(FALSE);
         // If we got no record but asked for a specific one, check if this was a permissions issue?
-        if (!count($r) && $this->uri->total_arguments()!==0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false)) {
-          Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
-          throw new EntityAccessError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1), 1001);
+        if (!count($r) && $this->uri->total_arguments() !== 0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false)) {
+          Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id ' . $this->uri->argument(1));
+          throw new EntityAccessError('Attempt to access existing record failed - website_id ' . $this->website_id . ' does not match website for ' . $this->entity . ' id ' . $this->uri->argument(1), 1001);
         }
         return $r;
       }
@@ -1187,26 +1193,32 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Works out what filter and other options to set on the db object according to the
-  * $_REQUEST parameters currently available, when retrieving a list of items.
-  * @param boolean $count set to true when doing a count query, so the limit and offset are skipped
-  */
-  protected function apply_get_parameters_to_db($count=false) {
+   * Works out what filter and other options to set on the db object according to the
+   * $_REQUEST parameters currently available, when retrieving a list of items.
+   *
+   * @param boolean $count
+   *   Set to true when doing a count query, so the limit and offset are skipped.
+   */
+  protected function apply_get_parameters_to_db($count = FALSE) {
     $sortdir = [];
     $orderby = [];
     $like = [];
     $where = [];
-    // don't use $_REQUEST as it has a tendency to escape values in different ways on different PHP versions.
-    $request=array_merge($_GET, $_POST);
+    // Don't use $_REQUEST as it has a tendency to escape values in different
+    // ways on different PHP versions.
+    $request = array_merge($_GET, $_POST);
     foreach ($request as $param => $value) {
       switch ($param) {
         case 'sortdir':
-          if ($count) break;
-          $sortdir=explode(',', strtoupper($value));
-          // default to ASC any which are not ASC or DESC for safety
-          foreach ($sortdir as $idx=>$dir) {
-            if ($dir !== 'ASC' && $dir !== 'DESC')
-              $sortdir[$idx]='ASC';
+          if ($count) {
+            break;
+          }
+          $sortdir = explode(',', strtoupper($value));
+          // Default to ASC any which are not ASC or DESC for safety.
+          foreach ($sortdir as $idx => $dir) {
+            if ($dir !== 'ASC' && $dir !== 'DESC') {
+              $sortdir[$idx] = 'ASC';
+            }
           }
           break;
 
@@ -1235,19 +1247,20 @@ class Data_Controller extends Data_Service_Base_Controller {
           break;
 
         case 'qfield':
-          if (array_key_exists(strtolower($value), $this->view_columns))
-          {
+          if (array_key_exists(strtolower($value), $this->view_columns)) {
             $qfield = strtolower($value);
           }
           break;
+
         case 'q':
           $q = $value;
           break;
 
         case 'attrs':
-          // Check that we're dealing with 'occurrence', 'location' or 'sample' here
-          // TODO check this works - looks like it does nothing...
-          $attrTables = array('survey', 'sample', 'occurrence', 'people', 'taxa_taxon_list');
+          // Check that we're dealing with 'occurrence', 'location' or 'sample'
+          // here.
+          // @todo check this works - looks like it does nothing...
+          $attrTables = ['survey', 'sample', 'occurrence', 'people', 'taxa_taxon_list'];
           if (in_array($this->entity, $attrTables)) {
             $attrs = explode(',', $value);
           }
@@ -1256,8 +1269,9 @@ class Data_Controller extends Data_Service_Base_Controller {
         case 'query':
           // A fix for a bug in data_entry_helper where the query passed in the
           // getAttributes method is double urlencoded.
-          if (substr($value, 0, 3) === '%7B')
+          if (substr($value, 0, 3) === '%7B') {
             $value = urldecode($value);
+          }
           $this->apply_query_def_to_db($value);
           break;
 
@@ -1271,22 +1285,26 @@ class Data_Controller extends Data_Service_Base_Controller {
         case '_':
           break;
 
-      default:
-        if (array_key_exists(strtolower($param), $this->view_columns)) {
-          // A parameter has been supplied which specifies the field name of a filter field
-          if ($value == 'NULL')
-            $value = NULL;
-          // Build a where for ints, bools or if there is no * in the search string.
-          if ($this->view_columns[$param]['type'] === 'int' || $this->view_columns[$param]['type'] === 'bool' ||
-              strpos($value, '*') === FALSE) {
-            $where["$this->viewname.$param"] = $value;
+        default:
+          if (array_key_exists(strtolower($param), $this->view_columns)) {
+            // A parameter has been supplied which specifies the field name of
+            // a filter field.
+            if ($value == 'NULL') {
+              $value = NULL;
+            }
+            // Build a where for ints, bools or if there is no * in the search
+            // string.
+            if ($this->view_columns[$param]['type'] === 'int' || $this->view_columns[$param]['type'] === 'bool' ||
+                strpos($value, '*') === FALSE) {
+              $where["$this->viewname.$param"] = $value;
+            }
+            else {
+              $like["$this->viewname.$param"] = str_replace('*', '%', $value);
+            }
           }
           else {
-            $like["$this->viewname.$param"] = str_replace('*', '%', $value);
+            Kohana::log('debug', "Trying to filter on unknown column $param. Ignoring.");
           }
-        } else {
-          Kohana::log('debug', "Trying to filter on unknown column $param. Ignoring.");
-        }
       }
     }
     if (isset($qfield) && isset($q)) {
@@ -1298,12 +1316,15 @@ class Data_Controller extends Data_Service_Base_Controller {
         // autocomplete, so append a wildcard and also switch any service
         // wildcards (*) for sql wildcards (%).
         $searchTerm = str_replace('*', '%', $q) . '%';
-        // Special case for taxon searchterm. If the searchterm might be for an abbreviation, we need to use the
-        // unsimplified version to search to avoid problems with simplification of ae -> a breaking the abbreviation.
+        // Special case for taxon searchterm. If the searchterm might be for an
+        // abbreviation, we need to use the unsimplified version to search to
+        // avoid problems with simplification of ae -> a breaking the
+        // abbreviation.
         if ($this->entity === 'cache_taxon_searchterm' && $qfield === 'searchterm'
-            // only bother for 5 char searches that might be abbreviations
+            // Only bother for 5 char searches that might be abbreviations.
             && !empty($_GET['unsimplified']) && strlen($_GET['unsimplified']) === 5
-            // and only bother if searches against abbreviations (which don't use the simplified flag) are allowed.
+            // And only bother if searches against abbreviations (which don't
+            // use the simplified flag) are allowed.
             && (empty($_GET['query']) || strpos(strtolower($_GET['query']), 'simplified') === FALSE
               || strpos(strtolower($_GET['query']), 'simplified is null') !== FALSE)
         ) {
@@ -1334,10 +1355,10 @@ class Data_Controller extends Data_Service_Base_Controller {
         if (!preg_match('/^\d+$/', $attr)) {
           throw new exception("Request for invalid attribute ID $attr");
         }
-        $this->db->join("$attrValTable as val_{$this->entity}_$attr", array(
+        $this->db->join("$attrValTable as val_{$this->entity}_$attr", [
             "val_{$this->entity}_$attr.{$this->entity}_id" => "$this->viewname.id",
-            "val_{$this->entity}_$attr.{$this->entity}_attribute_id=$attr" => ''
-        ), NULL, 'LEFT');
+            "val_{$this->entity}_$attr.{$this->entity}_attribute_id=$attr" => '',
+        ], NULL, 'LEFT');
       }
     }
   }
