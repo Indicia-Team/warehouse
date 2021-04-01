@@ -1304,14 +1304,14 @@ class Data_Controller extends Data_Service_Base_Controller {
               }
               $where["$this->viewname.$param"] = $value;
             }
-            if ($this->view_columns[$param]['type'] === 'bool') {
+            elseif ($this->view_columns[$param]['type'] === 'bool') {
               if (!preg_match('/^[tf]$/i', trim($value))) {
                 throw new ValidationError('Validation error', 2003, 'Invalid format for boolean column filter.');
               }
               $where["$this->viewname.$param"] = $value;
             }
             elseif (strpos($value, '*') === FALSE) {
-              $where["$this->viewname.$param"] = pg_escape_string($value);
+              $where["$this->viewname.$param"] = $value;
             }
             else {
               $like["$this->viewname.$param"] = pg_escape_string(str_replace('*', '%', $value));
