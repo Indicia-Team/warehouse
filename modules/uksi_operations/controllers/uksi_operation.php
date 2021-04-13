@@ -244,41 +244,49 @@ SQL;
    *   Operation details.
    */
   public function processMergeTaxa($operation) {
-    $this->checkOperationRequiredFields('Merge taxa', $operation, ['current_organism_key', 'synonym']);
+    $this->checkOperationRequiredFields('Merge taxa', $operation, [
+      'current_organism_key',
+      'synonym',
+    ]);
     $namesToKeep = $this->getTaxaForOrganismKey($operation->current_organism_key);
     $allNamesToMerge = $this->getTaxaForOrganismKey($operation->synonym);
-    if (count($namesToKeep) === 0) {
-      $this->operationErrors[] = 'Organism key not found';
-    }
     if (count($allNamesToMerge) === 0) {
       $this->operationErrors[] = 'Synonym (organism key) not found';
     }
-    $seniorName = $namesToKeep->current()->taxon;
-    $juniorName = $allNamesToMerge->current()->taxon;
+    if (count($namesToKeep) === 0) {
+      $this->operationErrors[] = 'Organism key not found';
+    }
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    $taxonMeaningId = $namesToKeep->current()->taxon_meaning_id;
-    $externalKey = $namesToKeep->current()->external_key;
-    foreach ($allNamesToMerge as $mergedNameInfo) {
-      $ttl = ORM::factory('taxa_taxon_list', $mergedNameInfo->id);
-      $ttl->preferred = 'f';
-      $ttl->taxon_meaning_id = $taxonMeaningId;
-      $ttl->set_metadata();
-      $ttl->save();
-      $ttl->taxon->external_key = $externalKey;
-      $ttl->taxon->organism_key = $operation->current_organism_key;
-      $ttl->taxon->set_metadata();
-      $ttl->taxon->save();
-      // Occurrences will need a cache table refresh as new preferred name details.
-      $addWorkQueueQuery = <<<SQL
-INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-VALUES('task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', $mergedNameInfo->id, 100, 3, now())
-ON CONFLICT DO NOTHING;
-SQL;
-      $this->db->query($addWorkQueueQuery);
+    return $this->moveNames($allNamesToMerge, $namesToKeep->current());
+  }
+
+  /**
+   * Implements the Move name operation.
+   *
+   * Moves a junior synonym from one organism to another.
+   *
+   * @param object $operation
+   *   Operation details.
+   */
+  public function processMoveName($operation) {
+    $this->checkOperationRequiredFields('Move name', $operation, [
+      'current_organism_key',
+      'synonym',
+    ]);
+    $namesToKeep = $this->getTaxaForOrganismKey($operation->current_organism_key);
+    $allNamesToMerge = $this->getTaxaForTaxonVersionKey($operation->synonym);
+    if (count($allNamesToMerge) === 0) {
+      $this->operationErrors[] = 'Synonym (taxon version key) not found';
     }
-    return "$juniorName merged into $seniorName";
+    if (count($namesToKeep) === 0) {
+      $this->operationErrors[] = 'Organism key not found';
+    }
+    if (count($this->operationErrors) > 0) {
+      return 'Error';
+    }
+    return $this->moveNames($allNamesToMerge, $namesToKeep->current());
   }
 
   /**
@@ -438,6 +446,42 @@ SQL;
   }
 
   /**
+   * Moves a group of names into another concept.
+   *
+   * @param object $names
+   *   Query object containing a list of names which will be moved.
+   * @param object $linkToName
+   *   Current record for a name in the destination concept which the moving
+   *   names will be linked to.
+   */
+  private function moveNames($names, $linkToName) {
+    $seniorName = $linkToName->taxon;
+    $juniorName = $names->current()->taxon;
+    $taxonMeaningId = $linkToName->taxon_meaning_id;
+    $externalKey = $linkToName->external_key;
+    foreach ($names as $mergedNameInfo) {
+      $ttl = ORM::factory('taxa_taxon_list', $mergedNameInfo->id);
+      $ttl->preferred = 'f';
+      $ttl->taxon_meaning_id = $taxonMeaningId;
+      $ttl->set_metadata();
+      $ttl->save();
+      $ttl->taxon->external_key = $externalKey;
+      $ttl->taxon->organism_key = $linkToName->organism_key;
+      $ttl->taxon->set_metadata();
+      $ttl->taxon->save();
+      // Occurrences will need a cache table refresh as new preferred name
+      // details.
+      $addWorkQueueQuery = <<<SQL
+INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+VALUES('task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', $mergedNameInfo->id, 100, 3, now())
+ON CONFLICT DO NOTHING;
+SQL;
+      $this->db->query($addWorkQueueQuery);
+    }
+    return "$juniorName merged into $seniorName";
+  }
+
+  /**
    * Create an array of fields and values ready to submit a new taxon.
    *
    * @param obj $operation
@@ -501,12 +545,35 @@ SQL;
    *   Query result which can be iterated.
    */
   private function getTaxaForOrganismKey($organismKey) {
-    return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, t.taxon, t.search_code, t.external_key')
+    return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, t.taxon, t.search_code, t.external_key, t.organism_key')
       ->from('taxa_taxon_lists AS ttl')
       ->join('taxa as t', 't.id', 'ttl.taxon_id')
       ->where([
         'ttl.taxon_list_id' => $this->getTaxonListId(),
         't.organism_key' => $organismKey,
+        'ttl.deleted' => 'f',
+        't.deleted' => 'f',
+      ])
+      ->orderby('preferred', 'DESC')
+      ->get();
+  }
+
+  /**
+   * Retrieves some info about a taxon name linked to a TVK.
+   *
+   * @param string $taxonVersionKey
+   *   Key to fetch names for.
+   *
+   * @return object
+   *   Query result which can be iterated.
+   */
+  private function getTaxaForTaxonVersionKey($taxonVersionKey) {
+    return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, t.taxon, t.search_code, t.external_key, t.organism_key')
+      ->from('taxa_taxon_lists AS ttl')
+      ->join('taxa as t', 't.id', 'ttl.taxon_id')
+      ->where([
+        'ttl.taxon_list_id' => $this->getTaxonListId(),
+        't.search_code' => $taxonVersionKey,
         'ttl.deleted' => 'f',
         't.deleted' => 'f',
       ])
