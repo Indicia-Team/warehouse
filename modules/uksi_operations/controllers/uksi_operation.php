@@ -27,8 +27,16 @@
  */
 class Uksi_operation_Controller extends Gridview_Base_Controller {
 
+  /**
+   * Track errors for each operation.
+   *
+   * @var array
+   */
   private $operationErrors = [];
 
+  /**
+   * Controller constructor, configures grid view.
+   */
   public function __construct() {
     parent::__construct('uksi_operation', 'uksi_operation/index');
     $this->columns = array(
@@ -50,6 +58,9 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->logged_in('UKSIAdmin');
   }
 
+  /**
+   * Override the generic importer with a specific one.
+   */
   public function importer() {
     $view = new View('uksi_operation/importer');
     $this->template->title = 'Import UKSI operations';
@@ -61,13 +72,13 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     $view->totalToProcess = $this->db
       ->query('SELECT count(*) FROM uksi_operations WHERE operation_processed=false;')
       ->current()->count;
-    $this->template->title='Processing';
+    $this->template->title = 'Processing';
     $this->template->content = $view;
   }
 
   public function processing_complete() {
     $view = new View('uksi_operation/processing_complete');
-    $this->template->title='Processing complete';
+    $this->template->title = 'Processing complete';
     $this->template->content = $view;
   }
 
@@ -81,7 +92,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       echo json_encode(['message' => 'Nothing to do']);
       return;
     }
-    $operationLink = '<a href="' . url::base(true) . "uksi_operation/edit/$operation->id\">$operation->batch_processed_on : $operation->sequence ($operation->operation)</a>";
+    $operationLink = '<a href="' . url::base(TRUE) . "uksi_operation/edit/$operation->id\">$operation->batch_processed_on : $operation->sequence ($operation->operation)</a>";
     if (!empty($operation->error_detail)) {
       http_response_code(400);
       echo json_encode(['error' => "Operation $operationLink had previously failed. Clear errors before proceeding."]);
@@ -89,10 +100,13 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     }
 
     // Function name camelCase.
-    $fn = 'process' . str_replace(' ', '', ucWords($operation->operation));
+    $fn = 'process' . str_replace(' ', '', ucwords($operation->operation));
     if (!method_exists($this, $fn)) {
       http_response_code('501');
-      echo json_encode(['status' => 'Not Implemented', 'error' => "Operation not supported: $operation->operation"]);
+      echo json_encode([
+        'status' => 'Not Implemented',
+        'error' => "Operation not supported: $operation->operation",
+      ]);
       return;
     }
     kohana::log('debug', "Calling $fn");
@@ -200,7 +214,7 @@ SQL;
   public function processAddSynonym($operation) {
     $this->checkOperationRequiredFields('Add synonym', $operation, ['current_organism_key', 'taxon_version_key', 'taxon_name', 'name_type']);
     // Find other taxa with same organism key.
-    $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key, false);
+    $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key, FALSE);
     // Fail if none found.
     if (count($allExistingNames) === 0) {
       $this->operationErrors[] = "Organism key $operation->current_organism_key not found for add synonym operation";
@@ -340,7 +354,8 @@ SQL;
         $tx->set_metadata();
         $tx->save();
       }
-      // Occurrences will need a cache table refresh as new preferred name details.
+      // Occurrences will need a cache table refresh as new preferred name
+      // details.
       $addWorkQueueQuery = <<<SQL
 INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
 VALUES('task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', $existingNameInfo->id, 100, 3, now())
@@ -363,7 +378,13 @@ SQL;
    *   Operation details.
    */
   public function processRenameTaxon($operation) {
-    $this->checkOperationRequiredFields('Rename taxon', $operation, ['taxon_name', 'current_organism_key', 'taxon_version_key', 'rank', 'taxon_group_key']);
+    $this->checkOperationRequiredFields('Rename taxon', $operation, [
+      'taxon_name',
+      'current_organism_key',
+      'taxon_version_key',
+      'rank',
+      'taxon_group_key',
+    ]);
     // Find other taxa with same organism key.
     $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key);
     // Fail if none found.
@@ -384,7 +405,8 @@ SQL;
       $this->operationErrors[] = implode("\n", $taxa_taxon_list->getAllErrors());
       return 'Error';
     }
-    // Update the other taxa with same organism key so not preferred, same group and parent correct.
+    // Update the other taxa with same organism key so not preferred, same
+    // group and parent correct.
     $synonymTtlIds = [];
     foreach ($allExistingNames as $existingNameInfo) {
       $synonymTtlIds[] = $existingNameInfo->id;
