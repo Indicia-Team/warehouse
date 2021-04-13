@@ -1,0 +1,46 @@
+<report
+    title="List taxa"
+    description="A list of distinct taxa for Species Lookup page."
+    featured="true"
+>
+  <query website_filter_field="cttl.website_id" training_filter_field="">
+    SELECT #columns#
+    FROM cache_taxa_taxon_lists cttl
+    LEFT JOIN cache_taxa_taxon_lists cttl_common on cttl_common.taxon_meaning_id = cttl.taxon_meaning_id 
+  		and cttl_common.preferred = false and cttl_common.language_iso = '#language#' AND cttl_common.taxon_list_id = #taxon_list_id#
+    LEFT JOIN taxon_media tm on tm.taxon_meaning_id = cttl.taxon_meaning_id AND tm.deleted = false
+    LEFT JOIN cache_taxa_taxon_lists cttl_syn on cttl_syn.taxon_meaning_id = cttl.taxon_meaning_id 
+    	AND cttl_syn.taxon_rank_id = 3 AND cttl_syn.taxon_list_id = 1  
+    	AND cttl_syn.preferred = false AND cttl_syn.language_iso = 'lat'
+    WHERE (cttl.website_id IS NULL OR cttl.website_id IN (#website_ids#))
+    AND cttl.taxon_rank_id = 3 AND cttl.taxon_list_id = 1 AND cttl.preferred = true
+  </query>
+  <order_bys>
+    <order_by>cttl.kingdom_taxon, cttl.order_taxon, cttl.family_taxon, cttl.taxon</order_by>
+  </order_bys>
+  <params>
+    <param name="taxon_list_id" datatype="integer" display="Taxon List ID" default=""
+        description="Limit to the list with this ID.">
+      <where>cttl.taxon_list_id=#taxon_list_id#</where>
+    </param>
+    <param name="taxon_group_list" datatype="integer[]" display="Taxon Group IDs" default=""
+        description="Comma separated list of IDs of taxon groups to limit to.">
+      <where>cttl.taxon_group_id in (#taxon_group_list#)</where>
+    </param>
+    <param name="preferred" datatype="boolean" display="Limit to preferred" default="false"
+        description="Limit to preferred names.">
+      <where>cttl.preferred=true</where>
+    </param>
+    <param name="language" display="Preferred language" datatype="text" default="deu" />
+  </params>
+  <columns>
+    <column name='id' display='ID'
+            sql='cttl.id' in_count="true" datatype="integer" visible="false"/>
+    <column name='taxon' display='Species name' sql="cttl.taxon || ' ' || cttl.authority" datatype="text" />
+    <column name='common' display='Common name' sql="string_agg(distinct  cttl_common.taxon,',')" datatype='text' aggregate="true"/>
+    <column name='synonyms' display='Synonyms'
+            sql="string_agg(distinct cttl_syn.taxon,', ')" datatype="text" aggregate="true" />
+    <column name='images_exist' display='Images available?'
+            sql="CASE WHEN tm.id IS NOT NULL THEN true ELSE false END" datatype="boolean"  visible = "false"/>
+  </columns>
+</report>
