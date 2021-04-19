@@ -1,0 +1,24 @@
+# The endpoint for initialising the database.
+url = "http://localhost:8080/index.php/setup_check/config_db_save"
+
+# Save returned cookies but DO NOT send any.
+cookie-jar = cookiefile
+# Divert output to file
+output = outputfile
+# Don't show progress 
+silent
+# Do show errors though
+show-error
+
+# Enable debugging so you can set breakpoints in the PHP.
+data = "XDEBUG_SESSION=true"
+
+# The information we want to post.
+data = "host=postgres"
+data = "port=5432"
+data = "database=indicia"
+data = "schema=indicia"
+data = "dbuser=indicia_user"
+data = "dbpassword=indicia_user_pass"
+data = "reportuser=indicia_report_user"
+data = "reportpassword=indicia_report_user_pass"
