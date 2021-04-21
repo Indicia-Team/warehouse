@@ -46,13 +46,30 @@ if [ $location = "http://localhost:8080/index.php/setup_check" ]; then
     echo "Setting the password for user 'admin' to 'password'."
     curl --config warehouse/setup/03_set_admin_password
     echo "Upgrading the indicia schema to the most recent version."
-    curl --config warehouse/setup/04_database_upgrade
-    
-    # Clean up.
-    rm cookiefile
-    rm outputfile
+    curl --config warehouse/setup/04_database_upgrade   
+
+    # Now the indicia schema exists we can set permissions for it.
+    echo "Setting permissions on the indicia schema."
+    export PGPASSWORD=password
+    psql -q -o outputfile -h localhost -U postgres indicia <<____EOF
+      GRANT USAGE ON SCHEMA indicia TO indicia_report_user;
+      GRANT SELECT ON ALL TABLES IN SCHEMA indicia TO indicia_report_user;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA indicia 
+        GRANT SELECT ON TABLES TO indicia_report_user;
+      ALTER USER indicia_report_user SET search_path = indicia, public, pg_catalog;
+      ALTER USER indicia_user SET search_path = indicia, public, pg_catalog;
+____EOF
+
+    # With the search_path set we can apply the optiimisation
+    find="config\['apply_schema'\] = TRUE;"
+    replace="config\['apply_schema'\] = false;"
+    sed -i "s/$find/$replace/" ../application/config/indicia.php
   fi
 fi
+
+# Clean up.
+rm -f cookiefile
+rm -f outputfile
 
 echo
 echo "You can visit the warehouse at http://localhost:8080"
