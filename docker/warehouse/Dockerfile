@@ -35,6 +35,12 @@ ENV GID=${GID}
 ENV USER=${USER}
 ENV GROUP=${GROUP}
 
+# Change Apache to listen on port 8080.
+# We need it to appear on the same port both inside and outside the container
+# as it is accessed from both perspectives.
+RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf
+RUN sed -i 's/<VirtualHost *:80>/<VirtualHost *:8080>/' /etc/apache2/sites-enabled/000-default.conf
+
 # When a warehouse container is started, we need to execute a setup script.
 # (The working directory is /var/www/html)
 CMD docker/warehouse/setup.sh
