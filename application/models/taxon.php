@@ -59,23 +59,21 @@ class Taxon_Model extends ORM {
       'terrestrial_flag',
       'non_native_flag',
       'organism_key',
+      'scientific',
     ];
     return parent::validate($array, $save);
   }
 
-  protected function preSubmit(){
-
+  /**
+   * On presubmit, fill in calculated scientific field value.
+   */
+  protected function preSubmit() {
     // Call the parent preSubmit function.
     parent::preSubmit();
-
     // Set scientific if latin.
-    $l = ORM::factory('language');
-    $sci = 'f';
-    if ($l->find($this->submission['fields']['language_id']['value'])->iso === 'lat') {
-      $sci = 't';
-    }
+    $scientific = ORM::factory('language')->find($this->submission['fields']['language_id']['value'])->iso === 'lat' ? 't' : 'f';
     $this->submission['fields']['scientific'] = [
-      'value' =>  $sci,
+      'value' => $scientific,
     ];
   }
 
