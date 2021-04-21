@@ -13,7 +13,7 @@ Details of the upgrade procedure are at
 http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-upgrading.html.
 
 ## Docker development
-If you clone this repo and execute `docker/compose.sh` it will start 
+If you clone this repo, `cd docker` and execute `./compose.sh` it will start 
 4 docker containers offering these services.
 1. A postgres database with postgis installed.
 1. pgAdmin for administering the database.
@@ -26,3 +26,6 @@ password `password`.
 Once running you can browse the warehouse at http://localhost:8080.
 You can examine the database with pgAdmin at http://localhost:8070.
 Any mail sent by the warehouse can be viewed at http://localhost:8025.
+
+To reset your docker system to an entirely clean state, execute `./reset.sh`
+from the `docker` folder. 
