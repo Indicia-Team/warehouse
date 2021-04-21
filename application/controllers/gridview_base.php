@@ -38,7 +38,6 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    * $viewname and $controllerpath can be ommitted if the names are all the same.
    */
   public function __construct($modelname, $viewname = NULL, $controllerpath = NULL) {
-    error_logger::log_trace(debug_backtrace());
     $this->model = ORM::factory($modelname);
     $this->modelname = $modelname;
     $this->viewname = is_null($viewname) ? "$modelname/index" : $viewname;
