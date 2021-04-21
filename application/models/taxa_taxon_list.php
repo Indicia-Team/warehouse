@@ -113,6 +113,13 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
 
   public $process_synonyms = TRUE;
 
+  /**
+   * Does an update change fields which are in the occurrences cache tables?
+   *
+   * @var bool
+   */
+  private $updateAffectsOccurrenceCache = FALSE;
+
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('taxon_id', 'required');
@@ -158,10 +165,39 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   }
 
   /**
+   * Handle tasks before submission.
+   *
+   * Check if any fields are being updated that imply the occurrence cache
+   * tables will need an update.
+   */
+  protected function preSubmit() {
+    // Call the parent preSubmit function.
+    parent::preSubmit();
+    // For existing records, need to assess if the occurrences cache data needs
+    // a taxonomy refresh.
+    if ($this->id) {
+      $keyFields = [
+        'parent_id',
+        'taxon_meaning_id',
+      ];
+      foreach ($keyFields as $keyField) {
+        if (isset($this->submission['fields'][$keyField]) && isset($this->submission['fields'][$keyField]['value'])) {
+          if ($this->submission['fields'][$keyField]['value'] !== (string) $this->$keyField) {
+            $this->updateAffectsOccurrenceCache = TRUE;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Overrides the postSubmit function.
    *
    * Adds in synonomies and common names as well as search codes. This only
-   * applies when adding a preferred name, not a synonym or common name.
+   * applies when adding a preferred name, not a synonym or common name. Also
+   * adds work_queue tasks if the update implies the occurrence cache data
+   * need updating for this taxon.
    */
   protected function postSubmit($isInsert) {
     $result = TRUE;
@@ -292,6 +328,15 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       if (isset($this->changed['common_taxon_id']) || isset($this->changed['parent_id'])) {
         $this->save();
       }
+    }
+    // Add work queue tasks if occurrences will need an update.
+    if (!$isInsert && $this->updateAffectsOccurrenceCache) {
+      $addWorkQueueQuery = <<<SQL
+INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+VALUES('task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', $this->id, 100, 3, now())
+ON CONFLICT DO NOTHING;
+SQL;
+      $this->db->query($addWorkQueueQuery);
     }
     return $result;
   }
