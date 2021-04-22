@@ -1,0 +1,19 @@
+# The endpoint for setting a new password.
+url = "http://localhost:8080/index.php/home/upgrade"
+# A GET not a post
+get
+
+# Send previously saved cookies.
+cookie = cookiefile
+# Save returned cookies.
+cookie-jar = cookiefile
+# Divert output to file.
+output = outputfile
+# Don't show progress.
+silent
+# Do show errors though.
+show-error
+
+# Enable debugging so you can set breakpoints in the PHP.
+data = "XDEBUG_SESSION=true"
+
