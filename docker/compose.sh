@@ -36,8 +36,8 @@ location=$(curl \
 if [ $location = "http://localhost:8080/index.php/setup_check" ]; then
   # Database initialisation has not been performed yet.
   prompt="Do you want the indicia database schema initialised (Y/n)?"
-  read -rs -n 1 -p "$prompt" init
-  if [ "$init" = "Y" ] || [ "$init" = "y" ] || [ -z "$init" ]; then
+  read -rs -n 1 -p "$prompt" 
+  if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
     echo
     echo "Initialising the indicia schema."
     curl --config warehouse/setup/01_database_init
@@ -64,6 +64,17 @@ ____EOF
     find="config\['apply_schema'\] = TRUE;"
     replace="config\['apply_schema'\] = false;"
     sed -i "s/$find/$replace/" ../application/config/indicia.php
+  fi
+
+  # With the database fully set up we can enable scheduled tasks.
+  prompt="Do you want scheduled tasks to run (Y/n)?"
+  read -rs -n 1 -p "$prompt"
+  if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
+    echo
+    echo "Adding scheduled tasks to crontab."
+    cronspec="*/15 * * * * php /var/www/html/index.php scheduled_tasks"
+    croncmd="echo $cronspec | crontab -u $(id -un) -"
+    docker exec docker_warehouse_1 sh -c "set -f; $croncmd"
   fi
 fi
 
