@@ -106,6 +106,12 @@ function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
     ]);
     echo getOrganismKeyControl('organism_key', 'Organism Key', 'Organism Key created by this operation', $values);
     echo getOrganismKeyControl('current_organism_key', 'Current Organism Key', 'Existing Organism Key affected by this operation', $values);
+    echo data_entry_helper::text_input([
+      'label' => 'Current name',
+      'fieldname' => 'uksi_operation:current_name',
+      'default' => html::initial_value($values, 'uksi_operation:current_name'),
+      'helpText' => 'Name from previous operation in this batch which is affected by this operation'
+    ]);
 
     echo data_entry_helper::text_input([
       'label' => 'Taxon Version Key',
