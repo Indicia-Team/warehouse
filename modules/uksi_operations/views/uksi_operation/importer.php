@@ -1,15 +1,10 @@
-<?php if (!empty($_FILES)) : ?>
-  <div class="alert alert-warning">
-    Please remove the mapping for the import file's <strong>id</strong> column before proceeding.
-  </div>
-<?php endif; ?>
-
 <?php
+
 warehouse::loadHelpers(['import_helper']);
 $auth = import_helper::get_read_write_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 
 $fieldMappings = <<<TXT
-uksi_operation:sequence=row_id
+uksi_operation:sequence=id
 uksi_operation:parent_organism_key=parent_orgkey
 uksi_operation:organism_key=org_key
 uksi_operation:taxon_version_key=new_tv_key
