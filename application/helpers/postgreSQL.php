@@ -354,7 +354,8 @@ SQL;
         SELECT column_name, column_default, is_nullable, data_type, udt_name,
           character_maximum_length, numeric_precision, numeric_precision_radix, numeric_scale
         FROM information_schema.columns
-        WHERE table_name = \'' . $entity . '\'
+        WHERE table_name = \'' . $entity . '\' 
+        AND table_schema != \'information_schema\'
         ORDER BY ordinal_position
       ');
 
