@@ -141,9 +141,16 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
    *   Operation details.
    */
   public function processAddSynonym($operation) {
-    $this->checkOperationRequiredFields('Add synonym', $operation, ['current_organism_key', 'taxon_version_key', 'taxon_name', 'name_type']);
+    $this->checkOperationRequiredFields('Add synonym', $operation, [
+      'taxon_version_key',
+      'taxon_name',
+    ]);
+    // Must either have a current_organism_key, or current_name in same batch.
+    if (empty($operation->current_organism_key) && empty($operation->current_name)) {
+      $this->operationErrors[] = 'Add synonym operation requires a value for current_organism_key or current_name';
+    }
     // Find other taxa with same organism key.
-    $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key, FALSE);
+    $allExistingNames = $this->getCurrentTaxa($operation, FALSE);
     // Fail if none found.
     if (count($allExistingNames) === 0) {
       $this->operationErrors[] = "Organism key $operation->current_organism_key not found for add synonym operation";
@@ -152,6 +159,13 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     // Add the taxon as per new taxon, using the existing taxon meaning Id.
     $fields = $this->getCreateTaxonFields($operation, FALSE);
     $fields['taxa_taxon_list:taxon_meaning_id'] = $allExistingNames->current()->taxon_meaning_id;
+    $fields['taxon:taxon_rank_id'] = $allExistingNames->current()->taxon_rank_id;
+    $fields['taxon:taxon_group_id'] = $allExistingNames->current()->taxon_group_id;
+    $fields['taxon:marine_flag'] = $allExistingNames->current()->marine_flag;
+    $fields['taxon:freshwater_flag'] = $allExistingNames->current()->freshwater_flag;
+    $fields['taxon:terrestrial_flag'] = $allExistingNames->current()->terrestrial_flag;
+    $fields['taxon:non_native_flag'] = $allExistingNames->current()->non_native_flag;
+    $fields['taxon:organism_key'] = $allExistingNames->current()->organism_key;
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
@@ -161,6 +175,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       $this->operationErrors[] = implode("\n", $taxa_taxon_list->getAllErrors());
       return 'Error';
     }
+    return "Synonym $operation->taxon_name added.";
   }
 
   /**
@@ -172,15 +187,15 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
    *   Operation details.
    */
   public function processAmendMetadata($operation) {
-    $this->processAmendTaxon($operation);
+    return $this->processAmendTaxon($operation);
   }
 
   /**
    * Implements the Amend name operation.
    *
-   * Allows the name, attribute, authority or rank of a single name to be
-   * updated. Note we don't use the operation's taxon type field which can also
-   * be updated.
+   * Allows the name, attribute, authority, rank or taxon group of a single
+   * name to be updated. Note taxon group is derived from the input taxon_type
+   * field by the pre-processing script.
    *
    * @param object $operation
    *   Operation details.
@@ -194,17 +209,21 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
         $tx->taxon = $operation->taxon_name;
       }
       if (!empty($operation->attribute)) {
-        $tx->taxon = $operation->attribute;
+        $tx->attribute = $operation->attribute;
       }
       if (!empty($operation->authority)) {
-        $tx->taxon = $operation->authority;
+        $tx->authority = $operation->authority;
       }
       if (!empty($operation->rank)) {
         $tx->taxon_rank_id = $this->getTaxonRankId($operation);
       }
+      if (!empty($operation->taxon_group_key)) {
+        $tx->taxon_group_id = $this->getTaxonGroupId($operation);
+      }
       $tx->set_metadata();
       $tx->save();
     }
+    return "Name with key $operation->synonym amended.";
   }
 
   /**
@@ -267,6 +286,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
         $tx->save();
       }
     }
+    return "Taxon with organism key $operation->current_organism_key amended.";
   }
 
   /**
@@ -288,6 +308,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       $ttl->set_metadata();
       $ttl->save();
     }
+    return "Name with key $operation->synonym deprecated.";
   }
 
   /**
@@ -309,8 +330,18 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       $newTxMeaning = ORM::factory('taxon_meaning');
       $newTxMeaning->set_submission_data([]);
       $newTxMeaning->submit();
+      // Find the name to extract.
       $ttl = ORM::factory('taxa_taxon_list', $nameInfo->id);
-      $ttl->taxon_meaning = $ttl->taxon_meaning_id = $newTxMeaning->id;
+      // Set the existing parent.
+      $qry = <<<SQL
+select parent_id
+from taxa_taxon_lists
+where taxon_meaning_id=$nameInfo->taxon_meaning_id
+and preferred=true;
+SQL;
+      $ttl->parent_id = $this->db->query($qry)->current()->parent_id;
+      // Give the name a new meaning.
+      $ttl->taxon_meaning_id = $newTxMeaning->id;
       $ttl->set_metadata();
       $ttl->save();
 
@@ -319,8 +350,9 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       $ttl->taxon->organism_key = $operation->organism_key;
       $ttl->taxon->external_key = $operation->synonym;
       $ttl->taxon->set_metadata();
-      $ttl->save();
+      $ttl->taxon->save();
     }
+    return "Name with key $operation->synonym extracted to make a new organism.";
   }
 
   /**
@@ -343,7 +375,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       $this->operationErrors[] = 'Synonym (organism key) not found';
     }
     if (count($namesToKeep) === 0) {
-      $this->operationErrors[] = 'Organism key not found';
+      $this->operationErrors[] = 'Could not find existing organisms using current_organism_key';
     }
     if (count($this->operationErrors) > 0) {
       return 'Error';
@@ -416,6 +448,8 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
    *
    * @param object $operation
    *   Operation details.
+   *
+   * @todo Handle updates to ORGANISM_KEY?
    */
   public function processPromoteName($operation) {
     $this->checkOperationRequiredFields('Promote name', $operation, [
@@ -431,11 +465,14 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       return 'Error';
     }
     if (!$foundNameToPromote) {
-      $this->operationErrors[] = 'Synonym not found for Promote name operation';
+      $this->operationErrors[] = 'Name identified by Synonym value could not be found for Promote name operation';
     }
     // If parent changing, lookup the parent.
     if (!empty($operation->parent_name) || !empty($operation->parent_organism_key)) {
       $parentId = $this->getParentTtlId($operation);
+    }
+    if (count($this->operationErrors) > 0) {
+      return 'Error';
     }
     foreach ($allExistingNames as $existingNameInfo) {
       if ($existingNameInfo->search_code === $operation->synonym) {
@@ -452,6 +489,9 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
         }
         $ttl->set_metadata();
         $ttl->save();
+        if ($currentlyPreferred !== $shouldBePreferred) {
+          $this->repointLinksFromSynonymsToPreferredName($ttl->id);
+        }
       }
       // Taxa need external key updated.
       if ($existingNameInfo->external_key !== $operation->synonym) {
@@ -493,7 +533,10 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     $originalName = $allExistingNames->current()->taxon;
     // Add the taxon as per new taxon, using the existing taxon meaning Id.
     $fields = $this->getCreateTaxonFields($operation);
+    // New name for existing taxon.
+    $fields['taxon:organism_key'] = $operation->current_organism_key;
     $fields['taxa_taxon_list:taxon_meaning_id'] = $allExistingNames->current()->taxon_meaning_id;
+    $fields['taxa_taxon_list:parent_id'] = $allExistingNames->current()->parent_id;
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
@@ -525,7 +568,45 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       $existingSynonym->taxon->set_metadata();
       $existingSynonym->taxon->save();
     }
+    $this->repointLinksFromSynonymsToPreferredName($taxa_taxon_list->id);
     return "Taxon $originalName renamed to $operation->taxon_name";
+  }
+
+  /**
+   * If a preferred name changes for a concept, update references.
+   *
+   * Parent IDs of child taxa_taxon_lists as well as
+   * taxa_taxon_list_attribute_values use the preferred name's
+   * taxa_taxon_list.id as a key, so these need to be re-pointed to a new
+   * preferred name.
+   *
+   * @param int $ttlId
+   *   Taxa_taxon_lists.id value for the new preferred name.
+   */
+  private function repointLinksFromSynonymsToPreferredName($ttlId) {
+    // Any existing children should be re-pointed to new preferred name.
+    $qry = <<<SQL
+update taxa_taxon_lists u
+set parent_id=p.id
+from taxa_taxon_lists p
+join taxa_taxon_lists s on s.taxon_meaning_id=p.taxon_meaning_id
+where u.parent_id=s.id
+and p.id=$ttlId
+and u.parent_id<>p.id
+SQL;
+    $this->db->query($qry);
+    // Any existing attribute values should be re-pointed to new preferred
+    // name.
+    $qry = <<<SQL
+update taxa_taxon_list_attribute_values u
+set taxa_taxon_list_id=p.id
+from taxa_taxon_lists p
+join taxa_taxon_lists s on s.taxon_meaning_id=p.taxon_meaning_id
+where u.taxa_taxon_list_id=s.id
+and p.id=$ttlId
+and u.taxa_taxon_list_id<>p.id
+SQL;
+    $this->db->query($qry);
   }
 
   /**
@@ -594,6 +675,38 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
   }
 
   /**
+   * Returns taxon info referred to by current_organism_key or current_name.
+   *
+   * Current name can be used to refer to a taxon name added in same batch.
+   */
+  private function getCurrentTaxa(&$operation) {
+    if (empty($operation->current_organism_key) && !empty($operation->current_name)) {
+      $qry = <<<SQL
+SELECT organism_key
+FROM uksi_operations
+WHERE sequence < $operation->sequence
+AND taxon_name='$operation->current_name'
+AND operation='New taxon'
+AND batch_processed_on='$operation->batch_processed_on'
+ORDER BY sequence DESC
+LIMIT 1
+SQL;
+      $nameAddedInOperation = $this->db->query($qry)->current();
+      if ($nameAddedInOperation) {
+        $operation->current_organism_key = $nameAddedInOperation->organism_key;
+      }
+      else {
+        $this->operationErrors[] = "Could not find current_name taxon in previous operations for this batch date.";
+      }
+
+    }
+    if (!empty($operation->current_organism_key)) {
+      return $this->getTaxaForOrganismKey($operation->current_organism_key);
+    }
+    return [];
+  }
+
+  /**
    * Retrieves some info about taxon names linked to an organism key.
    *
    * @param string $organismKey
@@ -603,7 +716,9 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
    *   Query result which can be iterated.
    */
   private function getTaxaForOrganismKey($organismKey) {
-    return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, t.taxon, t.search_code, t.external_key, t.organism_key')
+    return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, ttl.parent_id, ' .
+        't.taxon, t.search_code, t.external_key, t.organism_key, t.taxon_rank_id, t.taxon_group_id, ' .
+        't.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag')
       ->from('taxa_taxon_lists AS ttl')
       ->join('taxa as t', 't.id', 'ttl.taxon_id')
       ->where([
@@ -755,14 +870,16 @@ SQL;
    *   ID, or NULL if not found.
    */
   private function getTaxonRankId($operation) {
-    $rank = $this->db->select('id')
-      ->from('taxon_ranks')
-      ->where(['rank' => $operation->rank, 'deleted' => 'f'])
-      ->get()->current();
-    if ($rank) {
-      return $rank->id;
+    if (!empty($operation->rank)) {
+      $rank = $this->db->select('id')
+        ->from('taxon_ranks')
+        ->where(['rank' => $operation->rank, 'deleted' => 'f'])
+        ->get()->current();
+      if ($rank) {
+        return $rank->id;
+      }
+      $this->operationErrors[] = "Could not find rank $operation->rank in the database.";
     }
-    $this->operationErrors[] = "Could not find rank $operation->rank in the database.";
     return NULL;
   }
 
@@ -777,14 +894,19 @@ SQL;
    *   ID, or NULL if not found.
    */
   private function getTaxonGroupId($operation) {
-    $group = $this->db->select('id')
-      ->from('taxon_groups')
-      ->where(['external_key' => $operation->taxon_group_key, 'deleted' => 'f'])
-      ->get()->current();
-    if ($group) {
-      return $group->id;
+    if (!empty($operation->taxon_group_key)) {
+      $group = $this->db->select('id')
+        ->from('taxon_groups')
+        ->where([
+          'external_key' => $operation->taxon_group_key,
+          'deleted' => 'f',
+        ])
+        ->get()->current();
+      if ($group) {
+        return $group->id;
+      }
+      $this->operationErrors[] = "Could not find taxon group $operation->taxon_group_key in the database.";
     }
-    $this->operationErrors[] = "Could not find taxon group $operation->taxon_group_key in the database.";
     return NULL;
   }
 
