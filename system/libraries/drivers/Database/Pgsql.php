@@ -326,7 +326,7 @@ class Pgsql_Result extends Database_Result {
    * @param  boolean   return objects or arrays
    * @param  string    SQL query that was run
    */
-  public function __construct($result, $link, $object = TRUE, $sql)
+  public function __construct($result, $link, $object, $sql)
   {
     $this->link = $link;
     $this->result = $result;
