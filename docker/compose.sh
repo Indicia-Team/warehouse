@@ -64,18 +64,50 @@ ____EOF
     find="config\['apply_schema'\] = TRUE;"
     replace="config\['apply_schema'\] = false;"
     sed -i "s/$find/$replace/" ../application/config/indicia.php
-  fi
 
-  # With the database fully set up we can enable scheduled tasks.
-  prompt="Do you want scheduled tasks to run (Y/n)?"
-  read -rs -n 1 -p "$prompt"
-  if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
-    echo
-    echo "Adding scheduled tasks to crontab."
-    cronspec="*/15 * * * * php /var/www/html/index.php scheduled_tasks"
-    croncmd="echo $cronspec | crontab -u $(id -un) -"
-    docker exec docker_warehouse_1 sh -c "set -f; $croncmd"
-  fi
+    # With the database fully set up we can enable scheduled tasks.
+    prompt="Do you want scheduled tasks to run (Y/n)?"
+    read -rs -n 1 -p "$prompt"
+    if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
+      echo
+      echo "Adding scheduled tasks to crontab."
+      cronspec="*/15 * * * * php /var/www/html/index.php scheduled_tasks"
+      croncmd="echo $cronspec | crontab -u $(id -un) -"
+      docker exec docker_warehouse_1 sh -c "set -f; $croncmd"
+
+      # With scheduled_tasks enabled we can enable the data_cleaner.
+      prompt="Do you want data_cleaner tasks to run (Y/n)?"
+      read -rs -n 1 -p "$prompt"
+      if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
+        echo
+        echo "Adding data cleaner tasks to application/config/config.php."
+        module_array=(
+          'data_cleaner_ancillary_species'
+          'data_cleaner_designated_taxa'
+          'data_cleaner_identification_difficulty'
+          'data_cleaner_location_lookup_attr_list'
+          'data_cleaner_new_species_for_site'
+          'data_cleaner_occurrence_lookup_attr_outside_range'
+          'data_cleaner_period'
+          'data_cleaner_period_within_year'
+          'data_cleaner_sample_attribute_changes_for_site'
+          'data_cleaner_sample_lookup_attr_outside_range'
+          'data_cleaner_sample_number_attr_outside_range'
+          'data_cleaner_sample_time_attr_outside_range'
+          'data_cleaner_species_location'
+          'data_cleaner_species_location_name'
+          'data_cleaner_without_polygon'
+        )
+        # This just has the effect of uncommenting all the modules.
+        for module in ${module_array[@]}; do
+          replace="         MODPATH.'$module'"
+          find="\/\/$replace"
+          sed -i "s/$find/$replace/" ../application/config/config.php
+          echo Added $module
+        done
+      fi # End of enable data_cleaner.
+    fi # End of enable scheduled_tasks.
+  fi # End of initialise indicia schema.
 fi
 
 # Clean up.
