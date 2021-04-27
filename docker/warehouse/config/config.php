@@ -130,23 +130,26 @@ $config['modules'] = array
          MODPATH.'sref_osie',             // Irish grid notation (TM75)
          MODPATH.'sref_channel_islands',  // Jersey and Guernsey grid notations
          MODPATH.'sref_utm',              // UTM grid notation
-         MODPATH.'cache_builder',         // build a cache for performance reporting
-         MODPATH.'data_cleaner',          // automatic record checks
-//         MODPATH.'data_cleaner_ancillary_species',                      // automatic record checks
-//         MODPATH.'data_cleaner_designated_taxa',                        // automatic record checks
-//         MODPATH.'data_cleaner_identification_difficulty',              // automatic record checks
-//         MODPATH.'data_cleaner_location_lookup_attr_list',              // automatic record checks
-//         MODPATH.'data_cleaner_new_species_for_site',                   // automatic record checks
-//         MODPATH.'data_cleaner_occurrence_lookup_attr_outside_range',   // automatic record checks
-//         MODPATH.'data_cleaner_period',                                 // automatic record checks
-//         MODPATH.'data_cleaner_period_within_year',                     // automatic record checks
-//         MODPATH.'data_cleaner_sample_attribute_changes_for_site',      // automatic record checks
-//         MODPATH.'data_cleaner_sample_lookup_attr_outside_range',       // automatic record checks
-//         MODPATH.'data_cleaner_sample_number_attr_outside_range',       // automatic record checks
-//         MODPATH.'data_cleaner_sample_time_attr_outside_range',         // automatic record checks
-//         MODPATH.'data_cleaner_species_location',                       // automatic record checks
-//         MODPATH.'data_cleaner_species_location_name',                  // automatic record checks
-//         MODPATH.'data_cleaner_without_polygon',                        // automatic record checks
-//         MODPATH.'spatial_index_builder', // index of location occurrence overlaps
-//         MODPATH.'summary_builder'        // build a cache for improving the performance of reporting summary data
+         MODPATH.'cache_builder',         // Build a cache for performance reporting
+         MODPATH.'data_cleaner',          // Automatic record check manager
+//         MODPATH.'data_cleaner_ancillary_species',                      // Automatic record checks
+//         MODPATH.'data_cleaner_designated_taxa',                        // Automatic record checks
+//         MODPATH.'data_cleaner_identification_difficulty',              // Automatic record checks
+//         MODPATH.'data_cleaner_location_lookup_attr_list',              // Automatic record checks
+//         MODPATH.'data_cleaner_new_species_for_site',                   // Automatic record checks
+//         MODPATH.'data_cleaner_occurrence_lookup_attr_outside_range',   // Automatic record checks
+//         MODPATH.'data_cleaner_period',                                 // Automatic record checks
+//         MODPATH.'data_cleaner_period_within_year',                     // Automatic record checks
+//         MODPATH.'data_cleaner_sample_attribute_changes_for_site',      // Automatic record checks
+//         MODPATH.'data_cleaner_sample_lookup_attr_outside_range',       // Automatic record checks
+//         MODPATH.'data_cleaner_sample_number_attr_outside_range',       // Automatic record checks
+//         MODPATH.'data_cleaner_sample_time_attr_outside_range',         // Automatic record checks
+//         MODPATH.'data_cleaner_species_location',                       // Automatic record checks
+//         MODPATH.'data_cleaner_species_location_name',                  // Automatic record checks
+//         MODPATH.'data_cleaner_without_polygon',                        // Automatic record checks
+//         MODPATH.'taxon_designations',    // Protection designations for taxa
+//         MODPATH.'taxon_associations',    // Associations between two taxa
+//         MODPATH.'species_alerts',        // Alerts when records meeting criteria are added
+//         MODPATH.'spatial_index_builder', // Index of location occurrence overlaps
+//         MODPATH.'summary_builder'        // Build a cache for improving the performance of reporting summary data
 );
