@@ -1,7 +1,5 @@
-# The endpoint for setting a new password.
-url = "http://localhost:8080/index.php/home/upgrade"
-# A GET not a post
-get
+# The endpoint for logging in.
+url = "http://localhost:8080/index.php/login"
 
 # Send previously saved cookies.
 cookie = cookiefile
@@ -17,3 +15,6 @@ show-error
 # Enable debugging so you can set breakpoints in the PHP.
 data = "XDEBUG_SESSION=true"
 
+# The information we want to post.
+data = "user=admin"
+data = "password=password"

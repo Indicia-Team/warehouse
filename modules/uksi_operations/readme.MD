@@ -14,6 +14,14 @@ Then run the following script to ensure that the organism_key links to UKSI are 
 update taxa t
 set organism_key=pn.organism_key
 from uksi.preferred_names pn
-where pn.taxon_version_key=t.external_key;
+where pn.taxon_version_key=t.external_key
+and pn.redundant=false;
+
+update taxa t
+set organism_key=pn.organism_key
+from uksi.preferred_names pn
+where pn.taxon_version_key=t.external_key
+and pn.redundant=true
+and t.organism_key is null;
 ```
 

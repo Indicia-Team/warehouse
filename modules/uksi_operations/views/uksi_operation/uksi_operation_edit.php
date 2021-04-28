@@ -83,8 +83,14 @@ function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
       'fieldname' => 'uksi_operation:operation',
       'default' => html::initial_value($values, 'uksi_operation:operation'),
       'lookupValues' => [
-        'Amend metadata' => 'Amend metadata',
+        'Add synonym' => 'Add synonym',
+        'Amend metadata' => 'Amend metadata (deprecated - use Amend taxon instead)',
+        'Amend name' => 'Amend name',
+        'Amend taxon' => 'Amend taxon',
+        'Deprecate name' => 'Deprecate name',
+        'Extract name' => 'Extract name',
         'Merge taxa' => 'Merge taxa',
+        'Move name' => 'Move name',
         'New taxon' => 'New taxon',
         'Promote name' => 'Promote name',
         'Rename taxon' => 'Rename taxon',
@@ -100,6 +106,12 @@ function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
     ]);
     echo getOrganismKeyControl('organism_key', 'Organism Key', 'Organism Key created by this operation', $values);
     echo getOrganismKeyControl('current_organism_key', 'Current Organism Key', 'Existing Organism Key affected by this operation', $values);
+    echo data_entry_helper::text_input([
+      'label' => 'Current name',
+      'fieldname' => 'uksi_operation:current_name',
+      'default' => html::initial_value($values, 'uksi_operation:current_name'),
+      'helpText' => 'Name from previous operation in this batch which is affected by this operation'
+    ]);
 
     echo data_entry_helper::text_input([
       'label' => 'Taxon Version Key',

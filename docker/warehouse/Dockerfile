@@ -17,6 +17,8 @@ ENV XDEBUG_MODE=debug
 # Install a postgres client for the pg_isready command.
 RUN apt-get update
 RUN apt-get -y install postgresql-client
+# Install cron for scheduled tasks
+RUN apt-get -y install cron
 
 # Create a user the same identity as the host user so that it can 
 # share files on the bind mount containing the warehouse code which 

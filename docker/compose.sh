@@ -35,21 +35,22 @@ location=$(curl \
 
 if [ $location = "http://localhost:8080/index.php/setup_check" ]; then
   # Database initialisation has not been performed yet.
+  echo
   prompt="Do you want the indicia database schema initialised (Y/n)?"
-  read -rs -n 1 -p "$prompt" init
-  if [ "$init" = "Y" ] || [ "$init" = "y" ] || [ -z "$init" ]; then
+  read -rs -n 1 -p "$prompt" 
+  if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
     echo
     echo "Initialising the indicia schema."
     curl --config warehouse/setup/01_database_init
-    echo "Performing first log in."
+    echo "...Performing first log in."
     curl --config warehouse/setup/02_first_login
-    echo "Setting the password for user 'admin' to 'password'."
+    echo "...Setting the password for user 'admin' to 'password'."
     curl --config warehouse/setup/03_set_admin_password
-    echo "Upgrading the indicia schema to the most recent version."
-    curl --config warehouse/setup/04_database_upgrade   
+    echo "...Upgrading the indicia schema to the most recent version."
+    curl --config warehouse/setup/database_upgrade   
 
     # Now the indicia schema exists we can set permissions for it.
-    echo "Setting permissions on the indicia schema."
+    echo "...Setting permissions on the indicia schema."
     export PGPASSWORD=password
     psql -q -o outputfile -h localhost -U postgres indicia <<____EOF
       GRANT USAGE ON SCHEMA indicia TO indicia_report_user;
@@ -64,8 +65,113 @@ ____EOF
     find="config\['apply_schema'\] = TRUE;"
     replace="config\['apply_schema'\] = false;"
     sed -i "s/$find/$replace/" ../application/config/indicia.php
-  fi
-fi
+
+    # We can import the UK Species Inventory to a species list
+    echo
+    prompt="Do you want to import the UK Species Inventory (Could take 15 mins) (Y/n)?"
+    read -rs -n 1 -p "$prompt"
+    if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
+      echo
+      echo "Adding UK Species Inventory."
+
+      echo "...Creating an empty list."
+      curl --config warehouse/setup/04_new_species_list  
+
+      # Enable required modules.
+      module_array=(
+        'taxon_designations'
+        'taxon_associations'
+        'species_alerts'
+        'data_cleaner_period_within_year'
+        'data_cleaner_without_polygon'
+      )
+      # This just has the effect of uncommenting all the modules.
+      for module in ${module_array[@]}; do
+        replace="         MODPATH.'$module'"
+        find="\/\/$replace"
+        sed -i "s/$find/$replace/" ../application/config/config.php
+        echo "...Enabled $module"
+      done
+
+      echo "...Upgrading the database after adding modules."
+      curl --config warehouse/setup/database_upgrade   
+
+      echo "...Copy the UKSI files from Github."
+      url=https://codeload.github.com/Indicia-Team/support_files/tar.gz/master
+      curl $url | tar -xz --strip-components=1 support_files-master/UKSI
+
+      echo "...Executing the import on the warehouse."
+      docker exec docker_warehouse_1 sh -c '
+        cd docker/UKSI
+        php import-uksi.php \
+        --warehouse-path=/var/www/html \
+        --data-path=/var/docker/UKSI \
+        --su=postgres \
+        --supass=password \
+        --taxon_list_id=1 \
+        --user_id=1
+      '
+
+      echo "...Setting the master list id in application/config/indicia.php"
+      find="config\['master_list_id'\] = 0;"
+      replace="config\['master_list_id'\] = 1;"
+      sed -i "s/$find/$replace/" ../application/config/indicia.php
+
+      # Clean up.
+      rm -rf UKSI
+
+    fi # End of add UKSI species list.
+    
+    # With the database fully set up we can enable scheduled tasks.
+    echo
+    prompt="Do you want scheduled tasks to run (Y/n)?"
+    read -rs -n 1 -p "$prompt"
+    if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
+      echo
+      echo "Adding scheduled tasks to crontab."
+      cronspec="*/15 * * * * php /var/www/html/index.php scheduled_tasks"
+      croncmd="echo $cronspec | crontab -u $(id -un) -"
+      docker exec docker_warehouse_1 sh -c "set -f; $croncmd"
+
+      # With scheduled_tasks enabled we can enable the data_cleaner.
+      echo
+      prompt="Do you want data_cleaner tasks to run (Y/n)?"
+      read -rs -n 1 -p "$prompt"
+      if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
+        echo
+        echo "Adding data cleaner tasks to application/config/config.php."
+        module_array=(
+          'data_cleaner_ancillary_species'
+          'data_cleaner_designated_taxa'
+          'data_cleaner_identification_difficulty'
+          'data_cleaner_location_lookup_attr_list'
+          'data_cleaner_new_species_for_site'
+          'data_cleaner_occurrence_lookup_attr_outside_range'
+          'data_cleaner_period'
+          'data_cleaner_period_within_year'
+          'data_cleaner_sample_attribute_changes_for_site'
+          'data_cleaner_sample_lookup_attr_outside_range'
+          'data_cleaner_sample_number_attr_outside_range'
+          'data_cleaner_sample_time_attr_outside_range'
+          'data_cleaner_species_location'
+          'data_cleaner_species_location_name'
+          'data_cleaner_without_polygon'
+        )
+        # This just has the effect of uncommenting all the modules.
+        for module in ${module_array[@]}; do
+          replace="         MODPATH.'$module'"
+          find="\/\/$replace"
+          sed -i "s/$find/$replace/" ../application/config/config.php
+          echo "...Enabled $module"
+        done
+
+        echo "...Upgrading the database after adding modules."
+        curl --config warehouse/setup/database_upgrade   
+
+      fi # End of enable data_cleaner.
+    fi # End of enable scheduled_tasks.
+  fi # End of initialise indicia schema.
+fi # End of setup.
 
 # Clean up.
 rm -f cookiefile
