@@ -8,6 +8,8 @@ services:
         volumes:
             # Persist the database in a named volume.
             - indicia_postgres:/var/lib/postgresql/data
+            # Share a host folder so postgres can access UKSI data.
+            - .:/var/docker
         ports:
             - "5432:5432"
 
@@ -17,7 +19,7 @@ services:
     pgadmin:
         # See https://hub.docker.com/r/dpage/pgadmin4/tags
         # for other versions available.
-        image: dpage/pgadmin4:5.1
+        image: dpage/pgadmin4:5.2
         environment:
             PGADMIN_DEFAULT_EMAIL: pgadmin@indicia.org.uk
             PGADMIN_DEFAULT_PASSWORD: password
@@ -35,9 +37,10 @@ services:
     # Accessible on http://localhost:8080
     warehouse:
         build: ./warehouse
+        # Share the warehouse code between host and container
         volumes:
             - ..:/var/www/html/
-            
+        # Apache is configured to run on port 8080 in warehouse/setup.sh  
         ports: 
             - "8080:8080"
 
