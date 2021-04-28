@@ -188,11 +188,11 @@ class rest_api_sync_rest {
    * Cleans up prefixes such as adult etc.
    */
   private static function sexTerm($term) {
-    if (preg_match($term, '/\bmale\b/i')) {
+    if (preg_match('/\bmale\b/i', $term)) {
       return 'male';
     }
-    elseif (preg_match($term, '/\bfemale\b/i')) {
-      return 'male';
+    elseif (preg_match('/\bfemale\b/i', $term)) {
+      return 'female';
     }
     return NULL;
   }
