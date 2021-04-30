@@ -253,7 +253,7 @@ class Swift_Connection_SMTP extends Swift_ConnectionBase
         $this->smtpErrors());
       }
       $ret .= trim($tmp) . "\r\n";
-      if ($tmp{3} == " ") break;
+      if ($tmp[3] == " ") break;
     }
     return $ret = substr($ret, 0, -2);
   }
@@ -385,7 +385,7 @@ class Swift_Connection_SMTP extends Swift_ConnectionBase
     foreach ($this->authenticators as $name => $obj)
     {
       //Server supports this authentication mechanism
-      if (in_array($name, $this->getAttributes("AUTH")) || $name{0} == "*")
+      if (in_array($name, $this->getAttributes("AUTH")) || $name[0] == "*")
       {
         $tried++;
         if ($log->hasLevel(Swift_Log::LOG_EVERYTHING))
