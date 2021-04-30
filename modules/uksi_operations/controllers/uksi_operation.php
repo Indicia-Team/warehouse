@@ -666,10 +666,10 @@ SQL;
       'taxon:external_key' => $operation->taxon_version_key,
       'taxon:search_code' => $operation->taxon_version_key,
       'taxon:organism_key' => $operation->organism_key,
-      'taxon:marine_flag' => $operation->marine,
-      'taxon:terrestrial_flag' => $operation->terrestrial,
-      'taxon:freshwater_flag' => $operation->freshwater,
-      'taxon:non_native_flag' => $operation->non_native,
+      'taxon:marine_flag' => empty($operation->marine) ? 'f' : $operation->marine,
+      'taxon:terrestrial_flag' => empty($operation->terrestrial) ? 'f' : $operation->terrestrial,
+      'taxon:freshwater_flag' => empty($operation->freshwater) ? 'f' : $operation->freshwater,
+      'taxon:non_native_flag' => empty($operation->non_native) ? 'f' : $operation->non_native,
       'taxon:language_id' => $this->getLanguageId('lat'),
     ];
   }
@@ -831,6 +831,7 @@ SQL;
           'ttl.deleted' => 'f',
           't.deleted' => 'f',
         ])
+        ->where('t.search_code IS NOT NULL')
         ->get();
       if (count($parent) === 1) {
         return $parent->current()->id;
