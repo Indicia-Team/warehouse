@@ -127,7 +127,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $response = curl_exec($session);
     if (curl_errno($session)) {
       $this->session->set_flash('flash_info', 'The list of verification rule servers could not be retrieved from the internet. ' .
-          'More information is avaailable in the server logs.');
+          'More information is available in the server logs.');
       kohana::log('error', 'Error occurred when retrieving list of verification rule servers. ' . curl_error($session));
       return array();
     }
