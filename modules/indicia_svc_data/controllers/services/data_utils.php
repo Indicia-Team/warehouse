@@ -29,8 +29,9 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   /**
    * Handled configurable data actions.
    *
-   * Magic method to allow URLs to be mapped to custom actions defined in configuration and implemented in
-   * database functions. Response from the function is output (and therefore returned from the service call).
+   * Magic method to allow URLs to be mapped to custom actions defined in
+   * configuration and implemented in database functions. Response from the
+   * function is output (and therefore returned from the service call).
    *
    * @param string $name
    *   Method name.
@@ -252,12 +253,13 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         // Field updates for the occurrences table and related cache tables.
         $updates = data_utils::getOccurrenceTableVerificationUpdateValues(
           $db,
+          $this->user_id,
           $_POST['occurrence:record_status'],
           empty($_POST['occurrence:record_substatus']) ? NULL : $_POST['occurrence:record_substatus'],
           empty($_POST['occurrence:record_decision_source']) ? 'H' : $_POST['occurrence:record_decision_source']
         );
         // Give the workflow module a chance to rewind or update the values before updating.
-        $this->applyWorkflowToOccurrenceUpdates($db, $ids, $updates);
+        data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
         foreach ($ids as $id) {
           if (!empty($_POST['occurrence_comment:comment'])) {
             $db->insert('occurrence_comments', array(
