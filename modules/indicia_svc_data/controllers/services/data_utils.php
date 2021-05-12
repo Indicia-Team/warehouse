@@ -163,10 +163,10 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       }
       if (!$dryRun) {
         // Field updates for the occurrences table and related cache tables.
-        $updates = $this->getOccurrenceTableVerificationUpdateValues($db, 'V', $substatus, 'H');
+        $updates = data_utils::getOccurrenceTableVerificationUpdateValues($db, $this->user_id, 'V', $substatus, 'H');
         // Check for any workflow updates. Any workflow records will need an
         // individual update.
-        $this->applyWorkflowToOccurrenceUpdates($db, array_keys($ids), $updates);
+        data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, array_keys($ids), $updates);
       }
       echo count($ids);
       if (class_exists('request_logging')) {
@@ -250,7 +250,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         $db = new Database();
         $this->authenticate('write');
         // Field updates for the occurrences table and related cache tables.
-        $updates = $this->getOccurrenceTableVerificationUpdateValues(
+        $updates = data_utils::getOccurrenceTableVerificationUpdateValues(
           $db,
           $_POST['occurrence:record_status'],
           empty($_POST['occurrence:record_substatus']) ? NULL : $_POST['occurrence:record_substatus'],
@@ -520,179 +520,6 @@ SQL;
       'message' => $text,
     );
     echo json_encode($response);
-  }
-
-  /**
-   * Retrieves the values that must change for each entity after a verification.
-   */
-  private function getOccurrenceTableVerificationUpdateValues($db, $status, $substatus, $decisionSource) {
-    $r = [];
-    $verifier = $this->getVerifierName($db);
-    // Field updates for the occurrences table.
-    $r['occurrences'] = array(
-      'record_status' => $status,
-      'verified_by_id' => $this->user_id,
-      'verified_on' => date('Y-m-d H:i:s'),
-      'updated_by_id' => $this->user_id,
-      'updated_on' => date('Y-m-d H:i:s'),
-      'record_substatus' => $substatus,
-      'record_decision_source' => $decisionSource,
-    );
-    // Field updates for the cache_occurrences_functional table.
-    $r['cache_occurrences_functional'] = array(
-      'record_status' => $status,
-      'verified_on' => date('Y-m-d H:i:s'),
-      'updated_on' => date('Y-m-d H:i:s'),
-      'record_substatus' => $substatus,
-      'query' => NULL
-    );
-    // Field updates for the cache_occurrences_nonfunctional table.
-    $r['cache_occurrences_nonfunctional'] = array('verifier' => $verifier);
-    return $r;
-  }
-
-  /**
-   * Retrieves the current user's name (the verifier name) for bulk verify operations.
-   *
-   * @param object $db
-   *   Database connection.
-   */
-  private function getVerifierName($db) {
-    $qryVerifiers = $db->select(array("p.surname", "p.first_name"))
-      ->from('users as u')
-      ->join('people as p', 'p.id', 'u.person_id')
-      ->where('u.id', $this->user_id)
-      ->get()->result_array(FALSE);
-    return $qryVerifiers[0]['surname'] . ', ' . $qryVerifiers[0]['first_name'];
-  }
-
-  /**
-   * Applies workflow changes to updates that are about to be applied to occurrence data.
-   *
-   * This gives the workflow module (if installed) the chance to alter the saved values on verification events.
-   *
-   * @param object $db
-   *   Database connection.
-   * @param array $idList
-   *   Array of occurrence IDs about to be updated.
-   * @param array $updates
-   *   List of fields and values which are about to be applied to records in the occurrences table and
-   *   related cache tables. Keyed by table name, each entry contains an associative array of field/value pairs.
-   */
-  private function applyWorkflowToOccurrenceUpdates($db, array $idList, array $updates) {
-    $rewinds = [];
-    $workflowEvents = [];
-    if (in_array(MODPATH . 'workflow', Kohana::config('config.modules'))
-        && !empty($updates['occurrences']['record_status'])) {
-      // As we are verifying or rejecting, we need to rewind any opposing rejections or verifications.
-      $rewinds = workflow::getRewindChangesForRecords($db, 'occurrence', $idList, ['V', 'R']);
-      // Fetch any new events to apply when this record is verified.
-      $workflowEvents = workflow::getEventsForRecords(
-        $db,
-        $this->website_id,
-        'occurrence',
-        $idList,
-        [$updates['occurrences']['record_status']]
-      );
-      foreach ($idList as $id) {
-        // If there is either a rewind operation, or a workflow event to apply, need to process this record individually.
-        if (isset($rewinds["occurrence.$id"]) || isset($workflowEvents["occurrence.$id"])) {
-          // Grab a copy of the update array.
-          $thisUpdates = $updates;
-          if (isset($rewinds["occurrence.$id"])) {
-            $thisRewind = $rewinds["occurrence.$id"];
-            $this->applyValuesToOccurrenceTableValues($thisRewind, $thisUpdates);
-          }
-          if (isset($workflowEvents["occurrence.$id"])) {
-            $theseEvents = $workflowEvents["occurrence.$id"];
-            $state = [];
-            foreach ($theseEvents as $thisEvent) {
-              $oldRecord = ORM::factory('occurrence', $id);
-              $oldRecordVals = $oldRecord->as_array();
-              $newRecordVals = array_merge($oldRecordVals, $thisUpdates['occurrences']);
-              $valuesToApply = workflow::processEvent(
-                $thisEvent,
-                'occurrence',
-                $oldRecordVals,
-                $newRecordVals,
-                $state
-              );
-              $this->applyValuesToOccurrenceTableValues($valuesToApply, $thisUpdates);
-            }
-            // Apply the update to the occurrence and cache tables.
-            $this->applyUpdatesToOccurrences($db, [$id], $thisUpdates);
-            // Save these events in workflow_undo.
-            $userId = security::getUserId();
-            foreach ($state as $undoDetails) {
-              $db->insert('workflow_undo', array(
-                'entity' => 'occurrence',
-                'entity_id' => $id,
-                'event_type' => $undoDetails['event_type'],
-                'created_on' => date("Ymd H:i:s"),
-                'created_by_id' => $userId,
-                'original_values' => json_encode($undoDetails['old_data'])
-              ));
-            }
-          }
-          // This record is done, so exclude from the bulk operation.
-          unset($idList['$id']);
-        }
-      }
-    }
-    // Bulk update any remaining records.
-    $this->applyUpdatesToOccurrences($db, $idList, $updates);
-  }
-
-  /**
-   * Takes a set of updates for occurrence data and applies them to a list of occurrences.
-   *
-   * Updates the occurrences table and related cache tables.
-   *
-   * @param object $db
-   *   Database connection.
-   * @param array $idList
-   *   Array of occurrence IDs about to be updated.
-   * @param array $updates
-   *   List of fields and values which are about to be applied to records in the occurrences table and
-   *   related cache tables. Keyed by table name, each entry contains an associative array of field/value pairs.
-   */
-  private function applyUpdatesToOccurrences($db, $idList, $updates) {
-    $db->from('occurrences')
-      ->set($updates['occurrences'])
-      ->in('id', $idList)
-      ->update();
-    // Since we bypass ORM here for performance, update the cache_occurrences_* tables.
-    $db->from('cache_occurrences_functional')
-      ->set($updates['cache_occurrences_functional'])
-      ->in('id', $idList)
-      ->update();
-    $db->from('cache_occurrences_nonfunctional')
-      ->set($updates['cache_occurrences_nonfunctional'])
-      ->in('id', $idList)
-      ->update();
-  }
-
-  /**
-   * Applies a set of field value changes to the arrays used to update occurrences and related cache tables.
-   *
-   * @param array $values
-   *   Values that are to be applied to the occurrences table as a result of workflow.
-   * @param array $updates
-   *   List of fields and values which are about to be applied to records in the occurrences table and
-   *   related cache tables. Keyed by table name, each entry contains an associative array of field/value pairs.
-   */
-  private function applyValuesToOccurrenceTableValues(array $values, array &$updates) {
-    $updates['occurrences'] = array_merge($values, $updates['occurrences']);
-    if (isset($values['confidential'])) {
-      $updates['cache_occurrences_functional']['confidential'] = $values['confidential'];
-    }
-    if (isset($values['sensitivity_precision'])) {
-      $updates['cache_occurrences_functional']['sensitive'] = empty($values['sensitivity_precision']) ? 'f' : 't';
-      $updates['cache_occurrences_nonfunctional']['sensitivity_precision'] = $values['sensitivity_precision'];
-    }
-    if (isset($values['release_status'])) {
-      $updates['cache_occurrences_functional']['release_status'] = $values['release_status'];
-    }
   }
 
 }
