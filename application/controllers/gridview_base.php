@@ -32,10 +32,16 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
 
   protected $gridReport = FALSE;
 
-  /* Constructor. $modelname = name of the model for the grid.
-   * $viewname = name of the view which contains the grid. Defaults to the model name + /index.
-   * $controllerpath = path the controller from the controllers folder
-   * $viewname and $controllerpath can be ommitted if the names are all the same.
+  /* Constructor.
+   *
+   * @param string $modelname
+   *   Name of the model for the grid.
+   * @param string $viewname
+   *   Name of the view which contains the grid. Defaults to the model name +
+   *   /index.
+   * @param string $controllerpath
+   *   Path the controller from the controllers folder. $viewname and
+   *   $controllerpath can be ommitted if the names are all the same.
    */
   public function __construct($modelname, $viewname = NULL, $controllerpath = NULL) {
     $this->model = ORM::factory($modelname);
@@ -187,7 +193,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       }
     }
     $r['attributes'] = $attrs;
-    // nNw work out if we need termlist content for lookups.
+    // Now work out if we need termlist content for lookups.
     foreach ($attrs as $attr) {
       // If there are any lookup lists in the attributes, preload the options.
       if (!empty($attr['termlist_id'])) {
