@@ -418,7 +418,7 @@ class XMLReportReader_Core implements ReportReader {
         // Add a filter so we can check their privacy preferences. This does
         // not apply if record input on this website, or for the admin user
         // account.
-        $sharedWebsiteIdList = implode(', ', warehouse::getSharedWebsiteList($websiteIds, $this->db, $sharing));
+        $sharedWebsiteIdList = implode(',', warehouse::getSharedWebsiteList($websiteIds, $this->db, $sharing));
         if (!empty($this->blockedSharingTasksField)) {
           $sharingCode = warehouse::sharingTermToCode($sharing);
           $sharingFilters[] = "($this->websiteFilterField in ($idList) OR $this->createdByField=1 OR " .
