@@ -79,7 +79,7 @@ data_entry_helper::$javascript .= "
 ";
 
 ?>
-<form action="<?php echo url::site() . 'websites_website_agreement/save' ?>" method="post" id="websites-website-agreement-edit">
+<form action="<?php echo url::site() . 'websites_website_agreement/save' ?>" method="post" id="entry_form">
   <fieldset>
     <legend>Website Agreement Participation Details<?php echo $metadata; ?></legend>
     <input type="hidden" name="websites_website_agreement:id" value="<?php echo html::initial_value($values, 'websites_website_agreement:id'); ?>" />
@@ -222,7 +222,7 @@ data_entry_helper::$javascript .= "
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('websites-website-agreement-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

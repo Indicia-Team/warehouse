@@ -25,7 +25,7 @@
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'licences_website:id');
 ?>
-<form action="<?php echo url::site() . 'licences_website/save' ?>" method="post" id="licences-websites-edit">
+<form action="<?php echo url::site() . 'licences_website/save' ?>" method="post" id="entry_form">
   <fieldset>
     <input type="hidden" name="licences_website:id" value="<?php echo html::initial_value($values, 'licences_website:id'); ?>" />
     <input type="hidden" name="licences_website:website_id" value="<?php echo html::initial_value($values, 'licences_website:website_id'); ?>" />
@@ -45,7 +45,7 @@ $id = html::initial_value($values, 'licences_website:id');
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('licences-websites-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

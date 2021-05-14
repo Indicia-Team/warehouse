@@ -27,7 +27,10 @@ class Taxa_search_Controller extends Indicia_Controller {
   public function index() {
     $view = new View('taxa_search/index');
     $this->template->title = 'UKSI taxon search';
-    $view->listId = kohana::config('uksi_operations.taxon_list_id');
+    $view->listId = kohana::config('uksi_operations.taxon_list_id', FALSE, FALSE);
+    if (!$view->listId) {
+      $view = 'Incomplete configuration. Please set up the uksi_operations module\'s configuration file.';
+    }
     $this->template->content = $view;
   }
 

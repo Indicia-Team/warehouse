@@ -62,7 +62,7 @@ This page allows you to specify the details of a location.
 <?php endif; ?>
 </p>
 
-<form id="location-edit" action="<?php echo url::site() . 'location/save'; ?>" method="post" id="location-edit">
+<form id="entry_form" action="<?php echo url::site() . 'location/save'; ?>" method="post" >
   <div id="details">
     <fieldset>
       <legend>Location details<?php echo $metadata; ?></legend>
@@ -274,7 +274,7 @@ This page allows you to specify the details of a location.
   <?php
   endif;
   echo html::form_buttons(html::initial_value($values, 'location:id') != NULL, $disabled_input === 'YES');
-  data_entry_helper::enable_validation('location-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

@@ -29,13 +29,13 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
 
   protected $lookup_against = 'lookup_taxa_taxon_list';
 
-  protected $belongs_to = array(
+  protected $belongs_to = [
     'taxon',
     'taxon_list',
     'taxon_meaning',
     'created_by' => 'user',
-    'updated_by' => 'user'
-  );
+    'updated_by' => 'user',
+  ];
 
   // Declare that this model has child attributes, and the name of the node in
   // the submission which contains them
@@ -52,7 +52,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     // Extra lookup options.
     'taxon:taxon:genus' => 'Genus (builds binomial name)',
     'taxon:taxon:specific' => 'Specific name/epithet (builds binomial name)',
-    'taxon:taxon:qualifier' => 'Qualifier (builds binomial name)'
+    'taxon:taxon:qualifier' => 'Qualifier (builds binomial name)',
   ];
 
   public $specialImportFieldProcessingDefn = [
@@ -113,6 +113,13 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
 
   public $process_synonyms = TRUE;
 
+  /**
+   * Does an update change fields which are in the occurrences cache tables?
+   *
+   * @var bool
+   */
+  private $updateAffectsOccurrenceCache = FALSE;
+
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('taxon_id', 'required');
@@ -121,7 +128,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
 #		$array->add_callbacks('deleted', array($this, '__dependents'));
 
     // Explicitly add those fields for which we don't do validation.
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'taxonomic_sort_order',
       'parent_id',
       'deleted',
@@ -129,7 +136,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'preferred',
       'description',
       'common_taxon_id',
-    );
+    ];
     return parent::validate($array, $save);
   }
 
@@ -137,9 +144,9 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
    * If we want to delete the record, we need to check that no dependents exist.
    */
   public function __dependents(Validation $array, $field){
-    if ($array['deleted'] == 'true'){
+    if ($array['deleted'] == 'true') {
       $record = ORM::factory('taxa_taxon_list', $array['id']);
-      if ($record->children->count() != 0){
+      if ($record->children->count() != 0) {
         $array->add_error($field, 'has_children');
       }
     }
@@ -158,10 +165,39 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   }
 
   /**
+   * Handle tasks before submission.
+   *
+   * Check if any fields are being updated that imply the occurrence cache
+   * tables will need an update.
+   */
+  protected function preSubmit() {
+    // Call the parent preSubmit function.
+    parent::preSubmit();
+    // For existing records, need to assess if the occurrences cache data needs
+    // a taxonomy refresh.
+    if ($this->id) {
+      $keyFields = [
+        'parent_id',
+        'taxon_meaning_id',
+      ];
+      foreach ($keyFields as $keyField) {
+        if (isset($this->submission['fields'][$keyField]) && isset($this->submission['fields'][$keyField]['value'])) {
+          if ($this->submission['fields'][$keyField]['value'] !== (string) $this->$keyField) {
+            $this->updateAffectsOccurrenceCache = TRUE;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Overrides the postSubmit function.
    *
    * Adds in synonomies and common names as well as search codes. This only
-   * applies when adding a preferred name, not a synonym or common name.
+   * applies when adding a preferred name, not a synonym or common name. Also
+   * adds work_queue tasks if the update implies the occurrence cache data
+   * need updating for this taxon.
    */
   protected function postSubmit($isInsert) {
     $result = TRUE;
@@ -173,7 +209,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         );
       }
       else {
-        $arrCommonNames = array();
+        $arrCommonNames = [];
       }
       Kohana::log("debug", "Number of common names is: " . count($arrCommonNames));
       if (array_key_exists('synonyms', $this->submission['metaFields'])) {
@@ -183,7 +219,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         );
       }
       else {
-        $arrSyn = array();
+        $arrSyn = [];
       }
       Kohana::log("debug", "Number of synonyms is: " . count($arrSyn));
 
@@ -292,6 +328,15 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       if (isset($this->changed['common_taxon_id']) || isset($this->changed['parent_id'])) {
         $this->save();
       }
+    }
+    // Add work queue tasks if occurrences will need an update.
+    if (!$isInsert && $this->updateAffectsOccurrenceCache) {
+      $addWorkQueueQuery = <<<SQL
+INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+VALUES('task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', $this->id, 100, 3, now())
+ON CONFLICT DO NOTHING;
+SQL;
+      $this->db->query($addWorkQueueQuery);
     }
     return $result;
   }

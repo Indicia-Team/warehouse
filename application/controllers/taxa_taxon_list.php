@@ -25,7 +25,7 @@
 class Taxa_taxon_list_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
-    parent::__construct('taxa_taxon_list', NULL, NULL, 'taxa_taxon_list');
+    parent::__construct('taxa_taxon_list');
     $this->base_filter['parent_id'] = NULL;
     $this->base_filter['preferred'] = 't';
     $this->columns = [

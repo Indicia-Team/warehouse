@@ -36,7 +36,7 @@ if (!empty($parent_id)) : ?>
 <?php if ($this->get_read_only($values)) : ?>
   <div class="alert alert-warning">You do not have the required privileges to edit this record.</div>
 <?php endif; ?>
-<form id="taxon-list-edit" action="<?php echo url::site() . 'taxon_list/save' ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'taxon_list/save' ?>" method="post">
   <fieldset>
     <legend>List details<?php echo $metadata ?></legend>
     <input type="hidden" name="id" id="id" value="<?php echo $id; ?>" />
@@ -82,7 +82,7 @@ if (!empty($parent_id)) : ?>
   </fieldset>
   <?php
   echo html::form_buttons(!empty($id), $this->get_read_only($values), FALSE);
-  data_entry_helper::enable_validation('taxon-list-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

@@ -27,8 +27,8 @@ $id = html::initial_value($values, 'taxon_medium:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify the details of an taxon media file.</p>
-<form action="<?php echo url::site() . 'taxon_medium/save'; ?>" method="post"
-      enctype="multipart/form-data" id="taxon-medium-edit">
+<form id="entry_form" action="<?php echo url::site() . 'taxon_medium/save'; ?>" method="post"
+      enctype="multipart/form-data">
   <fieldset>
     <legend>Media file details<?php echo $metadata; ?></legend>
     <?php
@@ -73,7 +73,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'fieldname' => 'taxon_medium:caption',
       'default' => html::initial_value($values, 'taxon_medium:caption'),
     ]);
-    echo data_entry_helper::select(array(
+    echo data_entry_helper::select([
       'label' => 'Licence',
       'helpText' => 'Licence which applies to this photo if set.',
       'fieldname' => 'taxon_medium:licence_id',
@@ -83,7 +83,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'captionField' => 'title',
       'blankText' => '<Please select>',
       'extraParams' => $readAuth,
-    ));
+    ]);
     if ($mediaTypeId && $mediaType !== 'Image:Local') {
       echo data_entry_helper::select([
         'label' => 'Media type',
@@ -98,7 +98,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('taxon-medium-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

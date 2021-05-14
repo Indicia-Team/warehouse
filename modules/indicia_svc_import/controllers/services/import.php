@@ -23,13 +23,14 @@ defined('SYSPATH') or die('No direct script access.');
 
 require 'vendor/autoload.php';
 
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
+use PhpOffice\PhpSpreadsheet\Reader\Xls;
+use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 
 /**
  * PHPSpreadsheet filter for reading the header row.
  */
-class FirstRowReadFilter implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
+class FirstRowReadFilter implements IReadFilter {
 
   public function readCell($column, $row, $worksheetName = '') {
     return $row == 1;
@@ -39,7 +40,7 @@ class FirstRowReadFilter implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter
 /**
  * PHPSpreadsheet filter for reading a range of data rows.
  */
-class RangeReadFilter implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter {
+class RangeReadFilter implements IReadFilter {
 
   private $offset;
 
@@ -291,10 +292,10 @@ class Import_Controller extends Service_Base_Controller {
       return $columns;
     }
     elseif ($ext === 'xlsx') {
-      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+      $reader = new Xlsx();
     }
     elseif ($ext === 'xls') {
-      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+      $reader = new Xls();
     }
     else {
       throw new exception('Unsupported file type');
@@ -1388,10 +1389,10 @@ class Import_Controller extends Service_Base_Controller {
       return filesize($file);
     }
     elseif ($ext === 'xlsx') {
-      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+      $reader = new Xlsx();
     }
     elseif ($ext === 'xls') {
-      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+      $reader = new Xls();
     }
     else {
       throw new exception('Unsupported file type');
@@ -1562,10 +1563,10 @@ class Import_Controller extends Service_Base_Controller {
       return $handle;
     }
     elseif ($ext === 'xlsx') {
-      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+      $reader = new Xlsx();
     }
     elseif ($ext === 'xls') {
-      $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+      $reader = new Xls();
     }
     else {
       throw new exception('Unsupported file type');

@@ -26,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'title:id');
 ?>
 <p>This page allows you to specify the details of a person's title.</p>
-<form id="title-edit" action="<?php echo url::site(); ?>title/save" method="post">
+<form id="entry_form" action="<?php echo url::site(); ?>title/save" method="post">
   <?php echo $metadata ?>
   <fieldset>
   <legend>Title details</legend>
@@ -42,7 +42,7 @@ $id = html::initial_value($values, 'title:id');
   </fieldset>
   <?php
   echo html::form_buttons($id != NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('title-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

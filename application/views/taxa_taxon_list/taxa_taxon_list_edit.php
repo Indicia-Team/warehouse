@@ -28,7 +28,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
 
 echo html::error_message($model->getError('deleted'));
 ?>
-<form id="taxa-taxon-list-edit" action="<?php echo url::site() . 'taxa_taxon_list/save' ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'taxa_taxon_list/save' ?>" method="post">
   <fieldset>
     <legend>Naming<?php echo $metadata; ?></legend>
     <input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
@@ -273,7 +273,7 @@ TXT;
   </fieldset>
   <?php
   echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id') !== NULL);
-  data_entry_helper::enable_validation('taxa_taxon_list-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

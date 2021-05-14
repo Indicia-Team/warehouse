@@ -38,7 +38,7 @@ $relationsJson = json_encode($relationsList);
 data_entry_helper::$javascript .= "indiciaData.subTypes = $relationsJson;\n";
 ?>
 <p>This page allows you to specify the details of a taxon relationship.</p>
-<form id="taxon-relation-edit" action="<?php echo url::site() . 'taxon_relation/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'taxon_relation/save'; ?>" method="post">
   <fieldset>
     <legend>Relationship details<?php echo $metadata; ?></legend>
     <input type="hidden" name="taxon_relation:id" value="<?php echo $id ?>" />
@@ -93,7 +93,7 @@ data_entry_helper::$javascript .= "indiciaData.subTypes = $relationsJson;\n";
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('taxon-relation-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

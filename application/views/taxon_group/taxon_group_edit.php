@@ -26,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'taxon_group:id');
 ?>
 <p>This page allows you to specify the details of a taxon group.</p>
-<form id="taxon-group-edit" action="<?php echo url::site() . 'taxon_group/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'taxon_group/save'; ?>" method="post">
   <input type="hidden" name="taxon_group:id" value="<?php echo $id; ?>" />
   <fieldset>
     <legend>Taxon Group details<?php echo $metadata ?></legend>
@@ -47,7 +47,7 @@ $id = html::initial_value($values, 'taxon_group:id');
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('taxon-group-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

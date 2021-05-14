@@ -27,7 +27,7 @@ $id = html::initial_value($values, 'person:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify a persons details.</p>
-<form id="person-edit" action="<?php echo url::site() . 'person/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'person/save'; ?>" method="post">
   <fieldset>
     <legend>Person's details<?php echo $metadata; ?></legend>
     <?php
@@ -148,7 +148,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   <?php
   endif;
 echo html::form_buttons($id !== NULL, FALSE, FALSE);
-data_entry_helper::enable_validation('person-edit');
+data_entry_helper::enable_validation('entry_form');
 echo data_entry_helper::dump_javascript();
 ?>
 </form>

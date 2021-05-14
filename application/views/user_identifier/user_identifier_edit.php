@@ -27,7 +27,7 @@ $id = html::initial_value($values, 'user_identifier:id');
 ?>
 <p>This page allows you to specify the details of an identifier for a user, such as a Twitter or Facebook account.
 Identifiers are used to ensure that Indicia recognises an individual across all websites sharing the warehouse.</p>
-<form id="user-identifier-edit" action="<?php echo url::site() . 'user_identifier/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'user_identifier/save'; ?>" method="post">
   <fieldset>
     <input type="hidden" name="user_identifier:id" value="<?php echo $id ?>" />
     <input type="hidden" name="user_identifier:user_id" value="<?php echo html::initial_value($values, 'user_identifier:user_id'); ?>" />
@@ -53,7 +53,7 @@ Identifiers are used to ensure that Indicia recognises an individual across all 
   </fieldset>
   <?php
   echo html::form_buttons($id != NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('user-identifier-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

@@ -27,7 +27,7 @@ $id = html::initial_value($values, 'taxon_code:id');
 ?>
 <p>This page allows you to specify the details of a taxon code. Different types of code can be made available by adding
 terms to the taxon codes termlist.</p>
-<form id="taxon-code-edit" action="<?php echo url::site() . 'taxon_code/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'taxon_code/save'; ?>" method="post">
   <fieldset>
     <input type="hidden" name="taxon_code:id" value="<?php echo $id ?>" />
     <input type="hidden" name="taxon_code:taxon_meaning_id"
@@ -56,7 +56,7 @@ terms to the taxon codes termlist.</p>
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('taxon-code-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

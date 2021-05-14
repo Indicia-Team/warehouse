@@ -393,6 +393,7 @@ class Rest_Controller extends Controller {
       'POST' => [
         'occurrences' => [],
         'occurrences/list' => [],
+        'occurrences/verify-spreadsheet' => [],
       ],
       'PUT' => [
         'occurrences/{id}' => [],
@@ -937,11 +938,13 @@ class Rest_Controller extends Controller {
    * @return string
    *   Method name.
    */
-  private function getMethodName($arguments, $usingPath) {
+  private function getMethodName(array $arguments, $usingPath) {
     $methodNamePartsArr = array_merge($arguments);
     $methodNamePartsArr = preg_replace('/^([A-Z]{3})?\d+$/', 'id', $methodNamePartsArr);
     $methodNamePartsArr = preg_replace('/^[a-zA-Z0-9_-]+\.xml$/', 'file', $methodNamePartsArr);
-    array_map(function ($item) { return ucFirst($item); }, $methodNamePartsArr);
+    $methodNamePartsArr = array_map(function ($item) {
+      return str_replace(' ', '', ucwords(str_replace('-', ' ', $item)));
+    }, $methodNamePartsArr);
     $methodName = implode('', $methodNamePartsArr);
     if ($usingPath) {
       $methodName = preg_replace('/^[^{]*(?!{.+})/', 'Path', $methodName);
@@ -3474,6 +3477,21 @@ SQL;
     $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
     rest_crud::delete('occurrence_attributes_website', $id);
+  }
+
+  /**
+   * Controller method for the verify_spreadsheet end-point.
+   */
+  public function occurrencesPostVerifySpreadsheet() {
+    $this->authenticate();
+    try {
+      $metadata = rest_spreadsheet_verify::verifySpreadsheet();
+      header('Content-type: application/json');
+      echo json_encode($metadata);
+    }
+    catch (RestApiAbort $e) {
+      // No action if a proper abort.
+    }
   }
 
 }

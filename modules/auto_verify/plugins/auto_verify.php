@@ -105,8 +105,16 @@ SQL;
       ->query($sql)
       ->current()
       ->min_tracking;
-    $qryEnd = "AND delta.tracking>=$minTracking";
+
+    if (empty($minTracking)) {
+      echo "0 occurrence records have been automatically verified.<br/>"; 
+      return;
+    }
+    else {
+      $qryEnd = "AND delta.tracking>=$minTracking";
+    }
   }
+  
   $verificationTime = gmdate("Y\/m\/d H:i:s");
   $query = <<<SQL
 DROP TABLE IF EXISTS records_to_auto_verify;

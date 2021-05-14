@@ -1,0 +1,48 @@
+services:
+    # The postgres database container.
+    postgres:
+        build: ./postgres
+        environment:
+            # The password for the postgres user (not indicia user)
+            POSTGRES_PASSWORD: password
+        volumes:
+            # Persist the database in a named volume.
+            - indicia_postgres:/var/lib/postgresql/data
+            # Share a host folder so postgres can access UKSI data.
+            - .:/var/docker
+        ports:
+            - "5432:5432"
+
+    # A container running pgAdmin to help us examine the database.
+    # Accessible on http://localhost:8070
+    # Login with the email and password configured below.
+    pgadmin:
+        # See https://hub.docker.com/r/dpage/pgadmin4/tags
+        # for other versions available.
+        image: dpage/pgadmin4:5.2
+        environment:
+            PGADMIN_DEFAULT_EMAIL: pgadmin@indicia.org.uk
+            PGADMIN_DEFAULT_PASSWORD: password
+        ports: 
+            - "8070:80"
+
+    # A fake mail server which allows the warehouse to send emails.
+    # Received mail can be viewed at http://localhost:8025
+    mailhog:
+        image: mailhog/mailhog 
+        ports:
+            - "8025:8025"
+
+    # The warehouse container.
+    # Accessible on http://localhost:8080
+    warehouse:
+        build: ./warehouse
+        # Share the warehouse code between host and container
+        volumes:
+            - ..:/var/www/html/
+        # Apache is configured to run on port 8080 in warehouse/setup.sh  
+        ports: 
+            - "8080:8080"
+
+volumes:
+    indicia_postgres:

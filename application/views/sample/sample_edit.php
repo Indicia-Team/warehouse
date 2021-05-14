@@ -27,7 +27,7 @@ $id = html::initial_value($values, 'sample:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 $site = url::site();
 ?>
-<form action="<?php echo url::site() . 'sample/save' ?>" method="post" id="sample-edit">
+<form action="<?php echo url::site() . 'sample/save' ?>" method="post" id="entry_form">
   <fieldset>
     <legend>Sample Details<?php echo $metadata; ?></legend>
     <input type="hidden" name="sample:id" value="<?php echo html::initial_value($values, 'sample:id'); ?>" />
@@ -188,7 +188,7 @@ $site = url::site();
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('sample-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

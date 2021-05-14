@@ -27,7 +27,7 @@ $id = html::initial_value($values, 'sample_medium:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify the details of an sample media file.</p>
-<form action="<?php echo url::site() . 'sample_medium/save'; ?>" method="post"
+<form id="entry_form" action="<?php echo url::site() . 'sample_medium/save'; ?>" method="post"
       enctype="multipart/form-data" id="sample-medium-edit">
   <fieldset>
     <legend>Media file details<?php echo $metadata; ?></legend>

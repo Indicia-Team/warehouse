@@ -418,7 +418,7 @@ class XMLReportReader_Core implements ReportReader {
         // Add a filter so we can check their privacy preferences. This does
         // not apply if record input on this website, or for the admin user
         // account.
-        $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
+        $sharedWebsiteIdList = implode(', ', warehouse::getSharedWebsiteList($websiteIds, $this->db, $sharing));
         if (!empty($this->blockedSharingTasksField)) {
           $sharingCode = warehouse::sharingTermToCode($sharing);
           $sharingFilters[] = "($this->websiteFilterField in ($idList) OR $this->createdByField=1 OR " .
@@ -491,39 +491,6 @@ class XMLReportReader_Core implements ReportReader {
       return $qry->count === '0';
     }
     return FALSE;
-  }
-
-  /**
-   * A cached lookup of the websites that are available for a sharing mode.
-   *
-   * Only bother to cache the lookup if there is only 1 website (i.e. we are
-   * running a report from a client website or the warehouse user can only see
-   * 1 website). Otherwise there are too many possibilities to be worth it.
-   * This is mainly to speed up client website reporting anyway.
-   */
-  private function getSharedWebsiteList($websiteIds, $sharing) {
-    if (count($websiteIds) === 1) {
-      $tag = 'website-shares-' . implode('', $websiteIds);
-      $cacheId = "$tag-$sharing";
-      $cache = Cache::instance();
-      if ($cached = $cache->get($cacheId)) {
-        return $cached;
-      }
-    }
-    $qry = $this->db->select('to_website_id')
-      ->from('index_websites_website_agreements')
-      ->where("receive_for_$sharing", 't')
-      ->in('from_website_id', $websiteIds)
-      ->get()->result();
-    $ids = [];
-    foreach ($qry as $row) {
-      $ids[] = $row->to_website_id;
-    }
-    $r = implode(',', $ids);
-    // Tag all cache entries for this website so they can be cleared together
-    // when changes are saved.
-    $cache->set($cacheId, $r, $tag);
-    return $r;
   }
 
   /**

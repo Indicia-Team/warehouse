@@ -26,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'sample_comment:id');
 ?>
 <p>This page allows you to specify the details of a sample comment.</p>
-<form action="<?php echo url::site() . 'sample_comment/save'; ?>" method="post" enctype="multipart/form-data">
+<form id="entry_form" action="<?php echo url::site() . 'sample_comment/save'; ?>" method="post" enctype="multipart/form-data">
   <fieldset>
     <input type="hidden" name="sample_comment:id" value="<?php echo $id ?>" />
     <input type="hidden" name="sample_comment:sample_id" value="<?php echo html::initial_value($values, 'sample_comment:sample_id'); ?>" />

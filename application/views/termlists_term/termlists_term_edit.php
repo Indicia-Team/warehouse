@@ -27,7 +27,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'termlists_term:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
-<form id="termlists-term-edit" enctype="multipart/form-data" action="<?php echo url::site() . 'termlists_term/save' ?>" method="post">
+<form id="entry_form" enctype="multipart/form-data" action="<?php echo url::site() . 'termlists_term/save' ?>" method="post">
   <fieldset>
     <legend>Term Details<?php echo $metadata ?></legend>
     <input type="hidden" name="termlists_term:id" value="<?php echo $id; ?>" />
@@ -165,7 +165,7 @@ TXT;
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL);
-  data_entry_helper::enable_validation('termlists-term-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>
