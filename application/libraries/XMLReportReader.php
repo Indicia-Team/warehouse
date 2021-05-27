@@ -23,8 +23,8 @@
  * methods in a transparent way to the report controller.
  */
 class XMLReportReader_Core implements ReportReader {
-  public $columns = array();
-  public $defaultParamValues = array();
+  public $columns = [];
+  public $defaultParamValues = [];
   private $name;
   private $title;
   private $description;
@@ -35,9 +35,9 @@ class XMLReportReader_Core implements ReportReader {
   private $countFields;
   private $field_sql;
   private $order_by;
-  private $params = array();
-  private $tables = array();
-  private $attributes = array();
+  private $params = [];
+  private $tables = [];
+  private $attributes = [];
   private $automagic = false;
   private $vagueDateProcessing = 'true';
   private $download = 'OFF';
@@ -46,7 +46,7 @@ class XMLReportReader_Core implements ReportReader {
   private $trainingFilterField = 'o.training';
   private $blockedSharingTasksField = 'blocked_sharing_tasks';
   private $createdByField;
-  private $colsToInclude = array();
+  private $colsToInclude = [];
 
   /**
    * Database connection object;
@@ -64,7 +64,7 @@ class XMLReportReader_Core implements ReportReader {
   /**
    * @var array List of column definitions that have data type and sql defined so therefore allow filtering.
    */
-  public $filterableColumns = array();
+  public $filterableColumns = [];
 
   /**
    * @var bool Track if this report supports the standard set of parameters. If so, names the entity.
@@ -188,36 +188,58 @@ class XMLReportReader_Core implements ReportReader {
                     $this->blockedSharingTasksField = $sp === 'samples' ? 's.blocked_sharing_tasks' : 'o.blocked_sharing_tasks';
                   }
                 }
-                if (!$this->createdByField = $reader->getAttribute('created_by_field'))
-                  // default field name for filtering the user ID that created the record
+                if (!$this->createdByField = $reader->getAttribute('created_by_field')) {
+                  // Default field name for filtering the user ID that created
+                  // the record.
                   $this->createdByField = 'o.created_by_id';
-                if (!$this->surveys_id_field = $reader->getAttribute('surveys_id_field'))
-                  // default table alias for the surveys table, so we can join to the id
+                }
+                if (!$this->surveys_id_field = $reader->getAttribute('surveys_id_field')) {
+                  // Default table alias for the surveys table, so we can join
+                  // to the id.
                   $this->surveys_id_field = 'su.id';
-                if (!$this->samples_id_field = $reader->getAttribute('samples_id_field'))
-                  // default table alias for the samples table, so we can join to the id
+                }
+                if (!$this->samples_id_field = $reader->getAttribute('samples_id_field')) {
+                  // Default table alias for the samples table, so we can join
+                  // to the id.
                   $this->samples_id_field = 's.id';
-                if (!$this->samples2_id_field = $reader->getAttribute('samples2_id_field'))
-                  // default table alias for the second samples table, so we can join to the id: used when geting attributes for both in a parent/child arrangement
+                }
+                if (!$this->samples2_id_field = $reader->getAttribute('samples2_id_field')) {
+                  // Default table alias for the second samples table, so we
+                  // can join to the id: used when geting attributes for both
+                  // in a parent/child arrangement.
                   $this->samples2_id_field = 's2.id';
-                if (!$this->occurrences_id_field = $reader->getAttribute('occurrences_id_field'))
-                  // default table alias for the occurrences table, so we can join to the id
+                }
+                if (!$this->occurrences_id_field = $reader->getAttribute('occurrences_id_field')) {
+                  // Default table alias for the occurrences table, so we can
+                  // join to the id.
                   $this->occurrences_id_field = 'o.id';
-                if (!$this->occurrences2_id_field = $reader->getAttribute('occurrences2_id_field'))
-                  // default table alias for the second occurrences table, so we can join to the id
+                }
+                if (!$this->occurrences2_id_field = $reader->getAttribute('occurrences2_id_field')) {
+                  // Default table alias for the second occurrences table, so
+                  // we can join to the id.
                   $this->occurrences2_id_field = 'o2.id';
-                if (!$this->locations_id_field = $reader->getAttribute('locations_id_field'))
-                  // default table alias for the locations table, so we can join to the id
+                }
+                if (!$this->locations_id_field = $reader->getAttribute('locations_id_field')) {
+                  // Default table alias for the locations table, so we can
+                  // join to the id.
                   $this->locations_id_field = 'l.id';
-                if (!$this->locations2_id_field = $reader->getAttribute('locations2_id_field'))
-                  // default table alias for the second locations table, so we can join to the id: used when geting attributes for both in a parent/child arrangement
+                }
+                if (!$this->locations2_id_field = $reader->getAttribute('locations2_id_field')) {
+                  // Default table alias for the second locations table, so we
+                  // can join to the id: used when geting attributes for both
+                  // in a parent/child arrangement.
                   $this->locations2_id_field = 'l2.id';
-                if (!$this->people_id_field = $reader->getAttribute('people_id_field'))
-                  // default table alias for the people table, so we can join to the id
+                }
+                if (!$this->people_id_field = $reader->getAttribute('people_id_field')) {
+                  // Default table alias for the people table, so we can join
+                  // to the id.
                   $this->people_id_field = 'p.id';
-                if (!$this->count_field = $reader->getAttribute('count_field'))
-                  // field used in count queries unless in_count fields are specified
+                }
+                if (!$this->count_field = $reader->getAttribute('count_field')) {
+                  // Field used in count queries unless in_count fields are
+                  // specified.
                   $this->count_field = '*';
+                }
                 // load the standard set of parameters for consistent filtering of reports?
                 $standardParams = $reader->getAttribute('standard_params');
                 if ($standardParams!==null)
@@ -565,7 +587,7 @@ class XMLReportReader_Core implements ReportReader {
    * e.g. if some custom attribute columns have been added to the report.
    */
   private function buildGroupBy() {
-    $sql = array();
+    $sql = [];
     foreach ($this->columns as $col => $def) {
       if (isset($def['internal_sql'])
           && (!isset($def['aggregate']) || $def['aggregate'] != 'true')
@@ -729,7 +751,7 @@ class XMLReportReader_Core implements ReportReader {
       return $this->columns;
     else {
       // user override of the columns to return
-      $columns = array();
+      $columns = [];
       foreach ($this->columns as $col => $coldef) {
         if (in_array($col, $this->colsToInclude)) {
           $columns[$col] = $coldef;
@@ -965,7 +987,7 @@ TBL;
         while ($reader->read()) {
           if ($reader->nodeType == XMLREADER::ELEMENT && $reader->name === 'join') {
             if (!isset($this->params[$name]['joins'])) {
-              $this->params[$name]['joins'] = array();
+              $this->params[$name]['joins'] = [];
             }
             $this->params[$name]['joins'][] = array(
               'value' => $reader->getAttribute('value'),
@@ -975,7 +997,7 @@ TBL;
           }
           if ($reader->nodeType == XMLREADER::ELEMENT && $reader->name === 'where') {
             if (!isset($this->params[$name]['wheres'])) {
-              $this->params[$name]['wheres'] = array();
+              $this->params[$name]['wheres'] = [];
             }
             $this->params[$name]['wheres'][] = array(
               'value' => $reader->getAttribute('value'),
@@ -1151,7 +1173,7 @@ TBL;
       );
     }
     // build a definition from the XML
-    $def = array();
+    $def = [];
     if ($reader->moveToFirstAttribute()) {
       do {
         if ($reader->name!='name')
@@ -1246,7 +1268,7 @@ TBL;
            'join' => $join,
           'attributes' => '',
           'where' => $where,
-           'columns' => array());
+           'columns' => []);
     $this->tableIndex=$this->nextTableIndex;
     $this->nextTableIndex++;
   }
