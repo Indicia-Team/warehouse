@@ -390,7 +390,7 @@ class XMLReportReader_Core implements ReportReader {
       $query = str_replace(['#website_filter#', '#website_ids#'], ['1=1', 'SELECT id FROM websites'], $query);
     }
     if (!empty($this->trainingFilterField)) {
-      $boolStr = $providedParams['training'] ==='true' ? 'true' : 'false';
+      $boolStr = $providedParams['training'] === 'true' ? 'true' : 'false';
       $query = str_replace('#sharing_filter#', "{$this->trainingFilterField}=$boolStr AND #sharing_filter#", $query);
     }
     // An alternative way to inform a query about training mode....
@@ -475,10 +475,19 @@ class XMLReportReader_Core implements ReportReader {
   private function coveringSurveyFilter(array $providedParams, $sharedWebsiteIdList) {
     if ($this->loadStandardParamsSet && !empty($providedParams['survey_list']) || !empty($providedParams['survey_id'])) {
       $surveys = empty($providedParams['survey_list']) ? $providedParams['survey_id'] : $providedParams['survey_list'];
-      $cacheId = "covering-survey-filter-s-$surveys-w-" . $sharedWebsiteIdList;
+      $list = explode(',', $surveys);
+      sort($list);
+      $listAsString = implode(',', $list);
+      // Cache key will use a hash so survey ID list not too long for a
+      // filename.
+      $hash = md5($listAsString);
+      $cacheId = "covering-survey-filter-sh-$hash-w-$sharedWebsiteIdList";
       $cache = Cache::instance();
       if ($cached = $cache->get($cacheId)) {
-        return $cached;
+        // Extra safety check in case a hash value collision.
+        if ($cached[0] === $listAsString) {
+          return $cached[1];
+        }
       }
       // Doing a standard params filter on survey ID. If all the requested
       // surveys are allowed then we don't need a separate website filter.
@@ -487,7 +496,7 @@ class XMLReportReader_Core implements ReportReader {
         ->in('id', $surveys)
         ->notin('website_id', $sharedWebsiteIdList)
         ->get()->current();
-      $cache->set($cacheId, $qry->count === '0');
+      $cache->set($cacheId, [$listAsString, $qry->count === '0']);
       return $qry->count === '0';
     }
     return FALSE;
