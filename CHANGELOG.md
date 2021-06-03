@@ -1,3 +1,32 @@
+# Version 6.0.0
+*2021-05-14*
+
+* Addition of a script for Docker support (work in progress).
+* Enhanced support for importing taxonomy updates from the UKSI_History table provided with a
+  raw copy of the UK Species Inventory.
+* Adds a help link to the top of the list page for events in the Workflow module, plus small
+  improvements to help text on the edit form.
+* Support for uploading spreadsheets of verification decisions as per enhancements to the
+  Elasticsearch [verificationButtons] control.
+* Updates to taxa_taxon_list entity now more intelligently decide when the associated occurrence
+  cache data also needs to be refreshed.
+* Boolean custom attributes now have their underlying datatype set correctly in report outputs.
+* Taxon.scientific field value now correctly set after saving taxa via the warehouse UI.
+* Fixes an error in scheduled tasks that occurs if there are no data to auto-verify.
+* Switch from using feature-bootstrap for client_helpers and media submodules to the default
+  master branch (unifying code with Drupal clients).
+* Replace jQuery.UI datepicker with HTML5 date input.
+* Adds a datepicker polyfill for browsers which don't support HTML 5 dates, e.g. MacOS Safari.
+* Switch from jQuery.ui.progress to HTML5 progress in preparation for Drupal 9 support.
+* Remove use of jQuery.UI's shake effect in preparation for Drupal 9 support.
+* Replace jQuery.sortable with Sortable.js, in preparation for Drupal 9 support.
+* Replace jQuery.ui.dialog with a Fancybox derived dialog control, in preparation for Drupal 9
+  support.
+* Reports for extracting data for Elasticsearch now include taxon list information, accepted taxon
+  name and original taxon group information improving support for names that don't map well to
+  the configured master list (e.g. UKSI).
+* Mime type support for *.zc (Zerocrossing) files.
+
 # Version 5.1.0
 *2021-03-22*
 

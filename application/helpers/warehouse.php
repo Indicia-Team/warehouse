@@ -96,7 +96,7 @@ class warehouse {
    */
   public static function getSharedWebsiteList(array $websiteIds, $db, $scope = 'reporting') {
     if (count($websiteIds) === 1) {
-      $tag = 'website-shares-' . implode('', $websiteIds);
+      $tag = 'website-share-array-' . implode('', $websiteIds);
       $cacheId = "$tag-$scope";
       $cache = Cache::instance();
       if ($cached = $cache->get($cacheId)) {

@@ -104,7 +104,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
   public function save() {
     if (!empty($_POST['websites_website_agreement:website_id'])) {
       $cache = Cache::instance();
-      $tag = 'website-shares-'.$_POST['websites_website_agreement:website_id'];
+      $tag = 'website-share-array-' . $_POST['websites_website_agreement:website_id'];
       $cache->delete_tag($tag);
     }
     parent::save();

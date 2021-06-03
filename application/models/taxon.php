@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -19,14 +19,32 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+defined('SYSPATH') or die('No direct script access.');
+
 /**
  * Model class for the Taxa table.
  */
 class Taxon_Model extends ORM {
-  public $search_field='taxon';
-  protected $belongs_to = array('meaning', 'language', 'created_by' => 'user', 'updated_by' => 'user');
-  protected $has_many = array('taxa_taxon_lists');
-  protected $has_and_belongs_to_many = array('taxon_lists');
+
+  public $search_field = 'taxon';
+
+  protected $belongs_to = [
+    'meaning',
+    'language',
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  ];
+
+  protected $has_many = ['taxa_taxon_lists'];
+
+  protected $has_and_belongs_to_many = ['taxon_lists'];
+
+  /**
+   * Does an update change fields which are in the occurrences cache tables?
+   *
+   * @var bool
+   */
+  private $updateAffectsOccurrenceCache = FALSE;
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
@@ -34,8 +52,8 @@ class Taxon_Model extends ORM {
     $array->add_rules('language_id', 'required');
     $array->add_rules('taxon_group_id', 'required');
 
-    // Explicitly add those fields for which we don't do validation
-    $this->unvalidatedFields = array(
+    // Explicitly add those fields for which we don't do validation.
+    $this->unvalidatedFields = [
       'attribute',
       'external_key',
       'authority',
@@ -48,34 +66,79 @@ class Taxon_Model extends ORM {
       'terrestrial_flag',
       'non_native_flag',
       'organism_key',
-    );
+      'scientific',
+    ];
     return parent::validate($array, $save);
   }
 
-  protected function preSubmit(){
-
-    // Call the parent preSubmit function
+  /**
+   * Handle tasks before submission.
+   *
+   * * Fill in calculated scientific field value.
+   * * Check if any fields are being updated that imply the occurrence cache
+   *   tables will need an update.
+   */
+  protected function preSubmit() {
+    // Call the parent preSubmit function.
     parent::preSubmit();
+    // Set scientific if latin.
+    $scientific = ORM::factory('language')->find($this->submission['fields']['language_id']['value'])->iso === 'lat' ? 't' : 'f';
+    $this->submission['fields']['scientific'] = [
+      'value' => $scientific,
+    ];
+    // For existing records, need to assess if the occurrences cache data needs
+    // a taxonomy refresh.
+    if ($this->id) {
+      $keyFields = [
+        'taxon_group_id',
+        'external_key',
+        'taxon_rank_id',
+        'marine_flag',
+        'freshwater_flag',
+        'terrestrial_flag',
+        'non_native_flag',
+      ];
+      foreach ($keyFields as $keyField) {
+        if (isset($this->submission['fields'][$keyField]) && isset($this->submission['fields'][$keyField]['value'])) {
+          $updatedValueToCompare = $this->submission['fields'][$keyField]['value'];
+          // Allow bool values to be '0' or '1'.
+          if (substr($keyField, -5) === '_flag' && in_array($updatedValueToCompare, ['0', '1'])) {
+            $updatedValueToCompare = $updatedValueToCompare === '1' ? 't' : 'f';
+          }
+          if ($updatedValueToCompare !== (string) $this->$keyField) {
+            $this->updateAffectsOccurrenceCache = TRUE;
+            break;
+          }
+        }
+      }
+    }
+  }
 
-    // Set scientific if latin
-    $l = ORM::factory('language');
-    $sci = 'f';
-    /*if ($l->find($this->submission['fields']['language_id']['value'])->iso == "lat") {
-      $sci = 't';
-    }*/
-    $this->submission['fields']['scientific'] = array(
-      'value' =>  $sci
-    );
-
+  /**
+   * After submission, add work_queue tasks if occurrence cache needs update.
+   */
+  protected function postSubmit($isInsert) {
+    if (!$isInsert && $this->updateAffectsOccurrenceCache) {
+      foreach ($this->taxa_taxon_lists as $ttl) {
+        $addWorkQueueQuery = <<<SQL
+INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+VALUES('task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', $ttl->id, 100, 3, now())
+ON CONFLICT DO NOTHING;
+SQL;
+        $this->db->query($addWorkQueueQuery);
+      }
+    }
+    return TRUE;
   }
 
   /**
    * Set default values for a new taxon entry.
    */
   public function getDefaults() {
-    return array(
-      'language_id'=>2 // latin
-    );
+    return [
+      // Latin.
+      'language_id' => 2,
+    ];
   }
-}
 
+}

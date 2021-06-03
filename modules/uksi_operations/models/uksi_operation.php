@@ -40,6 +40,7 @@ class Uksi_operation_Model extends ORM {
       'error_detail',
       'organism_key',
       'current_organism_key',
+      'current_name',
       'taxon_version_key',
       'rank',
       'taxon_name',

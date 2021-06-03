@@ -354,7 +354,7 @@ function notification_emails_hyperlink_id($id, $websiteId) {
   foreach ($recordDetailsPages as $page) {
     $found = $page['website_id'] == $websiteId;
     if (!$found) {
-      $ids = explode(',', notification_emails_get_shared_website_list($websiteId));
+      $ids = notification_emails_get_shared_website_list($websiteId);
       $found = in_array($websiteId, $ids);
     }
     if ($found) {
@@ -366,7 +366,7 @@ function notification_emails_hyperlink_id($id, $websiteId) {
 }
 
 function notification_emails_get_shared_website_list($websiteId) {
-  $tag = "website-shares-$websiteId";
+  $tag = "website-share-array-$websiteId";
   $cacheId = "$tag-reporting";
   $cache = Cache::instance();
   if ($cached = $cache->get($cacheId)) {
@@ -378,15 +378,14 @@ function notification_emails_get_shared_website_list($websiteId) {
     ->where("receive_for_reporting", 't')
     ->in('from_website_id', $websiteId)
     ->get()->result();
-  $ids = array();
+  $ids = [];
   foreach ($qry as $row) {
     $ids[] = $row->to_website_id;
   }
-  $r = implode(',', $ids);
   // Tag all cache entries for this website so they can be cleared together
   // when changes are saved.
-  $cache->set($cacheId, $r, $tag);
-  return $r;
+  $cache->set($cacheId, $ids, $tag);
+  return $ids;
 }
 
 /**

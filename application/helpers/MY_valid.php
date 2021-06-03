@@ -59,17 +59,17 @@ class Valid extends valid_Core {
    * @param	string	SDate
    */
   public static function vague_date($sDate){
-    if (vague_date::string_to_vague_date($sDate) != false){
-      return true;
+    if (vague_date::string_to_vague_date($sDate) != FALSE){
+      return TRUE;
     }
-    return false;
+    return FALSE;
   }
 
   /**
   * Validates that a date is not in the future.
   */
   public static function date_in_past($date) {
-    return ($date == null || strtotime($date) <= time());
+    return ($date == NULL || strtotime($date) <= time());
   }
 
   /**
@@ -199,10 +199,10 @@ SQL;
     $emails = explode(',', $value);
     foreach ($emails as $email) {
       if (!self::email(trim($email))) {
-        return false;
+        return FALSE;
       }
     }
-    return true;
+    return TRUE;
   }
 
 

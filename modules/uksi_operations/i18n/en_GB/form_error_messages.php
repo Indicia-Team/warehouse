@@ -3,6 +3,9 @@
 defined('SYSPATH') or die('No direct access allowed.');
 
 $lang = [
+  'batch_processed_on' => [
+    'required' => 'The batch processing date field requires a value.',
+  ],
   'deleted_date' => [
     'date' => 'The Deleted Date field must contain a valid date.',
   ],

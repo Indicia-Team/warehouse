@@ -1343,11 +1343,6 @@ $config['occurrences']['get_changed_items_query'] = "
     join locations l on l.id=s.location_id
     where l.updated_on>'#date#'
     union
-    select o.id, ttl.deleted
-    from occurrences o
-    join taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id
-    where ttl.updated_on>'#date#'
-    union
     select om.occurrence_id, false
     from occurrence_media om
     where om.updated_on>'#date#' and om.created_on<om.updated_on
