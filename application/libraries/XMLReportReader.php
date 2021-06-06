@@ -477,6 +477,21 @@ class XMLReportReader_Core implements ReportReader {
   }
 
   /**
+   * Sorts a string of comma separated numbers.
+   *
+   * @param string $string
+   *   String containing comma separated numbers.
+   *
+   * @return string
+   *   String of sorted, comma separated numbers.
+   */
+  private function sortCsvString($string) {
+    $list = explode(',', $string);
+    sort($list);
+    return implode(',', $list);
+  }
+
+  /**
    * Check if we have a survey filter param which covers permissions.
    *
    * If doing a standard params filter including a filter on survey and all
@@ -497,17 +512,16 @@ class XMLReportReader_Core implements ReportReader {
   private function coveringSurveyFilter(array $providedParams, $sharedWebsiteIdList) {
     if ($this->loadStandardParamsSet && !empty($providedParams['survey_list']) || !empty($providedParams['survey_id'])) {
       $surveys = empty($providedParams['survey_list']) ? $providedParams['survey_id'] : $providedParams['survey_list'];
-      $list = explode(',', $surveys);
-      sort($list);
-      $listAsString = implode(',', $list);
-      // Cache key will use a hash so survey ID list not too long for a
-      // filename.
-      $hash = md5($listAsString);
-      $cacheId = "covering-survey-filter-sh-$hash-w-$sharedWebsiteIdList";
+      $sortedSurveys = $this->sortCsvString($surveys);
+      $sortedWebsites = $this->sortCsvString($sharedWebsiteIdList);
+      // Cache key will use a hash so survey and website ID lists not too long
+      // for a filename.
+      $hash = md5("$sortedSurveys:$sortedWebsites");
+      $cacheId = "covering-survey-filter-swh-$hash";
       $cache = Cache::instance();
       if ($cached = $cache->get($cacheId)) {
         // Extra safety check in case a hash value collision.
-        if ($cached[0] === $listAsString) {
+        if ($cached[0] === "$sortedSurveys:$sortedWebsites") {
           return $cached[1];
         }
       }
@@ -518,7 +532,7 @@ class XMLReportReader_Core implements ReportReader {
         ->in('id', $surveys)
         ->notin('website_id', $sharedWebsiteIdList)
         ->get()->current();
-      $cache->set($cacheId, [$listAsString, $qry->count === '0']);
+      $cache->set($cacheId, ["$sortedSurveys:$sortedWebsites", $qry->count === '0']);
       return $qry->count === '0';
     }
     return FALSE;
