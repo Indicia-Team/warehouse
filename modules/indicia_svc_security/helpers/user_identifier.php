@@ -130,7 +130,7 @@ class user_identifier {
       $userPersonObj->person_id = $qry[0]['person_id'];
     }
     else {
-      $existingUsers = array();
+      $existingUsers = [];
       // Work through the list of identifiers and find the users for the ones
       // we already know about, plus find the list of identifiers we've not
       // seen before.
@@ -181,14 +181,14 @@ SQL;
         foreach ($r as $existingUser) {
           // Create a placeholder for the known user we just found.
           if (!isset($existingUsers[$existingUser->user_id])) {
-            $existingUsers[$existingUser->user_id] = array();
+            $existingUsers[$existingUser->user_id] = [];
           }
           // Add the identifier detail to this known user.
-          $existingUsers[$existingUser->user_id][] = array(
+          $existingUsers[$existingUser->user_id][] = [
             'identifier' => $identifier->identifier,
             'type' => $identifier->type,
             'person_id' => $existingUser->person_id,
-          );
+          ];
         }
 
       }
@@ -229,7 +229,7 @@ SQL;
     self::storeCustomAttributes($userId, $attrs, $userPersonObj);
     // Convert the attributes to update in the client website account into an
     // array of captions & values.
-    $attrsToReturn = array();
+    $attrsToReturn = [];
     foreach ($attrs as $attr) {
       $attrsToReturn[$attr['caption']] = $attr['value'];
     }
@@ -292,22 +292,24 @@ SQL;
   }
 
   /**
-   * Creates a new user account using the surname and first_name (if available)
-   * in the $_REQUEST.
+   * Creates a new user account.
+   *
+   * Uses the surname and first_name (if available) in the $_REQUEST.
    */
   private static function createUser($email, $userPersonObj) {
     $person = ORM::factory('person')
       ->where('deleted', 'f')
       // Use like as converts to ilike so case-insensitive.
-      ->like('email_address', addcslashes($email, '%\\_'))
+      ->like('email_address', addcslashes($email, '%\\_'), FALSE)
       ->find();
     if ($person->loaded
         && ((!empty($person->first_name) && $person->first_name != '?'
         && !empty($_REQUEST['first_name']) && strtolower(trim($_REQUEST['first_name'])) !== strtolower(trim($person->first_name)))
-        || strtolower(trim($person->surname)) !== strtolower(trim($_REQUEST['surname']))))
+        || strtolower(trim($person->surname)) !== strtolower(trim($_REQUEST['surname'])))) {
       throw new exception("The system attempted to use your user account details to register you as a user of the ".
           "central records database, but a different person with email address $email already exists. Please contact your ".
-          "site administrator who may be able to help resolve this issue." . print_r($_REQUEST, true));
+          "site administrator who may be able to help resolve this issue." . print_r($_REQUEST, TRUE));
+    }
     $data = array(
       'first_name' => isset($_REQUEST['first_name']) ? $_REQUEST['first_name'] : '?',
       'surname' => $_REQUEST['surname'],
@@ -316,16 +318,17 @@ SQL;
     if ($person->loaded) {
       $data['id'] = $person->id;
     }
-    $person->validate(new Validation($data), true);
+    $person->validate(new Validation($data), TRUE);
     self::checkErrors($person);
     $user = ORM::factory('user');
-    $data = array(
+    $data = [
       'person_id' => $person->id,
       'username' => $person->newUsername(),
-      // User will not actually have warehouse access, so password fairly irrelevant.
+      // User will not actually have warehouse access, so password fairly
+      // irrelevant.
       'password' => 'P4ssw0rd',
-    );
-    $user->validate(new Validation($data), true);
+    ];
+    $user->validate(new Validation($data), TRUE);
     self::checkErrors($user);
     $userPersonObj->person_id = $person->id;
     return $user->id;
@@ -340,7 +343,7 @@ SQL;
   private static function storeIdentifiers($userId, $identifiers, $userPersonObj, $websiteId) {
     // Build a list of all the identifier types we will need, to ensure that we
     // have terms for them.
-    $typeTerms = array();
+    $typeTerms = [];
     foreach ($identifiers as $identifier) {
       if (!in_array($identifier->type, $typeTerms)) {
         $typeTerms[] = $identifier->type;
@@ -445,7 +448,7 @@ QRY
    */
   private static function loadIdentifierTypes($userPersonObj) {
     if (!isset($userPersonObj->identifierTypes)) {
-      $userPersonObj->identifierTypes = array();
+      $userPersonObj->identifierTypes = [];
       $terms = $userPersonObj->db
         ->select('termlists_terms.id, term')
         ->from('termlists_terms')
@@ -477,26 +480,29 @@ QRY
    */
   private static function associateWebsite($userId, $userPersonObj, $websiteId) {
     $qry = $userPersonObj->db->select('id')
-        ->from('users_websites')
-        ->where(array('user_id' => $userId, 'website_id' => $websiteId))
-        ->get()->result_array(FALSE);
+      ->from('users_websites')
+      ->where(['user_id' => $userId, 'website_id' => $websiteId])
+      ->get()->result_array(FALSE);
 
-    if (count($qry) === 0)
-      // insert new join record
-      $uw=ORM::factory('users_website');
-    else {
-      // update existing
-      $uw=ORM::factory('users_website', $qry[0]['id']);
-      if ($uw->site_role_id===1 || $uw->site_role_id===2)
-        // don't bother updating, they are already admin or editor for this site
-        return;
+    if (count($qry) === 0) {
+      // Insert new join record.
+      $uw = ORM::factory('users_website');
     }
-    $data = array(
-      'user_id'=>$userId,
-      'website_id'=>$websiteId,
-      'site_role_id'=>3
-    );
-    $uw->validate(new Validation($data), true);
+    else {
+      // Update existing.
+      $uw = ORM::factory('users_website', $qry[0]['id']);
+      if ($uw->site_role_id === 1 || $uw->site_role_id === 2) {
+        // Don't bother updating, they are already admin or editor for this
+        // site.
+        return;
+      }
+    }
+    $data = [
+      'user_id' => $userId,
+      'website_id' => $websiteId,
+      'site_role_id' => 3,
+    ];
+    $uw->validate(new Validation($data), TRUE);
     self::checkErrors($uw);
   }
 
@@ -512,7 +518,7 @@ QRY
       $preventShares = explode(',', $_REQUEST['shares_to_prevent']);
       // build an array of values to post to the db
       $tasks = array('reporting', 'peer_review', 'verification', 'data_flow', 'moderation', 'editing');
-      $values=array();
+      $values=[];
       foreach ($tasks as $task) {
         $values["allow_share_for_$task"]=(in_array($task, $preventShares) ? 'f' : 't');
       }
@@ -530,7 +536,7 @@ QRY
    */
   private static function storeCustomAttributes($userId, &$attrs,$userPersonObj) {
     if (!empty($_REQUEST['attribute_values'])) {
-      $valueData = json_decode($_REQUEST['attribute_values'], true);
+      $valueData = json_decode($_REQUEST['attribute_values'], TRUE);
       if (count($valueData)) {
         $attrCaptions = array_keys($valueData);
         $pav = ORM::factory('person_attribute_value');
@@ -552,7 +558,7 @@ QRY
               $pav->find($attr['value_id']);
             } else
               $pav->clear();
-            $pav->validate(new Validation($data), true);
+            $pav->validate(new Validation($data), TRUE);
             self::checkErrors($pav);
         }
         }
@@ -609,7 +615,7 @@ QRY
    * warehouse for admin to check for and merge potential duplicate users.
    */
   private static function findBestFit($identifiers, $existingUsers, $userPersonObj) {
-    $nameMatches = array();
+    $nameMatches = [];
     foreach ($identifiers as $identifier) {
       // find all the existing users which match this identifier.
       $userPersonObj->db->select('ui.user_id, p.first_name, p.surname')
@@ -690,7 +696,7 @@ QRY
 
     // use the User Ids list to find a list of people to delete.
     $psnIds = $userPersonObj->db->select('person_id')->from('users')->in('id', $uidsToDelete)->get()->result_array();
-    $pidsToDelete = array();
+    $pidsToDelete = [];
     foreach ($psnIds as $psnId)
       $pidsToDelete[] = $psnId->person_id;
     // do the actual deletions
