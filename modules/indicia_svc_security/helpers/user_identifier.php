@@ -695,7 +695,7 @@ QRY
     }
 
     // use the User Ids list to find a list of people to delete.
-    $psnIds = $userPersonObj->db->select('person_id')->from('users')->in('id', $uidsToDelete)->get()->result_[];
+    $psnIds = $userPersonObj->db->select('person_id')->from('users')->in('id', $uidsToDelete)->get()->result_array();
     $pidsToDelete = [];
     foreach ($psnIds as $psnId)
       $pidsToDelete[] = $psnId->person_id;
