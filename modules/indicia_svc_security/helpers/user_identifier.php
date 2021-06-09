@@ -292,22 +292,24 @@ SQL;
   }
 
   /**
-   * Creates a new user account using the surname and first_name (if available)
-   * in the $_REQUEST.
+   * Creates a new user account.
+   *
+   * Uses the surname and first_name (if available) in the $_REQUEST.
    */
   private static function createUser($email, $userPersonObj) {
     $person = ORM::factory('person')
       ->where('deleted', 'f')
       // Use like as converts to ilike so case-insensitive.
-      ->like('email_address', addcslashes($email, '%\\_'))
+      ->like('email_address', addcslashes($email, '%\\_'), FALSE)
       ->find();
     if ($person->loaded
         && ((!empty($person->first_name) && $person->first_name != '?'
         && !empty($_REQUEST['first_name']) && strtolower(trim($_REQUEST['first_name'])) !== strtolower(trim($person->first_name)))
-        || strtolower(trim($person->surname)) !== strtolower(trim($_REQUEST['surname']))))
+        || strtolower(trim($person->surname)) !== strtolower(trim($_REQUEST['surname'])))) {
       throw new exception("The system attempted to use your user account details to register you as a user of the ".
           "central records database, but a different person with email address $email already exists. Please contact your ".
-          "site administrator who may be able to help resolve this issue." . print_r($_REQUEST, true));
+          "site administrator who may be able to help resolve this issue." . print_r($_REQUEST, TRUE));
+    }
     $data = array(
       'first_name' => isset($_REQUEST['first_name']) ? $_REQUEST['first_name'] : '?',
       'surname' => $_REQUEST['surname'],
