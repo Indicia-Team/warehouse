@@ -38,7 +38,7 @@ class data_cleaner {
     // Use cached rules if available.
     if (!($rules = $cache->get($cacheId))) {
       // Need to build the set of rules from plugin modules.
-      $rules = array();
+      $rules = [];
       foreach (Kohana::config('config.modules') as $path) {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
@@ -70,10 +70,10 @@ class data_cleaner {
     foreach ($rules as $rule) {
       if (strcasecmp($rule['testType'], $type) === 0) {
         if (!array_key_exists('required', $rule)) {
-          $rule['required'] = array();
+          $rule['required'] = [];
         }
         if (!array_key_exists('optional', $rule)) {
-          $rule['optional'] = array();
+          $rule['optional'] = [];
         }
         return $rule;
       }
@@ -99,8 +99,8 @@ class data_cleaner {
     // Break into lines, tolerating different line ending forms.
     $lines = helper_base::explode_lines($content);
     $currentSection = '';
-    $currentSectionData = array();
-    $r = array();
+    $currentSectionData = [];
+    $r = [];
     foreach ($lines as $line) {
       $line = trim($line);
       // Skip comments and blank lines plus the end of the metadata section.
@@ -113,7 +113,7 @@ class data_cleaner {
         }
         // Reset for the next section.
         $currentSection = trim(strtolower($matches['section']));
-        $currentSectionData = array();
+        $currentSectionData = [];
       }
       elseif (preg_match('/^([^=\r\n]+)=([^\r\n]*)$/', $line, $matches)) {
         $currentSectionData[trim(strtolower($matches[1]))] = trim($matches[2]);
