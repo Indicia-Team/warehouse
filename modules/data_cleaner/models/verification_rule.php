@@ -382,7 +382,6 @@ class Verification_rule_Model extends ORM {
    */
   protected function postSubmit($isInsert) {
     require_once DOCROOT . 'client_helpers/helper_base.php';
-    $result = TRUE;
     if (isset($this->submission['metaFields'])) {
       $currentRule = data_cleaner::getRule($this->test_type);
       if (isset($this->submission['metaFields']['metadata']['value'])) {
