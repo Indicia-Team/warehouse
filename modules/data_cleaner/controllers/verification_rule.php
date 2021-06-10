@@ -218,7 +218,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $view->uploadId = $uploadId;
     $view->requiresFetch = 'true';
     $this->template->content = $view;
-    $this->template->title = 'Fetching rule files from server';
+    $this->template->title = 'Importing verification rule files';
     $zipfiles = $this->fetchServerFileList($_POST['server']);
     $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
     fwrite($cacheHandle, json_encode(array(
