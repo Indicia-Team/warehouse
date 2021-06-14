@@ -77,9 +77,9 @@ left join verification_rule_metadata vrmmeaning on vrmmeaning.verification_rule_
 left join cache_taxa_taxon_lists cttlmeaning on cttltaxon.taxon_meaning_id=vrmmeaning.value::integer and cttlmeaning.preferred=true
 join verification_rule_data vrdstage on vrdstage.verification_rule_id=vr.id and vrdstage.key ilike 'Stage'
 left join verification_rule_data vrstart on vrstart.verification_rule_id=vr.id and vrstart.key ilike 'StartDate' and length(vrstart.value)=4
-  and vrstart.deleted=false
+  and vrstart.deleted=false and vrstart.data_group=vrdstage.data_group
 left join verification_rule_data vrend on vrend.verification_rule_id=vr.id and vrend.key ilike 'EndDate' and length(vrend.value)=4
-  and vrend.deleted=false
+  and vrend.deleted=false and vrend.data_group=vrdstage.data_group
 left join verification_rule_data vrmsurvey on vrmsurvey.verification_rule_id=vr.id and vrmsurvey.key='SurveyId' and vrmsurvey.deleted=false
 where vr.test_type='PeriodWithinYear'
   and vr.deleted=false
