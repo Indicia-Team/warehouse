@@ -87,14 +87,21 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
 
   private function getDataAsText() {
     $currentHeader = '';
+    $lastGroup = NULL;
     if ($this->model->id) {
       $items = $this->db->select('header_name, data_group, key, value')
         ->from('verification_rule_data')
-        ->where(array('verification_rule_id' => $this->model->id, 'deleted' => 'f'))
-        ->orderby(array('data_group' => 'ASC', 'id' => 'ASC'))
+        ->where(['verification_rule_id' => $this->model->id, 'deleted' => 'f'])
+        ->orderby(['data_group' => 'ASC', 'id' => 'ASC'])
         ->get()->result();
       $outputs = array();
       foreach ($items as $item) {
+        // Space separate groups of metadata.
+        $lastGroup = $lastGroup === NULL ? $item->data_group : $lastGroup;
+        if ($item->data_group !== $lastGroup) {
+          $outputs[] = '';
+          $lastGroup = $item->data_group;
+        }
         if ($item->header_name !== $currentHeader) {
           $outputs[] = "[$item->header_name]";
           $currentHeader = $item->header_name;
