@@ -231,11 +231,7 @@ class Verification_rule_Model extends ORM {
     // Counter to keep track of groups of related field values in a data
     // section. Not implemented properly at the moment but we are likely to
     // need this e.g. for periodInYear checks with multiple stages.
-    $dataGroup = 1;
     $rows = [];
-    // Unset geom, as we auto-calculate it for withoutPolygons, not really part
-    // of the rule definition.
-    unset($data['geom']);
     // A quick test to ensure we don't have sections in the data we shouldn't.
     $got = array_keys(array_change_key_case($data));
     $expect = array_keys(array_change_key_case($fields));
@@ -251,42 +247,47 @@ class Verification_rule_Model extends ORM {
     }
     foreach ($fields as $dataSection => $dataContent) {
       if (isset($data[strtolower($dataSection)])) {
-        if (!in_array('*', $dataContent)) {
-          // A quick test to ensure we don't have keys in the data we
-          // shouldn't. Test not required if we have a wildcard key allowed.
-          $got = array_keys(array_change_key_case($data[strtolower($dataSection)]));
-          $expect = array_map('strtolower', $dataContent);
-          $dontWant = array_diff($got, $expect);
-          if (count($dontWant)) {
-            throw new exception('The following data keys are not recognised for this rule type: ' .
-              implode(',', $dontWant) . print_r($dataContent, TRUE));
-          }
-        }
-
-        foreach ($dataContent as $key) {
-          if ($key === '*') {
-            // * means that any field value is allowed.
-            foreach ($data[strtolower($dataSection)] as $anyField => $anyValue) {
-              $rows[] = [
-                'dataSection' => $dataSection,
-                'dataGroup' => $dataGroup,
-                'key' => $anyField,
-                'value' => $anyValue,
-              ];
+        foreach ($data[strtolower($dataSection)] as $dataGroupNum => $dataGroup) {
+          // Unset geom, as we auto-calculate it for withoutPolygons, not really
+          // part of the rule definition.
+          unset($dataGroup['geom']);
+          if (!in_array('*', $dataContent)) {
+            // A quick test to ensure we don't have keys in the data we
+            // shouldn't. Test not required if we have a wildcard key allowed.
+            $got = array_keys(array_change_key_case($dataGroup));
+            $expect = array_map('strtolower', $dataContent);
+            $dontWant = array_diff($got, $expect);
+            if (count($dontWant)) {
+              throw new exception('The following data keys are not recognised for this rule type: ' .
+                implode(',', $dontWant) . print_r($dataContent, TRUE));
             }
           }
-          elseif (isset($data[strtolower($dataSection)][strtolower($key)])) {
-            // Doing specific named fields.
-            $rows[] = [
-              'dataSection' => $dataSection,
-              'dataGroup' => $dataGroup,
-              'key' => $key,
-              'value' => $data[strtolower($dataSection)][strtolower($key)],
-            ];
-          }
-          else {
-            if (isset($currentRule['required'][$dataSection]) && in_array($key, $currentRule['required'][$dataSection])) {
-              throw new exception("Required field $key missing from the data for section $dataSection");
+
+          foreach ($dataContent as $key) {
+            if ($key === '*') {
+              // * means that any field value is allowed.
+              foreach ($dataGroup as $anyField => $anyValue) {
+                $rows[] = [
+                  'dataSection' => $dataSection,
+                  'dataGroup' => $dataGroupNum + 1,
+                  'key' => $anyField,
+                  'value' => $anyValue,
+                ];
+              }
+            }
+            elseif (isset($dataGroup[strtolower($key)])) {
+              // Doing specific named fields.
+              $rows[] = [
+                'dataSection' => $dataSection,
+                'dataGroup' => $dataGroupNum + 1,
+                'key' => $key,
+                'value' => $dataGroup[strtolower($key)],
+              ];
+            }
+            else {
+              if (isset($currentRule['required'][$dataSection]) && in_array($key, $currentRule['required'][$dataSection])) {
+                throw new exception("Required field $key missing from the data for section $dataSection");
+              }
             }
           }
         }

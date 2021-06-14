@@ -83,6 +83,38 @@ class data_cleaner {
   }
 
   /**
+   * Adds a value to the data collected for the current section.
+   *
+   * For metadata, the data are collected in a simple key/value list with the
+   * key's lowercased. For metadata and other sections, the key/value list is
+   * grouped allowing multiple sets to be collected.
+   *
+   * @param string $currentSection
+   *   Title of the current section.
+   * @param array $currentSectionData
+   *   List the key/value pair will be added to.
+   * @param int $dataGroup
+   *   Index of the grouped set of key/value pairs.
+   * @param string $key
+   *   Key name.
+   * @param string $value
+   *   Value to store.
+   */
+  private static function addDataValue($currentSection, array &$currentSectionData, $dataGroup, $key, $value) {
+    if ($currentSection === 'metadata') {
+      $currentSectionData[trim(strtolower($key))] = trim($value);
+    }
+    else {
+      // Other sections have groups of related keys (e.g. date ranges for a
+      // stage term).
+      if (!isset($currentSectionData[$dataGroup])) {
+        $currentSectionData[$dataGroup] = [];
+      }
+      $currentSectionData[$dataGroup][trim(strtolower($key))] = trim($value);
+    }
+  }
+
+  /**
    * Parse a verification rule test file.
    *
    * Parses a data cleaner verification rule test file into an array of
@@ -100,11 +132,12 @@ class data_cleaner {
     $lines = helper_base::explode_lines($content);
     $currentSection = '';
     $currentSectionData = [];
+    $dataGroup = 0;
     $r = [];
     foreach ($lines as $line) {
       $line = trim($line);
-      // Skip comments and blank lines plus the end of the metadata section.
-      if (substr($line, 1) === ';' || empty($line) || $line === '[EndMetadata]') {
+      // Skip comments plus the end of the metadata section.
+      if (substr($line, 1) === ';' || $line === '[EndMetadata]') {
         continue;
       }
       if (preg_match('/^\[(?P<section>.+)\]$/', $line, $matches)) {
@@ -114,12 +147,16 @@ class data_cleaner {
         // Reset for the next section.
         $currentSection = trim(strtolower($matches['section']));
         $currentSectionData = [];
+        $dataGroup = 0;
       }
       elseif (preg_match('/^([^=\r\n]+)=([^\r\n]*)$/', $line, $matches)) {
-        $currentSectionData[trim(strtolower($matches[1]))] = trim($matches[2]);
+        self::addDataValue($currentSection, $currentSectionData, $dataGroup, $matches[1], $matches[2]);
       }
       elseif (preg_match('/^(?P<key>.+)$/', $line, $matches)) {
-        $currentSectionData[trim(strtolower($matches['key']))] = '-';
+        self::addDataValue($currentSection, $currentSectionData, $dataGroup, $matches['key'], '-');
+      }
+      elseif (empty($line) && $currentSection !== 'metadata') {
+        $dataGroup++;
       }
     }
     // Set the final section content.
