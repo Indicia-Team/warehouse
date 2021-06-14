@@ -108,7 +108,9 @@ if (requiresFetch) {
 <div class="error" style="display: none" id="errors-notice"><span>0</span> error(s) have been reported.</div>
 <label id="progress-text">Please wait....</label>
 <progress id="progress-bar" class="progress" value="0" max="100"></progress>
-<div id="link" style="display: none">Import Complete<br/><a href="<?php echo url::base(); ?>index.php/verification_rule">Return to the Verification Rules list</a></div>
+<div id="link" class="alert alert-success" style="display: none">Import Complete<br/>
+  <a class="btn btn-primary" href="<?php echo url::base(); ?>index.php/verification_rule">Return to the Verification Rules list</a>
+</div>
 <br/>
 <label>Output:</label>
 <div id="messages" style="height: 400px; width: 100%; border: solid silver 1px; overflow: auto"></div>
