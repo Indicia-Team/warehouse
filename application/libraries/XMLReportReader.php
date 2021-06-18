@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -38,7 +39,7 @@ class XMLReportReader_Core implements ReportReader {
   private $params = [];
   private $tables = [];
   private $attributes = [];
-  private $automagic = false;
+  private $automagic = FALSE;
   private $vagueDateProcessing = 'true';
   private $download = 'OFF';
   private $surveyParam='survey_id';
@@ -49,39 +50,50 @@ class XMLReportReader_Core implements ReportReader {
   private $colsToInclude = [];
 
   /**
-   * Database connection object;
+   * Database connection object.
    *
    * @var object
    */
   private $db;
 
   /**
-   * @var bool Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the
-   * sql for the columns list.
+   * Identify if we have got SQL defined in the columns array.
+   *
+   * If so we are able to auto-generate the sql for the columns list.
+   *
+   * @var bool
    */
   private $hasColumnsSql = FALSE;
 
   /**
-   * @var array List of column definitions that have data type and sql defined so therefore allow filtering.
+   * List of column definitions that allow filtering.
+   *
+   * These must have datatype and sql defined.
+   *
+   * @var array
    */
   public $filterableColumns = [];
 
   /**
-   * @var bool Track if this report supports the standard set of parameters. If so, names the entity.
+   * Track if this report supports the standard set of parameters.
+   *
+   * If so, names the entity.
+   *
+   * @var bool
    */
-  public $loadStandardParamsSet = false;
+  public $loadStandardParamsSet = FALSE;
 
   /**
    * @var boolean True if loading the legacy set of standard parameters for reporting occurrences against the
    * old cache structure via the cache_occurrences view which simulates the structure for backwards compatibility.
    */
-  public $loadLegacyStandardParamsSet = false;
+  public $loadLegacyStandardParamsSet = FALSE;
 
   /**
    * @var boolean Identify if we have got SQL defined for aggregated fields. If so we need to implement a group by for
    * the other fields.
    */
-  private $hasAggregates = false;
+  private $hasAggregates = FALSE;
 
   /**
    * Returns a simple array containing the title and description of a report. Static so you don't have to load the full report object to get this
@@ -151,26 +163,24 @@ class XMLReportReader_Core implements ReportReader {
     try {
       $this->db = $db;
       $a = explode('/', $report);
-      $this->name = $a[count($a)-1];
+      $this->name = $a[count($a) - 1];
       $reader = new XMLReader();
       $reader->open($report);
       $this->colsToInclude = $colsToInclude;
-      while($reader->read())
-      {
-        switch($reader->nodeType)
-        {
+      while ($reader->read()) {
+        switch ($reader->nodeType) {
           case (XMLREADER::ELEMENT):
-            switch ($reader->name)
-              {
+            switch ($reader->name) {
               case 'report':
                 $this->title = $reader->getAttribute('title');
                 $this->description = $reader->getAttribute('description');
                 $this->row_class = $reader->getAttribute('row_class');
                 break;
+
               case 'query':
                 $sp = $reader->getAttribute('standard_params');
                 $this->websiteFilterField = $reader->getAttribute('website_filter_field');
-                if ($this->websiteFilterField=== NULL)
+                if ($this->websiteFilterField === NULL)
                   // default field name for filtering against websites
                   $this->websiteFilterField = 'w.id';
                 $this->trainingFilterField = $reader->getAttribute('training_filter_field');
@@ -242,19 +252,21 @@ class XMLReportReader_Core implements ReportReader {
                 }
                 // load the standard set of parameters for consistent filtering of reports?
                 $standardParams = $reader->getAttribute('standard_params');
-                if ($standardParams!==null)
+                if ($standardParams !== null)
                   // default to loading the occurrences standard parameters set. But this can be overridden.
-                  $this->loadStandardParamsSet = $standardParams==='true' ? 'occurrences' : $standardParams;
+                  $this->loadStandardParamsSet = $standardParams === 'true' ? 'occurrences' : $standardParams;
                 // reports using the old cache_occurrences structure set standard params to true rather than occurrences
-                if ($standardParams==='true')
-                  $this->loadLegacyStandardParamsSet = true;
+                if ($standardParams === 'true')
+                  $this->loadLegacyStandardParamsSet = TRUE;
                 $reader->read();
                 $this->query = $reader->value;
                 break;
+
               case 'count_query':
                 $reader->read();
                 $this->countQuery = $reader->value;
                 break;
+
               case 'field_sql':
                 $reader->read();
                 $field_sql = $reader->value;
@@ -345,18 +357,21 @@ class XMLReportReader_Core implements ReportReader {
       $reader->close();
       // Add a token to mark where additional filters can insert in the WHERE
       // clause.
-      if ($this->query && strpos($this->query, '#filters#') === false) {
-        if (strpos($this->query, '#order_by#') !== false)
+      if ($this->query && strpos($this->query, '#filters#') === FALSE) {
+        if (strpos($this->query, '#order_by#') !== FALSE) {
           $this->query = str_replace('#order_by#', "#filters#\n#order_by#", $this->query);
-        else
+        }
+        else {
           $this->query .= '#filters#';
+        }
       }
       // Also for count query if specified.
       if ($this->countQuery) {
-        if (strpos($this->countQuery, '#filters#') === false) {
+        if (strpos($this->countQuery, '#filters#') === FALSE) {
           $this->countQuery .= '#filters#';
         }
-      } elseif ($this->query) {
+      }
+      elseif ($this->query) {
         $this->countQuery = $this->query;
       }
       if ($this->hasColumnsSql) {
@@ -368,15 +383,18 @@ class XMLReportReader_Core implements ReportReader {
         }
       }
       elseif ($this->query) {
-        // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
-        // otherwise the same.
+        // Sort out the field list or use count(*) for the count query. Do this
+        // at the end so the queries are otherwise the same.
         if (!empty($field_sql)) {
           $this->countQueryBase = str_replace('#field_sql#', '#count#', $this->countQuery);
           $this->countFields = $this->count_field;
           $this->query = str_replace('#field_sql#', $field_sql, $this->query);
         }
-        // column SQL is part of the SQL statement, or defined in a field_sql element.
-        // Get any extra columns from the query data. Do this at the end so that the specified columns appear first, followed by any unspecified ones.
+        // Column SQL is part of the SQL statement, or defined in a field_sql
+        // element.
+        // Get any extra columns from the query data. Do this at the end so
+        // that the specified columns appear first, followed by any unspecified
+        // ones.
         $this->inferFromQuery();
       }
       if ($this->query) {
@@ -384,9 +402,8 @@ class XMLReportReader_Core implements ReportReader {
         $this->countQueryBase = str_replace('#master_list_id', warehouse::getMasterTaxonListId(), $this->countQueryBase);
       }
     }
-    catch (Exception $e)
-    {
-      throw new Exception("Report: $report\n".$e->getMessage());
+    catch (Exception $e) {
+      throw new Exception("Report: $report\n" . $e->getMessage());
     }
   }
 
@@ -578,7 +595,7 @@ class XMLReportReader_Core implements ReportReader {
     $this->countQueryBase = str_replace('#columns#', '#count#', $this->countQuery);
     if (count($countSql) > 1) {
       // Concatenate the fields so we can get a distinct list.
-      $this->countFields = 'coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')";
+      $this->countFields = 'coalesce(' . implode("::text, '') || coalesce(", $countSql) . "::text, '')";
     }
     elseif (count($countSql) === 1) {
       $this->countFields = $countSql[0];
@@ -818,37 +835,36 @@ class XMLReportReader_Core implements ReportReader {
 
   /**
    */
-  public function getAttributeDefns()
-  {
+  public function getAttributeDefns() {
      return $this->attributes;
   }
 
-  public function getVagueDateProcessing()
-  {
+  public function getVagueDateProcessing() {
     return $this->vagueDateProcessing;
   }
 
   public function getDownloadDetails() {
-   $thisDefn = new stdClass;
-   $thisDefn->mode = $this->download;
-   $thisDefn->id = 'occurrence_id';
-   if($this->automagic) {
-     for($i = 0; $i < count($this->tables); $i++){
-      if($this->tables[$i]['tablename'] == 'occurrences'){ // Warning, will not work with multiple occurrence tables
-         $thisDefn->id = "lt".$i."_id";
-         break;
+    $thisDefn = new stdClass();
+    $thisDefn->mode = $this->download;
+    $thisDefn->id = 'occurrence_id';
+    if ($this->automagic) {
+      for ($i = 0; $i < count($this->tables); $i++) {
+        if ($this->tables[$i]['tablename'] == 'occurrences') {
+          // Warning, will not work with multiple occurrence tables.
+          $thisDefn->id = 'lt' . $i . '_id';
+          break;
+        }
       }
-     }
-   }
-   return $thisDefn;
+    }
+    return $thisDefn;
   }
+
   //* PRIVATE FUNCTIONS *//
 
   /**
    * Returns the css class to apply to rows in the report.
    */
-  private function getRowClass()
-  {
+  private function getRowClass() {
     return $this->row_class;
   }
 
@@ -861,11 +877,10 @@ class XMLReportReader_Core implements ReportReader {
     $query = "SELECT vt.".$parentSingular."_id as main_id,
       vt.text_value, vt.float_value, vt.int_value, vt.date_start_value, vt.date_end_value, vt.date_type_value,
       at.id, at.caption, at.data_type, at.termlist_id, at.multi_value ";
-    $j=0;
     // table list
     $from = ""; // this is built from back to front, to scan up the tree of tables that are only relevent to this attribute request.
     $i = $attributes->parentTableIndex;
-    while(true){
+    while(TRUE){
       if ($i == 0) {
         $from = $this->tables[$i]['tablename'] . " lt" . $i . $from;
         break;
@@ -885,12 +900,12 @@ class XMLReportReader_Core implements ReportReader {
     $query .= " INNER JOIN " . $parentSingular . "_attributes_websites rt ON (rt." . $parentSingular . "_attribute_id = at.id and rt.deleted = FALSE and (rt.restrict_to_survey_id = #" .
         $this->surveyParam."# or rt.restrict_to_survey_id is null)) ";
     // where list
-    $previous=false;
-    if($this->tables[0]['where'] != null) {
+    $previous=FALSE;
+    if ($this->tables[0]['where'] != NULL) {
       $query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
-      $previous = true;
+      $previous = TRUE;
     }
-    if($attributes->where != null) {
+    if ($attributes->where != NULL) {
       $query .= ($previous ? " AND " : " WHERE ").$attributes->where;
     }
     $query .= " ORDER BY rt.form_structure_block_id, rt.weight, at.id, lt".$attributes->parentTableIndex.".id ";
@@ -1109,7 +1124,7 @@ TBL;
   }
 
   private function array_insert($array, $values, $offset) {
-    return array_slice($array, 0, $offset, true) + $values + array_slice($array, $offset, NULL, true);
+    return array_slice($array, 0, $offset, TRUE) + $values + array_slice($array, $offset, NULL, TRUE);
   }
 
   /**
@@ -1183,7 +1198,7 @@ TBL;
       $this->columns[$name] = array(
         'visible' => 'provisional_true',
         'img' => 'false',
-        'autodef' => false
+        'autodef' => FALSE
       );
     }
     // build a definition from the XML
@@ -1210,7 +1225,7 @@ TBL;
   }
 
   private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='',
-    $orderby='', $mappable='', $autodef=true) {
+    $orderby='', $mappable='', $autodef=TRUE) {
     if (array_key_exists($name, $this->columns))
     {
       if ($display != '') $this->columns[$name]['display'] = $display;
@@ -1287,77 +1302,75 @@ TBL;
     $this->nextTableIndex++;
   }
 
-  private function mergeTabColumn($name, $func = '', $display = '', $style = '', $feature_style = '', $class='', $visible='', $autodef=false) {
-    $found = false;
+  private function mergeTabColumn($name, $func = '', $display = '', $style = '', $feature_style = '', $class='', $visible='', $autodef=FALSE) {
+    $found = FALSE;
     for($r = 0; $r < count($this->tables[$this->tableIndex]['columns']); $r++){
       if($this->tables[$this->tableIndex]['columns'][$r]['name'] == $name) {
-        $found = true;
+        $found = TRUE;
         if($func != '') {
           $this->tables[$this->tableIndex]['columns'][$r]['func'] = $func;
         }
       }
     }
     if (!$found) {
-      $this->tables[$this->tableIndex]['columns'][] = array(
-            'name' => $name,
-            'func' => $func);
+      $this->tables[$this->tableIndex]['columns'][] = [
+        'name' => $name,
+        'func' => $func,
+      ];
       if($display == '') {
         $display = $this->tables[$this->tableIndex]['tablename']." ".$name;
       }
     }
     // force visible if the column is already declared as visible. This prevents the id field from being forced to hidden if explicitly included.
-    if (isset($this->columns['lt'.$this->tableIndex."_".$name]['visible']) && $this->columns['lt'.$this->tableIndex."_".$name]['visible']=='true')
+    if (isset($this->columns['lt' . $this->tableIndex . "_" . $name]['visible']) && $this->columns['lt' . $this->tableIndex . "_" . $name]['visible'] == 'true')
       $visible = 'true';
-    $this->mergeColumn('lt'.$this->tableIndex."_".$name, $display, $style, $feature_style, $class, $visible, 'false', $autodef);
+    $this->mergeColumn('lt' . $this->tableIndex . "_" . $name, $display, $style, $feature_style, $class, $visible, 'false', $autodef);
   }
 
-  private function setMergeTabColumn($name, $tablename, $separator, $where = '', $display = '')
-  {
-    // in this case the data for the column in merged into one, if there are more than one records
+  private function setMergeTabColumn($name, $tablename, $separator, $where = '', $display = '') {
+    // In this case the data for the column in merged into one, if there are more than one records
     // To do this we highjack the attribute handling functionality.
-    $tableKey = (inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
+    $tableKey = (inflector::singular($this->tables[$this->tableIndex]['tablename'])) . '_id';
 
-    $thisDefn = new stdClass;
+    $thisDefn = new stdClass();
     $thisDefn->caption = 'caption';
     $thisDefn->main_id = $tableKey; // main_id is the name of the column in the subquery holding the PK value of the parent table.
-     $thisDefn->parentKey = "lt".$this->tableIndex."_id"; // parentKey holds the column in the main query to compare the main_id against.
+    $thisDefn->parentKey = "lt" . $this->tableIndex . "_id"; // parentKey holds the column in the main query to compare the main_id against.
     $thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
-     $thisDefn->separator = $separator;
+    $thisDefn->separator = $separator;
     $thisDefn->hideVagueDateFields = 'false';
-     $thisDefn->columnPrefix = 'merge_'.count($this->attributes);
+    $thisDefn->columnPrefix = 'merge_' . count($this->attributes);
 
-    if($display == ''){
-      $display = $tablename.' '.$name;
+    if ($display == '') {
+      $display = "$tablename $name";
     }
 
-    $thisDefn->query =  "SELECT ".$tableKey.", '".$display."' as caption, '' as id, 'T' as data_type, ".$name." as text_value, 't' as multi_value FROM ".$tablename.($where == '' ? '' : " WHERE ".$where);
+    $thisDefn->query = "SELECT $tableKey, '$display' as caption, '' as id, 'T' as data_type, $name as text_value, 't' as multi_value FROM $tablename " . ($where == '' ? '' : " WHERE $where");
     $this->attributes[] = $thisDefn;
     // Make sure id column of parent table is in list of columns returned from query.
-    $this->mergeTabColumn('id', '', '', '', '', 'false', true);
+    $this->mergeTabColumn('id', '', '', '', '', 'false', TRUE);
   }
 
-  private function setAttributes($where, $separator, $hideVagueDateFields, $meaningIdLanguage)
-  {
+  private function setAttributes($where, $separator, $hideVagueDateFields, $meaningIdLanguage) {
     $thisDefn = new stdClass;
     $thisDefn->caption = 'caption'; // caption is the name of the column in the subquery holding the attribute caption.
     $thisDefn->main_id = 'main_id'; // main_id is the name of the column in the subquery holding the PK value of the parent table.
-     $thisDefn->parentKey = "lt".$this->tableIndex."_id"; // parentKey holds the column in the main query to compare the main_id against.
+    $thisDefn->parentKey = "lt" . $this->tableIndex . "_id"; // parentKey holds the column in the main query to compare the main_id against.
     $thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
     $thisDefn->separator = $separator;
     $thisDefn->hideVagueDateFields = $hideVagueDateFields;
-    $thisDefn->columnPrefix = 'attr_'.$this->tableIndex.'_';
-    // folowing is used the query builder only
+    $thisDefn->columnPrefix = 'attr_' . $this->tableIndex.'_';
+    // Folowing is used the query builder only.
     $thisDefn->parentTableIndex = $this->tableIndex;
     $thisDefn->where = $where;
     $thisDefn->meaningIdLanguage = $meaningIdLanguage;
     $thisDefn->query = $this->buildAttributeQuery($thisDefn);
     $this->attributes[] = $thisDefn;
     // Make sure id column of parent table is in list of columns returned from query.
-    $this->mergeTabColumn('id', '', '', '', '', 'false', true);
+    $this->mergeTabColumn('id', '', '', '', '', 'false', TRUE);
   }
 
-  private function setDownload($mode)
-  {
+  private function setDownload($mode) {
     $this->download = $mode;
   }
 
@@ -1381,7 +1394,7 @@ TBL;
     do {
       $nextSelect = strpos($this->query, ' select ', $offset);
       $nextFrom = strpos($this->query, ' from ', $offset);
-      if ($nextSelect !== false && $nextSelect < $nextFrom) {
+      if ($nextSelect !== FALSE && $nextSelect < $nextFrom) {
         //found start of sub-query
         $nesting++;
         $offset = $nextSelect + 7;
@@ -1403,16 +1416,16 @@ TBL;
     // commas nested in brackets
     $colStart = 0;
     $nextComma =  strpos($colString, ',', $colStart);
-    while ($nextComma !== false)
+    while ($nextComma !== FALSE)
     {//loop through columns
       $nextOpen =  strpos($colString, '(', $colStart);
-      while ($nextOpen !== false && $nextComma !==false && $nextOpen < $nextComma)
+      while ($nextOpen !== FALSE && $nextComma !==FALSE && $nextOpen < $nextComma)
       { //skipping commas in brackets
         $offset = $this->strposclose($colString, $nextOpen) + 1;
         $nextComma =  strpos($colString, ',', $offset);
         $nextOpen =  strpos($colString, '(', $offset);
       }
-      if ($nextComma !== false) {
+      if ($nextComma !== FALSE) {
         //extract column and move on to next
         $cols[] = substr($colString, $colStart, ($nextComma - $colStart));
         $colStart = $nextComma + 1;
@@ -1447,7 +1460,7 @@ TBL;
    * Returns the numeric position of the closing bracket matching the opening bracket
    * @param <string> $haystack The string to search
    * @param <int> $open The numeric position of the opening bracket
-   * @return The numeric position of the closing bracket or false if not present
+   * @return The numeric position of the closing bracket or FALSE if not present
    */
   private function strposclose($haystack, $open) {
     $nesting = 1;
@@ -1455,8 +1468,8 @@ TBL;
     do {
       $nextOpen =  strpos($haystack, '(', $offset);
       $nextClose =  strpos($haystack, ')', $offset);
-      if ($nextClose === false) return false;
-      if ($nextOpen !== false and $nextOpen < $nextClose) {
+      if ($nextClose === FALSE) return FALSE;
+      if ($nextOpen !== FALSE and $nextOpen < $nextClose) {
         $nesting++;
         $offset = $nextOpen + 1;
       } else {
