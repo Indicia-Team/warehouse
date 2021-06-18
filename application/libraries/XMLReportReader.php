@@ -578,7 +578,7 @@ class XMLReportReader_Core implements ReportReader {
     $this->countQueryBase = str_replace('#columns#', '#count#', $this->countQuery);
     if (count($countSql) > 1) {
       // Concatenate the fields so we can get a distinct list.
-      $this->countFields = 'coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')";
+      $this->countFields = 'coalesce(' . implode("::text, '') || coalesce(", $countSql) . "::text, '')";
     }
     elseif (count($countSql) === 1) {
       $this->countFields = $countSql[0];
