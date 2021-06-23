@@ -700,7 +700,19 @@ QRY
     foreach ($psnIds as $psnId)
       $pidsToDelete[] = $psnId->person_id;
     // do the actual deletions
-    $userPersonObj->db->from('users')->set(array('deleted'=>'t'))->in('id', $uidsToDelete)->update();
-    $userPersonObj->db->from('people')->set(array('deleted'=>'t'))->in('id', $pidsToDelete)->update();
+    $userPersonObj->db->from('users')
+      ->set([
+        'deleted' => 't',
+        'updated_on' => date("Ymd H:i:s"),
+        'updated_by_id' => $uid,
+      ])
+      ->in('id', $uidsToDelete)->update();
+    $userPersonObj->db->from('people')
+      ->set([
+        'deleted' => 't',
+        'updated_on' => date("Ymd H:i:s"),
+        'updated_by_id' => $uid,
+      ])
+      ->in('id', $pidsToDelete)->update();
   }
 }
