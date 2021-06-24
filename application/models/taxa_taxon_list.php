@@ -233,14 +233,14 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       foreach ($existingSyn as $syn) {
         // Is the taxon from the db in the list of synonyms?
         $key = str_replace('|','', $syn->taxon->taxon) . '|' . $syn->taxon->language->iso . '|' . $syn->taxon->authority;
-        if (array_key_exists($key, $arrSyn)) {
+        if (array_key_exists($key, $arrSyn) && $this->submission['fields']['deleted']['value'] !== 't') {
           unset($arrSyn[$key]);
           Kohana::log("debug", "Known synonym: " . $syn->taxon->taxon . ', language ' . $syn->taxon->language->iso .
             ', Authority ' . $syn->taxon->authority);
         }
-        elseif ($syn->taxon->language->iso !== 'lat' || $this->process_synonyms) {
+        elseif ($syn->taxon->language->iso !== 'lat' || $this->process_synonyms || $this->submission['fields']['deleted']['value'] == 't') {
           // Only delete if a common name (not latin) OR process_synonyms is
-          // switched on.
+          // switched on, or the preferred name is being deleted.
           // Synonym not in new list has been deleted - remove it from the db.
           $syn->deleted = 't';
           if ($this->common_taxon_id == $syn->taxon->id) {
@@ -249,6 +249,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           Kohana::log("debug", "Deleting synonym: " . $syn->taxon->taxon . ', language ' . $syn->taxon->language->iso .
             ', Authority ' . $syn->taxon->authority);
           $syn->save();
+          unset($arrSyn[$key]);
         }
       }
 

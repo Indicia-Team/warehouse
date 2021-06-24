@@ -32,23 +32,24 @@ var totaldone=0,
 function dumpErrors(response) {
   if (typeof response.errors!=="undefined") {
     $.each(response.errors, function(idx, error) {
-      $('#messages > div').append('<div class="error">' + error + '</div>');
+      $('#messages').append('<div class="error">' + error + '</div>');
     });
   }
 }
 
 function fetchFileChunk() {
+  $('#progress-text').text('Please wait - fetching rule files from the server...');
   $.ajax({
     url: '<?php echo url::base(); ?>index.php/verification_rule/fetch_file_chunk?uploadId='+uploadId,
     dataType: 'json',
     success: function(response) {
-      $('#progress-bar').progressbar ('option', 'value', response.progress);
+      $('#progress-bar').val(response.progress);
       dumpErrors(response);
       // can't go on if we fail to even load a file
       if (typeof response.errors==="undefined") {
         if (response.progress===100) {
-          $('h1').html('Processing rule files');
-          $('#progress-bar').progressbar ('option', 'value', 0);
+          $('#progress-bar').val(0);
+          $('#progress-text').text('Please wait - processing rule files...');
           uploadChunk();
         } else {
           fetchFileChunk();
@@ -74,13 +75,13 @@ uploadChunk = function() {
         $('#errors-notice').show();
       }
       $.each(response.files, function(idx, file) {
-        $('#messages > div').append('<div class="ok">' + file + ' done</div>');
+        $('#messages').append('<div class="ok">' + file + ' done</div>');
       });
-      $('#messages div').scrollTop(999999);
-      $('#progress-bar').progressbar ('option', 'value', response.progress);
+      $('#messages').scrollTop(999999);
+      $('#progress-bar').val(response.progress);
       totaldone=response.totaldone;
       if (typeof response.complete!=="undefined") {
-        jQuery('#progress-text').html('Upload complete.');
+        $('#progress-text').html('Upload complete.');
         $('#progress').hide();
         $('#link').show();
       } else {
@@ -93,7 +94,7 @@ uploadChunk = function() {
   });
 };
 
-jQuery('#progress-bar').progressbar ({value: 0});
+$('#progress-bar').val(0);
 if (requiresFetch) {
   fetchFileChunk();
 } else {
@@ -105,10 +106,11 @@ if (requiresFetch) {
 </script>
 <p>The selected Record Cleaner rule files are being imported. As some of the rule files can be quite large, it may take a few seconds to import each one so please be patient.</p>
 <div class="error" style="display: none" id="errors-notice"><span>0</span> error(s) have been reported.</div>
-<label id="progress">Please wait....
-<div id="progress-bar"></div></label>
-<div id="link" style="display: none">Import Complete<br/><a href="<?php echo url::base(); ?>index.php/verification_rule">Return to the Verification Rules list</a></div>
+<label id="progress-text">Please wait....</label>
+<progress id="progress-bar" class="progress" value="0" max="100"></progress>
+<div id="link" class="alert alert-success" style="display: none">Import Complete<br/>
+  <a class="btn btn-primary" href="<?php echo url::base(); ?>index.php/verification_rule">Return to the Verification Rules list</a>
+</div>
 <br/>
-<label id="messages">Output:
-<div style="height: 400px; width: 100%; border: solid silver 1px; overflow: auto"></div>
-</label>
+<label>Output:</label>
+<div id="messages" style="height: 400px; width: 100%; border: solid silver 1px; overflow: auto"></div>

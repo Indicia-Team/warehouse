@@ -130,7 +130,7 @@ class user_identifier {
       $userPersonObj->person_id = $qry[0]['person_id'];
     }
     else {
-      $existingUsers = array();
+      $existingUsers = [];
       // Work through the list of identifiers and find the users for the ones
       // we already know about, plus find the list of identifiers we've not
       // seen before.
@@ -181,14 +181,14 @@ SQL;
         foreach ($r as $existingUser) {
           // Create a placeholder for the known user we just found.
           if (!isset($existingUsers[$existingUser->user_id])) {
-            $existingUsers[$existingUser->user_id] = array();
+            $existingUsers[$existingUser->user_id] = [];
           }
           // Add the identifier detail to this known user.
-          $existingUsers[$existingUser->user_id][] = array(
+          $existingUsers[$existingUser->user_id][] = [
             'identifier' => $identifier->identifier,
             'type' => $identifier->type,
             'person_id' => $existingUser->person_id,
-          );
+          ];
         }
 
       }
@@ -229,14 +229,14 @@ SQL;
     self::storeCustomAttributes($userId, $attrs, $userPersonObj);
     // Convert the attributes to update in the client website account into an
     // array of captions & values.
-    $attrsToReturn = array();
+    $attrsToReturn = [];
     foreach ($attrs as $attr) {
       $attrsToReturn[$attr['caption']] = $attr['value'];
     }
-    return array(
+    return [
       'userId' => $userId,
       'attrs' => $attrsToReturn,
-    );
+    ];
   }
 
   /**
@@ -250,34 +250,35 @@ SQL;
     // values so that we can return blanks
     $attrs = $userPersonObj->db->select('DISTINCT ON (pa.id) pa.id, pav.id as value_id, pa.caption, pa.data_type, '.
           'pav.text_value, pav.int_value, pav.float_value, pav.date_start_value, pav.deleted')
-        ->from('person_attributes as pa')
-        ->join('person_attributes_websites as paw', 'paw.person_attribute_id', 'pa.id')
-        ->join('person_attribute_values as pav',"pav.person_attribute_id=pa.id "
-                . "AND (pav.person_id IS NULL OR pav.person_id=".$userPersonObj->person_id.") AND pav.deleted=false",'','LEFT')
-        ->where(array(
-          'pa.synchronisable'=>'t',
-          'pa.deleted'=>'f',
-          'paw.deleted'=>'f',
-          'paw.website_id'=>$websiteId
-        ))
-        ->orderby(array('pa.id'=>'ASC', 'pav.deleted'=>'ASC')) // forces the distinct on to prioritise non-deleted records.
-        ->get()->result_array(false);
+      ->from('person_attributes as pa')
+      ->join('person_attributes_websites as paw', 'paw.person_attribute_id', 'pa.id')
+      ->join('person_attribute_values as pav',"pav.person_attribute_id=pa.id "
+              . "AND (pav.person_id IS NULL OR pav.person_id=$userPersonObj->person_id) AND pav.deleted=false", '', 'LEFT')
+      ->where([
+        'pa.synchronisable' => 't',
+        'pa.deleted' => 'f',
+        'paw.deleted' => 'f',
+        'paw.website_id' => $websiteId,
+      ])
+      ->orderby(['pa.id' => 'ASC', 'pav.deleted' => 'ASC']) // forces the distinct on to prioritise non-deleted records.
+      ->get()->result_array(FALSE);
     // discard deletions if they are superceded by another non-deleted value
     // Convert the diff type value fields into a single variant value
     foreach ($attrs as &$attr) {
-      if ($attr['deleted'])
-        $attr['value']=null;
+      if ($attr['deleted']) {
+        $attr['value'] = NULL;
+      }
       else {
         switch ($attr['data_type']) {
           case 'T':
-            $attr['value']=$attr['text_value'];
+            $attr['value'] = $attr['text_value'];
             break;
           case 'F':
-            $attr['value']=$attr['float_value'];
+            $attr['value'] = $attr['float_value'];
             break;
           case 'D':
           case 'V':
-            $attr['value']=$attr['date_start_value'];
+            $attr['value'] = $attr['date_start_value'];
             break;
           default:
             $attr['value']=$attr['int_value'];
@@ -292,22 +293,24 @@ SQL;
   }
 
   /**
-   * Creates a new user account using the surname and first_name (if available)
-   * in the $_REQUEST.
+   * Creates a new user account.
+   *
+   * Uses the surname and first_name (if available) in the $_REQUEST.
    */
   private static function createUser($email, $userPersonObj) {
     $person = ORM::factory('person')
       ->where('deleted', 'f')
       // Use like as converts to ilike so case-insensitive.
-      ->like('email_address', addcslashes($email, '%\\_'))
+      ->like('email_address', addcslashes($email, '%\\_'), FALSE)
       ->find();
     if ($person->loaded
         && ((!empty($person->first_name) && $person->first_name != '?'
         && !empty($_REQUEST['first_name']) && strtolower(trim($_REQUEST['first_name'])) !== strtolower(trim($person->first_name)))
-        || strtolower(trim($person->surname)) !== strtolower(trim($_REQUEST['surname']))))
+        || strtolower(trim($person->surname)) !== strtolower(trim($_REQUEST['surname'])))) {
       throw new exception("The system attempted to use your user account details to register you as a user of the ".
           "central records database, but a different person with email address $email already exists. Please contact your ".
-          "site administrator who may be able to help resolve this issue." . print_r($_REQUEST, true));
+          "site administrator who may be able to help resolve this issue." . print_r($_REQUEST, TRUE));
+    }
     $data = array(
       'first_name' => isset($_REQUEST['first_name']) ? $_REQUEST['first_name'] : '?',
       'surname' => $_REQUEST['surname'],
@@ -316,16 +319,17 @@ SQL;
     if ($person->loaded) {
       $data['id'] = $person->id;
     }
-    $person->validate(new Validation($data), true);
+    $person->validate(new Validation($data), TRUE);
     self::checkErrors($person);
     $user = ORM::factory('user');
-    $data = array(
+    $data = [
       'person_id' => $person->id,
       'username' => $person->newUsername(),
-      // User will not actually have warehouse access, so password fairly irrelevant.
+      // User will not actually have warehouse access, so password fairly
+      // irrelevant.
       'password' => 'P4ssw0rd',
-    );
-    $user->validate(new Validation($data), true);
+    ];
+    $user->validate(new Validation($data), TRUE);
     self::checkErrors($user);
     $userPersonObj->person_id = $person->id;
     return $user->id;
@@ -340,7 +344,7 @@ SQL;
   private static function storeIdentifiers($userId, $identifiers, $userPersonObj, $websiteId) {
     // Build a list of all the identifier types we will need, to ensure that we
     // have terms for them.
-    $typeTerms = array();
+    $typeTerms = [];
     foreach ($identifiers as $identifier) {
       if (!in_array($identifier->type, $typeTerms)) {
         $typeTerms[] = $identifier->type;
@@ -445,14 +449,14 @@ QRY
    */
   private static function loadIdentifierTypes($userPersonObj) {
     if (!isset($userPersonObj->identifierTypes)) {
-      $userPersonObj->identifierTypes = array();
+      $userPersonObj->identifierTypes = [];
       $terms = $userPersonObj->db
         ->select('termlists_terms.id, term')
         ->from('termlists_terms')
         ->join('terms', 'terms.id', 'termlists_terms.term_id')
         ->join('termlists', 'termlists.id', 'termlists_terms.termlist_id')
-        ->where(array('termlists.external_key' => 'indicia:user_identifier_types', 'termlists_terms.deleted' => 'f', 'terms.deleted' => 'f', 'termlists.deleted'=>'f'))
-        ->orderby(array('termlists_terms.sort_order'=>'ASC', 'terms.term'=>'ASC'))
+        ->where(array('termlists.external_key' => 'indicia:user_identifier_types', 'termlists_terms.deleted' => 'f', 'terms.deleted' => 'f', 'termlists.deleted' => 'f'))
+        ->orderby(array('termlists_terms.sort_order' => 'ASC', 'terms.term' => 'ASC'))
         ->get();
       foreach ($terms as $term) {
         $userPersonObj->identifierTypes[$term->term] = $term->id;
@@ -477,26 +481,29 @@ QRY
    */
   private static function associateWebsite($userId, $userPersonObj, $websiteId) {
     $qry = $userPersonObj->db->select('id')
-        ->from('users_websites')
-        ->where(array('user_id' => $userId, 'website_id' => $websiteId))
-        ->get()->result_array(FALSE);
+      ->from('users_websites')
+      ->where(['user_id' => $userId, 'website_id' => $websiteId])
+      ->get()->result_array(FALSE);
 
-    if (count($qry) === 0)
-      // insert new join record
-      $uw=ORM::factory('users_website');
-    else {
-      // update existing
-      $uw=ORM::factory('users_website', $qry[0]['id']);
-      if ($uw->site_role_id===1 || $uw->site_role_id===2)
-        // don't bother updating, they are already admin or editor for this site
-        return;
+    if (count($qry) === 0) {
+      // Insert new join record.
+      $uw = ORM::factory('users_website');
     }
-    $data = array(
-      'user_id'=>$userId,
-      'website_id'=>$websiteId,
-      'site_role_id'=>3
-    );
-    $uw->validate(new Validation($data), true);
+    else {
+      // Update existing.
+      $uw = ORM::factory('users_website', $qry[0]['id']);
+      if ($uw->site_role_id === 1 || $uw->site_role_id === 2) {
+        // Don't bother updating, they are already admin or editor for this
+        // site.
+        return;
+      }
+    }
+    $data = [
+      'user_id' => $userId,
+      'website_id' => $websiteId,
+      'site_role_id' => 3,
+    ];
+    $uw->validate(new Validation($data), TRUE);
     self::checkErrors($uw);
   }
 
@@ -512,7 +519,7 @@ QRY
       $preventShares = explode(',', $_REQUEST['shares_to_prevent']);
       // build an array of values to post to the db
       $tasks = array('reporting', 'peer_review', 'verification', 'data_flow', 'moderation', 'editing');
-      $values=array();
+      $values=[];
       foreach ($tasks as $task) {
         $values["allow_share_for_$task"]=(in_array($task, $preventShares) ? 'f' : 't');
       }
@@ -530,7 +537,7 @@ QRY
    */
   private static function storeCustomAttributes($userId, &$attrs,$userPersonObj) {
     if (!empty($_REQUEST['attribute_values'])) {
-      $valueData = json_decode($_REQUEST['attribute_values'], true);
+      $valueData = json_decode($_REQUEST['attribute_values'], TRUE);
       if (count($valueData)) {
         $attrCaptions = array_keys($valueData);
         $pav = ORM::factory('person_attribute_value');
@@ -552,7 +559,7 @@ QRY
               $pav->find($attr['value_id']);
             } else
               $pav->clear();
-            $pav->validate(new Validation($data), true);
+            $pav->validate(new Validation($data), TRUE);
             self::checkErrors($pav);
         }
         }
@@ -590,7 +597,7 @@ QRY
         ->join('users_websites', 'users_websites.website_id', 'websites.id')
         ->join('users', 'users.id', 'users_websites.user_id')
         ->join('people', 'people.id', 'users.person_id')
-        ->where(array('websites.deleted'=>'f', 'users.deleted'=>'f', 'people.deleted'=>'f'))
+        ->where(array('websites.deleted' => 'f', 'users.deleted' => 'f', 'people.deleted' => 'f'))
         ->where('users_websites.site_role_id is not null')
         ->in('users_websites.user_id', $users);
       if (isset($_REQUEST['users_to_merge'])) {
@@ -604,14 +611,15 @@ QRY
   /**
    * In the case where there are 2 users identified by a single list of
    * identifiers, resolve the situation. Returns the best matching user (based
-   * on first_name and surname match then number of matching identifiers)
+   * on first_name and surname match then number of matching identifiers).
+   *
    * @todo Note that in conjunction with this, a tool must be provided in the
    * warehouse for admin to check for and merge potential duplicate users.
    */
   private static function findBestFit($identifiers, $existingUsers, $userPersonObj) {
-    $nameMatches = array();
+    $nameMatches = [];
     foreach ($identifiers as $identifier) {
-      // find all the existing users which match this identifier.
+      // Find all the existing users which match this identifier.
       $userPersonObj->db->select('ui.user_id, p.first_name, p.surname')
         ->from('users as u')
         ->join('people as p', 'p.id', 'u.person_id')
@@ -634,67 +642,87 @@ QRY
         $userPersonObj->db->in('ui.user_id', $usersToMerge);
       }
       $qry = $userPersonObj->db->get()->result();
-      foreach($qry as $match) {
-        if (!isset($existingUsers[$match->user_id]['matches']))
-          $existingUsers[$match->user_id]['matches']=1;
-        else
-          $existingUsers[$match->user_id]['matches']=$existingUsers[$match->user_id]['matches']+1;
-        // keep track of any exact name matches as they have priority
-        if ($match->first_name==(isset($_REQUEST['first_name']) ? $_REQUEST['first_name'] : '')
-            && $match->surname==$_REQUEST['surname'] && !in_array($match->user_id, $nameMatches))
+      foreach ($qry as $match) {
+        if (!isset($existingUsers[$match->user_id]['matches'])) {
+          $existingUsers[$match->user_id]['matches'] = 1;
+        }
+        else {
+          $existingUsers[$match->user_id]['matches'] = $existingUsers[$match->user_id]['matches'] + 1;
+        }
+        // Keep track of any exact name matches as they have priority.
+        if ($match->first_name == (isset($_REQUEST['first_name']) ? $_REQUEST['first_name'] : '')
+            && $match->surname == $_REQUEST['surname'] && !in_array($match->user_id, $nameMatches)) {
           $nameMatches[] = $match->user_id;
+        }
       }
     }
-    // Skim through the list of users to find the one that has the best fit. We try any with a name match
-    // first.
+    // Skim through the list of users to find the one that has the best fit. We
+    // try any with a name match first.
     $bestFitUid = 0;
     $bestFitMatchCount = 0;
     foreach ($nameMatches as $uid) {
-      if ($existingUsers[$uid]['matches']>$bestFitMatchCount) {
-        $bestFitUid=$uid;
-        $bestFitMatchCount=$existingUsers[$uid]['matches'];
+      if ($existingUsers[$uid]['matches'] > $bestFitMatchCount) {
+        $bestFitUid = $uid;
+        $bestFitMatchCount = $existingUsers[$uid]['matches'];
       }
     }
     // No need to check non-name matches if we've got something.
-    if ($bestFitUid!==0)
+    if ($bestFitUid !== 0) {
       return $bestFitUid;
-    foreach ($existingUsers as $uid=>$user) {
-      if ($user['matches']>$bestFitMatchCount) {
-        $bestFitUid=$uid;
-        $bestFitMatchCount=$user['matches'];
+    }
+    foreach ($existingUsers as $uid => $user) {
+      if ($user['matches'] > $bestFitMatchCount) {
+        $bestFitUid = $uid;
+        $bestFitMatchCount = $user['matches'];
       }
     }
-    // Now we know the user ID to keep
+    // Now we know the user ID to keep.
     return $bestFitUid;
   }
 
   /**
+   * Merge several user accounts into one.
+   *
    * If a request is received with the force parameter set to merge, this means
    * we can merge the detected users into one.
    */
   private static function mergeUsers($uid, $existingUsers, $userPersonObj) {
-    foreach($existingUsers as $userIdToMerge=>$websites) {
-      if ($userIdToMerge!=$uid && (!isset($_REQUEST['users_to_merge']) || in_array($userIdToMerge, $_REQUEST['users_to_merge']))) {
-        // Own the occurrences
-        $userPersonObj->db->update('occurrences', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
-        $userPersonObj->db->update('occurrences', array('updated_by_id'=>$uid), array('updated_by_id'=>$userIdToMerge));
-        if (in_array(MODPATH.'cache_builder', Kohana::config('config.modules'))) {
-          $userPersonObj->db->update('cache_occurrences_functional', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
-          $userPersonObj->db->update('cache_samples_functional', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
+    foreach ($existingUsers as $userIdToMerge => $websites) {
+      if ($userIdToMerge != $uid && (!isset($_REQUEST['users_to_merge']) || in_array($userIdToMerge, $_REQUEST['users_to_merge']))) {
+        // Own the occurrences.
+        $userPersonObj->db->update('occurrences', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
+        $userPersonObj->db->update('occurrences', ['updated_by_id' => $uid], ['updated_by_id' => $userIdToMerge]);
+        if (in_array(MODPATH . 'cache_builder', Kohana::config('config.modules'))) {
+          $userPersonObj->db->update('cache_occurrences_functional', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
+          $userPersonObj->db->update('cache_samples_functional', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
         }
-        // delete the old user
+        // Delete the old user.
         $uidsToDelete[] = $userIdToMerge;
         kohana::log('debug', "User merge operation resulted in deletion of user $userIdToMerge plus the related person");
       }
     }
 
-    // use the User Ids list to find a list of people to delete.
+    // Use the User Ids list to find a list of people to delete.
     $psnIds = $userPersonObj->db->select('person_id')->from('users')->in('id', $uidsToDelete)->get()->result_array();
-    $pidsToDelete = array();
-    foreach ($psnIds as $psnId)
+    $pidsToDelete = [];
+    foreach ($psnIds as $psnId) {
       $pidsToDelete[] = $psnId->person_id;
-    // do the actual deletions
-    $userPersonObj->db->from('users')->set(array('deleted'=>'t'))->in('id', $uidsToDelete)->update();
-    $userPersonObj->db->from('people')->set(array('deleted'=>'t'))->in('id', $pidsToDelete)->update();
+    }
+    // Do the actual deletions.
+    $userPersonObj->db->from('users')
+      ->set([
+        'deleted' => 't',
+        'updated_on' => date("Ymd H:i:s"),
+        'updated_by_id' => $uid,
+      ])
+      ->in('id', $uidsToDelete)->update();
+    $userPersonObj->db->from('people')
+      ->set([
+        'deleted' => 't',
+        'updated_on' => date("Ymd H:i:s"),
+        'updated_by_id' => $uid,
+      ])
+      ->in('id', $pidsToDelete)->update();
   }
+
 }
