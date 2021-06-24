@@ -790,7 +790,7 @@ SET website_id=su.website_id,
   updated_on=s.updated_on,
   verified_on=s.verified_on,
   created_by_id=s.created_by_id,
-  group_id=s.group_id,
+  group_id=coalesce(s.group_id, sp.group_id),
   record_status=s.record_status,
   training=s.training,
   query=case
@@ -893,9 +893,10 @@ SET website_title=w.title,
   attr_linked_location_id=v_linked_location_id.int_value
 FROM samples s
 #join_needs_update#
+LEFT JOIN samples sp ON sp.id=s.parent_id and sp.deleted=false
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
-LEFT JOIN groups g on g.id=s.group_id and g.deleted=false
+LEFT JOIN groups g on g.id=coalesce(s.group_id, sp.group_id) and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
 LEFT JOIN (sample_attribute_values v_email
@@ -969,7 +970,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
-  s.group_id, s.record_status, s.training,
+  coalesce(s.group_id, sp.group_id), s.record_status, s.training,
   case
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
@@ -1028,10 +1029,11 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   s.recorder_names, s.comment, s.privacy_precision, li.code
 FROM samples s
 #join_needs_update#
+LEFT JOIN samples sp ON sp.id=s.parent_id and sp.deleted=false
 LEFT JOIN cache_samples_nonfunctional cs on cs.id=s.id
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
-LEFT JOIN groups g on g.id=s.group_id and g.deleted=false
+LEFT JOIN groups g on g.id=coalesce(s.group_id, sp.group_id) and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
 WHERE s.deleted=false
@@ -1376,7 +1378,7 @@ SET sample_id=o.sample_id,
   updated_on=greatest(o.updated_on, cttl.cache_updated_on),
   verified_on=o.verified_on,
   created_by_id=o.created_by_id,
-  group_id=s.group_id,
+  group_id=coalesce(s.group_id, sp.group_id),
   taxa_taxon_list_id=o.taxa_taxon_list_id,
   preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
   taxon_meaning_id=cttl.taxon_meaning_id,
@@ -1636,7 +1638,7 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
     reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision)) as public_geom,
     s.date_start, s.date_end, s.date_type, o.created_on, o.updated_on, o.verified_on,
-    o.created_by_id, s.group_id, o.taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id,
+    o.created_by_id, coalesce(s.group_id, sp.group_id), o.taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id,
     cttl.taxon_meaning_id, cttl.external_key, cttl.family_taxa_taxon_list_id,
     cttl.taxon_group_id, cttl.taxon_rank_sort_order, o.record_status, o.record_substatus,
     case when certainty.sort_order is null then null
