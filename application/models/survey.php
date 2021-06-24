@@ -28,26 +28,28 @@ class Survey_Model extends ORM_Tree {
 
   protected $ORM_Tree_children = "surveys";
 
-  protected $has_many = array(
-    'sample_media'
-  );
+  protected $has_many = [
+    'sample_media',
+  ];
 
-  protected $belongs_to = array(
-      'owner'=>'person',
-      'website',
-      'created_by'=>'user',
-      'updated_by'=>'user');
+  protected $belongs_to = [
+    'owner' => 'person',
+    'website',
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  ];
 
-  // Declare that this model has child attributes, and the name of the node in the submission which contains them
-  protected $has_attributes=true;
-  protected $attrs_submission_name='srvAttributes';
-  public $attrs_field_prefix='srvAttr';
+  // Declare that this model has child attributes, and the name of the node
+  // in the submission which contains them.
+  protected $has_attributes = TRUE;
+  protected $attrs_submission_name = 'srvAttributes';
+  public $attrs_field_prefix = 'srvAttr';
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
     $array->add_rules('website_id', 'required');
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'description',
       'deleted',
       'parent_id',
@@ -56,7 +58,7 @@ class Survey_Model extends ORM_Tree {
       'auto_accept_max_difficulty',
       'auto_accept_taxa_filters',
       'core_validation_rules',
-    );
+    ];
     return parent::validate($array, $save);
   }
 
@@ -67,18 +69,18 @@ class Survey_Model extends ORM_Tree {
       foreach ($_POST as $key => $value) {
         if (substr($key, -8) === ':present' && $value !== '0') {
           $ttlIds[] = $value;
-        }  
+        }
       }
       $tmIdRecs = $this->db
-          ->select('id, taxon_meaning_id')
-          ->from('cache_taxa_taxon_lists')
-          ->in('id', $ttlIds)
-          ->get()->result();
+        ->select('id, taxon_meaning_id')
+        ->from('cache_taxa_taxon_lists')
+        ->in('id', $ttlIds)
+        ->get()->result();
 
       foreach ($tmIdRecs as $tmIdRec) {
         $tmIds[] = intVal($tmIdRec->taxon_meaning_id);
       }
-      $this->submission['fields']['auto_accept_taxa_filters']=array('value' => $tmIds);
+      $this->submission['fields']['auto_accept_taxa_filters'] = ['value' => $tmIds];
     }
     return parent::presubmit();
   }
