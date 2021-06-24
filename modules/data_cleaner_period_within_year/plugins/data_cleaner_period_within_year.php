@@ -77,9 +77,9 @@ left join verification_rule_metadata vrmmeaning on vrmmeaning.verification_rule_
 left join cache_taxa_taxon_lists cttlmeaning on cttltaxon.taxon_meaning_id=vrmmeaning.value::integer and cttlmeaning.preferred=true
 join verification_rule_data vrdstage on vrdstage.verification_rule_id=vr.id and vrdstage.key ilike 'Stage'
 left join verification_rule_data vrstart on vrstart.verification_rule_id=vr.id and vrstart.key ilike 'StartDate' and length(vrstart.value)=4
-  and vrstart.deleted=false
+  and vrstart.deleted=false and vrstart.data_group=vrdstage.data_group
 left join verification_rule_data vrend on vrend.verification_rule_id=vr.id and vrend.key ilike 'EndDate' and length(vrend.value)=4
-  and vrend.deleted=false
+  and vrend.deleted=false and vrend.data_group=vrdstage.data_group
 left join verification_rule_data vrmsurvey on vrmsurvey.verification_rule_id=vr.id and vrmsurvey.key='SurveyId' and vrmsurvey.deleted=false
 where vr.test_type='PeriodWithinYear'
   and vr.deleted=false
@@ -147,10 +147,10 @@ group by co.id, co.date_start, co.taxa_taxon_list_external_key, co.stage,
 having count(o2.id) < 6
 SQL;
 
-  return array(
+  return [
     'testType' => 'periodWithinYear',
-    'optional' => array(
-      'Metadata' => array(
+    'optional' => [
+      'Metadata' => [
         'Tvk',
         'TaxonMeaningId',
         'Taxon',
@@ -158,18 +158,22 @@ SQL;
         'EndDate',
         'DataFieldName',
         'SurveyId',
-      ),
-      'Data' => array(
+      ],
+      'Data' => [
         'Stage',
         'StartDate',
         'EndDate',
-      ),
-    ),
-    // Slightly convoluted logic required in this test to get it to work with ranges in middle of year as well as ranges that span the end of the year.
-    // Also note in these queries we use 2012 as the year for expanding dates that have just a month and day, as it is a leap
-    // year so all dates are covered.
-    // Also a warning - these queries are case-sensitive, but performance is miserable if they are made insensitive since this kills the use of indexes.
-    // The overall performance is also better with 3 simpler queries than one complex one.
+      ],
+    ],
+    // Slightly convoluted logic required in this test to get it to work with
+    // ranges in middle of year as well as ranges that span the end of the
+    // year. Also note in these queries we use 2012 as the year for expanding
+    // dates that have just a month and day, as it is a leap year so all dates
+    // are covered.
+    // Also a warning - these queries are case-sensitive, but performance is
+    // miserable if they are made insensitive since this kills the use of
+    // indexes. The overall performance is also better with 3 simpler queries
+    // than one complex one.
 
     'queries' => [
       [
@@ -180,11 +184,13 @@ SQL;
         'errorMsgSuffix' => " || case when vr.stages is null then '' else ' This test was based on the record being ' || co.stage || '.' end",
       ],
     ],
-  );
+  ];
 }
 
 /**
- * Taxon version keys should really be uppercase, so enforce this. Otherwise the query needs to be case insensitive which makes it slow.
+ * Taxon version keys should really be uppercase, so enforce this.
+ *
+ * Otherwise the query needs to be case insensitive which makes it slow.
  */
 function data_cleaner_period_within_year_data_cleaner_postprocess($id, $db) {
   $db->query("update verification_rule_metadata set value=upper(value) where key ilike 'Tvk' and value<>upper(value) and verification_rule_id=$id");
