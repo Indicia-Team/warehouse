@@ -82,4 +82,21 @@ class Survey_Model extends ORM_Tree {
     }
     return parent::presubmit();
   }
+
+  /**
+   * Define a form that is used to capture a set of predetermined values that
+   * apply to every record during an import.
+   */
+  public function fixedValuesForm($options = []) {
+    $retval = [
+      'website_id' => [
+        'display' => 'Website',
+        'description' => 'Select the website to import records into.',
+        'datatype' => 'lookup',
+        'population_call' => 'direct:website:id:title',
+      ],
+    ];
+    return $retval;
+  }
+
 }
