@@ -23,6 +23,9 @@ services:
         environment:
             PGADMIN_DEFAULT_EMAIL: pgadmin@indicia.org.uk
             PGADMIN_DEFAULT_PASSWORD: password
+        volumes:
+            # Persist configuration in a named volume.
+            - pgadmin:/var/lib/pgadmin
         ports: 
             - "8070:80"
 
@@ -46,3 +49,4 @@ services:
 
 volumes:
     indicia_postgres:
+    pgadmin:
