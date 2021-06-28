@@ -19,7 +19,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
 class vague_date {
 
@@ -148,56 +148,70 @@ class vague_date {
    */
   private static function singleMonthInYearFormats() {
     return [
-      '%Y-%m', // ISO 8601 format - truncated to month 1998-06
-      '%m/%Y', // 06/1998
-      '%m/%y', // 06/96
-      '%B %Y', // June 1998
-      '%b %Y', // Jun 1998
-      '%B %y', // June 98
-      '%b %y', // Jun 98
+      // ISO 8601 format - truncated to month 1998-06
+      '%Y-%m',
+      // 06/1998
+      '%m/%Y',
+      // 06/96
+      '%m/%y',
+      // June 1998
+      '%B %Y',
+      // Jun 1998
+      '%b %Y',
+      // June 98
+      '%B %y',
+      // Jun 98
+      '%b %y',
     ];
   }
 
   private static function singleMonthFormats() {
     return [
-      '%B', // October
-      '%b', // Oct
+      // October
+      '%B',
+      // Oct
+      '%b',
     ];
   }
 
   private static function singleYearFormats() {
     return [
-      '%Y', // 1998
-      '%y', // 98
+      // 1998
+      '%Y',
+      // 98
+      '%y',
     ];
   }
 
   private static function seasonInYearFormats() {
-    return array(
-      '%K %Y', // Autumn 2008
-      '%K %y', // Autumn 08
-    );
+    return [
+      // Autumn 2008
+      '%K %Y',
+      // Autumn 08
+      '%K %y',
+    ];
   }
 
   private static function seasonFormats() {
-    return array(
-      '%K', //August
-    );
+    return [
+      // August
+      '%K',
+    ];
   }
 
   private static function centuryFormats() {
-    return array(
-      '%C', //20C
-    );
+    return [
+      // 20C
+      '%C',
+    ];
   }
-
 
   /**
    * Convert a vague date in the form of array(start, end, type) to a string.
    *
    * @param array $date
-   *   Vague date in the form array(start_date, end_date, date_type), where start_date and end_date are DateTime
-   *   objects or strings.
+   *   Vague date in the form array(start_date, end_date, date_type), where
+   *   start_date and end_date are DateTime objects or strings.
    *
    * @return string
    *   Vague date expressed as a string.
@@ -223,7 +237,7 @@ class vague_date {
         $end = new DateTime($date[1]);
       }
     }
-    //self::validate(array($start, $end, $type);
+    // self::validate(array($start, $end, $type);
     switch ($type) {
       case 'D':
         return self::vague_date_to_day($start, $end);
@@ -277,7 +291,9 @@ class vague_date {
   }
 
   /**
-   * Convert a string into a vague date. Returns an array with 3 entries, the start date, end date and date type.
+   * Convert a string into a vague date.
+   *
+   * Returns an array with 3 entries, the start date, end date and date type.
    */
   public static function string_to_vague_date($string) {
     $parseFormats = array_merge(
@@ -289,11 +305,10 @@ class vague_date {
       self::centuryFormats(),
       self::singleYearFormats()
     );
-    // Our approach shall be to gradually pare down from the most complex possible
-    // dates to the simplest, and match as fast as possible to try to grab the most
-    // information. First we consider the potential ways that a range may be
-    // represented.
-
+    // Our approach shall be to gradually pare down from the most complex
+    // possible dates to the simplest, and match as fast as possible to try to
+    // grab the most information. First we consider the potential ways that a
+    // range may be represented.
     $range = FALSE;
     $startDate = FALSE;
     $endDate = FALSE;
@@ -362,7 +377,7 @@ class vague_date {
     }
     if (!$matched) {
       if (trim($string) === 'U' || trim($string) === Kohana::lang('dates.unknown')) {
-        return array(NULL, NULL, 'U');
+        return [NULL, NULL, 'U'];
       }
       else {
         return FALSE;
@@ -379,20 +394,20 @@ class vague_date {
         // S (if we don't).
         if ($endDate->tm_year !== NULL) {
           // We're a P.
-          $vagueDate = array(
+          $vagueDate = [
             $endDate->getImpreciseDateStart(),
             $endDate->getImpreciseDateEnd(),
             'P',
-          );
+          ];
           return self::validate($vagueDate);
         }
         else {
           // No year, so we're an S.
-          $vagueDate = array(
+          $vagueDate = [
             $endDate->getImpreciseDateStart(),
             $endDate->getImpreciseDateEnd(),
             'S',
-          );
+          ];
           return self::validate($vagueDate);
         }
       }
@@ -400,22 +415,22 @@ class vague_date {
       if ($endDate->tm_mday !== NULL) {
         if (!$range) {
           // We're a D.
-          $vagueDate = array(
+          $vagueDate = [
             $endDate->getIsoDate(),
             $endDate->getIsoDate(),
             'D',
-          );
+          ];
           return self::validate($vagueDate);
         }
         else {
           // Type is DD. We copy across any data not set in the
           // start date.
           if ($startDate->getPrecision() == $endDate->getPrecision()) {
-            $vagueDate = array(
+            $vagueDate = [
               $startDate->getImpreciseDateStart(),
               $endDate->getImpreciseDateEnd(),
               'DD',
-            );
+            ];
           }
           else {
             // Less precision in the start date -
@@ -439,20 +454,20 @@ class vague_date {
           // Either a month in a year or just a month.
           if ($endDate->tm_year !== NULL) {
             // Then we have a month in a year- type O.
-            $vagueDate = array(
+            $vagueDate = [
               $endDate->getImpreciseDateStart(),
               $endDate->getImpreciseDateEnd(),
               'O',
-            );
+            ];
             return self::validate($vagueDate);
           }
           else {
             // Month without a year - type M.
-            $vagueDate = array(
+            $vagueDate = [
               $endDate->getImpreciseDateStart(),
               $endDate->getImpreciseDateEnd(),
               'M',
-            );
+            ];
             return self::validate($vagueDate);
           }
         }
@@ -460,16 +475,16 @@ class vague_date {
           // We do have a range, OO.
           if ($endDate->tm_year !== NULL) {
             // We have a year - so this is OO.
-            $vagueDate = array(
+            $vagueDate = [
               $startDate->getImpreciseDateStart(),
               $endDate->getImpreciseDateEnd(),
               'OO',
-            );
+            ];
             return self::validate($vagueDate);
           }
           else {
-            // MM is not an allowed type
-            // TODO think about this
+            // MM is not an allowed type.
+            // TODO think about this.
             return FALSE;
           }
         }
@@ -480,100 +495,108 @@ class vague_date {
        */
 
       // Are we a century?
-      if ($endDate->tm_century !== null){
-        // CC, C, C- or -C
-        if (!$range){
-          // Type C
-          $vagueDate = array(
+      if ($endDate->tm_century !== NULL) {
+        // CC, C, C- or -C.
+        if (!$range) {
+          // Type C.
+          $vagueDate = [
             $endDate->getImpreciseDateStart(),
             $endDate->getImpreciseDateEnd(),
-            'C'
-          );
+            'C',
+          ];
           return self::validate($vagueDate);
-        } else {
+        }
+        else {
           if ($start && $end) {
-            // We're CC
-            $vagueDate = array(
+            // We're CC.
+            $vagueDate = [
               $startDate->getImpreciseDateStart(),
               $endDate->getImpreciseDateEnd(),
-              'CC'
-            );
+              'CC',
+            ];
             return self::validate($vagueDate);
-          } else if ($start && !$end) {
-            // We're C-
-            $vagueDate = array(
+          }
+          elseif ($start && !$end) {
+            // We're C-.
+            $vagueDate = [
               $endDate->getImpreciseDateStart(),
-              null,
-              'C-'
-            );
+              NULL,
+              'C-',
+            ];
             return self::validate($vagueDate);
-          } else if ($end && !$start) {
-            // We're -C
-            $vagueDate = array(
-              null,
+          }
+          elseif ($end && !$start) {
+            // We're -C.
+            $vagueDate = [
+              NULL,
               $endDate->getImpreciseDateEnd(),
-              '-C'
-            );
+              '-C',
+            ];
             return self::validate($vagueDate);
           }
         }
       }
 
-      //Okay, we're one of the year representations.
-      if ($endDate->tm_year !== null){
-        if (!$range){
-          // We're Y
-          $vagueDate = array(
+      // Okay, we're one of the year representations.
+      if ($endDate->tm_year !== NULL) {
+        if (!$range) {
+          // We're Y.
+          $vagueDate = [
             $endDate->getImpreciseDateStart(),
             $endDate->getImpreciseDateEnd(),
-            'Y'
-          );
+            'Y',
+          ];
           return self::validate($vagueDate);
-        } else {
-          if ($start && $end){
-            // We're YY
-            $vagueDate = array(
+        }
+        else {
+          if ($start && $end) {
+            // We're YY.
+            $vagueDate = [
               $startDate->getImpreciseDateStart(),
               $endDate->getImpreciseDateEnd(),
-              'YY'
-            );
+              'YY',
+            ];
             return self::validate($vagueDate);
-          } else if ($start && !$end){
-            // We're Y-
-            $vagueDate = array(
+          }
+          elseif ($start && !$end) {
+            // We're Y-.
+            $vagueDate = [
               $startDate->getImpreciseDateStart(),
-              null,
-              'Y-'
-            );
+              NULL,
+              'Y-',
+            ];
             return self::validate($vagueDate);
-          } else if ($end && !$start){
-            // We're -Y
-            $vagueDate = array(
-              null,
+          }
+          elseif ($end && !$start) {
+            // We're -Y.
+            $vagueDate = [
+              NULL,
               $endDate->getImpreciseDateEnd(),
-              '-Y'
-            );
+              '-Y',
+            ];
             return self::validate($vagueDate);
           }
         }
-      } else {
-        return false;
       }
-    } catch (Exception $e) {
-      return false;
+      else {
+        return FALSE;
+      }
+    }
+    catch (Exception $e) {
+      return FALSE;
     }
   }
 
   /**
    * Parses a single date from a string.
    */
-  protected static function parseSingleDate($string, $parseFormats){
-    $parsedDate = null;
+  protected static function parseSingleDate($string, $parseFormats) {
+    $parsedDate = NULL;
 
-    foreach ($parseFormats as $a){
+    foreach ($parseFormats as $a) {
       $dp = new DateParser($a);
 
-      if ($dp->strptime($string)){
+      if ($dp->strptime($string)) {
         $parsedDate = $dp;
         break;
       }
@@ -585,329 +608,360 @@ class vague_date {
   /**
    * Convert a vague date to a string representing a fixed date.
    */
-  protected static function vague_date_to_day($start, $end)
-  {
-    self::check(self::are_dates_equal($start, $end), 'Day vague dates should have the same date for the start and end of the date range');
+  protected static function vague_date_to_day($start, $end) {
+    self::check(
+      self::are_dates_equal($start, $end),
+      'Day vague dates should have the same date for the start and end of the date range'
+    );
     return $start->format(Kohana::lang('dates.format'));
   }
 
   /**
    * Convert a vague date to a string representing a range of days.
    */
-  protected static function vague_date_to_days($start, $end)
-  {
-    self::check(self::is_first_date_first_or_equal($start, $end), 'Day ranges should be presented in vague dates in the correct sequence. Start was %s, end was %s.', $start, $end);
-    return 	$start->format(Kohana::lang('dates.format')).
-      Kohana::lang('dates.range_separator').
+  protected static function vague_date_to_days($start, $end) {
+    self::check(
+      self::is_first_date_first_or_equal($start, $end),
+      'Day ranges should be presented in vague dates in the correct sequence. Start was %s, end was %s.', $start, $end);
+    return $start->format(Kohana::lang('dates.format')) .
+      Kohana::lang('dates.range_separator') .
       $end->format(Kohana::lang('dates.format'));
   }
 
   /**
    * Convert a vague date to a string representing a fixed month.
    */
-  protected static function vague_date_to_month_in_year($start, $end)
-  {
-    self::check(self::is_month_start($start) && self::is_month_end($end) && self::is_same_month($start, $end),
-      'Month dates should be represented by the first day and last day of the same month. Start was %s, end was %s.', $start, $end);
+  protected static function vague_date_to_month_in_year($start, $end) {
+    self::check(
+      self::is_month_start($start) &&
+      self::is_month_end($end) &&
+      self::is_same_month($start, $end),
+      'Month dates should be represented by the first day and last day of the same month. Start was %s, end was %s.', $start, $end
+    );
     return $start->format(Kohana::lang('dates.format_m_y'));
   }
 
   /**
    * Convert a vague date to a string representing a range of months.
    */
-  protected static function vague_date_to_months_in_year($start, $end)
-  {
-    self::check(self::is_month_start($start) && self::is_month_end($end) && self::is_first_date_first($start, $end),
-      'Month ranges should be represented by the first day of the first month and last day of the last month. Start was %s, end was %s.', $start, $end);
-    return 	$start->format(Kohana::lang('dates.format_m_y')).
-      Kohana::lang('dates.range_separator').
+  protected static function vague_date_to_months_in_year($start, $end) {
+    self::check(
+      (
+        self::is_month_start($start) &&
+        self::is_month_end($end) &&
+        self::is_first_date_first($start, $end)
+      ),
+      'Month ranges should be represented by the first day of the first month and last day of the last month. Start was %s, end was %s.', $start, $end
+    );
+    return $start->format(Kohana::lang('dates.format_m_y')) .
+      Kohana::lang('dates.range_separator') .
       $end->format(Kohana::lang('dates.format_m_y'));
   }
 
-  /*
-   * Convert a vague date to a string representing a season in a given year
+  /**
+   * Convert a vague date to a string representing a season in a given year.
    */
-  protected static function vague_date_to_season_in_year($start, $end)
-  {
-    return self::convert_to_season_string($start, $end).' '.$end->format('Y');
+  protected static function vague_date_to_season_in_year($start, $end) {
+    return self::convert_to_season_string($start, $end) . ' ' . $end->format('Y');
   }
 
   /**
-   * Convert a vague date to a string representing a year
+   * Convert a vague date to a string representing a year.
    */
-  protected static function vague_date_to_year($start, $end)
-  {
-    self::check(self::is_year_start($start) && self::is_year_end($end) && self::is_same_year($start, $end),
-      'Years should be represented by the first day and last day of the same year. Start was %s, end was %s.', $start, $end);
+  protected static function vague_date_to_year($start, $end) {
+    self::check(
+      (
+        self::is_year_start($start) &&
+        self::is_year_end($end) &&
+        self::is_same_year($start, $end)
+      ),
+      'Years should be represented by the first day and last day of the same year. Start was %s, end was %s.', $start, $end
+    );
     return $start->format('Y');
   }
 
   /**
-   * Convert a vague date to a string representing a range of years
+   * Convert a vague date to a string representing a range of years.
    */
-  protected static function vague_date_to_years($start, $end)
-  {
-    self::check(self::is_year_start($start) && self::is_year_end($end) && self::is_first_date_first($start, $end),
-      'Year ranges should be represented by the first day of the first year to the last day of the last year. Start was %s, end was %s.', $start, $end);
-    return $start->format('Y').Kohana::lang('dates.range_separator').$end->format('Y');
+  protected static function vague_date_to_years($start, $end) {
+    self::check(
+      (
+        self::is_year_start($start) &&
+        self::is_year_end($end) &&
+        self::is_first_date_first($start, $end)
+      ),
+      'Year ranges should be represented by the first day of the first year to the last day of the last year. Start was %s, end was %s.', $start, $end
+    );
+    return $start->format('Y') . Kohana::lang('dates.range_separator') . $end->format('Y');
   }
 
   /**
-   * Convert a vague date to a string representing any date after a given year
+   * Convert a vague date to a string representing any date after a given year.
    */
-  protected static function vague_date_to_year_from($start, $end)
-  {
-    self::check(self::is_year_start($start) && $end===null,
+  protected static function vague_date_to_year_from($start, $end) {
+    self::check(self::is_year_start($start) && $end === NULL,
       'From year date should be represented by just the first day of the first year.');
     return sprintf(Kohana::lang('dates.from_date'), $start->format('Y'));
   }
 
   /**
-   * Convert a vague date to a string representing any date up to and including a given year
+   * Convert a vague date to a string representing any date up to and including a given year.
    */
-  protected static function vague_date_to_year_to($start, $end)
-  {
-    self::check($start===null && self::is_year_end($end),
+  protected static function vague_date_to_year_to($start, $end) {
+    self::check($start === NULL && self::is_year_end($end),
       "To year date should be represented by just the last day of the last year. Start was %s and end was %s.", $start, $end);
     return sprintf(Kohana::lang('dates.to_date'), $end->format('Y'));
   }
 
   /**
-   * Convert a vague date to a string representing a month in an unknown year
+   * Convert a vague date to a string representing a month in an unknown year.
    */
-  protected static function vague_date_to_month($start, $end)
-  {
-    self::check(self::is_month_start($start) && self::is_month_end($end) && self::is_same_month($start, $end),
+  protected static function vague_date_to_month($start, $end) {
+    self::check(
+      (
+        self::is_month_start($start) &&
+        self::is_month_end($end) &&
+        self::is_same_month($start, $end)
+      ),
       'Month dates should be represented by the start and end of the month.');
     return $start->format('F');
   }
 
-  /*
-   * Convert a vague date to a string representing a season in an unknown year
+  /**
+   * Convert a vague date to a string representing a season in an unknown year.
    */
-  protected static function vague_date_to_season($start, $end)
-  {
+  protected static function vague_date_to_season($start, $end) {
     return self::convert_to_season_string($start, $end);
   }
 
-  /*
-   * Convert a vague date to a string representing an unknown date
+  /**
+   * Convert a vague date to a string representing an unknown date.
    */
-  protected static function vague_date_to_unknown($start, $end)
-  {
-    self::check($start===null && $end===null,
+  protected static function vague_date_to_unknown($start, $end) {
+    self::check($start === NULL && $end === NULL,
       'Unknown dates should not have a start or end specified');
     return Kohana::lang('dates.unknown');
   }
 
-  /*
-   * Convert a vague date to a string representing a century
+  /**
+   * Convert a vague date to a string representing a century.
    */
-  protected static function vague_date_to_century($start, $end)
-  {
-    self::check(self::is_century_start($start) && self::is_century_end($end) && self::is_same_century($start, $end),
+  protected static function vague_date_to_century($start, $end) {
+    self::check(
+      (
+        self::is_century_start($start) &&
+        self::is_century_end($end) &&
+        self::is_same_century($start, $end)
+      ),
       'Century dates should be represented by the first day and the last day of the century');
-    return sprintf(Kohana::lang('dates.century', ($start->format('Y')-1)/100+1));
+    return sprintf(Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1));
   }
 
-  /*
-   * Convert a vague date to a string representing a century
+  /**
+   * Convert a vague date to a string representing a century.
    */
-  protected static function vague_date_to_centuries($start, $end)
-  {
-    self::check(self::is_century_start($start) && self::is_century_end($end) && self::is_first_date_first($start, $end),
+  protected static function vague_date_to_centuries($start, $end) {
+    self::check(
+      (
+        self::is_century_start($start) &&
+        self::is_century_end($end) &&
+        self::is_first_date_first($start, $end)
+      ),
       'Century ranges should be represented by the first day of the first century and the last day of the last century');
-    return 	sprintf(Kohana::lang('dates.century', ($start->format('Y')-1)/100+1)).
-      Kohana::lang('dates.range_separator').
-      sprintf(Kohana::lang('dates.century', ($end->format('Y')-1)/100+1));
-  }
-
-  /*
-   * Convert a vague date to a string representing a date during or after a specified century
-   */
-  protected static function vague_date_to_century_from($start, $end)
-  {
-    self::check(self::is_century_start($start) && $end===null,
-      'From Century dates should be represented by the first day of the century only');
-    return sprintf(Kohana::lang('dates.from_date'), sprintf(Kohana::lang('dates.century', ($start->format('Y')-1)/100+1)));
-  }
-
-  /*
-   * Convert a vague date to a string representing a date before or during a specified century
-   */
-  protected static function vague_date_to_century_to($start, $end)
-  {
-    self::check($start===null && self::is_century_end($end),
-      'To Century dates should be represented by the last day of the century only');
-    return sprintf(Kohana::lang('dates.to_date'), sprintf(Kohana::lang('dates.century', ($end->format('Y')-1)/100+1)));
-  }
-
-
-  /**
-   * Returns true if the supplied date is the first day of the month
-   */
-  protected static function is_month_start($date)
-  {
-    return ($date->format('j')==1);
+    return sprintf(Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1)) .
+      Kohana::lang('dates.range_separator') .
+      sprintf(Kohana::lang('dates.century', ($end->format('Y') - 1) / 100 + 1));
   }
 
   /**
-   * Returns true if the supplied date is the last day of the month
+   * Convert a vague date to a string representing a date during or after a specified century.
    */
-  protected static function is_month_end($date)
-  {
-    // format t gives us the last day of the given date's month
-    return ($date->format('j')==$date->format('t'));
+  protected static function vague_date_to_century_from($start, $end) {
+    self::check(
+      self::is_century_start($start) && $end === NULL,
+      'From Century dates should be represented by the first day of the century only'
+    );
+    return sprintf(
+      Kohana::lang('dates.from_date'),
+      sprintf(Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1))
+    );
   }
 
   /**
-   * Returns true if the supplied dates are the same. Early versions of PHP5.2 do not have valid binary comparison functions
+   * Convert a vague date to a string representing a date before or during a specified century.
    */
-  protected static function are_dates_equal($date1, $date2)
-  {
-    return (!strcmp($date1->format('Ymd'),$date2->format('Ymd')));
+  protected static function vague_date_to_century_to($start, $end) {
+    self::check(
+      $start === NULL && self::is_century_end($end),
+      'To Century dates should be represented by the last day of the century only'
+    );
+    return sprintf(
+      Kohana::lang('dates.to_date'),
+      sprintf(Kohana::lang('dates.century', ($end->format('Y') - 1) / 100 + 1)));
   }
 
   /**
-   * Returns true if the first supplied date is before second. Early versions of PHP5.2 do not have valid binary comparison functions
+   * Returns true if the supplied date is the first day of the month.
    */
-  protected static function is_first_date_first($date1, $date2)
-  {
-    return (strcmp($date1->format('Ymd'),$date2->format('Ymd'))<0);
+  protected static function is_month_start($date) {
+    return ($date->format('j') == 1);
   }
 
   /**
-   * Returns true if the first supplied date is before second or they are the same. Early versions of PHP5.2 do not have valid
-   * binary comparison functions
+   * Returns true if the supplied date is the last day of the month.
    */
-  protected static function is_first_date_first_or_equal($date1, $date2)
-  {
-    return $date1==$date2 || (strcmp($date1->format('Ymd'),$date2->format('Ymd'))<0);
+  protected static function is_month_end($date) {
+    // Format t gives us the last day of the given date's month.
+    return ($date->format('j') == $date->format('t'));
   }
 
   /**
-   * Returns true if the supplied dates are in the same month
+   * Returns true if the supplied dates are the same.
+   *
+   * Early versions of PHP5.2 do not have valid binary comparison functions.
    */
-  protected static function is_same_month($date1, $date2)
-  {
-    return ($date1->format('m')==$date2->format('m'));
+  protected static function are_dates_equal($date1, $date2) {
+    return (!strcmp($date1->format('Ymd'), $date2->format('Ymd')));
   }
 
   /**
-   * Returns true if the supplied date is the first day of the year
+   * Returns true if the first supplied date is before second.
+   *
+   * Early versions of PHP5.2 do not have valid binary comparison functions.
    */
-  protected static function is_year_start($date)
-  {
-    return ($date->format('j')==1 && $date->format('m')==1);
+  protected static function is_first_date_first($date1, $date2) {
+    return (strcmp($date1->format('Ymd'), $date2->format('Ymd')) < 0);
   }
 
   /**
-   * Returns true if the supplied date is the last day of the year
+   * Returns true if the first supplied date is before second or they are the same.
+   *
+   * Early versions of PHP5.2 do not have valid binary comparison functions.
    */
-  protected static function is_year_end($date)
-  {
-    return ($date->format('j')==31 && $date->format('m')==12);
+  protected static function is_first_date_first_or_equal($date1, $date2) {
+    return $date1 == $date2 || (strcmp($date1->format('Ymd'), $date2->format('Ymd')) < 0);
   }
 
   /**
-   * Returns true if the supplied dates are in the same year
+   * Returns true if the supplied dates are in the same month.
    */
-  protected static function is_same_year($date1, $date2)
-  {
-    return ($date1->format('Y')==$date2->format('Y'));
+  protected static function is_same_month($date1, $date2) {
+    return ($date1->format('m') == $date2->format('m'));
+  }
+
+  /**
+   * Returns true if the supplied date is the first day of the year.
+   */
+  protected static function is_year_start($date) {
+    return ($date->format('j') == 1 && $date->format('m') == 1);
+  }
+
+  /**
+   * Returns true if the supplied date is the last day of the year.
+   */
+  protected static function is_year_end($date) {
+    return ($date->format('j') == 31 && $date->format('m') == 12);
+  }
+
+  /**
+   * Returns true if the supplied dates are in the same year.
+   */
+  protected static function is_same_year($date1, $date2) {
+    return ($date1->format('Y') == $date2->format('Y'));
   }
 
   /**
    * Returns true if the supplied date is the first day of the century (starts in year nn01!)
    */
-  protected static function is_century_start($date)
-  {
-    return ($date->format('j')==1 && $date->format('m')==1 && $date->format('y')==1);
+  protected static function is_century_start($date) {
+    return ($date->format('j') == 1 && $date->format('m') == 1 && $date->format('y') == 1);
   }
 
   /**
-   * Returns true if the supplied date is the last day of the century
+   * Returns true if the supplied date is the last day of the century.
    */
-  protected static function is_century_end($date)
-  {
-    return ($date->format('j')==31 && $date->format('m')==12 && $date->format('y')==0);
+  protected static function is_century_end($date) {
+    return ($date->format('j') == 31 && $date->format('m') == 12 && $date->format('y') == 0);
   }
 
   /**
-   * Returns true if the supplied dates are in the same century
+   * Returns true if the supplied dates are in the same century.
    */
-  protected static function is_same_century($date1, $date2)
-  {
-    return floor(($date1->format('Y')-1)/100)==floor(($date2->format('Y')-1)/100);
+  protected static function is_same_century($date1, $date2) {
+    return floor(($date1->format('Y') - 1) / 100) == floor(($date2->format('Y') - 1) / 100);
   }
 
   /**
    * Retrieve the string that describes a season (spring, summer, autumn, winter)
    * for a start and end date.
    */
-  protected static function convert_to_season_string($start, $end)
-  {
+  protected static function convert_to_season_string($start, $end) {
     self::check(self::is_month_start($start) && self::is_month_end($end),
       'Seasons should be represented by the start of the first month of the season, to the end of the last month.');
-    // ensure the season spans 3 months.
-    self::check( ($start->format('Y')*12 + $start->format('m') + 2)
+    // Ensure the season spans 3 months.
+    self::check(($start->format('Y') * 12 + $start->format('m') + 2)
       ==
-      ($end->format('Y')*12 + $end->format('m')),
+      ($end->format('Y') * 12 + $end->format('m')),
         'Seasons should be 3 months long');
-    switch ($start->format('m'))
-    {
-    case 3:
-      return Kohana::lang('dates.seasons.spring');
-    case 6:
-      return Kohana::lang('dates.seasons.summer');
-    case 9:
-      return Kohana::lang('dates.seasons.autumn');
-    case 12:
-      return Kohana::lang('dates.seasons.winter');
-    default:
-      throw new Exception('Season date does not start on the month a known season starts on.');
+    switch ($start->format('m')) {
+      case 3:
+        return Kohana::lang('dates.seasons.spring');
+
+      case 6:
+        return Kohana::lang('dates.seasons.summer');
+
+      case 9:
+        return Kohana::lang('dates.seasons.autumn');
+
+      case 12:
+        return Kohana::lang('dates.seasons.winter');
+
+      default:
+        throw new Exception('Season date does not start on the month a known season starts on.');
     }
   }
-
 
   /**
    * Ensure a vague date array is well-formed.
    */
-  protected static function validate($vagueDate)
-  {
+  protected static function validate($vagueDate) {
     $start = $vagueDate[0];
     $end = $vagueDate[1];
     $type = $vagueDate[2];
 
     if ($end < $start && !is_null($end)) {
-      //End date must be after start date
-      return false;
-    } else {
+      // End date must be after start date.
+      return FALSE;
+    }
+    else {
       return $vagueDate;
     }
   }
 
   /**
-   * Tests that a check passed, and if not throws an exception containing the message. Replacements
-   * in the message can be supplied as additional string parameters, with %s used in the message. The
-   * replacements can also be null or datetime objects which are then converted to strings.
+   * Tests that a check passed, and if not throws an exception containing the
+   * message. Replacements in the message can be supplied as additional string
+   * parameters, with %s used in the message. The replacements can also be null
+   * or datetime objects which are then converted to strings.
    */
-  protected static function check($pass, $message)
-  {
+  protected static function check($pass, $message) {
     if (!$pass) {
       $args = func_get_args();
-      // any args after the message are string format inputs for the message
+      // Any args after the message are string format inputs for the message.
       unset($args[0]);
       unset($args[1]);
-      $inputs = array();
+      $inputs = [];
       foreach ($args as $arg) {
-        kohana::log('debug', 'arg '.gettype($arg));
-        if (gettype($arg)=='object')
+        kohana::log('debug', 'arg ' . gettype($arg));
+        if (gettype($arg) == 'object') {
           $inputs[] = $arg->format(Kohana::lang('dates.format'));
-        elseif (gettype($arg)==='NULL')
+        }
+        elseif (gettype($arg) === 'NULL') {
           $inputs[] = 'null';
-        else
+        }
+        else {
           $inputs[] = $arg;
+        }
       }
       throw new Exception(vsprintf($message, $inputs));
     }
