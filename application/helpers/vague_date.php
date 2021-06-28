@@ -19,7 +19,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-defined('SYSPATH') or die('No direct script access.');
+//defined('SYSPATH') or die('No direct script access.');
 
 class vague_date {
 
@@ -754,11 +754,11 @@ class vague_date {
         self::is_same_century($start, $end)
       ),
       'Century dates should be represented by the first day and the last day of the century');
-    return sprintf(Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1));
+    return sprintf(Kohana::lang('dates.century', ($start->format('Y') / 100) + 1));
   }
 
   /**
-   * Convert a vague date to a string representing a century.
+   * Convert a vague date to a string representing a range of centuries.
    */
   protected static function vague_date_to_centuries($start, $end) {
     self::check(
@@ -768,9 +768,11 @@ class vague_date {
         self::is_first_date_first($start, $end)
       ),
       'Century ranges should be represented by the first day of the first century and the last day of the last century');
-    return sprintf(Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1)) .
+    return sprintf(
+      Kohana::lang('dates.century', ($start->format('Y') / 100) + 1)) .
       Kohana::lang('dates.range_separator') .
-      sprintf(Kohana::lang('dates.century', ($end->format('Y') - 1) / 100 + 1));
+      sprintf(Kohana::lang('dates.century', ($end->format('Y') + 1) / 100)
+    );
   }
 
   /**
@@ -783,7 +785,7 @@ class vague_date {
     );
     return sprintf(
       Kohana::lang('dates.from_date'),
-      sprintf(Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1))
+      sprintf(Kohana::lang('dates.century', ($start->format('Y') / 100) + 1))
     );
   }
 
@@ -797,7 +799,8 @@ class vague_date {
     );
     return sprintf(
       Kohana::lang('dates.to_date'),
-      sprintf(Kohana::lang('dates.century', ($end->format('Y') - 1) / 100 + 1)));
+      sprintf(Kohana::lang('dates.century', ($end->format('Y') + 1) / 100))
+    );
   }
 
   /**
@@ -871,24 +874,24 @@ class vague_date {
   }
 
   /**
-   * Returns true if the supplied date is the first day of the century (starts in year nn01!)
+   * Returns true if the supplied date is the first day of the century.
    */
   protected static function is_century_start($date) {
-    return ($date->format('j') == 1 && $date->format('m') == 1 && $date->format('y') == 1);
+    return ($date->format('j') == 1 && $date->format('m') == 1 && $date->format('y') == 0);
   }
 
   /**
    * Returns true if the supplied date is the last day of the century.
    */
   protected static function is_century_end($date) {
-    return ($date->format('j') == 31 && $date->format('m') == 12 && $date->format('y') == 0);
+    return ($date->format('j') == 31 && $date->format('m') == 12 && $date->format('y') == 99);
   }
 
   /**
    * Returns true if the supplied dates are in the same century.
    */
-  protected static function is_same_century($date1, $date2) {
-    return floor(($date1->format('Y') - 1) / 100) == floor(($date2->format('Y') - 1) / 100);
+  protected static function is_same_century($start, $end) {
+    return ($start->format('Y') / 100) == floor($end->format('Y') / 100);
   }
 
   /**
