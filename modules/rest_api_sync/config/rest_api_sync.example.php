@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
- * @subpackage Cache builder
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -31,8 +30,10 @@ $config['user_id'] = 'ABC';
 $config['taxon_list_id'] = 1;
 
 /**
- * Which sample attribute will we use to store the dataset name for records which came from
- * remote systems?
+ * Dataset name attribute ID.
+ *
+ * Which sample attribute will we use to store the dataset name for records
+ * which came from remote systems?
  */
 $config['dataset_name_attr_id'] = 99;
 
@@ -51,7 +52,7 @@ $config['servers'] = [
     // Secret shared with the remote API.
     'shared_secret' => '123password',
     // Optional. Which resources will we try to retrieve from this API?
-    'resources' => array('taxon-observations', 'annotations'),
+    'resources' => ['taxon-observations', 'annotations'],
     // Should existing records get overwritten by remote updates when verified?
     // Default true.
     'allowUpdateWhenVerified' => TRUE,
@@ -65,12 +66,17 @@ $config['servers'] = [
     'parameters' => [
       'quality_grade' => 'research',
       'place_id' => 6857,
-	    'license' => 'cc-by,cc-by-nc,cc-by-nd,cc-by-sa,cc-by-nc-nd,cc-by-nc-sa,cc0',
+      'license' => 'cc-by,cc-by-nc,cc-by-nd,cc-by-sa,cc-by-nc-nd,cc-by-nc-sa,cc0',
     ],
-    // iNaturalist field mappings to custom attributes.
-    'attrs' => [
+    // iNaturalist annotation field mappings to custom attributes.
+    'annotationAttrs' => [
       'controlled_attribute:1' => 'occAttr:768',
       'controlled_attribute:9' => 'occAttr:346',
+    ],
+    // Other iNat observation fields to map to custom attributes.
+    'otherFields' => [
+      'quality_grade' => 'occAttr:123',
+      'project_ids' => 'occAttr:124',
     ],
     'allowUpdateWhenVerified' => FALSE,
   ],
