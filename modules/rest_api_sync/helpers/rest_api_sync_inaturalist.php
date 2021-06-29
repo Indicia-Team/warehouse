@@ -47,7 +47,7 @@ class rest_api_sync_inaturalist {
    * @param array $server
    *   Server configuration.
    */
-  public static function syncServer($serverId, $server) {
+  public static function syncServer($serverId, array $server) {
     // Count of pages done in this run.
     $pageCount = 0;
     // If last run still going, not on first page.
@@ -78,7 +78,7 @@ class rest_api_sync_inaturalist {
    * @param array $server
    *   Server configuration.
    */
-  public static function loadControlledTerms($serverId, $server) {
+  public static function loadControlledTerms($serverId, array $server) {
     if (!empty(self::$controlledTerms)) {
       // Already loaded.
       return;
@@ -138,7 +138,7 @@ class rest_api_sync_inaturalist {
       $serverId
     );
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
-    $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
+    $tracker = ['inserts' => 0, 'updates' => 0, 'errors' => 0];
     foreach ($data['results'] as $iNatRecord) {
       try {
         if (empty($iNatRecord['taxon']['name'])) {
@@ -199,7 +199,7 @@ class rest_api_sync_inaturalist {
           $observation,
           $server['website_id'],
           $server['survey_id'],
-          $taxon_list_id, 
+          $taxon_list_id,
           $server['allowUpdateWhenVerified']
         );
         if ($is_new !== NULL) {

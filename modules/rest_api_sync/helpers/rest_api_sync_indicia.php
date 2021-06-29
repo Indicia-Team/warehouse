@@ -22,7 +22,7 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Helper class for syncing to the RESTful API on an Indicia warehouses.
@@ -58,6 +58,11 @@ class rest_api_sync_indicia {
    */
   private static $processingDateLimit;
 
+  /**
+   * Database connection.
+   *
+   * @var obj
+   */
   private static $db;
 
   /**
@@ -68,7 +73,7 @@ class rest_api_sync_indicia {
    * @param array $server
    *   Server configuration.
    */
-  public static function syncServer($serverId, $server) {
+  public static function syncServer($serverId, array $server) {
     self::$db = Database::instance();
     $next_page_of_projects_url = self::getServerProjectsUrl($server['url']);
     while ($next_page_of_projects_url) {
@@ -128,21 +133,21 @@ class rest_api_sync_indicia {
   private static function getSurveyId(array $server, array $project) {
     $projects = self::$db->select('id')
       ->from('surveys')
-      ->where(array(
+      ->where([
         'website_id' => $server['website_id'],
         'title' => "$project[id]:$project[title]",
         'deleted' => 'f',
-      ))->get()->result_array(FALSE);
+      ])->get()->result_array(FALSE);
     if (count($projects)) {
       return $projects[0]['id'];
     }
     else {
       // Survey dataset does not exist yet so create it.
-      $values = array(
+      $values = [
         'survey:title' => "$project[id]:$project[title]",
         'survey:description' => "$project[id]:$project[description]",
         'survey:website_id' => $server['website_id'],
-      );
+      ];
       $survey = ORM::factory('survey');
       $survey->set_submission_data($values);
       $survey->submit();
@@ -181,8 +186,8 @@ class rest_api_sync_indicia {
       if ($state === 'load-annotations' && $done) {
         // Initial loading done.
         $state = 'load-done';
-        // @todo -1 week is arbitrary. Should really use the time that we switched out of the
-        // loading-taxon-observations state.
+        // @todo -1 week is arbitrary. Should really use the time that we
+        // switched out of the loading-taxon-observations state.
         self::$processingDateLimit = date("Y-m-d\TH:i:s -1 week");
       }
     }
@@ -222,7 +227,7 @@ class rest_api_sync_indicia {
       self::$fromDateTime,
       self::$processingDateLimit
     );
-    $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
+    $tracker = ['inserts' => 0, 'updates' => 0, 'errors' => 0];
     $processedCount = 0;
     $last_completely_processed_date = NULL;
     $last_record_date = NULL;
@@ -240,10 +245,10 @@ class rest_api_sync_indicia {
         try {
           $is_new = api_persist::taxonObservation(
             self::$db,
-            $observation, 
-            $server['website_id'], 
-            $survey_id, 
-            $taxon_list_id, 
+            $observation,
+            $server['website_id'],
+            $survey_id,
+            $taxon_list_id,
             $server['allowUpdateWhenVerified']
           );
           if ($is_new !== NULL) {
@@ -298,7 +303,7 @@ class rest_api_sync_indicia {
       self::$fromDateTime,
       self::$processingDateLimit
     );
-    $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
+    $tracker = ['inserts' => 0, 'updates' => 0, 'errors' => 0];
     $processedCount = 0;
     $last_completely_processed_date = NULL;
     $last_record_date = NULL;
@@ -329,6 +334,9 @@ class rest_api_sync_indicia {
     return $load_all || $processedCount < MAX_RECORDS_TO_PROCESS;
   }
 
+  /**
+   * Gets the URL to a server web-service endpoint.
+   */
   private static function getServerUrl(
       $endPoint,
       array $server,
@@ -348,6 +356,9 @@ class rest_api_sync_indicia {
     return "$server[url]/$endPoint?" . http_build_query($params);
   }
 
+  /**
+   * Gets the URL to a server projects web-service endpoint.
+   */
   private static function getServerProjectsUrl($server_url) {
     return $server_url . '/projects';
   }
