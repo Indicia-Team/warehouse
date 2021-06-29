@@ -379,9 +379,14 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $uid3 = $output->userId;
     $this->assertEquals($uid2, $uid3, 'Merge request did not return the correct user');
     // This user should "own" the 2 records that we linked to uid1 and uid2 earlier.
-    $this->assertEquals(2, $this->db->select('id')->from('occurrences')->where(array('created_by_id' => $uid3))
+    $this->assertEquals(2, $this->db->select('id')->from('occurrences')->where(['created_by_id' => $uid3])
       ->get()->count(), 'Occurrence not owned by user');
-
+    $this->assertEquals(1, $this->db->select('id')->from('users')
+      ->where(['deleted' => 't', 'id' => $uid1])
+      ->get()->count(), 'Merged user was not deleted');
+    $this->assertEquals(1, $this->db->select('id')->from('users')
+      ->where(['deleted' => 'f', 'id' => $uid3])
+      ->get()->count(), 'Kept user was incorrectly deleted');
     // Cleanup.
     $this->db->query('delete from occurrences where website_id in (1, 2)');
     $this->db->query("delete from user_identifiers where user_id in ($uid1, $uid2)");
