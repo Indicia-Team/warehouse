@@ -68,10 +68,15 @@ $config['servers'] = [
       'place_id' => 6857,
       'license' => 'cc-by,cc-by-nc,cc-by-nd,cc-by-sa,cc-by-nc-nd,cc-by-nc-sa,cc0',
     ],
-    // iNaturalist field mappings to custom attributes.
-    'attrs' => [
+    // iNaturalist annotation field mappings to custom attributes.
+    'annotationAttrs' => [
       'controlled_attribute:1' => 'occAttr:768',
       'controlled_attribute:9' => 'occAttr:346',
+    ],
+    // Other iNat observation fields to map to custom attributes.
+    'otherFields' => [
+      'quality_grade' => 'occAttr:123',
+      'project_ids' => 'occAttr:124',
     ],
     'allowUpdateWhenVerified' => FALSE,
   ],

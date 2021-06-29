@@ -181,11 +181,11 @@ class rest_api_sync_inaturalist {
             }
           }
         }
-        if (!empty($server['attrs']) && !empty($iNatRecord['annotations'])) {
+        if (!empty($server['annotationAttrs']) && !empty($iNatRecord['annotations'])) {
           foreach ($iNatRecord['annotations'] as $annotation) {
             $iNatAttr = "controlled_attribute:$annotation[controlled_attribute_id]";
-            if (isset($server['attrs'][$iNatAttr])) {
-              $attrTokens = explode(':', $server['attrs'][$iNatAttr]);
+            if (isset($server['annotationAttrs'][$iNatAttr])) {
+              $attrTokens = explode(':', $server['annotationAttrs'][$iNatAttr]);
               if (isset(self::$controlledTerms[$annotation['controlled_attribute_id']])) {
                 $controlledTermValues = self::$controlledTerms[$annotation['controlled_attribute_id']]['values'];
                 $controlledValueId = $annotation['controlled_value_id'];
@@ -194,6 +194,16 @@ class rest_api_sync_inaturalist {
             }
           }
         }
+        if (!empty($server['otherFields'])) {
+          foreach ($server['otherFields'] as $src => $dest) {
+            if (!empty($iNatRecord[$src])) {
+              // @todo Check multi-value/array handling.
+              $attrTokens = explode(':', $dest);
+              $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $iNatRecord[$src];
+            }
+          }
+        }
+        kohana::log('debug', var_export($observation, TRUE));
         $is_new = api_persist::taxonObservation(
           $db,
           $observation,
