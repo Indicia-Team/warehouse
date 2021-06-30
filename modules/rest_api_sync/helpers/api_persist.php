@@ -201,20 +201,49 @@ class api_persist {
     }
     if (isset($observation['occAttrs'])) {
       foreach ($observation['occAttrs'] as $id => $value) {
-        // Lookup the term if we can.
-        $qry = <<<SQL
-SELECT t.id
-FROM occurrence_attributes a
-JOIN cache_termlists_terms t ON t.termlist_id=a.termlist_id AND t.term='$value'
-WHERE a.id=$id AND a.data_type='L'
-SQL;
-        $term = $db->query($qry)->result_array(FALSE);
-        // Use the found term ID if we found one. Otherwise submit the iNat
-        // value (which will presumably fail validation if this is a lookup).
-        $values["occAttr:$id"] = count($term) > 0 ? $term[0]['id'] : $value;
+        self::mapOccAttrValueToTermId($db, $id, $value);
+        $values["occAttr:$id"] = $value;
       }
     }
     return $values;
+  }
+
+  private static function mapOccAttrValueToTermId($db, $occAttrId, &$value) {
+    $cacheId = "occAttrIsLookup-$occAttrId";
+    $cache = Cache::instance();
+    $attrInfo = $cache->get($cacheId);
+    if ($attrInfo === NULL) {
+      $qry = <<<SQL
+SELECT data_type, termlist_id
+FROM occurrence_attributes
+WHERE id=$occAttrId AND deleted=false
+SQL;
+      $attrRecord = $db->query($qry)->current();
+      $attrInfo = [
+        'data_type' => $attrRecord->data_type,
+        'termlist_id' => $attrRecord->termlist_id,
+      ];
+      $cache->set($cacheId, $attrInfo);
+    }
+    // Don't bother if not a lookup attribute.
+    if ($attrInfo['data_type'] === 'L') {
+      if (is_array($value)) {
+        foreach ($value as &$item) {
+          $qry = "SELECT id FROM cache_termlists_terms t WHERE termlist_id=$attrInfo[termlist_id] AND term='$item'";
+          $termInfo = $db->query($qry)->current();
+          if ($termInfo) {
+            $item = $termInfo->id;
+          }
+        }
+      }
+      else {
+        $qry = "SELECT id FROM cache_termlists_terms t WHERE termlist_id=$attrInfo[termlist_id] AND term='$value'";
+        $termInfo = $db->query($qry)->current();
+        if ($termInfo) {
+          $value = $termInfo->id;
+        }
+      }
+    }
   }
 
   /**

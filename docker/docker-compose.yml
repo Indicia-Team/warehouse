@@ -19,10 +19,13 @@ services:
     pgadmin:
         # See https://hub.docker.com/r/dpage/pgadmin4/tags
         # for other versions available.
-        image: dpage/pgadmin4:5.2
+        image: dpage/pgadmin4:5.4
         environment:
-            PGADMIN_DEFAULT_EMAIL: pgadmin@indicia.org.uk
+            PGADMIN_DEFAULT_EMAIL: pgadmin@example.com
             PGADMIN_DEFAULT_PASSWORD: password
+        volumes:
+            # Persist configuration in a named volume.
+            - pgadmin:/var/lib/pgadmin
         ports: 
             - "8070:80"
 
@@ -46,3 +49,4 @@ services:
 
 volumes:
     indicia_postgres:
+    pgadmin:

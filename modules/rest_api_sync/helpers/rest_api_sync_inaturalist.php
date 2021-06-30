@@ -47,7 +47,7 @@ class rest_api_sync_inaturalist {
    * @param array $server
    *   Server configuration.
    */
-  public static function syncServer($serverId, $server) {
+  public static function syncServer($serverId, array $server) {
     // Count of pages done in this run.
     $pageCount = 0;
     // If last run still going, not on first page.
@@ -78,7 +78,7 @@ class rest_api_sync_inaturalist {
    * @param array $server
    *   Server configuration.
    */
-  public static function loadControlledTerms($serverId, $server) {
+  public static function loadControlledTerms($serverId, array $server) {
     if (!empty(self::$controlledTerms)) {
       // Already loaded.
       return;
@@ -138,7 +138,7 @@ class rest_api_sync_inaturalist {
       $serverId
     );
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
-    $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
+    $tracker = ['inserts' => 0, 'updates' => 0, 'errors' => 0];
     foreach ($data['results'] as $iNatRecord) {
       try {
         if (empty($iNatRecord['taxon']['name'])) {
@@ -181,11 +181,11 @@ class rest_api_sync_inaturalist {
             }
           }
         }
-        if (!empty($server['attrs']) && !empty($iNatRecord['annotations'])) {
+        if (!empty($server['annotationAttrs']) && !empty($iNatRecord['annotations'])) {
           foreach ($iNatRecord['annotations'] as $annotation) {
             $iNatAttr = "controlled_attribute:$annotation[controlled_attribute_id]";
-            if (isset($server['attrs'][$iNatAttr])) {
-              $attrTokens = explode(':', $server['attrs'][$iNatAttr]);
+            if (isset($server['annotationAttrs'][$iNatAttr])) {
+              $attrTokens = explode(':', $server['annotationAttrs'][$iNatAttr]);
               if (isset(self::$controlledTerms[$annotation['controlled_attribute_id']])) {
                 $controlledTermValues = self::$controlledTerms[$annotation['controlled_attribute_id']]['values'];
                 $controlledValueId = $annotation['controlled_value_id'];
@@ -194,12 +194,22 @@ class rest_api_sync_inaturalist {
             }
           }
         }
+        if (!empty($server['otherFields'])) {
+          foreach ($server['otherFields'] as $src => $dest) {
+            if (!empty($iNatRecord[$src])) {
+              // @todo Check multi-value/array handling.
+              $attrTokens = explode(':', $dest);
+              $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $iNatRecord[$src];
+            }
+          }
+        }
+        kohana::log('debug', var_export($observation, TRUE));
         $is_new = api_persist::taxonObservation(
           $db,
           $observation,
           $server['website_id'],
           $server['survey_id'],
-          $taxon_list_id, 
+          $taxon_list_id,
           $server['allowUpdateWhenVerified']
         );
         if ($is_new !== NULL) {
