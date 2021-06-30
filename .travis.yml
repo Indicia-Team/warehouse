@@ -4,37 +4,31 @@ sudo: required
 language: php
 
 php:
+  # Test oldest and newest maintained versions.
   - '7.3'
-  # - '7.4'
   # - '8.0'
 
 env:
-  - POSTGRESQL_VERSION=postgresql-9.5-postgis-2.2
-  # - POSTGRESQL_VERSION=postgresql-10-postgis-2.4
-
-
-services:
-  - postgresql
+  # Test oldest and newest maintained versions.
+  - PGVERSION=9.6
+  - PGVERSION=13
 
 before_install:
+  # Output info for debugging.
   - php -r "echo phpinfo();"
-
-  # From https://docs.travis-ci.com/user/languages/php
-  # Currently Travis CI does not support mod_php for apache, but you can
-  # configure php-fpm for your integration tests.
 
   # Update the package list.
   - sudo apt-get update
-  # Reinstall PostgreSQL - see https://github.com/travis-ci/travis-ci/issues/7048#issuecomment-267731971
-  - sudo apt-get autoremove postgis*
-  - sudo apt-get autoremove postgresql*
-  - sudo apt-get install $POSTGRESQL_VERSION
+
   # Install Apache.
-  - sudo apt-get install apache2 libapache2-mod-fastcgi
-  # See https://www.marcus-povey.co.uk/2016/02/16/travisci-with-php-7-on-apache-php-fpm/
-  - if [[ ${TRAVIS_PHP_VERSION:0:2} == "7." ]]; then sudo cp ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.d/www.conf.default ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.d/www.conf; fi
+  # From https://docs.travis-ci.com/user/languages/php
+  # Currently Travis CI does not support mod_php for apache, but you can
+  # configure php-fpm for your integration tests.
+  - sudo apt-get install apache2
+  # Install mod_fastcgi which is no longer available in Ubuntu repositories.
+  - wget http://mirrors.kernel.org/ubuntu/pool/multiverse/liba/libapache-mod-fastcgi/libapache2-mod-fastcgi_2.4.7~0910052141-1.2_amd64.deb
+  - sudo dpkg -i libapache2-mod-fastcgi_2.4.7~0910052141-1.2_amd64.deb
   # enable php-fpm
-  - sudo cp ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf.default ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf
   - sudo a2enmod rewrite actions fastcgi alias
   - echo "cgi.fix_pathinfo = 1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - sudo sed -i -e "s,www-data,travis,g" /etc/apache2/envvars
@@ -45,20 +39,22 @@ before_install:
   - sudo sed -e "s?%TRAVIS_BUILD_DIR%?$(pwd)?g" --in-place /etc/apache2/sites-available/000-default.conf
   - sudo service apache2 restart
 
+  # Reinstall PostgreSQL - see https://github.com/travis-ci/travis-ci/issues/7048#issuecomment-267731971
+  - sudo apt-get autoremove postgis*
+  - sudo apt-get autoremove postgresql*
+  - sudo apt-get install install postgresql-${PGVERSION}-postgis-3 postgresql-contrib-${PGVERSION}
+  - PGDATA=/var/ramfs/postgresql/${PGVERSION}/main
+  - PGBIN=/usr/lib/postgresql/${PGVERSION}/bin
+  - sudo mkdir -p $PGDATA
+  - sudo chown -R postgres:postgres /var/ramfs/postgresql
+  - sudo -u postgres ${PGBIN}/initdb -D $PGDATA
+  - sudo -u postgres ${PGBIN}/pg_ctl -D $PGDATA start
+
 install:
   # Grant execute on scripts
   - chmod +x .travis/postgres_setup.sh
 
 before_script:
-    # Special configuration required for PostgreSQL 10.
-  - |
-    if [ ${POSTGRESQL_VERSION:10:4} == "-10-" ]; then
-      # Use default port
-      sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
-      # Use 9.6 auth config:
-      sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf
-    fi
-  - sudo service postgresql restart
   # Create database
   - psql -c 'create database indicia;' -U postgres -d postgres
   # Add extension for PostGIS
