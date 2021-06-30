@@ -42,7 +42,7 @@ before_install:
   # Reinstall PostgreSQL - see https://github.com/travis-ci/travis-ci/issues/7048#issuecomment-267731971
   - sudo apt-get autoremove postgis*
   - sudo apt-get autoremove postgresql*
-  - sudo apt-get install install postgresql-${PGVERSION}-postgis-3 postgresql-contrib-${PGVERSION}
+  - sudo apt-get install postgresql-${PGVERSION}-postgis-3 postgresql-contrib-${PGVERSION}
   - PGDATA=/var/ramfs/postgresql/${PGVERSION}/main
   - PGBIN=/usr/lib/postgresql/${PGVERSION}/bin
   - sudo mkdir -p $PGDATA
