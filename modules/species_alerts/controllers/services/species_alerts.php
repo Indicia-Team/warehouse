@@ -63,15 +63,18 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       self::store_species_alert($userId);
       //Automatically register the user to receive email notifications if they have never had any settings at all
       try {
-        $readAuth = data_entry_helper::get_read_auth(0-$userId, kohana::config('indicia.private_key'));
-        $freqSettingsData = data_entry_helper::get_report_data(array(
-          'dataSource'=>'library/user_email_notification_settings/user_email_notification_settings_inc_deleted',
-          'readAuth'=>$readAuth,
-          'extraParams'=>array('user_id' => $userId)
-        ));
-        if (empty($freqSettingsData))
+        warehouse::loadHelpers(['report_helper']);
+        $readAuth = report_helper::get_read_auth(0 - $userId, kohana::config('indicia.private_key'));
+        $freqSettingsData = report_helper::get_report_data([
+          'dataSource' => 'library/user_email_notification_settings/user_email_notification_settings_inc_deleted',
+          'readAuth' => $readAuth,
+          'extraParams' => ['user_id' => $userId],
+        ]);
+        if (empty($freqSettingsData)) {
           self::store_user_email_notification_setting($userId);
-      } catch (exception $e) {
+        }
+      }
+      catch (exception $e) {
         kohana::log('debug', "Unable to register user ".$userId." for email notifications, perhaps that module is not installed?.");
       }
     }
