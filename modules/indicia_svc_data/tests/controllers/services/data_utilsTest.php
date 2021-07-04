@@ -151,7 +151,7 @@ SQL;
         ]),
         'occurrence:record_status' => 'V',
         'user_id' => 1,
-        'dryrun' => 'TRUE',
+        'dryrun' => 'true',
       ], $this->auth['write_tokens'])
     );
     // Check the dry run reports the correct record count and does no update.
