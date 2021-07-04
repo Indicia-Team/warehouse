@@ -20,9 +20,11 @@ changes immediately and xdebug is set up so you can set breakpoints and
 single step through code.
 
 ### Prerequisites
-A postgres client is needed on the host for the script to complete the set
+Naturally you'll need [Docker](https://docs.docker.com/engine/install/) installed.
+
+Currently, a postgres client is needed on the host for the script to complete the set
 up of the indicia schema. E.g. on Ubuntu you can
-`sudo apt install postgresql-client`
+`sudo apt install postgresql-client`.
 
 ### Starting
 If you clone this repo, `cd docker` and execute `./compose.sh` it will start
@@ -45,3 +47,10 @@ Once running you can browse the warehouse at http://localhost:8080.
 You can examine the database with pgAdmin at http://localhost:8070.
 Any mail sent by the warehouse can be viewed at http://localhost:8025.
 
+### Unit testing
+There is a separate Docker configuration for unit testing which can be
+run up by `cd docker` then `./phpunit.sh`. This replicates the unit 
+testing performed when you push commits to the repository, enabling you
+to create and debug tests locally. It uses its own volume for the database
+so won't overwrite any setup you have. It also saves and restores any config
+files that are modified by testing.

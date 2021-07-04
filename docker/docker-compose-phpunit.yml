@@ -1,0 +1,10 @@
+services:
+    # A warehouse and postgresql container combined, as on Travis CI.
+    phpunit:
+        build: ./phpunit
+        # Apache is configured to run on port 8080 in phpunit/Dockerfile  
+        ports: 
+            - "8080:8080"
+        # Share the warehouse code between host and container
+        volumes:
+            - ..:/var/www/html/
