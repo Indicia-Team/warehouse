@@ -1,4 +1,7 @@
 <?php
+
+use PHPUnit\Framework\TestCase;
+
 /**
  * Request Helper Unit Tests
  *
@@ -9,17 +12,17 @@
  * @group   core.helpers
  * @group   core.helpers.request
  */
-class Helper_Request_Test extends PHPUnit_Framework_TestCase
+class Helper_Request_Test extends TestCase
 {
 	protected $server_vars;
 
-	protected function setUp()
+	protected function setUp(): void
 	{
 		// Save $_SERVER
 		$this->server_vars = $_SERVER;
 	}
 
-	protected function tearDown()
+	protected function tearDown(): void
 	{
 		// Restore $_SERVER
 		$_SERVER = $this->server_vars;

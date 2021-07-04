@@ -1,4 +1,7 @@
 <?php
+
+use PHPUnit\Framework\TestCase;
+
 /**
  * Cache Library Unit Tests
  *
@@ -6,13 +9,13 @@
  * @subpackage	Libraries
  * @author		Kiall Mac Innes
  */
-abstract class Library_Cache_Base_Test extends PHPUnit_Framework_TestCase
+abstract class Library_Cache_Base_Test extends TestCase
 {
 	protected $cache;
 	
 	protected $config;
 	
-	public function setUp()
+	public function setUp(): void
 	{
 		$this->cache->delete_all();
 	}
