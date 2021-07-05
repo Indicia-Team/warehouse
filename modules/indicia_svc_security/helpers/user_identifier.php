@@ -21,65 +21,65 @@
 
 defined('SYSPATH') or die('No direct script access.');
 class user_identifier {
-  protected $db;
+
   /**
+   * Database connection.
+   *
+   * @var obj
+   */
+  protected $db;
+
+  /**
+   * Retrieve a user ID web service endpoint.
+   *
    * Helper method that takes a list of user identifiers such as email addresses
    * and returns the appropriate user ID from the warehouse, which can then be
    * used in subsequent calls to save the data. Takes the following parameters
    * in the $request (which is a merge of $_GET or $_POST data) in addition to a
-   * nonce and auth_token for a write operation:<ul>
-   * <li><strong>identifiers</strong/><br/>
-   * Required. A JSON encoded array of identifiers known for the user. Each
-   * array entry is an object with a type property (e.g. twitter, openid) and
-   * identifier property (e.g. twitter account). An identifier of type email
-   * must be provided in case a new user account has to be created on the
-   * warehouse.</li>
-   * <li><strong>surname</strong/><br/>
-   * Required. Surname of the user, enabling a new user account to be created on
-   * the warehouse.</li>
-   * <li><strong>first_name</strong/><br/>
-   * Optional. First name of the user, enabling a new user account to be created
-   * on the warehouse.</li>
-   * <li><strong>cms_user_id</strong/><br/>
-   * Optional. User ID from the client website's login system. Allows existing
-   * records to be linked to the created account when migrating from a CMS user
-   * ID based authentication to Easy Login based authentication.</li>
-   * <li><strong>warehouse_user_id</strong/><br/>
-   * Optional. Where a user ID is already known but a new identifier is being
-   * provided (e.g. an email switch), provide the warehouse user ID.</li>
-   * <li><strong>force</strong/><br/>
-   * Optional. Only relevant after a request has returned an array of several
-   * possible matches. Set to merge or split to define the action.</li>
-   * <li><strong>users_to_merge</strong/><br/>
-   * If force=merge, then this parameter can be optionally used to limit the
-   * list of users in the merge operation. Pass a JSON encoded array of user
-   * IDs.</li>
-   * <li><strong>attribute_values</strong>
-   * Optional list of custom attribute values for the person which have been
-   * modified on the client website and should be synchronised into the
-   * warehouse person record. The custom attributes must already exist on the
-   * warehouse and have a matching caption, as well as being marked as
-   * synchronisable or the attribute values will be ignored. Provide this as a
-   * JSON object with the properties being the caption of the attribute and the
-   * values being the values to change.
-   * </li>
-   * <li><strong>shares_to_prevent</strong>
-   * If the user has opted out of allowing their records to be shared with other
-   * websites, the sharing tasks which they have opted out of should be passed
-   * as a comma separated list here. Valid sharing tasks are: reporting,
-   * peer_review, verification, data_flow, moderation, editing. They will then be stored
-   * against the user account. </li>
-   * </ul>
+   * nonce and auth_token for a write operation:
+   * * identifiers - Required. A JSON encoded array of identifiers known for
+   *   the user. Each array entry is an object with a type property (e.g.
+   *   twitter, openid) and identifier property (e.g. twitter account). An
+   *   identifier of type email must be provided in case a new user account has
+   *   to be created on the warehouse.
+   * * surname - Required. Surname of the user, enabling a new user account to
+   *   be created on the warehouse.
+   * * first_name - Optional. First name of the user, enabling a new user
+   *   account to be created on the warehouse.
+   * * cms_user_id - Optional. User ID from the client website's login system.
+   *   Allows existing records to be linked to the created account when
+   *   migrating from a CMS user ID based authentication to Easy Login based
+   *   authentication.
+   * * warehouse_user_id - Optional. Where a user ID is already known but a new
+   *   identifier is being provided (e.g. an email switch), provide the
+   *   warehouse user ID.
+   * * force - Optional. Only relevant after a request has returned an array of
+   *   several possible matches. Set to merge or split to define the action.
+   * * users_to_merge - If force=merge, then this parameter can be optionally
+   *   used to limit the list of users in the merge operation. Pass a JSON
+   *   encoded array of user IDs.
+   * * attribute_values - Optional list of custom attribute values for the
+   *   person which have been modified on the client website and should be
+   *   synchronised into the warehouse person record. The custom attributes
+   *   must already exist on the warehouse and have a matching caption, as well
+   *   as being marked as synchronisable or the attribute values will be
+   *   ignored. Provide this as a JSON object with the properties being the
+   *   caption of the attribute and the values being the values to change.
+   * * shares_to_prevent - If the user has opted out of allowing their records
+   *   to be shared with other websites, the sharing tasks which they have
+   *   opted out of should be passed as a comma separated list here. Valid
+   *   sharing tasks are: reporting, peer_review, verification, data_flow,
+   *   moderation, editing. They will then be stored against the user account.
    *
    * @return JSON
    *   JSON object containing the following properties:
-   *   userId - If a single user account has been identified then returns the
+   *   * userId - If a single user account has been identified then returns the
    *     Indicia user ID for the existing or newly created account. Otherwise
    *     not returned.
-   *   attrs - If a single user account has been identifed then returns a list
-   *     of captions and values for the attributes to update on the client
+   *   * attrs - If a single user account has been identifed then returns a
+   *     list of captions and values for the attributes to update on the client
    *     account.
-   *   possibleMatches - If a list of possible users has been identified then
+   *   * possibleMatches - If a list of possible users has been identified then
    *     this property includes a list of people that match from the warehouse -
    *     each with the user ID, website ID and website title they are members
    *     of. If this happens then the client must ask the user to confirm that
@@ -101,7 +101,7 @@ class user_identifier {
     // force: not passed to any query.
     // users_to_merge: looks like these all go through query builder so are escaped.
     // attribute_values: looks like these all go through ORM so are escaped.
-    // shares_to_prevent: not passed to any query
+    // shares_to_prevent: not passed to any query.
 
     if (!array_key_exists('identifiers', $request)) {
       throw new exception('Error: missing identifiers parameter');
@@ -195,10 +195,11 @@ SQL;
       if ($email === NULL) {
         throw new exception('Call to get_user_id requires an email address in the list of provided identifiers.');
       }
-      // Now we have a list of the existing users that match this identifier. If there are none, we
-      // can create a new user and attach to the current website. If there is one, then we can
-      // just return it. If more than one, then we have a resolution task since it probably
-      // means 2 user records refer to the same physical person, or someone is sharing their
+      // Now we have a list of the existing users that match this identifier.
+      // If there are none, we can create a new user and attach to the current
+      // website. If there is one, then we can just return it. If more than
+      // one, then we have a resolution task since it probably means 2 user
+      // records refer to the same physical person, or someone is sharing their
       // identifiers!
       if (count($existingUsers) === 0) {
         $userId = self::createUser($email, $userPersonObj);
@@ -226,7 +227,7 @@ SQL;
     self::associateWebsite($userId, $userPersonObj, $websiteId);
     self::storeSharingPreferences($userId, $userPersonObj);
     $attrs = self::getAttributes($userPersonObj, $websiteId);
-    self::storeCustomAttributes($userId, $attrs, $userPersonObj);
+    self::storeCustomAttributes($attrs, $userPersonObj);
     // Convert the attributes to update in the client website account into an
     // array of captions & values.
     $attrsToReturn = [];
@@ -240,19 +241,20 @@ SQL;
   }
 
   /**
-   * Finds the list of custom attributes associated whith the person and the
-   * associated values.
-   * @return array List of the attributes to synchronise into the client site.
+   * Finds the list of custom attribute values associated whith the person.
+   *
+   * @return array
+   *   List of the attributes to synchronise into the client site.
    */
   private static function getAttributes($userPersonObj, $websiteId) {
-    // find the attribute Ids for the ones we have values for, that are synchronisable
-    // and associated with the current website. Note we deliberately read deleted
-    // values so that we can return blanks
-    $attrs = $userPersonObj->db->select('DISTINCT ON (pa.id) pa.id, pav.id as value_id, pa.caption, pa.data_type, '.
+    // Find the attribute Ids for the ones we have values for, that are
+    // synchronisable and associated with the current website. Note we
+    // deliberately read deleted values so that we can return blanks.
+    $attrs = $userPersonObj->db->select('DISTINCT ON (pa.id) pa.id, pav.id as value_id, pa.caption, pa.data_type, ' .
           'pav.text_value, pav.int_value, pav.float_value, pav.date_start_value, pav.deleted')
       ->from('person_attributes as pa')
       ->join('person_attributes_websites as paw', 'paw.person_attribute_id', 'pa.id')
-      ->join('person_attribute_values as pav',"pav.person_attribute_id=pa.id "
+      ->join('person_attribute_values as pav', "pav.person_attribute_id=pa.id "
               . "AND (pav.person_id IS NULL OR pav.person_id=$userPersonObj->person_id) AND pav.deleted=false", '', 'LEFT')
       ->where([
         'pa.synchronisable' => 't',
@@ -260,10 +262,11 @@ SQL;
         'paw.deleted' => 'f',
         'paw.website_id' => $websiteId,
       ])
-      ->orderby(['pa.id' => 'ASC', 'pav.deleted' => 'ASC']) // forces the distinct on to prioritise non-deleted records.
+      // Forces the distinct on to prioritise non-deleted records.
+      ->orderby(['pa.id' => 'ASC', 'pav.deleted' => 'ASC'])
       ->get()->result_array(FALSE);
-    // discard deletions if they are superceded by another non-deleted value
-    // Convert the diff type value fields into a single variant value
+    // Discard deletions if they are superceded by another non-deleted value.
+    // Convert the diff type value fields into a single variant value.
     foreach ($attrs as &$attr) {
       if ($attr['deleted']) {
         $attr['value'] = NULL;
@@ -273,15 +276,18 @@ SQL;
           case 'T':
             $attr['value'] = $attr['text_value'];
             break;
+
           case 'F':
             $attr['value'] = $attr['float_value'];
             break;
+
           case 'D':
           case 'V':
             $attr['value'] = $attr['date_start_value'];
             break;
+
           default:
-            $attr['value']=$attr['int_value'];
+            $attr['value'] = $attr['int_value'];
         }
       }
       unset($attr['text_value']);
@@ -307,15 +313,15 @@ SQL;
         && ((!empty($person->first_name) && $person->first_name != '?'
         && !empty($_REQUEST['first_name']) && strtolower(trim($_REQUEST['first_name'])) !== strtolower(trim($person->first_name)))
         || strtolower(trim($person->surname)) !== strtolower(trim($_REQUEST['surname'])))) {
-      throw new exception("The system attempted to use your user account details to register you as a user of the ".
-          "central records database, but a different person with email address $email already exists. Please contact your ".
+      throw new exception("The system attempted to use your user account details to register you as a user of the " .
+          "central records database, but a different person with email address $email already exists. Please contact your " .
           "site administrator who may be able to help resolve this issue." . print_r($_REQUEST, TRUE));
     }
-    $data = array(
+    $data = [
       'first_name' => isset($_REQUEST['first_name']) ? $_REQUEST['first_name'] : '?',
       'surname' => $_REQUEST['surname'],
       'email_address' => $email,
-    );
+    ];
     if ($person->loaded) {
       $data['id'] = $person->id;
     }
@@ -355,15 +361,15 @@ SQL;
     foreach ($typeTerms as $term) {
       $qry = $userPersonObj->db->select('t.id')
         ->from('terms as t')
-        ->join('termlists_terms as tlt', array('tlt.term_id' => 't.id'))
-        ->join('termlists as tl', array('tl.id' => 'tlt.termlist_id'))
-        ->where(array(
+        ->join('termlists_terms as tlt', ['tlt.term_id' => 't.id'])
+        ->join('termlists as tl', ['tl.id' => 'tlt.termlist_id'])
+        ->where([
           't.deleted' => 'f',
           't.term' => $term,
           'tl.external_key' => 'indicia:user_identifier_types',
           'tlt.deleted' => 'f',
-          'tl.deleted' => 'f'
-        ))
+          'tl.deleted' => 'f',
+        ])
         ->get()->result_array(FALSE);
       if (count($qry) === 0) {
         // Missing term so insert.
@@ -374,28 +380,28 @@ SQL;
     foreach ($identifiers as $identifier) {
       $r = $userPersonObj->db->select('ui.user_id')
         ->from('terms as t')
-        ->join('termlists_terms as tlt1', array('tlt1.term_id' => 't.id'))
-        ->join('termlists_terms as tlt2', array('tlt2.meaning_id' => 'tlt1.meaning_id'))
-        ->join('user_identifiers as ui', array('ui.type_id' => 'tlt2.id'))
-        ->where(array(
+        ->join('termlists_terms as tlt1', ['tlt1.term_id' => 't.id'])
+        ->join('termlists_terms as tlt2', ['tlt2.meaning_id' => 'tlt1.meaning_id'])
+        ->join('user_identifiers as ui', ['ui.type_id' => 'tlt2.id'])
+        ->where([
           't.term' => $identifier->type,
           'ui.user_id' => $userId,
           't.deleted' => 'f',
           'tlt1.deleted' => 'f',
           'tlt2.deleted' => 'f',
           'ui.deleted' => 'f',
-        ))
+        ])
         ->like('ui.identifier', $identifier->identifier)
         ->get()->result_array(FALSE);
       if (!count($r)) {
         // Identifier does not yet exist so create it.
         self::loadIdentifierTypes($userPersonObj);
         $new = ORM::factory('user_identifier');
-        $data = array(
+        $data = [
           'user_id' => $userId,
           'type_id' => $userPersonObj->identifierTypes[$identifier->type],
           'identifier' => $identifier->identifier,
-        );
+        ];
         $new->validate(new Validation($data), TRUE);
         self::checkErrors($new);
       }
@@ -455,8 +461,13 @@ QRY
         ->from('termlists_terms')
         ->join('terms', 'terms.id', 'termlists_terms.term_id')
         ->join('termlists', 'termlists.id', 'termlists_terms.termlist_id')
-        ->where(array('termlists.external_key' => 'indicia:user_identifier_types', 'termlists_terms.deleted' => 'f', 'terms.deleted' => 'f', 'termlists.deleted' => 'f'))
-        ->orderby(array('termlists_terms.sort_order' => 'ASC', 'terms.term' => 'ASC'))
+        ->where([
+          'termlists.external_key' => 'indicia:user_identifier_types',
+          'termlists_terms.deleted' => 'f',
+          'terms.deleted' => 'f',
+          'termlists.deleted' => 'f',
+        ])
+        ->orderby(['termlists_terms.sort_order' => 'ASC', 'terms.term' => 'ASC'])
         ->get();
       foreach ($terms as $term) {
         $userPersonObj->identifierTypes[$term->term] = $term->id;
@@ -470,14 +481,15 @@ QRY
   private static function checkErrors($model) {
     $errors = $model->getAllErrors();
     if (count($errors)) {
-      kohana::log('debug', 'Errors on user identifier saved model: '.print_r($errors, TRUE));
+      kohana::log('debug', 'Errors on user identifier saved model: ' . print_r($errors, TRUE));
       throw new exception(print_r($errors, TRUE));
     }
   }
 
   /**
-   * Create the associations between a user and the website that the call was made on,
-   * if the association does not already exist.
+   * Create the associations between a user and the request website.
+   *
+   * Only created if the association does not already exist.
    */
   private static function associateWebsite($userId, $userPersonObj, $websiteId) {
     $qry = $userPersonObj->db->select('id')
@@ -508,60 +520,78 @@ QRY
   }
 
   /**
-   * If there are sharing preferences in the $_REQUEST for this user account, then
-   * stores them against the user record. E.g. the user might opt of allowing other
-   * websites to pass on their records via the sharing mechanism.
+   * Store a user's sharing preferences.
+   *
+   * If there are sharing preferences in the $_REQUEST for this user account,
+   * then stores them against the user record. E.g. the user might opt of
+   * allowing other websites to pass on their records via the sharing
+   * mechanism.
    */
   private static function storeSharingPreferences($userId, $userPersonObj) {
     if (isset($_REQUEST['shares_to_prevent'])) {
-      // the request parameter is a comma separated list of the tasks this user does not
-      // want to share their records with other sites for
+      // The request parameter is a comma separated list of the tasks this user
+      // does not want to share their records with other sites for.
       $preventShares = explode(',', $_REQUEST['shares_to_prevent']);
-      // build an array of values to post to the db
-      $tasks = array('reporting', 'peer_review', 'verification', 'data_flow', 'moderation', 'editing');
-      $values=[];
+      // Build an array of values to post to the db.
+      $tasks = [
+        'reporting',
+        'peer_review',
+        'verification',
+        'data_flow',
+        'moderation',
+        'editing',
+      ];
+      $values = [];
       foreach ($tasks as $task) {
-        $values["allow_share_for_$task"]=(in_array($task, $preventShares) ? 'f' : 't');
+        $values["allow_share_for_$task"] = (in_array($task, $preventShares) ? 'f' : 't');
       }
-      // update their user record.
-      $userPersonObj->db->update('users', $values, array('id'=>$userId));
+      // Update their user record.
+      $userPersonObj->db->update('users', $values, ['id' => $userId]);
     }
   }
 
   /**
-   * Stores any changed custom attribute values supplied in the request data against person associated
-   * with the user.
-   * @param integer $userId User ID,
-   * @param array $attrs Array of attribute & value data.
-   * @param object $userPersonObj object containing data including relating to the person/user
+   * Stores any changed custom attribute values supplied in the request data.
+   *
+   * Person attribute values are stored against the person associated with the
+   * user.
+   *
+   * @param array $attrs
+   *   Array of attribute & value data.
+   * @param object $userPersonObj
+   *   Object containing data including relating to the person/user.
    */
-  private static function storeCustomAttributes($userId, &$attrs,$userPersonObj) {
+  private static function storeCustomAttributes(array &$attrs, $userPersonObj) {
     if (!empty($_REQUEST['attribute_values'])) {
       $valueData = json_decode($_REQUEST['attribute_values'], TRUE);
       if (count($valueData)) {
         $attrCaptions = array_keys($valueData);
         $pav = ORM::factory('person_attribute_value');
-        // loop through all the possible attributes to save the changed ones from the client site
-        foreach($attrs as &$attr) {
-          // Ignore any attributes we don't have a change value for
+        // Loop through all the possible attributes to save the changed ones
+        // from the client site.
+        foreach ($attrs as &$attr) {
+          // Ignore any attributes we don't have a change value for.
           if (in_array($attr['caption'], $attrCaptions)) {
-            $data = array(
-                'person_id' => $userPersonObj->person_id,
-                'person_attribute_id' => $attr['id'],
-                'text_value' => $valueData[$attr['caption']]
-            );
-            // Store the attribute value we are saving in the array of attributes, so the
-            // full updated list can be returned to the client website
+            $data = [
+              'person_id' => $userPersonObj->person_id,
+              'person_attribute_id' => $attr['id'],
+              'text_value' => $valueData[$attr['caption']],
+            ];
+            // Store the attribute value we are saving in the array of
+            // attributes, so the full updated list can be returned to the
+            // client website.
             $attr['value'] = $valueData[$attr['caption']];
             kohana::log('debug', 'NEED TO GET CORRECT TYPE OF VALUE ABOVE');
             if (!empty($attr['value_id'])) {
               $data['id'] = $attr['value_id'];
               $pav->find($attr['value_id']);
-            } else
+            }
+            else {
               $pav->clear();
+            }
             $pav->validate(new Validation($data), TRUE);
             self::checkErrors($pav);
-        }
+          }
         }
 
       }
@@ -569,6 +599,8 @@ QRY
   }
 
   /**
+   * Resolves multiple similar user accounts.
+   *
    * Handle the case when multiple possible users are found for a list of
    * identifiers. Outcome depends on the settings in $_REQUEST, with options to
    * set force=merge or force=split. If not forced, then the list of possible
@@ -578,37 +610,45 @@ QRY
    */
   private static function resolveMultipleUsers($identifiers, $existingUsers, $userPersonObj) {
     if (isset($_REQUEST['force'])) {
-      if ($_REQUEST['force']==='split') {
+      if ($_REQUEST['force'] === 'split') {
         $uid = self::findBestFit($identifiers, $existingUsers, $userPersonObj);
-        return array('userId'=>$uid);
-      } elseif ($_REQUEST['force']==='merge') {
+        return ['userId' => $uid];
+      }
+      elseif ($_REQUEST['force'] === 'merge') {
         $uid = self::findBestFit($identifiers, $existingUsers, $userPersonObj);
         // Merge the users into 1. A $_REQUEST['users_to_merge'] array can be
         // used to limit which are merged.
         self::mergeUsers($uid, $existingUsers, $userPersonObj);
-        return array('userId'=>$uid);
+        return ['userId' => $uid];
       }
-    } else {
-      // we need to propose that there are several possible existing users which match the supplied identifiers
-      // to the client website
+    }
+    else {
+      // We need to propose that there are several possible existing users
+      // which match the supplied identifiers to the client website.
       $users = array_keys($existingUsers);
       $userPersonObj->db->select('users_websites.user_id, users_websites.website_id, websites.title')
         ->from('websites')
         ->join('users_websites', 'users_websites.website_id', 'websites.id')
         ->join('users', 'users.id', 'users_websites.user_id')
         ->join('people', 'people.id', 'users.person_id')
-        ->where(array('websites.deleted' => 'f', 'users.deleted' => 'f', 'people.deleted' => 'f'))
+        ->where([
+          'websites.deleted' => 'f',
+          'users.deleted' => 'f',
+          'people.deleted' => 'f',
+        ])
         ->where('users_websites.site_role_id is not null')
         ->in('users_websites.user_id', $users);
       if (isset($_REQUEST['users_to_merge'])) {
         $usersToMerge = json_decode($_REQUEST['users_to_merge']);
         $userPersonObj->db->in('users_websites.user_id', $usersToMerge);
       }
-      return array('possibleMatches'=>$userPersonObj->db->get()->result_array(false));
+      return ['possibleMatches' => $userPersonObj->db->get()->result_array(FALSE)];
     }
   }
 
   /**
+   * Finds best matching user.
+   *
    * In the case where there are 2 users identified by a single list of
    * identifiers, resolve the situation. Returns the best matching user (based
    * on first_name and surname match then number of matching identifiers).
