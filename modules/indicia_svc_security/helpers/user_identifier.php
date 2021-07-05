@@ -692,6 +692,8 @@ QRY
         // Own the occurrences.
         $userPersonObj->db->update('occurrences', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
         $userPersonObj->db->update('occurrences', ['updated_by_id' => $uid], ['updated_by_id' => $userIdToMerge]);
+        $userPersonObj->db->update('samples', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
+        $userPersonObj->db->update('samples', ['updated_by_id' => $uid], ['updated_by_id' => $userIdToMerge]);
         if (in_array(MODPATH . 'cache_builder', Kohana::config('config.modules'))) {
           $userPersonObj->db->update('cache_occurrences_functional', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
           $userPersonObj->db->update('cache_samples_functional', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
