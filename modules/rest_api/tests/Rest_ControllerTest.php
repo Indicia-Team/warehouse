@@ -1,5 +1,8 @@
 <?php
 
+use PHPUnit\DbUnit\DataSet\CompositeDataSet as DbUDataSetCompositeDataSet;
+use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
+
 /**
  * Unit test class for the REST api controller.
  * @todo Test sharing mode on project filters is respected.
@@ -81,7 +84,7 @@ KEY;
   private static $jwt;
 
   public function getDataSet() {
-    $ds1 = new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
 
     /* Create a filter for the test project defined in config/rest.php.travis.
      * Create an occurrence comment for annotation testing.
@@ -131,7 +134,7 @@ KEY;
       )
     );
 
-    $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
+    $compositeDs = new DbUDataSetCompositeDataSet();
     $compositeDs->addDataSet($ds1);
     $compositeDs->addDataSet($ds2);
 
@@ -147,7 +150,7 @@ KEY;
     return $compositeDs;
   }
 
-  public static function setUpBeforeClass() {
+  public static function setUpBeforeClass(): void {
     // grab the clients registered on this system
     $clientUserIds = array_keys(Kohana::config('rest.clients'));
     $clientConfigs = array_values(Kohana::config('rest.clients'));
@@ -157,7 +160,7 @@ KEY;
     self::$config = $clientConfigs[0];
   }
 
-  protected function setUp() {
+  protected function setUp(): void {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
     // Make sure public key stored.
@@ -169,7 +172,7 @@ KEY;
     );
   }
 
-  protected function tearDown() {
+  protected function tearDown(): void {
 
   }
 
@@ -1804,7 +1807,7 @@ SQL;
       $this->assertArrayHasKey('data', $response['response'],
           'Data missing from response to call to taxon-observations');
       $data = $response['response']['data'];
-      $this->assertInternalType('array', $data, 'Taxon-observations data invalid. ' . var_export($data, true));
+      $this->assertIsArray($data, 'Taxon-observations data invalid. ' . var_export($data, true));
       $this->assertNotCount(0, $data, 'Taxon-observations data absent. ' . var_export($data, true));
       foreach ($data as $occurrence)
         $this->checkValidTaxonObservation($occurrence);
@@ -1830,7 +1833,7 @@ SQL;
       $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to annotations');
       $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to annotations');
       $data = $response['response']['data'];
-      $this->assertInternalType('array', $data, 'Annotations data invalid. ' . var_export($data, true));
+      $this->assertIsArray($data, 'Annotations data invalid. ' . var_export($data, true));
       $this->assertNotCount(0, $data, 'Annotations data absent. ' . var_export($data, true));
       foreach ($data as $annotation)
         $this->checkValidAnnotation($annotation);
@@ -1858,7 +1861,7 @@ SQL;
     $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
     $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
     $data = $response['response']['data'];
-    $this->assertInternalType('array', $data, 'taxa/search data invalid.');
+    $this->assertIsArray($data, 'taxa/search data invalid.');
     $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
     $response = $this->callService('taxa/search', [
       'searchQuery' => 'test taxon 2',
@@ -1868,7 +1871,7 @@ SQL;
     $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
     $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
     $data = $response['response']['data'];
-    $this->assertInternalType('array', $data, 'taxa/search data invalid.');
+    $this->assertIsArray($data, 'taxa/search data invalid.');
     $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
     $response = $this->callService('taxa/search', [
       'taxon_list_id' => 1,
@@ -1989,9 +1992,9 @@ SQL;
     $this->assertEquals(200, $response['httpCode']);
     $this->assertEquals(0, $response['curlErrno']);
     $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']), NULL, ['Accept: text/html']);
-    $this->assertRegexp('/^<!DOCTYPE HTML>/', $response['response']);
-    $this->assertRegexp('/<html>/', $response['response']);
-    $this->assertRegexp('/<\/html>$/', $response['response']);
+    $this->assertMatchesRegularExpression('/^<!DOCTYPE HTML>/', $response['response']);
+    $this->assertMatchesRegularExpression('/<html>/', $response['response']);
+    $this->assertMatchesRegularExpression('/<\/html>$/', $response['response']);
     $this->assertEquals(200, $response['httpCode']);
     $this->assertEquals(0, $response['curlErrno']);
     // try requesting an invalid content type as first preference - response should select the second.
@@ -2087,7 +2090,7 @@ SQL;
    * @param $data Array to be tested as a taxon occurrence resource
    */
   private function checkValidTaxonObservation($data) {
-    $this->assertInternalType('array', $data, 'Taxon-observation object invalid. ' . var_export($data, true));
+    $this->assertIsArray($data, 'Taxon-observation object invalid. ' . var_export($data, true));
     $mustHave = array('id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
         'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate');
     foreach ($mustHave as $key) {
@@ -2104,7 +2107,7 @@ SQL;
    * @param $data Array to be tested as an annotation resource
    */
   private function checkValidAnnotation($data) {
-    $this->assertInternalType('array', $data, 'Annotation object invalid. ' . var_export($data, true));
+    $this->assertIsArray($data, 'Annotation object invalid. ' . var_export($data, true));
     $mustHave = array('id', 'href', 'taxonObservation', 'taxonVersionKey', 'comment',
         'question', 'authorName', 'dateTime');
     foreach ($mustHave as $key) {
@@ -2114,9 +2117,9 @@ SQL;
         "Empty $key in annotation resource" . var_export($data, true));
     }
     if (!empty($data['statusCode1']))
-      $this->assertRegExp('/[AUN]/', $data['statusCode1'], 'Invalid statusCode1 value for annotation');
+      $this->assertMatchesRegularExpression('/[AUN]/', $data['statusCode1'], 'Invalid statusCode1 value for annotation');
     if (!empty($data['statusCode2']))
-      $this->assertRegExp('/[1-6]/', $data['statusCode2'], 'Invalid statusCode2 value for annotation');
+      $this->assertMatchesRegularExpression('/[1-6]/', $data['statusCode2'], 'Invalid statusCode2 value for annotation');
     // We should be able to request the taxon observation associated with the occurrence
     $session = $this->initCurl($data['taxonObservation']['href']);
     $response = $this->getCurlResponse($session);

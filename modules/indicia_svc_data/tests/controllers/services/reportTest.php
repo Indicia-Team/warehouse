@@ -1,5 +1,7 @@
 <?php
 
+use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
+
 require_once 'client_helpers/report_helper.php';
 
 class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
@@ -288,11 +290,11 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
   ];
 
   public function getDataSet() {
-    $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    $ds1 =  new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
     return $ds1;
   }
 
-  public static function setUpBeforeClass() {
+  public static function setUpBeforeClass(): void {
     // The indicia_report_user is used when querying for reports and needs
     // adequate permissions to work. These cannot be established until
     // the application has created the schema.
@@ -302,7 +304,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $db->query('GRANT SELECT ON ALL TABLES IN SCHEMA indicia TO indicia_report_user;');
   }
 
-  public function setup() {
+  public function setup(): void {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
 

@@ -1,10 +1,17 @@
 <?php
 
+use PHPUnit\DbUnit\DataSet\AbstractDataSet as DbUDataSetAbstractDataSet;
+use PHPUnit\DbUnit\DataSet\DefaultTable as DbUDataSetDefaultTable;
+use PHPUnit\DbUnit\DataSet\DefaultTableIterator as DbUDataSetDefaultTableIterator;
+use PHPUnit\DbUnit\DataSet\DefaultTableMetadata as DbUDataSetDefaultTableMetadata;
+use PHPUnit\DbUnit\DataSet\ITable as DbUDataSetITable;
+use PHPUnit\DbUnit\DataSet\ITableIterator as DbUDataSetITableIterator;
+
 /**
  * Implements a dataset created from a PHP array.
  * https://phpunit.de/manual/current/en/database.html#database.available-implementations
  */
-class Indicia_ArrayDataSet extends PHPUnit_Extensions_Database_DataSet_AbstractDataSet
+class Indicia_ArrayDataSet extends DbUDataSetAbstractDataSet
 {
     /**
      * @var array
@@ -22,8 +29,8 @@ class Indicia_ArrayDataSet extends PHPUnit_Extensions_Database_DataSet_AbstractD
                 $columns = array_keys($rows[0]);
             }
 
-            $metaData = new PHPUnit_Extensions_Database_DataSet_DefaultTableMetaData($tableName, $columns);
-            $table = new PHPUnit_Extensions_Database_DataSet_DefaultTable($metaData);
+            $metaData = new DbUDataSetDefaultTableMetadata($tableName, $columns);
+            $table = new DbUDataSetDefaultTable($metaData);
 
             foreach ($rows AS $row) {
                 $table->addRow($row);
@@ -32,12 +39,12 @@ class Indicia_ArrayDataSet extends PHPUnit_Extensions_Database_DataSet_AbstractD
         }
     }
 
-    protected function createIterator($reverse = false)
+    protected function createIterator(bool $reverse = false): DbUDataSetITableIterator
     {
-        return new PHPUnit_Extensions_Database_DataSet_DefaultTableIterator($this->tables, $reverse);
+        return new DbUDataSetDefaultTableIterator($this->tables, $reverse);
     }
 
-    public function getTable($tableName)
+    public function getTable(string $tableName): DbUDataSetITable
     {
         if (!isset($this->tables[$tableName])) {
             throw new InvalidArgumentException("$tableName is not a table in the current database.");

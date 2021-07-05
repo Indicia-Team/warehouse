@@ -1,4 +1,7 @@
 <?php
+
+use PHPUnit\Framework\TestCase;
+
 /**
  * Date Helper Unit Tests
  *
@@ -8,7 +11,7 @@
  * @group core.helpers
  * @group core.helpers.date
  */
-class Helper_Date_Test extends PHPUnit_Framework_TestCase
+class Helper_Date_Test extends TestCase
 {
 	public function offset_provider()
 	{
