@@ -12,7 +12,7 @@
  */
 class Library_Cache_Xcache_Test extends Library_Cache_Base_Test
 {
-	public function setUp()
+	public function setUp(): void
 	{
 		if (!extension_loaded('xcache'))
 			$this->markTestSkipped('The XCache extension is not loaded');

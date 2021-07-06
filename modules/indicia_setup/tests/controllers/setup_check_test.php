@@ -1,12 +1,12 @@
 <?php
 
+use PHPUnit\Framework\TestCase;
+
 /**
  * The tests in this class will install the Indicia config files and 
  * database which many other tests depend on. 
  */
-
-class SetupCheckControllerTest extends PHPUnit_Framework_TestCase {
-  
+class SetupCheckControllerTest extends TestCase {
   /**
    * Calls Setup_Check_Controller::config_db_save causing essential config
    * files to be created and the basic database schema to be created. 

@@ -1,4 +1,7 @@
 <?php
+
+use PHPUnit\Framework\TestCase;
+
 /**
  * Database Result Library Unit Tests
  *
@@ -10,17 +13,17 @@
  * @group   core.libraries.database
  * @group   core.libraries.database.result
  */
-class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
+class Library_Database_Result_Test extends TestCase
 {
 	protected $db;
 
-	protected function setUp()
+	protected function setUp(): void
 	{
 		$this->db = Database::instance('phpunit');
 		$this->db->connect();
 	}
 
-	protected function tearDown()
+	protected function tearDown(): void
 	{
 		$this->db = NULL;
 	}
@@ -62,25 +65,21 @@ class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
 
 	/**
 	 * @group core.libraries.database.result.array_access
-	 *
-	 * @expectedException Kohana_Exception
 	 */
 	public function test_offset_set()
 	{
 		$result = $this->db->query('SELECT 1');
-
+		$this->expectException(Kohana_Exception::class);
 		$result->offsetSet(0, TRUE);
 	}
 
 	/**
 	 * @group core.libraries.database.result.array_access
-	 *
-	 * @expectedException Kohana_Exception
 	 */
 	public function test_offset_unset()
 	{
 		$result = $this->db->query('SELECT 1');
-
+		$this->expectException(Kohana_Exception::class);
 		$result->offsetUnset(0);
 	}
 

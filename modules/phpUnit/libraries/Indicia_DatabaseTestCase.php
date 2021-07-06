@@ -1,13 +1,23 @@
 <?php
 
+use PHPUnit\DbUnit\TestCase as DbUTestCase;
+use PHPUnit\DbUnit\Database\Connection as DbUDatabaseConnection;
+use PHPUnit\DbUnit\Database\DefaultConnection as dbUDatabaseDefualtConnection;
+use PHPUnit\DbUnit\Database\Metadata\AbstractMetadata as DbUDatabaseMetadataAbstractMetadata;
+use PHPUnit\DbUnit\Database\Metadata\PgSQL as DbUDatabaseMetadataPgSQL;
+use PHPUnit\DbUnit\DataSet\IDataSet as DbUDatasetIDataset;
+use PHPUnit\DbUnit\Operation\Composite as DbUOperationComposite;
+use PHPUnit\DbUnit\Operation\Exception as DbUOperationException;
+use PHPUnit\DbUnit\Operation\Factory as DbUOperationFactory;
+use PHPUnit\DbUnit\Operation\Operation as DbUOperationOperation;
+
 /**
  * An abstract test case to efficiently make database connections.
  * https://phpunit.de/manual/current/en/database.html#database.tip-use-your-own-abstract-database-testcase
  */
-abstract class Indicia_DatabaseTestCase extends PHPUnit_Extensions_Database_TestCase
-{
-  // only instantiate pdo once for test clean-up/fixture load
-  static private $pdo = null;
+abstract class Indicia_DatabaseTestCase extends DbUTestCase {
+  // Only instantiate pdo once for test clean-up/fixture load.
+  static private $pdo = NULL;
 
   // only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
   private $conn = null;
@@ -41,7 +51,7 @@ abstract class Indicia_DatabaseTestCase extends PHPUnit_Extensions_Database_Test
   
   // Override the function to create the database connection so that is uses 
   // My_DB_DefaultDatabaseConnection.
-  protected function createDefaultDBConnection(PDO $connection, $schema = ''){
+  protected function createDefaultDBConnection(PDO $connection, $schema = ''): dbUDatabaseDefualtConnection {
     return new My_DB_DefaultDatabaseConnection($connection, $schema);
   }  
 }
@@ -50,17 +60,17 @@ abstract class Indicia_DatabaseTestCase extends PHPUnit_Extensions_Database_Test
  * Extends PHPUnit_Extensions_Database_DB_MetaData_PgSQL in order to create
  * a database specific command to restart sequences.
  */
-class My_DB_MetaData_PgSQL extends PHPUnit_Extensions_Database_DB_MetaData_PgSQL {
-    public function getRestartCommand($table) {
-      // Assumes sequence naming convention has been followed.
-      $seq = $table . '_id_seq';
-      return "DO $$"
-        . "BEGIN"
-        . " IF EXISTS (SELECT * FROM  pg_class WHERE relkind = 'S' AND relname = '$seq')"
-        . "  THEN PERFORM setval('$seq', 1, false);"
-        . " END IF;"
-        . "END"
-        . "$$";
+class My_DB_MetaData_PgSQL extends DbUDatabaseMetadataPgSQL {
+  public function getRestartCommand($table) {
+    // Assumes sequence naming convention has been followed.
+    $seq = $table . '_id_seq';
+    return "DO $$"
+      . "BEGIN"
+      . " IF EXISTS (SELECT * FROM  pg_class WHERE relkind = 'S' AND relname = '$seq')"
+      . "  THEN PERFORM setval('$seq', 1, false);"
+      . " END IF;"
+      . "END"
+      . "$$";
   }
 }
 
@@ -68,7 +78,7 @@ class My_DB_MetaData_PgSQL extends PHPUnit_Extensions_Database_DB_MetaData_PgSQL
  * Extends PHPUnit_Extensions_Database_DB_MetaData in order to replace the 
  * default postgres driver with mine.
  */
-abstract class My_DB_MetaData extends PHPUnit_Extensions_Database_DB_MetaData {
+abstract class My_DB_MetaData extends DbUDatabaseMetadataAbstractMetadata {
   public static function createMetaData(PDO $pdo, $schema = '') {
     self::$metaDataClassMap['pgsql'] = 'My_DB_MetaData_PgSQL';
     return parent::createMetaData($pdo, $schema);
@@ -80,7 +90,7 @@ abstract class My_DB_MetaData extends PHPUnit_Extensions_Database_DB_MetaData {
  * a. override the constructor so that it uses My_DB_MetaData.
  * b. give access to the command that will restart sequences.
  */
-class My_DB_DefaultDatabaseConnection extends PHPUnit_Extensions_Database_DB_DefaultDatabaseConnection {
+class My_DB_DefaultDatabaseConnection extends dbUDatabaseDefualtConnection {
   public function __construct(PDO $connection, $schema = '') {
     $this->connection = $connection;
     $this->metaData   = My_DB_MetaData::createMetaData($connection, $schema);
@@ -95,8 +105,11 @@ class My_DB_DefaultDatabaseConnection extends PHPUnit_Extensions_Database_DB_Def
 /**
  * New class to add a Restart operation.
  */
-Class My_Operation_Restart implements PHPUnit_Extensions_Database_Operation_IDatabaseOperation {
-  public function execute(PHPUnit_Extensions_Database_DB_IDatabaseConnection $connection, PHPUnit_Extensions_Database_DataSet_IDataSet $dataSet) {
+Class My_Operation_Restart implements DbUOperationOperation {
+  public function execute(
+    DbUDatabaseConnection $connection,
+    DbUDatasetIDataset $dataSet
+    ): void {
     foreach ($dataSet->getReverseIterator() as $table) {
       $tableName = $table->getTableMetaData()->getTableName();
       $query = $connection->getRestartCommand($tableName);
@@ -104,7 +117,7 @@ Class My_Operation_Restart implements PHPUnit_Extensions_Database_Operation_IDat
           $connection->getConnection()->query($query);
       } catch (\Exception $e) {
         if ($e instanceof PDOException) {
-          throw new PHPUnit_Extensions_Database_Operation_Exception('RESTART', $query, [], $table, $e->getMessage());
+          throw new DbUOperationException('RESTART', $query, [], $table, $e->getMessage());
         }
         throw $e;
       }
@@ -116,9 +129,9 @@ Class My_Operation_Restart implements PHPUnit_Extensions_Database_Operation_IDat
  * Extends PHPUnit_Extensions_Database_Operation_Factory in order to add 
  * functions that call the Restart operation.
  */
-Class My_Operation_Factory extends PHPUnit_Extensions_Database_Operation_Factory {
+Class My_Operation_Factory extends DbUOperationFactory {
   public static function RESTART_INSERT($cascadeTruncates = FALSE) {
-    return new PHPUnit_Extensions_Database_Operation_Composite([
+    return new DbUOperationComposite([
       self::TRUNCATE($cascadeTruncates),
       self::RESTART(),
       self::INSERT()

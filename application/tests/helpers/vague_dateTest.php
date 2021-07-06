@@ -1,6 +1,8 @@
 <?php
 
-class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
+use PHPUnit\Framework\TestCase;
+
+class Helper_Vague_Date_Test extends TestCase {
 
   /*****************************
    *  Vague date to string tests

@@ -1,9 +1,12 @@
 <?php
 
+use PHPUnit\Framework\TestCase;
+
 /**
- * The tests in this class will upgrade the database to the latest version and confirm it matches with the code version.
+ * The tests in this class will upgrade the database to the latest version and
+ * confirm it matches with the code version.
  */
-class Home_Controller_Test extends PHPUnit_Framework_TestCase {
+class Home_Controller_Test extends TestCase {
 
   public function testUpgrade() {
 
