@@ -161,9 +161,18 @@ HTML;
     $uri = URI::instance();
     foreach ($extends as $extend) {
       // If on a new record, skip tabs that are disallowed for new.
+      if (
+        isset($extend['allowForNew']) &&
+        $extend['allowForNew'] === FALSE &&
+        $uri->segment(2) === 'create'
+      ) {
+        continue;
+      }
+      // Skip action-limited tab if we are not extending the requested action.
       if (isset($extend['actions']) && !in_array($uri->segment(2), $extend['actions'])) {
         continue;
       }
+      // Skip if the extension is not a tab or not for this view.
       if (
         (!isset($extend['type']) || $extend['type'] == 'tab') &&
         (!isset($extend['view']) || $extend['view'] == $this->viewname)
