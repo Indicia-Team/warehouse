@@ -42,6 +42,59 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   private $website_id;
 
   /**
+   * @const SQL_FETCH_ALL_SURVEY_ATTRS Query definition which retrieves all
+   * the survey attribute details for a survey ID in preparation for export.
+   */
+  const SQL_FETCH_ALL_SURVEY_ATTRS = "SELECT 
+    a.caption,
+    a.caption_i18n #>> '{}' AS a_caption_i18n,
+    a.unit,
+    a.term_name,
+    a.term_identifier,
+    a.description,
+    a.description_i18n #>> '{}' AS a_description_i18n,
+    a.system_function,
+    a.data_type,
+    a.multi_value,
+    a.allow_ranges,
+    a.public,
+    a.validation_rules,
+    aw.validation_rules AS aw_validation_rules, 
+    aw.weight AS aw_weight, 
+    aw.control_type_id AS aw_control_type_id,
+    aw.website_id AS aw_website_id, 
+    aw.default_text_value AS aw_default_text_value, 
+    aw.default_float_value AS aw_default_float_value, 
+    aw.default_int_value AS aw_default_int_value,
+    aw.default_date_start_value AS aw_default_date_start_value, 
+    aw.default_date_end_value AS aw_default_date_end_value, 
+    aw.default_date_type_value AS aw_default_date_type_value,
+    aw.default_upper_value AS aw_default_upper_value,
+    t.termlist_title,
+    array_to_string(array_agg(
+      (
+        t.term || '|' || 
+        t.language_iso || '|' || 
+        coalesce(t.sort_order::varchar, '') || '|' || 
+        coalesce(tp.term::varchar, '')
+      )::varchar ORDER BY t.sort_order, t.term
+    ), '**') AS terms
+  FROM survey_attributes a
+  JOIN survey_attributes_websites aw ON aw.survey_attribute_id = a.id AND aw.deleted = false
+  LEFT JOIN cache_termlists_terms t ON t.termlist_id = a.termlist_id
+  LEFT JOIN cache_termlists_terms tp ON tp.id = t.parent_id
+  WHERE a.deleted = false
+  {where}
+  GROUP BY a.caption, a_caption_i18n, a.unit, a.term_name,
+    a.term_identifier, a.description, a_description_i18n, a.system_function,
+    a.data_type, a.multi_value, a.allow_ranges, a.public, a.validation_rules, 
+    aw.validation_rules, aw.weight, aw.control_type_id, aw.website_id,
+    aw.default_text_value, aw.default_float_value, aw.default_int_value,
+    aw.default_date_start_value, aw.default_date_end_value,
+    aw.default_date_type_value, aw.default_upper_value, t.termlist_title
+  ORDER BY aw.weight";
+
+  /**
    * @const SQL_FETCH_ALL_SAMPLE_ATTRS Query definition which retrieves all
    * the sample attribute details for a survey ID in preparation for export.
    */
@@ -233,10 +286,19 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    */
   public function index() {
     $this->view = new View('survey_structure_export/index');
-    $this->view->surveyId = $this->uri->last_segment();
+    $surveyId = $this->uri->last_segment();
+    // Get website ID for this survey.
+    $survey = $this->db
+      ->select('website_id')
+      ->from('surveys')
+      ->where(['id' => $surveyId])
+      ->get()->result_array(FALSE);
+    $websiteId = $survey[0]['website_id'];
+    $this->website_id = $websiteId;
+    $this->view->surveyId = $surveyId;
     // Get the attribute data (including termlists) associated with the survey
     // ready to export.
-    $export = $this->getSurveyAttributes($this->view->surveyId);
+    $export = $this->getSurveyAttributes($websiteId, $surveyId);
     $this->view->export = json_encode($export);
     $this->template->content = $this->view;
   }
@@ -517,8 +579,8 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   }
 
   /**
-   * Link an attribute to the survey by checking a sample_attributes_websites or occurrence_attributes_websites
-   * record exists and if not then creates it.
+   * Link an attribute to the survey by checking a sample_attributes_websites
+   * or occurrence_attributes_websites record exists and if not then creates it.
    *
    * @param string $type Type of attribute we are working on, occurrence or sample.
    * @param array $importAttrDef The definition of the attribute we are importing.
@@ -578,14 +640,16 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         }
       }
       if (!$aw->save()) {
-        throw new exception("Error creating $type attributes website record to associate $importAttrDef[caption].");
+        throw new exception("Error creating $type attributes website record " .
+        "to associate $importAttrDef[caption].");
       }
     }
   }
 
   /**
-   * Given an attribute import definition, work out if the correct form structure blocks are already available
-   * and return the appropriate ID. If not already available then the form structure blocks are created.
+   * Given an attribute import definition, work out if the correct form
+   * structure blocks are already available and return the appropriate ID. If
+   * not already available then the form structure blocks are created.
    *
    * @todo Should probably use the database agnostic query builder here.
    * @param string $type Type of attribute we are working on, occurrence or sample.
@@ -651,22 +715,30 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * @return array A version of the data which has been changed into structured
    * arrays of the data from the tables.
    */
-  public function getSurveyAttributes($id) {
+  public function getSurveyAttributes($websiteId, $surveyId) {
     $query = str_replace(
       '{where}',
-      "and aw.restrict_to_survey_id = $id",
+      "and aw.website_id = $websiteId",
+      self::SQL_FETCH_ALL_SURVEY_ATTRS
+    );
+    $srvAttrs = $this->db->query($query)->result_array(FALSE);
+
+    $query = str_replace(
+      '{where}',
+      "and aw.restrict_to_survey_id = $surveyId",
       self::SQL_FETCH_ALL_SAMPLE_ATTRS
     );
     $smpAttrs = $this->db->query($query)->result_array(FALSE);
 
     $query = str_replace(
       '{where}',
-      "and aw.restrict_to_survey_id = $id",
+      "and aw.restrict_to_survey_id = $surveyId",
       self::SQL_FETCH_ALL_OCCURRENCE_ATTRS
     );
     $occAttrs = $this->db->query($query)->result_array(FALSE);
 
     return [
+      'srvAttrs' => $srvAttrs,
       'smpAttrs' => $smpAttrs,
       'occAttrs' => $occAttrs,
     ];
