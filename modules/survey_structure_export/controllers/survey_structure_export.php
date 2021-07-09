@@ -45,7 +45,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * @const SQL_FETCH_ALL_SURVEY_ATTRS Query definition which retrieves all
    * the survey attribute details for a survey ID in preparation for export.
    */
-  const SQL_FETCH_ALL_SURVEY_ATTRS = "SELECT 
+  const SQL_FETCH_ALL_SURVEY_ATTRS = "SELECT
     a.caption,
     a.caption_i18n #>> '{}' AS a_caption_i18n,
     a.unit,
@@ -71,6 +71,32 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     aw.default_date_type_value AS aw_default_date_type_value,
     aw.default_upper_value AS aw_default_upper_value,
     t.termlist_title,
+    (
+      SELECT array_to_string(array_agg(
+        CASE a.data_type 
+        WHEN 'T' THEN
+          coalesce(av.text_value, '')
+        WHEN 'F' THEN
+          coalesce(av.float_value::varchar, '') || '|' ||
+          coalesce(av.upper_value::varchar, '')
+        WHEN 'L' THEN
+          coalesce(t.term, '')
+        WHEN 'I' THEN
+          coalesce(av.int_value::varchar, '') || '|' ||
+          coalesce(av.upper_value::varchar, '')
+        WHEN 'V' THEN
+          coalesce(av.date_start_value::varchar, '') || '|' || 
+          coalesce(av.date_end_value::varchar, '') || '|' || 
+          coalesce(av.date_type_value::varchar, '')
+        END
+      ), '**') 
+      FROM survey_attribute_values av
+      LEFT JOIN cache_termlists_terms t 
+        ON t.termlist_id = a.termlist_id
+        AND t.id = av.int_value
+      WHERE av.survey_attribute_id = a.id
+      AND av.survey_id = {survey_id}
+    ) AS av_values,
     array_to_string(array_agg(
       (
         t.term || '|' || 
@@ -80,21 +106,24 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       )::varchar ORDER BY t.sort_order, t.term
     ), '**') AS terms
   FROM survey_attributes a
-  JOIN survey_attributes_websites aw ON aw.survey_attribute_id = a.id AND aw.deleted = false
+  JOIN survey_attributes_websites aw 
+    ON aw.survey_attribute_id = a.id 
+    AND aw.deleted = false
   LEFT JOIN cache_termlists_terms t ON t.termlist_id = a.termlist_id
   LEFT JOIN cache_termlists_terms tp ON tp.id = t.parent_id
   WHERE a.deleted = false
-  {where}
+  AND aw.website_id = {website_id}
   GROUP BY a.caption, a_caption_i18n, a.unit, a.term_name,
     a.term_identifier, a.description, a_description_i18n, a.system_function,
     a.data_type, a.multi_value, a.allow_ranges, a.public, a.validation_rules, 
     aw.validation_rules, aw.weight, aw.control_type_id, aw.website_id,
     aw.default_text_value, aw.default_float_value, aw.default_int_value,
     aw.default_date_start_value, aw.default_date_end_value,
-    aw.default_date_type_value, aw.default_upper_value, t.termlist_title
+    aw.default_date_type_value, aw.default_upper_value, t.termlist_title,
+    av_values
   ORDER BY aw.weight";
 
-  /**
+ /**
    * @const SQL_FETCH_ALL_SAMPLE_ATTRS Query definition which retrieves all
    * the sample attribute details for a survey ID in preparation for export.
    */
@@ -752,9 +781,10 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * arrays of the data from the tables.
    */
   public function getSurveyAttributes($websiteId, $surveyId) {
+    // Get survey attributes.
     $query = str_replace(
-      '{where}',
-      "and aw.website_id = $websiteId",
+      ['{survey_id}', '{website_id}'],
+      [$surveyId, $websiteId],
       self::SQL_FETCH_ALL_SURVEY_ATTRS
     );
     $srvAttrs = $this->db->query($query)->result_array(FALSE);
