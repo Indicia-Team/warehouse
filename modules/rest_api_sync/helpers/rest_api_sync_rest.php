@@ -98,8 +98,8 @@ class rest_api_sync_rest {
       }
       else {
         $point = explode(',', $doc->location->point);
-        $obj['location']['decimalLatitude'] = $point[1];
-        $obj['location']['decimalLongitude'] = $point[0];
+        $obj['location']['decimalLatitude'] = $point[0];
+        $obj['location']['decimalLongitude'] = $point[1];
         $obj['location']['geodeticDatum'] = 'WGS84';
       }
       if (!empty($doc->location->verbatim_locality)) {

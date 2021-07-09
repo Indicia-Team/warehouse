@@ -193,6 +193,15 @@ class Sample_Model extends ORM_Tree {
         $this->unvalidatedFields[] = 'geom';
       }
     }
+
+    // The trim pre_filter will convert a null date_start to an empty string
+    // which causes an SQL exception when we attempt to insert it. Null is a
+    // valid value for date_types of -Y. -C and U.
+    $untrim = function ($val) {
+      return $val == '' ? NULL : $val;
+    };
+    $array->post_filter($untrim, 'date_start');
+
     return parent::validate($array, $save);
   }
 

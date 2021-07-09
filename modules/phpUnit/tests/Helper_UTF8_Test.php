@@ -1,4 +1,7 @@
 <?php
+
+use PHPUnit\Framework\TestCase;
+
 /**
  * UTF8 Helper Unit Tests
  *
@@ -7,7 +10,7 @@
  * @group    core.helpers
  * @group    core.helpers.utf8
  */
-class Helper_UTF8_Test extends PHPUnit_Framework_TestCase
+class Helper_UTF8_Test extends TestCase
 {
 	/**
 	 * DataProvider for the utf8::substr_replace() test
@@ -134,7 +137,7 @@ class Helper_UTF8_Test extends PHPUnit_Framework_TestCase
 	{
 		if ($pad_type === -1)
 		{
-			$this->setExpectedException('ErrorException');
+			$this->expectException(ErrorException::class);
 			$result = utf8::str_pad($str, $final_str_length, $pad_str, $pad_type);
 		}
 		else

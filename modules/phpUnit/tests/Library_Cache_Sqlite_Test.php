@@ -12,7 +12,7 @@
  */
 class Library_Cache_Sqlite_Test extends Library_Cache_Base_Test
 {
-    public function setUp()
+    public function setUp(): void
     {
         if (!extension_loaded('sqlite'))
             $this->markTestSkipped('The Sqlite extension is not loaded');

@@ -1299,13 +1299,13 @@ class Data_Controller extends Data_Service_Base_Controller {
               kohana::log('debug', $value);
             }
             if ($this->view_columns[$param]['type'] === 'int') {
-              if (!preg_match('/^\d+$/', trim($value))) {
+              if ($value !== NULL && !preg_match('/^\d+$/', trim($value))) {
                 throw new ValidationError('Validation error', 2003, 'Invalid format for integer column filter.');
               }
               $where["$this->viewname.$param"] = $value;
             }
             elseif ($this->view_columns[$param]['type'] === 'bool') {
-              if (!preg_match('/^[tf]$/i', trim($value))) {
+              if ($value !== NULL && !preg_match('/^[tf]$/i', trim($value))) {
                 throw new ValidationError('Validation error', 2003, 'Invalid format for boolean column filter.');
               }
               $where["$this->viewname.$param"] = $value;

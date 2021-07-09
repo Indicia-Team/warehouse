@@ -38,14 +38,16 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       self::boolean_validate('alert_on_entry');
       self::boolean_validate('alert_on_verify');
       self::int_key_validate('location_id');
-      if (!empty($_GET['user_id']))
+      self::int_key_validate('survey_id');
+      if (!empty($_GET['user_id'])) {
         $userId = $_GET['user_id'];
+      }
       else {
         // User was not logged in when subscribing, so use their details to find or create a warehouse user id.
         $emailIdentifierObject = new stdClass();
-        $emailIdentifierObject->type="email";
-        $emailIdentifierObject->identifier=$_GET["email"];
-        $userIdentificationData['identifiers']=json_encode(array($emailIdentifierObject));
+        $emailIdentifierObject->type = "email";
+        $emailIdentifierObject->identifier = $_GET["email"];
+        $userIdentificationData['identifiers'] = json_encode(array($emailIdentifierObject));
         //Also pass through these fields so if a new user is required then the system can fill in the database details
         $userIdentificationData['surname']=$_GET["surname"];
         $userIdentificationData['first_name']=$_GET["first_name"];
@@ -61,15 +63,18 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       self::store_species_alert($userId);
       //Automatically register the user to receive email notifications if they have never had any settings at all
       try {
-        $readAuth = data_entry_helper::get_read_auth(0-$userId, kohana::config('indicia.private_key'));
-        $freqSettingsData = data_entry_helper::get_report_data(array(
-          'dataSource'=>'library/user_email_notification_settings/user_email_notification_settings_inc_deleted',
-          'readAuth'=>$readAuth,
-          'extraParams'=>array('user_id' => $userId)
-        ));
-        if (empty($freqSettingsData))
+        warehouse::loadHelpers(['report_helper']);
+        $readAuth = report_helper::get_read_auth(0 - $userId, kohana::config('indicia.private_key'));
+        $freqSettingsData = report_helper::get_report_data([
+          'dataSource' => 'library/user_email_notification_settings/user_email_notification_settings_inc_deleted',
+          'readAuth' => $readAuth,
+          'extraParams' => ['user_id' => $userId],
+        ]);
+        if (empty($freqSettingsData)) {
           self::store_user_email_notification_setting($userId);
-      } catch (exception $e) {
+        }
+      }
+      catch (exception $e) {
         kohana::log('debug', "Unable to register user ".$userId." for email notifications, perhaps that module is not installed?.");
       }
     }
@@ -84,29 +89,33 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
    * from a failed save?
    */
   private function store_species_alert($userId) {
-    // load existing or create a new record
+    // Load existing or create a new record.
     if (!empty($_GET['id']))
       $alertRecordSubmissionObj = ORM::factory('species_alert', $_GET['id']);
     else
       $alertRecordSubmissionObj = ORM::factory('species_alert');
-    //The user id can be either a new user or exsting user, this has already been sorted out by the get_user_id function, so
-    //by this point we don't care about whether the user is new or existing, we are just dealing with a user id given to us by that function.
-    //No need to validate as the user_id comes from get_user_id
-    $alertRecordSubmissionObj->user_id=$userId;
-    //Region to receive alerts for.
-    $alertRecordSubmissionObj->location_id = empty($_GET['location_id']) ? null : $_GET['location_id'];
-    //Already checked this has been filled in so don't need to do this again
+    // The user id can be either a new user or exsting user, this has already
+    // been sorted out by the get_user_id function, so by this point we don't
+    // care about whether the user is new or existing, we are just dealing with
+    // a user id given to us by that function.
+    // No need to validate as the user_id comes from get_user_id
+    $alertRecordSubmissionObj->user_id = $userId;
+    // Survey to receive alerts for.
+    $alertRecordSubmissionObj->survey_id = empty($_GET['survey_id']) ? NULL : $_GET['survey_id'];
+    // Region to receive alerts for.
+    $alertRecordSubmissionObj->location_id = empty($_GET['location_id']) ? NULL : $_GET['location_id'];
+    // Already checked this has been filled in so don't need to do this again
     $alertRecordSubmissionObj->website_id=$_GET['website_id'];
-    //At least one of this must be supplied to identifiy the taxon
-    self::at_least_one_field_required(array('taxon_meaning_id','external_key','taxon_list_id'));
-    $alertRecordSubmissionObj->taxon_meaning_id = empty($_GET['taxon_meaning_id']) ? null : $_GET['taxon_meaning_id'];
-    $alertRecordSubmissionObj->external_key = empty($_GET['external_key']) ? null : $_GET['external_key'];
-    $alertRecordSubmissionObj->taxon_list_id = empty($_GET['taxon_list_id']) ? null : $_GET['taxon_list_id'];
+    // At least one of this must be supplied to identifiy the taxon
+    self::at_least_one_field_required(array('taxon_meaning_id', 'external_key', 'taxon_list_id'));
+    $alertRecordSubmissionObj->taxon_meaning_id = empty($_GET['taxon_meaning_id']) ? NULL : $_GET['taxon_meaning_id'];
+    $alertRecordSubmissionObj->external_key = empty($_GET['external_key']) ? NULL : $_GET['external_key'];
+    $alertRecordSubmissionObj->taxon_list_id = empty($_GET['taxon_list_id']) ? NULL : $_GET['taxon_list_id'];
 
-    //If boolean isn't supplied just assume as false
+    // If boolean isn't supplied just assume as false.
     $alertRecordSubmissionObj->alert_on_entry = empty($_GET['alert_on_entry']) ? 'f' : $_GET['alert_on_entry'];
     $alertRecordSubmissionObj->alert_on_verify = empty($_GET['alert_on_verify']) ? 'f' : $_GET['alert_on_verify'];
-    //Fill in the Created/Updated data fields in the record row
+    // Fill in the Created/Updated data fields in the record row.
     $alertRecordSubmissionObj->set_metadata($alertRecordSubmissionObj);
     $alertRecordSubmissionObj->save();
   }
