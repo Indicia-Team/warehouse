@@ -172,7 +172,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     ON fsb2.id = fsb1.parent_id 
     AND fsb2.survey_id = aw.restrict_to_survey_id
   WHERE a.deleted = false
-  {where}
+    AND aw.restrict_to_survey_id = {survey_id}
   GROUP BY a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules, 
     a.multi_value, a.public, a.applies_to_recorder, a.system_function,
     sm.term, aw.validation_rules, aw.weight, aw.control_type_id,
@@ -230,7 +230,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     ON fsb2.id = fsb1.parent_id 
     AND fsb2.survey_id = aw.restrict_to_survey_id
   WHERE a.deleted = false
-  {where}
+    AND aw.restrict_to_survey_id = {survey_id}
   GROUP BY a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, 
     a.public, a.system_function, aw.validation_rules, aw.weight, aw.control_type_id,
     aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value,
@@ -776,38 +776,29 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   /**
    * Retrieves the data for a list of attributes associated with a given survey.
    *
-   * @param integer $id Survey ID
+   * @param integer $websiteId Website ID
+   * @param integer $surveyId Survey ID
    * @return array A version of the data which has been changed into structured
    * arrays of the data from the tables.
    */
   public function getSurveyAttributes($websiteId, $surveyId) {
-    // Get survey attributes.
-    $query = str_replace(
-      ['{survey_id}', '{website_id}'],
-      [$surveyId, $websiteId],
-      self::SQL_FETCH_ALL_SURVEY_ATTRS
-    );
-    $srvAttrs = $this->db->query($query)->result_array(FALSE);
-
-    $query = str_replace(
-      '{where}',
-      "and aw.restrict_to_survey_id = $surveyId",
-      self::SQL_FETCH_ALL_SAMPLE_ATTRS
-    );
-    $smpAttrs = $this->db->query($query)->result_array(FALSE);
-
-    $query = str_replace(
-      '{where}',
-      "and aw.restrict_to_survey_id = $surveyId",
-      self::SQL_FETCH_ALL_OCCURRENCE_ATTRS
-    );
-    $occAttrs = $this->db->query($query)->result_array(FALSE);
-
-    return [
-      'srvAttrs' => $srvAttrs,
-      'smpAttrs' => $smpAttrs,
-      'occAttrs' => $occAttrs,
+    $query_templates = [
+      'srvAttrs' => self::SQL_FETCH_ALL_SURVEY_ATTRS,
+      'smpAttrs' => self::SQL_FETCH_ALL_SAMPLE_ATTRS,
+      'occAttrs' => self::SQL_FETCH_ALL_OCCURRENCE_ATTRS,
     ];
+
+    $result = [];
+    foreach ($query_templates as $attrs => $template) {
+      $query = str_replace(
+        ['{survey_id}', '{website_id}'],
+        [$surveyId, $websiteId],
+        $template
+      );
+      $result[$attrs] = $this->db->query($query)->result_array(FALSE);
+    }
+
+    return $result;
   }
 
 }
