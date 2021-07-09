@@ -309,13 +309,16 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    */
   public function save() {
     $surveyId = $_POST['survey_id'];
+    // Get website ID for this survey.
     $survey = $this->db
       ->select('website_id, title')
       ->from('surveys')
       ->where(['id' => $surveyId])
       ->get()->result_array(FALSE);
     $this->website_id = $survey[0]['website_id'];
+
     if (empty($_POST['import_survey_structure'])) {
+      // Return error if import text was not provided.
       $this->template->title = 'Error during survey structure import';
       $this->view = new View('templates/error_message');
       $this->view->message = 'Please ensure you copy the details of a ' .
@@ -323,7 +326,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       $this->template->content = $this->view;
     }
     else {
-      // Start a transaction.
+      // Start a transaction for import.
       $this->db->query('BEGIN;');
       try {
         $importData = json_decode($_POST['import_survey_structure'], TRUE);
@@ -335,6 +338,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         $this->db->query('COMMIT;');
       }
       catch (Exception $e) {
+        // Roll back transaction on error.
         $this->db->query('ROLLBACK;');
         error_logger::log_error('Exception during survey structure import', $e);
         $this->template->title = 'Error during survey structure import';
@@ -345,6 +349,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         $this->template->content = $this->view;
       }
     }
+
     $this->surveyTitle = $survey[0]['title'];
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
     $this->page_breadcrumbs[] = html::anchor('survey/edit/' . $surveyId, $this->surveyTitle);
@@ -357,6 +362,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * @param array $importData The array definition of the attributes to import.
    */
   public function doImport($importData) {
+    // Determine userId to use for creating records.
     if (isset($_SESSION['auth_user'])) {
       $this->userId = $_SESSION['auth_user']->id;
     }
@@ -370,6 +376,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         $this->userId = ($defaultUserId ? $defaultUserId : 1);
       }
     }
+
     foreach ($importData['smpAttrs'] as $importAttrDef) {
       $this->processAttribute(
         'sample',
@@ -402,7 +409,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       'public' => 'a.public',
       'system_function' => 'a.system_function',
     ];
-    // Depending on the type of attribute (occurrence or sample), there might
+    // Depending on the type of attribute, there might
     // be some additional fields to match. We also need these in a string
     // suitable for adding to the SQL select and group by clauses.
     $extras = '';
@@ -416,10 +423,10 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     foreach ($fieldsToMatch as $field => $fieldsql) {
       $value = pg_escape_string($importAttrDef[$field]);
       if ($importAttrDef[$field] === '' || $importAttrDef[$field] === NULL) {
-        $where .= "and coalesce($fieldsql, '')='$value' ";
+        $where .= "and coalesce($fieldsql, '') = '$value' ";
       }
       else {
-        $where .= "and $fieldsql='$value' ";
+        $where .= "and $fieldsql = '$value' ";
       }
     }
 
@@ -443,6 +450,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       }
     }
     if (count($existingAttrs) === 0) {
+      // Create a new attribute if no existing match was found.
       $this->createAttr($type, $importAttrDef, $extraFields);
     }
     else {
@@ -453,7 +461,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   }
 
   /**
-   * Create a sample or occurrence custom attribute.
+   * Create a custom attribute.
    *
    * @param string $type Type of custom attribute, sample or occurrence.
    * @param array $attrDef Definition of the attribute in an array, as
@@ -463,6 +471,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * @throws \exception
    */
   private function createAttr($type, $attrDef, $extraFields) {
+    // List standard fields and values to set.
     $array = [
       'caption' => $attrDef['caption'],
       'data_type' => $attrDef['data_type'],
@@ -471,18 +480,19 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       'public' => $attrDef['public'],
       'system_function' => $attrDef['system_function'],
     ];
-    // Depending on if it is an occurrence or sample attribute there might be
-    // extra fields to copy.
+    // Append any extra fields and their values.
     foreach ($extraFields as $field) {
       $array[$field] = $attrDef[$field];
     }
+
     // Lookups need to link to or create a termlist.
     if ($attrDef['data_type'] === 'L') {
       // Find termlists with the same name that are available to this website?
       $possibleMatches = $this->db->query(
           str_replace(
             '{where}',
-            "t.termlist_title='$attrDef[termlist_title]' and (t.website_id={$this->website_id} or t.website_id is null)",
+            "t.termlist_title = '$attrDef[termlist_title]' and " .
+            "(t.website_id = {$this->website_id} or t.website_id is null)",
             self::SQL_FIND_TERMLIST
           )
       )->result_array(FALSE);
@@ -504,6 +514,8 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         $array['termlist_id'] = $this->createTermlist($attrDef);
       }
     }
+
+    // Save array of values to new attribute.
     $a = ORM::factory("{$type}_attribute");
     $a->set_submission_data($array);
     if (!$a->submit()) {
@@ -562,9 +574,9 @@ class Survey_structure_export_Controller extends Indicia_Controller {
           $this->db->query("UPDATE termlists_terms tlt set parent_id = tltp.id
             FROM terms t, termlists_terms tltp
             JOIN terms tp 
-              ON tp.id=tltp.term_id 
-              AND tp.deleted=false 
-              AND tp.term='$escapedParent'
+              ON tp.id = tltp.term_id 
+              AND tp.deleted = false 
+              AND tp.term = '$escapedParent'
             WHERE tlt.termlist_id = {$tl->id} 
               AND t.id = tlt.term_id 
               AND t.deleted = false 
@@ -579,8 +591,8 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   }
 
   /**
-   * Link an attribute to the survey by checking a sample_attributes_websites
-   * or occurrence_attributes_websites record exists and if not then creates it.
+   * Link an attribute to the survey by checking a {type}_attributes_websites
+   * record exists and if not then creates it.
    *
    * @param string $type Type of attribute we are working on, occurrence or sample.
    * @param array $importAttrDef The definition of the attribute we are importing.
@@ -595,7 +607,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       'restrict_to_survey_id' => $_POST['survey_id'],
     ])->find();
     if ($aw->loaded) {
-      $this->log[] = 'An attribute similar to this is already link to the ' .
+      $this->log[] = 'An attribute similar to this is already linked to the ' .
       'survey - no action taken.';
     }
     else {
@@ -661,15 +673,19 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       return NULL;
     }
     $type = ($type === 'sample') ? 'S' : 'O';
-    $query = "select fsb1.id
-        from form_structure_blocks fsb1
-        LEFT JOIN form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id
-        where fsb1.name='$attrDef[fsb1_name]' and fsb1.survey_id=$_POST[survey_id] and fsb1.type='$type'\n";
+    $query = "SELECT fsb1.id
+        FROM form_structure_blocks fsb1
+        LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb1.parent_id
+        WHERE fsb1.name = '$attrDef[fsb1_name]'
+        AND fsb1.survey_id = $_POST[survey_id]
+        AND fsb1.type = '$type'\n";
     if (empty($attrDef['fsb2_name'])) {
-      $query .= 'and fsb2.id is null';
+      $query .= 'AND fsb2.id is null';
     }
     else {
-      $query .= "and fsb2.name='$attrDef[fsb2_name]' and fsb2.survey_id=$_POST[survey_id] and fsb2.type='$type'";
+      $query .= "AND fsb2.name = '$attrDef[fsb2_name]' 
+          AND fsb2.survey_id = $_POST[survey_id] 
+          AND fsb2.type = '$type'";
     }
     $matches = $this->db->query($query)->result_array(FALSE);
     if (count($matches)) {
