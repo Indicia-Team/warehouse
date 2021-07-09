@@ -377,6 +377,10 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       }
     }
 
+    // Process attributes.
+    foreach ($importData['srvAttrs'] as $importAttrDef) {
+      $this->processAttribute('survey', $importAttrDef, []);
+    }
     foreach ($importData['smpAttrs'] as $importAttrDef) {
       $this->processAttribute(
         'sample',
@@ -390,9 +394,9 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   }
 
   /**
-   * Handles the import of a single occurrence or sample custom attribute.
+   * Handles the import of a single custom attribute.
    *
-   * @param string $type occurrence or sample.
+   * @param string $type occurrence, sample, or survey.
    * @param array $importAttrDef Definition of the attribute in an array, as
    * retrieved from the imported data.
    * @param array $extraFields List of non-standard fields in this attributes
@@ -463,7 +467,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   /**
    * Create a custom attribute.
    *
-   * @param string $type Type of custom attribute, sample or occurrence.
+   * @param string $type Type of custom attribute: [survey|sample|occurrence].
    * @param array $attrDef Definition of the attribute in an array, as
    * retrieved from the imported data.
    * @param array $extraFields List of non-standard fields in this attributes
@@ -594,7 +598,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * Link an attribute to the survey by checking a {type}_attributes_websites
    * record exists and if not then creates it.
    *
-   * @param string $type Type of attribute we are working on, occurrence or sample.
+   * @param string $type Type of attribute we are working on, [survey|sample|occurrence].
    * @param array $importAttrDef The definition of the attribute we are importing.
    * @param array $existingAttr The array definition of the attribute to link, which must
    * already exist.
@@ -602,10 +606,22 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * @internal param array $attrDef Definition of the attribute as defined by the imported data.
    */
   private function linkAttr($type, $importAttrDef, $existingAttr) {
-    $aw = ORM::factory("{$type}_attributes_website")->where([
-      "{$type}_attribute_id" => $existingAttr['id'],
-      'restrict_to_survey_id' => $_POST['survey_id'],
-    ])->find();
+    if ($type === 'survey') {
+      // Survey attributes are not restricted to survey like samples and
+      // occurrences.
+      $where = [
+        "{$type}_attribute_id" => $existingAttr['id'],
+        'website_id' => $this->website_id,
+      ];
+    }
+    else {
+      $where = [
+        "{$type}_attribute_id" => $existingAttr['id'],
+        'restrict_to_survey_id' => $_POST['survey_id'],
+      ];
+    }
+    $aw = ORM::factory("{$type}_attributes_website")->where($where)->find();
+
     if ($aw->loaded) {
       $this->log[] = 'An attribute similar to this is already linked to the ' .
       'survey - no action taken.';
@@ -616,7 +632,9 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       $fkName = "{$type}_attribute_id";
       $aw->$fkName = $existingAttr['id'];
       $aw->website_id = $this->website_id;
-      $aw->restrict_to_survey_id = $_POST['survey_id'];
+      if ($type !== 'survey') {
+        $aw->restrict_to_survey_id = $_POST['survey_id'];
+      }
       $aw->validation_rules = $importAttrDef['aw_validation_rules'];
       $aw->weight = $importAttrDef['aw_weight'];
       $aw->control_type_id = $importAttrDef['aw_control_type_id'];
@@ -664,7 +682,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * not already available then the form structure blocks are created.
    *
    * @todo Should probably use the database agnostic query builder here.
-   * @param string $type Type of attribute we are working on, occurrence or sample.
+   * @param string $type Type of attribute we are working on: [survey|sample|occurrence].
    * @param array $attrDef Definition of the attribute as defined by the imported data.
    * @return integer The form structure block ID to link this attribute to.
    */
@@ -672,6 +690,8 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     if (empty($attrDef['fsb1_name'])) {
       return NULL;
     }
+    // Survey attributes never have form structure blocks so will
+    // have already been turned back.
     $type = ($type === 'sample') ? 'S' : 'O';
     $query = "SELECT fsb1.id
         FROM form_structure_blocks fsb1
