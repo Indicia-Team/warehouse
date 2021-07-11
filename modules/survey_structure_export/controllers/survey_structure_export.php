@@ -484,12 +484,16 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     }
     if (count($existingAttrs) === 0) {
       // Create a new attribute if no existing match was found.
-      $this->createAttr($type, $importAttrDef, $extraFields);
+      $attrId = $this->createAttr($type, $importAttrDef, $extraFields);
     }
     else {
       // Because the find query puts the attributes already used by this
       // website at the top, we can use $existingAttrs[0] to link to safely.
       $this->linkAttr($type, $importAttrDef, $existingAttrs[0]);
+      $attrId = $existingAttrs[0]['id'];
+    }
+    if ($type === 'survey') {
+      $this->createAttrValue($importAttrDef, $attrId);
     }
   }
 
@@ -501,6 +505,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * retrieved from the imported data.
    * @param array $extraFields List of non-standard fields in this attributes
    * database table.
+   * @return int Returns the database ID of the created attribute.
    * @throws \exception
    */
   private function createAttr($type, $attrDef, $extraFields) {
@@ -558,6 +563,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       $this->log[] = "Created $type attribute $attrDef[caption]";
       $this->linkAttr($type, $attrDef, $a->as_array());
     }
+    return $a->id;
   }
 
   /**
@@ -771,6 +777,92 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       $child->save();
       return $child->id;
     }
+  }
+
+  /**
+   * Create survey attribute values.
+   *
+   * @param array $attrDef Definition of the attribute in an array, as
+   * retrieved from the imported data.
+   * @param int $attrId The database ID of the attribute to create values for.
+   */
+  private function createAttrValue($attrDef, $attrId) {
+    if ($attrDef['av_values'] === '') {
+      // No values to create.
+      return;
+    }
+
+    $fixedCols = [
+      'survey_id' => $_POST['survey_id'],
+      'survey_attribute_id' => $attrId,
+    ];
+
+    // Multiple attribute values will be separated by '**'.
+    $inValues = explode('**', $attrDef['av_values']);
+    foreach ($inValues as $inValue) {
+
+      $values = [];
+      switch ($attrDef['data_type']) {
+        case 'T':
+          $values['text_value'] = $inValue;
+          break;
+
+        case 'F':
+          list(
+            $values['float_value'],
+            $values['upper_value']
+          ) = explode('|', $inValue);
+          break;
+
+        case 'L':
+          // From the attrId we can get the termlist_id, thence we can find the
+          // matching term. The cache_termlists_terms cannot be relied upon to
+          // have any new records.
+          $query = "SELECT tlt.id
+          FROM termlists_terms tlt
+          JOIN termlists tl ON tl.id = tlt.termlist_id AND tl.deleted = false
+          JOIN terms t ON t.id = tlt.term_id AND t.deleted = false
+          JOIN survey_attributes sa ON sa.termlist_id = tl.id AND sa.deleted = false
+          WHERE tlt.deleted = false
+            AND sa.id = $attrId
+            AND t.term = '$inValue'";
+
+          $matches = $this->db->query($query)->result_array(FALSE);
+          if (count($matches) === 0) {
+            throw new exception("Error creating survey attribute value " .
+            "record for $attrDef[caption]. No matching term.");
+          }
+          else {
+            $values['int_value'] = $matches[0]['id'];
+          }
+          break;
+
+        case 'I':
+          list(
+            $values['int_value'],
+            $values['upper_value']
+          ) = explode('|', $inValue);
+          break;
+
+        case 'V':
+          list(
+            $values['date_start_value'],
+            $values['date_end_value'],
+            $values['date_type_value']
+          ) = explode('|', $inValue);
+          break;
+      }
+
+      $array = array_merge($fixedCols, $values);
+      $a = ORM::factory("survey_attribute_value");
+      $a->set_submission_data($array);
+      if (!$a->submit()) {
+        throw new exception("Error creating survey attribute value for $attrDef[caption]");
+      }
+      else {
+        $this->log[] = "Created survey attribute value $attrDef[caption]";
+      }
+    } // End foreach.
   }
 
   /**
