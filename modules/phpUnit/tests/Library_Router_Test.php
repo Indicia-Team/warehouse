@@ -1,4 +1,7 @@
 <?php
+
+use PHPUnit\Framework\TestCase;
+
 /**
  * Router Library Unit Tests
  *
@@ -9,7 +12,7 @@
  * @group   core.libraries
  * @group   core.libraries.router
  */
-class Library_Router_Test extends PHPUnit_Framework_TestCase
+class Library_Router_Test extends TestCase
 {
 	protected $backupGlobals = TRUE;
 
@@ -17,7 +20,7 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 	protected $kohana_server_api;
 	protected $router_vars;
 
-	protected function setUp()
+	protected function setUp(): void
 	{
 		// Save config
 		$this->kohana_config['core.url_suffix'] = Kohana::config('core.url_suffix');
@@ -48,7 +51,7 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 		Router::$url_suffix   = '';
 	}
 
-	protected function tearDown()
+	protected function tearDown(): void
 	{
 		// Restore config
 		foreach ($this->kohana_config as $key => $value)

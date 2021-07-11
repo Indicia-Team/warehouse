@@ -1,5 +1,7 @@
 <?php
 
+use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
+
 require_once 'client_helpers/data_entry_helper.php';
 require_once 'client_helpers/submission_builder.php';
 
@@ -14,14 +16,14 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
    *   Dataset YAML object.
    */
   public function getDataSet() {
-    $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
     return $ds1;
   }
 
   /**
    * Set up the test suite.
    */
-  public function setup() {
+  public function setup(): void {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
 

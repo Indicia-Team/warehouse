@@ -12,7 +12,7 @@
  */
 class Library_Cache_File_Test extends Library_Cache_Base_Test
 {
-	public function setUp()
+	public function setUp(): void
 	{
 		if (($config = Kohana::config('cache.testing.file')) === NULL)
 			$this->markTestSkipped('No cache.testing.file config found.');

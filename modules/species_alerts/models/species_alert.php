@@ -13,38 +13,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Model class for the species_details table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Species_Alert_Model extends ORM {
-  protected $belongs_to = array(
-    'user_id'=>'user',
-    'location_id'=>'location',
-    'created_by'=>'user',
-    'updated_by'=>'user'
-  );
+  protected $belongs_to = [
+    'user_id' => 'user',
+    'location_id' => 'location',
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('user_id', 'required');
     $array->add_rules('required');
     $array->add_rules('external_key', 'length[1,50]');
     $array->add_rules('location_id', 'integer');
+    $array->add_rules('survey_id', 'integer');
     $array->add_rules('taxon_meaning_id', 'integer');
     $array->add_rules('taxon_list_id', 'integer');
-    $this->unvalidatedFields = array('deleted');
+    $this->unvalidatedFields = ['deleted'];
     return parent::validate($array, $save);
   }
+
 }

@@ -1,5 +1,8 @@
 <?php
 
+use PHPUnit\DbUnit\DataSet\CompositeDataSet as DbUDataSetCompositeDataSet;
+use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
+
 require_once 'client_helpers/data_entry_helper.php';
 
 class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
@@ -7,7 +10,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
   protected $db;
 
   public function getDataSet() {
-    $ds1 = new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
 
     // Create a second website and second survey to use in testFindingRecords
     // Create a CMS User ID sample attribute
@@ -120,13 +123,13 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
       )
     );
 
-    $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
+    $compositeDs = new DbUDataSetCompositeDataSet();
     $compositeDs->addDataSet($ds1);
     $compositeDs->addDataSet($ds2);
     return $compositeDs;
   }
 
-  public function setup() {
+  public function setup(): void {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
 
@@ -341,7 +344,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertObjectHasAttribute('possibleMatches', $output, "Response should include the list of possible users.\n$response[output]");
-    $this->assertInternalType('array', $output->possibleMatches, "Response should include an array of possible users.\n$response[output]");
+    $this->assertIsArray($output->possibleMatches, "Response should include an array of possible users.\n$response[output]");
     $this->assertCount(2, $output->possibleMatches, '2 possible users should have been found');
 
     // Can we limit the searched list of users and only find one?
