@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Groups select" description="Report for [extra_data_entry_controls.groups_select] control">
+  <query website_filter_field="g.website_id">
+    SELECT #columns#
+    FROM groups g
+    #joins#
+    WHERE g.deleted = false
+    AND #website_filter#
+    AND (
+      ((g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval))
+      OR g.id=#current_record_group_id#
+    )
+  </query>
+  <order_bys>
+    <order_by>g.title</order_by>
+  </order_bys>
+  <params>
+    <param name="group_type_id" display="Group Type" description="Limit the report to a certain type of group" datatype="lookup"
+           population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:group_types,termlist_id='
+           default="">
+      <where>g.group_type_id in (#group_type_id#)</where>
+    </param>
+    <param name="joining_method" display="Joining method" type="text" default="P" />
+    <param name="current_record_group_id" display="ID of group for current record" type="integer" default="0" />
+  </params>
+  <columns>
+    <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
+    <column name="logo_path" display="Logo" sql="g.logo_path" img="true" visible="false" />
+    <column name="group_type_id" visible="false" sql="g.group_type_id" datatype="integer" />
+    <column name="title" display="Name" sql="g.title" datatype="text" />
+    <column name="description" display="Description" sql="g.description" datatype="text" />
+  </columns>
+</report>
