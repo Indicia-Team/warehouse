@@ -10,11 +10,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $ds1 = new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
 
     // Create a second website and second survey to use in testFindingRecords
-    // Create a CMS User ID sample attribute
-    // Create a CMS User ID sample attribute value for the sample in the
-    // core fixture
-    // Create a sample, occurrence and CMS User ID sample attribute value on the
-    // second website.
+    // Create a sample and occurrence on the second website.
     $ds2 = new Indicia_ArrayDataSet(
       array(
         'websites' => array(
