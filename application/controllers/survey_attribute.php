@@ -40,13 +40,13 @@ class Survey_attribute_Controller extends Attr_Base_Controller {
   }
 
   /**
-   * Returns some addition information required by the edit view, which is not associated with
-   * a particular record.
+   * Returns some addition information required by the edit view, which is not
+   * associated with a particular record.
    */
   protected function prepareOtherViewData(array $values) {
     return array_merge(
       (array) parent::prepareOtherViewData($values),
-      array('publicFieldName' => 'Public (available for all survey datasets on this warehouse)')
+      ['publicFieldName' => 'Public (available for all survey datasets on this warehouse)']
     );
   }
 

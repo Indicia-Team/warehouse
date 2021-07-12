@@ -24,20 +24,21 @@
  */
 class Person_attribute_Controller extends Attr_Base_Controller {
 
-  public function __construct()
-  {
+  public function __construct() {
     $this->prefix = 'person';
     parent::__construct();
   }
 
   /**
-   * Override saave to store the synchronisable field.
+   * Override save to store the synchronisable field.
    */
   public function save() {
     if ($_POST['metaFields:disabled_input'] == 'NO') {
       // Make sure checkboxes have a value.
       // @todo: If we use Indicia client helper controls for the attribute edit page, this becomes unnecessary
-      if (!array_key_exists($this->model->object_name.':synchronisable', $_POST)) $_POST[$this->model->object_name.':synchronisable'] = '0';
+      if (!array_key_exists($this->model->object_name . ':synchronisable', $_POST)) {
+        $_POST[$this->model->object_name . ':synchronisable'] = '0';
+      }
     }
     parent::save();
   }
@@ -46,18 +47,18 @@ class Person_attribute_Controller extends Attr_Base_Controller {
    * Returns the shared view for all custom attribute edits.
    */
   protected function editViewName() {
-    $this->associationsView=new View('templates/attribute_associations_website');
+    $this->associationsView = new View('templates/attribute_associations_website');
     return 'custom_attribute/custom_attribute_edit';
   }
 
   /**
-   * Returns some addition information required by the edit view, which is not associated with
-   * a particular record.
+   * Returns some addition information required by the edit view, which is not
+   * associated with a particular record.
    */
   protected function prepareOtherViewData(array $values) {
     return array_merge(
       parent::prepareOtherViewData($values),
-      array('publicFieldName' => 'Public (available for all people on this warehouse)')
+      ['publicFieldName' => 'Public (available for all people on this warehouse)']
     );
   }
 
