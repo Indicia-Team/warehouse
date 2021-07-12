@@ -56,11 +56,12 @@ RUN runuser -l $USER -c 'composer global require "misantron/dbunit:^5.1"'
 RUN runuser -l $USER -c "composer global config home"
 ENV PATH="${PATH}:/home/$USER/.composer/vendor/bin"
 
-# Change Apache to listen on port 8080.
+ARG PORT
+# Change Apache to listen on an available port.
 # We need it to appear on the same port both inside and outside the container
 # as it is accessed from both perspectives.
-RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf
-RUN sed -i 's/<VirtualHost *:80>/<VirtualHost *:8080>/' /etc/apache2/sites-enabled/000-default.conf
+RUN sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
+RUN sed -i "s/<VirtualHost *:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-enabled/000-default.conf
 
 # When a warehouse container is started, we need to execute a startup script.
 # (The working directory is /var/www/html)
