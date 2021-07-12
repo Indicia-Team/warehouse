@@ -29,6 +29,9 @@ class Survey_attribute_Controller extends Attr_Base_Controller {
   public function __construct() {
     $this->prefix = 'survey';
     parent::__construct();
+    // Update the default columns as survey attributes
+    // are not attached to surveys.
+    unset($this->columns['survey']);
   }
 
   /**
