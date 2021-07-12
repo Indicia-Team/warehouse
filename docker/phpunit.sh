@@ -63,13 +63,14 @@ cp ${DIR}/request_logging.example.php ${DIR}/request_logging.php
 # 172.17.0.1 is the IP address of the Docker host seen from a container.
 # The idekey is for a suitably configured Visual Studio Code debugging client.
 docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
-  runuser -u $USER -- phpunit --stderr --configuration phpunit-config-test.xml
-  runuser -u $USER -- phpunit --stderr --configuration phpunit-setup-check-test.xml
-  runuser -u $USER -- phpunit --stderr --configuration phpunit-home-test.xml
-  # Repeat to upgrade modules
-  runuser -u $USER -- phpunit --stderr --configuration phpunit-home-test.xml
-  runuser -u $USER -- phpunit --stderr --configuration phpunit-tests.xml
+  runuser -u $USER -- pwd && \
+    vendor/bin/phpunit --stderr --configuration phpunit-config-test.xml && \
+    vendor/bin/phpunit --stderr --configuration phpunit-setup-check-test.xml && \
+    vendor/bin/phpunit --stderr --configuration phpunit-home-test.xml && \
+    vendor/bin/phpunit --stderr --configuration phpunit-home-test.xml && \
+    vendor/bin/phpunit --stderr --configuration phpunit-tests.xml
 '
+
 
 # Restore backed-up files.
 for FILE in ${BACKUP[@]}; do

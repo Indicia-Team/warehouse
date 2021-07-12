@@ -50,12 +50,6 @@ ENV GID=${GID}
 ENV USER=${USER}
 ENV GROUP=${GROUP}
 
-# Install phpunit globally for use by host user.
-RUN runuser -l $USER -c 'composer global require "phpunit/phpunit"'
-RUN runuser -l $USER -c 'composer global require "misantron/dbunit:^5.1"'
-RUN runuser -l $USER -c "composer global config home"
-ENV PATH="${PATH}:/home/$USER/.composer/vendor/bin"
-
 ARG PORT
 # Change Apache to listen on an available port.
 # We need it to appear on the same port both inside and outside the container

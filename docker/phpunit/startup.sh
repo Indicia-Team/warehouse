@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Ensure Composer packages are installed and add PHPUnit to path
+# as host user. (Includes PHPUnnit and DBUnit.)
+runuser -u $USER -- composer install
+
 # Start postgresql as user postgres
 runuser -u postgres -- pg_ctlcluster $PG_VERSION main start
 # Wait till database is up before going any further.

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Ensure Composer production packages are installed
+runuser -l $USER -c 'composer --no-dev install'
+
 # Copy config files in to place after the container is running
 # and the source code has been mounted to var/www/html.
 # Do not overwrite existing files which the user may have customised.
@@ -9,7 +12,6 @@ for file in config email database; do
     chown $UID:$GID "application/config/$file.php"
     fi
 done
-
 
 # Wait till database is up before going any further.
 echo "Waiting for Postgres."
