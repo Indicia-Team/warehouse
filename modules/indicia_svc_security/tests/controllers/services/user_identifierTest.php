@@ -13,11 +13,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
 
     // Create a second website and second survey to use in testFindingRecords
-    // Create a CMS User ID sample attribute
-    // Create a CMS User ID sample attribute value for the sample in the
-    // core fixture
-    // Create a sample, occurrence and CMS User ID sample attribute value on the
-    // second website.
+    // Create a sample and occurrence on the second website.
     $ds2 = new Indicia_ArrayDataSet(
       array(
         'websites' => array(
@@ -42,17 +38,6 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
             'created_by_id' => 1,
             'updated_on' => '2016-07-22:16:00:00',
             'updated_by_id' => 1,
-          ),
-        ),
-        'sample_attributes' => array(
-          array(
-            'caption' => 'CMS User ID',
-            'data_type' => 'I',
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-            'public' => 't',
           ),
         ),
         'samples' => array(
@@ -100,27 +85,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
             'confidential' => 'f',
           ),
         ),
-        'sample_attribute_values' => array(
-          array(
-            'sample_id' => '1',
-            'sample_attribute_id' => '1',
-            'int_value' => '9999',
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-          ),
-          array(
-            'sample_id' => '2',
-            'sample_attribute_id' => '1',
-            'int_value' => '9998',
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-          ),
-        ),
-      )
+      ),
     );
 
     $compositeDs = new DbUDataSetCompositeDataSet();
@@ -150,7 +115,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $response = $this->callGetUserIdService($this->auth, array(
       array('type' => 'email', 'identifier' => 'test@test.com'),
       array('type' => 'twitter', 'identifier' => 'dummytwitteraccount')
-    ), 9998, 'test', 'autotest');
+    ), 'test', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     // Response should definitely include a user id.
@@ -175,7 +140,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $response = $this->callGetUserIdService($this->auth, array(
       array('type' => 'email', 'identifier' => 'othertest@test.com'),
       array('type' => 'twitter', 'identifier' => 'dummytwitteraccount'),
-    ), 9997, '?', 'autotest');
+    ), '?', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertEquals($uid1, $output->userId, 'A repeat request for same identifiers did not return the same user ID');
@@ -184,7 +149,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     // Request for the same email address but with a different case.
     $response = $this->callGetUserIdService($this->auth, array(
       array('type' => 'email', 'identifier' => 'Test@test.com'),
-    ), 9997, '?', 'autotest');
+    ), '?', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertEquals($uid1, $output->userId, 'A repeat request for same email with different case did not return the same user ID');
@@ -204,7 +169,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $response = $this->callGetUserIdService($this->auth, array(
       array('type' => 'email', 'identifier' => 'test@test.com'),
       array('type' => $randomType, 'identifier' => 'dummylinkedinaccount')
-    ), 9996, '?', 'autotest');
+    ), '?', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed when sending a random type string.');
     $output = json_decode($response['output']);
     // Response should definitely include a user id.
@@ -233,7 +198,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $response = $this->callGetUserIdService($this->auth, array(
       array('type' => 'email', 'identifier' => 'test2@test.com'),
       array('type' => 'twitter', 'identifier' => 'anothertwitteraccount')
-    ), 9995, 'test', 'autotest');
+    ), 'test', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $uid1 = $output->userId;
@@ -254,14 +219,14 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Controllers_Services_Identifier_Test::testGetUserIDUnique");
     $response = $this->callGetUserIdService($this->auth, [
       ['type' => 'email', 'identifier' => 'testunique@test.com'],
-    ], 19997, 'testunique', 'name');
+    ], 'testunique', 'name');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $obj = json_decode($response['output']);
     $userId1 = $obj->userId;
     $user1 = ORM::factory('user', $userId1);
     $response = $this->callGetUserIdService($this->auth, [
       ['type' => 'email', 'identifier' => 'testunique1@test.com'],
-    ], 19998, 'testunique', 'name');
+    ], 'testunique', 'name');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $obj = json_decode($response['output']);
     $userId2 = $obj->userId;
@@ -272,7 +237,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $user1->save();
     $response = $this->callGetUserIdService($this->auth, [
       ['type' => 'email', 'identifier' => 'testunique2@test.com'],
-    ], 19999, 'testunique', 'name');
+    ], 'testunique', 'name');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $obj = json_decode($response['output']);
     $userId3 = $obj->userId;
@@ -286,14 +251,14 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Controllers_Services_Identifier_Test::testGetUserIDWildcards");
     $response = $this->callGetUserIdService($this->auth, [
       ['type' => 'email', 'identifier' => 'testwildcard@test.com'],
-    ], 19997, 'testwildcard1', 'name');
+    ], 'testwildcard1', 'name');
     $response = $this->callGetUserIdService($this->auth, [
       ['type' => 'email', 'identifier' => 'test%card@test.com'],
-    ], 19997, 'testwildcard2', 'name');
+    ], 'testwildcard2', 'name');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed with % wildcard.');
     $response = $this->callGetUserIdService($this->auth, [
       ['type' => 'email', 'identifier' => 'test_ildcard@test.com'],
-    ], 19997, 'testwildcard3', 'name');
+    ], 'testwildcard3', 'name');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed with _ wildcard.');
   }
 
@@ -309,7 +274,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $response = $this->callGetUserIdService($auth1, array(
       array('type' => 'email', 'identifier' => 'tracking1@test.com'),
       array('type' => 'twitter', 'identifier' => 'twittertracking1'),
-    ), 9999, 'u1', 'autotest');
+    ), 'u1', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     // Response should definitely include a positive whole number for the user id.
@@ -323,7 +288,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $response = $this->callGetUserIdService($auth2, array(
       array('type' => 'email', 'identifier' => 'tracking2@test.com'),
       array('type' => 'facebook', 'identifier' => 'fbtracking2'),
-    ), 9998, 'u1', 'autotest');
+    ), 'u1', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     // Response should definitely include a user id.
@@ -340,7 +305,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
       array('type' => 'email', 'identifier' => 'tracking2@test.com'),
       array('type' => 'facebook', 'identifier' => 'fbtracking2'),
       array('type' => 'twitter', 'identifier' => 'twittertracking1'),
-    ), 9998, 'u1', 'autotest');
+    ), 'u1', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertObjectHasAttribute('possibleMatches', $output, "Response should include the list of possible users.\n$response[output]");
@@ -352,7 +317,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
       array('type' => 'email', 'identifier' => 'tracking2@test.com'),
       array('type' => 'facebook', 'identifier' => 'fbtracking2'),
       array('type' => 'twitter', 'identifier' => 'twittertracking1'),
-    ), 9998, 'u1', 'autotest', 'users_to_merge=[' . $uid2 . ']');
+    ), 'u1', 'autotest', 'users_to_merge=[' . $uid2 . ']');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertEquals($uid2, $output->userId, 'Failed to limit users to check using users_to_merge');
@@ -362,7 +327,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
       array('type' => 'email', 'identifier' => 'tracking2@test.com'),
       array('type' => 'facebook', 'identifier' => 'fbtracking2'),
       array('type' => 'twitter', 'identifier' => 'twittertracking1'),
-    ), 9998, 'u1', 'autotest', 'force=split');
+    ), 'u1', 'autotest', 'force=split');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertEquals($uid2, $output->userId, 'Failed to split users and retreive the correct user ID');
@@ -376,7 +341,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
       array('type' => 'email', 'identifier' => 'tracking2@test.com'),
       array('type' => 'facebook', 'identifier' => 'fbtracking2'),
       array('type' => 'twitter', 'identifier' => 'twittertracking1'),
-    ), 9998, 'u1', 'autotest', 'force=merge');
+    ), 'u1', 'autotest', 'force=merge');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id merge service failed.');
     $output = json_decode($response['output']);
     $uid3 = $output->userId;
@@ -391,10 +356,16 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
       ->where(['deleted' => 'f', 'id' => $uid3])
       ->get()->count(), 'Kept user was incorrectly deleted');
     // Cleanup.
+    $pid1 = $this->db->query("select person_id from users where id=$uid1")->current()->person_id;
+    $pid2 = $this->db->query("select person_id from users where id=$uid1")->current()->person_id;
     $this->db->query('delete from occurrences where website_id in (1, 2)');
     $this->db->query("delete from user_identifiers where user_id in ($uid1, $uid2)");
     $this->db->query("delete from users_websites where user_id in ($uid1, $uid2)");
-    $this->db->query("delete from users where id in ($uid1, $uid2)");
+    // Delete 1 at a time to avoid integrity violations.
+    $this->db->query("delete from users where id=$uid1");
+    $this->db->query("delete from people where id=$pid1");
+    $this->db->query("delete from users where id=$uid2");
+    $this->db->query("delete from people where id=$pid2");
   }
 
   /**
@@ -405,7 +376,6 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $response = $this->callGetUserIdService($this->auth, [
         ['type' => 'email', 'identifier' => 'thisisaverylongfirstnamethisisaverylongsurname@test.com'],
       ],
-      5000,
       'thisisaverylongfirstname',
       'thisisaverylongsurname'
     );
@@ -432,11 +402,11 @@ SQL;
   /**
    * Private helper function to call the get_user_id service.
    */
-  private function callGetUserIdService($auth, $identifiers, $cmsUserId, $firstName, $surname, $extras = '') {
+  private function callGetUserIdService($auth, $identifiers, $firstName, $surname, $extras = '') {
     $url = data_entry_helper::$base_url . 'index.php/services/user_identifier/get_user_id';
     $url .= '?nonce=' . $auth['write_tokens']['nonce'] . '&auth_token=' . $auth['write_tokens']['auth_token'];
     $identifiers = urlencode(json_encode($identifiers));
-    $params = "cms_user_id=$cmsUserId&first_name=$firstName&surname=$surname&identifiers=$identifiers";
+    $params = "first_name=$firstName&surname=$surname&identifiers=$identifiers";
     if (!empty($extras)) {
       $params .= "&$extras";
     }
