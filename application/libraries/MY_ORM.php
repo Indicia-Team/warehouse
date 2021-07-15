@@ -1826,6 +1826,9 @@ class ORM extends ORM_Core {
         $vf = 'text_value';
         break;
       case 'F':
+        // Preseerve the value entered as text because, when converted to float,
+        // we may lose trailing zeroes.
+        $attrValueModel->text_value = $value;
         $vf = 'float_value';
         break;
       case 'D':

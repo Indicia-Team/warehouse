@@ -91,7 +91,7 @@ $lang = [
     'maximum' => 'The value specified for this number is too high',
     'minimum' => 'The value specified for this number is too low',
     'required' => 'The value is required.',
-    'regex' => 'Invalid format.',
+    'regex' => 'The value is not of the correct format.',
   ],
   'geom' => [
     'required' => 'The spatial reference must be supplied.',
@@ -191,6 +191,7 @@ $lang = [
     'required' => 'The value is required.',
     'default' => 'The value is not of the correct format.',
     'standard_text' => 'The value contains characters that are not allowed.',
+    'decimal' => 'The value does not have the required number of digits before/after the decimal point.',
   ],
   'term' => [
     'required' => 'The term must be specified.',

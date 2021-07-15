@@ -104,7 +104,15 @@ abstract class Attribute_Value_ORM extends ORM {
       if ($attr->validation_rules != '') {
         $rules = explode("\n", $attr->validation_rules);
         foreach ($rules as $a) {
-          $array->add_rules($vf, trim($a));
+          if ($vf === 'float_value' && substr($a, 0, 7) === 'decimal') {
+            // When performing the decimal rule (correct number of digits before
+            // and after decimal point) on a float, use its string value as
+            // trailing zeroes will be missing on the float value.
+            $array->add_rules('text_value', trim($a));
+          }
+          else {
+            $array->add_rules($vf, trim($a));
+          }
         }
       }
       else {
