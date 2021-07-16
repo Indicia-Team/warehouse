@@ -108,6 +108,10 @@ abstract class Attribute_Value_ORM extends ORM {
             // When performing the decimal rule (correct number of digits before
             // and after decimal point) on a float, use its string value as
             // trailing zeroes will be missing on the float value.
+            if ($attr->allow_ranges === 't') {
+              // Substitute a decimal rule that allows ranges.
+              $a = str_replace('decimal', 'decimal_range', $a);
+            }
             $array->add_rules('text_value', trim($a));
           }
           else {

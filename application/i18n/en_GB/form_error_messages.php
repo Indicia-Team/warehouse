@@ -192,6 +192,7 @@ $lang = [
     'default' => 'The value is not of the correct format.',
     'standard_text' => 'The value contains characters that are not allowed.',
     'decimal' => 'The value does not have the required number of digits before/after the decimal point.',
+    'decimal_range' => 'One or more value does not have the required number of digits before/after the decimal point.',
   ],
   'term' => [
     'required' => 'The term must be specified.',
