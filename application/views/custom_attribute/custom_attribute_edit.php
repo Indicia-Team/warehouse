@@ -493,7 +493,6 @@ function toggleOptions() {
       enable = [
         'required',
         'digit',
-        'decimal',
         'regex',
         'min',
         'max'
