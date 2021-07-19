@@ -64,7 +64,7 @@ abstract class Attribute_Value_ORM extends ORM {
           $vf = 'int_value';
           $array->add_rules('int_value', 'integer');
           if ($attr->allow_ranges === 't') {
-            $array->add_rules('upper_value', 'numeric');
+            $array->add_rules('upper_value', 'integer');
           }
           break;
 

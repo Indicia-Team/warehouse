@@ -209,6 +209,10 @@ $lang = [
     'unique' => 'This title must be unique.',
     'default' => 'Invalid input.',
   ],
+  'upper_value' => [
+    'default' => 'Invalid upper value.',
+    'integer' => 'The upper value must be a valid whole number.'
+  ],
   'url' => [
     'required' => 'The website URL cannot be blank.',
     'url' => 'This must be a valid URL including the http:// prefix.',
