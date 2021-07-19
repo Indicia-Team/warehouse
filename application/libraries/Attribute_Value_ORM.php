@@ -116,6 +116,9 @@ abstract class Attribute_Value_ORM extends ORM {
           }
           else {
             $array->add_rules($vf, trim($a));
+            if ($attr->allow_ranges === 't') {
+              $array->add_rules('upper_value', trim($a));
+            }
           }
         }
       }

@@ -88,8 +88,8 @@ $lang = [
   ],
   'float_value' => [
     'default' => 'This must be a valid number.',
-    'maximum' => 'The value specified for this number is too high',
-    'minimum' => 'The value specified for this number is too low',
+    'maximum' => 'The value specified for this number is too high.',
+    'minimum' => 'The value specified for this number is too low.',
     'required' => 'The value is required.',
     'regex' => 'The value is not of the correct format.',
   ],
@@ -103,8 +103,8 @@ $lang = [
   ],
   'int_value' => [
     'digit' => 'This must be a valid whole number.',
-    'maximum' => 'The value specified for this number is too high',
-    'minimum' => 'The value specified for this number is too low',
+    'maximum' => 'The value specified for this number is too high.',
+    'minimum' => 'The value specified for this number is too low.',
     'required' => 'The value is required.',
     'regex' => 'The value is not of the correct format.',
     'default' => 'The value must be a valid whole number.',
@@ -211,7 +211,10 @@ $lang = [
   ],
   'upper_value' => [
     'default' => 'Invalid upper value.',
-    'integer' => 'The upper value must be a valid whole number.'
+    'integer' => 'The upper value must be a whole number.',
+    'maximum' => 'The upper value is too high.',
+    'minimum' => 'The upper value is too low.',
+    'regex' => 'The upper value is not of the correct format.',
   ],
   'url' => [
     'required' => 'The website URL cannot be blank.',
