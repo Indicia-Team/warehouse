@@ -241,7 +241,7 @@ TXT;
       'fieldname' => "$model->object_name:allow_ranges",
       'label' => 'Allow ranges',
       'default' => html::initial_value($values, "$model->object_name:allow_ranges"),
-      'helpText' => 'Allow a range to be specified as a value, e.g. 0.4 - 1.6',
+      'helpText' => 'Allow (but do not require) a value to be specified as a range, e.g. 0.4 - 1.6',
     ]);
     echo data_entry_helper::checkbox([
       'fieldname' => "$model->object_name:public",
