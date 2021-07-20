@@ -90,9 +90,9 @@ KEY;
      * Create an occurrence comment for annotation testing.
      */
     $ds2 = new Indicia_ArrayDataSet(
-      array(
-        'filters' => array(
-          array(
+      [
+        'filters' => [
+          [
             'title' => 'Test filter',
             'description' => 'Filter for unit testing',
             'definition' => '{"quality":"!R"}',
@@ -101,8 +101,8 @@ KEY;
             'created_by_id' => 1,
             'updated_on' => '2016-07-22:16:00:00',
             'updated_by_id' => 1,
-          ),
-          array(
+          ],
+          [
             'title' => 'Test user permission filter',
             'description' => 'Filter for unit testing',
             'definition' => '{"quality":"!R","occurrence_id":2}',
@@ -111,27 +111,27 @@ KEY;
             'created_by_id' => 1,
             'updated_on' => '2016-07-22:16:00:00',
             'updated_by_id' => 1,
-          ),
-        ),
-        'filters_users' => array(
-          array(
+          ],
+        ],
+        'filters_users' => [
+          [
             'filter_id' => 2,
             'user_id' => 1,
             'created_on' => '2016-07-22:16:00:00',
             'created_by_id' => 1
-          )
-        ),
-        'occurrence_comments' => array(
-          array(
+          ],
+        ],
+        'occurrence_comments' => [
+          [
             'comment' => 'Occurrence comment for unit testing',
             'created_on' => '2016-07-22:16:00:00',
             'created_by_id' => 1,
             'updated_on' => '2016-07-22:16:00:00',
             'updated_by_id' => 1,
             'occurrence_id' => 1,
-          ),
-        ),
-      )
+          ],
+        ],
+      ]
     );
 
     $compositeDs = new DbUDataSetCompositeDataSet();
@@ -143,19 +143,19 @@ KEY;
     $db = new Database();
     $db->update(
       'users',
-      array('password' => '18d025c6c8809e34371e2ec7d84215bd3eb6031dcd804006f4'),
-      array('id' => 1)
+      ['password' => '18d025c6c8809e34371e2ec7d84215bd3eb6031dcd804006f4'],
+      ['id' => 1]
     );
 
     return $compositeDs;
   }
 
   public static function setUpBeforeClass(): void {
-    // grab the clients registered on this system
+    // Grab the clients registered on this system.
     $clientUserIds = array_keys(Kohana::config('rest.clients'));
     $clientConfigs = array_values(Kohana::config('rest.clients'));
 
-    // just test the first client
+    // Just test the first client.
     self::$clientUserId = $clientUserIds[0];
     self::$config = $clientConfigs[0];
   }
@@ -194,8 +194,8 @@ KEY;
     $db = new Database();
     $db->update(
       'websites',
-      array('public_key' => NULL),
-      array('id' => 1)
+      ['public_key' => NULL],
+      ['id' => 1]
     );
     $cache->delete($cacheKey);
     // Make an otherwise valid call - should be unauthorised.
@@ -206,8 +206,8 @@ KEY;
     $db = new Database();
     $db->update(
       'websites',
-      array('public_key' => 'INVALID!!!'),
-      array('id' => 1)
+      ['public_key' => 'INVALID!!!'],
+      ['id' => 1]
     );
     $cache->delete($cacheKey);
     // Make an otherwise valid call - should be unauthorised.
@@ -218,8 +218,8 @@ KEY;
     $db = new Database();
     $db->update(
       'websites',
-      array('public_key' => self::$publicKey),
-      array('id' => 1)
+      ['public_key' => self::$publicKey],
+      ['id' => 1]
     );
     $cache->delete($cacheKey);
     // Make a valid call - should be authorised.
@@ -255,17 +255,20 @@ KEY;
     $response = $this->callService(
       'samples',
       FALSE,
-      ['values' => [
-        'survey_id' => 1,
-        'entered_sref' => 'SU1234',
-        'entered_sref_system' => 'OSGB',
-        'date' => '01/08/2020',
-        'comment' => 'A sample to delete',
-      ]]
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+          'comment' => 'A sample to delete',
+        ]
+      ]
     );
     $this->assertEquals(201, $response['httpCode']);
     $id = $response['response']['values']['id'];
-    // Now GET to check values stored OK using manually set auth header in lowercase.
+    // Now GET to check values stored OK using manually set auth header in
+    // lowercase.
     $this->authMethod = 'none';
     $storedObj = $this->callService("samples/$id", FALSE, NULL, ['authorization: bearer ' . self::$jwt]);
     $this->assertResponseOk($storedObj, "/samples/$id GET");
@@ -350,8 +353,14 @@ KEY;
     $storedObj = $this->callService("$table/$id");
     $expectedValues = array_merge($exampleData, $updateData);
     foreach ($expectedValues as $field => $value) {
-      $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
-      $this->assertEquals($value, $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
+      $this->assertTrue(
+        isset($storedObj['response']['values'][$field]),
+        "Stored info in $table does not include value for $field"
+      );
+      $this->assertEquals(
+        $value, $storedObj['response']['values'][$field],
+        "Stored info in $table does not match value for $field"
+      );
     }
   }
 
@@ -384,8 +393,14 @@ KEY;
     $this->assertTrue(array_key_exists('ETag', $headers), "$table GET does not return ETag.");
     $this->assertEquals($insertedRecordETag, $headers['ETag'], 'GET returns ETag which does not match expected');
     foreach ($exampleData as $field => $value) {
-      $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
-      $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
+      $this->assertTrue(
+        isset($storedObj['response']['values'][$field]),
+        "Stored info in $table does not include value for $field"
+      );
+      $this->assertEquals(
+        $exampleData[$field], $storedObj['response']['values'][$field],
+        "Stored info in $table does not match value for $field"
+      );
     }
   }
 
@@ -459,7 +474,10 @@ KEY;
         break;
       }
     }
-    $this->assertFalse($found, 'POSTed survey found in filtered retrieved list using GET which it should be excluded from.');
+    $this->assertFalse(
+      $found,
+      'POSTed survey found in filtered retrieved list using GET which it should be excluded from.'
+    );
   }
 
   /**
@@ -599,13 +617,15 @@ KEY;
     $response = $this->callService(
       'samples',
       FALSE,
-      ['values' => [
-        'survey_id' => 1,
-        'entered_sref' => 'SU1234',
-        'entered_sref_system' => 'OSGB',
-        'date' => '01/08/2020',
-        'comment' => 'A sample comment test',
-      ]]
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+          'comment' => 'A sample comment test',
+        ],
+      ]
     );
     $this->assertEquals(401, $response['httpCode']);
     // Grant website access.
@@ -615,20 +635,25 @@ KEY;
     $response = $this->callService(
       'samples',
       FALSE,
-      ['values' => [
-        'survey_id' => 1,
-        'entered_sref' => 'SU1234',
-        'entered_sref_system' => 'OSGB',
-        'date' => '01/08/2020',
-        'comment' => 'A sample comment test',
-      ]]
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+          'comment' => 'A sample comment test',
+        ],
+      ]
     );
     $this->assertEquals(201, $response['httpCode']);
     $id = $response['response']['values']['id'];
     // Check created_by_id.
     $response = $this->callService("samples/$id");
     $this->assertEquals(200, $response['httpCode']);
-    $this->assertEquals($userId, $response['response']['values']['created_by_id'], 'Created_by_id not set correctly for sample');
+    $this->assertEquals(
+      $userId, $response['response']['values']['created_by_id'],
+      'Created_by_id not set correctly for sample'
+    );
     // Re-authenticate as user 1.
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     // They shouldn't have access.
@@ -653,9 +678,7 @@ KEY;
     $response = $this->callService(
       'samples',
       FALSE,
-      [
-        'values' => $data
-      ]
+      ['values' => $data]
     );
     $this->assertEquals(201, $response['httpCode']);
     $headers = $this->parseHeaders($response['headers']);
@@ -697,12 +720,10 @@ KEY;
     $response = $this->callService(
       'samples',
       FALSE,
-      [
-        'values' => $data
-      ]
+      ['values' => $data]
     );
     $this->assertEquals(400, $response['httpCode']);
-    // GET the posted data;
+    // GET the posted data.
     $response = $this->callService("samples/$id");
     $this->assertResponseOk($response, "/samples GET");
     $this->assertTrue(array_key_exists('comment', $response['response']['values']),
@@ -719,7 +740,7 @@ KEY;
       'GET samples response does not contain processed lat output.');
       $this->assertTrue(array_key_exists('lon', $response['response']['values']),
       'GET samples response does not contain processed lon output.');
-    // PUT a bad update with ID mismatch
+    // PUT a bad update with ID mismatch.
     $data = [
       'id' => $id + 1,
       'entered_sref' => 'SU121341',
@@ -843,7 +864,10 @@ KEY;
       FALSE,
       $data
     );
-    $this->assertEquals(400, $response['httpCode'], 'POSTing a list to normal endpoint should fail');
+    $this->assertEquals(
+      400, $response['httpCode'],
+      'POSTing a list to normal endpoint should fail'
+    );
     $response = $this->callService(
       'samples/list',
       FALSE,
@@ -851,11 +875,17 @@ KEY;
     );
     $this->assertEquals(201, $response['httpCode']);
     foreach ($response['response'] as $idx => $item) {
-      $this->assertTrue(is_numeric($idx), 'Response from list post should be a simple list array');
+      $this->assertTrue(
+        is_numeric($idx),
+        'Response from list post should be a simple list array'
+      );
       $id = $item['values']['id'];
       $occCount = $db->query("select count(*) from occurrences where sample_id=$id")
         ->current()->count;
-      $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample in a list.');
+      $this->assertEquals(
+        1, $occCount,
+        'No occurrence created when submitted with a sample in a list.'
+      );
     }
   }
 
@@ -883,7 +913,10 @@ KEY;
       FALSE,
       ['values' => $data]
     );
-    $this->assertEquals(409, $response['httpCode'], 'Duplicate external key did not return 409 Conflict response.');
+    $this->assertEquals(
+      409, $response['httpCode'],
+      'Duplicate external key did not return 409 Conflict response.'
+    );
     $this->assertArrayHasKey('duplicate_of', $response['response']);
     $this->assertArrayHasKey('id', $response['response']['duplicate_of']);
     $this->assertArrayHasKey('href', $response['response']['duplicate_of']);
@@ -895,7 +928,10 @@ KEY;
       FALSE,
       ['values' => $data]
     );
-    $this->assertEquals(201, $response['httpCode'], 'Duplicate external key in different survey not accepted.');
+    $this->assertEquals(
+      201, $response['httpCode'],
+      'Duplicate external key in different survey not accepted.'
+    );
     // PUT with same external key should be OK.
     $response = $this->callService(
       "samples/$id",
@@ -1069,9 +1105,18 @@ KEY;
     $id = $response['response']['values']['id'];
     $smpMediaCount = $db->query("select count(*) from sample_media where sample_id=$id and path='$uploadedFileName'")
       ->current()->count;
-    $this->assertEquals(1, $smpMediaCount, 'No media created when submitted with a sample.');
-    $this->assertFileExists(DOCROOT . 'upload/' . $uploadedFileName, 'Uploaded media file does not exist in destination');
-    $this->assertFileExists(DOCROOT . 'upload/thumb-' . $uploadedFileName, 'Uploaded media thumbnail does not exist in destination');
+    $this->assertEquals(
+      1, $smpMediaCount, 
+      'No media created when submitted with a sample.'
+    );
+    $this->assertFileExists(
+      DOCROOT . 'upload/' . $uploadedFileName,
+      'Uploaded media file does not exist in destination'
+    );
+    $this->assertFileExists(
+      DOCROOT . 'upload/thumb-' . $uploadedFileName,
+      'Uploaded media thumbnail does not exist in destination'
+    );
     // Post a sample which refers to an incorrect file.
     $data = [
       'values' => [
@@ -1119,7 +1164,7 @@ KEY;
           $file,
           'image/jpg',
           basename($file)
-        )
+        ),
       ],
       [], NULL, TRUE
     );
@@ -1156,10 +1201,16 @@ KEY;
     $this->assertEquals(201, $response['httpCode']);
     $id = $response['response']['values']['id'];
     $occurrences = $db->query("select id from occurrences where sample_id=$id");
-    $this->assertEquals(1, count($occurrences), 'Posting a sample with occurrence did not create the occurrence');
+    $this->assertEquals(
+      1, count($occurrences),
+      'Posting a sample with occurrence did not create the occurrence'
+    );
     $occurrenceId = $occurrences->current()->id;
     $occurrences = $db->query("select id from occurrence_media where occurrence_id=$occurrenceId");
-    $this->assertEquals(1, count($occurrences), 'Posting a sample with occurrence and media did not create the media');
+    $this->assertEquals(
+      1, count($occurrences),
+      'Posting a sample with occurrence and media did not create the media'
+    );
     // Check occurrence exists.
     $response = $this->callService("occurrences/$occurrenceId");
     $this->assertResponseOk($response, "/occurrences/$occurrenceId GET");
@@ -1244,7 +1295,10 @@ KEY;
     $db = new Database();
     $locationsWebsitesCount = $db->query("select count(*) from locations_websites where location_id=$id")
       ->current()->count;
-    $this->assertEquals(1, $locationsWebsitesCount, 'No locations_websites record created for a location POST.');
+    $this->assertEquals(
+      1, $locationsWebsitesCount,
+      'No locations_websites record created for a location POST.'
+    );
   }
 
   /**
@@ -1254,7 +1308,7 @@ KEY;
     $this->putTest('locations', [
       'name' => 'Location test',
       'centroid_sref' => 'ST1234',
-      'centroid_sref_system' => 'OSGB'
+      'centroid_sref_system' => 'OSGB',
     ], [
       'name' => 'Location test updated',
     ]);
@@ -1267,7 +1321,7 @@ KEY;
     $this->getTest('locations', [
       'name' => 'Location GET test',
       'centroid_sref' => 'ST1234',
-      'centroid_sref_system' => 'OSGB'
+      'centroid_sref_system' => 'OSGB',
     ]);
   }
 
@@ -1293,7 +1347,7 @@ KEY;
    * Test behaviour around REST support for ETags.
    */
   public function testJwtLocationETags() {
-    $this->eTagsTest('locations',  [
+    $this->eTagsTest('locations', [
       'name' => 'Location GET test',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
@@ -1311,7 +1365,7 @@ KEY;
    * Test /surveys PUT behaviour.
    */
   public function testJwtSurveyPut() {
-    $this->putTest('surveys',  [
+    $this->putTest('surveys', [
       'title' => 'Test survey',
       'description' => 'A test',
     ], [
@@ -1323,7 +1377,7 @@ KEY;
    * A basic test of /surveys GET.
    */
   public function testJwtSurveyGet() {
-    $this->getTest('surveys',  [
+    $this->getTest('surveys', [
       'title' => 'Test survey',
       'description' => 'A test',
     ]);
@@ -1333,7 +1387,7 @@ KEY;
    * A basic test of /surveys GET.
    */
   public function testJwtSurveysGetList() {
-    $this->getListTest('surveys',  [
+    $this->getListTest('surveys', [
       'title' => 'Test survey ' . microtime(TRUE),
       'description' => 'A test',
     ]);
@@ -1343,7 +1397,7 @@ KEY;
    * Test DELETE for a survey.
    */
   public function testJwtSurveyDelete() {
-    $this->deleteTest('surveys',  [
+    $this->deleteTest('surveys', [
       'title' => 'Test survey',
       'description' => 'A test',
     ]);
@@ -1352,7 +1406,7 @@ KEY;
   public function testJwtSurveyPostPermissions() {
     $this->authMethod = 'jwtUser';
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
-    $data =  [
+    $data = [
       'title' => 'Test survey',
       'description' => 'A test',
     ];
@@ -1419,7 +1473,7 @@ SQL;
    * Test behaviour around REST support for ETags.
    */
   public function testJwtSurveyETags() {
-    $this->eTagsTest('surveys',  [
+    $this->eTagsTest('surveys', [
       'title' => 'Test survey',
       'description' => 'A test',
     ]);
@@ -1436,7 +1490,7 @@ SQL;
    * Test /sample_attributes PUT behaviour.
    */
   public function testJwtSampleAttributePut() {
-    $this->putTest('sample_attributes',  [
+    $this->putTest('sample_attributes', [
       'caption' => 'Test sample attribute',
       'data_type' => 'T',
     ], [
@@ -1448,7 +1502,7 @@ SQL;
    * A basic test of /sample_attributes GET.
    */
   public function testJwtSampleAttributeGet() {
-    $this->getTest('sample_attributes',  [
+    $this->getTest('sample_attributes', [
       'caption' => 'Test sample attribute',
       'data_type' => 'T',
     ]);
@@ -1458,7 +1512,7 @@ SQL;
    * A basic test of /sample_attributes GET.
    */
   public function testJwtSampleAttributeGetList() {
-    $this->getListTest('sample_attributes',  [
+    $this->getListTest('sample_attributes', [
       'caption' => 'Test sample attribute ' . microtime(TRUE),
       'data_type' => 'T',
     ]);
@@ -1485,7 +1539,7 @@ SQL;
    * Test behaviour around REST support for ETags.
    */
   public function testJwtSampleAttributeETags() {
-    $this->eTagsTest('sample_attributes',  [
+    $this->eTagsTest('sample_attributes', [
       'caption' => 'Test sample attribute',
       'data_type' => 'T',
     ]);
@@ -1502,7 +1556,7 @@ SQL;
    * Test /occurrence_attributes PUT behaviour.
    */
   public function testJwtOccurrenceAttributePut() {
-    $this->putTest('occurrence_attributes',  [
+    $this->putTest('occurrence_attributes', [
       'caption' => 'Test occurrence attribute',
       'data_type' => 'T',
     ], [
@@ -1514,7 +1568,7 @@ SQL;
    * A basic test of /occurrence_attributes GET.
    */
   public function testJwtOccurrenceAttributeGet() {
-    $this->getTest('occurrence_attributes',  [
+    $this->getTest('occurrence_attributes', [
       'caption' => 'Test occurrence attribute',
       'data_type' => 'T',
     ]);
@@ -1551,7 +1605,7 @@ SQL;
    * Test behaviour around REST support for ETags.
    */
   public function testJwtOccurrenceAttributeETags() {
-    $this->eTagsTest('occurrence_attributes',  [
+    $this->eTagsTest('occurrence_attributes', [
       'caption' => 'Test occurrence attribute',
       'data_type' => 'T',
     ]);
@@ -1595,7 +1649,7 @@ SQL;
     ], 'taxa_taxon_list_id');
   }
 
-   /**
+  /**
    * Test /occurrences PUT in isolation.
    */
   public function testJwtOccurrencePut() {
@@ -1654,7 +1708,7 @@ SQL;
    */
   public function testJwtOccurrenceETags() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
-    $this->eTagsTest('occurrences',  [
+    $this->eTagsTest('occurrences', [
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
     ]);
@@ -1683,7 +1737,10 @@ SQL;
       FALSE,
       ['values' => $data]
     );
-    $this->assertEquals(409, $response['httpCode'], 'Duplicate external key did not return 409 Conflict response.');
+    $this->assertEquals(
+      409, $response['httpCode'],
+      'Duplicate external key did not return 409 Conflict response.'
+    );
   }
 
   /**
@@ -1702,7 +1759,10 @@ SQL;
       FALSE,
       ['values' => $data]
     );
-    $this->assertEquals(400, $response['httpCode'], 'Adding occurrence to deleted sample did not return 400 Bad request response.');
+    $this->assertEquals(
+      400, $response['httpCode'],
+      'Adding occurrence to deleted sample did not return 400 Bad request response.'
+    );
   }
 
   public function testProjects_authentication() {
@@ -1715,20 +1775,32 @@ SQL;
     // user and website authentications don't allow access to projects
     $this->authMethod = 'hmacUser';
     $response = $this->callService('projects');
-    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method hmacUser for projects ' .
-        "but response still OK. Http response $response[httpCode].");
+    $this->assertTrue(
+      $response['httpCode'] === 401,
+      'Invalid authentication method hmacUser for projects ' .
+      "but response still OK. Http response $response[httpCode]."
+    );
     $this->authMethod = 'directUser';
     $response = $this->callService('projects');
-    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method directUser for projects ' .
-        "but response still OK. Http response $response[httpCode].");
+    $this->assertTrue(
+      $response['httpCode'] === 401,
+      'Invalid authentication method directUser for projects ' .
+      "but response still OK. Http response $response[httpCode]."
+    );
     $this->authMethod = 'hmacWebsite';
     $response = $this->callService('projects');
-    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method hmacWebsite for projects ' .
-        "but response still OK. Http response $response[httpCode].");
+    $this->assertTrue(
+      $response['httpCode'] === 401,
+      'Invalid authentication method hmacWebsite for projects ' .
+      "but response still OK. Http response $response[httpCode]."
+    );
     $this->authMethod = 'directWebsite';
     $response = $this->callService('projects');
-    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method directWebsite for projects ' .
-        "but response still OK. Http response $response[httpCode].");
+    $this->assertTrue(
+      $response['httpCode'] === 401,
+      'Invalid authentication method directWebsite for projects ' .
+      "but response still OK. Http response $response[httpCode]."
+    );
 
     $this->authMethod = 'hmacClient';
   }
@@ -1742,14 +1814,23 @@ SQL;
     $this->assertEquals(count($viaConfig), count($response['response']['data']),
         'Incorrect number of projects returned from /projects.');
     foreach ($response['response']['data'] as $projDef) {
-      $this->assertArrayHasKey($projDef['id'], $viaConfig, "Unexpected project $projDef[id]returned by /projects.");
+      $this->assertArrayHasKey(
+        $projDef['id'], $viaConfig, 
+        "Unexpected project $projDef[id]returned by /projects."
+      );
       $this->assertEquals($viaConfig[$projDef['id']]['title'], $projDef['title'],
         "Unexpected title $projDef[title] returned for project $projDef[id] by /projects.");
       $this->assertEquals($viaConfig[$projDef['id']]['description'], $projDef['description'],
         "Unexpected description $projDef[description] returned for project $projDef[id] by /projects.");
-      // Some project keys are supposed to be removed
-      $this->assertNotContains('filter_id', $projDef, 'Project definition should not contain filter_id');
-      $this->assertNotContains('sharing', $projDef, 'Project definition should not contain sharing');
+      // Some project keys are supposed to be removed.
+      $this->assertNotContains(
+        'filter_id', $projDef,
+        'Project definition should not contain filter_id'
+      );
+      $this->assertNotContains(
+        'sharing', $projDef,
+        'Project definition should not contain sharing'
+      );
     }
   }
 
@@ -1765,17 +1846,23 @@ SQL;
       $this->assertEquals($projDef['description'], $response['response']['description'],
           "Unexpected description " . $response['response']['description'] .
           " returned for project $projDef[id] by /projects/$projDef[id].");
-      // Some project keys are supposed to be removed
-      $this->assertNotContains('filter_id', $projDef, 'Project definition should not contain filter_id');
-      $this->assertNotContains('sharing', $projDef, 'Project definition should not contain sharing');
+      // Some project keys are supposed to be removed.
+      $this->assertNotContains(
+        'filter_id', $projDef,
+        'Project definition should not contain filter_id'
+      );
+      $this->assertNotContains(
+        'sharing', $projDef,
+        'Project definition should not contain sharing'
+      );
     }
   }
 
   public function testTaxon_observations_authentication() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_clientAuthentication");
     $proj_id = self::$config['projects'][array_keys(self::$config['projects'])[0]]['id'];
-    $queryWithProj = array('proj_id' => $proj_id, 'edited_date_from' => '2015-01-01');
-    $query = array('edited_date_from' => '2015-01-01');
+    $queryWithProj = ['proj_id' => $proj_id, 'edited_date_from' => '2015-01-01');
+    $query = ['edited_date_from' => '2015-01-01');
 
     $this->authMethod = 'hmacClient';
     $this->checkResourceAuthentication('taxon-observations', $queryWithProj);
@@ -1785,7 +1872,7 @@ SQL;
     $this->checkResourceAuthentication('taxon-observations', $query);
     // @todo The following test needs to check filtered response rather than authentication
     $this->authMethod = 'directUser';
-    $this->checkResourceAuthentication('taxon-observations', $query + array('filter_id' => self::$userFilterId));
+    $this->checkResourceAuthentication('taxon-observations', $query + ['filter_id' => self::$userFilterId));
     $this->authMethod = 'hmacWebsite';
     $this->checkResourceAuthentication('taxon-observations', $query);
     $this->authMethod = 'directWebsite';
@@ -1800,10 +1887,10 @@ SQL;
     $this->assertEquals(400, $response['httpCode'],
         'Requesting taxon observations without params should be a bad request');
     foreach (self::$config['projects'] as $projDef) {
-      $response = $this->callService("taxon-observations", array('proj_id' => $projDef['id']));
+      $response = $this->callService("taxon-observations", ['proj_id' => $projDef['id']));
       $this->assertEquals(400, $response['httpCode'],
           'Requesting taxon observations without edited_date_from should be a bad request');
-      $response = $this->callService("taxon-observations", array('edited_date_from' => '2015-01-01'));
+      $response = $this->callService("taxon-observations", ['edited_date_from' => '2015-01-01'));
       $this->assertEquals(400, $response['httpCode'],
         'Requesting taxon observations without proj_id should be a bad request');
       // only test a single project
@@ -1820,7 +1907,7 @@ SQL;
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxon_observations_get");
 
     foreach (self::$config['projects'] as $projDef) {
-      $response = $this->callService("taxon-observations", array(
+      $response = $this->callService("taxon-observations", [
           'proj_id' => $projDef['id'],
           'edited_date_from' => '2015-01-01',
           'edited_date_to' => date("Y-m-d\TH:i:s")
@@ -1834,9 +1921,10 @@ SQL;
       $data = $response['response']['data'];
       $this->assertIsArray($data, 'Taxon-observations data invalid. ' . var_export($data, true));
       $this->assertNotCount(0, $data, 'Taxon-observations data absent. ' . var_export($data, true));
-      foreach ($data as $occurrence)
+      foreach ($data as $occurrence) {
         $this->checkValidTaxonObservation($occurrence);
-      // only test a single project
+      }
+      // Only test a single project.
       break;
     }
   }
@@ -1852,17 +1940,18 @@ SQL;
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService(
         "annotations",
-        array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01')
+        ['proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01')
       );
       $this->assertResponseOk($response, '/annotations');
       $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to annotations');
       $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to annotations');
       $data = $response['response']['data'];
-      $this->assertIsArray($data, 'Annotations data invalid. ' . var_export($data, true));
-      $this->assertNotCount(0, $data, 'Annotations data absent. ' . var_export($data, true));
-      foreach ($data as $annotation)
+      $this->assertIsArray($data, 'Annotations data invalid. ' . var_export($data, TRUE));
+      $this->assertNotCount(0, $data, 'Annotations data absent. ' . var_export($data, TRUE));
+      foreach ($data as $annotation) {
         $this->checkValidAnnotation($annotation);
-      // only test a single project
+      }
+      // Only test a single project.
       break;
     }
   }
@@ -1883,8 +1972,14 @@ SQL;
       'taxon_list_id' => 1,
     ]);
     $this->assertResponseOk($response, '/taxa/search');
-    $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
-    $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
+    $this->assertArrayHasKey(
+      'paging', $response['response'],
+      'Paging missing from response to call to taxa/search'
+    );
+    $this->assertArrayHasKey(
+      'data', $response['response'],
+      'Data missing from response to call to taxa/search'
+    );
     $data = $response['response']['data'];
     $this->assertIsArray($data, 'taxa/search data invalid.');
     $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
@@ -1893,8 +1988,14 @@ SQL;
       'taxon_list_id' => 1,
     ]);
     $this->assertResponseOk($response, '/taxa/search');
-    $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
-    $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
+    $this->assertArrayHasKey(
+      'paging', $response['response'],
+      'Paging missing from response to call to taxa/search'
+    );
+    $this->assertArrayHasKey(
+      'data', $response['response'],
+      'Data missing from response to call to taxa/search'
+    );
     $data = $response['response']['data'];
     $this->assertIsArray($data, 'taxa/search data invalid.');
     $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
@@ -1920,7 +2021,7 @@ SQL;
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportsHierarchy_get");
 
     $projDef = self::$config['projects']['BRC1'];
-    $response = $this->callService("reports", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports", ['proj_id' => $projDef['id']]);
     $this->assertResponseOk($response, '/reports');
     // Check a folder that should definitely exist.
     $this->checkReportFolderInReponse($response['response'], 'library');
@@ -1931,19 +2032,19 @@ SQL;
     // should be an additional featured folder at the top level with shortcuts
     // to favourite reports.
     $this->authMethod = 'hmacWebsite';
-    $response = $this->callService("reports", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports", ['proj_id' => $projDef['id']]);
     $this->checkReportFolderInReponse($response['response'], 'featured');
     $this->checkReportInReponse($response['response'], 'demo');
 
     // now check some folder contents
     $this->authMethod = 'hmacClient';
-    $response = $this->callService("reports/featured", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports/featured", ['proj_id' => $projDef['id']]);
     $this->assertResponseOk($response, '/reports/featured');
     $this->checkReportInReponse($response['response'], 'library/occurrences/filterable_explore_list');
-    $response = $this->callService("reports/library", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports/library", ['proj_id' => $projDef['id']]);
     $this->assertResponseOk($response, '/reports/library');
     $this->checkReportFolderInReponse($response['response'], 'occurrences');
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports/library/occurrences", ['proj_id' => $projDef['id']]);
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $this->checkReportInReponse($response['response'], 'filterable_explore_list');
   }
@@ -1952,15 +2053,19 @@ SQL;
     $this->authMethod = 'jwtUser';
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/some_random_report_name.xml', []);
-    $this->assertEquals(404, $response['httpCode'], 'Request for a missing report does not return 404.');
+    $this->assertEquals(
+      404, $response['httpCode'],
+      'Request for a missing report does not return 404.'
+    );
   }
 
   public function testReportParams_get() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportParams_get");
 
-    // First grab a list of reports so we can use the links to get the correct params URL
+    // First grab a list of reports so we can use the links to get the correct
+    // params URL.
     $projDef = self::$config['projects']['BRC1'];
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports/library/occurrences", ['proj_id' => $projDef['id']]);
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('params', $reportDef, 'Report response does not define parameters');
@@ -1976,9 +2081,9 @@ SQL;
   public function testReportColumns_get() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportColumns_get");
 
-    // First grab a list of reports so we can use the links to get the correct columns URL
-    $projDef = self::$config['projects']['BRC1'];
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    // First grab a list of reports so we can use the links to get the correct
+    // columns URL.
+    $response = $this->callService("reports/library/occurrences", ['proj_id' => $projDef['id']]);
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('columns', $reportDef, 'Report response does not define columns');
@@ -1994,9 +2099,10 @@ SQL;
   public function testReportOutput_get() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportOutput_get");
 
-    // First grab a list of reports so we can use the links to get the correct columns URL
+    // First grab a list of reports so we can use the links to get the correct
+    // columns URL.
     $projDef = self::$config['projects']['BRC1'];
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports/library/occurrences", ['proj_id' => $projDef['id']]);
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('href', $reportDef, 'Report response missing href');
@@ -2005,34 +2111,57 @@ SQL;
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml');
     $this->assertArrayHasKey('data', $response['response']);
     $this->assertCount(1, $response['response']['data'], 'Report call returns incorrect record count');
-    $this->assertEquals(1, $response['response']['data'][0]['occurrence_id'], 'Report call returns incorrect record');
+    $this->assertEquals(
+      1, $response['response']['data'][0]['occurrence_id'],
+      'Report call returns incorrect record'
+    );
   }
 
   public function testAcceptHeader() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAcceptHeader");
     $projDef = self::$config['projects']['BRC1'];
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']), NULL, ['Accept: application/json']);
+    $response = $this->callService(
+      "reports/library/occurrences",
+      ['proj_id' => $projDef['id']],
+      NULL,
+      ['Accept: application/json']
+    );
     $decoded = json_decode($response['response'], TRUE);
     $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response['response']);
     $this->assertEquals(200, $response['httpCode']);
     $this->assertEquals(0, $response['curlErrno']);
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']), NULL, ['Accept: text/html']);
+    $response = $this->callService(
+      "reports/library/occurrences",
+      ['proj_id' => $projDef['id']],
+      NULL,
+      ['Accept: text/html']
+    );
     $this->assertMatchesRegularExpression('/^<!DOCTYPE HTML>/', $response['response']);
     $this->assertMatchesRegularExpression('/<html>/', $response['response']);
     $this->assertMatchesRegularExpression('/<\/html>$/', $response['response']);
     $this->assertEquals(200, $response['httpCode']);
     $this->assertEquals(0, $response['curlErrno']);
-    // try requesting an invalid content type as first preference - response should select the second.
-    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']), NULL, ['Accept: image/png, application/json']);
+    // Try requesting an invalid content type as first preference - response
+    // should select the second.
+    $response = $this->callService(
+      "reports/library/occurrences",
+      ['proj_id' => $projDef['id']],
+      NULL,
+      ['Accept: image/png, application/json']
+    );
     $decoded = json_decode($response['response'], TRUE);
-    $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response['response']);
+    $this->assertNotEquals(
+      NULL, $decoded, 
+      'JSON response could not be decoded: ' . $response['response']
+    );
     $this->assertEquals(200, $response['httpCode']);
     $this->assertEquals(0, $response['curlErrno']);
   }
 
   /**
-   * Tests authentication against a resource, by passing incorrect user or secret, then
-   * finally passing the correct details to check a valid response returns.
+   * Tests authentication against a resource, by passing incorrect user or
+   * secret, then finally passing the correct details to check a valid response
+   * returns.
    *
    * @param $resource
    * @param string $user
@@ -2059,11 +2188,16 @@ SQL;
     self::$userPassword = '---';
 
     $response = $this->callService($resource, $query, TRUE);
-    $this->assertEquals(401, $response['httpCode'],
-      "Incorrect secret or password passed to /$resource but request authorised. Http response $response[httpCode].");
-    $this->assertEquals('Unauthorized', $response['response']['status'],
-        "Incorrect secret or password passed to /$resource but data still returned. ".
-      var_export($response, true));
+    $this->assertEquals(
+      401, $response['httpCode'],
+      "Incorrect secret or password passed to /$resource but request " .
+      "authorised. Http response $response[httpCode]."
+    );
+    $this->assertEquals(
+      'Unauthorized', $response['response']['status'],
+      "Incorrect secret or password passed to /$resource but data still returned. " .
+      var_export($response, TRUE)
+    );
     self::$config['shared_secret'] = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
@@ -2076,10 +2210,16 @@ SQL;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
     $response = $this->callService($resource, $query, TRUE);
-    $this->assertEquals(401, $response['httpCode'],
-        "Incorrect userId passed to /$resource but request authorised. Http response $response[httpCode].");
-    $this->assertEquals('Unauthorized', $response['response']['status'],
-        "Incorrect userId passed to /$resource but data still returned. " . var_export($response, true));
+    $this->assertEquals(
+      401, $response['httpCode'],
+      "Incorrect userId passed to /$resource but request authorised. Http " .
+      "response $response[httpCode]."
+    );
+    $this->assertEquals(
+      'Unauthorized', $response['response']['status'],
+      "Incorrect userId passed to /$resource but data still returned. " .
+      var_export($response, TRUE)
+    );
 
     // Now test with everything correct.
     self::$clientUserId = $correctClientUserId;
@@ -2115,14 +2255,14 @@ SQL;
    * @param $data Array to be tested as a taxon occurrence resource
    */
   private function checkValidTaxonObservation($data) {
-    $this->assertIsArray($data, 'Taxon-observation object invalid. ' . var_export($data, true));
-    $mustHave = array('id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
+    $this->assertIsArray($data, 'Taxon-observation object invalid. ' . var_export($data, TRUE));
+    $mustHave = ['id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
         'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate');
     foreach ($mustHave as $key) {
       $this->assertArrayHasKey($key, $data,
-          "Missing $key from taxon-observation resource. " . var_export($data, true));
+          "Missing $key from taxon-observation resource. " . var_export($data, TRUE));
       $this->assertNotEmpty($data[$key],
-          "Empty $key in taxon-observation resource" . var_export($data, true));
+          "Empty $key in taxon-observation resource" . var_export($data, TRUE));
     }
     // @todo Format tests
   }
@@ -2132,19 +2272,27 @@ SQL;
    * @param $data Array to be tested as an annotation resource
    */
   private function checkValidAnnotation($data) {
-    $this->assertIsArray($data, 'Annotation object invalid. ' . var_export($data, true));
-    $mustHave = array('id', 'href', 'taxonObservation', 'taxonVersionKey', 'comment',
+    $this->assertIsArray($data, 'Annotation object invalid. ' . var_export($data, TRUE));
+    $mustHave = ['id', 'href', 'taxonObservation', 'taxonVersionKey', 'comment',
         'question', 'authorName', 'dateTime');
     foreach ($mustHave as $key) {
       $this->assertArrayHasKey($key, $data,
-        "Missing $key from annotation resource. " . var_export($data, true));
+        "Missing $key from annotation resource. " . var_export($data, TRUE));
       $this->assertNotEmpty($data[$key],
-        "Empty $key in annotation resource" . var_export($data, true));
+        "Empty $key in annotation resource" . var_export($data, TRUE));
     }
-    if (!empty($data['statusCode1']))
-      $this->assertMatchesRegularExpression('/[AUN]/', $data['statusCode1'], 'Invalid statusCode1 value for annotation');
-    if (!empty($data['statusCode2']))
-      $this->assertMatchesRegularExpression('/[1-6]/', $data['statusCode2'], 'Invalid statusCode2 value for annotation');
+    if (!empty($data['statusCode1'])) {
+      $this->assertMatchesRegularExpression(
+        '/[AUN]/', $data['statusCode1'],
+        'Invalid statusCode1 value for annotation'
+      );
+    }
+    if (!empty($data['statusCode2'])) {
+      $this->assertMatchesRegularExpression(
+        '/[1-6]/', $data['statusCode2'],
+        'Invalid statusCode2 value for annotation'
+      );
+    }
     // We should be able to request the taxon observation associated with the occurrence
     $session = $this->initCurl($data['taxonObservation']['href']);
     $response = $this->getCurlResponse($session);
@@ -2166,7 +2314,7 @@ SQL;
   /**
    * Assert that a folder exists in the response from a call to /reports.
    * @param array $response
-   * @param string $folder
+   * @param string $reportFile
    */
   private function checkReportInReponse($response, $reportFile) {
     $this->assertArrayHasKey($reportFile, $response);
@@ -2180,6 +2328,7 @@ SQL;
    *
    * @param $session
    * @param $url
+   * @param additionalRequestHeader
    */
   private function setRequestHeader($session, $url, $additionalRequestHeader = []) {
     switch ($this->authMethod) {
@@ -2325,6 +2474,9 @@ SQL;
    * @param $method
    * @param mixed|FALSE $query
    * @param string $postData
+   * @param $additionalRequestHeader
+   * @param $customMethod
+   * @param $files
    * @return array
    */
   private function callService($method, $query = FALSE, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL, $files = FALSE) {
