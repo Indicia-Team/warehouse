@@ -361,7 +361,7 @@ HTML;
     $val = html::specialchars($model->valid_regex_format);
     echo <<<HTML
 <div id="valid_regex_inputs">
-<input type="text" id="valid_regex_format" name="valid_regex_format" value="$val"/>
+<input type="text" id="valid_regex_format" name="valid_regex_format" value="$val" class="form-control" />
 </div>
 
 HTML;

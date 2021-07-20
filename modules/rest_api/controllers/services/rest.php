@@ -2699,13 +2699,20 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * End-point to GET an list of occurrences.
+   */
+  public function occurrencesGet() {
+    rest_crud::readList('occurrence', 'AND t1.website_id=' . RestObjects::$clientWebsiteId);
+  }
+
+  /**
    * End-point to GET an occurrence by ID.
    *
    * @param int $id
    *   Occurrence ID.
    */
   public function occurrencesGetId($id) {
-    rest_crud::read('occurrence', $id);
+    rest_crud::read('occurrence', $id, 'AND t1.website_id=' . RestObjects::$clientWebsiteId);
   }
 
   /**
@@ -2835,13 +2842,22 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * End-point to GET an list of samples.
+   */
+  public function samplesGet() {
+    // @todo Website filters on this request and similar may need to respect
+    // JWT scope.
+    rest_crud::readList('sample', 'AND t2.website_id=' . RestObjects::$clientWebsiteId);
+  }
+
+  /**
    * End-point to GET a sample by ID.
    *
    * @param int $id
    *   Sample ID.
    */
   public function samplesGetId($id) {
-    rest_crud::read('sample', $id);
+    rest_crud::read('sample', $id, 'AND t2.website_id=' . RestObjects::$clientWebsiteId);
   }
 
   /**

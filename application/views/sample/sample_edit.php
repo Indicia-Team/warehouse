@@ -34,6 +34,7 @@ $site = url::site();
     <input type="hidden" name="sample:survey_id" value="<?php echo html::initial_value($values, 'sample:survey_id'); ?>" />
     <input type="hidden" name="website_id" value="<?php echo html::initial_value($values, 'website_id'); ?>" />
     <?php
+    data_entry_helper::$entity_to_load = $values;
     echo data_entry_helper::text_input([
       'label' => 'Survey',
       'fieldname' => 'survey-label',
