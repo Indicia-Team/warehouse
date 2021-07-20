@@ -40,6 +40,17 @@ class Taxon_Model extends ORM {
   protected $has_and_belongs_to_many = ['taxon_lists'];
 
   /**
+   * Track external key changes.
+   *
+   * Taxon meaning ID for group of taxon names where preferred external key
+   * changing. Allows synonyms/vernaculars to be kept in sync with the accepted
+   * name.
+   *
+   * @var array
+   */
+  private $prefExternalKeyChangedForTaxonMeaningIds = [];
+
+  /**
    * Does an update change fields which are in the occurrences cache tables?
    *
    * @var bool
@@ -47,6 +58,13 @@ class Taxon_Model extends ORM {
   private $updateAffectsOccurrenceCache = FALSE;
 
   public function validate(Validation $array, $save = FALSE) {
+    // An external key change needs to apply to other taxa with the same
+    // meaning (concept).
+    foreach ($this->taxa_taxon_lists as $ttl) {
+      if ($ttl->preferred && $this->external_key !== $this->submission['fields']['external_key']['value']) {
+        $this->prefExternalKeyChangedForTaxonMeaningIds[] = $ttl->taxon_meaning_id;
+      }
+    }
     $array->pre_filter('trim');
     $array->add_rules('taxon', 'required');
     $array->add_rules('language_id', 'required');
@@ -126,6 +144,26 @@ VALUES('task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', $ttl->id, 10
 ON CONFLICT DO NOTHING;
 SQL;
         $this->db->query($addWorkQueueQuery);
+      }
+    }
+    if (!empty($this->prefExternalKeyChangedForTaxonMeaningIds)) {
+      // Apply external key change to synonyms/vernaculars.
+      global $remoteUserId;
+      if (isset($remoteUserId)) {
+        $userId = $remoteUserId;
+      }
+      else {
+        $userId = isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : Kohana::config('indicia.defaultPersonId');
+      }
+      foreach ($this->prefExternalKeyChangedForTaxonMeaningIds as $taxonMeaningId) {
+        $updateExtKeyQuery = <<<SQL
+  UPDATE taxa t
+  SET external_key='$this->external_key', updated_on=now(), updated_by_id=$userId
+  FROM taxa_taxon_lists ttl
+  WHERE ttl.taxon_meaning_id=$taxonMeaningId
+  AND t.id=ttl.taxon_id
+  SQL;
+        $this->db->query($updateExtKeyQuery);
       }
     }
     return TRUE;

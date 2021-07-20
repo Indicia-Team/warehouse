@@ -137,8 +137,39 @@ $config['taxa_taxon_lists']['get_changed_items_query'] = "
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
       left join taxa tc on tc.id=ttl.common_taxon_id
-      where ttl.updated_on>'#date#' or tl.updated_on>'#date#' or t.updated_on>'#date#' or l.updated_on>'#date#'
-        or tc.updated_on>'#date#'
+      where ttl.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where tl.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where t.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where l.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where tc.updated_on>'#date#'
       union
       select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
       from taxa_taxon_lists ttl
@@ -146,7 +177,31 @@ $config['taxa_taxon_lists']['get_changed_items_query'] = "
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
-      where ttlpref.updated_on>'#date#' or tpref.updated_on>'#date#' or lpref.updated_on>'#date#' or tg.updated_on>'#date#'
+      where ttlpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id and ttlpref.deleted=false
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where tpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id and ttlpref.deleted=false
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where lpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id and ttlpref.deleted=false
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where tg.updated_on>'#date#'
       ) as sub
       group by id";
 
@@ -407,8 +462,39 @@ $config['taxon_searchterms']['get_changed_items_query'] = "
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
       left join taxa tc on tc.id=ttl.common_taxon_id
-      where ttl.updated_on>'#date#' or tl.updated_on>'#date#' or t.updated_on>'#date#' or l.updated_on>'#date#'
-        or tc.updated_on>'#date#'
+      where ttl.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where tl.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where t.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where l.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where tc.updated_on>'#date#'
       union
       select ttl.id, ttl.allow_data_entry, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
       from taxa_taxon_lists ttl
@@ -416,7 +502,31 @@ $config['taxon_searchterms']['get_changed_items_query'] = "
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
-      where ttlpref.updated_on>'#date#' or tpref.updated_on>'#date#' or lpref.updated_on>'#date#' or tg.updated_on>'#date#'
+      where ttlpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where tpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where lpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where tg.updated_on>'#date#'
       ) as sub
       group by sub.id, sub.allow_data_entry";
 
