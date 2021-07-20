@@ -254,13 +254,13 @@ SQL;
    * @todo Support for reading a survey structure including attribute metadata.
    * @todo Add test case
    */
-  public static function readList($entity, $extraFilter, $userFilter = TRUE) {
+  public static function readList($entity, $extraFilter = '', $userFilter = TRUE) {
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $rows = RestObjects::$db->query($qry);
     $r = [];
     foreach ($rows as $row) {
       unset($row->xmin);
-      $r[] = ['values' => (array) $row];
+      $r[] = ['values' => self::getValuesForResponse($row)];
     }
     RestObjects::$apiResponse->succeed($r);
   }
