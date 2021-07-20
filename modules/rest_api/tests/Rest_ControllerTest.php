@@ -409,40 +409,40 @@ KEY;
     $this->assertEquals(201, $response['httpCode']);
     $id = $response['response']['values']['id'];
     // Now GET to check values stored OK.
-    $surveys = $this->callService("$table");
-    $this->assertResponseOk($surveys, "/$table GET");
+    $storedList = $this->callService("$table");
+    $this->assertResponseOk($storedList, "/$table GET");
     // Search for the one we posted.
     $found = FALSE;
-    foreach ($surveys['response'] as $survey) {
-      $allMatch = $survey['values']['id'] === $id;
+    foreach ($storedList['response'] as $storedItem) {
+      $allMatch = $storedItem['values']['id'] === $id;
       foreach ($exampleData as $field => $value) {
-        $allMatch = $allMatch && ($value === $survey['values'][$field]);
+        $allMatch = $allMatch && ((string) $value === $storedItem['values'][$field]);
       }
       if ($allMatch) {
         $found = TRUE;
-        // from foreach.
+        // From foreach.
         break;
       }
     }
-    $this->assertTrue($found, 'POSTed survey not found in retrieved list using GET.');
+    $this->assertTrue($found, "POSTed $table not found in retrieved list using GET.");
     // Repeat with a filter
-    $filterField = array_keys($exampleData)[0];
-    $surveys = $this->callService($table, [$filterField => $exampleData[$filterField]]);
-    $this->assertResponseOk($surveys, "/$table GET");
+    $filterField = array_keys($exampleData)[1];
+    $storedList = $this->callService($table, [$filterField => $exampleData[$filterField]]);
+    $this->assertResponseOk($storedList, "/$table GET");
     // Search for the one we posted.
     $found = FALSE;
-    foreach ($surveys['response'] as $survey) {
-      $allMatch = $survey['values']['id'] === $id;
+    foreach ($storedList['response'] as $storedItem) {
+      $allMatch = $storedItem['values']['id'] === $id;
       foreach ($exampleData as $field => $value) {
-        $allMatch = $allMatch && ($value === $survey['values'][$field]);
+        $allMatch = $allMatch && ((string) $value === $storedItem['values'][$field]);
       }
       if ($allMatch) {
         $found = TRUE;
-        // from foreach.
+        // From foreach.
         break;
       }
     }
-    $this->assertTrue($found, 'POSTed survey not found in filtered retrieved list using GET.');
+    $this->assertTrue($found, "POSTed $table not found in filtered retrieved list using GET.");
     // Repeat with a filter that should exclude the record.
     $surveys = $this->callService($table, [$filterField => microtime(TRUE)]);
     $this->assertResponseOk($surveys, "/$table GET");
@@ -455,7 +455,7 @@ KEY;
       }
       if ($allMatch) {
         $found = TRUE;
-        // from foreach.
+        // From foreach.
         break;
       }
     }
@@ -1166,7 +1166,7 @@ KEY;
   }
 
   public function testJwtSamplePut() {
-    $this->putTesT('samples', [
+    $this->putTest('samples', [
       'survey_id' => 1,
       'entered_sref' => 'SU1234',
       'entered_sref_system' => 'OSGB',
@@ -1177,7 +1177,7 @@ KEY;
   }
 
   /**
-   * A basic test of /samples GET.
+   * A basic test of /samples/id GET.
    */
   public function testJwtSampleGet() {
     $this->getTest('samples',  [
@@ -1186,6 +1186,19 @@ KEY;
       'entered_sref_system' => 'OSGB',
       'date' => '01/08/2020',
       'comment' => 'A sample to delete',
+    ]);
+  }
+
+  /**
+   * A basic test of /samples GET.
+   */
+  public function testJwtSampleGetList() {
+    $this->getListTest('samples', [
+      'survey_id' => 1,
+      'entered_sref' => 'SU2345',
+      'entered_sref_system' => 'OSGB',
+      'date' => '01/08/2020',
+      'comment' => 'A sample to delete for list get test.',
     ]);
   }
 
@@ -1596,13 +1609,25 @@ SQL;
   }
 
   /**
-   * A basic test of /occurrences GET.
+   * A basic test of /occurrences/id GET.
    */
   public function testJwtOccurrenceGet() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
     $this->getTest('occurrences', [
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrences GET.
+   */
+  public function testJwtOccurrenceGetList() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->getListTest('occurrences', [
+      // Sample first as it makes a better filter test.
+      'sample_id' => $sampleId,
+      'taxa_taxon_list_id' => 1,
     ]);
   }
 

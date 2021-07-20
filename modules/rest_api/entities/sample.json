@@ -29,6 +29,14 @@
     { "sql": "st_y(st_transform(st_centroid(t1.geom), 4326))", "name": "lat", "type": "float" },
     { "sql": "st_x(st_transform(st_centroid(t1.geom), 4326))", "name": "lon", "type": "float" }
   ],
+  "joins": [
+    {
+      "sql": "JOIN surveys t2 on t2.id=t1.survey_id AND t2.deleted=false",
+      "fields": [
+        { "sql": "title", "name": "survey_title", "type": "integer" }
+      ]
+    }
+  ],
   "subModels": {
     "samples": { "fk": "parent_id" },
     "occurrences": { "fk": "sample_id" },

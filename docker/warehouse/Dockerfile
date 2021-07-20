@@ -3,6 +3,9 @@
 FROM php:8.0-apache
 # Use PHP development configuration file
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+# Increase size of files which can be uploaded.
+RUN sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 20M/' "$PHP_INI_DIR/php.ini"
+
 # Add a tool to assist with installing PHP extensions.
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions
