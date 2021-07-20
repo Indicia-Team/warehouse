@@ -316,12 +316,22 @@ the same way as a POST.
 TXT;
 $lang['resources']['DELETE sample-attributes/{id}'] = 'Deletes a single sample custom attribute.';
 $lang['resources']['samples'] = 'A list of the user\'s samples data, each of which can contain any number of occurrences.';
-$lang['resources']['GET samples'] = 'Retrieve a list of the user\'s samples data.';
+$lang['resources']['GET samples'] = <<<TXT
+Retrieve a list of the user's samples data. In addition to the database fields, the response values
+include the following: <ul>
+  <li>date - formatted date or vague date string.</li>
+  <li>survey_title - title of the survey it belongs to.</li>
+</ul>
+TXT;
 $lang['resources']['GET samples/{id}'] = <<<TXT
 Read the data for a single sample. If using jwtUser or directUser authentication then the sample
 must be created by the authenticated user or 404 Not Found will be returned. Response contains a
-values entry with a list of key/value pairs including custom attributes. An additional field called
-`date` is added with the formatted date string created from the vague date fields. Example:
+values entry with a list of key/value pairs including custom attributes. In addition to the
+database fields, the response values include the following: <ul>
+  <li>date - formatted date or vague date string.</li>
+  <li>survey_title - title of the survey it belongs to.</li>
+</ul>
+Example:
 <pre><code>
 GET /index.php/services/rest/samples/3
 
@@ -358,7 +368,8 @@ Response:
     "lat": "51.10309961727583",
     "lon": "51.10309961727583",
     "smpAttr:1": "150",
-    "date": "01\/08\/2020"
+    "date": "01\/08\/2020",
+    "survey_title": "Woodland monitoring"
   }
 }
 </code></pre>

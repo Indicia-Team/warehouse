@@ -452,7 +452,7 @@ KEY;
       }
       if ($allMatch) {
         $found = TRUE;
-        // from foreach.
+        // From foreach.
         break;
       }
     }
