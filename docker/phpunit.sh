@@ -63,14 +63,41 @@ cp ${DIR}/request_logging.example.php ${DIR}/request_logging.php
 # 172.17.0.1 is the IP address of the Docker host seen from a container.
 # The idekey is for a suitably configured Visual Studio Code debugging client.
 docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
-  runuser -u $USER -- pwd && \
+ runuser -u $USER -- pwd && \
     vendor/bin/phpunit --stderr --configuration phpunit-config-test.xml && \
     vendor/bin/phpunit --stderr --configuration phpunit-setup-check-test.xml && \
     vendor/bin/phpunit --stderr --configuration phpunit-home-test.xml && \
-    vendor/bin/phpunit --stderr --configuration phpunit-home-test.xml && \
-    vendor/bin/phpunit --stderr --configuration phpunit-tests.xml
+    # Repeat to upgrade modules
+    vendor/bin/phpunit --stderr --configuration phpunit-home-test.xml
 '
 
+# Now the Indicia schema exists we can assign permissions to the 
+# indicia_report_user.
+docker exec -t docker_phpunit_1 sh -c '
+  runuser -u postgres -- psql indicia -c "
+  GRANT USAGE ON SCHEMA indicia TO indicia_report_user;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA indicia GRANT SELECT ON TABLES TO indicia_report_user;
+  GRANT SELECT ON ALL TABLES IN SCHEMA indicia TO indicia_report_user;
+  "
+'
+
+docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
+  runuser -u $USER -- pwd && \
+  vendor/bin/phpunit --stderr --configuration phpunit-tests.xml
+'
+
+# Allow user a chance to modify code and rerun application/module tests.
+while true; do
+  prompt="Would you like to re-run application and module tests (Y/n)?"
+  read -rs -n 1 -p "$prompt" 
+  echo
+  if [ "$REPLY" = "N" ] || [ "$REPLY" = "n" ]; then
+    break
+  fi
+  docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
+    runuser -u $USER -- vendor/bin/phpunit --stderr --configuration phpunit-tests.xml
+  '
+done
 
 # Restore backed-up files.
 for FILE in ${BACKUP[@]}; do

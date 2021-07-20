@@ -48,4 +48,4 @@ RUN sed -i 's/<VirtualHost *:80>/<VirtualHost *:8080>/' /etc/apache2/sites-enabl
 
 # When a warehouse container is started, we need to execute a setup script.
 # (The working directory is /var/www/html)
-CMD docker/warehouse/setup.sh
+CMD docker/warehouse/startup.sh
