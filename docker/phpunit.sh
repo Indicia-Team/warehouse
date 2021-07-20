@@ -63,6 +63,19 @@ docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_ph
   runuser -u $USER -- phpunit --stderr --configuration phpunit-home-test.xml
   # Repeat to upgrade modules
   runuser -u $USER -- phpunit --stderr --configuration phpunit-home-test.xml
+'
+
+# Now the Indicia schema exists we can assign permissions to the 
+# indicia_report_user.
+docker exec -t docker_phpunit_1 sh -c '
+  runuser -u postgres -- psql indicia -c "
+  GRANT USAGE ON SCHEMA indicia TO indicia_report_user;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA indicia GRANT SELECT ON TABLES TO indicia_report_user;
+  GRANT SELECT ON ALL TABLES IN SCHEMA indicia TO indicia_report_user;
+  "
+'
+
+docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
   runuser -u $USER -- phpunit --stderr --configuration phpunit-tests.xml
 '
 
