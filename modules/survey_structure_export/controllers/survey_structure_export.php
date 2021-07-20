@@ -129,13 +129,20 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    */
   const SQL_FETCH_ALL_SAMPLE_ATTRS = "SELECT 
     a.caption, 
-    a.data_type, 
-    a.applies_to_location, 
-    a.validation_rules, 
-    a.multi_value, 
-    a.public, 
-    a.applies_to_recorder, 
+    a.caption_i18n #>> '{}' AS a_caption_i18n,
+    a.unit,
+    a.term_name,
+    a.term_identifier,
+    a.description,
+    a.description_i18n #>> '{}' AS a_description_i18n,
     a.system_function,
+    a.data_type, 
+    a.multi_value, 
+    a.allow_ranges,
+    a.public, 
+    a.validation_rules, 
+    a.applies_to_location, 
+    a.applies_to_recorder, 
     sm.term AS aw_restrict_to_sample_method_id_term, 
     aw.validation_rules AS aw_validation_rules, 
     aw.weight AS aw_weight, 
@@ -173,11 +180,14 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     AND fsb2.survey_id = aw.restrict_to_survey_id
   WHERE a.deleted = false
     AND aw.restrict_to_survey_id = {survey_id}
-  GROUP BY a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules, 
-    a.multi_value, a.public, a.applies_to_recorder, a.system_function,
+  GROUP BY a.caption, a_caption_i18n, a.unit, a.term_name,
+    a.term_identifier, a.description, a_description_i18n, a.system_function,
+    a.data_type, a.multi_value, a.allow_ranges, a.public,
+    a.validation_rules, a.applies_to_location, a.applies_to_recorder,
     sm.term, aw.validation_rules, aw.weight, aw.control_type_id,
-    aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value,
-    aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value,
+    aw.website_id, aw.default_text_value, aw.default_float_value, 
+    aw.default_int_value, aw.default_date_start_value,
+    aw.default_date_end_value, aw.default_date_type_value,
     fsb1.name, fsb1.weight, fsb2.name, fsb2.weight, t.termlist_title
   ORDER BY fsb1.weight, fsb2.weight, aw.weight";
 
@@ -187,13 +197,19 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * export.
    */
   const SQL_FETCH_ALL_OCCURRENCE_ATTRS = "SELECT 
-    a.id, 
     a.caption, 
-    a.data_type, 
-    a.validation_rules, 
-    a.multi_value, 
-    a.public, 
+    a.caption_i18n #>> '{}' AS a_caption_i18n,
+    a.unit,
+    a.term_name,
+    a.term_identifier,
+    a.description,
+    a.description_i18n #>> '{}' AS a_description_i18n,
     a.system_function,
+    a.data_type, 
+    a.multi_value, 
+    a.allow_ranges,
+    a.public, 
+    a.validation_rules, 
     aw.validation_rules AS aw_validation_rules, 
     aw.weight AS aw_weight, 
     aw.control_type_id AS aw_control_type_id,
@@ -231,10 +247,13 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     AND fsb2.survey_id = aw.restrict_to_survey_id
   WHERE a.deleted = false
     AND aw.restrict_to_survey_id = {survey_id}
-  GROUP BY a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, 
-    a.public, a.system_function, aw.validation_rules, aw.weight, aw.control_type_id,
-    aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value,
-    aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value,
+  GROUP BY  a.caption, a_caption_i18n, a.unit, a.term_name,
+    a.term_identifier, a.description, a_description_i18n, a.system_function,
+    a.data_type, a.multi_value, a.allow_ranges, a.public,
+    a.validation_rules, aw.validation_rules, aw.weight, aw.control_type_id,
+    aw.website_id, aw.default_text_value, aw.default_float_value, 
+    aw.default_int_value, aw.default_date_start_value,
+    aw.default_date_end_value, aw.default_date_type_value,
     fsb1.name, fsb1.weight, fsb2.name, fsb2.weight, t.termlist_title
   ORDER BY fsb1.weight, fsb2.weight, aw.weight";
 
@@ -249,11 +268,18 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   const SQL_FIND_ATTRS = "SELECT 
     a.id, 
     a.caption, 
+    a.caption_i18n #>> '{}' AS a_caption_i18n,
+    a.unit,
+    a.term_name,
+    a.term_identifier,
+    a.description,
+    a.description_i18n #>> '{}' AS a_description_i18n,
+    a.system_function,
     a.data_type, 
-    a.validation_rules, 
     a.multi_value, 
+    a.allow_ranges,
     a.public, 
-    a.system_function{extraFields},
+    a.validation_rules{extraFields},
 	  t.termlist_title AS termlist_title, 
     aw.website_id,
 	  array_to_string(array_agg(
@@ -274,8 +300,10 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   WHERE a.deleted = false
   AND (a.public = true OR aw.id IS NOT NULL)
   {where}
-  GROUP BY a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, 
-  a.public, a.system_function, t.termlist_title, aw.website_id{extraFields}
+  GROUP BY a.id, a.caption, a_caption_i18n, a.unit, a.term_name,
+    a.term_identifier, a.description, a_description_i18n, a.system_function,
+    a.data_type, a.multi_value, a.allow_ranges, a.public,
+    a.validation_rules{extraFields}, t.termlist_title, aw.website_id
   ORDER BY aw.website_id IS NULL, aw.website_id = {websiteId}";
 
   /**
@@ -512,11 +540,18 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     // List standard fields and values to set.
     $array = [
       'caption' => $attrDef['caption'],
-      'data_type' => $attrDef['data_type'],
-      'validation_rules' => $attrDef['validation_rules'],
-      'multi_value' => $attrDef['multi_value'],
-      'public' => $attrDef['public'],
+      'caption_i18n' => $attrDef['caption_i18n'],
+      'unit' => $attrDef['unit'],
+      'term_name' => $attrDef['term_name'],
+      'term_identifier' => $attrDef['term_identifier'],
+      'description' => $attrDef['description'],
+      'description_i18n' => $attrDef['description_i18n'],
       'system_function' => $attrDef['system_function'],
+      'data_type' => $attrDef['data_type'],
+      'multi_value' => $attrDef['multi_value'],
+      'allow_ranges' => $attrDef['allow_ranges'],
+      'public' => $attrDef['public'],
+      'validation_rules' => $attrDef['validation_rules'],
     ];
     // Append any extra fields and their values.
     foreach ($extraFields as $field) {
