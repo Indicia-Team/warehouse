@@ -34,6 +34,14 @@ RUN sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-
     && apt-get update \
     && apt-get -y install postgresql-${PG_VERSION}-postgis-3 postgresql-contrib-${PG_VERSION}
 
+# Enable postgresql query logging
+RUN CONF=/etc/postgresql/${PG_VERSION}/main/postgresql.conf \
+  && LOG=/var/lib/postgresql/${PG_VERSION}/main/log \
+  && mkdir -p $LOG \
+  && chown postgres:postgres $LOG \
+  && sed -i "s/#logging_collector = off/logging_collector = on/" $CONF\
+  && sed -i "s/#log_statement = 'none'/log_statement = 'all'/" $CONF 
+
 # Create a user the same identity as the host user so that it can 
 # share files on the bind mount containing the warehouse code which 
 # docker-compose is going to set up.
