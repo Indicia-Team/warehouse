@@ -79,6 +79,19 @@ docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_ph
   runuser -u $USER -- phpunit --stderr --configuration phpunit-tests.xml
 '
 
+# Allow user a chance to modify code and rerun application/module tests.
+while true; do
+  prompt="Would you like to re-run application and module tests (Y/n)?"
+  read -rs -n 1 -p "$prompt" 
+  echo
+  if [ "$REPLY" = "N" ] || [ "$REPLY" = "n" ]; then
+    break
+  fi
+  docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
+    runuser -u $USER -- vendor/bin/phpunit --stderr --configuration phpunit-tests.xml
+  '
+done
+
 # Restore backed-up files.
 for FILE in ${BACKUP[@]}; do
   if [ -f ${FILE}.phpunit-backup ]; then
