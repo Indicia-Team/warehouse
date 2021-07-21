@@ -1,10 +1,10 @@
 -- For each view, `list_*_attribute values`, alter the `value` field
--- for float data types to return the `text_value`, if there is one.
--- The text value is the entered value, including trailing zeroes,
+-- for float data types to return the `text_value`.
+-- The text value is the entered value including trailing zeroes,
 -- which we need when a decimal validation rule is in place checking
--- the number of digits after the decimal place.
+-- the number of digits after the decimal place, and ranges.
 
--- I.e.
+-- I.e. Where previously there were lines like
 -- 
 -- WHEN 'F'::bpchar THEN av.float_value::text ||
 -- CASE
@@ -12,19 +12,12 @@
 --     ELSE ''::text
 -- END
 --
--- becomes
+-- they can become
 --
--- WHEN 'F'::bpchar THEN
--- CASE
---     WHEN av.text_value IS NOT NULL THEN av.text_value
---     ELSE av.float_value::text ||
---     CASE
---         WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
---         ELSE ''::text
---     END
--- END
+-- WHEN 'F'::bpchar THEN av.text_value
 
--- This allows for legacy float values where there is no text_value.
+-- This depends upon all existing floating-point attribute values being updated
+-- so that the text_value is populated.
 
 CREATE OR REPLACE VIEW list_location_attribute_values
  AS
@@ -57,15 +50,7 @@ CREATE OR REPLACE VIEW list_location_attribute_values
                 ELSE ''::text
             END
             WHEN 'B'::bpchar THEN av.int_value::text
-            WHEN 'F'::bpchar THEN
-            CASE
-                WHEN av.text_value IS NOT NULL THEN av.text_value
-                ELSE av.float_value::text ||
-                CASE
-                    WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
-                    ELSE ''::text
-                END
-            END
+            WHEN 'F'::bpchar THEN av.text_value 
             WHEN 'D'::bpchar THEN av.date_start_value::text
             WHEN 'V'::bpchar THEN (av.date_start_value::text || ' - '::text) || av.date_end_value::text
             ELSE NULL::text
@@ -132,15 +117,7 @@ CREATE OR REPLACE VIEW list_occurrence_attribute_values
                 ELSE ''::text
             END
             WHEN 'B'::bpchar THEN av.int_value::text
-            WHEN 'F'::bpchar THEN
-            CASE
-                WHEN av.text_value IS NOT NULL THEN av.text_value
-                ELSE av.float_value::text ||
-                CASE
-                    WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
-                    ELSE ''::text
-                END
-            END
+            WHEN 'F'::bpchar THEN av.text_value
             WHEN 'D'::bpchar THEN av.date_start_value::text
             WHEN 'V'::bpchar THEN vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
             ELSE NULL::text
@@ -208,15 +185,7 @@ CREATE OR REPLACE VIEW list_person_attribute_values
                 ELSE ''::text
             END
             WHEN 'B'::bpchar THEN av.int_value::text
-            WHEN 'F'::bpchar THEN
-            CASE
-                WHEN av.text_value IS NOT NULL THEN av.text_value
-                ELSE av.float_value::text ||
-                CASE
-                    WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
-                    ELSE ''::text
-                END
-            END
+            WHEN 'F'::bpchar THEN av.text_value
             WHEN 'D'::bpchar THEN av.date_start_value::text
             WHEN 'V'::bpchar THEN vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
             ELSE NULL::text
@@ -284,15 +253,7 @@ CREATE OR REPLACE VIEW list_sample_attribute_values
                 ELSE ''::text
             END
             WHEN 'B'::bpchar THEN av.int_value::text
-            WHEN 'F'::bpchar THEN
-            CASE
-                WHEN av.text_value IS NOT NULL THEN av.text_value
-                ELSE av.float_value::text ||
-                CASE
-                    WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
-                    ELSE ''::text
-                END
-            END
+            WHEN 'F'::bpchar THEN av.text_value
             WHEN 'D'::bpchar THEN av.date_start_value::text
             WHEN 'V'::bpchar THEN vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
             ELSE NULL::text
@@ -359,15 +320,7 @@ CREATE OR REPLACE VIEW list_survey_attribute_values
                 ELSE ''::text
             END
             WHEN 'B'::bpchar THEN av.int_value::text
-            WHEN 'F'::bpchar THEN
-            CASE
-                WHEN av.text_value IS NOT NULL THEN av.text_value
-                ELSE av.float_value::text ||
-                CASE
-                    WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
-                    ELSE ''::text
-                END
-            END
+            WHEN 'F'::bpchar THEN av.text_value
             WHEN 'D'::bpchar THEN av.date_start_value::text
             WHEN 'V'::bpchar THEN vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
             ELSE NULL::text
@@ -469,15 +422,7 @@ UNION
                 ELSE ''::text
             END
             WHEN 'B'::bpchar THEN av.int_value::text
-            WHEN 'F'::bpchar THEN
-            CASE
-                WHEN av.text_value IS NOT NULL THEN av.text_value
-                ELSE av.float_value::text ||
-                CASE
-                    WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
-                    ELSE ''::text
-                END
-            END
+            WHEN 'F'::bpchar THEN av.text_value
             WHEN 'D'::bpchar THEN av.date_start_value::text
             WHEN 'V'::bpchar THEN (av.date_start_value::text || ' - '::text) || av.date_end_value::text
             WHEN 'G'::bpchar THEN st_astext(av.geom_value)
@@ -546,15 +491,7 @@ CREATE OR REPLACE VIEW list_termlists_term_attribute_values
                 ELSE ''::text
             END
             WHEN 'B'::bpchar THEN av.int_value::text
-            WHEN 'F'::bpchar THEN
-            CASE
-                WHEN av.text_value IS NOT NULL THEN av.text_value
-                ELSE av.float_value::text ||
-                CASE
-                    WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
-                    ELSE ''::text
-                END
-            END
+            WHEN 'F'::bpchar THEN av.text_value 
             WHEN 'D'::bpchar THEN av.date_start_value::text
             WHEN 'V'::bpchar THEN vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
             ELSE NULL::text
