@@ -118,33 +118,34 @@ $config['extension_prefix'] = 'MY_';
  */
 $config['modules'] = array
 (
-  MODPATH.'indicia_auth',          // Authentication
-  MODPATH.'indicia_svc_base',      // Services
-  MODPATH.'indicia_svc_data',      // Data services
-  MODPATH.'indicia_svc_import',    // Import services
-  MODPATH.'indicia_svc_validation',// Validation services
-  MODPATH.'indicia_svc_security',  // Security services
-  MODPATH.'indicia_svc_spatial',   // Spatial services
-  MODPATH.'indicia_setup',         // Setup procedures
+  MODPATH.'indicia_auth',            // Authentication
+  MODPATH.'indicia_svc_base',        // Services
+  MODPATH.'indicia_svc_data',        // Data services
+  MODPATH.'indicia_svc_import',      // Import services
+  MODPATH.'indicia_svc_validation',  // Validation services
+  MODPATH.'indicia_svc_security',    // Security services
+  MODPATH.'indicia_svc_spatial',     // Spatial services
+  MODPATH.'indicia_setup',           // Setup procedures
 
-  MODPATH.'sref_osgb',             // OSGB grid notation
-  MODPATH.'sref_osie',             // Irish grid notation (TM75)
-  MODPATH.'sref_channel_islands',  // Jersey and Guernsey grid notations
-  MODPATH.'sref_utm',              // UTM grid notation
-  MODPATH.'sref_mtb',              // German grid notation (MTBQQQ)
+  MODPATH.'sref_osgb',               // OSGB grid notation
+  MODPATH.'sref_osie',               // Irish grid notation (TM75)
+  MODPATH.'sref_channel_islands',    // Jersey and Guernsey grid notations
+  MODPATH.'sref_utm',                // UTM grid notation
+  MODPATH.'sref_mtb',                // German grid notation (MTBQQQ)
 
-  MODPATH.'cache_builder',         // build a cache for performance reporting
-  MODPATH.'data_cleaner',          // automatic record checks
+  MODPATH.'cache_builder',           // build a cache for performance reporting
+  MODPATH.'data_cleaner',            // automatic record checks
   MODPATH.'data_cleaner_period_within_year',
 
-  MODPATH.'rest_api',              // RESTful web service interface
-  MODPATH.'spatial_index_builder', // index of location occurrence overlaps
-  MODPATH.'taxon_associations',    // data tables for associations between taxa
-  MODPATH.'scratchpad',            // scratchpad tables for keeping quick lists
-  MODPATH.'auto_verify',           // verification acceptance based on data cleaner rules
-  MODPATH.'milestones',            // milestone achievements against milestones
-  MODPATH.'workflow',              // control of record flags through verification workflow
-  MODPATH.'attribute_sets',        // custom attribute management functionality
-  MODPATH.'request_logging',       // track report and data timings
-  MODPATH.'phpUnit',               // Required for testing
+  MODPATH.'rest_api',                // RESTful web service interface
+  MODPATH.'spatial_index_builder',   // index of location occurrence overlaps
+  MODPATH.'taxon_associations',      // data tables for associations between taxa
+  MODPATH.'scratchpad',              // scratchpad tables for keeping quick lists
+  MODPATH.'auto_verify',             // verification acceptance based on data cleaner rules
+  MODPATH.'milestones',              // milestone achievements against milestones
+  MODPATH.'workflow',                // control of record flags through verification workflow
+  MODPATH.'attribute_sets',          // custom attribute management functionality
+  MODPATH.'request_logging',         // track report and data timings
+  MODPATH.'survey_structure_export', // import/export of attributes
+  MODPATH.'phpUnit',                 // Required for testing
 );
