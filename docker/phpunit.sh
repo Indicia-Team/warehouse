@@ -2,7 +2,9 @@
 
 # Set the port on which the warehouse will be accessible
 # to the host.
-export PORT=8010
+export PORT=8080
+# Set the project name which determines the network and container names.
+export COMPOSE_PROJECT_NAME=phpunit
 
 # The phpunit container is built to replicate the CI environment
 # allowing us to run tests locally before pushing commits.
@@ -62,7 +64,7 @@ cp ${DIR}/request_logging.example.php ${DIR}/request_logging.php
 # The XDEBUG_CONFIG is to allow breakpoints to be triggered as tests run.
 # 172.17.0.1 is the IP address of the Docker host seen from a container.
 # The idekey is for a suitably configured Visual Studio Code debugging client.
-docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
+docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" phpunit_warehouse_1 sh -c '
  runuser -u $USER -- pwd && \
     vendor/bin/phpunit --stderr --configuration phpunit-config-test.xml && \
     vendor/bin/phpunit --stderr --configuration phpunit-setup-check-test.xml && \
@@ -73,7 +75,7 @@ docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_ph
 
 # Now the Indicia schema exists we can assign permissions to the 
 # indicia_report_user.
-docker exec -t docker_phpunit_1 sh -c '
+docker exec -t phpunit_warehouse_1 sh -c '
   runuser -u postgres -- psql indicia -c "
   GRANT USAGE ON SCHEMA indicia TO indicia_report_user;
   ALTER DEFAULT PRIVILEGES IN SCHEMA indicia GRANT SELECT ON TABLES TO indicia_report_user;
@@ -81,7 +83,7 @@ docker exec -t docker_phpunit_1 sh -c '
   "
 '
 
-docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
+docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" phpunit_warehouse_1 sh -c '
   runuser -u $USER -- pwd && \
   vendor/bin/phpunit --stderr --configuration phpunit-tests.xml
 '
@@ -94,7 +96,7 @@ while true; do
   if [ "$REPLY" = "N" ] || [ "$REPLY" = "n" ]; then
     break
   fi
-  docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
+  docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" phpunit_warehouse_1 sh -c '
     runuser -u $USER -- vendor/bin/phpunit --stderr --configuration phpunit-tests.xml
   '
 done

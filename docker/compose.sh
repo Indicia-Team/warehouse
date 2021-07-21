@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Set the project name which determines the network and container names.
+export COMPOSE_PROJECT_NAME=indicia
+
 # The postgres container is built by us so that we can include
 # the setup script in the image.
 # The warehouse container is built with PHP extensions added
@@ -101,7 +104,7 @@ ____EOF
       curl $url | tar -xz --strip-components=1 support_files-master/UKSI
 
       echo "...Executing the import on the warehouse."
-      docker exec docker_warehouse_1 sh -c '
+      docker exec indicia_warehouse_1 sh -c '
         cd docker/UKSI
         php import-uksi.php \
         --warehouse-path=/var/www/html \
@@ -168,7 +171,7 @@ ____EOF
       # Note, warehouse-path is in the warehouse container
       # but data-path is in the postgres container.
       # There are corresponding mounts in the compose file.
-      docker exec docker_warehouse_1 sh -c '
+      docker exec indicia_warehouse_1 sh -c '
         cd docker/GBIF
         php import-gbif.php \
         --warehouse-path=/var/www/html \
@@ -193,7 +196,7 @@ ____EOF
       echo "Adding scheduled tasks to crontab."
       cronspec="*/15 * * * * php /var/www/html/index.php scheduled_tasks"
       croncmd="echo $cronspec | crontab -u $(id -un) -"
-      docker exec docker_warehouse_1 sh -c "set -f; $croncmd"
+      docker exec indicia_warehouse_1 sh -c "set -f; $croncmd"
 
       # With scheduled_tasks enabled we can enable the data_cleaner.
       echo
