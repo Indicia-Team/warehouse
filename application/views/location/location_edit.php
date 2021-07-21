@@ -251,12 +251,13 @@ This page allows you to specify the details of a location.
             break;
 
           case 'L':
-            echo data_entry_helper::date_picker(array(
+            echo data_entry_helper::select([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['raw_value'],
               'lookupValues' => $values["terms_$attr[termlist_id]"],
-            ));
+              'blankText' => '<Please select>',
+            ]);
             break;
 
           case 'B':
