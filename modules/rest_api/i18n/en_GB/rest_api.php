@@ -256,7 +256,12 @@ the same way as a POST.
 TXT;
 $lang['resources']['DELETE occurrence-attributes/{id}'] = 'Deletes a single occurrence custom attribute.';
 $lang['resources']['occurrence-media'] = "A list of a user's occurrence media.";
-$lang['resources']['GET occurrence-media'] = "Retrieve list of a user's occurrence media.";
+$lang['resources']['GET occurrence-media'] = <<<TXT
+Retrieve list of a user's occurrence media. In addition to the database fields, the response values
+include the following: <ul>
+  <li>media_type - the term describing the type of media, e.g. 'Image:Local'.</li>
+</ul>
+TXT;
 $lang['resources']['POST occurrence-media'] = "Create a single occurrence media belonging to the user, for an existing occurrence.";
 $lang['resources']['PUT occurrence-media'] = "Updates a single occurrence media belonging to the user.";
 $lang['resources']['DELETE occurrence-media'] = "Deletes a single occurrence media belonging to the user.";
@@ -322,7 +327,12 @@ Updates a single sample custom attribute. Lookups can update the termlist conten
 the same way as a POST.
 TXT;
 $lang['resources']['DELETE sample-attributes/{id}'] = 'Deletes a single sample custom attribute.';
-$lang['resources']['sample-media'] = "A list of a user's sample media.";
+$lang['resources']['sample-media'] = <<<TXT
+Retrieve list of a user's sample media. In addition to the database fields, the response values
+include the following: <ul>
+  <li>media_type - the term describing the type of media, e.g. 'Image:Local'.</li>
+</ul>
+TXT;
 $lang['resources']['GET sample-media'] = "Retrieve list of a user's sample media.";
 $lang['resources']['POST sample-media'] = "Create a single sample media belonging to the user, for an existing sample.";
 $lang['resources']['PUT sample-media'] = "Updates a single sample media belonging to the user.";
