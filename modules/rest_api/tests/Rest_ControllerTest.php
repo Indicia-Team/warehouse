@@ -981,6 +981,70 @@ KEY;
   }
 
   /**
+   * Test /sample_media POST in isolation.
+   */
+  public function testJwtSampleMediaPost() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->postTest('sample_media', [
+      'path' => 'abc.jpg',
+      'sample_id' => $sampleId,
+    ], 'path');
+  }
+
+  /**
+   * Test /sample_media PUT in isolation.
+   */
+  public function testJwtSampleMediaPut() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->putTest('sample_media', [
+      'path' => 'abc.jpg',
+      'sample_id' => $sampleId,
+    ], [
+      'path' => 'cde.jpg',
+    ]);
+  }
+
+  /**
+   * A basic test of /sample_media/id GET.
+   */
+  public function testJwtSampleMediaGet() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->getTest('sample_media',  [
+      'path' => 'xyz.jpg',
+      'sample_id' => $sampleId,
+    ]);
+  }
+
+  /**
+   * A basic test of /sample_media GET.
+   */
+  public function testJwtSampleMediaGetList() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->getListTest('sample_media', [
+      'path' => 'a123.jpg',
+      'sample_id' => $sampleId,
+    ]);
+  }
+
+  /**
+   * Test DELETE for an sample_media.
+   */
+  public function testJwtSampleMediaDelete() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->deleteTest('sample_media', [
+      'path' => 'b123.jpg',
+      'sample_id' => $sampleId,
+    ]);
+  }
+
+  /**
+   * Testing fetching OPTIONS for sample_media end-point.
+   */
+  public function testJwtSampleMediaOptions() {
+    $this->optionsTest('sample_media');
+  }
+
+  /**
    * Test attempt to upload JS script into media queue.
    */
   public function testJwtMediaQueueInvalid() {
@@ -1555,6 +1619,70 @@ SQL;
   }
 
   /**
+   * Test /sample_media POST in isolation.
+   */
+  public function testJwtOccurrenceMediaPost() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->postTest('occurrence_media', [
+      'path' => 'abc.jpg',
+      'occurrence_id' => $occurrenceId,
+    ], 'path');
+  }
+
+  /**
+   * Test /sample_media PUT in isolation.
+   */
+  public function testJwtOccurrenceMediaPut() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->putTest('occurrence_media', [
+      'path' => 'abc.jpg',
+      'occurrence_id' => $occurrenceId,
+    ], [
+      'path' => 'cde.jpg',
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrence_media/id GET.
+   */
+  public function testJwtOccurrenceMediaGet() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->getTest('occurrence_media', [
+      'path' => 'xyz.jpg',
+      'occurrence_id' => $occurrenceId,
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrence_media GET.
+   */
+  public function testJwtOccurrenceMediaGetList() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->getListTest('occurrence_media', [
+      'path' => 'a123.jpg',
+      'occurrence_id' => $occurrenceId,
+    ]);
+  }
+
+  /**
+   * Test DELETE for an occurrence_media.
+   */
+  public function testJwtOccurrenceMediaDelete() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->deleteTest('occurrence_media', [
+      'path' => 'b123.jpg',
+      'occurrence_id' => $occurrenceId,
+    ]);
+  }
+
+  /**
+   * Testing fetching OPTIONS for occurrence_media end-point.
+   */
+  public function testJwtOccurrenceMediaOptions() {
+    $this->optionsTest('occurrence_media');
+  }
+
+  /**
    * Create a sample we can add occurrences to.
    *
    * @return int
@@ -1570,10 +1698,29 @@ SQL;
         'entered_sref' => 'SU1234',
         'entered_sref_system' => 'OSGB',
         'date' => '01/08/2020',
-      ]
+      ],
     ];
     $response = $this->callService(
       'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    return $response['response']['values']['id'];
+  }
+
+  private function postOccurrenceToAddStuffTo() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'values' => [
+        'taxa_taxon_list_id' => 1,
+        'sample_id' => $sampleId,
+      ],
+    ];
+    $response = $this->callService(
+      'occurrences',
       FALSE,
       $data
     );

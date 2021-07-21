@@ -109,8 +109,10 @@ $lang['resourceOptionInfo'] = 'The %s resource: {{ list }}';
 $lang['resourceOptionInfo-entities'] = 'Access to data entities is limited to: {{ list }}';
 $lang['resourceOptionInfo-entities-"locations"'] = 'locations';
 $lang['resourceOptionInfo-entities-"occurrence_attributes"'] = 'occurrence_attributes';
+$lang['resourceOptionInfo-entities-"occurrence_media"'] = 'occurrence_media';
 $lang['resourceOptionInfo-entities-"occurrences"'] = 'occurences';
 $lang['resourceOptionInfo-entities-"sample_attributes"'] = 'sample_attributes';
+$lang['resourceOptionInfo-entities-"sample_media"'] = 'sample_media';
 $lang['resourceOptionInfo-entities-"samples"'] = 'samples';
 $lang['resourceOptionInfo-entities-"surveys"'] = 'surveys';
 $lang['resourceOptionInfo-elasticsearch'] = 'Elasticsearch is enabled via end-points mapped to Elasticsearch aliases.';
@@ -253,6 +255,11 @@ Updates a single occurrence custom attribute. Lookups can update the termlist co
 the same way as a POST.
 TXT;
 $lang['resources']['DELETE occurrence-attributes/{id}'] = 'Deletes a single occurrence custom attribute.';
+$lang['resources']['occurrence-media'] = "A list of a user's occurrence media.";
+$lang['resources']['GET occurrence-media'] = "Retrieve list of a user's occurrence media.";
+$lang['resources']['POST occurrence-media'] = "Create a single occurrence media belonging to the user, for an existing occurrence.";
+$lang['resources']['PUT occurrence-media'] = "Updates a single occurrence media belonging to the user.";
+$lang['resources']['DELETE occurrence-media'] = "Deletes a single occurrence media belonging to the user.";
 $lang['resources']['occurrences'] = "A list of a user's occurrences.";
 $lang['resources']['GET occurrences'] = <<<TXT
 Retrieve a list of occurrences owned by the logged in user. In addition to the database fields, the response values
@@ -315,6 +322,11 @@ Updates a single sample custom attribute. Lookups can update the termlist conten
 the same way as a POST.
 TXT;
 $lang['resources']['DELETE sample-attributes/{id}'] = 'Deletes a single sample custom attribute.';
+$lang['resources']['sample-media'] = "A list of a user's sample media.";
+$lang['resources']['GET sample-media'] = "Retrieve list of a user's sample media.";
+$lang['resources']['POST sample-media'] = "Create a single sample media belonging to the user, for an existing sample.";
+$lang['resources']['PUT sample-media'] = "Updates a single sample media belonging to the user.";
+$lang['resources']['DELETE sample-media'] = "Deletes a single sample media belonging to the user.";
 $lang['resources']['samples'] = 'A list of the user\'s samples data, each of which can contain any number of occurrences.';
 $lang['resources']['GET samples'] = <<<TXT
 Retrieve a list of the user's samples data. In addition to the database fields, the response values
