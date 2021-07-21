@@ -64,30 +64,30 @@ $site = url::site();
     <p class="alert alert-info">Zoom the map in by double-clicking then single click on the sample's centre to set the
     spatial reference. The more you zoom in, the more accurate the reference will be.</p>
     <?php
-    echo map_helper::map_panel(array(
+    echo map_helper::map_panel([
       'readAuth' => $readAuth,
-      'presetLayers' => array('osm'),
+      'presetLayers' => ['osm'],
       'editLayer' => TRUE,
-      'layers' => array(),
+      'layers' => [],
       'initial_lat' => 52,
       'initial_long' => -2,
       'initial_zoom' => 7,
       'width' => '100%',
       'height' => 400,
       'initialFeatureWkt' => html::initial_value($values, 'sample:geom'),
-      'standardControls' => array('layerSwitcher', 'panZoom', 'fullscreen'),
-    ));
-    echo data_entry_helper::text_input(array(
+      'standardControls' => ['layerSwitcher', 'panZoom', 'fullscreen'],
+    ]);
+    echo data_entry_helper::text_input([
       'label' => 'Location Name',
       'fieldname' => 'sample:location_name',
       'default' => html::initial_value($values, 'sample:location_name'),
-    ));
+    ]);
     $location_id = html::initial_value($values, 'sample:location_id');
     if (!empty($location_id)) {
       echo "<h2>Associated with location record: <a href=\"{$site}location/edit/$location_id\" >" .
         ORM::factory("location", $location_id)->name . '</a></h2>';
     }
-    echo data_entry_helper::autocomplete(array(
+    echo data_entry_helper::autocomplete([
       'label' => 'Location',
       'fieldname' => 'sample:location_id',
       'table' => 'location',
@@ -96,37 +96,37 @@ $site = url::site();
       'extraParams' => $readAuth,
       'default' => $location_id,
       'defaultCaption' => (empty($location_id) ? NULL : html::specialchars($model->location->name)),
-    ));
-    echo data_entry_helper::textarea(array(
+    ]);
+    echo data_entry_helper::textarea([
       'label' => 'Recorder Names',
       'helpText' => 'Enter the names of the recorders, one per line',
       'fieldname' => 'sample:recorder_names',
       'default' => html::initial_value($values, 'sample:recorder_names'),
-    ));
-    echo data_entry_helper::select(array(
+    ]);
+    echo data_entry_helper::select([
       'label' => 'Sample Method',
       'fieldname' => 'sample:sample_method_id',
       'default' => html::initial_value($values, 'sample:sample_method_id'),
       'lookupValues' => $other_data['method_terms'],
       'blankText' => '<Please select>',
-    ));
-    echo data_entry_helper::textarea(array(
+    ]);
+    echo data_entry_helper::textarea([
       'label' => 'Comment',
       'fieldname' => 'sample:comment',
       'default' => html::initial_value($values, 'sample:comment'),
-    ));
+    ]);
     echo data_entry_helper::checkbox([
       'label' => 'Training',
       'fieldname' => 'sample:training',
       'default' => html::initial_value($values, 'sample:training'),
       'helpText' => 'Tick if a fake sample for training purposes',
     ]);
-    echo data_entry_helper::text_input(array(
+    echo data_entry_helper::text_input([
       'label' => 'External Key',
       'fieldname' => 'sample:external_key',
       'default' => html::initial_value($values, 'sample:external_key'),
-    ));
-    echo data_entry_helper::select(array(
+    ]);
+    echo data_entry_helper::select([
       'label' => 'Licence',
       'helpText' => 'Licence which applies to all records and media held within this sample.',
       'fieldname' => 'sample:licence_id',
@@ -136,7 +136,7 @@ $site = url::site();
       'captionField' => 'title',
       'blankText' => '<Please select>',
       'extraParams' => $readAuth,
-    ));
+    ]);
     ?>
   </fieldset>
   <fieldset>
@@ -168,29 +168,29 @@ $site = url::site();
           break;
 
         case 'L':
-          echo data_entry_helper::select(array(
+          echo data_entry_helper::select([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['raw_value'],
             'lookupValues' => $values["terms_$attr[termlist_id]"],
             'blankText' => '<Please select>',
-          ));
+          ]);
           break;
 
         case 'B':
-          echo data_entry_helper::checkbox(array(
+          echo data_entry_helper::checkbox([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
-          ));
+          ]);
           break;
 
         default:
-          echo data_entry_helper::text_input(array(
+          echo data_entry_helper::text_input([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
-          ));
+          ]);
       }
     }
     ?>

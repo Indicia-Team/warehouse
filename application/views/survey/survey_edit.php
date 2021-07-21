@@ -102,7 +102,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       ?>
     </fieldset>
     <?php
-    echo data_entry_helper::autocomplete(array(
+    echo data_entry_helper::autocomplete([
       'label' => 'Parent survey',
       'fieldname' => 'survey:parent_id',
       'table' => 'survey',
@@ -112,31 +112,31 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'default' => html::initial_value($values, 'survey:parent_id'),
       'defaultCaption' => html::initial_value($values, 'parent:title'),
       'helpText' => 'Set a parent for your survey to allow grouping of survey datasets in reports',
-    ));
-    echo data_entry_helper::select(array(
+    ]);
+    echo data_entry_helper::select([
       'label' => 'Website',
       'fieldname' => 'survey:website_id',
       'default' => html::initial_value($values, 'survey:website_id'),
       'lookupValues' => $other_data['websites'],
       'helpText' => 'The survey must belong to a website registration',
-    ));
+    ]);
     // Only show fields, if fields have been found in the database (the auto
     // verify module is installed).
     if (array_key_exists('survey:auto_accept', $values)) {
-      echo data_entry_helper::checkbox(array(
+      echo data_entry_helper::checkbox([
         'label' => 'Auto Accept',
         'fieldname' => 'survey:auto_accept',
         'default' => html::initial_value($values, 'survey:auto_accept'),
         'helpText' => 'Should the automatic verification module attempt to auto verify records in this survey?',
-      ));
+      ]);
     }
     if (array_key_exists('survey:auto_accept_max_difficulty', $values)) {
-      echo data_entry_helper::text_input(array(
+      echo data_entry_helper::text_input([
         'label' => 'Auto Accept Maximum Difficulty',
         'fieldname' => 'survey:auto_accept_max_difficulty',
         'default' => html::initial_value($values, 'survey:auto_accept_max_difficulty'),
         'helpText' => 'If Auto Accept is set, then this is the minimum identification difficulty that will be auto verified.',
-      ));
+      ]);
     }
     if (array_key_exists('survey:auto_accept_taxa_filters', $values)) {
       $masterListId = warehouse::getMasterTaxonListId();
