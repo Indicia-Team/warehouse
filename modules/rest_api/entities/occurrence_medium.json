@@ -12,5 +12,13 @@
     { "sql": "created_by_id", "type": "integer" },
     { "sql": "updated_on", "type": "date" },
     { "sql": "updated_by_id", "type": "integer" }
+  ],
+  "joins": [
+    {
+      "sql": "JOIN cache_termlists_terms t2 on t2.id=t1.media_type_id",
+      "fields": [
+        { "sql": "t2.term", "name": "media_type", "type": "string" }
+      ]
+    }
   ]
 }
