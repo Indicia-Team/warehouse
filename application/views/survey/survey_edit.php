@@ -186,11 +186,19 @@ HTML;
       }
       switch ($attr['data_type']) {
         case 'D':
+          echo data_entry_helper::date_picker([
+            'label' => $attr['caption'],
+            'fieldname' => $name,
+            'default' => $attr['value'],
+          ]);
+          break;
+
         case 'V':
           echo data_entry_helper::date_picker([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
+            'allowVagueDates' => TRUE,
           ]);
           break;
 

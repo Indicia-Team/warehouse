@@ -108,12 +108,20 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       }
       switch ($attr['data_type']) {
         case 'D':
-        case 'V':
-          echo data_entry_helper::date_picker(array(
+          echo data_entry_helper::date_picker([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
-          ));
+          ]);
+          break;
+
+        case 'V':
+          echo data_entry_helper::date_picker([
+            'label' => $attr['caption'],
+            'fieldname' => $name,
+            'default' => $attr['value'],
+            'allowVagueDates' => TRUE,
+          ]);
           break;
 
         case 'L':
