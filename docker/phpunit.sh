@@ -61,7 +61,6 @@ cp ${DIR}/request_logging.example.php ${DIR}/request_logging.php
 # 172.17.0.1 is the IP address of the Docker host seen from a container.
 # The idekey is for a suitably configured Visual Studio Code debugging client.
 docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" phpunit_warehouse_1 sh -c '
-docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
   runuser -u $USER -- phpunit --stderr --configuration phpunit-config-test.xml
   runuser -u $USER -- phpunit --stderr --configuration phpunit-setup-check-test.xml
   runuser -u $USER -- phpunit --stderr --configuration phpunit-home-test.xml
@@ -80,7 +79,6 @@ docker exec -t phpunit_warehouse_1 sh -c '
 '
 
 docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" phpunit_warehouse_1 sh -c '
-docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" docker_phpunit_1 sh -c '
   runuser -u $USER -- phpunit --stderr --configuration phpunit-tests.xml
 '
 
