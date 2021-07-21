@@ -1012,9 +1012,11 @@ KEY;
    */
   public function testJwtSampleMediaGet() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
-    $this->getTest('sample_media',  [
+    $this->getTest('sample_media', [
       'path' => 'xyz.jpg',
       'sample_id' => $sampleId,
+      // The following won't actually be posted, but should be in the response.
+      'media_type' => 'Image:Local',
     ]);
   }
 
@@ -1653,6 +1655,8 @@ SQL;
     $this->getTest('occurrence_media', [
       'path' => 'xyz.jpg',
       'occurrence_id' => $occurrenceId,
+      // The following won't actually be posted, but should be in the response.
+      'media_type' => 'Image:Local',
     ]);
   }
 
