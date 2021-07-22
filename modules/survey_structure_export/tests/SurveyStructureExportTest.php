@@ -30,30 +30,35 @@ class SurveyStructureExportTest extends TestCase {
     $user = 'user = indicia_user';
     $pass = 'password = indicia_user_pass';
     self::$conn = pg_connect("$host $dbname $user $pass");
+
+    // Load base database fixture which does not change.
+    self::setupFixture('base_fixture.php');
   }
 
   /**
    * Set up function called before each tests.
    */
   protected function setUp(): void {
-    // Load local fixture file.
-    $this->setupFixture('modules/survey_structure_export/tests/base_fixture.php');
   }
 
   /**
    * Set up database fixture defined in file.
    */
-  private function setupFixture($filename) {
+  private static function setupFixture($filename) {
+    $filename = "modules/survey_structure_export/tests/fixtures/$filename";
     require_once $filename;
 
     // Drop content in fixture tables.
     $tables = array_keys($fixture);
     $table_list = implode(',', $tables);
     pg_query(self::$conn, "TRUNCATE TABLE $table_list CASCADE");
-    // And reset sequences.
+    // And reset primary key sequences.
     foreach ($tables as $table) {
-      $seq = $table . '_id_seq';
-      pg_query(self::$conn, "SELECT setval('$seq', 1, false)");
+      if (substr($table, 0, 6) !== 'cache_') {
+        // cache tables don't have their own sequences.
+        $seq = $table . '_id_seq';
+        pg_query(self::$conn, "SELECT setval('$seq', 1, false)");
+      }
     }
 
     // Set up fixture.
@@ -63,6 +68,10 @@ class SurveyStructureExportTest extends TestCase {
           throw new Exception("Failed inserting $r into $table");
         }
       }
+    }
+
+    if (isset($expected)) {
+      return $expected;
     }
   }
 
@@ -77,6 +86,28 @@ class SurveyStructureExportTest extends TestCase {
       'smpAttrs' => [],
       'occAttrs' => [],
     ];
+
+    $this->assertEqualsCanonicalizing($expected, $export);
+  }
+
+  /**
+   * Test survey export with text attributes.
+   */
+  public function testExportTextAttributes() {
+    $expected = self::setupFixture('text_attribute_fixture.php');
+    $controller = new Survey_structure_export_Controller();
+    $export = $controller->getSurveyAttributes(1, 1);
+
+    $this->assertEqualsCanonicalizing($expected, $export);
+  }
+
+  /**
+   * Test survey export with termlist attributes.
+   */
+  public function testExportTermlistAttributes() {
+    $expected = self::setupFixture('termlist_attribute_fixture.php');
+    $controller = new Survey_structure_export_Controller();
+    $export = $controller->getSurveyAttributes(1, 1);
 
     $this->assertEqualsCanonicalizing($expected, $export);
   }
