@@ -47,12 +47,28 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    */
   const SQL_FETCH_ALL_SURVEY_ATTRS = "SELECT
     a.caption,
-    a.caption_i18n #>> '{}' AS a_caption_i18n,
+    (with table_of_caption_i18n as 
+      (
+        select 
+        value || '|' || key as cap_pipe_lang
+        from json_each_text(a.caption_i18n)
+	    )
+      select array_to_string(array_agg(cap_pipe_lang), '**')
+      from table_of_caption_i18n
+    ) as a_caption_i18n,
     a.unit,
     a.term_name,
     a.term_identifier,
     a.description,
-    a.description_i18n #>> '{}' AS a_description_i18n,
+    (with table_of_description_i18n as 
+      (
+        select 
+        value || '|' || key as desc_pipe_lang
+        from json_each_text(a.description_i18n)
+	    )
+      select array_to_string(array_agg(desc_pipe_lang), '**')
+      from table_of_description_i18n
+    ) as a_description_i18n,
     a.system_function,
     a.data_type,
     a.multi_value,
@@ -129,12 +145,28 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    */
   const SQL_FETCH_ALL_SAMPLE_ATTRS = "SELECT 
     a.caption, 
-    a.caption_i18n #>> '{}' AS a_caption_i18n,
+    (with table_of_caption_i18n as 
+      (
+        select 
+        value || '|' || key as cap_pipe_lang
+        from json_each_text(a.caption_i18n)
+	    )
+      select array_to_string(array_agg(cap_pipe_lang), '**')
+      from table_of_caption_i18n
+    ) as a_caption_i18n,
     a.unit,
     a.term_name,
     a.term_identifier,
     a.description,
-    a.description_i18n #>> '{}' AS a_description_i18n,
+    (with table_of_description_i18n as 
+      (
+        select 
+        value || '|' || key as desc_pipe_lang
+        from json_each_text(a.description_i18n)
+	    )
+      select array_to_string(array_agg(desc_pipe_lang), '**')
+      from table_of_description_i18n
+    ) as a_description_i18n,
     a.system_function,
     a.data_type, 
     a.multi_value, 
@@ -198,12 +230,28 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    */
   const SQL_FETCH_ALL_OCCURRENCE_ATTRS = "SELECT 
     a.caption, 
-    a.caption_i18n #>> '{}' AS a_caption_i18n,
+    (with table_of_caption_i18n as 
+      (
+        select 
+        value || '|' || key as cap_pipe_lang
+        from json_each_text(a.caption_i18n)
+	    )
+      select array_to_string(array_agg(cap_pipe_lang), '**')
+      from table_of_caption_i18n
+    ) as a_caption_i18n,
     a.unit,
     a.term_name,
     a.term_identifier,
     a.description,
-    a.description_i18n #>> '{}' AS a_description_i18n,
+    (with table_of_description_i18n as 
+      (
+        select 
+        value || '|' || key as desc_pipe_lang
+        from json_each_text(a.description_i18n)
+	    )
+      select array_to_string(array_agg(desc_pipe_lang), '**')
+      from table_of_description_i18n
+    ) as a_description_i18n,
     a.system_function,
     a.data_type, 
     a.multi_value, 
@@ -268,12 +316,28 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   const SQL_FIND_ATTRS = "SELECT 
     a.id, 
     a.caption, 
-    a.caption_i18n #>> '{}' AS a_caption_i18n,
+    (with table_of_caption_i18n as 
+      (
+        select 
+        value || '|' || key as cap_pipe_lang
+        from json_each_text(a.caption_i18n)
+	    )
+      select array_to_string(array_agg(cap_pipe_lang), '**')
+      from table_of_caption_i18n
+    ) as a_caption_i18n,
     a.unit,
     a.term_name,
     a.term_identifier,
     a.description,
-    a.description_i18n #>> '{}' AS a_description_i18n,
+    (with table_of_description_i18n as 
+      (
+        select 
+        value || '|' || key as desc_pipe_lang
+        from json_each_text(a.description_i18n)
+	    )
+      select array_to_string(array_agg(desc_pipe_lang), '**')
+      from table_of_description_i18n
+    ) as a_description_i18n,
     a.system_function,
     a.data_type, 
     a.multi_value, 
@@ -540,12 +604,12 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     // List standard fields and values to set.
     $array = [
       'caption' => $attrDef['caption'],
-      'caption_i18n' => $attrDef['caption_i18n'],
+      'caption_i18n' => str_replace('**', "\n", $attrDef['a_caption_i18n']),
       'unit' => $attrDef['unit'],
       'term_name' => $attrDef['term_name'],
       'term_identifier' => $attrDef['term_identifier'],
       'description' => $attrDef['description'],
-      'description_i18n' => $attrDef['description_i18n'],
+      'description_i18n' => str_replace('**', "\n", $attrDef['a_description_i18n']),
       'system_function' => $attrDef['system_function'],
       'data_type' => $attrDef['data_type'],
       'multi_value' => $attrDef['multi_value'],

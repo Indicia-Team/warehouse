@@ -87,10 +87,7 @@ class SurveyStructureExportTest extends TestCase {
    */
   private static function trimJson($string) {
     $json = preg_replace('/\n\s*/', '', $string);
-    // Spaces remain in nested quoted objects which we must avoid stripping.
-    $json = preg_replace('/":\s+"/', '":"', $json);
-    $json = preg_replace('/":\s+\[/', '":[', $json);
-    $json = preg_replace('/":\s+null/', '":null', $json);
+    $json = preg_replace('/":\s+/', '":', $json);
     return $json;
   }
 

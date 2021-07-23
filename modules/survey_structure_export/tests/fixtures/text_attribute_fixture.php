@@ -9,12 +9,12 @@ $fixture = [
   "sample_attributes" => [
     [
       "caption" => "Sample attribute",
-      "caption_i18n" => '{"fra": "Sample attribute"}',
+      "caption_i18n" => '{"fra":"French caption","esp":"Spanish caption"}',
       "unit" => "smpAttr unit",
       "term_name" => "smpAttr term name",
       "term_identifier" => "smpAttr term identifier",
       "description" => "smpAttr description",
-      "description_i18n" => '{"fra": "smpAttr description"}',
+      "description_i18n" => '{"fra":"smpAttr description"}',
       "system_function" => "smpAttr system function",
       "data_type" => "T",
       "multi_value" => "false",
@@ -39,12 +39,12 @@ $fixture = [
   "occurrence_attributes" => [
     [
       "caption" => "Occurrence attribute",
-      "caption_i18n" => '{"fra": "Occurrence attribute"}',
+      "caption_i18n" => '{"fra":"French caption","esp":"Spanish caption"}',
       "unit" => "occAttr unit",
       "term_name" => "occAttr term name",
       "term_identifier" => "occAttr term identifier",
       "description" => "occAttr description",
-      "description_i18n" => '{"fra": "occAttr description"}',
+      "description_i18n" => '{"fra":"occAttr description"}',
       "system_function" => "occAttr system function",
       "data_type" => "T",
       "multi_value" => "false",
@@ -68,12 +68,12 @@ $fixture = [
   "survey_attributes" => [
     [
       "caption" => "Survey attribute",
-      "caption_i18n" => '{"fra": "Survey attribute"}',
+      "caption_i18n" => '{"fra":"French caption","esp":"Spanish caption"}',
       "unit" => "srvAttr unit",
       "term_name" => "srvAttr term name",
       "term_identifier" => "srvAttr term identifier",
       "description" => "srvAttr description",
-      "description_i18n" => '{"fra": "srvAttr description"}',
+      "description_i18n" => '{"fra":"srvAttr description"}',
       "system_function" => "srvAttr system function",
       "data_type" => "T",
       "multi_value" => "false",
@@ -110,12 +110,12 @@ $export = '{
   "srvAttrs": [
     {
       "caption": "Survey attribute",
-      "a_caption_i18n": "{\"fra\": \"Survey attribute\"}",
+      "a_caption_i18n": "French caption|fra**Spanish caption|esp",
       "unit": "srvAttr unit",
       "term_name": "srvAttr term name",
       "term_identifier": "srvAttr term identifier",
       "description": "srvAttr description",
-      "a_description_i18n": "{\"fra\": \"srvAttr description\"}",
+      "a_description_i18n": "srvAttr description|fra",
       "system_function": "srvAttr system function",
       "data_type": "T",
       "multi_value": "f",
@@ -141,12 +141,12 @@ $export = '{
   "smpAttrs": [
     {
       "caption": "Sample attribute",
-      "a_caption_i18n": "{\"fra\": \"Sample attribute\"}",
+      "a_caption_i18n": "French caption|fra**Spanish caption|esp",
       "unit": "smpAttr unit",
       "term_name": "smpAttr term name",
       "term_identifier": "smpAttr term identifier",
       "description": "smpAttr description",
-      "a_description_i18n": "{\"fra\": \"smpAttr description\"}",
+      "a_description_i18n": "smpAttr description|fra",
       "system_function": "smpAttr system function",
       "data_type": "T",
       "multi_value": "f",
@@ -177,12 +177,12 @@ $export = '{
   "occAttrs": [
     {
       "caption": "Occurrence attribute",
-      "a_caption_i18n": "{\"fra\": \"Occurrence attribute\"}",
+      "a_caption_i18n": "French caption|fra**Spanish caption|esp",
       "unit": "occAttr unit",
       "term_name": "occAttr term name",
       "term_identifier": "occAttr term identifier",
       "description": "occAttr description",
-      "a_description_i18n": "{\"fra\": \"occAttr description\"}",
+      "a_description_i18n": "occAttr description|fra",
       "system_function": "occAttr system function",
       "data_type": "T",
       "multi_value": "f",
