@@ -83,18 +83,33 @@ class SurveyStructureExportTest extends TestCase {
   }
 
   /**
+   * Remove white space from a human-readable json string.
+   */
+  private static function trimJson($string) {
+    $json = preg_replace('/\n\s*/', '', $string);
+    // Spaces remain in nested quoted objects which we must avoid stripping.
+    $json = preg_replace('/":\s+"/', '":"', $json);
+    $json = preg_replace('/":\s+\[/', '":[', $json);
+    $json = preg_replace('/":\s+null/', '":null', $json);
+    return $json;
+  }
+
+  /**
    * Test survey export with no attributes.
    */
   public function testExportNoAttributes() {
     $controller = new Survey_structure_export_Controller();
-    $export = $controller->getSurveyAttributes(1, 1);
-    $expected = [
-      'srvAttrs' => [],
-      'smpAttrs' => [],
-      'occAttrs' => [],
-    ];
+    $controller->uri::$current_uri = 'survey_structure_export/1';
+    $controller->uri::setup();
+    $controller->index();
+    $export = $controller->view->export;
+    $expected = self::trimJson('{
+      "srvAttrs": [],
+      "smpAttrs": [],
+      "occAttrs": []
+    }');
 
-    $this->assertEqualsCanonicalizing($expected, $export);
+    $this->assertEquals($expected, $export);
   }
 
   /**
@@ -102,10 +117,15 @@ class SurveyStructureExportTest extends TestCase {
    */
   public function testExportTextAttributes() {
     $expected = self::setupFixture('text_attribute_fixture.php');
-    $controller = new Survey_structure_export_Controller();
-    $export = $controller->getSurveyAttributes(1, 1);
+    $expected = self::trimJson($expected);
 
-    $this->assertEqualsCanonicalizing($expected, $export);
+    $controller = new Survey_structure_export_Controller();
+    $controller->uri::$current_uri = 'survey_structure_export/1';
+    $controller->uri::setup();
+    $controller->index();
+    $export = $controller->view->export;
+
+    $this->assertEquals($expected, $export);
   }
 
   /**
@@ -113,10 +133,15 @@ class SurveyStructureExportTest extends TestCase {
    */
   public function testExportTermlistAttributes() {
     $expected = self::setupFixture('termlist_attribute_fixture.php');
-    $controller = new Survey_structure_export_Controller();
-    $export = $controller->getSurveyAttributes(1, 1);
+    $expected = self::trimJson($expected);
 
-    $this->assertEqualsCanonicalizing($expected, $export);
+    $controller = new Survey_structure_export_Controller();
+    $controller->uri::$current_uri = 'survey_structure_export/1';
+    $controller->uri::setup();
+    $controller->index();
+    $export = $controller->view->export;
+
+    $this->assertEquals($expected, $export);
   }
 
 }
