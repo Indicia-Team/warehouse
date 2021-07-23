@@ -43,8 +43,17 @@ If you are going to immediately restart docker then delete cookies from
 your browser too.
 
 ### Using
-Once running you can browse the warehouse at http://localhost:8080.
+Once running you can browse the warehouse at http://localhost:8080. 
+
 You can examine the database with pgAdmin at http://localhost:8070.
+Each time you restart the container you have to log in with
+- email = pgadmin@example.com
+- password = password
+On first use, you need to add a server with connection parameters of
+- host = postgres
+- user = postgres
+- password = password
+
 Any mail sent by the warehouse can be viewed at http://localhost:8025.
 
 ### Unit testing
@@ -52,5 +61,16 @@ There is a separate Docker configuration for unit testing which can be
 run up by `cd docker` then `./phpunit.sh`. This replicates the unit 
 testing performed when you push commits to the repository, enabling you
 to create and debug tests locally. It uses its own volume for the database
-so won't overwrite any setup you have. It also saves and restores any config
-files that are modified by testing.
+so won't overwrite any setup you have in your development system. You do have to
+stop your development containers before running unit testing though, as it uses
+the same ports and modifies configuration. Config files that are modified by 
+testing are backed up and restored, provided the script runs to completion.
+
+You can examine the database with pgAdmin at http://localhost:8070.
+Each time you restart the container you have to log in with
+- email = pgadmin@example.com
+- password = password
+On first use, you need to add a server with connection parameters of
+- host = warehouse
+- user = postgres
+- password = password

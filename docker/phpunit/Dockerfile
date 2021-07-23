@@ -39,8 +39,14 @@ RUN CONF=/etc/postgresql/${PG_VERSION}/main/postgresql.conf \
   && LOG=/var/lib/postgresql/${PG_VERSION}/main/log \
   && mkdir -p $LOG \
   && chown postgres:postgres $LOG \
-  && sed -i "s/#logging_collector = off/logging_collector = on/" $CONF\
+  && sed -i "s/#logging_collector = off/logging_collector = on/" $CONF \
   && sed -i "s/#log_statement = 'none'/log_statement = 'all'/" $CONF 
+
+# Enable postgresql to accept connection from pgAdminn
+RUN CONF=/etc/postgresql/${PG_VERSION}/main/postgresql.conf \
+  && sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" $CONF \
+  && CONF=/etc/postgresql/${PG_VERSION}/main/pg_hba.conf \
+  && echo "host    all             all             0.0.0.0/0               md5" >> $CONF
 
 # Create a user the same identity as the host user so that it can 
 # share files on the bind mount containing the warehouse code which 
