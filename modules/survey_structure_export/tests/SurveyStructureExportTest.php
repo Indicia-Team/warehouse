@@ -46,20 +46,9 @@ class SurveyStructureExportTest extends TestCase {
    */
   private static function setupFixture($filename) {
     $filename = "modules/survey_structure_export/tests/fixtures/$filename";
-    require_once $filename;
+    require $filename;
 
-    // Drop content in fixture tables.
-    $tables = array_keys($fixture);
-    $table_list = implode(',', $tables);
-    pg_query(self::$conn, "TRUNCATE TABLE $table_list CASCADE");
-    // And reset primary key sequences.
-    foreach ($tables as $table) {
-      if (substr($table, 0, 6) !== 'cache_') {
-        // cache tables don't have their own sequences.
-        $seq = $table . '_id_seq';
-        pg_query(self::$conn, "SELECT setval('$seq', 1, false)");
-      }
-    }
+    self::deleteFixture($fixture);
 
     // Set up fixture.
     foreach ($fixture as $table => $records) {
@@ -70,8 +59,26 @@ class SurveyStructureExportTest extends TestCase {
       }
     }
 
-    if (isset($expected)) {
-      return $expected;
+    if (isset($export)) {
+      return $export;
+    }
+  }
+
+  /**
+   * Delete database fixture.
+   */
+  private static function deleteFixture($fixture) {
+    // Drop content in fixture tables.
+    $tables = array_keys($fixture);
+    $table_list = implode(',', $tables);
+    pg_query(self::$conn, "TRUNCATE TABLE $table_list CASCADE");
+    // And reset primary key sequences.
+    foreach ($tables as $table) {
+      if (substr($table, 0, 6) !== 'cache_') {
+        // Cache tables don't have their own sequences.
+        $seq = $table . '_id_seq';
+        pg_query(self::$conn, "SELECT setval('$seq', 1, false)");
+      }
     }
   }
 
