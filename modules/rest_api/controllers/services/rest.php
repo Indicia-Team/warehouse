@@ -373,6 +373,21 @@ class Rest_Controller extends Controller {
         'occurrence-attributes-websites/{id}' => [],
       ],
     ],
+    'occurrence-media' => [
+      'GET' => [
+        'occurrence-media' => [],
+        'occurrence-media/{id}' => [],
+      ],
+      'POST' => [
+        'occurrence-media' => [],
+      ],
+      'PUT' => [
+        'occurrence-media/{id}' => [],
+      ],
+      'DELETE' => [
+        'occurrence-media/{id}' => [],
+      ],
+    ],
     'occurrences' => [
       'GET' => [
         'occurrences' => [
@@ -470,6 +485,21 @@ class Rest_Controller extends Controller {
       ],
       'DELETE' => [
         'sample-attributes-websites/{id}' => [],
+      ],
+    ],
+    'sample-media' => [
+      'GET' => [
+        'sample-media' => [],
+        'sample-media/{id}' => [],
+      ],
+      'POST' => [
+        'sample-media' => [],
+      ],
+      'PUT' => [
+        'sample-media/{id}' => [],
+      ],
+      'DELETE' => [
+        'sample-media/{id}' => [],
       ],
     ],
     'samples' => [
@@ -805,7 +835,7 @@ class Rest_Controller extends Controller {
             $class = RestObjects::$handlerModule . '_rest';
           }
           else {
-            RestObjects::$apiResponse->fail('Not Found', 404, "Resource $name not known for method $this->method");
+            RestObjects::$apiResponse->fail('Not Found', 404, "Resource $name not known for method $this->method ($methodName)");
           }
           call_user_func([$class, $methodName], $requestForId, $this->clientConfig, $projectId);
         }
@@ -2699,6 +2729,65 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * End-point to GET an list of occurrence_media.
+   */
+  public function occurrenceMediaGet() {
+    rest_crud::readList('occurrence_medium');
+  }
+
+  /**
+   * End-point to GET a occurrence_media by ID.
+   *
+   * @param int $id
+   *   Occurrence media ID.
+   */
+  public function occurrenceMediaGetId($id) {
+    rest_crud::read('occurrence_medium', $id);
+  }
+
+  /**
+   * API end-point to POST a occurrence_media to create.
+   */
+  public function occurrenceMediaPost() {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    $r = rest_crud::create('occurrence_medium', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to PUT to an existing occurrence_medium to update.
+   *
+   * @todo Safety check it's from the correct website.
+   */
+  public function occurrenceMediaPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    $r = rest_crud::update('occurrence_medium', $id, $putArray);
+    echo json_encode($r);
+  }
+
+  /**
+   * API end-point to DELETE a occurrence_medium.
+   *
+   * Will only be deleted if the occurrence_medium was created by the current user.
+   *
+   * @param int $id
+   *   Occurrence medium ID to delete.
+   *
+   * @todo Safety check it's from the correct website.
+   */
+  public function occurrenceMediaDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('occurrence_medium', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
+  /**
    * End-point to GET an list of occurrences.
    */
   public function occurrencesGet() {
@@ -2839,6 +2928,65 @@ class Rest_Controller extends Controller {
     }
     // Delete as long as created by this user.
     rest_crud::delete('location', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
+  /**
+   * End-point to GET an list of sample_media.
+   */
+  public function sampleMediaGet() {
+    rest_crud::readList('sample_medium');
+  }
+
+  /**
+   * End-point to GET a sample_media by ID.
+   *
+   * @param int $id
+   *   Sample media ID.
+   */
+  public function sampleMediaGetId($id) {
+    rest_crud::read('sample_medium', $id);
+  }
+
+  /**
+   * API end-point to POST a sample_media to create.
+   */
+  public function sampleMediaPost() {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    $r = rest_crud::create('sample_medium', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to PUT to an existing sample_medium to update.
+   *
+   * @todo Safety check it's from the correct website.
+   */
+  public function sampleMediaPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    $r = rest_crud::update('sample_medium', $id, $putArray);
+    echo json_encode($r);
+  }
+
+  /**
+   * API end-point to DELETE a sample_medium.
+   *
+   * Will only be deleted if the sample_medium was created by the current user.
+   *
+   * @param int $id
+   *   Sample medium ID to delete.
+   *
+   * @todo Safety check it's from the correct website.
+   */
+  public function sampleMediaDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('sample_medium', $id, ['created_by_id' => RestObjects::$clientUserId]);
   }
 
   /**
