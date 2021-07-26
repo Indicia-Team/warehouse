@@ -48,6 +48,7 @@ class SurveyStructureExportTest extends TestCase {
     $filename = "modules/survey_structure_export/tests/fixtures/$filename";
     require $filename;
 
+    // Remove any pre-existing data in fixture tables.
     self::deleteFixture($fixture);
 
     // Set up fixture.
@@ -59,6 +60,8 @@ class SurveyStructureExportTest extends TestCase {
       }
     }
 
+    // Fixture files may also contain the expected form of the survey export
+    // for the configuration established by the fixture.
     if (isset($export)) {
       return $export;
     }
@@ -80,6 +83,11 @@ class SurveyStructureExportTest extends TestCase {
         pg_query(self::$conn, "SELECT setval('$seq', 1, false)");
       }
     }
+
+    // Clear the cache to ensure tests use new database contents.
+    $cache = Cache::instance();
+    $cache->delete_all();
+
   }
 
   /**
@@ -139,6 +147,57 @@ class SurveyStructureExportTest extends TestCase {
     $export = $controller->view->export;
 
     $this->assertEquals($expected, $export);
+  }
+
+  /**
+   * Test survey import with various fixtures.
+   */
+  public function testImportSurvey() {
+    $files = [
+      'text_attribute_fixture.php',
+      'termlist_attribute_fixture.php',
+    ];
+
+    foreach ($files as $file) {
+      print("Testing fixture $file\n");
+      $filepath = "modules/survey_structure_export/tests/fixtures/$file";
+      require $filepath;
+
+      // Reset the tables we are going to import into.
+      self::deleteFixture($fixture);
+
+      // Do the import.
+      $controller = new Survey_structure_export_Controller();
+      $_POST['survey_id'] = 1;
+      $_POST['import_survey_structure'] = $export;
+      $controller->save($export);
+
+      // Test the database matches the fixture.
+      foreach ($fixture as $table => $records) {
+        if (substr($table, 0, 6) !== 'cache_') {
+          // Import does not create cache tables.
+          print("..Testing table $table\n");
+          foreach ($records as $i => $record) {
+            unset($record['created_on'], $record['updated_on']);
+            $fields = array_keys($record);
+            $field_list = implode(',', $fields);
+            $query = "SELECT $field_list FROM $table WHERE id = " . ($i + 1);
+            $result = pg_query(self::$conn, $query);
+            if ($result === FALSE) {
+              print("Failed query: $query");
+            }
+            $actual = pg_fetch_array($result, NULL, PGSQL_ASSOC);
+            if ($actual === FALSE) {
+              print("No results to query: $query");
+            }
+            // pg_fetch_array returns each value as a string.
+            $expected = array_map('strval', $record);
+
+            $this->assertEqualsCanonicalizing($expected, $actual);
+          }
+        }
+      }
+    }
   }
 
 }
