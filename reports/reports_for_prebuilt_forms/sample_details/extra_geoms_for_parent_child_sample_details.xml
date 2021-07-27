@@ -1,6 +1,6 @@
 <report
-    title="Sample data for sample details"
-    description="Report used to retrieve details of a sample excluding custom attributes for the sample details prebuilt form."
+    title="Map for parent/child sample"
+    description="Geometry data summarising a parent/child sample."
 >
   <query website_filter_field="sp.website_id" created_by_field="sp.created_by_id" training_filter_field="">
     select 'child' as type, s.id, st_astext(l.boundary_geom) as geom
