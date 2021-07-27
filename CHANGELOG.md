@@ -1,3 +1,9 @@
+# Version 6.1.0
+*2021-07-27*
+
+* Reporting updates to support the sample details page when showing parent/child samples, e.g.
+  transect walks.
+
 # Version 6.0.0
 *2021-05-14*
 
