@@ -1,0 +1,26 @@
+<report
+    title="Map for parent/child sample"
+    description="Geometry data summarising a parent/child sample."
+>
+  <query website_filter_field="sp.website_id" created_by_field="sp.created_by_id" training_filter_field="">
+    select 'child' as type, s.id, st_astext(l.boundary_geom) as geom
+    from cache_samples_functional s
+    /* inner join, as only need location boundary geoms, samples are embedded in occurrences below. */
+    join locations l on l.id=s.location_id and l.deleted=false
+    where s.parent_sample_id=#sample_id#
+    and s.website_id in (#website_ids#)
+    union
+    select 'occurrence', o.id, st_astext(o.public_geom) as geom
+    from cache_occurrences_functional o
+    where o.parent_sample_id=#sample_id# or o.sample_id=#sample_id#
+    and o.website_id in (#website_ids#)
+  </query>
+  <params>
+    <param name='sample_id' display='Sample ID' description='ID of the sample to load' datatype='text' />
+  </params>
+  <columns>
+    <column name="type" datatype="text" />
+    <column name="id" datatype="integer" />
+    <column name="geom" datatype="text" />
+  </columns>
+</report>
