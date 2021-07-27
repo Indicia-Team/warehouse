@@ -12,7 +12,7 @@
     union
     select 'occurrence', o.id, st_astext(o.public_geom) as geom
     from cache_occurrences_functional o
-    where o.parent_sample_id=#sample_id# or o.sample_id=#sample_id#
+    where (o.parent_sample_id=#sample_id# or o.sample_id=#sample_id#)
     and o.website_id in (#website_ids#)
   </query>
   <params>
