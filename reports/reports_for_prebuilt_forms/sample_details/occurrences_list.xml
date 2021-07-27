@@ -14,7 +14,7 @@
   #agreements_join#
   #joins#
   WHERE #sharing_filter#
-  AND o.sample_id=#sample_id#
+  AND (o.sample_id=#sample_id# or o.parent_sample_id=#sample_id#)
   #idlist#
   </query>
   <order_bys>
