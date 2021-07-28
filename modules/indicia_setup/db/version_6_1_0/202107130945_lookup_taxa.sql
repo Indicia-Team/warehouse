@@ -1,3 +1,5 @@
+DROP VIEW lookup_taxa_taxon_lists;
+
 CREATE OR REPLACE VIEW lookup_taxa_taxon_lists AS
   SELECT ttl.id,
       ttl.taxon_meaning_id,
