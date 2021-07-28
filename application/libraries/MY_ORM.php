@@ -1826,6 +1826,9 @@ class ORM extends ORM_Core {
         $vf = 'text_value';
         break;
       case 'F':
+        // Preseerve the value entered as text because, when converted to float,
+        // we may lose trailing zeroes.
+        $attrValueModel->text_value = $value;
         $vf = 'float_value';
         break;
       case 'D':
@@ -1938,7 +1941,7 @@ class ORM extends ORM_Core {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId.");
       }
       elseif ($dataType === 'F' && preg_match('/^-?\d+(\.\d+)?$/', $value)
-          && abs($attrValueModel->$vf - $value) < abs(0.00001 * $attrValueModel->$vf)) {
+          && abs($attrValueModel->$vf - $value) <= abs(0.00001 * $attrValueModel->$vf)) {
         kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
       } else {
         $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
