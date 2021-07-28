@@ -813,6 +813,31 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $cache->delete_tag('required-fields');
   }
 
+  /**
+   * Tests no dependency on occurrences for adding map square links to samples.
+   */
+  public function testEmptySampleHasMapSquares() {
+    $db = new Database();
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+    ];
+    $structure = [
+      'model' => 'sample'
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $qCheck = $db->query(
+      "select map_sq_1km_id, map_sq_2km_id, map_sq_10km_id from cache_samples_functional where id=$r[success]",
+    )->current();
+    $this->assertNotEquals(NULL, $qCheck->map_sq_10km_id, 'Empty sample does not fill in map_sq_10km_id field');
+    $this->assertNotEquals(NULL, $qCheck->map_sq_2km_id, 'Empty sample does not fill in map_sq_2km_id field');
+    $this->assertNotEquals(NULL, $qCheck->map_sq_1km_id, 'Empty sample does not fill in map_sq_1km_id field');
+  }
+
   private function getSampleAsCsv($id, $regexExpected) {
     $params = array(
       'mode' => 'csv',
