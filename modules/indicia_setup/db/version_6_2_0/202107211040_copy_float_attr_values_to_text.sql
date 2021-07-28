@@ -121,7 +121,7 @@ CREATE OR REPLACE VIEW list_location_attribute_values
             WHEN 'B'::bpchar THEN av.int_value::text
             WHEN 'F'::bpchar THEN av.text_value 
             WHEN 'D'::bpchar THEN av.date_start_value::text
-            WHEN 'V'::bpchar THEN (av.date_start_value::text || ' - '::text) || av.date_end_value::text
+            WHEN 'V'::bpchar THEN vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
             ELSE NULL::text
         END AS value,
         CASE a.data_type
@@ -131,7 +131,7 @@ CREATE OR REPLACE VIEW list_location_attribute_values
             WHEN 'B'::bpchar THEN av.int_value::text
             WHEN 'F'::bpchar THEN av.float_value::text
             WHEN 'D'::bpchar THEN av.date_start_value::text
-            WHEN 'V'::bpchar THEN (av.date_start_value::text || ' - '::text) || av.date_end_value::text
+            WHEN 'V'::bpchar THEN vague_date_to_raw_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
             ELSE NULL::text
         END AS raw_value,
         CASE
@@ -493,7 +493,7 @@ UNION
             WHEN 'B'::bpchar THEN av.int_value::text
             WHEN 'F'::bpchar THEN av.text_value
             WHEN 'D'::bpchar THEN av.date_start_value::text
-            WHEN 'V'::bpchar THEN (av.date_start_value::text || ' - '::text) || av.date_end_value::text
+            WHEN 'V'::bpchar THEN vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
             WHEN 'G'::bpchar THEN st_astext(av.geom_value)
             ELSE NULL::text
         END AS value,
@@ -504,7 +504,7 @@ UNION
             WHEN 'B'::bpchar THEN av.int_value::text
             WHEN 'F'::bpchar THEN av.float_value::text
             WHEN 'D'::bpchar THEN av.date_start_value::text
-            WHEN 'V'::bpchar THEN (av.date_start_value::text || ' - '::text) || av.date_end_value::text
+            WHEN 'V'::bpchar THEN vague_date_to_raw_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
             WHEN 'G'::bpchar THEN st_astext(av.geom_value)
             ELSE NULL::text
         END AS raw_value,
