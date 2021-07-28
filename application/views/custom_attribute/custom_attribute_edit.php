@@ -241,7 +241,7 @@ TXT;
       'fieldname' => "$model->object_name:allow_ranges",
       'label' => 'Allow ranges',
       'default' => html::initial_value($values, "$model->object_name:allow_ranges"),
-      'helpText' => 'Allow a range to be specified as a value, e.g. 0.4 - 1.6',
+      'helpText' => 'Allow (but do not require) a value to be specified as a range, e.g. 0.4 - 1.6',
     ]);
     echo data_entry_helper::checkbox([
       'fieldname' => "$model->object_name:public",
@@ -301,7 +301,9 @@ HTML;
       'fieldname' => 'valid_numeric',
       'label' => 'Numeric characters only',
       'default' => $model->valid_numeric,
-      'helpText' => 'Enforce that any value provided consists of numeric characters only.',
+      'helpText' => 'Enforce that any value provided consists of numeric 
+      characters (0-9 and the locale-specific decimal point) only, with negative
+      values allowed.',
     ]);
     echo data_entry_helper::checkbox([
       'fieldname' => 'valid_alpha_numeric',
@@ -343,7 +345,9 @@ HTML;
       'fieldname' => 'valid_decimal',
       'label' => 'Formatted decimal',
       'default' => $model->valid_decimal,
-      'helpText' => 'Validate a decimal format against the provided pattern, e.g. 2 (2 digits) or 2,2 (2 digits before and 2 digits after the decimal point).',
+      'helpText' => 'Validate a non-negative decimal format against the 
+      provided pattern, e.g. 2 (2 digits after the decimal point) or 2,2 
+      (2 digits before and 2 digits after the decimal point).',
     ]);
     $val = html::specialchars($model->valid_dec_format);
     echo <<<HTML
@@ -493,7 +497,6 @@ function toggleOptions() {
       enable = [
         'required',
         'digit',
-        'decimal',
         'regex',
         'min',
         'max'
