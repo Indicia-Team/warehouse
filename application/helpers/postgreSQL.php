@@ -239,14 +239,14 @@ SQL
       $fieldsForEachSquare = '';
       foreach ($sizes as $idx => $size) {
         $fieldsForEachSquare .= <<<SQL
-  GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size) as size$size,
+  GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer, max(o.sensitivity_precision), s.privacy_precision, $size) as size$size,
   round(st_x(st_centroid(reduce_precision(
-    coalesce(s.geom, l.centroid_geom), o.confidential,
-    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size))
+    coalesce(s.geom, l.centroid_geom), bool_or(o.confidential),
+    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer, max(o.sensitivity_precision), s.privacy_precision, $size))
   ))) as x$size,
   round(st_y(st_centroid(reduce_precision(
-    coalesce(s.geom, l.centroid_geom), o.confidential,
-    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size))
+    coalesce(s.geom, l.centroid_geom), bool_or(o.confidential),
+    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer, max(o.sensitivity_precision), s.privacy_precision, $size))
   ))) as y$size
 SQL;
         if ($idx < 2) {
@@ -256,14 +256,17 @@ SQL;
       $query = <<<SQL
 SELECT DISTINCT s.id,
   st_astext(coalesce(s.geom, l.centroid_geom)) as geom,
-  o.confidential,
+  COALESCE(bool_or(o.confidential), false) as confidential,
   coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system,
   $fieldsForEachSquare
 FROM samples s
-JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false
+LEFT JOIN samples sc on sc.parent_id=s.id
+-- check occurrence sensitivity for this sample and children.
+LEFT JOIN occurrences o on (o.sample_id=s.id or o.sample_id=sc.id) and o.deleted=false
 LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
 WHERE $alias.id IN ($idlist)
 AND s.deleted=false
+GROUP BY s.id, l.centroid_geom, l.centroid_sref_system
 SQL;
       $smpInfo = $db->query($query)->result_array(TRUE);
       foreach ($smpInfo as $s) {
