@@ -39,13 +39,13 @@
     <column name="date_end" sql="s.date_end" visible="false" />
     <column name="date_type" sql="s.date_type" visible="false" />
     <column name="date" display="Date" datatype="date" />
-    <column name="entered_sref" sql="case when max(o.sensitive::integer)=0 or #allow_sensitive_full_precision#='1'
+    <column name="entered_sref" sql="case when coalesce(bool_or(o.sensitive), false)=false or #allow_sensitive_full_precision#='1'
         then smp.entered_sref
         else (select output_sref from cache_occurrences_nonfunctional onf join cache_occurrences_functional o on o.id=onf.id and o.sample_id=#sample_id# order by onf.sensitivity_precision desc nulls last limit 1) end"
         internal_sql="smp.entered_sref" />
     <column name="sref_precision" sql="snf.attr_sref_precision" />
     <column name="location_name" sql="s.location_name" />
-    <column name="sample_comment" sql="case when max(o.sensitive::integer)=0 or #allow_sensitive_full_precision#='1' then snf.comment else null end"
+    <column name="sample_comment" sql="case when coalesce(bool_or(o.sensitive), false)=false or #allow_sensitive_full_precision#='1' then snf.comment else null end"
       internal_sql="snf.comment" />
     <column name="geom" sql="case
       when #allow_sensitive_full_precision#='1' then st_astext(smp.geom)
