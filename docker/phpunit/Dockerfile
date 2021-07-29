@@ -15,13 +15,6 @@ RUN install-php-extensions gd pgsql zip xdebug pdo_pgsql
 ENV XDEBUG_CONFIG=client_host=172.17.0.1
 ENV XDEBUG_MODE=debug
 
-# Install composer.
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
-    && php -r "if (hash_file('sha384', 'composer-setup.php') === '756890a4488ce9024fc62c56153228907f1545c228516cbf63f885e036d37e9a59d27d63f46af1d4d07ee0f76181c7d3') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" \
-    && php composer-setup.php \
-    && php -r "unlink('composer-setup.php');" \
-    && mv composer.phar /usr/local/bin/composer
-
 # Install operating system tools
 RUN apt-get update \
     && apt-get -y install lsb-release wget gnupg
@@ -58,17 +51,12 @@ ENV GID=${GID}
 ENV USER=${USER}
 ENV GROUP=${GROUP}
 
-# Install phpunit globally for use by host user.
-RUN runuser -l $USER -c 'composer global require "phpunit/phpunit"'
-RUN runuser -l $USER -c 'composer global require "misantron/dbunit:^5.1"'
-RUN runuser -l $USER -c "composer global config home"
-ENV PATH="${PATH}:/home/$USER/.composer/vendor/bin"
-
-# Change Apache to listen on port 8080.
+ARG PORT
+# Change Apache to listen on an available port.
 # We need it to appear on the same port both inside and outside the container
 # as it is accessed from both perspectives.
-RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf
-RUN sed -i 's/<VirtualHost *:80>/<VirtualHost *:8080>/' /etc/apache2/sites-enabled/000-default.conf
+RUN sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
+RUN sed -i "s/<VirtualHost *:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-enabled/000-default.conf
 
 # When a warehouse container is started, we need to execute a startup script.
 # (The working directory is /var/www/html)
