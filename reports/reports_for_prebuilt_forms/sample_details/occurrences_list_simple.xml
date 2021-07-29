@@ -1,0 +1,33 @@
+<report
+    title="Simple list of occurrences with abundance"
+    description="A list of occurrences designed for list output."
+    featured="true"
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         standard_params="occurrences" count_field="o.*">
+  SELECT #columns#
+  FROM cache_occurrences_functional o
+  JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  WHERE o.website_id in (#website_ids#)
+  AND (o.sample_id=#sample_id# or o.parent_sample_id=#sample_id#)
+  AND o.zero_abundance=false
+  </query>
+  <order_bys>
+    <order_by>cttl.taxon_group, cttl.preferred_taxon</order_by>
+  </order_bys>
+  <params>
+    <param name="sample_id" datatype="integer" />
+  </params>
+  <columns>
+    <column name="external_key" display="Key" datatype="text" sql="cttl.external_key" />
+    <column name="taxon" display="Species" datatype="species" sql="cttl.preferred_taxon" template='&lt;span class="zero-{zero_abundance}"&gt;{taxon}&lt;/span&gt;' />
+    <column name="common" display="Common name" datatype="text" sql="cttl.default_common_name" template='&lt;span class="zero-{zero_abundance}"&gt;{common}&lt;/span&gt;' />
+    <column name="taxon_group" display="Taxon group" sql="cttl.taxon_group" datatype="text" />
+    <column name="count" display="Count" datatype="text" aggregate="true"
+      sql="array_to_string(ARRAY[
+	  sum(case when onf.attr_sex_stage_count ~ '^\d+$' then onf.attr_sex_stage_count::integer else null end)::text,
+      string_agg(case when onf.attr_sex_stage_count !~ '^\d+$' then onf.attr_sex_stage_count else null end, ' + ')
+  ], ' + ')" />
+  </columns>
+</report>

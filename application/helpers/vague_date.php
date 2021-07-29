@@ -220,7 +220,7 @@ class vague_date {
     $start = empty($date[0]) ? NULL : $date[0];
     $end = empty($date[1]) ? NULL : $date[1];
     $type = $date[2];
-    if ($type === '') {
+    if (empty($type)) {
       return '';
     }
     if (is_string($start)) {

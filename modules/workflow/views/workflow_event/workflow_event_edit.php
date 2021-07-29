@@ -125,12 +125,12 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'fieldname' => 'old_workflow_event_event_type',
       'default' => html::initial_value($values, 'workflow_event:event_type'),
     ]);
-    echo data_entry_helper::select([]
+    echo data_entry_helper::select([
       'label' => 'Event Type',
       'fieldname' => 'workflow_event:event_type',
       'lookupValues' => [],
       'validation' => ['required'],
-    ));
+    ]);
     echo data_entry_helper::checkbox([
       'label' => 'Rewind record state first',
       'fieldname' => 'workflow_event:mimic_rewind_first',
