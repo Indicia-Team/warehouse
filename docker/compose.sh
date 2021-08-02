@@ -12,7 +12,7 @@ if [ ! $(which composer) ]; then
   && php -r "unlink('composer-setup.php');" \
   && mv composer.phar /usr/local/bin/composer
 fi
-composer --working-dir=../ install
+composer --working-dir=../ install --no-dev
 
 # The postgres container is built by us so that we can include
 # the setup script in the image.
