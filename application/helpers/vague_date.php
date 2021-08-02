@@ -19,7 +19,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-//defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
 class vague_date {
 
