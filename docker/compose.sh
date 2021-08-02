@@ -138,7 +138,7 @@ ____EOF
     
     # We can import the GBIF Backbone to a species list
     echo
-    prompt="Do you want to import the GBIF Backbone Taxonomy (Could take 15 mins) (Y/n)?"
+    prompt="Do you want to import the GBIF Backbone Taxonomy (Could take 4 hours) (Y/n)?"
     read -rs -n 1 -p "$prompt"
     if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
       echo
