@@ -73,10 +73,10 @@ class Helper_Vague_Date_Test extends TestCase {
       'Season only Summer' => ['2010-06-01', '2010-08-31', 'S', 'Summer'],
       'Season only Autumn' => ['2010-09-01', '2010-11-30', 'S', 'Autumn'],
       'Unknown' => ['', '', 'U', 'Unknown'],
-      'Century 20' => ['1900-01-01', '1999-12-31', 'C', '20c'],
-      'Century range 17 to 19' => ['1600-01-01', '1899-12-31', 'CC', '17c to 19c'],
-      'Open ended century range from 19' => ['1800-01-01', '', 'C-', 'From 19c'],
-      'Open start century range to 20' => ['', '1999-12-31', '-C', 'To 20c'],
+      'Century 20' => ['1901-01-01', '2000-12-31', 'C', '20c'],
+      'Century range 17 to 19' => ['1601-01-01', '1900-12-31', 'CC', '17c to 19c'],
+      'Open ended century range from 19' => ['1801-01-01', '', 'C-', 'From 19c'],
+      'Open start century range to 20' => ['', '2000-12-31', '-C', 'To 20c'],
     ];
   }
 
@@ -281,11 +281,11 @@ class Helper_Vague_Date_Test extends TestCase {
       'Season only Autumn' => ['Autumn', "$year-09-01", "$year-11-30", 'S'],
       'Unknown' => ['Unknown', NULL, NULL, 'U'],
       'Unknown U' => ['U', NULL, NULL, 'U'],
-      'Century 20' => ['20c', '1900-01-01', '1999-12-31', 'C'],
-      'Century range 17 to 19' => ['17c to 19c', '1600-01-01', '1899-12-31', 'CC'],
-      'Century range 17 - 19' => ['17c - 19c', '1600-01-01', '1899-12-31', 'CC'],
-      'Open ended century range 19-' => ['19c-', '1800-01-01', '', 'C-'],
-      'Open start century range -20' => ['-20c', '', '1999-12-31', '-C'],
+      'Century 20' => ['20c', '1901-01-01', '2000-12-31', 'C'],
+      'Century range 17 to 19' => ['17c to 19c', '1601-01-01', '1900-12-31', 'CC'],
+      'Century range 17 - 19' => ['17c - 19c', '1601-01-01', '1900-12-31', 'CC'],
+      'Open ended century range 19-' => ['19c-', '1801-01-01', '', 'C-'],
+      'Open start century range -20' => ['-20c', '', '2000-12-31', '-C'],
     ];
   }
 

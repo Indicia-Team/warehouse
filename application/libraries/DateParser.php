@@ -346,7 +346,7 @@ class DateParser_Core {
     $aStart = $this->aResult;
     // If we're a century...
     if (($a = $aStart['tm_century']) != NULL) {
-      $aStart['tm_year'] = 100 * ($a - 1);
+      $aStart['tm_year'] = (100 * ($a - 1)) + 1;
       $aStart['tm_mon'] = 0;
       $aStart['tm_mday'] = 1;
       return $this->formatDate($aStart['tm_year'], $aStart['tm_mon'] + 1, $aStart['tm_mday']);
@@ -394,7 +394,7 @@ class DateParser_Core {
     $aStart = $this->aResult;
     // If we're a century...
     if (($a = $aStart['tm_century']) !== NULL) {
-      return $this->formatDate(100 * ($a) - 1, 12, 31);
+      return $this->formatDate(100 * ($a), 12, 31);
     }
 
     // Do we have a year, else set it to this year.
