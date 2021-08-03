@@ -1,5 +1,7 @@
 -- #slow script#
 
+DROP TABLE IF EXISTS to_fix;
+
 -- Find all the samples WHERE the map square data was skipped due to not containing occurrences.
 SELECT DISTINCT s.id, cast(null AS integer) AS msq_1k_id, cast(null AS integer) AS msq_2k_id, cast(null AS integer) AS msq_10k_id,
   GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer, max(o.sensitivity_precision), s.privacy_precision, 1000) AS size1000,

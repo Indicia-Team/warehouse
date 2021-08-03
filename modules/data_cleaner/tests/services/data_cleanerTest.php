@@ -26,6 +26,9 @@
  * @subpackage Data Cleaner
  */
 
+use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
+use PHPUnit\DbUnit\DataSet\CompositeDataSet as DbUDataSetCompositeDataSet;
+
 require_once 'client_helpers/data_entry_helper.php';
 
 /**
@@ -42,7 +45,7 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
    */
   public function getDataSet()
   {
-    $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    $ds1 =  new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
 
     // Create a rule to test against
     $ds2 = new Indicia_ArrayDataSet(
@@ -106,13 +109,13 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
       )
     );
 
-    $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
+    $compositeDs = new DbUDataSetCompositeDataSet();
     $compositeDs->addDataSet($ds1);
     $compositeDs->addDataSet($ds2);
     return $compositeDs;
   }
 
-  public function setUp() {
+  public function setUp(): void {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
 
@@ -158,7 +161,7 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
     $errors = json_decode($response['output'], TRUE);
 
     $this->assertTrue($response['result'], 'Invalid response');
-    $this->assertInternalType('array', $errors, 'Errors list not returned');
+    $this->assertIsArray($errors, 'Errors list not returned');
     $this->assertEquals(1, count($errors), 'Errors list empty. Is the data_cleaner_period_within_year module installed?');
     $this->assertArrayHasKey('taxa_taxon_list_id', $errors[0], 'Errors list missing taxa_taxon_list_id');
     $this->assertEquals('1', $errors[0]['taxa_taxon_list_id'], 'Incorrect taxa_taxon_list_id returned');
@@ -189,7 +192,7 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
     $errors = json_decode($response['output'], TRUE);
 
     $this->assertTrue($response['result'], 'Invalid response');
-    $this->assertInternalType('array', $errors, 'Errors list not returned');
+    $this->assertIsArray($errors, 'Errors list not returned');
     $this->assertCount(0, $errors, 'Errors contanied in list');
   }
 

@@ -7,7 +7,7 @@ services:
             POSTGRES_PASSWORD: password
         volumes:
             # Persist the database in a named volume.
-            - indicia_postgres:/var/lib/postgresql/data
+            - postgres:/var/lib/postgresql/data
             # Share a host folder so postgres can access UKSI data.
             - .:/var/docker
         ports:
@@ -19,10 +19,13 @@ services:
     pgadmin:
         # See https://hub.docker.com/r/dpage/pgadmin4/tags
         # for other versions available.
-        image: dpage/pgadmin4:5.2
+        image: dpage/pgadmin4:5.5
         environment:
-            PGADMIN_DEFAULT_EMAIL: pgadmin@indicia.org.uk
+            PGADMIN_DEFAULT_EMAIL: pgadmin@example.com
             PGADMIN_DEFAULT_PASSWORD: password
+        volumes:
+            # Persist configuration in a named volume.
+            - pgadmin:/var/lib/pgadmin
         ports: 
             - "8070:80"
 
@@ -45,4 +48,5 @@ services:
             - "8080:8080"
 
 volumes:
-    indicia_postgres:
+    postgres:
+    pgadmin:

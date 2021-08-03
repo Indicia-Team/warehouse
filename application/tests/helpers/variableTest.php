@@ -1,5 +1,8 @@
 <?php
-class Helper_Variable_Test extends PHPUnit_Framework_TestCase {
+
+use PHPUnit\Framework\TestCase;
+
+class Helper_Variable_Test extends TestCase {
 
   public function testSet() {
     variable::set('unittestset', 'testvalue');

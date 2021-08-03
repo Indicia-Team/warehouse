@@ -729,7 +729,7 @@ sample_attributes:
     caption: "Altitude"
     data_type: "I"
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
     updated_on: "2016-07-22:16:00:00"
     updated_by_id: 1
     public: "false"
@@ -739,7 +739,7 @@ sample_attributes_websites:
     website_id: 1
     sample_attribute_id: 1
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
     restrict_to_survey_id: 1
 
 occurrence_attributes:
@@ -749,7 +749,7 @@ occurrence_attributes:
     public: "false"
     system_function: "det_full_name"
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
     updated_on: "2016-07-22:16:00:00"
     updated_by_id: 1
 
@@ -758,7 +758,7 @@ occurrence_attributes_websites:
     website_id: 1
     occurrence_attribute_id: 1
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
     restrict_to_survey_id: 1
 
 locations:
@@ -768,9 +768,9 @@ locations:
     centroid_sref_system: "OSGB"
     location_type_id: "2"
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
     updated_on: "2016-07-22:16:00:00"
-    updated_by_id: 1,
+    updated_by_id: 1
     public: "true"
 
 
@@ -780,53 +780,53 @@ location_attributes:
     data_type: "T"
     public: "false"
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
     updated_on: "2016-07-22:16:00:00"
-    updated_by_id: 1,
+    updated_by_id: 1
   -
     caption: "Test lookup"
     data_type: "L"
-    termlist_id: 1,
+    termlist_id: 1
     public: "false"
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
     updated_on: "2016-07-22:16:00:00"
-    updated_by_id: 1,
+    updated_by_id: 1
   -
     caption: "Test integer"
     data_type: "I"
-    termlist_id: 1,
+    termlist_id: 1
     public: "false"
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
     updated_on: "2016-07-22:16:00:00"
-    updated_by_id: 1,
+    updated_by_id: 1
 
 
 location_attributes_websites:
   -
     website_id: 1                           #Test website
-    location_attribute_id: 1,               #Test text
+    location_attribute_id: 1                #Test text
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
   -
     website_id: 1                           #Test website
-    location_attribute_id: 2,               #Test lookup
+    location_attribute_id: 2                #Test lookup
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
   -
     website_id: 1                           #Test website
-    location_attribute_id: 3,               #Test integer
+    location_attribute_id: 3                #Test integer
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
 
 
 location_attribute_values:
   -
-    location_id: 1,                         #Test location
-    location_attribute_id: 2,               #Test lookup
-    int_value: 1,                           #Test term
+    location_id: 1                          #Test location
+    location_attribute_id: 2                #Test lookup
+    int_value: 1                            #Test term
     created_on: "2016-07-22:16:00:00"
-    created_by_id: 1,
+    created_by_id: 1
     updated_on: "2016-07-22:16:00:00"
-    updated_by_id: 1,
+    updated_by_id: 1

@@ -1,5 +1,6 @@
 <?php
 
+use PHPUnit\Framework\TestCase;
 
 define("CORNER_1846_SW_X", 13 + 1/3);
 define("CORNER_1846_SW_Y", 54.1);
@@ -10,7 +11,7 @@ define("Q_SQUARE_WIDTH_Y", MTB_SQUARE_WIDTH_Y / 2);
 define("QQ_SQUARE_WIDTH_X", Q_SQUARE_WIDTH_X / 2);
 define("QQ_SQUARE_WIDTH_Y", Q_SQUARE_WIDTH_Y / 2);
 
-class Helpers_mtbqqq_Test extends PHPUnit_Framework_TestCase {
+class Helpers_mtbqqq_Test extends TestCase {
 
   public function testIsValid() {
     $sref='1846-1';
@@ -76,28 +77,22 @@ class Helpers_mtbqqq_Test extends PHPUnit_Framework_TestCase {
       'WKT to SREF returned an unexpected value'
     );
   }
-  
-  /**
-   * @expectedException InvalidArgumentException
-   */
+
   public function testSrefToWktInvalidQ() {
-    $sref='1846/5';
+    $this->expectException(InvalidArgumentException::class);
+    $sref = '1846/5';
     $wkt = mtbqqq::sref_to_wkt($sref);
   }
-  
-  /**
-   * @expectedException InvalidArgumentException
-   */
+
   public function testSrefToWktInvalidQQ() {
-    $sref='1846/15';
+    $this->expectException(InvalidArgumentException::class);
+    $sref =' 1846/15';
     $wkt = mtbqqq::sref_to_wkt($sref);
   }
-  
-  /**
-   * @expectedException InvalidArgumentException
-   */
+
   public function testSrefToWktInvalidQQQ() {
-    $sref='1846/115';
+    $this->expectException(InvalidArgumentException::class);
+    $sref = '1846/115';
     $wkt = mtbqqq::sref_to_wkt($sref);
   }
 

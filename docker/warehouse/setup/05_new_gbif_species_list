@@ -1,0 +1,24 @@
+# The endpoint for adding a taxon list.
+url = "http://localhost:8080/index.php/taxon_list/save"
+
+# Send previously saved cookies.
+cookie = cookiefile
+# Save returned cookies.
+cookie-jar = cookiefile
+# Divert output to file.
+output = outputfile
+# Don't show progress.
+silent
+# Do show errors though.
+show-error
+
+# Enable debugging so you can set breakpoints in the PHP.
+data = "XDEBUG_SESSION=true"
+
+# The information we want to post, url encoded.
+data = "id="
+data = "parent_id="
+data = "taxon_list%3Atitle=GBIF+Backbone+Taxonomy"
+data = "taxon_list%3Adescription=Global+Species+curated+by+the+Global+Biodiversity+Information+Facility."
+data = "taxon_list%3Awebsite_id="
+data = "submit=Save"

@@ -55,6 +55,7 @@ LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=delta.taxon
 JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=delta.website_id and iwwa.receive_for_reporting=true
 JOIN species_alerts sa ON
   (sa.location_id IS NULL OR delta.location_ids @> ARRAY[sa.location_id])
+  AND (sa.survey_id IS NULL OR delta.survey_id = sa.survey_id)
   AND
     (sa.taxon_meaning_id = delta.taxon_meaning_id
     OR

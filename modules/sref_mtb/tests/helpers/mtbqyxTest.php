@@ -1,11 +1,13 @@
 <?php
 
+use PHPUnit\Framework\TestCase;
+
 define("CORNER_1847_SW_X", 13.5);
 define("CORNER_1847_SW_Y", 54.1);
 define("QYX_SQUARE_WIDTH_X", Q_SQUARE_WIDTH_X / 5);
 define("QYX_SQUARE_WIDTH_Y", Q_SQUARE_WIDTH_Y / 3);
 
-class Helpers_mtbqyx_Test extends PHPUnit_Framework_TestCase {
+class Helpers_mtbqyx_Test extends TestCase {
 
   public function testIsValid() {
     $sref='1847-1';
@@ -70,29 +72,23 @@ class Helpers_mtbqyx_Test extends PHPUnit_Framework_TestCase {
       'WKT to SREF returned an unexpected value'
     );
   }
-  
-  /**
-   * @expectedException InvalidArgumentException
-   */
+
   public function testSrefToWktInvalidQ() {
-    $sref='1847/a';
+    $this->expectException(InvalidArgumentException::class);
+    $sref = '1847/a';
     $wkt = mtbqyx::sref_to_wkt($sref);
   }
-  
-  /**
-   * @expectedException InvalidArgumentException
-   */
+
   public function testSrefToWktInvalidQY() {
-    $sref='1847/14';
+    $this->expectException(InvalidArgumentException::class);
+    $sref = '1847/14';
     $wkt = mtbqyx::sref_to_wkt($sref);
   }
-  
-  /**
-   * @expectedException InvalidArgumentException
-   */
+
   public function testSrefToWktInvalidQYX() {
-    // limits of yx grid are 3,5.
-    $sref='1847/146';
+    // Limits of yx grid are 3,5.
+    $this->expectException(InvalidArgumentException::class);
+    $sref = '1847/146';
     $wkt = mtbqyx::sref_to_wkt($sref);
   }
 

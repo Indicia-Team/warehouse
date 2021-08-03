@@ -210,37 +210,45 @@ TXT;
         }
         switch ($attr['data_type']) {
           case 'D':
-          case 'V':
-            echo data_entry_helper::date_picker(array(
+            echo data_entry_helper::date_picker([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
+            break;
+
+          case 'V':
+            echo data_entry_helper::date_picker([
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['value'],
+              'allowVagueDates' => TRUE,
+            ]);
             break;
 
           case 'L':
-            echo data_entry_helper::select(array(
+            echo data_entry_helper::select([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['raw_value'],
               'lookupValues' => $values["terms_$attr[termlist_id]"],
               'blankText' => '<Please select>',
-            ));
+            ]);
             break;
 
           case 'B':
-            echo data_entry_helper::checkbox(array(
+            echo data_entry_helper::checkbox([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
             break;
 
           case 'G':
             echo "<input type=\"hidden\" name=\"$name\" value=\"$attr[value]\" id=\"imp-geom\"/>";
             echo "<label>$attr[caption]:</label>";
-            echo map_helper::map_panel(array(
-              'presetLayers' => array('osm'),
+            echo map_helper::map_panel([
+              'presetLayers' => ['osm'],
               'editLayer' => TRUE,
               'clickForSpatialRef' => FALSE,
               'layers' => [],
@@ -257,15 +265,15 @@ TXT;
                 'modifyFeature',
                 'clearEditLayer',
               ],
-            ));
+            ]);
             break;
 
           default:
-            echo data_entry_helper::text_input(array(
+            echo data_entry_helper::text_input([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
         }
       }
       ?>

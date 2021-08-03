@@ -1,5 +1,7 @@
 <?php
 
+use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
+
 require_once 'client_helpers/data_entry_helper.php';
 require_once 'client_helpers/submission_builder.php';
 
@@ -18,11 +20,11 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
   protected $auth;
 
   public function getDataSet() {
-    $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    $ds1 =  new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
     return $ds1;
   }
 
-  public function setup() {
+  public function setup(): void {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
 
@@ -851,7 +853,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     // Fire regexpressions at the raw CSV data so we can check for things like missing escaping which
     // should really be present by fgetcsv might tolerate
     foreach ($regexExpected as $regex)
-      $this->assertRegExp($regex, $response);
+      $this->assertMatchesRegularExpression($regex, $response);
     fputs($fp, $response);
     rewind($fp);
     $data = [];

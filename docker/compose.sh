@@ -1,5 +1,19 @@
 #!/bin/bash
 
+# Set the project name which determines the network and container names.
+export COMPOSE_PROJECT_NAME=indicia
+
+# Ensure dependencies of warehouse have been installed
+if [ ! $(which composer) ]; then
+  # First install composer if not present
+  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+  && php -r "if (hash_file('sha384', 'composer-setup.php') === '756890a4488ce9024fc62c56153228907f1545c228516cbf63f885e036d37e9a59d27d63f46af1d4d07ee0f76181c7d3') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" \
+  && php composer-setup.php \
+  && php -r "unlink('composer-setup.php');" \
+  && mv composer.phar /usr/local/bin/composer
+fi
+composer --working-dir=../ install --no-dev
+
 # The postgres container is built by us so that we can include
 # the setup script in the image.
 # The warehouse container is built with PHP extensions added
@@ -75,7 +89,7 @@ ____EOF
       echo "Adding UK Species Inventory."
 
       echo "...Creating an empty list."
-      curl --config warehouse/setup/04_new_species_list  
+      curl --config warehouse/setup/04_new_uksi_species_list  
 
       # Enable required modules.
       module_array=(
@@ -101,7 +115,7 @@ ____EOF
       curl $url | tar -xz --strip-components=1 support_files-master/UKSI
 
       echo "...Executing the import on the warehouse."
-      docker exec docker_warehouse_1 sh -c '
+      docker exec indicia_warehouse_1 sh -c '
         cd docker/UKSI
         php import-uksi.php \
         --warehouse-path=/var/www/html \
@@ -122,6 +136,68 @@ ____EOF
 
     fi # End of add UKSI species list.
     
+    # We can import the GBIF Backbone to a species list
+    echo
+    prompt="Do you want to import the GBIF Backbone Taxonomy (Could take 4 hours) (Y/n)?"
+    read -rs -n 1 -p "$prompt"
+    if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
+      echo
+      echo "Adding GBIF Backbone Taxonomy."
+
+      echo "...Creating an empty list."
+      curl --config warehouse/setup/05_new_gbif_species_list  
+
+      #### COPYING FROM UKSI - MAY NOT BE NEEDED.
+      # Enable required modules.
+      module_array=(
+        'taxon_designations'
+        'taxon_associations'
+        'species_alerts'
+        'data_cleaner_period_within_year'
+        'data_cleaner_without_polygon'
+      )
+      # This just has the effect of uncommenting all the modules.
+      for module in ${module_array[@]}; do
+        replace="         MODPATH.'$module'"
+        find="\/\/$replace"
+        sed -i "s/$find/$replace/" ../application/config/config.php
+        echo "...Enabled $module"
+      done
+
+      echo "...Upgrading the database after adding modules."
+      curl --config warehouse/setup/database_upgrade   
+
+      echo "...Copying the GBIF scripts from Github."
+      url=https://codeload.github.com/Indicia-Team/support_files/tar.gz/master
+      curl $url | tar -xz --strip-components=1 support_files-master/GBIF
+
+      echo "...Downloading the GBIF Backbone Taxonomy."
+      cd GBIF
+      url=https://hosted-datasets.gbif.org/datasets/backbone/backbone-current-simple.txt.gz
+      curl -O $url
+      echo "...Decompressing the GBIF file."
+      gunzip -k backbone-current-simple.txt.gz
+
+      echo "...Executing the import on the warehouse."
+      # Note, warehouse-path is in the warehouse container
+      # but data-path is in the postgres container.
+      # There are corresponding mounts in the compose file.
+      docker exec indicia_warehouse_1 sh -c '
+        cd docker/GBIF
+        php import-gbif.php \
+        --warehouse-path=/var/www/html \
+        --data-path=/var/docker/GBIF \
+        --su=postgres \
+        --supass=password \
+        --taxon_list_id=1 \
+        --user_id=1'
+
+      # # Clean up.
+      cd -
+      rm -rf GBIF
+
+    fi # End of add GBIF Backbone species list.
+
     # With the database fully set up we can enable scheduled tasks.
     echo
     prompt="Do you want scheduled tasks to run (Y/n)?"
@@ -131,7 +207,7 @@ ____EOF
       echo "Adding scheduled tasks to crontab."
       cronspec="*/15 * * * * php /var/www/html/index.php scheduled_tasks"
       croncmd="echo $cronspec | crontab -u $(id -un) -"
-      docker exec docker_warehouse_1 sh -c "set -f; $croncmd"
+      docker exec indicia_warehouse_1 sh -c "set -f; $croncmd"
 
       # With scheduled_tasks enabled we can enable the data_cleaner.
       echo

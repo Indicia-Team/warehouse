@@ -1,4 +1,7 @@
 <?php
+
+use PHPUnit\Framework\TestCase;
+
 /**
  * Valid Helper Unit Tests
  *
@@ -8,7 +11,7 @@
  * @group    core.helpers
  * @group    core.helpers.valid
  */
-class Helper_Valid_Test extends PHPUnit_Framework_TestCase
+class Helper_Valid_Test extends TestCase
 {
 	/**
 	 * DataProvider for the valid::email() test

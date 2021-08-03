@@ -1,6 +1,8 @@
 <?php
 
-class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
+use PHPUnit\Framework\TestCase;
+
+class Helper_Vague_Date_Test extends TestCase {
 
   /*****************************
    *  Vague date to string tests
@@ -35,7 +37,7 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
    *  - the date_type of the vague date to convert
    *  - the expected date string.
    */
-   public function provideVagueDateToString() {
+  public function provideVagueDateToString() {
     return [
       'Date 2001-06-15' => ['2001-06-15', '2001-06-15', 'D', '15/06/2001'],
       'Date 2004-02-29' => ['2004-02-29', '2004-02-29', 'D', '29/02/2004'],
@@ -51,12 +53,12 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
       'Season Winter 2010' => ['2009-12-01', '2010-02-28', 'P', 'Winter 2010'],
       'Season Spring 2010' => ['2010-03-01', '2010-05-31', 'P', 'Spring 2010'],
       'Season Summer 2010' => ['2010-06-01', '2010-08-31', 'P', 'Summer 2010'],
-      'Season Autumn 2010' => ['2010-09-01', '2010-11-30', 'P','Autumn 2010'],
+      'Season Autumn 2010' => ['2010-09-01', '2010-11-30', 'P', 'Autumn 2010'],
       'Year 2001' => ['2001-01-01', '2001-12-31', 'Y', '2001'],
       'Year 1970' => ['1970-01-01', '1970-12-31', 'Y', '1970'],
       'Year 1900' => ['1900-01-01', '1900-12-31', 'Y', '1900'],
       'Year 1800' => ['1800-01-01', '1800-12-31', 'Y', '1800'],
-      'Year range 2001 to 2005' => ['2001-01-01', '2005-12-31', 'YY','2001 to 2005'],
+      'Year range 2001 to 2005' => ['2001-01-01', '2005-12-31', 'YY', '2001 to 2005'],
       'Open ended year range From 2001' => ['2001-01-01', '', 'Y-', 'From 2001'],
       'Open ended year range From 1970' => ['1970-01-01', '', 'Y-', 'From 1970'],
       'Open ended year range From 1900' => ['1900-01-01', '', 'Y-', 'From 1900'],
@@ -71,6 +73,10 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
       'Season only Summer' => ['2010-06-01', '2010-08-31', 'S', 'Summer'],
       'Season only Autumn' => ['2010-09-01', '2010-11-30', 'S', 'Autumn'],
       'Unknown' => ['', '', 'U', 'Unknown'],
+      'Century 20' => ['1901-01-01', '2000-12-31', 'C', '20c'],
+      'Century range 17 to 19' => ['1601-01-01', '1900-12-31', 'CC', '17c to 19c'],
+      'Open ended century range from 19' => ['1801-01-01', '', 'C-', 'From 19c'],
+      'Open start century range to 20' => ['', '2000-12-31', '-C', 'To 20c'],
     ];
   }
 
@@ -90,7 +96,6 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
     $s = vague_date::vague_date_to_string($vd);
     $this->assertEquals($expected, $s, 'Failed converting vague date (strings) to ' . $expected);
   }
-
 
   /*****************************
    *  String to vague date tests
@@ -276,10 +281,15 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
       'Season only Autumn' => ['Autumn', "$year-09-01", "$year-11-30", 'S'],
       'Unknown' => ['Unknown', NULL, NULL, 'U'],
       'Unknown U' => ['U', NULL, NULL, 'U'],
+      'Century 20' => ['20c', '1901-01-01', '2000-12-31', 'C'],
+      'Century range 17 to 19' => ['17c to 19c', '1601-01-01', '1900-12-31', 'CC'],
+      'Century range 17 - 19' => ['17c - 19c', '1601-01-01', '1900-12-31', 'CC'],
+      'Open ended century range 19-' => ['19c-', '1801-01-01', '', 'C-'],
+      'Open start century range -20' => ['-20c', '', '2000-12-31', '-C'],
     ];
-   }
+  }
 
- /**
+  /**
    * @dataProvider provideStringToVagueDate
    */
   public function testStringToVagueDate($string, $from, $to, $type) {
@@ -291,17 +301,17 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
 
   public function provideBadStringToVagueDate() {
     return [
-        'Date 29/02/2001' => ['29/02/2001'],
-        'Date 34/3/73' => ['34/3/73'],
-        'Date 34 march 73' => ['34 march 73'],
-        'Date 100/13/2001' => ['100/13/2001'],
-        'Date 06/1992-1996' => ['06/1992-1996'],
-        'Date Apr 2019 to Dec 2017' => ['Apr 2019 to Dec 2017'],
-        'Date 04/2019 to 12/2017' => ['04/2019 to 12/2017'],
+      'Date 29/02/2001' => ['29/02/2001'],
+      'Date 34/3/73' => ['34/3/73'],
+      'Date 34 march 73' => ['34 march 73'],
+      'Date 100/13/2001' => ['100/13/2001'],
+      'Date 06/1992-1996' => ['06/1992-1996'],
+      'Date Apr 2019 to Dec 2017' => ['Apr 2019 to Dec 2017'],
+      'Date 04/2019 to 12/2017' => ['04/2019 to 12/2017'],
     ];
   }
 
- /**
+  /**
    * @dataProvider provideBadStringToVagueDate
    */
   public function testBadStringToVagueDate($string) {

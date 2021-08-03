@@ -29,7 +29,7 @@ class Taxa_taxon_list_attribute_Controller extends Attr_Base_Controller {
     parent::__construct();
     $this->pagetitle = "Taxon Attributes";
     // Override the default columns for custom attributes, as taxon attributes
-    // are attached to websites not taxon lists.
+    // are attached to taxon lists not websites.
     $this->columns = [
       'id' => '',
       'taxon_list' => 'Species List',

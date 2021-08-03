@@ -1,16 +1,18 @@
 <?php
+
+use PHPUnit\Framework\TestCase;
+
 /**
  * Arr Helper Unit Tests
  *
- * @package	Core
- * @subpackage	Helpers
+ * @package Core
+ * @subpackage Helpers
  * @author	Kiall Mac Innes
  * @group	core
  * @group	core.helpers
  * @group	core.helpers.arr
  */
-class Helper_Arr_Test extends PHPUnit_Framework_TestCase
-{
+class Helper_Arr_Test extends TestCase {
 	/**
 	 * DataProvider for the arr::rotate() test
 	 */

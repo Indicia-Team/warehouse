@@ -1,4 +1,7 @@
 <?php
+
+use PHPUnit\Framework\TestCase;
+
 /**
  * Text Helper Unit Tests
  *
@@ -8,7 +11,7 @@
  * @group    core.helpers
  * @group    core.helpers.text
  */
-class Helper_Text_Test extends PHPUnit_Framework_TestCase
+class Helper_Text_Test extends TestCase
 {
 	/**
 	 * DataProvider for the text::limit_words() test

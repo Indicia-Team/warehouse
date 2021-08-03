@@ -1,3 +1,14 @@
+# Version 6.2.0
+*2021-08-02*
+
+* Support for life stages in period-within-year verification rules
+* Support for csv import of survey attributes to a website.
+* Additional iNat fields can be mapped to custom attributes.
+* Allow alert filters to include survey.
+* Import/Export of surveys now includes survey attributes.
+* Updates to unit test harness.
+* Allow dependencies to be maintained with Composer.
+
 # Version 6.1.0
 *2021-07-27*
 

@@ -15,6 +15,7 @@
       <directory>./modules/phpUnit/tests</directory>
       <directory>./modules/rest_api/tests</directory>
       <directory>./modules/sref_mtb/tests</directory>
+      <directory>./modules/survey_structure_export/tests</directory>
     </testsuite>
   </testsuites>
 </phpunit>

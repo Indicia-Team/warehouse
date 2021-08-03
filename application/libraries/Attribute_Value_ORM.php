@@ -64,7 +64,7 @@ abstract class Attribute_Value_ORM extends ORM {
           $vf = 'int_value';
           $array->add_rules('int_value', 'integer');
           if ($attr->allow_ranges === 't') {
-            $array->add_rules('upper_value', 'numeric');
+            $array->add_rules('upper_value', 'integer');
           }
           break;
 
@@ -104,7 +104,23 @@ abstract class Attribute_Value_ORM extends ORM {
       if ($attr->validation_rules != '') {
         $rules = explode("\n", $attr->validation_rules);
         foreach ($rules as $a) {
-          $array->add_rules($vf, trim($a));
+          $a = trim($a);
+          if ($vf === 'float_value' && substr($a, 0, 7) === 'decimal') {
+            // When performing the decimal rule (correct number of digits before
+            // and after decimal point) on a float, use its string value as
+            // trailing zeroes will be missing on the float value.
+            if ($attr->allow_ranges === 't') {
+              // Substitute a decimal rule that allows ranges.
+              $a = str_replace('decimal', 'decimal_range', $a);
+            }
+            $array->add_rules('text_value', $a);
+          }
+          else {
+            $array->add_rules($vf, $a);
+            if ($attr->allow_ranges === 't' && $a !== 'required') {
+              $array->add_rules('upper_value', $a);
+            }
+          }
         }
       }
       else {
@@ -120,7 +136,20 @@ abstract class Attribute_Value_ORM extends ORM {
           if ($aw->validation_rules != '') {
             $rules = explode("\n", $aw->validation_rules);
             foreach ($rules as $a) {
-              $array->add_rules($vf, trim($a));
+              $a = trim($a);
+              // Same comments as for global rules above.
+              if ($vf === 'float_value' && substr($a, 0, 7) === 'decimal') {
+                if ($aw->allow_ranges === 't') {
+                  $a = str_replace('decimal', 'decimal_range', $a);
+                }
+                $array->add_rules('text_value', $a);
+              }
+              else {
+                $array->add_rules($vf, $a);
+                if ($aw->allow_ranges === 't' && $a !== 'required') {
+                  $array->add_rules('upper_value', $a);
+                }
+              }
             }
           }
         }
