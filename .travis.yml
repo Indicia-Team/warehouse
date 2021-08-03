@@ -57,10 +57,9 @@ before_install:
 
 install:
   # Install dependencies.
-  - composer install --no-dev
-  # Install a version of DbUnit that is being kept compatible with PHPUnit.
+  - composer install
+  # Includes a version of DbUnit that is being kept compatible with PHPUnit.
   # The original DbUnit has been abandonned. https://github.com/sebastianbergmann/dbunit
-  - composer require "misantron/dbunit:^5.1"
 
   # Grant execute on scripts
   - chmod +x .travis/postgres_setup.sh

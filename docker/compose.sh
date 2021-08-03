@@ -12,7 +12,7 @@ if [ ! $(which composer) ]; then
   && php -r "unlink('composer-setup.php');" \
   && mv composer.phar /usr/local/bin/composer
 fi
-composer --working-dir=../ install
+composer --working-dir=../ install --no-dev
 
 # The postgres container is built by us so that we can include
 # the setup script in the image.
@@ -138,7 +138,7 @@ ____EOF
     
     # We can import the GBIF Backbone to a species list
     echo
-    prompt="Do you want to import the GBIF Backbone Taxonomy (Could take 15 mins) (Y/n)?"
+    prompt="Do you want to import the GBIF Backbone Taxonomy (Could take 4 hours) (Y/n)?"
     read -rs -n 1 -p "$prompt"
     if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
       echo
