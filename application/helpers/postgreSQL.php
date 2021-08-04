@@ -239,34 +239,49 @@ SQL
       $fieldsForEachSquare = '';
       foreach ($sizes as $idx => $size) {
         $fieldsForEachSquare .= <<<SQL
-  GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer, max(o.sensitivity_precision), s.privacy_precision, $size) as size$size,
+https://github.com/BiologicalRecordsCentre/iRecord/issues/1130  GREATEST(round(sqrt(st_area(st_transform(geom, sref_system_to_srid(entered_sref_system)))))::integer, max(sensitivity_precision), privacy_precision, $size) AS size$size,
   round(st_x(st_centroid(reduce_precision(
-    coalesce(s.geom, l.centroid_geom), bool_or(o.confidential),
-    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer, max(o.sensitivity_precision), s.privacy_precision, $size))
-  ))) as x$size,
+    geom, bool_or(confidential),
+    GREATEST(round(sqrt(st_area(st_transform(geom, sref_system_to_srid(entered_sref_system)))))::integer, max(sensitivity_precision), privacy_precision, $size))
+  ))) AS x$size,
   round(st_y(st_centroid(reduce_precision(
-    coalesce(s.geom, l.centroid_geom), bool_or(o.confidential),
-    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer, max(o.sensitivity_precision), s.privacy_precision, $size))
-  ))) as y$size
+    geom, bool_or(confidential),
+    GREATEST(round(sqrt(st_area(st_transform(geom, sref_system_to_srid(entered_sref_system)))))::integer, max(sensitivity_precision), privacy_precision, $size))
+  ))) AS y$size
 SQL;
         if ($idx < 2) {
           $fieldsForEachSquare .= ",\n";
         }
       }
       $query = <<<SQL
-SELECT DISTINCT s.id,
-  st_astext(coalesce(s.geom, l.centroid_geom)) as geom,
-  COALESCE(bool_or(o.confidential), false) as confidential,
-  coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system,
-  $fieldsForEachSquare
+DROP TABLE IF EXISTS smp_occs;
+
+SELECT s.id, o.id AS occurrence_id, coalesce(s.geom, l.centroid_geom) AS geom, coalesce(s.entered_sref_system, l.centroid_sref_system) AS entered_sref_system,
+  greatest(sc.privacy_precision, s.privacy_precision) AS privacy_precision, o.sensitivity_precision, o.confidential
+INTO temporary smp_occs
 FROM samples s
-LEFT JOIN samples sc on sc.parent_id=s.id
--- check occurrence sensitivity for this sample and children.
-LEFT JOIN occurrences o on (o.sample_id=s.id or o.sample_id=sc.id) and o.deleted=false
-LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
+LEFT JOIN samples sc ON sc.parent_id=s.id AND sc.deleted=false
+LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
+LEFT JOIN occurrences o ON o.sample_id = sc.id AND o.deleted=false
 WHERE $alias.id IN ($idlist)
 AND s.deleted=false
-GROUP BY s.id, l.centroid_geom, l.centroid_sref_system
+UNION
+SELECT s.id, o.id AS occurrence_id, coalesce(s.geom, l.centroid_geom) AS geom, coalesce(s.entered_sref_system, l.centroid_sref_system) AS entered_sref_system,
+  greatest(sc.privacy_precision, s.privacy_precision), o.sensitivity_precision, o.confidential
+FROM samples s
+LEFT JOIN samples sc on sc.parent_id=s.id and sc.deleted=false
+LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
+LEFT JOIN occurrences o on o.sample_id = s.id and o.deleted=false
+WHERE $alias.id IN ($idlist)
+AND s.deleted=false;
+
+SELECT DISTINCT id,
+  st_astext(geom) as geom,
+  COALESCE(bool_or(confidential), false) as confidential,
+  entered_sref_system,
+  $fieldsForEachSquare
+FROM smp_occs s
+GROUP BY id, geom, entered_sref_system, privacy_precision
 SQL;
       $smpInfo = $db->query($query)->result_array(TRUE);
       foreach ($smpInfo as $s) {
