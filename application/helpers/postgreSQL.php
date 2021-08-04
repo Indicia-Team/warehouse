@@ -239,7 +239,7 @@ SQL
       $fieldsForEachSquare = '';
       foreach ($sizes as $idx => $size) {
         $fieldsForEachSquare .= <<<SQL
-https://github.com/BiologicalRecordsCentre/iRecord/issues/1130  GREATEST(round(sqrt(st_area(st_transform(geom, sref_system_to_srid(entered_sref_system)))))::integer, max(sensitivity_precision), privacy_precision, $size) AS size$size,
+GREATEST(round(sqrt(st_area(st_transform(geom, sref_system_to_srid(entered_sref_system)))))::integer, max(sensitivity_precision), privacy_precision, $size) AS size$size,
   round(st_x(st_centroid(reduce_precision(
     geom, bool_or(confidential),
     GREATEST(round(sqrt(st_area(st_transform(geom, sref_system_to_srid(entered_sref_system)))))::integer, max(sensitivity_precision), privacy_precision, $size))
