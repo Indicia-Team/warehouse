@@ -41,6 +41,48 @@ class api_persist {
   private static $mediaTypes = [];
 
   /**
+   * Capture information about Darwin Core linked attributes in the survey.
+   *
+   * @var array
+   */
+  private static $dwcAttributes = [];
+
+  /**
+   * Finds attributes in the survey which have a DwC term name.
+   *
+   * Allows the code to post data into these attributes without continually
+   * looking them up.
+   */
+  public static function initDwcAttributes($db, $surveyId) {
+    self::$dwcAttributes = [
+      'occAttrs' => self::fetchDwcAttrs($db, 'occurrence', $surveyId),
+      'smpAttrs' => self::fetchDwcAttrs($db, 'sample', $surveyId),
+    ];
+    echo '<pre>';
+    var_export(self::$dwcAttributes);
+    echo '</pre>';
+  }
+
+  private static function fetchDwcAttrs($db, $type, $surveyId) {
+    // List of DwC terms that we might process values for.
+    $attrs = $db->select('a.id, a.term_name')
+      ->from("{$type}_attributes as a")
+      ->join("{$type}_attributes_websites as aw", "aw.{$type}_attribute_id", 'a.id')
+      ->where([
+        'aw.restrict_to_survey_id' => $surveyId,
+        'a.deleted' => 'f',
+        'aw.deleted' => 'f',
+      ])
+      ->where('a.term_name IS NOT NULL')
+      ->get();
+    $r = [];
+    foreach ($attrs as $attr) {
+      $r[$attr->term_name] = ($type === 'sample' ? 'smp' : 'occ') . "Attr:$attr->id";
+    }
+    return $r;
+  }
+
+  /**
    * Persists a taxon-observation resource.
    *
    * @param object $db
@@ -64,7 +106,10 @@ class api_persist {
    * @throws \exception
    */
   public static function taxonObservation($db, array $observation, $website_id, $survey_id, $taxon_list_id, $allowUpdateWhenVerified) {
-    if (!empty($observation['taxonVersionKey'])) {
+    if (!empty($observation['organismKey'])) {
+      $lookup = ['organism_key' => $observation['organismKey']];
+    }
+    elseif (!empty($observation['taxonVersionKey'])) {
       $lookup = ['search_code' => $observation['taxonVersionKey']];
     }
     elseif (!empty($observation['taxonName'])) {
@@ -94,7 +139,6 @@ class api_persist {
     // Set the spatial reference depending on the projection information
     // supplied.
     self::setSrefData($values, $observation, 'sample:entered_sref');
-    self::setCoordinateUncertainty($db, $survey_id, $values, $observation);
 
     // Site handling. If a known site with a SiteKey, we can create a record in
     // locations, otherwise use the free text location_name field.
@@ -111,6 +155,27 @@ class api_persist {
       throw new exception("Error occurred submitting an occurrence\n" . kohana::debug($obs->getAllErrors()));
     }
     return count($existing) === 0;
+  }
+
+  /**
+   * Copies a "standard" Dwc attribute from the observation to the values.
+   *
+   * The DwC attribute will be linked to a custom attribute where the term_name
+   * identifies the DwC term.
+   *
+   * @param array $observation
+   *   Provided observation values.
+   * @param array $values
+   *   Submission values which will be updated with the value.
+   * @param string $type
+   *   Attribute type, smp or occ.
+   * @param string $term
+   *   The DwC term.
+   */
+  private static function copyDwcAttribute(array $observation, array &$values, $type, $term) {
+    if (!empty($observation[$term]) && !empty(self::$dwcAttributes["{$type}Attrs"][$term])) {
+      $values[self::$dwcAttributes["{$type}Attrs"][$term]] = $observation[$term];
+    }
   }
 
   /**
@@ -175,19 +240,22 @@ class api_persist {
    */
   private static function getTaxonObservationValues($db, $website_id, array $observation, $ttl_id) {
     $sensitive = isset($observation['sensitive']) && strtolower($observation['sensitive']) === 't';
-    $values = array(
+    $values = [
       'website_id' => $website_id,
       'sample:date_start'     => $observation['startDate'],
       'sample:date_end'       => $observation['endDate'],
       'sample:date_type'      => $observation['dateType'],
-      'sample:recorder_names' => isset($observation['recorder']) ? $observation['recorder'] : 'Unknown',
+      'sample:recorder_names' => isset($observation['recordedBy']) ? $observation['recordedBy'] : 'Unknown',
       'occurrence:taxa_taxon_list_id' => $ttl_id,
       'occurrence:external_key' => $observation['id'],
       'occurrence:zero_abundance' => isset($observation['zeroAbundance']) ? strtolower($observation['zeroAbundance']) : 'f',
       'occurrence:sensitivity_precision' => $sensitive ? 10000 : NULL,
-    );
+    ];
     if (!empty($observation['licenceCode'])) {
       $values['sample:licence_id'] = self::getLicenceIdFromCode($db, $observation['licenceCode']);
+    }
+    if (!empty($observation['occurrenceRemarks'])) {
+      $values['occurrence:comment'] = $observation['occurrenceRemarks'];
     }
     if (!empty($observation['media'])) {
       foreach ($observation['media'] as $idx => $medium) {
@@ -205,7 +273,47 @@ class api_persist {
         $values["occAttr:$id"] = $value;
       }
     }
+    if (!empty($observation['eventId'])) {
+      $values['sample:external_key'] = $observation['eventId'];
+    }
+    if (!empty($observation['eventRemarks'])) {
+      $values['sample:comment'] = $observation['eventRemarks'];
+    }
+    if (!empty($observation['identificationVerificationStatus'])) {
+      self::applyIdentificationVerificationStatus($observation['identificationVerificationStatus'], $values);
+    }
+    self::copyDwcAttribute($observation, $values, 'smp', 'coordinateUncertaintyInMeters');
+    self::copyDwcAttribute($observation, $values, 'smp', 'collectionCode');
+    self::copyDwcAttribute($observation, $values, 'occ', 'individualCount');
+    self::copyDwcAttribute($observation, $values, 'occ', 'lifeStage');
+    self::copyDwcAttribute($observation, $values, 'occ', 'reproductiveCondition');
+    self::copyDwcAttribute($observation, $values, 'occ', 'sex');
+    self::copyDwcAttribute($observation, $values, 'occ', 'identifiedBy');
+    self::copyDwcAttribute($observation, $values, 'occ', 'identificationRemarks');
     return $values;
+  }
+
+  private static function applyIdentificationVerificationStatus($identificationVerificationStatus, array &$values) {
+    $mappings = [
+      'accepted' => ['V', NULL],
+      'accepted - correct' => ['V', 1],
+      'accepted - considered correct' => ['V', 2],
+      'unconfirmed' => ['C', NULL],
+      'unconfirmed - plausible' => ['C', 3],
+      'unconfirmed - not reviewed' => ['C', NULL],
+      'not accepted' => ['R', NULL],
+      'not accepted - unable to verify' => ['R', 4],
+      'not accepted - incorrect' => ['R', 5],
+    ];
+    if (isset($mappings[strtolower($identificationVerificationStatus)])) {
+      $statuses = $mappings[strtolower($identificationVerificationStatus)];
+      kohana::log('debug', strtolower($identificationVerificationStatus) . ': ' . var_export($statuses, TRUE));
+      $values['occurrence:record_status'] = $statuses[0];
+      $values['occurrence:record_substatus'] = $statuses[1];
+    }
+    else {
+      throw new exception("Invalid identificationVerificationStatus value: $identificationVerificationStatus");
+    }
   }
 
   private static function mapOccAttrValueToTermId($db, $occAttrId, &$value) {
@@ -323,10 +431,10 @@ SQL;
       $licenceData = $db->query($qry)->result_array(FALSE);
       self::$licences = [];
       foreach ($licenceData as $licence) {
-        self::$licences[strtolower($licence['code'])] = $licence['id'];
+        self::$licences[strtolower(str_replace($licence['code'], ' ', '-'))] = $licence['id'];
       }
     }
-    return self::$licences[$licenceCode];
+    return self::$licences[strtolower(str_replace($licenceCode, ' ', '-'))];
   }
 
   /**
@@ -360,14 +468,7 @@ SQL;
         $exactMatches[] = "'" . pg_escape_string("$words[0] $words[1] subsp. $words[2]") . "'";
       }
       $filter .= 'AND original in (' . implode(',', $exactMatches) . ")\n";
-    }
-    else {
-      // Add in the exact match filter for other search methods.
-      foreach ($lookup as $key => $value) {
-        $filter .= "AND $key='$value'\n";
-      }
-    }
-    $qry = <<<SQL
+      $qry = <<<SQL
 SELECT taxon_meaning_id, taxa_taxon_list_id
 FROM cache_taxon_searchterms
 WHERE taxon_list_id=$taxon_list_id
@@ -375,6 +476,23 @@ AND simplified='f'
 $filter
 ORDER BY preferred DESC
 SQL;
+    }
+    else {
+      // Add in the exact match filter for other search methods.
+      foreach ($lookup as $key => $value) {
+        $filter .= "AND t.$key='$value'\n";
+      }
+      $qry = <<<SQL
+SELECT ttl.taxon_meaning_id, ttl.id as taxa_taxon_list_id
+FROM taxa_taxon_lists ttl
+JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
+WHERE ttl.taxon_list_id=$taxon_list_id
+AND ttl.deleted=false
+$filter
+ORDER BY ttl.preferred DESC
+SQL;
+    }
+
     $taxa = $db->query($qry)->result_array(FALSE);
     // Need to know if the search found a single unique taxon concept so count
     // the taxon meanings.
@@ -407,7 +525,7 @@ SQL;
    * @throws \exception
    */
   private static function checkMandatoryFields(array $array, $resourceName) {
-    $required = array();
+    $required = [];
     // Deletions have no other mandatory fields except the id to delete.
     if (!empty($resource['delete']) && $resource['delete'] === 'T') {
       $array[] = 'id';
@@ -415,16 +533,15 @@ SQL;
     else {
       switch ($resourceName) {
         case 'taxon-observation':
-          $required = array(
+          $required = [
             'id',
-            'href', /*'taxonName', */
             'startDate',
             'endDate',
             'dateType',
             'projection',
-            'precision',
-            'recorder',
-          );
+            'coordinateUncertaintyInMeters',
+            'recordedBy',
+          ];
           // Conditionally required fields.
           if (empty($array['gridReference'])) {
             $required[] = 'east';
@@ -433,7 +550,10 @@ SQL;
               $required[] = 'gridReference';
             }
           }
-          $required[] = empty($array['taxonVersionKey']) ? 'taxonName' : 'taxonVersionKey';
+          // One of taxonVersionKey, organismKey or taxonName required.
+          if (empty($array['taxonVersionKey']) && empty($array['organismKey'])) {
+            $required[] = 'taxonName';
+          }
           break;
 
         case 'annotation':
@@ -592,35 +712,6 @@ SQL;
     elseif ($observation['projection'] === 'OSGB36') {
       $values[$fieldname] = self::formatEastNorth($observation['east'], $observation['north']);
       $values[$fieldname . '_system'] = 27700;
-    }
-  }
-
-  /**
-   * Sets the coordinate uncertainty attribute for an imported observation.
-   *
-   * @param object $db
-   *   Database connection.
-   * @param int $survey_id
-   *   ID of the survey (the sref_precision attribute should be linked to this).
-   * @param array $values
-   *   The values array to add the precision information to.
-   * @param array $observation
-   *   The observation data array.
-   */
-  private static function setCoordinateUncertainty($db, $survey_id, array &$values, array $observation) {
-    if (!empty($observation['precision'])) {
-      $attr = $db->select('a.id')
-        ->from('sample_attributes as a')
-        ->join('sample_attributes_websites as aw', 'aw.sample_attribute_id', 'a.id')
-        ->where([
-          'a.system_function' => 'sref_precision',
-          'aw.restrict_to_survey_id' => $survey_id,
-          'a.deleted' => 'f',
-          'aw.deleted' => 'f',
-        ])->get()->current();
-      if ($attr) {
-        $values["smpAttr:$attr->id"] = $observation['precision'];
-      }
     }
   }
 
