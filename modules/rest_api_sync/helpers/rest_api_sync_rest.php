@@ -85,7 +85,7 @@ class rest_api_sync_rest {
         $obj['event']['eventRemarks'] = $doc->event->event_remarks;
       }
       if (!empty($doc->event->recorded_by)) {
-        $obj['event']['recordedBy'] = $doc->event->recorded_by;
+        $obj['occurrence']['recordedBy'] = $doc->event->recorded_by;
       }
       if (!empty($doc->event->sampling_protocol)) {
         $obj['event']['samplingProtocol'] = $doc->event->sampling_protocol;
