@@ -24,9 +24,11 @@ $(document).ready(function docReady() {
             data: startInfo
           });
         } else {
-          chunkPercentage = 100 / startInfo.servers.length;
-          progress = ((response.serverIdx - 1) + ((response.page - 1) / pageCount)) * chunkPercentage;
-          $('#progress').progressbar('value', progress);
+          if (response.pagesToGo) {
+            chunkPercentage = 100 / startInfo.servers.length;
+            progress = ((response.serverIdx - 1) + ((response.page - 1) / pageCount)) * chunkPercentage;
+            $('#progress').progressbar('value', progress);
+          }
           doRequest({
             serverIdx: response.serverIdx,
             page: response.page

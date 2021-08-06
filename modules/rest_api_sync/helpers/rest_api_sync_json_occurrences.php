@@ -126,7 +126,7 @@ class rest_api_sync_json_occurrences {
           'endDate' => $parsedDate['end'],
           'dateType' => $parsedDate['type'],
           'samplingProtocol' => empty($record['event']['samplingProtocol']) ? NULL : $record['event']['samplingProtocol'],
-          'coordinateUncertaintyInMeters' => $record['location']['coordinateUncertaintyInMeters'],
+          'coordinateUncertaintyInMeters' => empty($record['location']['coordinateUncertaintyInMeters']) ? NULL : $record['location']['coordinateUncertaintyInMeters'],
           'siteName' => empty($record['location']['locality']) ? NULL : $record['location']['locality'],
           'identifiedBy' => empty($record['identification']['identifiedBy']) ? NULL : $record['identification']['identifiedBy'],
           'identificationVerificationStatus' => empty($record['identification']['identificationVerificationStatus']) ? NULL : $record['identification']['identificationVerificationStatus'],
@@ -204,7 +204,6 @@ VALUES (
 QRY;
         $db->query($sql);
       }
-      throw new exception('Stop');
     }
     variable::set("rest_api_sync_{$serverId}_next_page", $data['paging']['next']);
     rest_api_sync::log(
@@ -212,9 +211,10 @@ QRY;
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
     $r = [
-      'moreToDo' => count($data['data']) === PAGE_SIZE,
-      'pagesToGo' => ceil($data['total_results'] / PAGE_SIZE),
-      'recordsToGo' => $data['total_results'],
+      'moreToDo' => count($data['data']) > 0,
+      // No way of determining the following.
+      'pagesToGo' => NULL,
+      'recordsToGo' => NULL,
     ];
     return $r;
   }
