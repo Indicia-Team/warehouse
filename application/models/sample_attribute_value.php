@@ -36,7 +36,8 @@ class Sample_Attribute_Value_Model extends Attribute_Value_ORM {
     return $this->db
             ->from('sample_attributes_websites as saw')
             ->join('samples as s', 's.survey_id', 'saw.restrict_to_survey_id')
-            ->select('saw.validation_rules')
+            ->join('sample_attributes as sa', 'sa.id', 'saw.sample_attribute_id')
+            ->select('saw.validation_rules, sa.allow_ranges')
             ->where(array(
               's.id' => $values['sample_id'],
               'saw.sample_attribute_id'=>$values['sample_attribute_id']

@@ -1,6 +1,10 @@
 {
   "require": {
-    "firebase/php-jwt": "^5.2",
-    "phpoffice/phpspreadsheet": "^1.15"
+    "firebase/php-jwt": "^5.4",
+    "phpoffice/phpspreadsheet": "^1.18"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.5",
+    "misantron/dbunit": "^5.1"
   }
 }

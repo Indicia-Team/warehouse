@@ -205,5 +205,49 @@ SQL;
     return TRUE;
   }
 
+  /**
+   * Checks if a string is a proper decimal format with allowance for ranges.
+   *
+   * The format array can be used to specify a decimal length, or a number 
+   * and decimal length, eg: array(2) would force each number to have 2 decimal 
+   * places, array(4,2) would force each number to have 4 digits and 2 decimal
+   * places.
+   *
+   * Either a single number matching the format can be accepted or two numbers
+   * separated by a hyphen (and any amount of white space).
+   *
+   * Takes after system/helpers/valid.php:decimal() and doesn't admit negative 
+   * numbers.
+   *
+   * @param   string   input string
+   * @param   array    decimal format: y or x,y
+   * @return  boolean
+   */
+  public static function decimal_range($str, $format = NULL) {
+    // Create the pattern.
+    $pattern = '[0-9]%s\.[0-9]%s';
+
+    if (!empty($format)) {
+      if (count($format) > 1) {
+        // Use the format for number and decimal length.
+        $pattern = sprintf(
+          $pattern, '{' . $format[0] . '}', '{' . $format[1] . '}'
+        );
+      }
+      elseif (count($format) > 0) {
+        // Use the format as decimal length.
+        $pattern = sprintf($pattern, '+', '{' . $format[0] . '}');
+      }
+    }
+    else {
+      // No format.
+      $pattern = sprintf($pattern, '+', '+');
+    }
+
+    // Add allowance for range.
+    $pattern = "/^${pattern}(\s*-\s*${pattern})?$/";
+
+    return (bool) preg_match($pattern, (string) $str);
+  }
 
 }

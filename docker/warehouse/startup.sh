@@ -10,7 +10,6 @@ for file in config email database; do
     fi
 done
 
-
 # Wait till database is up before going any further.
 echo "Waiting for Postgres."
 until pg_isready -h postgres; do
