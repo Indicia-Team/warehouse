@@ -133,11 +133,12 @@ class rest_api_sync_json_occurrences {
         ];
         if (!empty($record['location']['gridReference'])) {
           $observation['gridReference'] = strtoupper(str_replace(' ', '', $record['location']['gridReference']));
-          if (preg_match('/[A-Z][A-Z]\d*/', $observation['gridReference'])) {
-            $observation['projection'] = 'OSGB';
-          }
-          elseif (preg_match('/[A-Z]\d*/', $observation['gridReference'])) {
+          if (preg_match('/I?[A-Z]\d*/', $observation['gridReference'])) {
             $observation['projection'] = 'OSIE';
+            $observation['gridReference'] = preg_replace('/^I/', '', $observation['gridReference']);
+          }
+          elseif (preg_match('/[A-Z][A-Z]\d*/', $observation['gridReference'])) {
+            $observation['projection'] = 'OSGB';
           }
           else {
             throw new exception('Invalid grid reference format: ' . $record['location']['gridReference']);
