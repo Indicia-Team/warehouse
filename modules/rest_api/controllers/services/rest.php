@@ -3472,7 +3472,7 @@ SQL;
    */
   public function sampleAttributesWebsitesPutId($id) {
     $this->assertUserHasWebsiteAccess();
-    $this->assertRecordFromCurrentWebsite('sample_attributes_website', $id);
+    $this->assertRecordFromCurrentWebsite('sample_attributes_websites', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
     $r = rest_crud::update('sample_attributes_website', $id, $putArray);
@@ -3489,7 +3489,7 @@ SQL;
    */
   public function sampleAttributesWebsitesDeleteId($id) {
     $this->assertUserHasWebsiteAccess();
-    $this->assertRecordFromCurrentWebsite('sample_attributes_website', $id);
+    $this->assertRecordFromCurrentWebsite('sample_attributes_websites', $id);
     rest_crud::delete('sample_attributes_website', $id);
   }
 
@@ -3622,7 +3622,7 @@ SQL;
    */
   public function occurrenceAttributesWebsitesPutId($id) {
     $this->assertUserHasWebsiteAccess();
-    $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
+    $this->assertRecordFromCurrentWebsite('occurrence_attributes_websites', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
     $r = rest_crud::update('occurrence_attributes_website', $id, $putArray);
@@ -3639,7 +3639,7 @@ SQL;
    */
   public function occurrenceAttributesWebsitesDeleteId($id) {
     $this->assertUserHasWebsiteAccess();
-    $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
+    $this->assertRecordFromCurrentWebsite('occurrence_attributes_websites', $id);
     rest_crud::delete('occurrence_attributes_website', $id);
   }
 
