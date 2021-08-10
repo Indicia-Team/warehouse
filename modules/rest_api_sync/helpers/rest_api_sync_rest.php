@@ -182,6 +182,9 @@ class rest_api_sync_rest {
     echo "\n],\"paging\":{\"next\":{\"tracking_from\":$nextFrom}}}";
   }
 
+  public function syncAnnotationsGet($foo, $clientConfig, $projectId) {
+  }
+
   /**
    * Returns male or female for sex term.
    *
