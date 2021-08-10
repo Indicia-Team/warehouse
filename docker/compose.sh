@@ -3,6 +3,17 @@
 # Set the project name which determines the network and container names.
 export COMPOSE_PROJECT_NAME=indicia
 
+# Ensure dependencies of warehouse have been installed
+if [ ! $(which composer) ]; then
+  # First install composer if not present
+  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+  && php -r "if (hash_file('sha384', 'composer-setup.php') === '756890a4488ce9024fc62c56153228907f1545c228516cbf63f885e036d37e9a59d27d63f46af1d4d07ee0f76181c7d3') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" \
+  && php composer-setup.php \
+  && php -r "unlink('composer-setup.php');" \
+  && mv composer.phar /usr/local/bin/composer
+fi
+composer --working-dir=../ install --no-dev
+
 # The postgres container is built by us so that we can include
 # the setup script in the image.
 # The warehouse container is built with PHP extensions added
@@ -127,7 +138,7 @@ ____EOF
     
     # We can import the GBIF Backbone to a species list
     echo
-    prompt="Do you want to import the GBIF Backbone Taxonomy (Could take 15 mins) (Y/n)?"
+    prompt="Do you want to import the GBIF Backbone Taxonomy (Could take 4 hours) (Y/n)?"
     read -rs -n 1 -p "$prompt"
     if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
       echo

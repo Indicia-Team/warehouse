@@ -19,7 +19,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-//defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
 class vague_date {
 
@@ -220,7 +220,7 @@ class vague_date {
     $start = empty($date[0]) ? NULL : $date[0];
     $end = empty($date[1]) ? NULL : $date[1];
     $type = $date[2];
-    if ($type === '') {
+    if (empty($type)) {
       return '';
     }
     if (is_string($start)) {
@@ -753,8 +753,9 @@ class vague_date {
         self::is_century_end($end) &&
         self::is_same_century($start, $end)
       ),
-      'Century dates should be represented by the first day and the last day of the century');
-    return sprintf(Kohana::lang('dates.century', ($start->format('Y') / 100) + 1));
+      'Century dates should be represented by the first day (e.g. 1/1/1901) and 
+      the last day (e.g. 31/12/2000) of the century');
+    return sprintf(Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1));
   }
 
   /**
@@ -767,11 +768,12 @@ class vague_date {
         self::is_century_end($end) &&
         self::is_first_date_first($start, $end)
       ),
-      'Century ranges should be represented by the first day of the first century and the last day of the last century');
+      'Century ranges should be represented by the first day (e.g. 1/1/1701) of 
+      the first century and the last day (e.g. 31/12/1900) of the last century');
     return sprintf(
-      Kohana::lang('dates.century', ($start->format('Y') / 100) + 1)) .
+      Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1)) .
       Kohana::lang('dates.range_separator') .
-      sprintf(Kohana::lang('dates.century', ($end->format('Y') + 1) / 100)
+      sprintf(Kohana::lang('dates.century', ($end->format('Y') - 1) / 100 + 1)
     );
   }
 
@@ -781,11 +783,12 @@ class vague_date {
   protected static function vague_date_to_century_from($start, $end) {
     self::check(
       self::is_century_start($start) && $end === NULL,
-      'From Century dates should be represented by the first day of the century only'
+      'From Century dates should be represented by the first day (e.g. 1/1/1901)
+      of the century only'
     );
     return sprintf(
       Kohana::lang('dates.from_date'),
-      sprintf(Kohana::lang('dates.century', ($start->format('Y') / 100) + 1))
+      sprintf(Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1))
     );
   }
 
@@ -795,11 +798,12 @@ class vague_date {
   protected static function vague_date_to_century_to($start, $end) {
     self::check(
       $start === NULL && self::is_century_end($end),
-      'To Century dates should be represented by the last day of the century only'
+      'To Century dates should be represented by the last day (e.g. 31/12/2000)
+      of the century only'
     );
     return sprintf(
       Kohana::lang('dates.to_date'),
-      sprintf(Kohana::lang('dates.century', ($end->format('Y') + 1) / 100))
+      sprintf(Kohana::lang('dates.century', ($end->format('Y') - 1) / 100 + 1))
     );
   }
 
@@ -875,23 +879,37 @@ class vague_date {
 
   /**
    * Returns true if the supplied date is the first day of the century.
+   *
+   * Century starts on 1/1/nn01 (compatible with postgresql).
    */
   protected static function is_century_start($date) {
-    return ($date->format('j') == 1 && $date->format('m') == 1 && $date->format('y') == 0);
+    return (
+      $date->format('j') == 1 &&
+      $date->format('m') == 1 &&
+      $date->format('y') == 1
+    );
   }
 
   /**
    * Returns true if the supplied date is the last day of the century.
+   *
+   * Century ends on 31/12/nn00 (compatible with postgresql).
    */
   protected static function is_century_end($date) {
-    return ($date->format('j') == 31 && $date->format('m') == 12 && $date->format('y') == 99);
+    return (
+      $date->format('j') == 31 &&
+      $date->format('m') == 12 &&
+      $date->format('y') == 0
+    );
   }
 
   /**
    * Returns true if the supplied dates are in the same century.
+   *
+   * A century runs from e.g. 1/1/1901 to 31/12/2000.
    */
   protected static function is_same_century($start, $end) {
-    return ($start->format('Y') / 100) == floor($end->format('Y') / 100);
+    return floor(($start->format('Y') - 1) / 100) == floor(($end->format('Y') - 1) / 100);
   }
 
   /**
