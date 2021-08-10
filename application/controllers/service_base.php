@@ -125,10 +125,10 @@ class Service_Base_Controller extends Controller {
     $authentic = FALSE; // default
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token', $array)) {
       $nonce = $array['nonce'];
-      $this->cache = new Cache;
+      $this->cache = new Cache();
       // Get all cache entries that match this nonce
       $paths = $this->cache->exists($nonce);
-      foreach($paths as $path) {
+      foreach ($paths as $path) {
         // Find the parts of each file name, which is the cache entry ID, then the mode.
         $tokens = explode('~', basename($path));
         // check this cached nonce is for the correct read or write operation.
@@ -139,14 +139,16 @@ class Service_Base_Controller extends Controller {
             $website = ORM::factory('website', $id);
             if ($website->id)
               $password = $website->password;
-          } else
+          }
+          else {
             $password = kohana::config('indicia.private_key');
+          }
           // calculate the auth token from the nonce and the password. Does it match the request's auth token?
           if (isset($password) && sha1("$nonce:$password")==$array['auth_token']) {
             Kohana::log('info', "Authentication successful.");
             // cache website_password for subsequent use by controllers
             $this->website_password = $password;
-            $authentic=true;
+            $authentic = TRUE;
           }
           if ($authentic) {
             if ($id > 0) {
@@ -166,7 +168,7 @@ class Service_Base_Controller extends Controller {
               $user = ORM::Factory('user', $this->user_id);
               $this->user_is_core_admin = ($user->core_role_id === 1);
               if (!$this->user_is_core_admin) {
-                $this->user_websites = array();
+                $this->user_websites = [];
                 $userWebsites = ORM::Factory('users_website')->where(array(
                   'user_id' => $this->user_id,
                   'site_role_id is not' => NULL,
