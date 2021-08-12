@@ -125,7 +125,12 @@ class rest_api_sync_json_occurrences {
           'identifiedBy' => empty($record['identification']['identifiedBy']) ? NULL : $record['identification']['identifiedBy'],
           'identificationVerificationStatus' => empty($record['identification']['identificationVerificationStatus']) ? NULL : $record['identification']['identificationVerificationStatus'],
         ];
-        if (!empty($record['location']['gridReference'])) {
+        if (!empty($record['location']['decimalLongitude']) && !empty($record['location']['decimalLatitude'])) {
+          $observation['east'] = $record['location']['decimalLongitude'];
+          $observation['north'] = $record['location']['decimalLatitude'];
+          $observation['projection'] = 'WGS84';
+        }
+        elseif (!empty($record['location']['gridReference'])) {
           $observation['gridReference'] = strtoupper(str_replace(' ', '', $record['location']['gridReference']));
           if (preg_match('/^I?[A-Z]\d*[A-NP-Z]?$/', $observation['gridReference'])) {
             $observation['projection'] = 'OSI';
@@ -137,11 +142,6 @@ class rest_api_sync_json_occurrences {
           else {
             throw new exception('Invalid grid reference format: ' . $record['location']['gridReference']);
           }
-        }
-        else {
-          $observation['east'] = $record['location']['decimalLongitude'];
-          $observation['north'] = $record['location']['decimalLatitude'];
-          $observation['projection'] = 'WGS84';
         }
         if (!empty($server['otherFields'])) {
           foreach ($server['otherFields'] as $src => $dest) {
