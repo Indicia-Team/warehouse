@@ -105,7 +105,7 @@ class rest_api_sync_json_occurrences {
           'licenceCode' => empty($record['record-level']['license']) ? NULL : $record['record-level']['license'],
           'collectionCode' => empty($record['record-level']['collectionCode']) ? NULL : $record['record-level']['collectionCode'],
           'occurrenceMetadata' => empty($record['record-level']['dynamicProperties']) ? NULL : $record['record-level']['dynamicProperties'],
-          'id' => "$serverId:" . $record['occurrence']['occurrenceID'],
+          'id' => $record['occurrence']['occurrenceID'],
           'individualCount' => empty($record['occurrence']['individualCount']) ? NULL : $record['occurrence']['individualCount'],
           'lifeStage' => empty($record['occurrence']['lifeStage']) ? NULL : $record['occurrence']['lifeStage'],
           'recordedBy' => $record['occurrence']['recordedBy'],
