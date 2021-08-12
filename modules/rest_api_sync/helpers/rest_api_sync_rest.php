@@ -220,7 +220,7 @@ class rest_api_sync_rest {
       'system_user_id' => Kohana::config('rest.user_id'),
     ];
     foreach ($projectConfig['annotations_filter'] as $key => $value) {
-      $params["context_$key"] = $value;
+      $params["{$key}_context"] = $value;
     }
     if (isset($_GET['dateTime_from'])) {
       $params['dateTime_from'] = $_GET['dateTime_from'];
