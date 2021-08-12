@@ -58,9 +58,6 @@ class api_persist {
       'occAttrs' => self::fetchDwcAttrs($db, 'occurrence', $surveyId),
       'smpAttrs' => self::fetchDwcAttrs($db, 'sample', $surveyId),
     ];
-    echo '<pre>';
-    var_export(self::$dwcAttributes);
-    echo '</pre>';
   }
 
   private static function fetchDwcAttrs($db, $type, $surveyId) {
