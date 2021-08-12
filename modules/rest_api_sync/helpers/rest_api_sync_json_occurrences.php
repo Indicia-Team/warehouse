@@ -43,8 +43,6 @@ class rest_api_sync_json_occurrences {
    *   Server configuration.
    */
   public static function syncServer($serverId, array $server) {
-    kohana::log('debug', 'In syncServer');
-    kohana::log_save();
     // Count of pages done in this run.
     $pageCount = 0;
     // If last run still going, not on first page.
@@ -92,12 +90,8 @@ class rest_api_sync_json_occurrences {
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $tracker = ['inserts' => 0, 'updates' => 0, 'errors' => 0];
     foreach ($data['data'] as $record) {
-      echo '<pre>' . var_export($record, TRUE) . '</pre>';
-      // @todo Handle grid ref if provided
-      // @todo taxonID is ORGANISM_KEY
-      // @todo Ensure non-exact dates are handled.
       // @todo Make sure all fields in specification are handled
-      // @todo Handle moreToDo code.
+      // @todo dynamicProperties field.
       // @todo occurrence.associated_media
       // @todo occurrence.occurrence_status
       // @todo occurrence.organism_quantity
@@ -133,11 +127,11 @@ class rest_api_sync_json_occurrences {
         ];
         if (!empty($record['location']['gridReference'])) {
           $observation['gridReference'] = strtoupper(str_replace(' ', '', $record['location']['gridReference']));
-          if (preg_match('/I?[A-Z]\d*/', $observation['gridReference'])) {
-            $observation['projection'] = 'OSIE';
+          if (preg_match('/^I?[A-Z]\d*[A-NP-Z]?$/', $observation['gridReference'])) {
+            $observation['projection'] = 'OSI';
             $observation['gridReference'] = preg_replace('/^I/', '', $observation['gridReference']);
           }
-          elseif (preg_match('/[A-Z][A-Z]\d*/', $observation['gridReference'])) {
+          elseif (preg_match('/^[A-Z][A-Z]\d*[A-NP-Z]?$/', $observation['gridReference'])) {
             $observation['projection'] = 'OSGB';
           }
           else {
@@ -159,7 +153,6 @@ class rest_api_sync_json_occurrences {
             }
           }
         }
-        echo '<pre>' . var_export($observation, TRUE) . '</pre><br/>';
 
         $is_new = api_persist::taxonObservation(
           $db,
