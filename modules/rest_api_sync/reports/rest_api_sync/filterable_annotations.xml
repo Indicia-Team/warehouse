@@ -21,7 +21,7 @@
   </order_bys>
   <params>
     <param name='system_user_id' display='System ID' description='3 character code identifying the system' datatype='text'/>
-    <param name="dateTime_from" display="From dateTime" datatype="date">
+    <param name="dateTime_from" display="From dateTime" datatype="date" default="">
       <where>oc.updated_on&gt;'#dateTime_from#'</where>
     </param>
   </params>
