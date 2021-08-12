@@ -240,6 +240,7 @@ SQL;
   private static function delayChangesViaWorkQueue($db, $table, $idCsv) {
     $entity = inflector::singular($table);
     $sql = <<<SQL
+-- Comment necessary to prevent Kohana calling LASTVAL().
 INSERT INTO work_queue(task, entity, record_id, params, cost_estimate, priority, created_on)
 SELECT 'task_cache_builder_update', '$entity', t.id, null, 100, 2, now()
 FROM $table t

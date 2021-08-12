@@ -101,6 +101,9 @@ class rest_api_sync_indicia {
     }
   }
 
+  public static function loadControlledTerms() {
+  }
+
   /**
    * Currently just a stub function to treat the whole Indicia sync as a page.
    *

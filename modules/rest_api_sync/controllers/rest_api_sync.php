@@ -81,7 +81,7 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     $page = empty($_GET['page']) ? 1 : $_GET['page'];
     $serverId = array_keys($servers)[$serverIdx - 1];
     $server = array_merge([
-      'serverType' => 'Indicia', 
+      'serverType' => 'Indicia',
       'allowUpdateWhenVerified' => TRUE,
     ], $servers[$serverId]);
     $helperClass = 'rest_api_sync_' . strtolower($server['serverType']);
@@ -112,6 +112,7 @@ class Rest_api_sync_Controller extends Indicia_Controller {
         'log' => rest_api_sync::$log,
         'pagesToGo' => $progressInfo['pagesToGo'],
         'recordsToGo' => $progressInfo['recordsToGo'],
+        'moreToDo' => $progressInfo['moreToDo'],
       ];
       echo json_encode($r);
     }

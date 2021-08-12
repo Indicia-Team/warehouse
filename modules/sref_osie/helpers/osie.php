@@ -13,39 +13,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Modules
- * @subpackage OSGB Grid References
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  https://github.com/indicia-team/warehouse/
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Conversion class for OS Ireland grid references (TM75).
- * @package Modules
- * @subpackage OSGB Grid References
- * @author  Indicia Team
  */
 class osie {
 
   /**
    * Returns true if the spatial reference is a recognised Irish Grid square.
    *
-   * @param $sref string Spatial reference to validate
+   * @param $sref string
+   *   Spatial reference to validate
    */
-  public static function is_valid($sref)
-  {
-    // ignore any spaces in the grid ref
-    $sref = str_replace(' ','',$sref);
+  public static function is_valid($sref) {
+    // Ignore any spaces in the grid ref.
+    $sref = str_replace(' ', '', $sref);
     $sq100 = strtoupper(substr($sref, 0, 1));
-    if (!preg_match('([A-HJ-Z])', $sq100))
+    if (!preg_match('([A-HJ-Z])', $sq100)) {
       return FALSE;
-    $eastnorth=substr($sref, 1);
+    }
+    $eastnorth = substr($sref, 1);
     // 2 cases - either remaining chars must be all numeric and an equal number, up to 10 digits
     // OR for DINTY Tetrads, 2 numbers followed by a letter (Excluding O, including I)
-    if ((!preg_match('/^[0-9]*$/', $eastnorth) || strlen($eastnorth) % 2 != 0 || strlen($eastnorth)>10) AND
-                    (!preg_match('/^[0-9][0-9][A-NP-Z]$/', $eastnorth)))
+    if ((!preg_match('/^[0-9]*$/', $eastnorth) || strlen($eastnorth) % 2 != 0 || strlen($eastnorth) > 10) &&
+                    (!preg_match('/^[0-9][0-9][A-NP-Z]$/', $eastnorth))) {
       return FALSE;
+    }
     return TRUE;
   }
 
@@ -53,13 +50,15 @@ class osie {
    * Converts a grid reference in OSI notation into the WKT text for the polygon, in
    * easting and northings from the zero reference.
    *
-   * @param string $sref The grid reference
-   * @return string String containing the well known text.
+   * @param string $sref
+   *   The grid reference.
+   *
+   * @return string
+   *   String containing the well known text.
    */
-  public static function sref_to_wkt($sref)
-  {
+  public static function sref_to_wkt($sref) {
     // ignore any spaces in the grid ref
-    $sref = str_replace(' ','',$sref);
+    $sref = str_replace(' ', '', $sref);
     if (!self::is_valid($sref))
       throw new InvalidArgumentException('Spatial reference is not a recognisable grid square.', 4001);
     $sq_100 = self::get_100k_square($sref);

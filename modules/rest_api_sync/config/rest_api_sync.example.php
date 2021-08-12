@@ -47,7 +47,7 @@ $config['servers'] = [
     'website_id' => 5,
     // Remote API URL.
     'url' => 'http://localhost/indicia/index.php/services/rest',
-    // Remote platform name, iNaturalist or Indicia.
+    // Remote platform name, iNaturalist, Indicia (=REST API), json_occurrences (=JSON sync format).
     'serverType' => 'Indicia',
     // Secret shared with the remote API.
     'shared_secret' => '123password',

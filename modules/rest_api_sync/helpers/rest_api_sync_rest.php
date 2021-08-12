@@ -22,7 +22,7 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Helper class for extending the REST API with sync endpoints.
@@ -67,13 +67,26 @@ class rest_api_sync_rest {
     'R5' => 'Not accepted - incorrect',
   ];
 
-  public static function syncTaxonObservationsGet($foo, $clientConfig, $projectId) {
+  /**
+   * Endpoint for sync-taxon-observations.
+   *
+   * Echoes a list of observations in JSON occurrences format.
+   *
+   * @param mixed $foo
+   *   Unused as this endpoint doesn't support retrieving a record by ID.
+   * @param array $clientConfig
+   *   Configuration for this client from the REST API.
+   * @param string $projectId
+   *   Code for the project being retrieved from.
+   */
+  public static function syncTaxonObservationsGet($foo, array $clientConfig, $projectId) {
     if (empty($clientConfig['elasticsearch']) || count($clientConfig['elasticsearch']) !== 1) {
       RestObjects::$apiResponse->fail('Internal Server Error', 500, 'Incorrect elasticsearch configuration for client.');
     }
     $project = ($clientConfig && $projectId) ? $clientConfig['projects'][$projectId] : [];
     $response = self::getEsTaxonObservationsResponse($clientConfig, $project);
     $total = count($response->hits->hits);
+    $nextFrom = NULL;
     echo "{\"data\":[\n";
     foreach ($response->hits->hits as $idx => $hit) {
       $doc = $hit->_source;
@@ -85,7 +98,7 @@ class rest_api_sync_rest {
         $obj['event']['eventRemarks'] = $doc->event->event_remarks;
       }
       if (!empty($doc->event->recorded_by)) {
-        $obj['event']['recordedBy'] = $doc->event->recorded_by;
+        $obj['occurrence']['recordedBy'] = $doc->event->recorded_by;
       }
       if (!empty($doc->event->sampling_protocol)) {
         $obj['event']['samplingProtocol'] = $doc->event->sampling_protocol;
@@ -93,7 +106,8 @@ class rest_api_sync_rest {
       if (!empty($doc->location->coordinate_uncertainty_in_meters)) {
         $obj['location']['coordinateUncertaintyInMeters'] = $doc->location->coordinate_uncertainty_in_meters;
       }
-      if (isset($doc->location->input_sref_system) && in_array($doc->location->input_sref_system, ['OSGB', 'OSI'])) {
+      if (isset($doc->location->input_sref_system)
+          && in_array($doc->location->input_sref_system, ['OSGB', 'OSI'])) {
         $obj['location']['gridReference'] = $doc->location->input_sref;
       }
       else {
@@ -179,7 +193,56 @@ class rest_api_sync_rest {
         $nextFrom = $doc->metadata->tracking;
       }
     }
-    echo "\n],\"paging\":{\"next\":{\"tracking_from\":$nextFrom}}}";
+    echo "\n]";
+    if ($nextFrom) {
+      echo ",\"paging\":{\"next\":{\"tracking_from\":$nextFrom}}";
+    }
+    echo "}";
+  }
+
+  /**
+   * Endpoint for sync-annotations.
+   *
+   * Echoes a list of annnotations in JSON occurrences format.
+   *
+   * @param mixed $foo
+   *   Unused as this endpoint doesn't support retrieving a record by ID.
+   * @param array $clientConfig
+   *   Configuration for this client from the REST API.
+   * @param string $projectId
+   *   Code for the project being retrieved from.
+   */
+  public static function syncAnnotationsGet($foo, array $clientConfig, $projectId) {
+    $projectConfig = $clientConfig['projects'][$projectId];
+    $reportEngine = new ReportEngine([$projectConfig['website_id']]);
+    $params = [
+      'limit' => REST_API_DEFAULT_PAGE_SIZE,
+      'system_user_id' => Kohana::config('rest.user_id'),
+    ];
+    foreach ($projectConfig['annotations_filter'] as $key => $value) {
+      $params["context_$key"] = $value;
+    }
+    if (isset($_GET['dateTime_from'])) {
+      $params['dateTime_from'] = $_GET['dateTime_from'];
+    }
+    $output = $reportEngine->requestReport("rest_api_sync/filterable_annotations.xml", 'local', 'xml', $params, FALSE);
+    $dateTimeFrom = NULL;
+    echo "{\"data\":[\n";
+    $total = count($output['content']['records']);
+    foreach ($output['content']['records'] as $idx => $record) {
+      echo json_encode($record);
+      if ($idx < $total - 1) {
+        echo ',';
+      }
+      else {
+        $dateTimeFrom = $record->dateTime;
+      }
+    }
+    echo "\n]";
+    if ($dateTimeFrom) {
+      echo ",\"paging\":{\"next\":{\"dateTime_from\":\"$dateTimeFrom\"}}";
+    }
+    echo "}";
   }
 
   /**
@@ -203,7 +266,7 @@ class rest_api_sync_rest {
   private static function getEsTaxonObservationsResponse($clientConfig, $project) {
     $es = new RestApiElasticsearch($clientConfig['elasticsearch'][0]);
     $format = 'json';
-    if (isset($_GET['tracking_from']) ) {
+    if (isset($_GET['tracking_from'])) {
       if (!preg_match('/^\d+$/', $_GET['tracking_from'])) {
         RestObjects::$apiResponse->fail('Bad Request', 400, 'Invalid tracking from parameter');
       }

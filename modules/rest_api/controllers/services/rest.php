@@ -65,9 +65,36 @@ class RestApiAbort extends Exception {}
  * Simple object to keep globally useful stuff in.
  */
 class RestObjects {
+
+  /**
+   * Database connection.
+   *
+   * @var object
+   */
   public static $db;
+
+  /**
+   * Website ID the client is authenticated as.
+   *
+   * @var int
+   */
   public static $clientWebsiteId;
+
+  /**
+   * User ID the client is authenticated as.
+   *
+   * @var int
+   */
   public static $clientUserId;
+
+  /**
+   * Name of the warehouse module handling the request.
+   *
+   * Might not be rest_api if the REST services extended by a modules's plugin
+   * file.
+   *
+   * @var string
+   */
   public static $handlerModule;
 
   /**
@@ -815,7 +842,8 @@ class Rest_Controller extends Controller {
             $requestForId = $ids[0];
           }
           // When using a client system ID, we also want a project ID in most cases.
-          if (isset(RestObjects::$clientSystemId) && !in_array($name, ['projects', 'taxa'])) {
+          if (isset(RestObjects::$clientSystemId)
+              && !in_array($name, ['projects', 'taxa'])) {
             if (empty($this->request['proj_id'])) {
               // Should not have got this far - just in case.
               RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
@@ -937,7 +965,7 @@ class Rest_Controller extends Controller {
    * @return string
    *   Name of the key in the current HTTP method's config to use.
    */
-  private function getPathConfigPatternMatch($methodConfig, $arguments) {
+  private function getPathConfigPatternMatch(array $methodConfig, array $arguments) {
     // Build an array to help locate the correct bit of configuration for
     // this path inside the resource config's method key.
     $searchArr = array_merge($arguments);
@@ -984,7 +1012,6 @@ class Rest_Controller extends Controller {
     return $methodName;
   }
 
-
   /**
    * Check if resource allowed for project.
    *
@@ -1021,10 +1048,10 @@ class Rest_Controller extends Controller {
     if (!array_key_exists($id, $this->projects)) {
       RestObjects::$apiResponse->fail('No Content', 204);
     }
-    RestObjects::$apiResponse->succeed($this->projects[$id], array(
+    RestObjects::$apiResponse->succeed($this->projects[$id], [
       'columnsToUnset' => ['filter_id', 'website_id', 'sharing', 'resources'],
       'attachHref' => ['projects', 'id'],
-    ));
+    ]);
   }
 
   /**
@@ -1057,11 +1084,11 @@ class Rest_Controller extends Controller {
   private function taxonObservationsGetId($id) {
     if (substr($id, 0, strlen(kohana::config('rest.user_id'))) === kohana::config('rest.user_id')) {
       $occurrence_id = substr($id, strlen(kohana::config('rest.user_id')));
-      $params = array('occurrence_id' => $occurrence_id);
+      $params = ['occurrence_id' => $occurrence_id];
     }
     else {
       // @todo What happens if system not recognised?
-      $params = array('external_key' => $id);
+      $params = ['external_key' => $id];
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
 
@@ -1076,10 +1103,10 @@ class Rest_Controller extends Controller {
     else {
       RestObjects::$apiResponse->succeed(
         $report['content']['records'][0],
-        array(
-          'attachHref' => array('taxon-observations', 'id'),
+        [
+          'attachHref' => ['taxon-observations', 'id'],
           'columns' => $report['content']['columns'],
-        )
+        ]
       );
     }
   }
@@ -1110,7 +1137,7 @@ class Rest_Controller extends Controller {
     RestObjects::$apiResponse->succeed(
       $this->listResponseStructure($report['content']['records']),
       [
-        'attachHref' => array('taxon-observations', 'id'),
+        'attachHref' => ['taxon-observations', 'id'],
         'columns' => $report['content']['columns'],
       ]
     );
@@ -1125,7 +1152,7 @@ class Rest_Controller extends Controller {
    *   Unique ID for the annotations to output.
    */
   private function annotationsGetId($id) {
-    $params = array('id' => $id);
+    $params = ['id' => $id];
     $report = $this->loadReport('rest_api/filterable_annotations', $params);
     if (empty($report['content']['records'])) {
       RestObjects::$apiResponse->fail('No Content', 204);
@@ -1136,11 +1163,11 @@ class Rest_Controller extends Controller {
     }
     else {
       $record = $report['content']['records'][0];
-      $record['taxonObservation'] = array(
+      $record['taxonObservation'] = [
         'id' => $record['taxon_observation_id'],
         // @todo href
-      );
-      RestObjects::$apiResponse->succeed($record, array(
+      ];
+      RestObjects::$apiResponse->succeed($record, [
         'attachHref' => [
           'annotations',
           'id',
@@ -1151,7 +1178,7 @@ class Rest_Controller extends Controller {
           'taxon-observations',
         ],
         'columns' => $report['content']['columns'],
-      ));
+      ]);
     }
   }
 
@@ -1208,10 +1235,10 @@ class Rest_Controller extends Controller {
    * @todo caching option
    */
   private function taxaGetSearch() {
-    $params = array_merge(array(
+    $params = array_merge([
       'limit' => REST_API_DEFAULT_PAGE_SIZE,
       'include' => ['data', 'count', 'paging', 'columns'],
-    ), $this->request);
+    ], $this->request);
     try {
       $params['count'] = FALSE;
       $query = postgreSQL::taxonSearchQuery($params);
@@ -1242,30 +1269,30 @@ class Rest_Controller extends Controller {
         $result['paging'] = $this->getPagination($count);
       }
     }
-    $columns = array(
-      'taxa_taxon_list_id' => array('caption' => 'Taxa taxon list ID'),
-      'searchterm' => array('caption' => 'Search term'),
-      'highlighted' => array('caption' => 'Highlighted'),
-      'taxon' => array('caption' => 'Taxon'),
-      'authority' => array('caption' => 'Authority'),
-      'language_iso' => array('caption' => 'Language'),
-      'preferred_taxon' => array('caption' => 'Preferred name'),
-      'preferred_authority' => array('caption' => 'Preferred name authority'),
-      'default_common_name' => array('caption' => 'Common name'),
-      'taxon_group' => array('caption' => 'Taxon group'),
-      'preferred' => array('caption' => 'Preferred'),
-      'preferred_taxa_taxon_list_id' => array('caption' => 'Preferred taxa taxon list ID'),
-      'taxon_meaning_id' => array('caption' => 'Taxon meaning ID'),
-      'external_key' => array('caption' => 'External Key'),
-      'taxon_group_id' => array('caption' => 'Taxon group ID'),
-      'parent_id' => array('caption' => 'Parent taxa taxon list ID'),
-      'identification_difficulty' => array('caption' => 'Ident. difficulty'),
-      'id_diff_verification_rule_id' => array('caption' => 'Ident. difficulty verification rule ID'),
-    );
+    $columns = [
+      'taxa_taxon_list_id' => ['caption' => 'Taxa taxon list ID'],
+      'searchterm' => ['caption' => 'Search term'],
+      'highlighted' => ['caption' => 'Highlighted'],
+      'taxon' => ['caption' => 'Taxon'],
+      'authority' => ['caption' => 'Authority'],
+      'language_iso' => ['caption' => 'Language'],
+      'preferred_taxon' => ['caption' => 'Preferred name'],
+      'preferred_authority' => ['caption' => 'Preferred name authority'],
+      'default_common_name' => ['caption' => 'Common name'],
+      'taxon_group' => ['caption' => 'Taxon group'],
+      'preferred' => ['caption' => 'Preferred'],
+      'preferred_taxa_taxon_list_id' => ['caption' => 'Preferred taxa taxon list ID'],
+      'taxon_meaning_id' => ['caption' => 'Taxon meaning ID'],
+      'external_key' => ['caption' => 'External Key'],
+      'taxon_group_id' => ['caption' => 'Taxon group ID'],
+      'parent_id' => ['caption' => 'Parent taxa taxon list ID'],
+      'identification_difficulty' => ['caption' => 'Ident. difficulty'],
+      'id_diff_verification_rule_id' => ['caption' => 'Ident. difficulty verification rule ID'],
+    ];
     if (in_array('columns', $params['include'])) {
       $result['columns'] = $columns;
     }
-    $resultOptions = array('columns' => $columns);
+    $resultOptions = ['columns' => $columns];
     RestObjects::$apiResponse->succeed(
       $result,
       $resultOptions
@@ -1329,14 +1356,23 @@ class Rest_Controller extends Controller {
     }
   }
 
+  /**
+   * Handler for GET reports/featured.
+   *
+   * Returns a list of the reports that have the attribute featured="true".
+   */
   private function reportsGetFeatured() {
     $this->reportsGet(TRUE);
   }
 
+  /**
+   * Handler for GET reports/path.
+   *
+   * Returns a list of the reports found within a folder path.
+   */
   private function reportsGetPath() {
     $this->reportsGet();
   }
-
 
   /**
    * Converts the segments in the URL to a full report path.
@@ -1374,12 +1410,12 @@ class Rest_Controller extends Controller {
       parse_str($parts[1], $params);
     }
     else {
-      $params = array();
+      $params = [];
     }
     $params['known_count'] = $count;
-    $pagination = array(
+    $pagination = [
       'self' => "$urlPrefix$url?" . http_build_query($params),
-    );
+    ];
     $limit = empty($params['limit']) ? REST_API_DEFAULT_PAGE_SIZE : $params['limit'];
     $offset = empty($params['offset']) ? 0 : $params['offset'];
     if ($offset > 0) {
@@ -1460,7 +1496,7 @@ class Rest_Controller extends Controller {
       }
       else {
         kohana::log('error', 'Rest API getReportOutput method retrieved invalid report response: ' .
-          var_export($report, true));
+          var_export($report, TRUE));
       }
     }
     finally {
@@ -1508,7 +1544,7 @@ class Rest_Controller extends Controller {
     }
     RestObjects::$apiResponse->responseTitle = ucfirst("$item for $reportFile");
     RestObjects::$apiResponse->wantIndex = TRUE;
-    RestObjects::$apiResponse->succeed(array('data' => $list), array('metadata' => array('description' => $description)));
+    RestObjects::$apiResponse->succeed(['data' => $list], ['metadata' => ['description' => $description]]);
   }
 
   /**
@@ -1547,12 +1583,14 @@ class Rest_Controller extends Controller {
    *
    * @param array $segments
    *   URL segments.
+   * @param bool $featured
+   *   True if returning a list of the featured reports.
    */
   private function getReportHierarchy(array $segments, $featured) {
     $this->loadReportEngine();
     // @todo Cache this
     $reportHierarchy = $this->reportEngine->reportList();
-    $response = array();
+    $response = [];
     $folderReadme = '';
     if ($featured) {
       $folderReadme = kohana::lang("rest_api.reports.featured_folder_description");
@@ -1575,15 +1613,15 @@ class Rest_Controller extends Controller {
     // If at the top level of the hierarchy, add a virtual featured folder
     // unless we are only showing featured reports.
     if (empty($segments) && empty($this->resourceOptions['featured'])) {
-      $reportHierarchy = array(
-        'featured' => array(
+      $reportHierarchy = [
+        'featured' => [
           'type' => 'folder',
           'description' => kohana::lang("rest_api.reports.featured_folder_description"),
-        ),
-      ) + $reportHierarchy;
+        ],
+      ] + $reportHierarchy;
     }
     if ($featured) {
-      $response = array();
+      $response = [];
       $this->getFeaturedReports($reportHierarchy, $response);
     }
     else {
@@ -1604,7 +1642,7 @@ class Rest_Controller extends Controller {
     $relativePath = '/reports/' . ($relativePath ? "$relativePath/" : '');
     $description = 'A list of reports and report folders stored on the warehouse under ' .
       "the folder <em>$relativePath</em>. $folderReadme";
-    RestObjects::$apiResponse->succeed($response, array('metadata' => array('description' => $description)));
+    RestObjects::$apiResponse->succeed($response, ['metadata' => ['description' => $description]]);
   }
 
   /**
@@ -1664,9 +1702,9 @@ class Rest_Controller extends Controller {
         'https://indicia-docs.readthedocs.io/en/latest/developing/reporting/standard-parameters.html';
       unset($metadata['standard_params']);
     }
-    $metadata['columns'] = array(
+    $metadata['columns'] = [
       'href' => RestObjects::$apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml/columns"),
-    );
+    ];
   }
 
   /**
@@ -1741,12 +1779,8 @@ class Rest_Controller extends Controller {
    * Validates that the request parameters provided fullful the requirements of
    * the method being called.
    *
-   * @param string $resourceName
-   *   Name of the resource.
-   * @param string $method
-   *   Method name, e.g. GET or POST.
-   * @param bool $requestForId
-   *   ID of resource being requested if any.
+   * @param array $methodConfig
+   *  Configuration for the request.
    */
   private function validateParameters($methodConfig) {
     // Check through the known list of parameters to ensure data formats are
@@ -1812,7 +1846,7 @@ class Rest_Controller extends Controller {
     // Should also return an object to iterate rather than loading the full
     // array.
     if (!isset($this->reportEngine)) {
-      $this->reportEngine = new ReportEngine(array(RestObjects::$clientWebsiteId));
+      $this->reportEngine = new ReportEngine([RestObjects::$clientWebsiteId]);
       // Resource configuration can provide a list of restricted reports that
       // are allowed for this client.
       if (isset($this->resourceOptions['authorise'])) {
@@ -2022,7 +2056,9 @@ class Rest_Controller extends Controller {
     }
     if (isset($this->projects[$id]['filter_id'])) {
       $filterId = $this->projects[$id]['filter_id'];
-      $filters = RestObjects::$db->select('definition')->from('filters')->where(array('id' => $filterId, 'deleted' => 'f'))
+      $filters = RestObjects::$db->select('definition')
+        ->from('filters')
+        ->where(['id' => $filterId, 'deleted' => 'f'])
         ->get()->result_array();
       if (count($filters) !== 1) {
         RestObjects::$apiResponse->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
@@ -2030,7 +2066,7 @@ class Rest_Controller extends Controller {
       return json_decode($filters[0]->definition, TRUE);
     }
     else {
-      return array();
+      return [];
     }
   }
 
@@ -2049,16 +2085,16 @@ class Rest_Controller extends Controller {
   private function getPermissionsFilterDefinition() {
     $filters = RestObjects::$db->select('definition')
       ->from('filters')
-      ->join('filters_users', array(
+      ->join('filters_users', [
         'filters_users.filter_id' => 'filters.id',
-      ))
-      ->where(array(
+      ])
+      ->where([
         'filters.id' => $_GET['filter_id'],
         'filters.deleted' => 'f',
         'filters.defines_permissions' => 't',
         'filters_users.user_id' => RestObjects::$clientUserId,
         'filters_users.deleted' => 'f',
-      ))
+      ])
       ->get()->result_array();
     if (count($filters) !== 1) {
       RestObjects::$apiResponse->fail('Bad request', 400, 'Filter ID missing or not a permissions filter for the user');
@@ -2174,7 +2210,7 @@ class Rest_Controller extends Controller {
         $method = ucfirst($method);
         // Try this authentication method.
         if (method_exists($this, "authenticateUsing$method")) {
-          call_user_func(array($this, "authenticateUsing$method"));
+          call_user_func([$this, "authenticateUsing$method"]);
         }
         if ($this->authenticated) {
           RestObjects::$authMethod = $method;
@@ -2274,6 +2310,16 @@ class Rest_Controller extends Controller {
     return $website;
   }
 
+  /**
+   * Checks that the current user has website permissions.
+   *
+   * Fails if unauthorized.
+   *
+   * @param int $websiteId
+   *   Website ID to test against.
+   * @param int $userId
+   *   Warehouse user ID to test.   *
+   */
   private function checkWebsiteUser($websiteId, $userId) {
     $cache = Cache::instance();
     $cacheKey = "website-user-$websiteId-$userId";
@@ -2687,6 +2733,12 @@ class Rest_Controller extends Controller {
     return $files;
   }
 
+  /**
+   * Request handler for POST /rest/media-queue.
+   *
+   * Allows media to be cached on the server prior to submitting the data the
+   * media should be attached to.
+   */
   public function mediaQueuePost() {
     // Upload size.
     $ups = Kohana::config('indicia.maxUploadSize');
@@ -2719,11 +2771,13 @@ class Rest_Controller extends Controller {
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode($errors));
     }
     foreach ($files as $key => $file) {
-      kohana::log('debug', var_export($file, TRUE));
       $typeParts = explode('/', $file['type']);
       $fileName = uniqid('', TRUE) . '.' . $typeParts[1];
       upload::save($file, $fileName, 'upload-queue');
-      $response[$key] = ['name' => $fileName, 'tempPath' => url::base() . "upload-queue/$fileName"];
+      $response[$key] = [
+        'name' => $fileName,
+        'tempPath' => url::base() . "upload-queue/$fileName",
+      ];
     }
     RestObjects::$apiResponse->succeed($response);
   }
@@ -2885,7 +2939,7 @@ class Rest_Controller extends Controller {
   /**
    * API end-point to retrieve a location by ID.
    *
-   * @param integer $id
+   * @param int $id
    *   ID of the location.
    */
   public function locationsGetId($id) {
@@ -3313,12 +3367,12 @@ SQL;
   private function createAttributeTermlist(array &$item) {
     // Create a new termlist.
     $termlist = ORM::factory('termlist');
-    $termlist->set_submission_data(array(
+    $termlist->set_submission_data([
       'title' => 'Termlist for ' . $item['values']['caption'],
       'description' => 'Termlist created by the REST API for attribute ' . $item['values']['caption'],
       'website_id' => RestObjects::$clientWebsiteId,
       'deleted' => 'f',
-    ));
+    ]);
     if (!$termlist->submit()) {
       RestObjects::$apiResponse->fail('Internal Server Error', 500,
             'Error occurred creating new termlist: ' . implode("\n", $termlist->getAllErrors()));
@@ -3345,7 +3399,11 @@ SQL;
       ->select('tlt.id, t.term, tlt.sort_order')
       ->from('termlists_terms AS tlt')
       ->join('terms AS t', 't.id', 'tlt.term_id')
-      ->where(['tlt.deleted' => 'f', 't.deleted' => 'f', 'tlt.termlist_id' => $item['values']['termlist_id']])
+      ->where([
+        'tlt.deleted' => 'f',
+        't.deleted' => 'f',
+        'tlt.termlist_id' => $item['values']['termlist_id'],
+      ])
       ->orderby(['tlt.sort_order' => 'ASC', 't.term' => 'ASC'])
       ->get()->result();
     foreach ($existingRows as $row) {
@@ -3371,13 +3429,13 @@ SQL;
       else {
         // Create new term.
         $termlists_term = ORM::factory('termlists_term');
-        $termlists_term->set_submission_data(array(
+        $termlists_term->set_submission_data([
           'term:term' => $term,
           'term:fk_language:iso' => kohana::config('indicia.default_lang'),
           'sort_order' => $idx + 1,
           'termlist_id' => $item['values']['termlist_id'],
           'preferred' => 't',
-        ));
+        ]);
         if (!$termlists_term->submit()) {
           RestObjects::$apiResponse->fail('Internal Server Error', 500,
             'Error occurred creating new term: ' . implode("\n", $termlists_term->getAllErrors()));
@@ -3447,14 +3505,14 @@ SQL;
     }
     // Duplicate check.
     $existing = RestObjects::$db->select('aw.id')
-        ->from('sample_attributes_websites aw')
-        ->where([
-          'website_id' => $postArray['values']['website_id'],
-          'sample_attribute_id' => $postArray['values']['sample_attribute_id'],
-          'restrict_to_survey_id' => $postArray['values']['restrict_to_survey_id'],
-          'deleted' => 'f',
-        ])
-        ->get()->current();
+      ->from('sample_attributes_websites aw')
+      ->where([
+        'website_id' => $postArray['values']['website_id'],
+        'sample_attribute_id' => $postArray['values']['sample_attribute_id'],
+        'restrict_to_survey_id' => $postArray['values']['restrict_to_survey_id'],
+        'deleted' => 'f',
+      ])
+      ->get()->current();
     if ($existing) {
       $r = rest_crud::update('sample_attributes_website', $existing->id, $postArray);
       echo json_encode($r);
@@ -3597,14 +3655,14 @@ SQL;
     }
     // Duplicate check.
     $existing = RestObjects::$db->select('aw.id')
-        ->from('occurrence_attributes_websites aw')
-        ->where([
-          'website_id' => $postArray['values']['website_id'],
-          'occurrence_attribute_id' => $postArray['values']['occurrence_attribute_id'],
-          'restrict_to_survey_id' => $postArray['values']['restrict_to_survey_id'],
-          'deleted' => 'f',
-        ])
-        ->get()->current();
+      ->from('occurrence_attributes_websites aw')
+      ->where([
+        'website_id' => $postArray['values']['website_id'],
+        'occurrence_attribute_id' => $postArray['values']['occurrence_attribute_id'],
+        'restrict_to_survey_id' => $postArray['values']['restrict_to_survey_id'],
+        'deleted' => 'f',
+      ])
+      ->get()->current();
     if ($existing) {
       $r = rest_crud::update('occurrence_attributes_website', $existing->id, $postArray);
       echo json_encode($r);
@@ -3618,7 +3676,7 @@ SQL;
   }
 
   /**
-   * API end-point to PUT to an existing occurrence attributes website to update.
+   * End-point to PUT to an existing occurrence attributes website to update.
    */
   public function occurrenceAttributesWebsitesPutId($id) {
     $this->assertUserHasWebsiteAccess();
