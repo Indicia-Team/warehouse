@@ -45,8 +45,9 @@ class workflow {
   /**
    * Applies undo data to rewind records to their originally posted state.
    *
-   * This occurs when a record has been modified by the workflow system because of a particular key value linking it to
-   * a workflow event record, then the key value is changed so the workflow event is no longer relevant.
+   * This occurs when a record has been modified by the workflow system because
+   * of a particular key value linking it to a workflow event record, then the
+   * key value is changed so the workflow event is no longer relevant.
    *
    * @param object $db
    *   Database connection.
@@ -71,16 +72,17 @@ class workflow {
     }
     $eventTypes = [];
     foreach ($entityConfig['keys'] as $keyDef) {
-      $keyChanged = false;
+      $keyChanged = FALSE;
       // We need to know if the key has changed to decide whether to wind back.
       // If the key is in the main entity, we can directly compare the old and new keys.
       if ($keyDef['table'] === $entity) {
         $keyCol = $keyDef['column'];
-        $keyChanged = (string) $oldRecord->$column !== (string) $newRecord->column;
+        $keyChanged = (string) $oldRecord->column !== (string) $newRecord->column;
       }
       else {
-        // Find the definintion of the extra data table that contains the column we need to look for changes in. We can
-        // then look to see if the foreign key pointing to that table has changed.
+        // Find the definintion of the extra data table that contains the
+        // column we need to look for changes in. We can then look to see if
+        // the foreign key pointing to that table has changed.
         foreach ($entityConfig['extraData'] as $extraDataDef) {
           if ($extraDataDef['table'] === $keyDef['table']) {
             $column = $extraDataDef['originating_table_column'];
@@ -94,7 +96,8 @@ class workflow {
     }
     if ($entity === 'occurrence'
         && $oldRecord->record_status !== $newRecord->record_status) {
-      // Remove previuos verification and rejection workflow changes as the record status is changing.
+      // Remove previuos verification and rejection workflow changes as the
+      // record status is changing.
       $eventTypes[] = 'V';
       $eventTypes[] = 'R';
     }
@@ -129,17 +132,18 @@ class workflow {
    *   List of event types to rewind ('S', 'V', 'R').
    *
    * @return array
-   *   Associatie array keyed by entity.entity_id, containing an array of the fields with undo values to apply.
+   *   Associate array keyed by entity.entity_id, containing an array of the
+   *   fields with undo values to apply.
    */
   public static function getRewindChangesForRecords($db, $entity, array $entityIdList, array $eventTypes) {
     $r = [];
     $undoRecords = $db
       ->select('DISTINCT workflow_undo.id, workflow_undo.entity_id, workflow_undo.original_values')
       ->from('workflow_undo')
-      ->where(array(
+      ->where([
         'workflow_undo.entity' => $entity,
         'workflow_undo.active' => 't',
-      ))
+      ])
       ->in('event_type', $eventTypes)
       ->in('entity_id', $entityIdList)
       ->orderby('workflow_undo.id', 'DESC')
@@ -154,7 +158,7 @@ class workflow {
         $r["$entity.$undoRecord->entity_id"] = array_merge($r["$entity.$undoRecord->entity_id"], $unsetColumns);
       }
       // As this is a hard rewind, disable the undo data.
-      $db->update('workflow_undo', array('active' => 'f'), array('id' => $undoRecord->id));
+      $db->update('workflow_undo', ['active' => 'f'], ['id' => $undoRecord->id]);
     }
     return $r;
   }
@@ -164,7 +168,7 @@ class workflow {
    *
    * @param object $db
    *   Database connection.
-   *  @param int $websiteId
+   * @param int $websiteId
    *   ID of the website the update is associated with.
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
@@ -174,8 +178,8 @@ class workflow {
    *   List of event types to include in the results.
    *
    * @return array
-   *   List of records with events attached (keyed by entity.id), with each entry containing an array of the events
-   *   associated with that record.
+   *   List of records with events attached (keyed by entity.id), with each
+   *   entry containing an array of the events associated with that record.
    */
   public static function getEventsForRecords($db, $websiteId, $entity, array $entityIdList, array $eventTypes) {
     $r = [];
@@ -195,10 +199,10 @@ class workflow {
         ->select('workflow_events.key_value, workflow_events.event_type, workflow_events.mimic_rewind_first, ' .
           "workflow_events.values, $table.id as {$entity}_id")
         ->from('workflow_events')
-        ->where(array(
+        ->where([
           'workflow_events.deleted' => 'f',
           'key' => $keyDef['db_store_value'],
-        ))
+        ])
         ->in('group_code', $groupCodes)
         ->in('workflow_events.event_type', $eventTypes);
       if ($keyDef['table'] === $entity) {
@@ -207,7 +211,8 @@ class workflow {
       }
       else {
         $qry->join($keyDef['table'], "$keyDef[table].$keyDef[column]", 'workflow_events.key_value');
-        // Cross reference to the extraData for the same table to find the field name which matches $newRecord->column.
+        // Cross reference to the extraData for the same table to find the
+        // field name which matches $newRecord->column.
         foreach ($entityConfig['extraData'] as $extraDataDef) {
           if ($extraDataDef['table'] === $keyDef['table']) {
             $qry->join(
@@ -274,8 +279,8 @@ class workflow {
   /**
    * Construct a query to retrieve workflow events.
    *
-   * Constructs a query object which will find all the events applicable to the current record for a given key in the
-   * entity's configuration.
+   * Constructs a query object which will find all the events applicable to the
+   * current record for a given key in the entity's configuration.
    *
    * @param object $db
    *   Database connection.
@@ -293,16 +298,16 @@ class workflow {
    * @return object
    *   Query object.
    */
-  private static function buildEventQueryForKey($db, $groupCodes, $entity, $oldRecord, $newRecord, array $keyDef) {
+  private static function buildEventQueryForKey($db, array $groupCodes, $entity, $oldRecord, $newRecord, array $keyDef) {
     $entityConfig = self::getEntityConfig($entity);
     $eventTypes = [];
     $qry = $db
       ->select('workflow_events.event_type, workflow_events.mimic_rewind_first, workflow_events.values')
       ->from('workflow_events')
-      ->where(array(
+      ->where([
         'workflow_events.deleted' => 'f',
         'key' => $keyDef['db_store_value'],
-      ))
+      ])
       ->in('group_code', $groupCodes);
     if ($keyDef['table'] === $entity) {
       $column = $keyDef['column'];
@@ -361,8 +366,10 @@ class workflow {
    * Finds configured groups which the current operation's website uses the workflow for.
    *
    * @param int $websiteId
+   *   Website ID.
    *
    * @return array
+   *   List of group names.
    */
   private static function getGroupCodesForThisWebsite($websiteId) {
     $config = kohana::config('workflow_groups', FALSE, FALSE);
@@ -380,8 +387,9 @@ class workflow {
   /**
    * Applies the events query results to a record.
    *
-   * Applies the field value changes determined by a query against the workflow_events table to the contents of a record
-   * that is about to be saved.
+   * Applies the field value changes determined by a query against the
+   * workflow_events table to the contents of a record that is about to be
+   * saved.
    *
    * @param object $qry
    *   Query object set up to retrieve the events to apply.
@@ -393,12 +401,12 @@ class workflow {
    * @param object $newRecord
    *   ORM Validation object containing the new record details.
    * @param array $state
-   *   State data to pass through to the post-process hook, containing undo data.
+   *   State data to pass through to the post-process hook, containing undo
+   *   data.
    */
   private static function applyEventsQueryToRecord($qry, $entity, array $oldValues, &$newRecord, array &$state) {
     $events = $qry->get();
     foreach ($events as $event) {
-      $newUndoRecord = array();
       kohana::log('debug', 'Processing event: ' . var_export($event, TRUE));
       $valuesToApply = self::processEvent(
         $event,
@@ -416,8 +424,9 @@ class workflow {
   /**
    * Processes a single workflow event.
    *
-   * Retrieves a list of the values that need to be applied to a database record given an event. The values may include
-   * the results of a mimiced rewind as well as the value changes required for the event.
+   * Retrieves a list of the values that need to be applied to a database
+   * record given an event. The values may include the results of a mimiced
+   * rewind as well as the value changes required for the event.
    *
    * @param object $event
    *   Event object loaded from the database query.
@@ -427,12 +436,15 @@ class workflow {
    *   Array of the record values before the save operation. Used to retrieve
    *   values for undo state data.
    * @param array $newValues
-   *   Array of the record values that were submitted to be saved, causing the event to fire.
+   *   Array of the record values that were submitted to be saved, causing the
+   *   event to fire.
    * @param array $state
-   *   Array of undo state data which will be updated by this method to allow any proposed changes to be undone.
+   *   Array of undo state data which will be updated by this method to allow
+   *   any proposed changes to be undone.
    *
    * @return array
-   *   Associative array of the database fields and values which need to be applied.
+   *   Associative array of the database fields and values which need to be
+   *   applied.
    */
   public static function processEvent($event, $entity, array $oldValues, array $newValues, array &$state) {
     $entityConfig = self::getEntityConfig($entity);
@@ -463,12 +475,15 @@ class workflow {
         $valuesToApply[$deltaColumn] = $deltaValue;
       }
     }
-    $state[] = array('event_type' => $event->event_type, 'old_data' => $newUndoRecord);
+    $state[] = [
+      'event_type' => $event->event_type,
+      'old_data' => $newUndoRecord,
+    ];
     return $valuesToApply;
   }
 
   /**
-   * Returns true if the current user is allowed to view the workflow configuration pages.
+   * Returns true if the user is allowed to view the workflow config pages.
    *
    * @param object $auth
    *   Kohana authorisation object.
@@ -496,8 +511,8 @@ class workflow {
   /**
    * Rewind a record.
    *
-   * If an event wants to mimic a rewind to reset data to its original state, then undoes all changes to the record
-   * caused by workflow.
+   * If an event wants to mimic a rewind to reset data to its original state,
+   * then undoes all changes to the record caused by workflow.
    *
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
@@ -506,8 +521,8 @@ class workflow {
    * @param array $columnDeltaList
    *   Array containing the field values that will be changed by the rewind.
    * @param array $state
-   *   Undo state change data from events applied to the record on this transaction which may need to be rewound.
-   * @return void
+   *   Undo state change data from events applied to the record on this
+   *   transaction which may need to be rewound.
    */
   private static function mimicRewind($entity, $entityId, array &$columnDeltaList, array $state) {
     for ($i = count($state) - 1; $i >= 0; $i--) {
@@ -516,11 +531,11 @@ class workflow {
       }
     }
     $undoRecords = ORM::factory('workflow_undo')
-      ->where(array(
+      ->where([
         'entity' => $entity,
         'entity_id' => $entityId,
         'active' => 't',
-      ))
+      ])
       ->orderby('id', 'DESC')->find_all();
     foreach ($undoRecords as $undoRecord) {
       kohana::log('debug', 'mimic rewind record: ' . var_export($undoRecord->as_array(), TRUE));
