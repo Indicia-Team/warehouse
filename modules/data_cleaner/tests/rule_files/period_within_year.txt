@@ -1,0 +1,11 @@
+[Metadata]
+TestType=PeriodWithinYear
+Group=Period within year rule group
+ShortName=Period within year rule name
+Description=Period within year rule description
+ErrorMsg=Period within year rule error message
+Tvk=NBNSYS0100027431
+StartDate=0501
+EndDate=0930
+LastChanged=20210816
+[EndMetadata]
