@@ -35,8 +35,6 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   <fieldset>
     <legend>Workflow Event definition details</legend>
     <?php
-    data_entry_helper::link_default_stylesheet();
-    data_entry_helper::enable_validation('entry-form');
     echo data_entry_helper::hidden_text([
       'fieldname' => 'workflow_event:id',
       'default' => $id,
