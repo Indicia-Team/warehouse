@@ -27,16 +27,20 @@ defined('SYSPATH') or die('No direct script access.');
  * Model class for the workflow_event table.
  */
 class Workflow_event_Model extends ORM {
-  public $search_field='id';
+  public $search_field = 'id';
 
-  protected $belongs_to = array(
+  protected $belongs_to = [
     'created_by' => 'user',
-    'updated_by' => 'user'
-  );
-  protected $has_and_belongs_to_many = array();
+    'updated_by' => 'user',
+  ];
+  protected $has_and_belongs_to_many = [];
 
+  /**
+   * Define model validation behaviour.
+   */
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('entity', 'required');
     $array->add_rules('group_code', 'required');
@@ -46,10 +50,11 @@ class Workflow_event_Model extends ORM {
     $array->add_rules('values', 'required');
 
     // Explicitly add those fields for which we don't do validation.
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'deleted',
       'mimic_rewind_first',
-    );
+      'attrs_filter',
+    ];
 
     return parent::validate($array, $save);
   }
