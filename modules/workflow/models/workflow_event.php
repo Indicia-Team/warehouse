@@ -53,10 +53,27 @@ class Workflow_event_Model extends ORM {
     $this->unvalidatedFields = [
       'deleted',
       'mimic_rewind_first',
-      'attrs_filter',
+      'attrs_filter_term',
+      'attrs_filter_values',
     ];
 
     return parent::validate($array, $save);
+  }
+
+  /**
+   * Converts attr_filter_values from form submission string to array.
+   */
+  public function preSubmit() {
+    if (!empty($this->submission['fields']['attrs_filter_values']['value'])
+        && is_string($this->submission['fields']['attrs_filter_values']['value'])) {
+      $keyList = str_replace("\r\n", "\n", $this->submission['fields']['attrs_filter_values']['value']);
+      $keyList = str_replace("\r", "\n", $keyList);
+      $keyList = explode("\n", trim($keyList));
+      $this->submission['fields']['attrs_filter_values'] = ['value' => $keyList];
+    }
+    elseif (isset($this->submission['fields']['attrs_filter_values'])) {
+      $this->submission['fields']['attrs_filter_values'] = ['value' => NULL];
+    }
   }
 
 }
