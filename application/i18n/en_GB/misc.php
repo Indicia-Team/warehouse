@@ -21,6 +21,7 @@ $lang = [
   'save' => 'Save',
   'then' => 'then',
   'unsubscribe' => 'Unsubscribe',
+  'untitled' => 'Untitled',
   // Notification emails.
   // The default notification email texts below can be overridden in
   // application/config/email.php.
