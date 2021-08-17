@@ -274,6 +274,34 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
+   * Ensure all columns have a title.
+   *
+   * After reading column titles from the import file, any with blank titles
+   * are filled in with a default title. Otherwise untitled columns mess up
+   * column alignment assumptions later during import.
+   *
+   * @param array $columns
+   *   List of column titles read from the import file.
+   *
+   * @return array
+   *   List of column titles with blanks filled in.
+   */
+  private function ensureAllColumnsTitled(array $columns) {
+    $foundAProperColumn = FALSE;
+    for ($i = count($columns) - 1; $i >= 0; $i--) {
+      if (!empty($columns[$i])) {
+        $foundAProperColumn = TRUE;
+      }
+      elseif ($foundAProperColumn) {
+        if (empty(trim($columns[$i]))) {
+          $columns[$i] = kohana::lang('misc.untitled') . ' - ' . ($i + 1);
+        }
+      }
+    }
+    return $columns;
+  }
+
+  /**
    * Get the array of column names from a file.
    *
    * @param string $fileName
@@ -289,7 +317,7 @@ class Import_Controller extends Service_Base_Controller {
       $handle = fopen($fileName, 'r');
       $columns = fgetcsv($handle);
       fclose($handle);
-      return $columns;
+      return $this->ensureAllColumnsTitled($columns);
     }
     elseif ($ext === 'xlsx') {
       $reader = new Xlsx();
@@ -314,7 +342,7 @@ class Import_Controller extends Service_Base_Controller {
     if (count($data) === 0) {
       throw new exception('The spreadsheet file is empty');
     }
-    return $data[0];
+    return $this->ensureAllColumnsTitled($data[0]);
   }
 
   /**
