@@ -144,7 +144,7 @@ class RestApiElasticsearch {
       ['caption' => 'Kingdom', 'field' => 'taxon.kingdom'],
       ['caption' => 'Order', 'field' => 'taxon.order'],
       ['caption' => 'Family', 'field' => 'taxon.family'],
-      ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
+      ['caption' => 'TaxonVersionKey', 'field' => 'taxon.accepted_taxon_id'],
       ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
       ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
       ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
