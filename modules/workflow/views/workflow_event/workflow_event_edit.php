@@ -130,6 +130,18 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'lookupValues' => [],
       'validation' => ['required'],
     ]);
+    echo data_entry_helper::sub_list([
+      'label' => 'Location boundary filter',
+      'fieldname' => 'workflow_event:location_ids_filter',
+      'helpText' => lang::get('When this event should only trigger if a record falls inside a geographic region, ' .
+        'specify the list of locations covering that region (or regions). The locations must be indexed.'),
+      'table' => 'location',
+      'captionField' => 'name',
+      'valueField' => 'id',
+      'extraParams' => $readAuth /* + location type IDs filter + */,
+      'addToTable' => FALSE,
+      'default' => $values['location_ids_filter_array'],
+    ]);
     echo data_entry_helper::text_input([
       'label' => 'Attribute value filter term',
       'fieldname' => 'workflow_event:attrs_filter_term',

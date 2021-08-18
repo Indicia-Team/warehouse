@@ -55,24 +55,31 @@ class Workflow_event_Model extends ORM {
       'mimic_rewind_first',
       'attrs_filter_term',
       'attrs_filter_values',
+      'location_ids_filter',
     ];
 
     return parent::validate($array, $save);
   }
 
   /**
-   * Converts attr_filter_values from form submission string to array.
+   * Tidy form data to prepare for submission.
+   *
+   * Converts attr_filter_values from form submission string to array. Also
+   * ensures location_ids_filter array is cleaned.
    */
   public function preSubmit() {
     if (!empty($this->submission['fields']['attrs_filter_values']['value'])
         && is_string($this->submission['fields']['attrs_filter_values']['value'])) {
-      $keyList = str_replace("\r\n", "\n", $this->submission['fields']['attrs_filter_values']['value']);
-      $keyList = str_replace("\r", "\n", $keyList);
-      $keyList = explode("\n", trim($keyList));
-      $this->submission['fields']['attrs_filter_values'] = ['value' => $keyList];
+      $valueList = str_replace("\r\n", "\n", $this->submission['fields']['attrs_filter_values']['value']);
+      $valueList = str_replace("\r", "\n", $valueList);
+      $valueList = explode("\n", trim($valueList));
+      $this->submission['fields']['attrs_filter_values'] = ['value' => $valueList];
     }
-    elseif (isset($this->submission['fields']['attrs_filter_values'])) {
-      $this->submission['fields']['attrs_filter_values'] = ['value' => NULL];
+    // Due to the way the sub_list control works, we can have hidden empty
+    // values which need to be cleaned.
+    if (!empty($this->submission['fields']['location_ids_filter']['value'])
+        && is_array($this->submission['fields']['location_ids_filter']['value'])) {
+      $this->submission['fields']['location_ids_filter']['value'] = array_values(array_filter($this->submission['fields']['location_ids_filter']['value']));
     }
   }
 
