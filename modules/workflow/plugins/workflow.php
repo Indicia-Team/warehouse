@@ -130,6 +130,19 @@ function workflow_orm_post_save_processing($db, $entity, $record, array $state, 
       'created_by_id' => $userId,
       'original_values' => json_encode($undoDetails['old_data']),
     ]);
+    if ($undoDetails['needs_filter_check']) {
+      $q = new WorkQueue();
+      $q->enqueue($db, [
+        'task' => 'task_workflow_event_check_filters',
+        'entity' => $entity,
+        'record_id' => $id,
+        'cost_estimate' => 50,
+        'priority' => 2,
+        'params' => json_encode([
+          'workflow_events.id' => $undoDetails['event_id'],
+        ]),
+      ]);
+    }
   }
   return TRUE;
 }

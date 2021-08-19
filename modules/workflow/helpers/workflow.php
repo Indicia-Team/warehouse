@@ -302,7 +302,8 @@ class workflow {
     $entityConfig = self::getEntityConfig($entity);
     $eventTypes = [];
     $qry = $db
-      ->select('workflow_events.event_type, workflow_events.mimic_rewind_first, workflow_events.values')
+      ->select('workflow_events.id, workflow_events.event_type, workflow_events.mimic_rewind_first, workflow_events.values, ' .
+          'workflow_events.attrs_filter_term, workflow_events.location_ids_filter')
       ->from('workflow_events')
       ->where([
         'workflow_events.deleted' => 'f',
@@ -408,8 +409,10 @@ class workflow {
     $events = $qry->get();
     foreach ($events as $event) {
       kohana::log('debug', 'Processing event: ' . var_export($event, TRUE));
+      $needsFilterCheck = !empty($event->attrs_filter_term) || !empty($event->location_ids_filter);
       $valuesToApply = self::processEvent(
         $event,
+        $needsFilterCheck,
         $entity,
         $oldValues,
         $newRecord->as_array(),
@@ -430,6 +433,9 @@ class workflow {
    *
    * @param object $event
    *   Event object loaded from the database query.
+   * @param bool $needsFilterCheck
+   *   If true, then the workflow event has an attribute or location filter
+   *   that needs double checking via a work queue task.
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
    * @param array $oldValues
@@ -446,7 +452,7 @@ class workflow {
    *   Associative array of the database fields and values which need to be
    *   applied.
    */
-  public static function processEvent($event, $entity, array $oldValues, array $newValues, array &$state) {
+  public static function processEvent($event, $needsFilterCheck, $entity, array $oldValues, array $newValues, array &$state) {
     $entityConfig = self::getEntityConfig($entity);
     $columnDeltaList = [];
     $valuesToApply = [];
@@ -476,6 +482,8 @@ class workflow {
       }
     }
     $state[] = [
+      'event_id' => $event->id,
+      'needs_filter_check' => $needsFilterCheck,
       'event_type' => $event->event_type,
       'old_data' => $newUndoRecord,
     ];
