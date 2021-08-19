@@ -1,8 +1,16 @@
 jQuery(document).ready(function($) {
   $('#taxon_list_id').change(function() {
-    var options = $('input#workflow_event\\:key_value\\:taxon').indiciaAutocomplete('option');
-    options.extraParams.taxon_list_id = $('#taxon_list_id').val();
-    $('input#workflow_event\\:key_value\\:taxon').indiciaAutocomplete('option', options);
+    $('input#workflow_event\\:key_value\\:taxon').setExtraParams({
+      taxon_list_id: $('#taxon_list_id').val()
+    });
+  });
+
+  $('#location_type').change(function() {
+    // Remove any hanging autocomplete select list.
+    $('.ac_results').hide();
+    $('#workflow_event\\:location_ids_filter\\:search\\:name').setExtraParams({
+      location_type_id: $('#location_type').val()
+    });
   });
 
   $('#workflow_event\\:entity').change(function entityChange() {

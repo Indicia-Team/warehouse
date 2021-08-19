@@ -125,22 +125,33 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'default' => html::initial_value($values, 'workflow_event:event_type'),
     ]);
     echo data_entry_helper::select([
-      'label' => 'Event Type',
+      'label' => 'Event type',
       'fieldname' => 'workflow_event:event_type',
       'lookupValues' => [],
       'validation' => ['required'],
+    ]);
+    echo '<fieldset><legend>Event filters</legend>';
+    echo data_entry_helper::select([
+      'label' => 'Location type',
+      'fieldname' => 'location_type',
+      'table' => 'termlists_term',
+      'valueField' => 'id',
+      'captionField' => 'term',
+      'extraParams' => $readAuth + ['termlist_external_key' => 'indicia:location_types', 'order_by' => 'term'],
+      'blankText' => '<Please select>',
+      'helpText' => 'Choose the location type to search within when adding a location boundary filter below.',
     ]);
     echo data_entry_helper::sub_list([
       'label' => 'Location boundary filter',
       'fieldname' => 'workflow_event:location_ids_filter',
       'helpText' => lang::get('When this event should only trigger if a record falls inside a geographic region, ' .
-        'specify the list of locations covering that region (or regions). The locations must be indexed.'),
+        'specify the list of locations covering that region (or regions).'),
       'table' => 'location',
       'captionField' => 'name',
       'valueField' => 'id',
-      'extraParams' => $readAuth /* + location type IDs filter + */,
+      'extraParams' => $readAuth /* @todo location type IDs filter + */,
       'addToTable' => FALSE,
-      'default' => $values['location_ids_filter_array'],
+      'default' => html::initial_value($values, 'location_ids_filter_array'),
     ]);
     echo data_entry_helper::text_input([
       'label' => 'Attribute value filter term',
@@ -160,6 +171,8 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'fieldname' => 'workflow_event:attrs_filter_values',
       'default' => $filterValues,
     ]);
+    echo '</fieldset>';
+    echo '<fieldset><legend>Data updates</legend>';
     echo data_entry_helper::checkbox([
       'label' => 'Rewind record state first',
       'fieldname' => 'workflow_event:mimic_rewind_first',
@@ -171,6 +184,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'schema' => $other_data['jsonSchema'],
       'default' => html::initial_value($values, 'workflow_event:values'),
     ]);
+    echo '</fieldset>';
     echo $metadata;
     data_entry_helper::$indiciaData['entities'] = $other_data['entities'];
 
