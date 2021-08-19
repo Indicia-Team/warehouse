@@ -726,8 +726,10 @@ SQL;
   private static function formatLatLong($lat, $long) {
     $ns = $lat >= 0 ? 'N' : 'S';
     $ew = $long >= 0 ? 'E' : 'W';
-    $lat = abs($lat);
-    $long = abs($long);
+    // Variant of abs() function using preg_replace avoids changing float to
+    // scientific notation.
+    $lat = preg_replace('/^-/', '', $lat);
+    $long = preg_replace('/^-/', '', $long);
     return "$lat$ns $long$ew";
   }
 

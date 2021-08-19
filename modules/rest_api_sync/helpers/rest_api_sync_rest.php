@@ -112,8 +112,10 @@ class rest_api_sync_rest {
       }
       else {
         $point = explode(',', $doc->location->point);
-        $obj['location']['decimalLatitude'] = $point[0];
-        $obj['location']['decimalLongitude'] = $point[1];
+        // Rtrim() and number_format() ensure we don't convert float to
+        // scientific notation.
+        $obj['location']['decimalLatitude'] = rtrim(number_format($point[0], 12), 0);
+        $obj['location']['decimalLongitude'] = rtrim(number_format($point[1], 12), 0);
         $obj['location']['geodeticDatum'] = 'WGS84';
       }
       if (!empty($doc->location->verbatim_locality)) {

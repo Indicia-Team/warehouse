@@ -126,8 +126,10 @@ class rest_api_sync_json_occurrences {
           'identificationVerificationStatus' => empty($record['identification']['identificationVerificationStatus']) ? NULL : $record['identification']['identificationVerificationStatus'],
         ];
         if (!empty($record['location']['decimalLongitude']) && !empty($record['location']['decimalLatitude'])) {
-          $observation['east'] = $record['location']['decimalLongitude'];
-          $observation['north'] = $record['location']['decimalLatitude'];
+          // Json_decode() converts some floats to scientific notation, so
+          // reverse that.
+          $observation['east'] = rtrim(number_format($record['location']['decimalLongitude'], 12), 0);
+          $observation['north'] = rtrim(number_format($record['location']['decimalLatitude'], 12), 0);
           $observation['projection'] = 'WGS84';
         }
         elseif (!empty($record['location']['gridReference'])) {
