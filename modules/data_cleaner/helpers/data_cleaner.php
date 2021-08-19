@@ -141,6 +141,7 @@ class data_cleaner {
         continue;
       }
       if (preg_match('/^\[(?P<section>.+)\]$/', $line, $matches)) {
+        // Found a [Section] heading.
         if (!empty($currentSectionData)) {
           $r[$currentSection] = $currentSectionData;
         }
@@ -150,12 +151,19 @@ class data_cleaner {
         $dataGroup = 0;
       }
       elseif (preg_match('/^([^=\r\n]+)=([^\r\n]*)$/', $line, $matches)) {
+        // Found a key=value.
         self::addDataValue($currentSection, $currentSectionData, $dataGroup, $matches[1], $matches[2]);
       }
+      elseif (preg_match('/^(?P<key>[^,\r\n]+),(?P<value>[^\r\n]*)$/', $line, $matches)) {
+        // Found a key,value as used in ancillary species data.
+        self::addDataValue($currentSection, $currentSectionData, $dataGroup, $matches['key'], $matches['value']);
+      }
       elseif (preg_match('/^(?P<key>.+)$/', $line, $matches)) {
+        // Found a key with no value.
         self::addDataValue($currentSection, $currentSectionData, $dataGroup, $matches['key'], '-');
       }
       elseif (empty($line) && $currentSection !== 'metadata') {
+        // Found a blank line indicating end of a data group.
         $dataGroup++;
       }
     }

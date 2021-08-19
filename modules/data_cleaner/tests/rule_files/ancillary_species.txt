@@ -1,0 +1,17 @@
+[Metadata]
+TestType=AncillarySpecies
+Group=Ancillary species rule group
+ShortName=Ancillary species rule name
+Description=Ancillary species rule description
+ErrorMsg=Ancillary species error message
+ReverseRule=True
+LastChanged=20210816
+[EndMetadata]
+
+[INI]
+1=Ancillary species message 1.
+2=Ancillary species message 2, with comma.
+
+[Data]
+NBNSYS0000007848,1
+NBNSYS0100004993,2

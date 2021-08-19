@@ -1,0 +1,11 @@
+[Metadata]
+TestType=Period
+Group=Period rule group
+ShortName=Period rule name
+Description=Period rule description
+ErrorMsg=Period rule error message
+Tvk=NBNSYS0100005964
+StartDate=
+EndDate=19581231
+LastChanged=20210816
+[EndMetadata]

@@ -1,0 +1,15 @@
+[Metadata]
+TestType=WithoutPolygon
+Group=Without polygon rule group
+ShortName=Without polygon rule name
+Description=Without polygon rule description
+ErrorMsg=Without polygon rule error message
+DataFieldName=Species
+DataRecordId=NBNSYS0000007908
+LastChanged=20210816
+[EndMetadata]
+
+[10km_GB]
+NH80
+NH91
+NH95
