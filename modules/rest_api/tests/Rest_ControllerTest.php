@@ -1,5 +1,8 @@
 <?php
 
+use PHPUnit\DbUnit\DataSet\CompositeDataSet as DbUDataSetCompositeDataSet;
+use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
+
 /**
  * Unit test class for the REST api controller.
  * @todo Test sharing mode on project filters is respected.
@@ -79,10 +82,9 @@ KEY;
 
   // Access tokens.
   private static $jwt;
-  private static $oAuthAccessToken;
 
   public function getDataSet() {
-    $ds1 = new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
 
     /* Create a filter for the test project defined in config/rest.php.travis.
      * Create an occurrence comment for annotation testing.
@@ -132,7 +134,7 @@ KEY;
       )
     );
 
-    $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
+    $compositeDs = new DbUDataSetCompositeDataSet();
     $compositeDs->addDataSet($ds1);
     $compositeDs->addDataSet($ds2);
 
@@ -148,7 +150,7 @@ KEY;
     return $compositeDs;
   }
 
-  public static function setUpBeforeClass() {
+  public static function setUpBeforeClass(): void {
     // grab the clients registered on this system
     $clientUserIds = array_keys(Kohana::config('rest.clients'));
     $clientConfigs = array_values(Kohana::config('rest.clients'));
@@ -158,7 +160,7 @@ KEY;
     self::$config = $clientConfigs[0];
   }
 
-  protected function setUp() {
+  protected function setUp(): void {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
     // Make sure public key stored.
@@ -170,59 +172,8 @@ KEY;
     );
   }
 
-  protected function tearDown() {
+  protected function tearDown(): void {
 
-  }
-
-  public function testoAuth2() {
-    $url = url::base(true) . "services/rest/token";
-    $session = curl_init();
-    // Set the cUrl options.
-    curl_setopt ($session, CURLOPT_URL, $url);
-    curl_setopt($session, CURLOPT_HEADER, TRUE);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
-
-    // try a request with no post data
-    $r = $this->getCurlResponse($session);
-    $this->assertEquals(400, $r['httpCode'], 'Token request without parameters should be a bad request');
-
-    // Now try some post data, but use an invalid password
-    curl_setopt($session, CURLOPT_POST, 1);
-    $post = 'grant_type=password&username=admin&password=sunnyday&client_id=website_id:1';
-    curl_setopt($session, CURLOPT_POSTFIELDS, $post);
-    $r = $this->getCurlResponse($session);
-    $this->assertEquals(401, $r['httpCode'], 'Incorrect password in token request should result in Unauthorised');
-
-    // Try again with the correct password
-    curl_setopt($session, CURLOPT_POST, 1);
-    $post = 'grant_type=password&username=admin&password=password&client_id=website_id:1';
-    curl_setopt($session, CURLOPT_POSTFIELDS, $post);
-    $r = $this->getCurlResponse($session);
-    $this->assertEquals(200, $r['httpCode'], 'Valid request to /token failed.');
-    self::$oAuthAccessToken = $r['response']['access_token'];
-    $this->assertNotEmpty(self::$oAuthAccessToken, 'No oAuth access token returned');
-
-    // Check oAuth2 doesn't allow access to incorrect resources
-    $this->authMethod = 'oAuth2User';
-    $response = $this->callService('projects');
-    $this->assertEquals(401, $response['httpCode'], 'Invalid authentication method oAuth2 for projects  ' .
-        "but response still OK. Http response $response[httpCode].");
-
-    // Now try a valid request with the access token
-    $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01', 'proj_id' => 'BRC1'));
-    $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to taxon-observations failed.');
-
-    // Now try a valid request with the access token for the reports endpoint
-    $response = $this->callService('reports', array());
-    $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to reports failed.');
-
-    $response = $this->callService('reports/library/occurrences/filterable_explore_list.xml', array());
-    $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to the filterable_explore_list report failed.');
-
-    // Now try a bad access token
-    self::$oAuthAccessToken = '---';
-    $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01'));
-    $this->assertEquals(401, $response['httpCode'], 'Invalid token oAuth2 request to taxon-observations should fail.');
   }
 
   private function getJwt($privateKey, $iss, $userId, $exp) {
@@ -458,40 +409,40 @@ KEY;
     $this->assertEquals(201, $response['httpCode']);
     $id = $response['response']['values']['id'];
     // Now GET to check values stored OK.
-    $surveys = $this->callService("$table");
-    $this->assertResponseOk($surveys, "/$table GET");
+    $storedList = $this->callService("$table");
+    $this->assertResponseOk($storedList, "/$table GET");
     // Search for the one we posted.
     $found = FALSE;
-    foreach ($surveys['response'] as $survey) {
-      $allMatch = $survey['values']['id'] === $id;
+    foreach ($storedList['response'] as $storedItem) {
+      $allMatch = $storedItem['values']['id'] === $id;
       foreach ($exampleData as $field => $value) {
-        $allMatch = $allMatch && ($value === $survey['values'][$field]);
+        $allMatch = $allMatch && ((string) $value === $storedItem['values'][$field]);
       }
       if ($allMatch) {
         $found = TRUE;
-        // from foreach.
+        // From foreach.
         break;
       }
     }
-    $this->assertTrue($found, 'POSTed survey not found in retrieved list using GET.');
+    $this->assertTrue($found, "POSTed $table not found in retrieved list using GET.");
     // Repeat with a filter
-    $filterField = array_keys($exampleData)[0];
-    $surveys = $this->callService($table, [$filterField => $exampleData[$filterField]]);
-    $this->assertResponseOk($surveys, "/$table GET");
+    $filterField = array_keys($exampleData)[1];
+    $storedList = $this->callService($table, [$filterField => $exampleData[$filterField]]);
+    $this->assertResponseOk($storedList, "/$table GET");
     // Search for the one we posted.
     $found = FALSE;
-    foreach ($surveys['response'] as $survey) {
-      $allMatch = $survey['values']['id'] === $id;
+    foreach ($storedList['response'] as $storedItem) {
+      $allMatch = $storedItem['values']['id'] === $id;
       foreach ($exampleData as $field => $value) {
-        $allMatch = $allMatch && ($value === $survey['values'][$field]);
+        $allMatch = $allMatch && ((string) $value === $storedItem['values'][$field]);
       }
       if ($allMatch) {
         $found = TRUE;
-        // from foreach.
+        // From foreach.
         break;
       }
     }
-    $this->assertTrue($found, 'POSTed survey not found in filtered retrieved list using GET.');
+    $this->assertTrue($found, "POSTed $table not found in filtered retrieved list using GET.");
     // Repeat with a filter that should exclude the record.
     $surveys = $this->callService($table, [$filterField => microtime(TRUE)]);
     $this->assertResponseOk($surveys, "/$table GET");
@@ -504,7 +455,7 @@ KEY;
       }
       if ($allMatch) {
         $found = TRUE;
-        // from foreach.
+        // From foreach.
         break;
       }
     }
@@ -1033,6 +984,72 @@ KEY;
   }
 
   /**
+   * Test /sample_media POST in isolation.
+   */
+  public function testJwtSampleMediaPost() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->postTest('sample_media', [
+      'path' => 'abc.jpg',
+      'sample_id' => $sampleId,
+    ], 'path');
+  }
+
+  /**
+   * Test /sample_media PUT in isolation.
+   */
+  public function testJwtSampleMediaPut() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->putTest('sample_media', [
+      'path' => 'abc.jpg',
+      'sample_id' => $sampleId,
+    ], [
+      'path' => 'cde.jpg',
+    ]);
+  }
+
+  /**
+   * A basic test of /sample_media/id GET.
+   */
+  public function testJwtSampleMediaGet() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->getTest('sample_media', [
+      'path' => 'xyz.jpg',
+      'sample_id' => $sampleId,
+      // The following won't actually be posted, but should be in the response.
+      'media_type' => 'Image:Local',
+    ]);
+  }
+
+  /**
+   * A basic test of /sample_media GET.
+   */
+  public function testJwtSampleMediaGetList() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->getListTest('sample_media', [
+      'path' => 'a123.jpg',
+      'sample_id' => $sampleId,
+    ]);
+  }
+
+  /**
+   * Test DELETE for an sample_media.
+   */
+  public function testJwtSampleMediaDelete() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->deleteTest('sample_media', [
+      'path' => 'b123.jpg',
+      'sample_id' => $sampleId,
+    ]);
+  }
+
+  /**
+   * Testing fetching OPTIONS for sample_media end-point.
+   */
+  public function testJwtSampleMediaOptions() {
+    $this->optionsTest('sample_media');
+  }
+
+  /**
    * Test attempt to upload JS script into media queue.
    */
   public function testJwtMediaQueueInvalid() {
@@ -1215,7 +1232,7 @@ KEY;
   }
 
   public function testJwtSamplePut() {
-    $this->putTesT('samples', [
+    $this->putTest('samples', [
       'survey_id' => 1,
       'entered_sref' => 'SU1234',
       'entered_sref_system' => 'OSGB',
@@ -1226,7 +1243,7 @@ KEY;
   }
 
   /**
-   * A basic test of /samples GET.
+   * A basic test of /samples/id GET.
    */
   public function testJwtSampleGet() {
     $this->getTest('samples',  [
@@ -1235,6 +1252,19 @@ KEY;
       'entered_sref_system' => 'OSGB',
       'date' => '01/08/2020',
       'comment' => 'A sample to delete',
+    ]);
+  }
+
+  /**
+   * A basic test of /samples GET.
+   */
+  public function testJwtSampleGetList() {
+    $this->getListTest('samples', [
+      'survey_id' => 1,
+      'entered_sref' => 'SU2345',
+      'entered_sref_system' => 'OSGB',
+      'date' => '01/08/2020',
+      'comment' => 'A sample to delete for list get test.',
     ]);
   }
 
@@ -1395,15 +1425,15 @@ KEY;
     $db = new Database();
     // Should fail if we are not an admin.
     $db->query('UPDATE users SET core_role_id=null WHERE id=1');
+    // Should succeed if we are a site admin
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      ' VALUES (1, 1, 3, 1, now(), 1, now())');
     $response = $this->callService(
       'surveys',
       FALSE,
       ['values' => $data]
     );
-    // Should succeed if we are a site admin
-    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
-      ' VALUES (1, 1, 3, 1, now(), 1, now())');
-    $this->assertEquals(401, $response['httpCode']);
+    $this->assertEquals(201, $response['httpCode']);
     $response = $this->callService(
       'surveys',
       FALSE,
@@ -1594,6 +1624,72 @@ SQL;
   }
 
   /**
+   * Test /sample_media POST in isolation.
+   */
+  public function testJwtOccurrenceMediaPost() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->postTest('occurrence_media', [
+      'path' => 'abc.jpg',
+      'occurrence_id' => $occurrenceId,
+    ], 'path');
+  }
+
+  /**
+   * Test /sample_media PUT in isolation.
+   */
+  public function testJwtOccurrenceMediaPut() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->putTest('occurrence_media', [
+      'path' => 'abc.jpg',
+      'occurrence_id' => $occurrenceId,
+    ], [
+      'path' => 'cde.jpg',
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrence_media/id GET.
+   */
+  public function testJwtOccurrenceMediaGet() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->getTest('occurrence_media', [
+      'path' => 'xyz.jpg',
+      'occurrence_id' => $occurrenceId,
+      // The following won't actually be posted, but should be in the response.
+      'media_type' => 'Image:Local',
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrence_media GET.
+   */
+  public function testJwtOccurrenceMediaGetList() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->getListTest('occurrence_media', [
+      'path' => 'a123.jpg',
+      'occurrence_id' => $occurrenceId,
+    ]);
+  }
+
+  /**
+   * Test DELETE for an occurrence_media.
+   */
+  public function testJwtOccurrenceMediaDelete() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->deleteTest('occurrence_media', [
+      'path' => 'b123.jpg',
+      'occurrence_id' => $occurrenceId,
+    ]);
+  }
+
+  /**
+   * Testing fetching OPTIONS for occurrence_media end-point.
+   */
+  public function testJwtOccurrenceMediaOptions() {
+    $this->optionsTest('occurrence_media');
+  }
+
+  /**
    * Create a sample we can add occurrences to.
    *
    * @return int
@@ -1609,10 +1705,29 @@ SQL;
         'entered_sref' => 'SU1234',
         'entered_sref_system' => 'OSGB',
         'date' => '01/08/2020',
-      ]
+      ],
     ];
     $response = $this->callService(
       'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    return $response['response']['values']['id'];
+  }
+
+  private function postOccurrenceToAddStuffTo() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'values' => [
+        'taxa_taxon_list_id' => 1,
+        'sample_id' => $sampleId,
+      ],
+    ];
+    $response = $this->callService(
+      'occurrences',
       FALSE,
       $data
     );
@@ -1645,13 +1760,25 @@ SQL;
   }
 
   /**
-   * A basic test of /occurrences GET.
+   * A basic test of /occurrences/id GET.
    */
   public function testJwtOccurrenceGet() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
     $this->getTest('occurrences', [
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrences GET.
+   */
+  public function testJwtOccurrenceGetList() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->getListTest('occurrences', [
+      // Sample first as it makes a better filter test.
+      'sample_id' => $sampleId,
+      'taxa_taxon_list_id' => 1,
     ]);
   }
 
@@ -1856,7 +1983,7 @@ SQL;
       $this->assertArrayHasKey('data', $response['response'],
           'Data missing from response to call to taxon-observations');
       $data = $response['response']['data'];
-      $this->assertInternalType('array', $data, 'Taxon-observations data invalid. ' . var_export($data, true));
+      $this->assertIsArray($data, 'Taxon-observations data invalid. ' . var_export($data, true));
       $this->assertNotCount(0, $data, 'Taxon-observations data absent. ' . var_export($data, true));
       foreach ($data as $occurrence)
         $this->checkValidTaxonObservation($occurrence);
@@ -1882,7 +2009,7 @@ SQL;
       $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to annotations');
       $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to annotations');
       $data = $response['response']['data'];
-      $this->assertInternalType('array', $data, 'Annotations data invalid. ' . var_export($data, true));
+      $this->assertIsArray($data, 'Annotations data invalid. ' . var_export($data, true));
       $this->assertNotCount(0, $data, 'Annotations data absent. ' . var_export($data, true));
       foreach ($data as $annotation)
         $this->checkValidAnnotation($annotation);
@@ -1897,41 +2024,41 @@ SQL;
     $response = $this->callService('taxa/search');
     $this->assertEquals(400, $response['httpCode'],
           'Requesting taxa/search without search_term should be a bad request');
-    $response = $this->callService('taxa/search', array(
-      'searchQuery' => 'test'
-    ));
+    $response = $this->callService('taxa/search', [
+      'searchQuery' => 'test',
+    ]);
     $this->assertEquals(400, $response['httpCode'],
           'Requesting taxa/search without taxon_list_id should be a bad request');
-    $response = $this->callService('taxa/search', array(
+    $response = $this->callService('taxa/search', [
       'searchQuery' => 'test',
-      'taxon_list_id' => 1
-    ));
-    $this->assertResponseOk($response, '/taxa/search');
-    $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
-    $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
-    $data = $response['response']['data'];
-    $this->assertInternalType('array', $data, 'taxa/search data invalid.');
-    $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
-    $response = $this->callService('taxa/search', array(
-      'searchQuery' => 'test taxon 2',
-      'taxon_list_id' => 1
-    ));
-    $this->assertResponseOk($response, '/taxa/search');
-    $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
-    $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
-    $data = $response['response']['data'];
-    $this->assertInternalType('array', $data, 'taxa/search data invalid.');
-    $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
-    $response = $this->callService('taxa/search', array(
-      'taxon_list_id' => 1
-    ));
-    $this->assertResponseOk($response, '/taxa/search');
-    $data = $response['response']['data'];
-    $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
-    $response = $this->callService('taxa/search', array(
       'taxon_list_id' => 1,
-      'min_taxon_rank_sort_order' => 300
-    ));
+    ]);
+    $this->assertResponseOk($response, '/taxa/search');
+    $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
+    $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
+    $data = $response['response']['data'];
+    $this->assertIsArray($data, 'taxa/search data invalid.');
+    $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
+    $response = $this->callService('taxa/search', [
+      'searchQuery' => 'test taxon 2',
+      'taxon_list_id' => 1,
+    ]);
+    $this->assertResponseOk($response, '/taxa/search');
+    $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
+    $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
+    $data = $response['response']['data'];
+    $this->assertIsArray($data, 'taxa/search data invalid.');
+    $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
+    $response = $this->callService('taxa/search', [
+      'taxon_list_id' => 1,
+    ]);
+    $this->assertResponseOk($response, '/taxa/search');
+    $data = $response['response']['data'];
+    $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
+    $response = $this->callService('taxa/search', [
+      'taxon_list_id' => 1,
+      'min_taxon_rank_sort_order' => 300,
+    ]);
     $this->assertResponseOk($response, '/taxa/search');
     $data = $response['response']['data'];
     $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
@@ -2041,9 +2168,9 @@ SQL;
     $this->assertEquals(200, $response['httpCode']);
     $this->assertEquals(0, $response['curlErrno']);
     $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']), NULL, ['Accept: text/html']);
-    $this->assertRegexp('/^<!DOCTYPE HTML>/', $response['response']);
-    $this->assertRegexp('/<html>/', $response['response']);
-    $this->assertRegexp('/<\/html>$/', $response['response']);
+    $this->assertMatchesRegularExpression('/^<!DOCTYPE HTML>/', $response['response']);
+    $this->assertMatchesRegularExpression('/<html>/', $response['response']);
+    $this->assertMatchesRegularExpression('/<\/html>$/', $response['response']);
     $this->assertEquals(200, $response['httpCode']);
     $this->assertEquals(0, $response['curlErrno']);
     // try requesting an invalid content type as first preference - response should select the second.
@@ -2105,7 +2232,7 @@ SQL;
     $this->assertEquals('Unauthorized', $response['response']['status'],
         "Incorrect userId passed to /$resource but data still returned. " . var_export($response, true));
 
-    // now test with everything correct
+    // Now test with everything correct.
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;
     self::$userId = $correctUserId;
@@ -2119,8 +2246,11 @@ SQL;
   /**
    * An assertion that the response object returned by a call to getCurlResponse
    * indicates a successful request.
-   * @param array $response Response data returned by getCurlReponse().
-   * @param string $apiCall Name of the API method being called, e.g. /projects
+   *
+   * @param array $response
+   *   Response data returned by getCurlReponse().
+   * @param string $apiCall
+   *   Name of the API method being called, e.g. /projects
    */
   private function assertResponseOk($response, $apiCall) {
     $this->assertEquals(200, $response['httpCode'],
@@ -2136,7 +2266,7 @@ SQL;
    * @param $data Array to be tested as a taxon occurrence resource
    */
   private function checkValidTaxonObservation($data) {
-    $this->assertInternalType('array', $data, 'Taxon-observation object invalid. ' . var_export($data, true));
+    $this->assertIsArray($data, 'Taxon-observation object invalid. ' . var_export($data, true));
     $mustHave = array('id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
         'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate');
     foreach ($mustHave as $key) {
@@ -2153,7 +2283,7 @@ SQL;
    * @param $data Array to be tested as an annotation resource
    */
   private function checkValidAnnotation($data) {
-    $this->assertInternalType('array', $data, 'Annotation object invalid. ' . var_export($data, true));
+    $this->assertIsArray($data, 'Annotation object invalid. ' . var_export($data, true));
     $mustHave = array('id', 'href', 'taxonObservation', 'taxonVersionKey', 'comment',
         'question', 'authorName', 'dateTime');
     foreach ($mustHave as $key) {
@@ -2163,9 +2293,9 @@ SQL;
         "Empty $key in annotation resource" . var_export($data, true));
     }
     if (!empty($data['statusCode1']))
-      $this->assertRegExp('/[AUN]/', $data['statusCode1'], 'Invalid statusCode1 value for annotation');
+      $this->assertMatchesRegularExpression('/[AUN]/', $data['statusCode1'], 'Invalid statusCode1 value for annotation');
     if (!empty($data['statusCode2']))
-      $this->assertRegExp('/[1-6]/', $data['statusCode2'], 'Invalid statusCode2 value for annotation');
+      $this->assertMatchesRegularExpression('/[1-6]/', $data['statusCode2'], 'Invalid statusCode2 value for annotation');
     // We should be able to request the taxon observation associated with the occurrence
     $session = $this->initCurl($data['taxonObservation']['href']);
     $response = $this->getCurlResponse($session);
@@ -2240,10 +2370,6 @@ SQL;
         $user = self::$websiteId;
         $password = self::$websitePassword;
         $authString = "WEBSITE_ID:$user:SECRET:$password";
-        break;
-
-      case 'oAuth2User':
-        $authString = "Bearer " . self::$oAuthAccessToken;
         break;
 
       case 'jwtUser':

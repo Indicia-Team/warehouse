@@ -25,7 +25,7 @@
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'language:id');
 ?>
-<form id="language-edit" action="<?php echo url::site() . 'language/save' ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'language/save' ?>" method="post">
   <fieldset>
   <legend>Language details <?php echo $metadata; ?></legend>
     <input type="hidden" name="language:id" value="<?php echo $id; ?>" />
@@ -48,7 +48,7 @@ $id = html::initial_value($values, 'language:id');
   </fieldset>
   <?php
   echo html::form_buttons(!empty($id), FALSE, FALSE);
-  data_entry_helper::enable_validation('language-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

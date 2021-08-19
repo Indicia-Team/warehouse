@@ -26,7 +26,7 @@ $id = html::initial_value($values, 'survey_comment:id');
 warehouse::loadHelpers(['data_entry_helper']);
 ?>
 <p>This page allows you to specify the details of a survey comment.</p>
-<form action="<?php echo url::site() . 'survey_comment/save'; ?>" method="post" enctype="multipart/form-data">
+<form id="entry_form" action="<?php echo url::site() . 'survey_comment/save'; ?>" method="post" enctype="multipart/form-data">
   <?php echo $metadata; ?>
   <fieldset>
     <legend>Survey Comment</legend>

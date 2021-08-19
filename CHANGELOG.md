@@ -1,3 +1,118 @@
+# Version 6.2.0
+*2021-08-02*
+
+* Support for life stages in period-within-year verification rules
+* Support for csv import of survey attributes to a website.
+* Additional iNat fields can be mapped to custom attributes.
+* Allow alert filters to include survey.
+* Import/Export of surveys now includes survey attributes.
+* Updates to unit test harness.
+* Allow dependencies to be maintained with Composer.
+
+# Version 6.1.0
+*2021-07-27*
+
+* Reporting updates to support the sample details page when showing parent/child samples, e.g.
+  transect walks.
+
+# Version 6.0.0
+*2021-05-14*
+
+* Addition of a script for Docker support (work in progress).
+* Enhanced support for importing taxonomy updates from the UKSI_History table provided with a
+  raw copy of the UK Species Inventory.
+* Adds a help link to the top of the list page for events in the Workflow module, plus small
+  improvements to help text on the edit form.
+* Support for uploading spreadsheets of verification decisions as per enhancements to the
+  Elasticsearch [verificationButtons] control.
+* Updates to taxa_taxon_list entity now more intelligently decide when the associated occurrence
+  cache data also needs to be refreshed.
+* Boolean custom attributes now have their underlying datatype set correctly in report outputs.
+* Taxon.scientific field value now correctly set after saving taxa via the warehouse UI.
+* Fixes an error in scheduled tasks that occurs if there are no data to auto-verify.
+* Switch from using feature-bootstrap for client_helpers and media submodules to the default
+  master branch (unifying code with Drupal clients).
+* Replace jQuery.UI datepicker with HTML5 date input.
+* Adds a datepicker polyfill for browsers which don't support HTML 5 dates, e.g. MacOS Safari.
+* Switch from jQuery.ui.progress to HTML5 progress in preparation for Drupal 9 support.
+* Remove use of jQuery.UI's shake effect in preparation for Drupal 9 support.
+* Replace jQuery.sortable with Sortable.js, in preparation for Drupal 9 support.
+* Replace jQuery.ui.dialog with a Fancybox derived dialog control, in preparation for Drupal 9
+  support.
+* Reports for extracting data for Elasticsearch now include taxon list information, accepted taxon
+  name and original taxon group information improving support for names that don't map well to
+  the configured master list (e.g. UKSI).
+* Mime type support for *.zc (Zerocrossing) files.
+
+# Version 5.1.0
+*2021-03-22*
+
+* Adds reports to support a new sample_details prebuilt form.
+
+# Version 5.0.0
+*2021-02-28*
+
+* Dropped support for oAuth2 password authentication as no longer recommended in the oAuth 2.0
+  Security Best Current Practice. See https://oauth.net/2/grant-types/password/.
+* JWT authentication on the REST API - dropped http://indicia.org.uk/alldata token in the payload.
+  Now, default is to return user's own data only, but this can be expanded by specifying scope
+  in the payload with a space separated list of scopes (sharing modes) - defining which website's
+  records will appear in the response. Options include: userWithinWebsite, user (all records for
+  user across all websites), reporting, verification, data_flow, editing, peer_review, moderation.
+  If a JWT token claims multiple scopes, the URL parameter scope can select the active one for a
+  request.
+* Adds occurrence custom attribute system functions for behaviour and reproductive_condition.
+
+# Version 4.12.0
+*2021-02-12*
+
+* Submitting a location record now supports the following metadata field values:
+  * metaFields:srid - the SRID of the provided boundary geometry if not 900913 or 3857 (Web
+    Mercator).
+  * metaFields:mergeBoundary - if set to 't' then when updating an existing location with a new
+    submission, the provided boundary is merged with the existing boundary rather than the provided
+    boundary overwriting the existing boundary.
+* Additional system functions added for occurrences - behaviour and reproductive_condition,
+  reflecting Darwin Core terms of the same names.
+* Base 64 decoding used to read JWT authentication tokens in the REST API now uses Base 64 URL
+  decoding, fixing problems with some characters in tokens.
+* REST API and Elasticsearch API now support Website ID and password based authentication with
+  automatic application of appropriate website sharing permissions. This reduces the need to
+  create multiple Elasticsearch aliases to control website sharing.
+
+# Version 4.11.0
+*2021-01-19*
+
+* New UKSI operations warehouse module which accepts a log of taxonomic updates in the same format
+  as used to update the master copy of the UKSI taxon list. This reduces the need for periodic and
+  complex full updates of the UKSI taxonomy.
+* New `es_key_prefix` option in `application/config/indicia.php` which allows a prefix to be added
+  to IDs in Elasticsearch downloads (to uniquely ID the warehouse).
+* Support for Excel (*.xls or *.xlsx) files in the importer (experimental).
+* After upgrades, now more effectively clears appropriate parts of the cache so that UI and ORM
+  updates are immediate.
+* Performance improvement by indexing notifications table for count of user's outstanding
+  notifications.
+* Improvements to Elasticsearch download column templates, e.g. for better MapMate export support.
+* Option to skip overwrite of verified records in the Rest API sync module (e.g. for iNaturalist
+  synchronisation), see https://github.com/BiologicalRecordsCentre/iRecord/issues/972.
+# Version 4.10.0
+*2020-12-17*
+
+* New uksi_operations module allows update logs for UKSI to be directly imported, with support for
+  new taxon, amend metadata, promote name, merge taxa, rename taxon operations.
+* Addition of organism_key to taxon table for improved links with UKSI.
+* Generation of taxon path data now more reliable (report filtering by higher taxa).
+* New work queue task for efficient updates of taxonomy related fields in occurrence cache tables.
+* Server status message on home page fixed immediately after install.
+* Minor tweaks to improve the install process.
+* Support for dynamic addition of termlist terms when inserting attribute values (tag style, e.g.
+  using the data_entry_helper::sublist control).
+* Fix to check constraint for unique email addresses. Excludes deleted records.
+* Fixes a problem where importing to update existing records caused duplicates.
+* Elasticsearch downloads now support automatic inclusion of custom attributes for a survey.
+* Fix for importing anonymous records into Recorder 6 using Indicia2Recorder.
+
 # Version 4.5.0
 *2020-09-16*
 

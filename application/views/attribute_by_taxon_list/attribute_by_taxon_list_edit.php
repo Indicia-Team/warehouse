@@ -118,7 +118,7 @@ switch ($dataType) {
 ?>
 <p>This page allows you to modify the settings of the taxon attribute within the context of the
 <?php echo $other_data['taxonList']; ?> list.</p>
-<form action="<?php echo url::site() ?>attribute_by_taxon_list/save/1" method="post">
+<form id="entry_form" action="<?php echo url::site() ?>attribute_by_taxon_list/save/1" method="post">
   <fieldset id="validation-rules">
   <legend><?php echo $other_data['name']; ?> attribute details<?php echo $metadata; ?></legend>
     <p>Set the validation rules to apply to values submitted for this attribute below.</p>
@@ -348,7 +348,7 @@ HTML;
     else {
       echo <<<HTML
 <div class="alert alert-warning">
-  Set the taxon_list_id configuration in application/config/indicia.php to enable linking attributes to taxa.
+  Set the master_list_id configuration in application/config/indicia.php to enable linking attributes to taxa.
 </div>
 HTML;
     }

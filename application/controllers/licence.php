@@ -24,13 +24,17 @@
  */
 class Licence_Controller extends Gridview_Base_Controller {
 
+  /**
+   * Constructor - sets up the index grid view.
+   */
   public function __construct() {
     parent::__construct('licence');
-    $this->columns = array(
+    $this->columns = [
+      'id' => '',
       'title' => '',
       'code' => '',
-      'version' => ''
-    );
+      'version' => '',
+    ];
     $this->pagetitle = "Licences";
     $this->session = Session::instance();
   }

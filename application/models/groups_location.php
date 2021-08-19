@@ -34,4 +34,21 @@ class Groups_location_Model extends ORM {
     return parent::validate($array, $save);
   }
 
+  /**
+   * Defines a submission structure for groups_locations.
+   *
+   * Lets locations be submitted at the same time, e.g. during CSV upload.
+   *
+   * @return array
+   *   Submission structure.
+   */
+  public function get_submission_structure() {
+    return [
+      'model' => $this->object_name,
+      'superModels' => [
+        'location' => ['fk' => 'location_id'],
+      ],
+    ];
+  }
+  
 }

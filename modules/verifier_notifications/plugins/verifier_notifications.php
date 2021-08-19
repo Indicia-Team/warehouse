@@ -47,7 +47,7 @@ function verifier_notifications_metadata() {
  * notifications to the mentor.
  */
 function verifier_notifications_scheduled_task($last_run_date, $db) {
-  $params = array(
+  $params = [
     'notificationSourceType' => 'PT',
     'notificationSource' => 'pending_record_check_notifications',
     'notificationComment' => 'You have pending records to check.',
@@ -56,9 +56,9 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
     'noNotificationsCreatedMessage' => 'No new pending record check notifications have been created.',
     'oneNotificationCreatedMessage' => 'new pending record check notification has been created.',
     'multipleNotificationsCreatedMessage' => 'new pending record check notifications have been created.',
-  );
+  ];
   verifier_notifications_process_task_type('moderation', $params, $db, FALSE);
-  $params = array(
+  $params = [
     'notificationSourceType' => 'VT',
     'notificationSource' => 'verifier_notifications',
     'notificationComment' => 'You have new or updated records to verify.',
@@ -67,7 +67,7 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
     'noNotificationsCreatedMessage' => 'No new verification notifications have been created.',
     'oneNotificationCreatedMessage' => 'new verification notification has been created.',
     'multipleNotificationsCreatedMessage' => 'new verification notifications have been created.',
-  );
+  ];
   verifier_notifications_process_task_type('verification', $params, $db, FALSE);
   if (verifier_notifications_use_workflow_module()) {
     $config = kohana::config('workflow_groups', FALSE, FALSE);
@@ -139,6 +139,7 @@ function verifier_notifications_process_task_type($type, array $params, $db) {
     if (!empty($url['linkText'])) {
       $params['notificationComment'] = $url['linkText'];
     }
+    acknowledge_stale_notifications($db, $params);
     // Get all filters where the user for the filter does not already have an
     // unacknowledged notification of that type and the user is associated
     // with the website of the moderation page.
@@ -149,11 +150,54 @@ function verifier_notifications_process_task_type($type, array $params, $db) {
 }
 
 /**
+ * Acknowledge stale verifier notifications so they are re-sent.
+ *
+ * If a verifier receives a notification, then forgets about it and doesn't
+ * acknowledge it, they may not realise their verification record pool is
+ * growing. Avoid this by acknowledging these stale notifications so they are
+ * sent out again.
+ *
+ * @param object $db
+ *   Database connection.
+ * @param array $params
+ *   Parameters defining the notification type.
+ */
+function acknowledge_stale_notifications($db, array $params) {
+  // Define a date after which we consider a notification still "fresh" - 1 day
+  // ago.
+  $date = new DateTime();
+  $date->sub(new DateInterval('P1D'));
+  $freshDate = $date->format('c');
+  // Automatically refresh stale notifications so they don't build up.
+  $sql = <<<SQL
+    UPDATE notifications n SET acknowledged=true
+    FROM filters f
+    JOIN filters_users AS fu ON (fu.filter_id = f.id)
+    JOIN users AS u ON (u.id = fu.user_id)
+    JOIN users_websites AS uw ON (uw.user_id = u.id)
+    WHERE f.sharing = '$params[sharingFilter]'
+    AND f.defines_permissions = 't'
+    AND uw.website_id = $params[website_id]
+    AND f.deleted = 'f'
+    AND fu.deleted = 'f'
+    AND u.deleted = 'f'
+    AND n.user_id=fu.user_id
+    AND n.source_type='$params[notificationSourceType]'
+    AND n.source='$params[notificationSource]'
+    AND n.acknowledged=false
+    AND n.linked_id is null
+    AND n.triggered_on<='$freshDate'
+SQL;
+  $db->query($sql);
+}
+
+/**
  * Retrieve filters that detect changes which have not already been notified.
  *
  * Get all filters where the user for the filter does not already have a
- * notification of the type we are interested in (the source is different
- * on the overdue notification).
+ * "fresh" notification of the type we are interested in (the source is
+ * different on the overdue notification). A "fresh" notification is considered
+ * as any triggered in the last 24 hours.
  *
  * @param object $db
  *   Database connection object.
@@ -170,9 +214,9 @@ function get_filters_without_existing_notification($db, array $params) {
     ->join('filters_users as fu', 'fu.filter_id', 'f.id')
     ->join('users as u', 'u.id', 'fu.user_id')
     ->join('users_websites as uw', 'uw.user_id', 'u.id')
-    ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='" . $params['notificationSourceType'] .
-      "' and n.source='" . $params['notificationSource'] . "'  and n.acknowledged=false and n.linked_id is null)", '', 'LEFT')
-    ->where(array(
+    ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='$params[notificationSourceType]' " .
+      "and n.source='$params[notificationSource]' and n.acknowledged=false and n.linked_id is null)", '', 'LEFT')
+    ->where([
       'f.sharing' => $params['sharingFilter'],
       'f.defines_permissions' => 't',
       'n.id' => NULL,
@@ -180,7 +224,7 @@ function get_filters_without_existing_notification($db, array $params) {
       'f.deleted' => 'f',
       'fu.deleted' => 'f',
       'u.deleted' => 'f',
-    ))
+    ])
     ->get()->result_array(FALSE);
   return $filters;
 }
@@ -197,30 +241,30 @@ function loop_through_workflows_and_filters_and_create_notifications($db, $filte
   // Supply 1 as the user id to give the code maximum privileges. Also force
   // the main database connection to allow access to the temporary occdelta
   // table.
-  $reportEngine = new ReportEngine(array($params['website_id']), 1, $db);
+  $reportEngine = new ReportEngine([$params['website_id']], 1, $db);
   // When creating notifications keep a track of users we have created
   // notifications for per verification page, this allows us to avoid creating
   // multiple notifications per user without having to check the database.
-  $alreadyCreatedNotifications = array();
+  $alreadyCreatedNotifications = [];
   // Go through each filter for users who don't have an outstanding
   // notification of the required type.
   foreach ($filters as $filterIdx => $filter) {
-    $extraParams = array('sharing' => $params['sharingFilterFullName']);
+    $extraParams = ['sharing' => $params['sharingFilterFullName']];
     if ($params['notificationSourceType'] === 'VT') {
       // Only look for completed record_status, we don't want to pick up V for
       // instance, as these records are already verified. Also include any
       // release status and any confidential status for verification purposes.
-      $extraParams = array_merge($extraParams, array(
+      $extraParams = array_merge($extraParams, [
         'record_status' => 'C',
         'release_status' => 'A',
         'confidential' => 'all',
-      ));
+      ]);
     }
     else {
       // If we are only interested in detecting Pending records then provide a
       // release_status P parameter, this will  override the release_status R
       // parameter that automatically appears in the report.
-      $extraParams = array_merge($extraParams, array('release_status' => 'P'));
+      $extraParams = array_merge($extraParams, ['release_status' => 'P']);
     }
     $reportParams = json_decode($filter['definition'], TRUE) + $extraParams;
     try {

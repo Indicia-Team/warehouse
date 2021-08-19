@@ -212,6 +212,7 @@ $config = array
 	'xlc'   => array('application/excel', 'application/vnd.ms-excel'),
 	'xlm'   => array('application/excel', 'application/vnd.ms-excel'),
 	'xls'   => array('application/excel', 'application/vnd.ms-excel'),
+	'xlsx'  => array('application/excel', 'application/vnd.ms-excel'),
 	'xlt'   => array('application/excel', 'application/vnd.ms-excel'),
 	'xml'   => array('text/xml'),
 	'xof'   => array('x-world/x-vrml'),
@@ -220,5 +221,6 @@ $config = array
 	'xvid'  => array('video/x-xvid'),
 	'xwd'   => array('image/x-xwindowdump'),
 	'z'     => array('application/x-compress'),
-	'zip'   => array('application/x-zip', 'application/zip', 'application/x-zip-compressed')
+	'zc'     => array('application/octet-stream'),
+	'zip'   => array('application/x-zip', 'application/zip', 'application/x-zip-compressed'),
 );

@@ -80,7 +80,7 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
     JOIN users u ON u.id=co.created_by_id
     LEFT JOIN groups_users gu ON gu.group_id=m.group_id AND gu.user_id=u.id AND gu.deleted=false
     WHERE ma.id IS NULL AND (m.group_id IS NULL OR gu.id IS NOT NULL)
-    ")->result_array(false);
+    ")->result_array(FALSE);
   return $usersWebsiteCombos;
 }
 
@@ -92,8 +92,6 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
  *
  * Only need to take into account user/website combinations for occurrence_media that have been created (or the occurrence itself verified) since the last time the scheduled task was run
  * as only these will have passed a new milestone.
- *
- *
  */
 function get_user_website_combinations_with_unawarded_milestones_for_changed_occ_media($db) {
   $usersWebsiteCombos = $db->query("
@@ -107,86 +105,103 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
     JOIN users u on u.id=co.created_by_id
     LEFT JOIN groups_users gu on gu.group_id=m.group_id AND gu.user_id=u.id AND gu.deleted=false
     WHERE ma.id IS null AND (m.group_id is null OR gu.id is not null)
-    ")->result_array(false);
+    ")->result_array(FALSE);
   return $usersWebsiteCombos;
 }
 
 /**
- * When the scheduled task is run, we need to send a notification to all users who have passed a new milestone
+ *
+ * Notify users who've passed a milestone.
+ *
+ * When the scheduled task is run, we need to send a notification to all users
+ * who have passed a new milestone.
  */
 function milestones_scheduled_task($last_run_date, $db) {
-  //Get a list of distinct user/website combinations and  milestones that each combination will need testing for,
-  //these are milestones associated with each website the user is associated with, where the milestone has not been
-  //awarded yet)
+  // Get a list of distinct user/website combinations and  milestones that each
+  // combination will need testing for, these are milestones associated with
+  // each website the user is associated with, where the milestone has not been
+  // awarded yet).
   $occurrenceMilestonesToCheck = get_user_website_combinations_with_unawarded_milestones_for_changed_occurrences($db);
   $mediaMilestonesToCheck = get_user_website_combinations_with_unawarded_milestones_for_changed_occ_media($db);
 
-  //Supply a config of which websites to take into account.
+  // Supply a config of which websites to take into account.
   try {
-    $website_ids=kohana::config('milestones.website_ids');
-  //Handle config file not present
-  } catch (Exception $e) {
-    $website_ids=array();
+    $website_ids = kohana::config('milestones.website_ids');
+  // Handle config file not present.
   }
-  //handle if config file present but option is not supplied
-  if (empty($website_ids))
-    $website_ids=array();
-  //Supply 1 as the user id to give the code maximum privileges
+  catch (Exception $e) {
+    $website_ids = [];
+  }
+  // Handle if config file present but option is not supplied.
+  if (empty($website_ids)) {
+    $website_ids = [];
+  }
+  // Supply 1 as the user id to give the code maximum privileges.
   $reportEngine = new ReportEngine($website_ids, 1);
-  $notificationCount=0;
-  //Cycle through all the occurrence media milestones that haven't been awarded yet and could potentially need to be awarded since last run.
+  $notificationCount = 0;
+  // Cycle through all the occurrence media milestones that haven't been
+  // awarded yet and could potentially need to be awarded since last run.
   foreach ($mediaMilestonesToCheck as $milestoneToCheck) {
     $report = 'library/occurrences/filterable_occurrence_media_counts_per_user_website';
 
-    $params = json_decode($milestoneToCheck['definition'],true);
+    $params = json_decode($milestoneToCheck['definition'], TRUE);
     $params['user_id'] = $milestoneToCheck['created_by_id'];
     $params['website_id'] = $milestoneToCheck['website_id'];
 
     try {
-      //Get the report data for all new occurrences that match the filter,user,website.
-      $data=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+      // Get the report data for all new occurrences that match the filter,
+      // user, website.
+      $data = $reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
     } catch (Exception $e) {
       echo $e->getMessage();
       error_logger::log_error('Error occurred when creating verification notifications based on new occurrences and user\'s filters.', $e);
     }
-    foreach($data['content']['records'] as $milestoneCountData) {
-      if ($milestoneCountData['count']>=$milestoneToCheck['count']) {
+    foreach ($data['content']['records'] as $milestoneCountData) {
+      if ($milestoneCountData['count'] >= $milestoneToCheck['count']) {
         create_milestone_reached_notification($milestoneToCheck);
         $notificationCount++;
       }
     }
   }
-  //Cycle through all the occurrence taxa/occurrence milestones that haven't been awarded yet and could potentially need to be awarded since the last run
+  // Cycle through all the occurrence taxa/occurrence milestones that haven't
+  // been awarded yet and could potentially need to be awarded since the last
+  // run.
   foreach ($occurrenceMilestonesToCheck as $milestoneToCheck) {
-    if ($milestoneToCheck['milestone_entity']=='T')
+    if ($milestoneToCheck['milestone_entity'] === 'T') {
       $report = 'library/occurrences/filterable_taxa_counts_per_user_website';
-    else
+    }
+    else {
       $report = 'library/occurrences/filterable_occurrence_counts_per_user_website';
+    }
 
-    $params = json_decode($milestoneToCheck['definition'],true);
+    $params = json_decode($milestoneToCheck['definition'], TRUE);
     $params['user_id'] = $milestoneToCheck['created_by_id'];
     $params['website_id'] = $milestoneToCheck['website_id'];
 
     try {
-      //Get the report data for all new occurrences that match the filter/user/website
-      $data=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+      // Get the report data for all new occurrences that match the
+      // filter/user/website.
+      $data = $reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+      foreach ($data['content']['records'] as $milestoneCountData) {
+        if ($milestoneCountData['count'] >= $milestoneToCheck['count']) {
+          create_milestone_reached_notification($milestoneToCheck);
+          $notificationCount++;
+        }
+      }
     } catch (Exception $e) {
       echo $e->getMessage();
       error_logger::log_error('Error occurred when creating verification notifications based on new occurrences and user\'s filters.', $e);
     }
-    foreach($data['content']['records'] as $milestoneCountData) {
-      if ($milestoneCountData['count']>=$milestoneToCheck['count']) {
-        create_milestone_reached_notification($milestoneToCheck);
-        $notificationCount++;
-      }
-    }
   }
-  if ($notificationCount==0)
+  if ($notificationCount === 0) {
     echo 'No new milestone notifications have been created.</br>';
-  elseif ($notificationCount==1)
+  }
+  elseif ($notificationCount === 1) {
     echo '1 new milestone notification has been created.</br>';
-  else
-    echo $notificationCount.' new milestone notifications have been created.</br>';
+  }
+  else {
+    echo "$notificationCount new milestone notifications have been created.</br>";
+  }
 }
 
 /**
@@ -194,23 +209,25 @@ function milestones_scheduled_task($last_run_date, $db) {
  */
 function create_milestone_reached_notification($milestoneToCheck) {
   $notificationObj = ORM::factory('notification');
-  $notificationObj->source='milestones';
-  $notificationObj->triggered_on=date("Ymd H:i:s");
-  $notificationObj->user_id=$milestoneToCheck['created_by_id'];
-  $notificationObj->source_type='M';
-  $notificationObj->data=json_encode(
-    array('comment'=>$milestoneToCheck['success_message'],
-          'auto_generated'=>'t',
-          'username'=>$milestoneToCheck['awarded_by']));
+  $notificationObj->source = 'milestones';
+  $notificationObj->triggered_on = date("Ymd H:i:s");
+  $notificationObj->user_id = $milestoneToCheck['created_by_id'];
+  $notificationObj->source_type = 'M';
+  $notificationObj->data = json_encode([
+    'comment' => $milestoneToCheck['success_message'],
+    'auto_generated' => 't',
+    'username' => $milestoneToCheck['awarded_by'],
+  ]);
   $notificationObj->save();
 
-  //Save that the Milestone has been awarded so users are not awarded more than once.
+  // Save that the Milestone has been awarded so users are not awarded more
+  // than once.
   $awardObj = ORM::factory('milestone_award');
-  $awardObj->milestone_id=$milestoneToCheck['milestone_id'];
-  $awardObj->user_id=$milestoneToCheck['created_by_id'];
-  $awardObj->created_on=date("Ymd H:i:s");
-  $awardObj->updated_on=date("Ymd H:i:s");
-  $awardObj->created_by_id=$milestoneToCheck['created_by_id'];
-  $awardObj->updated_by_id=$milestoneToCheck['created_by_id'];
+  $awardObj->milestone_id = $milestoneToCheck['milestone_id'];
+  $awardObj->user_id = $milestoneToCheck['created_by_id'];
+  $awardObj->created_on = date("Ymd H:i:s");
+  $awardObj->updated_on = date("Ymd H:i:s");
+  $awardObj->created_by_id = $milestoneToCheck['created_by_id'];
+  $awardObj->updated_by_id = $milestoneToCheck['created_by_id'];
   $awardObj->save();
 }

@@ -26,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify the details of a survey in which samples and records can be organised.</p>
-<form action="<?php echo url::site() . 'survey/save'; ?>" method="post" id="survey-edit">
+<form action="<?php echo url::site() . 'survey/save'; ?>" method="post" id="entry_form">
   <fieldset>
     <legend>Survey dataset details<?php echo $metadata ?></legend>
     <?php
@@ -102,7 +102,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       ?>
     </fieldset>
     <?php
-    echo data_entry_helper::autocomplete(array(
+    echo data_entry_helper::autocomplete([
       'label' => 'Parent survey',
       'fieldname' => 'survey:parent_id',
       'table' => 'survey',
@@ -112,37 +112,38 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'default' => html::initial_value($values, 'survey:parent_id'),
       'defaultCaption' => html::initial_value($values, 'parent:title'),
       'helpText' => 'Set a parent for your survey to allow grouping of survey datasets in reports',
-    ));
-    echo data_entry_helper::select(array(
+    ]);
+    echo data_entry_helper::select([
       'label' => 'Website',
       'fieldname' => 'survey:website_id',
       'default' => html::initial_value($values, 'survey:website_id'),
       'lookupValues' => $other_data['websites'],
       'helpText' => 'The survey must belong to a website registration',
-    ));
+    ]);
     // Only show fields, if fields have been found in the database (the auto
     // verify module is installed).
     if (array_key_exists('survey:auto_accept', $values)) {
-      echo data_entry_helper::checkbox(array(
+      echo data_entry_helper::checkbox([
         'label' => 'Auto Accept',
         'fieldname' => 'survey:auto_accept',
         'default' => html::initial_value($values, 'survey:auto_accept'),
         'helpText' => 'Should the automatic verification module attempt to auto verify records in this survey?',
-      ));
+      ]);
     }
     if (array_key_exists('survey:auto_accept_max_difficulty', $values)) {
-      echo data_entry_helper::text_input(array(
+      echo data_entry_helper::text_input([
         'label' => 'Auto Accept Maximum Difficulty',
         'fieldname' => 'survey:auto_accept_max_difficulty',
         'default' => html::initial_value($values, 'survey:auto_accept_max_difficulty'),
         'helpText' => 'If Auto Accept is set, then this is the minimum identification difficulty that will be auto verified.',
-      ));
+      ]);
     }
     if (array_key_exists('survey:auto_accept_taxa_filters', $values)) {
       $masterListId = warehouse::getMasterTaxonListId();
-      echo <<<HTML
+      if ($masterListId) {
+        echo <<<HTML
 <div class="alert alert-info">
- <p>You can use the taxon selection control below to 
+ <p>You can use the taxon selection control below to
  select one or more higher level taxa to which recorded taxa must belong in order to
  quality for auto-verification. Leave the list empty for no filtering. You must also
  check the Auto Accept box for these filters to take effect.</p>
@@ -150,24 +151,25 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
 <label>Taxon restrictions</label>
 <input type="hidden" name="has-taxon-restriction-data" value="1" />
 HTML;
-      require_once 'client_helpers/prebuilt_forms/includes/language_utils.php';
-      $speciesChecklistOptions = [
-        'lookupListId' => $masterListId,
-        'rowInclusionCheck' => 'alwaysRemovable',
-        'extraParams' => $readAuth,
-        'survey_id' => $values['survey:id'],
-        'language' => iform_lang_iso_639_2(kohana::config('indicia.default_lang')),
-        'occAttrs' => [],
-      ];
-      if (!empty($other_data['taxon_restrictions'])) {
-        $speciesChecklistOptions['listId'] = $masterListId;
-        $speciesChecklistOptions['preloadTaxa'] = [];
-        foreach ($other_data['taxon_restrictions'] as $restriction) {
-          $speciesChecklistOptions['preloadTaxa'][] = $restriction['taxa_taxon_list_id'];
+        require_once 'client_helpers/prebuilt_forms/includes/language_utils.php';
+        $speciesChecklistOptions = [
+          'lookupListId' => $masterListId,
+          'rowInclusionCheck' => 'alwaysRemovable',
+          'extraParams' => $readAuth,
+          'survey_id' => $values['survey:id'],
+          'language' => iform_lang_iso_639_2(kohana::config('indicia.default_lang')),
+          'occAttrs' => [],
+        ];
+        if (!empty($other_data['taxon_restrictions'])) {
+          $speciesChecklistOptions['listId'] = $masterListId;
+          $speciesChecklistOptions['preloadTaxa'] = [];
+          foreach ($other_data['taxon_restrictions'] as $restriction) {
+            $speciesChecklistOptions['preloadTaxa'][] = $restriction['taxa_taxon_list_id'];
+          }
         }
+        echo data_entry_helper::species_checklist($speciesChecklistOptions);
+        echo '<br/>';
       }
-      echo data_entry_helper::species_checklist($speciesChecklistOptions);
-      echo '<br/>';
     }
     ?>
   </fieldset>
@@ -184,11 +186,19 @@ HTML;
       }
       switch ($attr['data_type']) {
         case 'D':
+          echo data_entry_helper::date_picker([
+            'label' => $attr['caption'],
+            'fieldname' => $name,
+            'default' => $attr['value'],
+          ]);
+          break;
+
         case 'V':
           echo data_entry_helper::date_picker([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
+            'allowVagueDates' => TRUE,
           ]);
           break;
 
@@ -223,7 +233,7 @@ HTML;
   <?php
   endif;
   echo html::form_buttons(html::initial_value($values, 'survey:id') !== NULL);
-  data_entry_helper::enable_validation('survey-edit');
+  data_entry_helper::enable_validation('entry_form');
   data_entry_helper::$javascript .= <<<JS
 // ensure the parent lookup does not allow an inappropriate survey to be selected (i.e. self or wrong website)
 function setParentFilter() {

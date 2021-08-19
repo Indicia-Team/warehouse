@@ -26,9 +26,6 @@ use \Firebase\JWT;
 
 define("REST_API_DEFAULT_PAGE_SIZE", 100);
 define("AUTOFEED_DEFAULT_PAGE_SIZE", 10000);
-// Max load from ES, keep fairly low to avoid PHP memory overload.
-define('MAX_ES_SCROLL_SIZE', 5000);
-define('SCROLL_TIMEOUT', '5m');
 
 if (!function_exists('apache_request_headers')) {
   Kohana::log('debug', 'PHP apache_request_headers() function does not exist. Replacement function used.');
@@ -37,7 +34,7 @@ if (!function_exists('apache_request_headers')) {
    * Polyfill for apache_request_headers function if not available.
    */
   function apache_request_headers() {
-    $arh = array();
+    $arh = [];
     $rx_http = '/\AHTTP_/';
     foreach ($_SERVER as $key => $val) {
       if (preg_match($rx_http, $key)) {
@@ -69,10 +66,40 @@ class RestApiAbort extends Exception {}
  */
 class RestObjects {
   public static $db;
-  public static $apiResponse;
   public static $clientWebsiteId;
   public static $clientUserId;
   public static $handlerModule;
+
+  /**
+   * RestApiResponse class instance.
+   *
+   * @var RestApiResponse
+   */
+  public static $apiResponse;
+
+  /**
+   * Name of the authentication method.
+   *
+   * @var string
+   */
+  public static $authMethod;
+
+  /**
+   * The client's system ID (i.e. the caller).
+   *
+   * Set if authenticated against the list of configured clients.
+   *
+   * @var string
+   */
+  public static $clientSystemId;
+
+  /**
+   * Current request's scope (sharing mode), e.g. reporting.
+   *
+   * @var string
+   */
+  public static $scope = 'reporting';
+
 }
 
 /**
@@ -83,15 +110,6 @@ class RestObjects {
  * Visit index.php/services/rest for a help page.
  */
 class Rest_Controller extends Controller {
-
-  /**
-   * Defines which ES CSV column download template to use.
-   *
-   * Only supports "default" or empty string currently.
-   *
-   * @var string
-   */
-  private $esCsvTemplate = 'default';
 
   /**
    * Set sensible defaults for the authentication methods available.
@@ -121,12 +139,6 @@ class Rest_Controller extends Controller {
         'reports' => [],
       ],
     ],
-    'oauth2User' => [
-      'resource_options' => [
-        // Grants full access to all reports. Client configs can override this.
-        'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
-      ],
-    ],
     'jwtUser' => [
       'resource_options' => [
         // Grants full access to all reports. Client configs can override this.
@@ -134,13 +146,6 @@ class Rest_Controller extends Controller {
       ],
     ],
   ];
-
-  /**
-   * RestApiResponse class instance.
-   *
-   * @var RestApiResponse
-   */
-  private $apiResponse;
 
   /**
    * The request method (GET, POST etc).
@@ -164,29 +169,11 @@ class Rest_Controller extends Controller {
   private $authenticated = FALSE;
 
   /**
-   * Name of the authentication method.
-   *
-   * @var string
-   */
-  private $authMethod;
-
-  /**
    * Config settings relating to the selected auth method.
    *
    * @var array
    */
   private $authConfig;
-
-  /**
-   * Allow override of default ES filters on record created_by_id
-   *
-   * When using user based auth (jwtUser or oAuth2User), configuration can
-   * included limit_to_own_data which applies an automatic user filter unless
-   * the request access token includes a claim that alldata access is allowed.
-   *
-   * @var bool
-   */
-  private $allowAllData = FALSE;
 
   /**
    * Config settings relating to the authenticated client if any.
@@ -233,15 +220,6 @@ class Rest_Controller extends Controller {
   private $serverUserId;
 
   /**
-   * The client's system ID (i.e. the caller).
-   *
-   * Set if authenticated against the list of configured clients.
-   *
-   * @var string
-   */
-  private $clientSystemId;
-
-  /**
    * The latest API major version number. Unversioned calls will map to this.
    *
    * @var int
@@ -270,20 +248,6 @@ class Rest_Controller extends Controller {
    * @var array
    */
   private $request;
-
-  /**
-   * For ES paged downloads, holds the mode (scroll or composite).
-   *
-   * @var string
-   */
-  private $pagingMode = 'off';
-
-  /**
-   * For ES paged downloads, holds the current request state (initial or nextPage).
-   *
-   * @var string
-   */
-  private $pagingModeState;
 
   /**
    * List of project definitions that are available to the authorised client.
@@ -409,6 +373,21 @@ class Rest_Controller extends Controller {
         'occurrence-attributes-websites/{id}' => [],
       ],
     ],
+    'occurrence-media' => [
+      'GET' => [
+        'occurrence-media' => [],
+        'occurrence-media/{id}' => [],
+      ],
+      'POST' => [
+        'occurrence-media' => [],
+      ],
+      'PUT' => [
+        'occurrence-media/{id}' => [],
+      ],
+      'DELETE' => [
+        'occurrence-media/{id}' => [],
+      ],
+    ],
     'occurrences' => [
       'GET' => [
         'occurrences' => [
@@ -429,6 +408,7 @@ class Rest_Controller extends Controller {
       'POST' => [
         'occurrences' => [],
         'occurrences/list' => [],
+        'occurrences/verify-spreadsheet' => [],
       ],
       'PUT' => [
         'occurrences/{id}' => [],
@@ -505,6 +485,21 @@ class Rest_Controller extends Controller {
       ],
       'DELETE' => [
         'sample-attributes-websites/{id}' => [],
+      ],
+    ],
+    'sample-media' => [
+      'GET' => [
+        'sample-media' => [],
+        'sample-media/{id}' => [],
+      ],
+      'POST' => [
+        'sample-media' => [],
+      ],
+      'PUT' => [
+        'sample-media/{id}' => [],
+      ],
+      'DELETE' => [
+        'sample-media/{id}' => [],
       ],
     ],
     'samples' => [
@@ -733,59 +728,10 @@ class Rest_Controller extends Controller {
   /**
    * Implement the oAuth2 token endpoint for password grant flow.
    *
-   * @todo Also implement the client_credentials grant type for website level
-   *   access and client system level access.
+   * No longer implemented due to being not-recommended best practice.
    */
   public function token() {
-    try {
-      if (empty($_POST['grant_type']) || empty($_POST['username']) ||
-        empty($_POST['password']) || empty($_POST['client_id'])
-      ) {
-        RestObjects::$apiResponse->fail('Bad request', 400, 'Missing required parameters');
-      }
-      if ($_POST['grant_type'] !== 'password') {
-        RestObjects::$apiResponse->fail('Not implemented', 501, 'Grant type not implemented: ' . $_POST['grant_type']);
-      }
-      $matchField = strpos($_POST['username'], '@') === FALSE ? 'u.username' : 'email_address';
-      $websiteId = preg_replace('/^website_id:/', '', $_POST['client_id']);
-      // @todo Test for is the user a member of this website?
-      $users = RestObjects::$db->select('u.id, u.password, u.core_role_id, uw.site_role_id')
-        ->from('users as u')
-        ->join('people as p', 'p.id', 'u.person_id')
-        ->join('users_websites as uw', 'uw.user_id', 'u.id', 'LEFT')
-        ->where(array(
-          $matchField => $_POST['username'],
-          'u.deleted' => 'f',
-          'p.deleted' => 'f',
-        ))
-        ->get()->result_array(FALSE);
-      if (count($users) !== 1) {
-        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
-      }
-      if ($users[0]['site_role_id'] === NULL && $users[0]['core_role_id'] === NULL) {
-        RestObjects::$apiResponse->fail('Unauthorized', 401, 'User does not have access to website.');
-      }
-      $auth = new Auth();
-      if (!$auth->checkPasswordAgainstHash($_POST['password'], $users[0]['password'])) {
-        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
-      }
-      if (substr($_POST['client_id'], 0, 11) !== 'website_id:') {
-        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Invalid client_id format. ' . var_export($_POST, TRUE));
-      }
-      $accessToken = $this->getToken();
-      $cache = new Cache();
-      $uid = $users[0]['id'];
-      $data = "USER_ID:$uid:WEBSITE_ID:$websiteId";
-      $cache->set($accessToken, $data, 'oAuthUserAccessToken', Kohana::config('indicia.nonce_life'));
-      RestObjects::$apiResponse->succeed(array(
-        'access_token' => $accessToken,
-        'token_type' => 'bearer',
-        'expires_in' => Kohana::config('indicia.nonce_life'),
-      ));
-    }
-    catch (RestApiAbort $e) {
-      // No action if a proper abort.
-    }
+    RestObjects::$apiResponse->fail('Not Implemented', 501, 'oAuth 2.0 Password authentication not supported');
   }
 
   /**
@@ -827,7 +773,7 @@ class Rest_Controller extends Controller {
         $this->resourceOptions = $this->authConfig['resource_options'][$this->resourceName];
       }
       if (!isset($this->resourceOptions)) {
-        $this->resourceOptions = array();
+        $this->resourceOptions = [];
       }
       // Caching can be enabled via a query string parameter if not already
       // forced by the authorisation config.
@@ -835,7 +781,12 @@ class Rest_Controller extends Controller {
         $this->resourceOptions['cached'] = TRUE;
       }
       if ($this->elasticProxy) {
-        $this->elasticRequest();
+        $es = new RestApiElasticsearch($this->elasticProxy);
+        $es->checkResourceAllowed();
+        $postRaw = file_get_contents('php://input');
+        $postObj = empty($postRaw) ? [] : json_decode($postRaw);
+        $format = (isset($_GET['format']) && $_GET['format'] === 'csv') ? 'csv' : 'json';
+        $es->elasticRequest($postObj, $format);
       }
       else {
         $resourceConfig = $this->findResourceConfig($this->resourceName);
@@ -859,18 +810,19 @@ class Rest_Controller extends Controller {
           $methodName = $this->getMethodName($arguments, strpos($pathConfigPattern, '{path}') !== FALSE);
           $requestForId = NULL;
           $ids = preg_grep('/^([A-Z]{3})?\d+$/', $arguments);
+          $projectId = NULL;
           if (count($ids) > 0) {
             $requestForId = $ids[0];
           }
-          // When using a client system ID, we also want a project ID if
-          // accessing taxon observations or annotations.
-          if (isset($this->clientSystemId) && ($name === 'taxon_observations' || $name === 'annotations')) {
+          // When using a client system ID, we also want a project ID in most cases.
+          if (isset(RestObjects::$clientSystemId) && !in_array($name, ['projects', 'taxa'])) {
             if (empty($this->request['proj_id'])) {
               // Should not have got this far - just in case.
               RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
             }
             else {
               $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
+              $projectId = $this->request['proj_id'];
             }
           }
           $this->validateParameters($pathConfig);
@@ -878,13 +830,14 @@ class Rest_Controller extends Controller {
             $class = $this;
           }
           elseif (RestObjects::$handlerModule !== 'rest_api' && method_exists(RestObjects::$handlerModule . '_rest', $methodName)) {
-            // Expect any modules extending the API to implement a helper class <module name>_rest.
+            // Expect any modules extending the API to implement a helper class
+            // <module name>_rest.
             $class = RestObjects::$handlerModule . '_rest';
           }
           else {
-            RestObjects::$apiResponse->fail('Not Found', 404, "Resource $name not known for method $this->method");
+            RestObjects::$apiResponse->fail('Not Found', 404, "Resource $name not known for method $this->method ($methodName)");
           }
-          call_user_func([$class, $methodName], $requestForId);
+          call_user_func([$class, $methodName], $requestForId, $this->clientConfig, $projectId);
         }
       }
     }
@@ -920,7 +873,7 @@ class Rest_Controller extends Controller {
       return $this->resourceConfig[$this->resourceName];
     }
     else {
-      // load from plugin or fail
+      // Load from plugin or fail.
       $pluginConfigs = $this->getRestPluginConfigs();
       if (array_key_exists($this->resourceName, $pluginConfigs)) {
         RestObjects::$handlerModule = $pluginConfigs[$this->resourceName]['module'];
@@ -1015,11 +968,13 @@ class Rest_Controller extends Controller {
    * @return string
    *   Method name.
    */
-  private function getMethodName($arguments, $usingPath) {
+  private function getMethodName(array $arguments, $usingPath) {
     $methodNamePartsArr = array_merge($arguments);
     $methodNamePartsArr = preg_replace('/^([A-Z]{3})?\d+$/', 'id', $methodNamePartsArr);
     $methodNamePartsArr = preg_replace('/^[a-zA-Z0-9_-]+\.xml$/', 'file', $methodNamePartsArr);
-    array_map(function ($item) { return ucFirst($item); }, $methodNamePartsArr);
+    $methodNamePartsArr = array_map(function ($item) {
+      return str_replace(' ', '', ucwords(str_replace('-', ' ', $item)));
+    }, $methodNamePartsArr);
     $methodName = implode('', $methodNamePartsArr);
     if ($usingPath) {
       $methodName = preg_replace('/^[^{]*(?!{.+})/', 'Path', $methodName);
@@ -1052,1708 +1007,6 @@ class Rest_Controller extends Controller {
         RestObjects::$apiResponse->fail('No Content', 204);
       }
     }
-  }
-
-  /**
-   * Templates for ES CSV output.
-   *
-   * @var array
-   */
-  private $esCsvTemplates = [
-    "default" => [
-      ['caption' => 'Record ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '_id'],
-      ['caption' => 'Sample ID', 'field' => 'event.event_id'],
-      ['caption' => 'Date interpreted', 'field' => '#event_date#'],
-      ['caption' => 'Date start', 'field' => 'event.date_start'],
-      ['caption' => 'Date end', 'field' => 'event.date_end'],
-      ['caption' => 'Recorded by', 'field' => 'event.recorded_by'],
-      ['caption' => 'Determined by', 'field' => 'identification.identified_by'],
-      ['caption' => 'Grid reference', 'field' => 'location.output_sref'],
-      ['caption' => 'System', 'field' => 'location.output_sref_system'],
-      ['caption' => 'Coordinate uncertainty (m)', 'field' => 'location.coordinate_uncertainty_in_meters'],
-      ['caption' => 'Lat/Long', 'field' => 'location.point'],
-      ['caption' => 'Location name', 'field' => 'location.verbatim_locality'],
-      ['caption' => 'Higher geography', 'field' => '#higher_geography::name#'],
-      ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
-      ['caption' => 'Vice County number', 'field' => '#higher_geography:Vice County:code#'],
-      ['caption' => 'Identified by', 'field' => 'identification.identified_by'],
-      ['caption' => 'Taxon accepted name', 'field' => 'taxon.accepted_name'],
-      ['caption' => 'Taxon recorded name', 'field' => 'taxon.taxon_name'],
-      ['caption' => 'Taxon common name', 'field' => 'taxon.vernacular_name'],
-      ['caption' => 'Taxon group', 'field' => 'taxon.group'],
-      ['caption' => 'Kindom', 'field' => 'taxon.kingdom'],
-      ['caption' => 'Phylum', 'field' => 'taxon.phylum'],
-      ['caption' => 'Order', 'field' => 'taxon.order'],
-      ['caption' => 'Family', 'field' => 'taxon.family'],
-      ['caption' => 'Genus', 'field' => 'taxon.genus'],
-      ['caption' => 'Taxon Version Key', 'field' => 'taxon.taxon_id'],
-      ['caption' => 'Accepted Taxon Version Key', 'field' => 'taxon.accepted_taxon_id'],
-      ['caption' => 'Sex', 'field' => 'occurrence.sex'],
-      ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
-      ['caption' => 'Quantity', 'field' => 'occurrence.organism_quantity'],
-      ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
-      ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
-      ['caption' => 'Record status', 'field' => 'identification.verification_status'],
-      ['caption' => 'Record substatus', 'field' => '#null_if_zero:identification.verification_substatus#'],
-      ['caption' => 'Query status', 'field' => 'identification.query'],
-      ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
-      ['caption' => 'Verified on', 'field' => 'identification.verified_on'],
-      ['caption' => 'Website', 'field' => 'metadata.website.title'],
-      ['caption' => 'Survey dataset', 'field' => 'metadata.survey.title'],
-      ['caption' => 'Media', 'field' => '#occurrence_media#'],
-    ],
-    "easy-download" => [
-      ['caption' => 'ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '_id'],
-      ['caption' => 'External key', 'field' => 'occurrence_external_key'],
-      ['caption' => 'Source', 'field' => '#datasource_code:<wt> | <st> {|} <gt>#'],
-      ['caption' => 'Species', 'field' => 'taxon.accepted_name'],
-      ['caption' => 'Common name', 'field' => 'taxon.vernacular_name'],
-      ['caption' => 'Taxon group', 'field' => 'taxon.group'],
-      ['caption' => 'Kingdom', 'field' => 'taxon.kingdom'],
-      ['caption' => 'Order', 'field' => 'taxon.order'],
-      ['caption' => 'Family', 'field' => 'taxon.family'],
-      ['caption' => 'TaxonVersionKey', 'field' => 'taxon.taxon_id'],
-      ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
-      ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
-      ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
-      ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
-      ['caption' => 'Projection', 'field' => '#sref_system:location.input_sref_system:alphanumeric#'],
-      ['caption' => 'Precision', 'field' => 'location.coordinate_uncertainty_in_meters'],
-      ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
-      ['caption' => 'Projection', 'field' => '#sref_system:location.output_sref_system:alphanumeric#'],
-      ['caption' => 'Biotope', 'field' => 'event.habitat'],
-      ['caption' => 'VC number', 'field' => '#higher_geography:Vice County:code#'],
-      ['caption' => 'Vice County', 'field' => '#higher_geography:Vice County:name#'],
-      ['caption' => 'Date interpreted', 'field' => '#event_date#'],
-      ['caption' => 'Date from', 'field' => 'event.date_start'],
-      ['caption' => 'Date to', 'field' => 'event.date_end'],
-      ['caption' => 'Date type', 'field' => 'event.date_type'],
-      ['caption' => 'Sample method', 'field' => 'event.sampling_protocol'],
-      ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
-      ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
-      ['caption' => 'Recorder certainty', 'field' => 'identification.recorder_certainty'],
-      ['caption' => 'Sex', 'field' => 'occurrence.sex'],
-      ['caption' => 'Stage', 'field' => 'occurrence.life_stage'],
-      ['caption' => 'Count of sex or stage', 'field' => 'occurrence.organism_quantity'],
-      ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
-      ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
-      ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
-      ['caption' => 'Images', 'field' => '#occurrence_media#'],
-      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i#'],
-      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y H\:i#'],
-      ['caption' => 'Verification status 1', 'field' => '#verification_status:astext#'],
-      ['caption' => 'Verification status 2', 'field' => '#verification_substatus:astext#'],
-      ['caption' => 'Query', 'field' => '#query:astext#'],
-      ['caption' => 'Verifier', 'field' => 'identification.verifier.name'],
-      ['caption' => 'Verified on', 'field' => '#datetime:identification.verified_on:d/m/Y H\:i#'],
-      ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
-      ['caption' => 'Automated checks', 'field' => 'identification.auto_checks.result'],
-    ],
-    "mapmate" => [
-      ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
-      ['caption' => 'Site', 'field' => 'location.verbatim_locality'],
-      ['caption' => 'Gridref', 'field' => 'location.output_sref'],
-      ['caption' => 'VC', 'field' => '#higher_geography:Vice County:code:mapmate#'],
-      ['caption' => 'Recorder', 'field' => 'event.recorded_by'],
-      ['caption' => 'Determiner', 'field' => 'identification.identified_by'],
-      ['caption' => 'Date', 'field' => '#event_date:mapmate#'],
-      ['caption' => 'Quantity', 'field' => '#organism_quantity:mapmate#'],
-      ['caption' => 'Method', 'field' => 'event.sampling_protocol'],
-      ['caption' => 'Sex', 'field' => '#sex:mapmate#'],
-      ['caption' => 'Stage', 'field' => '#life_stage:mapmate#'],
-      ['caption' => 'Status', 'field' => '#blank#'],
-      ['caption' => 'Comment', 'field' => '#sample_occurrence_comment#'],
-      ['caption' => 'ID', 'field' => 'id'],
-      ['caption' => 'RecordKey', 'field' => '_id'],
-      ['caption' => 'NonNumericQuantity', 'field' => '#organism_quantity:exclude_integer#'],
-      ['caption' => 'Habitat', 'field' => 'event.habitat'],
-      ['caption' => 'Input on date', 'field' => '#datetime:metadata.created_on:d/m/Y H\:i\:s#'],
-      ['caption' => 'Last edited on date', 'field' => '#datetime:metadata.updated_on:d/m/Y G\:i\:s#'],
-      ['caption' => 'Verification status 1', 'field' => '#verification_status:astext#'],
-      ['caption' => 'Verification status 2', 'field' => '#verification_substatus:astext#'],
-      ['caption' => 'Query', 'field' => '#query:astext#'],
-      ['caption' => 'Licence', 'field' => 'metadata.licence_code'],
-    ]
-  ];
-
-  /**
-   * Works out the list of columns for an ES CSV download.
-   *
-   * @param obj $postObj
-   *   Request object.
-   */
-  private function getColumnsTemplate(&$postObj) {
-    // Params for configuring an ES CSV download template get extracted and not
-    // sent to ES.
-    if (isset($postObj->columnsTemplate)) {
-      $this->esCsvTemplate = $postObj->columnsTemplate;
-      unset($postObj->columnsTemplate);
-    }
-    if (isset($postObj->addColumns)) {
-      // Columns converted to associative array.
-      $this->esCsvTemplateAddColumns = json_decode(json_encode($postObj->addColumns), TRUE);
-      unset($postObj->addColumns);
-    }
-    if (isset($postObj->removeColumns)) {
-      $this->esCsvTemplateRemoveColumns = (array) $postObj->removeColumns;
-      unset($postObj->removeColumns);
-    }
-  }
-
-   /**
-   * A cached lookup of the websites that are available for a sharing mode.
-   *
-   * @param integer $websiteId
-   *   ID of the website that is receiving the shared data.
-   *
-   * @return array
-   *   List of website IDs that will share their data.
-   */
-  private function getSharedWebsiteList($websiteId, $sharing = 'reporting') {
-    $tag = "website-shares-$websiteId";
-    $cacheId = "$tag-$sharing";
-    $cache = Cache::instance();
-    if ($cached = $cache->get($cacheId)) {
-      return explode(',', $cached);
-    }
-    $qry = RestObjects::$db->select('to_website_id')
-      ->from('index_websites_website_agreements')
-      ->where([
-        "receive_for_$sharing" => 't',
-        'from_website_id' => $websiteId
-      ])
-      ->get()->result();
-    $ids = array();
-    foreach ($qry as $row) {
-      $ids[] = $row->to_website_id;
-    }
-    // Tag all cache entries for this website so they can be cleared together
-    // when changes are saved. Also note the cached entry is an imploded string
-    // so we benefit from sharing cache hits with the reporting engine.
-    $cache->set($cacheId, implode(',', $ids), $tag);
-    return $ids;
-  }
-
-  /**
-   * Adds permissions filters to ES search, based on website ID and user ID.
-   *
-   * If the authentication method configuration (e.g. jwtUser) includes the
-   * option limit_to_website in the settings for the Elasticsearch endpoint,
-   * then automatically adds a terms filter on metadata.website.id. Also,
-   * if the settings include limit_to_own_data for the endpoint, then adds a
-   * terms filter on metadata.created_by_id. This can be overridden by
-   * including the claim http://indicia.org.uk/alldata in the JWT access token.
-   */
-  private function applyEsPermissionsQuery(&$postObj) {
-    $filters = [];
-    if (!empty($this->esConfig['limit_to_own_data']) && !$this->allowAllData && RestObjects::$clientUserId) {
-      $filters[] = ['term' => ['metadata.created_by_id' => RestObjects::$clientUserId]];
-    }
-    if (!empty($this->esConfig['limit_to_website']) && RestObjects::$clientWebsiteId) {
-      // @todo Support for other sharing modes in JWT claims.
-      $filters[] = ['terms' => ['metadata.website.id' => $this->getSharedWebsiteList(RestObjects::$clientWebsiteId)]];
-    }
-    if (count($filters) > 0) {
-      if (!isset($postObj->query)) {
-        $postObj->query = new stdClass();
-      }
-      if (!isset($postObj->query->bool)) {
-        $postObj->query->bool = new stdClass();
-      }
-      if (!isset($postObj->query->bool->must)) {
-        $postObj->query->bool->must = [];
-      }
-      $postObj->query->bool->must = array_merge($postObj->query->bool->must, $filters);
-    }
-  }
-
-  /**
-   * Calculate the data to post to an Elasticsearch search.
-   *
-   * @param obj $postObj
-   *   Request object.
-   * @param string $format
-   *   Format identifier. If CSV then we can use this to do source filtering
-   *   to lower memory consumption.
-   * @param array|NULL $file
-   *   Cached info about the file if paging.
-   *
-   * @return string
-   *   Data to post.
-   */
-  private function getEsPostData($postObj, $format, $file, $isSearch) {
-    if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'nextPage') {
-      // A subsequent hit on a scrolled request.
-      $postObj = [
-        'scroll_id' => $_GET['scroll_id'],
-        'scroll' => SCROLL_TIMEOUT,
-      ];
-      return json_encode($postObj);
-    }
-    // Either unscrolled, or the first call to a scroll. So post the query.
-    if ($this->pagingMode === 'scroll') {
-      $postObj->size = MAX_ES_SCROLL_SIZE;
-    }
-    elseif ($this->pagingMode === 'composite' && isset($file['after_key'])) {
-      $postObj->aggs->_rows->composite->after = $file['after_key'];
-    }
-    if ($isSearch) {
-      $this->applyEsPermissionsQuery($postObj);
-    }
-    if ($format === 'csv') {
-      $csvTemplate = $this->getEsCsvTemplate();
-      $fields = [];
-      // Check for special fields - may need to force the underlying raw fields
-      // into the list of requested fields.
-      foreach ($csvTemplate as $column) {
-        $field = $column['field'];
-        if (strpos($field, '_') === 0) {
-          // Fields starting _ are not inside _source object.
-          continue;
-        }
-        if (preg_match('/^[a-z_]+(\.[a-z_]+)*$/', $field)) {
-          $fields[] = $field;
-        }
-        elseif (preg_match('/^#higher_geography(.*)#$/', $field)) {
-          $fields[] = 'location.higher_geography.*';
-        }
-        elseif ($field === '#data_cleaner_icons#') {
-          $fields[] = 'identification.auto_checks';
-        }
-        elseif (preg_match('/^#datasource_code(.*)#$/', $field)) {
-          $fields[] = 'metadata.website';
-          $fields[] = 'metadata.survey';
-          $fields[] = 'metadata.group';
-        }
-        elseif (preg_match('/^#event_date(.*)#$/', $field)) {
-          $fields[] = 'event.date_start';
-          $fields[] = 'event.date_end';
-        }
-        elseif (preg_match('/^#vc(.*)#$/', $field)) {
-          $fields[] = 'location.higher_geography';
-        }
-        elseif (preg_match('/^#sex(.*)#$/', $field)) {
-          $fields[] = 'occurrence.sex';
-        }
-        elseif (preg_match('/^#life_stage(.*)#$/', $field)) {
-          $fields[] = 'occurrence.life_stage';
-        }
-        elseif ($field ==='#sample_occurrence_comment#') {
-          $fields[] = 'event.event_remarks';
-          $fields[] = 'occurrence.occurrence_remarks';
-        }
-        elseif (preg_match('/^#organism_quantity(.*)#$/', $field)) {
-          $fields[] = 'occurrence.organism_quantity';
-          $fields[] = 'occurrence.zero_abundance';
-        }
-        elseif (preg_match('/^#(lat_lon|lat|lon)#$/', $field) || preg_match('/^#(lat|lon):(.*)#$/', $field)) {
-          $fields[] = 'location.point';
-        }
-        elseif ($field === '#locality#') {
-          $fields[] = 'location.verbatim_locality';
-          $fields[] = 'location.higher_geography';
-        }
-        elseif ($field === '#occurrence_media#') {
-          $fields[] = 'occurrence.media';
-        }
-        elseif ($field === '#status_icons#') {
-          $fields[] = 'metadata';
-          $fields[] = 'identification';
-          $fields[] = 'occurrence.zero_abundance';
-        }
-        elseif (preg_match('/^#verification_status(.*)#$/', $field)) {
-          $fields[] = 'identification.verification_status';
-        }
-        elseif (preg_match('/^#verification_substatus(.*)#$/', $field)) {
-          $fields[] = 'identification.verification_substatus';
-        }
-        elseif (preg_match('/^#query(.*)#$/', $field)) {
-          $fields[] = 'identification.query';
-        }
-        elseif (preg_match('/^#attr_value:(event|sample|parent_event|occurrence):(\d+)#$/', $field, $matches)) {
-          $key = $matches[1] === 'parent_event' ? 'parent_attributes' : 'attributes';
-          // Tolerate sample or event for entity parameter.
-          $entity = in_array($matches[1], ['sample', 'event', 'parent_event']) ? 'event' : 'occurrence';
-          $fields[] = "$entity.$key";
-        }
-        elseif (preg_match('/^#null_if_zero:([a-z_]+(\.[a-z_]+)*)#$/', $field, $matches)) {
-          $fields[] = $matches[1];
-        }
-        elseif (preg_match('/^#datetime:([a-z_]+(\.[a-z_]+)*):.*#$/', $field, $matches)) {
-          $fields[] = $matches[1];
-        }
-        elseif (preg_match('/^#sref_system:([a-z_]+(\.[a-z_]+)*):.*#$/', $field, $matches)) {
-          $fields[] = $matches[1];
-        }
-      }
-      $postObj->_source = array_values(array_unique($fields));
-    }
-    $r = json_encode($postObj, JSON_UNESCAPED_SLASHES);
-    return str_replace(['"#emptyobj#"', '"#emptyarray#"'], ['{}', '[]'], $r);
-  }
-
-  /**
-   * Works out the actual URL required for an Elasticsearch request.
-   *
-   * Caters for fact that the URL is different when scrolling to the next page
-   * of a scrolled request. For unscrolled URLs adds the GET parameters to the
-   * request if appropriate.
-   *
-   * @param string $url
-   *   Elasticsearch alias URL.
-   *
-   * @return string
-   *   Revised URL.
-   */
-  private function getEsActualUrl($url) {
-    if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'nextPage') {
-      // On subsequent hits to a scrolled request, the URL is different.
-      return preg_replace('/[a-z0-9_-]*\/_search$/', '_search/scroll', $url);
-    }
-    else {
-      if (!empty($_GET)) {
-        $params = array_merge($_GET);
-        // Don't pass on the auth tokens.
-        unset($params['user']);
-        unset($params['website_id']);
-        unset($params['secret']);
-        unset($params['format']);
-        unset($params['scroll']);
-        unset($params['scroll_id']);
-        unset($params['callback']);
-        unset($params['aggregation_type']);
-        unset($params['state']);
-        unset($params['uniq_id']);
-        unset($params['_']);
-        if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'initial') {
-          $params['scroll'] = SCROLL_TIMEOUT;
-        }
-        $url .= '?' . http_build_query($params);
-      }
-      return $url;
-    }
-  }
-
-  /**
-   * Builds the header for the top of a scrolled Elasticsearch output.
-   *
-   * For example, adds the CSV row.
-   *
-   * @param string $format
-   *   Data format, either json or csv.
-   *
-   * @return string
-   *   Header content.
-   */
-  private function getEsOutputHeader($format) {
-    if ($format === 'csv') {
-      $csvTemplate = $this->getEsCsvTemplate();
-      $row = array_map(function ($column) {
-        // Cells containing a quote, a comma or a new line will need to be
-        // contained in double quotes.
-        if (preg_match('/["\n,]/', $column['caption'])) {
-          // Double quotes within cells need to be escaped.
-          return '"' . preg_replace('/"/', '""', $column['caption']) . '"';
-        }
-        return $column['caption'];
-      }, array_values($csvTemplate));
-      return chr(0xEF) . chr(0xBB) . chr(0xBF) . implode(',', $row) . "\n";
-    }
-    return '';
-  }
-
-  /**
-   * Determines the columns template for an ES download.
-   *
-   * @return array
-   *   List of column definitions to download.
-   */
-  private function getEsCsvTemplate() {
-    // Start with the template columns set, or an empty array.
-    if (array_key_exists($this->esCsvTemplate, $this->esCsvTemplates)) {
-      $csvTemplate = $this->esCsvTemplates[$this->esCsvTemplate];
-    } else {
-      $csvTemplate = [];
-    }
-    // Append extra columns.
-    if (!empty($this->esCsvTemplateAddColumns)) {
-      if (isset($this->esCsvTemplateAddColumns[0])) {
-        // New format, v4+.
-        $csvTemplate = array_merge($csvTemplate, $this->esCsvTemplateAddColumns);
-      }
-      else {
-        // Old format <v4.
-        kohana::log('alert', 'Deprecated Elasticsearch download addColumns format detected.');
-        foreach ($this->esCsvTemplateAddColumns as $caption => $field) {
-          $csvTemplate[] = ['caption' => $caption, 'field' => $field];
-        }
-      }
-    }
-    // Remove any that need to be removed.
-    if (!empty($this->esCsvTemplateRemoveColumns)) {
-      foreach ($this->esCsvTemplateRemoveColumns as $col) {
-        unset($csvTemplate[$col]);
-      }
-    }
-    return $csvTemplate;
-  }
-
-  /**
-   * Builds an empty CSV file ready to received a paged ES request.
-   *
-   * @param string $format
-   *   Data format, either json or csv.
-   *
-   * @return array
-   *   File array containing the name and handle.
-   */
-  private function preparePagingFile($format) {
-    rest_utils::purgeOldFiles('download', 3600);
-    $uniqId = uniqid('', TRUE);
-    $filename = "download-$uniqId.$format";
-    // Reopen file for appending.
-    $handle = fopen(DOCROOT . "download/$filename", "w");
-    fwrite($handle, $this->getEsOutputHeader($format));
-    return [
-      'uniq_id' => $uniqId,
-      'filename' => $filename,
-      'handle' => $handle,
-      'done' => 0,
-    ];
-  }
-
-  /**
-   * Create a temporary file that will be used to build an ES download.
-   *
-   * @param string $format
-   *   Data format, either json or csv.
-   *
-   * @return array
-   *   File details, array containing filename and handle.
-   */
-  private function openPagingFile($format) {
-    $uniqId = isset($_GET['uniq_id']) ? $_GET['uniq_id'] : $_GET['scroll_id'];
-    $cache = Cache::instance();
-    $info = $cache->get("es-paging-$uniqId");
-    if ($info === NULL) {
-      RestObjects::$apiResponse->fail('Bad request', 400, 'Invalid scroll_id or uniq_id parameter.');
-    }
-    $info['handle'] = fopen(DOCROOT . "download/$info[filename]", 'a');
-    return $info;
-  }
-
-  /**
-   * Works out the mode of paging for chunked downloads.
-   *
-   * Supports Elasticsearch scroll or composite aggregations for paging. Mode
-   * is stored in $this->pagingMode.
-   */
-  private function getPagingMode($format) {
-    $this->pagingModeState = empty($_GET['state']) ? 'initial' : $_GET['state'];
-    if (isset($_GET['aggregation_type']) && $_GET['aggregation_type'] === 'composite') {
-      $this->pagingMode = 'composite';
-    }
-    elseif ($format === 'csv') {
-      $this->pagingMode = 'scroll';
-    }
-  }
-
-  /**
-   * Proxies the current request to a provided URL.
-   *
-   * Eg. used when proxying to an Elasticsearch instance.
-   *
-   * @param string $url
-   *   URL to proxy to.
-   */
-  private function proxyToEs($url) {
-    $format = isset($_GET['format']) && $_GET['format'] === 'csv' ? 'csv' : 'json';
-    $postData = file_get_contents('php://input');
-    $postObj = empty($postData) ? [] : json_decode($postData);
-    $this->getPagingMode($format);
-    $this->getColumnsTemplate($postObj);
-    $file = NULL;
-    if ($this->pagingModeState === 'initial') {
-      // First iteration of a scrolled request, so prepare an output file.
-      $file = $this->preparePagingFile($format);
-    }
-    elseif ($this->pagingModeState === 'nextPage') {
-      $file = $this->openPagingFile($format);
-    }
-    else {
-      echo $this->getEsOutputHeader($format);
-    }
-    $postData = $this->getEsPostData($postObj, $format, $file, preg_match('/\/_search/', $url));
-    $actualUrl = $this->getEsActualUrl($url);
-    $session = curl_init($actualUrl);
-    if (!empty($postData) && $postData !== '[]') {
-      curl_setopt($session, CURLOPT_POST, 1);
-      curl_setopt($session, CURLOPT_POSTFIELDS, $postData);
-    }
-    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-      curl_setopt($session, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
-    }
-    curl_setopt($session, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($session, CURLOPT_HEADER, FALSE);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($session, CURLOPT_REFERER, $_SERVER['HTTP_HOST']);
-    // Do the POST and then close the session.
-    $response = curl_exec($session);
-    $headers = curl_getinfo($session);
-    $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
-    if ($httpCode !== 200) {
-      $error = curl_error($session);
-      kohana::log('error', 'ES proxy request failed: ' . $error . ': ' . json_encode($error));
-      kohana::log('error', 'URL: ' . $actualUrl);
-      kohana::log('error', 'Query: ' . $postData);
-      kohana::log('error', 'Response: ' . $response);
-      RestObjects::$apiResponse->fail('Internal server error', 500, json_encode($error));
-    }
-    curl_close($session);
-    // Will need decoded data for processing CSV.
-    if ($format === 'csv') {
-      $data = json_decode($response, TRUE);
-      if (!empty($data['error'])) {
-        kohana::log('error', 'Bad ES Rest query response: ' . json_encode($data['error']));
-        kohana::log('error', 'Query: ' . $postData);
-        RestObjects::$apiResponse->fail('Bad request', 400, json_encode($data['error']));
-      }
-      // Find the list of documents or aggregation output to add to the CSV.
-      $itemList = $this->pagingMode === 'composite'
-        ? $data['aggregations']['_rows']['buckets']
-        : $data['hits']['hits'];
-      if ($this->pagingMode === 'composite' && !empty($data['aggregations']['_count'])) {
-        $file['total'] = $data['aggregations']['_count']['value'];
-      }
-    }
-    // First response from a scroll, need to grab the scroll ID.
-    if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'initial') {
-      $file['scroll_id'] = $data['_scroll_id'];
-      // ES6/7 tolerance.
-      $file['total'] = isset($data['hits']['total']['value']) ? $data['hits']['total']['value'] : $data['hits']['total'];
-    }
-    elseif ($this->pagingMode === 'scroll' && $this->pagingModeState === 'nextPage') {
-      $file['scroll_id'] = $_GET['scroll_id'];
-    }
-
-    if ($this->pagingMode === 'off') {
-      switch ($format) {
-        case 'csv':
-          header('Content-type: text/csv');
-          $out = fopen('php://output', 'w');
-          $this->esToCsv($itemList, $out);
-          fclose($out);
-          break;
-
-        case 'json':
-          if (array_key_exists('charset', $headers)) {
-            $headers['content_type'] .= '; ' . $headers['charset'];
-          }
-          header('Content-type: ' . $headers['content_type']);
-          echo $response;
-          break;
-
-        default:
-          throw new exception("Invalid format $format");
-      }
-    }
-    else {
-      switch ($format) {
-        case 'csv':
-          $this->esToCsv($itemList, $file['handle']);
-          break;
-
-        case 'json':
-          // Append a separator to the output file.
-          fwrite($file['handle'], "\n~~~\n");
-          break;
-
-        default:
-          throw new exception("Invalid format $format");
-      }
-      fclose($file['handle']);
-      unset($file['handle']);
-      $done = FALSE;
-      if ($this->pagingMode === 'scroll') {
-        $file['done'] = min($file['total'], $file['done'] + MAX_ES_SCROLL_SIZE);
-        $done = $file['done'] >= $file['total'];
-      }
-      elseif ($this->pagingMode === 'composite') {
-        if ($format === 'csv') {
-          $file['done'] = $file['done'] + count($itemList);
-        }
-        $data = json_decode($response, TRUE);
-        // If we know the total, use that to set done state, otherwise wait for empty response.
-        if (isset($file['total'])) {
-          $done = $file['done'] >= $file['total'];
-        }
-        else {
-          $done = count($data['aggregations']['_rows']['buckets']) === 0;
-        }
-        if (empty($data['aggregations']['_rows']['after_key'])) {
-          unset($file['after_key']);
-        }
-        else {
-          $file['after_key'] = $data['aggregations']['_rows']['after_key'];
-        }
-      }
-      $file['state'] = $done ? 'done' : 'nextPage';
-      $cache = Cache::instance();
-      if ($done) {
-        $cache->delete("es-paging-$file[uniq_id]", $file);
-        unset($file['scroll_id']);
-        $this->zip($file);
-      }
-      else {
-        $cache->set("es-paging-$file[uniq_id]", $file);
-      }
-      $file['filename'] = url::base() . 'download/' . $file['filename'];
-      header('Content-type: application/json');
-      // Allow for a JSONP cross-site request.
-      if (array_key_exists('callback', $_GET)) {
-        echo $_GET['callback'] . "(" . json_encode($file) . ")";
-      }
-      else {
-        echo json_encode($file);
-      }
-    }
-  }
-
-  /**
-   * Zip the CSV file ready for download.
-   *
-   * @param array $file
-   *   File details. The filename will be modified to reflect the zip file name.
-   */
-  private function zip(array &$file) {
-    $zip = new ZipArchive();
-    $zipFile = DOCROOT . 'download/' . basename($file['filename'], '.csv') . '.zip';
-    if ($zip->open($zipFile, ZipArchive::CREATE) !== TRUE) {
-      throw new exception("Cannot create zip file $zipFile.");
-    }
-    $zip->addFile(DOCROOT . 'download/' . $file['filename'], $file['filename']);
-    $zip->close();
-    unlink(DOCROOT . 'download/' . $file['filename']);
-    $file['filename'] = basename($file['filename'], '.csv') . '.zip';
-  }
-
-  /**
-   * Converts an Elasticsearch response to a chunk of CSV data.
-   *
-   * @param string $itemList
-   *   Decoded list of data from an Elasticsearch search.
-   * @param int $handle
-   *   File or output buffer handle.
-   */
-  private function esToCsv($itemList, $handle) {
-    if (empty($itemList)) {
-      return;
-    }
-    $esCsvTemplate = $this->getEsCsvTemplate();
-    foreach ($itemList as $item) {
-      $row = [];
-      foreach ($esCsvTemplate as $source) {
-        $this->copyIntoCsvRow($item, $source['field'], $row);
-      }
-      fputcsv($handle, $row);
-    };
-  }
-
-  /**
-   * Special field handler returns an empty string. This is useful
-   * where the output CSV must contain a column to which no
-   * useful data can be mapped.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Empty string.
-   */
-  private function esGetSpecialFieldBlank(array $doc) {
-    return '';
-  }
-
-  /**
-   * Special field handler for Elasticsearch to combine
-   * the sample and occurrence comment.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Combined comment string.
-   */
-  private function esGetSpecialFieldSampleOccurrenceComment(array $doc) {
-    $oComment = isset($doc['occurrence']['occurrence_remarks']) ? $doc['occurrence']['occurrence_remarks'] : '';
-    $sComment = isset($doc['event']['event_remarks']) ? $doc['event']['event_remarks'] : '';
-    if ($oComment !== '' && $sComment !== '') {
-      return "Record comment: $oComment Sample comment: $sComment";
-    }
-    elseif ($oComment !== '') {
-      return "Record comment: $oComment";
-    }
-    elseif ($sComment !== '') {
-      return "Sample comment: $sComment";
-    }
-    else {
-      return '';
-    }
-  }
-
-  /**
-   * Special field handler ES datetime fields to output with provided format.
-   *
-   * Return the datetime as a string formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Provided parameters:
-   *   1. ES field
-   *   2. datetime format
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldDatetime(array $doc, array $params) {
-    if (count($params) !== 2) {
-      return 'Incorrect params for Datetime field';
-    }
-    $dtvalue = $this->getRawEsFieldValue($doc, $params[0]);
-    $dt = DateTime::createFromFormat('Y-m-d G:i:s.u', $dtvalue);
-    if ($dt === FALSE) {
-      return  $dtvalue;
-    } else {
-      return $dt->format($params[1]);
-    }
-  }
-
-  /**
-   * Special field handler for ES spatial ref system fields.
-   *
-   * Return the spatial ref system formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Provided parameters:
-   *   1. ES field
-   *   2. format identifier
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldSrefSystem(array $doc, array $params) {
-    if (count($params) !== 2) {
-      return 'Incorrect params for sref system field';
-    }
-    $value = strval($this->getRawEsFieldValue($doc, $params[0]));
-    if ($params[1] === 'alphanumeric') {
-      // Ensure that EPSG codes are converted to alphanumeric string.
-      // Provides backward compatibility with pre-ES downloads.
-      if ($value === '4326') {
-        return 'WGS84';
-      }
-      else if ($value === '27700') {
-        return 'OSGB36';
-      }
-      else {
-        return strtoupper($value);
-      }
-    }
-    else {
-      return $value;
-    }
-  }
-
-  /**
-   * Special field handler for ES verification status.
-   *
-   * Return the verification status formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldVerificationStatus(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for verification status field';
-    }
-    $value = $this->getRawEsFieldValue($doc, 'identification.verification_status');
-    if ($params[0] === 'astext') {
-      // Provides backward compatibility with pre-ES downloads.
-      if($value === 'V'){
-        return 'Accepted';
-      }
-      elseif ($value === 'C'){
-        return 'Unconfirmed';
-      }
-      elseif ($value === 'R'){
-        return 'Rejected';
-      }
-      elseif ($value === 'I'){
-        return 'Input still in progress';
-      }
-      elseif ($value === 'D'){
-        return 'Queried';
-      }
-      elseif ($value === 'S'){
-        return 'Awaiting check';
-      }
-      else {
-        return $value;
-      }
-    }
-    else {
-      return $value;
-    }
-  }
-
-  /**
-   * Special field handler for ES verification status.
-   *
-   * Return the verification status formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldVerificationSubstatus(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for verification substatus field';
-    }
-    $status = $this->getRawEsFieldValue($doc, 'identification.verification_status');
-    $value = $this->getRawEsFieldValue($doc, 'identification.verification_substatus');
-    if ($params[0] === 'astext') {
-      // Provides backward compatibility with pre-ES downloads.
-      if($status === 'V'){
-        if ($value === '1') {
-          return 'Correct';
-        }
-        elseif ($value === '2') {
-          return 'Considered correct';
-        }
-        else {
-          return NULL;
-        }
-      }
-      elseif ($status === 'C'){
-        if ($value === '3') {
-          return 'Plausible';
-        }
-        else {
-          return 'Not reviewed';
-        }
-      }
-      elseif ($status === 'R'){
-        if ($value === '4') {
-          return 'Unable to verify';
-        }
-        elseif ($value === '5') {
-          return 'Incorrect';
-        }
-        else {
-          return NULL;
-        }
-      }
-      else {
-        return NULL;
-      }
-    }
-    else {
-      return $value;
-    }
-  }
-
-  /**
-   * Special field handler for ES identification query status.
-   *
-   * Return the identification query status formatted as specified.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldQuery(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for query field';
-    }
-    $value = $this->getRawEsFieldValue($doc, 'identification.query');
-    if ($params[0] === 'astext') {
-      // Provides backward compatibility with pre-ES downloads.
-      if($value === 'A'){
-        return 'Answered';
-      }
-      elseif ($value === 'Q'){
-        return 'Queried';
-      }
-      else {
-        return $value;
-      }
-    }
-    else {
-      return $value;
-    }
-  }
-
-  /**
-   * Special field handler for the associations data.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted value.
-   */
-  private function esGetSpecialFieldAssociations(array $doc) {
-    $output = [];
-    if (isset($doc['occurrence']['associations'])) {
-      foreach ($doc['occurrence']['associations'] as $assoc) {
-        $label = $assoc->accepted_name;
-        if (!empty($assoc->vernacular_name)) {
-          $label = $assoc->vernacular_name + " ($label)";
-        }
-      }
-    }
-    return implode('; ', $output);
-  }
-
-  /**
-   * Special field handler for Elasticsearch custom attribute values.
-   *
-   * Concatenates values to a semi-colon separated string. The parameters
-   * should be:
-   * * 0 - the entity (event|occurrence)
-   * * 1 - the attribute ID.
-   * Multiple attribute values are returned joined by semi-colons.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldAttrValue(array $doc, array $params) {
-    $r = [];
-    if (in_array($params[0], ['occurrence', 'sample', 'event', 'parent_event'])) {
-      // Tolerate sample or event for sample attributes.
-      $key = $params[0] === 'parent_event' ? 'parent_attributes' : 'attributes';
-      $entity = in_array($params[0], ['sample', 'event', 'parent_event']) ? 'event' : 'occurrence';
-      if (isset($doc[$entity][$key])) {
-        foreach ($doc[$entity][$key] as $attr) {
-          if ($attr['id'] == $params[1]) {
-            $r[] = $attr['value'];
-          }
-        }
-      }
-    }
-    return implode('; ', $r);
-  }
-
-  /**
-   * Special field handler for the datacleaner icons field.
-   *
-   * Text representation of icons for download.
-   */
-  private function esGetSpecialFieldDataCleanerIcons(array $doc) {
-    $autoChecks = $doc['identification']['auto_checks'];
-    $output = [];
-    if ($autoChecks['enabled'] === 'false') {
-      $output[] = 'Automatic rule checks will not be applied to records in this dataset.';
-    }
-    elseif (isset($autoChecks['result'])) {
-      if ($autoChecks['result'] === 'true') {
-        $output[] = 'All automatic rule checks passed.';
-      }
-      elseif ($autoChecks['result'] === 'false') {
-        if (count($autoChecks['output']) > 0) {
-          // Add an icon for each rule violation.
-          foreach($autoChecks['output'] as $violation) {
-            $output[] = $violation['message'];
-          }
-        }
-        else {
-          $output[] = 'Automatic rule checks flagged issues with this record';
-        }
-      }
-    } else {
-      // Not yet checked.
-      $output[] = 'Record not yet checked against rules.';
-    }
-    return implode('; ', $output);
-  }
-
-  /**
-   * Special field handler for datasource codes.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted value including website, survey dataset and,
-   *   optionally, group info.
-   */
-  private function esGetSpecialFieldDatasourceCode(array $doc, $params) {
-    if (count($params) > 1) {
-      return 'Incorrect params for datasource code field (must be 0 or 1)';
-    }
-    $w = $doc['metadata']['website'];
-    $s = $doc['metadata']['survey'];
-    if (isset($doc['metadata']['group'])) {
-      $g = $doc['metadata']['group'];
-    }
-    else {
-      $g = array('title' => '', 'id' => '');
-    }
-    if (count($params)) {
-      $pattern = $params[0];
-    }
-    else {
-      $pattern = '<wi> (<wt>) | <si> (<st>)';
-    }
-    $regpatterns = array('/<wi>/', '/<wt>/', '/<si>/' , '/<st>/', '/<gi>/', '/<gt>/');
-    $replacements = array($w['id'], $w['title'], $s['id'], $s['title'], $g['id'] , $g['title']);
-    $output = preg_replace($regpatterns, $replacements, $pattern);
-    // Disregarding whitespace, if the output string ends in something in curly braces,
-    // then remove it. Allows us to conditionally remove a separator if there's no group.
-    $output = preg_replace('/\s*{.*}\s*$/', '', $output);
-    // Remvove curly braces from output.
-    $output = preg_replace('/({|})/', '', $output);
-    return $output;
-  }
-
-  /**
-   * Special field handler for Elasticsearch event dates.
-   *
-   * Converts event.date_from and event.date_to to a readable date string, e.g.
-   * for inclusion in CSV output. Also handles date fields when prefixed by
-   * `key`, e.g. when used in composite aggregation sources.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Provided parameters in field definition.
-   *   Can be empty or a string to specify a format.
-   *
-   * @return string
-   *   Formatted readable date.
-   */
-  private function esGetSpecialFieldEventDate(array $doc, array $params) {
-    if (count($params) > 1) {
-      return 'Incorrect params for formatted date (must be zero or one)';
-    }
-    if (count($params)) {
-      $format = $params[0];
-    }
-    else {
-      $format = "";
-    }
-    // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['event'];
-    $start = isset($root['date_start']) ? $root['date_start'] :
-      (isset($root['event-date_start']) ? $root['event-date_start'] : '');
-    $end = isset($root['date_end']) ? $root['date_end'] :
-      (isset($root['event-date_end']) ? $root['event-date_end'] : '');
-    if (preg_match('/^\-?\d+$/', $start)) {
-      $start = date('d/m/Y', $start / 1000);
-    }
-    if (preg_match('/^\-?\d+$/', $end)) {
-      $end = date('d/m/Y', $end / 1000);
-    }
-    if (preg_match('/^(\d\d\d\d)-(\d\d)-(\d\d)$/', $start, $matches)) {
-      $start = $matches[3] . '/' . $matches[2] . '/' . $matches[1];
-    }
-    if (preg_match('/^(\d\d\d\d)-(\d\d)-(\d\d)$/', $end, $matches)) {
-      $end = $matches[3] . '/' . $matches[2] . '/' . $matches[1];
-    }
-    if (empty($start) && empty($end)) {
-      if ($format === 'mapmate') {
-        return '';
-      } else {
-        return 'Unknown';
-      }
-    }
-    elseif (empty($end)) {
-      if ($format === 'mapmate') {
-        // Mapmate can't deal with unbound ranges
-        // - replace with date of known bound.
-        return $start;
-      } else {
-        return "After $start";
-      }
-    }
-    elseif (empty($start)) {
-      if ($format === 'mapmate') {
-        // Mapmate can't deal with unbound ranges
-        // - replace with date of known bound.
-        return $end;
-      } else {
-        return "Before $end";
-      }
-    }
-    elseif ($start === $end) {
-      return $start;
-    }
-    else {
-      if ($format === 'mapmate') {
-        return $start . '-' . $end;
-      } else {
-        return "$start to $end";
-      }
-    }
-  }
-
-  /**
-   * Special field handler for Elasticsearch higher geography.
-   *
-   * Converts location.higher_geography to a string, e.g. for inclusion in CSV
-   * output. Configurable output by passing parameters:
-   * * type - limit output to this type.
-   * * field - limit output to content of this field (name, id, type or code).
-   * * format - can be left empty or set to either json or mapmate.
-   * E.g. pass type=Country, field=name, text=true to convert to a plaintext
-   * Country name.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Provided parameters in field definition.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldHigherGeography(array $doc, array $params) {
-    if (isset($doc['location']) && isset($doc['location']['higher_geography'])) {
-      if (empty($params) || empty($params[0])) {
-        $r = $doc['location']['higher_geography'];
-      }
-      else {
-        $r = [];
-        foreach ($doc['location']['higher_geography'] as $loc) {
-          if (strcasecmp($loc['type'], $params[0]) === 0) {
-            if (!empty($params[1])) {
-              $r[] = $loc[$params[1]];
-            }
-            else {
-              $r[] = $loc;
-            }
-          }
-        }
-      }
-      if (isset($params[2]) && $params[2] === 'json') {
-        return json_encode($r);
-      }
-      else {
-        $outputList = [];
-        foreach ($r as $outputItem) {
-          $outputList[] = is_array($outputItem) ? implode('; ', $outputItem) : $outputItem;
-        }
-        if (isset($params[2]) && $params[2] === 'mapmate') {
-          if (count($outputList) === 1) {
-            return $outputList[0];
-          }
-          else {
-            return 0;
-          }
-        }
-        else {
-          return implode(' | ', $outputList);
-        }
-      }
-    }
-    else {
-      if (isset($params[2]) && $params[2] === 'mapmate') {
-        return 0;
-      }
-      else {
-        return '';
-      }
-    }
-  }
-
-  /**
-   * Special field handler for Elasticsearch sex with format options.
-   *
-   * Converts occurrence.sex to values as specified in format option.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted sex.
-   */
-  private function esGetSpecialFieldSex(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for formatted sex';
-    }
-    $value = isset($doc['occurrence']['sex']) ? strtolower($doc['occurrence']['sex']) : '';
-    if ($params[0] === 'mapmate') {
-      // Provides compatibility for import to MapMate
-      switch($value) {
-        case 'female':
-          return 'f';
-
-        case 'male':
-          return 'm';
-
-        case 'mixed':
-          return 'g';
-
-        case 'queen':
-          return 'q';
-
-        case 'not recorded':
-        case 'not known':
-        case 'unknown':
-        case 'unsexed:':
-          return 'u';
-
-        default:
-          return $value;
-      }
-    }
-    else {
-      return $value;
-    }
-  }
-
-  /**
-   * Special field handler for Elasticsearch life stage with format options.
-   *
-   * Converts occurrence.life_stage to values as specified in format option.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   An identifier for the format.
-   *
-   * @return string
-   *   Formatted life stage.
-   */
-  private function esGetSpecialFieldLifeStage(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for formatted life stage';
-    }
-    $value = isset($doc['occurrence']['life_stage']) ? strtolower($doc['occurrence']['life_stage']) : '';
-    if ($params[0] === 'mapmate') {
-      // Provides compatibility for import to MapMate
-      switch($value) {
-        case 'adult':
-        case 'adults':
-        case 'adult female':
-        case 'adult male':
-          return 'Adult';
-
-        case 'larva':
-          return 'Larval';
-
-        case 'not recorded':
-          return 'Not recorded';
-
-        case 'pre-adult':
-          return 'Subadult';
-
-        case 'In flower':
-          return 'Flowering';
-
-        default:
-          return $value;
-      }
-    }
-    else {
-      return $value;
-    }
-  }
-
-  /**
-   * Special field handler for Elasticsearch organism quantity.
-   *
-   * Allows organism quanities to be filtered/formatted as directed by params.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Provided parameters in field definition.
-   *
-   * @return string
-   *   A quantity formatted/filtered as indicated by passed parameter.
-   */
-  private function esGetSpecialFieldOrganismQuantity(array $doc, array $params) {
-    $format = !empty($params) ? $params[0] : '';
-    $quantity = !empty($doc['occurrence']['organism_quantity']) ? $doc['occurrence']['organism_quantity'] : '';
-    if (!empty($doc['occurrence']['zero_abundance']) && $doc['occurrence']['zero_abundance'] !== 'false') {
-      $zero = True;
-    }
-    else {
-      $zero = False;
-    }
-    switch($format) {
-      case 'mapmate':
-        // Mapmate will only accept integer values and uses a value
-        // of -7 to indicate a negative record. MapMate interprets
-        // a quantity of 0 to mean 'present'.
-        if ($zero || $quantity === '0') {
-          return -7;
-        }
-        elseif(preg_match('/^\d+$/', $quantity)) {
-          return (int)$quantity;
-        }
-        else {
-          return '';
-        }
-
-      case 'integer':
-        // Only return the value if it is an integer.
-        if(preg_match('/^\d+$/', $quantity)) {
-          return $quantity;
-        }
-        else {
-          return '';
-        }
-
-      case 'exclude_integer':
-        // Only return the value if it is not an integer.
-        if(!preg_match('/^\d+$/', $quantity)) {
-          return $quantity;
-        }
-        else {
-          return '';
-        }
-
-      default:
-        return $quantity;
-    }
-  }
-
-  /**
-   * Special field handler for latitude data.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted value.
-   */
-  private function esGetSpecialFieldLat(array $doc, array $params) {
-    // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
-    if (empty($root['point'])) {
-      return 'n/a';
-    }
-    $coords = explode(',', $root['point']);
-    $format = !empty($params) ? $params[0] : '';
-    switch($format) {
-      case 'decimal':
-        return $coords[0];
-
-      case 'nssuffix': // Implemented as the default.
-      default:
-        $ns = $coords[0] >= 0 ? 'N' : 'S';
-        $lat = number_format(abs($coords[0]), 3);
-        return "$lat$ns";
-    }
-  }
-
-  /**
-   * Special field handler for lat/lon data.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted value.
-   */
-  private function esGetSpecialFieldLatLon(array $doc) {
-    // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
-    if (empty($root['point'])) {
-      return 'n/a';
-    }
-    $coords = explode(',', $root['point']);
-    $ns = $coords[0] >= 0 ? 'N' : 'S';
-    $ew = $coords[1] >= 0 ? 'E' : 'W';
-    $lat = number_format(abs($coords[0]), 3);
-    $lon = number_format(abs($coords[1]), 3);
-    return "$lat$ns $lon$ew";
-  }
-
-  /**
-   * Special field handler for longitude data.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted value.
-   */
-  private function esGetSpecialFieldLon(array $doc, array $params) {
-    // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
-    if (empty($root['point'])) {
-      return 'n/a';
-    }
-    $coords = explode(',', $root['point']);
-    $format = !empty($params) ? $params[0] : "";
-    switch($format) {
-      case "decimal":
-        return $coords[1];
-
-      case "ewsuffix": // Implemented as the default.
-      default:
-        $ew = $coords[1] >= 0 ? 'E' : 'W';
-        $lon = number_format(abs($coords[1]), 3);
-        return "$lon$ew";
-    }
-  }
-
-  /**
-   * Special field handler for locality data.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted value containing a list of location names associated with the
-   *   record.
-   */
-  private function esGetSpecialFieldLocality(array $doc) {
-    $info = [];
-    if (!empty($doc['location']['verbatim_locality'])) {
-      $info[] = $doc['location']['verbatim_locality'];
-      if (!empty($doc['location']['higher_geography'])) {
-        foreach ($doc['location']['higher_geography'] as $loc) {
-          $info[] = "$loc[type]: $loc[name]";
-        }
-      }
-    }
-    return implode('; ', $info);
-  }
-
-  /**
-   * Special field handler for occurrence media data.
-   *
-   * Concatenates media to a string.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted value.
-   */
-  private function esGetSpecialFieldOccurrenceMedia(array $doc) {
-    if (!empty($doc['occurrence']['media'])) {
-      $items = [];
-      foreach ($doc['occurrence']['media'] as $m) {
-        $item = [
-          $m['path'],
-          empty($m['caption']) ? '' : $m['caption'],
-          empty($m['licence']) ? '' : $m['licence'],
-        ];
-        $items[] = implode('; ', $item);
-      }
-      return implode(' | ', $items);
-    }
-    return '';
-  }
-
-  /**
-   * Special field handler for status data.
-   *
-   * Returns text instead of icons (for download purposes).
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   *
-   * @return string
-   *   Formatted value.
-   */
-  private function esGetSpecialFieldStatusIcons(array $doc) {
-    $terms = [];
-    $recordStatusLookup = [
-      'V' => 'Accepted',
-      'V1' => 'Accepted as correct',
-      'V2' => 'Accepted as considered correct',
-      'C' => 'Not reviewed',
-      'C3' => 'Plausible',
-      'R' => 'Not accepted',
-      'R4' => 'Not accepted as unable to verify',
-      'R5' => 'Not accepted as incorrect',
-    ];
-    if (!empty($doc['identification'])) {
-      $status = $doc['identification']['verification_status'];
-      if (!empty($doc['identification']['verification_substatus']) && $doc['identification']['verification_substatus'] !== 0) {
-        $status .= $doc['identification']['verification_substatus'];
-      }
-      if (isset($recordStatusLookup[$status])) {
-        $terms[] = $recordStatusLookup[$status];
-      }
-      if (!empty($doc['identification']['query'])) {
-        $terms[] = $doc['identification']['query'] === 'A' ? 'Answered' : 'Queried';
-      }
-    }
-    if (!empty($doc['metadata'])) {
-      if (!empty($doc['metadata']['sensitive']) && $doc['metadata']['sensitive'] !== 'false') {
-        $terms[] = 'Sensitive';
-      }
-      if (!empty($doc['metadata']['confidential']) && $doc['metadata']['confidential'] !== 'false') {
-        $terms[] = 'Confidential';
-      }
-      if (!empty($doc['metadata']['created_by_id']) && $doc['metadata']['created_by_id'] === '1') {
-        $terms[] = 'Anonymous user';
-      }
-    }
-    if (!empty($doc['occurrence'])) {
-      if (!empty($doc['occurrence']['zero_abundance']) && $doc['occurrence']['zero_abundance'] !== 'false') {
-        $terms[] = 'Zero abundance';
-      }
-    }
-    return implode('; ', $terms);
-  }
-
-  /**
-   * Special field handler for ES fields that should treat zero as null.
-   *
-   * If the field value (fieldname in params) is zero, then return null, else
-   * return the original value.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param array $params
-   *   Provided parameters.
-   *
-   * @return string
-   *   Formatted string
-   */
-  private function esGetSpecialFieldNullIfZero(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for Null If Zero field';
-    }
-    $value = $this->getRawEsFieldValue($doc, $params[0]);
-    return ($value === '0' || $value === 0) ? NULL : $value;
-  }
-
-  /**
-   * Function to find the value stored in an ES doc for a field.
-   *
-   * @param array $doc
-   *   Document extracted from Elasticsearch.
-   * @param string $source
-   *   Fieldname, with nested segments separated by a period, e.g.
-   *   identification.verification_status.
-   *
-   * @return mixed
-   *   Data value or empty string if not found.
-   */
-  private function getRawEsFieldValue(array $doc, $source) {
-    $search = explode('.', $source);
-    $data = $doc;
-    $failed = FALSE;
-    foreach ($search as $field) {
-      if (isset($data[$field])) {
-        $data = $data[$field];
-      }
-      else {
-        $failed = TRUE;
-        break;
-      }
-    }
-    if (isset($data['value_as_string'])) {
-      // A formatted aggregation response stored in value property.
-      return $data['value_as_string'];
-    }
-    elseif (isset($data['value'])) {
-      // An aggregation response stored in value property.
-      return $data['value'];
-    }
-    return $failed ? '' : $data;
-  }
-
-  /**
-   * Copies a source field from an Elasticsearch document into a CSV row.
-   *
-   * @param array $doc
-   *   Elasticsearch document.
-   * @param string $sourceField
-   *   Source field name or special field name.
-   * @param array $row
-   *   Output row array, will be update with the value to output.
-   */
-  private function copyIntoCsvRow(array $doc, $sourceField, array &$row) {
-    // Fields starting '_' are special fields in the root of the doc. Others
-    // are in the _source element.
-    $docSource = strpos($sourceField, '_') === 0 || !isset($doc['_source']) ? $doc : $doc['_source'];
-    if (preg_match('/^#(?P<sourceType>[a-z_]*):?(?<params>.*)?#$/', $sourceField, $matches)) {
-      $fn = 'esGetSpecialField' .
-        str_replace('_', '', ucwords($matches['sourceType']));
-
-      // Split $matches['params'] into an array using colon as a separator.
-      // First replace escaped colons ('\:') with another marker ('EscapedColon')
-      // converting back to colons in the resulting array elements.
-      $params = empty($matches['params']) ? [] : explode(':', str_replace('\:', 'EscapedColon', $matches['params']));
-      foreach ($params as &$param) {
-        $param = str_replace('EscapedColon', ':', $param);
-      }
-      if ($matches['sourceType'] === 'id') {
-        // Resets docSource to root if special function to format doc ID.
-        $docSource = $doc;
-      }
-      if (method_exists($this, $fn)) {
-        $row[] = $this->$fn($docSource, $params);
-      }
-      else {
-        $row[] = "Invalid field $sourceField";
-      }
-    }
-    else {
-      if (!preg_match('/^[a-z0-9_\-]+(\.[a-z0-9_\-]+)*$/', $sourceField)) {
-        $row[] = "Invalid field $sourceField";
-      }
-      else {
-        $row[] = $this->getRawEsFieldValue($docSource, $sourceField);
-      }
-    }
-  }
-
-  /**
-   * Handles a request to Elasticsearch via a proxy.
-   */
-  private function elasticRequest() {
-    $esConfig = kohana::config('rest.elasticsearch');
-    $thisProxyCfg = $esConfig[$this->elasticProxy];
-    $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
-    if (isset($thisProxyCfg['allowed'])) {
-      $allowed = FALSE;
-      if (isset($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])])) {
-        foreach ($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])] as $regex => $description) {
-          if (preg_match($regex, $resource)) {
-            $allowed = TRUE;
-          }
-        }
-      }
-      if (!$allowed) {
-        RestObjects::$apiResponse->fail('Bad request', 400,
-          "Elasticsearch request $resource ($_SERVER[REQUEST_METHOD]) disallowed by Warehouse REST API proxy configuration.");
-      }
-    }
-    $url = "$thisProxyCfg[url]/$thisProxyCfg[index]/$resource";
-    $this->proxyToEs($url);
   }
 
   /**
@@ -3674,7 +1927,7 @@ class Rest_Controller extends Controller {
     $filter = [];
     // @todo Apply permissions for user or website & write tests
     // load the filter associated with the project ID
-    if (isset($this->clientSystemId)) {
+    if (isset(RestObjects::$clientSystemId)) {
       $filter = $this->loadFilterForProject($this->request['proj_id']);
     }
     elseif (isset(RestObjects::$clientUserId)) {
@@ -3684,21 +1937,27 @@ class Rest_Controller extends Controller {
       if (!empty($_GET['filter_id'])) {
         $filter = $this->getPermissionsFilterDefinition();
       }
-      elseif (!empty($this->resourceOptions['limit_to_own_data'])) {
+      elseif (!empty($this->resourceOptions['limit_to_own_data']) || RestObjects::$scope === 'userWithinWebsite') {
         // Default filter - the user's records for this website only.
-        $filter = array(
+        $filter = [
           'website_list' => RestObjects::$clientWebsiteId,
           'created_by_id' => RestObjects::$clientUserId,
-        );
+        ];
+      }
+      elseif (RestObjects::$scope === 'user') {
+        // Default filter - the user's records for this website only.
+        $filter = [
+          'created_by_id' => RestObjects::$clientUserId,
+        ];
       }
     }
     else {
       if (!isset(RestObjects::$clientWebsiteId)) {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'Minimal filter on website ID not provided.');
       }
-      $filter = array(
+      $filter = [
         'website_list' => RestObjects::$clientWebsiteId,
-      );
+      ];
     }
     // The project's filter acts as a context for the report, meaning it
     // defines the limit of all the records that are available for this project.
@@ -3706,13 +1965,12 @@ class Rest_Controller extends Controller {
       $params["{$key}_context"] = $value;
     }
     $params['system_user_id'] = $this->serverUserId;
-    if (isset($this->clientSystemId)) {
-      // For client systems, the project defines how records are allowed to be
-      // shared with this client.
-      $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
+    if (substr(RestObjects::$scope, 0, 4) !== 'user') {
+      // User based scope handled above - others map to sharing mode.
+      $params['sharing'] = RestObjects::$scope;
     }
     $params = array_merge(
-      array('limit' => REST_API_DEFAULT_PAGE_SIZE),
+      ['limit' => REST_API_DEFAULT_PAGE_SIZE],
       $params
     );
     // Get the output, setting the option to load a pg result object rather
@@ -3837,10 +2095,10 @@ class Rest_Controller extends Controller {
    * either parameter is not an integer.
    */
   private function checkPaginationParams() {
-    $this->request = array_merge(array(
+    $this->request = array_merge([
       'page' => 1,
       'page_size' => REST_API_DEFAULT_PAGE_SIZE,
-    ), $this->request);
+    ], $this->request);
     $this->checkInteger($this->request['page'], 'page');
     $this->checkInteger($this->request['page_size'], 'page_size');
   }
@@ -3869,7 +2127,8 @@ class Rest_Controller extends Controller {
         (isset($this->authConfig) && array_key_exists('allow_cors', $this->authConfig))) {
       if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' || $this->authConfig['allow_cors'] === TRUE) {
         $corsSetting = '*';
-      } elseif (is_array($this->authConfig['allow_cors'])) {
+      }
+      elseif (is_array($this->authConfig['allow_cors'])) {
         // If list of domain patterns specified, allow only if a match.
         foreach ($this->authConfig['allow_cors'] as $domainRegex) {
           if (preg_match("/$domainRegex/", $_SERVER['HTTP_ORIGIN'])) {
@@ -3914,9 +2173,16 @@ class Rest_Controller extends Controller {
       if ($this->isHttps || array_key_exists('allow_http', $cfg) || in_array('allow_http', $cfg)) {
         $method = ucfirst($method);
         // Try this authentication method.
-        call_user_func(array($this, "authenticateUsing$method"));
+        if (method_exists($this, "authenticateUsing$method")) {
+          call_user_func(array($this, "authenticateUsing$method"));
+        }
         if ($this->authenticated) {
-          $this->authMethod = $method;
+          RestObjects::$authMethod = $method;
+          if (!empty(RestObjects::$clientUserId)) {
+            // Pass through to ORM.
+            global $remoteUserId;
+            $remoteUserId = RestObjects::$clientUserId;
+          }
           // Double checking required for Elasticsearch proxy.
           if ($this->elasticProxy) {
             if (empty($cfg['resource_options']['elasticsearch'])) {
@@ -3973,52 +2239,17 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Retrieves the Bearer access token from the Authoriztion header.
-   *
-   * @param bool $wantJwt
-   *   Set to TRUE to retrieve JWT format or FALSE for oAuth.
+   * Retrieves the Bearer access token from the Authorization header.
    *
    * @return string
    *   Auth token or empty string.
    */
-  private function getBearerAuthToken($wantJwt = FALSE) {
+  private function getBearerAuthToken() {
     $authHeader = $this->getAuthHeader();
     if (stripos($authHeader, 'Bearer ') === 0) {
-      $token = substr($authHeader, 7);
-      $isJwt = substr_count($token, '.') === 2;
-      if ($isJwt === $wantJwt) {
-        return $token;
-      }
+      return substr($authHeader, 7);
     }
     return '';
-  }
-
-  /**
-   * Attempts to authenticate using the oAuth2 protocal.
-   */
-  private function authenticateUsingOauth2User() {
-    $suppliedToken = $this->getBearerAuthToken();
-    if ($suppliedToken) {
-      $this->cache = new Cache();
-      // Get all cache entries that match this nonce.
-      $paths = $this->cache->exists($suppliedToken);
-      foreach ($paths as $path) {
-        // Find the parts of each file name, which is the cache entry ID, then
-        // the mode.
-        $tokens = explode('~', basename($path));
-        if ($tokens[1] === 'oAuthUserAccessToken') {
-          $data = $this->cache->get($tokens[0]);
-          if (preg_match('/^USER_ID:(?P<user_id>\d+):WEBSITE_ID:(?P<website_id>\d+)$/', $data, $matches)) {
-            RestObjects::$clientWebsiteId = $matches['website_id'];
-            RestObjects::$clientUserId = $matches['user_id'];
-            // Pass through to ORM.
-            global $remoteUserId;
-            $remoteUserId = RestObjects::$clientUserId;
-            $this->authenticated = TRUE;
-          }
-        }
-      }
-    }
   }
 
   /**
@@ -4068,14 +2299,29 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Implement base64-url decode support for JWT tokens.
+   *
+   * @param string $str
+   *   String to decode.
+   *
+   * @return string
+   *   Decoded response.
+   */
+  private function base64urlDecode($str) {
+    return base64_decode(str_replace(['-', '_'], ['+', '/'], $str));
+  }
+
+  /**
    * Attempts to authenticate as a user using a JWT access token.
+   *
+   * @todo Allow claims for full precision data.
    */
   private function authenticateUsingJwtUser() {
     require_once 'vendor/autoload.php';
     $suppliedToken = $this->getBearerAuthToken(TRUE);
-    if ($suppliedToken) {
+    if ($suppliedToken && substr_count($suppliedToken, '.') === 2) {
       list($jwtHeader, $jwtPayload, $jwtSignature) = explode('.', $suppliedToken);
-      $payload = base64_decode($jwtPayload);
+      $payload = $this->base64urlDecode($jwtPayload);
       if (!$payload) {
         RestObjects::$apiResponse->fail('Bad request', 400);
       }
@@ -4083,12 +2329,8 @@ class Rest_Controller extends Controller {
       if (!$payloadValues) {
         RestObjects::$apiResponse->fail('Bad request', 400);
       }
-      if (empty($payloadValues['iss']) || empty($payloadValues['http://indicia.org.uk/user:id'])) {
+      if (empty($payloadValues['iss'])) {
         RestObjects::$apiResponse->fail('Bad request', 400);
-      }
-      // Check for claim that stops ES filtering to just user's own records.
-      if (!empty($payloadValues['http://indicia.org.uk/alldata'])) {
-        $this->allowAllData = TRUE;
       }
       $website = $this->getWebsiteByUrl($payloadValues['iss']);
       if (!$website || empty($website->public_key)) {
@@ -4120,14 +2362,34 @@ class Rest_Controller extends Controller {
         kohana::log('debug', 'Payload email unverified');
         RestObjects::$apiResponse->fail('Unauthorized', 401);
       }
-      if (!isset($payloadValues['http://indicia.org.uk/user:id'])) {
-        RestObjects::$apiResponse->fail('Bad request', 400);
+      if (isset($payloadValues['http://indicia.org.uk/user:id'])) {
+        $this->checkWebsiteUser($website->id, $payloadValues['http://indicia.org.uk/user:id']);
+        RestObjects::$clientUserId = $payloadValues['http://indicia.org.uk/user:id'];
+        // If authenticated as a user, change default scope.
+        RestObjects::$scope = 'userWithinWebsite';
       }
-      $this->checkWebsiteUser($website->id, $payloadValues['http://indicia.org.uk/user:id']);
       RestObjects::$clientWebsiteId = $website->id;
-      RestObjects::$clientUserId = $payloadValues['http://indicia.org.uk/user:id'];
-      global $remoteUserId;
-      $remoteUserId = RestObjects::$clientUserId;
+      // Allow URL parameter to override default reporting scope as long as
+      // this scope has been claimed by the token. We allow scope as a standard
+      // claim or custom claim and as an array or space separated string for
+      // wider compatibility with auth servers.
+      if (isset($payloadValues['http://indicia.org.uk/scope']) && !isset($payloadValues['scope'])) {
+        $payloadValues['scope'] = $payloadValues['http://indicia.org.uk/scope'];
+      }
+      if (!empty($payloadValues['scope'])) {
+        $allowedScopes = is_array($payloadValues['scope']) ? $payloadValues['scope'] : explode(' ', $payloadValues['scope']);
+        if (!empty($_GET['scope'])) {
+          if (!in_array($_GET['scope'], $allowedScopes)) {
+            RestObjects::$apiResponse->fail('Forbidden', 403, 'Attempt to access disallowed scope');
+          }
+          RestObjects::$scope = $_GET['scope'];
+        }
+        else {
+          // The first specified scope in the token is default if not specified
+          // in query parameters.
+          RestObjects::$scope = $allowedScopes[0];
+        }
+      }
       $this->authenticated = TRUE;
     }
   }
@@ -4145,11 +2407,15 @@ class Rest_Controller extends Controller {
         $request_url = "$protocol://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
         $correct_hmac = hash_hmac("sha1", $request_url, $config[$clientSystemId]['shared_secret'], $raw_output = FALSE);
         if ($supplied_hmac === $correct_hmac) {
-          $this->clientSystemId = $clientSystemId;
+          RestObjects::$clientSystemId = $clientSystemId;
           $this->projects = $config[$clientSystemId]['projects'];
           $this->clientConfig = $config[$clientSystemId];
+          unset($this->clientConfig['shared_secret']);
           if (!empty($_REQUEST['proj_id'])) {
             RestObjects::$clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
+            // For client systems, the project defines how records are allowed to be
+            // shared with this client.
+            RestObjects::$scope = $this->projects[$_REQUEST['proj_id']]['sharing'];
           }
           // Apart from the projects resource, other end-points will need a
           // proj_id if using client system based authorisation.
@@ -4177,7 +2443,7 @@ class Rest_Controller extends Controller {
         }
         $websites = RestObjects::$db->select('password')
           ->from('websites')
-          ->where(array('id' => $websiteId))
+          ->where(['id' => $websiteId])
           ->get()->result_array();
         if (count($websites) === 1) {
           $protocol = $this->isHttps ? 'https' : 'http';
@@ -4185,6 +2451,14 @@ class Rest_Controller extends Controller {
           $correct_hmac = hash_hmac("sha1", $request_url, $websites[0]->password, $raw_output = FALSE);
           if ($supplied_hmac === $correct_hmac) {
             RestObjects::$clientWebsiteId = $websiteId;
+            // Scope mode and user_id allowed as URL parameters, as if
+            // intercepted and changed the HMAC breaks.
+            if (!empty($_GET['scope'])) {
+              RestObjects::$scope = $_GET['scope'];
+            }
+            if (!empty($_GET['user_id'])) {
+              RestObjects::$clientUserId = $_GET['user_id'];
+            }
             $this->authenticated = TRUE;
           }
           else {
@@ -4203,19 +2477,24 @@ class Rest_Controller extends Controller {
    */
   private function authenticateUsingDirectUser() {
     $authHeader = $this->getAuthHeader();
-    if (substr_count($authHeader, ':') === 5) {
-      // 6 parts to authorisation required for user ID, website ID and password
-      // pairs.
-      list($u, $userId, $w, $websiteId, $h, $password) = explode(':', $authHeader);
-      if ($u !== 'USER_ID' || $w !== 'WEBSITE_ID' || $h !== 'SECRET') {
+    // 6 or 8 colon separated tokens possible in auth header.
+    $tokens = explode(':', $authHeader);
+    if (in_array(count($tokens), [6, 8])) {
+      if ($tokens[0] !== 'USER_ID' || $tokens[2] !== 'WEBSITE_ID' || $tokens[4] !== 'SECRET' || (count($tokens) === 8 && $tokens[4] !== 'SCOPE')) {
+        // Not a valid header for this auth method.
         return;
       }
+      $userId = $tokens[1];
+      $websiteId = $tokens[3];
+      $password = $tokens[5];
+      $scope = count($tokens) === 8 ? $tokens[7] : NULL;
     }
     elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
-          !empty($_GET['user_id']) && !empty($_GET['secret'])) {
+          !empty($_GET['user_id']) && !empty($_GET['website_id']) && !empty($_GET['secret'])) {
       $userId = $_GET['user_id'];
       $websiteId = $_GET['website_id'];
       $password = $_GET['secret'];
+      $scope = !empty($_GET['scope']) ? $_GET['scope'] : NULL;
     }
     else {
       return;
@@ -4226,7 +2505,8 @@ class Rest_Controller extends Controller {
     }
     $users = RestObjects::$db->select('password')
       ->from('users')
-      ->where(array('id' => $userId))
+      ->join('users_websites', 'users_websites.user_id', 'users.id')
+      ->where(['users.id' => $userId, 'users_websites.website_id' => $websiteId])
       ->get()->result_array(FALSE);
     if (count($users) !== 1) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
@@ -4235,16 +2515,12 @@ class Rest_Controller extends Controller {
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
       RestObjects::$clientWebsiteId = $websiteId;
       RestObjects::$clientUserId = $userId;
-      // Pass through to ORM.
-      global $remoteUserId;
-      $remoteUserId = $userId;
-      // @todo Is this user a member of the website?
+      RestObjects::$scope = $scope === NULL ? 'userWithinWebsite' : $scope;
       $this->authenticated = TRUE;
     }
     else {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect password for user.');
     }
-    // @todo Apply user ID limit to data, limit to filterable reports
   }
 
   /**
@@ -4273,9 +2549,10 @@ class Rest_Controller extends Controller {
     if ($secret !== $config[$clientSystemId]['shared_secret']) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
-    $this->clientSystemId = $clientSystemId;
+    RestObjects::$clientSystemId = $clientSystemId;
     $this->projects = isset($config[$clientSystemId]['projects']) ? $config[$clientSystemId]['projects'] : [];
     $this->clientConfig = $config[$clientSystemId];
+    unset($this->clientConfig['shared_secret']);
     // Taxon observations and annotations resource end-points will need a
     // proj_id if using client system based authorisation.
     if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
@@ -4291,6 +2568,9 @@ class Rest_Controller extends Controller {
           isset($projectConfig['resource_options'][$this->resourceName])) {
         $this->resourceOptions = $projectConfig['resource_options'][$this->resourceName];
       }
+      // For client systems, the project defines how records are allowed to be
+      // shared with this client.
+      RestObjects::$scope = $projectConfig['sharing'];
     }
     $this->authenticated = TRUE;
   }
@@ -4300,35 +2580,49 @@ class Rest_Controller extends Controller {
    */
   private function authenticateUsingDirectWebsite() {
     $authHeader = $this->getAuthHeader();
-    if (substr_count($authHeader, ':') === 3) {
-      list($u, $websiteId, $h, $password) = explode(':', $authHeader);
-      if ($u !== 'WEBSITE_ID' || $h !== 'SECRET') {
+    // 4, 6 or 8 colon separated tokens possible in auth header.
+    $tokens = explode(':', $authHeader);
+    if (in_array(count($tokens), [4, 6, 8])) {
+      if ($tokens[0] !== 'WEBSITE_ID' || $tokens[2] !== 'SECRET' || (count($tokens) >= 6 && $tokens[4] !== 'SCOPE') || (count($tokens) === 8 && $tokens[6] !== 'USER_ID')) {
+        // Not a valid header for this auth method.
         return;
       }
+      $websiteId = $tokens[1];
+      $password = $tokens[3];
+      $scope = count($tokens) >= 6 ? $tokens[5] : NULL;
+      $userId = count($tokens) === 8 ? $tokens[7] : NULL;
     }
     elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
-        !empty($_GET['website_id']) && !empty($_GET['secret'])) {
+          !empty($_GET['user_id']) && !empty($_GET['secret'])) {
       $websiteId = $_GET['website_id'];
       $password = $_GET['secret'];
+      $scope = !empty($_GET['scope']) ? $_GET['scope'] : NULL;
+      $userId = !empty($_GET['user_id']) ? $_GET['user_id'] : NULL;
     }
     else {
       return;
     }
     // Input validation.
-    if (!preg_match('/^\d+$/', $websiteId)) {
+    if (($userId !== NULL && !preg_match('/^\d+$/', $userId)) || !preg_match('/^\d+$/', $websiteId)) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
     }
     $password = pg_escape_string($password);
     $websites = RestObjects::$db->select('id')
       ->from('websites')
-      ->where(array('id' => $websiteId, 'password' => $password))
+      ->where(['id' => $websiteId, 'password' => $password])
       ->get()->result_array();
-    if (count($websites) !== 1) {
+    if (count($websites) === 1) {
+      RestObjects::$clientWebsiteId = $websiteId;
+      if ($userId !== NULL) {
+        // @todo Is this user a member of the website?
+        RestObjects::$clientUserId = $userId;
+      }
+      RestObjects::$scope = $scope === NULL ? 'reporting' : $scope;
+      $this->authenticated = TRUE;
+    }
+    else {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised website ID or password.');
     }
-    RestObjects::$clientWebsiteId = $websiteId;
-    $this->authenticated = TRUE;
-    // @todo Apply website ID limit to data
   }
 
   /**
@@ -4361,16 +2655,6 @@ class Rest_Controller extends Controller {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
       RestObjects::$apiResponse->fail('Bad request', 400, "Parameter $param is not an valid date");
     }
-  }
-
-  /**
-   * Generates a unique token, e.g. for oAuth2.
-   *
-   * @return string
-   *   Token.
-   */
-  private function getToken() {
-    return sha1(time() . ':' . rand() . $_SERVER['REMOTE_ADDR'] . ':' . kohana::config('indicia.private_key'));
   }
 
   /**
@@ -4445,13 +2729,79 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * End-point to GET an list of occurrence_media.
+   */
+  public function occurrenceMediaGet() {
+    rest_crud::readList('occurrence_medium');
+  }
+
+  /**
+   * End-point to GET a occurrence_media by ID.
+   *
+   * @param int $id
+   *   Occurrence media ID.
+   */
+  public function occurrenceMediaGetId($id) {
+    rest_crud::read('occurrence_medium', $id);
+  }
+
+  /**
+   * API end-point to POST a occurrence_media to create.
+   */
+  public function occurrenceMediaPost() {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    $r = rest_crud::create('occurrence_medium', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to PUT to an existing occurrence_medium to update.
+   *
+   * @todo Safety check it's from the correct website.
+   */
+  public function occurrenceMediaPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    $r = rest_crud::update('occurrence_medium', $id, $putArray);
+    echo json_encode($r);
+  }
+
+  /**
+   * API end-point to DELETE a occurrence_medium.
+   *
+   * Will only be deleted if the occurrence_medium was created by the current user.
+   *
+   * @param int $id
+   *   Occurrence medium ID to delete.
+   *
+   * @todo Safety check it's from the correct website.
+   */
+  public function occurrenceMediaDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('occurrence_medium', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
+  /**
+   * End-point to GET an list of occurrences.
+   */
+  public function occurrencesGet() {
+    rest_crud::readList('occurrence', 'AND t1.website_id=' . RestObjects::$clientWebsiteId);
+  }
+
+  /**
    * End-point to GET an occurrence by ID.
    *
    * @param int $id
    *   Occurrence ID.
    */
   public function occurrencesGetId($id) {
-    rest_crud::read('occurrence', $id);
+    rest_crud::read('occurrence', $id, 'AND t1.website_id=' . RestObjects::$clientWebsiteId);
   }
 
   /**
@@ -4581,13 +2931,81 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * End-point to GET an list of sample_media.
+   */
+  public function sampleMediaGet() {
+    rest_crud::readList('sample_medium');
+  }
+
+  /**
+   * End-point to GET a sample_media by ID.
+   *
+   * @param int $id
+   *   Sample media ID.
+   */
+  public function sampleMediaGetId($id) {
+    rest_crud::read('sample_medium', $id);
+  }
+
+  /**
+   * API end-point to POST a sample_media to create.
+   */
+  public function sampleMediaPost() {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    $r = rest_crud::create('sample_medium', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to PUT to an existing sample_medium to update.
+   *
+   * @todo Safety check it's from the correct website.
+   */
+  public function sampleMediaPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    $r = rest_crud::update('sample_medium', $id, $putArray);
+    echo json_encode($r);
+  }
+
+  /**
+   * API end-point to DELETE a sample_medium.
+   *
+   * Will only be deleted if the sample_medium was created by the current user.
+   *
+   * @param int $id
+   *   Sample medium ID to delete.
+   *
+   * @todo Safety check it's from the correct website.
+   */
+  public function sampleMediaDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('sample_medium', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
+  /**
+   * End-point to GET an list of samples.
+   */
+  public function samplesGet() {
+    // @todo Website filters on this request and similar may need to respect
+    // JWT scope.
+    rest_crud::readList('sample', 'AND t2.website_id=' . RestObjects::$clientWebsiteId);
+  }
+
+  /**
    * End-point to GET a sample by ID.
    *
    * @param int $id
    *   Sample ID.
    */
   public function samplesGetId($id) {
-    rest_crud::read('sample', $id);
+    rest_crud::read('sample', $id, 'AND t2.website_id=' . RestObjects::$clientWebsiteId);
   }
 
   /**
@@ -4654,7 +3072,7 @@ class Rest_Controller extends Controller {
    * resource.
    *
    * @param int $level
-   *   Level required (1 = user, 2 = editor, 3 = admin). Default 2.
+   *   Level required (1 = admin, 2 = editor, 3 = user). Default 2.
    */
   private function assertUserHasWebsiteAccess($level = 2) {
     if (empty(RestObjects::$clientUserId)) {
@@ -4665,7 +3083,7 @@ class Rest_Controller extends Controller {
     $sql = <<<SQL
 SELECT u.id, u.core_role_id, uw.site_role_id
 FROM users u
-LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=$websiteId and uw.site_role_id>=$level
+LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=$websiteId and uw.site_role_id<=$level
 WHERE u.id=$userId;
 SQL;
     $user = RestObjects::$db->query($sql)->current();
@@ -5054,7 +3472,7 @@ SQL;
    */
   public function sampleAttributesWebsitesPutId($id) {
     $this->assertUserHasWebsiteAccess();
-    $this->assertRecordFromCurrentWebsite('sample_attributes_website', $id);
+    $this->assertRecordFromCurrentWebsite('sample_attributes_websites', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
     $r = rest_crud::update('sample_attributes_website', $id, $putArray);
@@ -5071,7 +3489,7 @@ SQL;
    */
   public function sampleAttributesWebsitesDeleteId($id) {
     $this->assertUserHasWebsiteAccess();
-    $this->assertRecordFromCurrentWebsite('sample_attributes_website', $id);
+    $this->assertRecordFromCurrentWebsite('sample_attributes_websites', $id);
     rest_crud::delete('sample_attributes_website', $id);
   }
 
@@ -5204,7 +3622,7 @@ SQL;
    */
   public function occurrenceAttributesWebsitesPutId($id) {
     $this->assertUserHasWebsiteAccess();
-    $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
+    $this->assertRecordFromCurrentWebsite('occurrence_attributes_websites', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
     $r = rest_crud::update('occurrence_attributes_website', $id, $putArray);
@@ -5221,8 +3639,23 @@ SQL;
    */
   public function occurrenceAttributesWebsitesDeleteId($id) {
     $this->assertUserHasWebsiteAccess();
-    $this->assertRecordFromCurrentWebsite('occurrence_attributes_website', $id);
+    $this->assertRecordFromCurrentWebsite('occurrence_attributes_websites', $id);
     rest_crud::delete('occurrence_attributes_website', $id);
+  }
+
+  /**
+   * Controller method for the verify_spreadsheet end-point.
+   */
+  public function occurrencesPostVerifySpreadsheet() {
+    $this->authenticate();
+    try {
+      $metadata = rest_spreadsheet_verify::verifySpreadsheet();
+      header('Content-type: application/json');
+      echo json_encode($metadata);
+    }
+    catch (RestApiAbort $e) {
+      // No action if a proper abort.
+    }
   }
 
 }

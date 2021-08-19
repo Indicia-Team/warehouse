@@ -22,7 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 ?>
-<form action="<?php echo url::site() . $controllerpath . '/upload_shp2'; ?>" method="post" class="cmxform">
+<form action="<?php echo url::site() . $controllerpath . '/upload_shp2'; ?>" method="post" >
   <fieldset>
     <div class="form-group">
       <label for="boundary">Shape file geometries are</label>

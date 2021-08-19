@@ -37,7 +37,7 @@ if ($parent_id != NULL) : ?>
 </a>
 </h1>
 <?php endif; ?>
-<form action="<?php echo url::site() . 'termlist/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'termlist/save'; ?>" method="post">
   <fieldset>
   <legend>List Details<?php echo $metadata ?></legend>
     <input type="hidden" name="termlist:id" value="<?php echo $id; ?>" />
@@ -92,7 +92,7 @@ if ($parent_id != NULL) : ?>
   <?php
   echo html::form_buttons(!empty($id), FALSE, FALSE);
   echo html::error_message($model->getError('deleted'));
-  data_entry_helper::enable_validation('termlist-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

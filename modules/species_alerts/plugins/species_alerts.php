@@ -55,6 +55,7 @@ LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=delta.taxon
 JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=delta.website_id and iwwa.receive_for_reporting=true
 JOIN species_alerts sa ON
   (sa.location_id IS NULL OR delta.location_ids @> ARRAY[sa.location_id])
+  AND (sa.survey_id IS NULL OR delta.survey_id = sa.survey_id)
   AND
     (sa.taxon_meaning_id = delta.taxon_meaning_id
     OR
@@ -79,7 +80,7 @@ LEFT JOIN notifications n_verify ON n_verify.user_id=sa.user_id AND n_verify.lin
 WHERE delta.training='f' AND delta.confidential='f'
 AND (
   (n_create.id IS NULL AND sa.alert_on_entry='t' AND delta.created_on> TO_TIMESTAMP('$last_run_date', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval)
-  OR (n_verify.id IS NULL AND sa.alert_on_verify='t' AND delta.verified_on > TO_TIMESTAMP('$last_run_date', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval)
+  OR (n_verify.id IS NULL AND sa.alert_on_verify='t' AND delta.record_status='V' AND delta.verified_on > TO_TIMESTAMP('$last_run_date', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval)
 )
 -- Following just to allow index to be used.
 AND delta.updated_on> TO_TIMESTAMP('$last_run_date', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval

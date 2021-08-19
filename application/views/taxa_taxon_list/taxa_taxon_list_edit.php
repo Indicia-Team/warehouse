@@ -28,7 +28,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
 
 echo html::error_message($model->getError('deleted'));
 ?>
-<form id="taxa-taxon-list-edit" action="<?php echo url::site() . 'taxa_taxon_list/save' ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'taxa_taxon_list/save' ?>" method="post">
   <fieldset>
     <legend>Naming<?php echo $metadata; ?></legend>
     <input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
@@ -116,7 +116,7 @@ echo html::error_message($model->getError('deleted'));
       'helpText' => 'Description which applies only to this taxon within the context of this list.',
     ]);
     $helpText = <<<TXT
-Unique identifier for this taxon concept as defined by an external source. For example in the UK this field is
+Unique identifier for the accepted name for this taxon as defined by an external source. For example in the UK this field is
 typically used to store an NBN Taxon Version Key for the accepted name.
 TXT;
     echo data_entry_helper::text_input([
@@ -135,6 +135,16 @@ TXT;
       'label' => 'Taxon name unique identifier (search code)',
       'fieldname' => 'taxon:search_code',
       'default' => html::initial_value($values, 'taxon:search_code'),
+      'helpText' => $helpText,
+    ]);
+    $helpText = <<<TXT
+Unique identifier for this taxon concept as defined by an external source. When linking to UKSI, this
+field is used to store the Organism Key.
+TXT;
+    echo data_entry_helper::text_input([
+      'fieldname' => 'taxon:organism_key',
+      'label' => 'Organism unique identifier (organism key)',
+      'default' => html::initial_value($values, 'taxon:organism_key'),
       'helpText' => $helpText,
     ]);
     echo data_entry_helper::text_input([
@@ -200,37 +210,45 @@ TXT;
         }
         switch ($attr['data_type']) {
           case 'D':
-          case 'V':
-            echo data_entry_helper::date_picker(array(
+            echo data_entry_helper::date_picker([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
+            break;
+
+          case 'V':
+            echo data_entry_helper::date_picker([
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['value'],
+              'allowVagueDates' => TRUE,
+            ]);
             break;
 
           case 'L':
-            echo data_entry_helper::select(array(
+            echo data_entry_helper::select([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['raw_value'],
               'lookupValues' => $values["terms_$attr[termlist_id]"],
               'blankText' => '<Please select>',
-            ));
+            ]);
             break;
 
           case 'B':
-            echo data_entry_helper::checkbox(array(
+            echo data_entry_helper::checkbox([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
             break;
 
           case 'G':
             echo "<input type=\"hidden\" name=\"$name\" value=\"$attr[value]\" id=\"imp-geom\"/>";
             echo "<label>$attr[caption]:</label>";
-            echo map_helper::map_panel(array(
-              'presetLayers' => array('osm'),
+            echo map_helper::map_panel([
+              'presetLayers' => ['osm'],
               'editLayer' => TRUE,
               'clickForSpatialRef' => FALSE,
               'layers' => [],
@@ -247,15 +265,15 @@ TXT;
                 'modifyFeature',
                 'clearEditLayer',
               ],
-            ));
+            ]);
             break;
 
           default:
-            echo data_entry_helper::text_input(array(
+            echo data_entry_helper::text_input([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
         }
       }
       ?>
@@ -263,7 +281,7 @@ TXT;
   </fieldset>
   <?php
   echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id') !== NULL);
-  data_entry_helper::enable_validation('taxa_taxon_list-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

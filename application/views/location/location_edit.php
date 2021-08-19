@@ -62,19 +62,19 @@ This page allows you to specify the details of a location.
 <?php endif; ?>
 </p>
 
-<form id="location-edit" action="<?php echo url::site() . 'location/save'; ?>" method="post" id="location-edit">
+<form id="entry_form" action="<?php echo url::site() . 'location/save'; ?>" method="post" >
   <div id="details">
     <fieldset>
       <legend>Location details<?php echo $metadata; ?></legend>
       <input type="hidden" name="location:id" value="<?php echo html::initial_value($values, 'location:id'); ?>" />
       <?php
-      echo data_entry_helper::text_input(array(
+      echo data_entry_helper::text_input([
         'label' => 'Name',
         'fieldname' => 'location:name',
         'default' => html::initial_value($values, 'location:name'),
         'validation' => 'required',
         'disabled' => $disabled,
-      ));
+      ]);
       if (!empty($parent_id)) : ?>
         <div class="alert alert-info">
           This location is a child of
@@ -83,7 +83,7 @@ This page allows you to specify the details of a location.
           </a>
         </div>
       <?php endif;
-      echo data_entry_helper::autocomplete(array(
+      echo data_entry_helper::autocomplete([
         'label' => 'Parent location',
         'fieldname' => 'location:parent_id',
         'table' => 'location',
@@ -94,18 +94,18 @@ This page allows you to specify the details of a location.
         'defaultCaption' => html::initial_value($values, 'parent:name'),
         'disabled' => $disabled,
         'helpText' => 'To set the parent of this location, search for the parent by typing the first few characters of its name.',
-      ));
-      echo data_entry_helper::textarea(array(
+      ]);
+      echo data_entry_helper::textarea([
         'label' => 'Comment',
         'fieldname' => 'location:comment',
         'default' => html::initial_value($values, 'location:comment'),
         'disabled' => $disabled,
-      ));
+      ]);
       ?>
       <div class="row">
         <div class="col-md-4">
           <?php
-          echo data_entry_helper::sref_and_system(array(
+          echo data_entry_helper::sref_and_system([
             'label' => 'Spatial Ref',
             'fieldname' => 'location:centroid_sref',
             'geomFieldname' => 'location:centroid_geom',
@@ -115,21 +115,21 @@ This page allows you to specify the details of a location.
             'defaultSystem' => html::initial_value($values, 'location:centroid_sref_system'),
             'validation' => 'required',
             'disabled' => $disabled,
-          ));
-          echo data_entry_helper::text_input(array(
+          ]);
+          echo data_entry_helper::text_input([
             'label' => 'Location code',
             'fieldname' => 'location:code',
             'default' => html::initial_value($values, 'location:code'),
             'disabled' => $disabled,
-          ));
-          echo data_entry_helper::select(array(
+          ]);
+          echo data_entry_helper::select([
             'label' => 'Location type',
             'fieldname' => 'location:location_type_id',
             'default' => html::initial_value($values, 'location:location_type_id'),
             'lookupValues' => $other_data['type_terms'],
             'blankText' => '<Please select>',
             'disabled' => $disabled,
-          ));
+          ]);
           ?>
         </div>
         <div class="col-md-8">
@@ -144,9 +144,9 @@ This page allows you to specify the details of a location.
               ['drawPolygon', 'drawLine', 'modifyFeature']
             );
           }
-          echo map_helper::map_panel(array(
+          echo map_helper::map_panel([
             'readAuth' => $readAuth,
-            'presetLayers' => array('osm'),
+            'presetLayers' => ['osm'],
             'editLayer' => TRUE,
             'layers' => [],
             'initial_lat' => 52,
@@ -157,7 +157,7 @@ This page allows you to specify the details of a location.
             'initialFeatureWkt' => $centroid_geom,
             'standardControls' => $controls,
             'allowPolygonRecording' => TRUE,
-          ));
+          ]);
           ?>
         </div>
       </div>
@@ -173,12 +173,12 @@ This page allows you to specify the details of a location.
       <?php
       if ($this->auth->logged_in('CoreAdmin')) {
         // Only core admin can create public locations.
-        echo data_entry_helper::checkbox(array(
+        echo data_entry_helper::checkbox([
           'label' => 'Available to all websites',
           'fieldname' => 'location:public',
           'default' => html::initial_value($values, 'location:public'),
           'disabled' => $disabled,
-        ));
+        ]);
       }
       ?>
       <div id="websites-list">
@@ -186,7 +186,7 @@ This page allows you to specify the details of a location.
       <ol>
         <?php
         $websiteIds = $this->get_allowed_website_id_list('editor');
-        $linkedWebsites = array();
+        $linkedWebsites = [];
         if (!is_null($websiteIds)) {
           $websites = ORM::factory('website')
             ->in('id', $websiteIds)
@@ -211,7 +211,7 @@ This page allows you to specify the details of a location.
           }
           echo '></li>';
         }
-      ?>
+        ?>
     </ol>
     </fieldset>
   </div>
@@ -234,37 +234,46 @@ This page allows you to specify the details of a location.
         }
         switch ($attr['data_type']) {
           case 'D':
-          case 'V':
-            echo data_entry_helper::date_picker(array(
+            echo data_entry_helper::date_picker([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
+            break;
+
+          case 'V':
+            echo data_entry_helper::date_picker([
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['value'],
+              'allowVagueDates' => TRUE,
+            ]);
             break;
 
           case 'L':
-            echo data_entry_helper::date_picker(array(
+            echo data_entry_helper::select([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['raw_value'],
               'lookupValues' => $values["terms_$attr[termlist_id]"],
-            ));
+              'blankText' => '<Please select>',
+            ]);
             break;
 
           case 'B':
-            echo data_entry_helper::checkbox(array(
+            echo data_entry_helper::checkbox([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
             break;
 
           default:
-            echo data_entry_helper::text_input(array(
+            echo data_entry_helper::text_input([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
         }
       }
       ?>
@@ -274,7 +283,7 @@ This page allows you to specify the details of a location.
   <?php
   endif;
   echo html::form_buttons(html::initial_value($values, 'location:id') != NULL, $disabled_input === 'YES');
-  data_entry_helper::enable_validation('location-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

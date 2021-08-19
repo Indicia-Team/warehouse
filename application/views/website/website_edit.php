@@ -26,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 ?>
 <p>This page allows you to specify the details of a website that will use the services provided by this Indicia
 Warehouse instance.</p>
-<form id="website-edit" action="<?php echo url::site() . 'website/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'website/save'; ?>" method="post">
   <?php echo $metadata; ?>
   <fieldset>
     <input type="hidden" name="website:id" value="<?php echo html::initial_value($values, 'website:id'); ?>" />
@@ -85,7 +85,7 @@ Warehouse instance.</p>
   </fieldset>
   <?php
   echo html::form_buttons(html::initial_value($values, 'website:id') != NULL);
-  data_entry_helper::enable_validation('website-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

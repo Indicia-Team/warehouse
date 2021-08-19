@@ -264,7 +264,8 @@ FROM {$entity}_attribute_values v
 LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_$entity'
   AND q.entity='$entity' AND q.record_id=v.{$entity}_id AND q.params IS NULL
 WHERE v.{$entity}_attribute_id IN ($attrIds)
-AND v.int_value IN ($ids);
+AND v.int_value IN ($ids)
+AND q.id IS NULL;
 SQL;
         $this->db->query($sql);
       }

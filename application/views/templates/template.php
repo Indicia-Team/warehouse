@@ -41,28 +41,31 @@ $siteTitle = html::specialchars($warehouseTitle);
 <title><?php echo $siteTitle; ?> | <?php echo $title ?></title>
 <?php
 echo html::stylesheet(
-  array(
+  [
     'vendor-other/bootstrap/css/bootstrap.min.css',
     'vendor-other/bootstrap/css/bootstrap-theme.min.css',
     'media/css/warehouse',
-    'media/js/fancybox/source/jquery.fancybox.css',
+    'media/js/fancybox/dist/jquery.fancybox.min.css',
     'media/css/jquery-ui.min',
     'media/css/jquery.autocomplete',
     "media/themes/$theme/jquery-ui.theme.min",
     'media/css/default_site.css',
     'media/css/theme-bootstrap-3.css',
-  ),
-  array('screen')
+  ],
+  ['screen']
 );
+if (isset($cssFile)) {
+  echo html::stylesheet([$cssFile], ['screen']);
+}
 echo html::script(
-  array(
+  [
     'media/js/jquery.js?v=3.2.1',
     'media/js/jquery.url.js',
-    'media/js/fancybox/source/jquery.fancybox.pack.js',
+    'media/js/fancybox/dist/jquery.fancybox.min.js',
     'media/js/hasharray.js',
     'media/js/jquery-ui.min.js?v=1.12.1',
     'vendor-other/bootstrap/js/bootstrap.min.js',
-  ), FALSE
+  ], FALSE
 );
 if (isset($jsFile)) {
   echo html::script([$jsFile], FALSE);

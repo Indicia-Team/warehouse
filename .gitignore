@@ -3,3 +3,5 @@
 .DS_Store
 .vscode
 desktop.ini
+.phpunit.result.cache
+vendor/*

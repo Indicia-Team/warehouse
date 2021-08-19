@@ -45,8 +45,11 @@ class Rest_Api_Sync_Controller extends Controller {
     }
     foreach ($servers as $serverId => $server) {
       echo "<h2>$serverId</h2>";
-      $serverType = isset($server['serverType']) ? $server['serverType'] : 'indicia';
-      $helperClass = 'rest_api_sync_' . strtolower($serverType);
+      $server = array_merge([
+        'serverType' => 'Indicia', 
+        'allowUpdateWhenVerified' => TRUE,
+      ], $server);
+      $helperClass = 'rest_api_sync_' . strtolower($server['serverType']);
       $helperClass::loadControlledTerms($serverId, $server);
       $helperClass::syncServer($serverId, $server);
     }

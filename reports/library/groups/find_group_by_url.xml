@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<report title="Groups list" description="Lists groups.">
+<report title="Find group by URL" description="Lists groups.">
   <query website_filter_field="g.website_id">
     SELECT #columns#
     FROM groups g

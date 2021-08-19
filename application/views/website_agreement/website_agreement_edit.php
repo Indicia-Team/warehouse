@@ -25,7 +25,7 @@
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'website_agreement:id');
 ?>
-<form action="<?php echo url::site() . 'website_agreement/save' ?>" method="post" id="website-agreement-edit">
+<form action="<?php echo url::site() . 'website_agreement/save' ?>" method="post" id="entry_form">
   <fieldset>
     <legend>Website Agreement Details<?php echo $metadata; ?></legend>
     <input type="hidden" name="website_agreement:id" value="<?php echo html::initial_value($values, 'website_agreement:id'); ?>" />
@@ -219,7 +219,7 @@ $id = html::initial_value($values, 'website_agreement:id');
   </fieldset>
   <?php
   echo html::form_buttons($id != NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('website-agreement-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

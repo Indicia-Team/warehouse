@@ -137,8 +137,39 @@ $config['taxa_taxon_lists']['get_changed_items_query'] = "
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
       left join taxa tc on tc.id=ttl.common_taxon_id
-      where ttl.updated_on>'#date#' or tl.updated_on>'#date#' or t.updated_on>'#date#' or l.updated_on>'#date#'
-        or tc.updated_on>'#date#'
+      where ttl.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where tl.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where t.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where l.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where tc.updated_on>'#date#'
       union
       select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
       from taxa_taxon_lists ttl
@@ -146,7 +177,31 @@ $config['taxa_taxon_lists']['get_changed_items_query'] = "
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
-      where ttlpref.updated_on>'#date#' or tpref.updated_on>'#date#' or lpref.updated_on>'#date#' or tg.updated_on>'#date#'
+      where ttlpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id and ttlpref.deleted=false
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where tpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id and ttlpref.deleted=false
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where lpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id and ttlpref.deleted=false
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where tg.updated_on>'#date#'
       ) as sub
       group by id";
 
@@ -260,6 +315,7 @@ $config['taxa_taxon_lists']['key_field'] = 'ttl.id';
 
 $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
   'setup' => "
+    -- Find children of updated taxa to ensure they are also changed.
     WITH RECURSIVE q AS (
       SELECT ttl.id
       FROM taxa_taxon_lists ttl
@@ -274,25 +330,35 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     INTO TEMPORARY descendants FROM q;
 
     WITH RECURSIVE q AS (
-      SELECT distinct ttlpref.id AS child_pref_ttl_id, ttlpref.parent_id,
-      ttlpref.taxon_meaning_id AS rank_taxon_meaning_id, ttlpref.taxon_list_id, 0 as distance
+      SELECT distinct ttlpref.id AS child_pref_ttl_id, ttlpref.allow_data_entry as child_pref_allow_data_entry,
+      ttlpref.taxon_meaning_id as child_pref_taxon_meaning_id, ttlpref.taxon_list_id as child_pref_taxon_list_id,
+      ttlpref.parent_id, ttlpref.taxon_meaning_id AS rank_taxon_meaning_id, ttlpref.taxon_list_id, 0 as distance
       FROM taxa_taxon_lists ttlpref
       JOIN taxa t ON t.id=ttlpref.taxon_id and t.deleted=false
       JOIN descendants d ON d.id=ttlpref.id
       WHERE ttlpref.preferred=true
       AND ttlpref.deleted=false
       UNION ALL
-      SELECT q.child_pref_ttl_id, ttl.parent_id,
-          ttl.taxon_meaning_id AS rank_taxon_meaning_id, ttl.taxon_list_id, q.distance+1
+      SELECT q.child_pref_ttl_id, q.child_pref_allow_data_entry, q.child_pref_taxon_meaning_id, q.child_pref_taxon_list_id,
+          ttl.parent_id, ttl.taxon_meaning_id AS rank_taxon_meaning_id, ttl.taxon_list_id, q.distance+1
       FROM q
       JOIN taxa_taxon_lists ttl ON ttl.id=q.parent_id and ttl.deleted=false and ttl.taxon_list_id=q.taxon_list_id
       JOIN taxa t ON t.id=ttl.taxon_id and t.deleted=false
     )
-    SELECT child_pref_ttl_id, array_agg(rank_taxon_meaning_id order by distance desc) as path
+    SELECT child_pref_ttl_id, child_pref_allow_data_entry, child_pref_taxon_meaning_id, child_pref_taxon_list_id,
+	    array_agg(rank_taxon_meaning_id order by distance desc) as path
     INTO TEMPORARY ttl_path
     FROM q
-    GROUP BY child_pref_ttl_id
+    GROUP BY child_pref_ttl_id, child_pref_allow_data_entry, child_pref_taxon_meaning_id, child_pref_taxon_list_id
     ORDER BY child_pref_ttl_id;
+
+    -- Remove any for redundant taxa where path covered by a non-redundant taxa.
+    DELETE FROM ttl_path t1
+    USING ttl_path t2
+    WHERE t1.child_pref_allow_data_entry=false
+    AND t2.child_pref_allow_data_entry=true
+    AND t2.child_pref_taxon_meaning_id=t1.child_pref_taxon_meaning_id
+    AND t2.child_pref_taxon_list_id=t1.child_pref_taxon_list_id;
 
     SELECT DISTINCT ON (cttl.external_key) cttl.external_key, cttlall.id, tp.path
     INTO TEMPORARY master_list_paths
@@ -396,8 +462,39 @@ $config['taxon_searchterms']['get_changed_items_query'] = "
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
       left join taxa tc on tc.id=ttl.common_taxon_id
-      where ttl.updated_on>'#date#' or tl.updated_on>'#date#' or t.updated_on>'#date#' or l.updated_on>'#date#'
-        or tc.updated_on>'#date#'
+      where ttl.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where tl.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where t.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where l.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
+      from taxa_taxon_lists ttl
+      join taxon_lists tl on tl.id=ttl.taxon_list_id
+      join taxa t on t.id=ttl.taxon_id
+      join languages l on l.id=t.language_id
+      left join taxa tc on tc.id=ttl.common_taxon_id
+      where tc.updated_on>'#date#'
       union
       select ttl.id, ttl.allow_data_entry, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
       from taxa_taxon_lists ttl
@@ -405,7 +502,31 @@ $config['taxon_searchterms']['get_changed_items_query'] = "
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
-      where ttlpref.updated_on>'#date#' or tpref.updated_on>'#date#' or lpref.updated_on>'#date#' or tg.updated_on>'#date#'
+      where ttlpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where tpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where lpref.updated_on>'#date#'
+      union
+      select ttl.id, ttl.allow_data_entry, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
+      from taxa_taxon_lists ttl
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id
+      join taxa tpref on tpref.id=ttlpref.taxon_id
+      join languages lpref on lpref.id=tpref.language_id
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
+      where tg.updated_on>'#date#'
       ) as sub
       group by sub.id, sub.allow_data_entry";
 
@@ -779,7 +900,7 @@ SET website_id=su.website_id,
   updated_on=s.updated_on,
   verified_on=s.verified_on,
   created_by_id=s.created_by_id,
-  group_id=s.group_id,
+  group_id=coalesce(s.group_id, sp.group_id),
   record_status=s.record_status,
   training=s.training,
   query=case
@@ -882,9 +1003,10 @@ SET website_title=w.title,
   attr_linked_location_id=v_linked_location_id.int_value
 FROM samples s
 #join_needs_update#
+LEFT JOIN samples sp ON sp.id=s.parent_id and sp.deleted=false
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
-LEFT JOIN groups g on g.id=s.group_id and g.deleted=false
+LEFT JOIN groups g on g.id=coalesce(s.group_id, sp.group_id) and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
 LEFT JOIN (sample_attribute_values v_email
@@ -958,7 +1080,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
-  s.group_id, s.record_status, s.training,
+  coalesce(s.group_id, sp.group_id), s.record_status, s.training,
   case
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
@@ -1017,10 +1139,11 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   s.recorder_names, s.comment, s.privacy_precision, li.code
 FROM samples s
 #join_needs_update#
+LEFT JOIN samples sp ON sp.id=s.parent_id and sp.deleted=false
 LEFT JOIN cache_samples_nonfunctional cs on cs.id=s.id
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
-LEFT JOIN groups g on g.id=s.group_id and g.deleted=false
+LEFT JOIN groups g on g.id=coalesce(s.group_id, sp.group_id) and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
 WHERE s.deleted=false
@@ -1332,11 +1455,6 @@ $config['occurrences']['get_changed_items_query'] = "
     join locations l on l.id=s.location_id
     where l.updated_on>'#date#'
     union
-    select o.id, ttl.deleted
-    from occurrences o
-    join taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id
-    where ttl.updated_on>'#date#'
-    union
     select om.occurrence_id, false
     from occurrence_media om
     where om.updated_on>'#date#' and om.created_on<om.updated_on
@@ -1370,7 +1488,7 @@ SET sample_id=o.sample_id,
   updated_on=greatest(o.updated_on, cttl.cache_updated_on),
   verified_on=o.verified_on,
   created_by_id=o.created_by_id,
-  group_id=s.group_id,
+  group_id=coalesce(s.group_id, sp.group_id),
   taxa_taxon_list_id=o.taxa_taxon_list_id,
   preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
   taxon_meaning_id=cttl.taxon_meaning_id,
@@ -1469,6 +1587,16 @@ SET comment=o.comment,
   ),
   verifier=pv.surname || ', ' || pv.first_name,
   licence_code=li.code,
+  attr_behaviour=CASE a_behaviour.data_type
+    WHEN 'T'::bpchar THEN v_behaviour.text_value
+    WHEN 'L'::bpchar THEN t_behaviour.term
+    ELSE NULL::text
+  END,
+  attr_reproductive_condition=CASE a_reproductive_condition.data_type
+    WHEN 'T'::bpchar THEN v_reproductive_condition.text_value
+    WHEN 'L'::bpchar THEN t_reproductive_condition.term
+    ELSE NULL::text
+  END,
   attr_sex_stage=CASE a_sex_stage.data_type
       WHEN 'T'::bpchar THEN v_sex_stage.text_value
       WHEN 'L'::bpchar THEN t_sex_stage.term
@@ -1525,6 +1653,14 @@ LEFT JOIN (sample_attribute_values spv
   JOIN sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
       and spa.system_function='sref_precision'
 ) on spv.sample_id=s.id and spv.deleted=false
+LEFT JOIN (occurrence_attribute_values v_behaviour
+  JOIN occurrence_attributes a_behaviour on a_behaviour.id=v_behaviour.occurrence_attribute_id and a_behaviour.deleted=false and a_behaviour.system_function='behaviour'
+  LEFT JOIN cache_termlists_terms t_behaviour on a_behaviour.data_type='L' and t_behaviour.id=v_behaviour.int_value
+) on v_behaviour.occurrence_id=o.id and v_behaviour.deleted=false
+LEFT JOIN (occurrence_attribute_values v_reproductive_condition
+  JOIN occurrence_attributes a_reproductive_condition on a_reproductive_condition.id=v_reproductive_condition.occurrence_attribute_id and a_reproductive_condition.deleted=false and a_reproductive_condition.system_function='reproductive_condition'
+  LEFT JOIN cache_termlists_terms t_reproductive_condition on a_reproductive_condition.data_type='L' and t_reproductive_condition.id=v_reproductive_condition.int_value
+) on v_reproductive_condition.occurrence_id=o.id and v_reproductive_condition.deleted=false
 LEFT JOIN (occurrence_attribute_values v_sex_stage
   JOIN occurrence_attributes a_sex_stage on a_sex_stage.id=v_sex_stage.occurrence_attribute_id and a_sex_stage.deleted=false and a_sex_stage.system_function='sex_stage'
   LEFT JOIN cache_termlists_terms t_sex_stage on a_sex_stage.data_type='L' and t_sex_stage.id=v_sex_stage.int_value
@@ -1612,7 +1748,7 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
     reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision)) as public_geom,
     s.date_start, s.date_end, s.date_type, o.created_on, o.updated_on, o.verified_on,
-    o.created_by_id, s.group_id, o.taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id,
+    o.created_by_id, coalesce(s.group_id, sp.group_id), o.taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id,
     cttl.taxon_meaning_id, cttl.external_key, cttl.family_taxa_taxon_list_id,
     cttl.taxon_group_id, cttl.taxon_rank_sort_order, o.record_status, o.record_substatus,
     case when certainty.sort_order is null then null
@@ -1717,6 +1853,16 @@ AND co.id IS NULL
 $config['occurrences']['insert']['nonfunctional_attrs'] = "
 UPDATE cache_occurrences_nonfunctional
 SET
+  attr_behaviour=CASE a_behaviour.data_type
+      WHEN 'T'::bpchar THEN v_behaviour.text_value
+      WHEN 'L'::bpchar THEN t_behaviour.term
+      ELSE NULL::text
+  END,
+  attr_reproductive_condition=CASE a_reproductive_condition.data_type
+      WHEN 'T'::bpchar THEN v_reproductive_condition.text_value
+      WHEN 'L'::bpchar THEN t_reproductive_condition.term
+      ELSE NULL::text
+  END,
   attr_sex_stage=CASE a_sex_stage.data_type
       WHEN 'T'::bpchar THEN v_sex_stage.text_value
       WHEN 'L'::bpchar THEN t_sex_stage.term
@@ -1761,6 +1907,14 @@ SET
   END
 FROM occurrences o
 #join_needs_update#
+LEFT JOIN (occurrence_attribute_values v_behaviour
+  JOIN occurrence_attributes a_behaviour on a_behaviour.id=v_behaviour.occurrence_attribute_id and a_behaviour.deleted=false and a_behaviour.system_function='behaviour'
+  LEFT JOIN cache_termlists_terms t_behaviour on a_behaviour.data_type='L' and t_behaviour.id=v_behaviour.int_value
+) on v_behaviour.occurrence_id=o.id and v_behaviour.deleted=false
+LEFT JOIN (occurrence_attribute_values v_reproductive_condition
+  JOIN occurrence_attributes a_reproductive_condition on a_reproductive_condition.id=v_reproductive_condition.occurrence_attribute_id and a_reproductive_condition.deleted=false and a_reproductive_condition.system_function='reproductive_condition'
+  LEFT JOIN cache_termlists_terms t_reproductive_condition on a_reproductive_condition.data_type='L' and t_reproductive_condition.id=v_reproductive_condition.int_value
+) on v_reproductive_condition.occurrence_id=o.id and v_reproductive_condition.deleted=false
 LEFT JOIN (occurrence_attribute_values v_sex_stage
   JOIN occurrence_attributes a_sex_stage on a_sex_stage.id=v_sex_stage.occurrence_attribute_id and a_sex_stage.deleted=false and a_sex_stage.system_function='sex_stage'
   LEFT JOIN cache_termlists_terms t_sex_stage on a_sex_stage.data_type='L' and t_sex_stage.id=v_sex_stage.int_value

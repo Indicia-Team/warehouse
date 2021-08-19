@@ -82,6 +82,45 @@ class warehouse {
   }
 
   /**
+   * A cached lookup of the websites that are available for a sharing mode.
+   *
+   * @param array $websiteIds
+   *   ID of the website that is receiving the shared data.
+   * @param object $db
+   *   Database connection.
+   * @param string $scope
+   *   Sharing mode.
+   *
+   * @return array
+   *   List of website IDs that will share their data.
+   */
+  public static function getSharedWebsiteList(array $websiteIds, $db, $scope = 'reporting') {
+    if (count($websiteIds) === 1) {
+      $tag = 'website-share-array-' . implode('', $websiteIds);
+      $cacheId = "$tag-$scope";
+      $cache = Cache::instance();
+      if ($cached = $cache->get($cacheId)) {
+        return $cached;
+      }
+    }
+    $qry = $db->select('to_website_id')
+      ->from('index_websites_website_agreements')
+      ->where("receive_for_$scope", 't')
+      ->in('from_website_id', $websiteIds)
+      ->get()->result();
+    $ids = [];
+    foreach ($qry as $row) {
+      $ids[] = $row->to_website_id;
+    }
+    if (count($websiteIds) === 1) {
+      // Tag all cache entries for this website so they can be cleared together
+      // when changes are saved.
+      $cache->set($cacheId, $ids, $tag);
+    }
+    return $ids;
+  }
+
+  /**
    * Expand a single character sharing mode code to the full term.
    *
    * @param string $code

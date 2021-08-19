@@ -239,31 +239,49 @@ SQL
       $fieldsForEachSquare = '';
       foreach ($sizes as $idx => $size) {
         $fieldsForEachSquare .= <<<SQL
-  GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size) as size$size,
+GREATEST(round(sqrt(st_area(st_transform(geom, sref_system_to_srid(entered_sref_system)))))::integer, max(sensitivity_precision), privacy_precision, $size) AS size$size,
   round(st_x(st_centroid(reduce_precision(
-    coalesce(s.geom, l.centroid_geom), o.confidential,
-    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size))
-  ))) as x$size,
+    geom, bool_or(confidential),
+    GREATEST(round(sqrt(st_area(st_transform(geom, sref_system_to_srid(entered_sref_system)))))::integer, max(sensitivity_precision), privacy_precision, $size))
+  ))) AS x$size,
   round(st_y(st_centroid(reduce_precision(
-    coalesce(s.geom, l.centroid_geom), o.confidential,
-    GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size))
-  ))) as y$size
+    geom, bool_or(confidential),
+    GREATEST(round(sqrt(st_area(st_transform(geom, sref_system_to_srid(entered_sref_system)))))::integer, max(sensitivity_precision), privacy_precision, $size))
+  ))) AS y$size
 SQL;
         if ($idx < 2) {
           $fieldsForEachSquare .= ",\n";
         }
       }
       $query = <<<SQL
-SELECT DISTINCT s.id,
-  st_astext(coalesce(s.geom, l.centroid_geom)) as geom,
-  o.confidential,
-  coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system,
-  $fieldsForEachSquare
+DROP TABLE IF EXISTS smp_occs;
+
+SELECT s.id, o.id AS occurrence_id, coalesce(s.geom, l.centroid_geom) AS geom, coalesce(s.entered_sref_system, l.centroid_sref_system) AS entered_sref_system,
+  greatest(sc.privacy_precision, s.privacy_precision) AS privacy_precision, o.sensitivity_precision, o.confidential
+INTO temporary smp_occs
 FROM samples s
-JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false
-LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
+LEFT JOIN samples sc ON sc.parent_id=s.id AND sc.deleted=false
+LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
+LEFT JOIN occurrences o ON o.sample_id = sc.id AND o.deleted=false
 WHERE $alias.id IN ($idlist)
 AND s.deleted=false
+UNION
+SELECT s.id, o.id AS occurrence_id, coalesce(s.geom, l.centroid_geom) AS geom, coalesce(s.entered_sref_system, l.centroid_sref_system) AS entered_sref_system,
+  greatest(sc.privacy_precision, s.privacy_precision), o.sensitivity_precision, o.confidential
+FROM samples s
+LEFT JOIN samples sc on sc.parent_id=s.id and sc.deleted=false
+LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
+LEFT JOIN occurrences o on o.sample_id = s.id and o.deleted=false
+WHERE $alias.id IN ($idlist)
+AND s.deleted=false;
+
+SELECT DISTINCT id,
+  st_astext(geom) as geom,
+  COALESCE(bool_or(confidential), false) as confidential,
+  entered_sref_system,
+  $fieldsForEachSquare
+FROM smp_occs s
+GROUP BY id, geom, entered_sref_system, privacy_precision
 SQL;
       $smpInfo = $db->query($query)->result_array(TRUE);
       foreach ($smpInfo as $s) {
@@ -381,7 +399,7 @@ SQL;
         throw new Kohana_Database_Exception('database.table_not_found', $entity);
       }
       else {
-        $cache->set($key, $fieldInfo);
+        $cache->set($key, $fieldInfo, ['orm']);
       }
     }
     return $fieldInfo;

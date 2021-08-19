@@ -27,7 +27,7 @@ $id = html::initial_value($values, 'person:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify a persons details.</p>
-<form id="person-edit" action="<?php echo url::site() . 'person/save'; ?>" method="post">
+<form id="entry_form" action="<?php echo url::site() . 'person/save'; ?>" method="post">
   <fieldset>
     <legend>Person's details<?php echo $metadata; ?></legend>
     <?php
@@ -108,38 +108,46 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       }
       switch ($attr['data_type']) {
         case 'D':
-        case 'V':
-          echo data_entry_helper::date_picker(array(
+          echo data_entry_helper::date_picker([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
-          ));
+          ]);
+          break;
+
+        case 'V':
+          echo data_entry_helper::date_picker([
+            'label' => $attr['caption'],
+            'fieldname' => $name,
+            'default' => $attr['value'],
+            'allowVagueDates' => TRUE,
+          ]);
           break;
 
         case 'L':
-          echo data_entry_helper::select(array(
+          echo data_entry_helper::select([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['raw_value'],
             'lookupValues' => $values["terms_$attr[termlist_id]"],
             'blankText' => '<Please select>',
-          ));
+          ]);
           break;
 
         case 'B':
-          echo data_entry_helper::checkbox(array(
+          echo data_entry_helper::checkbox([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
-          ));
+          ]);
           break;
 
         default:
-          echo data_entry_helper::text_input(array(
+          echo data_entry_helper::text_input([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
-          ));
+          ]);
       }
 
     }
@@ -147,8 +155,8 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   </fieldset>
   <?php
   endif;
-echo html::form_buttons($id !== NULL, FALSE, FALSE);
-data_entry_helper::enable_validation('person-edit');
-echo data_entry_helper::dump_javascript();
-?>
+  echo html::form_buttons($id !== NULL, FALSE, FALSE);
+  data_entry_helper::enable_validation('entry_form');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>

@@ -37,6 +37,17 @@
     LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
     WHERE sp.id=o.parent_sample_id AND sp.deleted=false;
 
+    -- Use parents of locations if no parent sample location.
+    UPDATE output_rows o
+    SET recorded_parent_location_id = lp.id,
+      recorded_parent_location_name = lp.name,
+      recorded_parent_location_code = lp.code
+      FROM samples sc
+    JOIN locations lc ON lc.id=sc.location_id AND lc.deleted=false
+      JOIN locations lp ON lp.id = lc.parent_id AND lp.deleted=false
+      WHERE sc.id=o.sample_id AND sc.deleted=false
+    AND o.recorded_parent_location_id IS NULL;
+
     SELECT *
     FROM output_rows o
     #order_by#
@@ -69,6 +80,8 @@
     <column name="accepted_taxon_key" sql="cttl.external_key" datatype="text" />
     <column name="taxa_taxon_list_id" sql="o.taxa_taxon_list_id" datatype="integer" />
     <column name="taxon_meaning_id" sql="o.taxon_meaning_id" datatype="integer" />
+    <column name="taxon_list_id" sql="cttl.taxon_list_id" datatype="integer" />
+    <column name="taxon_list_title" sql="cttl.taxon_list_title" datatype="text" />
     <column name="date_start" sql="o.date_start" datatype="date" />
     <column name="date_end" sql="o.date_end" datatype="date" />
     <column name="date_type" sql="o.date_type" datatype="text" />
@@ -102,15 +115,15 @@
     <column name="map_sq_srid" sql="COALESCE(get_output_srid(o.public_geom), 3857)" datatype="integer" />
     <column name="map_sq_1km" sql="CASE
       WHEN onf.sensitivity_precision > 1000 THEN NULL
-      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(o.public_geom), false, 1000), 4326)))))
+      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(o.public_geom, false, 1000), 4326)))))
     END" datatype="text" />
     <column name="map_sq_2km" sql="CASE
       WHEN onf.sensitivity_precision > 2000 THEN NULL
-      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(o.public_geom), false, 2000), 4326)))))
+      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(o.public_geom, false, 2000), 4326)))))
     END" datatype="text" />
     <column name="map_sq_10km" sql="CASE
       WHEN onf.sensitivity_precision > 10000 THEN NULL
-      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(st_centroid(o.public_geom), false, 10000), 4326)))))
+      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(o.public_geom, false, 10000), 4326)))))
     END" datatype="text" />
     <column name="input_sref" sql="COALESCE(snf.public_entered_sref, onf.output_sref)" datatype="text" />
     <column name="input_sref_system" sql="CASE WHEN snf.public_entered_sref IS NULL THEN onf.output_sref_system ELSE snf.entered_sref_system END" datatype="text" />
@@ -135,6 +148,8 @@
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
     <column name="licence_code" sql="onf.licence_code" datatype="text" />
+    <column name="attr_behaviour" sql="onf.attr_behaviour" datatype="text" />
+    <column name="attr_reproductive_condition" sql="onf.attr_reproductive_condition" datatype="text" />
     <column name="attr_stage" sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)" datatype="text" />
     <column name="attr_sex" sql="onf.attr_sex" datatype="text" />
     <column name="attr_sex_stage_count" sql="onf.attr_sex_stage_count" datatype="text" />
@@ -181,8 +196,12 @@
       properly mapped -->
     <column name="taxon_name" sql="cttl.taxon" datatype="text" />
     <column name="taxon_authority" sql="cttl.authority" datatype="text" />
+    <column name="accepted_taxon_name" sql="cttl.preferred_taxon" datatype="text" />
+    <column name="accepted_taxon_authority" sql="cttl.preferred_authority" datatype="text" />
     <column name="taxon_group_id" sql="cttl.taxon_group_id" datatype="integer" />
     <column name="taxon_group" sql="cttl.taxon_group" datatype="text" />
+    <column name="input_taxon_group_id" sql="cttl.taxon_group_id" datatype="integer" />
+    <column name="input_taxon_group" sql="cttl.taxon_group" datatype="text" />
     <column name="common_name" sql="cttl.default_common_name" datatype="text" />
     <column name="taxon_rank" sql="cttl.taxon_rank" datatype="text" />
     <column name="taxon_rank_sort_order" sql="cttl.taxon_rank_sort_order" datatype="integer" />

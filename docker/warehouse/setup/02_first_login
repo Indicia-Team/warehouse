@@ -1,0 +1,20 @@
+# The endpoint for logging in.
+url = "http://localhost:8080/index.php/login"
+
+# Send previously saved cookies.
+cookie = cookiefile
+# Save returned cookies.
+cookie-jar = cookiefile
+# Divert output to file.
+output = outputfile
+# Don't show progress.
+silent
+# Do show errors though.
+show-error
+
+# Enable debugging so you can set breakpoints in the PHP.
+data = "XDEBUG_SESSION=true"
+
+# The information we want to post.
+data = "user=admin"
+data = "password="

@@ -1,4 +1,7 @@
 <?php
+
+use PHPUnit\Framework\TestCase;
+
 /**
  * Num Helper Unit Tests
  *
@@ -8,7 +11,7 @@
  * @group core.helpers
  * @group core.helpers.num
  */
-class Helper_Num_Test extends PHPUnit_Framework_TestCase
+class Helper_Num_Test extends TestCase
 {
 	/**
 	 * DataProvider for the num::round() test

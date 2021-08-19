@@ -88,10 +88,10 @@ $lang = [
   ],
   'float_value' => [
     'default' => 'This must be a valid number.',
-    'maximum' => 'The value specified for this number is too high',
-    'minimum' => 'The value specified for this number is too low',
+    'maximum' => 'The value specified for this number is too high.',
+    'minimum' => 'The value specified for this number is too low.',
     'required' => 'The value is required.',
-    'regex' => 'Invalid format.',
+    'regex' => 'The value is not of the correct format.',
   ],
   'geom' => [
     'required' => 'The spatial reference must be supplied.',
@@ -103,8 +103,8 @@ $lang = [
   ],
   'int_value' => [
     'digit' => 'This must be a valid whole number.',
-    'maximum' => 'The value specified for this number is too high',
-    'minimum' => 'The value specified for this number is too low',
+    'maximum' => 'The value specified for this number is too high.',
+    'minimum' => 'The value specified for this number is too low.',
     'required' => 'The value is required.',
     'regex' => 'The value is not of the correct format.',
     'default' => 'The value must be a valid whole number.',
@@ -191,6 +191,8 @@ $lang = [
     'required' => 'The value is required.',
     'default' => 'The value is not of the correct format.',
     'standard_text' => 'The value contains characters that are not allowed.',
+    'decimal' => 'The value does not have the required number of digits before/after the decimal point.',
+    'decimal_range' => 'One or more value does not have the required number of digits before/after the decimal point.',
   ],
   'term' => [
     'required' => 'The term must be specified.',
@@ -206,6 +208,13 @@ $lang = [
     'length' => 'The title supplied is too long.',
     'unique' => 'This title must be unique.',
     'default' => 'Invalid input.',
+  ],
+  'upper_value' => [
+    'default' => 'Invalid upper value.',
+    'integer' => 'The upper value must be a whole number.',
+    'maximum' => 'The upper value is too high.',
+    'minimum' => 'The upper value is too low.',
+    'regex' => 'The upper value is not of the correct format.',
   ],
   'url' => [
     'required' => 'The website URL cannot be blank.',

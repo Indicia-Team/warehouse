@@ -3,7 +3,7 @@
     description="Report used to retrieve custom attributes of a record for the verification 3 prebuilt form."
 >
   <query website_filter_field="o.website_id">
-  select 
+  select
       o.id, oaw.weight, 'Record' as attribute_type, a.system_function,
       CASE a.data_type
               WHEN 'T'::bpchar THEN 'Text'::bpchar
@@ -14,11 +14,11 @@
               WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
               WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
               ELSE a.data_type
-          END AS data_type, a.caption, 
+          END AS data_type, a.caption,
           CASE a.data_type
-              WHEN 'T'::bpchar THEN CASE WHEN substring(a.caption from char_length(a.caption) - 4) = 'link' AND substring(av.text_value from 1 for 4) = 'http' THEN 
+              WHEN 'T'::bpchar THEN CASE WHEN substring(a.caption from char_length(a.caption) - 4) = 'link' AND substring(av.text_value from 1 for 4) = 'http' THEN
                 '&lt;a href="' || av.text_value || '"&gt;' || av.text_value || '&lt;/a&gt;'
-              ELSE 
+              ELSE
                 av.text_value END
               WHEN 'L'::bpchar THEN lookup.term::text
               WHEN 'I'::bpchar THEN av.int_value::character varying::text
@@ -27,7 +27,7 @@
               WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
               WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
               ELSE NULL::text
-          END AS value, 
+          END AS value,
           CASE a.data_type
               WHEN 'T'::bpchar THEN av.text_value
               WHEN 'L'::bpchar THEN av.int_value::character varying::text
@@ -42,14 +42,14 @@
   join samples s on s.id=o.sample_id and s.deleted=false
   join occurrence_attribute_values av on av.occurrence_id=o.id and av.deleted=false
   join occurrence_attributes a on a.id=av.occurrence_attribute_id and a.deleted=false
-  left join cache_termlists_terms lookup on lookup.id=av.int_value 
+  left join cache_termlists_terms lookup on lookup.id=av.int_value
   left join occurrence_attributes_websites oaw on oaw.occurrence_attribute_id=a.id and oaw.restrict_to_survey_id=s.survey_id and oaw.deleted=false
   where o.id=#occurrence_id#
   and o.deleted=false
-  
+
   union
 
-  select 
+  select
     o.id, saw.weight, 'Parent sample' as attribute_type, a.system_function,
     CASE a.data_type
             WHEN 'T'::bpchar THEN 'Text'::bpchar
@@ -60,7 +60,7 @@
             WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
             WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
             ELSE a.data_type
-        END AS data_type, a.caption, 
+        END AS data_type, a.caption,
         CASE a.data_type
             WHEN 'T'::bpchar THEN av.text_value
             WHEN 'L'::bpchar THEN lookup.term::text
@@ -70,7 +70,7 @@
             WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
             WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
             ELSE NULL::text
-        END AS value, 
+        END AS value,
         CASE a.data_type
             WHEN 'T'::bpchar THEN av.text_value
             WHEN 'L'::bpchar THEN av.int_value::character varying::text
@@ -85,7 +85,7 @@
   join samples s on s.id=o.sample_id and s.deleted=false
   join sample_attribute_values av on av.sample_id=s.parent_id and av.deleted=false
   join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
-  left join cache_termlists_terms lookup on lookup.id=av.int_value 
+  left join cache_termlists_terms lookup on lookup.id=av.int_value
   left join sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.restrict_to_survey_id=s.survey_id and saw.deleted=false
   where o.id=#occurrence_id#
   and o.deleted=false
@@ -93,7 +93,7 @@
 
   union
 
-  select 
+  select
     o.id, saw.weight, 'Sample' as attribute_type, a.system_function,
     CASE a.data_type
             WHEN 'T'::bpchar THEN 'Text'::bpchar
@@ -104,7 +104,7 @@
             WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
             WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
             ELSE a.data_type
-        END AS data_type, a.caption, 
+        END AS data_type, a.caption,
         CASE a.data_type
             WHEN 'T'::bpchar THEN av.text_value
             WHEN 'L'::bpchar THEN lookup.term::text
@@ -114,7 +114,7 @@
             WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
             WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
             ELSE NULL::text
-        END AS value, 
+        END AS value,
         CASE a.data_type
             WHEN 'T'::bpchar THEN av.text_value
             WHEN 'L'::bpchar THEN av.int_value::character varying::text
@@ -129,7 +129,7 @@
   join samples s on s.id=o.sample_id and s.deleted=false
   join sample_attribute_values av on av.sample_id=o.sample_id and av.deleted=false
   join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
-  left join cache_termlists_terms lookup on lookup.id=av.int_value 
+  left join cache_termlists_terms lookup on lookup.id=av.int_value
   left join sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.restrict_to_survey_id=s.survey_id and saw.deleted=false
   where o.id=#occurrence_id#
   and o.deleted=false
@@ -137,6 +137,6 @@
   order by attribute_type, weight, caption
   </query>
   <params>
-    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
+    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='integer' />
   </params>
 </report>

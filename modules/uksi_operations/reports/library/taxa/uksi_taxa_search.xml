@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="UKSI taxon search" description="Quick way of reviewing UKSI changes.">
+  <query>
+  select #columns#
+  from taxa_taxon_lists ttl
+  join taxa t on t.id=ttl.taxon_id and t.deleted=false
+  left join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false
+  left join taxa_taxon_lists ttlp on ttlp.id=ttl.parent_id and ttlp.deleted=false and ttlp.taxon_list_id=15
+  left join taxa tp on tp.id=ttlp.taxon_id and tp.deleted=false
+  where ttl.taxon_list_id=#param_taxon_list_id#
+  and ttl.deleted=false
+  and t.organism_key='#param_organism_key#'
+  </query>
+  <order_bys>
+    <order_by>
+      ttl.preferred desc, t.language_id=2 desc, t.taxon, t.attribute, t.authority
+    </order_by>
+  </order_bys>
+  <params>
+    <param name="param_taxon_list_id" display="Taxon list ID" datatype="integer" />
+    <param name="param_organism_key" display="Organism key" datatype="text" />
+  </params>
+  <columns>
+    <column name="name_type" display="Name type" datatype="text"
+      sql="CASE WHEN ttl.preferred=true THEN 'Accepted' WHEN t.language_id=2 THEN 'Synonym' ELSE 'Vernacular' END" />
+    <column name="taxon" display="Taxon" datatype="text" sql="t.taxon" />
+    <column name="attribute" display="Attribute" datatype="text" sql="t.attribute" />
+    <column name="authority" display="Authority" datatype="text" sql="t.authority" />
+    <column name="rank" display="Rank" datatype="text" sql="tr.rank" />
+    <column name="search_code" display="TVK" datatype="text" sql="t.search_code" />
+    <column name="external_key" display="Accepted name TVK" datatype="text" sql="t.external_key" />
+    <column name="organism_key" display="Organism Key" datatype="text" sql="t.organism_key" />
+    <column name="taxon_meaning_id" display="Taxon Meaning ID" datatype="integer" sql="ttl.taxon_meaning_id" />
+    <column name="parent_taxon" display="Parent taxon" datatype="text" sql="tp.taxon" />
+    <column name="parent_organism_key" display="Parant Organism Key" datatype="text" sql="tp.organism_key" />
+    <column name="redundant" display="Redundant" datatype="text" sql="case when ttl.allow_data_entry then 'No' else 'Yes' end" />
+    <column name="name_class" display="Class" datatype="text" sql="case when tr.sort_order >= 300 and t.language_id=2 then 'name-italic' else '' end" />
+  </columns>
+</report>

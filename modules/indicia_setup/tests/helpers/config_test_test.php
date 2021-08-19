@@ -1,14 +1,15 @@
 <?php
 
+use PHPUnit\Framework\TestCase;
+
 /**
  * The tests in this class will check the server environment prior to
  * installing the database.
  */
+class ConfigTestTest extends TestCase {
 
-class ConfigTestTest extends PHPUnit_Framework_TestCase {
-
-  protected function setUp() {
-    // Check config assumes there is a session in place
+  protected function setUp(): void {
+    // Check config assumes there is a session in place.
     $this->session = Session::instance();
   }
 

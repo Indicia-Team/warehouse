@@ -63,7 +63,7 @@ $lang = [
   'error_no_postgis'                => 'Postgis not installed',
   'error_wrong_postgis_version'     => 'Required Postgis version >= 1.3',
   'error_wrong_postgres_version'     => 'Required Postgresql version >= 8.2',
-  'error_no_postgres_client_extension' => 'No php_pgsql extension found (postgresql). Check your php.ini file.',
+  'error_no_postgres_client_extension' => 'No PHP PostgreSQL extension found (pgsql). Check your php.ini file.',
   'error_no_php_curl_extension'        => 'No php_curl extension found. Check your php.ini file.',
   'error_downgrade_not_possible' => 'Current indicia script version is lower than the database version. Downgrade not possible.',
   'host_required' => 'Please specify the PopstgreSQL database host.',

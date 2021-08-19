@@ -34,7 +34,7 @@ $(document).ready(function() {
   jQuery('.date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
 });
 </script>
-<form action="<?php echo url::site() . 'occurrence/save' ?>" method="post" id="occurrence-edit">
+<form action="<?php echo url::site() . 'occurrence/save' ?>" method="post" id="entry_form">
   <fieldset class="readonly">
     <legend>Sample summary<?php echo $metadata; ?></legend>
     <label>Sample link:</label>
@@ -217,38 +217,46 @@ $(document).ready(function() {
       }
       switch ($attr['data_type']) {
         case 'D':
-        case 'V':
-          echo data_entry_helper::date_picker(array(
+          echo data_entry_helper::date_picker([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
-          ));
+          ]);
+          break;
+
+        case 'V':
+          echo data_entry_helper::date_picker([
+            'label' => $attr['caption'],
+            'fieldname' => $name,
+            'default' => $attr['value'],
+            'allowVagueDates' => TRUE,
+          ]);
           break;
 
         case 'L':
-          echo data_entry_helper::select(array(
+          echo data_entry_helper::select([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['raw_value'],
             'lookupValues' => $values["terms_$attr[termlist_id]"],
             'blankText' => '<Please select>',
-          ));
+          ]);
           break;
 
         case 'B':
-          echo data_entry_helper::checkbox(array(
+          echo data_entry_helper::checkbox([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
-          ));
+          ]);
           break;
 
         default:
-          echo data_entry_helper::text_input(array(
+          echo data_entry_helper::text_input([
             'label' => $attr['caption'],
             'fieldname' => $name,
             'default' => $attr['value'],
-          ));
+          ]);
       }
     }
     ?>
@@ -256,7 +264,7 @@ $(document).ready(function() {
 
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::enable_validation('occurrence-edit');
+  data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>
