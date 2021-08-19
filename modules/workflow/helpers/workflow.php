@@ -196,8 +196,8 @@ class workflow {
     $table = inflector::plural($entity);
     foreach ($entityConfig['keys'] as $keyDef) {
       $qry = $db
-        ->select('workflow_events.key_value, workflow_events.event_type, workflow_events.mimic_rewind_first, ' .
-          "workflow_events.values, $table.id as {$entity}_id")
+        ->select('workflow_events.id, workflow_events.key_value, workflow_events.event_type, workflow_events.mimic_rewind_first, ' .
+          "workflow_events.values, $table.id as {$entity}_id, workflow_events.attrs_filter_term, workflow_events.location_ids_filter")
         ->from('workflow_events')
         ->where([
           'workflow_events.deleted' => 'f',

@@ -149,9 +149,9 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'table' => 'location',
       'captionField' => 'name',
       'valueField' => 'id',
-      'extraParams' => $readAuth /* @todo location type IDs filter + */,
+      'extraParams' => $readAuth,
       'addToTable' => FALSE,
-      'default' => html::initial_value($values, 'location_ids_filter_array'),
+      'default' => empty($values['location_ids_filter_array']) ? NULL : $values['location_ids_filter_array'],
     ]);
     echo data_entry_helper::text_input([
       'label' => 'Attribute value filter term',
