@@ -26,9 +26,6 @@
  * @subpackage Data Cleaner
  */
 
-use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
-use PHPUnit\DbUnit\DataSet\CompositeDataSet as DbUDataSetCompositeDataSet;
-
 require_once 'client_helpers/data_entry_helper.php';
 
 /**
@@ -36,7 +33,7 @@ require_once 'client_helpers/data_entry_helper.php';
  * @backupGlobals disabled
  * @backupStaticAttributes disabled
  */
-class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
+class Controllers_Services_Data_Cleaner_Test extends SimpleDatabaseTestCase {
 
   protected $request;
 
@@ -44,74 +41,69 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
    * @return PHPUnit_Extensions_Database_DataSet_IDataSet
    */
   public function getDataSet() {
-    $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    require 'modules/phpUnit/config/core_fixture.php';
 
     // Create a rule to test against.
-    $ds2 = new Indicia_ArrayDataSet(
-      [
-        'verification_rules' => [
-          [
-            'title' => 'Test PeriodWithinYear rule',
-            'description' => 'Test rule for unit testing',
-            'test_type' => 'PeriodWithinYear',
-            'error_message' => 'PeriodWithinYear test failed',
-            'source_url' => NULL,
-            'source_filename' => NULL,
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-            'reverse_rule' => 'F',
-          ],
+    $local_fixture = [
+      'verification_rules' => [
+        [
+          'title' => 'Test PeriodWithinYear rule',
+          'description' => 'Test rule for unit testing',
+          'test_type' => 'PeriodWithinYear',
+          'error_message' => 'PeriodWithinYear test failed',
+          'source_url' => NULL,
+          'source_filename' => NULL,
+          'created_on' => '2016-07-22 16:00:00',
+          'created_by_id' => 1,
+          'updated_on' => '2016-07-22 16:00:00',
+          'updated_by_id' => 1,
+          'reverse_rule' => 'F',
         ],
-        'verification_rule_metadata' => [
-          [
-            'verification_rule_id' => '1',
-            'key' => 'Tvk',
-            'value' => 'TESTKEY',
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-          ],
-          [
-            'verification_rule_id' => '1',
-            'key' => 'StartDate',
-            'value' => '0801',
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-          ],
-          [
-            'verification_rule_id' => '1',
-            'key' => 'EndDate',
-            'value' => '0831',
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-          ],
+      ],
+      'verification_rule_metadata' => [
+        [
+          'verification_rule_id' => '1',
+          'key' => 'Tvk',
+          'value' => 'TESTKEY',
+          'created_on' => '2016-07-22 16:00:00',
+          'created_by_id' => 1,
+          'updated_on' => '2016-07-22 16:00:00',
+          'updated_by_id' => 1,
         ],
-        'cache_verification_rules_period_within_year' => [
-          [
-            'verification_rule_id' => '1',
-            'reverse_rule' => 'f',
-            'taxa_taxon_list_external_key' => 'TESTKEY',
-            'start_date' => '214',
-            'end_date' => '244',
-            'survey_id' => NULL,
-            'stages' => NULL,
-            'error_message' => 'PeriodWithinYear test failed',
-          ],
+        [
+          'verification_rule_id' => '1',
+          'key' => 'StartDate',
+          'value' => '0801',
+          'created_on' => '2016-07-22 16:00:00',
+          'created_by_id' => 1,
+          'updated_on' => '2016-07-22 16:00:00',
+          'updated_by_id' => 1,
         ],
-      ]
-    );
+        [
+          'verification_rule_id' => '1',
+          'key' => 'EndDate',
+          'value' => '0831',
+          'created_on' => '2016-07-22 16:00:00',
+          'created_by_id' => 1,
+          'updated_on' => '2016-07-22 16:00:00',
+          'updated_by_id' => 1,
+        ],
+      ],
+      'cache_verification_rules_period_within_year' => [
+        [
+          'verification_rule_id' => '1',
+          'reverse_rule' => 'f',
+          'taxa_taxon_list_external_key' => 'TESTKEY',
+          'start_date' => '214',
+          'end_date' => '244',
+          'survey_id' => NULL,
+          'stages' => NULL,
+          'error_message' => 'PeriodWithinYear test failed',
+        ],
+      ],
+    ];
 
-    $compositeDs = new DbUDataSetCompositeDataSet();
-    $compositeDs->addDataSet($ds1);
-    $compositeDs->addDataSet($ds2);
-    return $compositeDs;
+    return array_merge($core_fixture, $local_fixture);
   }
 
   public function setUp(): void {
