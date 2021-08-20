@@ -1,0 +1,60 @@
+<report
+    title="Annotations for REST API"
+    description="Retrieves record annotations to support the REST api module. Compatible with the standard report filter parameters."
+    >
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences" count_field="oc.*">
+    select #columns#
+    from occurrence_comments oc
+    join cache_occurrences_functional o on o.id=oc.occurrence_id
+    join occurrences occ on occ.id=o.id
+    join users u on u.id=oc.created_by_id and u.deleted=false
+    join people p on p.id=u.person_id and p.deleted=false
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+    and oc.deleted=false
+    and o.taxa_taxon_list_external_key is not null
+    #idlist#
+  </query>
+  <order_bys>
+    <order_by>oc.updated_on ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='system_user_id' display='System ID' description='3 character code identifying the system' datatype='text'/>
+    <param name="dateTime_from" display="From dateTime" datatype="date" default="">
+      <where>oc.updated_on&gt;'#dateTime_from#'</where>
+    </param>
+  </params>
+  <columns>
+    <column name="annotationID" datatype="text"
+            sql="COALESCE(oc.external_key, '#system_user_id#' || oc.id::varchar)" />
+    <column name="occurrenceID" datatype="integer"
+            sql="COALESCE(occ.external_key, '#system_user_id#' || o.id::varchar)" />
+    <column name="comment" datatype="text"
+            sql="oc.comment"/>
+    <column name="identificationVerificationStatus" datatype="text"
+            sql="case oc.record_status || coalesce(oc.record_substatus::text, '')
+            when 'V' then 'Accepted'
+            when 'V1' then 'Accepted - correct'
+            when 'V2' then 'Accepted - considered correct'
+            when 'C' then 'Unconfirmed - not reviewed'
+            when 'C3' then 'Unconfirmed - plausible'
+            when 'R' then 'Not accepted'
+            when 'R4' then 'Not accepted - unable to verify'
+            when 'R5' then 'Not accepted - incorrect'
+            else null
+        end" />
+    <column name="question" datatype="boolean"
+            sql="oc.query" />
+    <column name="answeredAnnotationID" datatype="text"
+            sql="case oc.query
+            when false then
+              (select id from occurrence_comments oc2 where oc2.occurrence_id=occ.id and oc2.deleted=false and oc2.query=true and oc2.id&lt;oc.id order by id desc limit 1)
+            else null
+        end" />
+    <column name="authorName" datatype="text"
+            sql="coalesce(oc.person_name, case u.id when 1 then 'anonymous' else p.first_name || ' ' || p.surname end)"/>
+    <column name="dateTime"
+            sql="to_char(oc.updated_on, 'YYYY-MM-DD&quot;T&quot;HH24:MI:SS')" />
+  </columns>
+</report>

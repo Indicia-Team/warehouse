@@ -17,8 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Modules
- * @subpackage Workflow
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/
@@ -46,25 +44,27 @@ function workflow_alter_menu($menu, $auth) {
 /**
  * Implements the extend_data_services hook.
  *
- * Determines the data entities which should be added to those available via data services.
+ * Determines the data entities which should be added to those available via
+ * data services.
  *
  * @return array
  *   List of database entities exposed by this plugin with configuration.
  */
 function workflow_extend_data_services() {
-  return array(
-    'workflow_events' => array(),
-    'workflow_metadata' => array('allow_full_access' => TRUE)
-  );
+  return [
+    'workflow_events' => [],
+    'workflow_metadata' => ['allow_full_access' => TRUE],
+  ];
 }
 
 /**
  * Pre-record save processing hook.
  *
- * Potential problem when a record matches multiple events, and they change the same columns,
- * so we are making the assumption that each record will only fire one alert key/key_value combination
- * undo record would require more details on firing event (key and key_value) if this is changed in future
- * In following code, entity means the orm entity, e.g. 'occurrence'
+ * Potential problem when a record matches multiple events, and they change the
+ * same columns, so we are making the assumption that each record will only
+ * fire one alert key/key_value combination undo record would require more
+ * details on firing event (key and key_value) if this is changed in future.
+ * In following code, entity means the orm entity, e.g. 'occurrence'.
  *
  * @param object $db
  *   Database connection.
@@ -81,12 +81,13 @@ function workflow_extend_data_services() {
  *   State data to pass to the post save processing hook.
  */
 function workflow_orm_pre_save_processing($db, $websiteId, $entity, $oldRecord, &$newRecord) {
-  $state = array();
+  $state = [];
   // Abort if no workflow configuration for this entity.
   if (empty(workflow::getEntityConfig($entity))) {
     return $state;
   }
-  // Rewind the record if previous workflow rule changes no longer apply (e.g. after redetermination).
+  // Rewind the record if previous workflow rule changes no longer apply (e.g.
+  // safter redetermination).
   $rewoundRecord = workflow::getRewoundRecord($db, $entity, $oldRecord, $newRecord);
   // Apply any changes in the workflow_events table relevant to the record.
   $state = workflow::applyWorkflow($db, $websiteId, $entity, $oldRecord, $rewoundRecord, $newRecord);
@@ -121,14 +122,27 @@ function workflow_orm_post_save_processing($db, $entity, $record, array $state, 
   $userId = security::getUserId();
   // Insert any state undo records.
   foreach ($state as $undoDetails) {
-    $db->insert('workflow_undo', array(
+    $db->insert('workflow_undo', [
       'entity' => $entity,
       'entity_id' => $id,
       'event_type' => $undoDetails['event_type'],
       'created_on' => date("Ymd H:i:s"),
       'created_by_id' => $userId,
-      'original_values' => json_encode($undoDetails['old_data'])
-    ));
+      'original_values' => json_encode($undoDetails['old_data']),
+    ]);
+    if ($undoDetails['needs_filter_check']) {
+      $q = new WorkQueue();
+      $q->enqueue($db, [
+        'task' => 'task_workflow_event_check_filters',
+        'entity' => $entity,
+        'record_id' => $id,
+        'cost_estimate' => 50,
+        'priority' => 2,
+        'params' => json_encode([
+          'workflow_events.id' => $undoDetails['event_id'],
+        ]),
+      ]);
+    }
   }
   return TRUE;
 }

@@ -1,9 +1,9 @@
 $(document).ready(function docReady() {
   var startInfo;
   var pageCount;
+  var pagesDone = 0;
 
   $('#sync-progress').hide();
-  $('#progress').progressbar();
   function doRequest(data) {
     $.ajax({
       url: 'rest_api_sync/process_batch',
@@ -13,20 +13,30 @@ $(document).ready(function docReady() {
         var chunkPercentage;
         var progress;
         // Get pageCount from pagesToGo on first iteration.
-        pageCount = typeof pageCount === 'undefined' ? response.pagesToGo : pageCount;
+        pageCount = pageCount ?? response.pagesToGo ?? null;
+
         $('#output .panel-body').append('<div>' + response.log.join('<br/>') + '</div>');
         if (response.state === 'done') {
           $('#output .panel-body').append('<div class="alert alert-success">Synchronisation complete</div>');
-          $('#progress').hide();
+          $('#progress, #progress-info').hide();
           $.ajax({
             url: 'rest_api_sync/end',
             dataType: 'json',
             data: startInfo
           });
         } else {
-          chunkPercentage = 100 / startInfo.servers.length;
-          progress = ((response.serverIdx - 1) + ((response.page - 1) / pageCount)) * chunkPercentage;
-          $('#progress').progressbar('value', progress);
+          pagesDone++;
+          if (response.moreToDo) {
+            if (pageCount) {
+              chunkPercentage = 100 / startInfo.servers.length;
+              progress = ((response.serverIdx - 1) + ((response.page - 1) / pageCount)) * chunkPercentage;
+              $('#progress').val(progress);
+            }
+            else {
+              // Alternative if true progress info missing.
+              $('#progress-info').removeClass('hide').text('Batches done so far: ' + pagesDone);
+            }
+          }
           doRequest({
             serverIdx: response.serverIdx,
             page: response.page

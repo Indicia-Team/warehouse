@@ -52,8 +52,17 @@ class rest_api_sync {
     if (empty($servers[$serverId]['serverType']) || $servers[$serverId]['serverType'] === 'Indicia') {
       $shared_secret = $servers[$serverId]['shared_secret'];
       $userId = self::$clientUserId;
-      $hmac = hash_hmac("sha1", $url, $shared_secret, $raw_output = FALSE);
-      curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
+      $hmac = hash_hmac("sha1", $url, $shared_secret, FALSE);
+      curl_setopt($session, CURLOPT_HTTPHEADER, ["Authorization: USER:$userId:HMAC:$hmac"]);
+    }
+    elseif (!empty($servers[$serverId]['serverType']) && $servers[$serverId]['serverType'] === 'json_occurrences') {
+      $shared_secret = $servers[$serverId]['shared_secret'];
+      $userId = self::$clientUserId;
+      $time = round(microtime(TRUE) * 1000);
+      $authData = "$userId$time";
+      // Create the authentication HMAC.
+      $hmac = hash_hmac("sha1", $authData, $shared_secret, FALSE);
+      curl_setopt($session, CURLOPT_HTTPHEADER, ["Authorization: USER:$userId:TIME:$time:HMAC:$hmac"]);
     }
     // Do the request.
     $response = curl_exec($session);

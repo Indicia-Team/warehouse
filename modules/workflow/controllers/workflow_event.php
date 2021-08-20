@@ -54,6 +54,27 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
   }
 
   /**
+   * Convert location_ids_filter to suitable default for the sub_list control.
+   */
+  protected function getModelValues() {
+    $r = parent::getModelValues();
+    $r['location_ids_filter_array'] = [];
+    if (preg_match('/^{(?<list>\d+(,\d+)*)}$/', $r['workflow_event:location_ids_filter'], $matches)) {
+      $ids = explode(',', $matches['list']);
+      foreach ($ids as $id) {
+        $location = ORM::factory('location', $id);
+        $r['location_ids_filter_array'][] = [
+          'caption' => $location->name,
+          'fieldname' => 'workflow_event:location_ids_filter[]',
+          'default' => $id,
+        ];
+      }
+
+    }
+    return $r;
+  }
+
+  /**
    * Prepares any additional data required by the edit view.
    *
    * @param array $values
