@@ -262,9 +262,10 @@ class Occurrence_Model extends ORM {
           unset($array->determiner_id);
           return;
         }
-        $userInfo = $this->$this->userIdFromPersonId($redetByPersonId);
-        $redetByUserId = $this->$this->userIdFromPersonId($redetByPersonId);
-      } else {
+        $userInfo = $this->userIdFromPersonId($redetByPersonId);
+        $redetByUserId = $this->userIdFromPersonId($redetByPersonId);
+      }
+      else {
         // Redetermination doesn't specify user ID, so use logged in user account.
         $redetByUserId = (int) $this->getCurrentUserId();
         $userInfo = $this->db->select('person_id')->from('users')->where('id', $redetByUserId)->get()->current();

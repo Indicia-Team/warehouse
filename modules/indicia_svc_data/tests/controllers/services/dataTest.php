@@ -448,12 +448,12 @@ SQL;
 
   public function testCreateUser() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateUser");
-    $array=array(
+    $array = [
       'person:first_name' => 'Test',
       'person:surname' => 'Person',
-      'person:email_address' => 'test123abc@example.com'
-    );
-    $s = submission_builder::build_submission($array, array('model' => 'person'));
+      'person:email_address' => 'test123abc@example.com',
+    ];
+    $s = submission_builder::build_submission($array, ['model' => 'person']);
     $r = data_entry_helper::forward_post_to('person', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to person save " . print_r($r, TRUE));
@@ -465,7 +465,7 @@ SQL;
       'user:core_role_id' => 1,
       'user:username' => 'testUser',
     ];
-    $s = submission_builder::build_submission($array, array('model' => 'user'));
+    $s = submission_builder::build_submission($array, ['model' => 'user']);
     $r = data_entry_helper::forward_post_to('user', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to user save " . print_r($r, TRUE));
@@ -478,15 +478,15 @@ SQL;
 
   public function testCreateFilter() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateFilter");
-    // post a filter
-    $filterData=array(
+    // Post a filter.
+    $filterData = [
       'filter:title' => 'Test',
       'filter:description' => 'Test descrtiption',
       'filter:definition' => '{"testfield":"testvalue"}',
       'filter:sharing' => 'V',
       'filter:defines_permissions' => 't',
       'filter:website_id' => 1,
-    );
+    ];
     $s = submission_builder::build_submission($filterData, array('model' => 'filter'));
     $r = data_entry_helper::forward_post_to('filter', $s, self::$auth['write_tokens']);
 
@@ -611,20 +611,20 @@ SQL;
 
   public function testCreateOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateOccurrence");
-    $array = array(
+    $array = [
       'website_id' => 1,
       'survey_id' => 1,
       'sample:entered_sref' => 'SU1234',
       'sample:entered_sref_system' => 'osgb',
       'sample:date' => '02/09/2017',
       'occurrence:taxa_taxon_list_id' => 1,
-    );
-    $structure = array(
+    ];
+    $structure = [
       'model' => 'sample',
-      'subModels' => array(
-        'occurrence' => array('fk' => 'sample_id')
-      )
-    );
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
 
@@ -641,14 +641,14 @@ SQL;
       'sample:entered_sref_system' => 'osgb',
       'sample:date' => '02/09/2017',
       'occurrence:taxa_taxon_list_id' => 1,
-      'occAttr:1' => 'Test recorder'
+      'occAttr:1' => 'Test recorder',
     );
-    $structure = array(
+    $structure = [
       'model' => 'sample',
-      'subModels' => array(
-        'occurrence' => array('fk' => 'sample_id')
-      )
-    );
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
@@ -658,14 +658,14 @@ SQL;
     $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
     $this->assertEquals('Test recorder', $val->text_value);
     // Specify determiner should alter the stored det info.
-    $array = array(
+    $array = [
       'website_id' => 1,
       'survey_id' => 1,
       'determiner_id' => 2,
       'occurrence:id' => $row->id,
       'sample:id' => $row->sample_id,
       'occurrence:taxa_taxon_list_id' => 2,
-    );
+    ];
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
@@ -680,13 +680,13 @@ SQL;
     // Specify different user should also alter the determiner.
     global $postedUserId;
     $postedUserId = 2;
-    $array = array(
+    $array = [
       'website_id' => 1,
       'survey_id' => 1,
       'occurrence:id' => $row->id,
       'sample:id' => $row->sample_id,
       'occurrence:taxa_taxon_list_id' => 1,
-    );
+    ];
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
@@ -695,13 +695,13 @@ SQL;
     $this->assertEquals('Unknown', $val->text_value);
     // Make anonymous user change - won't alter the determiner.
     $postedUserId = 1;
-    $array = array(
+    $array = [
       'website_id' => 1,
       'survey_id' => 1,
       'occurrence:id' => $row->id,
       'sample:id' => $row->sample_id,
       'occurrence:taxa_taxon_list_id' => 2,
-    );
+    ];
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
@@ -718,6 +718,7 @@ SQL;
    * people table).
    */
   public function testRedetOccurrencePerson() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRedetOccurrencePerson");
     // Add more people so we can detect misuse of person_id instead of user_id.
     global $postedUserId;
     $postedUserId = self::$extraUserId;
