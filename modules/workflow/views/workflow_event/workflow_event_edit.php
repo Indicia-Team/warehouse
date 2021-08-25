@@ -24,21 +24,20 @@
  * @link https://github.com/Indicia-Team/
  */
 
-require_once DOCROOT . 'client_helpers/data_entry_helper.php';
+warehouse::loadHelpers(['data_entry_helper']);
+$id = html::initial_value($values, 'workflow_event:id');
 if (isset($_POST)) {
   data_entry_helper::dump_errors(['errors' => $this->model->getAllErrors()]);
 }
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
-<form action="<?php echo url::site(); ?>workflow_event/save" method="post" id="entry-form">
+<form action="<?php echo url::site(); ?>workflow_event/save" method="post" id="entry_form">
   <fieldset>
     <legend>Workflow Event definition details</legend>
     <?php
-    data_entry_helper::link_default_stylesheet();
-    data_entry_helper::enable_validation('entry-form');
     echo data_entry_helper::hidden_text([
       'fieldname' => 'workflow_event:id',
-      'default' => html::initial_value($values, 'workflow_event:id'),
+      'default' => $id,
     ]);
     $messages = [];
     // Where controls have no choice available, show a message instead.
@@ -68,7 +67,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
         'lookupValues' => $other_data['groupSelectItems'],
         'default' => html::initial_value($values, 'workflow_event:group_code'),
         'validation' => ['required'],
-        'helpText' => 'The workflow groups available must be configured by the warehouse administrator and define which website\'s records will be affected by this event definition.'
+        'helpText' => 'The workflow groups available must be configured by the warehouse administrator and define which website\'s records will be affected by this event definition.',
       ]);
     }
     if (count($other_data['entitySelectItems']) !== 1) {
@@ -125,12 +124,55 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'fieldname' => 'old_workflow_event_event_type',
       'default' => html::initial_value($values, 'workflow_event:event_type'),
     ]);
-    echo data_entry_helper::select([]
-      'label' => 'Event Type',
+    echo data_entry_helper::select([
+      'label' => 'Event type',
       'fieldname' => 'workflow_event:event_type',
       'lookupValues' => [],
       'validation' => ['required'],
-    ));
+    ]);
+    echo '<fieldset><legend>Event filters</legend>';
+    echo data_entry_helper::select([
+      'label' => 'Location type',
+      'fieldname' => 'location_type',
+      'table' => 'termlists_term',
+      'valueField' => 'id',
+      'captionField' => 'term',
+      'extraParams' => $readAuth + ['termlist_external_key' => 'indicia:location_types', 'order_by' => 'term'],
+      'blankText' => '<Please select>',
+      'helpText' => 'Choose the location type to search within when adding a location boundary filter below.',
+    ]);
+    echo data_entry_helper::sub_list([
+      'label' => 'Location boundary filter',
+      'fieldname' => 'workflow_event:location_ids_filter',
+      'helpText' => lang::get('When this event should only trigger if a record falls inside a geographic region, ' .
+        'specify the list of locations covering that region (or regions).'),
+      'table' => 'location',
+      'captionField' => 'name',
+      'valueField' => 'id',
+      'extraParams' => $readAuth,
+      'addToTable' => FALSE,
+      'default' => empty($values['location_ids_filter_array']) ? NULL : $values['location_ids_filter_array'],
+    ]);
+    echo data_entry_helper::text_input([
+      'label' => 'Attribute value filter term',
+      'fieldname' => 'workflow_event:attrs_filter_term',
+      'helpText' => lang::get('When this event should only trigger if a certain attribute value is present, specify ' .
+        'the DwC term here which identifies the attribute to use (e.g. ReproductiveCondition or Stage). Typically ' .
+        'used to limit bird events to breeding ReproductiveCondition terms.'),
+      'default' => html::initial_value($values, 'workflow_event:attrs_filter_term'),
+    ]);
+    $filterValues = html::initial_value($values, 'workflow_event:attrs_filter_values');
+    if (!empty($filterValues)) {
+      $filterValues = trim($filterValues, '{}');
+      $filterValues = str_replace(',', "\n", $filterValues);
+    }
+    echo data_entry_helper::textarea([
+      'label' => 'Attribute value filter values',
+      'fieldname' => 'workflow_event:attrs_filter_values',
+      'default' => $filterValues,
+    ]);
+    echo '</fieldset>';
+    echo '<fieldset><legend>Data updates</legend>';
     echo data_entry_helper::checkbox([
       'label' => 'Rewind record state first',
       'fieldname' => 'workflow_event:mimic_rewind_first',
@@ -142,15 +184,12 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'schema' => $other_data['jsonSchema'],
       'default' => html::initial_value($values, 'workflow_event:values'),
     ]);
-
+    echo '</fieldset>';
     echo $metadata;
-    echo html::form_buttons(html::initial_value($values, 'workflow_event:id') != NULL, FALSE, FALSE);
-
     data_entry_helper::$indiciaData['entities'] = $other_data['entities'];
 
-    data_entry_helper::$dumped_resources[] = 'jquery';
-    data_entry_helper::$dumped_resources[] = 'jquery_ui';
-    data_entry_helper::$dumped_resources[] = 'fancybox';
+    echo html::form_buttons(!empty($id), FALSE, FALSE);
+    data_entry_helper::enable_validation('entry_form');
     echo data_entry_helper::dump_javascript();
     ?>
   </fieldset>

@@ -1,7 +1,21 @@
 #!/bin/bash
 
+# Set the port on which the warehouse will be accessible
+# to the host.
+export PORT=8080
 # Set the project name which determines the network and container names.
 export COMPOSE_PROJECT_NAME=phpunit
+
+# Ensure dependencies of warehouse have been installed
+if [ ! $(which composer) ]; then
+  # First install composer if not present
+  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+  && php -r "if (hash_file('sha384', 'composer-setup.php') === '756890a4488ce9024fc62c56153228907f1545c228516cbf63f885e036d37e9a59d27d63f46af1d4d07ee0f76181c7d3') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" \
+  && php composer-setup.php \
+  && php -r "unlink('composer-setup.php');" \
+  && mv composer.phar /usr/local/bin/composer
+fi
+composer --working-dir=../ install
 
 # The phpunit container is built to replicate the CI environment
 # allowing us to run tests locally before pushing commits.
@@ -12,15 +26,16 @@ docker-compose -f docker-compose-phpunit.yml build \
   --build-arg USER=$(id -un) \
   --build-arg GROUP=$(id -gn) \
   --build-arg PHP_VERSION=7.3 \
-  --build-arg PG_VERSION=13
-# When the containers are brought up the database will start 
+  --build-arg PG_VERSION=13 \
+  --build-arg PORT=$PORT
+# When the container is brought up, the database will start 
 # followed by Apache which will respond to http requests.
 # This is performed in the background.
 docker-compose -f docker-compose-phpunit.yml up -d
 
 # Wait for warehouse to be up
 echo "Waiting for warehouse..."
-until curl --silent --output outputfile http://localhost:8080; do
+until curl --silent --output outputfile http://localhost:${PORT}; do
   sleep 1
 done
 echo "Warehouse is up."
@@ -45,7 +60,7 @@ done;
 DIR=../application/config
 cp ${DIR}/config.php.travis ${DIR}/config.php
 # Alter site domain as apache is on a different port compared to Travis
-sed -i 's/127.0.0.1/127.0.0.1:8080/' ${DIR}/config.php
+sed -i "s/127.0.0.1/127.0.0.1:${PORT}/" ${DIR}/config.php
 # Provide a config file for the rest_api, spatial_index_builder and request_logging modules
 DIR=../modules/rest_api/config
 cp ${DIR}/rest.php.travis  ${DIR}/rest.php
@@ -61,11 +76,12 @@ cp ${DIR}/request_logging.example.php ${DIR}/request_logging.php
 # 172.17.0.1 is the IP address of the Docker host seen from a container.
 # The idekey is for a suitably configured Visual Studio Code debugging client.
 docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" phpunit_warehouse_1 sh -c '
-  runuser -u $USER -- phpunit --stderr --configuration phpunit-config-test.xml
-  runuser -u $USER -- phpunit --stderr --configuration phpunit-setup-check-test.xml
-  runuser -u $USER -- phpunit --stderr --configuration phpunit-home-test.xml
-  # Repeat to upgrade modules
-  runuser -u $USER -- phpunit --stderr --configuration phpunit-home-test.xml
+ runuser -u $USER -- pwd && \
+    vendor/bin/phpunit --stderr --configuration phpunit-config-test.xml && \
+    vendor/bin/phpunit --stderr --configuration phpunit-setup-check-test.xml && \
+    vendor/bin/phpunit --stderr --configuration phpunit-home-test.xml && \
+    # Repeat to upgrade modules
+    vendor/bin/phpunit --stderr --configuration phpunit-home-test.xml
 '
 
 # Now the Indicia schema exists we can assign permissions to the 
@@ -79,7 +95,8 @@ docker exec -t phpunit_warehouse_1 sh -c '
 '
 
 docker exec -t -e XDEBUG_CONFIG="idekey=VSCODE client_host=172.17.0.1" phpunit_warehouse_1 sh -c '
-  runuser -u $USER -- phpunit --stderr --configuration phpunit-tests.xml
+  runuser -u $USER -- pwd && \
+  vendor/bin/phpunit --stderr --configuration phpunit-tests.xml
 '
 
 # Allow user a chance to modify code and rerun application/module tests.

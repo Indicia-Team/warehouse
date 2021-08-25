@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Survey Structure Export
+ * @package Survey Structure Export
  * @subpackage Controllers
- * @author    Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link     https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -28,7 +29,7 @@ class Termlist_export_Controller extends Indicia_Controller {
   /**
    * @var array Holds a list of log messages describing the results of an import.
    */
-  private $log=array();
+  private $log = [];
 
   /**
    * @var integer The user's ID.
@@ -44,29 +45,35 @@ class Termlist_export_Controller extends Indicia_Controller {
    * @const SQL_FETCH_ALL_TERMS Query definition which retrieves all the terms for a termlist ID
    * in preparation for export.
    */
-  const SQL_FETCH_ALL_TERMS = "select array_to_string(array_agg(entry), '**') as terms from (select t.term || '|' || t.language_iso || '|' ||
-  coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, '')::varchar || '|' ||
-  array_to_string(array_agg(ts.term || '~' || ts.language_iso order by ts.term, ts.language_iso), '`'::varchar) as entry
-from cache_termlists_terms t
-left join cache_termlists_terms tp on tp.id=t.parent_id
-left join cache_termlists_terms ts on ts.meaning_id=t.meaning_id and ts.termlist_id=t.termlist_id and ts.preferred=false
-where t.preferred=true and {where}
-group by t.term, t.language_iso, t.sort_order, tp.term
-order by t.sort_order, t.term) as list";
+  const SQL_FETCH_ALL_TERMS = "SELECT array_to_string(array_agg(entry), '**') AS terms FROM 
+  (
+    SELECT 
+      t.term || '|' || 
+      t.language_iso || '|' ||
+      coalesce(t.sort_order::varchar, '') || '|' || 
+      coalesce(tp.term::varchar, '')::varchar || '|' ||
+      array_to_string(array_agg(ts.term || '~' || ts.language_iso ORDER BY ts.term, ts.language_iso), '`'::varchar) AS entry
+    FROM cache_termlists_terms t
+    LEFT JOIN cache_termlists_terms tp ON tp.id = t.parent_id
+    LEFT JOIN cache_termlists_terms ts ON ts.meaning_id = t.meaning_id AND ts.termlist_id = t.termlist_id AND ts.preferred = false
+    WHERE t.preferred = true AND {where}
+    GROUP BY t.term, t.language_iso, t.sort_order, tp.term
+    ORDER BY t.sort_order, t.term
+  ) AS list";
 
   /**
    * @const SQL_FIND_EXISTING_TERM = Query definition to find if a term definition already exists in the termlist.
    */
-  const SQL_FIND_EXISTING_TERM = "select 1
-   from termlists_terms tlt
-   join terms t on t.id=tlt.term_id and t.deleted=false
-   join languages l on l.id=t.language_id and l.deleted=false
-   left join termlists_terms tltp on tltp.id=tlt.parent_id and tltp.deleted=false
-   left join terms tp on tp.id=tltp.term_id and tp.deleted=false
-   where tlt.deleted=false and tlt.termlist_id={termlist_id}
-   and t.term='{term}' and l.iso='{language_iso}'
-   and coalesce(tlt.sort_order::varchar, '')='{sort_order}'
-   and coalesce(tp.term, '')='{parent}'";
+  const SQL_FIND_EXISTING_TERM = "SELECT 1
+   FROM termlists_terms tlt
+   JOIN terms t ON t.id = tlt.term_id AND t.deleted = false
+   JOIN languages l ON l.id = t.language_id AND l.deleted = false
+   LEFT JOIN termlists_terms tltp ON tltp.id = tlt.parent_id AND tltp.deleted = false
+   LEFT JOIN terms tp ON tp.id = tltp.term_id AND tp.deleted = false
+   WHERE tlt.deleted = false AND tlt.termlist_id = {termlist_id}
+   AND t.term = '{term}' and l.iso = '{language_iso}'
+   AND coalesce(tlt.sort_order::varchar, '') = '{sort_order}'
+   AND coalesce(tp.term, '') = '{parent}'";
 
   /**
    * Constructor.
@@ -81,41 +88,44 @@ order by t.sort_order, t.term) as list";
    */
   public function index() {
     $this->view = new View('termlist_export/index');
-    $this->view->termlistId=$this->uri->last_segment();
-    // Get the term data associated with the termlist ready to export
+    $this->view->termlistId = $this->uri->last_segment();
+    // Get the term data associated with the termlist ready to export.
     $export = $this->getTerms($this->view->termlistId);
     $this->view->export = json_encode($export);
     $this->template->content = $this->view;
   }
 
   /**
-   * Controller action called when Save clicked. Perform the import when text has been pasted into the import text area.
+   * Controller action called when Save clicked. Perform the import when text
+   * has been pasted into the import text area.
    */
   public function save() {
     $termlistId = $_POST['termlist_id'];
     $termlist = $this->db
-        ->select('website_id, title')
-        ->from('termlists')
-        ->where(array('id'=>$termlistId))
-        ->get()->result_array(FALSE);
-    $this->website_id=$termlist[0]['website_id'];
+      ->select('website_id, title')
+      ->from('termlists')
+      ->where(['id' => $termlistId])
+      ->get()->result_array(FALSE);
+    $this->website_id = $termlist[0]['website_id'];
     if (empty($_POST['import_termlist_contents'])) {
       $this->template->title = 'Error during termlist import';
       $this->view = new View('templates/error_message');
-      $this->view->message='Please ensure you copy the details of a termlists\'s terms into the "Import termlist contents" box before importing.';
+      $this->view->message = 'Please ensure you copy the details of a termlists\'s terms into the "Import termlist contents" box before importing.';
       $this->template->content = $this->view;
-    } else {
-      // start a transaction
+    }
+    else {
+      // Start a transaction.
       $this->db->query('BEGIN;');
       try {
-        $importData = json_decode($_POST['import_termlist_contents'], true);
+        $importData = json_decode($_POST['import_termlist_contents'], TRUE);
         $this->doImport($importData);
         $this->template->title = 'Import Complete';
         $this->view = new View('termlist_export/import_complete');
         $this->view->log = $this->log;
         $this->template->content = $this->view;
         $this->db->query('COMMIT;');
-      } catch (Exception $e) {
+      }
+      catch (Exception $e) {
         $this->db->query('ROLLBACK;');
         error_logger::log_error('Exception during termlist content import', $e);
         $this->template->title = 'Error during termlist content import';
@@ -126,7 +136,7 @@ order by t.sort_order, t.term) as list";
       }
     }
     $this->page_breadcrumbs[] = html::anchor('termlist', 'Termlists');
-    $this->page_breadcrumbs[] = html::anchor('termlist/edit/'.$termlistId, $termlist[0]['title']);
+    $this->page_breadcrumbs[] = html::anchor('termlist/edit/' . $termlistId, $termlist[0]['title']);
     $this->page_breadcrumbs[] = $this->template->title;
   }
 
@@ -136,12 +146,14 @@ order by t.sort_order, t.term) as list";
    * @param string $importData The definition of the terms to import.
    */
   public function doImport($importData) {
-    if (isset($_SESSION['auth_user']))
+    if (isset($_SESSION['auth_user'])) {
       $this->userId = $_SESSION['auth_user']->id;
+    }
     else {
       global $remoteUserId;
-      if (isset($remoteUserId))
+      if (isset($remoteUserId)) {
         $this->userId = $remoteUserId;
+      }
       else {
         $defaultUserId = Kohana::config('indicia.defaultPersonId');
         $this->userId = ($defaultUserId ? $defaultUserId : 1);
@@ -157,44 +169,49 @@ order by t.sort_order, t.term) as list";
    * @internal param array $attrDef Definition of the attribute as defined by the imported data.
    */
   private function populateTermlist($importData) {
-    // now we need to create the terms required by the termlist. Split the terms string into individual terms.
+    // Now we need to create the terms required by the termlist.
+    // Split the terms string into individual terms.
     $terms = explode('**', $importData['terms']);
     $termlist_id = $_POST['termlist_id'];
     foreach ($terms as $term) {
-      // the tokens defining the term are separated by pipes.
+      // The tokens defining the term are separated by pipes.
       $term = explode('|', $term);
-      // SQL escaping
+      // SQL escaping.
       $escapedTerm = pg_escape_string($term[0]);
       $escapedParent = pg_escape_string($term[3]);
-      // does the term already exist in the list?
+      // Does the term already exist in the list?
       $existing = $this->db->query(str_replace(
-          array('{termlist_id}', '{term}', '{language_iso}', '{sort_order}', '{parent}'),
-          array($_POST['termlist_id'], $escapedTerm, $term[1], $term[2], $escapedParent),
-          self::SQL_FIND_EXISTING_TERM))->result()->count();
+        ['{termlist_id}', '{term}', '{language_iso}', '{sort_order}', '{parent}'],
+        [$_POST['termlist_id'], $escapedTerm, $term[1], $term[2], $escapedParent],
+        self::SQL_FIND_EXISTING_TERM))->result()->count();
 
       if (!$existing) {
         $this->log[] = $this->db->last_query();
-        // sanitise the sort order
+        // Sanitise the sort order.
         $term[2] = empty($term[2]) ? 'null' : $term[2];
         $this->db->query("select insert_term('$escapedTerm', '$term[1]', $term[2], $termlist_id, null);");
         $this->log[] = "Added term $term[0]";
-      } else {
+      }
+      else {
         $this->log[] = "Term $term[0] already exists";
       }
     }
-    // Now re-iterate through the terms and set the term parents
+    // Now re-iterate through the terms and set the term parents.
     foreach ($terms as $term) {
-      // the tokens defining the term are separated by pipes.
+      // The tokens defining the term are separated by pipes.
       $term = explode('|', $term);
       if (!empty($term[3])) {
-        // SQL escaping
+        // SQL escaping.
         $escapedTerm = pg_escape_string($term[0]);
         $escapedParent = pg_escape_string($term[3]);
-        $this->db->query("update termlists_terms tlt set parent_id=tltp.id, updated_on=now()
-          from terms t, termlists_terms tltp
-          join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$escapedParent'
-          where tlt.termlist_id=$termlist_id and t.id=tlt.term_id and t.deleted=false and t.term='$escapedTerm'
-          and tltp.termlist_id=tlt.termlist_id and tltp.deleted=false");
+        $this->db->query("UPDATE termlists_terms tlt SET parent_id = tltp.id, updated_on = now()
+          FROM terms t, termlists_terms tltp
+          JOIN terms tp ON tp.id = tltp.term_id AND tp.deleted = false AND tp.term = '$escapedParent'
+          WHERE 
+            tlt.termlist_id = $termlist_id AND t.id = tlt.term_id  
+            AND t.deleted = false AND t.term = '$escapedTerm'  
+            AND tltp.termlist_id = tlt.termlist_id AND tltp.deleted = false"
+        );
       }
     }
   }

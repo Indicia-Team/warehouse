@@ -20,11 +20,14 @@
  */
 
 /**
- * Extend Kohana's view implementation to automatically detect plugin modules which add tabs to existing pages.
- * To declare a plugin, create a module with a plugins folder, containing a php file named the same as the module.
- * Inside this module, write a method called (module_name)_extend_ui and return an array of user interface extensions.
- * Each extension is a child array, containing a view (the name of the view it is extending), type (='tab'), controller
- * (the path to the controller function which should be displayed on the tab), title (the title of the tab).
+ * Extend Kohana's view implementation to automatically detect plugin modules
+ * which add tabs to existing pages. To declare a plugin, create a module with
+ * a plugins folder, containing a php file named the same as the module. Inside
+ * this module, write a method called (module_name)_extend_ui and return an
+ * array of user interface extensions. Each extension is a child array,
+ * containing a view (the name of the view it is extending), type (='tab'),
+ * controller (the path to the controller function which should be displayed on
+ * the tab), title (the title of the tab).
  */
 class View extends View_Core {
 
@@ -55,7 +58,8 @@ class View extends View_Core {
           $path = url::site() . "$controller$args";
         }
         $safe = $this->tabNameToId($tab);
-        $tabLinks[] = "<li id=\"$safe-tab\"><a href=\"$path\" title=\"$tab\"><span>$tab</span></a></li>";
+        $tabLinks[] = "<li id=\"$safe-tab\">" .
+        "<a href=\"$path\" title=\"$tab\"><span>$tab</span></a></li>";
       }
       $tabsLi = implode("\n    ", $tabLinks);
       $selectedTab = empty($_GET['tab']) ? '' : $this->tabNameToId($_GET['tab']);
@@ -93,14 +97,17 @@ HTML;
   }
 
   /**
-   * Work out the current argument list so they can be passed through to the tab. E.g. the current record ID.
+   * Work out the current argument list so they can be passed through to the
+   * tab. E.g. the current record ID.
    */
   private function get_args() {
     $uri = URI::instance();
-    if ($uri->total_arguments())
-      $args = '/'.implode('/', $uri->argument_array());
-    else
+    if ($uri->total_arguments()) {
+      $args = '/' . implode('/', $uri->argument_array());
+    }
+    else {
       $args = '';
+    }
     return $args;
   }
 
@@ -108,35 +115,38 @@ HTML;
    * Retrieve the list of tabs for the current view.
    */
   protected function get_tabs() {
-    // skip tabifying the setup_check page, as it relies on the cache and we have not yet checked
-    // if the cache folder is set up.
-    if ($this->viewname=='setup_check')
-      return array('General'=>$this->viewname);
+    // Skip tabifying the setup_check page, as it relies on the cache and we
+    // have not yet checked if the cache folder is set up.
+    if ($this->viewname == 'setup_check') {
+      return ['General' => $this->viewname];
+    }
     else {
       $uri = URI::instance();
-      // use caching, so things don't slow down if there are lots of plugins
-      $cacheId = 'tabs-'.$this->viewname.'-'.$uri->segment(2);
+      // Use caching, so things don't slow down if there are lots of plugins.
+      $cacheId = 'tabs-' . $this->viewname . '-' . $uri->segment(2);
       $cache = Cache::instance();
       if ($tabs = $cache->get($cacheId)) {
         return $tabs;
-      } else {
-        // $this->tabs is set by the controller to the default tabs for the view - excluding module extensions.
-        $tabs = array();
+      }
+      else {
+        // $this->tabs is set by the controller to the default tabs for the
+        // view - excluding module extensions.
+        $tabs = [];
         if (isset($this->tabs)) {
           $this->extend_tabs($tabs, $this->tabs);
         }
-        // now look for modules which plugin to add a tab.
+        // Now look for modules which plugin to add a tab.
         foreach (Kohana::config('config.modules') as $path) {
           $plugin = basename($path);
           if (file_exists("$path/plugins/$plugin.php")) {
-            require_once("$path/plugins/$plugin.php");
-            if (function_exists($plugin.'_extend_ui')) {
-              $extends = call_user_func($plugin.'_extend_ui');
+            require_once "$path/plugins/$plugin.php";
+            if (function_exists($plugin . '_extend_ui')) {
+              $extends = call_user_func($plugin . '_extend_ui');
               $this->extend_tabs($tabs, $extends);
             }
           }
         }
-        $tabs = array_merge(array('General'=>$this->viewname), $tabs);
+        $tabs = array_merge(['General' => $this->viewname], $tabs);
         $cache->set($cacheId, $tabs, ['ui']);
         return $tabs;
       }
@@ -144,22 +154,37 @@ HTML;
   }
 
   /**
-   * Takes a list of tabs and adds new tabs to them according to the supplied list of extensions.
+   * Takes a list of tabs and adds new tabs to them according to the supplied
+   * list of extensions.
    */
   protected function extend_tabs(&$tabs, $extends) {
     $uri = URI::instance();
     foreach ($extends as $extend) {
-      // if on a new record, skip tabs that are disallowed for new.
-      if (isset($extend['actions']) && !in_array($uri->segment(2), $extend['actions']))
+      // If on a new record, skip tabs that are disallowed for new.
+      if (
+        isset($extend['allowForNew']) &&
+        $extend['allowForNew'] === FALSE &&
+        $uri->segment(2) === 'create'
+      ) {
         continue;
-      if ((!isset($extend['type']) || $extend['type']=='tab') && (!isset($extend['view']) || $extend['view']==$this->viewname))
-        $tabs[$extend['title']]=$extend['controller'];
+      }
+      // Skip action-limited tab if we are not extending the requested action.
+      if (isset($extend['actions']) && !in_array($uri->segment(2), $extend['actions'])) {
+        continue;
+      }
+      // Skip if the extension is not a tab or not for this view.
+      if (
+        (!isset($extend['type']) || $extend['type'] == 'tab') &&
+        (!isset($extend['view']) || $extend['view'] == $this->viewname)
+      ) {
+        $tabs[$extend['title']] = $extend['controller'];
+      }
     }
   }
 
   /**
-   * Override the set_filename property accessor to keep a record of the view name, letting us check for
-   * plugins which are linked to this view's path.
+   * Override the set_filename property accessor to keep a record of the view
+   * name, letting us check for plugins which are linked to this view's path.
    */
   public function set_filename($name, $type = NULL) {
     parent::set_filename($name, $type);

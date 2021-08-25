@@ -31,7 +31,7 @@ For information on configuration of workflow events, see
 echo $grid;
 ?>
 <form action="<?php echo url::site() . 'workflow_event/create'; ?>" method="post">
-  <input type="submit" value="New Workflow event" class="ui-corner-all ui-state-default button" />
+  <input type="submit" value="New Workflow event" class="btn btn-primary" />
 </form>
 <?php
 $systemTableEntries = $this->db->select('*')->from('system')->where('name', 'workflow')->get()->as_array(TRUE);

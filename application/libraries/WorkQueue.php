@@ -72,7 +72,8 @@ class WorkQueue {
       'task=' . pg_escape_literal($fields['task']) .
       'AND entity' . (empty($fields['entity']) ? ' IS NULL' : '=' . pg_escape_literal($fields['entity'])) .
       'AND record_id' . (empty($fields['record_id']) ? ' IS NULL' : '=' . pg_escape_literal($fields['record_id'])) .
-      'AND params' . (empty($fields['params']) ? ' IS NULL' : '=' . pg_escape_literal($fields['params']));
+      // Use JSONB to compare as valid in pgSQL.
+      'AND params' . (empty($fields['params']) ? ' IS NULL' : ('::jsonb=' . pg_escape_literal($fields['params']) . '::jsonb'));
     foreach ($fields as $value) {
       $setValues[] = pg_escape_literal($value);
     }

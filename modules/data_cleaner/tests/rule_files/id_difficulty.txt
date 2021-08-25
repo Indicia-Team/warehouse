@@ -1,0 +1,13 @@
+[Metadata]
+TestType=IdentificationDifficulty
+Organisation=Identification difficulty organisation
+LastChanged=20210816
+[EndMetadata]
+
+[INI]
+1=Identification difficulty message 1.
+2=Identification difficulty message 2, with comma.
+
+[Data]
+NBNSYS0000007825=1
+NBNSYS0000007826=2

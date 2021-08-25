@@ -24,35 +24,38 @@
  */
 class Survey_Attribute_Model extends ATTR_ORM {
 
-  protected $belongs_to = array(
+  protected $belongs_to = [
     'created_by' => 'user',
     'updated_by' => 'user',
     'termlist_id' => 'termlist',
     'source_id' => 'termlists_term',
     'reporting_category_id' => 'termlists_term',
-  );
+  ];
 
-  protected $has_many = array(
+  protected $has_many = [
     'survey_attributes_values',
-  );
+  ];
 
-  protected $has_and_belongs_to_many = array('websites');
+  protected $has_and_belongs_to_many = ['websites'];
 
-  // The person attributes are defined per website, not per survey
-  protected $hasSurveyRestriction = false;
+  // The survey attributes are defined per website, not per survey.
+  protected $hasSurveyRestriction = FALSE;
 
   /**
-   * After saving, ensures that the join records linking the attribute to a website are created or deleted.
+   * After saving, ensures that the join records linking the attribute to a
+   * website are created or deleted.
    * @return boolean Returns true to indicate success.
    */
   protected function postSubmit($isInsert) {
-    // Record has saved correctly or is being reused
+    // Record has saved correctly or is being reused.
     $websites = ORM::factory('website')->find_all();
     foreach ($websites as $website) {
-      // Check for website checkbox ticked
-      $this->setAttributeWebsiteRecord($this->id, $website->id, null, isset($_POST['website_'.$website->id]));
+      // Check for website checkbox ticked.
+      $this->setAttributeWebsiteRecord(
+        $this->id, $website->id, NULL, isset($_POST['website_' . $website->id])
+      );
     }
-    return true;
+    return TRUE;
   }
 
 }

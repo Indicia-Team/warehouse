@@ -52,15 +52,15 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'extraParams' => $readAuth,
     ]);
     $helpText = <<<TXT
-If an image is required to explain the term, select it here. The image can be displayed alongside the input control
-n the data entry form.
+If an image is required to explain the term, select it here. The image can be
+displayed alongside the input control on the data entry form.
 TXT;
-    echo data_entry_helper::image_upload(array(
+    echo data_entry_helper::image_upload([
       'fieldname' => "image_upload",
       'label' => 'Image',
       'helpText' => $helpText,
       'existingFilePreset' => 'med',
-    ));
+    ]);
     if (html::initial_value($values, "termlists_term:image_path")) {
       echo html::sized_image(html::initial_value($values, "termlists_term:image_path")) . '</br>';
     }
@@ -84,8 +84,9 @@ TXT;
     echo data_entry_helper::textarea([
       'label' => 'Synonyms',
       'fieldname' => 'metaFields:synonyms',
-      'helpText' => 'Enter synonyms one per line. Optionally follow each name by a | character then the 3 ' .
-        'character code for the language, e.g. "Countryside | eng"',
+      'helpText' => 'Enter synonyms one per line. Optionally follow each name by
+       a | character then the 3 character code for the language,
+       e.g. "Countryside | eng"',
       'default' => html::initial_value($values, 'metaFields:synonyms'),
     ]);
     echo data_entry_helper::text_input([
@@ -108,7 +109,8 @@ TXT;
       'label' => 'Allow data entry',
       'fieldname' => 'termlists_term:allow_data_entry',
       'default' => html::initial_value($values, 'termlists_term:allow_data_entry'),
-      'helpText' => 'Uncheck this box to leave the term in the database but hide it from data entry forms for new records.',
+      'helpText' => 'Uncheck this box to leave the term in the database but hide
+      it from data entry forms for new records.',
     ]);
     ?>
   </fieldset>
@@ -125,38 +127,46 @@ TXT;
         }
         switch ($attr['data_type']) {
           case 'D':
-          case 'V':
-            echo data_entry_helper::date_picker(array(
+            echo data_entry_helper::date_picker([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
+            break;
+
+          case 'V':
+            echo data_entry_helper::date_picker([
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['value'],
+              'allowVagueDates' => TRUE,
+            ]);
             break;
 
           case 'L':
-            echo data_entry_helper::select(array(
+            echo data_entry_helper::select([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['raw_value'],
               'lookupValues' => $values['terms_' . $attr['termlist_id']],
               'blankText' => '<Please select>',
-            ));
+            ]);
             break;
 
           case 'B':
-            echo data_entry_helper::checkbox(array(
+            echo data_entry_helper::checkbox([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
             break;
 
           default:
-            echo data_entry_helper::text_input(array(
+            echo data_entry_helper::text_input([
               'label' => $attr['caption'],
               'fieldname' => $name,
               'default' => $attr['value'],
-            ));
+            ]);
         }
 
       }
