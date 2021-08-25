@@ -19,7 +19,7 @@ services:
     pgadmin:
         # See https://hub.docker.com/r/dpage/pgadmin4/tags
         # for other versions available.
-        image: dpage/pgadmin4:5.5
+        image: dpage/pgadmin4:5.6
         environment:
             PGADMIN_DEFAULT_EMAIL: pgadmin@example.com
             PGADMIN_DEFAULT_PASSWORD: password
