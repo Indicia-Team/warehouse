@@ -47,7 +47,7 @@ left join verification_rule_metadata vrmtaxon on vrmtaxon.verification_rule_id=v
 left join cache_taxa_taxon_lists cttltaxon on cttltaxon.preferred_taxon=vrmtaxon.value and cttltaxon.preferred=true
 left join verification_rule_metadata vrmmeaning on vrmmeaning.verification_rule_id=vr.id
   and vrmmeaning.key='TaxonMeaningId' and vrmmeaning.deleted=false
-left join cache_taxa_taxon_lists cttlmeaning on cttltaxon.taxon_meaning_id=vrmmeaning.value::integer and cttlmeaning.preferred=true
+left join cache_taxa_taxon_lists cttlmeaning on cttlmeaning.taxon_meaning_id=vrmmeaning.value::integer and cttlmeaning.preferred=true
 left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key ilike 'StartDate' and length(vrmstart.value)=4
   and vrmstart.deleted=false
 left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key ilike 'EndDate' and length(vrmend.value)=4
@@ -74,7 +74,7 @@ left join verification_rule_metadata vrmtaxon on vrmtaxon.verification_rule_id=v
 left join cache_taxa_taxon_lists cttltaxon on cttltaxon.taxon=vrmtaxon.value and cttltaxon.preferred=true
 left join verification_rule_metadata vrmmeaning on vrmmeaning.verification_rule_id=vr.id
   and vrmmeaning.key='TaxonMeaningId' and vrmmeaning.deleted=false
-left join cache_taxa_taxon_lists cttlmeaning on cttltaxon.taxon_meaning_id=vrmmeaning.value::integer and cttlmeaning.preferred=true
+left join cache_taxa_taxon_lists cttlmeaning on cttlmeaning.taxon_meaning_id=vrmmeaning.value::integer and cttlmeaning.preferred=true
 join verification_rule_data vrdstage on vrdstage.verification_rule_id=vr.id and vrdstage.key ilike 'Stage'
 left join verification_rule_data vrstart on vrstart.verification_rule_id=vr.id and vrstart.key ilike 'StartDate' and length(vrstart.value)=4
   and vrstart.deleted=false and vrstart.data_group=vrdstage.data_group
