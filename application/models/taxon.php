@@ -157,12 +157,12 @@ SQL;
       }
       foreach ($this->prefExternalKeyChangedForTaxonMeaningIds as $taxonMeaningId) {
         $updateExtKeyQuery = <<<SQL
-  UPDATE taxa t
-  SET external_key='$this->external_key', updated_on=now(), updated_by_id=$userId
-  FROM taxa_taxon_lists ttl
-  WHERE ttl.taxon_meaning_id=$taxonMeaningId
-  AND t.id=ttl.taxon_id
-  SQL;
+UPDATE taxa t
+SET external_key='$this->external_key', updated_on=now(), updated_by_id=$userId
+FROM taxa_taxon_lists ttl
+WHERE ttl.taxon_meaning_id=$taxonMeaningId
+AND t.id=ttl.taxon_id
+SQL;
         $this->db->query($updateExtKeyQuery);
       }
     }
