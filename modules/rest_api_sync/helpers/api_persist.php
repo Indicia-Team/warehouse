@@ -199,11 +199,11 @@ class api_persist {
       // and import the observation via the API?
       throw new exception("Attempt to import annotation $annotation[id] but taxon observation not found.");
     }
-    $values['occurrence_comment:occurrence_id'] = $existingObs[0]['id'];
+    $values['occurrence_id'] = $existingObs[0]['id'];
     // Link to existing annotation if appropriate.
     $existing = self::findExistingAnnotation($db, $annotation['id'], $existingObs[0]['id']);
     if ($existing) {
-      $values['occurrence_comment:id'] = $existing[0]['id'];
+      $values['id'] = $existing[0]['id'];
     }
     $annotationObj = ORM::factory('occurrence_comment');
     $annotationObj->set_submission_data($values);
@@ -398,16 +398,16 @@ SQL;
    */
   private static function getAnnotationValues($db, array $annotation) {
     $values = [
-      'occurrence_comment:comment' => $annotation['comment'],
-      'occurrence_comment:email_address' => self::valueOrNull($annotation, 'emailAddress'),
-      'occurrence_comment:record_status' => self::valueOrNull($annotation, 'record_status'),
-      'occurrence_comment:record_substatus' => self::valueOrNull($annotation, 'record_substatus'),
-      'occurrence_comment:query' => $annotation['question'],
-      'occurrence_comment:person_name' => $annotation['authorName'],
-      'occurrence_comment:external_key' => $annotation['id'],
+      'comment' => $annotation['comment'],
+      'email_address' => self::valueOrNull($annotation, 'emailAddress'),
+      'record_status' => self::valueOrNull($annotation, 'record_status'),
+      'record_substatus' => self::valueOrNull($annotation, 'record_substatus'),
+      'query' => $annotation['question'],
+      'person_name' => $annotation['authorName'],
+      'external_key' => $annotation['id'],
     ];
     if (!empty($annotation['dateTime'])) {
-      $r['updated_on'] = $annotation['dateTime'];
+      $values['updated_on'] = $annotation['dateTime'];
     }
     if (!empty($annotation['identificationVerificationStatus'])) {
       self::applyIdentificationVerificationStatus($annotation['identificationVerificationStatus'], $values);
@@ -866,9 +866,9 @@ SQL;
    */
   private static function updateObservationWithAnnotationDetails($db, $occurrence_id, array $annotation, array $values) {
     $update = [];
-    if (!empty($values['occurrence_comment:record_status'])) {
-      $update['record_status'] = $values['occurrence_comment:record_status'];
-      $update['record_substatus'] = empty($values['occurrence_comment:record_substatus']) ? NULL : $values['occurrence_comment:record_substatus'];
+    if (!empty($values['record_status'])) {
+      $update['record_status'] = $values['record_status'];
+      $update['record_substatus'] = empty($values['record_substatus']) ? NULL : $values['record_substatus'];
     }
     if (!empty($annotation['taxonVersionKey'])) {
       // Find the taxon information supplied with the comment's TVK.
