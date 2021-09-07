@@ -889,7 +889,7 @@ SQL;
     }
     if (count($values)) {
       $occ = ORM::factory('occurrence', $occurrence_id);
-      foreach ($values as $field => $value) {
+      foreach ($update as $field => $value) {
         $occ->$field = $value;
       }
       $occ->set_metadata();
