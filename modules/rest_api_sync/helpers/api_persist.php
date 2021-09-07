@@ -193,7 +193,7 @@ class api_persist {
     // Set up a values array for the annotation post.
     $values = self::getAnnotationValues($db, $annotation);
     // Link to the existing observation.
-    $existingObs = self::findExistingObservation($db, $annotation['taxonObservation']['id'], $survey_id);
+    $existingObs = self::findExistingObservation($db, $annotation['occurrenceID'], $survey_id);
     if (!count($existingObs)) {
       // @todo Proper error handling as annotation can't be imported. Perhaps should obtain
       // and import the observation via the API?
@@ -397,7 +397,7 @@ SQL;
    *   Values array to use for submission building.
    */
   private static function getAnnotationValues($db, array $annotation) {
-    return array(
+    $values = [
       'occurrence_comment:comment' => $annotation['comment'],
       'occurrence_comment:email_address' => self::valueOrNull($annotation, 'emailAddress'),
       'occurrence_comment:record_status' => self::valueOrNull($annotation, 'record_status'),
@@ -405,7 +405,14 @@ SQL;
       'occurrence_comment:query' => $annotation['question'],
       'occurrence_comment:person_name' => $annotation['authorName'],
       'occurrence_comment:external_key' => $annotation['id'],
-    );
+    ];
+    if (!empty($annotation['dateTime'])) {
+      $r['updated_on'] = $annotation['dateTime'];
+    }
+    if (!empty($annotation['identificationVerificationStatus'])) {
+      self::applyIdentificationVerificationStatus($annotation['identificationVerificationStatus'], $values);
+    }
+    return $values;
   }
 
   /**

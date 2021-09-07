@@ -35,7 +35,7 @@ define('MAX_PAGES', 1);
 class rest_api_sync_json_occurrences {
 
   /**
-   * Synchronise a set of data loaded from the iNat server.
+   * Synchronise a set of data loaded from the other server.
    *
    * @param string $serverId
    *   ID of the server as defined in the configuration.
