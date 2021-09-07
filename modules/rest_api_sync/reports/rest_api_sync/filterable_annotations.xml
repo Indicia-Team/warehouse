@@ -30,8 +30,18 @@
             sql="COALESCE(oc.external_key, '#system_user_id#' || oc.id::varchar)" />
     <column name="occurrenceID" datatype="integer"
             sql="COALESCE(occ.external_key, '#system_user_id#' || o.id::varchar)" />
-    <column name="comment" datatype="text"
-            sql="oc.comment"/>
+    <column name="comment" datatype="text" sql="123::text || case oc.comment when case oc.record_status || coalesce(oc.record_substatus::text, '')
+                when 'V' then 'Accepted'
+                when 'V1' then 'Accepted as correct'
+                when 'V2' then 'Accepted as considered correct'
+                when 'C3' then 'Plausible'
+                when 'R' then 'Not accepted'
+                when 'R4' then 'Not accepted as unable to verify'
+                when 'R5' then 'Not accepted as incorrect'
+                else null
+            end then null
+            else oc.comment
+        end"/>
     <column name="identificationVerificationStatus" datatype="text"
             sql="case oc.record_status || coalesce(oc.record_substatus::text, '')
             when 'V' then 'Accepted'
