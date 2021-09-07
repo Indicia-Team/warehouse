@@ -91,7 +91,7 @@ class rest_api_sync_json_annotations {
         $annotation = [
           'id' => $record['annotationID'],
           'occurrenceID' => $record['occurrenceID'],
-          'comment' => empty($record['record-level']['comment']) ? NULL : $record['record-level']['comment'],
+          'comment' => empty($record['comment']) ? 'No comment provided' : $record['comment'],
           'identificationVerificationStatus' => empty($record['identificationVerificationStatus']) ? NULL : $record['identificationVerificationStatus'],
           'question' => empty($record['question']) ? NULL : $record['question'],
           'authorName' => empty($record['authorName']) ? 'Unknown' : $record['authorName'],
