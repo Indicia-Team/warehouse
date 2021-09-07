@@ -89,7 +89,7 @@ class rest_api_sync_json_annotations {
       // @todo Make sure all fields in specification are handled.
       try {
         $annotation = [
-          'id' => $record['id'],
+          'id' => $record['annotationID'],
           'occurrenceID' => $record['occurrenceID'],
           'comment' => empty($record['record-level']['comment']) ? NULL : $record['record-level']['comment'],
           'identificationVerificationStatus' => empty($record['identificationVerificationStatus']) ? NULL : $record['identificationVerificationStatus'],

@@ -208,7 +208,7 @@ class api_persist {
     $annotationObj = ORM::factory('occurrence_comment');
     $annotationObj->set_submission_data($values);
     $annotationObj->submit();
-    self::updateObservationWithAnnotationDetails($db, $existingObs[0]['id'], $annotation);
+    self::updateObservationWithAnnotationDetails($db, $existingObs[0]['id'], $annotation, $values);
     if (count($annotationObj->getAllErrors()) !== 0) {
       throw new exception("Error occurred submitting an annotation\n" . kohana::debug($annotationObj->getAllErrors()));
     }
@@ -859,88 +859,53 @@ SQL;
    *   ID of the associated occurrence record in the database.
    * @param array $annotation
    *   Annotation object loaded from the REST API.
+   * @param array $values
+   *   Database values found for the annotation.
    *
    * @throws exception
    */
-  private static function updateObservationWithAnnotationDetails($db, $occurrence_id, array $annotation) {
-    // Find the original record to compare against.
-    $oldRecords = $db
-      ->select('record_status, record_substatus, taxa_taxon_list_id')
-      ->from('cache_occurrences')
-      ->where('id', $occurrence_id)
-      ->get()->result_array(FALSE);
-    if (!count($oldRecords)) {
-      throw new exception('Could not find cache_occurrences record associated with a comment.');
+  private static function updateObservationWithAnnotationDetails($db, $occurrence_id, array $annotation, array $values) {
+    $update = [];
+    if (!empty($values['occurrence_comment:record_status'])) {
+      $update['record_status'] = $values['occurrence_comment:record_status'];
+      $update['record_substatus'] = empty($values['occurrence_comment:record_substatus']) ? NULL : $values['occurrence_comment:record_substatus'];
     }
-
-    // Find the taxon information supplied with the comment's TVK.
-    $newTaxa = $db
-      ->select('id, taxonomic_sort_order, taxon, authority, preferred_taxon, default_common_name, search_name, ' .
-        'external_key, taxon_meaning_id, taxon_group_id, taxon_group')
-      ->from('cache_taxa_taxon_lists')
-      ->where([
-        'preferred' => 't',
-        'external_key' => $annotation['taxonVersionKey'],
-        'taxon_list_id' => kohana::config('rest_api_sync.taxon_list_id'),
-      ])
-      ->limit(1)
-      ->get()->result_array(FALSE);
-    if (!count($newTaxa)) {
-      throw new exception('Could not find cache_taxa_taxon_lists record associated with an update from a comment.');
+    if (!empty($annotation['taxonVersionKey'])) {
+      // Find the taxon information supplied with the comment's TVK.
+      $newTaxa = $db
+        ->select('id')
+        ->from('cache_taxa_taxon_lists')
+        ->where([
+          'preferred' => 't',
+          'external_key' => $annotation['taxonVersionKey'],
+          'taxon_list_id' => kohana::config('rest_api_sync.taxon_list_id'),
+        ])
+        ->limit(1)
+        ->get()->result_array(FALSE);
+      if (!count($newTaxa)) {
+        throw new exception('Could not find cache_taxa_taxon_lists record associated with an update from a comment.');
+      }
+      $values['taxa_taxon_list_id'] = $newTaxa[0]['id'];
     }
-
-    $oldRecord = $oldRecords[0];
-    $newTaxon = $newTaxa[0];
-
-    $new_status = $annotation['record_status'] === $oldRecord['record_status']
-      ? FALSE : $annotation['record_status'];
-    $new_substatus = $annotation['record_substatus'] === $oldRecord['record_substatus']
-      ? FALSE : $annotation['record_substatus'];
-    $new_ttlid = $newTaxon['id'] === $oldRecord['taxa_taxon_list_id']
-      ? FALSE : $newTaxon['id'];
-
-    // Does the comment imply an allowable change to the occurrence's attributes?
-    if ($new_status || $new_substatus || $new_ttlid) {
-      $oupdate = array('updated_on' => date("Ymd H:i:s"));
-      $coupdate = array('cache_updated_on' => date("Ymd H:i:s"));
-      if ($new_status || $new_substatus) {
-        $oupdate['verified_on'] = date("Ymd H:i:s");
-        // @todo Verified_by_id needs to be mapped to a proper user account.
-        $oupdate['verified_by_id'] = 1;
-        $coupdate['verified_on'] = date("Ymd H:i:s");
-        $coupdate['verifier'] = $annotation['authorName'];
+    if (count($values)) {
+      $occ = ORM::factory('occurrence', $occurrence_id);
+      foreach ($values as $field => $value) {
+        $occ->$field = $value;
       }
-      if ($new_status) {
-        $oupdate['record_status'] = $new_status;
-        $coupdate['record_status'] = $new_status;
-      }
-      if ($new_substatus) {
-        $oupdate['record_substatus'] = $new_substatus;
-        $coupdate['record_substatus'] = $new_substatus;
-      }
-      if ($new_ttlid) {
-        $oupdate['taxa_taxon_list_id'] = $new_ttlid;
-        $coupdate['taxa_taxon_list_id'] = $new_ttlid;
-        $coupdate['taxonomic_sort_order'] = $newTaxon['taxonomic_sort_order'];
-        $coupdate['taxon'] = $newTaxon['taxon'];
-        $coupdate['preferred_taxon'] = $newTaxon['preferred_taxon'];
-        $coupdate['authority'] = $newTaxon['authority'];
-        $coupdate['default_common_name'] = $newTaxon['default_common_name'];
-        $coupdate['search_name'] = $newTaxon['search_name'];
-        $coupdate['taxa_taxon_list_external_key'] = $newTaxon['external_key'];
-        $coupdate['taxon_meaning_id'] = $newTaxon['taxon_meaning_id'];
-        $coupdate['taxon_group_id'] = $newTaxon['taxon_group_id'];
-        $coupdate['taxon_group'] = $newTaxon['taxon_group'];
-      }
-      $db->update('occurrences',
-        $oupdate,
-        array('id' => $occurrence_id)
-      );
-      $db->update('cache_occurrences',
-        $coupdate,
-        array('id' => $occurrence_id)
-      );
-      // @todo create a determination if this is not automatic
+      $occ->set_metadata();
+      // Save occurrence changes (will update cache).
+      $occ->save();
+    }
+    elseif (!empty($annotation['question']) && $annotation['question'] === 't') {
+      // Need to separately update cache if question asked.
+      $q = new WorkQueue();
+      $q->enqueue($db, [
+        'task' => 'task_cache_builder_update',
+        'entity' => 'occurrence',
+        'record_id' => $occurrence_id,
+        'cost_estimate' => 50,
+        'priority' => 2,
+      ]);
     }
   }
 
