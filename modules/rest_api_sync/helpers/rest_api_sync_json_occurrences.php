@@ -24,8 +24,6 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
-define('MAX_PAGES', 1);
-
 /**
  * Helper class for syncing to the JSON occurrences API of another server.
  *

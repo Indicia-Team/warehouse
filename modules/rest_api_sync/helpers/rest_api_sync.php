@@ -21,6 +21,8 @@
 
  defined('SYSPATH') or die('No direct script access.');
 
+ define('MAX_PAGES', 1);
+
 /**
  * Helper class for syncing to RESTful APIs.
  */
@@ -55,7 +57,8 @@ class rest_api_sync {
       $hmac = hash_hmac("sha1", $url, $shared_secret, FALSE);
       curl_setopt($session, CURLOPT_HTTPHEADER, ["Authorization: USER:$userId:HMAC:$hmac"]);
     }
-    elseif (!empty($servers[$serverId]['serverType']) && $servers[$serverId]['serverType'] === 'json_occurrences') {
+    elseif (!empty($servers[$serverId]['serverType']) && substr($servers[$serverId]['serverType'], 0, 5) === 'json_') {
+      // All JSON servers use same HMAC authentication.
       $shared_secret = $servers[$serverId]['shared_secret'];
       $userId = self::$clientUserId;
       $time = round(microtime(TRUE) * 1000);

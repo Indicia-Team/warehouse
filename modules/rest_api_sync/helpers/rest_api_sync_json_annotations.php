@@ -24,8 +24,6 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
-define('MAX_PAGES', 1);
-
 /**
  * Helper class for syncing to the JSON annotations API of another server.
  *
@@ -87,17 +85,17 @@ class rest_api_sync_json_annotations {
       $serverId
     );
     $tracker = ['inserts' => 0, 'updates' => 0, 'errors' => 0];
-    foreach ($data['data'] as $annotation) {
+    foreach ($data['data'] as $record) {
       // @todo Make sure all fields in specification are handled.
       try {
         $annotation = [
-          'id' => $annotation['annotationID'],
-          'occurrenceID' => $annotation['occurrenceID'],
-          'comment' => empty($annotation['record-level']['comment']) ? NULL : $annotation['record-level']['comment'],
-          'identificationVerificationStatus' => empty($annotation['identificationVerificationStatus']) ? NULL : $annotation['identificationVerificationStatus'],
-          'question' => empty($annotation['question']) ? NULL : $annotation['question'],
-          'authorName' => empty($annotation['authorName']) ? 'Unknown' : $annotation['authorName'],
-          'dateTime' => $annotation['dateTime'],
+          'id' => $record['annotationID'],
+          'occurrenceID' => $record['occurrenceID'],
+          'comment' => empty($record['record-level']['comment']) ? NULL : $record['record-level']['comment'],
+          'identificationVerificationStatus' => empty($record['identificationVerificationStatus']) ? NULL : $record['identificationVerificationStatus'],
+          'question' => empty($record['question']) ? NULL : $record['question'],
+          'authorName' => empty($record['authorName']) ? 'Unknown' : $record['authorName'],
+          'dateTime' => $record['dateTime'],
         ];
 
         $is_new = api_persist::annotation(
@@ -109,12 +107,12 @@ class rest_api_sync_json_annotations {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
         $db->query("UPDATE rest_api_sync_skipped_records SET current=false " .
-          "WHERE server_id='$serverId' AND source_id='{$annotation['annotation']['annotationID']}' AND dest_table='occurrence_comments'");
+          "WHERE server_id='$serverId' AND source_id='$annotation[id]' AND dest_table='occurrence_comments'");
       }
       catch (exception $e) {
         rest_api_sync::log(
           'error',
-          "Error occurred submitting an annotation with ID {$annotation['annotation']['annotationID']}\n" . $e->getMessage(),
+          "Error occurred submitting an annotation with ID $annotation[id]\n" . $e->getMessage(),
           $tracker
         );
         $msg = pg_escape_string($e->getMessage());
@@ -131,7 +129,7 @@ INSERT INTO rest_api_sync_skipped_records (
 )
 VALUES (
   '$serverId',
-  '{$annotation['annotation']['annotationID']}',
+  '$annotation[id]',
   'occurrence_comments',
   '$msg',
   true,
