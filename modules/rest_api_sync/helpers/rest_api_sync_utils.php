@@ -26,14 +26,24 @@
 /**
  * Helper class for syncing to RESTful APIs.
  */
-class rest_api_sync {
+class rest_api_sync_utils {
 
+  /**
+   * Client user ID for authentication.
+   *
+   * @var string
+   */
   public static $clientUserId;
 
+  /**
+   * Keep track of logged messages so they can be reported back to a UI.
+   *
+   * @var array
+   */
   public static $log = [];
 
   /**
-   * Gets a page of data from another server's REST API
+   * Gets a page of data from another server's REST API.
    *
    * @param string $url
    *   URL of the service to access.

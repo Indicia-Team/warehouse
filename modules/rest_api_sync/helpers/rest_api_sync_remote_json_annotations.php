@@ -30,7 +30,7 @@ defined('SYSPATH') or die('No direct script access.');
  * Could be an Indicia warehouse, or another server implementing the same
  * standard.
  */
-class rest_api_sync_json_annotations {
+class rest_api_sync_remote_json_annotations {
 
   /**
    * Synchronise a set of data loaded from the other server.
@@ -80,7 +80,7 @@ class rest_api_sync_json_annotations {
   public static function syncPage($serverId, array $server) {
     $db = Database::instance();
     $nextPage = variable::get("rest_api_sync_{$serverId}_next_page", [], FALSE);
-    $data = rest_api_sync::getDataFromRestUrl(
+    $data = rest_api_sync_utils::getDataFromRestUrl(
       "$server[url]?" . http_build_query($nextPage),
       $serverId
     );
@@ -110,7 +110,7 @@ class rest_api_sync_json_annotations {
           "WHERE server_id='$serverId' AND source_id='$annotation[id]' AND dest_table='occurrence_comments'");
       }
       catch (exception $e) {
-        rest_api_sync::log(
+        rest_api_sync_utils::log(
           'error',
           "Error occurred submitting an annotation with ID $annotation[id]\n" . $e->getMessage(),
           $tracker
@@ -141,7 +141,7 @@ QRY;
       }
     }
     variable::set("rest_api_sync_{$serverId}_next_page", $data['paging']['next']);
-    rest_api_sync::log(
+    rest_api_sync_utils::log(
       'info',
       "<strong>Annotations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );

@@ -27,7 +27,7 @@ defined('SYSPATH') or die('No direct script access.');
 /**
  * Helper class for extending the REST API with sync endpoints.
  */
-class rest_api_sync_rest {
+class rest_api_sync_rest_endpoints {
 
   /**
    * Attribute types to exclude, either for privacy or duplication reasons.

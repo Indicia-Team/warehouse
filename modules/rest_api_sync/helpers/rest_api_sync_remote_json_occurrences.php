@@ -30,7 +30,7 @@ defined('SYSPATH') or die('No direct script access.');
  * Could be an Indicia warehouse, or another server implementing the same
  * standard.
  */
-class rest_api_sync_json_occurrences {
+class rest_api_sync_remote_json_occurrences {
 
   /**
    * Synchronise a set of data loaded from the other server.
@@ -81,7 +81,7 @@ class rest_api_sync_json_occurrences {
     $db = Database::instance();
     api_persist::initDwcAttributes($db, $server['survey_id']);
     $nextPage = variable::get("rest_api_sync_{$serverId}_next_page", [], FALSE);
-    $data = rest_api_sync::getDataFromRestUrl(
+    $data = rest_api_sync_utils::getDataFromRestUrl(
       "$server[url]?" . http_build_query($nextPage),
       $serverId
     );
@@ -169,7 +169,7 @@ class rest_api_sync_json_occurrences {
           "WHERE server_id='$serverId' AND source_id='{$record['occurrence']['occurrenceID']}' AND dest_table='occurrences'");
       }
       catch (exception $e) {
-        rest_api_sync::log(
+        rest_api_sync_utils::log(
           'error',
           "Error occurred submitting an occurrence with ID {$record['occurrence']['occurrenceID']}\n" . $e->getMessage(),
           $tracker
@@ -200,7 +200,7 @@ QRY;
       }
     }
     variable::set("rest_api_sync_{$serverId}_next_page", $data['paging']['next']);
-    rest_api_sync::log(
+    rest_api_sync_utils::log(
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );

@@ -857,10 +857,10 @@ class Rest_Controller extends Controller {
           if (RestObjects::$handlerModule === 'rest_api' && method_exists($this, $methodName)) {
             $class = $this;
           }
-          elseif (RestObjects::$handlerModule !== 'rest_api' && method_exists(RestObjects::$handlerModule . '_rest', $methodName)) {
+          elseif (RestObjects::$handlerModule !== 'rest_api' && method_exists(RestObjects::$handlerModule . '_rest_endpoints', $methodName)) {
             // Expect any modules extending the API to implement a helper class
-            // <module name>_rest.
-            $class = RestObjects::$handlerModule . '_rest';
+            // <module name>_rest_endpoints.
+            $class = RestObjects::$handlerModule . '_rest_endpoints';
           }
           else {
             RestObjects::$apiResponse->fail('Not Found', 404, "Resource $name not known for method $this->method ($methodName)");
