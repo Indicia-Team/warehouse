@@ -435,10 +435,10 @@ SQL;
       $licenceData = $db->query($qry)->result_array(FALSE);
       self::$licences = [];
       foreach ($licenceData as $licence) {
-        self::$licences[strtolower(str_replace($licence['code'], ' ', '-'))] = $licence['id'];
+        self::$licences[strtolower(str_replace(' ', '-', $licence['code']))] = $licence['id'];
       }
     }
-    return self::$licences[strtolower(str_replace($licenceCode, ' ', '-'))];
+    return self::$licences[strtolower(str_replace(' ', '-', $licenceCode))];
   }
 
   /**
