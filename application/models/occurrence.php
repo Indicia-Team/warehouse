@@ -25,24 +25,27 @@
 class Occurrence_Model extends ORM {
   protected $requeuedForVerification = FALSE;
 
-  protected $has_many = array(
+  protected $has_many = [
     'occurrence_attribute_values',
     'determinations',
-    'occurrence_media'
-  );
-  protected $belongs_to = array(
+    'occurrence_media',
+  ];
+
+  protected $belongs_to = [
     'determiner' => 'person',
     'sample',
     'taxa_taxon_list',
     'created_by' => 'user',
     'updated_by' => 'user',
-    'verified_by' => 'user'
-  );
-  // Declare that this model has child attributes, and the name of the node in the submission which contains them.
+    'verified_by' => 'user',
+  ];
+
+  // Declare that this model has child attributes, and the name of the node in
+  // the submission which contains them.
   protected $has_attributes = TRUE;
   protected $attrs_submission_name = 'occAttributes';
   public $attrs_field_prefix = 'occAttr';
-  protected $additional_csv_fields = array(
+  protected $additional_csv_fields = [
     // Extra lookup options.
     'occurrence:fk_taxa_taxon_list:genus' => 'Genus (builds binomial name)',
     'occurrence:fk_taxa_taxon_list:specific' => 'Specific name/epithet (builds binomial name)',
@@ -58,8 +61,8 @@ class Occurrence_Model extends ORM {
     'occurrence_medium:path:3' => 'Media Path 3',
     'occurrence_medium:caption:3' => 'Media Caption 3',
     'occurrence_medium:path:4' => 'Media Path 4',
-    'occurrence_medium:caption:4' => 'Media Caption 4'
-  );
+    'occurrence_medium:caption:4' => 'Media Caption 4',
+  ];
 
   // During an import it is possible to merge different columns in a CSV row to make a database field
   public $specialImportFieldProcessingDefn = [
@@ -108,6 +111,9 @@ class Occurrence_Model extends ORM {
 
   /**
    * Returns a caption to identify this model instance.
+   *
+   * @return string
+   *   Caption for instance.
    */
   public function caption() {
     return 'Record of ' . $this->taxa_taxon_list->taxon->taxon;
@@ -165,7 +171,7 @@ class Occurrence_Model extends ORM {
       $array->add_rules('taxa_taxon_list_id', 'required');
     }
     // Explicitly add those fields for which we don't do validation.
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'comment',
       'determiner_id',
       'deleted',
@@ -184,7 +190,8 @@ class Occurrence_Model extends ORM {
       'sensitivity_precision',
       'import_guid',
       'metadata',
-    );
+      'verifier_only',
+    ];
     if (array_key_exists('id', $fieldlist)) {
       // Existing data must not be set to download_flag=F (final download) otherwise it
       // is read only.
