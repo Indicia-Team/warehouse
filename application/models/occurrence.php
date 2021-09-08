@@ -190,7 +190,7 @@ class Occurrence_Model extends ORM {
       'sensitivity_precision',
       'import_guid',
       'metadata',
-      'verifier_only',
+      'verifier_only_data',
     ];
     if (array_key_exists('id', $fieldlist)) {
       // Existing data must not be set to download_flag=F (final download) otherwise it
