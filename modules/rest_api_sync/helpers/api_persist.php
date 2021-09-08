@@ -247,6 +247,7 @@ class api_persist {
       'occurrence:external_key' => $observation['id'],
       'occurrence:zero_abundance' => isset($observation['zeroAbundance']) ? strtolower($observation['zeroAbundance']) : 'f',
       'occurrence:sensitivity_precision' => $sensitive ? 10000 : NULL,
+      'occurrence:verifier_only_data' => isset($observation['verifierOnlyData']) ? $observation['verifierOnlyData'] : NULL,
     ];
     if (!empty($observation['licenceCode'])) {
       $values['sample:licence_id'] = self::getLicenceIdFromCode($db, $observation['licenceCode']);

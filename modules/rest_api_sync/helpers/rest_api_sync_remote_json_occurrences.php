@@ -89,7 +89,6 @@ class rest_api_sync_remote_json_occurrences {
     $tracker = ['inserts' => 0, 'updates' => 0, 'errors' => 0];
     foreach ($data['data'] as $record) {
       // @todo Make sure all fields in specification are handled
-      // @todo dynamicProperties field.
       // @todo occurrence.associated_media
       // @todo occurrence.occurrence_status
       // @todo occurrence.organism_quantity
@@ -102,7 +101,6 @@ class rest_api_sync_remote_json_occurrences {
         $observation = [
           'licenceCode' => empty($record['record-level']['license']) ? NULL : $record['record-level']['license'],
           'collectionCode' => empty($record['record-level']['collectionCode']) ? NULL : $record['record-level']['collectionCode'],
-          'occurrenceMetadata' => empty($record['record-level']['dynamicProperties']) ? NULL : $record['record-level']['dynamicProperties'],
           'id' => $record['occurrence']['occurrenceID'],
           'individualCount' => empty($record['occurrence']['individualCount']) ? NULL : $record['occurrence']['individualCount'],
           'lifeStage' => empty($record['occurrence']['lifeStage']) ? NULL : $record['occurrence']['lifeStage'],
@@ -143,17 +141,11 @@ class rest_api_sync_remote_json_occurrences {
             throw new exception('Invalid grid reference format: ' . $record['location']['gridReference']);
           }
         }
-        if (!empty($server['otherFields'])) {
-          foreach ($server['otherFields'] as $src => $dest) {
-            $path = explode('.', $src);
-            if (!empty($record[$path[0]]) && !empty($record[$path[1]])) {
-              // @todo Check multi-value/array handling.
-              $attrTokens = explode(':', $dest);
-              $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $record[$path[0]][$path[1]];
-            }
-          }
+        if (!empty($record['record-level']['dynamicProperties']) && !empty($record['record-level']['dynamicProperties']['verifierOnlyData'])) {
+          $observation['verifierOnlyData'] = json_encode($record['record-level']['dynamicProperties']['verifierOnlyData']);
+          unset($record['record-level']['dynamicProperties']['verifierOnlyData']);
         }
-
+        self::processOtherFields($server, $record, $observation);
         $is_new = api_persist::taxonObservation(
           $db,
           $observation,
@@ -211,6 +203,41 @@ QRY;
       'recordsToGo' => NULL,
     ];
     return $r;
+  }
+
+  /**
+   * Process any other field mappings defined by the server config.
+   *
+   * @param array $server
+   *   Server configuration.
+   * @param array $record
+   *   Record structure supplied by the remote server.
+   * @param array $observation
+   *   Observation values to store in Indicia. Will be updated as appropriate.
+   */
+  private static function processOtherFields(array $server, array $record, array &$observation) {
+    if (!empty($server['otherFields'])) {
+      foreach ($server['otherFields'] as $src => $dest) {
+        $path = explode('.', $src);
+        $posInDoc = $record;
+        $found = TRUE;
+        foreach ($path as $node) {
+          if (!isset($posInDoc[$node])) {
+            $found = FALSE;
+            break;
+          }
+          $posInDoc = $posInDoc[$node];
+        }
+        if ($found) {
+          // @todo Check multi-value/array handling.
+          $attrTokens = explode(':', $dest);
+          if (is_object($posInDoc) || is_array($posInDoc)) {
+            $posInDoc = json_encode($posInDoc);
+          }
+          $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $posInDoc;
+        }
+      }
+    }
   }
 
   /**
