@@ -15,6 +15,8 @@
     and oc.deleted=false
     -- Only annotations originating on this warehouse.
     and oc.external_key is null
+    -- No system generated notifications
+    and oc.auto_generated=false
     and o.taxa_taxon_list_external_key is not null
     #idlist#
   </query>
