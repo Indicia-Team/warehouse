@@ -109,7 +109,7 @@ $config['termlists_terms']['insert'] = "insert into cache_termlists_terms (
 $config['termlists_terms']['join_needs_update'] = 'join needs_update_termlists_terms nu on nu.id=tlt.id and nu.deleted=false';
 $config['termlists_terms']['key_field'] = 'tlt.id';
 
-//--------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 $config['taxa_taxon_lists']['get_missing_items_query'] = "
     select distinct on (ttl.id) ttl.id, tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted
@@ -313,7 +313,7 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
 $config['taxa_taxon_lists']['join_needs_update'] = 'join needs_update_taxa_taxon_lists nu on nu.id=ttl.id and nu.deleted=false';
 $config['taxa_taxon_lists']['key_field'] = 'ttl.id';
 
-$config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
+$config['taxa_taxon_lists']['extra_multi_record_updates'] = [
   'setup' => "
     -- Find children of updated taxa to ensure they are also changed.
     WITH RECURSIVE q AS (
@@ -428,7 +428,7 @@ $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
     DROP TABLE descendants;
     DROP TABLE ttl_path;
     DROP TABLE master_list_paths;",
-);
+];
 
 // --------------------------------------------------------------------------------------------------------------------------
 
@@ -880,10 +880,10 @@ $config['samples']['get_changed_items_query'] = "
     group by id
 ";
 
-$config['samples']['delete_query'] = array(
+$config['samples']['delete_query'] = [
   "delete from cache_samples_functional where id in (select id from needs_update_samples where deleted=true);
 delete from cache_samples_nonfunctional where id in (select id from needs_update_samples where deleted=true);",
-);
+];
 
 $config['samples']['update']['functional'] = "
 UPDATE cache_samples_functional s_update
@@ -909,7 +909,8 @@ SET website_id=su.website_id,
     else 'A'
   end,
   parent_sample_id=s.parent_id,
-  media_count=(SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false)
+  media_count=(SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
+  external_key=s.external_key
 FROM samples s
 #join_needs_update#
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -1075,7 +1076,7 @@ $config['samples']['insert']['functional'] = "
 INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
-            group_id, record_status, training, query, parent_sample_id, media_count)
+            group_id, record_status, training, query, parent_sample_id, media_count, external_key)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision),
@@ -1087,7 +1088,8 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
     else 'A'
   end,
   s.parent_id,
-  (SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false)
+  (SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
+  s.external_key
 FROM samples s
 #join_needs_update#
 LEFT JOIN cache_samples_functional cs on cs.id=s.id
@@ -1263,7 +1265,7 @@ $config['samples']['key_field'] = 's.id';
 // Additional update statements to pick up the recorder name from various possible custom attribute places. Faster than
 // loads of left joins. These should be in priority order - i.e. ones where we have recorded the inputter rather than
 // specifically the recorder should come after ones where we have recorded the recorder specifically.
-$config['samples']['extra_multi_record_updates'] = array(
+$config['samples']['extra_multi_record_updates'] = [
   // s.recorder_names is filled in as a starting point. The rest only proceed if this is null.
   // full recorder name
   // or surname, firstname.
@@ -1336,11 +1338,11 @@ $config['samples']['extra_multi_record_updates'] = array(
     from needs_update_samples nu, users u
     join cache_samples_functional csf on csf.created_by_id=u.id
     where cs.recorders is null and nu.id=cs.id
-    and cs.id=csf.id and u.id<>1;'
-);
+    and cs.id=csf.id and u.id<>1;',
+];
 
 // Final statements to pick up after an insert of a single record.
-$config['samples']['extra_single_record_updates'] = array(
+$config['samples']['extra_single_record_updates'] = [
   // Sample recorder names
   // Or, full recorder name
   // Or, surname, firstname.
@@ -1415,8 +1417,8 @@ $config['samples']['extra_single_record_updates'] = array(
     from users u
     join cache_samples_functional csf on csf.created_by_id=u.id
     where cs.recorders is null and cs.id in (#ids#)
-    and cs.id=csf.id and u.id<>1;'
-);
+    and cs.id=csf.id and u.id<>1;',
+];
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -1465,10 +1467,10 @@ $config['occurrences']['get_changed_items_query'] = "
     ) as sub
     group by id";
 
-$config['occurrences']['delete_query'] = array(
+$config['occurrences']['delete_query'] = [
   "delete from cache_occurrences_functional where id in (select id from needs_update_occurrences where deleted=true);
 delete from cache_occurrences_nonfunctional where id in (select id from needs_update_occurrences where deleted=true);"
-);
+];
 
 $config['occurrences']['update']['functional'] = "
 UPDATE cache_occurrences_functional
