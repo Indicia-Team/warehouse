@@ -120,6 +120,7 @@ class rest_api_sync_remote_json_occurrences {
           'siteName' => empty($record['location']['locality']) ? NULL : $record['location']['locality'],
           'identifiedBy' => empty($record['identification']['identifiedBy']) ? NULL : $record['identification']['identifiedBy'],
           'identificationVerificationStatus' => empty($record['identification']['identificationVerificationStatus']) ? NULL : $record['identification']['identificationVerificationStatus'],
+          'identificationRemarks' => empty($record['identification']['identificationRemarks']) ? NULL : $record['identification']['identificationRemarks'],
         ];
         if (!empty($record['location']['decimalLongitude']) && !empty($record['location']['decimalLatitude'])) {
           // Json_decode() converts some floats to scientific notation, so
