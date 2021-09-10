@@ -23,7 +23,7 @@
   </params>
   <columns>
     <column name="id" sql="l.id" />
-    <column name="name" sql="l.name || 'test'" />
+    <column name="name" sql="l.name" />
     <column name="centroid_sref" sql="l.centroid_sref" />
   </columns>
 </report>
