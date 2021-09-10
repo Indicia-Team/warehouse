@@ -1,0 +1,29 @@
+<report
+    title="Locations for drop down"
+    description="List of user's locations available to show on the calendar."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations l
+    JOIN location_attribute_values v ON v.location_id=l.id AND v.deleted=false AND v.int_value=#cms_user_id#
+    JOIN location_attributes a ON a.id=v.location_attribute_id AND a.deleted=false AND a.caption='CMS User ID'
+    JOIN location_attributes_websites aw ON aw.location_attribute_id=a.id AND aw.deleted=false AND aw.restrict_to_survey_id=#survey_id#
+    JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+    WHERE l.deleted=false
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name="cms_user_id" display="CMS user ID" datatype="integer"/>
+    <param name="survey_id" display="Survey ID" datatype="integer"/>
+    <param name="location_type_id" display="Location type ID" datatype="integer" default="">
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" sql="l.id" />
+    <column name="name" sql="l.name || 'test'" />
+    <column name="centroid_sref" sql="l.centroid_sref" />
+  </columns>
+</report>
