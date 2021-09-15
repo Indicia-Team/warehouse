@@ -23,7 +23,7 @@
   </params>
   <columns>
     <column name='occurrence_id' sql='o.id' datatype="integer" />
-    <column name='occurrence_medium_id' sql='om.id' datatype="integer" />
+    <column name='id' sql='om.id' datatype="integer" />
     <column name='record_status' sql='o.record_status' visible="false" />
     <column name='record_substatus' sql='o.record_substatus' visible="false" />
     <column name='query' sql='query' visible="false" />

@@ -61,8 +61,8 @@ function rest_api_sync_extend_rest_api() {
             'proj_id' => [
               'datatype' => 'text',
             ],
-            /*************/'tracking_from' => [
-              'datatype' => 'integer',
+            'dateTime_from' => [
+              'datatype' => 'text',
             ],
           ],
         ],

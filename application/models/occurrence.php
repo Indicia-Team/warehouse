@@ -25,24 +25,27 @@
 class Occurrence_Model extends ORM {
   protected $requeuedForVerification = FALSE;
 
-  protected $has_many = array(
+  protected $has_many = [
     'occurrence_attribute_values',
     'determinations',
-    'occurrence_media'
-  );
-  protected $belongs_to = array(
+    'occurrence_media',
+  ];
+
+  protected $belongs_to = [
     'determiner' => 'person',
     'sample',
     'taxa_taxon_list',
     'created_by' => 'user',
     'updated_by' => 'user',
-    'verified_by' => 'user'
-  );
-  // Declare that this model has child attributes, and the name of the node in the submission which contains them.
+    'verified_by' => 'user',
+  ];
+
+  // Declare that this model has child attributes, and the name of the node in
+  // the submission which contains them.
   protected $has_attributes = TRUE;
   protected $attrs_submission_name = 'occAttributes';
   public $attrs_field_prefix = 'occAttr';
-  protected $additional_csv_fields = array(
+  protected $additional_csv_fields = [
     // Extra lookup options.
     'occurrence:fk_taxa_taxon_list:genus' => 'Genus (builds binomial name)',
     'occurrence:fk_taxa_taxon_list:specific' => 'Specific name/epithet (builds binomial name)',
@@ -58,8 +61,8 @@ class Occurrence_Model extends ORM {
     'occurrence_medium:path:3' => 'Media Path 3',
     'occurrence_medium:caption:3' => 'Media Caption 3',
     'occurrence_medium:path:4' => 'Media Path 4',
-    'occurrence_medium:caption:4' => 'Media Caption 4'
-  );
+    'occurrence_medium:caption:4' => 'Media Caption 4',
+  ];
 
   // During an import it is possible to merge different columns in a CSV row to make a database field
   public $specialImportFieldProcessingDefn = [
@@ -108,6 +111,9 @@ class Occurrence_Model extends ORM {
 
   /**
    * Returns a caption to identify this model instance.
+   *
+   * @return string
+   *   Caption for instance.
    */
   public function caption() {
     return 'Record of ' . $this->taxa_taxon_list->taxon->taxon;
@@ -165,7 +171,7 @@ class Occurrence_Model extends ORM {
       $array->add_rules('taxa_taxon_list_id', 'required');
     }
     // Explicitly add those fields for which we don't do validation.
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'comment',
       'determiner_id',
       'deleted',
@@ -184,7 +190,8 @@ class Occurrence_Model extends ORM {
       'sensitivity_precision',
       'import_guid',
       'metadata',
-    );
+      'verifier_only_data',
+    ];
     if (array_key_exists('id', $fieldlist)) {
       // Existing data must not be set to download_flag=F (final download) otherwise it
       // is read only.
@@ -232,7 +239,7 @@ class Occurrence_Model extends ORM {
       // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
       // and the config setting must be enabled.
       if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
-        $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->determiner_id;
+        $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->userIdFromPersonId($this->determiner_id);
         $determination = [
           // We log the old taxon.
           'taxa_taxon_list_id' => $this->taxa_taxon_list_id,
@@ -262,9 +269,10 @@ class Occurrence_Model extends ORM {
           unset($array->determiner_id);
           return;
         }
-        $userInfo = $this->db->select('id')->from('users')->where('person_id', $redetByPersonId)->get()->current();
-        $redetByUserId = $userInfo->id;
-      } else {
+        $userInfo = $this->userIdFromPersonId($redetByPersonId);
+        $redetByUserId = $this->userIdFromPersonId($redetByPersonId);
+      }
+      else {
         // Redetermination doesn't specify user ID, so use logged in user account.
         $redetByUserId = (int) $this->getCurrentUserId();
         $userInfo = $this->db->select('person_id')->from('users')->where('id', $redetByUserId)->get()->current();
@@ -297,6 +305,20 @@ SQL;
         $this->db->query($sql);
       }
     }
+  }
+
+  /**
+   * Return the user ID associated with a person ID.
+   *
+   * @param int $personId
+   *   Primary key of a person (people.id).
+   *
+   * @return int
+   *   User ID.
+   */
+  private function userIdFromPersonId($personId) {
+    $r = $this->db->select('id')->from('users')->where('person_id', $personId)->get()->current();
+    return $r->id;
   }
 
   /**
@@ -363,7 +385,7 @@ SQL;
     // priority order.
     // Occurrences.determiner_id.
     if (!empty($oldValues['determiner_id'])) {
-      return $this->getPersonNameFromUserId($oldValues['determiner_id']);
+      return $this->getPersonNameFromPersonId($oldValues['determiner_id']);
     }
     // Attribute values det_*_name.
     $attrValues = $this->db
@@ -371,7 +393,7 @@ SQL;
       ->from('occurrence_attribute_values as v')
       ->join('occurrence_attributes as a', 'a.id', 'v.occurrence_attribute_id')
       ->where([
-        'v.occurrence_id' => $oldValues['id']
+        'v.occurrence_id' => $oldValues['id'],
       ])
       ->like('a.system_function', 'det_%')
       ->get();
@@ -407,12 +429,20 @@ SQL;
     return $determinerName;
   }
 
-  private function getPersonNameFromUserId($userId) {
+  /**
+   * Retrieves the name of a person from their person_id.
+   *
+   * @param int $personId
+   *   Primary key of the person (people.id).
+   *
+   * @return string
+   *   Formatted name.
+   */
+  private function getPersonNameFromPersonId($personId) {
     $p = $this->db
-      ->select('p.first_name', 'p.surname')
-      ->from('people as p')
-      ->join('users as u', 'u.person_id', 'p.id')
-      ->where('u.id', $userId)
+      ->select('first_name', 'surname')
+      ->from('people')
+      ->where('id', $personId)
       ->get()->current();
     return "$p->surname, $p->first_name";
   }

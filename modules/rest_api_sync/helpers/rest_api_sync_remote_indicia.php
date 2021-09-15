@@ -27,7 +27,7 @@ defined('SYSPATH') or die('No direct script access.');
 /**
  * Helper class for syncing to the RESTful API on an Indicia warehouses.
  */
-class rest_api_sync_indicia {
+class rest_api_sync_remote_indicia {
 
   /**
    * ISO datetime that the sync was last run.
@@ -79,7 +79,7 @@ class rest_api_sync_indicia {
     while ($next_page_of_projects_url) {
       $response = self::getServerProjects($next_page_of_projects_url, $serverId);
       if (!isset($response['data'])) {
-        rest_api_sync::log('error', "Invalid response\nURL: $next_page_of_projects_url\nResponse did not include data element.");
+        rest_api_sync_utils::log('error', "Invalid response\nURL: $next_page_of_projects_url\nResponse did not include data element.");
         var_export($response);
         continue;
       }
@@ -237,7 +237,7 @@ class rest_api_sync_indicia {
     while ($next_page_of_taxon_observations_url && ($load_all || $processedCount < MAX_RECORDS_TO_PROCESS)) {
       $data = self::getServerTaxonObservations($next_page_of_taxon_observations_url, $serverId);
       $observations = $data['data'];
-      rest_api_sync::log('debug', count($observations) . ' records found');
+      rest_api_sync_utils::log('debug', count($observations) . ' records found');
       foreach ($observations as $observation) {
         // If the record was originated from a different system, the specified
         // dataset name needs to be stored.
@@ -259,7 +259,7 @@ class rest_api_sync_indicia {
           }
         }
         catch (exception $e) {
-          rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
+          rest_api_sync_utils::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
               json_encode($observation), $tracker);
         }
         if ($last_record_date && $last_record_date <> $observation['lastEditDate']) {
@@ -313,14 +313,14 @@ class rest_api_sync_indicia {
     while ($nextPageOfAnnotationsUrl && ($load_all || $processedCount < MAX_RECORDS_TO_PROCESS)) {
       $data = self::getServerAnnotations($nextPageOfAnnotationsUrl, $serverId);
       $annotations = $data['data'];
-      rest_api_sync::log('debug', count($annotations) . ' records found');
+      rest_api_sync_utils::log('debug', count($annotations) . ' records found');
       foreach ($annotations as $annotation) {
         try {
           $is_new = api_persist::annotation(self::$db, $annotation, $survey_id);
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
         catch (exception $e) {
-          rest_api_sync::log('error', "Error occurred submitting an annotation\n" . $e->getMessage() . "\n" .
+          rest_api_sync_utils::log('error', "Error occurred submitting an annotation\n" . $e->getMessage() . "\n" .
             json_encode($annotation), $tracker);
         }
         if ($last_record_date && $last_record_date <> $annotation['lastEditDate']) {
@@ -367,15 +367,15 @@ class rest_api_sync_indicia {
   }
 
   public static function getServerProjects($url, $serverId) {
-    return rest_api_sync::getDataFromRestUrl($url, $serverId);
+    return rest_api_sync_utils::getDataFromRestUrl($url, $serverId);
   }
 
   public static function getServerTaxonObservations($url, $serverId) {
-    return rest_api_sync::getDataFromRestUrl($url, $serverId);
+    return rest_api_sync_utils::getDataFromRestUrl($url, $serverId);
   }
 
   public static function getServerAnnotations($url, $serverId) {
-    return rest_api_sync::getDataFromRestUrl($url, $serverId);
+    return rest_api_sync_utils::getDataFromRestUrl($url, $serverId);
   }
 
 }

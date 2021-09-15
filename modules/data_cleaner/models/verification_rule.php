@@ -377,13 +377,16 @@ class Verification_rule_Model extends ORM {
   /**
    * Overrides the postSubmit function to perform additional db changes.
    *
+   * Only applies when handling submissions from warehouse UI, not file uploads.
+   * * Update metadata and data tables
    * * Add in additional metadata calculated from other rule data.
    * * Allows rules which use a cache table for performance to update the
    *   cache.
    */
   protected function postSubmit($isInsert) {
     require_once DOCROOT . 'client_helpers/helper_base.php';
-    if (isset($this->submission['metaFields'])) {
+    if (isset($this->submission['metaFields']['metadata'])) {
+      // Submission is from warehouse UI.
       $currentRule = data_cleaner::getRule($this->test_type);
       if (isset($this->submission['metaFields']['metadata']['value'])) {
         $metadata = helper_base::explode_lines_key_value_pairs($this->submission['metaFields']['metadata']['value']);
@@ -391,20 +394,33 @@ class Verification_rule_Model extends ORM {
         $data = data_cleaner::parseTestFile($this->submission['metaFields']['data']['value']);
         $this->save_verification_rule_data($currentRule, $data);
         $this->postProcessRule($currentRule);
+        $this->updateCache();
       }
     }
+    return TRUE;
+  }
+
+  /**
+   * Update cache tables.
+   *
+   * Call this method after making any updates to a verification rule including
+   * the data and metadata.
+   */
+  public function updateCache() {
     // If the rule type uses a cache table to improve performance, update it.
     $rule = trim(strtolower(preg_replace('/([A-Z])/', '_$1', $this->test_type)), '_');
     require_once MODPATH . "data_cleaner_$rule/plugins/data_cleaner_$rule.php";
     if (function_exists("data_cleaner_{$rule}_cache_sql")) {
+      // Delete old cached values.
       $this->db->query("delete from cache_verification_rules_$rule where verification_rule_id=$this->id");
-      if ($this->deleted === 'f') {
+      // Only add back to cache if not deleting.
+      // Note, when importing new rules from file, deleted is null.
+      if ($this->deleted !== 't') {
         $sql = call_user_func("data_cleaner_{$rule}_cache_sql");
         $sql = str_replace('#id#', $this->id, $sql);
         $this->db->query($sql);
       }
     }
-    return TRUE;
   }
 
 }

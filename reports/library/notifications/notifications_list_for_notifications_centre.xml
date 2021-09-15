@@ -52,6 +52,16 @@
         <where>o.group_id in (#group_ids#)</where>
       </wheres>
     </param>
+    <param name="taxon_meaning_id" display="Taxon meaning ID" description="Filter to only show notifications for records in this taxonomic branch. Should be a taxon on the master list." datatype="integer" default="">
+      <wheres>
+        <where>#taxon_meaning_id#=ANY(coFilter.taxon_path)</where>
+      </wheres>
+    </param>
+    <param name="taxon_group_id" display="Taxon group ID" description="Filter to only show notifications for records in this taxonomic grouping." datatype="integer" default="">
+      <wheres>
+        <where>coFilter.taxon_group_id=#taxon_group_id#</where>
+      </wheres>
+    </param>
   </params>
   <columns>
     <column name="notification_id" visible="false" sql="n.id" />

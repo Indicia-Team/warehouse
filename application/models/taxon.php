@@ -60,9 +60,11 @@ class Taxon_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     // An external key change needs to apply to other taxa with the same
     // meaning (concept).
-    foreach ($this->taxa_taxon_lists as $ttl) {
-      if ($ttl->preferred && $this->external_key !== $this->submission['fields']['external_key']['value']) {
-        $this->prefExternalKeyChangedForTaxonMeaningIds[] = $ttl->taxon_meaning_id;
+    if (isset($this->submission['fields']['external_key'])) {
+      foreach ($this->taxa_taxon_lists as $ttl) {
+        if ($ttl->preferred && $this->external_key !== $this->submission['fields']['external_key']['value']) {
+          $this->prefExternalKeyChangedForTaxonMeaningIds[] = $ttl->taxon_meaning_id;
+        }
       }
     }
     $array->pre_filter('trim');
@@ -157,12 +159,12 @@ SQL;
       }
       foreach ($this->prefExternalKeyChangedForTaxonMeaningIds as $taxonMeaningId) {
         $updateExtKeyQuery = <<<SQL
-  UPDATE taxa t
-  SET external_key='$this->external_key', updated_on=now(), updated_by_id=$userId
-  FROM taxa_taxon_lists ttl
-  WHERE ttl.taxon_meaning_id=$taxonMeaningId
-  AND t.id=ttl.taxon_id
-  SQL;
+UPDATE taxa t
+SET external_key='$this->external_key', updated_on=now(), updated_by_id=$userId
+FROM taxa_taxon_lists ttl
+WHERE ttl.taxon_meaning_id=$taxonMeaningId
+AND t.id=ttl.taxon_id
+SQL;
         $this->db->query($updateExtKeyQuery);
       }
     }

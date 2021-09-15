@@ -515,6 +515,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       $this->model->save_verification_rule_data($currentRule, $rulesettings);
     }
     $this->model->postProcessRule($currentRule);
+    $this->model->updateCache();
   }
 
   public function uploadRuleCsv($file) {

@@ -30,7 +30,7 @@ define('INAT_MAX_PAGES', 5);
 /**
  * Helper class for syncing to the RESTful API on iNaturalist.
  */
-class rest_api_sync_inaturalist {
+class rest_api_sync_remote_inaturalist {
 
   /**
    * Terms loaded from iNat.
@@ -86,7 +86,7 @@ class rest_api_sync_inaturalist {
     $cache = Cache::instance();
     self::$controlledTerms = $cache->get('inaturalist-controlled-terms');
     if (!self::$controlledTerms) {
-      $data = rest_api_sync::getDataFromRestUrl(
+      $data = rest_api_sync_utils::getDataFromRestUrl(
         "$server[url]/controlled_terms",
         $serverId
       );
@@ -125,7 +125,7 @@ class rest_api_sync_inaturalist {
     $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
     $fromId = variable::get("rest_api_sync_{$serverId}_last_id", 0, FALSE);
     $lastId = $fromId;
-    $data = rest_api_sync::getDataFromRestUrl(
+    $data = rest_api_sync_utils::getDataFromRestUrl(
       "$server[url]/observations?" . http_build_query(array_merge(
         $server['parameters'],
         [
@@ -219,7 +219,7 @@ class rest_api_sync_inaturalist {
           "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
       }
       catch (exception $e) {
-        rest_api_sync::log(
+        rest_api_sync_utils::log(
           'error',
           "Error occurred submitting an occurrence with iNaturalist ID $iNatRecord[id]\n" . $e->getMessage(),
           $tracker
@@ -251,7 +251,7 @@ QRY;
       $lastId = $iNatRecord['id'];
     }
     variable::set("rest_api_sync_{$serverId}_last_id", $lastId);
-    rest_api_sync::log(
+    rest_api_sync_utils::log(
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
