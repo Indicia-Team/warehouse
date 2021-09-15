@@ -2012,8 +2012,8 @@ SQL;
   public function testTaxon_observations_authentication() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_clientAuthentication");
     $proj_id = self::$config['projects'][array_keys(self::$config['projects'])[0]]['id'];
-    $queryWithProj = ['proj_id' => $proj_id, 'edited_date_from' => '2015-01-01');
-    $query = ['edited_date_from' => '2015-01-01');
+    $queryWithProj = ['proj_id' => $proj_id, 'edited_date_from' => '2015-01-01'];
+    $query = ['edited_date_from' => '2015-01-01'];
 
     $this->authMethod = 'hmacClient';
     $this->checkResourceAuthentication('taxon-observations', $queryWithProj);
@@ -2023,7 +2023,7 @@ SQL;
     $this->checkResourceAuthentication('taxon-observations', $query);
     // @todo The following test needs to check filtered response rather than authentication
     $this->authMethod = 'directUser';
-    $this->checkResourceAuthentication('taxon-observations', $query + ['filter_id' => self::$userFilterId));
+    $this->checkResourceAuthentication('taxon-observations', $query + ['filter_id' => self::$userFilterId]);
     $this->authMethod = 'hmacWebsite';
     $this->checkResourceAuthentication('taxon-observations', $query);
     $this->authMethod = 'directWebsite';
@@ -2038,10 +2038,10 @@ SQL;
     $this->assertEquals(400, $response['httpCode'],
         'Requesting taxon observations without params should be a bad request');
     foreach (self::$config['projects'] as $projDef) {
-      $response = $this->callService("taxon-observations", ['proj_id' => $projDef['id']));
+      $response = $this->callService("taxon-observations", ['proj_id' => $projDef['id']]);
       $this->assertEquals(400, $response['httpCode'],
           'Requesting taxon observations without edited_date_from should be a bad request');
-      $response = $this->callService("taxon-observations", ['edited_date_from' => '2015-01-01'));
+      $response = $this->callService("taxon-observations", ['edited_date_from' => '2015-01-01']);
       $this->assertEquals(400, $response['httpCode'],
         'Requesting taxon observations without proj_id should be a bad request');
       // only test a single project
@@ -2062,8 +2062,7 @@ SQL;
           'proj_id' => $projDef['id'],
           'edited_date_from' => '2015-01-01',
           'edited_date_to' => date("Y-m-d\TH:i:s")
-        )
-      );
+      ]);
       $this->assertResponseOk($response, '/taxon-observations');
       $this->assertArrayHasKey('paging', $response['response'],
           'Paging missing from response to call to taxon-observations');
@@ -2091,7 +2090,7 @@ SQL;
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService(
         "annotations",
-        ['proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01')
+        ['proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01']
       );
       $this->assertResponseOk($response, '/annotations');
       $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to annotations');
@@ -2234,6 +2233,7 @@ SQL;
 
     // First grab a list of reports so we can use the links to get the correct
     // columns URL.
+    $projDef = self::$config['projects']['BRC1'];
     $response = $this->callService("reports/library/occurrences", ['proj_id' => $projDef['id']]);
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $reportDef = $response['response']['filterable_explore_list'];
@@ -2408,7 +2408,7 @@ SQL;
   private function checkValidTaxonObservation($data) {
     $this->assertIsArray($data, 'Taxon-observation object invalid. ' . var_export($data, TRUE));
     $mustHave = ['id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
-        'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate');
+        'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate'];
     foreach ($mustHave as $key) {
       $this->assertArrayHasKey($key, $data,
           "Missing $key from taxon-observation resource. " . var_export($data, TRUE));
@@ -2425,7 +2425,7 @@ SQL;
   private function checkValidAnnotation($data) {
     $this->assertIsArray($data, 'Annotation object invalid. ' . var_export($data, TRUE));
     $mustHave = ['id', 'href', 'taxonObservation', 'taxonVersionKey', 'comment',
-        'question', 'authorName', 'dateTime');
+        'question', 'authorName', 'dateTime'];
     foreach ($mustHave as $key) {
       $this->assertArrayHasKey($key, $data,
         "Missing $key from annotation resource. " . var_export($data, TRUE));
