@@ -411,8 +411,11 @@ class Verification_rule_Model extends ORM {
     $rule = trim(strtolower(preg_replace('/([A-Z])/', '_$1', $this->test_type)), '_');
     require_once MODPATH . "data_cleaner_$rule/plugins/data_cleaner_$rule.php";
     if (function_exists("data_cleaner_{$rule}_cache_sql")) {
+      // Delete old cached values.
       $this->db->query("delete from cache_verification_rules_$rule where verification_rule_id=$this->id");
-      if ($this->deleted === 'f') {
+      // Only add back to cache if not deleting.
+      // Note, when importing new rules from file, deleted is null.
+      if ($this->deleted !== 't') {
         $sql = call_user_func("data_cleaner_{$rule}_cache_sql");
         $sql = str_replace('#id#', $this->id, $sql);
         $this->db->query($sql);
