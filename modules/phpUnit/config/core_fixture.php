@@ -206,6 +206,7 @@ $core_fixture = [
   ],
   "cache_taxon_searchterms" => [
     [
+      "id" => 1,
       "taxa_taxon_list_id" => 1,
       "taxon_list_id" => 1,
       "searchterm" => "testtaxon",
