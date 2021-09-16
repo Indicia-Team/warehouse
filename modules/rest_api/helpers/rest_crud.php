@@ -625,7 +625,7 @@ SQL;
         if (preg_match('/_media$/', $subTable)) {
           $subTable = 'media';
         }
-        if (array_key_exists($subTable, self::$entityConfig[$entity]->subModels)) {
+        if (property_exists(self::$entityConfig[$entity]->subModels, $subTable)) {
           if (!isset($r[$subTable])) {
             $r[$subTable] = [];
           }
