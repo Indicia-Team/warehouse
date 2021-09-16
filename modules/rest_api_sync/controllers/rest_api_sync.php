@@ -75,7 +75,7 @@ class Rest_api_sync_Controller extends Indicia_Controller {
    */
   public function process_batch() {
     $this->auto_render = FALSE;
-    rest_api_sync::$clientUserId = Kohana::config('rest_api_sync.user_id');
+    rest_api_sync_utils::$clientUserId = Kohana::config('rest_api_sync.user_id');
     $servers = Kohana::config('rest_api_sync.servers');
     $serverIdx = empty($_GET['serverIdx']) ? 1 : $_GET['serverIdx'];
     $page = empty($_GET['page']) ? 1 : $_GET['page'];
@@ -84,7 +84,7 @@ class Rest_api_sync_Controller extends Indicia_Controller {
       'serverType' => 'Indicia',
       'allowUpdateWhenVerified' => TRUE,
     ], $servers[$serverId]);
-    $helperClass = 'rest_api_sync_' . strtolower($server['serverType']);
+    $helperClass = 'rest_api_sync_remote_' . strtolower($server['serverType']);
     $helperClass::loadControlledTerms($serverId, $server);
     // For performance, just notify work_queue to update cache entries.
     if (class_exists('cache_builder')) {
@@ -101,7 +101,7 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     if ($serverIdx > count($servers)) {
       echo json_encode([
         'state' => 'done',
-        'log' => rest_api_sync::$log,
+        'log' => rest_api_sync_utils::$log,
       ]);
     }
     else {
@@ -109,7 +109,7 @@ class Rest_api_sync_Controller extends Indicia_Controller {
         'state' => 'in progress',
         'serverIdx' => $serverIdx,
         'page' => $page,
-        'log' => rest_api_sync::$log,
+        'log' => rest_api_sync_utils::$log,
         'pagesToGo' => $progressInfo['pagesToGo'],
         'recordsToGo' => $progressInfo['recordsToGo'],
         'moreToDo' => $progressInfo['moreToDo'],

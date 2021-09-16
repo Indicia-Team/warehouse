@@ -1,10 +1,16 @@
 {
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/misantron/dbunit"
+    }
+  ],
   "require": {
     "firebase/php-jwt": "^5.4",
     "phpoffice/phpspreadsheet": "^1.18"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5",
-    "misantron/dbunit": "^5.1"
+    "misantron/dbunit": "dev-master"
   }
 }

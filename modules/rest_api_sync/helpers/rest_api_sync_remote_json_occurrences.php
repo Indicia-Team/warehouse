@@ -24,18 +24,16 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
-define('MAX_PAGES', 1);
-
 /**
  * Helper class for syncing to the JSON occurrences API of another server.
  *
  * Could be an Indicia warehouse, or another server implementing the same
  * standard.
  */
-class rest_api_sync_json_occurrences {
+class rest_api_sync_remote_json_occurrences {
 
   /**
-   * Synchronise a set of data loaded from the iNat server.
+   * Synchronise a set of data loaded from the other server.
    *
    * @param string $serverId
    *   ID of the server as defined in the configuration.
@@ -83,7 +81,7 @@ class rest_api_sync_json_occurrences {
     $db = Database::instance();
     api_persist::initDwcAttributes($db, $server['survey_id']);
     $nextPage = variable::get("rest_api_sync_{$serverId}_next_page", [], FALSE);
-    $data = rest_api_sync::getDataFromRestUrl(
+    $data = rest_api_sync_utils::getDataFromRestUrl(
       "$server[url]?" . http_build_query($nextPage),
       $serverId
     );
@@ -91,7 +89,6 @@ class rest_api_sync_json_occurrences {
     $tracker = ['inserts' => 0, 'updates' => 0, 'errors' => 0];
     foreach ($data['data'] as $record) {
       // @todo Make sure all fields in specification are handled
-      // @todo dynamicProperties field.
       // @todo occurrence.associated_media
       // @todo occurrence.occurrence_status
       // @todo occurrence.organism_quantity
@@ -104,7 +101,6 @@ class rest_api_sync_json_occurrences {
         $observation = [
           'licenceCode' => empty($record['record-level']['license']) ? NULL : $record['record-level']['license'],
           'collectionCode' => empty($record['record-level']['collectionCode']) ? NULL : $record['record-level']['collectionCode'],
-          'occurrenceMetadata' => empty($record['record-level']['dynamicProperties']) ? NULL : $record['record-level']['dynamicProperties'],
           'id' => $record['occurrence']['occurrenceID'],
           'individualCount' => empty($record['occurrence']['individualCount']) ? NULL : $record['occurrence']['individualCount'],
           'lifeStage' => empty($record['occurrence']['lifeStage']) ? NULL : $record['occurrence']['lifeStage'],
@@ -124,6 +120,7 @@ class rest_api_sync_json_occurrences {
           'siteName' => empty($record['location']['locality']) ? NULL : $record['location']['locality'],
           'identifiedBy' => empty($record['identification']['identifiedBy']) ? NULL : $record['identification']['identifiedBy'],
           'identificationVerificationStatus' => empty($record['identification']['identificationVerificationStatus']) ? NULL : $record['identification']['identificationVerificationStatus'],
+          'identificationRemarks' => empty($record['identification']['identificationRemarks']) ? NULL : $record['identification']['identificationRemarks'],
         ];
         if (!empty($record['location']['decimalLongitude']) && !empty($record['location']['decimalLatitude'])) {
           // Json_decode() converts some floats to scientific notation, so
@@ -145,17 +142,11 @@ class rest_api_sync_json_occurrences {
             throw new exception('Invalid grid reference format: ' . $record['location']['gridReference']);
           }
         }
-        if (!empty($server['otherFields'])) {
-          foreach ($server['otherFields'] as $src => $dest) {
-            $path = explode('.', $src);
-            if (!empty($record[$path[0]]) && !empty($record[$path[1]])) {
-              // @todo Check multi-value/array handling.
-              $attrTokens = explode(':', $dest);
-              $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $record[$path[0]][$path[1]];
-            }
-          }
+        if (!empty($record['record-level']['dynamicProperties']) && !empty($record['record-level']['dynamicProperties']['verifierOnlyData'])) {
+          $observation['verifierOnlyData'] = json_encode($record['record-level']['dynamicProperties']['verifierOnlyData']);
+          unset($record['record-level']['dynamicProperties']['verifierOnlyData']);
         }
-
+        self::processOtherFields($server, $record, $observation);
         $is_new = api_persist::taxonObservation(
           $db,
           $observation,
@@ -171,7 +162,7 @@ class rest_api_sync_json_occurrences {
           "WHERE server_id='$serverId' AND source_id='{$record['occurrence']['occurrenceID']}' AND dest_table='occurrences'");
       }
       catch (exception $e) {
-        rest_api_sync::log(
+        rest_api_sync_utils::log(
           'error',
           "Error occurred submitting an occurrence with ID {$record['occurrence']['occurrenceID']}\n" . $e->getMessage(),
           $tracker
@@ -202,7 +193,7 @@ QRY;
       }
     }
     variable::set("rest_api_sync_{$serverId}_next_page", $data['paging']['next']);
-    rest_api_sync::log(
+    rest_api_sync_utils::log(
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
@@ -213,6 +204,41 @@ QRY;
       'recordsToGo' => NULL,
     ];
     return $r;
+  }
+
+  /**
+   * Process any other field mappings defined by the server config.
+   *
+   * @param array $server
+   *   Server configuration.
+   * @param array $record
+   *   Record structure supplied by the remote server.
+   * @param array $observation
+   *   Observation values to store in Indicia. Will be updated as appropriate.
+   */
+  private static function processOtherFields(array $server, array $record, array &$observation) {
+    if (!empty($server['otherFields'])) {
+      foreach ($server['otherFields'] as $src => $dest) {
+        $path = explode('.', $src);
+        $posInDoc = $record;
+        $found = TRUE;
+        foreach ($path as $node) {
+          if (!isset($posInDoc[$node])) {
+            $found = FALSE;
+            break;
+          }
+          $posInDoc = $posInDoc[$node];
+        }
+        if ($found) {
+          // @todo Check multi-value/array handling.
+          $attrTokens = explode(':', $dest);
+          if (is_object($posInDoc) || is_array($posInDoc)) {
+            $posInDoc = json_encode($posInDoc);
+          }
+          $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $posInDoc;
+        }
+      }
+    }
   }
 
   /**

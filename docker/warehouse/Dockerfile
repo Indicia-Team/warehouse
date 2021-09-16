@@ -1,8 +1,6 @@
-# This image contains Debian's Apache httpd in conjunction with PHP7.3
-# (as mod_php) and uses mpm_prefork by default.
+# This image contains Debian's Apache httpd in conjunction with PHP8.0.
 # https://hub.docker.com/_/php
-# Currently warehouse is not compatible with PHP 7.4
-FROM php:7.3-apache
+FROM php:8.0-apache
 # Use PHP development configuration file
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 # Increase size of files which can be uploaded.
