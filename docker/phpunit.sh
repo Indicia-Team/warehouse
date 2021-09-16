@@ -25,7 +25,7 @@ docker-compose -f docker-compose-phpunit.yml build \
   --build-arg GID=$(id -g) \
   --build-arg USER=$(id -un) \
   --build-arg GROUP=$(id -gn) \
-  --build-arg PHP_VERSION=7.3 \
+  --build-arg PHP_VERSION=8 \
   --build-arg PG_VERSION=13 \
   --build-arg PORT=$PORT
 # When the container is brought up, the database will start 

@@ -326,7 +326,7 @@ class Pgsql_Result extends Database_Result {
    * @param  boolean   return objects or arrays
    * @param  string    SQL query that was run
    */
-  public function __construct($result, $link, $object = TRUE, $sql)
+  public function __construct($result, $link, $object, $sql)
   {
     $this->link = $link;
     $this->result = $result;
@@ -453,10 +453,12 @@ class Pgsql_Result extends Database_Result {
       $ER = error_reporting(0);
 
       $result = pg_query($this->link, $query);
-      $insert_id = pg_fetch_array($result, NULL, PGSQL_ASSOC);
-
-      $this->insert_id = $insert_id['insert_id'];
-
+      // $result is false when tables have no serial column.
+      if ($result !== false) {
+        $insert_id = pg_fetch_array($result, NULL, PGSQL_ASSOC);
+        $this->insert_id = $insert_id['insert_id'];
+      }
+        
       // Reset error reporting
       error_reporting($ER);
     }
