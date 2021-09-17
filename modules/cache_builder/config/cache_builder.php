@@ -892,7 +892,7 @@ SET website_id=su.website_id,
   input_form=COALESCE(sp.input_form, s.input_form),
   location_id= s.location_id,
   location_name=CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
-  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision),
+  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(s.privacy_precision, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
   date_start=s.date_start,
   date_end=s.date_end,
   date_type=s.date_type,
@@ -939,24 +939,59 @@ UPDATE cache_samples_nonfunctional
 SET website_title=w.title,
   survey_title=su.title,
   group_title=g.title,
-  public_entered_sref=case when s.privacy_precision is not null then null else
+  public_entered_sref=case
+    when s.privacy_precision is not null OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL then
+      get_output_sref(
+        greatest(
+          round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
+          (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+          s.privacy_precision,
+          -- work out best square size to reflect a lat long's true precision
+          case
+          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
+          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
+          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
+          else 10
+          end,
+          10 -- default minimum square size
+        ), reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+      )
+   else
     case
       when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
-        abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
-        || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
-        || ', '
-        || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
-        || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
+      abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
+      || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
+      || ', '
+      || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
+      || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
       when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
-        abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
-        || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
-        || ', '
-        || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
-        || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
+      abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
+      || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
+      || ', '
+      || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
+      || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
       else
-        coalesce(s.entered_sref, l.centroid_sref)
+      coalesce(s.entered_sref, l.centroid_sref)
     end
   end,
+  output_sref=get_output_sref(
+    greatest(
+      round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
+      (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+      s.privacy_precision,
+      -- work out best square size to reflect a lat long's true precision
+      case
+        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
+        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
+        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
+        else 10
+      end,
+      10 -- default minimum square size
+    ), reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+  ),
+  output_sref_system=get_output_system(
+    reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+  ),
   entered_sref_system=case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
   recorders = s.recorder_names,
   comment=s.comment,
@@ -1001,7 +1036,8 @@ SET website_title=w.title,
       WHEN 'L'::bpchar THEN t_sample_method.term
       ELSE NULL::text
   END, t_sample_method_id.term),
-  attr_linked_location_id=v_linked_location_id.int_value
+  attr_linked_location_id=v_linked_location_id.int_value,
+  verifier=pv.surname || ', ' || pv.first_name
 FROM samples s
 #join_needs_update#
 LEFT JOIN samples sp ON sp.id=s.parent_id and sp.deleted=false
@@ -1051,6 +1087,8 @@ LEFT JOIN (sample_attribute_values v_linked_location_id
   JOIN sample_attributes a_linked_location_id on a_linked_location_id.id=v_linked_location_id.sample_attribute_id
     and a_linked_location_id.deleted=false and a_linked_location_id.system_function='linked_location_id'
 ) ON v_linked_location_id.sample_id=s.id and v_linked_location_id.deleted=false
+LEFT JOIN users uv on uv.id=s.verified_by_id and uv.deleted=false
+LEFT JOIN people pv on pv.id=uv.person_id and pv.deleted=false
 WHERE s.id=cache_samples_nonfunctional.id
 ";
 
@@ -1063,15 +1101,6 @@ FROM samples s
 WHERE s.id=cache_samples_nonfunctional.id
 ";
 
-$config['samples']['update']['nonfunctional_sensitive'] = "
-UPDATE cache_samples_nonfunctional
-SET public_entered_sref=null
-FROM samples s
-#join_needs_update#
-JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false AND o.sensitivity_precision IS NOT NULL
-WHERE s.id=cache_samples_nonfunctional.id
-";
-
 $config['samples']['insert']['functional'] = "
 INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
@@ -1079,7 +1108,7 @@ INSERT INTO cache_samples_functional(
             group_id, record_status, training, query, parent_sample_id, media_count, external_key)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
-  reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision),
+  reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(s.privacy_precision, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
   coalesce(s.group_id, sp.group_id), s.record_status, s.training,
   case
@@ -1117,28 +1146,70 @@ WHERE s.id=cache_samples_functional.id
 $config['samples']['insert']['nonfunctional'] = "
 INSERT INTO cache_samples_nonfunctional(
             id, website_title, survey_title, group_title, public_entered_sref,
-            entered_sref_system, recorders, comment, privacy_precision, licence_code)
+            entered_sref_system, recorders, comment, privacy_precision, licence_code,
+            attr_sref_precision, output_sref, output_sref_system, verifier)
 SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
-  case when s.privacy_precision is not null then null else
+  case
+    when s.privacy_precision is not null OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL then
+      get_output_sref(
+        greatest(
+          round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
+          (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+          s.privacy_precision,
+          -- work out best square size to reflect a lat long's true precision
+          case
+          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
+          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
+          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
+          else 10
+          end,
+          10 -- default minimum square size
+        ), reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+      )
+   else
     case
       when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
-        abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
-        || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
-        || ', '
-        || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
-        || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
+      abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
+      || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
+      || ', '
+      || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
+      || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
       when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
-        abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
-        || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
-        || ', '
-        || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
-        || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
+      abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
+      || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
+      || ', '
+      || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
+      || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
       else
-        coalesce(s.entered_sref, l.centroid_sref)
+      coalesce(s.entered_sref, l.centroid_sref)
     end
   end,
   case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
-  s.recorder_names, s.comment, s.privacy_precision, li.code
+  s.recorder_names, s.comment, s.privacy_precision, li.code,
+  CASE a_sref_precision.data_type
+    WHEN 'I'::bpchar THEN v_sref_precision.int_value::double precision
+    WHEN 'F'::bpchar THEN v_sref_precision.float_value
+    ELSE NULL::double precision
+  END,
+  get_output_sref(
+    greatest(
+      round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
+      (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+      s.privacy_precision,
+      -- work out best square size to reflect a lat long's true precision
+      case
+        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
+        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
+        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
+        else 10
+      end,
+      10 -- default minimum square size
+    ), reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+  ),
+  get_output_system(
+    reduce_precision(coalesce(s.geom, l.centroid_geom),(SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+  ),
+  pv.surname || ', ' || pv.first_name
 FROM samples s
 #join_needs_update#
 LEFT JOIN samples sp ON sp.id=s.parent_id and sp.deleted=false
@@ -1147,7 +1218,13 @@ JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
 LEFT JOIN groups g on g.id=coalesce(s.group_id, sp.group_id) and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
+LEFT JOIN (sample_attribute_values v_sref_precision
+  JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
+  LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
+) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
+LEFT JOIN users uv on uv.id=s.verified_by_id and uv.deleted=false
+LEFT JOIN people pv on pv.id=uv.person_id and pv.deleted=false
 WHERE s.deleted=false
 AND cs.id IS NULL";
 
@@ -1183,11 +1260,6 @@ SET
       WHEN 'T'::bpchar THEN v_biotope.text_value
       WHEN 'L'::bpchar THEN t_biotope.term
       ELSE NULL::text
-  END,
-  attr_sref_precision=CASE a_sref_precision.data_type
-      WHEN 'I'::bpchar THEN v_sref_precision.int_value::double precision
-      WHEN 'F'::bpchar THEN v_sref_precision.float_value
-      ELSE NULL::double precision
   END,
   attr_sample_method=COALESCE(t_sample_method_id.term, CASE a_sample_method.data_type
       WHEN 'T'::bpchar THEN v_sample_method.text_value
@@ -1225,10 +1297,6 @@ LEFT JOIN (sample_attribute_values v_biotope
   JOIN sample_attributes a_biotope on a_biotope.id=v_biotope.sample_attribute_id and a_biotope.deleted=false and a_biotope.system_function='biotope'
   LEFT JOIN cache_termlists_terms t_biotope on a_biotope.data_type='L' and t_biotope.id=v_biotope.int_value
 ) on v_biotope.sample_id=s.id and v_biotope.deleted=false
-LEFT JOIN (sample_attribute_values v_sref_precision
-  JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
-  LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
-) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
 LEFT JOIN (sample_attribute_values v_sample_method
   JOIN sample_attributes a_sample_method on a_sample_method.id=v_sample_method.sample_attribute_id and a_sample_method.deleted=false and a_sample_method.system_function='sample_method'
   LEFT JOIN cache_termlists_terms t_sample_method on a_sample_method.data_type='L' and t_sample_method.id=v_sample_method.int_value
@@ -1246,15 +1314,6 @@ SET media=(SELECT array_to_string(array_agg(sm.path), ',')
 FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false)
 FROM samples s
 #join_needs_update#
-WHERE s.id=cache_samples_nonfunctional.id
-";
-
-$config['samples']['insert']['nonfunctional_sensitive'] = "
-UPDATE cache_samples_nonfunctional
-SET public_entered_sref=null
-FROM samples s
-#join_needs_update#
-JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false AND o.sensitivity_precision IS NOT NULL
 WHERE s.id=cache_samples_nonfunctional.id
 ";
 
@@ -1723,16 +1782,6 @@ WHERE o.id=onf.id
 AND o.deleted=false
 ";
 
-$config['occurrences']['update']['nonfunctional_sensitive'] = "
-UPDATE cache_samples_nonfunctional cs
-SET public_entered_sref=null
-FROM occurrences o
-#join_needs_update#
-WHERE o.sample_id=cs.id
-AND o.deleted=false
-AND o.sensitivity_precision IS NOT NULL
-";
-
 $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_functional(
             id, sample_id, website_id, survey_id, input_form, location_id,
             location_name, public_geom,
@@ -1975,16 +2024,6 @@ FROM occurrences o
 #join_needs_update#
 WHERE o.id=onf.id
 AND o.deleted=false
-";
-
-$config['occurrences']['insert']['nonfunctional_sensitive'] = "
-UPDATE cache_samples_nonfunctional cs
-SET public_entered_sref=null
-FROM occurrences o
-#join_needs_update#
-WHERE o.sample_id=cs.id
-AND o.deleted=false
-AND o.sensitivity_precision IS NOT NULL
 ";
 
 $config['occurrences']['join_needs_update'] = 'join needs_update_occurrences nu on nu.id=o.id and nu.deleted=false';
