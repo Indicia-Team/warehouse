@@ -11,9 +11,7 @@
     DROP TABLE IF EXISTS output_rows;
     DROP TABLE IF EXISTS sample_occurrence_list;
 
-    SET LOCAL enable_incremental_sort = off;
-
-    SELECT DISTINCT s.*, greatest(s.tracking, (SELECT max(o.tracking) FROM cache_occurrences_functional o WHERE o.sample_id=s.id OR o.parent_sample_id=s.id)) AS tracking_inc_occurrences
+    SELECT s.*
     INTO TEMPORARY filtered_samples
     FROM cache_samples_functional s
     #joins#
@@ -43,7 +41,6 @@
     JOIN samples smp ON smp.id=s.id
     JOIN occurrence_stats os ON os.sample_id=s.id
     JOIN cache_samples_nonfunctional snf ON snf.id=s.id
-    LEFT JOIN occurrences o ON o.sample_id=s.id
     LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false;
 
     UPDATE output_rows o
@@ -76,8 +73,8 @@
     <param name="last_id" display="Last ID" datatype="integer" default="" order_by="s.id ASC">
       <where>s.id &gt; #last_id#</where>
     </param>
-    <param name="autofeed_tracking_from" display="Autofeed tracking from" datatype="integer" default="" order_by="tracking_inc_occurrences ASC">
-      <where>(s.tracking >= #autofeed_tracking_from# OR o.tracking >= #autofeed_tracking_from#)</where> -- WON'T FIRE ON AN OCCURRENCE DELETION
+    <param name="autofeed_tracking_from" display="Autofeed tracking from" datatype="integer" default="" order_by="tracking ASC">
+      <where>s.tracking >= #autofeed_tracking_from#</where>
     </param>
     <param name="limit" datatype="integer" default="10000" />
   </params>
@@ -192,7 +189,6 @@
     <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />
     <column name="parent_sample_attrs_json" sql="null::json" datatype="text" />
     <column name="tracking" sql="s.tracking" datatype="integer" />
-    <column name="tracking_inc_occurrences" sql="s.tracking_inc_occurrences" datatype="integer" />
     <column name="input_form" sql="s.input_form" datatype="text" />
     <column name="count_occurrences" sql="os.count_occurrences" datatype="integer" />
     <column name="count_taxa" sql="os.count_taxa" datatype="integer" />
