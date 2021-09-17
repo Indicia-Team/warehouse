@@ -23,6 +23,7 @@
     FROM filtered_occurrences o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
+    JOIN samples s ON s.id=o.sample_id AND s.deleted=false
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
     LEFT JOIN locations l ON l.id=o.location_id AND l.deleted=false;
@@ -42,10 +43,10 @@
     SET recorded_parent_location_id = lp.id,
       recorded_parent_location_name = lp.name,
       recorded_parent_location_code = lp.code
-      FROM samples sc
+    FROM samples sc
     JOIN locations lc ON lc.id=sc.location_id AND lc.deleted=false
-      JOIN locations lp ON lp.id = lc.parent_id AND lp.deleted=false
-      WHERE sc.id=o.sample_id AND sc.deleted=false
+    JOIN locations lp ON lp.id = lc.parent_id AND lp.deleted=false
+    WHERE sc.id=o.sample_id AND sc.deleted=false
     AND o.recorded_parent_location_id IS NULL;
 
     SELECT *
@@ -66,6 +67,7 @@
     <!-- Tracking field called "id" is required for autofeed to work. -->
     <column name="id" sql="o.id" datatype="integer" />
     <column name="occurrence_external_key" sql="o.external_key" datatype="text" />
+    <column name="sample_external_key" sql="s.external_key" datatype="text" />
     <column name="created_by_id" sql="o.created_by_id" datatype="integer" />
     <column name="website_id" sql="o.website_id" datatype="integer" />
     <column name="survey_id" sql="o.survey_id" datatype="integer" />
