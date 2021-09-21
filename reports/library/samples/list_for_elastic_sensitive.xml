@@ -1,7 +1,7 @@
 <report
-    title="Autofeed samples for Elasticsearch (standard filters, no website limit)"
+    title="Autofeed samples for Elasticsearch (standard filters, sensitive only)"
     description="A list of samples designed for feeding into Elasticsearch or a similar JSON store.
-      No website limit so designed to collect records from all website registrations."
+      This report returns full precision copies of sensitive records. "
     restricted="true"
 >
   <query website_filter_field="s.website_id" samples_id_field="s.id" training_filter_field=""
@@ -14,8 +14,10 @@
     SELECT s.*
     INTO TEMPORARY filtered_samples
     FROM cache_samples_functional s
+    #agreements_join#
     #joins#
-    WHERE 1=1
+    WHERE #sharing_filter#
+    AND s.sensitive=true OR s.private=true
     #filters#
     #order_by#
     LIMIT #limit#;
@@ -41,7 +43,7 @@
     JOIN samples smp ON smp.id=s.id
     JOIN occurrence_stats os ON os.sample_id=s.id
     JOIN cache_samples_nonfunctional snf ON snf.id=s.id
-    LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false;
+    LEFT JOIN locations l ON l.id=smp.location_id AND l.deleted=false;
 
     UPDATE output_rows o
     SET recorded_parent_location_id = lp.id,
@@ -121,20 +123,20 @@
             when coalesce(date_part('year', s.date_start), 0)=coalesce(date_part('year', s.date_end), 0) then coalesce(date_part('year', s.date_start), null)
             else null
           end" datatype="integer" />
-    <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(s.public_geom, 4326)))" datatype="text" />
-    <column name="point" sql="st_y(st_transform(st_centroid(s.public_geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.public_geom), 4326))::text" datatype="text" />
-    <column name="map_sq_srid" sql="COALESCE(get_output_srid(s.public_geom), 3857)" datatype="integer" />
+    <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(smp.geom, 4326)))" datatype="text" />
+    <column name="point" sql="st_y(st_transform(st_centroid(smp.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(smp.geom), 4326))::text" datatype="text" />
+    <column name="map_sq_srid" sql="COALESCE(get_output_srid(smp.geom), 3857)" datatype="integer" />
     <column name="map_sq_1km" sql="CASE
       WHEN max_sensitivity_precision > 1000 THEN NULL
-      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.public_geom, false, 1000), 4326)))))
+      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(smp.geom, false, 1000), 4326)))))
     END" datatype="text" />
     <column name="map_sq_2km" sql="CASE
       WHEN max_sensitivity_precision > 2000 THEN NULL
-      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.public_geom, false, 2000), 4326)))))
+      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(smp.geom, false, 2000), 4326)))))
     END" datatype="text" />
     <column name="map_sq_10km" sql="CASE
       WHEN max_sensitivity_precision > 10000 THEN NULL
-      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.public_geom, false, 10000), 4326)))))
+      ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(smp.geom, false, 10000), 4326)))))
     END" datatype="text" />
     <column name="input_sref" sql="snf.public_entered_sref" datatype="text" />
     <column name="input_sref_system" sql="snf.entered_sref_system" datatype="text" />
@@ -160,7 +162,7 @@
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
     <column name="attr_sample_method" sql="snf.attr_sample_method" datatype="text" />
     <column name="media_data" sql="CASE
-      WHEN s.media_count>0 AND sensitive=false AND private=false THEN
+      WHEN s.media_count>0 THEN
         (SELECT string_agg(sm.path || '~~' || COALESCE(sm.caption, '') || '~~' ||  COALESCE(l.code, '') || '~~' ||  COALESCE(t.term, ''), '@@')
         FROM sample_media sm
         LEFT JOIN licences l ON l.id=sm.licence_id
@@ -179,8 +181,8 @@
     <column name="sensitive" sql="s.sensitive" datatype="text" />
     <column name="private" sql="s.private" datatype="text" />
     <column name="sensitivity_precision" sql="greatest(os.max_sensitivity_precision, s.privacy_precision)" datatype="integer" />
-    <!-- Flag sensitivity_blur = B for blurred version of a sensitive record. -->
-    <column name="sensitivity_blur" sql="CASE WHEN s.sensitive OR s.private THEN 'B' ELSE null END" datatype="text" />
+    <!-- Flag sensitivity_blur = F for full precision version of a sensitive record. -->
+    <column name="sensitivity_blur" sql="CASE WHEN s.sensitive OR s.private THEN 'F' ELSE null END" datatype="text" />
     <column name="confidential" sql="os.any_confidential::text" datatype="boolean" />
     <column name="release_status" description="Worst case release status from the contained occurrences" sql="CASE
       WHEN POSITION('U' IN os.all_release_status)&lt;&gt;0 THEN 'U'

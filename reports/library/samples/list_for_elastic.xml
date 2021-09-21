@@ -1,7 +1,6 @@
 <report
-    title="Autofeed samples for Elasticsearch (standard filters, no website limit)"
-    description="A list of samples designed for feeding into Elasticsearch or a similar JSON store.
-      No website limit so designed to collect records from all website registrations."
+    title="Autofeed samples for Elasticsearch (standard filters)"
+    description="A list of samples designed for feeding into Elasticsearch or a similar JSON store."
     restricted="true"
 >
   <query website_filter_field="s.website_id" samples_id_field="s.id" training_filter_field=""
@@ -14,8 +13,9 @@
     SELECT s.*
     INTO TEMPORARY filtered_samples
     FROM cache_samples_functional s
+    #agreements_join#
     #joins#
-    WHERE 1=1
+    WHERE #sharing_filter#
     #filters#
     #order_by#
     LIMIT #limit#;
