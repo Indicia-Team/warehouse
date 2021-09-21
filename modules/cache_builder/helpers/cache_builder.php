@@ -241,6 +241,29 @@ SQL;
   }
 
   /**
+   * If submitting occurrence changes without a sample, update sample tracking.
+   *
+   * This is so that any sample data feeds receive an updated copy of the
+   * sample, as the occurrence statistics will have changed.
+   *
+   * @param object $db
+   *   Database object.
+   * @param array $occurrenceIds
+   *   List of occurrences affected by a submission.
+   */
+  public static function updateSampleTrackingForOccurrences($db, array $ids) {
+    $idList = implode(',', $ids);
+    $sql = <<<SQL
+UPDATE cache_samples_functional s
+SET website_id=s.website_id
+FROM cache_occurrences_functional o
+WHERE o.id IN ($idList)
+AND (s.id=o.sample_id OR s.id=o.parent_sample_id);
+SQL;
+    $db->query($sql);
+  }
+
+  /**
    * During an import, add tasks to work queue rather than do immediate update.
    *
    * Allows performance improvement during import.

@@ -119,6 +119,9 @@ $config['elasticsearch'] = [
   'es' => [
     // Set open = TRUE if this end-point is available without authentication.
     'open' => FALSE,
+    // Optional type, either occurrence or sample. Default is occurrence if not
+    // specified.
+    'type' => 'occurrence',
     // Name of the elasticsearch index or alias this end-point points to.
     'index' => 'occurrence',
     // URL of the Elasticsearch index.
