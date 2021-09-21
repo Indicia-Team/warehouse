@@ -2,7 +2,9 @@
 
 UPDATE cache_samples_functional u
 SET external_key=u.external_key,
-  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(s.privacy_precision, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id)))
+  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(s.privacy_precision, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
+  sensitive=(SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
+  private=s.privacy_precision IS NOT NULL
 FROM samples s
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 WHERE s.id=u.id;

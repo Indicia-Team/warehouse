@@ -910,7 +910,9 @@ SET website_id=su.website_id,
   end,
   parent_sample_id=s.parent_id,
   media_count=(SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
-  external_key=s.external_key
+  external_key=s.external_key,
+  sensitive=(SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
+  private=s.privacy_precision IS NOT NULL
 FROM samples s
 #join_needs_update#
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -1105,7 +1107,8 @@ $config['samples']['insert']['functional'] = "
 INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
-            group_id, record_status, training, query, parent_sample_id, media_count, external_key)
+            group_id, record_status, training, query, parent_sample_id, media_count, external_key,
+            sensitive, private)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(s.privacy_precision, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
@@ -1118,7 +1121,9 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
   end,
   s.parent_id,
   (SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
-  s.external_key
+  s.external_key,
+  (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
+  s.privacy_precision IS NOT NULL
 FROM samples s
 #join_needs_update#
 LEFT JOIN cache_samples_functional cs on cs.id=s.id
