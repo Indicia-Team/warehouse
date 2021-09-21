@@ -1078,6 +1078,11 @@ class Rest_Controller extends Controller {
    *
    * Outputs a single taxon observations's details.
    *
+   * @deprecated
+   *   Deprecated in version 6.3 and may be removed in future. Use the
+   *   sync-taxon-observations end-point provided by the rest_api_sync module
+   *   instead.
+   *
    * @param string $id
    *   Unique ID for the taxon-observations to output.
    */
@@ -1115,6 +1120,11 @@ class Rest_Controller extends Controller {
    * GET handler for the taxon-observations resource.
    *
    * Outputs a list of taxon observation details.
+   *
+   * @deprecated
+   *   Deprecated in version 6.3 and may be removed in future. Use the
+   *   sync-taxon-observations end-point provided by the rest_api_sync module
+   *   instead.
    *
    * @todo Ensure delete information is output.
    */
