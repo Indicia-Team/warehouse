@@ -69,6 +69,7 @@
     <!-- Tracking field called "id" is required for autofeed to work. -->
     <column name="id" sql="o.id" datatype="integer" />
     <column name="occurrence_external_key" sql="o.external_key" datatype="text" />
+    <column name="sample_external_key" sql="s.external_key" datatype="text" />
     <column name="created_by_id" sql="o.created_by_id" datatype="integer" />
     <column name="website_id" sql="o.website_id" datatype="integer" />
     <column name="survey_id" sql="o.survey_id" datatype="integer" />
@@ -116,11 +117,11 @@
     <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(s.geom, 4326)))" datatype="text" />
     <column name="point" sql="st_y(st_transform(st_centroid(s.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.geom), 4326))::text" datatype="text" />
     <column name="map_sq_srid" sql="COALESCE(get_output_srid(o.public_geom), 3857)" datatype="integer" />
-    <column name="map_sq_1km_geom" datatype="text"
+    <column name="map_sq_1km" datatype="text"
       sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 1000), 4326)))))" />
-    <column name="map_sq_2km_geom" datatype="text"
+    <column name="map_sq_2km" datatype="text"
       sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 2000), 4326)))))" />
-    <column name="map_sq_10km_geom" datatype="text"
+    <column name="map_sq_10km" datatype="text"
       sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 10000), 4326)))))" />
     <column name="input_sref" sql="s.entered_sref" datatype="text" />
     <column name="input_sref_system" sql="s.entered_sref_system" datatype="text" />

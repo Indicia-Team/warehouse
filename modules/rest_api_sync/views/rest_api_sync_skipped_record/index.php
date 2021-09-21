@@ -34,8 +34,8 @@ if (empty($servers)) : ?>
   <button type="button" class="btn btn-primary" id="start-sync">Start sync</button>
   <div id="sync-progress">
     <h2>Synchronisation progress</h2>
-    <div id="progress"></div><br/>
-    <?php echo $grid; ?>
+    <progress id="progress" class="progress" max="100" title="Synchronisation progress"></progress>
+    <div id="progress-info" class="alert alert-info hide"></div>
     <div id="output" class="panel panel-default">
       <div class="panel-heading">Synchronisation messages</div>
       <div class="panel-body"></div>

@@ -1,3 +1,46 @@
+# Version 6.3.0
+*2021-09-21*
+
+* Support for Elasticsearch indexes which contain samples as documents (including empty samples).
+  These can be enabled for access via the REST API.
+* Addition of occurrences.verifier_only_data field to support data synced from other systems where
+  the data is supplied with attribute values that are only permitted to be used for verification.
+* Code updates for PHP 8 compatibility and updated unit test libraries.
+* Improvements to sensitivity handling for sample cache data, including:
+  * Addition of sensitive & private flags.
+  * Blurring the public geometry when any contained occurrences are sensitive,.
+  * The public_entered_sref is now populated with the blurred and localised grid reference when
+    there are sensitive records in a sample. Formerly it was left null.
+  * Fixes a bug where the map square links were not being populated for the full-precision copy of
+    sensitive records.
+* Adds the following fields fields to samples cache for consistency with the occurrences cache
+  tables:
+  * cache_samples_functional.external_key
+  * cache_samples_functional.sensitive
+  * cache_samples_functional.private
+  * cache_samples_nonfunctional.output_sref
+  * cache_samples_nonfunctional.output_sref_system
+  * cache_samples_nonfunctional.private
+* Updating an occurrence in isolation (via web services) now updates the tracking ID associated
+  with the sample that contains the occurrence. This is so that any sample data feeds receive an
+  updated copy of the sample, as the occurrence statistics will have changed.
+* Workflow events now allow filters on location, or stage term. These are applied retrospectively
+  using a Work Queue task, allowing spatial indexing to be applied to the record first. For example
+  this allows a workflow event's effect to be removed from a record if it does not fall inside a
+  boundary or is a juvenile.
+* REST API module provides sync-taxon-observations and sync-annotation end-points designed for
+  synchronising records and verification decisions with remote servers.
+* New json_occurrences server type for the REST API Sync module which sychronises data with any
+  remote (Indicia or otherwise) server that supports the sync-taxon-observations and
+  sync-annotations API format.
+* Bug fixes.
+
+## Deprecation notice
+
+* The previously provided taxon-observations and annotations end-points in the REST API (which were
+  based on the defunct NBN Gateway Exchange Format) are now deprecated and may be removed in a
+  future version.
+
 # Version 6.2.0
 *2021-08-02*
 

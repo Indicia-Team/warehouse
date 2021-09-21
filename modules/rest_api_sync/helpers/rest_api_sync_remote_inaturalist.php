@@ -30,7 +30,7 @@ define('INAT_MAX_PAGES', 5);
 /**
  * Helper class for syncing to the RESTful API on iNaturalist.
  */
-class rest_api_sync_inaturalist {
+class rest_api_sync_remote_inaturalist {
 
   /**
    * Terms loaded from iNat.
@@ -86,7 +86,7 @@ class rest_api_sync_inaturalist {
     $cache = Cache::instance();
     self::$controlledTerms = $cache->get('inaturalist-controlled-terms');
     if (!self::$controlledTerms) {
-      $data = rest_api_sync::getDataFromRestUrl(
+      $data = rest_api_sync_utils::getDataFromRestUrl(
         "$server[url]/controlled_terms",
         $serverId
       );
@@ -121,10 +121,11 @@ class rest_api_sync_inaturalist {
    */
   public static function syncPage($serverId, array $server) {
     $db = Database::instance();
+    api_persist::initDwcAttributes($db, $server['survey_id']);
     $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
     $fromId = variable::get("rest_api_sync_{$serverId}_last_id", 0, FALSE);
     $lastId = $fromId;
-    $data = rest_api_sync::getDataFromRestUrl(
+    $data = rest_api_sync_utils::getDataFromRestUrl(
       "$server[url]/observations?" . http_build_query(array_merge(
         $server['parameters'],
         [
@@ -156,16 +157,15 @@ class rest_api_sync_inaturalist {
           'startDate' => $iNatRecord['observed_on'],
           'endDate' => $iNatRecord['observed_on'],
           'dateType' => 'D',
-          'recorder' => empty($iNatRecord['user']['name']) ? $iNatRecord['user']['login'] : $iNatRecord['user']['name'],
+          'recordedBy' => empty($iNatRecord['user']['name']) ? $iNatRecord['user']['login'] : $iNatRecord['user']['name'],
           'east' => $east,
           'north' => $north,
           'projection' => 'WGS84',
-          'precision' => $iNatRecord['public_positional_accuracy'],
+          'coordinateUncertaintyInMeters' => $iNatRecord['public_positional_accuracy'],
           'siteName' => $iNatRecord['place_guess'],
           'href' => $iNatRecord['uri'],
           // American English in iNat field name - sic.
-          // Also correct extra hyphen in iNat CC licence codes.
-          'licenceCode' => preg_replace('/^cc-/', 'cc ', $iNatRecord['license_code']),
+          'licenceCode' => $iNatRecord['license_code'],
         ];
         if (!empty($iNatRecord['photos'])) {
           $observation['media'] = [];
@@ -176,7 +176,7 @@ class rest_api_sync_inaturalist {
                 'path' => $iNatPhoto['url'],
                 'caption' => $iNatPhoto['attribution'],
                 'mediaType' => 'Image:iNaturalist',
-                'licenceCode' => preg_replace('/^cc-/', 'cc ', $iNatPhoto['license_code']),
+                'licenceCode' => $iNatPhoto['license_code'],
               ];
             }
           }
@@ -219,7 +219,7 @@ class rest_api_sync_inaturalist {
           "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
       }
       catch (exception $e) {
-        rest_api_sync::log(
+        rest_api_sync_utils::log(
           'error',
           "Error occurred submitting an occurrence with iNaturalist ID $iNatRecord[id]\n" . $e->getMessage(),
           $tracker
@@ -251,7 +251,7 @@ QRY;
       $lastId = $iNatRecord['id'];
     }
     variable::set("rest_api_sync_{$serverId}_last_id", $lastId);
-    rest_api_sync::log(
+    rest_api_sync_utils::log(
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );

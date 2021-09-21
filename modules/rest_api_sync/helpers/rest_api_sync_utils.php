@@ -21,17 +21,29 @@
 
  defined('SYSPATH') or die('No direct script access.');
 
+ define('MAX_PAGES', 1);
+
 /**
  * Helper class for syncing to RESTful APIs.
  */
-class rest_api_sync {
+class rest_api_sync_utils {
 
+  /**
+   * Client user ID for authentication.
+   *
+   * @var string
+   */
   public static $clientUserId;
 
+  /**
+   * Keep track of logged messages so they can be reported back to a UI.
+   *
+   * @var array
+   */
   public static $log = [];
 
   /**
-   * Gets a page of data from another server's REST API
+   * Gets a page of data from another server's REST API.
    *
    * @param string $url
    *   URL of the service to access.
@@ -52,8 +64,18 @@ class rest_api_sync {
     if (empty($servers[$serverId]['serverType']) || $servers[$serverId]['serverType'] === 'Indicia') {
       $shared_secret = $servers[$serverId]['shared_secret'];
       $userId = self::$clientUserId;
-      $hmac = hash_hmac("sha1", $url, $shared_secret, $raw_output = FALSE);
-      curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
+      $hmac = hash_hmac("sha1", $url, $shared_secret, FALSE);
+      curl_setopt($session, CURLOPT_HTTPHEADER, ["Authorization: USER:$userId:HMAC:$hmac"]);
+    }
+    elseif (!empty($servers[$serverId]['serverType']) && substr($servers[$serverId]['serverType'], 0, 5) === 'json_') {
+      // All JSON servers use same HMAC authentication.
+      $shared_secret = $servers[$serverId]['shared_secret'];
+      $userId = self::$clientUserId;
+      $time = round(microtime(TRUE) * 1000);
+      $authData = "$userId$time";
+      // Create the authentication HMAC.
+      $hmac = hash_hmac("sha1", $authData, $shared_secret, FALSE);
+      curl_setopt($session, CURLOPT_HTTPHEADER, ["Authorization: USER:$userId:TIME:$time:HMAC:$hmac"]);
     }
     // Do the request.
     $response = curl_exec($session);

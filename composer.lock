@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c505b8dc101b76633c8ae935e66c78b2",
+    "content-hash": "2fccf8723ed1dfa22f7247880fd11bd9",
     "packages": [
         {
             "name": "ezyang/htmlpurifier",
@@ -885,37 +885,45 @@
         },
         {
             "name": "misantron/dbunit",
-            "version": "5.1.0",
+            "version": "dev-master",
             "source": {
                 "type": "git",
                 "url": "https://github.com/misantron/dbunit.git",
-                "reference": "a3e5d3c74a2ae78827c86e14e3d06d7a8d44ca65"
+                "reference": "73a9c07dca119c68e92002adb4fab9022235a91f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/misantron/dbunit/zipball/a3e5d3c74a2ae78827c86e14e3d06d7a8d44ca65",
-                "reference": "a3e5d3c74a2ae78827c86e14e3d06d7a8d44ca65",
+                "url": "https://api.github.com/repos/misantron/dbunit/zipball/73a9c07dca119c68e92002adb4fab9022235a91f",
+                "reference": "73a9c07dca119c68e92002adb4fab9022235a91f",
                 "shasum": ""
             },
             "require": {
-                "ext-libxml": "*",
                 "ext-pdo": "*",
-                "ext-simplexml": "*",
-                "php": "^7.2|^7.3|^7.4",
-                "phpunit/phpunit": "^8.5|^9.2",
-                "symfony/yaml": "^4.4|^5.0"
+                "php": "^7.2 || ^8.0",
+                "phpunit/phpunit": "^8.5 || ^9.2",
+                "symfony/yaml": "^4.4 || ^5.0"
             },
             "require-dev": {
-                "friendsofphp/php-cs-fixer": "^2.16",
-                "php-coveralls/php-coveralls": "^2.2"
+                "friendsofphp/php-cs-fixer": "^2.18 || ^3.0",
+                "php-coveralls/php-coveralls": "^2.4",
+                "phpstan/phpstan": "^0.12.98",
+                "squizlabs/php_codesniffer": "^3.6"
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
                     "PHPUnit\\DbUnit\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "autoload-dev": {
+                "psr-4": {
+                    "PHPUnit\\DbUnit\\Tests\\": "tests/"
+                },
+                "files": [
+                    "tests/_files/DatabaseTestUtility.php"
+                ]
+            },
             "license": [
                 "MIT"
             ],
@@ -923,21 +931,20 @@
                 {
                     "name": "Aleksandr Ivanov",
                     "email": "misantron@gmail.com",
-                    "role": "developer"
+                    "role": "Developer"
                 }
             ],
             "description": "DbUnit fork supporting PHPUnit 8/9",
-            "homepage": "https://github.com/misantron/dbunit/",
             "keywords": [
                 "database",
-                "dbUnit",
+                "dbunit",
                 "testing"
             ],
             "support": {
-                "issues": "https://github.com/misantron/dbunit/issues",
-                "source": "https://github.com/misantron/dbunit/tree/master"
+                "source": "https://github.com/misantron/dbunit/tree/master",
+                "issues": "https://github.com/misantron/dbunit/issues"
             },
-            "time": "2020-07-07T20:48:08+00:00"
+            "time": "2021-09-09T19:30:23+00:00"
         },
         {
             "name": "myclabs/deep-copy",
@@ -1324,33 +1331,33 @@
         },
         {
             "name": "phpspec/prophecy",
-            "version": "1.13.0",
+            "version": "1.14.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpspec/prophecy.git",
-                "reference": "be1996ed8adc35c3fd795488a653f4b518be70ea"
+                "reference": "d86dfc2e2a3cd366cee475e52c6bb3bbc371aa0e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpspec/prophecy/zipball/be1996ed8adc35c3fd795488a653f4b518be70ea",
-                "reference": "be1996ed8adc35c3fd795488a653f4b518be70ea",
+                "url": "https://api.github.com/repos/phpspec/prophecy/zipball/d86dfc2e2a3cd366cee475e52c6bb3bbc371aa0e",
+                "reference": "d86dfc2e2a3cd366cee475e52c6bb3bbc371aa0e",
                 "shasum": ""
             },
             "require": {
                 "doctrine/instantiator": "^1.2",
-                "php": "^7.2 || ~8.0, <8.1",
+                "php": "^7.2 || ~8.0, <8.2",
                 "phpdocumentor/reflection-docblock": "^5.2",
                 "sebastian/comparator": "^3.0 || ^4.0",
                 "sebastian/recursion-context": "^3.0 || ^4.0"
             },
             "require-dev": {
-                "phpspec/phpspec": "^6.0",
+                "phpspec/phpspec": "^6.0 || ^7.0",
                 "phpunit/phpunit": "^8.0 || ^9.0"
             },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "1.11.x-dev"
+                    "dev-master": "1.x-dev"
                 }
             },
             "autoload": {
@@ -1385,9 +1392,9 @@
             ],
             "support": {
                 "issues": "https://github.com/phpspec/prophecy/issues",
-                "source": "https://github.com/phpspec/prophecy/tree/1.13.0"
+                "source": "https://github.com/phpspec/prophecy/tree/1.14.0"
             },
-            "time": "2021-03-17T13:42:18+00:00"
+            "time": "2021-09-10T09:02:12+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -1709,16 +1716,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "9.5.7",
+            "version": "9.5.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "d0dc8b6999c937616df4fb046792004b33fd31c5"
+                "reference": "ea8c2dfb1065eb35a79b3681eee6e6fb0a6f273b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/d0dc8b6999c937616df4fb046792004b33fd31c5",
-                "reference": "d0dc8b6999c937616df4fb046792004b33fd31c5",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/ea8c2dfb1065eb35a79b3681eee6e6fb0a6f273b",
+                "reference": "ea8c2dfb1065eb35a79b3681eee6e6fb0a6f273b",
                 "shasum": ""
             },
             "require": {
@@ -1730,7 +1737,7 @@
                 "ext-xml": "*",
                 "ext-xmlwriter": "*",
                 "myclabs/deep-copy": "^1.10.1",
-                "phar-io/manifest": "^2.0.1",
+                "phar-io/manifest": "^2.0.3",
                 "phar-io/version": "^3.0.2",
                 "php": ">=7.3",
                 "phpspec/prophecy": "^1.12.1",
@@ -1796,7 +1803,7 @@
             ],
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/9.5.7"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/9.5.9"
             },
             "funding": [
                 {
@@ -1808,7 +1815,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2021-07-19T06:14:47+00:00"
+            "time": "2021-08-31T06:47:40+00:00"
         },
         {
             "name": "sebastian/cli-parser",
@@ -3107,7 +3114,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "misantron/dbunit": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],
