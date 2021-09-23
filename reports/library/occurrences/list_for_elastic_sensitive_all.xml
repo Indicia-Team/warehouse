@@ -24,10 +24,11 @@
     FROM filtered_occurrences o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
+    JOIN cache_samples_functional s ON s.id=o.sample_id
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-    JOIN samples s on s.id=o.sample_id AND s.deleted=false
-    LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false;
+    JOIN samples s on smp.id=o.sample_id AND smp.deleted=false
+    LEFT JOIN locations l ON l.id=smp.location_id AND l.deleted=false;
 
     UPDATE output_rows o
     SET recorded_parent_location_id = lp.id,
@@ -68,7 +69,7 @@
     <!-- Tracking field called "id" is required for autofeed to work. -->
     <column name="id" sql="o.id" datatype="integer" />
     <column name="occurrence_external_key" sql="o.external_key" datatype="text" />
-    <column name="sample_external_key" sql="s.external_key" datatype="text" />
+    <column name="sample_external_key" sql="smp.external_key" datatype="text" />
     <column name="created_by_id" sql="o.created_by_id" datatype="integer" />
     <column name="website_id" sql="o.website_id" datatype="integer" />
     <column name="survey_id" sql="o.survey_id" datatype="integer" />
@@ -113,20 +114,20 @@
             when coalesce(date_part('year', o.date_start), 0)=coalesce(date_part('year', o.date_end), 0) then coalesce(date_part('year', o.date_start), null)
             else null
           end" datatype="integer" />
-    <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(s.geom, 4326)))" datatype="text" />
-    <column name="point" sql="st_y(st_transform(st_centroid(s.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(s.geom), 4326))::text" datatype="text" />
+    <column name="geom" sql="st_astext(st_removerepeatedpoints(st_transform(smp.geom, 4326)))" datatype="text" />
+    <column name="point" sql="st_y(st_transform(st_centroid(smp.geom), 4326))::text || ',' || st_x(st_transform(st_centroid(smp.geom), 4326))::text" datatype="text" />
     <column name="map_sq_srid" sql="COALESCE(get_output_srid(o.public_geom), 3857)" datatype="integer" />
     <column name="map_sq_1km" datatype="text"
-      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 1000), 4326)))))" />
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(smp.geom, false, 1000), 4326)))))" />
     <column name="map_sq_2km" datatype="text"
-      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 2000), 4326)))))" />
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(smp.geom, false, 2000), 4326)))))" />
     <column name="map_sq_10km" datatype="text"
-      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(s.geom, false, 10000), 4326)))))" />
-    <column name="input_sref" sql="s.entered_sref" datatype="text" />
-    <column name="input_sref_system" sql="s.entered_sref_system" datatype="text" />
+      sql="TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(smp.geom, false, 10000), 4326)))))" />
+    <column name="input_sref" sql="smp.entered_sref" datatype="text" />
+    <column name="input_sref_system" sql="smp.entered_sref_system" datatype="text" />
     <column name="output_sref" sql="get_output_sref(
       greatest(
-        round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
+        round(sqrt(st_area(st_transform(smp.geom, sref_system_to_srid(smp.entered_sref_system)))))::integer,
         case
           when snf.attr_sref_precision>=501 then 10000
           when snf.attr_sref_precision between 51 and 500 then 1000
@@ -135,20 +136,20 @@
         end,
         10
       ),
-      coalesce(s.geom, l.centroid_geom)
+      coalesce(smp.geom, l.centroid_geom)
     )" datatype="text" />
     <column name="output_sref_system" sql="get_output_system(
-      coalesce(s.geom, l.centroid_geom)
+      coalesce(smp.geom, l.centroid_geom)
     )" datatype="text" />
     <column name="coordinate_uncertainty_in_meters"
               sql="CASE
       WHEN snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
-        get_sref_precision(s.entered_sref, s.entered_sref_system, null)
+        get_sref_precision(smp.entered_sref, smp.entered_sref_system, null)
       ELSE COALESCE(snf.attr_sref_precision, 50)
     END"
             datatype="float"
             term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
-    <column name="given_locality_name" sql="COALESCE(s.location_name, l.name)" datatype="text" />
+    <column name="given_locality_name" sql="COALESCE(smp.location_name, l.name)" datatype="text" />
     <column name="recorded_location_id" sql="l.id" datatype="integer" />
     <column name="recorded_location_name" sql="l.name" datatype="text" />
     <column name="recorded_location_code" sql="l.code" datatype="text" />
@@ -176,6 +177,15 @@
         LEFT JOIN licences l ON l.id=om.licence_id
         LEFT JOIN cache_termlists_terms t ON t.id=om.media_type_id
         WHERE om.occurrence_id=o.id AND om.deleted=false)
+      ELSE null
+      END" datatype="text" />
+    <column name="event_media_data" sql="CASE
+      WHEN s.media_count>0 AND s.sensitive=false AND private=false THEN
+        (SELECT string_agg(sm.path || '~~' || COALESCE(sm.caption, '') || '~~' ||  COALESCE(l.code, '') || '~~' ||  COALESCE(t.term, ''), '@@')
+        FROM sample_media sm
+        LEFT JOIN licences l ON l.id=sm.licence_id
+        LEFT JOIN cache_termlists_terms t ON t.id=sm.media_type_id
+        WHERE sm.sample_id=s.id AND sm.deleted=false)
       ELSE null
       END" datatype="text" />
     <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
