@@ -71,40 +71,6 @@ class rest_api_sync_remote_inaturalist {
   }
 
   /**
-   * Loads the controlled terms information from iNat.
-   *
-   * @param string $serverId
-   *   ID of the server as defined in the configuration.
-   * @param array $server
-   *   Server configuration.
-   */
-  public static function loadControlledTerms($serverId, array $server) {
-    if (!empty(self::$controlledTerms)) {
-      // Already loaded.
-      return;
-    }
-    $cache = Cache::instance();
-    self::$controlledTerms = $cache->get('inaturalist-controlled-terms');
-    if (!self::$controlledTerms) {
-      $data = rest_api_sync_utils::getDataFromRestUrl(
-        "$server[url]/controlled_terms",
-        $serverId
-      );
-      foreach ($data['results'] as $iNatControlledTerm) {
-        $termLookup = [];
-        foreach ($iNatControlledTerm['values'] as $iNatValue) {
-          $termLookup[$iNatValue['id']] = $iNatValue['label'];
-        }
-        self::$controlledTerms[$iNatControlledTerm['id']] = [
-          'label' => $iNatControlledTerm['label'],
-          'values' => $termLookup,
-        ];
-      }
-      $cache->set('inaturalist-controlled-terms', self::$controlledTerms);
-    }
-  }
-
-  /**
    * Synchronise a single page of data loaded from the iNat server.
    *
    * For this sync, we don't use the provided $page parameter as pagination
@@ -133,7 +99,7 @@ class rest_api_sync_remote_inaturalist {
           'per_page' => INAT_PAGE_SIZE,
           'id_above' => $fromId,
           'order' => 'asc',
-          'order_by' => 'created_at',
+          'order_by' => 'id',
         ]
       )),
       $serverId
@@ -260,6 +226,40 @@ QRY;
       'recordsToGo' => $data['total_results'],
     ];
     return $r;
+  }
+
+  /**
+   * Loads the controlled terms information from iNat.
+   *
+   * @param string $serverId
+   *   ID of the server as defined in the configuration.
+   * @param array $server
+   *   Server configuration.
+   */
+  public static function loadControlledTerms($serverId, array $server) {
+    if (!empty(self::$controlledTerms)) {
+      // Already loaded.
+      return;
+    }
+    $cache = Cache::instance();
+    self::$controlledTerms = $cache->get('inaturalist-controlled-terms');
+    if (!self::$controlledTerms) {
+      $data = rest_api_sync_utils::getDataFromRestUrl(
+        "$server[url]/controlled_terms",
+        $serverId
+      );
+      foreach ($data['results'] as $iNatControlledTerm) {
+        $termLookup = [];
+        foreach ($iNatControlledTerm['values'] as $iNatValue) {
+          $termLookup[$iNatValue['id']] = $iNatValue['label'];
+        }
+        self::$controlledTerms[$iNatControlledTerm['id']] = [
+          'label' => $iNatControlledTerm['label'],
+          'values' => $termLookup,
+        ];
+      }
+      $cache->set('inaturalist-controlled-terms', self::$controlledTerms);
+    }
   }
 
 }
