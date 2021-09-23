@@ -203,7 +203,6 @@ class rest_api_sync_remote_inaturalist {
             }
           }
         }
-        kohana::log('debug', var_export($observation, TRUE));
         $is_new = api_persist::taxonObservation(
           $db,
           $observation,
