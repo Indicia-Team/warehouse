@@ -23,7 +23,7 @@
     FROM filtered_occurrences o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
-    JOIN samples s ON s.id=o.sample_id AND s.deleted=false
+    JOIN cache_samples_functional s ON s.id=o.sample_id
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
     LEFT JOIN locations l ON l.id=o.location_id AND l.deleted=false;
@@ -167,6 +167,15 @@
         LEFT JOIN licences l ON l.id=om.licence_id
         LEFT JOIN cache_termlists_terms t ON t.id=om.media_type_id
         WHERE om.occurrence_id=o.id AND om.deleted=false)
+      ELSE null
+      END" datatype="text" />
+    <column name="event_media_data" sql="CASE
+      WHEN s.media_count>0 AND s.sensitive=false AND private=false THEN
+        (SELECT string_agg(sm.path || '~~' || COALESCE(sm.caption, '') || '~~' ||  COALESCE(l.code, '') || '~~' ||  COALESCE(t.term, ''), '@@')
+        FROM sample_media sm
+        LEFT JOIN licences l ON l.id=sm.licence_id
+        LEFT JOIN cache_termlists_terms t ON t.id=sm.media_type_id
+        WHERE sm.sample_id=s.id AND sm.deleted=false)
       ELSE null
       END" datatype="text" />
     <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
