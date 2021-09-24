@@ -1,3 +1,8 @@
+# Version 6.4.0
+*2021-09-24*
+
+* Occurrence Elasticsearch extraction updated to include sample (event) media.
+
 # Version 6.3.0
 *2021-09-21*
 
