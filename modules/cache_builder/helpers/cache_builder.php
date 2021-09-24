@@ -277,10 +277,12 @@ SQL;
    */
   private static function delayChangesViaWorkQueue($db, $table, $idCsv) {
     $entity = inflector::singular($table);
+    // Priority 1 work_queue tasks so it precedes things like spatial indexing
+    // or attributes population.
     $sql = <<<SQL
 -- Comment necessary to prevent Kohana calling LASTVAL().
 INSERT INTO work_queue(task, entity, record_id, params, cost_estimate, priority, created_on)
-SELECT 'task_cache_builder_update', '$entity', t.id, null, 100, 2, now()
+SELECT 'task_cache_builder_update', '$entity', t.id, null, 100, 1, now()
 FROM $table t
 LEFT JOIN work_queue w ON w.task='task_cache_builder_update' AND w.entity='$entity' AND w.record_id=t.id
 WHERE t.id IN ($idCsv)
