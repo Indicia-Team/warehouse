@@ -891,7 +891,10 @@ SET website_id=su.website_id,
   survey_id=s.survey_id,
   input_form=COALESCE(sp.input_form, s.input_form),
   location_id= s.location_id,
-  location_name=CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
+  location_name=CASE
+    WHEN s.privacy_precision IS NOT NULL OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL THEN NULL
+    ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name)
+  END,
   public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(s.privacy_precision, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
   date_start=s.date_start,
   date_end=s.date_end,
@@ -1110,7 +1113,10 @@ INSERT INTO cache_samples_functional(
             group_id, record_status, training, query, parent_sample_id, media_count, external_key,
             sensitive, private)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
-  CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
+  CASE
+    WHEN s.privacy_precision IS NOT NULL OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL THEN NULL
+    ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name)
+  END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(s.privacy_precision, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
   coalesce(s.group_id, sp.group_id), s.record_status, s.training,
@@ -1542,10 +1548,14 @@ SET sample_id=o.sample_id,
   website_id=o.website_id,
   survey_id=s.survey_id,
   input_form=COALESCE(sp.input_form, s.input_form),
-  location_id=CASE WHEN o.confidential=true OR o.sensitivity_precision IS NOT NULL OR s.privacy_precision IS NOT NULL
-    THEN null else l.id END,
-  location_name=CASE WHEN o.confidential=true OR o.sensitivity_precision IS NOT NULL OR s.privacy_precision IS NOT NULL
-      THEN null else COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
+  location_id=CASE
+    WHEN o.confidential=true OR o.sensitivity_precision IS NOT NULL OR s.privacy_precision IS NOT NULL THEN NULL
+    ELSE l.id
+  END,
+  location_name=CASE
+    WHEN o.confidential=true OR o.sensitivity_precision IS NOT NULL OR s.privacy_precision IS NOT NULL THEN NULL
+    ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name)
+  END,
   public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision)),
   date_start=s.date_start,
   date_end=s.date_end,
@@ -1575,6 +1585,7 @@ SET sample_id=o.sample_id,
     else null
   end,
   sensitive=o.sensitivity_precision is not null,
+  private=s.privacy_precision is not null,
   release_status=o.release_status,
   marine_flag=cttl.marine_flag,
   freshwater_flag=cttl.freshwater_flag,
@@ -1618,6 +1629,7 @@ LEFT JOIN occurrence_comments dc
 WHERE cache_occurrences_functional.id=o.id
 ";
 
+// Ensure occurrence sensitivity changes apply to parent sample cache data.
 $config['occurrences']['update']['functional_sensitive'] = "
 UPDATE cache_samples_functional cs
 SET location_id=null, location_name=null
@@ -1794,7 +1806,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             created_by_id, group_id, taxa_taxon_list_id, preferred_taxa_taxon_list_id,
             taxon_meaning_id, taxa_taxon_list_external_key, family_taxa_taxon_list_id,
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
-            certainty, query, sensitive, release_status,
+            certainty, query, sensitive, private, release_status,
             marine_flag, freshwater_flag, terrestrial_flag, non_native_flag, data_cleaner_result,
             training, zero_abundance, licence_id, import_guid, confidential, external_key,
             taxon_path, blocked_sharing_tasks, parent_sample_id, verification_checks_enabled,
@@ -1813,7 +1825,7 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         else 'U'
     end,
     null,
-    o.sensitivity_precision is not null, o.release_status,
+    o.sensitivity_precision is not null, s.privacy_precision is not null, o.release_status,
     cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag, null,
     o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key,
     ctp.path,

@@ -15,7 +15,7 @@
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
-    AND sensitive=true
+    AND (o.sensitive=true OR o.private=true)
     #filters#
     #order_by#
     LIMIT #limit#;
@@ -181,7 +181,7 @@
       ELSE null
       END" datatype="text" />
     <column name="event_media_data" sql="CASE
-      WHEN s.media_count>0 AND s.sensitive=false AND private=false THEN
+      WHEN s.media_count>0 AND s.sensitive=false AND s.private=false THEN
         (SELECT string_agg(sm.path || '~~' || COALESCE(sm.caption, '') || '~~' ||  COALESCE(l.code, '') || '~~' ||  COALESCE(t.term, ''), '@@')
         FROM sample_media sm
         LEFT JOIN licences l ON l.id=sm.licence_id
@@ -203,6 +203,8 @@
     <column name="query" sql="o.query" datatype="text" />
     <column name="zero_abundance" sql="o.zero_abundance::text" datatype="text" />
     <column name="trial" sql="o.training::text" datatype="text" />
+    <column name="private" sql="s.private::text" datatype="text" />
+    <column name="privacy_precision" sql="snf.privacy_precision" datatype="integer" />
     <column name="sensitive" sql="o.sensitive::text" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
     <!-- Flag sensitivity_blur = F for full precision version of a sensitive record. -->
