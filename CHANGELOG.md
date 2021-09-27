@@ -1,3 +1,9 @@
+# Version 6.5.0
+*2021-09-25*
+
+* Adds cache_occurrences_functional.private field to reflect site privacy status.
+* Updates the extraction to Elasticsearch to include additional privacy metadata.
+
 # Version 6.4.0
 *2021-09-24*
 
