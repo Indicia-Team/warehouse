@@ -1,3 +1,8 @@
+# Version 6.6.0
+*2021-09-28*
+
+* Added language_iso column to the taxon_list report. This is needed when using this report
+  to drive a species_autocomplete, it does not work without this information.
 # Version 6.5.0
 *2021-09-25*
 
