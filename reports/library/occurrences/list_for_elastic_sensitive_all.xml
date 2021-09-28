@@ -45,10 +45,10 @@
     SET recorded_parent_location_id = lp.id,
       recorded_parent_location_name = lp.name,
       recorded_parent_location_code = lp.code
-      FROM samples sc
+    FROM samples sc
     JOIN locations lc ON lc.id=sc.location_id AND lc.deleted=false
-      JOIN locations lp ON lp.id = lc.parent_id AND lp.deleted=false
-      WHERE sc.id=o.sample_id AND sc.deleted=false
+    JOIN locations lp ON lp.id = lc.parent_id AND lp.deleted=false
+    WHERE sc.id=o.sample_id AND sc.deleted=false
     AND o.recorded_parent_location_id IS NULL;
 
     SELECT *
@@ -180,7 +180,7 @@
       ELSE null
       END" datatype="text" />
     <column name="event_media_data" sql="CASE
-      WHEN s.media_count>0 AND s.sensitive=false AND s.private=false THEN
+      WHEN s.media_count>0 THEN
         (SELECT string_agg(sm.path || '~~' || COALESCE(sm.caption, '') || '~~' ||  COALESCE(l.code, '') || '~~' ||  COALESCE(t.term, ''), '@@')
         FROM sample_media sm
         LEFT JOIN licences l ON l.id=sm.licence_id
@@ -206,7 +206,7 @@
     <column name="privacy_precision" sql="snf.privacy_precision" datatype="integer" />
     <column name="sensitive" sql="o.sensitive::text" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
-    <!-- Flag sensitivity_blur = F for full precision version of a sensitive record. -->
+    <!-- Flag sensitivity_blur = F for full precision version of a sensitive or private record. -->
     <column name="sensitivity_blur" sql="'F'" datatype="text" />
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />

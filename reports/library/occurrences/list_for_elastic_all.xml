@@ -28,6 +28,7 @@
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
     LEFT JOIN locations l ON l.id=o.location_id AND l.deleted=false;
 
+    -- Parent sample data
     UPDATE output_rows o
     SET recorded_parent_location_id = lp.id,
       recorded_parent_location_name = lp.name,
@@ -196,8 +197,8 @@
     <column name="privacy_precision" sql="snf.privacy_precision" datatype="integer" />
     <column name="sensitive" sql="o.sensitive::text" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
-    <!-- Flag sensitivity_blur = B for blurred version of a sensitive record. -->
-    <column name="sensitivity_blur" sql="CASE o.sensitive WHEN true THEN 'B' ELSE null END" datatype="text" />
+    <!-- Flag sensitivity_blur = B for blurred version of a sensitive or private record. -->
+    <column name="sensitivity_blur" sql="CASE WHEN o.sensitive OR s.private THEN 'B' ELSE null END" datatype="text" />
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
     <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />
