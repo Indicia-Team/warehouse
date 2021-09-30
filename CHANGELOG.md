@@ -1,3 +1,8 @@
+# Version 6.7.0
+*2021-09-30*
+
+* Allow Users to be searched using an autocomplete when linking users to a location.
+
 # Version 6.6.0
 *2021-09-28*
 
