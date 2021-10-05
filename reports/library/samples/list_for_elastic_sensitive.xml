@@ -28,8 +28,8 @@
     JOIN cache_occurrences_functional o ON o.sample_id=s.id OR o.parent_sample_id=s.id;
 
     SELECT s.id as sample_id, COUNT(DISTINCT ol.occurrence_id) AS count_occurrences, COUNT(distinct cttl.taxon_meaning_id) AS count_taxa, COUNT(distinct cttl.taxon_group_id) AS count_taxon_groups,
-      SUM(case when onf.attr_sex_stage_count similar to '[0-9]{1,9}' then onf.attr_sex_stage_count::integer else null end) AS sum_individual_count,
-      MAX(onf.sensitivity_precision) AS max_sensitivity_precision, BOOL_OR(ol.confidential) AS any_confidential, string_agg(DISTINCT ol.release_status, '') as all_release_status
+      CASE COUNT(DISTINCT ol.occurrence_id) WHEN 0 THEN 0 ELSE SUM(case when onf.attr_sex_stage_count similar to '[0-9]{1,9}' then onf.attr_sex_stage_count::integer else null end) END AS sum_individual_count,
+      MAX(onf.sensitivity_precision) AS max_sensitivity_precision, COALESCE(BOOL_OR(ol.confidential), false) AS any_confidential, string_agg(DISTINCT ol.release_status, '') as all_release_status
     INTO TEMPORARY occurrence_stats
     FROM filtered_samples s
     LEFT JOIN sample_occurrences_list ol ON ol.sample_id=s.id
