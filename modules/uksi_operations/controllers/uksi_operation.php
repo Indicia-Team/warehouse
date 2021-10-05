@@ -156,9 +156,20 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       $this->operationErrors[] = "Organism key $operation->current_organism_key not found for add synonym operation";
       return 'Error';
     }
-    // Add the taxon as per new taxon, using the existing taxon meaning Id.
+    // Add the taxon as per new taxon.
     $fields = $this->getCreateTaxonFields($operation, FALSE);
+    // Check for duplication.
+    foreach ($allExistingNames as $name) {
+      if ($name->taxon === $fields['taxon:taxon']
+          && $name->authority === $fields['taxon:authority']
+          && $name->attribute === $fields['taxon:attribute']) {
+        return "Synonym $operation->taxon_name already exists.";
+      }
+    }
+    $allExistingNames->rewind();
+    // Copy over details from the preferred taxon to define a synonym.
     $fields['taxa_taxon_list:taxon_meaning_id'] = $allExistingNames->current()->taxon_meaning_id;
+    $fields['taxa_taxon_list:parent_id'] = $allExistingNames->current()->parent_id;
     $fields['taxon:taxon_rank_id'] = $allExistingNames->current()->taxon_rank_id;
     $fields['taxon:taxon_group_id'] = $allExistingNames->current()->taxon_group_id;
     $fields['taxon:marine_flag'] = $allExistingNames->current()->marine_flag;
@@ -717,8 +728,8 @@ SQL;
    */
   private function getTaxaForOrganismKey($organismKey) {
     return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, ttl.parent_id, ' .
-        't.taxon, t.search_code, t.external_key, t.organism_key, t.taxon_rank_id, t.taxon_group_id, ' .
-        't.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag')
+        't.taxon, t.authority, t.attribute, t.search_code, t.external_key, t.organism_key, t.taxon_rank_id, ' .
+        ' t.taxon_group_id, t.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag')
       ->from('taxa_taxon_lists AS ttl')
       ->join('taxa as t', 't.id', 'ttl.taxon_id')
       ->where([
