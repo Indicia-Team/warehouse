@@ -1078,6 +1078,11 @@ class Rest_Controller extends Controller {
    *
    * Outputs a single taxon observations's details.
    *
+   * @deprecated
+   *   Deprecated in version 6.3 and may be removed in future. Use the
+   *   sync-taxon-observations end-point provided by the rest_api_sync module
+   *   instead.
+   *
    * @param string $id
    *   Unique ID for the taxon-observations to output.
    */
@@ -1115,6 +1120,11 @@ class Rest_Controller extends Controller {
    * GET handler for the taxon-observations resource.
    *
    * Outputs a list of taxon observation details.
+   *
+   * @deprecated
+   *   Deprecated in version 6.3 and may be removed in future. Use the
+   *   sync-taxon-observations end-point provided by the rest_api_sync module
+   *   instead.
    *
    * @todo Ensure delete information is output.
    */
@@ -2267,7 +2277,8 @@ class Rest_Controller extends Controller {
       return $headers['authorization'];
     }
     elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-      // Sometimes on Apache, necessary to redirect the Auth header into the $_SERVER superglobal.
+      // Sometimes on Apache, necessary to redirect the Auth header into the
+      // $_SERVER superglobal.
       // See https://stackoverflow.com/questions/26475885/authorization-header-missing-in-php-post-request.
       return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
     }
@@ -2318,7 +2329,7 @@ class Rest_Controller extends Controller {
    * @param int $websiteId
    *   Website ID to test against.
    * @param int $userId
-   *   Warehouse user ID to test.   *
+   *   Warehouse user ID to test.
    */
   private function checkWebsiteUser($websiteId, $userId) {
     $cache = Cache::instance();
@@ -2602,10 +2613,13 @@ class Rest_Controller extends Controller {
     // Taxon observations and annotations resource end-points will need a
     // proj_id if using client system based authorisation.
     if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
-        (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {
-      RestObjects::$apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
+        (empty($_REQUEST['proj_id']))) {
+      RestObjects::$apiResponse->fail('Bad request', 400, 'Project ID missing.');
     }
     if (!empty($_REQUEST['proj_id'])) {
+      if (empty($this->projects[$_REQUEST['proj_id']])) {
+        RestObjects::$apiResponse->fail('Bad request', 400, 'Project ID invalid.');
+      }
       $projectConfig = $this->projects[$_REQUEST['proj_id']];
       RestObjects::$clientWebsiteId = $projectConfig['website_id'];
       // The client project config can override the resource options, e.g.

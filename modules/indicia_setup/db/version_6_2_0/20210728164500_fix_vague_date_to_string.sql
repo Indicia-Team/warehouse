@@ -51,8 +51,5 @@ BEGIN
 END
 $BODY$;
 
-ALTER FUNCTION vague_date_to_string(date, date, character varying)
-    OWNER TO indicia_user;
-
 COMMENT ON FUNCTION vague_date_to_string(date, date, character varying)
     IS 'Formats a vague date to a string.';

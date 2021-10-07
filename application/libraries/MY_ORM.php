@@ -61,7 +61,7 @@ class ORM extends ORM_Core {
     return $this->db->last_query();
   }
 
-  public $submission = array();
+  public $submission = [];
 
   /**
    * Describes the list of nested models that are present after a submission.
@@ -70,8 +70,8 @@ class ORM extends ORM_Core {
    *
    * @var array
    */
-  private $nestedChildModelIds = array();
-  private $nestedParentModelIds = array();
+  private $nestedChildModelIds = [];
+  private $nestedParentModelIds = [];
 
   /**
    * Default search field name.
@@ -82,7 +82,7 @@ class ORM extends ORM_Core {
    */
   public $search_field = 'title';
 
-  protected $errors = array();
+  protected $errors = [];
 
   /**
    * Flag that gets set if a unique key violation has occurred on save.
@@ -101,12 +101,12 @@ class ORM extends ORM_Core {
    * by a model. If not declared then the model will not transfer them to the saved data when
    * posting a record.
    */
-  protected $unvalidatedFields = array();
+  protected $unvalidatedFields = [];
 
   /**
    * @var array An array which a model can populate to declare additional fields that can be submitted for csv upload.
    */
-  protected $additional_csv_fields = array();
+  protected $additional_csv_fields = [];
 
   /**
    * @var bool Does the model have custom attributes? Defaults to false.
@@ -128,6 +128,7 @@ class ORM extends ORM_Core {
 
   /**
    * Default behaviour on save is to update metadata. If we detect no changes we can skip this.
+   *
    * @var bool
    */
   public $wantToUpdateMetadata = TRUE;
@@ -139,7 +140,7 @@ class ORM extends ORM_Core {
    */
   public $parentChanging = FALSE;
 
-  private $attrValModels = array();
+  private $attrValModels = [];
 
   /**
    * @var array If a submission contains submodels, then the array of submodels can be keyed. This
@@ -147,7 +148,7 @@ class ORM extends ORM_Core {
    * Normally, super/sub-models can handle foreign keys, but this approach is needed for association
    * tables which join across 2 entities created by a submission.
    */
-  private $dynamicRowIdReferences = array();
+  private $dynamicRowIdReferences = [];
 
   /**
    * Indicates database trigger on table which accesses a sequence.
@@ -163,8 +164,11 @@ class ORM extends ORM_Core {
 
   /**
    * Constructor allows plugins to modify the data model.
-   * @var int $id ID of the record to load. If null then creates a new record. If -1 then the ORM
-   * object is not initialised, providing access to the variables only.
+   *
+   * @var int $id
+   *   ID of the record to load. If null then creates a new record. If -1 then
+   *   the ORM object is not initialised, providing access to the variables
+   *   only.
    */
   public function __construct($id = NULL) {
     if (is_object($id) || $id != -1) {
@@ -343,7 +347,7 @@ class ORM extends ORM_Core {
    * Retrieve an array containing all page level errors which are marked with the key general.
    */
   public function getPageErrors() {
-    $r = array();
+    $r = [];
     if (array_key_exists('general', $this->errors)) {
       array_push($r, $this->errors['general']);
     }
@@ -567,7 +571,7 @@ class ORM extends ORM_Core {
    * @return array, an array of record id values for the created records.
    */
   private function createRecordsFromCaptions() {
-    $r = array();
+    $r = [];
 
     // Establish the right model and check it supports create from captions,
     $modelname = $this->submission['fields']['insert_captions_to_create']['value'];
@@ -584,7 +588,7 @@ class ORM extends ORM_Core {
       $sub = array(
         'id' => $modelname,
         'fields' => array(
-          'caption' => array()
+          'caption' => []
         )
       );
       // submit each caption to create a record, unless it exists
@@ -621,10 +625,10 @@ class ORM extends ORM_Core {
    */
   private function createIdsFromCaptions($ids) {
     $fieldname = $this->submission['fields']['insert_captions_use']['value'];
-    if(empty($ids)){
-	$this->submission['fields'][$fieldname] = array('value'=>array());
+    if (empty($ids)) {
+      $this->submission['fields'][$fieldname] = ['value'=>[]];
     }
-    else{
+    else {
     	$keys = array_fill(0, sizeof($ids), 'value');
     	$a = array_fill_keys($keys, $ids);
     	$this->submission['fields'][$fieldname] = $a;
@@ -688,28 +692,35 @@ class ORM extends ORM_Core {
    */
   protected function populateIdentifiers() {
     if (array_key_exists('website_id', $this->submission['fields'])) {
-      if (is_array($this->submission['fields']['website_id']))
+      if (is_array($this->submission['fields']['website_id'])) {
         $this->identifiers['website_id'] = $this->submission['fields']['website_id']['value'];
-      else
+      }
+      else {
         $this->identifiers['website_id'] = $this->submission['fields']['website_id'];
+      }
     }
     if (array_key_exists('survey_id', $this->submission['fields'])) {
-      if (is_array($this->submission['fields']['survey_id']))
+      if (is_array($this->submission['fields']['survey_id'])) {
         $this->identifiers['survey_id'] = $this->submission['fields']['survey_id']['value'];
-      else
+      }
+      else {
         $this->identifiers['survey_id'] = $this->submission['fields']['survey_id'];
+      }
     }
   }
 
   /**
    * Wraps the process of submission in a transaction.
-   * @return integer If successful, returns the id of the created/found record. If not, returns null - errors are embedded in the model.
+   *
+   * @return int
+   *   If successful, returns the id of the created/found record. If not,
+   *   returns null - errors are embedded in the model.
    */
   public function submit() {
     Kohana::log('debug', 'Commencing new transaction.');
     $this->db->query('BEGIN;');
     try {
-      $this->errors = array();
+      $this->errors = [];
       $this->preProcess();
       $res = $this->inner_submit();
       $this->postProcess();
@@ -720,8 +731,8 @@ class ORM extends ORM_Core {
       $res = NULL;
     }
     if ($res) {
-      $allowCommitToDB = (isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : true);
-      if (!empty($allowCommitToDB)&&$allowCommitToDB==true) {
+      $allowCommitToDB = (isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : TRUE);
+      if (!empty($allowCommitToDB) && $allowCommitToDB == TRUE) {
         Kohana::log('debug', 'Committing transaction.');
         $this->db->query('COMMIT;');
       }
@@ -747,13 +758,16 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Handles any index rebuild requirements as a result of new or updated records, e.g. in
-   * samples or occurrences. Also handles joining of occurrence_associations to the
-   * correct records.
+   * Submission post-processing.
+   *
+   * Handles any index rebuild requirements as a result of new or updated
+   * records, e.g. in samples or occurrences. Also handles joining of
+   * occurrence_associations to the correct records.
    */
   private function postProcess() {
     if (class_exists('cache_builder')) {
       $occurrences = [];
+      $deletedOccurrences = [];
       if (!empty(self::$changedRecords['insert']['occurrence'])) {
         cache_builder::insert($this->db, 'occurrences', self::$changedRecords['insert']['occurrence']);
         $occurrences = self::$changedRecords['insert']['occurrence'];
@@ -764,6 +778,7 @@ class ORM extends ORM_Core {
       }
       if (!empty(self::$changedRecords['delete']['occurrence'])) {
         cache_builder::delete($this->db, 'occurrences', self::$changedRecords['delete']['occurrence']);
+        $deletedOccurrences = self::$changedRecords['delete']['occurrence'];
       }
       $samples = [];
       if (!empty(self::$changedRecords['insert']['sample'])) {
@@ -785,6 +800,9 @@ class ORM extends ORM_Core {
         // No need to do occurrence map square update if inserting a sample, as
         // the above code does the occurrences in bulk.
         postgreSQL::insertMapSquaresForOccurrences($occurrences, $this->db);
+        // Need to ensure sample tracking is updated if occurrences change
+        // without a posted sample.
+        cache_builder::updateSampleTrackingForOccurrences($this->db, $occurrences + $deletedOccurrences);
       }
     }
     if (!empty(self::$changedRecords['insert']['occurrence_association']) ||
@@ -801,7 +819,7 @@ class ORM extends ORM_Core {
         }
       }
       // Reset important if doing an import with multiple submissions.
-      Occurrence_association_Model::$to_occurrence_id_pointers = array();
+      Occurrence_association_Model::$to_occurrence_id_pointers = [];
     }
     $this->createWorkQueueEntries();
   }
@@ -912,7 +930,7 @@ class ORM extends ORM_Core {
         else
           $addTo=&self::$changedRecords['update'];
         if (!isset($addTo[$this->object_name]))
-          $addTo[$this->object_name] = array();
+          $addTo[$this->object_name] = [];
         $addTo[$this->object_name][] = $this->id;
       }
       // Call postSubmit
@@ -978,7 +996,7 @@ class ORM extends ORM_Core {
       // The easiest thing here is pretend the current value of any array
       // column doesn't match. These array columns are used so rarely that this
       // less optimised solution is not important.
-      $exactMatches = array();
+      $exactMatches = [];
       foreach ($thisValues as $column => $value) {
         if (array_key_exists($column, $vArray) &&
             !is_array($vArray[$column]) &&
@@ -1326,8 +1344,8 @@ class ORM extends ORM_Core {
     // Test if this model has an attributes sub-table. Also to have required attributes, we must be posting into a
     // specified survey or website at least.
     if ($this->has_attributes) {
-      $got_values=array();
-      $empties = array();
+      $got_values=[];
+      $empties = [];
       if (isset($this->submission['metaFields'][$this->attrs_submission_name]))
       {
         // Old way of submitting attribute values but still supported - attributes are stored in a metafield. Find the ones we actually have a value for
@@ -1419,7 +1437,7 @@ class ORM extends ORM_Core {
    */
   protected function getAttributes($required = FALSE, $typeFilter = NULL, $hasSurveyRestriction = TRUE) {
     if (empty($this->identifiers['website_id']) && empty($this->identifiers['taxon_list_id'])) {
-      return array();
+      return [];
     }
     $attr_entity = $this->object_name . '_attribute';
     $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption', $attr_entity.'s.data_type');
@@ -1523,7 +1541,7 @@ class ORM extends ORM_Core {
       // currently can only have associations if a single superModel exists.
       if($use_associations && count($struct['superModels']) === 1) {
       	// duplicate all the existing fields, but rename adding a 2 to model end.
-      	$newFields = array();
+      	$newFields = [];
       	foreach($fields as $name=>$caption){
       		$parts=explode(':',$name);
       		if($parts[0]==$struct['model'] || $parts[0] == $struct['model'].'_image' || $parts[0] == $this->attrs_field_prefix) {
@@ -1560,7 +1578,7 @@ class ORM extends ORM_Core {
     $sub = $this->get_submission_structure();
     $arr = new Validation(array('id'=>1));
     $this->validate($arr, FALSE);
-    $fields = array();
+    $fields = [];
     foreach ($arr->errors() as $column=>$error) {
       if ($error=='required') {
         if ($fk && substr($column, -3) == "_id") {
@@ -1584,7 +1602,7 @@ class ORM extends ORM_Core {
     	// currently can only have associations if a single superModel exists.
     	if($use_associations && count($sub['superModels'])===1){
     		// duplicate all the existing fields, but rename adding a 2 to model end.
-    		$newFields = array();
+    		$newFields = [];
     		foreach($fields as $id){
     			$parts=explode(':',$id);
     			if($parts[0]==$sub['model'] || $parts[0]==$sub['model'].'_image' || $parts[0]==$this->attrs_field_prefix) {
@@ -1611,7 +1629,7 @@ class ORM extends ORM_Core {
    * @return array Prefixed key value pairs.
    */
   public function getPrefixedValuesArray($prefix=NULL) {
-    $r = array();
+    $r = [];
     if (!$prefix) {
       $prefix=$this->object_name;
     }
@@ -1627,7 +1645,7 @@ class ORM extends ORM_Core {
    * @return array Prefixed columns.
    */
   protected function getPrefixedColumnsArray($fk=FALSE, $skipHiddenFields=TRUE) {
-    $r = array();
+    $r = [];
     $prefix=$this->object_name;
     $sub = $this->get_submission_structure();
     foreach ($this->table_columns as $column=>$type) {
@@ -2181,7 +2199,7 @@ class ORM extends ORM_Core {
    * on creation of a new record.
    */
   public function getDefaults() {
-    return array();
+    return [];
   }
 
   /**
@@ -2200,8 +2218,8 @@ class ORM extends ORM_Core {
    */
   public function clear() {
     parent::clear();
-    $this->errors=array();
-    $this->identifiers = array('website_id'=>NULL,'survey_id'=>NULL);
+    $this->errors = [];
+    $this->identifiers = ['website_id' => NULL, 'survey_id' => NULL];
   }
 
   /**

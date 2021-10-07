@@ -23,10 +23,12 @@
     FROM filtered_occurrences o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
+    JOIN cache_samples_functional s ON s.id=o.sample_id
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
     LEFT JOIN locations l ON l.id=o.location_id AND l.deleted=false;
 
+    -- Parent sample data
     UPDATE output_rows o
     SET recorded_parent_location_id = lp.id,
       recorded_parent_location_name = lp.name,
@@ -42,10 +44,10 @@
     SET recorded_parent_location_id = lp.id,
       recorded_parent_location_name = lp.name,
       recorded_parent_location_code = lp.code
-      FROM samples sc
+    FROM samples sc
     JOIN locations lc ON lc.id=sc.location_id AND lc.deleted=false
-      JOIN locations lp ON lp.id = lc.parent_id AND lp.deleted=false
-      WHERE sc.id=o.sample_id AND sc.deleted=false
+    JOIN locations lp ON lp.id = lc.parent_id AND lp.deleted=false
+    WHERE sc.id=o.sample_id AND sc.deleted=false
     AND o.recorded_parent_location_id IS NULL;
 
     SELECT *
@@ -66,6 +68,7 @@
     <!-- Tracking field called "id" is required for autofeed to work. -->
     <column name="id" sql="o.id" datatype="integer" />
     <column name="occurrence_external_key" sql="o.external_key" datatype="text" />
+    <column name="sample_external_key" sql="s.external_key" datatype="text" />
     <column name="created_by_id" sql="o.created_by_id" datatype="integer" />
     <column name="website_id" sql="o.website_id" datatype="integer" />
     <column name="survey_id" sql="o.survey_id" datatype="integer" />
@@ -167,6 +170,15 @@
         WHERE om.occurrence_id=o.id AND om.deleted=false)
       ELSE null
       END" datatype="text" />
+    <column name="event_media_data" sql="CASE
+      WHEN s.media_count>0 AND s.sensitive=false AND s.private=false THEN
+        (SELECT string_agg(sm.path || '~~' || COALESCE(sm.caption, '') || '~~' ||  COALESCE(l.code, '') || '~~' ||  COALESCE(t.term, ''), '@@')
+        FROM sample_media sm
+        LEFT JOIN licences l ON l.id=sm.licence_id
+        LEFT JOIN cache_termlists_terms t ON t.id=sm.media_type_id
+        WHERE sm.sample_id=s.id AND sm.deleted=false)
+      ELSE null
+      END" datatype="text" />
     <column name="created_on" sql="to_char(o.created_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="updated_on" sql="to_char(o.updated_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="record_status" sql="o.record_status" datatype="text" />
@@ -181,10 +193,12 @@
     <column name="query" sql="o.query" datatype="text" />
     <column name="zero_abundance" sql="o.zero_abundance::text" datatype="text" />
     <column name="trial" sql="o.training::text" datatype="text" />
+    <column name="private" sql="s.private::text" datatype="text" />
+    <column name="privacy_precision" sql="snf.privacy_precision" datatype="integer" />
     <column name="sensitive" sql="o.sensitive::text" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
-    <!-- Flag sensitivity_blur = B for blurred version of a sensitive record. -->
-    <column name="sensitivity_blur" sql="CASE o.sensitive WHEN true THEN 'B' ELSE null END" datatype="text" />
+    <!-- Flag sensitivity_blur = B for blurred version of a sensitive or private record. -->
+    <column name="sensitivity_blur" sql="CASE WHEN o.sensitive OR s.private THEN 'B' ELSE null END" datatype="text" />
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
     <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />

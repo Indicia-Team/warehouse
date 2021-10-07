@@ -1,0 +1,31 @@
+<report
+    title="Delete samples list"
+    description="A list of samples IDs that have been deleted."
+>
+  <query website_filter_field="srv.website_id" samples_id_field="s.id"
+         count_field="s.*">
+    SELECT #columns#
+    FROM samples s
+    JOIN surveys srv ON srv.id=s.survey_id
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+    AND s.deleted=true
+  </query>
+  <order_bys>
+    <order_by>s.id</order_by>
+  </order_bys>
+  <params>
+    <param name="last_id" display="Last ID" datatype="integer" default="" order_by="s.id ASC">
+      <where>s.id &gt; #last_id#</where>
+    </param>
+    <param name="autofeed_tracking_date_from" datatype="date" default="" order_by="s.updated_on ASC">
+      <where>s.updated_on >= '#autofeed_tracking_date_from#'</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" sql="s.id" datatype="integer" />
+    <column name="tracking_date" sql="s.updated_on" datatype="date" />
+    <column name="tracking" sql="s.updated_on" datatype="date" />
+  </columns>
+</report>

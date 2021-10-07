@@ -241,6 +241,29 @@ SQL;
   }
 
   /**
+   * If submitting occurrence changes without a sample, update sample tracking.
+   *
+   * This is so that any sample data feeds receive an updated copy of the
+   * sample, as the occurrence statistics will have changed.
+   *
+   * @param object $db
+   *   Database object.
+   * @param array $occurrenceIds
+   *   List of occurrences affected by a submission.
+   */
+  public static function updateSampleTrackingForOccurrences($db, array $ids) {
+    $idList = implode(',', $ids);
+    $sql = <<<SQL
+UPDATE cache_samples_functional s
+SET website_id=s.website_id
+FROM cache_occurrences_functional o
+WHERE o.id IN ($idList)
+AND (s.id=o.sample_id OR s.id=o.parent_sample_id);
+SQL;
+    $db->query($sql);
+  }
+
+  /**
    * During an import, add tasks to work queue rather than do immediate update.
    *
    * Allows performance improvement during import.
@@ -254,10 +277,12 @@ SQL;
    */
   private static function delayChangesViaWorkQueue($db, $table, $idCsv) {
     $entity = inflector::singular($table);
+    // Priority 1 work_queue tasks so it precedes things like spatial indexing
+    // or attributes population.
     $sql = <<<SQL
 -- Comment necessary to prevent Kohana calling LASTVAL().
 INSERT INTO work_queue(task, entity, record_id, params, cost_estimate, priority, created_on)
-SELECT 'task_cache_builder_update', '$entity', t.id, null, 100, 2, now()
+SELECT 'task_cache_builder_update', '$entity', t.id, null, 100, 1, now()
 FROM $table t
 LEFT JOIN work_queue w ON w.task='task_cache_builder_update' AND w.entity='$entity' AND w.record_id=t.id
 WHERE t.id IN ($idCsv)

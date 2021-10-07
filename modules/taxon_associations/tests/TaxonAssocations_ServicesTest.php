@@ -1,5 +1,8 @@
 <?php
 
+use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
+use PHPUnit\DbUnit\DataSet\CompositeDataSet as DbUDataSetCompositeDataSet;
+
 require_once 'client_helpers/data_entry_helper.php';
 require_once 'client_helpers/submission_builder.php';
 
@@ -13,7 +16,7 @@ class TaxonAssociations_ServicesTest extends Indicia_DatabaseTestCase {
 
   public function getDataSet()
   {
-    $ds1 = new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
     $ds2 = new Indicia_ArrayDataSet(
       [
         'meanings' => [
@@ -59,7 +62,7 @@ class TaxonAssociations_ServicesTest extends Indicia_DatabaseTestCase {
       ]
     );
 
-    $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
+    $compositeDs = new DbUDataSetCompositeDataSet();
     $compositeDs->addDataSet($ds1);
     $compositeDs->addDataSet($ds2);
     return $compositeDs;
