@@ -1,3 +1,11 @@
+# Version 6.8.0
+*2021-10-11*
+
+* Bugfixes.
+* Adds a custom synchronisation handler for Odonata data synchronised from BTO Birdtrack, to meet
+  the needs of the recording scheme.
+* Update taxon associations module tests to new PHPUnit version.
+
 # Version 6.7.0
 *2021-09-30*
 
