@@ -147,6 +147,15 @@ class rest_api_sync_remote_json_occurrences {
           unset($record['record-level']['dynamicProperties']['verifierOnlyData']);
         }
         self::processOtherFields($server, $record, $observation);
+        // Allow custom handler functions to alter the record, or reject it.
+        if (!empty($server['customHandlers'])) {
+          foreach ($server['customHandlers'] as $handler) {
+            if (self::$handler($db, $server, $record, $observation) === FALSE) {
+              // Go to next record.
+              continue;
+            }
+          }
+        }
         $is_new = api_persist::taxonObservation(
           $db,
           $observation,
@@ -204,6 +213,57 @@ QRY;
       'recordsToGo' => NULL,
     ];
     return $r;
+  }
+
+  /**
+   * Custom handling for BTO Odonata data.
+   *
+   * * Rejects Odonata data if grid reference not at least 1km precision.
+   * * Rejects Odonata data below a certain ID as these records already sent to
+   *   the recording scheme.
+   * * Annotates the record if the grid ref is <= 1km but coordinate
+   *   uncertainty > 1000m.
+   *
+   * @param object $db
+   *   Connection.
+   * @param array $server
+   *   Configuration for the remote server.
+   * @param array $record
+   *   Record data read from the database.
+   * @param array $observation
+   *   Observation details array that will be updated with results of this custom handling.
+   *
+   * @return bool
+   *   True if the record is to be included, false if rejected.
+   */
+  private static function btoCheckOdonata($db, array $server, array $record, array &$observation) {
+    $sql = <<<SQL
+SELECT count(ctp.*)
+FROM taxa t
+JOIN cache_taxa_taxon_lists cttl on cttl.taxon_id=t.id
+JOIN cache_taxon_paths ctp ON ctp.taxon_meaning_id=cttl.taxon_meaning_id AND ctp.path && ARRAY[$server[odonataTaxonMeaningId]]
+WHERE t.organism_key='$observation[organismKey]'
+AND t.deleted=false
+SQL;
+    $isOdonataCheck = $db->query($sql)->current()->count > 0;
+    if ($isOdonataCheck) {
+      if (!empty($observation['gridReference']) &&
+        (($observation['projection'] = 'OSGB' && strlen($observation['gridReference']) < 6) ||
+        ($observation['projection'] = 'OSGI' && strlen($observation['gridReference']) < 5))) {
+        // Exclude if grid reference over 1km.
+        return FALSE;
+      }
+
+      // @todo Min ID filter.
+
+      if (!empty($observation['coordinateUncertaintyInMeters']) && $observation['coordinateUncertaintyInMeters'] > 1000) {
+        if (!empty($observation['occurrenceRemarks'])) {
+          $observation['occurrenceRemarks'] .= "\n";
+        }
+        $observation['occurrenceRemarks'] .= "BTO Coordinate Uncertainty: $observation[coordinateUncertaintyInMeters]m!";
+      }
+    }
+    return TRUE;
   }
 
   /**
