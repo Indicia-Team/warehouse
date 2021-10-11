@@ -1689,7 +1689,7 @@ class ORM extends ORM_Core {
             $arr = explode(':', $field);
             $attrId = $arr[1];
             $valueId = count($arr)>2 ? $arr[2] : NULL;
-            $attrDef = self::loadAttrDef($this->object_name, $attrId);
+            $attrDef = $this->loadAttrDef($this->object_name, $attrId);
             if ($attrDef->allow_ranges === 't' && !empty($this->submission['fields']["$field:upper"])
                 && !empty($this->submission['fields']["$field:upper"]['value'])) {
               $value .= ' - ' . $this->submission['fields']["$field:upper"]['value'];
@@ -1755,7 +1755,7 @@ class ORM extends ORM_Core {
         $attrId = $attr['fields'][$this->object_name.'_attribute_id'];
         // If this is an existing attribute value, get the record id to overwrite
         $valueId = (array_key_exists('id', $attr['fields'])) ? $attr['fields']['id'] : NULL;
-        $attrDef = self::loadAttrDef($this->object_name, $attrId);
+        $attrDef = $this->loadAttrDef($this->object_name, $attrId);
         if ($this->createAttributeRecord($attrId, $valueId, $value, $attrDef) === FALSE) {
           return FALSE;
         }
