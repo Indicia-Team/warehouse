@@ -842,13 +842,19 @@ class RestApiElasticsearch {
     $format = !empty($params) ? $params[0] : '';
     switch ($format) {
       case 'decimal':
+        if (isset($params[1])) {
+          // Format specifies decimal places to return.
+          return number_format($coords[0], $params[1]);
+        }
+        // Default is full precision.
         return $coords[0];
 
       // Implemented as the default.
       case 'nssuffix':
       default:
+        $precision = isset($params[1]) ? $params[1] : 3;
         $ns = $coords[0] >= 0 ? 'N' : 'S';
-        $lat = number_format(abs($coords[0]), 3);
+        $lat = number_format(abs($coords[0]), $precision);
         return "$lat$ns";
     }
   }
@@ -858,21 +864,24 @@ class RestApiElasticsearch {
    *
    * @param array $doc
    *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
    *
    * @return string
    *   Formatted value.
    */
-  private function esGetSpecialFieldLatLon(array $doc) {
+  private function esGetSpecialFieldLatLon(array $doc, array $params) {
     // Check in case fields are in composite agg key.
     $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
     if (empty($root['point'])) {
       return 'n/a';
     }
     $coords = explode(',', $root['point']);
+    $precision = count($params) > 0 ? $params[0] : 3;
     $ns = $coords[0] >= 0 ? 'N' : 'S';
     $ew = $coords[1] >= 0 ? 'E' : 'W';
-    $lat = number_format(abs($coords[0]), 3);
-    $lon = number_format(abs($coords[1]), 3);
+    $lat = number_format(abs($coords[0]), $precision);
+    $lon = number_format(abs($coords[1]), $precision);
     return "$lat$ns $lon$ew";
   }
 
@@ -969,13 +978,19 @@ class RestApiElasticsearch {
     $format = !empty($params) ? $params[0] : "";
     switch ($format) {
       case "decimal":
+        if (isset($params[1])) {
+          // Format specifies decimal places to return.
+          return number_format($coords[1], $params[1]);
+        }
+        // Default is full precision.
         return $coords[1];
 
       // Implemented as the default.
       case "ewsuffix":
       default:
+        $precision = isset($params[1]) ? $params[1] : 3;
         $ew = $coords[1] >= 0 ? 'E' : 'W';
-        $lon = number_format(abs($coords[1]), 3);
+        $lon = number_format(abs($coords[1]), $precision);
         return "$lon$ew";
     }
   }
