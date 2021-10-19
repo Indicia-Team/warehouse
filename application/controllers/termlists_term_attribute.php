@@ -55,14 +55,24 @@ class Termlists_term_attribute_Controller extends Attr_Base_Controller {
     $qry = $this->db
       ->select([
         'tl.id',
-        'tl.title',
+        "tl.title || 
+          ' (ID=' || tl.id || 
+          CASE WHEN tl.website_ID IS NOT NULL THEN
+            ', Website=' || websites.title
+          ELSE
+            ''
+          END ||
+          ')' as title",
         'tla.id as termlists_termlists_term_attributes_id',
       ])
       ->from('termlists as tl')
       ->join('termlists_termlists_term_attributes as tla', [
         'tla.termlist_id' => 'tl.id',
         'tla.deleted' => FALSE,
+         // If no existing record, deliberately join to nothing.
+        'tla.termlists_term_attribute_id' => empty($values['termlists_term_attribute:id']) ? -1 : $values['termlists_term_attribute:id'],
       ], NULL, 'LEFT')
+      ->join('websites', 'websites.id', 'tl.website_id', 'LEFT')
       ->where('tl.deleted', 'f');
     if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
       $qry->in('tl.website_id', $this->auth_filter['values']);
