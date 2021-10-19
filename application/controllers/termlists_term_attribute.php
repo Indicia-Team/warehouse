@@ -62,6 +62,8 @@ class Termlists_term_attribute_Controller extends Attr_Base_Controller {
       ->join('termlists_termlists_term_attributes as tla', [
         'tla.termlist_id' => 'tl.id',
         'tla.deleted' => FALSE,
+         // If no existing record, deliberately join to nothing.
+        'tla.termlists_term_attribute_id' => empty($values['termlists_term_attribute:id']) ? -1 : $values['termlists_term_attribute:id'],
       ], NULL, 'LEFT')
       ->where('tl.deleted', 'f');
     if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
