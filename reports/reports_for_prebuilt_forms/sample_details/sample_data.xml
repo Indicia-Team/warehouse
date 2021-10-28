@@ -62,6 +62,7 @@
     <column name="website_id" sql="s.website_id" />
     <column name="created_on" sql="s.created_on" />
     <column name="updated_on" sql="s.updated_on" />
+    <column name='input_form' sql='s.input_form' />
     <column name="includes_confidential" sql="max(o.confidential::integer)" aggregate="true" />
     <column name="includes_unreleased" sql="max((o.release_status&lt;&gt;'R')::integer)" aggregate="true" />
     <column name="includes_sensitive" sql="max(o.sensitive::integer)" aggregate="true" />
