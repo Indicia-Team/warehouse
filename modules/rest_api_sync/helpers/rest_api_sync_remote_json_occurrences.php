@@ -247,14 +247,18 @@ AND t.deleted=false
 SQL;
     $isOdonataCheck = $db->query($sql)->current()->count > 0;
     if ($isOdonataCheck) {
+      // @todo Check following is correct, as we may be preferring lat/long + coordinate uncertainty.
       if (!empty($observation['gridReference']) &&
         (($observation['projection'] = 'OSGB' && strlen($observation['gridReference']) < 6) ||
         ($observation['projection'] = 'OSGI' && strlen($observation['gridReference']) < 5))) {
         // Exclude if grid reference over 1km.
         return FALSE;
       }
-
-      // @todo Min ID filter.
+      // Skip records already provided to BTO.
+      $numericId = (integer) str_replace($observation['id'], 'BTO', '');
+      if ($numericId <= 290186151) {
+        return FALSE;
+      }
 
       if (!empty($observation['coordinateUncertaintyInMeters']) && $observation['coordinateUncertaintyInMeters'] > 1000) {
         if (!empty($observation['occurrenceRemarks'])) {
