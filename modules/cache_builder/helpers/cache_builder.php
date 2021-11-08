@@ -25,6 +25,12 @@
  */
 class cache_builder {
 
+  /**
+   * Allow cache table updates to be delegated to work_queue.
+   *
+   * Useful when processing large numbers of records where immediate visibility
+   * of the results is not required.
+   */
   public static $delayCacheUpdates = FALSE;
 
   /**
@@ -42,7 +48,7 @@ class cache_builder {
     <tr><th></th><th># records affected</th></tr>
   </thead>
   <tbody>
-    <tr><th scope=\"row\">Total</th><td>$count</td>
+    <tr><th scope="row">Total</th><td>$count</td>
     </tr>
 
 HTML;
@@ -77,29 +83,38 @@ HTML;
   public static function makeChanges($db, $table) {
     $queries = kohana::config("cache_builder.$table");
     cache_builder::do_delete($db, $table, $queries);
-    // preprocess some of the tags in the queries
-    if (is_array($queries['update']))
-      foreach($queries['update'] as $key=>&$sql)
+    // Preprocess some of the tags in the queries.
+    if (is_array($queries['update'])) {
+      foreach ($queries['update'] as &$sql) {
         $sql = str_replace('#join_needs_update#', $queries['join_needs_update'], $sql);
-    else
+      }
+    }
+    else {
       $queries['update'] = str_replace('#join_needs_update#', $queries['join_needs_update'], $queries['update']);
+    }
     cache_builder::run_statement($db, $table, $queries['update'], 'update');
-    // preprocess some of the tags in the queries
-    if (is_array($queries['insert']))
-      foreach($queries['insert'] as $key=>&$sql)
+    // Preprocess some of the tags in the queries.
+    if (is_array($queries['insert'])) {
+      foreach ($queries['insert'] as &$sql) {
         $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $sql);
-    else
+      }
+    }
+    else {
       $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $queries['insert']);
+    }
     cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
-    if (isset($queries['extra_multi_record_updates']))
+    if (isset($queries['extra_multi_record_updates'])) {
       cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');
+    }
     if (!variable::get("populated-$table")) {
-      $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
-      if (isset($queries['count']))
-        $totalQuery = $db->query($queries['count'])->result_array(false);
-      else
-        $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(false);
-      $percent = round($cacheQuery[0]['count']*100/$totalQuery[0]['count']);
+      $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(FALSE);
+      if (isset($queries['count'])) {
+        $totalQuery = $db->query($queries['count'])->result_array(FALSE);
+      }
+      else {
+        $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(FALSE);
+      }
+      $percent = round($cacheQuery[0]['count'] * 100 / $totalQuery[0]['count']);
       echo "<p>Initial population of $table progress $percent%.</p>";
     }
   }
@@ -112,7 +127,7 @@ HTML;
    * @param string $table
    *   Plural form of the table name.
    * @param array $ids
-   *   Record IDs to insert in the cache
+   *   Record IDs to insert in the cache.
    */
   public static function insert($db, $table, array $ids) {
     if (count($ids) > 0) {
@@ -226,6 +241,29 @@ SQL;
   }
 
   /**
+   * If submitting occurrence changes without a sample, update sample tracking.
+   *
+   * This is so that any sample data feeds receive an updated copy of the
+   * sample, as the occurrence statistics will have changed.
+   *
+   * @param object $db
+   *   Database object.
+   * @param array $occurrenceIds
+   *   List of occurrences affected by a submission.
+   */
+  public static function updateSampleTrackingForOccurrences($db, array $ids) {
+    $idList = implode(',', $ids);
+    $sql = <<<SQL
+UPDATE cache_samples_functional s
+SET website_id=s.website_id
+FROM cache_occurrences_functional o
+WHERE o.id IN ($idList)
+AND (s.id=o.sample_id OR s.id=o.parent_sample_id);
+SQL;
+    $db->query($sql);
+  }
+
+  /**
    * During an import, add tasks to work queue rather than do immediate update.
    *
    * Allows performance improvement during import.
@@ -239,9 +277,12 @@ SQL;
    */
   private static function delayChangesViaWorkQueue($db, $table, $idCsv) {
     $entity = inflector::singular($table);
+    // Priority 1 work_queue tasks so it precedes things like spatial indexing
+    // or attributes population.
     $sql = <<<SQL
+-- Comment necessary to prevent Kohana calling LASTVAL().
 INSERT INTO work_queue(task, entity, record_id, params, cost_estimate, priority, created_on)
-SELECT 'task_cache_builder_update', '$entity', t.id, null, 100, 2, now()
+SELECT 'task_cache_builder_update', '$entity', t.id, null, 100, 1, now()
 FROM $table t
 LEFT JOIN work_queue w ON w.task='task_cache_builder_update' AND w.entity='$entity' AND w.record_id=t.id
 WHERE t.id IN ($idCsv)
@@ -270,27 +311,32 @@ SQL;
 
   /**
    * Build a temporary table with the list of IDs of records we need to update.
+   *
    * The table has a deleted flag to indicate newly deleted records.
-   * @param objcet $db Database connection.
-   * @param string $table Name of the table being cached, e.g. occurrences.
-   * @param string $query A query which selects a list of IDs for all new, updated or
-   * deleted records (including looking for updates or deletions caused by related
-   * records).
-   * @param string $last_run_date Date/time of the last time the cache builder was
-   * run, used to filter records to only the recent changes. Supplied as a string
-   * suitable for injection into an SQL query.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $table
+   *   Name of the table being cached, e.g. occurrences.
+   * @param string $queries
+   *   List of configured queries for this table.
+   * @param string $last_run_date
+   *   Date/time of the last time the cache builder was run, used to filter
+   *   records to only the recent changes. Supplied as a string suitable for
+   *   injection into an SQL query.
    */
   private static function getChangeList($db, $table, $queries, $last_run_date) {
     $query = str_replace('#date#', $last_run_date, $queries['get_changed_items_query']);
     $db->query("create temporary table needs_update_$table as $query");
     if (!variable::get("populated-$table")) {
-      // as well as the changed records, pick up max 5000 previous records, which is important for initial population.
-      // 5000 is an arbitrary number to compromise between performance and cache population.
-      // of the cache
+      // As well as the changed records, pick up max 5000 previous records,
+      // which is important for initial population. 5000 is an arbitrary number
+      // to compromise between performance and cache population.
       $query = $queries['get_missing_items_query'] . ' limit 5000';
       $result = $db->query("insert into needs_update_$table $query");
       if ($result->count() === 0) {
-        // Flag that we don't need to do any more previously existing records as they are all done.
+        // Flag that we don't need to do any more previously existing records
+        // as they are all done.
         // Future cache updates can just pick up changes from now on.
         variable::set("populated-$table", TRUE);
         echo "<p>Initial population of $table completed</p>";
@@ -314,9 +360,9 @@ SQL;
    *   List of configured queries for this table, which might include non-default delete queries.
    */
   private static function do_delete($db, $table, $queries) {
-    // set up a default delete query if none are specified
+    // Set up a default delete query if none are specified.
     if (!isset($queries['delete_query'])) {
-      $queries['delete_query'] = array("delete from cache_$table where id in (select id from needs_update_$table where deleted=true)");
+      $queries['delete_query'] = ["delete from cache_$table where id in (select id from needs_update_$table where deleted=true)"];
     }
     $count = 0;
     foreach ($queries['delete_query'] as $query) {
@@ -328,12 +374,15 @@ SQL;
   }
 
   /**
-   * Runs an insert or update statemnet to update one of
-   * the cache tables.
-   * @param object $db Database connection.
-   * @param string $query Query used to perform the update or insert. Can be a string, or an
+   * Runs an insert or update statemnet to update one of the cache tables.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $query
+   *   Query used to perform the update or insert. Can be a string, or an
    *   associative array of SQL strings if multiple required to do the task.
-   * @param string $action Term describing the action, used for feedback only.
+   * @param string $action
+   *   Term describing the action, used for feedback only.
    */
   private static function run_statement($db, $table, $query, $action) {
     $master_list_id = warehouse::getMasterTaxonListId();
@@ -341,10 +390,12 @@ SQL;
       foreach ($query as $title => $sql) {
         $sql = str_replace('#master_list_id#', $master_list_id, $sql);
         $count = $db->query($sql)->count();
-        if (variable::get("populated-$table"))
+        if (variable::get("populated-$table")) {
           echo "    <tr><th scope=\"row\">$action(s) for $title</th><td>$count</td></tr>\n";
+        }
       }
-    } else {
+    }
+    else {
       $sql = str_replace('#master_list_id#', $master_list_id, $query);
       $count = $db->query($query)->count();
       if (variable::get("populated-$table")) {

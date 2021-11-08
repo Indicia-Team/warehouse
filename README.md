@@ -7,7 +7,7 @@ available at https://indicia-docs.readthedocs.io/en/latest/index.html.
 Details of the installation procedure are at
 http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-installation.html.
 
-The latest stable download of the warehouse code is available at https://github.com/Indicia-Team/warehouse/releases/tag/v6.0.0
+The latest stable download of the warehouse code is available at https://github.com/Indicia-Team/warehouse/releases/tag/v6.8.0
 
 Details of the upgrade procedure are at
 http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-upgrading.html.
@@ -49,7 +49,7 @@ Any mail sent by the warehouse can be viewed at http://localhost:8025.
 
 ### Unit testing
 There is a separate Docker configuration for unit testing which can be
-run up by `cd docker` then `./phpunit.sh`. This replicates the unit 
+run up by `cd docker` then `./phpunit.sh`. This replicates the unit
 testing performed when you push commits to the repository, enabling you
 to create and debug tests locally. It uses its own volume for the database
 so won't overwrite any setup you have. It also saves and restores any config

@@ -277,7 +277,7 @@ class Helper_Text_Test extends TestCase
 	 * @group core.helpers.text.censor
 	 * @test
 	 */
-	public function censor($str, $badwords, $replacement = '#', $replace_partial_words = FALSE, $expected_result)
+	public function censor($str, $badwords, $replacement, $replace_partial_words, $expected_result)
 	{
 		$result = text::censor($str, $badwords, $replacement, $replace_partial_words);
 		$this->assertEquals($expected_result, $result);

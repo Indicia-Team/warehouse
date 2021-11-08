@@ -25,24 +25,27 @@
 class Occurrence_Model extends ORM {
   protected $requeuedForVerification = FALSE;
 
-  protected $has_many = array(
+  protected $has_many = [
     'occurrence_attribute_values',
     'determinations',
-    'occurrence_media'
-  );
-  protected $belongs_to = array(
+    'occurrence_media',
+  ];
+
+  protected $belongs_to = [
     'determiner' => 'person',
     'sample',
     'taxa_taxon_list',
     'created_by' => 'user',
     'updated_by' => 'user',
-    'verified_by' => 'user'
-  );
-  // Declare that this model has child attributes, and the name of the node in the submission which contains them.
+    'verified_by' => 'user',
+  ];
+
+  // Declare that this model has child attributes, and the name of the node in
+  // the submission which contains them.
   protected $has_attributes = TRUE;
   protected $attrs_submission_name = 'occAttributes';
   public $attrs_field_prefix = 'occAttr';
-  protected $additional_csv_fields = array(
+  protected $additional_csv_fields = [
     // Extra lookup options.
     'occurrence:fk_taxa_taxon_list:genus' => 'Genus (builds binomial name)',
     'occurrence:fk_taxa_taxon_list:specific' => 'Specific name/epithet (builds binomial name)',
@@ -58,8 +61,8 @@ class Occurrence_Model extends ORM {
     'occurrence_medium:path:3' => 'Media Path 3',
     'occurrence_medium:caption:3' => 'Media Caption 3',
     'occurrence_medium:path:4' => 'Media Path 4',
-    'occurrence_medium:caption:4' => 'Media Caption 4'
-  );
+    'occurrence_medium:caption:4' => 'Media Caption 4',
+  ];
 
   // During an import it is possible to merge different columns in a CSV row to make a database field
   public $specialImportFieldProcessingDefn = [
@@ -108,6 +111,9 @@ class Occurrence_Model extends ORM {
 
   /**
    * Returns a caption to identify this model instance.
+   *
+   * @return string
+   *   Caption for instance.
    */
   public function caption() {
     return 'Record of ' . $this->taxa_taxon_list->taxon->taxon;
@@ -165,7 +171,7 @@ class Occurrence_Model extends ORM {
       $array->add_rules('taxa_taxon_list_id', 'required');
     }
     // Explicitly add those fields for which we don't do validation.
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'comment',
       'determiner_id',
       'deleted',
@@ -184,7 +190,8 @@ class Occurrence_Model extends ORM {
       'sensitivity_precision',
       'import_guid',
       'metadata',
-    );
+      'verifier_only_data',
+    ];
     if (array_key_exists('id', $fieldlist)) {
       // Existing data must not be set to download_flag=F (final download) otherwise it
       // is read only.
@@ -193,6 +200,12 @@ class Occurrence_Model extends ORM {
     return parent::validate($array, $save);
   }
 
+  /**
+   * Retrieve date of last determination.
+   *
+   * @return string
+   *   Date as string.
+   */
   private function getWhenRecordLastDetermined() {
     if (empty($this->id)) {
       // Use now as default for new records - should not really happen.
@@ -202,10 +215,10 @@ class Occurrence_Model extends ORM {
       $rows = $this->db
         ->select('max(updated_on) as last_update')
         ->from('determinations')
-        ->where(array(
+        ->where([
           'occurrence_id' => $this->id,
           'deleted' => 'f',
-        ))->get()->result_array();
+        ])->get()->result_array();
     }
     if (count($rows) > 0 && !empty($rows[0]->last_update)) {
       return $rows[0]->last_update;
@@ -232,7 +245,7 @@ class Occurrence_Model extends ORM {
       // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
       // and the config setting must be enabled.
       if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
-        $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->determiner_id;
+        $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->userIdFromPersonId($this->determiner_id);
         $determination = [
           // We log the old taxon.
           'taxa_taxon_list_id' => $this->taxa_taxon_list_id,
@@ -262,9 +275,10 @@ class Occurrence_Model extends ORM {
           unset($array->determiner_id);
           return;
         }
-        $userInfo = $this->db->select('id')->from('users')->where('person_id', $redetByPersonId)->get()->current();
-        $redetByUserId = $userInfo->id;
-      } else {
+        $userInfo = $this->userIdFromPersonId($redetByPersonId);
+        $redetByUserId = $this->userIdFromPersonId($redetByPersonId);
+      }
+      else {
         // Redetermination doesn't specify user ID, so use logged in user account.
         $redetByUserId = (int) $this->getCurrentUserId();
         $userInfo = $this->db->select('person_id')->from('users')->where('id', $redetByUserId)->get()->current();
@@ -300,6 +314,20 @@ SQL;
   }
 
   /**
+   * Return the user ID associated with a person ID.
+   *
+   * @param int $personId
+   *   Primary key of a person (people.id).
+   *
+   * @return int
+   *   User ID.
+   */
+  private function userIdFromPersonId($personId) {
+    $r = $this->db->select('id')->from('users')->where('person_id', $personId)->get()->current();
+    return $r->id;
+  }
+
+  /**
    * Method that adds a created by, created date, updated by, updated date to a row of data
    * we are going to add/update to the database.
    *
@@ -310,12 +338,14 @@ SQL;
    *   updated by and updated on fields.
    */
   public function set_metadata_for_row_array(&$row = NULL, $tableName = NULL) {
-    if (isset($_SESSION['auth_user']))
+    if (isset($_SESSION['auth_user'])) {
       $userId = $_SESSION['auth_user']->id;
+    }
     else {
       global $remoteUserId;
-      if (isset($remoteUserId))
+      if (isset($remoteUserId)) {
         $userId = $remoteUserId;
+      }
       else {
         $defaultUserId = Kohana::config('indicia.defaultPersonId');
         $userId = ($defaultUserId ? $defaultUserId : 1);
@@ -323,7 +353,8 @@ SQL;
     }
     $row['created_on'] = date("Ymd H:i:s");
     $row['created_by_id'] = $userId;
-    // Attribute websites tables don't have updated by/date details columns so we need a special case not to set them.
+    // Attribute websites tables don't have updated by/date details columns so
+    // we need a special case not to set them.
     if ($tableName !== 'sample_attributes_websites'&&$tableName !== 'occurrence_attributes_websites') {
       $row['updated_on'] = date("Ymd H:i:s");
       $row['updated_by_id'] = $userId;
@@ -363,7 +394,7 @@ SQL;
     // priority order.
     // Occurrences.determiner_id.
     if (!empty($oldValues['determiner_id'])) {
-      return $this->getPersonNameFromUserId($oldValues['determiner_id']);
+      return $this->getPersonNameFromPersonId($oldValues['determiner_id']);
     }
     // Attribute values det_*_name.
     $attrValues = $this->db
@@ -371,7 +402,7 @@ SQL;
       ->from('occurrence_attribute_values as v')
       ->join('occurrence_attributes as a', 'a.id', 'v.occurrence_attribute_id')
       ->where([
-        'v.occurrence_id' => $oldValues['id']
+        'v.occurrence_id' => $oldValues['id'],
       ])
       ->like('a.system_function', 'det_%')
       ->get();
@@ -407,12 +438,20 @@ SQL;
     return $determinerName;
   }
 
-  private function getPersonNameFromUserId($userId) {
+  /**
+   * Retrieves the name of a person from their person_id.
+   *
+   * @param int $personId
+   *   Primary key of the person (people.id).
+   *
+   * @return string
+   *   Formatted name.
+   */
+  private function getPersonNameFromPersonId($personId) {
     $p = $this->db
-      ->select('p.first_name', 'p.surname')
-      ->from('people as p')
-      ->join('users as u', 'u.person_id', 'p.id')
-      ->where('u.id', $userId)
+      ->select('first_name', 'surname')
+      ->from('people')
+      ->where('id', $personId)
       ->get()->current();
     return "$p->surname, $p->first_name";
   }
@@ -422,11 +461,11 @@ SQL;
    */
   public function postSubmit($isInsert) {
     if ($this->requeuedForVerification && !$isInsert) {
-      $data = array(
+      $data = [
         'occurrence_id' => $this->id,
         'comment' => kohana::lang('misc.recheck_verification'),
-        'auto_generated' => 't'
-      );
+        'auto_generated' => 't',
+      ];
       $comment = ORM::factory('occurrence_comment');
       $comment->validate(new Validation($data), TRUE);
     }
@@ -457,8 +496,8 @@ SQL;
     return ['attrs_field_prefix' => $this->attrs_field_prefix];
   }
 
-  /*
-   * Determines if the provided module has been activated in the indicia configuration.
+  /**
+   * Determines if the provided module has been activated in the configuration.
    */
   private function checkModuleActive($module) {
     $config = kohana::config_load('core');
@@ -529,10 +568,10 @@ SQL;
         'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
             'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.',
         'datatype' => 'lookup',
-        'lookup_values' => implode(',', $srefs)
+        'lookup_values' => implode(',', $srefs),
       ],
-      // Also allow a field to be defined which defines the taxon list to look in when searching for species during a
-      // csv upload.
+      // Also allow a field to be defined which defines the taxon list to look
+      // in when searching for species during a csv upload.
       'occurrence:fkFilter:taxa_taxon_list:taxon_list_id' => [
         'display' => 'Species list',
         'description' => 'Select the species checklist which will be used when attempting to match species names.',
@@ -540,41 +579,41 @@ SQL;
         'population_call' => 'direct:taxon_list:id:title',
         'linked_to' => 'website_id',
         'linked_filter_field' => 'website_id',
-        'filterIncludesNulls' => TRUE
+        'filterIncludesNulls' => TRUE,
       ],
       'occurrence:record_status' => [
         'display' => 'Record status',
         'description' => 'Select the initial status for imported species records',
         'datatype' => 'lookup',
         'lookup_values' => 'C:Unconfirmed - not reviewed,V:Accepted,I:Data entry still in progress',
-        'default' => 'C'
+        'default' => 'C',
       ]
     ];
-    if (!empty($options['activate_global_sample_method']) && ($options['activate_global_sample_method'] === 't' || $options['activate_global_sample_method'] === true)) {
+    if (!empty($options['activate_global_sample_method']) && ($options['activate_global_sample_method'] === 't' || $options['activate_global_sample_method'] === TRUE)) {
       $retVal['sample:sample_method_id'] = [
         'display' => 'Sample Method',
         'description' => 'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a ' .
         'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.',
         'datatype' => 'lookup',
-        'lookup_values' => implode(',', $sample_methods)
+        'lookup_values' => implode(',', $sample_methods),
       ];
     }
-    if (!empty($options['activate_parent_sample_method_filter']) && ($options['activate_parent_sample_method_filter']==='t' || $options['activate_parent_sample_method_filter']=== true)) {
+    if (!empty($options['activate_parent_sample_method_filter']) && ($options['activate_parent_sample_method_filter'] === 't' || $options['activate_parent_sample_method_filter'] === TRUE)) {
       $retVal['fkFilter:sample:sample_method_id'] = [
         'display' => 'Parent Sample Method',
         'description' => 'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked ' .
         'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype' => 'lookup',
-        'lookup_values' => implode(',', $parent_sample_methods)
+        'lookup_values' => implode(',', $parent_sample_methods),
       ];
     }
-    if (!empty($options['activate_location_location_type_filter']) && $options['activate_location_location_type_filter']==='t') {
+    if (!empty($options['activate_location_location_type_filter']) && $options['activate_location_location_type_filter'] === 't') {
       $retVal['fkFilter:location:location_type_id'] = [
         'display' => 'Location Type',
         'description' => 'If this import file includes samples which reference locations records, you can restrict the type of locations looked ' .
         'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype' => 'lookup',
-        'lookup_values' => implode(',', $locationTypes)
+        'lookup_values' => implode(',', $locationTypes),
       ];
     }
 
@@ -583,13 +622,13 @@ SQL;
       $retVal['useAssociations'] = [
         'display' => 'Use associations',
         'description' => 'Select if this import uses occurrence associations: implies two species records uploaded for each entry in the file.',
-        'datatype' => 'checkbox'
+        'datatype' => 'checkbox',
       ]; // default off
       $retVal['occurrence_association:fkFilter:association_type:termlist_id'] = [
         'display' => 'Term list for association types',
         'description' => 'Select the term list which will be used to match the association types.',
         'datatype' => 'lookup',
-        'population_call' => 'direct:termlist:id:title'
+        'population_call' => 'direct:termlist:id:title',
         // ,'linked_to' => 'website_id',
         // 'linked_filter_field' => 'website_id',
         // 'filterIncludesNulls' => TRUE
@@ -601,14 +640,14 @@ SQL;
         'population_call' => 'direct:taxon_list:id:title',
         'linked_to' => 'website_id',
         'linked_filter_field' => 'website_id',
-        'filterIncludesNulls' => TRUE
+        'filterIncludesNulls' => TRUE,
       ];
       $retVal['occurrence_2:record_status'] = [
         'display' => 'Record status',
         'description' => 'Select the initial status for second imported species records',
         'datatype' => 'lookup',
         'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
-        'default' => 'C'
+        'default' => 'C',
       ];
     }
     return $retVal;

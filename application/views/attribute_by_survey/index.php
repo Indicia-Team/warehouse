@@ -223,7 +223,7 @@ foreach ($existingAttrs as $attr) {
 </form>
 <?php
 // The JavaScript needs a list of attribute captions.
-$attrsData = [];
+$attrs = [];
 foreach ($existingAttrs as $attr) {
   $attrs["id$attr->id"] = $attr->caption;
 }

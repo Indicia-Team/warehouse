@@ -1,6 +1,6 @@
 <report
     title="Notifications list for notifications centre"
-    description="A list of notifications for use with the notifications centre extension, 
+    description="A list of notifications for use with the notifications centre extension,
                  has additional functionality for handling edit and view icons on the grid when compared to the notifications_list.xml report.">
   <query>
   SELECT #columns#
@@ -9,11 +9,11 @@
       LEFT JOIN cache_occurrences_functional coFilter ON n.linked_id=coFilter.id
       #joins#
     WHERE n.acknowledged=false
-      and n.user_id=#user_id#  
+      and n.user_id=#user_id#
       and (o.training=#training# or o.id is null)
       and n.source_type&lt;&gt;'T' -- skip trigger notifications which don't display correctly in the grid
     #order_by#
-  </query>  
+  </query>
   <order_bys>
     <order_by>n.id desc</order_by>
   </order_bys>
@@ -34,7 +34,7 @@
       </wheres>
     </param>
     <!-- parameter for user configurable source types on edit tab. -->
-    <param name="source_types" display="Source Types" 
+    <param name="source_types" display="Source Types"
         description="Comma separated list of source types with each item single quoted, or blank to allow all." datatype="text[]" default=''>
       <wheres>
         <where>n.source_type in (#source_types#)</where>
@@ -46,10 +46,20 @@
     <param name="groups_admin_page_path" display="Groups admin page path" datatype="text" default=""
            description="The path to the page which allows group admins to manage membership" />
     <param name="website_id" display="Website Id for the occurrence record." datatype="integer"/>
-    <param name="group_ids" display="Group Ids" 
+    <param name="group_ids" display="Group Ids"
         description="Comma separated list of groups ids, or blank to allow all. Only notifications associated with these group ids will be displayed." datatype="text" default=''>
       <wheres>
         <where>o.group_id in (#group_ids#)</where>
+      </wheres>
+    </param>
+    <param name="taxon_meaning_id" display="Taxon meaning ID" description="Filter to only show notifications for records in this taxonomic branch. Should be a taxon on the master list." datatype="integer" default="">
+      <wheres>
+        <where>#taxon_meaning_id#=ANY(coFilter.taxon_path)</where>
+      </wheres>
+    </param>
+    <param name="taxon_group_id" display="Taxon group ID" description="Filter to only show notifications for records in this taxonomic grouping." datatype="integer" default="">
+      <wheres>
+        <where>coFilter.taxon_group_id=#taxon_group_id#</where>
       </wheres>
     </param>
   </params>
@@ -60,10 +70,10 @@
     <column name="data" display="Message" datatype="text" sql="replace(replace(n.data, '\n', '&lt;br/&gt;'), '&quot;username&quot;:&quot;admin&quot;', '&quot;username&quot;:&quot;#system_name#&quot;')" />
     <column name="occurrence_id" display="Record ID" datatype="integer" sql="o.id" />
     <column name="sample_id" display="Sample ID" visible="false" datatype="integer" sql="o.sample_id" />
-    <column name="linked_id" display="Linked ID" datatype="integer" sql="n.linked_id" />
+    <column name="linked_id" display="Linked ID" datatype="integer" sql="n.linked_id" visible="false" />
     <column name="acknowledged" display="Acknowledged" datatype="boolean" sql="n.acknowledged" visible="false" />
     <column name="user_id" display="User ID" visible="false" datatype="integer" sql="n.user_id" />
-    <column name="triggered_on" display="Notification date" datatype="date" sql="n.triggered_on" visible="false" />    
+    <column name="triggered_on" display="Notification date" datatype="date" sql="n.triggered_on" visible="false" />
     <column name="triggered_date" display="Notification date" datatype="date" sql="to_char(n.triggered_on, 'DD/MM/YYYY')" orderby="triggered_on" />
     <column name="editing_form" visible="false" sql="case when o.input_form is null AND o.website_id=#website_id# AND o.created_by_id=#user_id# then'#default_edit_page_path#'else o.input_form end" />
     <column name="viewing_form" visible="false" sql="case when o.website_id=#website_id# then '#view_record_page_path#' else null end" />

@@ -12,6 +12,12 @@
     <param name='user_id' display='User ID' datatype='integer' emptyvalue='' default=''>
       <where>u.id=#user_id#</where>
     </param>
+    <param name='q' display='Search string' description = 'A string to search for (e.g. supplied by an autocomplete). Note the param must be called q.' datatype='text' emptyvalue='' default=''>
+      <where>replace(lower(p.first_name || p.surname), ' ', '') like replace(lower('%#q#%'), ' ', '') OR
+             replace(lower(p.surname || p.first_name), ' ', '') like replace(lower('%#q#%'), ' ', '') OR
+             replace(lower(p.first_name || ',' || p.surname), ' ', '') like replace(lower('%#q#%'), ' ', '') OR
+             replace(lower(p.surname || ',' || p.first_name), ' ', '') like replace(lower('%#q#%'), ' ', '')</where>
+    </param>
     <param name='website_id' display='Website ID' datatype='integer' emptyvalue='' default=''>
       <where>uw.website_id=#website_id#</where>
     </param>

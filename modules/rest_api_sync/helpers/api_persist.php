@@ -41,6 +41,45 @@ class api_persist {
   private static $mediaTypes = [];
 
   /**
+   * Capture information about Darwin Core linked attributes in the survey.
+   *
+   * @var array
+   */
+  private static $dwcAttributes = [];
+
+  /**
+   * Finds attributes in the survey which have a DwC term name.
+   *
+   * Allows the code to post data into these attributes without continually
+   * looking them up.
+   */
+  public static function initDwcAttributes($db, $surveyId) {
+    self::$dwcAttributes = [
+      'occAttrs' => self::fetchDwcAttrs($db, 'occurrence', $surveyId),
+      'smpAttrs' => self::fetchDwcAttrs($db, 'sample', $surveyId),
+    ];
+  }
+
+  private static function fetchDwcAttrs($db, $type, $surveyId) {
+    // List of DwC terms that we might process values for.
+    $attrs = $db->select('a.id, a.term_name')
+      ->from("{$type}_attributes as a")
+      ->join("{$type}_attributes_websites as aw", "aw.{$type}_attribute_id", 'a.id')
+      ->where([
+        'aw.restrict_to_survey_id' => $surveyId,
+        'a.deleted' => 'f',
+        'aw.deleted' => 'f',
+      ])
+      ->where('a.term_name IS NOT NULL')
+      ->get();
+    $r = [];
+    foreach ($attrs as $attr) {
+      $r[$attr->term_name] = ($type === 'sample' ? 'smp' : 'occ') . "Attr:$attr->id";
+    }
+    return $r;
+  }
+
+  /**
    * Persists a taxon-observation resource.
    *
    * @param object $db
@@ -64,7 +103,10 @@ class api_persist {
    * @throws \exception
    */
   public static function taxonObservation($db, array $observation, $website_id, $survey_id, $taxon_list_id, $allowUpdateWhenVerified) {
-    if (!empty($observation['taxonVersionKey'])) {
+    if (!empty($observation['organismKey'])) {
+      $lookup = ['organism_key' => $observation['organismKey']];
+    }
+    elseif (!empty($observation['taxonVersionKey'])) {
       $lookup = ['search_code' => $observation['taxonVersionKey']];
     }
     elseif (!empty($observation['taxonName'])) {
@@ -94,7 +136,6 @@ class api_persist {
     // Set the spatial reference depending on the projection information
     // supplied.
     self::setSrefData($values, $observation, 'sample:entered_sref');
-    self::setCoordinateUncertainty($db, $survey_id, $values, $observation);
 
     // Site handling. If a known site with a SiteKey, we can create a record in
     // locations, otherwise use the free text location_name field.
@@ -111,6 +152,27 @@ class api_persist {
       throw new exception("Error occurred submitting an occurrence\n" . kohana::debug($obs->getAllErrors()));
     }
     return count($existing) === 0;
+  }
+
+  /**
+   * Copies a "standard" Dwc attribute from the observation to the values.
+   *
+   * The DwC attribute will be linked to a custom attribute where the term_name
+   * identifies the DwC term.
+   *
+   * @param array $observation
+   *   Provided observation values.
+   * @param array $values
+   *   Submission values which will be updated with the value.
+   * @param string $type
+   *   Attribute type, smp or occ.
+   * @param string $term
+   *   The DwC term.
+   */
+  private static function copyDwcAttribute(array $observation, array &$values, $type, $term) {
+    if (!empty($observation[$term]) && !empty(self::$dwcAttributes["{$type}Attrs"][$term])) {
+      $values[self::$dwcAttributes["{$type}Attrs"][$term]] = $observation[$term];
+    }
   }
 
   /**
@@ -131,22 +193,22 @@ class api_persist {
     // Set up a values array for the annotation post.
     $values = self::getAnnotationValues($db, $annotation);
     // Link to the existing observation.
-    $existingObs = self::findExistingObservation($db, $annotation['taxonObservation']['id'], $survey_id);
+    $existingObs = self::findExistingObservation($db, $annotation['occurrenceID'], $survey_id);
     if (!count($existingObs)) {
       // @todo Proper error handling as annotation can't be imported. Perhaps should obtain
       // and import the observation via the API?
       throw new exception("Attempt to import annotation $annotation[id] but taxon observation not found.");
     }
-    $values['occurrence_comment:occurrence_id'] = $existingObs[0]['id'];
+    $values['occurrence_id'] = $existingObs[0]['id'];
     // Link to existing annotation if appropriate.
     $existing = self::findExistingAnnotation($db, $annotation['id'], $existingObs[0]['id']);
     if ($existing) {
-      $values['occurrence_comment:id'] = $existing[0]['id'];
+      $values['id'] = $existing[0]['id'];
     }
     $annotationObj = ORM::factory('occurrence_comment');
     $annotationObj->set_submission_data($values);
     $annotationObj->submit();
-    self::updateObservationWithAnnotationDetails($db, $existingObs[0]['id'], $annotation);
+    self::updateObservationWithAnnotationDetails($db, $existingObs[0]['id'], $annotation, $values);
     if (count($annotationObj->getAllErrors()) !== 0) {
       throw new exception("Error occurred submitting an annotation\n" . kohana::debug($annotationObj->getAllErrors()));
     }
@@ -175,19 +237,23 @@ class api_persist {
    */
   private static function getTaxonObservationValues($db, $website_id, array $observation, $ttl_id) {
     $sensitive = isset($observation['sensitive']) && strtolower($observation['sensitive']) === 't';
-    $values = array(
+    $values = [
       'website_id' => $website_id,
       'sample:date_start'     => $observation['startDate'],
       'sample:date_end'       => $observation['endDate'],
       'sample:date_type'      => $observation['dateType'],
-      'sample:recorder_names' => isset($observation['recorder']) ? $observation['recorder'] : 'Unknown',
+      'sample:recorder_names' => isset($observation['recordedBy']) ? $observation['recordedBy'] : 'Unknown',
       'occurrence:taxa_taxon_list_id' => $ttl_id,
       'occurrence:external_key' => $observation['id'],
       'occurrence:zero_abundance' => isset($observation['zeroAbundance']) ? strtolower($observation['zeroAbundance']) : 'f',
       'occurrence:sensitivity_precision' => $sensitive ? 10000 : NULL,
-    );
+      'occurrence:verifier_only_data' => isset($observation['verifierOnlyData']) ? $observation['verifierOnlyData'] : NULL,
+    ];
     if (!empty($observation['licenceCode'])) {
       $values['sample:licence_id'] = self::getLicenceIdFromCode($db, $observation['licenceCode']);
+    }
+    if (!empty($observation['occurrenceRemarks'])) {
+      $values['occurrence:comment'] = $observation['occurrenceRemarks'];
     }
     if (!empty($observation['media'])) {
       foreach ($observation['media'] as $idx => $medium) {
@@ -205,7 +271,47 @@ class api_persist {
         $values["occAttr:$id"] = $value;
       }
     }
+    if (!empty($observation['eventId'])) {
+      $values['sample:external_key'] = $observation['eventId'];
+    }
+    if (!empty($observation['eventRemarks'])) {
+      $values['sample:comment'] = $observation['eventRemarks'];
+    }
+    if (!empty($observation['identificationVerificationStatus'])) {
+      self::applyIdentificationVerificationStatus($observation['identificationVerificationStatus'], $values);
+    }
+    self::copyDwcAttribute($observation, $values, 'smp', 'coordinateUncertaintyInMeters');
+    self::copyDwcAttribute($observation, $values, 'smp', 'collectionCode');
+    self::copyDwcAttribute($observation, $values, 'occ', 'individualCount');
+    self::copyDwcAttribute($observation, $values, 'occ', 'lifeStage');
+    self::copyDwcAttribute($observation, $values, 'occ', 'reproductiveCondition');
+    self::copyDwcAttribute($observation, $values, 'occ', 'sex');
+    self::copyDwcAttribute($observation, $values, 'occ', 'identifiedBy');
+    self::copyDwcAttribute($observation, $values, 'occ', 'identificationRemarks');
     return $values;
+  }
+
+  private static function applyIdentificationVerificationStatus($identificationVerificationStatus, array &$values) {
+    $mappings = [
+      'accepted' => ['V', NULL],
+      'accepted - correct' => ['V', 1],
+      'accepted - considered correct' => ['V', 2],
+      'unconfirmed' => ['C', NULL],
+      'unconfirmed - plausible' => ['C', 3],
+      'unconfirmed - not reviewed' => ['C', NULL],
+      'not accepted' => ['R', NULL],
+      'not accepted - unable to verify' => ['R', 4],
+      'not accepted - incorrect' => ['R', 5],
+    ];
+    if (isset($mappings[strtolower($identificationVerificationStatus)])) {
+      $statuses = $mappings[strtolower($identificationVerificationStatus)];
+      kohana::log('debug', strtolower($identificationVerificationStatus) . ': ' . var_export($statuses, TRUE));
+      $values['occurrence:record_status'] = $statuses[0];
+      $values['occurrence:record_substatus'] = $statuses[1];
+    }
+    else {
+      throw new exception("Invalid identificationVerificationStatus value: $identificationVerificationStatus");
+    }
   }
 
   private static function mapOccAttrValueToTermId($db, $occAttrId, &$value) {
@@ -292,15 +398,22 @@ SQL;
    *   Values array to use for submission building.
    */
   private static function getAnnotationValues($db, array $annotation) {
-    return array(
-      'occurrence_comment:comment' => $annotation['comment'],
-      'occurrence_comment:email_address' => self::valueOrNull($annotation, 'emailAddress'),
-      'occurrence_comment:record_status' => self::valueOrNull($annotation, 'record_status'),
-      'occurrence_comment:record_substatus' => self::valueOrNull($annotation, 'record_substatus'),
-      'occurrence_comment:query' => $annotation['question'],
-      'occurrence_comment:person_name' => $annotation['authorName'],
-      'occurrence_comment:external_key' => $annotation['id'],
-    );
+    $values = [
+      'comment' => $annotation['comment'],
+      'email_address' => self::valueOrNull($annotation, 'emailAddress'),
+      'record_status' => self::valueOrNull($annotation, 'record_status'),
+      'record_substatus' => self::valueOrNull($annotation, 'record_substatus'),
+      'query' => $annotation['question'],
+      'person_name' => $annotation['authorName'],
+      'external_key' => $annotation['id'],
+    ];
+    if (!empty($annotation['dateTime'])) {
+      $values['updated_on'] = $annotation['dateTime'];
+    }
+    if (!empty($annotation['identificationVerificationStatus'])) {
+      self::applyIdentificationVerificationStatus($annotation['identificationVerificationStatus'], $values);
+    }
+    return $values;
   }
 
   /**
@@ -323,10 +436,10 @@ SQL;
       $licenceData = $db->query($qry)->result_array(FALSE);
       self::$licences = [];
       foreach ($licenceData as $licence) {
-        self::$licences[strtolower($licence['code'])] = $licence['id'];
+        self::$licences[strtolower(str_replace(' ', '-', $licence['code']))] = $licence['id'];
       }
     }
-    return self::$licences[$licenceCode];
+    return self::$licences[strtolower(str_replace(' ', '-', $licenceCode))];
   }
 
   /**
@@ -360,14 +473,7 @@ SQL;
         $exactMatches[] = "'" . pg_escape_string("$words[0] $words[1] subsp. $words[2]") . "'";
       }
       $filter .= 'AND original in (' . implode(',', $exactMatches) . ")\n";
-    }
-    else {
-      // Add in the exact match filter for other search methods.
-      foreach ($lookup as $key => $value) {
-        $filter .= "AND $key='$value'\n";
-      }
-    }
-    $qry = <<<SQL
+      $qry = <<<SQL
 SELECT taxon_meaning_id, taxa_taxon_list_id
 FROM cache_taxon_searchterms
 WHERE taxon_list_id=$taxon_list_id
@@ -375,6 +481,23 @@ AND simplified='f'
 $filter
 ORDER BY preferred DESC
 SQL;
+    }
+    else {
+      // Add in the exact match filter for other search methods.
+      foreach ($lookup as $key => $value) {
+        $filter .= "AND t.$key='$value'\n";
+      }
+      $qry = <<<SQL
+SELECT ttl.taxon_meaning_id, ttl.id as taxa_taxon_list_id
+FROM taxa_taxon_lists ttl
+JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
+WHERE ttl.taxon_list_id=$taxon_list_id
+AND ttl.deleted=false
+$filter
+ORDER BY ttl.preferred DESC
+SQL;
+    }
+
     $taxa = $db->query($qry)->result_array(FALSE);
     // Need to know if the search found a single unique taxon concept so count
     // the taxon meanings.
@@ -407,7 +530,7 @@ SQL;
    * @throws \exception
    */
   private static function checkMandatoryFields(array $array, $resourceName) {
-    $required = array();
+    $required = [];
     // Deletions have no other mandatory fields except the id to delete.
     if (!empty($resource['delete']) && $resource['delete'] === 'T') {
       $array[] = 'id';
@@ -415,16 +538,15 @@ SQL;
     else {
       switch ($resourceName) {
         case 'taxon-observation':
-          $required = array(
+          $required = [
             'id',
-            'href', /*'taxonName', */
             'startDate',
             'endDate',
             'dateType',
             'projection',
-            'precision',
-            'recorder',
-          );
+            'coordinateUncertaintyInMeters',
+            'recordedBy',
+          ];
           // Conditionally required fields.
           if (empty($array['gridReference'])) {
             $required[] = 'east';
@@ -433,7 +555,10 @@ SQL;
               $required[] = 'gridReference';
             }
           }
-          $required[] = empty($array['taxonVersionKey']) ? 'taxonName' : 'taxonVersionKey';
+          // One of taxonVersionKey, organismKey or taxonName required.
+          if (empty($array['taxonVersionKey']) && empty($array['organismKey'])) {
+            $required[] = 'taxonName';
+          }
           break;
 
         case 'annotation':
@@ -596,35 +721,6 @@ SQL;
   }
 
   /**
-   * Sets the coordinate uncertainty attribute for an imported observation.
-   *
-   * @param object $db
-   *   Database connection.
-   * @param int $survey_id
-   *   ID of the survey (the sref_precision attribute should be linked to this).
-   * @param array $values
-   *   The values array to add the precision information to.
-   * @param array $observation
-   *   The observation data array.
-   */
-  private static function setCoordinateUncertainty($db, $survey_id, array &$values, array $observation) {
-    if (!empty($observation['precision'])) {
-      $attr = $db->select('a.id')
-        ->from('sample_attributes as a')
-        ->join('sample_attributes_websites as aw', 'aw.sample_attribute_id', 'a.id')
-        ->where([
-          'a.system_function' => 'sref_precision',
-          'aw.restrict_to_survey_id' => $survey_id,
-          'a.deleted' => 'f',
-          'aw.deleted' => 'f',
-        ])->get()->current();
-      if ($attr) {
-        $values["smpAttr:$attr->id"] = $observation['precision'];
-      }
-    }
-  }
-
-  /**
    * Returns a formatted decimal latitude and longitude string.
    *
    * @param float $lat
@@ -638,8 +734,10 @@ SQL;
   private static function formatLatLong($lat, $long) {
     $ns = $lat >= 0 ? 'N' : 'S';
     $ew = $long >= 0 ? 'E' : 'W';
-    $lat = abs($lat);
-    $long = abs($long);
+    // Variant of abs() function using preg_replace avoids changing float to
+    // scientific notation.
+    $lat = preg_replace('/^-/', '', $lat);
+    $long = preg_replace('/^-/', '', $long);
     return "$lat$ns $long$ew";
   }
 
@@ -762,88 +860,53 @@ SQL;
    *   ID of the associated occurrence record in the database.
    * @param array $annotation
    *   Annotation object loaded from the REST API.
+   * @param array $values
+   *   Database values found for the annotation.
    *
    * @throws exception
    */
-  private static function updateObservationWithAnnotationDetails($db, $occurrence_id, array $annotation) {
-    // Find the original record to compare against.
-    $oldRecords = $db
-      ->select('record_status, record_substatus, taxa_taxon_list_id')
-      ->from('cache_occurrences')
-      ->where('id', $occurrence_id)
-      ->get()->result_array(FALSE);
-    if (!count($oldRecords)) {
-      throw new exception('Could not find cache_occurrences record associated with a comment.');
+  private static function updateObservationWithAnnotationDetails($db, $occurrence_id, array $annotation, array $values) {
+    $update = [];
+    if (!empty($values['record_status'])) {
+      $update['record_status'] = $values['record_status'];
+      $update['record_substatus'] = empty($values['record_substatus']) ? NULL : $values['record_substatus'];
     }
-
-    // Find the taxon information supplied with the comment's TVK.
-    $newTaxa = $db
-      ->select('id, taxonomic_sort_order, taxon, authority, preferred_taxon, default_common_name, search_name, ' .
-        'external_key, taxon_meaning_id, taxon_group_id, taxon_group')
-      ->from('cache_taxa_taxon_lists')
-      ->where([
-        'preferred' => 't',
-        'external_key' => $annotation['taxonVersionKey'],
-        'taxon_list_id' => kohana::config('rest_api_sync.taxon_list_id'),
-      ])
-      ->limit(1)
-      ->get()->result_array(FALSE);
-    if (!count($newTaxa)) {
-      throw new exception('Could not find cache_taxa_taxon_lists record associated with an update from a comment.');
+    if (!empty($annotation['taxonVersionKey'])) {
+      // Find the taxon information supplied with the comment's TVK.
+      $newTaxa = $db
+        ->select('id')
+        ->from('cache_taxa_taxon_lists')
+        ->where([
+          'preferred' => 't',
+          'external_key' => $annotation['taxonVersionKey'],
+          'taxon_list_id' => kohana::config('rest_api_sync.taxon_list_id'),
+        ])
+        ->limit(1)
+        ->get()->result_array(FALSE);
+      if (!count($newTaxa)) {
+        throw new exception('Could not find cache_taxa_taxon_lists record associated with an update from a comment.');
+      }
+      $values['taxa_taxon_list_id'] = $newTaxa[0]['id'];
     }
-
-    $oldRecord = $oldRecords[0];
-    $newTaxon = $newTaxa[0];
-
-    $new_status = $annotation['record_status'] === $oldRecord['record_status']
-      ? FALSE : $annotation['record_status'];
-    $new_substatus = $annotation['record_substatus'] === $oldRecord['record_substatus']
-      ? FALSE : $annotation['record_substatus'];
-    $new_ttlid = $newTaxon['id'] === $oldRecord['taxa_taxon_list_id']
-      ? FALSE : $newTaxon['id'];
-
-    // Does the comment imply an allowable change to the occurrence's attributes?
-    if ($new_status || $new_substatus || $new_ttlid) {
-      $oupdate = array('updated_on' => date("Ymd H:i:s"));
-      $coupdate = array('cache_updated_on' => date("Ymd H:i:s"));
-      if ($new_status || $new_substatus) {
-        $oupdate['verified_on'] = date("Ymd H:i:s");
-        // @todo Verified_by_id needs to be mapped to a proper user account.
-        $oupdate['verified_by_id'] = 1;
-        $coupdate['verified_on'] = date("Ymd H:i:s");
-        $coupdate['verifier'] = $annotation['authorName'];
+    if (count($values)) {
+      $occ = ORM::factory('occurrence', $occurrence_id);
+      foreach ($update as $field => $value) {
+        $occ->$field = $value;
       }
-      if ($new_status) {
-        $oupdate['record_status'] = $new_status;
-        $coupdate['record_status'] = $new_status;
-      }
-      if ($new_substatus) {
-        $oupdate['record_substatus'] = $new_substatus;
-        $coupdate['record_substatus'] = $new_substatus;
-      }
-      if ($new_ttlid) {
-        $oupdate['taxa_taxon_list_id'] = $new_ttlid;
-        $coupdate['taxa_taxon_list_id'] = $new_ttlid;
-        $coupdate['taxonomic_sort_order'] = $newTaxon['taxonomic_sort_order'];
-        $coupdate['taxon'] = $newTaxon['taxon'];
-        $coupdate['preferred_taxon'] = $newTaxon['preferred_taxon'];
-        $coupdate['authority'] = $newTaxon['authority'];
-        $coupdate['default_common_name'] = $newTaxon['default_common_name'];
-        $coupdate['search_name'] = $newTaxon['search_name'];
-        $coupdate['taxa_taxon_list_external_key'] = $newTaxon['external_key'];
-        $coupdate['taxon_meaning_id'] = $newTaxon['taxon_meaning_id'];
-        $coupdate['taxon_group_id'] = $newTaxon['taxon_group_id'];
-        $coupdate['taxon_group'] = $newTaxon['taxon_group'];
-      }
-      $db->update('occurrences',
-        $oupdate,
-        array('id' => $occurrence_id)
-      );
-      $db->update('cache_occurrences',
-        $coupdate,
-        array('id' => $occurrence_id)
-      );
-      // @todo create a determination if this is not automatic
+      $occ->set_metadata();
+      // Save occurrence changes (will update cache).
+      $occ->save();
+    }
+    elseif (!empty($annotation['question']) && $annotation['question'] === 't') {
+      // Need to separately update cache if question asked.
+      $q = new WorkQueue();
+      $q->enqueue($db, [
+        'task' => 'task_cache_builder_update',
+        'entity' => 'occurrence',
+        'record_id' => $occurrence_id,
+        'cost_estimate' => 50,
+        'priority' => 2,
+      ]);
     }
   }
 

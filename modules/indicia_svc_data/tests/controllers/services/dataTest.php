@@ -17,20 +17,107 @@ function hostsite_get_user_field($field) {
 
 class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
-  protected $auth;
+  private static $extraUserId;
+
+  private static $db;
+
+  private static $auth;
 
   public function getDataSet() {
     $ds1 =  new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
     return $ds1;
   }
 
-  public function setup(): void {
-    // Calling parent::setUp() will build the database fixture.
-    parent::setUp();
+  /**
+   * Create additional data used by tests.
+   *
+   * We can't create users and people in the main fixture, since they are
+   * mutually dependent. So create test data here.
+   */
+  public static function setUpBeforeClass(): void {
+    parent::setUpBeforeClass();
 
-    $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
+    self::$auth = data_entry_helper::get_read_write_auth(1, 'password');
     // Make the tokens re-usable.
-    $this->auth['write_tokens']['persist_auth']=true;
+    self::$auth['write_tokens']['persist_auth'] = TRUE;
+
+
+    $personId = self::addSomePeople(1, 3);
+    self::$extraUserId = self::addAUser($personId);
+    self::addSomePeople(4, 3);
+    self::$db = new Database();
+  }
+
+  /**
+   * Clean up the additional person/user data.
+   */
+  public static function tearDownAfterClass(): void {
+    $sql = <<<SQL
+delete from users_websites uw
+using users u
+join people p on p.id=u.person_id and p.email_address like 'addedPerson%'
+where uw.user_id=u.id;
+
+delete from users u
+using people p
+where p.id=u.person_id and p.email_address like 'addedPerson%';
+
+delete from people where email_address like 'addedPerson%';
+SQL;
+    self::$db->query($sql);
+  }
+
+  /**
+   * Adds a number of people to the database.
+   *
+   * @param int $start
+   *   Unique ID to start at for consistent first name, surname and email
+   *   address generation.
+   * @param int $count
+   *   Number to add.
+   *
+   * @return int
+   *   Last added person's ID.
+   */
+  private static function addSomePeople($start, $count) {
+    // Create some extra people to ensure person_id and user_id not the same.
+    for ($i = $start; $i < $start + $count; $i++) {
+      $array = [
+        'person:first_name' => "Test$i",
+        'person:surname' => "Person$i",
+        'person:email_address' => "addedPerson{$i}@example.com",
+      ];
+      $s = submission_builder::build_submission($array, array('model' => 'person'));
+      $r = data_entry_helper::forward_post_to('person', $s, self::$auth['write_tokens']);
+      $lastPersonId = $r['success'];
+    }
+    return $lastPersonId;
+  }
+
+  /**
+   * Adds a user to the database.
+   *
+   * @param int $personId
+   *   ID of the person to link to.
+   */
+  private static function addAUser($personId) {
+    // Create a user for the actual tests.
+    $array = [
+      'user:person_id' => $personId,
+      'user:core_role_id' => 1,
+      'user:username' => "testUser$personId",
+      'users_website:website_id' => 1,
+      'users_website:site_role_id' => 1,
+    ];
+    $structure = [
+      'model' => 'user',
+      'subModels' => [
+        'users_website' => ['fk' => 'user_id'],
+      ],
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('user', $s, self::$auth['write_tokens']);
+    return $r['success'];
   }
 
   private function getResponse($url, $decodeJson = true) {
@@ -51,8 +138,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataGetRecordByDirectId");
     $params = array(
       'mode' => 'json',
-      'auth_token'=>$this->auth['read']['auth_token'],
-      'nonce'=>$this->auth['read']['nonce']
+      'auth_token'=>self::$auth['read']['auth_token'],
+      'nonce'=>self::$auth['read']['nonce']
     );
     $url = data_entry_helper::$base_url.'index.php/services/data/location/1?'.http_build_query($params, '', '&');
     $response = self::getResponse($url);
@@ -65,8 +152,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataGetRecordByIndirectId");
     $params = array(
       'mode' => 'json',
-      'auth_token'=>$this->auth['read']['auth_token'],
-      'nonce'=>$this->auth['read']['nonce'],
+      'auth_token'=>self::$auth['read']['auth_token'],
+      'nonce'=>self::$auth['read']['nonce'],
       'id'=>1
     );
     $url = data_entry_helper::$base_url.'index.php/services/data/location?'.http_build_query($params, '', '&');
@@ -80,8 +167,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataGetRecordByQueryIn");
     $params = array(
       'mode' => 'json',
-      'auth_token'=>$this->auth['read']['auth_token'],
-      'nonce'=>$this->auth['read']['nonce'],
+      'auth_token'=>self::$auth['read']['auth_token'],
+      'nonce'=>self::$auth['read']['nonce'],
       'query'=>json_encode(array('in'=>array('id', array(1))))
     );
     $url = data_entry_helper::$base_url.'index.php/services/data/location?'.http_build_query($params, '', '&');
@@ -93,8 +180,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     // repeat test, for alternative format of in clause
     $params = array(
       'mode' => 'json',
-      'auth_token'=>$this->auth['read']['auth_token'],
-      'nonce'=>$this->auth['read']['nonce'],
+      'auth_token'=>self::$auth['read']['auth_token'],
+      'nonce'=>self::$auth['read']['nonce'],
       'query'=>json_encode(array(
         'in'=>array('id'=>array(1), 'name'=>array('Test location')),
       ))
@@ -108,8 +195,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     // Another test- which should return 0 records because we look for the wrong name
     $params = array(
       'mode' => 'json',
-      'auth_token'=>$this->auth['read']['auth_token'],
-      'nonce'=>$this->auth['read']['nonce'],
+      'auth_token'=>self::$auth['read']['auth_token'],
+      'nonce'=>self::$auth['read']['nonce'],
       'query'=>json_encode(array(
         'in'=>array('id'=>array(1), 'name'=>array('UnitTests')),
       ))
@@ -156,8 +243,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataTaxaSearch");
     $params = array(
       'mode' => 'json',
-      'auth_token' => $this->auth['read']['auth_token'],
-      'nonce' => $this->auth['read']['nonce'],
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
       'q' => 'test',
       'taxon_list_id' => 1,
     );
@@ -180,8 +267,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataTaxaSearchTaxonGroup");
     $params = array(
       'mode' => 'json',
-      'auth_token' => $this->auth['read']['auth_token'],
-      'nonce' => $this->auth['read']['nonce'],
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
       'q' => 'test',
       'taxon_list_id' => 1,
       'taxon_group' => json_encode(['Test taxon group'])
@@ -202,8 +289,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataTaxaSearch");
     $params = array(
       'mode' => 'json',
-      'auth_token' => $this->auth['read']['auth_token'],
-      'nonce' => $this->auth['read']['nonce'],
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
       'q' => 'test',
       'taxon_list_id' => 1
     );
@@ -232,7 +319,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'locAttr:1' => 'saveTestAttr'
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to location save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a location did not return success response');
@@ -255,7 +342,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'locAttr:1:' . $locAttr->id => 'saveTestAttr-update'
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to location re-submit " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Re-submitting a location did not return success response');
@@ -277,7 +364,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'locAttr:1:' . $locAttr->id => ''
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to location attribute delete " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Deleting a location attribute did not return success response');
@@ -301,7 +388,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'locAttr:3' => 'not an int',
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     Kohana::log('debug', "Submission response to invalid location attribute save " . print_r($r, TRUE));
 
     // check we got the required output - showing an error on the int field
@@ -316,7 +403,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'locAttr:3' => 0,
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to valid location attribute save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a location with int attr did not return success response');
@@ -342,18 +429,18 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       "locAttr:3:$locAttr->id" => '',
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to location attribute delete " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a location with blank attr did not return success response');
 
-    $db = ORM::Factory('location_attribute_value')
+    $v = ORM::Factory('location_attribute_value')
       ->where([
         'location_id' => $locId,
         'location_attribute_id' => 3,
         'deleted' => 'f',
       ]);
-    $this->assertEquals(0, $db->count_all(), 'Submitting a location with blank attr did not delete the attr');
+    $this->assertEquals(0, $v->count_all(), 'Submitting a location with blank attr did not delete the attr');
     // Cleanup.
     $locAttr->delete();
     ORM::Factory('location', $locId)->delete();
@@ -361,13 +448,13 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
   public function testCreateUser() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateUser");
-    $array=array(
+    $array = [
       'person:first_name' => 'Test',
       'person:surname' => 'Person',
-      'person:email_address' => 'test123abc@example.com'
-    );
-    $s = submission_builder::build_submission($array, array('model' => 'person'));
-    $r = data_entry_helper::forward_post_to('person', $s, $this->auth['write_tokens']);
+      'person:email_address' => 'test123abc@example.com',
+    ];
+    $s = submission_builder::build_submission($array, ['model' => 'person']);
+    $r = data_entry_helper::forward_post_to('person', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to person save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a new person did not work');
@@ -378,8 +465,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'user:core_role_id' => 1,
       'user:username' => 'testUser',
     ];
-    $s = submission_builder::build_submission($array, array('model' => 'user'));
-    $r = data_entry_helper::forward_post_to('user', $s, $this->auth['write_tokens']);
+    $s = submission_builder::build_submission($array, ['model' => 'user']);
+    $r = data_entry_helper::forward_post_to('user', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to user save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a new user did not work');
@@ -391,17 +478,17 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
   public function testCreateFilter() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateFilter");
-    // post a filter
-    $filterData=array(
+    // Post a filter.
+    $filterData = [
       'filter:title' => 'Test',
       'filter:description' => 'Test descrtiption',
       'filter:definition' => '{"testfield":"testvalue"}',
       'filter:sharing' => 'V',
       'filter:defines_permissions' => 't',
       'filter:website_id' => 1,
-    );
+    ];
     $s = submission_builder::build_submission($filterData, array('model' => 'filter'));
-    $r = data_entry_helper::forward_post_to('filter', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('filter', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to filter save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a new filter did not work');
@@ -429,7 +516,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'group:group_type_id' => 6,
     );
     $s = submission_builder::build_submission($groupData, array('model' => 'group'));
-    $r = data_entry_helper::forward_post_to('group', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('group', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to group save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a new group did not work');
@@ -453,7 +540,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'sample:date' => '02/09/2017'
     );
     $s = submission_builder::build_submission($array, array('model' => 'sample'));
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to sample 1 save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
@@ -473,7 +560,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'sample:date_type' => 'D'
     );
     $s = submission_builder::build_submission($array, array('model' => 'sample'));
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to sample 2 save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a sample 2 did not return success response');
@@ -493,7 +580,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'sample:date_type' => 'Y'
     );
     $s = submission_builder::build_submission($array, array('model' => 'sample'));
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to sample 3 save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['error']), 'Submitting a sample wth bad vague date did not fail');
@@ -515,7 +602,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
         'sample_comment' => ['fk' => 'sample_id'],
       ],
     ]);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
     $sc = ORM::factory('sample_comment', ['sample_id' => $r['success']]);
     $this->assertTrue($sc->loaded, 'Record not found after submitting a comment');
@@ -524,22 +611,22 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
   public function testCreateOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateOccurrence");
-    $array = array(
+    $array = [
       'website_id' => 1,
       'survey_id' => 1,
       'sample:entered_sref' => 'SU1234',
       'sample:entered_sref_system' => 'osgb',
       'sample:date' => '02/09/2017',
       'occurrence:taxa_taxon_list_id' => 1,
-    );
-    $structure = array(
+    ];
+    $structure = [
       'model' => 'sample',
-      'subModels' => array(
-        'occurrence' => array('fk' => 'sample_id')
-      )
-    );
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to sample 1 save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
@@ -554,74 +641,122 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'sample:entered_sref_system' => 'osgb',
       'sample:date' => '02/09/2017',
       'occurrence:taxa_taxon_list_id' => 1,
-      'occAttr:1' => 'Test recorder'
+      'occAttr:1' => 'Test recorder',
     );
-    $structure = array(
+    $structure = [
       'model' => 'sample',
-      'subModels' => array(
-        'occurrence' => array('fk' => 'sample_id')
-      )
-    );
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
-    $db = new Database();
-    $row = $db->select('*')->from('occurrences')->where('id', $r['success'])->get()->current();
+    $row = self::$db->select('*')->from('occurrences')->where('id', $r['success'])->get()->current();
     $id = $row->id;
     $this->assertEquals(NULL, $row->determiner_id);
-    $val = $db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
+    $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
     $this->assertEquals('Test recorder', $val->text_value);
     // Specify determiner should alter the stored det info.
-    $array = array(
+    $array = [
       'website_id' => 1,
       'survey_id' => 1,
       'determiner_id' => 2,
       'occurrence:id' => $row->id,
       'sample:id' => $row->sample_id,
       'occurrence:taxa_taxon_list_id' => 2,
-    );
+    ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
-    $row = $db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
     $this->assertEquals(2, $row->determiner_id);
-    $val = $db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
+    $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
     $this->assertEquals('Unknown', $val->text_value);
     // Reset.
-    $db->query("UPDATE occurrence_attribute_values SET text_value='Test recorder' WHERE id=$val->id");
-    $db->query("UPDATE occurrences SET determiner_id=1 WHERE id=$id");
-    $row = $db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    self::$db->query("UPDATE occurrence_attribute_values SET text_value='Test recorder' WHERE id=$val->id");
+    self::$db->query("UPDATE occurrences SET determiner_id=1 WHERE id=$id");
+    $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
     $this->assertEquals(1, $row->determiner_id);
     // Specify different user should also alter the determiner.
     global $postedUserId;
     $postedUserId = 2;
-    $array = array(
+    $array = [
       'website_id' => 1,
       'survey_id' => 1,
       'occurrence:id' => $row->id,
       'sample:id' => $row->sample_id,
       'occurrence:taxa_taxon_list_id' => 1,
-    );
+    ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
-    $row = $db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
     $this->assertEquals(2, $row->determiner_id, 'Failed to use posted user_id to update determiner_id');
-    $val = $db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
+    $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
     $this->assertEquals('Unknown', $val->text_value);
     // Make anonymous user change - won't alter the determiner.
     $postedUserId = 1;
-    $array = array(
+    $array = [
       'website_id' => 1,
       'survey_id' => 1,
       'occurrence:id' => $row->id,
       'sample:id' => $row->sample_id,
       'occurrence:taxa_taxon_list_id' => 2,
-    );
+    ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
-    $row = $db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
     $this->assertEquals(2, $row->determiner_id);
-    $val = $db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
+    $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
     $this->assertEquals('Unknown', $val->text_value);
+  }
+
+  /**
+   * Ensures that a redetermination picks up correct person details.
+   *
+   * Tests for possibility that user ID and person ID get muddled in the code
+   * which autogenerates determinations (since determiner_id points to the
+   * people table).
+   */
+  public function testRedetOccurrencePerson() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRedetOccurrencePerson");
+    // Add more people so we can detect misuse of person_id instead of user_id.
+    global $postedUserId;
+    $postedUserId = self::$extraUserId;
+    echo "\nExtraUserId is $postedUserId\n";
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'occurrence:taxa_taxon_list_id' => 1,
+    ];
+    $structure = [
+      'model' => 'sample',
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+    $occurrenceId = self::$db->query("select id from occurrences where sample_id=$r[success]")->current()->id;
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'occurrence:id' => $occurrenceId,
+      'occurrence:taxa_taxon_list_id' => 2,
+    ];
+    $s = submission_builder::build_submission($array, ['model' => 'occurrence']);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, self::$auth['write_tokens']);
+    $determinerInfo = self::$db->query("select created_by_id, person_name from determinations where occurrence_id=$occurrenceId")->current();
+    $this->assertEquals(self::$extraUserId, $determinerInfo->created_by_id, 'Determination has not picked up correct user ID.');
+    $this->assertEquals('Person3, Test3', $determinerInfo->person_name, 'Determination has not picked up correct person name.');
+    // Reset.
+    $postedUserId = 1;
+    self::$db->query("delete from determinations where occurrence_id=$occurrenceId");
+    self::$db->query('delete from occurrences where created_by_id=' . self::$extraUserId);
+    self::$db->query('delete from samples where created_by_id=' . self::$extraUserId);
   }
 
   public function testCreateOccurrenceComment() {
@@ -634,7 +769,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'sample:date' => '02/09/2017',
     ];
     $s = submission_builder::build_submission($array, array('model' => 'sample'));
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $smpId = $r['success'];
     $array = [
       'website_id' => 1,
@@ -653,7 +788,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       ],
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('occurrence', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting an occurrence with comment did not return success response');
     $oc = ORM::factory('occurrence_comment', ['occurrence_id' => $r['success']]);
     $this->assertTrue($oc->loaded, 'Comment not found after submitting a sample with occurrence and comment');
@@ -677,7 +812,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
         'term' => ['fk' => 'term_id'],
       ],
     ]);
-    $r = data_entry_helper::forward_post_to('termlists_term', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('termlists_term', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a termlists_term did not return success response');
     $termlistsTermId = $r['success'];
     $termlistsTerm = ORM::Factory('termlists_term', $termlistsTermId);
@@ -693,7 +828,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
         'term' => ['fk' => 'term_id'],
       ],
     ]);
-    $r = data_entry_helper::forward_post_to('termlists_term', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('termlists_term', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Updating a termlists_term did not return success response');
     $termlistsTerm->reload();
     $this->assertEmpty($termlistsTerm->sort_order);
@@ -708,9 +843,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
    * values.
    */
   public function testUpdateOccurrenceWithAttr() {
-    $db = new Database();
     // Start from fresh.
-    $db->query('delete from work_queue');
+    self::$db->query('delete from work_queue');
     $q = new WorkQueue();
     // First, create an attribute using ORM.
     $attr = ORM::factory('occurrence_attribute');
@@ -751,14 +885,14 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       ),
     );
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     // Check an error exists on the attribute field.
     $this->assertArrayHasKey('errors', $r);
     $this->assertArrayHasKey("occAttr:$attr->id", $r['errors']);
     // Resubmit with the attribute filled in .
     $array["occAttr:$attr->id"] = 'A value';
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $this->assertArrayHasKey('success', $r);
     $occId = $r['success'];
     $occ = ORM::factory('occurrence', $occId);
@@ -771,21 +905,21 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'occurrence:comment' => 'This has been partially updated',
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $this->assertArrayHasKey('success', $r, 'Partial update of an existing occurrence failed.');
     $occ->reload();
     $this->assertEquals('This has been partially updated', $occ->comment);
     $this->assertEquals(1, $occ->taxa_taxon_list_id);
     // Run the work queue task and check attrs_json
     // Run the task.
-    $q->process($db);
-    $attrs = json_decode($db->query(
+    $q->process(self::$db);
+    $attrs = json_decode(self::$db->query(
       "select attrs_json from cache_occurrences_nonfunctional where id=$occId"
     )->current()->attrs_json, TRUE);
     $this->assertEquals('A value', $attrs[$attr->id]);
     // Now test if an update fired at the individual attribute value causes a
     // work queue task so attrs_json gets updated.
-    $attrVal = $db->query("select id from occurrence_attribute_values where occurrence_attribute_id=$attr->id limit 1")->current();
+    $attrVal = self::$db->query("select id from occurrence_attribute_values where occurrence_attribute_id=$attr->id limit 1")->current();
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -793,19 +927,19 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'occurrence_attribute_value:text_value' => 'Updated',
     ];
     $s = submission_builder::build_submission($array, ['model' => 'occurrence_attribute_value']);
-    $r = data_entry_helper::forward_post_to('occurrence_attribute_value', $s, $this->auth['write_tokens']);
-    $qCount = $db->query(
+    $r = data_entry_helper::forward_post_to('occurrence_attribute_value', $s, self::$auth['write_tokens']);
+    $qCount = self::$db->query(
       "select count(*) from work_queue where task='task_cache_builder_attr_value_occurrence' and record_id=$attrVal->id"
     )->current();
     $this->assertEquals(1, $qCount->count, 'Work queue task not generated for attr value update.');
     // Run the task.
-    $q->process($db);
-    $attrs = json_decode($db->query(
+    $q->process(self::$db);
+    $attrs = json_decode(self::$db->query(
       "select attrs_json from cache_occurrences_nonfunctional where id=$occId"
     )->current()->attrs_json, TRUE);
     $this->assertEquals('Updated', $attrs[$attr->id]);
     // Clean up.
-    $db->query("delete from occurrence_attribute_values where occurrence_attribute_id=$attr->id");
+    self::$db->query("delete from occurrence_attribute_values where occurrence_attribute_id=$attr->id");
     $aw->delete();
     $attr->delete();
     // Remove the required field from the cache so it doesn't impact other tests.
@@ -817,7 +951,6 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
    * Check filling in of map_square links to cache tables.
    */
   public function testSampleOccurrenceMapSquares() {
-    $db = new Database();
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -833,17 +966,17 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       ],
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
 
 
-    $qCheck = $db->query(
+    $qCheck = self::$db->query(
       "select map_sq_1km_id, map_sq_2km_id, map_sq_10km_id from cache_occurrences_functional where sample_id=$r[success]",
     )->current();
     $this->assertNotEquals(NULL, $qCheck->map_sq_10km_id, 'Occurrence submission does not fill in map_sq_10km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_2km_id, 'Occurrence submission does not fill in map_sq_2km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_1km_id, 'Occurrence submission does not fill in map_sq_1km_id field');
-    $sq1 = $db->query("select * from map_squares where id={$qCheck->map_sq_1km_id}")->current();
-    $theSample = $db->query("select st_x(st_centroid(public_geom)), st_y(st_centroid(public_geom)) from cache_occurrences_functional where sample_id=$r[success]")->current();
+    $sq1 = self::$db->query("select * from map_squares where id={$qCheck->map_sq_1km_id}")->current();
+    $theSample = self::$db->query("select st_x(st_centroid(public_geom)), st_y(st_centroid(public_geom)) from cache_occurrences_functional where sample_id=$r[success]")->current();
     $this->assertEquals(round($theSample->st_x), $sq1->x, '1km square x coordinate wrong');
     $this->assertEquals(round($theSample->st_y), $sq1->y, '1km square y coordinate wrong');
   }
@@ -855,7 +988,6 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
    * separate check.
    */
   public function testIsolatedOccurrenceMapSquares() {
-    $db = new Database();
     // First a sample.
     $array = [
       'website_id' => 1,
@@ -868,7 +1000,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'model' => 'sample',
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     // Now an occurrence.
     $array = [
       'website_id' => 1,
@@ -880,15 +1012,15 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'model' => 'occurrence',
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('occurrence', $s, $this->auth['write_tokens']);
-    $qCheck = $db->query(
+    $r = data_entry_helper::forward_post_to('occurrence', $s, self::$auth['write_tokens']);
+    $qCheck = self::$db->query(
       "select map_sq_1km_id, map_sq_2km_id, map_sq_10km_id from cache_occurrences_functional where id=$r[success]",
     )->current();
     $this->assertNotEquals(NULL, $qCheck->map_sq_10km_id, 'Occurrence submission does not fill in map_sq_10km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_2km_id, 'Occurrence submission does not fill in map_sq_2km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_1km_id, 'Occurrence submission does not fill in map_sq_1km_id field');
-    $sq1 = $db->query("select * from map_squares where id={$qCheck->map_sq_1km_id}")->current();
-    $theSample = $db->query("select st_x(st_centroid(public_geom)), st_y(st_centroid(public_geom)) from cache_occurrences_functional where id=$r[success]")->current();
+    $sq1 = self::$db->query("select * from map_squares where id={$qCheck->map_sq_1km_id}")->current();
+    $theSample = self::$db->query("select st_x(st_centroid(public_geom)), st_y(st_centroid(public_geom)) from cache_occurrences_functional where id=$r[success]")->current();
     $this->assertEquals(round($theSample->st_x), $sq1->x, '1km square x coordinate wrong');
     $this->assertEquals(round($theSample->st_y), $sq1->y, '1km square y coordinate wrong');
   }
@@ -897,7 +1029,6 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
    * Tests no dependency on occurrences for adding map square links to samples.
    */
   public function testEmptySampleHasMapSquares() {
-    $db = new Database();
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -909,15 +1040,15 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'model' => 'sample'
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
-    $qCheck = $db->query(
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $qCheck = self::$db->query(
       "select map_sq_1km_id, map_sq_2km_id, map_sq_10km_id from cache_samples_functional where id=$r[success]",
     )->current();
     $this->assertNotEquals(NULL, $qCheck->map_sq_10km_id, 'Empty sample does not fill in map_sq_10km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_2km_id, 'Empty sample does not fill in map_sq_2km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_1km_id, 'Empty sample does not fill in map_sq_1km_id field');
-    $sq1 = $db->query("select * from map_squares where id={$qCheck->map_sq_1km_id}")->current();
-    $theSample = $db->query("select st_x(st_centroid(geom)), st_y(st_centroid(geom)) from samples where id=$r[success]")->current();
+    $sq1 = self::$db->query("select * from map_squares where id={$qCheck->map_sq_1km_id}")->current();
+    $theSample = self::$db->query("select st_x(st_centroid(geom)), st_y(st_centroid(geom)) from samples where id=$r[success]")->current();
     $this->assertEquals(round($theSample->st_x), $sq1->x, '1km square x coordinate wrong');
     $this->assertEquals(round($theSample->st_y), $sq1->y, '1km square y coordinate wrong');
   }
@@ -926,8 +1057,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $params = array(
       'mode' => 'csv',
       'view' => 'detail',
-      'auth_token' => $this->auth['read']['auth_token'],
-      'nonce' => $this->auth['read']['nonce'],
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
     );
     $url = data_entry_helper::$base_url . "index.php/services/data/sample/$id?" . http_build_query($params, '', '&');
     $response = self::getResponse($url, FALSE);

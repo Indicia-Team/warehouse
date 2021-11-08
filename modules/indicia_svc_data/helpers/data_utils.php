@@ -79,7 +79,10 @@ class data_utils {
         && !empty($updates['occurrences']['record_status'])) {
       // As we are verifying or rejecting, we need to rewind any opposing
       // rejections or verifications.
-      $rewinds = workflow::getRewindChangesForRecords($db, 'occurrence', $idList, ['V', 'R']);
+      $rewinds = workflow::getRewindChangesForRecords($db, 'occurrence', $idList, [
+        'V',
+        'R',
+      ]);
       // Fetch any new events to apply when this record is verified.
       $workflowEvents = workflow::getEventsForRecords(
         $db,
@@ -105,8 +108,10 @@ class data_utils {
               $oldRecord = ORM::factory('occurrence', $id);
               $oldRecordVals = $oldRecord->as_array();
               $newRecordVals = array_merge($oldRecordVals, $thisUpdates['occurrences']);
+              $needsFilterCheck = !empty($thisEvent->attrs_filter_term) || !empty($thisEvent->location_ids_filter);
               $valuesToApply = workflow::processEvent(
                 $thisEvent,
+                $needsFilterCheck,
                 'occurrence',
                 $oldRecordVals,
                 $newRecordVals,
@@ -126,6 +131,19 @@ class data_utils {
                 'created_by_id' => $userId,
                 'original_values' => json_encode($undoDetails['old_data']),
               ]);
+              if ($undoDetails['needs_filter_check']) {
+                $q = new WorkQueue();
+                $q->enqueue($db, [
+                  'task' => 'task_workflow_event_check_filters',
+                  'entity' => 'occurrence',
+                  'record_id' => $id,
+                  'cost_estimate' => 50,
+                  'priority' => 2,
+                  'params' => json_encode([
+                    'workflow_events.id' => $undoDetails['event_id'],
+                  ]),
+                ]);
+              }
             }
           }
           // This record is done, so exclude from the bulk operation.

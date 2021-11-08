@@ -36,6 +36,8 @@
             sql='cttl.external_key' visible="false" datatype="text" />
     <column name='taxon' display='Taxon name'
             sql="cttl.taxon" datatype="text" />
+    <column name='language_iso' display='Language ISO'
+            sql="cttl.language_iso" datatype="text" visible="false" />
     <column name='preferred_taxon' display='Preferred name'
             sql="cttl.preferred_taxon" datatype="text" />
     <column name='common' display='Common name'

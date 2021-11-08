@@ -26,9 +26,6 @@
  * @subpackage Data Cleaner
  */
 
-use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
-use PHPUnit\DbUnit\DataSet\CompositeDataSet as DbUDataSetCompositeDataSet;
-
 require_once 'client_helpers/data_entry_helper.php';
 
 /**
@@ -36,83 +33,77 @@ require_once 'client_helpers/data_entry_helper.php';
  * @backupGlobals disabled
  * @backupStaticAttributes disabled
  */
-class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
+class Controllers_Services_Data_Cleaner_Test extends SimpleDatabaseTestCase {
 
   protected $request;
 
   /**
    * @return PHPUnit_Extensions_Database_DataSet_IDataSet
    */
-  public function getDataSet()
-  {
-    $ds1 =  new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+  public function getDataSet() {
+    require 'modules/phpUnit/config/core_fixture.php';
 
-    // Create a rule to test against
-    $ds2 = new Indicia_ArrayDataSet(
-      array(
-        'verification_rules' => array(
-          array(
-            'title' => 'Test PeriodWithinYear rule',
-            'description' => 'Test rule for unit testing',
-            'test_type' => 'PeriodWithinYear',
-            'error_message' => 'PeriodWithinYear test failed',
-            'source_url' => null,
-            'source_filename' => null,
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-            'reverse_rule' => 'F',
-          ),
-        ),
-        'verification_rule_metadata' => array(
-          array(
-            'verification_rule_id' => '1',
-            'key' => 'Tvk',
-            'value' => 'TESTKEY',
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-          ),
-          array(
-            'verification_rule_id' => '1',
-            'key' => 'StartDate',
-            'value' => '0801',
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-          ),
-          array(
-            'verification_rule_id' => '1',
-            'key' => 'EndDate',
-            'value' => '0831',
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-          ),
-        ),
-        'cache_verification_rules_period_within_year' => array(
-          array(
-            'verification_rule_id' => '1',
-            'reverse_rule' => 'f',
-            'taxa_taxon_list_external_key' => 'TESTKEY',
-            'start_date' => '214',
-            'end_date' => '244',
-            'survey_id' => NULL,
-            'stages' => NULL,
-            'error_message' => 'PeriodWithinYear test failed',
-          ),
-        ),
-      )
-    );
+    // Create a rule to test against.
+    $local_fixture = [
+      'verification_rules' => [
+        [
+          'title' => 'Test PeriodWithinYear rule',
+          'description' => 'Test rule for unit testing',
+          'test_type' => 'PeriodWithinYear',
+          'error_message' => 'PeriodWithinYear test failed',
+          'source_url' => NULL,
+          'source_filename' => NULL,
+          'created_on' => '2016-07-22 16:00:00',
+          'created_by_id' => 1,
+          'updated_on' => '2016-07-22 16:00:00',
+          'updated_by_id' => 1,
+          'reverse_rule' => 'F',
+        ],
+      ],
+      'verification_rule_metadata' => [
+        [
+          'verification_rule_id' => '1',
+          'key' => 'Tvk',
+          'value' => 'TESTKEY',
+          'created_on' => '2016-07-22 16:00:00',
+          'created_by_id' => 1,
+          'updated_on' => '2016-07-22 16:00:00',
+          'updated_by_id' => 1,
+        ],
+        [
+          'verification_rule_id' => '1',
+          'key' => 'StartDate',
+          'value' => '0801',
+          'created_on' => '2016-07-22 16:00:00',
+          'created_by_id' => 1,
+          'updated_on' => '2016-07-22 16:00:00',
+          'updated_by_id' => 1,
+        ],
+        [
+          'verification_rule_id' => '1',
+          'key' => 'EndDate',
+          'value' => '0831',
+          'created_on' => '2016-07-22 16:00:00',
+          'created_by_id' => 1,
+          'updated_on' => '2016-07-22 16:00:00',
+          'updated_by_id' => 1,
+        ],
+      ],
+      'cache_verification_rules_period_within_year' => [
+        [
+          'verification_rule_id' => '1',
+          'reverse_rule' => 'f',
+          'taxa_taxon_list_external_key' => 'TESTKEY',
+          'start_date' => '214',
+          'end_date' => '244',
+          'survey_id' => NULL,
+          'stages' => NULL,
+          'error_message' => 'PeriodWithinYear test failed',
+        ],
+      ],
+    ];
 
-    $compositeDs = new DbUDataSetCompositeDataSet();
-    $compositeDs->addDataSet($ds1);
-    $compositeDs->addDataSet($ds2);
-    return $compositeDs;
+    return array_merge($core_fixture, $local_fixture);
   }
 
   public function setUp(): void {
@@ -123,7 +114,7 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
     $token = $auth['auth_token'];
     $nonce = $auth['nonce'];
     $this->request = data_entry_helper::$base_url .
-            "index.php/services/data_cleaner/verify?auth_token=$token&nonce=$nonce";
+      "index.php/services/data_cleaner/verify?auth_token=$token&nonce=$nonce";
 
     $cache = Cache::instance();
     $cache->delete('data-cleaner-rules');
@@ -134,7 +125,7 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
    * incomplete or wrong works.
    */
   public function testIncorrectParams() {
-    $response = data_entry_helper::http_post($this->request, null);
+    $response = data_entry_helper::http_post($this->request, NULL);
     $this->assertEquals($response['output'], 'Invalid parameters');
   }
 
@@ -144,29 +135,45 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
    * data_cleaner_period_within_year module must be enabled.
    */
   public function testPeriodWithinYearFail() {
-    $response = data_entry_helper::http_post($this->request, array(
-      'sample' => json_encode(array(
+    $response = data_entry_helper::http_post($this->request, [
+      'sample' => json_encode([
         'sample:survey_id' => 1,
         'sample:date' => '12/09/2012',
         'sample:entered_sref' => 'SU1234',
         'sample:entered_sref_system' => 'osgb',
-      )),
-      'occurrences' => json_encode(array(
-        array(
+      ]),
+      'occurrences' => json_encode([
+        [
           'occurrence:taxa_taxon_list_id' => 1,
-        ),
-      )),
-      'rule_types' => json_encode(array('PeriodWithinYear')),
-    ));
+        ],
+      ]),
+      'rule_types' => json_encode(['PeriodWithinYear']),
+    ]);
     $errors = json_decode($response['output'], TRUE);
 
     $this->assertTrue($response['result'], 'Invalid response');
     $this->assertIsArray($errors, 'Errors list not returned');
-    $this->assertEquals(1, count($errors), 'Errors list empty. Is the data_cleaner_period_within_year module installed?');
-    $this->assertArrayHasKey('taxa_taxon_list_id', $errors[0], 'Errors list missing taxa_taxon_list_id');
-    $this->assertEquals('1', $errors[0]['taxa_taxon_list_id'], 'Incorrect taxa_taxon_list_id returned');
+    $this->assertEquals(
+      1,
+      count($errors),
+      'Errors list empty. Is the data_cleaner_period_within_year module installed?'
+    );
+    $this->assertArrayHasKey(
+      'taxa_taxon_list_id',
+      $errors[0],
+      'Errors list missing taxa_taxon_list_id'
+    );
+    $this->assertEquals(
+      '1',
+      $errors[0]['taxa_taxon_list_id'],
+      'Incorrect taxa_taxon_list_id returned'
+    );
     $this->assertArrayHasKey('message', $errors[0], 'Errors list missing message');
-    $this->assertEquals('PeriodWithinYear test failed', $errors[0]['message'], 'Incorrect message returned');
+    $this->assertEquals(
+      'PeriodWithinYear test failed',
+      $errors[0]['message'],
+      'Incorrect message returned'
+    );
   }
 
   /**

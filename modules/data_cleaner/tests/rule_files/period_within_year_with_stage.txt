@@ -1,0 +1,23 @@
+[Metadata]
+TestType=PeriodWithinYear
+Group=Period within year rule group
+ShortName=Period within year rule name
+Description=Period within year rule description
+ErrorMsg=Period within year rule error message
+Tvk=NHMSYS0000504013
+DataFieldName=Stage
+LastChanged=20210816
+[EndMetadata]
+
+[Data]
+Stage=Larva
+StartDate=0515
+EndDate=0731
+
+Stage=Pupa
+StartDate=0701
+EndDate=0515
+
+Stage=Adult
+StartDate=0501
+EndDate=0630

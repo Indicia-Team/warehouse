@@ -119,6 +119,9 @@ $config['elasticsearch'] = [
   'es' => [
     // Set open = TRUE if this end-point is available without authentication.
     'open' => FALSE,
+    // Optional type, either occurrence or sample. Default is occurrence if not
+    // specified.
+    'type' => 'occurrence',
     // Name of the elasticsearch index or alias this end-point points to.
     'index' => 'occurrence',
     // URL of the Elasticsearch index.
@@ -166,11 +169,19 @@ $config['clients'] = [
         'id_prefix' => 'iBRC',
         'dataset_id_attr_id' => 22,
         'blur' => 'F',
+        // Define an Elasticsearch query for the observations available to this
+        // project.
         'es_bool_query' => [
           'must' => [
             ['term' => ['taxon.class.keyword' => 'Aves']],
             ['term' => ['metadata.website.id' => 2]],
           ],
+        ],
+        // Define a filter for the annotations data. This should match the
+        // location that the other server's observations are synced to using
+        // the rest_api_sync module.
+        'annotations_filter' => [
+          'survey_id' => 10,
         ],
       ],
     ],

@@ -1,0 +1,29 @@
+<report
+    title="Delete samples list (no website limit)"
+    description="A list of samples IDs that have been deleted.
+      No website limit so designed to report samples from all website registrations."
+    restricted="true"
+>
+  <query samples_id_field="s.id" count_field="s.*">
+    SELECT #columns#
+    FROM samples s
+    #joins#
+    WHERE s.deleted=true
+  </query>
+  <order_bys>
+    <order_by>s.id</order_by>
+  </order_bys>
+  <params>
+    <param name="last_id" display="Last ID" datatype="integer" default="" order_by="s.id ASC">
+      <where>s.id &gt; #last_id#</where>
+    </param>
+    <param name="autofeed_tracking_date_from" datatype="date" default="" order_by="s.updated_on ASC">
+      <where>s.updated_on >= '#autofeed_tracking_date_from#'</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" sql="s.id" datatype="integer" />
+    <column name="tracking_date" sql="s.updated_on" datatype="date" />
+    <column name="tracking" sql="s.updated_on" datatype="date" />
+  </columns>
+</report>
