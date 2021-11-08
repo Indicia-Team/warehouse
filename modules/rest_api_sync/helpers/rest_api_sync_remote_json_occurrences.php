@@ -111,7 +111,7 @@ class rest_api_sync_remote_json_occurrences {
           'sensitivityPrecision' => empty($record['occurrence']['sensitivityBlur']) ? NULL : $record['occurrence']['sensitivityBlur'],
           'organismKey' => $record['taxon']['taxonID'],
           'taxonVersionKey' => empty($record['taxon']['taxonNameID']) ? NULL : $record['taxon']['taxonNameID'],
-          'eventId' => empty($record['event']['eventId']) ? NULL : $record['event']['eventId'],
+          'eventId' => empty($record['event']['eventID']) ? NULL : $record['event']['eventID'],
           'startDate' => $parsedDate['start'],
           'endDate' => $parsedDate['end'],
           'dateType' => $parsedDate['type'],
