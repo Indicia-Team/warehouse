@@ -1,0 +1,35 @@
+<report
+    title='List taxon meanings'
+    description='A list of distinct taxon meanings that have been recorded.'
+>
+  <query website_filter_field='o.website_id'>
+    SELECT distinct o.taxon_meaning_id
+    FROM cache_occurrences_functional o
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+  </query>
+  <params>
+    <param name='location_id' display='Location ID' 
+        datatype='integer' default=''
+        description='Limit to occurrences at the location with this ID.'>
+      <where>o.location_id=#location_id#</where>
+     </param>
+    <param name='parent_location_id' display='Parent Location ID' 
+        datatype='integer'  default=''
+        description='Limit to occurrences having parent location with this ID.'>
+      <join>JOIN locations l on l.id = o.location_id</join>
+      <where>l.parent_id=#parent_location_id# </where>
+    </param>
+    <param name='survey_id' display='Survey ID' 
+        datatype='integer'  default=''
+        description='Limit to occurrences for the survey with this ID.'>
+      <where>o.survey_id=#survey_id#</where>
+    </param>
+    <param name='user_id' display='User ID' 
+        datatype='integer'  default=''
+        description='Limit to occurrences created by the user with this ID.'>
+      <where>o.created_by_id=#user_id#</where>
+    </param>
+  </params>
+</report>
