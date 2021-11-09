@@ -494,7 +494,12 @@ class RestApiElasticsearch {
       if (isset($doc[$entity][$key])) {
         foreach ($doc[$entity][$key] as $attr) {
           if ($attr['id'] == $params[1]) {
-            $r[] = $attr['value'];
+            if (is_array($attr['value'])) {
+              $r = array_merge($r, $attr['value']);
+            }
+            else {
+              $r[] = $attr['value'];
+            }
           }
         }
       }
