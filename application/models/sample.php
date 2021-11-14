@@ -62,7 +62,8 @@ class Sample_Model extends ORM_Tree {
     'sample:fk_parent:external_key' => 'Parent sample external key',
     'sample:date:day' => 'Day (Builds date)',
     'sample:date:month' => 'Month (Builds date)',
-    'sample:date:year' => 'Year (Builds date)'
+    'sample:date:year' => 'Year (Builds date)',
+    'sample:fk_licence:code' => 'Licence code',
   );
   // Define underlying fields which the user would not normally see, e.g. so
   // they can be hidden from selection during a csv import.
@@ -70,8 +71,12 @@ class Sample_Model extends ORM_Tree {
     'geom',
   ];
 
-  // During an import it is possible to merge different columns in a CSV row to
-  // make a database field.
+  /**
+   * Custom processing for special import fields.
+   *
+   * During an import it is possible to merge different columns in a CSV row to
+   * make a database field.
+   */
   public $specialImportFieldProcessingDefn = [
     'sample:date' => [
       'template' => '%04d-%02d-%02d',
