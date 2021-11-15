@@ -48,10 +48,12 @@ class Sample_Model extends ORM_Tree {
   // Declare that this model has child attributes, and the name of the node in
    // the submission which contains them.
   protected $has_attributes = TRUE;
-  protected $attrs_submission_name='smpAttributes';
-  public $attrs_field_prefix='smpAttr';
+  protected $attrs_submission_name = 'smpAttributes';
+  public $attrs_field_prefix = 'smpAttr';
 
-  // Declare additional fields required when posting via CSV.
+  /**
+   * Declare additional fields required when posting via CSV.
+   */
   protected $additional_csv_fields=array(
     'survey_id' => 'Survey ID',
     'website_id' => 'Website ID',
@@ -65,6 +67,7 @@ class Sample_Model extends ORM_Tree {
     'sample:date:year' => 'Year (Builds date)',
     'sample:fk_licence:code' => 'Licence code',
   );
+
   // Define underlying fields which the user would not normally see, e.g. so
   // they can be hidden from selection during a csv import.
   protected $hidden_fields = [
@@ -141,7 +144,7 @@ class Sample_Model extends ORM_Tree {
     $array->pre_filter('trim');
 
     if ($this->id && preg_match('/[RDV]/', $this->record_status) &&
-        (empty($this->submission['fields']['record_status']) || $this->submission['fields']['record_status']['value']==='C') &&
+        (empty($this->submission['fields']['record_status']) || $this->submission['fields']['record_status']['value'] === 'C') &&
         $this->wantToUpdateMetadata) {
       // If we update a processed occurrence but don't set the verification
       // state, revert it to completed/awaiting verification.
@@ -175,8 +178,15 @@ class Sample_Model extends ORM_Tree {
     // When deleting a sample, only need the id and the deleted flag, don't
     // need the date or location details, but copy over if they are there.
     if (array_key_exists('deleted', $orig_values) && $orig_values['deleted'] == 't') {
-      $this->unvalidatedFields = array_merge($this->unvalidatedFields,
-          array('date_type','date_start','date_end','location_id','entered_sref','entered_sref_system','geom'));
+      $this->unvalidatedFields = array_merge($this->unvalidatedFields, [
+        'date_type',
+        'date_start',
+        'date_end',
+        'location_id',
+        'entered_sref',
+        'entered_sref_system',
+        'geom',
+      ]);
     }
     else {
       $array->add_rules('date_type', 'required', 'length[1,2]');
@@ -190,7 +200,7 @@ class Sample_Model extends ORM_Tree {
         $array->add_rules('entered_sref', "required");
         $array->add_rules('entered_sref_system', 'required');
         $array->add_rules('geom', 'required');
-        // even though our location_id is empty, still mark it as unvalidated
+        // Even though our location_id is empty, still mark it as unvalidated
         // so it gets copied over.
         $this->unvalidatedFields[] = 'location_id';
         if (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='') {
@@ -204,10 +214,12 @@ class Sample_Model extends ORM_Tree {
         // copied across.
         $array->add_rules('location_id', 'required');
         // If any of the sref fields are also supplied, need all 3 fields.
-        if (!empty($orig_values['entered_sref']) || !empty($orig_values['entered_sref_system']) || !empty( $orig_values['geom']))
+        if (!empty($orig_values['entered_sref']) || !empty($orig_values['entered_sref_system']) || !empty($orig_values['geom'])) {
           $this->add_sref_rules($array, 'entered_sref', 'entered_sref_system');
+        }
         else {
-          // we are not requiring  the fields so they must go in unvalidated fields, allowing them to get blanked out on edit
+          // We are not requiring  the fields so they must go in unvalidated
+          // fields, allowing them to get blanked out on edit.
           $this->unvalidatedFields[] = 'entered_sref';
           $this->unvalidatedFields[] = 'entered_sref_system';
         }
@@ -258,11 +270,11 @@ class Sample_Model extends ORM_Tree {
     }
     elseif (array_key_exists('date_type', $this->submission['fields'])) {
       // Force an exception if a bad date structure provided.
-      $dateString = vague_date::vague_date_to_string(array(
+      $dateString = vague_date::vague_date_to_string([
         $this->submission['fields']['date_start']['value'],
         $this->submission['fields']['date_end']['value'],
         $this->submission['fields']['date_type']['value'],
-      ));
+      ]);
     }
     if (isset($dateString)) {
       $vagueDate = vague_date::string_to_vague_date($dateString);
@@ -280,7 +292,6 @@ class Sample_Model extends ORM_Tree {
    * If so we can work out the geom and fill it in.
    */
   private function preSubmitFillInGeom() {
-    //
     if (array_key_exists('entered_sref', $this->submission['fields']) &&
       array_key_exists('entered_sref_system', $this->submission['fields']) &&
       !(array_key_exists('geom', $this->submission['fields']) && $this->submission['fields']['geom']['value']) &&
@@ -309,20 +320,20 @@ class Sample_Model extends ORM_Tree {
     if (!(array_key_exists('id', $this->submission['fields']) || array_key_exists('licence_id', $this->submission['fields']))) {
       global $remoteUserId;
       if (isset($remoteUserId)) {
-        $userId=$remoteUserId;
+        $userId = $remoteUserId;
       }
       elseif (isset($_SESSION['auth_user'])) {
         $userId = $_SESSION['auth_user']->id;
       }
       if (isset($userId)) {
         $row = $this->db
-            ->select('licence_id')
-            ->from('users_websites')
-            ->where(array(
-              'user_id' => $userId,
-              'website_id' => $this->identifiers['website_id']
-            ))
-            ->get()->current();
+          ->select('licence_id')
+          ->from('users_websites')
+          ->where([
+            'user_id' => $userId,
+            'website_id' => $this->identifiers['website_id'],
+          ])
+          ->get()->current();
         if ($row) {
           $this->submission['fields']['licence_id']['value'] = $row->licence_id;
         }
