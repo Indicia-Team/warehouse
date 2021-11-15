@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,30 +14,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Verifier Notifications
- * @subpackage Config
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
-// The following configuration should hold the list of websites which host a verification portal and
-// where the verifiers should be automatically notified of incoming records. Each entry consists of
-// a website ID, then name of the website, then the verification page URL path. Finally, an optional
-// linkText can be supplied to override the default.
-$config['verification_urls'] = array(
-  array(
+/**
+ * Verifier notifications config.
+ *
+ * The following configuration should hold the list of websites which host a
+ * verification portal and where the verifiers should be automatically
+ * notified of incoming records. Each entry consists of:
+ * * website_id - the website that the records are being shared to for
+ *   verification or moderation.
+ * * title - name of the website used in the notification text
+ * * url -n the verification page URL path.
+ * * linkText - optional, override the default text in the link to the page.
+ * * extraParams - additional filter parameters (from the standard parameters
+ *   list) to supply to the report which detects records to notify for. In this
+ *   example, a website is excluded from the verification page.
+ */
+$config['verification_urls'] = [
+  [
     'website_id' => 23,
     'title' => 'iRecord',
-    'url' => 'http://www.brc.ac.uk/irecord/verification'
-  )
-);
+    'url' => 'http://www.brc.ac.uk/irecord/verification',
+    'extraParams' => [
+      'website_list' => 112,
+      'website_list_op' => 'not in',
+    ],
+  ],
+];
 // Same again but for pending check/moderation tasks.
-$config['moderation_urls'] = array(
-  array(
+$config['moderation_urls'] = [
+  [
     'website_id' => 23,
     'title' => 'iRecord',
     'url' => 'http://www.brc.ac.uk/irecord/moderation',
     'linkText' => 'Click here to view mentoring records needing your help.'
-  )
-);
+  ],
+];
