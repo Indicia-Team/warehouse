@@ -50,7 +50,7 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
   $params = [
     'notificationSourceType' => 'PT',
     'notificationSource' => 'pending_record_check_notifications',
-    'notificationComment' => 'You have pending records to check.',
+    'linkText' => 'You have pending records to check.',
     'sharingFilter' => 'M',
     'sharingFilterFullName' => 'moderation',
     'noNotificationsCreatedMessage' => 'No new pending record check notifications have been created.',
@@ -61,7 +61,7 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
   $params = [
     'notificationSourceType' => 'VT',
     'notificationSource' => 'verifier_notifications',
-    'notificationComment' => 'You have new or updated records to verify.',
+    'linkText' => 'You have new or updated records to verify.',
     'sharingFilter' => 'V',
     'sharingFilterFullName' => 'verification',
     'noNotificationsCreatedMessage' => 'No new verification notifications have been created.',
@@ -133,19 +133,14 @@ function verifier_notifications_process_task_type($type, array $params, $db) {
   $urls = verifier_notification_urls_for_task_type($type);
   // Loop through the known moderation/verification pages on each website.
   foreach ($urls as $url) {
-    $params['website_id'] = $url['website_id'];
-    $params['title'] = $url['title'];
-    $params['url'] = $url['url'];
-    if (!empty($url['linkText'])) {
-      $params['notificationComment'] = $url['linkText'];
-    }
-    acknowledge_stale_notifications($db, $params);
+    $urlParams = array_merge($params, $url);
+    acknowledge_stale_notifications($db, $urlParams);
     // Get all filters where the user for the filter does not already have an
     // unacknowledged notification of that type and the user is associated
     // with the website of the moderation page.
-    $filters = get_filters_without_existing_notification($db, $params);
+    $filters = get_filters_without_existing_notification($db, $urlParams);
     // Fire the notifications for records matching these filters.
-    loop_through_workflows_and_filters_and_create_notifications($db, $filters, $params);
+    loop_through_workflows_and_filters_and_create_notifications($db, $filters, $urlParams);
   }
 }
 
@@ -248,7 +243,7 @@ function loop_through_workflows_and_filters_and_create_notifications($db, $filte
   $alreadyCreatedNotifications = [];
   // Go through each filter for users who don't have an outstanding
   // notification of the required type.
-  foreach ($filters as $filterIdx => $filter) {
+  foreach ($filters as $filter) {
     $extraParams = ['sharing' => $params['sharingFilterFullName']];
     if ($params['notificationSourceType'] === 'VT') {
       // Only look for completed record_status, we don't want to pick up V for
@@ -265,6 +260,10 @@ function loop_through_workflows_and_filters_and_create_notifications($db, $filte
       // release_status P parameter, this will  override the release_status R
       // parameter that automatically appears in the report.
       $extraParams = array_merge($extraParams, ['release_status' => 'P']);
+    }
+    // Allow params override from URL configuration.
+    if (isset($params['extraParams'])) {
+      $extraParams = array_merge($extraParams, $params['extraParams']);
     }
     $reportParams = json_decode($filter['definition'], TRUE) + $extraParams;
     try {
@@ -325,7 +324,7 @@ function save_notification($userId, array $params, $forceHighPriorityEmail) {
   $notificationObj->source_type = $params['notificationSourceType'];
   $notificationObj->data = json_encode([
     'username' => $params['title'],
-    'comment' => "<a href=\"$params[url]\">$params[notificationComment]</a>",
+    'comment' => "<a href=\"$params[url]\">$params[linkText]</a>",
     'auto_generated' => 't',
   ]);
   if ($forceHighPriorityEmail === TRUE) {
