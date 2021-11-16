@@ -20,6 +20,12 @@
     { "sql": "name", "type": "string" },
     { "sql": "name", "type": "string" }
   ],
+  "joins": [
+    {
+      "sql": "LEFT JOIN locations_websites t2 ON t2.location_id=t1.id",
+      "fields": []
+    }
+  ],
   "subModels": {
     "locations": { "fk": "parent_id" },
     "media": { "fk": "location_id" },

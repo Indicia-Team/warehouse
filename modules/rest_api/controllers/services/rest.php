@@ -2951,6 +2951,16 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * End-point to GET a list of locations.
+   *
+   * Only returns locations for user of website.
+   * @todo Add parameters to return public locations and locations by type. 
+   */
+  public function locationsGet() {
+    rest_crud::readList('location', 'AND t2.website_id=' . RestObjects::$clientWebsiteId);
+  }
+
+  /**
    * API end-point to retrieve a location by ID.
    *
    * @param int $id
