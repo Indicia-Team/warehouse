@@ -1381,11 +1381,22 @@ KEY;
   }
 
   /**
-   * A basic test of /locations GET.
+   * A basic test of /locations/id GET.
    */
   public function testJwtLocationGet() {
     $this->getTest('locations', [
       'name' => 'Location GET test',
+      'centroid_sref' => 'ST1234',
+      'centroid_sref_system' => 'OSGB',
+    ]);
+  }
+
+  /**
+   * A basic test of /locations GET.
+   */
+  public function testJwtLocationGetList() {
+    $this->getListTest('locations', [
+      'name' => 'Test Location ' . microtime(TRUE),
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
     ]);
