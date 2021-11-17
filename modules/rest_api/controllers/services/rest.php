@@ -2430,11 +2430,11 @@ class Rest_Controller extends Controller {
       // this scope has been claimed by the token. We allow scope as a standard
       // claim or custom claim and as an array or space separated string for
       // wider compatibility with auth servers.
-      if (isset($payloadValues['http://indicia.org.uk/scope']) && !isset($payloadValues['scopes'])) {
-        $payloadValues['scopes'] = $payloadValues['http://indicia.org.uk/scope'];
+      if (isset($payloadValues['http://indicia.org.uk/scope']) && !isset($payloadValues['scope'])) {
+        $payloadValues['scope'] = $payloadValues['http://indicia.org.uk/scope'];
       }
-      if (!empty($payloadValues['scopes'])) {
-        $allowedScopes = is_array($payloadValues['scopes']) ? $payloadValues['scopes'] : explode(' ', $payloadValues['scopes']);
+      if (!empty($payloadValues['scope'])) {
+        $allowedScopes = is_array($payloadValues['scope']) ? $payloadValues['scope'] : explode(' ', $payloadValues['scope']);
         if (!empty($_GET['scope'])) {
           if (!in_array($_GET['scope'], $allowedScopes)) {
             RestObjects::$apiResponse->fail('Forbidden', 403, 'Attempt to access disallowed scope');
