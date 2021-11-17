@@ -22,6 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+require_once 'application/views/multi_value_data_editing_support.php';
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'person:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
@@ -73,6 +74,64 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
     ]);
     ?>
   </fieldset>
+  <?php
+  /**
+   * Handle single value attributes
+   * 
+   * Draw single value attributes to the screen when called
+   */
+  function handle_single_value_attributes($attr, $values) {
+    $name = "psnAttr:$attr[person_attribute_id]";
+    // If this is an existing attribute, tag it with the attribute value
+    // record id so we can re-save it.
+    if ($attr['id']) {
+      $name .= ":$attr[id]";
+    }
+    switch ($attr['data_type']) {
+      case 'D':
+        echo data_entry_helper::date_picker([
+          'label' => $attr['caption'],
+          'fieldname' => $name,
+          'default' => $attr['value'],
+        ]);
+        break;
+
+      case 'V':
+        echo data_entry_helper::date_picker([
+          'label' => $attr['caption'],
+          'fieldname' => $name,
+          'default' => $attr['value'],
+          'allowVagueDates' => TRUE,
+        ]);
+        break;
+
+      case 'L':
+        echo data_entry_helper::select([
+          'label' => $attr['caption'],
+          'fieldname' => $name,
+          'default' => $attr['raw_value'],
+          'lookupValues' => $values["terms_$attr[termlist_id]"],
+          'blankText' => '<Please select>',
+        ]);
+        break;
+
+      case 'B':
+        echo data_entry_helper::checkbox([
+          'label' => $attr['caption'],
+          'fieldname' => $name,
+          'default' => $attr['value'],
+        ]);
+        break;
+
+      default:
+        echo data_entry_helper::text_input([
+          'label' => $attr['caption'],
+          'fieldname' => $name,
+          'default' => $attr['value'],
+      ]);
+    }
+  }
+  ?>
   <fieldset>
     <legend>Additional info</legend>
     <?php
@@ -95,63 +154,25 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
     ]);
     ?>
   </fieldset>
-  <?php if (array_key_exists('attributes', $values) && count($values['attributes']) > 0) : ?>
+  <?php
+  if (array_key_exists('attributes', $values) && count($values['attributes']) > 0) : ?>
   <fieldset>
-    <legend>Custom attributes</legend>
-    <?php
-    foreach ($values['attributes'] as $attr) {
-      $name = "psnAttr:$attr[person_attribute_id]";
-      // If this is an existing attribute, tag it with the attribute value
-      // record id so we can re-save it.
-      if ($attr['id']) {
-        $name .= ":$attr[id]";
+  <legend>Custom attributes</legend>
+    <ol>
+      <?php
+      // The $values['attributes'] array has multi-value attributes on separate rows, so organise these into sub array
+      $attrsWithMulti = organise_values_attribute_array('person_attribute', $values['attributes']);
+      // Cycle through the attributes and drawn them to the screen
+      foreach ($attrsWithMulti as $sampleAttributeId => $wholeAttrToDraw) {
+        // Multi-attributes are in a sub array, so the caption is not present at the first level so we can detect this
+        if (!empty($wholeAttrToDraw['caption'])) {
+          handle_single_value_attributes($wholeAttrToDraw, $values);
+        } else {
+          handle_multi_value_attributes('psnAttr', $sampleAttributeId, $wholeAttrToDraw, $values);
+        }
       }
-      switch ($attr['data_type']) {
-        case 'D':
-          echo data_entry_helper::date_picker([
-            'label' => $attr['caption'],
-            'fieldname' => $name,
-            'default' => $attr['value'],
-          ]);
-          break;
-
-        case 'V':
-          echo data_entry_helper::date_picker([
-            'label' => $attr['caption'],
-            'fieldname' => $name,
-            'default' => $attr['value'],
-            'allowVagueDates' => TRUE,
-          ]);
-          break;
-
-        case 'L':
-          echo data_entry_helper::select([
-            'label' => $attr['caption'],
-            'fieldname' => $name,
-            'default' => $attr['raw_value'],
-            'lookupValues' => $values["terms_$attr[termlist_id]"],
-            'blankText' => '<Please select>',
-          ]);
-          break;
-
-        case 'B':
-          echo data_entry_helper::checkbox([
-            'label' => $attr['caption'],
-            'fieldname' => $name,
-            'default' => $attr['value'],
-          ]);
-          break;
-
-        default:
-          echo data_entry_helper::text_input([
-            'label' => $attr['caption'],
-            'fieldname' => $name,
-            'default' => $attr['value'],
-          ]);
-      }
-
-    }
-    ?>
+      ?>
+    </ol>
   </fieldset>
   <?php
   endif;
