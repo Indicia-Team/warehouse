@@ -161,6 +161,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         'caption' => $attr->caption,
         'value' => NULL,
         'raw_value' => NULL,
+        'multi_value' => $attr->multi_value,
         'termlist_id' => isset($attr->lookup_termlist_id) ? $attr->lookup_termlist_id : $attr->termlist_id,
         'validation_rules' => $attr->validation_rules,
       ];
