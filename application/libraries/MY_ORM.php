@@ -1890,12 +1890,7 @@ class ORM extends ORM_Core {
         break;
       case 'L':
         // Lookup list
-        // Multi-value are encoded into the text_value field for editing on a complex attribute grid
-        if (!empty($attrDef->multi_value) && $attrDef->multi_value == true) {
-          $vf = 'text_value';
-        } else {
-          $vf = 'int_value';
-        }   
+        $vf = 'int_value';
         if (!empty($value)) {
           $creatingTerm = $allowTermCreationLang && substr($value, 0, 11) === 'createTerm:';
           if ($creatingTerm) {
