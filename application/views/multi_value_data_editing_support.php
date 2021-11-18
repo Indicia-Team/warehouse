@@ -30,7 +30,6 @@ function organise_values_attribute_array($attributeModel, $valuesAttributes) {
  */
 function handle_multi_value_attributes($fieldPrefix, $attributeId, $multiAttr, &$values) {
   $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-  $valueToInsert = [];
   $attrCaption = '';
   $attrTermlistId = NULL;
   $default = [];
@@ -63,12 +62,9 @@ function handle_multi_value_attributes($fieldPrefix, $attributeId, $multiAttr, &
     }
     // Set up default value for existing data.
     if (!empty($multiAttrElement['raw_value'])) {
-      $valueToInsert = json_decode($multiAttrElement['raw_value']);
-      $valueToInsert = (array) $valueToInsert;
-      $valueToInsert = $valueToInsert[0];
       $default[] = [
         'fieldname' => "$fieldPrefix:$attributeId:$multiAttrElement[id]",
-        'default' => json_encode([$valueToInsert]),
+        'default' => $multiAttrElement['raw_value'],
         'defaultUpper' => NULL,
       ];
     }
@@ -92,12 +88,15 @@ function handle_multi_value_attributes($fieldPrefix, $attributeId, $multiAttr, &
         ],
       ];
     }
+    // The complex_attr_grid uses ',' encoding, which disables JSON so we just
+    // get the single attribute value.
     echo data_entry_helper::complex_attr_grid([
       'fieldname' => $name,
       'columns' => $columns,
       'default' => $default,
       'defaultRows' => 1,
       'extraParams' => $readAuth,
+      'encoding' => ',',
     ]) . "<br>";
   }
   else {
