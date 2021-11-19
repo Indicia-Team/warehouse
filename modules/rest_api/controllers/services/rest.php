@@ -2954,11 +2954,21 @@ class Rest_Controller extends Controller {
   /**
    * End-point to GET a list of locations.
    *
-   * Only returns locations for user of website.
-   * @todo Add parameters to return public locations and locations by type. 
+   * Returns locations for user of website plus public locations.
+   * Use parameters in the query string to limit returned values. E.g. 
+   * ?public=true&location_type_id=<nnn> to get public locations of type <nnn>
+   * ?public=false to only get locations for user of website. 
    */
   public function locationsGet() {
-    rest_crud::readList('location', 'AND t2.website_id=' . RestObjects::$clientWebsiteId);
+    // Make a filter for locations for this website and user.
+    $websiteFilter = 't2.website_id=' . RestObjects::$clientWebsiteId;
+    $userFilter = 't1.created_by_id=' . RestObjects::$clientUserId;
+    $webUserFilter = "($websiteFilter AND $userFilter)";
+    // Make a filter for public locations available to all users and websites.
+    $publicFilter = 't1.public=true';
+    // Allow both types of location.
+    $extraFilter = "AND ($webUserFilter OR $publicFilter)";
+    rest_crud::readList('location', $extraFilter, FALSE);
   }
 
   /**
