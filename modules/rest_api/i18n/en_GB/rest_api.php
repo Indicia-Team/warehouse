@@ -26,6 +26,17 @@ Where the details below refer to the scope of the request, the possible options 
   website for editing purposes, e.g. to allow an expert to correct a record during the verification process.</li>
  </ul>
 HTML;
+$lang['filterTitle'] = 'List filtering';
+$lang['filterText'] = <<<HTML
+<p>When calling any of the endpoints to GET a list of entities, you can include
+parameters in a query string to limit the response. You can filter on any of
+the fields in the entity. Only filtering on equality is supported. E.g. to list
+all public locations with a location_type_id of 123, use</p>
+<pre>services/rest/locations?public=true&location_type_id=123</pre>
+<p>(NB. the list of location types is in a term list with title 'Location
+types'. Terms are not available from the REST API and need to be looked up in
+the warehouse user interface.)</p>
+HTML;
 $lang['resourcesTitle'] = 'Resources';
 $lang['authMethods'] = 'Allowed authentication methods';
 $lang['jwtUser'] = 'JWT as warehouse user';
