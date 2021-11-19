@@ -80,8 +80,8 @@ HTML;
 $lang['jwtUser'] = 'Use a Java Web Token (JWT) to authenticate as a user.';
 $lang['jwtUserHelp'] = <<<HTML
 To use JWT to authenticate, you need to:<ul>
-  <li>Generate a public/private key pair and store the private key in the Warehouse website settings.</li>
-  <li>Provide a JWT token signed with the public key which provides the following claims:<ul>
+  <li>Generate a public/private key pair and store the public key in the Warehouse website settings.</li>
+  <li>Provide a JWT token signed with the private key which provides the following claims:<ul>
     <li>iss - the website URL</li>
     <li>http://indicia.org.uk/user:id - set to the warehouse ID of the user issuing the request, or skip this claim if
     the token is issued on behalf of the website rather than a specific user.</li>
