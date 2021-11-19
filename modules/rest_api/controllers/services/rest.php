@@ -2351,6 +2351,7 @@ class Rest_Controller extends Controller {
       }
     }
     if (!$websiteUser) {
+      kohana::log('debug', 'rest_api: Unauthorised - user has no role in website.');
       RestObjects::$apiResponse->fail('Unauthorized', 401);
     }
   }
