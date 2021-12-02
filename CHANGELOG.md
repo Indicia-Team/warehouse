@@ -1,3 +1,30 @@
+# Version 6.12.0
+*2021-12-02*
+
+* Import of sample and media file licences by licence code field supported.
+* Improvements and bug-fixes for the json_occurrences API used to sync between systems.
+* Occurrence comments list report uses logged in person name for the comment in preference to
+  person_name field as latter may contain email.
+* Output_sref fields now support up to 100km grid square sizes with imprecision indicator prefix
+  (~) where even less precise references are being displayed.
+
+
+# Version 6.11.0
+*2021-11-23*
+
+* Minor feature release to support hierarchical termlist usage in complex_attr_grid control.
+* Support for multi-value attribute editing on the warehouse.
+
+# Version 6.10.0
+*2021-11-08*
+
+* Minor feature release to add reports required for AJAX loading of species checklists.
+
+# Version 6.9.0
+*2021-10-15*
+
+* Configurable precision for latitude and longitude fields extracted from Elasticsearch.
+
 # Version 6.8.0
 *2021-10-11*
 
