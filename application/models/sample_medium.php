@@ -33,6 +33,15 @@ class Sample_Medium_Model extends Base_licensed_medium_Model {
     'sample',
   );
 
+  /**
+   * Declare additional fields required when posting via CSV.
+   *
+   * @var array
+   */
+  protected $additional_csv_fields = [
+    'sample_medium:fk_licence:code' => 'Licence code',
+  ];
+
   public function validate(Validation $array, $save = FALSE) {
 
     $array->pre_filter('trim');

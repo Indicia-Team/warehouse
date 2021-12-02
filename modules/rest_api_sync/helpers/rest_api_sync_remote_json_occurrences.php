@@ -111,7 +111,7 @@ class rest_api_sync_remote_json_occurrences {
           'sensitivityPrecision' => empty($record['occurrence']['sensitivityBlur']) ? NULL : $record['occurrence']['sensitivityBlur'],
           'organismKey' => $record['taxon']['taxonID'],
           'taxonVersionKey' => empty($record['taxon']['taxonNameID']) ? NULL : $record['taxon']['taxonNameID'],
-          'eventId' => empty($record['event']['eventId']) ? NULL : $record['event']['eventId'],
+          'eventId' => empty($record['event']['eventID']) ? NULL : $record['event']['eventID'],
           'startDate' => $parsedDate['start'],
           'endDate' => $parsedDate['end'],
           'dateType' => $parsedDate['type'],
@@ -247,14 +247,18 @@ AND t.deleted=false
 SQL;
     $isOdonataCheck = $db->query($sql)->current()->count > 0;
     if ($isOdonataCheck) {
+      // @todo Check following is correct, as we may be preferring lat/long + coordinate uncertainty.
       if (!empty($observation['gridReference']) &&
         (($observation['projection'] = 'OSGB' && strlen($observation['gridReference']) < 6) ||
         ($observation['projection'] = 'OSGI' && strlen($observation['gridReference']) < 5))) {
         // Exclude if grid reference over 1km.
         return FALSE;
       }
-
-      // @todo Min ID filter.
+      // Skip records already provided to BTO.
+      $numericId = (integer) str_replace($observation['id'], 'BTO', '');
+      if ($numericId <= 290186151) {
+        return FALSE;
+      }
 
       if (!empty($observation['coordinateUncertaintyInMeters']) && $observation['coordinateUncertaintyInMeters'] > 1000) {
         if (!empty($observation['occurrenceRemarks'])) {

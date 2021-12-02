@@ -55,6 +55,9 @@ class Taxon_association_Model extends ORM {
     $array->add_rules('association_type_id', 'required');
     $array->add_rules('from_taxon_meaning_id', 'required');
     $array->add_rules('to_taxon_meaning_id', 'required');
+    $array->add_rules('fidelity', 'integer');
+    $array->add_rules('fidelity', 'minimum[1]');
+    $array->add_rules('fidelity', 'maximum[3]');
     $this->unvalidatedFields = [
       'part_id',
       'position_id',

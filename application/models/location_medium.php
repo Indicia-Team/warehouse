@@ -30,8 +30,17 @@ class Location_Medium_Model extends Base_licensed_medium_Model {
   protected $belongs_to = array(
     'created_by' => 'user',
     'updated_by' => 'user',
-    'occurrence',
+    'location',
   );
+
+  /**
+   * Declare additional fields required when posting via CSV.
+   *
+   * @var array
+   */
+  protected $additional_csv_fields = [
+    'location_medium:fk_licence:code' => 'Licence code',
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
 
