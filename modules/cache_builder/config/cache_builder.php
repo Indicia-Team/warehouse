@@ -849,7 +849,7 @@ $config['samples']['get_missing_items_query'] = "
     left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
     left join cache_samples_functional cs on cs.id=s.id
     left join needs_update_samples nu on nu.id=s.id
-    where s.id is null and nu.id is null
+    where cs.id is null and nu.id is null
     and (s.deleted or coalesce(sp.deleted, false) or su.deleted) = false
 ";
 $config['samples']['get_changed_items_query'] = "
