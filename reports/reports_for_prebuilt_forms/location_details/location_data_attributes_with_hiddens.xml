@@ -1,0 +1,66 @@
+<report
+    title="Location attribute values"
+    description="Report used to retrieve custom attribute values of a location which are not included in a list of attributes to ignore."
+>
+  <query website_filter_field="">
+  select
+      'Location' as attribute_type, a.system_function, a.id as attr_id, aw.weight as w1, fsb1.weight as w2, fsb2.weight as w3,
+      CASE a.data_type
+              WHEN 'T' THEN 'Text'
+              WHEN 'L' THEN 'Lookup List'
+              WHEN 'I' THEN 'Integer'
+              WHEN 'B' THEN 'Boolean'
+              WHEN 'F' THEN 'Float'
+              WHEN 'D' THEN 'Specific Date'
+              WHEN 'V' THEN 'Vague Date'
+              ELSE a.data_type
+          END AS data_type,
+          CASE '#language#' WHEN '' THEN a.caption ELSE COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) END AS caption,
+          CASE a.data_type
+              WHEN 'T' THEN CASE WHEN substring(a.caption from (char_length(a.caption)-5) for 4) = 'link' AND substring(av.text_value from 0 for 4) = 'http' THEN
+                '&lt;a href="' || av.text_value || '"&gt;' || av.text_value || '&lt;/a&gt;'
+              ELSE
+                av.text_value END
+              WHEN 'L' THEN lookup.term::text
+              WHEN 'I' THEN av.int_value::varchar
+              WHEN 'B' THEN av.int_value::varchar
+              WHEN 'F' THEN av.float_value::varchar
+              WHEN 'D' THEN av.date_start_value::varchar
+              WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
+              ELSE NULL::text
+          END || CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN COALESCE(' - ' || av.upper_value::text, '') ELSE '' END AS value,
+          CASE a.data_type
+              WHEN 'T' THEN av.text_value
+              WHEN 'L' THEN av.int_value::varchar
+              WHEN 'I' THEN av.int_value::varchar
+              WHEN 'B' THEN av.int_value::varchar
+              WHEN 'F' THEN av.float_value::varchar
+              WHEN 'D' THEN av.date_start_value::varchar
+              WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
+              ELSE NULL::text
+          END AS raw_value,
+          CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN av.upper_value ELSE null END AS upper_value
+  from locations l
+  join location_attribute_values av on av.location_id=l.id and av.deleted=false
+  join location_attributes a on a.id=av.location_attribute_id and a.deleted=false
+  left join cache_termlists_terms lookup on a.data_type='L' and lookup.id=av.int_value
+  left join location_attributes_websites aw on aw.location_attribute_id=a.id and aw.deleted=false
+  left join form_structure_blocks fsb1 on fsb1.id=aw.form_structure_block_id
+  left join form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id
+  where l.id=#location_id#
+  and l.deleted=false
+  and lower(a.caption) #operator# (#attrs#)
+
+  </query>
+  <order_bys>
+    <order_by>w3, w2, w1, attr_id</order_by>
+  </order_bys>
+  <params>
+    <param name='location_id' display='Location ID' description='ID of the location to load' datatype='integer' />
+    <param name='attrs' display='Attributes' description='CSV list of attributes to include or exclude. Lowercase.' datatype='text[]' />
+    <param name='operator' display='Include or exclude' description="Do you want to include only the list of attributes you've defined, or exclude them?"
+        datatype='lookup' lookup_values='in:Include,not in:Exclude' />
+    <param name='language' display='Language' description="ISO 3 letter code of language to use for captions if available."
+        datatype='text' default='' />
+  </params>
+</report>
