@@ -55,20 +55,25 @@ class Groups_location_Model extends ORM {
   }
 
   /**
-   * Insert locations_website
-   * 
-   * Need to insert a locations_websites record for the groups_location where it has been specified in a mapping.
-   * @param boolean Unused indication if is an insert
-   * @return boolean Always TRUE to indicate task completion
+   * Insert locations_website.
+   *
+   * Need to insert a locations_websites record for the groups_location where
+   * it has been specified in a mapping.
+   *
+   * @param bool $isInsert
+   *   Unused - indication if is an insert.
+   *
+   * @return bool
+   *   Always TRUE to indicate task completion
    */
   public function postSubmit($isInsert) {
-    if (array_key_exists('location_website_id', $this->submission['metaFields'])) {
+    if (!empty($this->submission['metaFields']) && !empty($this->submission['metaFields']['location_website_id'])) {
       $websiteId = $this->submission['metaFields']['location_website_id']['value'];
       if (!empty($websiteId) && $this->location_id) {
         $selectLocationWebsite = "
         SELECT id
         FROM locations_websites
-        where location_id = ".$this->location_id." and website_id = ".$websiteId." and deleted = FALSE;";
+        where location_id=$this->location_id and website_id = $websiteId and deleted = FALSE;";
         $rows = $this->db->query($selectLocationWebsite)->current();
         // Only add the locations_websites record if it doesn't already exist.
         if (empty($rows)) {
