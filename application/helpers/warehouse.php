@@ -51,6 +51,24 @@ function hostsite_set_cookie($cookie, $value, $expire = NULL) {
 }
 
 /**
+ * Limited warehouse support for hostsite_get_user_field().
+ */
+function hostsite_get_user_field($field) {
+  if ($field === 'language') {
+    return 'en';
+  }
+  elseif ($field === 'indicia_user_id') {
+    return $_SESSION['auth_user']->id;
+  }
+  elseif ($field === 'training') {
+    return FALSE;
+  }
+  else {
+    throw new exception("Unsuppoered hostsite_get_user_field call on warehouse for field $field");
+  }
+}
+
+/**
  * Helper class to provide generally useful Indicia warehouse functions.
  */
 class warehouse {
