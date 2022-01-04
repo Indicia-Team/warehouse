@@ -16,7 +16,7 @@
               ELSE a.data_type
           END AS data_type,
           CASE '#language#' WHEN '' THEN a.caption ELSE COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) END AS caption,
-          CASE a.data_type
+          STRING_AGG(CASE a.data_type
               WHEN 'T' THEN CASE WHEN substring(a.caption from (char_length(a.caption)-5) for 4) = 'link' AND substring(av.text_value from 0 for 4) = 'http' THEN
                 '&lt;a href="' || av.text_value || '"&gt;' || av.text_value || '&lt;/a&gt;'
               ELSE
@@ -28,8 +28,8 @@
               WHEN 'D' THEN av.date_start_value::varchar
               WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
               ELSE NULL::text
-          END || CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN COALESCE(' - ' || av.upper_value::text, '') ELSE '' END AS value,
-          CASE a.data_type
+          END || CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN COALESCE(' - ' || av.upper_value::text, '') ELSE '' END, '; ') AS value,
+          STRING_AGG(CASE a.data_type
               WHEN 'T' THEN av.text_value
               WHEN 'L' THEN av.int_value::varchar
               WHEN 'I' THEN av.int_value::varchar
@@ -38,8 +38,8 @@
               WHEN 'D' THEN av.date_start_value::varchar
               WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
               ELSE NULL::text
-          END AS raw_value,
-          CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN av.upper_value ELSE null END AS upper_value
+          END, '; ') AS raw_value,
+          STRING_AGG(CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN av.upper_value::text ELSE null::text END, '; ') AS upper_value
   from locations l
   join location_attribute_values av on av.location_id=l.id and av.deleted=false
   join location_attributes a on a.id=av.location_attribute_id and a.deleted=false
@@ -50,7 +50,7 @@
   where l.id=#location_id#
   and l.deleted=false
   and lower(a.caption) #operator# (#attrs#)
-
+  group by a.system_function, a.id, aw.weight, fsb1.weight, fsb2.weight, a.data_type, a.caption
   </query>
   <order_bys>
     <order_by>w3, w2, w1, attr_id</order_by>
