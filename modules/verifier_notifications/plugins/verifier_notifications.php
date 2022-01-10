@@ -50,7 +50,7 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
   $params = [
     'notificationSourceType' => 'PT',
     'notificationSource' => 'pending_record_check_notifications',
-    'linkText' => 'You have pending records to check.',
+    'linkText' => 'You have pending records to check for {1}.',
     'sharingFilter' => 'M',
     'sharingFilterFullName' => 'moderation',
     'noNotificationsCreatedMessage' => 'No new pending record check notifications have been created.',
@@ -61,7 +61,7 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
   $params = [
     'notificationSourceType' => 'VT',
     'notificationSource' => 'verifier_notifications',
-    'linkText' => 'You have new or updated records to verify.',
+    'linkText' => 'You have new or updated records to verify for {1}.',
     'sharingFilter' => 'V',
     'sharingFilterFullName' => 'verification',
     'noNotificationsCreatedMessage' => 'No new verification notifications have been created.',
@@ -210,7 +210,9 @@ function get_filters_without_existing_notification($db, array $params) {
     ->join('users as u', 'u.id', 'fu.user_id')
     ->join('users_websites as uw', 'uw.user_id', 'u.id')
     ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='$params[notificationSourceType]' " .
-      "and n.source='$params[notificationSource]' and n.acknowledged=false and n.linked_id is null)", '', 'LEFT')
+      "and n.source='$params[notificationSource]' and n.acknowledged=false and n.linked_id is null " .
+      // Only include notifications that link to this verification page.
+      "and n.data like '<a href=\\\"" . str_replace('/', '\/', $params['url']) . "\\\"%')", '', 'LEFT')
     ->where([
       'f.sharing' => $params['sharingFilter'],
       'f.defines_permissions' => 't',
@@ -322,9 +324,10 @@ function save_notification($userId, array $params, $forceHighPriorityEmail) {
   // Use VT "Verifier Task" or PT "Pending Record Task" notification type as we
   // are informing the verifier that they need to perform a task.
   $notificationObj->source_type = $params['notificationSourceType'];
+  $linkText = str_replace('{1}', $params['title'], $params['linkText']);
   $notificationObj->data = json_encode([
     'username' => $params['title'],
-    'comment' => "<a href=\"$params[url]\">$params[linkText]</a>",
+    'comment' => "<a href=\"$params[url]\">$linkText</a>",
     'auto_generated' => 't',
   ]);
   if ($forceHighPriorityEmail === TRUE) {
