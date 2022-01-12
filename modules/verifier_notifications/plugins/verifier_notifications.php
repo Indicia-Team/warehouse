@@ -204,7 +204,7 @@ SQL;
  */
 function get_filters_without_existing_notification($db, array $params) {
   $filters = $db
-    ->select('DISTINCT f.id,f.definition,fu.user_id,u.username')
+    ->select('DISTINCT f.id, f.definition, fu.user_id, u.username')
     ->from('filters f')
     ->join('filters_users as fu', 'fu.filter_id', 'f.id')
     ->join('users as u', 'u.id', 'fu.user_id')
@@ -212,7 +212,7 @@ function get_filters_without_existing_notification($db, array $params) {
     ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='$params[notificationSourceType]' " .
       "and n.source='$params[notificationSource]' and n.acknowledged=false and n.linked_id is null " .
       // Only include notifications that link to this verification page.
-      "and n.data like '<a href=\\\"" . str_replace('/', '\/', $params['url']) . "\\\"%')", '', 'LEFT')
+      'and n.data like \'%<a href=\\\\"' . str_replace('/', '\\\\/', $params['url']) . '\\\\"%\')', '', 'LEFT')
     ->where([
       'f.sharing' => $params['sharingFilter'],
       'f.defines_permissions' => 't',
