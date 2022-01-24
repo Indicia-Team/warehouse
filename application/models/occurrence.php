@@ -36,6 +36,7 @@ class Occurrence_Model extends ORM {
     'determiner' => 'person',
     'sample',
     'taxa_taxon_list',
+    'classification_event',
     'created_by' => 'user',
     'updated_by' => 'user',
     'verified_by' => 'user',
@@ -247,13 +248,16 @@ class Occurrence_Model extends ORM {
         !empty($this->submission['fields']['taxa_taxon_list_id']['value']) &&
         $this->taxa_taxon_list_id != $this->submission['fields']['taxa_taxon_list_id']['value']) {
       // Only log a determination for the occurrence if the species is changed.
-      // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
-      // and the config setting must be enabled.
+      // Also the all_info_in_determinations flag must be off to avoid clashing
+      // with other functionality and the config setting must be enabled.
       if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
         $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->userIdFromPersonId($this->determiner_id);
         $determination = [
           // We log the old taxon.
           'taxa_taxon_list_id' => $this->taxa_taxon_list_id,
+          // And classification event it came from.
+          'machine_involvement' => $this->machine_involvement,
+          'classification_event_id' => $this->classification_event_id,
           'determination_type' => 'B',
           'occurrence_id' => $this->id,
           // Last change to the occurrence is really the create metadata for

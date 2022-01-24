@@ -1,9 +1,6 @@
 <?php
 
 /**
- * @file
- * Warehouse version configuration.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -25,24 +22,27 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * The application files' version number.
+ * Model class for the classification_events table.
  *
- * @var string
+ * Each row represents a single request or set of requests to an image
+ * classifier.
  */
-$config['version'] = '6.13.0';
+class Classification_event_Model extends ORM {
 
+  protected $has_many = [
+    'classification_result',
+  ];
 
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2021-12-29';
+  protected $belongs_to = [
+    'created_by' => 'user',
+  ];
 
+  public function validate(Validation $array, $save = FALSE) {
+    $array->pre_filter('trim');
+    $this->unvalidatedFields = [
+      'deleted',
+    ];
+    return parent::validate($array, $save);
+  }
 
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+}

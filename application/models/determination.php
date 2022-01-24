@@ -27,6 +27,7 @@ class Determination_Model extends ORM {
   protected $belongs_to = [
     'occurrence',
     'taxa_taxon_list',
+    'classification_event',
     'created_by' => 'user',
     'updated_by' => 'user',
   ];
