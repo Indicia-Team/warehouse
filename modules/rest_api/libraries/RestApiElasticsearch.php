@@ -346,7 +346,7 @@ class RestApiElasticsearch {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'No website_id available for website limited report.');
       }
       $filters[] = [
-        'term' => ['metadata.website.id', RestObjects::$clientWebsiteId],
+        'term' => ['metadata.website.id' => RestObjects::$clientWebsiteId],
       ];
     }
     // Apply limit to websites identified by scope if appropriate.

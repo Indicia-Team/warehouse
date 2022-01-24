@@ -4,10 +4,8 @@
     >
   <query>
     SELECT #columns#
-    FROM samples s
-    JOIN surveys su on su.id=s.survey_id and su.deleted=false
-    WHERE s.deleted=false
-    AND su.website_id in (#website_ids#)
+    FROM cache_samples_functional s
+    WHERE s.website_id in (#website_ids#)
   </query>
   <order_bys>
     <order_by>s.input_form ASC</order_by>
@@ -15,6 +13,6 @@
   <columns>
     <column name="input_form" sql="s.input_form" display="Input form" distincton="true"/>
     <column name="survey_id" visible="false" sql="s.survey_id" />
-    <column name="website_id" visible="false" sql="su.website_id" />
+    <column name="website_id" visible="false" sql="s.website_id" />
   </columns>
 </report>
