@@ -281,12 +281,16 @@ SQL;
             elseif ($field === 'query') {
               // Only allow commenting on occurrence records which have been
               // queried.
-              if ($notificationToSendEmailsFor['query'] === 'Q'&&!empty($record['occurrence_id'])) {
+              /*
+              @todo The auth token is not being attached to the links correctly.
+              See https://github.com/BiologicalRecordsCentre/iRecord/issues/1243
+              if ($notificationToSendEmailsFor['query'] === 'Q' && !empty($record['occurrence_id'])) {
                 $htmlToDisplay = record_comments_hyperlink_id(
                   $notificationToSendEmailsFor['user_id'],
                   $record['occurrence_id']
                 );
               }
+              */
             }
             if (empty($htmlToDisplay)) {
               $htmlToDisplay = '';
