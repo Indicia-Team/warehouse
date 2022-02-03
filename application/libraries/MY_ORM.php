@@ -909,7 +909,7 @@ class ORM extends ORM_Core {
     $return = $this->populateFkLookups();
     $this->populateIdentifiers();
     $return = $this->createParentRecords() && $return;
-    // No point doing any more if the parent records did not post
+    // No point doing any more if the parent records did not post.
     if ($return) {
       $this->initialValues = $this->as_array();
       $this->preSubmit();
@@ -923,17 +923,21 @@ class ORM extends ORM_Core {
         $return = $this->createAttributes($isInsert) ? $return : NULL;
         $return = $this->createChildRecords() ? $return : NULL;
         $return = $this->createJoinRecords() ? $return : NULL;
-        if ($isInsert)
-          $addTo=&self::$changedRecords['insert'];
-        elseif (isset($this->deleted) && $this->deleted === 't')
-          $addTo=&self::$changedRecords['delete'];
-        else
-          $addTo=&self::$changedRecords['update'];
-        if (!isset($addTo[$this->object_name]))
+        if ($isInsert) {
+          $addTo = &self::$changedRecords['insert'];
+        }
+        elseif (isset($this->deleted) && $this->deleted === 't') {
+          $addTo = &self::$changedRecords['delete'];
+        }
+        else {
+          $addTo = &self::$changedRecords['update'];
+        }
+        if (!isset($addTo[$this->object_name])) {
           $addTo[$this->object_name] = [];
+        }
         $addTo[$this->object_name][] = $this->id;
       }
-      // Call postSubmit
+      // Call postSubmit.
       if ($return) {
         $ps = $this->postSubmit($isInsert);
         if ($ps == NULL) {
@@ -1241,12 +1245,12 @@ class ORM extends ORM_Core {
   private function createChildRecords() {
     $r = TRUE;
     if (array_key_exists('subModels', $this->submission)) {
-      // Iterate through the subModel array, linking them to this model
+      // Iterate through the subModel array, linking them to this model.
       foreach ($this->submission['subModels'] as $key => $a) {
         Kohana::log("debug", "Submitting submodel ".$a['model']['id'].".");
         // Establish the right model.
         $modelName = $a['model']['id'];
-        // alias old images tables to new media tables.
+        // Alias old images tables to new media tables.
         $modelName = preg_replace('/^([a-z_]+)_image$/', '${1}_medium', $modelName);
         $m = ORM::factory($modelName);
         // Set the correct parent key in the subModel.
@@ -1262,14 +1266,14 @@ class ORM extends ORM_Core {
         // Copy any request fields.
         if (isset($a['copyFields'])) {
           foreach ($a['copyFields'] as $from => $to) {
-            Kohana::log("debug", "Setting ".$to." field (from parent record ".$from." field) to value ".$this->$from);
+            Kohana::log("debug", "Setting $to field (from parent record $from field) to value " . $this->$from);
             $a['model']['fields'][$to]['value'] = $this->$from;
           }
         }
-        // Call the submit method for that model and
-        // check whether it returns correctly
+        // Call the submit method for that model and check whether it returns
+        // correctly.
         $m->submission = $a['model'];
-        // copy down the website id and survey id
+        // Copy down the website id and survey id.
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
         $this->nestedChildModelIds[] = $m->getSubmissionResponseMetadata();
@@ -1282,12 +1286,12 @@ class ORM extends ORM_Core {
         }
 
         if (!$result) {
-          $fieldPrefix = (array_key_exists('field_prefix', $a['model'])) ? $a['model']['field_prefix'].':' : '';
+          $fieldPrefix = (array_key_exists('field_prefix', $a['model'])) ? $a['model']['field_prefix'] . ':' : '';
           // Remember this model so that its errors can be reported.
-          foreach ($m->errors as $key=>$value) {
-            $this->errors[$fieldPrefix.$key]=$value;
+          foreach ($m->errors as $key => $value) {
+            $this->errors[$fieldPrefix . $key] = $value;
           }
-          $r=FALSE;
+          $r = FALSE;
         }
         elseif (!preg_match('/^\d+$/', $key)) {
           // sub-model list is an associative array. This means there might be references
@@ -1305,13 +1309,14 @@ class ORM extends ORM_Core {
    */
   private function createJoinRecords() {
     if (array_key_exists('joinsTo', $this->submission)) {
-      foreach($this->submission['joinsTo'] as $model=>$ids) {
+      foreach ($this->submission['joinsTo'] as $model => $ids) {
         // $ids is now a list of the related ids that should be linked to this model via
         // a join table.
         $table = inflector::plural($model);
-        // Get the list of ids that are missing from the current state
+        // Get the list of ids that are missing from the current state.
         $to_add = array_diff($ids, $this->$table->as_array());
-        // Get the list of ids that are currently joined but need to be disconnected
+        // Get the list of ids that are currently joined but need to be
+        // disconnected.
         $to_delete = array_diff($this->$table->as_array(), $ids);
         $joinModel = inflector::singular($this->join_table($table));
         // Remove any joins that are to records that should no longer be joined.
@@ -2110,7 +2115,6 @@ class ORM extends ORM_Core {
   	if($this->object_name != $submission['id'])
     	$submissionModel = ORM::Factory($submission['id'], -1);
     else $submissionModel = $this;
-
   	foreach ($submission['fields'] as $field=>$value) {
       if (substr($field, 0, 3)=='fk_') {
         // This field is a fk_* field which contains the text caption of a record which we need to lookup.
