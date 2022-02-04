@@ -3,7 +3,7 @@
     "version": "2.2.11",
     "width": 2000,
     "height": 2000,
-    "scrollTop": 0,
+    "scrollTop": -233,
     "scrollLeft": 0,
     "zoomLevel": 0.9,
     "show": {
@@ -128,7 +128,7 @@
         "id": "a8385e66-105c-4a78-b0c0-facde3f2c39c"
       },
       {
-        "name": "classification_result",
+        "name": "classification_results",
         "comment": "",
         "columns": [
           {
@@ -343,15 +343,15 @@
           "active": false,
           "left": 930.2177,
           "top": 689.341,
-          "zIndex": 20,
-          "widthName": 114.71533203125,
+          "zIndex": 17,
+          "widthName": 121.21533203125,
           "widthComment": 60
         },
         "visible": true,
         "id": "55c56922-52d8-4217-9fca-da357cdd0bb1"
       },
       {
-        "name": "classifier_suggestion",
+        "name": "classifier_suggestions",
         "comment": "",
         "columns": [
           {
@@ -517,11 +517,11 @@
           }
         ],
         "ui": {
-          "active": true,
+          "active": false,
           "left": 1559.7681,
           "top": 688.217,
-          "zIndex": 22,
-          "widthName": 122.67529296875,
+          "zIndex": 23,
+          "widthName": 129.17529296875,
           "widthComment": 60
         },
         "visible": true,
@@ -636,7 +636,7 @@
         "id": "2bccf7ca-6c85-4a94-86f3-cea016e131da"
       },
       {
-        "name": "classification_result_occurrence_media",
+        "name": "classification_results_occurrence_media",
         "comment": "",
         "columns": [
           {
@@ -713,8 +713,8 @@
           "active": false,
           "left": 1064.3087,
           "top": 386.6447,
-          "zIndex": 4,
-          "widthName": 228.890625,
+          "zIndex": 30,
+          "widthName": 235.390625,
           "widthComment": 60
         },
         "visible": true,
@@ -853,7 +853,7 @@
         "id": "e4f31531-94a8-4dcb-b26a-59dd675af608"
       },
       {
-        "name": "classification_event",
+        "name": "classification_events",
         "comment": "",
         "columns": [
           {
@@ -953,8 +953,8 @@
           "active": false,
           "left": 251.1104,
           "top": 577.7779,
-          "zIndex": 7,
-          "widthName": 114.72802734375,
+          "zIndex": 10,
+          "widthName": 121.22802734375,
           "widthComment": 60
         },
         "visible": true,
