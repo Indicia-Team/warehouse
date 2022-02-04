@@ -2,6 +2,8 @@ INSERT INTO termlists (title, description, created_on, created_by_id, updated_on
 VALUES ('Media classifiers', 'List of media/image classification services used to identify photos.',
     now(), 1, now(), 1, 'indicia:classifiers');
 
+SELECT insert_term('Unknown', 'eng', null, 'indicia:classifiers');
+
 CREATE TABLE IF NOT EXISTS classification_events
 (
   id serial NOT NULL,
@@ -52,7 +54,7 @@ COMMENT ON COLUMN determinations.machine_involvement IS 'Identifies the involvem
   4 = human chose a machine suggestion that was the preferred choice;
   5 = machine determined with no human involvement.';
 
-CREATE TABLE IF NOT EXISTS classification_result
+CREATE TABLE IF NOT EXISTS classification_results
 (
   id serial NOT NULL,
   classification_event_id integer NOT NULL,
@@ -63,30 +65,30 @@ CREATE TABLE IF NOT EXISTS classification_result
   created_by_id integer,
   created_on timestamp without time zone NOT NULL,
   deleted boolean DEFAULT false NOT NULL,
-  CONSTRAINT pk_classification_result PRIMARY KEY (id),
-  CONSTRAINT fk_classification_result_event FOREIGN KEY (classification_event_id)
-      REFERENCES classification_event (id) MATCH SIMPLE
+  CONSTRAINT pk_classification_results PRIMARY KEY (id),
+  CONSTRAINT fk_classification_results_event FOREIGN KEY (classification_event_id)
+      REFERENCES classification_events (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT fk_classification_result_classifier_term FOREIGN KEY (classifier_term_id)
+  CONSTRAINT fk_classification_results_classifier_term FOREIGN KEY (classifier_id)
       REFERENCES termlists_terms (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT fk_classification_result_creator FOREIGN KEY (created_by_id)
+  CONSTRAINT fk_classification_results_creator FOREIGN KEY (created_by_id)
     REFERENCES users (id) MATCH SIMPLE
     ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
-COMMENT ON TABLE classification_result
+COMMENT ON TABLE classification_results
   IS 'Results of media/image classification services used to identify photos.';
-COMMENT ON COLUMN classification_result.classification_event_id IS 'Foreign key to the classification_events table. Identifies the classification event the results were associated with.';
-COMMENT ON COLUMN classification_result.classifier_term_id IS 'Foreign key to the termlists_terms table, identifies the name of the classification service.';
-COMMENT ON COLUMN classification_result.classifier_version IS 'Optional version label of the service called.';
-COMMENT ON COLUMN classification_result.additional_info_submitted IS 'JSON object defining any additional field values that were submitted with the photos to aid classification, e.g. latitude and longitude.';
-COMMENT ON COLUMN classification_result.results_raw IS 'Optional raw response data.';
-COMMENT ON COLUMN classification_result.created_by_id IS 'Foreign key to the users table (creator)';
-COMMENT ON COLUMN classification_result.created_on IS 'Date and time this result was created.';
-COMMENT ON COLUMN classification_result.deleted IS 'Has this record been deleted?';
+COMMENT ON COLUMN classification_results.classification_event_id IS 'Foreign key to the classification_events table. Identifies the classification event the results were associated with.';
+COMMENT ON COLUMN classification_results.classifier_id IS 'Foreign key to the termlists_terms table, identifies the name of the classification service.';
+COMMENT ON COLUMN classification_results.classifier_version IS 'Optional version label of the service called.';
+COMMENT ON COLUMN classification_results.additional_info_submitted IS 'JSON object defining any additional field values that were submitted with the photos to aid classification, e.g. latitude and longitude.';
+COMMENT ON COLUMN classification_results.results_raw IS 'Optional raw response data.';
+COMMENT ON COLUMN classification_results.created_by_id IS 'Foreign key to the users table (creator)';
+COMMENT ON COLUMN classification_results.created_on IS 'Date and time this result was created.';
+COMMENT ON COLUMN classification_results.deleted IS 'Has this record been deleted?';
 
-CREATE TABLE IF NOT EXISTS classification_suggestion
+CREATE TABLE IF NOT EXISTS classification_suggestions
 (
   id serial NOT NULL,
   classification_result_id integer NOT NULL,
@@ -97,41 +99,41 @@ CREATE TABLE IF NOT EXISTS classification_suggestion
   classifier_chosen boolean NOT NULL DEFAULT false,
   human_chosen boolean NOT NULL DEFAULT false,
   deleted boolean DEFAULT false NOT NULL,
-  CONSTRAINT pk_classification_suggestion PRIMARY KEY (id),
-  CONSTRAINT fk_classification_suggestion_result FOREIGN KEY (classification_result_id)
-        REFERENCES classification_result (id) MATCH SIMPLE
+  CONSTRAINT pk_classification_suggestions PRIMARY KEY (id),
+  CONSTRAINT fk_classification_suggestions_result FOREIGN KEY (classification_result_id)
+        REFERENCES classification_results (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT fk_classification_suggestion_taxon FOREIGN KEY (taxa_taxon_list_id)
-        REFERENCES taxa_taxon_list_id (id) MATCH SIMPLE
-        ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT fk_classification_suggestions_taxon FOREIGN KEY (taxa_taxon_list_id)
+        REFERENCES taxa_taxon_lists (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
-COMMENT ON TABLE classification_suggestion
+COMMENT ON TABLE classification_suggestions
   IS 'Individual suggested identifications as a result of a request sent to an image classification service';
-COMMENT ON COLUMN classification_suggestion.classification_result_id IS 'Foreign key to the classification_results table, identifies the classification result this suggestion belongs to.';
-COMMENT ON COLUMN classification_suggestion.taxon_name_given IS 'Name of the taxon suggested by the classifier.';
-COMMENT ON COLUMN classification_suggestion.taxa_taxon_list_id IS 'Foreign key to the taxa_taxon_lists table. Identifies the taxon in Indicia''s taxonomy that this suggestion refers to. May be null if no match made.';
-COMMENT ON COLUMN classification_suggestion.results_raw IS 'Optional raw response data associated with this suggestion.';
-COMMENT ON COLUMN classification_suggestion.probability_given IS 'Probability between 0 and 1 assigned for this suggestion by the classifier.';
-COMMENT ON COLUMN classification_suggestion.classifier_chosen IS 'True if this suggestion was given with confidence by the classifier.';
-COMMENT ON COLUMN classification_suggestion.human_chosen IS 'True if a human accepted this suggestion in order to determine the occurrence.';
-COMMENT ON COLUMN classification_suggestion.deleted IS 'Has this record been deleted?';
+COMMENT ON COLUMN classification_suggestions.classification_result_id IS 'Foreign key to the classification_results table, identifies the classification result this suggestion belongs to.';
+COMMENT ON COLUMN classification_suggestions.taxon_name_given IS 'Name of the taxon suggested by the classifier.';
+COMMENT ON COLUMN classification_suggestions.taxa_taxon_list_id IS 'Foreign key to the taxa_taxon_lists table. Identifies the taxon in Indicia''s taxonomy that this suggestion refers to. May be null if no match made.';
+COMMENT ON COLUMN classification_suggestions.results_raw IS 'Optional raw response data associated with this suggestion.';
+COMMENT ON COLUMN classification_suggestions.probability_given IS 'Probability between 0 and 1 assigned for this suggestion by the classifier.';
+COMMENT ON COLUMN classification_suggestions.classifier_chosen IS 'True if this suggestion was given with confidence by the classifier.';
+COMMENT ON COLUMN classification_suggestions.human_chosen IS 'True if a human accepted this suggestion in order to determine the occurrence.';
+COMMENT ON COLUMN classification_suggestions.deleted IS 'Has this record been deleted?';
 
-CREATE TABLE IF NOT EXISTS classification_result_occurrence_media
+CREATE TABLE IF NOT EXISTS classification_results_occurrence_media
 (
   id serial NOT NULL,
   classification_result_id integer NOT NULL,
-  occurrence_id integer NOT NULL,
+  occurrence_media_id integer NOT NULL,
   CONSTRAINT classification_result_occurrence_result FOREIGN KEY (classification_result_id)
-        REFERENCES classification_result (id) MATCH SIMPLE
+        REFERENCES classification_results (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT classification_result_occurrence_media FOREIGN KEY (occurrence_id)
+  CONSTRAINT fk_classification_results_occurrence_media_occurrence FOREIGN KEY (occurrence_media_id)
         REFERENCES occurrence_media (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT pk_classification_result_occurrence_media PRIMARY KEY (id)
+  CONSTRAINT pk_classification_results_occurrence_media PRIMARY KEY (id)
 );
 
-COMMENT ON TABLE classification_result_occurrence_media
+COMMENT ON TABLE classification_results_occurrence_media
   IS 'Join table that links classification results to the media files that were used.';
-COMMENT ON COLUMN classification_result_occurrence_media.classification_result_id IS 'Foreign key to the classification_result table. Identifies the set of classification results this file was submitted for.';
-COMMENT ON COLUMN classification_result_occurrence_media.occurrence_id IS 'Foreign key to the occurrence_media table. Identifies the submitted media file.';
+COMMENT ON COLUMN classification_results_occurrence_media.classification_result_id IS 'Foreign key to the classification_result table. Identifies the set of classification results this file was submitted for.';
+COMMENT ON COLUMN classification_results_occurrence_media.occurrence_media_id IS 'Foreign key to the occurrence_media table. Identifies the submitted media file.';
