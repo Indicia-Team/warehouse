@@ -22,12 +22,12 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Model class for the classifier_suggestions table.
+ * Model class for the classification_suggestions table.
  *
  * Each row represents a single taxonomic suggestion made by an image
  * classifier in response to a request to identify some images.
  */
-class Classifier_suggestion_Model extends ORM {
+class Classification_suggestion_Model extends ORM {
 
   protected $belongs_to = [
     'classification_result',

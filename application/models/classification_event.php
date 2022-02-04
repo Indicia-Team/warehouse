@@ -33,6 +33,11 @@ class Classification_event_Model extends ORM {
     'classification_result',
   ];
 
+  protected $has_one = [
+    'occurrence',
+    'determination',
+  ];
+
   protected $belongs_to = [
     'created_by' => 'user',
   ];

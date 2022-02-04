@@ -38,7 +38,8 @@ class Determination_Model extends ORM {
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
-    $array->add_rules('occurrence_id', 'required');
+    $array->add_rules('occurrence_id', 'integer', 'required');
+    $array->add_rules('classification_event_id', 'integer');
     // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = [
       'email_address',
