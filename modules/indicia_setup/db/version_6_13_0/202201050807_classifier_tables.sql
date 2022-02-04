@@ -94,7 +94,6 @@ CREATE TABLE IF NOT EXISTS classification_suggestions
   classification_result_id integer NOT NULL,
   taxon_name_given varchar NOT NULL,
   taxa_taxon_list_id integer,
-  results_raw json,
   probability_given real,
   classifier_chosen boolean NOT NULL DEFAULT false,
   human_chosen boolean NOT NULL DEFAULT false,
@@ -113,7 +112,6 @@ COMMENT ON TABLE classification_suggestions
 COMMENT ON COLUMN classification_suggestions.classification_result_id IS 'Foreign key to the classification_results table, identifies the classification result this suggestion belongs to.';
 COMMENT ON COLUMN classification_suggestions.taxon_name_given IS 'Name of the taxon suggested by the classifier.';
 COMMENT ON COLUMN classification_suggestions.taxa_taxon_list_id IS 'Foreign key to the taxa_taxon_lists table. Identifies the taxon in Indicia''s taxonomy that this suggestion refers to. May be null if no match made.';
-COMMENT ON COLUMN classification_suggestions.results_raw IS 'Optional raw response data associated with this suggestion.';
 COMMENT ON COLUMN classification_suggestions.probability_given IS 'Probability between 0 and 1 assigned for this suggestion by the classifier.';
 COMMENT ON COLUMN classification_suggestions.classifier_chosen IS 'True if this suggestion was given with confidence by the classifier.';
 COMMENT ON COLUMN classification_suggestions.human_chosen IS 'True if a human accepted this suggestion in order to determine the occurrence.';
