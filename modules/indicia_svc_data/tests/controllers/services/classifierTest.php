@@ -103,14 +103,10 @@ class Controllers_Services_Classifier_Test extends Indicia_DatabaseTestCase {
         ],
       ],
     ];
-    echo "\n" . json_encode($s) . "\n";
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
-
-    // @todo check occurrence, occurrence_media, classification_event, classification_result, classification_suggestion, classification_results_occurrence_media
-    // All daisy chained
-    /*
-
+    // Query to check all the data chained together.
+    $sql = <<<SQL
 select s.id as sample_id,
   o.id as occurrence_id,
   om.id as occurrence_medium_id,
@@ -126,9 +122,17 @@ left join classification_events ce on ce.id=o.classification_event_id and ce.del
 left join classification_results cr on cr.classification_event_id=ce.id and cr.deleted=false
 left join classification_suggestions cs on cs.classification_result_id=cr.id and cs.deleted=false
 left join classification_results_occurrence_media crom on crom.classification_result_id=cr.id
-where s.id=3
-*/
-
+where s.id=$r[success];
+SQL;
+    $checkData = self::$db->query($sql)->current();
+    $this->assertTrue(!empty($checkData->occurrence_id), 'Classification submission occurrence not created.');
+    $this->assertTrue(!empty($checkData->occurrence_medium_id), 'Classification submission occurrence_medium not created.');
+    $this->assertTrue(!empty($checkData->classification_event_id), 'Classification submission classification_event not created.');
+    $this->assertTrue(!empty($checkData->classification_result_id), 'Classification submission classification_result not created.');
+    $this->assertTrue(!empty($checkData->classification_suggestion_id), 'Classification submission classification_suggestion not created.');
+    $this->assertTrue(!empty($checkData->classification_results_occurrence_medium_id), 'Classification submission classification_results_occurrence_medium not created.');
+    $this->assertTrue(!empty($checkData->crom_om_id), 'Classification submission classification_results_occurrence_medium not linked to media file.');
+    $this->assertEquals($checkData->occurrence_medium_id, $checkData->crom_om_id, 'Classification submission mediaPaths linking incorrect.');
     // @todo check determination gets event ID if redetermined.
   }
 
