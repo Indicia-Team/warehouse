@@ -357,6 +357,7 @@ $lang['resources']['POST occurrences'] = <<<HTML
 which itself can contain nested results, suggestions and links to media. This is illustrated in the
 following example:</p>
 <pre><code>
+POST /index.php/services/rest/samples
 {
   "values": {
     "survey_id": 1,
