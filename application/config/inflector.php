@@ -83,5 +83,6 @@ $config['irregular'] = [
   'sample_medium' => 'sample_media',
   'location_medium' => 'location_media',
   'taxon_medium' => 'taxon_media',
-  'survey_medium' => 'survey_media'
+  'survey_medium' => 'survey_media',
+  'classification_results_occurrence_medium' => 'classification_results_occurrence_media',
 ];
