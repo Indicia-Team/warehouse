@@ -97,6 +97,8 @@ CREATE TABLE IF NOT EXISTS classification_suggestions
   probability_given real,
   classifier_chosen boolean NOT NULL DEFAULT false,
   human_chosen boolean NOT NULL DEFAULT false,
+  created_by_id integer,
+  created_on timestamp without time zone NOT NULL,
   deleted boolean DEFAULT false NOT NULL,
   CONSTRAINT pk_classification_suggestions PRIMARY KEY (id),
   CONSTRAINT fk_classification_suggestions_result FOREIGN KEY (classification_result_id)
@@ -105,6 +107,9 @@ CREATE TABLE IF NOT EXISTS classification_suggestions
   CONSTRAINT fk_classification_suggestions_taxon FOREIGN KEY (taxa_taxon_list_id)
         REFERENCES taxa_taxon_lists (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION
+  CONSTRAINT fk_classification_suggestions_creator FOREIGN KEY (created_by_id)
+    REFERENCES users (id) MATCH SIMPLE
+    ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
 COMMENT ON TABLE classification_suggestions
@@ -115,6 +120,8 @@ COMMENT ON COLUMN classification_suggestions.taxa_taxon_list_id IS 'Foreign key 
 COMMENT ON COLUMN classification_suggestions.probability_given IS 'Probability between 0 and 1 assigned for this suggestion by the classifier.';
 COMMENT ON COLUMN classification_suggestions.classifier_chosen IS 'True if this suggestion was given with confidence by the classifier.';
 COMMENT ON COLUMN classification_suggestions.human_chosen IS 'True if a human accepted this suggestion in order to determine the occurrence.';
+COMMENT ON COLUMN classification_suggestions.created_by_id IS 'Foreign key to the users table (creator)';
+COMMENT ON COLUMN classification_suggestions.created_on IS 'Date and time this result was created.';
 COMMENT ON COLUMN classification_suggestions.deleted IS 'Has this record been deleted?';
 
 CREATE TABLE IF NOT EXISTS classification_results_occurrence_media
