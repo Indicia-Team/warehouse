@@ -821,6 +821,10 @@ class ORM extends ORM_Core {
       // Reset important if doing an import with multiple submissions.
       Occurrence_association_Model::$to_occurrence_id_pointers = [];
     }
+    if (!empty(self::$changedRecords['insert']['classification_result']) ||
+        !empty(self::$changedRecords['update']['classification_result'])) {
+      Classification_result_Model::createMediaJoins($this->db);
+    }
     $this->createWorkQueueEntries();
   }
 
