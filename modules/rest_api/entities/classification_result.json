@@ -1,0 +1,15 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "classifier_event_id", "type": "integer" },
+    { "sql": "classifier_id", "type": "integer" },
+    { "sql": "classifier_version", "type": "string" },
+    { "sql": "additional_info_submitted", "type": "json" },
+    { "sql": "results_raw", "type": "json" },
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" }
+  ],
+  "subModels": {
+    "classification_suggestions": { "fk": "classification_result_id" }
+  }
+}
