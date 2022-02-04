@@ -173,6 +173,7 @@ class Occurrence_Model extends ORM {
     $array->add_rules('sample_id', 'required');
     $array->add_rules('website_id', 'required');
     $array->add_rules('classification_event_id', 'integer');
+    $array->add_rules('machine_involvement', 'integer', 'min[0]', 'max[5]');
     $fieldlist = $array->as_array();
     if (!array_key_exists('all_info_in_determinations', $fieldlist) || $fieldlist['all_info_in_determinations'] == 'N') {
       $array->add_rules('taxa_taxon_list_id', 'required');
@@ -274,6 +275,12 @@ class Occurrence_Model extends ORM {
           ->from('determinations')
           ->set($determination)
           ->insert();
+        if (empty($this->submission['fields']['machine_involvement'])) {
+          $array->machine_involvement = NULL;
+        }
+        if (empty($this->submission['fields']['classification_event_id'])) {
+          $array->classification_event_id = NULL;
+        }
       }
       if (!empty($this->submission['fields']['determiner_id']) && !empty($this->submission['fields']['determiner_id']['value'])) {
         // Redetermination by user ID provided in submission.

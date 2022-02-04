@@ -42,6 +42,7 @@ class Controllers_Services_Classifier_Test extends Indicia_DatabaseTestCase {
       'sample:date' => '02/09/2017',
       'occurrence:taxa_taxon_list_id' => 1,
       'occurrence_medium:path' => 'test_classified_file.jpg',
+      'occurrence:machine_involvement' => 4,
     ];
     $structure = [
       'model' => 'sample',
@@ -105,10 +106,12 @@ class Controllers_Services_Classifier_Test extends Indicia_DatabaseTestCase {
     ];
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+    $sampleId = $r['success'];
     // Query to check all the data chained together.
     $sql = <<<SQL
 select s.id as sample_id,
   o.id as occurrence_id,
+  o.machine_involvement,
   om.id as occurrence_medium_id,
   ce.id as classification_event_id,
   cr.id as classification_result_id,
@@ -122,10 +125,11 @@ left join classification_events ce on ce.id=o.classification_event_id and ce.del
 left join classification_results cr on cr.classification_event_id=ce.id and cr.deleted=false
 left join classification_suggestions cs on cs.classification_result_id=cr.id and cs.deleted=false
 left join classification_results_occurrence_media crom on crom.classification_result_id=cr.id
-where s.id=$r[success];
+where s.id=$sampleId;
 SQL;
     $checkData = self::$db->query($sql)->current();
     $this->assertTrue(!empty($checkData->occurrence_id), 'Classification submission occurrence not created.');
+    $this->assertEquals(4, $checkData->machine_involvement, 'Classification submission machine_involvement saved incorrectly.');
     $this->assertTrue(!empty($checkData->occurrence_medium_id), 'Classification submission occurrence_medium not created.');
     $this->assertTrue(!empty($checkData->classification_event_id), 'Classification submission classification_event not created.');
     $this->assertTrue(!empty($checkData->classification_result_id), 'Classification submission classification_result not created.');
@@ -133,7 +137,65 @@ SQL;
     $this->assertTrue(!empty($checkData->classification_results_occurrence_medium_id), 'Classification submission classification_results_occurrence_medium not created.');
     $this->assertTrue(!empty($checkData->crom_om_id), 'Classification submission classification_results_occurrence_medium not linked to media file.');
     $this->assertEquals($checkData->occurrence_medium_id, $checkData->crom_om_id, 'Classification submission mediaPaths linking incorrect.');
-    // @todo check determination gets event ID if redetermined.
+    // Check determination gets event ID if redetermined and the occurrence
+    // event data are cleared.
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'occurrence:id' => $checkData->occurrence_id,
+      'occurrence:taxa_taxon_list_id' => 2,
+    ];
+    $structure = [
+      'model' => 'occurrence',
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, self::$auth['write_tokens']);
+    $sql = <<<SQL
+select s.id as sample_id,
+  o.id as occurrence_id,
+  o.machine_involvement,
+  o.classification_event_id,
+  d.machine_involvement as det_machine_involvement,
+  d.classification_event_id as det_classification_event_id
+from samples s
+left join occurrences o on o.sample_id=s.id and o.deleted=false
+left join determinations d on d.occurrence_id=o.id and d.deleted=false
+where s.id=$sampleId;
+SQL;
+    $checkPostRedetData = self::$db->query($sql)->current();
+    $this->assertEquals($checkData->machine_involvement, $checkPostRedetData->det_machine_involvement, 'Machine_involvement not copied to determination correctly');
+    $this->assertEquals($checkData->classification_event_id, $checkPostRedetData->det_classification_event_id, 'Classification_event_id not copied to determination correctly');
+    $this->assertEmpty($checkPostRedetData->machine_involvement, 'Occurrence machine_involvement not cleared after redet');
+    $this->assertEmpty($checkPostRedetData->classification_event_id, 'Occurrence classification_event_id not cleared after redet');
+    // Also check that these flags can be reset on a subsequent redet.
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'occurrence:id' => $checkData->occurrence_id,
+      'occurrence:taxa_taxon_list_id' => 2,
+      'occurrence:machine_involvement' => $checkData->machine_involvement,
+      'occurrence:classification_event_id' => $checkData->classification_event_id,
+    ];
+    $structure = [
+      'model' => 'occurrence',
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, self::$auth['write_tokens']);
+    $sql = <<<SQL
+select s.id as sample_id,
+  o.id as occurrence_id,
+  o.machine_involvement,
+  o.classification_event_id,
+  d.machine_involvement as det_machine_involvement,
+  d.classification_event_id as det_classification_event_id
+from samples s
+left join occurrences o on o.sample_id=s.id and o.deleted=false
+left join determinations d on d.occurrence_id=o.id and d.deleted=false
+where s.id=$sampleId;
+SQL;
+    $checkPostRedetData = self::$db->query($sql)->current();
+    $this->assertEquals($checkData->machine_involvement, $checkPostRedetData->machine_involvement, 'Machine_involvement not re-saved after determination correctly');
+    $this->assertEquals($checkData->classification_event_id, $checkPostRedetData->classification_event_id, 'Classification_event_id not resaved after determination correctly');
   }
 
 }
