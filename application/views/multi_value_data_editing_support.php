@@ -88,15 +88,21 @@ function handle_multi_value_attributes($fieldPrefix, $attributeId, $multiAttr, &
         ],
       ];
     }
-    // The complex_attr_grid uses ',' encoding, which disables JSON so we just
-    // get the single attribute value.
+
+    // Typically, the complex_attr_grid takes data encoded in a multi-value text
+    // attribute and shows it in a table. Each value makes a row in the table
+    // and each value is decoded in to columns. By default, JSON ecoding is
+    // used. In this instance, however, we are using it to show multi-value 
+    // attributes in a single column and we must be careful NOT to do any 
+    // decoding of values. The `encoding` string has to be set to something 
+    // that will never be encountered (or is very very unlikely).
     echo data_entry_helper::complex_attr_grid([
       'fieldname' => $name,
       'columns' => $columns,
       'default' => $default,
       'defaultRows' => 1,
       'extraParams' => $readAuth,
-      'encoding' => ',',
+      'encoding' => 'Do_not_use_encoding_here.',
     ]) . "<br>";
   }
   else {
