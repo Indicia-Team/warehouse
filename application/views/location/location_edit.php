@@ -218,64 +218,6 @@ This page allows you to specify the details of a location.
   </div>
   <?php endif; ?>
   <?php
-  /**
-   * Handle single value attributes
-   * 
-   * Draw single value attributes to the screen
-   */
-  function handle_single_value_attributes($attr, $values) {
-    $name = "locAttr:$attr[location_attribute_id]";
-    // If this is an existing attribute, tag it with the attribute value
-    // record id so we can re-save it.
-    if ($attr['id']) {
-      $name .= ":$attr[id]";
-    }
-    switch ($attr['data_type']) {
-      case 'D':
-        echo data_entry_helper::date_picker([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-        ]);
-        break;
-
-      case 'V':
-        echo data_entry_helper::date_picker([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-          'allowVagueDates' => TRUE,
-        ]);
-        break;
-
-      case 'L':
-        echo data_entry_helper::select([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['raw_value'],
-          'lookupValues' => $values["terms_$attr[termlist_id]"],
-          'blankText' => '<Please select>',
-        ]);
-        break;
-
-      case 'B':
-        echo data_entry_helper::checkbox([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-        ]);
-        break;
-
-      default:
-        echo data_entry_helper::text_input([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-      ]);
-    }
-  }
-  ?>
-  <?php
   // No need to display for new locations or public locations.
   if (!is_null($id) && $values['location:public'] === 'f') :
   ?>
@@ -290,7 +232,7 @@ This page allows you to specify the details of a location.
         foreach ($attrsWithMulti as $locationAttributeId => $wholeAttrToDraw) {
         // Multi-attributes are in a sub array, so the caption is not present at the first level so we can detect this
         if (!empty($wholeAttrToDraw['caption'])) {
-            handle_single_value_attributes($wholeAttrToDraw, $values);
+            handle_single_value_attributes('locAttr', $locationAttributeId, $wholeAttrToDraw, $values);
           } else {
             handle_multi_value_attributes('locAttr', $locationAttributeId, $wholeAttrToDraw, $values);
           }
