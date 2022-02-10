@@ -127,8 +127,8 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
         echo data_entry_helper::text_input([
           'label' => $attr['caption'],
           'fieldname' => $name,
-          'default' => $attr['value'],
-      ]);
+          'default' => htmlspecialchars($attr['value']),
+        ]);
     }
   }
   ?>

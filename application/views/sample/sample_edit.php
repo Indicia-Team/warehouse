@@ -193,7 +193,7 @@ $site = url::site();
         echo data_entry_helper::text_input([
           'label' => $attr['caption'],
           'fieldname' => $name,
-          'default' => $attr['value'],
+          'default' => htmlspecialchars($attr['value']),
         ]);
     }
   }
