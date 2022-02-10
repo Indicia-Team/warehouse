@@ -88,10 +88,9 @@ SET taxon_path=ctp.path,
   non_native_flag=cttl.non_native_flag
 FROM work_queue q, cache_taxa_taxon_lists cttl
 LEFT JOIN cache_taxon_paths ctp
-  ON ctp.taxon_meaning_id=cttl.taxon_meaning_id
-  AND ctp.taxon_list_id=$masterListId
+  ON ctp.external_key=cttl.external_key
+  AND ctp.taxon_list_id=COALESCE($masterListId, cttl.taxon_list_id)
 WHERE cttl.id=o.taxa_taxon_list_id
-AND cttl.taxon_list_id=$masterListId
 AND o.taxa_taxon_list_id=q.record_id
 AND q.entity='taxa_taxon_list'
 AND q.task='task_cache_builder_taxonomy_occurrence'
