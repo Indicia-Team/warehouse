@@ -174,64 +174,6 @@ HTML;
     }
     ?>
   </fieldset>
-  <?php
-  /**
-   * Handle single value attributes
-   * 
-   * Draw single value attributes to the screen
-   */
-  function handle_single_value_attributes($attr, $values) {
-    $name = 'srvAttr:' . $attr['survey_attribute_id'];
-    // If this is an existing attribute, tag it with the attribute value
-    // record id so we can re-save it.
-    if ($attr['id']) {
-      $name .= ':' . $attr['id'];
-    }
-    switch ($attr['data_type']) {
-      case 'D':
-        echo data_entry_helper::date_picker([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-        ]);
-        break;
-
-      case 'V':
-        echo data_entry_helper::date_picker([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-          'allowVagueDates' => TRUE,
-        ]);
-        break;
-
-      case 'L':
-        echo data_entry_helper::select([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['raw_value'],
-          'lookupValues' => $values['terms_' . $attr['termlist_id']],
-          'blankText' => '<Please select>',
-        ]);
-        break;
-
-      case 'B':
-        echo data_entry_helper::checkbox([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-        ]);
-        break;
-
-      default:
-        echo data_entry_helper::text_input([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => htmlspecialchars($attr['value']),
-        ]);
-    }
-  }
-  ?>
   <?php if (array_key_exists('attributes', $values) && count($values['attributes']) > 0) : ?>
   <fieldset>
   <legend>Custom attributes</legend>
@@ -240,12 +182,12 @@ HTML;
       // The $values['attributes'] array has multi-value attributes on separate rows, so organise these into sub array
       $attrsWithMulti = organise_values_attribute_array('survey_attribute', $values['attributes']);
       // Cycle through the attributes and drawn them to the screen
-      foreach ($attrsWithMulti as $termlistsTermAttributeId => $wholeAttrToDraw) {
+      foreach ($attrsWithMulti as $surveyAttributeId => $wholeAttrToDraw) {
         // Multi-attributes are in a sub array, so the caption is not present at the first level so we can detect this
         if (!empty($wholeAttrToDraw['caption'])) {
-          handle_single_value_attributes($wholeAttrToDraw, $values);
+          handle_single_value_attributes('srvAttr', $surveyAttributeId, $wholeAttrToDraw, $values);
         } else {
-          handle_multi_value_attributes('srvAttr', $termlistsTermAttributeId, $wholeAttrToDraw, $values);
+          handle_multi_value_attributes('srvAttr', $surveyAttributeId, $wholeAttrToDraw, $values);
         }
       }
       ?>
