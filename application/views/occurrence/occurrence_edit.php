@@ -206,64 +206,6 @@ $(document).ready(function() {
     ]);
     ?>
   </fieldset>
-  <?php
-  /**
-   * Handle single value attributes
-   * 
-   * Draw single value attributes to the screen
-   */
-  function handle_single_value_attributes($attr, $values) {
-    $name = "occAttr:$attr[occurrence_attribute_id]";
-    // If this is an existing attribute, tag it with the attribute value
-    // record id so we can re-save it.
-    if ($attr['id']) {
-      $name .= ":$attr[id]";
-    }
-    switch ($attr['data_type']) {
-      case 'D':
-        echo data_entry_helper::date_picker([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-        ]);
-        break;
-
-      case 'V':
-        echo data_entry_helper::date_picker([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-          'allowVagueDates' => TRUE,
-        ]);
-        break;
-
-      case 'L':
-        echo data_entry_helper::select([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['raw_value'],
-          'lookupValues' => $values["terms_$attr[termlist_id]"],
-          'blankText' => '<Please select>',
-        ]);
-        break;
-
-      case 'B':
-        echo data_entry_helper::checkbox([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-        ]);
-        break;
-
-      default:
-        echo data_entry_helper::text_input([
-          'label' => $attr['caption'],
-          'fieldname' => $name,
-          'default' => $attr['value'],
-        ]);
-    }
-  }
-  ?>
   <fieldset>
   <legend>Survey specific attributes</legend>
     <ol>
@@ -274,7 +216,7 @@ $(document).ready(function() {
       foreach ($attrsWithMulti as $occurrenceAttributeId => $wholeAttrToDraw) {
         // Multi-attributes are in a sub array, so the caption is not present at the first level so we can detect this
         if (!empty($wholeAttrToDraw['caption'])) {
-          handle_single_value_attributes($wholeAttrToDraw, $values);
+          handle_single_value_attributes('occAttr', $occurrenceAttributeId, $wholeAttrToDraw, $values);
         } else {
           handle_multi_value_attributes('occAttr', $occurrenceAttributeId, $wholeAttrToDraw, $values);
         }
