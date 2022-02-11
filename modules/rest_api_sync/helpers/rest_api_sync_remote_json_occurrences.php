@@ -254,6 +254,10 @@ SQL;
         // Exclude if grid reference over 1km.
         return FALSE;
       }
+      elseif (empty($observation['coordinateUncertaintyInMeters'])) {
+        // Exclude point data with unknown precision.
+        return FALSE;
+      }
       // Skip records already provided to BTO.
       $numericId = (integer) str_replace($observation['id'], 'BTO', '');
       if ($numericId <= 290186151) {
