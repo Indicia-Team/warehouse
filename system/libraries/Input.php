@@ -346,7 +346,7 @@ class Input_Core {
 					$data = str_replace(array('&amp;','&lt;','&gt;'), array('&amp;amp;','&amp;lt;','&amp;gt;'), $data);
 					$data = preg_replace('/(&#*\w+)[\x00-\x20]+;/u', '$1;', $data);
 					$data = preg_replace('/(&#x*[0-9A-F]+);*/iu', '$1;', $data);
-					$data = html_entity_decode($data, ENT_COMPAT | ENT_HTML5, 'UTF-8');
+					$data = html_entity_decode($data, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 					// Remove any attribute starting with "on" or xmlns.
 					// Indicia modification - attribute must have additional characters,
