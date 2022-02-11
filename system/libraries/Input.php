@@ -346,12 +346,12 @@ class Input_Core {
 					$data = str_replace(array('&amp;','&lt;','&gt;'), array('&amp;amp;','&amp;lt;','&amp;gt;'), $data);
 					$data = preg_replace('/(&#*\w+)[\x00-\x20]+;/u', '$1;', $data);
 					$data = preg_replace('/(&#x*[0-9A-F]+);*/iu', '$1;', $data);
-					$data = html_entity_decode($data, ENT_COMPAT, 'UTF-8');
+					$data = html_entity_decode($data, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
 					// Remove any attribute starting with "on" or xmlns.
 					// Indicia modification - attribute must have additional characters,
 					// then = to be stripped.
-					$data = preg_replace('#(<[^>]+?[\x00-\x20"\'])(?:on|xmlns)[a-z]+\s*=[^>]*+>#iu', '$1>', $data);
+					$data = preg_replace('#(<[^>]+?[\x00-\x20"\'/])(?:on|xmlns)[a-z]+\s*=[^>]*+>#iu', '$1>', $data);
 
 					// Remove javascript: and vbscript: protocols
 					$data = preg_replace('#([a-z]*)[\x00-\x20]*=[\x00-\x20]*([`\'"]*)[\x00-\x20]*j[\x00-\x20]*a[\x00-\x20]*v[\x00-\x20]*a[\x00-\x20]*s[\x00-\x20]*c[\x00-\x20]*r[\x00-\x20]*i[\x00-\x20]*p[\x00-\x20]*t[\x00-\x20]*:#iu', '$1=$2nojavascript...', $data);
@@ -367,7 +367,7 @@ class Input_Core {
 					$data = preg_replace('#</*\w+:\w[^>]*+>#i', '', $data);
 
 					// Remove really unwanted tags
-					$data = preg_replace('#</*(?:applet|b(?:ase|gsound|link)|embed|frame(?:set)?|i(?:frame|layer)|l(?:ayer|ink)|meta|object|s(?:cript|tyle)|title|xml)[^>]*+>#i', '', $data);
+					$data = preg_replace('#</*(?:applet|b(?:ase|gsound|link)|embed|form|frame(?:set)?|i(?:frame|layer)|l(?:ayer|ink)|meta|object|s(?:cript|tyle)|title|xml)[^>]*+>#i', '', $data);
 				}
 				while ($old_data !== $data);
 			break;
