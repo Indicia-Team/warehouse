@@ -254,7 +254,7 @@ SQL;
         // Exclude if grid reference over 1km.
         return FALSE;
       }
-      elseif (empty($observation['coordinateUncertaintyInMeters'])) {
+      if (empty($observation['coordinateUncertaintyInMeters']) && empty($observation['gridReference'])) {
         // Exclude point data with unknown precision.
         return FALSE;
       }
