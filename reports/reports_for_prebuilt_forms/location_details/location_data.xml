@@ -1,0 +1,41 @@
+<report
+    title="Location data for location details"
+    description="Report used to retrieve details of a location excluding custom attributes for the location details prebuilt form."
+>
+  <query website_filter_field="" training_filter_field="">
+  select #columns#
+  from locations l
+  join users u on u.id=l.created_by_id
+  join people p on p.id=u.person_id
+  left join locations_websites lw on lw.location_id=l.id and lw.deleted=false
+  #agreements_join#
+  #joins#
+  where #sharing_filter#
+  and (lw.website_id in (#website_ids#) or l.public=true)
+  </query>
+  <params>
+    <param name="location_id" display="Location ID" description="ID of the location to load" datatype="integer">
+      <where>l.id=#location_id#</where>
+    </param>
+    <param name="parent_location_id" display="Parent location ID" description="ID of the parent location to load subsites for" datatype="integer" default="">
+      <where>l.parent_id=#parent_location_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="location_id" sql="l.id" />
+    <column name="location_external_key" sql="l.external_key" />
+    <column name="name" sql="l.name" />
+    <column name="code" sql="l.code" />
+    <column name="inputter" sql="p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end" />
+    <column name="centroid_sref" sql="l.centroid_sref" />
+    <column name="comment" sql="l.comment" />
+    <column name="geom" sql="st_astext(coalesce(l.boundary_geom, l.centroid_geom))" />
+    <column name="lat" sql="st_y(st_transform(st_centroid(coalesce(l.boundary_geom, l.centroid_geom)), 4326))" />
+    <column name="long" sql="st_x(st_transform(st_centroid(coalesce(l.boundary_geom, l.centroid_geom)), 4326))" />
+    <column name="boundary_geom" sql="st_astext(coalesce(l.boundary_geom, l.centroid_geom))" mappable="true" />
+    <column name="created_by_id" sql="l.created_by_id" />
+    <column name="website_id" sql="lw.website_id" />
+    <column name="created_on" sql="l.created_on" />
+    <column name="updated_on" sql="l.updated_on" />
+  </columns>
+</report>
