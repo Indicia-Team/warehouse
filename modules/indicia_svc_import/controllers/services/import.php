@@ -597,6 +597,7 @@ class Import_Controller extends Service_Base_Controller {
       }
       $storedMeanings = $this->retrieveCachedStoredMeanings();
       while (($limit === FALSE || $count < $limit) && ($data = $this->getNextRow($file, $count + $offset + 1, $metadata))) {
+        $count++;
         if (!array_filter($data)) {
           // Skip empty rows.
           continue;
@@ -604,7 +605,6 @@ class Import_Controller extends Service_Base_Controller {
         // Can't just clear the model, as clear does not do a full reset -
         // leaves related entries: important for location joinsTo websites.
         $model = ORM::Factory($_GET['model']);
-        $count++;
         $index = 0;
         $saveArray = $model->getDefaults();
         // Note, the mappings will always be in the same order as the columns
