@@ -1599,7 +1599,7 @@ class Import_Controller extends Service_Base_Controller {
     else {
       throw new exception('Unsupported file type');
     }
-    $metadata['isUtf8'] = FALSE;
+    $metadata['isUtf8'] = TRUE;
     // @todo Check the following doesn't damage dates.
     $reader->setReadDataOnly(true);
     // Minimise data read from spreadsheet - first sheet only.
