@@ -36,8 +36,8 @@ $returnPath = url::site() . "$controllerpath/importer/$returnPage";
   <input type="file" name="csv_upload" id="csv_upload" class="form-control" />
   <input type="submit" value="Upload file" class="btn btn-default" />
   <p class="helpText">To support the full range of special characters, CSV
-    files must be UTF-8 encoded with BOM. For a limited range of special 
-    characters, ISO 8859-1 is acceptable. ASCII will work if you have no 
-    accented characters.
+    files must be UTF encoded, preferably with BOM. For a limited range of 
+    special characters, Windows 1252 (as typically exported by Excel) is
+    acceptable. ASCII will work if you have no accented characters.
   </p>
 </form>
