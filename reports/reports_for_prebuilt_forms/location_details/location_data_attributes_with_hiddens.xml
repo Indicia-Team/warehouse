@@ -44,12 +44,15 @@
   join location_attribute_values av on av.location_id=l.id and av.deleted=false
   join location_attributes a on a.id=av.location_attribute_id and a.deleted=false
   left join cache_termlists_terms lookup on a.data_type='L' and lookup.id=av.int_value
-  left join location_attributes_websites aw on aw.location_attribute_id=a.id and aw.deleted=false
+  left join locations_websites lw on lw.location_id=l.id and lw.deleted=false
+  left join location_attributes_websites aw on aw.location_attribute_id=a.id and aw.deleted=false and aw.website_id=lw.website_id
+    and lw.website_id in (#website_ids#)
   left join form_structure_blocks fsb1 on fsb1.id=aw.form_structure_block_id
   left join form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id
   where l.id=#location_id#
   and l.deleted=false
   and lower(a.caption) #operator# (#attrs#)
+  and (lw.id is not null or l.public)
   group by a.system_function, a.id, aw.weight, fsb1.weight, fsb2.weight, a.data_type, a.caption
   </query>
   <order_bys>
