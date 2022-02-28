@@ -320,15 +320,11 @@ class Import_2_Controller extends Service_Base_Controller {
       }
       $config = $this->getConfig($fileName);
       if ($config['state'] === 'initial') {
-        kohana::log('debug', 'Creating temp table');
         $this->createTempTable($fileName, $config);
         $config['state'] = 'loadingRecords';
-        kohana::log('debug', 'Temp table created');
       }
       elseif ($config['state'] === 'loadingRecords') {
-        kohana::log('debug', 'Loading records');
         $this->loadNextRecordsBatch($fileName, $config);
-        kohana::log('debug', 'Loaded records');
       }
       $this->saveConfig($fileName, $config);
       echo json_encode([
@@ -402,8 +398,6 @@ class Import_2_Controller extends Service_Base_Controller {
       $config = $this->getConfig($fileName);
       $db = new Database();
       $matchesInfo = json_decode($_POST['matches-info'], TRUE);
-
-      kohana::log('debug', var_export($matchesInfo, TRUE));
       $sourceColName = $matchesInfo['source-field'];
       foreach ($matchesInfo['values'] as $value => $termlist_term_id) {
         // Safety check.
@@ -417,16 +411,13 @@ SET {$sourceColName}_id=$termlist_term_id
 WHERE trim(lower({$sourceColName}))=lower($literal);
 SQL;
         $db->query($sql);
-        kohana::log('debug', $sql);
       }
       // Need to check all done.
       $sql = <<<SQL
 SELECT count(*) FROM import_temp.$config[tableName]
 WHERE {$sourceColName}<>'' AND {$sourceColName}_id IS NULL;
 SQL;
-      kohana::log('debug', $sql);
       $countCheck = $db->query($sql)->result()->current()->count;
-      kohana::log('debug', var_export($countCheck, TRUE));
       if ($countCheck === '0') {
         echo json_encode([
           'status' => 'ok',
@@ -528,7 +519,6 @@ SQL;
         }
         else {
           foreach ($childEntityDataRows as $childEntityDataRow) {
-            kohana::log('debug', 'childEntityDataRow: ' . var_export($childEntityDataRow, TRUE));
             $child = ORM::factory($childEntity);
             $submission = [
               'sample_id' => $parent->id,
@@ -547,7 +537,14 @@ SQL;
         }
         $config['parentEntityRowsInserted']++;
       }
-      $this->saveConfig($fileName, $config);
+
+      $progress = 100 * $config['rowsProcessed'] / $config['totalRows'];
+      if ($progress === 100 && $config['errorsCount'] === 0) {
+        $this->tidyUpAfterImport($db, $config);
+      }
+      else {
+        $this->saveConfig($fileName, $config);
+      }
       $this->saveImportRecord($config);
       echo json_encode([
         'status' => $config['rowsProcessed'] >= $config['totalRows'] ? 'done' : 'importing',
@@ -842,11 +839,9 @@ SQL;
 
           // Query to fill in ID for all obvious matches.
           if (substr($destFieldParts[0], -4) === 'Attr' and strlen($destFieldParts[0]) === 7) {
-            kohana::log('debug', "Checking attr $dest");
             $unmatchedInfo = $this->autofillLookupAttrIds($db, $config, $destFieldParts, $valueToMapColName);
           }
           elseif ($dest === 'occurrence:fk_taxa_taxon_list') {
-            kohana::log('debug', "Checking species $dest");
             $unmatchedInfo = $this->autofillTaxonIds($db, $config, $valueToMapColName);
           }
           // Respond with values that don't match plus list of matches, or a
@@ -1049,8 +1044,6 @@ SQL;
     $file = $this->openSpreadsheet($fileName, $config);
     $count = 0;
     $rows = [];
-    kohana::log('debug', 'Configuration: ' . var_export($config, TRUE));
-
     while (($count < BATCH_ROW_LIMIT) && ($data = $this->getNextRow($file, $count + $config['rowsLoaded'] + 1, $config))) {
       $data = array_map('pg_escape_literal', array_pad($data, count($config['columns']), ''));
       $rows[] = '(' . implode(', ', $data) . ')';
@@ -1075,6 +1068,16 @@ SQL;
     if ($config['rowsLoaded'] >= $config['totalRows']) {
       $config['state'] = 'loaded';
     }
+  }
+
+  /**
+   * Create a unique ID for the import.
+   */
+  private function createGuid() {
+    return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X',
+       mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479),
+       mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535)
+    );
   }
 
   /**
@@ -1121,16 +1124,6 @@ SQL;
   }
 
   /**
-   * Create a unique ID for the import.
-   */
-  private function createGuid() {
-    return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X',
-       mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479),
-       mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535)
-    );
-  }
-
-  /**
    * Saves config to a JSON file, allowing process info to persist.
    *
    * @param string $fileName
@@ -1147,6 +1140,21 @@ SQL;
   }
 
   /**
+   * If an import completes successfully, remove the temporary table and files.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param array $config
+   *   Import metadata configuration object.
+   */
+  private function tidyUpAfterImport($db, array $config) {
+    $baseName = pathinfo($config['fileName'], PATHINFO_FILENAME);
+    unlink(DOCROOT . "import/$baseName.json");
+    unlink(DOCROOT . "import/$config[fileName]");
+    $db->query("DROP TABLE IF EXISTS import_temp.$config[tableName]");
+  }
+
+  /**
    * Opens a PHPSpreadsheet Reader for the selected file.
    *
    * @param string $fileName
@@ -1157,7 +1165,6 @@ SQL;
    */
   private function getReader($fileName) {
     $ext = pathinfo($fileName, PATHINFO_EXTENSION);
-    kohana::log('debug', 'Getting reader for ' . $ext);
     if ($ext === 'csv') {
       $reader = new Csv();
       $reader->setInputEncoding(Csv::GUESS_ENCODING);
@@ -1252,7 +1259,6 @@ SQL;
   private function loadColumnNamesFromFile($fileName) {
     $reader = $this->getReader($fileName);
     // Minimise data read from spreadsheet - first sheet only.
-    kohana::log('debug', "Opening $fileName");
     $worksheetData = $reader->listWorksheetInfo(DOCROOT . "import/$fileName");
     if (count($worksheetData) === 0) {
       throw new exception('Spreadsheet contains no worksheets');
@@ -1287,9 +1293,7 @@ SQL;
     // Add two to the range start, as it is indexed from one not zero unlike
     // the data array read out and we skip the header row.
     $reader->setReadFilter(new RangeReadFilter($config['rowsLoaded'] + 2, BATCH_ROW_LIMIT));
-    kohana::log('debug', "Rows loaded from " . ($config['rowsLoaded'] + 2));
     $file = $reader->load(DOCROOT . "import/$fileName");
-    kohana::log('debug', "Data read: " . var_export($file->getActiveSheet()->toArray(), TRUE));
     return $file->getActiveSheet()->toArray();
   }
 
@@ -1307,7 +1311,6 @@ SQL;
    *   Data array.
    */
   private function getNextRow($file, $row, array $config) {
-    kohana::log('debug', "Loading row $row out of $config[totalRows]");
     return ($row <= $config['totalRows']) ? $file[$row] : FALSE;
   }
 
