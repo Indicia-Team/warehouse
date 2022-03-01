@@ -58,7 +58,7 @@ function hostsite_get_user_field($field) {
     return 'en';
   }
   elseif ($field === 'indicia_user_id') {
-    return $_SESSION['auth_user']->id;
+    return isset($_SESSION) ? $_SESSION['auth_user']->id : 0;
   }
   elseif ($field === 'training') {
     return FALSE;
