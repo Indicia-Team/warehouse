@@ -22,7 +22,25 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
+
+/**
+ * Limited warehouse support for hostsite_get_user_field().
+ */
+function hostsite_get_user_field($field) {
+  if ($field === 'language') {
+    return 'en';
+  }
+  elseif ($field === 'indicia_user_id') {
+    return isset($_SESSION) ? $_SESSION['auth_user']->id : 0;
+  }
+  elseif ($field === 'training') {
+    return FALSE;
+  }
+  else {
+    throw new exception("Unsuppoered hostsite_get_user_field call on warehouse for field $field");
+  }
+}
 
 /**
  * Helper class to provide generally useful Indicia warehouse functions.
