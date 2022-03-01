@@ -42,21 +42,6 @@ function hostsite_get_config_value($context, $name, $default = FALSE) {
 }
 
 /**
- * Shim function to allow client site code to work.
- */
-function hostsite_get_user_field($field) {
-  if ($field === 'indicia_user_id') {
-    return 0;
-  }
-  elseif ($field === 'training') {
-    return FALSE;
-  }
-  else {
-    throw new Exception("Field $field not supported");
-  }
-}
-
-/**
  * PHPSpreadsheet filter for reading the header row.
  */
 class FirstRowReadFilter implements IReadFilter {
