@@ -34,6 +34,7 @@ class Controllers_Services_Classifier_Test extends Indicia_DatabaseTestCase {
 
   public function testCreateClassifiedOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateClassifiedOccurrence");
+    // First, build a basic sample -> occurrrence -> occurrence_medium submission.
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -59,6 +60,7 @@ class Controllers_Services_Classifier_Test extends Indicia_DatabaseTestCase {
     ];
     $s = submission_builder::build_submission($array, $structure);
 
+    // Find the unknown classfier term ID.
     $classifierTerms = data_entry_helper::get_population_data([
       'table' => 'termlists_term',
       'extraParams' => self::$auth['read'] + [
@@ -66,6 +68,14 @@ class Controllers_Services_Classifier_Test extends Indicia_DatabaseTestCase {
         'term' => 'Unknown',
       ],
     ]);
+    // Modify the submission to add a classification event, containing a
+    // classification result, which contains a suggestion. The event gets
+    // attached as a parent (superModel) of the occurrence which is in the
+    // sample's subModels array at index 0.
+    // Note that the classification result contains a metaField called
+    // media_paths - since you don't know the occurrence_media record's ID as
+    // it doesn't exist yet, you can use this to tell the warehouse to link to
+    // the media file by path instead.
     $s['subModels'][0]['model']['superModels'] = [
       [
         'fkId' => 'classification_event_id',
@@ -107,6 +117,8 @@ class Controllers_Services_Classifier_Test extends Indicia_DatabaseTestCase {
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
     $sampleId = $r['success'];
+
+    // Now, test the data that were saved.
     // Query to check all the data chained together.
     $sql = <<<SQL
 select s.id as sample_id,
@@ -128,6 +140,7 @@ left join classification_results_occurrence_media crom on crom.classification_re
 where s.id=$sampleId;
 SQL;
     $checkData = self::$db->query($sql)->current();
+    // Some assertions to check the data values.
     $this->assertTrue(!empty($checkData->occurrence_id), 'Classification submission occurrence not created.');
     $this->assertEquals(4, $checkData->machine_involvement, 'Classification submission machine_involvement saved incorrectly.');
     $this->assertTrue(!empty($checkData->occurrence_medium_id), 'Classification submission occurrence_medium not created.');
@@ -137,8 +150,10 @@ SQL;
     $this->assertTrue(!empty($checkData->classification_results_occurrence_medium_id), 'Classification submission classification_results_occurrence_medium not created.');
     $this->assertTrue(!empty($checkData->crom_om_id), 'Classification submission classification_results_occurrence_medium not linked to media file.');
     $this->assertEquals($checkData->occurrence_medium_id, $checkData->crom_om_id, 'Classification submission mediaPaths linking incorrect.');
-    // Check determination gets event ID if redetermined and the occurrence
-    // event data are cleared.
+
+    // If the occurrence is redetermined, the event ID in the occurrence table
+    // needs to follow the identification information as it gets copied into
+    // the determinations table to keep an audit trail of information.
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -148,8 +163,11 @@ SQL;
     $structure = [
       'model' => 'occurrence',
     ];
+    // Post a simple redetermination.
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('occurrence', $s, self::$auth['write_tokens']);
+
+    // Now, run a query to check the event ID has gone to the determinations table and is not left in the occurrences table.
     $sql = <<<SQL
 select s.id as sample_id,
   o.id as occurrence_id,
@@ -167,6 +185,7 @@ SQL;
     $this->assertEquals($checkData->classification_event_id, $checkPostRedetData->det_classification_event_id, 'Classification_event_id not copied to determination correctly');
     $this->assertEmpty($checkPostRedetData->machine_involvement, 'Occurrence machine_involvement not cleared after redet');
     $this->assertEmpty($checkPostRedetData->classification_event_id, 'Occurrence classification_event_id not cleared after redet');
+
     // Also check that these flags can be reset on a subsequent redet.
     $array = [
       'website_id' => 1,
