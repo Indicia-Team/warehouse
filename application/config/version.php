@@ -37,7 +37,7 @@ $config['version'] = '6.13.0';
  *
  * @var string
  */
-$config['release_date'] = '2022-02-03';
+$config['release_date'] = '2022-03-01';
 
 
 /**

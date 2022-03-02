@@ -247,6 +247,8 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           // switched on, or the preferred name is being deleted.
           // Synonym not in new list has been deleted - remove it from the db.
           $syn->deleted = 't';
+          $syn->updated_on = date("Ymd H:i:s");
+          $syn->updated_by_id = security::getUserId();
           if ($this->common_taxon_id == $syn->taxon->id) {
             $this->common_taxon_id = NULL;
           }

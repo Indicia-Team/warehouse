@@ -291,17 +291,22 @@ class RestApiElasticsearch {
     $thisProxyCfg = $esConfig[$this->elasticProxy];
     $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
     if (isset($thisProxyCfg['allowed'])) {
-      $allowed = FALSE;
-      if (isset($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])])) {
-        foreach (array_keys($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])]) as $regex) {
-          if (preg_match($regex, $resource)) {
-            $allowed = TRUE;
+      // OPTIONS request always allowed.
+      $allowed = $_SERVER['REQUEST_METHOD'] === 'OPTIONS';
+      if (!$allowed) {
+        // Not options, so need to check config allows the method/resource
+        // combination.
+        if (isset($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])])) {
+          foreach (array_keys($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])]) as $regex) {
+            if (preg_match($regex, $resource)) {
+              $allowed = TRUE;
+            }
           }
         }
-      }
-      if (!$allowed) {
-        RestObjects::$apiResponse->fail('Bad request', 400,
-          "Elasticsearch request $resource ($_SERVER[REQUEST_METHOD]) disallowed by Warehouse REST API proxy configuration.");
+        if (!$allowed) {
+          RestObjects::$apiResponse->fail('Bad request', 400,
+            "Elasticsearch request $resource ($_SERVER[REQUEST_METHOD]) disallowed by Warehouse REST API proxy configuration.");
+        }
       }
     }
   }

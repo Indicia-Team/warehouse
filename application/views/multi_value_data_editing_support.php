@@ -88,15 +88,21 @@ function handle_multi_value_attributes($fieldPrefix, $attributeId, $multiAttr, &
         ],
       ];
     }
-    // The complex_attr_grid uses ',' encoding, which disables JSON so we just
-    // get the single attribute value.
+
+    // Typically, the complex_attr_grid takes data encoded in a multi-value text
+    // attribute and shows it in a table. Each value makes a row in the table
+    // and each value is decoded in to columns. By default, JSON ecoding is
+    // used. In this instance, however, we are using it to show multi-value 
+    // attributes in a single column and we must be careful NOT to do any 
+    // decoding of values. The `encoding` string has to be set to something 
+    // that will never be encountered (or is very very unlikely).
     echo data_entry_helper::complex_attr_grid([
       'fieldname' => $name,
       'columns' => $columns,
       'default' => $default,
       'defaultRows' => 1,
       'extraParams' => $readAuth,
-      'encoding' => ',',
+      'encoding' => 'Do_not_use_encoding_here.',
     ]) . "<br>";
   }
   else {
@@ -104,3 +110,85 @@ function handle_multi_value_attributes($fieldPrefix, $attributeId, $multiAttr, &
     Please note that the Warehouse UI currently only supports text or lookup multi-value attribute data editing.<br>";
   }
 }
+
+/**
+ * Handle single value attributes
+ * 
+ * Draw single value attributes to the screen when called
+ */
+function handle_single_value_attributes($fieldPrefix, $attributeId, $attr, $values) {
+  $name = "$fieldPrefix:$attributeId";
+  // If this is an existing attribute, tag it with the attribute value
+  // record id so we can re-save it.
+  if ($attr['id']) {
+    $name .= ":$attr[id]";
+  }
+  switch ($attr['data_type']) {
+    case 'D':
+      echo data_entry_helper::date_picker([
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value'],
+      ]);
+      break;
+
+    case 'V':
+      echo data_entry_helper::date_picker([
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value'],
+        'allowVagueDates' => TRUE,
+      ]);
+      break;
+
+    case 'L':
+      echo data_entry_helper::select([
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['raw_value'],
+        'lookupValues' => $values["terms_$attr[termlist_id]"],
+        'blankText' => '<Please select>',
+      ]);
+      break;
+
+    case 'B':
+      echo data_entry_helper::checkbox([
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value'],
+      ]);
+      break;
+
+    case 'G':
+      echo "<input type=\"hidden\" name=\"$name\" value=\"$attr[value]\" id=\"imp-geom\"/>";
+      echo "<label>$attr[caption]:</label>";
+      echo map_helper::map_panel([
+        'presetLayers' => ['osm'],
+        'editLayer' => TRUE,
+        'clickForSpatialRef' => FALSE,
+        'layers' => [],
+        'initial_lat' => 55,
+        'initial_long' => -2,
+        'initial_zoom' => 4,
+        'width' => '100%',
+        'height' => 400,
+        'standardControls' => [
+          'panZoomBar',
+          'layerSwitcher',
+          'hoverFeatureHighlight',
+          'drawPolygon',
+          'modifyFeature',
+          'clearEditLayer',
+        ],
+      ]);
+      break;
+
+    default:
+      echo data_entry_helper::text_input([
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => htmlspecialchars($attr['value']),
+      ]);
+  }
+}
+

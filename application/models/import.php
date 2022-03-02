@@ -1,9 +1,6 @@
-<?php
+<?php defined('SYSPATH') or die('No direct script access.');
 
 /**
- * @file
- * Import template for the import form displayed under index grids.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,17 +19,24 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-warehouse::loadHelpers(['import_helper']);
-$auth = import_helper::get_read_write_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+/**
+ * Model class for the imports table.
+ */
+class Import_Model extends ORM {
 
-echo import_helper::importer(array(
-  'model' => $this->controllerpath,
-  'auth' => $auth,
-  'switches' => array(
-    'activate_parent_sample_method_filter' => 't',
-    'activate_global_sample_method' => 't',
-    'activate_location_location_type_filter' => 't',
-    'occurrence_associations' => 't',
-  ),
-));
-echo import_helper::dump_javascript();
+  public function validate(Validation $array, $save = FALSE) {
+    // Cleanup leading/trailing whitespace.
+    $array->pre_filter('trim');
+    $array->add_rules('entity', 'required');
+    $array->add_rules('inserted', 'integer', 'required');
+    $array->add_rules('updated', 'integer', 'required');
+    $array->add_rules('import_guid', 'required');
+    $array->add_rules('mappings', 'required');
+    $array->add_rules('global_values', 'required');
+
+    $this->unvalidatedFields = [
+      'description',
+    ];
+    return parent::validate($array, $save);
+  }
+}
