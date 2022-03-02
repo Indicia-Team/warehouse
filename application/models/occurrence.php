@@ -23,6 +23,7 @@
  * Model class for the Occurrences table.
  */
 class Occurrence_Model extends ORM {
+
   protected $requeuedForVerification = FALSE;
 
   protected $has_many = [
@@ -35,6 +36,7 @@ class Occurrence_Model extends ORM {
     'determiner' => 'person',
     'sample',
     'taxa_taxon_list',
+    'classification_event',
     'created_by' => 'user',
     'updated_by' => 'user',
     'verified_by' => 'user',
@@ -51,7 +53,7 @@ class Occurrence_Model extends ORM {
     'occurrence:fk_taxa_taxon_list:specific' => 'Specific name/epithet (builds binomial name)',
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
     'occurrence:fk_taxa_taxon_list:search_code' => 'Species or taxon search code',
-    // needs to be more complex version so import recognises it as same field as above
+    // Needs to be more complex version so import recognises it as same field as above.
     'occurrence:fk_taxa_taxon_list:id' => 'Species or taxon taxa_taxon_lists.id',
     // Allow details of 4 images to be uploaded in CSV files.
     'occurrence_medium:path:1' => 'Media Path 1',
@@ -64,11 +66,15 @@ class Occurrence_Model extends ORM {
     'occurrence_medium:caption:4' => 'Media Caption 4',
   ];
 
-  // During an import it is possible to merge different columns in a CSV row to make a database field
+  // During an import it is possible to merge different columns in a CSV row
+  // to make a database field.
   public $specialImportFieldProcessingDefn = [
     'occurrence:fk_taxa_taxon_list' => [
       'template' => '%s %s',
-      'columns' => ['occurrence:fk_taxa_taxon_list:genus', 'occurrence:fk_taxa_taxon_list:specific'],
+      'columns' => [
+        'occurrence:fk_taxa_taxon_list:genus',
+        'occurrence:fk_taxa_taxon_list:specific',
+      ],
     ],
     'sample:date' => [
       'template' => '%04d-%02d-%02d',
@@ -166,6 +172,8 @@ class Occurrence_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');
     $array->add_rules('website_id', 'required');
+    $array->add_rules('classification_event_id', 'integer');
+    $array->add_rules('machine_involvement', 'integer', 'min[0]', 'max[5]');
     $fieldlist = $array->as_array();
     if (!array_key_exists('all_info_in_determinations', $fieldlist) || $fieldlist['all_info_in_determinations'] == 'N') {
       $array->add_rules('taxa_taxon_list_id', 'required');
@@ -193,8 +201,8 @@ class Occurrence_Model extends ORM {
       'verifier_only_data',
     ];
     if (array_key_exists('id', $fieldlist)) {
-      // Existing data must not be set to download_flag=F (final download) otherwise it
-      // is read only.
+      // Existing data must not be set to download_flag=F (final download)
+      // otherwise it is read only.
       $array->add_rules('downloaded_flag', 'chars[N,I]');
     }
     return parent::validate($array, $save);
@@ -242,17 +250,20 @@ class Occurrence_Model extends ORM {
         !empty($this->submission['fields']['taxa_taxon_list_id']['value']) &&
         $this->taxa_taxon_list_id != $this->submission['fields']['taxa_taxon_list_id']['value']) {
       // Only log a determination for the occurrence if the species is changed.
-      // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
-      // and the config setting must be enabled.
+      // Also the all_info_in_determinations flag must be off to avoid clashing
+      // with other functionality and the config setting must be enabled.
       if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
         $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->userIdFromPersonId($this->determiner_id);
         $determination = [
           // We log the old taxon.
           'taxa_taxon_list_id' => $this->taxa_taxon_list_id,
+          // And classification event it came from.
+          'machine_involvement' => $this->machine_involvement,
+          'classification_event_id' => $this->classification_event_id,
           'determination_type' => 'B',
           'occurrence_id' => $this->id,
-          // Last change to the occurrence is really the create metadata for this
-          // determination, since we are copying it out of the existing
+          // Last change to the occurrence is really the create metadata for
+          // this determination, since we are copying it out of the existing
           // occurrence record.
           'created_by_id' => $oldDeterminerUserId,
           'updated_by_id' => $oldDeterminerUserId,
@@ -264,13 +275,19 @@ class Occurrence_Model extends ORM {
           ->from('determinations')
           ->set($determination)
           ->insert();
+        if (empty($this->submission['fields']['machine_involvement'])) {
+          $array->machine_involvement = NULL;
+        }
+        if (empty($this->submission['fields']['classification_event_id'])) {
+          $array->classification_event_id = NULL;
+        }
       }
       if (!empty($this->submission['fields']['determiner_id']) && !empty($this->submission['fields']['determiner_id']['value'])) {
         // Redetermination by user ID provided in submission.
         $redetByPersonId = (int) $this->submission['fields']['determiner_id']['value'];
         if ($redetByPersonId === -1) {
-          // Determiner person ID -1 is special case, means don't assign new determiner
-          // name on redet.
+          // Determiner person ID -1 is special case, means don't assign new
+          // determiner name on redet.
           unset($this->submission['fields']['determiner_id']);
           unset($array->determiner_id);
           return;
@@ -279,7 +296,8 @@ class Occurrence_Model extends ORM {
         $redetByUserId = $this->userIdFromPersonId($redetByPersonId);
       }
       else {
-        // Redetermination doesn't specify user ID, so use logged in user account.
+        // Redetermination doesn't specify user ID, so use logged in user
+        // account.
         $redetByUserId = (int) $this->getCurrentUserId();
         $userInfo = $this->db->select('person_id')->from('users')->where('id', $redetByUserId)->get()->current();
         $redetByPersonId = $userInfo->person_id;
@@ -328,14 +346,13 @@ SQL;
   }
 
   /**
-   * Method that adds a created by, created date, updated by, updated date to a row of data
-   * we are going to add/update to the database.
+   * Adds a create/update metadata to a row of data.
    *
    * @param array $row
    *   A row of data we are adding/updating to the database.
    * @param string $tableName
-   *   The name of the table we are adding the row to. We need this as the attribute_websites tables don't have
-   *   updated by and updated on fields.
+   *   The name of the table we are adding the row to. We need this as the
+   *   attribute_websites tables don't have updated by and updated on fields.
    */
   public function set_metadata_for_row_array(&$row = NULL, $tableName = NULL) {
     if (isset($_SESSION['auth_user'])) {
@@ -365,12 +382,14 @@ SQL;
    * Collect the user id for the current user, this will be 1 unless logged into warehouse or Easy Login is enabled in instant-indicia.
    */
   private function getCurrentUserId() {
-    if (isset($_SESSION['auth_user']))
+    if (isset($_SESSION['auth_user'])) {
       $userId = $_SESSION['auth_user']->id;
+    }
     else {
       global $remoteUserId;
-      if (isset($remoteUserId))
+      if (isset($remoteUserId)) {
         $userId = $remoteUserId;
+      }
       else {
         // Don't force overwrite of user IDs that already exist in the record, since
         // we are just using a default.
