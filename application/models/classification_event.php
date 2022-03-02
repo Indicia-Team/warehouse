@@ -19,46 +19,34 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-/**
- * Model class for the Determinations table.
- */
-class Determination_Model extends ORM {
+defined('SYSPATH') or die('No direct script access.');
 
-  protected $belongs_to = [
-    'occurrence',
-    'taxa_taxon_list',
-    'classification_event',
-    'created_by' => 'user',
-    'updated_by' => 'user',
+/**
+ * Model class for the classification_events table.
+ *
+ * Each row represents a single request or set of requests to an image
+ * classifier.
+ */
+class Classification_event_Model extends ORM {
+
+  protected $has_many = [
+    'classification_result',
   ];
 
-  public function caption() {
-    return $this->id;
-  }
+  protected $has_one = [
+    'occurrence',
+    'determination',
+  ];
+
+  protected $belongs_to = [
+    'created_by' => 'user',
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
-    $array->add_rules('occurrence_id', 'integer', 'required');
-    $array->add_rules('classification_event_id', 'integer');
-    $array->add_rules('machine_involvement', 'integer', 'min[0]', 'max[5]');
-    // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = [
-      'email_address',
-      'person_name',
-      'cms_ref',
-      'taxa_taxon_list_id',
-      'comment',
-      'taxon_extra_info',
       'deleted',
-      'determination_type',
-      'taxon_details',
-      'taxa_taxon_list_id_list',
     ];
-    if (array_key_exists('taxa_taxon_list_id_list', $array->as_array())) {
-    	if (count($array['taxa_taxon_list_id_list']) === 1 && $array['taxa_taxon_list_id_list'][0] == '') {
-	      $array['taxa_taxon_list_id_list'] = [];
-      }
-    }
     return parent::validate($array, $save);
   }
 

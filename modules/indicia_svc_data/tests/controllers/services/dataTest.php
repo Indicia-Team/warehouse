@@ -87,7 +87,7 @@ SQL;
         'person:surname' => "Person$i",
         'person:email_address' => "addedPerson{$i}@example.com",
       ];
-      $s = submission_builder::build_submission($array, array('model' => 'person'));
+      $s = submission_builder::build_submission($array, ['model' => 'person']);
       $r = data_entry_helper::forward_post_to('person', $s, self::$auth['write_tokens']);
       $lastPersonId = $r['success'];
     }
@@ -136,12 +136,12 @@ SQL;
 
   public function testRequestDataGetRecordByDirectId() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataGetRecordByDirectId");
-    $params = array(
+    $params = [
       'mode' => 'json',
-      'auth_token'=>self::$auth['read']['auth_token'],
-      'nonce'=>self::$auth['read']['nonce']
-    );
-    $url = data_entry_helper::$base_url.'index.php/services/data/location/1?'.http_build_query($params, '', '&');
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
+    ];
+    $url = data_entry_helper::$base_url . 'index.php/services/data/location/1?'.http_build_query($params, '', '&');
     $response = self::getResponse($url);
     $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByDirectId returned error. See log for details");
     $this->assertCount(1, $response, 'Data services get JSON for direct ID did not return 1 record.');
@@ -150,13 +150,13 @@ SQL;
 
   public function testRequestDataGetRecordByIndirectId() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataGetRecordByIndirectId");
-    $params = array(
+    $params = [
       'mode' => 'json',
-      'auth_token'=>self::$auth['read']['auth_token'],
-      'nonce'=>self::$auth['read']['nonce'],
-      'id'=>1
-    );
-    $url = data_entry_helper::$base_url.'index.php/services/data/location?'.http_build_query($params, '', '&');
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
+      'id' => 1,
+    ];
+    $url = data_entry_helper::$base_url . 'index.php/services/data/location?' . http_build_query($params, '', '&');
     $response = self::getResponse($url);
     $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByIndirectId returned error. See log for details");
     $this->assertCount(1, $response, 'Data services get JSON for indirect ID did not return 1 record.');
@@ -165,28 +165,28 @@ SQL;
 
   public function testRequestDataGetRecordByQueryIn() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataGetRecordByQueryIn");
-    $params = array(
+    $params = [
       'mode' => 'json',
-      'auth_token'=>self::$auth['read']['auth_token'],
-      'nonce'=>self::$auth['read']['nonce'],
-      'query'=>json_encode(array('in'=>array('id', array(1))))
-    );
-    $url = data_entry_helper::$base_url.'index.php/services/data/location?'.http_build_query($params, '', '&');
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
+      'query' => json_encode(array('in'=>['id', [1]])),
+    ];
+    $url = data_entry_helper::$base_url . 'index.php/services/data/location?' . http_build_query($params, '', '&');
     $response = self::getResponse($url);
     $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByQueryIn returned error. See log for details");
     $this->assertCount(1, $response, 'Data services get JSON for in clause did not return 1 record.');
     $this->assertEquals('Test location', ($response[0]['name']), 'Data services get JSON for in clause did not return correct record.');
 
-    // repeat test, for alternative format of in clause
-    $params = array(
+    // Repeat test, for alternative format of in clause.
+    $params = [
       'mode' => 'json',
-      'auth_token'=>self::$auth['read']['auth_token'],
-      'nonce'=>self::$auth['read']['nonce'],
-      'query'=>json_encode(array(
-        'in'=>array('id'=>array(1), 'name'=>array('Test location')),
-      ))
-    );
-    $url = data_entry_helper::$base_url.'index.php/services/data/location?'.http_build_query($params, '', '&');
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
+      'query' => json_encode([
+        'in' => ['id' => [1], 'name' => ['Test location']],
+      ]),
+    ];
+    $url = data_entry_helper::$base_url . 'index.php/services/data/location?' . http_build_query($params, '', '&');
     $response = self::getResponse($url);
     $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByQueryIn returned error. See log for details");
     $this->assertCount(1, $response, 'Data services get JSON for in clause did not return 1 record.');
@@ -341,7 +341,7 @@ SQL;
       'location:centroid_sref_system' => 'osgb',
       'locAttr:1:' . $locAttr->id => 'saveTestAttr-update'
     );
-    $s = submission_builder::build_submission($array, array('model' => 'location'));
+    $s = submission_builder::build_submission($array, ['model' => 'location']);
     $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to location re-submit " . print_r($r, TRUE));
@@ -356,14 +356,14 @@ SQL;
     $this->assertEquals('saveTestAttr-update', $locAttr->text_value, 'Saved attribute value is not as expected');
 
     // Reepost the same location, with a deleted attribute value.
-    $array = array(
+    $array = [
       'location:id' => $locId,
       'location:name' => 'UnitTest2',
       'location:centroid_sref' => 'SU0101',
       'location:centroid_sref_system' => 'osgb',
-      'locAttr:1:' . $locAttr->id => ''
-    );
-    $s = submission_builder::build_submission($array, array('model' => 'location'));
+      'locAttr:1:' . $locAttr->id => '',
+    ];
+    $s = submission_builder::build_submission($array, ['model' => 'location']);
     $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to location attribute delete " . print_r($r, TRUE));
@@ -722,7 +722,6 @@ SQL;
     // Add more people so we can detect misuse of person_id instead of user_id.
     global $postedUserId;
     $postedUserId = self::$extraUserId;
-    echo "\nExtraUserId is $postedUserId\n";
     $array = [
       'website_id' => 1,
       'survey_id' => 1,

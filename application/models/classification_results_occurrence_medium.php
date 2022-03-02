@@ -1,9 +1,6 @@
 <?php
 
 /**
- * @file
- * Warehouse version configuration.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,27 +19,24 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-defined('SYSPATH') or die('No direct script access.');
-
 /**
- * The application files' version number.
+ * Model class for the Classification_results_occurrence_media table.
  *
- * @var string
+ * Links classification results to the media files that were sent to the
+ * classifier.
  */
-$config['version'] = '6.13.0';
+class Classification_results_occurrence_medium_Model extends ORM {
 
+  protected $has_one = array(
+    'classification_result',
+    'occurrence_medium',
+  );
 
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2022-03-01';
+  public function validate(Validation $array, $save = FALSE) {
+    $array->pre_filter('trim');
+    $array->add_rules('classification_result_id', 'integer', 'required');
+    $array->add_rules('occurrence_medium_id', 'integer', 'required');
+    return parent::validate($array, $save);
+  }
 
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+}

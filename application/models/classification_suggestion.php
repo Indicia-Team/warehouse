@@ -19,46 +19,36 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+defined('SYSPATH') or die('No direct script access.');
+
 /**
- * Model class for the Determinations table.
+ * Model class for the classification_suggestions table.
+ *
+ * Each row represents a single taxonomic suggestion made by an image
+ * classifier in response to a request to identify some images.
  */
-class Determination_Model extends ORM {
+class Classification_suggestion_Model extends ORM {
 
   protected $belongs_to = [
-    'occurrence',
-    'taxa_taxon_list',
-    'classification_event',
+    'classification_result',
     'created_by' => 'user',
-    'updated_by' => 'user',
   ];
 
-  public function caption() {
-    return $this->id;
-  }
+  protected $has_and_belongs_to_many = [
+    'occurrence_media',
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
-    $array->add_rules('occurrence_id', 'integer', 'required');
-    $array->add_rules('classification_event_id', 'integer');
-    $array->add_rules('machine_involvement', 'integer', 'min[0]', 'max[5]');
-    // Explicitly add those fields for which we don't do validation.
+    $array->add_rules('classification_result_id', 'required', 'integer');
+    $array->add_rules('taxa_taxon_list_id', 'integer');
+    $array->add_rules('probability_given', 'minimum[0]', 'maximum[1]');
     $this->unvalidatedFields = [
-      'email_address',
-      'person_name',
-      'cms_ref',
-      'taxa_taxon_list_id',
-      'comment',
-      'taxon_extra_info',
+      'taxon_name_given',
       'deleted',
-      'determination_type',
-      'taxon_details',
-      'taxa_taxon_list_id_list',
+      'classifier_chosen',
+      'human_chosen',
     ];
-    if (array_key_exists('taxa_taxon_list_id_list', $array->as_array())) {
-    	if (count($array['taxa_taxon_list_id_list']) === 1 && $array['taxa_taxon_list_id_list'][0] == '') {
-	      $array['taxa_taxon_list_id_list'] = [];
-      }
-    }
     return parent::validate($array, $save);
   }
 

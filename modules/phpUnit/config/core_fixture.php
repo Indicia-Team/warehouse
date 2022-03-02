@@ -311,6 +311,9 @@ $core_fixture = [
     [
       "id" => 10006,
     ],
+    [
+      "id" => 10007,
+    ],
   ],
   "termlists" => [
     [
@@ -368,6 +371,15 @@ $core_fixture = [
       "updated_by_id" => 1,
       "external_key" => "indicia:media_types",
     ],
+    [
+      "title" => "Media classifiers",
+      "description" => "List of media/image classification services used to identify photos.",
+      "created_on" => "2016-07-22 16:00:00",
+      "created_by_id" => 1,
+      "updated_on" => "2016-07-22 16:00:00",
+      "updated_by_id" => 1,
+      "external_key" => "indicia:classifiers",
+    ],
   ],
 
   "terms" => [
@@ -421,6 +433,14 @@ $core_fixture = [
     ],
     [
       "term" => "Image:Local",
+      "language_id" => 1,
+      "created_on" => "2016-07-22 16:00:00",
+      "created_by_id" => 1,
+      "updated_on" => "2016-07-22 16:00:00",
+      "updated_by_id" => 1,
+    ],
+    [
+      "term" => "Unknown",
       "language_id" => 1,
       "created_on" => "2016-07-22 16:00:00",
       "created_by_id" => 1,
@@ -517,6 +537,19 @@ $core_fixture = [
       "updated_on" => "2016-07-22 16:00:00",
       "updated_by_id" => 1,
       "meaning_id" => 10005,
+      "preferred" => "true",
+      "sort_order" => 1,
+    ],
+    [
+      // Classifiers
+      "termlist_id" => 7,
+      // Unknown.
+      "term_id" => 8,
+      "created_on" => "2016-07-22 16:00:00",
+      "created_by_id" => 1,
+      "updated_on" => "2016-07-22 16:00:00",
+      "updated_by_id" => 1,
+      "meaning_id" => 10007,
       "preferred" => "true",
       "sort_order" => 1,
     ],

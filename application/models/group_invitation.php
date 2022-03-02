@@ -24,7 +24,7 @@
  */
 class Group_invitation_Model extends ORM {
 
-  protected $has_one = array('group');
+  protected $belongs_to = ['group'];
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');

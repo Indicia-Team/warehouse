@@ -1,7 +1,7 @@
 {
   "fields": [
     { "sql": "id", "type": "integer" },
-    { "sql": "sample_id", "type": "integer"},
+    { "sql": "location_id", "type": "integer"},
     { "sql": "path", "type": "string"},
     { "sql": "caption", "type": "string"},
     { "sql": "media_type_id", "type": "integer"},
