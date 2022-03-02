@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS classification_suggestions
         ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT fk_classification_suggestions_taxon FOREIGN KEY (taxa_taxon_list_id)
         REFERENCES taxa_taxon_lists (id) MATCH SIMPLE
-        ON UPDATE NO ACTION ON DELETE NO ACTION
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT fk_classification_suggestions_creator FOREIGN KEY (created_by_id)
     REFERENCES users (id) MATCH SIMPLE
     ON UPDATE NO ACTION ON DELETE NO ACTION
