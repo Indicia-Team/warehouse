@@ -9,12 +9,15 @@
       LEFT JOIN people p on p.id = pav.person_id AND p.deleted=false
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
       LEFT JOIN users u ON u.person_id=p.id
+      LEFT JOIN users_websites accesscheck ON accesscheck.website_id = lw.website_id
+        AND accesscheck.user_id=#auth_user_id# AND accesscheck.banned=false
+        AND accesscheck.site_role_id=1
       #joins#
     WHERE 1=1
       #filters#
       AND pav.deleted=false
       AND pav.person_attribute_id=#person_site_attr_id#
-      AND #website_filter#        
+      AND #website_filter#
    </query>
   <order_bys>
     <order_by>pav.id DESC</order_by>
@@ -31,6 +34,7 @@
     <param name="the_user_id" display="User Id" description="A user id used if we only want to return results for a single user." datatype="integer" default='' emptyvalue=''>
       <where>u.id=#the_user_id#</where>
     </param>
+    <param name="auth_user_id" default="-1" datatype="integer" />
   </params>
   <columns>
     <column name="id" sql="pav.id" unique="true" in_count="integer" type="hidden" visible="false"/>
@@ -39,7 +43,7 @@
     <column name="pav_user_id" display="User Id" sql="u.id" datatype="integer" visible="false"/>
     <column name="person_name" display="User's Name" sql="p.first_name || ' ' || p.surname" datatype="text"/>
     --Default to invisible as this field was added later and don't want to affect old reports
-    <column name="person_email" display="User's Email" sql="p.email_address" visible="false" datatype="text"/>
+    <column name="person_email" display="User's Email" sql="CASE WHEN accesscheck.id IS NULL THEN NULL ELSE p.email_address END" visible="false" datatype="text"/>
     <column name="location_name" display="Location" sql="l.name" datatype="text" />
   </columns>
 </report>

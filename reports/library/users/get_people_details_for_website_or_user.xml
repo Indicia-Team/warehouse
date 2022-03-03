@@ -4,7 +4,9 @@
     SELECT #columns#
     FROM users u
       JOIN people p on u.person_id=p.id
-      JOIN users_websites uw on u.id=uw.user_id  
+      JOIN users_websites uw on u.id=uw.user_id
+      LEFT JOIN users_websites accesscheck on accesscheck.website_id=uw.website_id
+        AND accesscheck.user_id=#auth_user_id# AND accesscheck.site_role_id<3
     WHERE u.deleted = false
     AND #website_filter#
   </query>
@@ -21,6 +23,7 @@
     <param name='website_id' display='Website ID' datatype='integer' emptyvalue='' default=''>
       <where>uw.website_id=#website_id#</where>
     </param>
+    <param name="auth_user_id" datatype="integer" default="-1" />
   </params>
   <columns>
     <column name="id" display="User ID" sql="u.id" datatype="integer" in_count="true"/>
@@ -28,6 +31,7 @@
     <column name="surname" display="Surname" sql="p.surname" datatype="text"/>
     <column name="fullname_surname_first" display="Full name" sql="p.surname || ', ' || p.first_name" datatype="text"/>
     <column name="fullname_firstname_first" display="Full name" sql="p.first_name || ' ' || p.surname" datatype="text"/>
-    <column name="fullname_surname_first_email" display="Full name with email" sql="p.surname || ', ' || p.first_name || ' (' || p.email_address || ')'" datatype="text"/>
+    <column name="fullname_surname_first_email" display="Full name with email"
+      sql="p.surname || ', ' || p.first_name || CASE accesscheck.id WHEN NULL THEN '' ELSE ' (' || p.email_address || ')' END" datatype="text"/>
   </columns>
 </report>

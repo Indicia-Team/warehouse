@@ -7,6 +7,8 @@
     FROM users u
     JOIN users_websites uw ON u.id = uw.user_id AND uw.site_role_id IS NOT NULL
     JOIN people p ON p.id = u.person_id AND p.deleted = false
+    LEFT JOIN users_websites accesscheck on accesscheck.website_id=uw.website_id
+      AND accesscheck.user_id=#auth_user_id# AND accesscheck.site_role_id<3
     WHERE u.deleted = false
     AND #website_filter#
     AND lower(p.surname || ', ' || p.first_name) like lower(replace('#q#', '*', '%') || '%')
@@ -33,11 +35,12 @@
     <param name="q" display="Search for" datatype="text"/>
     <param name="attr_function" display="Sysfunc of attribute to lookup in" datatype="string" default="full_name"
       preprocess="select id from list_sample_attributes where website_id in (#website_ids#) and system_function='#attr_function#'" />
+    <param name="auth_user_id" datatype="integer" default="-1" />
   </params>
   <columns>
     <column name="id" sql="p.id" datatype="integer" visible="false"/>
     <column name="person_name" visible="false" datatype="text"
             sql="p.surname || ', ' || p.first_name" />
-    <column name="email_address" display="Email" sql="p.email_address" datatype="text"/>
+    <column name="email_address" display="Email" sql="CASE WHEN accesscheck.id IS NULL THEN NULL ELSE p.email_address END" datatype="text"/>
   </columns>
 </report>

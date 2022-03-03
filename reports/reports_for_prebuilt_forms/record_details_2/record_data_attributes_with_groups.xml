@@ -98,6 +98,7 @@
   left join locations l on a.system_function='linked_location_id' and l.id=av.int_value and l.deleted=false
   where o.id=#occurrence_id#
   and o.deleted=false
+  and (a.system_function not in ('cms_user_id', 'email') or a.system_function is null)
   and lower(coalesce(#testagainst#,'')) #operator# (#attrs#)
   union
 
@@ -147,7 +148,7 @@
   left join locations l on a.system_function='linked_location_id' and l.id=av.int_value and l.deleted=false
   where o.id=#occurrence_id#
   and o.deleted=false
-  and (a.system_function&lt;&gt;'cms_user_id' or a.system_function is null)
+  and (a.system_function not in ('cms_user_id', 'email') or a.system_function is null)
   and lower(coalesce(#testagainst#,'')) #operator# (#attrs#)
   </query>
   <order_bys>
