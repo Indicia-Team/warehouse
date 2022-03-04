@@ -189,6 +189,7 @@
     <column name="verified_on" sql="to_char(o.verified_on, 'yyyy-mm-dd HH24:MI:SS.MS')" datatype="date" />
     <column name="data_cleaner_info" sql="onf.data_cleaner_info" datatype="text" />
     <column name="data_cleaner_result" sql="o.data_cleaner_result::text" datatype="text" />
+    <column name="identification_difficulty" sql="o.identification_difficulty" datatype="integer" />
     <column name='verification_checks_enabled' sql="o.verification_checks_enabled::text" datatype="boolean" />
     <column name="query" sql="o.query" datatype="text" />
     <column name="zero_abundance" sql="o.zero_abundance::text" datatype="text" />

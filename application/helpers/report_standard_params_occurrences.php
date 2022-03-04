@@ -692,6 +692,18 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'autocheck_rule' => [
+        'datatype' => 'text[]',
+        'display' => 'Autocheck rules',
+        'description' => 'Filter to only include records that have failed this rule.',
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autocheck_rules#]%'",
+          ],
+        ],
+      ],
       'has_photos' => [
         'datatype' => 'boolean',
         'display' => 'Photo records filter',
