@@ -1,6 +1,6 @@
 -- #slow script#
 UPDATE cache_taxa_taxon_lists cttl
-SET applicable_verification_rule_type=ARRAY[];
+SET applicable_verification_rule_type=ARRAY[]::text[];
 
 UPDATE cache_taxa_taxon_lists cttl
 SET applicable_verification_rule_types=ARRAY['period']
