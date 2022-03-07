@@ -1,6 +1,6 @@
 -- #slow script#
 UPDATE cache_taxa_taxon_lists cttl
-SET applicable_verification_rule_type=ARRAY[]::text[];
+SET applicable_verification_rule_types=ARRAY[]::text[];
 
 UPDATE cache_taxa_taxon_lists cttl
 SET applicable_verification_rule_types=ARRAY['period']
@@ -30,5 +30,3 @@ SET applied_verification_rule_types=cttl.applicable_verification_rule_types
 FROM cache_taxa_taxon_lists cttl
 WHERE cttl.external_key=o.taxa_taxon_list_external_key
 AND o.data_cleaner_result is not null;
-
-
