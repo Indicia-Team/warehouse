@@ -191,7 +191,9 @@ where occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')";
  * Sets field values in the cache reporting tables.
  *
  * Update the cache_occurrences_functional.data_cleaner_result and
- * cache_occurrences_nonfunctional.data_cleaner_info fields.
+ * cache_occurrences_nonfunctional.data_cleaner_info fields. Also update the
+ * applied_verification_rule_types to reflect the list of key rule types
+ * that have been applied. *
  */
 function data_cleaner_set_cache_fields($db) {
   if (in_array(MODPATH . 'cache_builder', Kohana::config('config.modules'))) {
@@ -210,9 +212,12 @@ LEFT JOIN occurrence_comments oc ON oc.occurrence_id=o.id
 GROUP BY o.id, occ.last_verification_check_date;
 
 UPDATE cache_occurrences_functional o
-SET data_cleaner_result = dcr.data_cleaner_result
-FROM data_cleaner_results dcr
-WHERE dcr.id=o.id;
+SET data_cleaner_result = dcr.data_cleaner_result,
+  applied_verification_rule_types=cttl.applicable_verification_rule_types
+FROM data_cleaner_results dcr, cache_taxa_taxon_lists cttl
+WHERE dcr.id=o.id
+AND cttl.external_key = o.taxa_taxon_list_external_key
+AND cttl.preferred=true;
 
 UPDATE cache_occurrences_nonfunctional o
 SET data_cleaner_info = dcr.data_cleaner_info

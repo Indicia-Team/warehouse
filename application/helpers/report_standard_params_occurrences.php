@@ -683,12 +683,12 @@ class report_standard_params_occurrences {
           [
             'value' => 'F',
             'operator' => 'equal',
-            'sql' => "o.data_cleaner_result = 'f'",
+            'sql' => "o.data_cleaner_result = 'f' and applied_verification_rule_types<>ARRAY[]::text[]",
           ],
           [
             'value' => 'P',
             'operator' => 'equal',
-            'sql' => "o.data_cleaner_result = 't'",
+            'sql' => "o.data_cleaner_result = 't' and applied_verification_rule_types<>ARRAY[]::text[]",
           ],
         ],
       ],
@@ -738,7 +738,10 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
-      'user_id' => ['datatype' => 'integer', 'display' => "Current user's warehouse ID"],
+      'user_id' => [
+        'datatype' => 'integer',
+        'display' => "Current user's warehouse ID",
+      ],
       'my_records' => [
         'datatype' => 'boolean',
         'display' => "Only include my records",

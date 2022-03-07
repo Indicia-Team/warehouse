@@ -328,6 +328,7 @@ AND u.deleted=false
 SQL;
         $this->db->query($sql);
       }
+      $array->last_verification_check_date = NULL;
     }
   }
 
