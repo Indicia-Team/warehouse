@@ -110,6 +110,8 @@ HTML;
       'resources' => kohana::lang("rest_api.resourcesTitle"),
       'filters' => kohana::lang("rest_api.filterTitle"),
       'filterText' => kohana::lang("rest_api.filterText"),
+      'submissionFormat' => kohana::lang("rest_api.submissionFormatTitle"),
+      'submissionFormatText' => kohana::lang("rest_api.submissionFormatText"),
     ];
     $authRows = '';
     $extraInfo = Kohana::config('rest.allow_auth_tokens_in_url')
@@ -186,6 +188,8 @@ HTML;
 </table>
 <h2>$lang[filters]</h2>
 $lang[filterText]
+<h2>$lang[submissionFormat]</h2>
+$lang[submissionFormatText]
 <h2>$lang[resources]</h2>
 HTML;
 

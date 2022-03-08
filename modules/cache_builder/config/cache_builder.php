@@ -849,7 +849,7 @@ $config['samples']['get_missing_items_query'] = "
     left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
     left join cache_samples_functional cs on cs.id=s.id
     left join needs_update_samples nu on nu.id=s.id
-    where s.id is null and nu.id is null
+    where cs.id is null and nu.id is null
     and (s.deleted or coalesce(sp.deleted, false) or su.deleted) = false
 ";
 $config['samples']['get_changed_items_query'] = "
@@ -1551,7 +1551,7 @@ delete from cache_occurrences_nonfunctional where id in (select id from needs_up
 ];
 
 $config['occurrences']['update']['functional'] = "
-UPDATE cache_occurrences_functional
+UPDATE cache_occurrences_functional u
 SET sample_id=o.sample_id,
   website_id=o.website_id,
   survey_id=s.survey_id,
@@ -1600,6 +1600,7 @@ SET sample_id=o.sample_id,
   terrestrial_flag=cttl.terrestrial_flag,
   non_native_flag=cttl.non_native_flag,
   data_cleaner_result=case when o.last_verification_check_date is null then null else dc.id is null end,
+  applied_verification_rule_types=case when o.last_verification_check_date is null then null else u.applied_verification_rule_types end,
   training=o.training,
   zero_abundance=o.zero_abundance,
   licence_id=s.licence_id,
@@ -1634,7 +1635,7 @@ LEFT JOIN occurrence_comments dc
     ON dc.occurrence_id=o.id
     AND dc.implies_manual_check_required=true
     AND dc.deleted=false
-WHERE cache_occurrences_functional.id=o.id
+WHERE u.id=o.id
 ";
 
 // Ensure occurrence sensitivity changes apply to parent sample cache data.

@@ -1,9 +1,6 @@
-<?php
+<?php defined('SYSPATH') or die('No direct script access.');
 
 /**
- * @file
- * Warehouse version configuration.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,27 +19,24 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-defined('SYSPATH') or die('No direct script access.');
-
 /**
- * The application files' version number.
- *
- * @var string
+ * Model class for the imports table.
  */
-$config['version'] = '7.0.0';
+class Import_Model extends ORM {
 
+  public function validate(Validation $array, $save = FALSE) {
+    // Cleanup leading/trailing whitespace.
+    $array->pre_filter('trim');
+    $array->add_rules('entity', 'required');
+    $array->add_rules('inserted', 'integer', 'required');
+    $array->add_rules('updated', 'integer', 'required');
+    $array->add_rules('import_guid', 'required');
+    $array->add_rules('mappings', 'required');
+    $array->add_rules('global_values', 'required');
 
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2022-03-08';
-
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+    $this->unvalidatedFields = [
+      'description',
+    ];
+    return parent::validate($array, $save);
+  }
+}

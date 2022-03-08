@@ -22,25 +22,27 @@
 /**
  * Model class for the Determinations table.
  */
-class Determination_Model extends ORM
-{
-  protected $belongs_to=array(
+class Determination_Model extends ORM {
+
+  protected $belongs_to = [
     'occurrence',
     'taxa_taxon_list',
-    'created_by'=>'user',
-    'updated_by'=>'user'
-  );
+    'classification_event',
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  ];
 
-  public function caption()
-  {
+  public function caption() {
     return $this->id;
   }
 
-  public function validate(Validation $array, $save = false) {
+  public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
-    $array->add_rules('occurrence_id', 'required');
-    // Explicitly add those fields for which we don't do validation
-    $this->unvalidatedFields = array(
+    $array->add_rules('occurrence_id', 'integer', 'required');
+    $array->add_rules('classification_event_id', 'integer');
+    $array->add_rules('machine_involvement', 'integer', 'min[0]', 'max[5]');
+    // Explicitly add those fields for which we don't do validation.
+    $this->unvalidatedFields = [
       'email_address',
       'person_name',
       'cms_ref',
@@ -50,13 +52,13 @@ class Determination_Model extends ORM
       'deleted',
       'determination_type',
       'taxon_details',
-      'taxa_taxon_list_id_list'
-    );
+      'taxa_taxon_list_id_list',
+    ];
     if (array_key_exists('taxa_taxon_list_id_list', $array->as_array())) {
-    	if(count($array['taxa_taxon_list_id_list']) == 1 && $array['taxa_taxon_list_id_list'][0] == '')
-	        $array['taxa_taxon_list_id_list'] = array();
+    	if (count($array['taxa_taxon_list_id_list']) === 1 && $array['taxa_taxon_list_id_list'][0] == '') {
+	      $array['taxa_taxon_list_id_list'] = [];
+      }
     }
-
     return parent::validate($array, $save);
   }
 

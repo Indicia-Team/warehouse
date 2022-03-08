@@ -101,11 +101,11 @@ class Termlists_term_Model extends Base_Name_Model {
         if (isset($this->submission['metaFields']) && array_key_exists('synonyms', $this->submission['metaFields'])) {
           $arrSyn = $this->parseRelatedNames(
             $this->submission['metaFields']['synonyms']['value'],
-            'set_synonym_sub_array'
+            'setSynonymSubArray'
           );
         }
         else {
-          $arrSyn = array();
+          $arrSyn = [];
         }
         $meaning_id = $this->submission['fields']['meaning_id']['value'];
         if (isset($this->submission['fields']['allow_data_entry'])
@@ -275,7 +275,7 @@ SQL;
   /**
    * Build the array that stores the language attached to synonyms being submitted.
    */
-  protected function set_synonym_sub_array($tokens, &$array) {
+  protected function setSynonymSubArray($tokens, &$array) {
     if (count($tokens) >= 2) {
       $array[trim($tokens[1])] = trim($tokens[0]);
     }

@@ -279,6 +279,8 @@ meanings:
     id: 10005
   -
     id: 10006
+  -
+    id: 10007
 
 
 termlists:
@@ -331,6 +333,14 @@ termlists:
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
     external_key: "indicia:media_types"
+  -
+    title: "Media classifiers"
+    description: "List of media/image classification services used to identify photos."
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+    external_key: "indicia:classifiers"
 
 
 terms:
@@ -378,6 +388,13 @@ terms:
     updated_by_id: 1
   -
     term: "Image:Local"
+    language_id: 1
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+  -
+    term: "Unknown"
     language_id: 1
     created_on: 2016-07-22:16:00:00
     created_by_id: 1
@@ -452,7 +469,17 @@ termlists_terms:
     created_by_id: 1
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
-    meaning_id: 10005
+    meaning_id: 10006
+    preferred: "true"
+    sort_order: 1
+  -
+    termlist_id: 7                          #Classifiers
+    term_id: 8                              #Unknown
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+    meaning_id: 10007
     preferred: "true"
     sort_order: 1
 
@@ -575,6 +602,23 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10006
+    cache_created_on: 2016-07-22:16:00:00
+    cache_updated_on: 2016-07-22:16:00:00
+  -
+    id: 8
+    preferred: "true"
+    termlist_id: 7
+    termlist_title: "Classifiers"
+    website_id:
+    preferred_termlists_term_id: 8
+    sort_order: 1
+    term: "Unknown"
+    language_iso: "eng"
+    language: "English"
+    preferred_term: "Unknown"
+    preferred_language_iso: "eng"
+    preferred_language: "English"
+    meaning_id: 10007
     cache_created_on: 2016-07-22:16:00:00
     cache_updated_on: 2016-07-22:16:00:00
 

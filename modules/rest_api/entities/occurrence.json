@@ -23,7 +23,9 @@
     { "sql": "release_status", "type": "string" },
     { "sql": "record_decision_source", "type": "string" },
     { "sql": "import_guid", "type": "string" },
-    { "sql": "metadata", "type": "json" }
+    { "sql": "metadata", "type": "json" },
+    { "sql": "classification_event_id", "type": "integer" },
+    { "sql": "machine_involvement", "type": "integer" }
   ],
   "joins": [
     {
@@ -39,6 +41,9 @@
   ],
   "subModels": {
     "media": { "fk": "occurrence_id" }
+  },
+  "superModels": {
+    "classification_event": { "fk": "classification_event_id" }
   },
   "attributes": true,
   "attributePrefix": "occ",

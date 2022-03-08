@@ -65,30 +65,14 @@ class Person_attributes_website_Model extends Valid_ORM
   }
 
   /**
-   * Map a virtual field called default_value onto the relevant default value fields, depending on the data type.
+   * Map a default_value virtual field  onto the relevant default value fields.
+   *
+   * Mapping depends on the data type.
    */
-  protected function preSubmit()
-  {
+  protected function preSubmit() {
     if (isset($this->submission['fields']['default_value']['value'])) {
       $attr = ORM::factory('person_attribute', $this->submission['fields']['person_attribute_id']['value']);
-      switch ($attr->data_type) {
-        case 'T':
-          $this->submission['fields']['default_text_value']['value']=$this->submission['fields']['default_value']['value'];
-          break;
-        case 'F':
-          $this->submission['fields']['default_float_value']['value']=$this->submission['fields']['default_value']['value'];
-          break;
-        case 'I':
-          case 'L':
-          $this->submission['fields']['default_int_value']['value']=$this->submission['fields']['default_value']['value'];
-          break;
-        case 'D':
-        case 'V':
-          $vagueDate = vague_date::string_to_vague_date($this->submission['fields']['default_value']['value']);
-          $this->submission['fields']['default_date_start_value']['value']=$vagueDate[0];
-          $this->submission['fields']['default_date_end_value']['value']=$vagueDate[1];
-          $this->submission['fields']['default_date_type_value']['value']=$vagueDate[2];
-      }
+      $this->setSubmissionAttrValue($this->submission['fields']['default_value']['value'], $attr->data_type, 'default_');
     }
     return parent::presubmit();
   }

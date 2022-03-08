@@ -25,6 +25,32 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
+ * Stubs for hostsite_* functions that are needed by client_helper code.
+ */
+
+/**
+ * Set a non-essential cookie.
+ *
+ * Respects settings in EU Cookie Compliance module.
+ *
+ * @param string $cookie
+ *   Cookie name.
+ * @param string $value
+ *   Cookie value.
+ * @param int $expire
+ *   Optional expiry value.
+ */
+function hostsite_set_cookie($cookie, $value, $expire = NULL) {
+  // Respect the remembered_fields_optin control.
+  if (isset($_POST['cookie_optin']) && $_POST['cookie_optin'] === '0') {
+    return;
+  }
+  setcookie($cookie, $value, $expire);
+  // Cookies are only set when the page is loaded. So, fudge the cookie array.
+  $_COOKIE[$cookie] = $value;
+}
+
+/**
  * Limited warehouse support for hostsite_get_user_field().
  */
 function hostsite_get_user_field($field) {
