@@ -680,6 +680,7 @@ SQL;
     // Specify different user should also alter the determiner.
     global $postedUserId;
     $postedUserId = 2;
+    $otherUserAuth = data_entry_helper::get_read_write_auth(1, 'password');
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -688,7 +689,7 @@ SQL;
       'occurrence:taxa_taxon_list_id' => 1,
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, $otherUserAuth['write_tokens']);
     $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
     $this->assertEquals(2, $row->determiner_id, 'Failed to use posted user_id to update determiner_id');
     $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
@@ -722,6 +723,7 @@ SQL;
     // Add more people so we can detect misuse of person_id instead of user_id.
     global $postedUserId;
     $postedUserId = self::$extraUserId;
+    $otherUserAuth = data_entry_helper::get_read_write_auth(1, 'password');
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -737,7 +739,7 @@ SQL;
       ],
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, $otherUserAuth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
     $occurrenceId = self::$db->query("select id from occurrences where sample_id=$r[success]")->current()->id;
     $array = [
