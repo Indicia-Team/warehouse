@@ -724,6 +724,7 @@ SQL;
     global $postedUserId;
     $postedUserId = self::$extraUserId;
     $otherUserAuth = data_entry_helper::get_read_write_auth(1, 'password');
+    $otherUserAuth['write_tokens']['persist_auth'] = TRUE;
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
