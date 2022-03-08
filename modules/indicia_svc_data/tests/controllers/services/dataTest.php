@@ -89,8 +89,6 @@ SQL;
       ];
       $s = submission_builder::build_submission($array, ['model' => 'person']);
       $r = data_entry_helper::forward_post_to('person', $s, self::$auth['write_tokens']);
-      echo "<br/>"; var_export($r); echo "<br/>";
-      echo "<br/>"; var_export(self::$auth['write_tokens']); echo "<br/>";
       $lastPersonId = $r['success'];
     }
     return $lastPersonId;
@@ -726,6 +724,7 @@ SQL;
     global $postedUserId;
     $postedUserId = self::$extraUserId;
     $otherUserAuth = data_entry_helper::get_read_write_auth(1, 'password');
+    $otherUserAuth['write_tokens']['persist_auth'] = TRUE;
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
