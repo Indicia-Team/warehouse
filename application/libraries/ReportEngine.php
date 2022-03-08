@@ -252,9 +252,11 @@ class ReportEngine {
                                 $params = array(), $resultAsArray = TRUE) {
     $this->reportFormat = $reportFormat;
     $this->providedParams = array_merge(
-      array('training' => 'false'),
+      ['training' => 'false'],
       $params
     );
+    global $remoteAuthUserId;
+    $this->providedParams['auth_user_id'] = isset($remoteAuthUserId) ? $remoteAuthUserId : -1;
     // Is the default sharing mode of "reporting" being overridden?
     if (isset($this->providedParams['sharing']))
       $this->sharingMode = $this->providedParams['sharing'];

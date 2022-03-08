@@ -1,3 +1,24 @@
+# Version 7.0.0
+*2021-03-08*
+
+* The data model includes tables that allow capturing of information on the results of using
+  external image classification services to provide suggested identifications for photographed
+  occurrences.
+* Adds support for a new Excel or CSV spreadsheet upload facility. Differs from the previous one
+  because records are imported into a temporary table first and can therefore be processed in bulk
+  there before import into the main database, bringing several advantages.
+* The new import tool tracks import metadata in a new database table.
+* The new and old import tools now use PhpSpreadsheet for CSV file parsing, for more reliable UTF-8
+  handling.
+* Cached taxon data now includes information on the verification rule types that apply to records
+  of this taxon. Cached occurrence data in PostgreSQL and Elasticsearch now includes information
+  on exactly which types of rules have been applied. See https://github.com/Indicia-Team/warehouse/issues/422.
+* Support for filters that limit records to those which have failed a specific type of verification
+  rule.
+* Filters on pass/fail of verification rules now only brings back records that actually have rules.
+* Fixes a missing samples check in the cache builder code.
+* Improves escaping of text values displayed in custom attribute fields.
+
 # Version 6.12.0
 *2021-12-02*
 
