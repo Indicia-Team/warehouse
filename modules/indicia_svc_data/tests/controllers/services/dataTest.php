@@ -24,7 +24,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
   private static $auth;
 
   public function getDataSet() {
-    $ds1 =  new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
     return $ds1;
   }
 
@@ -89,6 +89,8 @@ SQL;
       ];
       $s = submission_builder::build_submission($array, ['model' => 'person']);
       $r = data_entry_helper::forward_post_to('person', $s, self::$auth['write_tokens']);
+      echo "<br/>"; var_export($r); echo "<br/>";
+      echo "<br/>"; var_export(self::$auth['write_tokens']); echo "<br/>";
       $lastPersonId = $r['success'];
     }
     return $lastPersonId;
@@ -749,7 +751,7 @@ SQL;
       'occurrence:taxa_taxon_list_id' => 2,
     ];
     $s = submission_builder::build_submission($array, ['model' => 'occurrence']);
-    $r = data_entry_helper::forward_post_to('occurrence', $s, self::$auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, $otherUserAuth['write_tokens']);
     $determinerInfo = self::$db->query("select created_by_id, person_name from determinations where occurrence_id=$occurrenceId")->current();
     $this->assertEquals(self::$extraUserId, $determinerInfo->created_by_id, 'Determination has not picked up correct user ID.');
     $this->assertEquals('Person3, Test3', $determinerInfo->person_name, 'Determination has not picked up correct person name.');
@@ -1063,7 +1065,7 @@ SQL;
     );
     $url = data_entry_helper::$base_url . "index.php/services/data/sample/$id?" . http_build_query($params, '', '&');
     $response = self::getResponse($url, FALSE);
-    $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByDirectId returned error. See log for details");
+    $this->assertFalse(isset($response['error']), "Sample service returned error. See log for details");
     // spoof the CSV data as a file, so we can use fgetcsv which understands line breaks in content
     $fp = fopen("php://temp", 'r+');
     // Fire regexpressions at the raw CSV data so we can check for things like missing escaping which
