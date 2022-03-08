@@ -183,7 +183,7 @@ class Service_Base_Controller extends Controller {
               $this->website_id = $id;
               if (!empty($_REQUEST['user_id']) && preg_match('/^\d+$/', $_REQUEST['user_id'])) {
                 if ($this->auth_user_id !== -1 && $this->auth_user_id != $_REQUEST['user_id']) {
-                  Kohana::log('info', "Claiming wrong user ID.");
+                  Kohana::log('info', "Claiming wrong user ID: $_REQUEST[user_id] !== $this->auth_user_id");
                   throw new AuthenticationError("unauthorised", 1);
                 }
                 $this->user_id = $_REQUEST['user_id'];
