@@ -29,4 +29,5 @@ UPDATE cache_occurrences_functional o
 SET applied_verification_rule_types=cttl.applicable_verification_rule_types
 FROM cache_taxa_taxon_lists cttl
 WHERE cttl.external_key=o.taxa_taxon_list_external_key
-AND o.data_cleaner_result is not null;
+AND o.data_cleaner_result is not null
+AND cttl.applicable_verification_rule_types<>array[]::text[];
