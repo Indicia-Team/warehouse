@@ -7,13 +7,15 @@
     JOIN people p ON p.id=u.person_id AND p.deleted = false
     JOIN users_websites uw on u.id = uw.user_id
     JOIN indicia.websites w on w.id = uw.website_id AND w.deleted = false
-    WHERE u.deleted=false and u.id = #user_id#
+    WHERE u.deleted=false and (u.id = #user_id# or u.id = #requested_user_id#)
   </query>
   <orderbys>
     <orderby>u.id desc</orderby>
   </orderbys>
   <params>
-    <param name="user_id" display="User Id" datatype="integer"/>
+    -- Note that "requested_user_id" is needed because user_id has automatic code that fires that we don't always want running
+    <param name="user_id" display="User Id" datatype="integer" default="-1"/>
+    <param name="requested_user_id" display="User Id" datatype="integer" default="-1"/>
   </params>
   <columns>
     <column name="id" display="Users Websites ID" sql="uw.id" datatype="integer" in_count="true"/>
