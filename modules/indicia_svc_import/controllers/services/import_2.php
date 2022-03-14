@@ -733,7 +733,7 @@ SQL;
     foreach ($fields as $field) {
       $targetField = $config['mappings'][$field];
       // @todo Look for date fields more intelligently.
-      if ($targetField === 'sample:date' && preg_match('/\d+/', $dataRow->$field)) {
+      if ($config['isExcel'] && preg_match('/date$/', $targetField) && preg_match('/\d+/', $dataRow->$field)) {
         // Date fields are integers when read from Excel.
         $date = ImportDate::excelToDateTimeObject($dataRow->$field);
         $submission[$targetField] = $date->format('d/m/Y');
@@ -1094,6 +1094,7 @@ SQL;
    */
   private function getConfig($fileName) {
     $baseName = pathinfo($fileName, PATHINFO_FILENAME);
+    $ext = pathinfo($fileName, PATHINFO_EXTENSION);
     $configFile = DOCROOT . "import/$baseName.json";
     if (file_exists($configFile)) {
       $f = fopen($configFile, "r");
@@ -1106,6 +1107,7 @@ SQL;
       return [
         'fileName' => $fileName,
         'tableName' => '',
+        'isExcel' => in_array($ext, ['xls', 'xlsx']),
         // @todo Entity should be dynamic.
         'entity' => 'occurrence',
         'columns' => $this->loadColumnNamesFromFile($fileName),
