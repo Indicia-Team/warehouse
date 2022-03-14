@@ -291,17 +291,22 @@ class RestApiElasticsearch {
     $thisProxyCfg = $esConfig[$this->elasticProxy];
     $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
     if (isset($thisProxyCfg['allowed'])) {
-      $allowed = FALSE;
-      if (isset($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])])) {
-        foreach (array_keys($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])]) as $regex) {
-          if (preg_match($regex, $resource)) {
-            $allowed = TRUE;
+      // OPTIONS request always allowed.
+      $allowed = $_SERVER['REQUEST_METHOD'] === 'OPTIONS';
+      if (!$allowed) {
+        // Not options, so need to check config allows the method/resource
+        // combination.
+        if (isset($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])])) {
+          foreach (array_keys($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])]) as $regex) {
+            if (preg_match($regex, $resource)) {
+              $allowed = TRUE;
+            }
           }
         }
-      }
-      if (!$allowed) {
-        RestObjects::$apiResponse->fail('Bad request', 400,
-          "Elasticsearch request $resource ($_SERVER[REQUEST_METHOD]) disallowed by Warehouse REST API proxy configuration.");
+        if (!$allowed) {
+          RestObjects::$apiResponse->fail('Bad request', 400,
+            "Elasticsearch request $resource ($_SERVER[REQUEST_METHOD]) disallowed by Warehouse REST API proxy configuration.");
+        }
       }
     }
   }
@@ -346,7 +351,7 @@ class RestApiElasticsearch {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'No website_id available for website limited report.');
       }
       $filters[] = [
-        'term' => ['metadata.website.id', RestObjects::$clientWebsiteId],
+        'term' => ['metadata.website.id' => RestObjects::$clientWebsiteId],
       ];
     }
     // Apply limit to websites identified by scope if appropriate.
@@ -494,7 +499,12 @@ class RestApiElasticsearch {
       if (isset($doc[$entity][$key])) {
         foreach ($doc[$entity][$key] as $attr) {
           if ($attr['id'] == $params[1]) {
-            $r[] = $attr['value'];
+            if (is_array($attr['value'])) {
+              $r = array_merge($r, $attr['value']);
+            }
+            else {
+              $r[] = $attr['value'];
+            }
           }
         }
       }

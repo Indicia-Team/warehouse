@@ -2,7 +2,7 @@
 
 /**
  * @file
- * View template for the list of taxon designations.
+ * View template for the list of UKSI operations.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *

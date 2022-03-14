@@ -22,6 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+require_once 'application/views/multi_value_data_editing_support.php';
 $disabled_input = html::initial_value($values, 'metaFields:disabled_input');
 $disabled = ($disabled_input === 'YES') ? 'disabled="disabled"' : '';
 
@@ -222,62 +223,22 @@ This page allows you to specify the details of a location.
   ?>
   <div id="attrs">
     <fieldset>
-    <legend>Additional Attributes</legend>
-    <ol>
-      <?php
-      foreach ($values['attributes'] as $attr) {
-        $name = "locAttr:$attr[location_attribute_id]";
-        // If this is an existing attribute, tag it with the attribute value
-        // record id so we can re-save it.
-        if ($attr['id']) {
-          $name .= ":$attr[id]";
+      <legend>Additional Attributes</legend>
+      <ol>
+        <?php
+        // The $values['attributes'] array has multi-value attributes on separate rows, so organise these into sub array
+        $attrsWithMulti = organise_values_attribute_array('location_attribute', $values['attributes']);
+        // Cycle through the attributes and drawn them to the screen
+        foreach ($attrsWithMulti as $locationAttributeId => $wholeAttrToDraw) {
+        // Multi-attributes are in a sub array, so the caption is not present at the first level so we can detect this
+        if (!empty($wholeAttrToDraw['caption'])) {
+            handle_single_value_attributes('locAttr', $locationAttributeId, $wholeAttrToDraw, $values);
+          } else {
+            handle_multi_value_attributes('locAttr', $locationAttributeId, $wholeAttrToDraw, $values);
+          }
         }
-        switch ($attr['data_type']) {
-          case 'D':
-            echo data_entry_helper::date_picker([
-              'label' => $attr['caption'],
-              'fieldname' => $name,
-              'default' => $attr['value'],
-            ]);
-            break;
-
-          case 'V':
-            echo data_entry_helper::date_picker([
-              'label' => $attr['caption'],
-              'fieldname' => $name,
-              'default' => $attr['value'],
-              'allowVagueDates' => TRUE,
-            ]);
-            break;
-
-          case 'L':
-            echo data_entry_helper::select([
-              'label' => $attr['caption'],
-              'fieldname' => $name,
-              'default' => $attr['raw_value'],
-              'lookupValues' => $values["terms_$attr[termlist_id]"],
-              'blankText' => '<Please select>',
-            ]);
-            break;
-
-          case 'B':
-            echo data_entry_helper::checkbox([
-              'label' => $attr['caption'],
-              'fieldname' => $name,
-              'default' => $attr['value'],
-            ]);
-            break;
-
-          default:
-            echo data_entry_helper::text_input([
-              'label' => $attr['caption'],
-              'fieldname' => $name,
-              'default' => $attr['value'],
-            ]);
-        }
-      }
-      ?>
-    </ol>
+        ?>
+      </ol>
     </fieldset>
   </div>
   <?php

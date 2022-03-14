@@ -215,6 +215,7 @@ class rest_crud {
       foreach ($_GET as $param => $value) {
         if (isset(self::$fieldDefs[$param])) {
           if (in_array(self::$fieldDefs[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
+            RestObjects::$db->connect();
             $value = pg_escape_literal($value);
           }
           elseif (in_array(self::$fieldDefs[$param]['type'], ['integer', 'float'])) {
@@ -447,6 +448,11 @@ SQL;
     return $extraData;
   }
 
+  /**
+   * Link any supermodels to a submission.
+   *
+   * Includes one to many relationships.
+   */
   private static function includeSubmodels($entity, array $postObj, $websiteId, &$s) {
     $subModels = [];
     if (isset(self::$entityConfig[$entity]->subModels)) {
@@ -473,7 +479,36 @@ SQL;
           'fkId' => $subModelCfg->fk,
           'model' => self::convertNewToOldSubmission(inflector::singular($subModelTable), $obj, $websiteId),
         ];
+        kohana::log('debug', 'Submission updated sub: ' . var_export($s, TRUE));
       }
+    }
+  }
+
+  /**
+   * Link any supermodels to a submission.
+   *
+   * Includes many to one relationships.
+   */
+  private static function includeSupermodels($entity, array $postObj, $websiteId, &$s) {
+    $superModels = [];
+    if (isset(self::$entityConfig[$entity]->superModels)) {
+      $superModels = array_intersect_key((array) self::$entityConfig[$entity]->superModels, $postObj);
+      unset($superModels['values']);
+    }
+    foreach ($superModels as $superModelTable => $superModelCfg) {
+      $s['superModels'][] = [
+        'fkId' => $superModelCfg->fk,
+        'model' => self::convertNewToOldSubmission(inflector::singular($superModelTable), $postObj[$superModelTable], $websiteId),
+      ];
+    }
+  }
+
+  /**
+   * Attach any posted metaFields to the submission.
+   */
+  private static function includeMetafields($entity, array $postObj, $websiteId, &$s) {
+    if (isset($postObj['metaFields'])) {
+      $s['metaFields'] = $postObj['metaFields'];
     }
   }
 
@@ -495,6 +530,7 @@ SQL;
       'fields' => [],
     ];
     if (!isset($postObj['values'])) {
+      kohana::log('debug', $entity . ': ' . var_export($postObj, TRUE));
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Incorrect submission format');
     }
     foreach ($postObj['values'] as $field => $value) {
@@ -510,6 +546,8 @@ SQL;
       $s['subModels'] = [];
     }
     self::includeSubmodels($entity, $postObj, $websiteId, $s);
+    self::includeSupermodels($entity, $postObj, $websiteId, $s);
+    self::includeMetafields($entity, $postObj, $websiteId, $s);
     return $s;
   }
 

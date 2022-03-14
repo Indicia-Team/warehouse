@@ -18,7 +18,7 @@
     <tabColumn name='date_type' visible='false'/>
     <tabColumn name='date' func="''" display='Visit date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
     <tabColumn name='target_species' func="(regexp_replace(array(SELECT CASE WHEN sX.id IS NULL THEN '' ELSE term||'|'||
-    regexp_replace(array(select 
+    regexp_replace(array(select
       CASE WHEN sav.id IS NULL THEN CASE sa.data_type WHEN 'B' THEN 'N'  ELSE ''  END
       ELSE
         CASE sa.data_type
@@ -28,12 +28,12 @@
         ELSE text_value
         END
       END
-    FROM sample_attributes sa 
+    FROM sample_attributes sa
     LEFT JOIN sample_attribute_values sav ON (sav.sample_id=sX.id AND sav.sample_attribute_id = sa.id and sav.deleted='f')
     WHERE sa.id in (#target_species_attr_list#)
     and sa.deleted= 'f'
     ORDER BY SA.ID ASC)::text, '(\x22\x22)?,', '|', 'g')
-  END 
+  END
   FROM detail_termlists_terms tt
   LEFT JOIN samples sX ON (sX.parent_id = #this#.id and sX.deleted='f' AND EXISTS (SELECT 1 from sample_attribute_values sav2 where sav2.sample_attribute_id = #target_species_attr# and sav2.int_value= tt.meaning_id and sav2.sample_id=sX.id and sav2.deleted='f'))
   WHERE tt.termlist_id = #target_species_termlist#)::text, '[{}\x22]', '', 'g'))" display='Target species'/>
@@ -83,9 +83,9 @@ END)" />
         <subTable tablename='cache_taxa_taxon_lists' parentKey="taxa_taxon_list_id" join="LEFT OUTER" >
           <tabColumn name='preferred_taxon' display='Species'/>
         </subTable>
-        <tabColumn name='record_status' display='State' 
+        <tabColumn name='record_status' display='State'
           func="(CASE #this#.record_status WHEN 'V' THEN 'Verified'::text WHEN 'D' THEN 'Dubious'::text WHEN 'R' THEN 'Rejected'::text WHEN 'I' THEN 'In progress'::text WHEN 'C' THEN 'Complete'::text WHEN 'S' THEN 'Awaiting check'::text ELSE #this#.record_status::text END)" />
-        <attributes separator='|'  meaningIdLanguage='preferred'/> 
+        <attributes separator='|'  meaningIdLanguage='preferred'/>
       </subTable>
     </subTable>
   </table>

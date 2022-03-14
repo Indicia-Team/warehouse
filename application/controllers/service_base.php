@@ -104,6 +104,13 @@ class Service_Base_Controller extends Controller {
   protected $user_id = NULL;
 
   /**
+   * If authorised via an auth_token, set the user ID here.
+   *
+   * @var int
+   */
+  protected $auth_user_id = NULL;
+
+  /**
    * Flag set to true when user has core admin rights.
    *
    * Only applies when the request originates from the warehouse.
@@ -113,72 +120,103 @@ class Service_Base_Controller extends Controller {
   protected $user_is_core_admin = false;
 
   /**
-  * Before a request is accepted, this method ensures that the POST data contains the
-  * correct digest token so we know the request was from the website.
-  *
-  * @param string $mode Whether the authentication token is required to have read or write access.
-  * Possible values are 'read' and 'write'. Defaults to 'write'.
-  */
+   * Authenticate a data services request.
+   *
+   * Before a request is accepted, this method ensures that the POST data
+   * contains the correct digest token so we know the request was from the
+   * website.
+   *
+   * @param string $mode
+   *   Whether the authentication token is required to have read or write
+   *   access. Possible values are 'read' and 'write'. Defaults to 'write'.
+   */
   protected function authenticate($mode = 'write') {
-    // Read calls are done using get values, so we merge the two arrays
+    // Read calls are done using get values, so we merge the two arrays.
     $array = array_merge($_POST, $_GET);
-    $authentic = FALSE; // default
+    $authentic = FALSE;
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token', $array)) {
       $nonce = $array['nonce'];
       $this->cache = new Cache();
-      // Get all cache entries that match this nonce
+      // Get all cache entries that match this nonce.
       $paths = $this->cache->exists($nonce);
       foreach ($paths as $path) {
-        // Find the parts of each file name, which is the cache entry ID, then the mode.
+        // Find the parts of each file name, which is the cache entry ID, then
+        // the mode.
         $tokens = explode('~', basename($path));
-        // check this cached nonce is for the correct read or write operation.
+        // Check this cached nonce is for the correct read or write operation.
         if ($mode == $tokens[1]) {
           $id = $this->cache->get($tokens[0]);
           if ($id > 0) {
-            // normal state, the ID is positive, which means we are authenticating a remote website
+            // Normal state, the ID is positive, which means we are
+            // authenticating a remote website.
             $website = ORM::factory('website', $id);
-            if ($website->id)
+            if ($website->id) {
               $password = $website->password;
+            }
           }
           else {
             $password = kohana::config('indicia.private_key');
           }
-          // calculate the auth token from the nonce and the password. Does it match the request's auth token?
-          if (isset($password) && sha1("$nonce:$password")==$array['auth_token']) {
-            Kohana::log('info', "Authentication successful.");
-            // cache website_password for subsequent use by controllers
-            $this->website_password = $password;
+          // Calculate the auth token from the nonce and the password. Does it
+          // match the request's auth token? The auth_token can optionally be
+          // user specific in which case the user ID is both appended and
+          // embedded in the hash.
+          if (isset($password) && preg_match('/:(?<userId>\d+)$/', $array['auth_token'], $matches)
+              && sha1("$nonce:$password:$matches[userId]") . ':' . $matches['userId'] === $array['auth_token']) {
+            // Store the authorised user ID.
+            $this->auth_user_id = $matches['userId'];
+            $authentic = TRUE;
+          }
+          elseif (isset($password) && sha1("$nonce:$password") === $array['auth_token']) {
+            // Disable anything that requires elevated user permissions.
+            $this->auth_user_id = -1;
             $authentic = TRUE;
           }
           if ($authentic) {
+            Kohana::log('info', "Authentication successful.");
+            // Cache website_password for subsequent use by controllers.
+            $this->website_password = $password;
+            // Store ID in a global for code outside the service classes.
+            global $remoteAuthUserId;
+            $remoteAuthUserId = $this->auth_user_id;
             if ($id > 0) {
               $this->website_id = $id;
               if (!empty($_REQUEST['user_id']) && preg_match('/^\d+$/', $_REQUEST['user_id'])) {
+                if ($this->auth_user_id !== -1 && $this->auth_user_id != $_REQUEST['user_id']) {
+                  Kohana::log('info', "Claiming wrong user ID: $_REQUEST[user_id] !== $this->auth_user_id");
+                  throw new AuthenticationError("unauthorised", 1);
+                }
                 $this->user_id = $_REQUEST['user_id'];
                 // If the request included a user ID, put it in the global var
                 // so all ORM saves can use it.
                 global $remoteUserId;
                 $remoteUserId = $this->user_id;
               }
-            } else {
+            }
+            else {
               $this->in_warehouse = TRUE;
-              $this->website_id = 0; // the Warehouse
-              $this->user_id = 0 - $id; // user id was passed as a negative number to differentiate from a website id
+              // 0 is the Warehouse.
+              $this->website_id = 0;
+              // User id was passed as a negative number to differentiate from
+              // a website id.
+              $this->user_id = 0 - $id;
               // Get a list of the websites this user can see.
               $user = ORM::Factory('user', $this->user_id);
               $this->user_is_core_admin = ($user->core_role_id === 1);
               if (!$this->user_is_core_admin) {
                 $this->user_websites = [];
-                $userWebsites = ORM::Factory('users_website')->where(array(
+                $userWebsites = ORM::Factory('users_website')->where([
                   'user_id' => $this->user_id,
                   'site_role_id is not' => NULL,
-                  'banned' => 'f'
-                ))->find_all();
-                foreach ($userWebsites as $userWebsite)
+                  'banned' => 'f',
+                ])->find_all();
+                foreach ($userWebsites as $userWebsite) {
                   $this->user_websites[] = $userWebsite->website_id;
+                }
               }
             }
-            // reset the nonce if requested. Doing it here will mean only gets reset if not already timed out.
+            // Reset the nonce if requested. Doing it here will mean only gets
+            // reset if not already timed out.
             if (array_key_exists('reset_timeout', $array) && $array['reset_timeout'] == 'true') {
               Kohana::log('info', "Nonce timeout reset.");
               $this->cache->set($nonce, $id, $mode);

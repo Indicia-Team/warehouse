@@ -87,7 +87,16 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         }
       }
       $params = implode(', ', $action['parameters']);
-      echo json_encode($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));
+      $r = json_encode($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));
+      // Enable JSONP.
+      if (array_key_exists('callback', $_REQUEST)) {
+        $r = "$_REQUEST[callback]($r)";
+        header('Content-Type: application/javascript');
+      }
+      else {
+        header('Content-Type: application/json');
+      }
+      echo $r;
       if (class_exists('request_logging')) {
         request_logging::log('a', 'data', 'data_utils', $name, $this->website_id, $this->user_id, $tm, $db);
       }

@@ -2,7 +2,7 @@
   "fields": [
     { "sql": "id", "type": "integer" },
     { "sql": "code", "type": "string" },
-    { "sql": "parent_id", "type": "string" },
+    { "sql": "parent_id", "type": "integer" },
     { "sql": "centroid_sref", "type": "string" },
     { "sql": "centroid_sref_system", "type": "string" },
     { "sql": "created_on", "type": "date" },
@@ -13,12 +13,17 @@
     { "sql": "external_key", "type": "string" },
     { "sql": "st_astext(t1.centroid_geom)", "name": "centroid_geom", "type": "geom" },
     { "sql": "st_astext(t1.boundary_geom)", "name": "boundary_geom", "type": "geom" },
-    { "sql": "location_type_id", "type": "string" },
+    { "sql": "location_type_id", "type": "integer" },
     { "sql": "public", "type": "boolean" },
     { "sql": "st_y(st_transform(st_centroid(t1.centroid_geom), 4326))", "name": "lat", "type": "float" },
     { "sql": "st_x(st_transform(st_centroid(t1.centroid_geom), 4326))", "name": "lon", "type": "float" },
-    { "sql": "name", "type": "string" },
     { "sql": "name", "type": "string" }
+  ],
+  "joins": [
+    {
+      "sql": "LEFT JOIN locations_websites t2 ON t2.location_id=t1.id",
+      "fields": []
+    }
   ],
   "subModels": {
     "locations": { "fk": "parent_id" },

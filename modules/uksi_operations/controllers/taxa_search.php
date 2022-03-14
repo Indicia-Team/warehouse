@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Controller for the list of taxon designations.
+ * Controller for the list of UKSI operations.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *

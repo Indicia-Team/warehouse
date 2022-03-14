@@ -24,7 +24,7 @@
  */
 class Group_page_Model extends ORM {
 
-  protected $has_one = array('group');
+  protected $belongs_to = ['group'];
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
@@ -32,7 +32,7 @@ class Group_page_Model extends ORM {
     $array->add_rules('caption', 'required');
     $array->add_rules('path', 'required');
     $array->add_rules('access_level', 'integer');
-    $this->unvalidatedFields = array('administrator', 'deleted');
+    $this->unvalidatedFields = ['administrator', 'deleted'];
     return parent::validate($array, $save);
   }
 

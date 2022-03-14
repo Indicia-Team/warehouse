@@ -26,6 +26,69 @@ Where the details below refer to the scope of the request, the possible options 
   website for editing purposes, e.g. to allow an expert to correct a record during the verification process.</li>
  </ul>
 HTML;
+$lang['filterTitle'] = 'List filtering';
+$lang['filterText'] = <<<HTML
+<p>When calling any of the endpoints to GET a list of entities, you can include
+parameters in a query string to limit the response. You can filter on any of
+the fields in the entity. Only filtering on equality is supported. E.g. to list
+all public locations with a location_type_id of 123, use</p>
+<pre>services/rest/locations?public=true&location_type_id=123</pre>
+<p>(NB. the list of location types is in a term list with title 'Location
+types'. Terms are not available from the REST API and need to be looked up in
+the warehouse user interface.)</p>
+HTML;
+$lang['submissionFormatTitle'] = 'Submission format';
+$lang['submissionFormatText'] = <<<HTML
+<p>In order to POST data to insert, or PUT data to submit, values must be provided in the correct
+structure. Fields and their values must be provided inside a `values` property and attribute values
+can be included by creating a field called "locAttr:n", "smpAttr:n" or "occAttr:n" for samples,
+occurrences and location data respectively, where <em>n</em> is the attribute ID. This is
+illustrated in the following simple sample record submission:</p>
+<pre><code>
+POST /index.php/services/rest/samples
+{
+  "values": {
+    "survey_id": 1,
+    "entered_sref": "SU1234",
+    "entered_sref_system": "OSGB",
+    "date": "01\/08\/2020",
+    "smpAttr:4": 14
+  }
+}
+</code></pre>
+<p>Nested records (where there is a one to many relationship) are provided by naming the entity
+in a property alongside the values array, then listing the child records in an array beneath.
+Nested records can contain multiple levels of nesting.</p>
+<pre><code>
+POST /index.php/services/rest/samples
+{
+  "values": {
+    "survey_id": 1,
+    "entered_sref": "SU1234",
+    "entered_sref_system": "OSGB",
+    "date": "01\/08\/2020"
+  },
+  "occurrences": [
+    {
+      "values": {
+        "taxa_taxon_list_id": 2,
+        "occAttr:8": "4 adults",
+      }
+    },
+    {
+      "values": {
+        "taxa_taxon_list_id": 2,
+        "occAttr:8": "1 juvenile",
+      }
+    }
+  ]
+}
+</code></pre>
+<p>In some cases, a many-to-one relationship can be included in the submission. In these cases, the
+nested entity is described using the singular form of the entity name and there is no need to
+wrap the child object in an array (as only one is possible). The nested object's primary key is
+then saved into the current record as a foreign key.</p>
+HTML;
 $lang['resourcesTitle'] = 'Resources';
 $lang['authMethods'] = 'Allowed authentication methods';
 $lang['jwtUser'] = 'JWT as warehouse user';
@@ -80,8 +143,8 @@ HTML;
 $lang['jwtUser'] = 'Use a Java Web Token (JWT) to authenticate as a user.';
 $lang['jwtUserHelp'] = <<<HTML
 To use JWT to authenticate, you need to:<ul>
-  <li>Generate a public/private key pair and store the private key in the Warehouse website settings.</li>
-  <li>Provide a JWT token signed with the public key which provides the following claims:<ul>
+  <li>Generate a public/private key pair and store the public key in the Warehouse website settings.</li>
+  <li>Provide a JWT token signed with the private key which provides the following claims:<ul>
     <li>iss - the website URL</li>
     <li>http://indicia.org.uk/user:id - set to the warehouse ID of the user issuing the request, or skip this claim if
     the token is issued on behalf of the website rather than a specific user.</li>
@@ -288,7 +351,71 @@ following: <ul>
   <li>taxa_taxon_list_external_key - key for the taxon</li>
 </ul>
 TXT;
-$lang['resources']['POST occurrences'] = 'Creates an occurrence on the system within an existing sample.';
+$lang['resources']['POST occurrences'] = <<<HTML
+<p>Creates an occurrence on the system within an existing sample.</p>
+<p>A posted occurrence can include a many-to-one relationship to a single classification_event,
+which itself can contain nested results, suggestions and links to media. This is illustrated in the
+following example:</p>
+<pre><code>
+POST /index.php/services/rest/samples
+{
+  "values": {
+    "survey_id": 1,
+    "entered_sref": "SU1234",
+    "entered_sref_system": "OSGB",
+    "date": "01/08/2020"
+  },
+  "occurrences": [
+    {
+      "values": {
+        "taxa_taxon_list_id": 2,
+        "machine_involvement": 3
+      },
+      "media": [
+        {
+          "values": {
+            "queued": "abcdefg.jpg",
+            "caption": "Occurrence image"
+          }
+        }
+      ],
+      "classification_event": {
+        "values": {
+          "created_by_id": 123
+        },
+        "classification_results": [
+          {
+            "values": {
+              "classifier_id": 2,
+              "classifier_version": "1.0"
+            },
+            "classification_suggestions": [
+              {
+                "values": {
+                  "taxon_name_given": "A suggested name",
+                  "taxa_taxon_list_id": 1,
+                  "probability": 0.9
+                }
+              },
+              {
+                "values": {
+                  "taxon_name_given": "An alternative name",
+                  "taxa_taxon_list_id": 2,
+                  "probability": 0.4
+                }
+              }
+            ],
+            "metaFields": {
+              "mediaPaths": ["abcdefg.jpg"]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+</code></pre>
+HTML;
 $lang['resources']['PUT occurrences/{id}'] = 'Updates a single occurrence belonging to the user.';
 $lang['resources']['DELETE occurrences/{id}'] = 'Deletes a single occurrence belonging to the user.';
 $lang['resources']['reports'] = <<<TXT

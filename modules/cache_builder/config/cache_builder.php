@@ -849,7 +849,7 @@ $config['samples']['get_missing_items_query'] = "
     left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
     left join cache_samples_functional cs on cs.id=s.id
     left join needs_update_samples nu on nu.id=s.id
-    where s.id is null and nu.id is null
+    where cs.id is null and nu.id is null
     and (s.deleted or coalesce(sp.deleted, false) or su.deleted) = false
 ";
 $config['samples']['get_changed_items_query'] = "
@@ -953,9 +953,11 @@ SET website_title=w.title,
           s.privacy_precision,
           -- work out best square size to reflect a lat long's true precision
           case
-          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
-          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
-          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
+            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
+            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
+            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
+            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
+            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
           else 10
           end,
           10 -- default minimum square size
@@ -986,6 +988,8 @@ SET website_title=w.title,
       s.privacy_precision,
       -- work out best square size to reflect a lat long's true precision
       case
+        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
+        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
         when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
         when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
         when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
@@ -1169,10 +1173,12 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
           s.privacy_precision,
           -- work out best square size to reflect a lat long's true precision
           case
-          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
-          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
-          when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
-          else 10
+            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
+            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
+            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
+            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
+            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
+            else 10
           end,
           10 -- default minimum square size
         ), reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
@@ -1180,19 +1186,19 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
    else
     case
       when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
-      abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
-      || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
-      || ', '
-      || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
-      || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
+        abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
+        || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
+        || ', '
+        || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar
+        || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
       when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
-      abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
-      || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
-      || ', '
-      || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
-      || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
+        abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
+        || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
+        || ', '
+        || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar
+        || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
       else
-      coalesce(s.entered_sref, l.centroid_sref)
+        coalesce(s.entered_sref, l.centroid_sref)
     end
   end,
   case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
@@ -1209,6 +1215,8 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
       s.privacy_precision,
       -- work out best square size to reflect a lat long's true precision
       case
+        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
+        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
         when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
         when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
         when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
@@ -1543,7 +1551,7 @@ delete from cache_occurrences_nonfunctional where id in (select id from needs_up
 ];
 
 $config['occurrences']['update']['functional'] = "
-UPDATE cache_occurrences_functional
+UPDATE cache_occurrences_functional u
 SET sample_id=o.sample_id,
   website_id=o.website_id,
   survey_id=s.survey_id,
@@ -1592,6 +1600,7 @@ SET sample_id=o.sample_id,
   terrestrial_flag=cttl.terrestrial_flag,
   non_native_flag=cttl.non_native_flag,
   data_cleaner_result=case when o.last_verification_check_date is null then null else dc.id is null end,
+  applied_verification_rule_types=case when o.last_verification_check_date is null then null else u.applied_verification_rule_types end,
   training=o.training,
   zero_abundance=o.zero_abundance,
   licence_id=s.licence_id,
@@ -1626,7 +1635,7 @@ LEFT JOIN occurrence_comments dc
     ON dc.occurrence_id=o.id
     AND dc.implies_manual_check_required=true
     AND dc.deleted=false
-WHERE cache_occurrences_functional.id=o.id
+WHERE u.id=o.id
 ";
 
 // Ensure occurrence sensitivity changes apply to parent sample cache data.
@@ -1652,6 +1661,8 @@ SET comment=o.comment,
       s.privacy_precision,
       -- work out best square size to reflect a lat long's true precision
       case
+        when coalesce(spv.int_value, spv.float_value)>=50001 then 1000000
+        when coalesce(spv.int_value, spv.float_value)>=5001 then 100000
         when coalesce(spv.int_value, spv.float_value)>=501 then 10000
         when coalesce(spv.int_value, spv.float_value) between 51 and 500 then 1000
         when coalesce(spv.int_value, spv.float_value) between 6 and 50 then 100
@@ -1890,6 +1901,8 @@ SELECT o.id,
       s.privacy_precision,
       -- work out best square size to reflect a lat long's true precision
       case
+        when coalesce(spv.int_value, spv.float_value)>=50001 then 1000000
+        when coalesce(spv.int_value, spv.float_value)>=5001 then 100000
         when coalesce(spv.int_value, spv.float_value)>=501 then 10000
         when coalesce(spv.int_value, spv.float_value) between 51 and 500 then 1000
         when coalesce(spv.int_value, spv.float_value) between 6 and 50 then 100

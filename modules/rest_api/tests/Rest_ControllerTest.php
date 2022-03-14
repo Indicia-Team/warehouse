@@ -118,7 +118,7 @@ KEY;
             'filter_id' => 2,
             'user_id' => 1,
             'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1
+            'created_by_id' => 1,
           ],
         ],
         'occurrence_comments' => [
@@ -242,7 +242,7 @@ KEY;
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 2, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
-    // Make an call with wrong key
+    // Make an call with wrong key.
     self::$jwt = $this->getJwt(self::$wrongPrivateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
@@ -1172,7 +1172,7 @@ KEY;
     $smpMediaCount = $db->query("select count(*) from sample_media where sample_id=$id and path='$uploadedFileName'")
       ->current()->count;
     $this->assertEquals(
-      1, $smpMediaCount, 
+      1, $smpMediaCount,
       'No media created when submitted with a sample.'
     );
     $this->assertFileExists(
@@ -1282,6 +1282,128 @@ KEY;
     $this->assertResponseOk($response, "/occurrences/$occurrenceId GET");
   }
 
+  public function testJwtSampleOccurrenceClassifiedMediaPost() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Post into the media queue.
+    $rootFolder = dirname(dirname(dirname(dirname(__FILE__))));
+    $file = "$rootFolder/media/images/warehouse-banner.jpg";
+    // Submit 3 files with deliberate mix of by field array and single field
+    // value.
+    $response = $this->callService(
+      "media-queue",
+      FALSE,
+      [
+        'file[]' => curl_file_create(
+          $file,
+          'image/jpg',
+          basename($file)
+        ),
+      ],
+      [], NULL, TRUE
+    );
+    $uploadedFileName = $response['response']['file[0]']['name'];
+    $readAuth = data_entry_helper::get_read_auth(self::$websiteId, self::$websitePassword);
+    $classifierTerms = data_entry_helper::get_population_data([
+      'table' => 'termlists_term',
+      'extraParams' => $readAuth + [
+        'termlist_external_key' => 'indicia:classifiers',
+        'term' => 'Unknown',
+      ],
+    ]);
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'machine_involvement' => 3,
+          ],
+          'media' => [
+            [
+              'values' => [
+                'queued' => $uploadedFileName,
+                'caption' => 'Occurrence image',
+              ],
+            ],
+          ],
+          'classification_event' => [
+            'values' => [
+              'created_by_id' => self::$userId,
+            ],
+            'classification_results' => [
+              [
+                'values' => [
+                  'classifier_id' => $classifierTerms[0]['id'],
+                  'classifier_version' => '1.0',
+                ],
+                'classification_suggestions' => [
+                  [
+                    'values' => [
+                      'taxon_name_given' => 'A suggested name',
+                      'taxa_taxon_list_id' => 1,
+                      'probability' => 0.9,
+                    ],
+                    'values' => [
+                      'taxon_name_given' => 'An alternative name',
+                      'taxa_taxon_list_id' => 2,
+                      'probability' => 0.4,
+                    ],
+                  ],
+                ],
+                'metaFields' => [
+                  'mediaPaths' => [$uploadedFileName],
+                ],
+              ],
+            ],
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $sampleId = $response['response']['values']['id'];
+    $sql = <<<SQL
+select s.id as sample_id,
+  o.id as occurrence_id,
+  o.machine_involvement,
+  om.id as occurrence_medium_id,
+  ce.id as classification_event_id,
+  cr.id as classification_result_id,
+  cs.id as classification_suggestion_id,
+  crom.id as classification_results_occurrence_medium_id,
+  crom.occurrence_media_id as crom_om_id
+from samples s
+left join occurrences o on o.sample_id=s.id and o.deleted=false
+left join occurrence_media om on om.occurrence_id=o.id and om.deleted=false
+left join classification_events ce on ce.id=o.classification_event_id and ce.deleted=false
+left join classification_results cr on cr.classification_event_id=ce.id and cr.deleted=false
+left join classification_suggestions cs on cs.classification_result_id=cr.id and cs.deleted=false
+left join classification_results_occurrence_media crom on crom.classification_result_id=cr.id
+where s.id=$sampleId;
+SQL;
+    $checkData = $db->query($sql)->current();
+    $this->assertTrue(!empty($checkData->occurrence_id), 'REST Classification submission occurrence not created.');
+    $this->assertEquals(3, $checkData->machine_involvement, 'REST Classification submission machine_involvement saved incorrectly.');
+    $this->assertTrue(!empty($checkData->occurrence_medium_id), 'REST Classification submission occurrence_medium not created.');
+    $this->assertTrue(!empty($checkData->classification_event_id), 'REST Classification submission classification_event not created.');
+    $this->assertTrue(!empty($checkData->classification_result_id), 'REST Classification submission classification_result not created.');
+    $this->assertTrue(!empty($checkData->classification_suggestion_id), 'REST Classification submission classification_suggestion not created.');
+    $this->assertTrue(!empty($checkData->classification_results_occurrence_medium_id), 'REST Classification submission classification_results_occurrence_medium not created.');
+    $this->assertTrue(!empty($checkData->crom_om_id), 'REST Classification submission classification_results_occurrence_medium not linked to media file.');
+    $this->assertEquals($checkData->occurrence_medium_id, $checkData->crom_om_id, 'REST Classification submission mediaPaths linking incorrect.');
+  }
+
   public function testJwtSamplePut() {
     $this->putTest('samples', [
       'survey_id' => 1,
@@ -1381,11 +1503,22 @@ KEY;
   }
 
   /**
-   * A basic test of /locations GET.
+   * A basic test of /locations/id GET.
    */
   public function testJwtLocationGet() {
     $this->getTest('locations', [
       'name' => 'Location GET test',
+      'centroid_sref' => 'ST1234',
+      'centroid_sref_system' => 'OSGB',
+    ]);
+  }
+
+  /**
+   * A basic test of /locations GET.
+   */
+  public function testJwtLocationGetList() {
+    $this->getListTest('locations', [
+      'name' => 'Test Location ' . microtime(TRUE),
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
     ]);
@@ -1966,7 +2099,7 @@ SQL;
         'Incorrect number of projects returned from /projects.');
     foreach ($response['response']['data'] as $projDef) {
       $this->assertArrayHasKey(
-        $projDef['id'], $viaConfig, 
+        $projDef['id'], $viaConfig,
         "Unexpected project $projDef[id]returned by /projects."
       );
       $this->assertEquals($viaConfig[$projDef['id']]['title'], $projDef['title'],
@@ -2302,7 +2435,7 @@ SQL;
     );
     $decoded = json_decode($response['response'], TRUE);
     $this->assertNotEquals(
-      NULL, $decoded, 
+      NULL, $decoded,
       'JSON response could not be decoded: ' . $response['response']
     );
     $this->assertEquals(200, $response['httpCode']);
