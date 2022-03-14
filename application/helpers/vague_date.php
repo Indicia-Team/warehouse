@@ -293,7 +293,12 @@ class vague_date {
   /**
    * Convert a string into a vague date.
    *
-   * Returns an array with 3 entries, the start date, end date and date type.
+   * @param string $string
+   *   The date as a string.
+   *
+   * @return array|false
+   *   An array with 3 entries, the start date, end date and date type, or
+   *   FALSE if the format can't be matched.
    */
   public static function string_to_vague_date($string) {
     $parseFormats = array_merge(
@@ -753,7 +758,7 @@ class vague_date {
         self::is_century_end($end) &&
         self::is_same_century($start, $end)
       ),
-      'Century dates should be represented by the first day (e.g. 1/1/1901) and 
+      'Century dates should be represented by the first day (e.g. 1/1/1901) and
       the last day (e.g. 31/12/2000) of the century');
     return sprintf(Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1));
   }
@@ -768,7 +773,7 @@ class vague_date {
         self::is_century_end($end) &&
         self::is_first_date_first($start, $end)
       ),
-      'Century ranges should be represented by the first day (e.g. 1/1/1701) of 
+      'Century ranges should be represented by the first day (e.g. 1/1/1701) of
       the first century and the last day (e.g. 31/12/1900) of the last century');
     return sprintf(
       Kohana::lang('dates.century', ($start->format('Y') - 1) / 100 + 1)) .

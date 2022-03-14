@@ -27,6 +27,7 @@ use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Reader\Xls;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ImportDate;
 
 /**
  * PHPSpreadsheet filter for reading the header row.
@@ -615,7 +616,14 @@ class Import_Controller extends Service_Base_Controller {
               // import_helper::model_field_options.
               if ($attr != '<Please select>' && $data[$index] !== '') {
                 // Add the data to the record save array.
-                $saveArray[$attr] = $data[$index];
+                if (preg_match('/date$/', $attr) && preg_match('/\d+/', $data[$index])) {
+                  // Date fields are integers when read from Excel.
+                  $date = ImportDate::excelToDateTimeObject($data[$index]);
+                  $saveArray[$attr] = $date->format('d/m/Y');
+                }
+                else {
+                  $saveArray[$attr] = $data[$index];
+                }
               }
             }
             else {
