@@ -572,16 +572,16 @@ QRY
         foreach ($attrs as &$attr) {
           // Ignore any attributes we don't have a change value for.
           if (in_array($attr['caption'], $attrCaptions)) {
+            $valueFieldName = self::dataTypeToValueFieldName($attr['data_type']);
             $data = [
               'person_id' => $userPersonObj->person_id,
               'person_attribute_id' => $attr['id'],
-              'text_value' => $valueData[$attr['caption']],
+              $valueFieldName => $valueData[$attr['caption']],
             ];
             // Store the attribute value we are saving in the array of
             // attributes, so the full updated list can be returned to the
             // client website.
             $attr['value'] = $valueData[$attr['caption']];
-            kohana::log('debug', 'NEED TO GET CORRECT TYPE OF VALUE ABOVE');
             if (!empty($attr['value_id'])) {
               $data['id'] = $attr['value_id'];
               $pav->find($attr['value_id']);
@@ -593,8 +593,38 @@ QRY
             self::checkErrors($pav);
           }
         }
-
       }
+    }
+  }
+
+  /**
+   * Convert a data type code to the attribute value table value field name.
+   *
+   * @param string $dataType
+   *   Data type code ('T', 'I' etc).
+   *
+   * @return string
+   *   Value field name ('text_value', 'int_value' etc).
+   */
+  private static function dataTypeToValueFieldName($dataType) {
+    switch ($dataType) {
+      case 'T':
+        return 'text_value';
+
+      case 'F':
+        return 'float_value';
+
+      case 'I':
+      case 'L':
+      case 'B':
+        return 'int_value';
+
+      case 'D':
+      case 'V':
+        return 'date_start_value';
+
+      default:
+        throw new exception('Unsupported data type code ' . $dataType);
     }
   }
 
