@@ -182,15 +182,14 @@ class Service_Base_Controller extends Controller {
             if ($id > 0) {
               $this->website_id = $id;
               if (!empty($_REQUEST['user_id']) && preg_match('/^\d+$/', $_REQUEST['user_id'])) {
-                if ($this->auth_user_id !== -1 && $this->auth_user_id != $_REQUEST['user_id']) {
-                  Kohana::log('info', "Claiming wrong user ID: $_REQUEST[user_id] !== $this->auth_user_id");
-                  throw new AuthenticationError("unauthorised", 1);
+                if ($this->auth_user_id === -1 || $this->auth_user_id == $_REQUEST['user_id']) {
+                  // If the request included a user ID which matches the auth
+                  // token's user ID (if provided), use this ID as the logged
+                  // in user.
+                  $this->user_id = $_REQUEST['user_id'];
+                  global $remoteUserId;
+                  $remoteUserId = $this->user_id;
                 }
-                $this->user_id = $_REQUEST['user_id'];
-                // If the request included a user ID, put it in the global var
-                // so all ORM saves can use it.
-                global $remoteUserId;
-                $remoteUserId = $this->user_id;
               }
             }
             else {
