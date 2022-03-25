@@ -24,16 +24,21 @@
  */
 class Group_Model extends ORM {
 
-  protected $has_one = array('filter');
+  protected $has_one = ['filter'];
 
-  protected $has_and_belongs_to_many = array('users', 'locations');
+  protected $has_and_belongs_to_many = ['users', 'locations'];
 
-  protected $has_many = array('group_invitations', 'group_pages');
+  protected $has_many = ['group_invitations', 'group_pages'];
 
   /**
-   * @var boolean Flag indicating if the group's private records status is changing, indicating we need to update the release status of records.
+   * Release status needs updating?
+   *
+   * Flag indicating if the group's private record status is changing,
+   * indicating we need to update the release status of records.
+   *
+   * @var bool
    */
-  protected $wantToUpdateReleaseStatus=false;
+  protected $wantToUpdateReleaseStatus = FALSE;
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
@@ -41,12 +46,24 @@ class Group_Model extends ORM {
     $array->add_rules('group_type_id', 'required');
     $array->add_rules('website_id', 'required');
     $array->add_rules('code', 'length[1,20]');
-    $this->unvalidatedFields = array('code', 'description', 'from_date','to_date','private_records',
-        'filter_id', 'joining_method', 'deleted', 'implicit_record_inclusion', 'view_full_precision',
-        'logo_path', 'licence_id');
+    $this->unvalidatedFields = [
+      'code',
+      'description',
+      'from_date',
+      'to_date',
+      'private_records',
+      'filter_id',
+      'joining_method',
+      'deleted',
+      'implicit_record_inclusion',
+      'view_full_precision',
+      'logo_path',
+      'licence_id',
+      'published',
+    ];
     // has the private records flag changed?
     $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) &&
-        $this->submission['fields']['private_records']!==$this->private_records;
+        $this->submission['fields']['private_records'] !== $this->private_records;
     return parent::validate($array, $save);
   }
 
@@ -55,7 +72,7 @@ class Group_Model extends ORM {
    */
   public function postSubmit($isInsert) {
     if (!$isInsert && $this->wantToUpdateReleaseStatus) {
-      $status = $this->private_records==='1' ? 'U' : 'R';
+      $status = $this->private_records === '1' ? 'U' : 'R';
       $sql="update #table# o
 set release_status='$status'
 from samples s
@@ -65,7 +82,7 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
     }
     $this->processIndexGroupsLocations();
     $this->processIndexGroupsTaxonGroups();
-    return true;
+    return TRUE;
   }
 
   /**
@@ -78,7 +95,7 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
       ->from('index_groups_locations')
       ->where('group_id', $this->id)
       ->get();
-    $location_ids = array();
+    $location_ids = [];
     // Backwards compatibility checks.
     if (!empty($filter['indexed_location_id']) && empty($filter['indexed_location_list'])) {
       $filter['indexed_location_list'] = $filter['location_id'];
