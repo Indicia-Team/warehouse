@@ -1,7 +1,12 @@
 # Version 7.1.0
-*2021-03-10*
+*2022-03-25*
 
-* Add an alternative user_id parameter to the user_users_websites_list report, as user_id fires 
+* Adds a `groups.published` field for tracking which recording groups publish their data.
+
+# Version 7.1.0
+*2022-03-10*
+
+* Add an alternative user_id parameter to the user_users_websites_list report, as user_id fires
   some code automatically that we don't always want fired.
 # Version 7.0.0
 *2021-03-08*
