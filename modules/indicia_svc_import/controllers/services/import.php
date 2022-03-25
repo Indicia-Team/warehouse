@@ -616,7 +616,7 @@ class Import_Controller extends Service_Base_Controller {
               // import_helper::model_field_options.
               if ($attr != '<Please select>' && $data[$index] !== '') {
                 // Add the data to the record save array.
-                if (preg_match('/date$/', $attr) && preg_match('/\d+/', $data[$index])) {
+                if (preg_match('/date$/', $attr) && preg_match('/^\d+$/', $data[$index])) {
                   // Date fields are integers when read from Excel.
                   $date = ImportDate::excelToDateTimeObject($data[$index]);
                   $saveArray[$attr] = $date->format('d/m/Y');
