@@ -63,8 +63,12 @@ function hostsite_get_user_field($field) {
   elseif ($field === 'training') {
     return FALSE;
   }
+  elseif ($field === 'taxon_groups' || $field === 'location' || $field === 'location_expertise' || $field === 'location_collation') {
+    // Unsupported client website fields.
+    return FALSE;
+  }
   else {
-    throw new exception("Unsuppoered hostsite_get_user_field call on warehouse for field $field");
+    throw new exception("Unsupported hostsite_get_user_field call on warehouse for field $field");
   }
 }
 
