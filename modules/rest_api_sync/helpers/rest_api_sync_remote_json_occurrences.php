@@ -237,6 +237,8 @@ QRY;
    *   True if the record is to be included, false if rejected.
    */
   private static function btoCheckOdonata($db, array $server, array $record, array &$observation) {
+    // BTO automatic verifications are ignored.
+    $observation['identificationVerificationStatus'] = 'unconfirmed';
     $sql = <<<SQL
 SELECT count(ctp.*)
 FROM taxa t
