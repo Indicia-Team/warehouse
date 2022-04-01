@@ -813,6 +813,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     if (isset($this->extensionOpts['allow_full_access']) && $this->extensionOpts['allow_full_access'] == 1) {
       $this->allow_full_access[] = $entity;
     }
+    if (isset($this->extensionOpts['table_without_views']) && $this->extensionOpts['table_without_views'] == 1) {
+      $this->tables_without_views[] = inflector::plural($entity);
+    }
     return $extensions;
   }
 
