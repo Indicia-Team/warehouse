@@ -783,19 +783,19 @@ class Data_Controller extends Data_Service_Base_Controller {
    *   List of extension definitions.
    */
   protected function loadExtensions($entity) {
-    // use caching, so things don't slow down if there are lots of plugins
+    // Use caching, so things don't slow down if there are lots of plugins.
     $cacheId = 'extend-data-services';
     $cache = Cache::instance();
     $extensions = $cache->get($cacheId);
     if (!$extensions) {
-      $extensions = array();
-      // now look for modules which plugin to add a data service extension.
+      $extensions = [];
+      // Now look for modules which plugin to add a data service extension.
       foreach (Kohana::config('config.modules') as $path) {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
-          require_once("$path/plugins/$plugin.php");
-          if (function_exists($plugin.'_extend_data_services')) {
-            $moduleExtensions = call_user_func($plugin.'_extend_data_services');
+          require_once "$path/plugins/$plugin.php";
+          if (function_exists($plugin . '_extend_data_services')) {
+            $moduleExtensions = call_user_func($plugin . '_extend_data_services');
             $extensions = array_merge($extensions, $moduleExtensions);
           }
         }
@@ -805,11 +805,17 @@ class Data_Controller extends Data_Service_Base_Controller {
     if (array_key_exists(inflector::plural($entity), $extensions)) {
       $this->extensionOpts = $extensions[inflector::plural($entity)];
     }
-    if (isset($this->extensionOpts) && (!isset($this->extensionOpts['readOnly']) || $this->extensionOpts['readOnly']!==true))
+    if (isset($this->extensionOpts) && (!isset($this->extensionOpts['readOnly']) || $this->extensionOpts['readOnly'] !== TRUE)) {
       $this->allow_updates[] = $entity;
-    // Allow modules to provide an option when extending data services to allow tables without website ids to be written to
-    if (isset($this->extensionOpts['allow_full_access'])&&$this->extensionOpts['allow_full_access']==1)
+    }
+    // Allow modules to provide an option when extending data services to
+    // allow tables without website ids to be written to.
+    if (isset($this->extensionOpts['allow_full_access']) && $this->extensionOpts['allow_full_access'] == 1) {
       $this->allow_full_access[] = $entity;
+    }
+    if (isset($this->extensionOpts['table_without_views']) && $this->extensionOpts['table_without_views'] == 1) {
+      $this->tables_without_views[] = inflector::plural($entity);
+    }
     return $extensions;
   }
 
@@ -818,7 +824,7 @@ class Data_Controller extends Data_Service_Base_Controller {
    *
    * Decides if it's a request for data or a submission.
    *
-   * @param string
+   * @param string $entity
    *   Name of the affected entity.
    */
   protected function handle_call($entity) {
@@ -834,8 +840,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       kohana::log('debug', 'Sending reponse size ' . strlen($this->response));
       $this->send_response();
       if (class_exists('request_logging')) {
-        // Note that we store the response for submissions as more practical than
-        // entire POST.
+        // Note that we store the response for submissions as more practical
+        // than entire POST.
         request_logging::log(array_key_exists('submission', $_POST) ? 'i' : 'o', 'data', NULL, $entity,
           $this->website_id, $this->user_id, $tm, $this->db, NULL,
           array_key_exists('submission', $_POST) ? $this->response : NULL);
@@ -856,6 +862,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   protected function handle_submit() {
     $this->authenticate();
     $mode = $this->get_input_mode();
+    $s = [];
     switch ($mode) {
       case 'json':
         $s = json_decode($_POST['submission'], TRUE);
@@ -880,14 +887,14 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     elseif (isset($model) && is_array($model->getAllErrors())) {
       if ($model->uniqueKeyViolation) {
-        Throw new ValidationError('Duplicate key violation', 2004, $model->getAllErrors());
+        throw new ValidationError('Duplicate key violation', 2004, $model->getAllErrors());
       }
       else {
-        Throw new ValidationError('Error occurred on model submission', 2003, $model->getAllErrors());
+        throw new ValidationError('Error occurred on model submission', 2003, $model->getAllErrors());
       }
     }
     else {
-      Throw new Exception('Unknown error on submission of the model');
+      throw new Exception('Unknown error on submission of the model');
     }
 
   }
@@ -907,10 +914,10 @@ class Data_Controller extends Data_Service_Base_Controller {
   private function decodeArrayParameter($value) {
     $decoded = json_decode($value);
     // Strings which contain commas but not valid JSON are almost certainly mistakes.
-    if ($decoded === null && strpos($value, ',') !== false) {
+    if ($decoded === NULL && strpos($value, ',') !== FALSE) {
       throw new ValidationError('Validation error', 2003, 'Invalid format for array parameter.');
     }
-    return $decoded === null ? $value : $decoded;
+    return $decoded === NULL ? $value : $decoded;
   }
 
   /**
