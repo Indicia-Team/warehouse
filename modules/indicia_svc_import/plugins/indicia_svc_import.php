@@ -31,6 +31,9 @@ defined('SYSPATH') or die('No direct script access.');
  * are left which need to be tidied.
  */
 function indicia_svc_import_scheduled_task($timestamp, $db, $endtime) {
+  // Query selects tables in the import_temp schema where the date in the
+  // name indicates > 1 day old (format is DHH for last 3 digits, hence 100 =
+  // 1 day).
   $sql = <<<SQL
 SELECT
   table_name
@@ -43,6 +46,7 @@ SQL;
   $tables = $db->query($sql);
   foreach ($tables as $table) {
     $db->query("DROP TABLE import_temp.$table->table_name");
-
   }
+  // Purge files older than 1 day.
+  warehouse::purgeOldFiles(DOCROOT . 'import/', 60 * 60 * 3600);
 }
