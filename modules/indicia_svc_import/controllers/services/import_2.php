@@ -497,18 +497,19 @@ SQL;
       }
       // @todo Correctly set parent entity for other entities.
       // @todo Handling for entities without parent entity.
-      $parentEntity = 'sample';
-      $childEntity = 'occurrence';
-      $parentEntityFields = $this->findEntityFields($parentEntity, $config);
-      $childEntityFields = $this->findEntityFields($childEntity, $config);
+      $parentEntityFields = $this->findEntityFields($config['parentEntity'], $config);
+      $childEntityFields = $this->findEntityFields($config['entity'], $config);
       $parentEntityDataRows = $this->fetchParentEntityData($db, $parentEntityFields, $config);
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
         // @todo Updating existing data.
         // @todo tracking of records that are done in the import table so can restart.
-        $parent = ORM::factory($parentEntity);
+        $parent = ORM::factory($config['parentEntity']);
         $submission = [];
         $this->copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityFields, $config, $submission);
-        $this->applyGlobalValues($config, $parentEntity, $submission);
+        $this->applyGlobalValues($config, $config['parentEntity'], $submission);
+        if ($config['parentEntitySupportsImportGuid']) {
+          $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
+        }
         $parent->set_submission_data($submission);
         $parent->submit();
         $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityFields, $config, $parentEntityDataRow);
@@ -519,12 +520,15 @@ SQL;
         }
         else {
           foreach ($childEntityDataRows as $childEntityDataRow) {
-            $child = ORM::factory($childEntity);
+            $child = ORM::factory($config['entity']);
             $submission = [
               'sample_id' => $parent->id,
             ];
             $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityFields, $config, $submission);
-            $this->applyGlobalValues($config, $childEntity, $submission);
+            $this->applyGlobalValues($config, $config['entity'], $submission);
+            if ($config['entitySupportsImportGuid']) {
+              $submission["$config[entity]:import_guid"] = $config['importGuid'];
+            }
             $child->set_submission_data($submission);
             $child->submit();
             if (count($child->getAllErrors()) > 0) {
@@ -1103,13 +1107,21 @@ SQL;
       return json_decode($config, TRUE);
     }
     else {
+      // @todo Entity should by dynamic.
+      $entity = 'occurrence';
+      $model = ORM::Factory($entity);
+      $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
+      $config['parentEntity'] = 'sample';
+      $model = ORM::Factory($config['parentEntity']);
+      $parentSupportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
       // Create a new config object.
       return [
         'fileName' => $fileName,
         'tableName' => '',
         'isExcel' => in_array($ext, ['xls', 'xlsx']),
         // @todo Entity should be dynamic.
-        'entity' => 'occurrence',
+        'entity' => $entity,
+        'parentEntity' => $config['parentEntity'],
         'columns' => $this->loadColumnNamesFromFile($fileName),
         'state' => 'initial',
         'rowsLoaded' => 0,
@@ -1121,6 +1133,8 @@ SQL;
         'parentEntityRowsInserted' => 0,
         'errorsCount' => 0,
         'importGuid' => $this->createGuid(),
+        'entitySupportsImportGuid' => $supportsImportGuid,
+        'parentEntitySupportsImportGuid' => $parentSupportsImportGuid,
       ];
     }
   }
