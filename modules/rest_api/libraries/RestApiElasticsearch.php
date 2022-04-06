@@ -496,15 +496,22 @@ class RestApiElasticsearch {
       // Tolerate sample or event for sample attributes.
       $key = $params[0] === 'parent_event' ? 'parent_attributes' : 'attributes';
       $entity = in_array($params[0], ['sample', 'event', 'parent_event']) ? 'event' : 'occurrence';
+      $attrList = [];
       if (isset($doc[$entity][$key])) {
-        foreach ($doc[$entity][$key] as $attr) {
-          if ($attr['id'] == $params[1]) {
-            if (is_array($attr['value'])) {
-              $r = array_merge($r, $attr['value']);
-            }
-            else {
-              $r[] = $attr['value'];
-            }
+        $attrList = $doc[$entity][$key];
+      }
+      // If requesting an event/sample attribute, the parent event/sample's
+      // data can also be considered.
+      if ($entity === 'event' && $key === 'attributes' && isset($doc['event']['parent_attributes'])) {
+        $attrList = array_merge($attrList, $doc['event']['parent_attributes']);
+      }
+      foreach ($attrList as $attr) {
+        if ($attr['id'] == $params[1]) {
+          if (is_array($attr['value'])) {
+            $r = array_merge($r, $attr['value']);
+          }
+          else {
+            $r[] = $attr['value'];
           }
         }
       }
@@ -1879,6 +1886,11 @@ class RestApiElasticsearch {
           // Tolerate sample or event for entity parameter.
           $entity = in_array($matches[1], ['sample', 'event', 'parent_event']) ? 'event' : 'occurrence';
           $fields[] = "$entity.$key";
+          // When requesting an event attribute, allow the parent event
+          // attribute value to be used if necessary.
+          if ("$entity.$key" === 'event.attributes') {
+            $fields[] = 'event.parent_attributes';
+          }
         }
         elseif (preg_match('/^#null_if_zero:([a-z_]+(\.[a-z_]+)*)#$/', $field, $matches)) {
           $fields[] = $matches[1];
