@@ -2305,6 +2305,13 @@ class ORM extends ORM_Core {
         }
         break;
       case 'boolean':
+        // Any database column of type 'boolean' is mapped to 'bool' in 
+        // application/helpers/postgreSQL.php::sql_type(), thanks to the setting
+        // in application/config/sql_types.php.
+        // As a consequence, this case does not arise and there is no PHP type
+        // conversion. We can submit anything acceptable to the database. See 
+        // https://www.postgresql.org/docs/current/datatype-boolean.html
+        // However, see https://github.com/Indicia-Team/warehouse/issues/427.
         $value = (bool) $value;
       break;
       case 'string':
