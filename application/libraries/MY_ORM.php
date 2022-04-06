@@ -2309,11 +2309,16 @@ class ORM extends ORM_Core {
         // application/helpers/postgreSQL.php::sql_type(), thanks to the setting
         // in application/config/sql_types.php.
         // As a consequence, this case does not arise and there is no PHP type
-        // conversion. We can submit anything acceptable to the database. See 
-        // https://www.postgresql.org/docs/current/datatype-boolean.html
-        // However, see https://github.com/Indicia-Team/warehouse/issues/427.
+        // conversion except for binary fields from above.
         $value = (bool) $value;
       break;
+      case 'bool':
+        // Instead, we can submit any boolean representation acceptable to the
+        // database. See 
+        // https://www.postgresql.org/docs/current/datatype-boolean.html
+        // Integer values of 1/0 may arise from file importing and must be cast
+        // to string.
+        $value = (string) $value;
       case 'string':
         $value = (string) $value;
       break;
