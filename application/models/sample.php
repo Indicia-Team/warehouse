@@ -278,11 +278,15 @@ class Sample_Model extends ORM_Tree {
     }
     if (isset($dateString)) {
       $vagueDate = vague_date::string_to_vague_date($dateString);
-      $this->submission['fields']['date_start']['value'] = $vagueDate[0];
-      $this->submission['fields']['date_end']['value'] = $vagueDate[1];
-      $this->submission['fields']['date_type']['value'] = $vagueDate[2];
+      if ($vagueDate !== FALSE) {
+        $this->submission['fields']['date_start']['value'] = $vagueDate[0];
+        $this->submission['fields']['date_end']['value'] = $vagueDate[1];
+        $this->submission['fields']['date_type']['value'] = $vagueDate[2];
+      }
+      else {
+        $this->errors['date_type'] = 'The date could not be recognised.';
+      }
     }
-
   }
 
   /**
