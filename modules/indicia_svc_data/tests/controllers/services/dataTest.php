@@ -858,7 +858,8 @@ SQL;
     $this->assertFalse(isset($r['success']), 'Creating a sample with a bad date passed validation incorrectly');
     $this->assertArrayHasKey('errors', $r, 'Submission with bad sample date did not return field errors list');
     // Check error attached to correct field.
-    $this->assertArrayHasKey('sample:date_start', $r['errors'], 'Submission with bad sample date did not attached validation error to correct field.');
+    $this->assertArrayHasKey('sample:date_type', $r['errors'], 'Submission with bad sample date did not attached validation error to correct field.');
+    var_export($r);
   }
 
   /**
