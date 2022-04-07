@@ -917,6 +917,9 @@ class ORM extends ORM_Core {
     if ($return) {
       $this->initialValues = $this->as_array();
       $this->preSubmit();
+      if (count($this->errors) > 0) {
+        return FALSE;
+      }
       $this->removeUnwantedFields();
       $return = $this->validateAndSubmit();
       $return = $this->checkRequiredAttributes() ? $return : NULL;

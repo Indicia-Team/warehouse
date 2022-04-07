@@ -837,6 +837,32 @@ SQL;
   }
 
   /**
+   * Test a sample with a gibberish date.
+   *
+   * Ensure that date is reporting a validation error, not just a general 500
+   * error.
+   */
+  public function testSampleBadDate() {
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => 'gibbe 11 rish',
+    ];
+    $structure = [
+      'model' => 'sample',
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $this->assertFalse(isset($r['success']), 'Creating a sample with a bad date passed validation incorrectly');
+    $this->assertArrayHasKey('errors', $r, 'Submission with bad sample date did not return field errors list');
+    // Check error attached to correct field.
+    $this->assertArrayHasKey('sample:date_type', $r['errors'], 'Submission with bad sample date did not attached validation error to correct field.');
+    var_export($r);
+  }
+
+  /**
    * Test updating existing occurrence data with required values.
    *
    * If an existing occurrence has a value for a required attribute, it should
