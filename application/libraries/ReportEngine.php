@@ -418,6 +418,7 @@ class ReportEngine {
       // drop in the paramsFormExcludes parameter, then the list of parameters is always the ones that are not excluded.
       // Otherwise the list of parameters is the list of unpopulated parameters.
       $res = array('parameterRequest' => isset($includedParams) ? $includedParams : $unpopulatedParams);
+      kohana::log('debug', 'Need parameters: ' . print_r($res, TRUE));
       return $res;
     }
     else {
@@ -2076,6 +2077,7 @@ SQL;
     }
     else {
       Kohana::log('debug', "Run report query : " . $this->query);
+      kohana::log('debug', $this->query);
     }
   }
 
