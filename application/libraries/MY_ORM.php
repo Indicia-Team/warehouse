@@ -2156,9 +2156,6 @@ class ORM extends ORM_Core {
           'fkExcludeDeletedRecords' => ($lookupAgainst === $fkTable),
         );
         $struct = $submissionModel->get_submission_structure();
-        if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
-            $submission['fkFields'][$field]['fkWebsite'] = $submission['fields']['website_id']['value'];
-        }
         // if the save array defines a filter against the lookup table then also store that.
         // 2 formats: field level or table level : "fkFilter:[fieldname|tablename]:[column]=[value]
         // E.g. a search in the taxa_taxon_list table may want to filter by the taxon list. This is done
