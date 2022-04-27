@@ -500,7 +500,13 @@ class Location_Controller extends Gridview_Base_Controller {
    *   Field value.
    */
   private function getDbaseRecordFieldValue(Record $record, $name) {
-    return trim(utf8_encode($record->forceGetString($name)));
+    $value = $record->forceGetString($name);
+    $encoding = mb_detect_encoding($value, ['UTF-8', 'ISO-8859-1'], TRUE);
+    if ($encoding === 'ISO-8859-1') {
+      // Convert from Latin1 to UTF8.
+      $value = utf8_encode($value);
+    }
+    return trim($value);
   }
 
   function loadData($type, $data) {
