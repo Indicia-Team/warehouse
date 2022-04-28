@@ -48,5 +48,5 @@ SQL;
     $db->query("DROP TABLE import_temp.$table->table_name");
   }
   // Purge files older than 1 day.
-  warehouse::purgeOldFiles(DOCROOT . 'import/', 60 * 60 * 3600);
+  warehouse::purgeOldFiles('import/', 60 * 60 * 24);
 }
