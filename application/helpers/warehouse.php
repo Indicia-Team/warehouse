@@ -113,7 +113,7 @@ class warehouse {
    * Clears files older than a certain age in a folder.
    *
    * @param string $path
-   *   Folder path.
+   *   Folder path relative to the DOCROOT, without leading or trailing slash.
    * @param int $age
    *   Age in seconds. Files older than this are deleted.
    */
@@ -131,11 +131,12 @@ class warehouse {
     ];
     if ($dir) {
       while ($filename = readdir($dir)) {
-        if (is_dir($filename) || in_array($filename, $exclude)) {
+        $fullPath = DOCROOT . $path . DIRECTORY_SEPARATOR . $filename;
+        if (is_dir($fullPath) || in_array($filename, $exclude)) {
           continue;
         }
-        $lastModified = filemtime(DOCROOT . "import/$filename");
-        $files[] = [DOCROOT . "import/$filename", $lastModified];
+        $lastModified = filemtime($fullPath);
+        $files[] = [$fullPath, $lastModified];
       }
     }
     // Sort the file array by date, oldest first.
