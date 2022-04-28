@@ -1584,7 +1584,7 @@ class Import_Controller extends Service_Base_Controller {
    *   Row data.
    */
   private function getNextRow($data, $row, $metadata) {
-    return ($row <= $metadata['fileSize']) ? $data[$row] : FALSE;
+    return ($row <= $metadata['fileSize'] && isset($data[$row])) ? $data[$row] : FALSE;
   }
 
 }

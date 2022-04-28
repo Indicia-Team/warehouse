@@ -1,7 +1,20 @@
-# Version 7.1.0
-*2021-03-10*
+# Version 7.2.0
+*2022-04-28*
 
-* Add an alternative user_id parameter to the user_users_websites_list report, as user_id fires 
+* Adds a `groups.published` field for tracking which recording groups publish their data.
+* ORM extension plugins can now declare table entities that are accessed directly using the
+  `table_without_views` option in the plugin metadata.
+* Original import code fixes an exception that occurred when importing empty CSV lines.
+* Model fields used in the mappings page of the new importer now have human-friendly captions.
+* The new importer now purges old files uploaded into the /import folder.
+* Adds a report library/classification_events/classification_event_results to summarise the results
+  of image classification.
+* Project specific reports removed.
+
+# Version 7.1.0
+*2022-03-10*
+
+* Add an alternative user_id parameter to the user_users_websites_list report, as user_id fires
   some code automatically that we don't always want fired.
 # Version 7.0.0
 *2021-03-08*

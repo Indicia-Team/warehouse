@@ -110,6 +110,52 @@ class warehouse {
   }
 
   /**
+   * Clears files older than a certain age in a folder.
+   *
+   * @param string $path
+   *   Folder path.
+   * @param int $age
+   *   Age in seconds. Files older than this are deleted.
+   */
+  public static function purgeOldFiles($path, $age) {
+    // First, get an array of files sorted by date.
+    $files = [];
+    $dir = opendir($path);
+    // Skip certain file names.
+    $exclude = [
+      '.',
+      '..',
+      '.htaccess',
+      'web.config',
+      '.gitignore',
+    ];
+    if ($dir) {
+      while ($filename = readdir($dir)) {
+        if (is_dir($filename) || in_array($filename, $exclude)) {
+          continue;
+        }
+        $lastModified = filemtime(DOCROOT . "import/$filename");
+        $files[] = [DOCROOT . "import/$filename", $lastModified];
+      }
+    }
+    // Sort the file array by date, oldest first.
+    usort($files, ['warehouse', 'dateCmp']);
+    // Iterate files.
+    foreach ($files as $file) {
+      // If we have reached a file that is not old enough to expire, don't
+      // go any further. Expiry set to 1 hour.
+      if ($file[1] > (time() - $age)) {
+        break;
+      }
+      // Clear out the old file.
+      if (is_file($file[0])) {
+        // Ignore errors, will try again later if not deleted.
+        @unlink($file[0]);
+      }
+    }
+  }
+
+  /**
    * Find the master taxon list's ID from config.
    *
    * This identifies the taxon list which provides an overall taxonomic
@@ -193,6 +239,27 @@ class warehouse {
   public static function sharingTermToCode($term) {
     $mappings = array_flip(self::$sharingMappings);
     return array_key_exists($term, $mappings) ? $mappings[$term] : $term;
+  }
+
+  /**
+   * Custom sort function for date comparison of files.
+   *
+   * @param int $a
+   *   Date value 1 as Unix timestamp.
+   * @param int $b
+   *   Date value 2 as Unix timestamp.
+   */
+  private static function dateCmp($a, $b) {
+    if ($a[1] < $b[1]) {
+      $r = -1;
+    }
+    elseif ($a[1] > $b[1]) {
+      $r = 1;
+    }
+    else {
+      $r = 0;
+    }
+    return $r;
   }
 
 }

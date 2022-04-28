@@ -232,6 +232,7 @@ ____EOF
           'data_cleaner_species_location'
           'data_cleaner_species_location_name'
           'data_cleaner_without_polygon'
+          'taxon_designations'
         )
         # This just has the effect of uncommenting all the modules.
         for module in ${module_array[@]}; do

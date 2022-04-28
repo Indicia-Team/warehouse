@@ -1997,7 +1997,7 @@ SQL;
    *   File array containing the name and handle.
    */
   private function preparePagingFile($format) {
-    rest_utils::purgeOldFiles('download', 3600);
+    rest_utils::purgeOldFiles(DOCROOT . 'download/', 3600);
     $uniqId = uniqid('', TRUE);
     $filename = "download-$uniqId.$format";
     // Reopen file for appending.
