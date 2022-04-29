@@ -176,11 +176,26 @@ KEY;
 
   }
 
+  /**
+   * Get user associated JWT.
+   */
   private function getJwt($privateKey, $iss, $userId, $exp) {
     require_once 'vendor/autoload.php';
     $payload = [
       'iss' => $iss,
       'http://indicia.org.uk/user:id' => $userId,
+      'exp' => $exp,
+    ];
+    return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
+  }
+
+  /**
+   * Get anonymous JWT.
+   */
+  private function getAnonJwt($privateKey, $iss, $exp) {
+    require_once 'vendor/autoload.php';
+    $payload = [
+      'iss' => $iss,
       'exp' => $exp,
     ];
     return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
@@ -246,6 +261,75 @@ KEY;
     self::$jwt = $this->getJwt(self::$wrongPrivateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
+  }
+
+  /**
+   * Check use of anonymous website based JWT tokens.
+   */
+  public function testAnonJwt() {
+    $this->authMethod = 'jwtUser';
+    $cache = Cache::instance();
+    $cacheKey = 'website-by-url-' . preg_replace('/[^0-9a-zA-Z]/', '', 'http://www.indicia.org.uk');
+    // Store the public key so Indicia can check signed requests.
+    $db = new Database();
+    $db->update(
+      'websites',
+      ['public_key' => self::$publicKey, 'allow_anon_jwt_post' => 'f'],
+      ['id' => 1]
+    );
+    $cache->delete($cacheKey);
+    self::$jwt = $this->getAnonJwt(self::$privateKey, 'http://www.indicia.org.uk', time() + 120);
+    // PUT samples should be rejected.
+    $response = $this->callService(
+      'samples/1',
+      FALSE,
+      [
+        'values' => [
+          'date_start' => NULL,
+          'date_end' => NULL,
+          'date_type' => 'U',
+        ],
+      ],
+      [], 'PUT'
+    );
+    $this->assertTrue($response['httpCode'] === 404);
+    // POST samples should be rejected (website flag to allow anon
+    // submissions is off).
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+          'comment' => 'A sample comment test',
+        ],
+      ]
+    );
+    $this->assertTrue($response['httpCode'] === 400);
+    // POST samples should be accepted (website flag to allow anon
+    // submissions is on).
+    $db->update(
+      'websites',
+      ['allow_anon_jwt_post' => 't'],
+      ['id' => 1]
+    );
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+          'comment' => 'A sample create test',
+        ],
+      ]
+    );
+    $this->assertTrue($response['httpCode'] === 201);
   }
 
   public function testJwtHeaderCaseInsensitive() {
