@@ -35,7 +35,9 @@ class rest_crud {
   private static $entityConfig = [];
 
   /**
+   * List of definitions for fields required by a GET request.
    *
+   * @var array
    */
   private static $fieldDefs;
 
@@ -89,11 +91,11 @@ class rest_crud {
   /**
    * Retrieves a list of definitions for fields required by a GET request.
    *
+   * Populates self::$fieldDefs with a list of SQL field definitions keyed by
+   * field name.
+   *
    * @param string $entity
    *   Entity name.
-   *
-   * @return array
-   *   List of SQL field definitions keyed by field name.
    */
   private static function loadFieldDefs($entity) {
     if (empty(self::$fieldDefs)) {
@@ -119,7 +121,7 @@ class rest_crud {
    * @return array
    *   List of SQL field strings to include in SELECT.
    */
-  private static function getSqlFieldsForOneTable($fields, $alias) {
+  private static function getSqlFieldsForOneTable(array $fields, $alias) {
     $list = [];
     foreach ($fields as $fieldDef) {
       // If field SQL is a simple fieldname we can alias it to the table.
@@ -171,22 +173,22 @@ class rest_crud {
         $list[] = $joinDef->sql;
       }
     }
-    return implode ("\n", $list);
+    return implode("\n", $list);
   }
 
   /**
    * Gets the list of SQL field definitions for filtering one table in a query.
+   *
+   * Populates self::$fieldDefs with a list of SQL field definitions keyed by
+   * field name, for a single table.
    *
    * @param array $fields
    *   Field list from configuration for entity or join.
    * @param string $alias
    *   Table alias to use.
    *
-   * @return array
-   *   List of SQL field definitions containing information required to filter,
-   *   keyed by field name.
    */
-  private static function getFieldDefsForOneTable($fields, $alias) {
+  private static function getFieldDefsForOneTable(array $fields, $alias) {
     foreach ($fields as $fieldDef) {
       // If field SQL is a simple fieldname we can alias it to the table.
       $fieldSql = preg_match('/^[a-z_]+$/', $fieldDef->sql) ? "$alias.$fieldDef->sql" : $fieldDef->sql;
@@ -569,7 +571,7 @@ SQL;
    * @param array $values
    *   Values for the record being checked.
    */
-  private static function checkDuplicateFields($entity, $values) {
+  private static function checkDuplicateFields($entity, array $values) {
     $table = inflector::plural($entity);
     $filters = [];
     // If we are updating, then don't match the same record.
@@ -589,10 +591,12 @@ SQL;
       ->current();
     if ($hit) {
       $href = url::base() . "index.php/services/rest/$table/$hit->id";
-      RestObjects::$apiResponse->fail('Conflict', 409, 'Duplicate external_key would be created', ['duplicate_of' => [
-        'id' => $hit->id,
-        'href' => $href,
-      ]]);
+      RestObjects::$apiResponse->fail('Conflict', 409, 'Duplicate external_key would be created', [
+        'duplicate_of' => [
+          'id' => $hit->id,
+          'href' => $href,
+        ],
+      ]);
     }
   }
 
@@ -613,11 +617,10 @@ SQL;
    *
    * Dates will be ISO formatted.
    *
-   * @param string $entity
-   *   Entity name.
    * @param mixed $data
    *   Associative array or object of field names and values.
-   * @param array $fields Optional list of fields to restrict to.
+   * @param array $fields
+   *   Optional list of fields to restrict to.
    *
    * @return array
    *   Associative array of field names and values.
@@ -686,12 +689,14 @@ SQL;
    *
    * The API response is echoed and appropriate http status set.
    *
-   * @param obj $obj
+   * @param string $entity
+   *   Entity name.
+   * @param object $obj
    *   ORM object.
    * @param array $postObj
    *   Submission data.
    */
-  private static function submit($entity, $obj, $postObj) {
+  private static function submit($entity, $obj, array $postObj) {
     $obj->submission = rest_crud::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
     $id = $obj->submit();
     if ($id) {
@@ -702,7 +707,8 @@ SQL;
       // Include href and basic record metadata.
       $responseMetadata = $obj->getSubmissionResponseMetadata();
       return self::getResponseMetadata($responseMetadata);
-    } else {
+    }
+    else {
       RestObjects::$apiResponse->fail('Bad Request', 400, $obj->getAllErrors());
     }
   }
