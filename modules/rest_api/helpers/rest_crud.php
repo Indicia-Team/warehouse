@@ -56,6 +56,12 @@ class rest_crud {
     if (!empty($values['id'])) {
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Cannot POST with id to update, use PUT instead.']));
     }
+    if (empty(RestObjects::$clientUserId)) {
+      $allowAnonPostCheck = RestObjects::$db->query('SELECT allow_anon_jwt_post FROM websites WHERE deleted=false AND id=' . RestObjects::$clientWebsiteId)->current();
+      if ($allowAnonPostCheck->allow_anon_jwt_post === 'f') {
+        RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:created_by_id" => 'Cannot POST without user authentication.']));
+      }
+    }
     $obj = ORM::factory($entity);
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
       self::checkDuplicateFields($entity, $values);
@@ -375,7 +381,7 @@ SQL;
       self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values));
     }
     if ($obj->created_by_id != RestObjects::$clientUserId) {
-      RestObjects::$apiResponse->fail('Not Found', 404);
+      RestObjects::$apiResponse->fail('Not Found', 404, 'Attempt to update record belonging to different user.');
     }
     // Keep existing values unless replaced by PUT data.
     $data['values'] = array_merge(
@@ -413,7 +419,8 @@ SQL;
       $obj->set_metadata();
       $obj->save();
       http_response_code(204);
-    } else {
+    }
+    else {
       RestObjects::$apiResponse->fail('Not found', 404);
     }
   }
