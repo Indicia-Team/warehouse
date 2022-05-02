@@ -1,0 +1,84 @@
+<report
+    title="List of taxa for the iRecord app"
+    description="A list of distinct taxa with names."
+>
+  <query website_filter_field="">
+-- Get all english taxon names (taxa_taxon_list + taxa)
+WITH joined AS (
+  SELECT ttl.taxon_meaning_id, ta.taxon
+  FROM taxa_taxon_lists as ttl
+  JOIN taxa as ta
+  ON ta.id = ttl.taxon_id and ta.language_id = 1
+  WHERE ttl."taxon_list_id" = #taxon_list_id# and ta.deleted = false
+),
+joined_cym AS (
+  SELECT ttl.taxon_meaning_id, ta.taxon
+  FROM taxa_taxon_lists as ttl
+  JOIN taxa as ta
+  ON ta.id = ttl.taxon_id and ta.language_id = 3
+  WHERE ttl."taxon_list_id" = #taxon_list_id# and ta.deleted = false
+),
+-- Get only unique taxon groups
+unique_taxon_groups AS (
+  SELECT (array_agg(id))[1] as id, title
+  FROM taxon_groups
+  WHERE deleted = false
+  GROUP BY title
+),
+
+-- Main
+main AS (
+  SELECT preferred_taxa_taxon_list_id as id, tg.id as taxon_group, replace(preferred_taxon, '[unassigned] ', '') as taxon,
+    t.default_common_name as common_name, (array_agg(joined.taxon))[1] as synonym, (array_agg(joined_cym.taxon))[1] as cym,
+    t.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag
+
+  -- get preferred_taxon and default_common_name from cached taxon terms
+  FROM cache_taxon_searchterms as t
+
+  -- we need to add synonyms
+  LEFT JOIN joined ON t.taxon_meaning_id = joined.taxon_meaning_id and default_common_name != joined.taxon -- get synonyms that match taxon_meaning_id
+  LEFT JOIN joined_cym ON t.taxon_meaning_id = joined_cym.taxon_meaning_id and default_common_name != joined_cym.taxon -- get synonyms that match taxon_meaning_id
+  LEFT JOIN unique_taxon_groups as tg on t.taxon_group = tg.title
+  WHERE t."taxon_list_id" = #taxon_list_id#
+  AND t.simplified = false
+  AND t.preferred = true
+  AND t.name_type = 'L'
+  #filters#
+
+  -- there are multiple synonyms and other stuff for each latin taxa so we need to aggregate
+  GROUP BY t.id, tg.id, preferred_taxon, default_common_name
+)
+
+SELECT #columns# FROM main
+</query>
+<order_bys>
+  <order_by>taxon ASC</order_by>
+</order_bys>
+<params>
+  <param name="taxon_list_id" display="Taxon list ID" datatype="integer" />
+  <param name="marine_flag" display="Marine flag" datatype="boolean" default="">
+    <where>t.marine_flag='#marine_flag#'</where>
+  </param>
+  <param name="freshwater_flag" display="Freshwater flag" datatype="boolean" default="">
+    <where>t.freshwater_flag='#freshwater_flag#'</where>
+  </param>
+  <param name="terrestrial_flag" display="Terrestrial flag" datatype="boolean" default="">
+    <where>t.terrestrial_flag='#terrestrial_flag#'</where>
+  </param>
+  <param name="non_native_flag" display="Non-native flag" datatype="boolean" default="">
+    <where>t.non_native_flag='#non_native_flag#'</where>
+  </param>
+</params>
+<columns>
+  <column name="id" sql="id" datatype="integer" />
+  <column name="taxon_group" sql="taxon_group" datatype="string" />
+  <column name="taxon" sql="taxon" datatype="string" />
+  <column name="common_name" sql="common_name" datatype="string" />
+  <column name="synonym" sql="synonym" datatype="string" />
+  <column name="cym" sql="cym" datatype="string" />
+  <column name="marine_flag" sql="marine_flag" datatype="boolean" />
+  <column name="freshwater_flag" sql="freshwater_flag" datatype="boolean" />
+  <column name="terrestrial_flag" sql="terrestrial_flag" datatype="boolean" />
+  <column name="non_native_flag" sql="non_native_flag" datatype="boolean" />
+</columns>
+</report>
