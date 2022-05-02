@@ -25,18 +25,18 @@
 class Website_Model extends ORM {
   protected $auth = NULL;
 
-  protected $has_many = array(
+  protected $has_many = [
     'termlists',
     'taxon_lists',
-  );
-  protected $belongs_to = array(
+  ];
+  protected $belongs_to = [
     'created_by' => 'user',
     'updated_by' => 'user',
-  );
-  protected $has_and_belongs_to_many = array(
+  ];
+  protected $has_and_belongs_to_many = [
     'locations',
     'users',
-  );
+  ];
 
   public $password2;
 
@@ -44,22 +44,26 @@ class Website_Model extends ORM {
    * Validate and save the data.
    */
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('title', 'required', 'length[1,100]');
     $array->add_rules('url', 'required', 'length[1,500]', 'url');
     // NOTE password is stored unencrypted.
-    // The repeat password held in password2 does not get through preSubmit during the submit process
-    // and is not present in the validation object at this point. The "matches" validation rule does not
-    // work in these circumstances, so a new "matches_post" has been inserted into MY_valid.php
+    // The repeat password held in password2 does not get through preSubmit
+    // during the submit process and is not present in the validation object at
+    // this point. The "matches" validation rule does not work in these
+    // circumstances, so a new "matches_post" has been inserted into
+    // MY_valid.php.
     $array->add_rules('password', 'required', 'length[7,30]', 'matches_post[password2]');
     // Explicitly add those fields for which we don't do validation.
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'description',
       'deleted',
       'verification_checks_enabled',
       'public_key',
-    );
+      'allow_anon_jwt_post',
+    ];
 
     return parent::validate($array, $save);
   }
@@ -70,14 +74,15 @@ class Website_Model extends ORM {
    * This acts like calling where on the ORM object.
    *
    * @param string $role
-   *   The role to require on that website. Defaults to Admin, other possible values are User or Editor.
+   *   The role to require on that website. Defaults to Admin,
+   *   other possible values are User or Editor.
    *
    * @return ORM
-   *   REturns the object so can be used for method chaining.
+   *   Returns the object so can be used for method chaining.
    */
   public function in_allowed_websites($role = 'Admin') {
     if (!isset($this->auth)) {
-      $this->auth = new Auth;
+      $this->auth = new Auth();
     }
 
     if (!$this->auth->logged_in('CoreAdmin')) {
@@ -85,19 +90,19 @@ class Website_Model extends ORM {
         ->from('users_websites')
         ->join('site_roles', 'site_roles.id', 'users_websites.site_role_id')
         ->join('websites', 'websites.id', 'users_websites.website_id')
-        ->where(array(
+        ->where([
           'users_websites.user_id' => $_SESSION['auth_user']->id,
           'site_roles.title' => $role,
           'websites.deleted' => 'f',
-        ))->get();
+        ])->get();
     }
     else {
       $websites = $this->db->select('id')
         ->from('websites')
-        ->where(array('websites.deleted' => 'f'))
+        ->where(['websites.deleted' => 'f'])
         ->get();
     }
-    $arr = array();
+    $arr = [];
     foreach ($websites as $website) {
       $arr[] = $website->id;
     }
