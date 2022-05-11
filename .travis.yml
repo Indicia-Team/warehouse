@@ -10,7 +10,7 @@ language: php
 
 php:
   # Test oldest and newest maintained versions.
-  - '7.4'
+  - '7.4.29'
   - '8.0'
 
 env:
