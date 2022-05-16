@@ -47,6 +47,14 @@ Once running you can browse the warehouse at http://localhost:8080.
 You can examine the database with pgAdmin at http://localhost:8070.
 Any mail sent by the warehouse can be viewed at http://localhost:8025.
 
+To connect pgAdmin to the database, configure the connection with
+ - Host name: The docker container name e.g. indicia_postgres_1
+ - Port: 5432
+ - Username: postgres
+ - Password: password
+To list the container names and ports you can execute the command
+`docker container ls --format "table {{.Names}}\t{{.Ports}}"`
+
 ### Unit testing
 There is a separate Docker configuration for unit testing which can be
 run up by `cd docker` then `./phpunit.sh`. This replicates the unit
