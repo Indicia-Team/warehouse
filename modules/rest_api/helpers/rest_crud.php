@@ -357,15 +357,16 @@ SQL;
     $attrValues = RestObjects::$db->query($qry);
     $attrs = [];
     foreach ($attrValues as $attr) {
+      $key = self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id";
       $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
       if ($attr->multi_value === 't') {
-        if (!isset($attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"])) {
-          $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = [];
+        if (!isset($attrs[$key])) {
+          $attrs[$key] = [];
         }
-        $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"][] = $val;
+        $attrs[$key][] = $val;
       }
       else {
-        $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
+        $attrs[$key] = $val;
       }
     }
     return $attrs;
