@@ -1,4 +1,5 @@
-CREATE OR REPLACE VIEW list_groups AS
+DROP VIEW list_groups;
+CREATE VIEW list_groups AS
  SELECT g.id,
     g.title,
     g.code,
@@ -13,12 +14,12 @@ CREATE OR REPLACE VIEW list_groups AS
     g.logo_path,
     g.implicit_record_inclusion,
     g.licence_id,
-    g.view_full_precision,
-    g.published
+    g.view_full_precision
    FROM groups g
   WHERE g.deleted = false;
 
-CREATE OR REPLACE VIEW detail_groups AS
+DROP VIEW detail_groups;
+CREATE VIEW detail_groups AS
  SELECT g.id,
     g.title,
     g.code,
@@ -43,11 +44,12 @@ CREATE OR REPLACE VIEW detail_groups AS
     g.implicit_record_inclusion,
     g.licence_id,
     l.code AS licence_code,
-    g.view_full_precision,
-    g.published
+    g.view_full_precision
    FROM groups g
      LEFT JOIN filters f ON f.id = g.filter_id AND f.deleted = false
      LEFT JOIN licences l ON l.id = g.licence_id AND l.deleted = false
      JOIN users c ON c.id = g.created_by_id
      JOIN users u ON u.id = g.updated_by_id
   WHERE g.deleted = false;
+
+  ALTER TABLE groups DROP COLUMN published;
