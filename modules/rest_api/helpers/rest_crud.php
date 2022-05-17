@@ -295,7 +295,26 @@ SQL;
       header("ETag: $row[xmin]");
       unset($row['xmin']);
       if (!empty(self::$entityConfig[$entity]->attributes)) {
-        $qry = <<<SQL
+        $attrs = self::readAttributes($entity, $id);
+        $row = array_merge((array) $row, $attrs);
+      }
+      RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
+    }
+    else {
+      RestObjects::$apiResponse->fail('Not found', 404);
+    }
+  }
+
+  /**
+   * Read attributes for record.
+   *
+   * @param string $entity
+   *   Entity name (singular).
+   * @param int $id
+   *   Record ID to read.
+   */
+  private static function readAttributes($entity, $id) {
+    $qry = <<<SQL
 SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type, a.multi_value,
   CASE a.data_type
     WHEN 'T'::bpchar THEN av.text_value
@@ -335,27 +354,21 @@ LEFT JOIN cache_termlists_terms t on a.data_type='L' and t.id=av.int_value
 WHERE av.deleted=false
 AND av.{$entity}_id=$id;
 SQL;
-        $attrValues = RestObjects::$db->query($qry);
-        $attrs = [];
-        foreach ($attrValues as $attr) {
-          $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
-          if ($attr->multi_value === 't') {
-            if (!isset($attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"])) {
-              $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = [];
-            }
-            $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"][] = $val;
-          }
-          else {
-            $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
-          }
+    $attrValues = RestObjects::$db->query($qry);
+    $attrs = [];
+    foreach ($attrValues as $attr) {
+      $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
+      if ($attr->multi_value === 't') {
+        if (!isset($attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"])) {
+          $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = [];
         }
-        $row = array_merge((array) $row, $attrs);
+        $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"][] = $val;
       }
-      RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
+      else {
+        $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
+      }
     }
-    else {
-      RestObjects::$apiResponse->fail('Not found', 404);
-    }
+    return $attrs;
   }
 
   /**
