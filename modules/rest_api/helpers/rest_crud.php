@@ -259,16 +259,29 @@ SQL;
    * @param bool $userFilter
    *   Should a filter on created_by_id be applied? Default TRUE.
    *
-   * @todo Support for attribute values + verbose option.
    * @todo Support for reading a survey structure including attribute metadata.
    * @todo Add test case
    */
   public static function readList($entity, $extraFilter = '', $userFilter = TRUE) {
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $rows = RestObjects::$db->query($qry);
+
+    $attrs = [];
+    // If requested, get attribute values.
+    if (array_key_exists('verbose', $_GET)) {
+      $ids = [];
+      foreach ($rows as $row) {
+        $ids[] = $row->id;
+      }
+      $attrs = self::readAttributes($entity, $ids);
+    }
+
     $r = [];
     foreach ($rows as $row) {
       unset($row->xmin);
+      if (array_key_exists($row->id, $attrs)) {
+        $row = array_merge((array) $row, $attrs[$row->id]);
+      }
       $r[] = ['values' => self::getValuesForResponse($row)];
     }
     RestObjects::$apiResponse->succeed($r);
@@ -288,15 +301,40 @@ SQL;
    */
   public static function read($entity, $id, $extraFilter = '', $userFilter = TRUE) {
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
-    $qry .= "AND t1.id=$id";
+    $qry .= "AND t1.id = $id";
     $row = RestObjects::$db->query($qry)->result(FALSE)->current();
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
       header("ETag: $row[xmin]");
       unset($row['xmin']);
       if (!empty(self::$entityConfig[$entity]->attributes)) {
-        $qry = <<<SQL
-SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type, a.multi_value,
+        $attrs = self::readAttributes($entity, [$id]);
+        $row = array_merge((array) $row, $attrs[$id]);
+      }
+      RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
+    }
+    else {
+      RestObjects::$apiResponse->fail('Not found', 404);
+    }
+  }
+
+  /**
+   * Read attributes for records.
+   *
+   * @param string $entity
+   *   Entity name (singular).
+   * @param int[] $ids
+   *   Array of record IDs to obtain attributes for.
+   * 
+   * @return array
+   *   List of attributes for records. First dimension is record id. Second
+   *   dimension is attribute key, e.g. locAttr:3
+   */
+  private static function readAttributes($entity, array $ids) {
+    $idList = implode(',', $ids);
+    $qry = <<<SQL
+SELECT av.{$entity}_id as record_id, a.id as attribute_id, av.id as value_id,
+  a.caption, a.data_type, a.multi_value,
   CASE a.data_type
     WHEN 'T'::bpchar THEN av.text_value
     WHEN 'L'::bpchar THEN t.term::text
@@ -330,32 +368,35 @@ SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type, a.multi_
     ELSE NULL::double precision
   END AS upper_value
 FROM {$entity}_attribute_values av
-JOIN {$entity}_attributes a on a.id=av.{$entity}_attribute_id and a.deleted=false
-LEFT JOIN cache_termlists_terms t on a.data_type='L' and t.id=av.int_value
-WHERE av.deleted=false
-AND av.{$entity}_id=$id;
+JOIN {$entity}_attributes a on a.id = av.{$entity}_attribute_id and a.deleted = false
+LEFT JOIN cache_termlists_terms t on a.data_type = 'L' and t.id = av.int_value
+WHERE av.deleted = false
+AND av.{$entity}_id IN ($idList);
 SQL;
-        $attrValues = RestObjects::$db->query($qry);
-        $attrs = [];
-        foreach ($attrValues as $attr) {
-          $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
-          if ($attr->multi_value === 't') {
-            if (!isset($attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"])) {
-              $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = [];
-            }
-            $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"][] = $val;
-          }
-          else {
-            $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
-          }
-        }
-        $row = array_merge((array) $row, $attrs);
+    $attrValues = RestObjects::$db->query($qry);
+    $attrs = [];
+    foreach ($attrValues as $attr) {
+      $recordKey = $attr->record_id;
+      unset($attr->record_id);
+      $attrKey = self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id";
+      $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
+
+      if (!isset($attrs[$recordKey])) {
+        $attrs[$recordKey] = [];
       }
-      RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
+
+      if ($attr->multi_value === 't') {
+        if (!isset($attrs[$recordKey][$attrKey])) {
+          $attrs[$recordKey][$attrKey] = [];
+        }
+        $attrs[$recordKey][$attrKey][] = $val;
+      }
+      else {
+        $attrs[$recordKey][$attrKey] = $val;
+      }
     }
-    else {
-      RestObjects::$apiResponse->fail('Not found', 404);
-    }
+
+    return $attrs;
   }
 
   /**
