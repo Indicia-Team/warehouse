@@ -259,16 +259,29 @@ SQL;
    * @param bool $userFilter
    *   Should a filter on created_by_id be applied? Default TRUE.
    *
-   * @todo Support for attribute values + verbose option.
    * @todo Support for reading a survey structure including attribute metadata.
    * @todo Add test case
    */
   public static function readList($entity, $extraFilter = '', $userFilter = TRUE) {
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $rows = RestObjects::$db->query($qry);
+
+    $attrs = [];
+    // If requested, get attribute values.
+    if (array_key_exists('verbose', $_GET)) {
+      $ids = [];
+      foreach ($rows as $row) {
+        $ids[] = $row->id;
+      }
+      $attrs = self::readAttributes($entity, $ids);
+    }
+
     $r = [];
     foreach ($rows as $row) {
       unset($row->xmin);
+      if (array_key_exists($row->id, $attrs)) {
+        $row = array_merge((array) $row, $attrs[$row->id]);
+      }
       $r[] = ['values' => self::getValuesForResponse($row)];
     }
     RestObjects::$apiResponse->succeed($r);
