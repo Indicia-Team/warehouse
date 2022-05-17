@@ -309,7 +309,9 @@ SQL;
       unset($row['xmin']);
       if (!empty(self::$entityConfig[$entity]->attributes)) {
         $attrs = self::readAttributes($entity, [$id]);
-        $row = array_merge((array) $row, $attrs[$id]);
+        if (array_key_exists($id, $attrs)) {
+          $row = array_merge((array) $row, $attrs[$id]);
+        }
       }
       RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
     }
