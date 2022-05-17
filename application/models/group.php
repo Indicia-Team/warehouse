@@ -59,9 +59,8 @@ class Group_Model extends ORM {
       'view_full_precision',
       'logo_path',
       'licence_id',
-      'published',
     ];
-    // has the private records flag changed?
+    // Has the private records flag changed?
     $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) &&
         $this->submission['fields']['private_records'] !== $this->private_records;
     return parent::validate($array, $save);
@@ -73,7 +72,7 @@ class Group_Model extends ORM {
   public function postSubmit($isInsert) {
     if (!$isInsert && $this->wantToUpdateReleaseStatus) {
       $status = $this->private_records === '1' ? 'U' : 'R';
-      $sql="update #table# o
+      $sql = "update #table# o
 set release_status='$status'
 from samples s
 where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
@@ -86,8 +85,9 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
   }
 
   /**
-   * Method to populate the indexed locations that this group intersects with. Makes it easy to do things like
-   * suggest groups based on geographic region.
+   * Method to populate the indexed locations that this group intersects with.
+   *
+   * Makes it easy to do things like suggest groups based on geographic region.
    */
   private function processIndexGroupsLocations() {
     $filter = json_decode($this->filter->definition, TRUE);
@@ -176,7 +176,7 @@ SQL;
         }
       }
     }
-    $foundExistingLocationIds = array();
+    $foundExistingLocationIds = [];
     // Go through the existing index entries for this group. Remove any that
     // are not needed now.
     foreach ($exist as $record) {
@@ -189,7 +189,7 @@ SQL;
         }
         if (in_array($record->location_id, $foundExistingLocationIds)) {
           // This one must exist twice in the index so clean it up.
-          $this->db->delete('index_groups_locations', array('id' => $record->id));
+          $this->db->delete('index_groups_locations', ['id' => $record->id]);
         }
         else {
           $foundExistingLocationIds[] = $record->location_id;
@@ -197,15 +197,15 @@ SQL;
       }
       else {
         // Got one we didn't actually want.
-        $this->db->delete('index_groups_locations', array('id' => $record->id));
+        $this->db->delete('index_groups_locations', ['id' => $record->id]);
       }
     }
     // Any remaining in our list now need to be added.
     foreach ($location_ids as $location_id) {
-      $this->db->insert('index_groups_locations', array(
+      $this->db->insert('index_groups_locations', [
         'group_id' => $this->id,
         'location_id' => $location_id,
-      ));
+      ]);
     }
   }
 
@@ -223,7 +223,7 @@ SQL;
       ->where('group_id', $this->id)
       ->get();
 
-    $taxon_group_ids = array();
+    $taxon_group_ids = [];
 
     if (!empty($filter['taxon_group_list'])) {
       // Got a list of taxon groups linked to the group's filter, so these can
@@ -261,15 +261,15 @@ SQL;
       }
       else {
         // Got one we didn't actually want.
-        $this->db->delete('index_groups_taxon_groups', array('id' => $record->id));
+        $this->db->delete('index_groups_taxon_groups', ['id' => $record->id]);
       }
     }
     // Any remaining in our list now need to be added.
     foreach ($taxon_group_ids as $taxon_group_id) {
-      $this->db->insert('index_groups_taxon_groups', array(
+      $this->db->insert('index_groups_taxon_groups', [
         'group_id' => $this->id,
         'taxon_group_id' => $taxon_group_id,
-      ));
+      ]);
     }
   }
 

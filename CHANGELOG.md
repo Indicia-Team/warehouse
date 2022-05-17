@@ -1,7 +1,20 @@
+# Version 8.1.0
+*2022-05-17*
+
+* Adds range of record IDs to the report which lists a user's imports.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1294.
+* Adds report library/taxa/taxa_list_for_app to aid in extracting lists of taxa to use in apps.
+* Removes an unused field groups.published.
+* Docker image includes correct URL for GBIF backbone taxonomy.
+# Version 8.0.0
+*2022-04-29*
+
+* Support for authenticating on the REST API using anonymous JWT tokens for posting anonymous
+  records.
+
 # Version 7.2.0
 *2022-04-28*
 
-* Adds a `groups.published` field for tracking which recording groups publish their data.
 * ORM extension plugins can now declare table entities that are accessed directly using the
   `table_without_views` option in the plugin metadata.
 * Original import code fixes an exception that occurred when importing empty CSV lines.
