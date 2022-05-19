@@ -60,7 +60,7 @@ class Swift_Message_Encoder
       $input = substr($input, strlen($matches[0]));
     }
     if ($input != "") $ret[($elements++)] = $input; //Whatever is left over
-        
+
     return $ret;
   }
   /**
@@ -80,7 +80,7 @@ class Swift_Message_Encoder
       $input = substr($input, strlen($matches[0]));
     }
     if ($input != "") $ret[($elements++)] = $input; //Whatever is left over
-        
+
     return $ret;
   }
   /**
@@ -97,20 +97,20 @@ class Swift_Message_Encoder
     $ret = "";
     $chunk -= 2;
     $chunk = $this->getHcf($chunk, 4);
-    
+
     if ($init_chunk >= 2)
     {
       $init_chunk -= 2;
       $init_chunk = $this->getHcf($init_chunk, 4);
     }
-    
+
     if ($headers) $data = $this->quoteChunk($data);
     else $data = array($data);
-    
+
     foreach ($data as $key => $string)
     {
       $key = (string) $key;
-      if ($key{0} == 'a') //This is an address
+      if ($key[0] == 'a') //This is an address
       {
         if ($init_chunk && $init_chunk < (strlen($string)+2)) $ret .= $le;
         $ret .= $le . $string;
@@ -124,12 +124,12 @@ class Swift_Message_Encoder
           $string = substr($string, $init_chunk);
         }
         elseif ($init_chunk) $ret .= $le;
-        
+
         $ret .= trim(chunk_split($string, $chunk, $le)) . $le;
       }
       $init_chunk = 0;
     }
-    
+
     return trim($ret);
   }
   /**
@@ -182,12 +182,12 @@ class Swift_Message_Encoder
     $ret = "";
     if ($headers) $data = $this->quoteChunk($data);
     else $data = array($data);
-    
+
     $trailing_spaces = chr(9) . chr(32);
     foreach ($data as $key => $string)
     {
       $key = (string) $key;
-      if ($key{0} == 'a') //An address
+      if ($key[0] == 'a') //An address
       {
         if ($init_chunk && $init_chunk < (strlen($string)+3)) $ret .= "=";
         $ret .= $le . $string;
@@ -208,7 +208,7 @@ class Swift_Message_Encoder
           }
         }
         elseif ($init_chunk) $ret .= "=";
-        
+
         while (preg_match('/^.{1,'.($init_chunk-5).'}[^=]{2}(?!=[A-F0-9]{2})/', $string, $matches)
           || preg_match('/^.{1,'.($chunk-6).'}([^=]{0,3})?/', $string, $matches)
           || (strlen($string) > 0 && $matches = array($string)))
@@ -219,7 +219,7 @@ class Swift_Message_Encoder
       }
       $init_chunk = 0;
     }
-    
+
     if (substr($ret, -1) == "=") return trim(substr($ret, 0, -1));
     else return trim($ret);
   }
@@ -240,14 +240,14 @@ class Swift_Message_Encoder
     $len = strlen($string);
     for ($i = 0; $i < $len; $i++)
     {
-      $val = ord($string{$i});
+      $val = ord($string[$i]);
       //9, 32 = HT, SP; 10, 13 = CR, LF; 33-60 & 62-126 are ok
       // 63 = '?'; 95 = '_' and need encoding to go in the headers
       if ((!$bin && ($val == 32 || $val == 9 || $val == 10 || $val == 13))
         || ($val >= 33 && $val <= 60) || ($val >= 62 && $val <= 126)
         && $val != 63)
       {
-        $ret .= $string{$i};
+        $ret .= $string[$i];
       }
       else
       {
