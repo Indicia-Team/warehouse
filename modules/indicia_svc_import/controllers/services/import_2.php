@@ -899,7 +899,7 @@ SQL;
     if (isset($thisSrcField)) {
       $r['sourceField'] = $thisSrcField;
     }
-    if (isset($unmatchedInfo)) {
+    if (isset($unmatchedInfo) && count($unmatchedInfo['values']) > 0) {
       $r['unmatchedInfo'] = $unmatchedInfo;
     }
     return $r;
