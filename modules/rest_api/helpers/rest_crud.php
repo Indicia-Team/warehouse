@@ -267,8 +267,8 @@ SQL;
     $rows = RestObjects::$db->query($qry);
 
     $attrs = [];
-    // If requested, get attribute values.
-    if (array_key_exists('verbose', $_GET)) {
+    // If requested (and there are some rows), get attribute values.
+    if (array_key_exists('verbose', $_GET) && $rows->count() > 0) {
       $ids = [];
       foreach ($rows as $row) {
         $ids[] = $row->id;
