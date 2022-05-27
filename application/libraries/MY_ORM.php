@@ -1010,7 +1010,7 @@ class ORM extends ORM_Core {
       $exactMatches = [];
       foreach ($thisValues as $column => $value) {
         if (array_key_exists($column, $vArray) &&
-            !is_array($vArray[$column]) &&
+            !is_array($vArray[$column]) && !is_array($value) &&
             (string) $vArray[$column] === (string) $value) {
           $exactMatches[] = $value;
         }
@@ -2305,7 +2305,7 @@ class ORM extends ORM_Core {
         }
         break;
       case 'boolean':
-        // Any database column of type 'boolean' is mapped to 'bool' in 
+        // Any database column of type 'boolean' is mapped to 'bool' in
         // application/helpers/postgreSQL.php::sql_type(), thanks to the setting
         // in application/config/sql_types.php.
         // As a consequence, this case does not arise and there is no PHP type
@@ -2314,7 +2314,7 @@ class ORM extends ORM_Core {
       break;
       case 'bool':
         // Instead, we can submit any boolean representation acceptable to the
-        // database. See 
+        // database. See
         // https://www.postgresql.org/docs/current/datatype-boolean.html
         // Integer values of 1/0 may arise from file importing and must be cast
         // to string.
