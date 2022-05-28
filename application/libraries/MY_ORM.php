@@ -1081,6 +1081,10 @@ class ORM extends ORM_Core {
    */
   private function populateFkLookups() {
     $r=TRUE;
+    // The row might have more than one parent, keep track of database matches for previous column so we can check they are consistent.
+    $previousParentFksArray = [];
+    // Does the row have more than one parent column, where there is no exact match for both in the database.
+    $inconsistentParentFkFound = FALSE;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
         if (!empty($b['fkSearchValue'])) {
@@ -1091,6 +1095,25 @@ class ORM extends ORM_Core {
           }
           $fk = $this->fkLookup($b);
           if ($fk) {
+            if ($b['fkIdField'] === 'parent_id') {
+              // A parent might match more than one item, for instance more than one location could have same name.
+              $allParentFksArray = [];
+              // Get all possible matches for parent column.
+              $allFks = $this->fkLookup($b, TRUE);
+              // Convert to single dimensional array.
+              foreach ($allFks as $idx => $fkItem) {
+                $allParentFksArray[$idx] = $fkItem->id;
+              }
+              // If the matches for the current parent column don't include any of the matches for the previous parent column, then we need to warn the user their data is inconsistent with the database.
+              if (!empty($previousParentFksArray) && empty(array_intersect($allParentFksArray, $previousParentFksArray))) {
+                $inconsistentParentFkFound = TRUE;
+              }
+              // If there is only 1 match for the current parent and it appears in the matches for the previous parent, then we know that must be the lookup we what to use.
+              if (count(array_intersect($allParentFksArray, $previousParentFksArray)) === 1) {
+                $fk = $allParentFksArray[0];
+              }
+              $previousParentFksArray = $allParentFksArray;
+            }
             $this->submission['fields'][$b['fkIdField']] = array('value' => $fk);
           } else {
             // look for a translation of the field name
@@ -1107,22 +1130,33 @@ class ORM extends ORM_Core {
         }
       }
     }
+    if ($inconsistentParentFkFound === TRUE) {
+      $this->errors[$a] = "More than one parent column has been specified, " .
+          "but there is no data on the system that matches all the parent columns in this row";
+      $r = FALSE;
+    }
     return $r;
   }
 
-  /**Function to return key of item defined in the fkArr parameter
-   * @param array $fkArr Contains definition of item to look up. Contains the following fields
-   *  fkTable => table in which to perform lookup
-   *  fkSearchField => field in table to search
-   *  fkSearchValue => value to find in search field
-   *  fkSearchFilterField => field by which to filter search
-   *  fkSearchFilterValue => filter value
-   *  fkExcludeDeletedRecords => whether to include a where clause to exclude deleted records.
-   *  fkWebsite => optional website_id filter.
+  /**
+   * Function to return key of item defined in the fkArr parameter.
    *
-   * @return Foreign key value or false if not found
+   * @param array $fkArr
+   *   Contains definition of item to look up. Contains the following fields
+   *   * fkTable => table in which to perform lookup
+   *   * fkSearchField => field in table to search
+   *   * fkSearchValue => value to find in search field
+   *   * fkSearchFilterField => field by which to filter search
+   *   * fkSearchFilterValue => filter value
+   *   * fkExcludeDeletedRecords => whether to include a where clause to exclude deleted records.
+   *   * fkWebsite => optional website_id filter.
+   * @param bool $returnAllResults
+   *   Should all possible matches be returned, or just one match chosen by the function logic.
+   *
+   * @return mixed
+   *   Object or array of foreign key value, or false if not found.
    */
-  protected function fkLookup($fkArr) {
+  protected function fkLookup($fkArr, $returnAllResults = FALSE) {
     $r = FALSE;
     $key = '';
     if (isset($fkArr['fkSearchFilterValue'])) {
@@ -1132,7 +1166,7 @@ class ORM extends ORM_Core {
         $filterValue = $fkArr['fkSearchFilterValue'];
     } else $filterValue = '';
 
-    if (ORM::$cacheFkLookups) {
+    if (ORM::$cacheFkLookups && $returnAllResults == FALSE) {
       $keyArr=array('lookup', $fkArr['fkTable'], $fkArr['fkSearchField'], $fkArr['fkSearchValue']);
       // cache must be unique per filtered value (e.g. when lookup up a taxa in a taxon list).
       if ($filterValue != '')
@@ -1153,13 +1187,22 @@ class ORM extends ORM_Core {
       if (isset($fkArr['fkWebsite'])) {
           $where['website_id'] = $fkArr['fkWebsite'];
       }
-      // for locations we have to filter by the website
-      $matches = $this->db
-        ->select('id')
-        ->from(inflector::plural($fkArr['fkTable']))
-        ->where($where)
-        ->limit(1)
-        ->get();
+      // for locations we have to filter by the website.
+      if ($returnAllResults == TRUE) {
+        $matches = $this->db
+          ->select('id')
+          ->from(inflector::plural($fkArr['fkTable']))
+          ->where($where)
+          ->get()->result_array();
+      }
+      else {
+        $matches = $this->db
+          ->select('id')
+          ->from(inflector::plural($fkArr['fkTable']))
+          ->where($where)
+          ->limit(1)
+          ->get();
+      }
       if (count($matches)===0 && $fkArr['fkSearchField']!='id') {
         // try a slower case insensitive search before giving up, but don't bother if id specified as ints don't like ilike
         $this->db
@@ -1168,22 +1211,30 @@ class ORM extends ORM_Core {
           ->where("(".$fkArr['fkSearchField']." ilike '".strtolower(str_replace("'","''",$fkArr['fkSearchValue']))."')");
         if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField'])
           $this->db->where(array($fkArr['fkSearchFilterField']=>$filterValue));
-        $matches = $this->db
-          ->limit(1)
-          ->get();
+        if ($returnAllResults == TRUE) {
+          $matches = $this->db
+            ->get()->result_array();
+        }
+        else {
+          $matches = $this->db
+            ->limit(1)
+            ->get();
+        }
       }
-      if (count($matches) > 0) {
-        $r = $matches[0]->id;
-        if (ORM::$cacheFkLookups) {
-          $this->cache->set($key, $r, array('lookup'));
+      if ($returnAllResults == TRUE) {
+        $r = $matches;
+      }
+      else {
+        if (count($matches) > 0) {
+          $r = $matches[0]->id;
+          if (ORM::$cacheFkLookups) {
+            $this->cache->set($key, $r, array('lookup'));
+          }
         }
       }
     }
-
     return $r;
   }
-
-
 
   /**
    * Generate any records that this model contains an FK reference to in the
