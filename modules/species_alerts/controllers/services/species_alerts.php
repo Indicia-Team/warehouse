@@ -166,12 +166,25 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
   }
 
   /*
-   * If a boolean is supplied, we make sure it is of the correct type (if it isn't supplied we don't need to throw an exception
-   * as the system will assume it is false)
+   * Validate a boolean value.
+   *
+   * If a boolean is supplied, we make sure it is of the correct type (if it
+   * isn't supplied we don't need to throw an exception as the system will
+   * assume it is false).
+   *
+   * @param string $keyToValidate
+   *   Name of the field to validate.
    */
   private function boolean_validate($keyToValidate) {
-    if (array_key_exists($keyToValidate, $_GET) && (!isset($_GET[$keyToValidate]) || !in_array($_GET[$keyToValidate], array(1, 0)))) {
-      throw new Exception($keyToValidate.' has been supplied to the Species Alert service and it has not been supplied as a boolean.');
+    if (array_key_exists($keyToValidate, $_GET)) {
+      // Map 0, 1 to f, t for legacy purposes.
+      $mappings = [0 => 'f', 1 => 't'];
+      if (isset($mappings[$_GET[$keyToValidate]])) {
+        $_GET[$keyToValidate] = $mappings[$_GET[$keyToValidate]];
+      }
+      if (!isset($_GET[$keyToValidate]) || !in_array($_GET[$keyToValidate], $mappings)) {
+        throw new Exception("$keyToValidate has been supplied to the Species Alert service and it has not been supplied as a boolean.");
+      }
     }
   }
 
@@ -180,7 +193,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
    */
   private function string_validate_mandatory($keyToValidate) {
     if (!array_key_exists($keyToValidate, $_GET) || empty($_GET[$keyToValidate])) {
-      throw new Exception($keyToValidate.' has not been supplied to the Species Alert service or is missing a data value.');
+      throw new Exception($keyToValidate  .' has not been supplied to the Species Alert service or is missing a data value.');
     }
   }
 
@@ -188,7 +201,6 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
    * Validate an "at least one of" scenerio where is at least one of a list of fields must be filled in
    */
   private function at_least_one_field_required($array) {
-    $found = FALSE;
     foreach ($array as $item) {
       if (!empty($_GET[$item])) {
         return;
@@ -196,6 +208,6 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     }
     throw new Exception('At least one of ' . implode(', ', $array) . ' must be supplied to the Species Alert service.');
   }
-}
 
+}
 
