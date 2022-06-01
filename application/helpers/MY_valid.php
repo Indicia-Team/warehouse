@@ -170,6 +170,37 @@ SQL;
   }
 
   /**
+   * Validates that JSON string or array of values matches list of options.
+   *
+   * The value can be provided as an array formatted as a JSON string, or a PHP
+   * array. Tests that all the provided values in the array are found in a list
+   * of options, provided as a | separated list.
+   *
+   * @param string|array $value
+   *   Array of options to validate, in PHP or JSON format.
+   * @param array $options
+   *   Options passed to the validation rule. The first option must be a list
+   *   of allowed options, separated by |.
+   *
+   * @return bool
+   *   True if all provided values match one of the list of options.
+   */
+  public static function json_or_array_options($value, array $options) {
+    $testArray = explode('|', $options[0]);
+    if (is_string($value) && preg_match('/^\[.+\]$/', $value)) {
+      $value = json_decode($value);
+      if ($value === NULL) {
+        return FALSE;
+      }
+    }
+    elseif (is_string($value)) {
+      // Single value in simple string form.
+      $value = [$value];
+    }
+    return !array_diff($value, $testArray);
+  }
+
+  /**
    * Checks a value against the POST array.
    *
    * Generates an error if the field does not match one or more other fields in
