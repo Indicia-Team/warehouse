@@ -5,6 +5,7 @@ use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
 
 /**
  * Unit test class for the REST api controller.
+ *
  * @todo Test sharing mode on project filters is respected.
  *
  */
@@ -138,8 +139,8 @@ KEY;
     $compositeDs->addDataSet($ds1);
     $compositeDs->addDataSet($ds2);
 
-    // Dependencies prevent us adding a user with known password, so we'll update the
-    // existing one with the hash for 'password'.
+    // Dependencies prevent us adding a user with known password, so we'll
+    // update the existing one with the hash for 'password'.
     $db = new Database();
     $db->update(
       'users',
@@ -398,7 +399,7 @@ KEY;
     $this->assertArrayHasKey('values', $response['response']);
     $this->assertArrayHasKey('id', $response['response']['values']);
     $id = $response['response']['values']['id'];
-    $storedObj =$this->callService("$table/$id");
+    $storedObj = $this->callService("$table/$id");
     foreach ($exampleData as $field => $value) {
       $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
       $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
@@ -1562,7 +1563,7 @@ SQL;
     $id = $this->postTest('locations', [
       'name' => 'Test location',
       'centroid_sref' => 'ST1234',
-      'centroid_sref_system' => 'OSGB'
+      'centroid_sref_system' => 'OSGB',
     ], 'name');
     $db = new Database();
     $locationsWebsitesCount = $db->query("select count(*) from locations_websites where location_id=$id")
@@ -2140,7 +2141,7 @@ SQL;
     $this->checkResourceAuthentication('projects');
     $this->authMethod = 'directClient';
     $this->checkResourceAuthentication('projects');
-    // user and website authentications don't allow access to projects
+    // User and website authentications don't allow access to projects.
     $this->authMethod = 'hmacUser';
     $response = $this->callService('projects');
     $this->assertTrue(
@@ -2268,6 +2269,7 @@ SQL;
 
   /**
    * Test the /taxon-observations endpoint in valid use.
+   *
    * @todo Test the pagination responses
    * @todo Test the /taxon-observations/id endpoint
    */
@@ -2298,6 +2300,7 @@ SQL;
 
   /**
    * Test the /annotations endpoint in valid use.
+   *
    * @todo Test the pagination responses
    * @todo Test the annotations/id endpoint
    */
@@ -2392,18 +2395,18 @@ SQL;
     $this->assertResponseOk($response, '/reports');
     // Check a folder that should definitely exist.
     $this->checkReportFolderInReponse($response['response'], 'library');
-    // The demo report is not featured, so should not exist
+    // The demo report is not featured, so should not exist.
     $this->assertFalse(array_key_exists('demo', $response['response']));
 
-    // Repeat with an authMethod that allows access to non-featured reports. There
-    // should be an additional featured folder at the top level with shortcuts
-    // to favourite reports.
+    // Repeat with an authMethod that allows access to non-featured reports.
+    // There should be an additional featured folder at the top level with shortcuts
+    // shortcuts to favourite reports.
     $this->authMethod = 'hmacWebsite';
     $response = $this->callService("reports", ['proj_id' => $projDef['id']]);
     $this->checkReportFolderInReponse($response['response'], 'featured');
     $this->checkReportInReponse($response['response'], 'demo');
 
-    // now check some folder contents
+    // Now check some folder contents.
     $this->authMethod = 'hmacClient';
     $response = $this->callService("reports/featured", ['proj_id' => $projDef['id']]);
     $this->assertResponseOk($response, '/reports/featured');
@@ -2456,7 +2459,7 @@ SQL;
     $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('columns', $reportDef, 'Report response does not define columns');
     $this->assertArrayHasKey('href', $reportDef['columns'], 'Report columns missing href');
-    // Now grab the columns URL output and check it
+    // Now grab the columns URL output and check it.
     $response = $this->callUrl($reportDef['columns']['href']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml/columns');
     $this->assertArrayHasKey('data', $response['response']);
@@ -2474,7 +2477,7 @@ SQL;
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('href', $reportDef, 'Report response missing href');
-    // Now grab the columns URL output and check it
+    // Now grab the columns URL output and check it.
     $response = $this->callUrl($reportDef['href']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml');
     $this->assertArrayHasKey('data', $response['response']);
@@ -2531,11 +2534,8 @@ SQL;
    * secret, then finally passing the correct details to check a valid response
    * returns.
    *
-   * @param $resource
-   * @param string $user
-   *   User identifier, either client system ID, user ID or website ID.
-   * @param string $secret
-   *   Secret or password to go with the $user.
+   * @param string $resource
+   *   Resource path.
    * @param array $query
    *   Query parameters to pass in the URL
    */
@@ -2570,7 +2570,7 @@ SQL;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
 
-    // break the user IDs
+    // Break the user IDs.
     self::$clientUserId = '---';
     self::$websiteId = '---';
     self::$userId = '---';
@@ -2620,9 +2620,11 @@ SQL;
 
   /**
    * Checks that an array retrieved from the API is a valid taxon-occurrence resource.
-   * @param $data Array to be tested as a taxon occurrence resource
+   *
+   * @param array $data
+   *   Array to be tested as a taxon occurrence resource
    */
-  private function checkValidTaxonObservation($data) {
+  private function checkValidTaxonObservation(array $data) {
     $this->assertIsArray($data, 'Taxon-observation object invalid. ' . var_export($data, TRUE));
     $mustHave = ['id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
         'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate'];
@@ -2637,9 +2639,11 @@ SQL;
 
   /**
    * Checks that an array retrieved from the API is a valid annotation resource.
-   * @param $data Array to be tested as an annotation resource
+   *
+   * @param array $data
+   *   Array to be tested as an annotation resource
    */
-  private function checkValidAnnotation($data) {
+  private function checkValidAnnotation(array $data) {
     $this->assertIsArray($data, 'Annotation object invalid. ' . var_export($data, TRUE));
     $mustHave = ['id', 'href', 'taxonObservation', 'taxonVersionKey', 'comment',
         'question', 'authorName', 'dateTime'];
@@ -2661,7 +2665,8 @@ SQL;
         'Invalid statusCode2 value for annotation'
       );
     }
-    // We should be able to request the taxon observation associated with the occurrence
+    // We should be able to request the taxon observation associated with the
+    // occurrence.
     $session = $this->initCurl($data['taxonObservation']['href']);
     $response = $this->getCurlResponse($session);
     $this->assertResponseOk($response, $data['taxonObservation']['href']);
@@ -2670,6 +2675,7 @@ SQL;
 
   /**
    * Assert that a folder exists in the response from a call to /reports.
+   *
    * @param array $response
    * @param string $folder
    */
@@ -2681,6 +2687,7 @@ SQL;
 
   /**
    * Assert that a folder exists in the response from a call to /reports.
+   *
    * @param array $response
    * @param string $reportFile
    */
@@ -2691,8 +2698,8 @@ SQL;
   }
 
   /**
-   * Sets the http header before a request. This includes the Authorization string and can also include additional
-   * header data when required.
+   * Sets the http header before a request. This includes the Authorization
+   * string and can also include additional header data when required.
    *
    * @param $session
    * @param $url
