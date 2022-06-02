@@ -1005,17 +1005,6 @@ KEY;
     $this->assertArrayHasKey('id', $response['response']['duplicate_of']);
     $this->assertArrayHasKey('href', $response['response']['duplicate_of']);
     $this->assertEquals($id, $response['response']['duplicate_of']['id']);
-    // In a diff survey, not considered a duplicate.
-    $data['survey_id'] = 2;
-    $response = $this->callService(
-      'samples',
-      FALSE,
-      ['values' => $data]
-    );
-    $this->assertEquals(
-      201, $response['httpCode'],
-      'Duplicate external key in different survey not accepted.'
-    );
     // PUT with same external key should be OK.
     $response = $this->callService(
       "samples/$id",
@@ -1584,6 +1573,43 @@ SQL;
     ], [
       'name' => 'Location test updated',
     ]);
+  }
+
+
+
+  public function testJwtLocationDuplicateCheck() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Post an initial location to check duplicates against.
+
+    // Need a sub-model locations_websites.website_id to cause duplicate to trigger.
+    $response = $this->callService(
+      'locations',
+      FALSE,
+      [
+        'values' => [
+          'name' => 'Test location 1',
+          'centroid_sref' => 'ST1234',
+          'centroid_sref_system' => 'OSGB',
+          'external_key' => 'textexternalkey',
+        ],
+      ],
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $response = $this->callService(
+      'locations',
+      FALSE,
+      [
+        'values' => [
+          'name' => 'Test location 2',
+          'centroid_sref' => 'SU345678',
+          'centroid_sref_system' => 'OSGB',
+          'external_key' => 'textexternalkey',
+        ],
+      ],
+    );
+    // Check a conflict in the response.
+    $this->assertEquals(409, $response['httpCode']);
   }
 
   /**
