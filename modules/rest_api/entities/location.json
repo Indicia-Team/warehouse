@@ -40,5 +40,6 @@
   "attributePrefix": "loc",
   "forceValuesOnCreate": {
     "public": "f"
-  }
+  },
+  "duplicateCheckFields": ["external_key"]
 }

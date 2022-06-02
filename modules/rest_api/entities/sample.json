@@ -44,5 +44,5 @@
   },
   "attributes": true,
   "attributePrefix": "smp",
-  "duplicateCheckFields": ["external_key", "survey_id"]
+  "duplicateCheckFields": ["external_key"]
 }
