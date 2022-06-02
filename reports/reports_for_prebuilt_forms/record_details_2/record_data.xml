@@ -38,6 +38,7 @@
     <column name='occurrence_id' sql='o.id' />
     <column name='occurrence_external_key' sql='o.external_key' />
     <column name='taxon' sql="case o.zero_abundance when true then '&lt;span class=&quot;zero-abundance&quot;&gt;' || cttl.taxon || '&lt;span&gt; - zero abundance found' else cttl.taxon end" />
+    <column name='taxon_as_entered' sql="cttl.taxon" />
     <column name='language_iso' sql='cttl.language_iso' />
     <column name='preferred_taxon' sql='cttl.preferred_taxon' />
     <column name='preferred_language_iso' sql='cttl.preferred_language_iso' />
@@ -93,5 +94,6 @@
     <column name="licence_url" sql="l.url_readable" />
     <column name='confidential' sql='o.confidential' />
     <column name='release_status' sql='o.release_status' />
+    <column name='zero_abundance' sql='o.zero_abundance' />
   </columns>
 </report>
