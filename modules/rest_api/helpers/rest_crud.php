@@ -66,7 +66,7 @@ class rest_crud {
     }
     $obj = ORM::factory($entity);
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
-      self::checkDuplicateFields($entity, $values);
+      self::checkDuplicateFields($entity, $values, $data);
     }
     return self::submit($entity, $obj, $data);
   }
@@ -327,7 +327,7 @@ SQL;
    *   Entity name (singular).
    * @param int[] $ids
    *   Array of record IDs to obtain attributes for.
-   * 
+   *
    * @return array
    *   List of attributes for records. First dimension is record id. Second
    *   dimension is attribute key, e.g. locAttr:3
@@ -423,7 +423,7 @@ SQL;
     $obj = ORM::factory($entity, $id);
     self::checkETags($entity, $id);
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
-      self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values));
+      self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values), $data);
     }
     if ($obj->created_by_id != RestObjects::$clientUserId) {
       RestObjects::$apiResponse->fail('Not Found', 404, 'Attempt to update record belonging to different user.');
@@ -612,25 +612,44 @@ SQL;
    * @param int $entity
    *   Entity name.
    * @param array $values
-   *   Values for the record being checked.
+   *   Values for the record being checked. For updates, will merge the
+   *   submitted values into the existing values.
+   * @param array $data
+   *   Submitted data.
    */
-  private static function checkDuplicateFields($entity, array $values) {
+  private static function checkDuplicateFields($entity, array $values, array $data) {
+    kohana::log('debug', "Doing duplicate check for $entity");
     $table = inflector::plural($entity);
     $filters = [];
+    $joins = [];
     // If we are updating, then don't match the same record.
     if (!empty($values['id'])) {
       $filters[] = "id<>$values[id]";
     }
     foreach (self::$entityConfig[$entity]->duplicateCheckFields as $field) {
-      if (empty($values[$field])) {
-        // No need for check if some duplicate check values missing.
-        return;
+      $fieldParts = explode('.', $field);
+      $fieldName = array_pop($fieldParts);
+      // Anything left must be a duplicate check on a sub-model field.
+      if (count($fieldParts) === 1) {
+        $subModelTable = $fieldParts[0];
+        // Skip if sub-model not present, or does not contain a field value.
+        if (!isset($data[$subModelTable]) || !isset($data[$subModelTable][0]) || !isset($data[$subModelTable][0]['values']) || empty($data[$subModelTable][0]['values'][$fieldName])) {
+          return;
+        }
+        $value = $data[$subModelTable][0]['values'][$fieldName];
+        $joins[$subModelTable] = "\njoin $subModelTable on $subModelTable.{$entity}_id=$table.id and $subModelTable.$fieldName='$value'";
       }
-      $value = $values[$field];
-      $filters[] = "$field='$value'";
+      else {
+        if (empty($values[$field])) {
+          // No need for check if some duplicate check values missing.
+          return;
+        }
+        $value = $values[$field];
+        $filters[] = "$table.$fieldName='$value'";
+      }
     }
     $hit = RestObjects::$db
-      ->query("select id from $table where " . implode(' and ', $filters))
+      ->query("select $table.id from $table" . implode('', $joins) . " where " . implode(' and ', $filters))
       ->current();
     if ($hit) {
       $href = url::base() . "index.php/services/rest/$table/$hit->id";

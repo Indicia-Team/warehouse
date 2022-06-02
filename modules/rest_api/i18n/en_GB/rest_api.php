@@ -203,8 +203,37 @@ TXT;
 $lang['resources']['locations'] = 'A list of a user\'s saved sites and other locations.';
 $lang['resources']['GET locations'] = 'Retrieves a list of a user\'s saved sites and other locations.';
 $lang['resources']['GET locations/{id}'] = 'Retrieves the user\'s saved site or other location identified by {id}.';
-$lang['resources']['POST locations'] = 'Creates a saved site or and other location.';
-$lang['resources']['PUT locations/{id}'] = 'Updates the user\'s saved site or other location identified by {id}.';
+$lang['resources']['POST locations'] = <<<TXT
+<p>Creates a saved site or other type of location.</p>
+<p>Example:</p>
+<pre><code>
+POST /index.php/services/rest/locations
+{
+"values": {
+  "name": "Test location 2",
+  "centroid_sref": "SU345678",
+  "centroid_sref_system": "OSGB",
+  "external_key": "textexternalkey",
+}
+</code></pre>
+
+<p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
+unique within the system that supplied it, add a suitable prefix to make it unique.</p>
+TXT;
+$lang['resources']['PUT locations/{id}'] = <<<TXT
+<p>Updates the user's saved site or other type of location identified by {id}.</p>
+<p>Example:</p>
+<pre><code>
+POST /index.php/services/rest/locations/2
+{
+"values": {
+  "name": "Corrected name"
+}
+</code></pre>
+
+<p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
+unique within the system that supplied it, add a suitable prefix to make it unique.</p>
+TXT;
 $lang['resources']['DELETE locations/{id}'] = 'Deletes the user\'s saved site or other location identified by {id}.';
 $lang['resources']['media-queue'] = <<<TXT
 Endpoint which allows media files such as record photos to be cached on the server prior to submitting the associated
@@ -415,6 +444,9 @@ POST /index.php/services/rest/samples
   ]
 }
 </code></pre>
+
+<p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
+unique within the system that supplied it, add a suitable prefix to make it unique.</p>
 HTML;
 $lang['resources']['PUT occurrences/{id}'] = 'Updates a single occurrence belonging to the user.';
 $lang['resources']['DELETE occurrences/{id}'] = 'Deletes a single occurrence belonging to the user.';
@@ -575,6 +607,9 @@ Response:
   }]
 }
 </code></pre>
+
+<p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
+unique within the system that supplied it, add a suitable prefix to make it unique.</p>
 ';
 $lang['resources']['POST samples/list'] = <<<TXT
 Allows posting of a list of samples to create multiple in one request. Identical to the POST samples endpoint but
@@ -583,6 +618,9 @@ outer array wrapping the response for each sample in the same order.
 TXT;
 $lang['resources']['PUT samples/{id}'] = <<<TXT
 Update an existing sample by replacing the provided values.
+
+<p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
+unique within the system that supplied it, add a suitable prefix to make it unique.</p>
 TXT;
 $lang['resources']['DELETE samples/{id}'] = <<<TXT
 Delete a single sample.  If using jwtUser or directUser authentication then the sample must be
