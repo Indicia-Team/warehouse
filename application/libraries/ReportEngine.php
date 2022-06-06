@@ -1453,16 +1453,26 @@ SQL;
     $this->reportDb
       ->select('distinct a.id, a.data_type, a.caption, a.validation_rules, a.system_function, a.multi_value, a.allow_ranges')
       ->from("{$entity}_attributes as a");
-    if ($this->websiteIds) {
-      $websiteIds = implode(',', $this->websiteIds);
-      // A 'me' share is basically a subtype of a reporting share mode.
-      $sharingMode = $this->sharingMode === 'me' ? 'reporting' : $this->sharingMode;
-      $this->reportDb
-        ->join("{$entity}_attributes_websites as aw", "aw.{$entity}_attribute_id", 'a.id')
-        ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id', 'LEFT')
-        ->where("(wa.to_website_id in ($websiteIds) or wa.to_website_id is NULL)")
-        ->where(['aw.deleted' => 'f'])
-        ->where("(wa.provide_for_$sharingMode='t' or wa.provide_for_$sharingMode is NULL)");
+    if ($entity === 'taxa_taxon_list') {
+      // Here we may want to join to taxon_lists_taxa_taxon_list_attributes
+      // in order to limit attributes to a taxon list.
+    }
+    elseif ($entity === 'termlists_term') {
+      // Here we may want to join to termlists_termlists_terms_attributes
+      // in order to limit attributes to a termlist.
+    }
+    else {
+      if ($this->websiteIds) {
+        $websiteIds = implode(',', $this->websiteIds);
+        // A 'me' share is basically a subtype of a reporting share mode.
+        $sharingMode = $this->sharingMode === 'me' ? 'reporting' : $this->sharingMode;
+        $this->reportDb
+          ->join("{$entity}_attributes_websites as aw", "aw.{$entity}_attribute_id", 'a.id')
+          ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id', 'LEFT')
+          ->where("(wa.to_website_id in ($websiteIds) or wa.to_website_id is NULL)")
+          ->where(['aw.deleted' => 'f'])
+          ->where("(wa.provide_for_$sharingMode='t' or wa.provide_for_$sharingMode is NULL)");
+      }
     }
     $ids = [];
     $captions = [];
@@ -2013,13 +2023,14 @@ SQL;
       // survey could vary per record.
       $joinType = (strpos($attr->validation_rules, 'required') === FALSE) ? 'LEFT JOIN' : 'JOIN';
       // Find out what alias and field name the query uses for the table &
-      // field we need to join to (samples.id, occurrences.id or locations.id).
+      // field we need to join to (samples.id, occurrences.id, locations.id
+      // taxa_taxon_lists.id, termlists_terms.id, survey.id or person.id).
       $joinFieldAttr = inflector::plural($entity) . $idx . '_id_field';
       $joinToField = $this->reportReader->$joinFieldAttr;
       $avAlias = "$entity{$idx_}$attr->id";
       // Construct a join to the attribute values table so we can get the value
       // out.
-      $join = "$joinType {$entity}_attribute_values $entity{$idx_}$attr->id ON $entity{$idx_}$attr->id.{$entity}_id=$joinToField AND $entity{$idx_}$attr->id.{$entity}_attribute_id=$attr->id AND $entity{$idx_}$attr->id.deleted=false";
+      $join = "$joinType {$entity}_attribute_values $avAlias ON $avAlias.{$entity}_id=$joinToField AND $avAlias.{$entity}_attribute_id=$attr->id AND $avAlias.deleted=false";
       if ($attr->data_type === 'L') {
         $join .= "\n$joinType cache_termlists_terms ltt{$idx_}{$attr->id} ON ltt{$idx_}$attr->id.id={$entity}{$idx_}$attr->id.int_value";
       }
