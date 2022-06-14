@@ -535,7 +535,7 @@ SQL;
             $child->submit();
             if (count($child->getAllErrors()) > 0) {
               $config['importErrors']++;
-              $this->saveErrorsToRows($db, $parentEntityDataRow, $parentEntityFields, $parent->getAllErrors(), $config);
+              $this->saveErrorsToRows($db, $parentEntityDataRow, $parentEntityFields, $child->getAllErrors(), $config);
             }
             $config['rowsInserted']++;
             $config['rowsProcessed']++;
@@ -652,13 +652,20 @@ SQL;
     }
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
-    foreach ($errors as $error) {
-      $errorsList[] = pg_escape_literal($error);
+    foreach ($errors as $field => $error) {
+      $fieldName = $field;
+      // Find the temp table field name for the error.
+      $dbFieldInTempTable = array_search($fieldName, $config['mappings']);
+      if ($dbFieldInTempTable) {
+        // Map back to find the import file's name for the column.
+        $fieldName = array_search($dbFieldInTempTable, $config['columns']);
+      }
+      $errorsList[$fieldName] = $error;
     }
-    $errorsArray = 'ARRAY[' . implode(', ', $errorsList) . ']';
+    $errorsJson = pg_escape_literal(json_encode($errorsList));
     $sql = <<<SQL
 UPDATE import_temp.$config[tableName]
-SET errors = errors || $errorsArray
+SET errors = COALESCE(errors, '{}'::jsonb) || $errorsJson::jsonb
 WHERE $wheres;
 SQL;
     $db->query($sql);
@@ -1057,7 +1064,7 @@ SQL;
     foreach (array_values($config['columns']) as $columnName) {
       $colsArray[] = "$columnName varchar";
     }
-    $colsArray[] = 'errors text[]';
+    $colsArray[] = 'errors jsonb';
     $colsList = implode(",\n", $colsArray);
     $qry = <<<SQL
 CREATE TABLE import_temp.$tableName (
