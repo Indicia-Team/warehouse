@@ -894,6 +894,25 @@ class ORM extends ORM_Core {
   }
 
   /**
+   * Performs a basic validation precheck on the submission fields.
+   *
+   * @return array
+   *   Key/value pairs of validation errors found.
+   */
+  public function precheck() {
+    $this->preSubmit();
+    $vArray = [];
+    foreach ($this->submission['fields'] as $key => $value) {
+      if (isset($value['value'])) {
+        $vArray[$key] = $value['value'];
+      }
+    }
+    $validationObj = new Validation($vArray);
+    $this->validate($validationObj);
+    return $validationObj->errors();
+  }
+
+  /**
    * Submits the data by:
    * - For each entry in the "supermodels" array, calling the submit function
    *   for that model and linking in the resultant object.
@@ -2305,7 +2324,7 @@ class ORM extends ORM_Core {
         }
         break;
       case 'boolean':
-        // Any database column of type 'boolean' is mapped to 'bool' in 
+        // Any database column of type 'boolean' is mapped to 'bool' in
         // application/helpers/postgreSQL.php::sql_type(), thanks to the setting
         // in application/config/sql_types.php.
         // As a consequence, this case does not arise and there is no PHP type
@@ -2314,7 +2333,7 @@ class ORM extends ORM_Core {
       break;
       case 'bool':
         // Instead, we can submit any boolean representation acceptable to the
-        // database. See 
+        // database. See
         // https://www.postgresql.org/docs/current/datatype-boolean.html
         // Integer values of 1/0 may arise from file importing and must be cast
         // to string.
