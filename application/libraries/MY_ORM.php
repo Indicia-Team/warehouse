@@ -894,6 +894,25 @@ class ORM extends ORM_Core {
   }
 
   /**
+   * Performs a basic validation precheck on the submission fields.
+   *
+   * @return array
+   *   Key/value pairs of validation errors found.
+   */
+  public function precheck() {
+    $this->preSubmit();
+    $vArray = [];
+    foreach ($this->submission['fields'] as $key => $value) {
+      if (isset($value['value'])) {
+        $vArray[$key] = $value['value'];
+      }
+    }
+    $validationObj = new Validation($vArray);
+    $this->validate($validationObj);
+    return $validationObj->errors();
+  }
+
+  /**
    * Submits the data by:
    * - For each entry in the "supermodels" array, calling the submit function
    *   for that model and linking in the resultant object.

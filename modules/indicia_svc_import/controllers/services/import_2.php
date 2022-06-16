@@ -26,7 +26,7 @@ defined('SYSPATH') or die('No direct script access.');
 
 define('BATCH_ROW_LIMIT', 5);
 define('SYSTEM_FIELD_NAMES', [
-  'id',
+  '_row_id',
   'errors',
 ]);
 
@@ -355,7 +355,6 @@ class Import_2_Controller extends Service_Base_Controller {
    */
   public function process_lookup_matching() {
     header("Content-Type: application/json");
-    kohana::log('debug', "In process_lookup_matching");
     try {
       $this->authenticate('write');
       $fileName = $_POST['data-file'];
@@ -493,6 +492,12 @@ SQL;
         throw new exception('Parameter data-file refers to a missing file');
       }
       $config = $this->getConfig($fileName);
+      $isPrecheck = !empty($_POST['precheck']);
+      // If request to start again sent, go from beginning.
+      if (!empty($_POST['restart'])) {
+        $config['rowsProcessed'] = 0;
+        $config['parentEntityRowsProcessed'] = 0;
+      }
       $db = new Database();
       if (!empty($_POST['save-import-record'])) {
         $this->saveImportRecord($config, json_decode($_POST['save-import-record']));
@@ -513,14 +518,24 @@ SQL;
           $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
         }
         $parent->set_submission_data($submission);
-        $parent->submit();
+        if ($isPrecheck) {
+          $errors = $parent->precheck();
+          // A fake ID to allow check on children.
+          $parent->id = 1;
+        }
+        else {
+          $parent->submit();
+          $errors = $parent->getAllErrors();
+        }
         $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityFields, $config, $parentEntityDataRow);
-        if (count($parent->getAllErrors()) > 0) {
+        if (count($errors) > 0) {
           $config['errorsCount'] += count($childEntityDataRows);
           $config['rowsProcessed'] += count($childEntityDataRows);
           $this->saveErrorsToRows($db, $parentEntityDataRow, $parentEntityFields, $parent->getAllErrors(), $config);
         }
-        else {
+        // If sample saved OK, or we are just prechecking, process the matching
+        // occurrences.
+        if (count($errors) === 0 || $isPrecheck) {
           foreach ($childEntityDataRows as $childEntityDataRow) {
             $child = ORM::factory($config['entity']);
             $submission = [
@@ -532,45 +547,102 @@ SQL;
               $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
             $child->set_submission_data($submission);
-            $child->submit();
-            if (count($child->getAllErrors()) > 0) {
+            if ($isPrecheck) {
+              $errors = $child->precheck();
+            }
+            else {
+              $child->submit();
+              $errors = $child->getAllErrors();
+            }
+            if (count($errors) > 0) {
               $config['importErrors']++;
               $this->saveErrorsToRows($db, $parentEntityDataRow, $parentEntityFields, $child->getAllErrors(), $config);
             }
-            $config['rowsInserted']++;
+            if (!$isPrecheck) {
+              $config['rowsInserted']++;
+            }
             $config['rowsProcessed']++;
           }
         }
-        $config['parentEntityRowsInserted']++;
+        $config['parentEntityRowsProcessed']++;
       }
 
       $progress = 100 * $config['rowsProcessed'] / $config['totalRows'];
-      if ($progress === 100 && $config['errorsCount'] === 0) {
+      if ($progress === 100 && $config['errorsCount'] === 0 && !$isPrecheck) {
         $this->tidyUpAfterImport($db, $config);
       }
       else {
         $this->saveConfig($fileName, $config);
       }
-      $this->saveImportRecord($config);
+      if (!$isPrecheck) {
+        $this->saveImportRecord($config);
+      }
       echo json_encode([
-        'status' => $config['rowsProcessed'] >= $config['totalRows'] ? 'done' : 'importing',
+        'status' => $config['rowsProcessed'] >= $config['totalRows'] ? 'done' : ($isPrecheck ? 'checking' : 'importing'),
         'progress' => 100 * $config['rowsProcessed'] / $config['totalRows'],
+        'rowsProcessed' => $config['rowsProcessed'],
+        'totalRows' => $config['totalRows'],
         'errorsCount' => $config['errorsCount'],
       ]);
     }
     catch (Exception $e) {
       // Save config as it tells us how far we got, making diagnosis and
       // continuation easier.
-      $this->saveConfig($fileName, $config);
-      $this->saveImportRecord($config);
-      error_logger::log_error('Error in save_lookup_matches_group', $e);
-      kohana::log('debug', 'Error in save_lookup_matches_group: ' . $e->getMessage());
+      if (isset($config)) {
+        $this->saveConfig($fileName, $config);
+        $this->saveImportRecord($config);
+      }
+      error_logger::log_error('Error in import_chunk', $e);
+      kohana::log('debug', 'Error in import_chunk: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'status' => 'error',
         'msg' => $e->getMessage(),
       ]);
     }
+  }
+
+  /**
+   * Adds end-point for retrieving errors file.
+   *
+   * Sends CSV content for rows with errors to the output.
+   */
+  public function get_errors_file() {
+    if (empty($_GET['data-file'])) {
+      http_response_code(400);
+      echo json_encode([
+        'status' => 'error',
+        'msg' => 'A query parameter called data-file must be passed to get_errors_file end-point.',
+      ]);
+      return;
+    }
+    header("Content-Description: File Transfer");
+    header("Content-Type: text/csv");
+    header("Content-Disposition: attachment; filename=\"import-errors.csv\"");
+    $fileName = $_GET['data-file'];
+    $config = $this->getConfig($fileName);
+    $fields = array_merge(array_values($config['columns']), [
+      '_row_id',
+      'errors',
+    ]);
+    $fieldSql = implode(', ', $fields);
+    $query = <<<SQL
+SELECT $fieldSql
+FROM import_temp.$config[tableName]
+WHERE errors IS NOT NULL
+ORDER BY _row_id;
+SQL;
+    $db = new Database();
+    $results = $db->query($query)->result(FALSE);
+    $out = fopen('php://output', 'w');
+    fputcsv($out, array_merge(array_keys($config['columns']), [
+      '[Row no.]',
+      '[Errors]',
+    ]));
+    foreach ($results as $row) {
+      fputcsv($out, $row);
+    }
+    fclose($out);
   }
 
   /**
@@ -758,7 +830,7 @@ SELECT DISTINCT $fieldsAsCsv
 FROM import_temp.$config[tableName]
 ORDER BY $fieldsAsCsv
 LIMIT $batchRowLimit
-OFFSET $config[parentEntityRowsInserted];
+OFFSET $config[parentEntityRowsProcessed];
 SQL;
     return $db->query($sql)->result();
   }
@@ -840,7 +912,7 @@ SQL;
 SELECT *
 FROM import_temp.$config[tableName]
 WHERE $wheres
-ORDER BY id;
+ORDER BY _row_id;
 SQL;
     return $db->query($sql)->result();
   }
@@ -1060,7 +1132,7 @@ SQL;
     $db = new Database();
     $tableName = 'import_' . date('YmdHi') . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', pathinfo($fileName, PATHINFO_FILENAME));
     $config['tableName'] = $tableName;
-    $colsArray = ['id serial'];
+    $colsArray = ['_row_id serial'];
     foreach (array_values($config['columns']) as $columnName) {
       $colsArray[] = "$columnName varchar";
     }
@@ -1172,7 +1244,7 @@ SQL;
         'rowsInserted' => 0,
         'rowsUpdated' => 0,
         'rowsProcessed' => 0,
-        'parentEntityRowsInserted' => 0,
+        'parentEntityRowsProcessed' => 0,
         'errorsCount' => 0,
         'importGuid' => $this->createGuid(),
         'entitySupportsImportGuid' => $supportsImportGuid,
