@@ -629,9 +629,9 @@ class ORM extends ORM_Core {
       $this->submission['fields'][$fieldname] = ['value'=>[]];
     }
     else {
-    	$keys = array_fill(0, sizeof($ids), 'value');
-    	$a = array_fill_keys($keys, $ids);
-    	$this->submission['fields'][$fieldname] = $a;
+      $keys = array_fill(0, sizeof($ids), 'value');
+      $a = array_fill_keys($keys, $ids);
+      $this->submission['fields'][$fieldname] = $a;
     }
     return TRUE;
   }
@@ -1569,21 +1569,21 @@ class ORM extends ORM_Core {
     }
     $struct = $this->get_submission_structure();
     if (array_key_exists('superModels', $struct)) {
-      // currently can only have associations if a single superModel exists.
+      // Currently can only have associations if a single superModel exists.
       if($use_associations && count($struct['superModels']) === 1) {
-      	// duplicate all the existing fields, but rename adding a 2 to model end.
-      	$newFields = [];
-      	foreach($fields as $name=>$caption){
-      		$parts=explode(':',$name);
-      		if($parts[0]==$struct['model'] || $parts[0] == $struct['model'].'_image' || $parts[0] == $this->attrs_field_prefix) {
-      			$parts[0] .= '_2';
-      			$newFields[implode(':',$parts)] = ($caption != '' ? $caption.' (2)' : '');
-      		}
-      	}
-      	$fields = array_merge($fields, ORM::factory($struct['model'].'_association')->getSubmittableFields($fk, $identifiers, NULL, FALSE));
-      	$fields = array_merge($fields,$newFields);
+        // Duplicate all the existing fields, but rename adding a 2 to model end.
+        $newFields = [];
+        foreach ($fields as $name=>$caption){
+          $parts = explode(':', $name);
+          if ($parts[0] == $struct['model'] || $parts[0] == $struct['model'] . '_image' || $parts[0] == $this->attrs_field_prefix) {
+            $parts[0] .= '_2';
+            $newFields[implode(':', $parts)] = ($caption != '' ? $caption.' (2)' : '');
+          }
+        }
+        $fields = array_merge($fields, ORM::factory($struct['model'].'_association')->getSubmittableFields($fk, $identifiers, NULL, FALSE));
+        $fields = array_merge($fields,$newFields);
       }
-      foreach ($struct['superModels'] as $super=>$content) {
+      foreach ($struct['superModels'] as $super => $content) {
         $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $identifiers, $attrTypeFilter, FALSE));
       }
     }
@@ -1598,54 +1598,63 @@ class ORM extends ORM_Core {
   /**
    * Retrieves a list of the required fields for this model and its related models.
    *
-   * @param <type> $fk
+   * @param bool $fk
+   *   True if foreign key field types (fk_*) should be returned where
+   *   appropriate.
    * @param array $identifiers
    *   Website ID, survey ID and/or taxon list ID that define the context of
    *   the list of fields, used to determine the custom attributes to include.
+   * @param array $use_associations
+   *   TRUE if occurrence associations data included.
    *
-   * @return array List of the fields which are required.
+   * @return array
+   *   List of the fields which are required.
    */
   public function getRequiredFields($fk = FALSE, array $identifiers = [], $use_associations = FALSE) {
     $sub = $this->get_submission_structure();
-    $arr = new Validation(array('id'=>1));
+    $arr = new Validation(['id' => 1]);
     $this->validate($arr, FALSE);
     $fields = [];
-    foreach ($arr->errors() as $column=>$error) {
-      if ($error=='required') {
+    foreach ($arr->errors() as $column => $error) {
+      if ($error == 'required') {
         if ($fk && substr($column, -3) == "_id") {
-          // don't include the fk link field if the submission is supposed to contain full data
-          // for the supermodel record rather than just a link
-          if (!isset($sub['superModels'][substr($column, 0, -3)]))
-            $fields[] = $this->object_name.":fk_".substr($column, 0, -3);
-        } else {
-          $fields[] = $this->object_name.":$column";
+          // Don't include the fk link field if the submission is supposed to
+          // contain full data for the supermodel record rather than just a
+          // link.
+          if (!isset($sub['superModels'][substr($column, 0, -3)])) {
+            $fields[] = $this->object_name . ":fk_" . substr($column, 0, -3);
+          }
+        }
+        else {
+          $fields[] = $this->object_name . ":$column";
         }
       }
     }
     if ($this->has_attributes) {
       $result = $this->getAttributes(TRUE);
-      foreach($result as $row) {
-        $fields[] = $this->attrs_field_prefix.':'.$row->id;
+      foreach ($result as $row) {
+        $fields[] = "$this->attrs_field_prefix:$row->id";
       }
     }
 
     if (array_key_exists('superModels', $sub)) {
-    	// currently can only have associations if a single superModel exists.
-    	if($use_associations && count($sub['superModels'])===1){
-    		// duplicate all the existing fields, but rename adding a 2 to model end.
-    		$newFields = [];
-    		foreach($fields as $id){
-    			$parts=explode(':',$id);
-    			if($parts[0]==$sub['model'] || $parts[0]==$sub['model'].'_image' || $parts[0]==$this->attrs_field_prefix) {
-    				$parts[0] .= '_2';
-    				$newFields[] = implode(':',$parts);
-    			}
-    		}
-    		$fields = array_merge($fields,$newFields);
-    		$fields = array_merge($fields, ORM::factory($sub['model'].'_association')->getRequiredFields($fk, $identifiers, FALSE));
-    	}
+      // Currently can only have associations if a single superModel exists.
+      if ($use_associations && count($sub['superModels']) === 1) {
+        // Duplicate all the existing fields, but rename adding a 2 to model
+        // end.
+        $newFields = [];
+        foreach ($fields as $id) {
+          $parts = explode(':', $id);
+          if ($parts[0] == $sub['model'] || $parts[0] == $sub['model'] . '_image' || $parts[0] == $this->attrs_field_prefix) {
+            $parts[0] .= '_2';
+            $newFields[] = implode(':', $parts);
+          }
+        }
+        $fields = array_merge($fields, $newFields);
+        $fields = array_merge($fields, ORM::factory($sub['model'] . '_association')->getRequiredFields($fk, $identifiers, FALSE));
+      }
 
-      foreach ($sub['superModels'] as $super=>$content) {
+      foreach ($sub['superModels'] as $super => $content) {
         $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($fk, $identifiers, FALSE));
       }
     }
@@ -1655,17 +1664,20 @@ class ORM extends ORM_Core {
   /**
    * Returns the array of values, with each key prefixed by the model name then :.
    *
-   * @param string $prefix Optional prefix, only required when overriding the model name
-   * being used as a prefix.
-   * @return array Prefixed key value pairs.
+   * @param string $prefix
+   *   Optional prefix, only required when overriding the model name being used
+   *   as a prefix.
+   *
+   * @return array
+   *   Prefixed key value pairs.
    */
-  public function getPrefixedValuesArray($prefix=NULL) {
+  public function getPrefixedValuesArray($prefix = NULL) {
     $r = [];
     if (!$prefix) {
-      $prefix=$this->object_name;
+      $prefix = $this->object_name;
     }
-    foreach ($this->as_array() as $key=>$val) {
-      $r["$prefix:$key"]=$val;
+    foreach ($this->as_array() as $key => $val) {
+      $r["$prefix:$key"] = $val;
     }
     return $r;
   }
@@ -2138,10 +2150,10 @@ class ORM extends ORM_Core {
    * @return array The submission structure containing the fkFields element.
    */
   public function getFkFields($submission, $saveArray) {
-  	if($this->object_name != $submission['id'])
-    	$submissionModel = ORM::Factory($submission['id'], -1);
+    if($this->object_name != $submission['id'])
+      $submissionModel = ORM::Factory($submission['id'], -1);
     else $submissionModel = $this;
-  	foreach ($submission['fields'] as $field=>$value) {
+    foreach ($submission['fields'] as $field=>$value) {
       if (substr($field, 0, 3)=='fk_') {
         // This field is a fk_* field which contains the text caption of a record which we need to lookup.
         // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
@@ -2183,25 +2195,25 @@ class ORM extends ORM_Core {
         foreach ($saveArray as $filterfield=>$filtervalue) {
           if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
               substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
-        		// found a filter for this field or fkTable. So extract the field name as the 3rd part
-        		$arr = explode(':', $filterfield);
-        		$submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
-        		// and remember the value
-        		$submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
+            // found a filter for this field or fkTable. So extract the field name as the 3rd part
+            $arr = explode(':', $filterfield);
+            $submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
+            // and remember the value
+            $submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
             }
         }
         // Alternative location is in the submission array itself:
         // this allows for multiple records with different filters, E.G. when submitting occurrences as associations,
         // may want different taxon lists, will be entered as occurrence<n>:fkFilter:<table>:<field> = <value>
         foreach ($submission['fields'] as $filterfield=>$filtervalue) {
-        	if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
-                	substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
-        		// found a filter for this field or fkTable. So extract the field name as the 3rd part
-        		$arr = explode(':', $filterfield);
-        		$submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
-        		// and remember the value
-        		$submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
-        	}
+          if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
+                  substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
+            // found a filter for this field or fkTable. So extract the field name as the 3rd part
+            $arr = explode(':', $filterfield);
+            $submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
+            // and remember the value
+            $submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
+          }
         }
 
       }
