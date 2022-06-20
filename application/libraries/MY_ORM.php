@@ -1611,6 +1611,7 @@ class ORM extends ORM_Core {
    *   List of the fields which are required.
    */
   public function getRequiredFields($fk = FALSE, array $identifiers = [], $use_associations = FALSE) {
+    $this->identifiers = $identifiers;
     $sub = $this->get_submission_structure();
     $arr = new Validation(['id' => 1]);
     $this->validate($arr, FALSE);
