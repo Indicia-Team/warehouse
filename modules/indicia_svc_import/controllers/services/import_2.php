@@ -135,9 +135,12 @@ class Import_2_Controller extends Service_Base_Controller {
   /**
    * Controller function that returns the list of import fields for an entity.
    *
-   * Accepts optional $_GET parameters for the website_id and survey_id, which
-   * limit the available custom attribute fields as appropriate. Echoes JSON
-   * listing the fields that can be imported.
+   * Accepts optional $_GET parameters for the website_id, survey_id,
+   * taxon_list_id and use_associations which influences the required fields
+   * returned in the result, since custom attributes are only associated with
+   * certain website/survey dataset/taxon list combinations.
+   *
+   * Echoes JSON listing the fields that can be imported.
    *
    * @param string $entity
    *   Singular name of the entity to check.
@@ -171,7 +174,16 @@ class Import_2_Controller extends Service_Base_Controller {
       $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
     }
     $useAssociations = !empty($_GET['use_associations']) && $_GET['use_associations'] === 'true';
-    $fields = $model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $useAssociations);
+    if (!empty($_GET['required']) && $_GET['required'] === 'true') {
+      $fields = $model->getRequiredFields(TRUE, $identifiers, $useAssociations);
+      foreach ($fields as &$field) {
+        $field = preg_replace('/:date_type$/', ':date', $field);
+      }
+      $fields = array_combine($fields, array_pad([], count($fields), ''));
+    }
+    else {
+      $fields = $model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $useAssociations);
+    }
     $this->provideFriendlyFieldCaptions($fields);
     echo json_encode($fields);
   }
