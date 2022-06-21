@@ -1609,8 +1609,8 @@ class ORM extends ORM_Core {
       ($this->identifiers['taxon_list_id'] ?? '') . '-' .
       ($required ? 't' : 'f') .
       $typeFilter;
-    $this->cache = Cache::instance();
-    $attrs = $this->cache->get($cacheId);
+    $cache = Cache::instance();
+    $attrs = $cache->get($cacheId);
     if ($attrs === NULL) {
       $attrEntity = $this->object_name . '_attribute';
       $attrTable = inflector::plural($this->object_name . '_attribute');
@@ -1670,7 +1670,7 @@ class ORM extends ORM_Core {
       }
       $this->db->orderby("$attrTable.caption", 'ASC');
       $attrs = $this->db->get()->result_array(TRUE);
-      $this->cache->set($cacheId, $attrs, ['attribute-lists']);
+      $cache->set($cacheId, $attrs, ['attribute-lists']);
     }
     return $attrs;
   }
