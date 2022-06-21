@@ -24,7 +24,7 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
-define('BATCH_ROW_LIMIT', 5);
+define('BATCH_ROW_LIMIT', 100);
 define('SYSTEM_FIELD_NAMES', [
   '_row_id',
   'errors',
@@ -845,7 +845,9 @@ SQL;
    */
   private function fetchParentEntityData($db, array $fields, array $config) {
     $fieldsAsCsv = implode(', ', $fields);
-    $batchRowLimit = BATCH_ROW_LIMIT;
+    // Batch row limit div by arbitrary 10 to allow for multiple children per
+    // parent.
+    $batchRowLimit = BATCH_ROW_LIMIT / 10;
     $sql = <<<SQL
 SELECT DISTINCT $fieldsAsCsv
 FROM import_temp.$config[tableName]
