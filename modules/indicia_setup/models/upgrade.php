@@ -185,6 +185,7 @@ class Upgrade_Model extends Model {
     $cache->delete('work-queue-helpers');
     $cache->delete_tag('orm');
     $cache->delete_tag('required-fields');
+    $cache->delete_tag('attribute-lists');
     $cache->delete_tag('ui');
   }
 
