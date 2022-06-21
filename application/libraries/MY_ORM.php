@@ -896,10 +896,16 @@ class ORM extends ORM_Core {
   /**
    * Performs a basic validation precheck on the submission fields.
    *
+   * @param array $identifiers
+   *   Identifier values, e.g. website_id, survey_id or taxon_list_id.
+   *
    * @return array
    *   Key/value pairs of validation errors found.
    */
-  public function precheck() {
+  public function precheck(array $identifiers) {
+    $this->identifiers = $identifiers;
+    // Need to call pre-submit as it fills in certain fields, e.g. geom from
+    // the spatial ref fields.
     $this->preSubmit();
     $vArray = [];
     foreach ($this->submission['fields'] as $key => $value) {
@@ -909,7 +915,33 @@ class ORM extends ORM_Core {
     }
     $validationObj = new Validation($vArray);
     $this->validate($validationObj);
-    return $validationObj->errors();
+    $errors = $validationObj->errors();
+    if ($this->has_attributes) {
+      // @todo The getAttributes call should use a type filter e.g. to filter on sample_method_id.
+      $requiredAttributes = $this->getAttributes(TRUE);
+      foreach ($requiredAttributes as $attr) {
+        if (empty($vArray["$this->attrs_field_prefix:$attr->id"])) {
+          $errors["$this->attrs_field_prefix:$attr->id"] = 'A value for this attribute is required.';
+        }
+      }
+      foreach ($vArray as $field => $value) {
+        if (preg_match("/^$this->attrs_field_prefix\:(?<id>\d+)/", $field, $matches)) {
+          $attrObj = ORM::factory($this->object_name . '_attribute_value');
+          $attrArray = [
+            $this->object_name . '_id' => 1,
+            $this->object_name . '_attribute_id' => $matches['id'],
+            // @todo Correct field according to data type
+            'int_value' => $value,
+          ];
+          $attrObj->validate(new Validation($attrArray), TRUE);
+          if (count($attrObj->errors)) {
+            $errors[$field] = implode(';', array_values($attrObj->errors));
+          }
+        }
+      }
+    }
+    // @todo the custom attributes are not validated here.
+    return $errors;
   }
 
   /**
@@ -1570,18 +1602,18 @@ class ORM extends ORM_Core {
     $struct = $this->get_submission_structure();
     if (array_key_exists('superModels', $struct)) {
       // Currently can only have associations if a single superModel exists.
-      if($use_associations && count($struct['superModels']) === 1) {
+      if ($use_associations && count($struct['superModels']) === 1) {
         // Duplicate all the existing fields, but rename adding a 2 to model end.
         $newFields = [];
-        foreach ($fields as $name=>$caption){
+        foreach ($fields as $name => $caption){
           $parts = explode(':', $name);
           if ($parts[0] == $struct['model'] || $parts[0] == $struct['model'] . '_image' || $parts[0] == $this->attrs_field_prefix) {
             $parts[0] .= '_2';
-            $newFields[implode(':', $parts)] = ($caption != '' ? $caption.' (2)' : '');
+            $newFields[implode(':', $parts)] = ($caption != '' ? $caption .' (2)' : '');
           }
         }
-        $fields = array_merge($fields, ORM::factory($struct['model'].'_association')->getSubmittableFields($fk, $identifiers, NULL, FALSE));
-        $fields = array_merge($fields,$newFields);
+        $fields = array_merge($fields, ORM::factory($struct['model'] . '_association')->getSubmittableFields($fk, $identifiers, NULL, FALSE));
+        $fields = array_merge($fields, $newFields);
       }
       foreach ($struct['superModels'] as $super => $content) {
         $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $identifiers, $attrTypeFilter, FALSE));
