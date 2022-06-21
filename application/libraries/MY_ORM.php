@@ -187,24 +187,28 @@ class ORM extends ORM_Core {
             if (function_exists($plugin . '_extend_orm')) {
               $extends = call_user_func($plugin . '_extend_orm');
               if (isset($extends[$object_name])) {
-                if (isset($extends[$object_name]['has_one']))
+                if (isset($extends[$object_name]['has_one'])) {
                   $this->has_one = array_merge($this->has_one, $extends[$object_name]['has_one']);
-                if (isset($extends[$object_name]['has_many']))
+                }
+                if (isset($extends[$object_name]['has_many'])) {
                   $this->has_many = array_merge($this->has_many, $extends[$object_name]['has_many']);
-                if (isset($extends[$object_name]['belongs_to']))
+                }
+                if (isset($extends[$object_name]['belongs_to'])) {
                   $this->belongs_to = array_merge($this->belongs_to, $extends[$object_name]['belongs_to']);
-                if (isset($extends[$object_name]['has_and_belongs_to_many']))
+                }
+                if (isset($extends[$object_name]['has_and_belongs_to_many'])) {
                   $this->has_and_belongs_to_many = array_merge($this->has_and_belongs_to_many, $extends[$object_name]['has_and_belongs_to_many']);
+                }
               }
             }
           }
         }
-        $cacheArray = array(
+        $cacheArray = [
           'has_one' => $this->has_one,
           'has_many' => $this->has_many,
           'belongs_to' => $this->belongs_to,
-          'has_and_belongs_to_many' => $this->has_and_belongs_to_many
-        );
+          'has_and_belongs_to_many' => $this->has_and_belongs_to_many,
+        ];
         $this->cache->set($cacheId, $cacheArray, ['orm']);
       }
       else {
@@ -629,9 +633,9 @@ class ORM extends ORM_Core {
       $this->submission['fields'][$fieldname] = ['value'=>[]];
     }
     else {
-    	$keys = array_fill(0, sizeof($ids), 'value');
-    	$a = array_fill_keys($keys, $ids);
-    	$this->submission['fields'][$fieldname] = $a;
+      $keys = array_fill(0, sizeof($ids), 'value');
+      $a = array_fill_keys($keys, $ids);
+      $this->submission['fields'][$fieldname] = $a;
     }
     return TRUE;
   }
@@ -894,12 +898,57 @@ class ORM extends ORM_Core {
   }
 
   /**
+   * Finds the name of a value field according to the attr's datatype.
+   *
+   * @param array $allAttributes
+   *   Loaded list of attributes for the data being saved.
+   * @param int $id
+   *   Attribute ID.
+   *
+   * @return string
+   *   Attribute value field name.
+   */
+  private function getValueField($allAttributes, $id) {
+    foreach ($allAttributes as $attr) {
+      if ($attr->id == $id) {
+        switch ($attr->data_type) {
+          case 'T':
+            return 'text_value';
+
+          case 'F':
+            return 'float_value';
+
+          case 'D':
+          case 'V':
+            return 'date_start_value';
+
+          case 'G':
+            return 'geom_value';
+
+          case 'I':
+          case 'B':
+          case 'L':
+            return 'int_value';
+        }
+      }
+    }
+    // Fallback.
+    return 'text_value';
+  }
+
+  /**
    * Performs a basic validation precheck on the submission fields.
+   *
+   * @param array $identifiers
+   *   Identifier values, e.g. website_id, survey_id or taxon_list_id.
    *
    * @return array
    *   Key/value pairs of validation errors found.
    */
-  public function precheck() {
+  public function precheck(array $identifiers) {
+    $this->identifiers = $identifiers;
+    // Need to call pre-submit as it fills in certain fields, e.g. geom from
+    // the spatial ref fields.
     $this->preSubmit();
     $vArray = [];
     foreach ($this->submission['fields'] as $key => $value) {
@@ -909,7 +958,34 @@ class ORM extends ORM_Core {
     }
     $validationObj = new Validation($vArray);
     $this->validate($validationObj);
-    return $validationObj->errors();
+    $errors = $validationObj->errors();
+    if ($this->has_attributes) {
+      // @todo The getAttributes call should use a type filter e.g. to filter on sample_method_id.
+      $requiredAttributes = $this->getAttributes(TRUE);
+      foreach ($requiredAttributes as $attr) {
+        if (empty($vArray["$this->attrs_field_prefix:$attr->id"])) {
+          $errors["$this->attrs_field_prefix:$attr->id"] = 'A value for this attribute is required.';
+        }
+      }
+      $allAttributes = $this->getAttributes(FALSE);
+      foreach ($vArray as $field => $value) {
+        if (preg_match("/^$this->attrs_field_prefix\:(?<id>\d+)/", $field, $matches)) {
+          $attrObj = ORM::factory($this->object_name . '_attribute_value');
+          $valueField = $this->getValueField($allAttributes, $matches['id']);
+          $attrArray = [
+            $this->object_name . '_id' => 1,
+            $this->object_name . '_attribute_id' => $matches['id'],
+            $valueField => $value,
+          ];
+          $attrObj->validate(new Validation($attrArray), TRUE);
+          if (count($attrObj->errors)) {
+            $errors[$field] = implode(';', array_values($attrObj->errors));
+          }
+        }
+      }
+    }
+    // @todo the custom attributes are not validated here.
+    return $errors;
   }
 
   /**
@@ -1417,9 +1493,9 @@ class ORM extends ORM_Core {
       // a custom attribute is saved so it should always be up to date.
       $key = $this->getRequiredFieldsCacheKey($typeFilter);
       $result = $this->cache->get($key);
-      if ($result===NULL) {
-        // setup basic query to get custom attrs.
-        $result=$this->getAttributes(TRUE, $typeFilter);
+      if ($result === NULL) {
+        // Setup basic query to get custom attrs.
+        $result = $this->getAttributes(TRUE, $typeFilter);
         $this->cache->set($key, $result, array('required-fields'));
       }
 
@@ -1450,79 +1526,103 @@ class ORM extends ORM_Core {
    * @return string The cache key.
    */
   protected function getRequiredFieldsCacheKey($typeFilter) {
-    $keyArr = array_merge(array('required', $this->object_name), $this->identifiers);
-    if ($typeFilter) $keyArr[] = $typeFilter;
+    $keyArr = array_merge(['required', $this->object_name], $this->identifiers);
+    if ($typeFilter) {
+      $keyArr[] = $typeFilter;
+    }
     return implode('-', $keyArr);
   }
 
   /**
    * Gets the list of custom attributes for this model.
-   * This is just a default implementation for occurrence & sample attributes which can be
-   * overridden if required.
-   * @param boolean $required Optional. Set to TRUE to only return required attributes (requires
-   * the website and survey identifier to be set).
-   * @param int @typeFilter Specify a location type meaning id or a sample method meaning id to
-   * filter the returned attributes to those which apply to the given type or method.
-   * @param boolean @hasSurveyRestriction TRUE if this objects attributes can be restricted to
-   * survey scope.
+   *
+   * This is just a default implementation for occurrence & sample attributes
+   * which can be overridden if required.
+   *
+   * @param bool $required
+   *   Optional. Set to TRUE to only return required attributes (requires the
+   *   website and survey identifier to be set).
+   * @param int $typeFilter
+   *   Specify a location type meaning id or a sample method meaning id to
+   *   filter the returned attributes to those which apply to the given type or
+   *   method.
+   * @param bool $hasSurveyRestriction
+   *   TRUE if this objects attributes can be restricted to survey scope.
    */
   protected function getAttributes($required = FALSE, $typeFilter = NULL, $hasSurveyRestriction = TRUE) {
     if (empty($this->identifiers['website_id']) && empty($this->identifiers['taxon_list_id'])) {
       return [];
     }
-    $attr_entity = $this->object_name . '_attribute';
-    $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption', $attr_entity.'s.data_type');
-    $this->db->from($attr_entity.'s');
-    $this->db->where($attr_entity.'s.deleted', 'f');
-    if ((!empty($this->identifiers['website_id']) || !empty($this->identifiers['survey_id']))
-        && $this->db->table_exists($attr_entity.'s_websites')) {
-      $this->db->join($attr_entity.'s_websites', $attr_entity.'s_websites.'.$attr_entity.'_id', $attr_entity.'s.id');
-      $this->db->where($attr_entity.'s_websites.deleted', 'f');
-      if (!empty($this->identifiers['website_id']))
-        $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
-      if (!empty($this->identifiers['survey_id']) && $hasSurveyRestriction)
-        $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], NULL));
-      // note we concatenate the validation rules to check both global and website specific rules for requiredness.
-      if ($required) {
-        $this->db->where('('.$attr_entity."s_websites.validation_rules like '%required%' or ".$attr_entity."s.validation_rules like '%required%')");
-      }
-      // ensure that only attrs for the record's sample method or location type, or unrestricted attrs,
-      // are returned
-      if ($this->object_name=='location' || $this->object_name=='sample') {
-        if ($this->object_name=='location')
-          $this->db->join('termlists_terms as tlt', 'tlt.id',
-              'location_attributes_websites.restrict_to_location_type_id', 'left');
-        elseif ($this->object_name=='sample') {
-          $this->db->join('termlists_terms as tlt', 'tlt.id',
-              'sample_attributes_websites.restrict_to_sample_method_id', 'left');
+    $cacheId = "list-attrs-$this->object_name-" .
+      ($this->identifiers['website_id'] ?? '') . '-' .
+      ($this->identifiers['survey_id'] ?? '') . '-' .
+      ($this->identifiers['taxon_list_id'] ?? '') . '-' .
+      ($required ? 't' : 'f') .
+      $typeFilter;
+    $this->cache = Cache::instance();
+    $attrs = $this->cache->get($cacheId);
+    if ($attrs === NULL) {
+      $attrEntity = $this->object_name . '_attribute';
+      $attrTable = inflector::plural($this->object_name . '_attribute');
+
+      $this->db->select("$attrTable.id", "$attrTable.caption", "$attrTable.data_type");
+      $this->db->from($attrTable);
+      $this->db->where("$attrTable.deleted", 'f');
+      if ((!empty($this->identifiers['website_id']) || !empty($this->identifiers['survey_id']))
+          && $this->db->table_exists("{$attrTable}_websites")) {
+        $this->db->join("{$attrTable}_websites", "{$attrTable}_websites.{$attrEntity}_id", "$attrTable.id");
+        $this->db->where("{$attrTable}_websites.deleted", 'f');
+        if (!empty($this->identifiers['website_id'])) {
+          $this->db->where("{$attrTable}_websites.website_id", $this->identifiers['website_id']);
         }
-        $this->db->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt.meaning_id', 'left');
-        $ttlIds = array(NULL);
-        if ($typeFilter)
-          $ttlIds[] = $typeFilter;
-        $this->db->in('tlt2.id', $ttlIds);
+        if (!empty($this->identifiers['survey_id']) && $hasSurveyRestriction) {
+          $this->db->in("{$attrTable}_websites.restrict_to_survey_id", [$this->identifiers['survey_id'], NULL]);
+        }
+        // Note we concatenate the validation rules to check both global and
+        // website specific rules for requiredness.
+        if ($required) {
+          $this->db->where("({$attrTable}_websites.validation_rules like '%required%' or {$attrTable}.validation_rules like '%required%')");
+        }
+        // Ensure that only attrs for the record's sample method or location
+        // type, or unrestricted attrs, are returned.
+        if ($this->object_name === 'location' || $this->object_name === 'sample') {
+          if ($this->object_name === 'location') {
+            $this->db->join('termlists_terms as tlt', 'tlt.id',
+                'location_attributes_websites.restrict_to_location_type_id', 'left');
+          }
+          elseif ($this->object_name === 'sample') {
+            $this->db->join('termlists_terms as tlt', 'tlt.id',
+                'sample_attributes_websites.restrict_to_sample_method_id', 'left');
+          }
+          $this->db->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt.meaning_id', 'left');
+          $ttlIds = [NULL];
+          if ($typeFilter) {
+            $ttlIds[] = $typeFilter;
+          }
+          $this->db->in('tlt2.id', $ttlIds);
+        }
+        // For taxon or stage restrictions, the attributes are not loaded into
+        // the entry form unless the correct taxon/stage are chosen. Therefore
+        // we don't enforce the required state of these fields on the server
+        // and instead allow it to be enforced on the client.
+        if ($required && ($this->object_name === 'sample' || $this->object_name === 'occurrence')) {
+          $this->db->join("{$attrEntity}_taxon_restrictions AS tr", "tr.{$attrTable}_website_id", "{$attrTable}_websites.id", 'LEFT');
+          $this->db->where("tr.id IS NULL");
+        }
       }
-      // For taxon or stage restrictions, the attributes are not loaded into
-      // the entry form unless the correct taxon/stage are chosen. Therefore
-      // we don't enforce the required state of these fields on the server
-      // and instead allow it to be enforced on the client.
-      if ($required && ($this->object_name === 'sample' || $this->object_name === 'occurrence')) {
-        $this->db->join("{$attr_entity}_taxon_restrictions AS tr", "tr.{$attr_entity}s_website_id", "{$attr_entity}s_websites.id", 'LEFT');
-        $this->db->where("tr.id IS NULL");
+      elseif (!empty($this->identifiers['taxon_list_id']) && $this->object_name === 'taxa_taxon_list') {
+        $this->db->join('taxon_lists_taxa_taxon_list_attributes', "taxon_lists_taxa_taxon_list_attributes.{$attrEntity}_id", "$attrTable.id");
+        $this->db->where('taxon_lists_taxa_taxon_list_attributes.deleted', 'f');
+        $this->db->where('taxon_lists_taxa_taxon_list_attributes.taxon_list_id', $this->identifiers['taxon_list_id']);
       }
+      elseif ($required) {
+        $this->db->like("$attrTable.validation_rules", '%required%');
+      }
+      $this->db->orderby("$attrTable.caption", 'ASC');
+      $attrs = $this->db->get()->result_array(TRUE);
+      $this->cache->set($cacheId, $attrs, ['attribute-lists']);
     }
-    elseif (!empty($this->identifiers['taxon_list_id']) && $this->object_name === 'taxa_taxon_list') {
-      $this->db->join('taxon_lists_taxa_taxon_list_attributes', 'taxon_lists_taxa_taxon_list_attributes.'.$attr_entity.'_id', $attr_entity.'s.id');
-      $this->db->where('taxon_lists_taxa_taxon_list_attributes.deleted', 'f');
-      $this->db->where('taxon_lists_taxa_taxon_list_attributes.taxon_list_id', $this->identifiers['taxon_list_id']);
-    }
-    elseif ($required) {
-      $this->db->like($attr_entity.'s.validation_rules', '%required%');
-    }
-    $this->db->orderby($attr_entity.'s.caption', 'ASC');
-    $r = $this->db->get()->result_array(TRUE);
-    kohana::log('debug', $this->db->last_query());
-    return $r;
+    return $attrs;
   }
 
   /**
@@ -1569,21 +1669,21 @@ class ORM extends ORM_Core {
     }
     $struct = $this->get_submission_structure();
     if (array_key_exists('superModels', $struct)) {
-      // currently can only have associations if a single superModel exists.
-      if($use_associations && count($struct['superModels']) === 1) {
-      	// duplicate all the existing fields, but rename adding a 2 to model end.
-      	$newFields = [];
-      	foreach($fields as $name=>$caption){
-      		$parts=explode(':',$name);
-      		if($parts[0]==$struct['model'] || $parts[0] == $struct['model'].'_image' || $parts[0] == $this->attrs_field_prefix) {
-      			$parts[0] .= '_2';
-      			$newFields[implode(':',$parts)] = ($caption != '' ? $caption.' (2)' : '');
-      		}
-      	}
-      	$fields = array_merge($fields, ORM::factory($struct['model'].'_association')->getSubmittableFields($fk, $identifiers, NULL, FALSE));
-      	$fields = array_merge($fields,$newFields);
+      // Currently can only have associations if a single superModel exists.
+      if ($use_associations && count($struct['superModels']) === 1) {
+        // Duplicate all the existing fields, but rename adding a 2 to model end.
+        $newFields = [];
+        foreach ($fields as $name => $caption){
+          $parts = explode(':', $name);
+          if ($parts[0] == $struct['model'] || $parts[0] == $struct['model'] . '_image' || $parts[0] == $this->attrs_field_prefix) {
+            $parts[0] .= '_2';
+            $newFields[implode(':', $parts)] = ($caption != '' ? $caption .' (2)' : '');
+          }
+        }
+        $fields = array_merge($fields, ORM::factory($struct['model'] . '_association')->getSubmittableFields($fk, $identifiers, NULL, FALSE));
+        $fields = array_merge($fields, $newFields);
       }
-      foreach ($struct['superModels'] as $super=>$content) {
+      foreach ($struct['superModels'] as $super => $content) {
         $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $identifiers, $attrTypeFilter, FALSE));
       }
     }
@@ -1598,54 +1698,64 @@ class ORM extends ORM_Core {
   /**
    * Retrieves a list of the required fields for this model and its related models.
    *
-   * @param <type> $fk
+   * @param bool $fk
+   *   True if foreign key field types (fk_*) should be returned where
+   *   appropriate.
    * @param array $identifiers
    *   Website ID, survey ID and/or taxon list ID that define the context of
    *   the list of fields, used to determine the custom attributes to include.
+   * @param array $use_associations
+   *   TRUE if occurrence associations data included.
    *
-   * @return array List of the fields which are required.
+   * @return array
+   *   List of the fields which are required.
    */
   public function getRequiredFields($fk = FALSE, array $identifiers = [], $use_associations = FALSE) {
+    $this->identifiers = $identifiers;
     $sub = $this->get_submission_structure();
-    $arr = new Validation(array('id'=>1));
+    $arr = new Validation(['id' => 1]);
     $this->validate($arr, FALSE);
     $fields = [];
-    foreach ($arr->errors() as $column=>$error) {
-      if ($error=='required') {
+    foreach ($arr->errors() as $column => $error) {
+      if ($error == 'required') {
         if ($fk && substr($column, -3) == "_id") {
-          // don't include the fk link field if the submission is supposed to contain full data
-          // for the supermodel record rather than just a link
-          if (!isset($sub['superModels'][substr($column, 0, -3)]))
-            $fields[] = $this->object_name.":fk_".substr($column, 0, -3);
-        } else {
-          $fields[] = $this->object_name.":$column";
+          // Don't include the fk link field if the submission is supposed to
+          // contain full data for the supermodel record rather than just a
+          // link.
+          if (!isset($sub['superModels'][substr($column, 0, -3)])) {
+            $fields[] = $this->object_name . ":fk_" . substr($column, 0, -3);
+          }
+        }
+        else {
+          $fields[] = $this->object_name . ":$column";
         }
       }
     }
     if ($this->has_attributes) {
       $result = $this->getAttributes(TRUE);
-      foreach($result as $row) {
-        $fields[] = $this->attrs_field_prefix.':'.$row->id;
+      foreach ($result as $row) {
+        $fields[] = "$this->attrs_field_prefix:$row->id";
       }
     }
 
     if (array_key_exists('superModels', $sub)) {
-    	// currently can only have associations if a single superModel exists.
-    	if($use_associations && count($sub['superModels'])===1){
-    		// duplicate all the existing fields, but rename adding a 2 to model end.
-    		$newFields = [];
-    		foreach($fields as $id){
-    			$parts=explode(':',$id);
-    			if($parts[0]==$sub['model'] || $parts[0]==$sub['model'].'_image' || $parts[0]==$this->attrs_field_prefix) {
-    				$parts[0] .= '_2';
-    				$newFields[] = implode(':',$parts);
-    			}
-    		}
-    		$fields = array_merge($fields,$newFields);
-    		$fields = array_merge($fields, ORM::factory($sub['model'].'_association')->getRequiredFields($fk, $identifiers, FALSE));
-    	}
+      // Currently can only have associations if a single superModel exists.
+      if ($use_associations && count($sub['superModels']) === 1) {
+        // Duplicate all the existing fields, but rename adding a 2 to model
+        // end.
+        $newFields = [];
+        foreach ($fields as $id) {
+          $parts = explode(':', $id);
+          if ($parts[0] == $sub['model'] || $parts[0] == $sub['model'] . '_image' || $parts[0] == $this->attrs_field_prefix) {
+            $parts[0] .= '_2';
+            $newFields[] = implode(':', $parts);
+          }
+        }
+        $fields = array_merge($fields, $newFields);
+        $fields = array_merge($fields, ORM::factory($sub['model'] . '_association')->getRequiredFields($fk, $identifiers, FALSE));
+      }
 
-      foreach ($sub['superModels'] as $super=>$content) {
+      foreach ($sub['superModels'] as $super => $content) {
         $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($fk, $identifiers, FALSE));
       }
     }
@@ -1655,17 +1765,20 @@ class ORM extends ORM_Core {
   /**
    * Returns the array of values, with each key prefixed by the model name then :.
    *
-   * @param string $prefix Optional prefix, only required when overriding the model name
-   * being used as a prefix.
-   * @return array Prefixed key value pairs.
+   * @param string $prefix
+   *   Optional prefix, only required when overriding the model name being used
+   *   as a prefix.
+   *
+   * @return array
+   *   Prefixed key value pairs.
    */
-  public function getPrefixedValuesArray($prefix=NULL) {
+  public function getPrefixedValuesArray($prefix = NULL) {
     $r = [];
     if (!$prefix) {
-      $prefix=$this->object_name;
+      $prefix = $this->object_name;
     }
-    foreach ($this->as_array() as $key=>$val) {
-      $r["$prefix:$key"]=$val;
+    foreach ($this->as_array() as $key => $val) {
+      $r["$prefix:$key"] = $val;
     }
     return $r;
   }
@@ -2138,10 +2251,10 @@ class ORM extends ORM_Core {
    * @return array The submission structure containing the fkFields element.
    */
   public function getFkFields($submission, $saveArray) {
-  	if($this->object_name != $submission['id'])
-    	$submissionModel = ORM::Factory($submission['id'], -1);
+    if($this->object_name != $submission['id'])
+      $submissionModel = ORM::Factory($submission['id'], -1);
     else $submissionModel = $this;
-  	foreach ($submission['fields'] as $field=>$value) {
+    foreach ($submission['fields'] as $field=>$value) {
       if (substr($field, 0, 3)=='fk_') {
         // This field is a fk_* field which contains the text caption of a record which we need to lookup.
         // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
@@ -2183,25 +2296,25 @@ class ORM extends ORM_Core {
         foreach ($saveArray as $filterfield=>$filtervalue) {
           if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
               substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
-        		// found a filter for this field or fkTable. So extract the field name as the 3rd part
-        		$arr = explode(':', $filterfield);
-        		$submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
-        		// and remember the value
-        		$submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
+            // found a filter for this field or fkTable. So extract the field name as the 3rd part
+            $arr = explode(':', $filterfield);
+            $submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
+            // and remember the value
+            $submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
             }
         }
         // Alternative location is in the submission array itself:
         // this allows for multiple records with different filters, E.G. when submitting occurrences as associations,
         // may want different taxon lists, will be entered as occurrence<n>:fkFilter:<table>:<field> = <value>
         foreach ($submission['fields'] as $filterfield=>$filtervalue) {
-        	if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
-                	substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
-        		// found a filter for this field or fkTable. So extract the field name as the 3rd part
-        		$arr = explode(':', $filterfield);
-        		$submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
-        		// and remember the value
-        		$submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
-        	}
+          if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
+                  substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
+            // found a filter for this field or fkTable. So extract the field name as the 3rd part
+            $arr = explode(':', $filterfield);
+            $submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
+            // and remember the value
+            $submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
+          }
         }
 
       }
