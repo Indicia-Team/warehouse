@@ -174,15 +174,13 @@ class Import_2_Controller extends Service_Base_Controller {
       $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
     }
     $useAssociations = !empty($_GET['use_associations']) && $_GET['use_associations'] === 'true';
+    $fields = $model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $useAssociations);
     if (!empty($_GET['required']) && $_GET['required'] === 'true') {
-      $fields = $model->getRequiredFields(TRUE, $identifiers, $useAssociations);
-      foreach ($fields as &$field) {
+      $requiredFields = $model->getRequiredFields(TRUE, $identifiers, $useAssociations);
+      foreach ($requiredFields as &$field) {
         $field = preg_replace('/:date_type$/', ':date', $field);
       }
-      $fields = array_combine($fields, array_pad([], count($fields), ''));
-    }
-    else {
-      $fields = $model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $useAssociations);
+      $fields = array_intersect_key($fields, array_combine($requiredFields, $requiredFields));
     }
     $this->provideFriendlyFieldCaptions($fields);
     echo json_encode($fields);
@@ -427,18 +425,23 @@ SQL;
       }
       // Need to check all done.
       $sql = <<<SQL
-SELECT count(*) FROM import_temp.$config[tableName]
+SELECT DISTINCT {$sourceColName} AS value FROM import_temp.$config[tableName]
 WHERE {$sourceColName}<>'' AND {$sourceColName}_id IS NULL;
 SQL;
-      $countCheck = $db->query($sql)->result()->current()->count;
-      if ($countCheck === '0') {
+      $countCheck = $db->query($sql)->result_array();
+      if (count($countCheck) === 0) {
         echo json_encode([
           'status' => 'ok',
         ]);
       }
       else {
+        $unmatched = [];
+        foreach ($countCheck as $row) {
+          $unmatched[] = $row->value;
+        }
         echo json_encode([
           'status' => 'incomplete',
+          'unmatched' => $unmatched,
         ]);
       }
 
@@ -526,12 +529,16 @@ SQL;
         $submission = [];
         $this->copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityFields, $config, $submission);
         $this->applyGlobalValues($config, $config['parentEntity'], $submission);
+        $identifiers = [
+          'website_id' => $config['global-values']['website_id'],
+          'survey_id' => $submission['survey_id'],
+        ];
         if ($config['parentEntitySupportsImportGuid']) {
           $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
         }
         $parent->set_submission_data($submission);
         if ($isPrecheck) {
-          $errors = $parent->precheck();
+          $errors = $parent->precheck($identifiers);
           // A fake ID to allow check on children.
           $parent->id = 1;
         }
@@ -558,17 +565,19 @@ SQL;
             if ($config['entitySupportsImportGuid']) {
               $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
+            kohana::log('debug', 'Unwrapped submission: ' . json_encode($submission));
+            kohana::log('debug', 'Row: ' . json_encode($childEntityDataRow));
             $child->set_submission_data($submission);
             if ($isPrecheck) {
-              $errors = $child->precheck();
+              $errors = $child->precheck($identifiers);
             }
             else {
               $child->submit();
               $errors = $child->getAllErrors();
             }
             if (count($errors) > 0) {
-              $config['importErrors']++;
-              $this->saveErrorsToRows($db, $parentEntityDataRow, $parentEntityFields, $child->getAllErrors(), $config);
+              $config['errorsCount']++;
+              $this->saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
             }
             if (!$isPrecheck) {
               $config['rowsInserted']++;
@@ -1175,7 +1184,8 @@ SQL;
     $count = 0;
     $rows = [];
     while (($count < BATCH_ROW_LIMIT) && ($data = $this->getNextRow($file, $count + $config['rowsLoaded'] + 1, $config))) {
-      $data = array_map('pg_escape_literal', array_pad($data, count($config['columns']), ''));
+      // Trim and escape the data, then pad to correct number of columns.
+      $data = array_map('pg_escape_literal', array_pad(array_map('trim', $data), count($config['columns']), ''));
       $rows[] = '(' . implode(', ', $data) . ')';
       $count++;
     }
