@@ -80,9 +80,11 @@ abstract class ATTR_ORM extends Valid_ORM {
       $array->add_error("$this->object_name:allow_ranges", 'notmultiple');
     }
     $parent_valid = parent::validate($array, $save);
-    // Clean up cached required fields in case validation rules have changed.
+    // Clean up cached required fields and attribute lists in case validation
+    // rules have changed.
     $cache = Cache::instance();
     $cache->delete_tag('required-fields');
+    $cache->delete_tag('attribute-lists');
     if ($save && $parent_valid) {
       // Clear the cache used for attribute datatype and validation rules since
       // the attribute has changed.
