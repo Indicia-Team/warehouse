@@ -984,7 +984,6 @@ class ORM extends ORM_Core {
         }
       }
     }
-    // @todo the custom attributes are not validated here.
     return $errors;
   }
 

@@ -896,6 +896,7 @@ SQL;
     // Clear the cache to ensure that our required field is used.
     $cache = Cache::instance();
     $cache->delete_tag('required-fields');
+    $cache->delete_tag('attribute-lists');
     // Now, submitting an occurrence without the attribute filled in should
     // fail.
     $array = array(
@@ -973,6 +974,7 @@ SQL;
     // Remove the required field from the cache so it doesn't impact other tests.
     $cache = Cache::instance();
     $cache->delete_tag('required-fields');
+    $cache->delete_tag('attribute-lists');
   }
 
   /**
