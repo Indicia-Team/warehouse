@@ -977,9 +977,10 @@ class ORM extends ORM_Core {
             $this->object_name . '_attribute_id' => $matches['id'],
             $valueField => $value,
           ];
-          $attrObj->validate(new Validation($attrArray), TRUE);
-          if (count($attrObj->errors)) {
-            $errors[$field] = implode(';', array_values($attrObj->errors));
+          $attrValidationObj = new Validation($attrArray);
+          $attrObj->validate($attrValidationObj);
+          if (count($attrValidationObj->errors())) {
+            $errors[$field] = implode(';', array_values($attrValidationObj->errors()));
           }
         }
       }
