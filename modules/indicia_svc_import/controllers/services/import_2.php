@@ -528,7 +528,7 @@ SQL;
         $parent = ORM::factory($config['parentEntity']);
         $submission = [];
         $this->copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityFields, $config, $submission);
-        $this->applyGlobalValues($config, $config['parentEntity'], $submission);
+        $this->applyGlobalValues($config, $config['parentEntity'], $parent->attrs_field_prefix ?? NULL, $submission);
         $identifiers = [
           'website_id' => $config['global-values']['website_id'],
           'survey_id' => $submission['survey_id'],
@@ -561,12 +561,10 @@ SQL;
               'sample_id' => $parent->id,
             ];
             $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityFields, $config, $submission);
-            $this->applyGlobalValues($config, $config['entity'], $submission);
+            $this->applyGlobalValues($config, $config['entity'], $child->attrs_field_prefix ?? NULL, $submission);
             if ($config['entitySupportsImportGuid']) {
               $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
-            kohana::log('debug', 'Unwrapped submission: ' . json_encode($submission));
-            kohana::log('debug', 'Row: ' . json_encode($childEntityDataRow));
             $child->set_submission_data($submission);
             if ($isPrecheck) {
               $errors = $child->precheck($identifiers);
@@ -895,13 +893,17 @@ SQL;
    *   Import metadata configuration object.
    * @param string $entity
    *   Name of the entity to copy over values for.
+   * @param string $attrPrefix
+   *   Attribute fieldname prefix, e.g. smp or occ. Leave empty if not an
+   *   attribute table.
    * @param array $submission
    *   Submission data array that will be updated with the global values.
    */
-  private function applyGlobalValues(array $config, $entity, array &$submission) {
+  private function applyGlobalValues(array $config, $entity, $attrPrefix, array &$submission) {
     foreach ($config['global-values'] as $field => $value) {
       if (in_array($field, ['survey_id', 'website_id'])
-          || substr($field, 0, strlen($entity) + 1) === "$entity:") {
+          || substr($field, 0, strlen($entity) + 1) === "$entity:"
+          || ($attrPrefix && substr($field, 0, strlen($attrPrefix) + 1) === "{$attrPrefix}:")) {
         $submission[$field] = $value;
       }
     }
