@@ -32,7 +32,7 @@
  */
 class task_indicia_svc_security_delete_user_account {
 
-  const BATCH_SIZE = 10000;
+  const BATCH_SIZE = 10;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -49,35 +49,20 @@ class task_indicia_svc_security_delete_user_account {
    *   tasks to perform.
    */
   public static function process($db, $taskType, $procId) {
-    $websiteRemovalId = self::getWebsiteRemovalId($db, $procId);
     $anonymousUserId = self::getAnonymousUserId($db, $procId);
-    self::sendWebsitesListEmail($db, $procId);
-  }
-
-  /**
-   * Get the website ID the user is being removed from.
-   *
-   * @param object $db
-   *   Database connection object.
-   * @param string $procId
-   *   Unique identifier of this work queue processing run. Allows filtering
-   *   against the work_queue table's claimed_by field to determine which
-   *   tasks to perform.
-   * @return int
-   *   ID of the website the user is removing themselves from.
-   */
-  public static function getWebsiteRemovalId($db, $procId) {
-    $websiteId = $db
-      ->select("(params::json->>'website_id')::integer as website_id")
+    $jobs = $db
+      ->select("record_id as user_id, (params::json->>'website_id')::integer as website_id")
       ->from('work_queue')
       ->where([
         'entity' => 'user',
         'task' => 'task_indicia_svc_security_delete_user_account',
         'claimed_by' => $procId,
       ])
-      ->limit(1)
-      ->get()->result_array();
-    return $websiteId[0]->website_id;
+      ->get()->result();
+    foreach ($jobs as $job) {
+      // Call function replaceUserIdWithAnonId($job->userId, $job->website_id, $anonymousUserId);
+      self::sendWebsitesListEmail($db, $procId, $job->userId, $job->website_id);
+    }
   }
 
   /**
@@ -85,14 +70,11 @@ class task_indicia_svc_security_delete_user_account {
    *
    * @param object $db
    *   Database connection object.
-   * @param string $procId
-   *   Unique identifier of this work queue processing run. Allows filtering
-   *   against the work_queue table's claimed_by field to determine which
-   *   tasks to perform.
+   *
    * @return integer
    *   User ID of the special anonymous user.
    */
-  public static function getAnonymousUserId($db, $procId) {
+  public static function getAnonymousUserId($db) {
     $anonymousUserId = $db
       ->select("users.id as anonymous_user_id")
       ->from('users')
@@ -118,12 +100,12 @@ class task_indicia_svc_security_delete_user_account {
    *
    * @param object $db
    *   Database connection object.
-   * @param string $procId
-   *   Unique identifier of this work queue processing run. Allows filtering
-   *   against the work_queue table's claimed_by field to determine which
-   *   tasks to perform.
+   * @param int $userId
+   *   User ID being deleted.
+   * @param int $websiteId
+   *   Website ID they are being deleted from.
    */
-  private static function sendWebsitesListEmail($db, $procId) {
+  private static function sendWebsitesListEmail($db, $userId, $websiteId) {
     if (kohana::config('indicia_svc_security.deletion_user_test_id') != 0) {
       $deletionUserTestId = kohana::config('indicia_svc_security.deletion_user_test_id');
     }
@@ -194,6 +176,7 @@ class task_indicia_svc_security_delete_user_account {
    *   Database connection object.
    * @param array $websiteListUserIsStillMemberOf
    *   A list of website names the user is still a member of.
+   *
    * @return string
    *   String containing the email's content.
    */
@@ -212,7 +195,7 @@ class task_indicia_svc_security_delete_user_account {
   }
 
   /**
-   * Collect the content of the email that contains the details of the user's websites.
+   * Collect the email content that contains the details of the user's websites.
    *
    * @return string
    *   String containing the email address of the recipient.
@@ -230,6 +213,7 @@ class task_indicia_svc_security_delete_user_account {
    *   Database connection object.
    * @param int $warehouseUserId
    *   Warehouse ID of user we are deleting.
+   *
    * @return array
    *   Array of websites the user is still a member of.
    */

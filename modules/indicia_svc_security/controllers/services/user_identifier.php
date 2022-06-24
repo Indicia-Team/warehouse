@@ -61,21 +61,28 @@ class User_Identifier_Controller extends Service_Base_Controller {
   public function delete_user() {
     $tm = microtime(TRUE);
     try {
-      // don't use $_REQUEST as it can do funny things escaping quotes etc.
-      $request = array_merge($_GET, $_POST);
+      // Don't use $_REQUEST as it can do funny things escaping quotes etc.
       $this->authenticate('write');
-      $r = user_identifier::delete_user($request, $this->website_id);
+      $userId = $_POST['warehouse_user_id'];
+      $websiteId = $_POST['website_id_for_user_deletion'];
+      // Fail if website ID doesn't match the one in authentication.
+      if ($websiteId !== $this->website_id) {
+        throw new Exception('Requested website ID does not match the authorised one.');
+      }
+      if (!preg_match('/^\d+$/', $userId) || !preg_match('/^\d+$/', $websiteId)) {
+        throw new Exception('Parameters must be valid integers.');
+      }
+      $r = user_identifier::delete_user($userId, $websiteId);
       echo json_encode($r);
-      $userId = isset($r['userId']) ? $r['userId'] : NULL;
       if (class_exists('request_logging')) {
         request_logging::log('a', 'security', 'delete_user', 'user',
-          $this->website_id, $userId, $tm);
+          $websiteId, $userId, $tm);
       }
     }
     catch (Exception $e) {
       if (class_exists('request_logging')) {
         request_logging::log('a', 'security', 'delete_user', 'user',
-          $this->website_id, NULL, $tm, NULL, $e->getMessage());
+          $websiteId, NULL, $tm, NULL, $e->getMessage());
       }
       $this->handle_error($e);
     }
