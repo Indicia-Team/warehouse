@@ -61,7 +61,7 @@ class task_indicia_svc_security_delete_user_account {
       ->get()->result();
     foreach ($jobs as $job) {
       // Call function replaceUserIdWithAnonId($job->userId, $job->website_id, $anonymousUserId);
-      self::sendWebsitesListEmail($db, $procId, $job->userId, $job->website_id);
+      self::sendWebsitesListEmail($db, $procId, $job->user_id, $job->website_id);
     }
   }
 
