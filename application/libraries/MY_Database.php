@@ -154,6 +154,7 @@ class Database extends Database_Core {
    *   Query string.
    */
   public function justRunQuery($sql) {
+    $this->link or $this->connect();
     pg_query($this->link, $sql);
   }
 

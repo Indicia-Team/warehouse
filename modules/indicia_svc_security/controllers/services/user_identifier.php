@@ -55,5 +55,30 @@ class User_Identifier_Controller extends Service_Base_Controller {
     }
   }
 
-}
+  /**
+   * Controller for the client site delete_user service call to the Warehouse.
+   */
+  public function delete_user() {
+    $tm = microtime(TRUE);
+    try {
+      // don't use $_REQUEST as it can do funny things escaping quotes etc.
+      $request = array_merge($_GET, $_POST);
+      $this->authenticate('write');
+      $r = user_identifier::delete_user($request, $this->website_id);
+      echo json_encode($r);
+      $userId = isset($r['userId']) ? $r['userId'] : NULL;
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'security', 'delete_user', 'user',
+          $this->website_id, $userId, $tm);
+      }
+    }
+    catch (Exception $e) {
+      if (class_exists('request_logging')) {
+        request_logging::log('a', 'security', 'delete_user', 'user',
+          $this->website_id, NULL, $tm, NULL, $e->getMessage());
+      }
+      $this->handle_error($e);
+    }
+  }
 
+}

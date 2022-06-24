@@ -241,6 +241,40 @@ SQL;
   }
 
   /**
+   * Create work_queue item to process user deletion.
+   *
+   * @param array $request
+   *   The request to delete the user.
+   * @param int $websiteId
+   *   The Indicia website ID the user is removing their account from.
+   */
+  public static function delete_user($request, $websiteId) {
+    if (!array_key_exists('identifiers', $request)) {
+      throw new exception('Error: missing identifiers parameter');
+    }
+    $identifiers = json_decode($request['identifiers']);
+    if (!is_array($identifiers)) {
+      throw new Exception('Error: identifiers parameter not of correct format');
+    }
+    if (!is_numeric($request['warehouse_user_id'])) {
+      throw new Exception('Error: warehouse_user_id parameter not of correct format');
+    }
+    if (!is_numeric($request['website_id_for_user_deletion'])) {
+      throw new Exception('Error: website_id_for_user_deletion parameter not of correct format');
+    }
+    $q = new WorkQueue();
+    $db = new Database();
+    $q->enqueue($db, [
+      'task' => 'task_indicia_svc_security_delete_user_account',
+      'entity' => 'user',
+      'record_id' => $request['warehouse_user_id'],
+      'params' => json_encode(['website_id' => $request['website_id_for_user_deletion']]),
+      'cost_estimate' => 60,
+      'priority' => 2,
+    ]);
+  }
+
+  /**
    * Finds the list of custom attribute values associated whith the person.
    *
    * @return array
