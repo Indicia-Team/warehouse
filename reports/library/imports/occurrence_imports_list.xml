@@ -4,11 +4,10 @@
 >
   <query>
     SELECT #columns#
-    FROM occurrences o
+    FROM cache_occurrences_functional o
     JOIN users u ON u.id=o.created_by_id
     JOIN people p ON p.id=u.person_id
-    WHERE o.deleted=false
-    AND o.import_guid IS NOT NULL
+    WHERE o.import_guid IS NOT NULL
   </query>
   <order_bys>
     <order_by>min(o.created_on)</order_by>
@@ -20,8 +19,10 @@
   </params>
   <columns>
     <column name="import_guid" sql="import_guid" in_count="true" />
-    <column name="date_time" display="Date time" sql="min(o.created_on)" aggregate="true" />
-    <column name="imported_by" display="Imported by" sql="p.surname || coalesce(', ' || p.first_name, '')" />
+    <column name="date_time" display="Date/time started" sql="min(o.created_on)" aggregate="true" />
+    <column name="imported_by" display="Imported by" sql="coalesce(p.first_name || ' ', '') || p.surname" />
     <column name="records" display="# Records" sql="count(o.*)" aggregate="true" />
+    <column name="from_id" sql="min(o.id)" aggregate="true" visible="false" />
+    <column name="to_id" sql="max(o.id)" aggregate="true" visible="false" />
   </columns>
 </report>

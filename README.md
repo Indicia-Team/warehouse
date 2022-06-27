@@ -7,7 +7,7 @@ available at https://indicia-docs.readthedocs.io/en/latest/index.html.
 Details of the installation procedure are at
 http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-installation.html.
 
-The latest stable download of the warehouse code is available at https://github.com/Indicia-Team/warehouse/releases/tag/v6.4.0
+The latest stable download of the warehouse code is available at https://github.com/Indicia-Team/warehouse/releases/
 
 Details of the upgrade procedure are at
 http://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/warehouse-upgrading.html.
@@ -43,18 +43,17 @@ If you are going to immediately restart docker then delete cookies from
 your browser too.
 
 ### Using
-Once running you can browse the warehouse at http://localhost:8080. 
-
+Once running you can browse the warehouse at http://localhost:8080.
 You can examine the database with pgAdmin at http://localhost:8070.
-Each time you restart the container you have to log in with
-- email = pgadmin@example.com
-- password = password
-On first use, you need to add a server with connection parameters of
-- host = postgres
-- user = postgres
-- password = password
-
 Any mail sent by the warehouse can be viewed at http://localhost:8025.
+
+To connect pgAdmin to the database, configure the connection with
+ - Host name: The docker container name e.g. indicia_postgres_1
+ - Port: 5432
+ - Username: postgres
+ - Password: password
+To list the container names and ports you can execute the command
+`docker container ls --format "table {{.Names}}\t{{.Ports}}"`
 
 ### Unit testing
 There is a separate Docker configuration for unit testing which can be
@@ -65,12 +64,3 @@ so won't overwrite any setup you have in your development system. You do have to
 stop your development containers before running unit testing though, as it uses
 the same ports and modifies configuration. Config files that are modified by 
 testing are backed up and restored, provided the script runs to completion.
-
-You can examine the database with pgAdmin at http://localhost:8070.
-Each time you restart the container you have to log in with
-- email = pgadmin@example.com
-- password = password
-On first use, you need to add a server with connection parameters of
-- host = warehouse
-- user = postgres
-- password = password

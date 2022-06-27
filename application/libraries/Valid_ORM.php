@@ -51,8 +51,9 @@ abstract class Valid_ORM extends ORM {
     if (array_key_exists('validation_rules', $array->as_array())) {
       $this->validation_rules = $array['validation_rules'];
       $save = $save && $this->validateValidationRules();
-    } else {
-      $this->validation_rules = null;
+    }
+    else {
+      $this->validation_rules = NULL;
     }
     return parent::validate($array, $save);
   }
@@ -61,48 +62,49 @@ abstract class Valid_ORM extends ORM {
    * Applies validation logic to the loaded validation rules - e.g. for min validation we must have a min value to
    * check against.
    *
-   * @return boolean Returns true if successful.
+   * @return bool
+   *   Returns TRUE if successful.
    */
   private function validateValidationRules() {
-    $r = true;
-    // do validation for validation_rules here
+    $r = TRUE;
     $this->populate_validation_rules();
-    // do validation for validation_rules here
-    if ($this->valid_length == true){
-      if (!empty($this->valid_length_min) AND !is_numeric($this->valid_length_min)) {
-        $this->errors['valid_length']='Minimum length must be empty or a number';
-        $r=false;
+    // Do validation for validation_rules here.
+    if ($this->valid_length == TRUE) {
+      if (!empty($this->valid_length_min) && !is_numeric($this->valid_length_min)) {
+        $this->errors['valid_length'] = 'Minimum length must be empty or a number';
+        $r = FALSE;
       }
-      else if (!empty($this->valid_length_max) AND !is_numeric($this->valid_length_max)) {
-        $this->errors['valid_length']='Maximum length must be empty or a number';
-        $r=false;
-      } else if (empty($this->valid_length_min) AND empty($this->valid_length_max)) {
-        $this->errors['valid_length']='One or both minimum length and/or maximum length must be provided';
-        $r=false;
+      elseif (!empty($this->valid_length_max) && !is_numeric($this->valid_length_max)) {
+        $this->errors['valid_length'] = 'Maximum length must be empty or a number';
+        $r = FALSE;
+      }
+      elseif (empty($this->valid_length_min) && empty($this->valid_length_max)) {
+        $this->errors['valid_length'] = 'One or both minimum length and/or maximum length must be provided';
+        $r = FALSE;
       }
     }
-    if ($this->valid_decimal == true){
+    if ($this->valid_decimal == TRUE) {
       if (empty($this->valid_dec_format)) {
-        $this->errors['valid_decimal']='Format String must be provided';
-        $r=false;
+        $this->errors['valid_decimal'] = 'Format String must be provided';
+        $r = FALSE;
       }
     }
-    if ($this->valid_regex == true){
+    if ($this->valid_regex == TRUE) {
       if (empty($this->valid_regex_format)) {
-        $this->errors['valid_regex']='Format String must be provided';
-        $r=false;
+        $this->errors['valid_regex'] = 'Format String must be provided';
+        $r = FALSE;
       }
     }
-    if ($this->valid_min == true){
-      if (empty($this->valid_min_value) && $this->valid_min_value!=0) {
-        $this->errors['valid_min']='Minimum value must be provided';
-        $r=false;
+    if ($this->valid_min == TRUE) {
+      if (empty($this->valid_min_value) && $this->valid_min_value != 0) {
+        $this->errors['valid_min'] = 'Minimum value must be provided';
+        $r = FALSE;
       }
     }
-    if ($this->valid_max == true){
+    if ($this->valid_max == TRUE) {
       if (empty($this->valid_max_value)) {
-        $this->errors['valid_max']='Maximum value must be provided';
-        $r=false;
+        $this->errors['valid_max'] = 'Maximum value must be provided';
+        $r = FALSE;
       }
     }
     return $r;
@@ -114,80 +116,137 @@ abstract class Valid_ORM extends ORM {
   * of this class.
   */
   public function populate_validation_rules() {
-    if (empty($this->validation_rules))
+    if (empty($this->validation_rules)) {
       return;
+    }
     $rules_list = explode("\r\n", $this->validation_rules);
-    foreach($rules_list as $rule) {
-      // argument extraction is complicated by fact that for regex holds a regular expression.
-      if (substr($rule, -2)=='[]') {
-        // Remove the empty params as this breaks the regex
+    foreach ($rules_list as $rule) {
+      // Argument extraction is complicated by fact that for regex holds a regular expression.
+      if (substr($rule, -2) == '[]') {
+        // Remove the empty params as this breaks the regex.
         $rule = substr($rule, 0, -2);
       }
-      // Use the same method as the validation object
+      // Use the same method as the validation object.
       $args = NULL;
-      if (preg_match('/^([^\[]++)\[(.+)\]$/', $rule, $matches))
-      {
-        // Split the rule into the function and args
+      if (preg_match('/^([^\[]++)\[(.+)\]$/', $rule, $matches)) {
+        // Split the rule into the function and args.
         $rule = $matches[1];
         $args = $matches[2];
       }
       switch ($rule) {
-        case 'required' :
-		  $this->valid_required = true;
+        case 'required':
+          $this->valid_required = TRUE;
           break;
-        case 'alpha' :
-		  $this->valid_alpha = true;
+
+        case 'alpha':
+          $this->valid_alpha = TRUE;
           break;
-        case 'email' :
-		  $this->valid_email = true;
+
+        case 'email':
+          $this->valid_email = TRUE;
           break;
-        case 'url' :
-		  $this->valid_url = true;
+
+        case 'url':
+          $this->valid_url = TRUE;
           break;
-        case 'alpha_numeric' :
-		  $this->valid_alpha_numeric = true;
+
+        case 'alpha_numeric':
+          $this->valid_alpha_numeric = TRUE;
           break;
-        case 'numeric' :
-		  $this->valid_numeric = true;
+
+        case 'numeric':
+          $this->valid_numeric = TRUE;
           break;
-        case 'digit' :
-		  $this->valid_digit = true;
+
+        case 'digit':
+          $this->valid_digit = TRUE;
           break;
-        case 'integer' :
-		  $this->valid_integer = true;
+
+        case 'integer':
+          $this->valid_integer = TRUE;
           break;
-        case 'standard_text' :
-		  $this->valid_standard_text = true;
+
+        case 'standard_text':
+          $this->valid_standard_text = TRUE;
           break;
-        case 'decimal' :
-		  $this->valid_decimal = true;
+
+        case 'decimal':
+          $this->valid_decimal = TRUE;
           $this->valid_dec_format = $args;
           break;
-        case 'regex' :
-		  $this->valid_regex = true;
-		  $this->valid_regex_format = $args;
+
+        case 'regex':
+          $this->valid_regex = TRUE;
+          $this->valid_regex_format = $args;
           break;
-        case 'minimum' :
-		  $this->valid_min = true;
+
+        case 'minimum':
+          $this->valid_min = TRUE;
           $this->valid_min_value = $args;
           break;
-        case 'maximum' :
-		  $this->valid_max = true;
+
+        case 'maximum':
+          $this->valid_max = TRUE;
           $this->valid_max_value = $args;
           break;
-        case 'length' :
-		  $this->valid_length = true;
+
+        case 'length':
+          $this->valid_length = TRUE;
           $args = preg_split('/(?<!\\\\),\s*/', $matches[2]);
           $this->valid_length_min = $args[0];
           $this->valid_length_max = $args[1];
           break;
-        case 'date_in_past' :
-		  $this->valid_date_in_past=true;
+
+        case 'date_in_past':
+          $this->valid_date_in_past = TRUE;
           break;
-        case 'time' :
-		  $this->valid_time=true;
+
+        case 'time':
+          $this->valid_time = TRUE;
           break;
       }
+    }
+  }
+
+  /**
+   * Set an attribute value using the correct field name for given data type.
+   *
+   * @param mixed $value
+   *   Value to set in the submission.
+   * @param string $dataType
+   *   Data type code for the attribute.
+   * @param string $prefix
+   *   Field name previx to use, e.g. for setting fields such as
+   *   `default_text_value` pass 'default_' in this parameter.
+   */
+  protected function setSubmissionAttrValue($value, $dataType, $prefix = '') {
+    switch ($dataType) {
+      case 'T':
+        $this->submission['fields']["{$prefix}text_value"]['value'] = $value;
+        break;
+
+      case 'F':
+        $this->submission['fields']["{$prefix}float_value"]['value'] = $value;
+        break;
+
+      case 'I':
+      case 'L':
+        $this->submission['fields']["{$prefix}int_value"]['value'] = $value;
+        break;
+
+      case 'D':
+      case 'V':
+        if (empty($value)) {
+          $this->submission['fields']["{$prefix}date_start_value"]['value'] = NULL;
+          $this->submission['fields']["{$prefix}date_end_value"]['value'] = NULL;
+          $this->submission['fields']["{$prefix}date_type_value"]['value'] = NULL;
+        }
+        else {
+          $vagueDate = vague_date::string_to_vague_date($value);
+          $this->submission['fields']["{$prefix}date_start_value"]['value'] = $vagueDate[0];
+          $this->submission['fields']["{$prefix}date_end_value"]['value'] = $vagueDate[1];
+          $this->submission['fields']["{$prefix}date_type_value"]['value'] = $vagueDate[2];
+        }
     }
   }
 

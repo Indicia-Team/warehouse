@@ -1,3 +1,91 @@
+# Version 8.1.0
+*2022-05-17*
+
+* Adds range of record IDs to the report which lists a user's imports.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1294.
+* Adds report library/taxa/taxa_list_for_app to aid in extracting lists of taxa to use in apps.
+* Removes an unused field groups.published.
+* Docker image includes correct URL for GBIF backbone taxonomy.
+* Fix to verbose responses in REST API, with support for attributes across multiple records.
+# Version 8.0.0
+*2022-04-29*
+
+* Support for authenticating on the REST API using anonymous JWT tokens for posting anonymous
+  records.
+
+# Version 7.2.0
+*2022-04-28*
+
+* ORM extension plugins can now declare table entities that are accessed directly using the
+  `table_without_views` option in the plugin metadata.
+* Original import code fixes an exception that occurred when importing empty CSV lines.
+* Model fields used in the mappings page of the new importer now have human-friendly captions.
+* The new importer now purges old files uploaded into the /import folder.
+* Adds a report library/classification_events/classification_event_results to summarise the results
+  of image classification.
+* Project specific reports removed.
+
+# Version 7.1.0
+*2022-03-10*
+
+* Add an alternative user_id parameter to the user_users_websites_list report, as user_id fires
+  some code automatically that we don't always want fired.
+# Version 7.0.0
+*2021-03-08*
+
+* The data model includes tables that allow capturing of information on the results of using
+  external image classification services to provide suggested identifications for photographed
+  occurrences.
+* Adds support for a new Excel or CSV spreadsheet upload facility. Differs from the previous one
+  because records are imported into a temporary table first and can therefore be processed in bulk
+  there before import into the main database, bringing several advantages.
+* The new import tool tracks import metadata in a new database table.
+* The new and old import tools now use PhpSpreadsheet for CSV file parsing, for more reliable UTF-8
+  handling.
+* Cached taxon data now includes information on the verification rule types that apply to records
+  of this taxon. Cached occurrence data in PostgreSQL and Elasticsearch now includes information
+  on exactly which types of rules have been applied. See https://github.com/Indicia-Team/warehouse/issues/422.
+* Support for filters that limit records to those which have failed a specific type of verification
+  rule.
+* Filters on pass/fail of verification rules now only brings back records that actually have rules.
+* Fixes a missing samples check in the cache builder code.
+* Improves escaping of text values displayed in custom attribute fields.
+
+# Version 6.12.0
+*2021-12-02*
+
+* Import of sample and media file licences by licence code field supported.
+* Improvements and bug-fixes for the json_occurrences API used to sync between systems.
+* Occurrence comments list report uses logged in person name for the comment in preference to
+  person_name field as latter may contain email.
+* Output_sref fields now support up to 100km grid square sizes with imprecision indicator prefix
+  (~) where even less precise references are being displayed.
+
+
+# Version 6.11.0
+*2021-11-23*
+
+* Minor feature release to support hierarchical termlist usage in complex_attr_grid control.
+* Support for multi-value attribute editing on the warehouse.
+
+# Version 6.10.0
+*2021-11-08*
+
+* Minor feature release to add reports required for AJAX loading of species checklists.
+
+# Version 6.9.0
+*2021-10-15*
+
+* Configurable precision for latitude and longitude fields extracted from Elasticsearch.
+
+# Version 6.8.0
+*2021-10-11*
+
+* Bugfixes.
+* Adds a custom synchronisation handler for Odonata data synchronised from BTO Birdtrack, to meet
+  the needs of the recording scheme.
+* Update taxon associations module tests to new PHPUnit version.
+
 # Version 6.7.0
 *2021-09-30*
 

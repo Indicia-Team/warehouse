@@ -807,20 +807,26 @@ class Rest_Controller extends Controller {
       if (!empty($_GET['cached']) && $_GET['cached'] === 'true') {
         $this->resourceOptions['cached'] = TRUE;
       }
+      $this->method = $_SERVER['REQUEST_METHOD'];
       if ($this->elasticProxy) {
         $es = new RestApiElasticsearch($this->elasticProxy);
         $es->checkResourceAllowed();
-        $postRaw = file_get_contents('php://input');
-        $postObj = empty($postRaw) ? [] : json_decode($postRaw);
-        $format = (isset($_GET['format']) && $_GET['format'] === 'csv') ? 'csv' : 'json';
-        $es->elasticRequest($postObj, $format);
+        if ($this->method === 'OPTIONS') {
+          // A request for the methods allowed for this resource.
+          header('Allow: ' . strtoupper(implode(', ', ['GET', 'POST', 'OPTIONS'])));
+        }
+        else {
+          $postRaw = file_get_contents('php://input');
+          $postObj = empty($postRaw) ? [] : json_decode($postRaw);
+          $format = (isset($_GET['format']) && $_GET['format'] === 'csv') ? 'csv' : 'json';
+          $es->elasticRequest($postObj, $format);
+        }
       }
       else {
         $resourceConfig = $this->findResourceConfig($this->resourceName);
         if (!$resourceConfig) {
           RestObjects::$apiResponse->fail('Not Found', 404, "Resource $this->resourceName not known");
         }
-        $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource.
           header('Allow: ' . strtoupper(implode(', ', array_merge(array_keys($resourceConfig), ['OPTIONS']))));
@@ -2199,11 +2205,11 @@ class Rest_Controller extends Controller {
     $this->serverUserId = Kohana::config('rest.user_id');
     $methods = Kohana::config('rest.authentication_methods');
     $this->authenticated = FALSE;
+    $this->checkElasticsearchRequest();
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
       // No need to authenticate OPTIONS request.
       return;
     }
-    $this->checkElasticsearchRequest();
     if ($this->authenticated) {
       return;
     }
@@ -2351,6 +2357,7 @@ class Rest_Controller extends Controller {
       }
     }
     if (!$websiteUser) {
+      kohana::log('debug', 'rest_api: Unauthorised - user has no role in website.');
       RestObjects::$apiResponse->fail('Unauthorized', 401);
     }
   }
@@ -2951,13 +2958,42 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * End-point to GET a list of locations.
+   *
+   * Returns locations for user of website plus public locations.
+   * Use parameters in the query string to limit returned values. E.g.
+   * ?public=true&location_type_id=<nnn> to get public locations of type <nnn>
+   * ?public=false to only get locations for user of website.
+   */
+  public function locationsGet() {
+    // Make a filter for locations for this website and user.
+    $websiteFilter = 't2.website_id=' . RestObjects::$clientWebsiteId;
+    $userFilter = 't1.created_by_id=' . RestObjects::$clientUserId;
+    $webUserFilter = "($websiteFilter AND $userFilter)";
+    // Make a filter for public locations available to all users and websites.
+    $publicFilter = 't1.public=true';
+    // Allow both types of location.
+    $extraFilter = "AND ($webUserFilter OR $publicFilter)";
+    rest_crud::readList('location', $extraFilter, FALSE);
+  }
+
+  /**
    * API end-point to retrieve a location by ID.
+   *
+   * Only return locations for user of website or public locations.
    *
    * @param int $id
    *   ID of the location.
    */
   public function locationsGetId($id) {
-    rest_crud::read('location', $id);
+    $websiteFilter = 't2.website_id=' . RestObjects::$clientWebsiteId;
+    $userFilter = 't1.created_by_id=' . RestObjects::$clientUserId;
+    $webUserFilter = "($websiteFilter AND $userFilter)";
+    $publicFilter = 't1.public=true';
+    $extraFilter = "AND ($webUserFilter OR $publicFilter)";
+    // Call read() with userFilter = FALSE as public locations may be
+    // created by another user.
+    rest_crud::read('location', $id, $extraFilter, FALSE);
   }
 
   /**

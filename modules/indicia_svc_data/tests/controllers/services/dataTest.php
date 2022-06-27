@@ -24,7 +24,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
   private static $auth;
 
   public function getDataSet() {
-    $ds1 =  new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+    $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
     return $ds1;
   }
 
@@ -87,7 +87,7 @@ SQL;
         'person:surname' => "Person$i",
         'person:email_address' => "addedPerson{$i}@example.com",
       ];
-      $s = submission_builder::build_submission($array, array('model' => 'person'));
+      $s = submission_builder::build_submission($array, ['model' => 'person']);
       $r = data_entry_helper::forward_post_to('person', $s, self::$auth['write_tokens']);
       $lastPersonId = $r['success'];
     }
@@ -136,12 +136,12 @@ SQL;
 
   public function testRequestDataGetRecordByDirectId() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataGetRecordByDirectId");
-    $params = array(
+    $params = [
       'mode' => 'json',
-      'auth_token'=>self::$auth['read']['auth_token'],
-      'nonce'=>self::$auth['read']['nonce']
-    );
-    $url = data_entry_helper::$base_url.'index.php/services/data/location/1?'.http_build_query($params, '', '&');
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
+    ];
+    $url = data_entry_helper::$base_url . 'index.php/services/data/location/1?'.http_build_query($params, '', '&');
     $response = self::getResponse($url);
     $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByDirectId returned error. See log for details");
     $this->assertCount(1, $response, 'Data services get JSON for direct ID did not return 1 record.');
@@ -150,13 +150,13 @@ SQL;
 
   public function testRequestDataGetRecordByIndirectId() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataGetRecordByIndirectId");
-    $params = array(
+    $params = [
       'mode' => 'json',
-      'auth_token'=>self::$auth['read']['auth_token'],
-      'nonce'=>self::$auth['read']['nonce'],
-      'id'=>1
-    );
-    $url = data_entry_helper::$base_url.'index.php/services/data/location?'.http_build_query($params, '', '&');
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
+      'id' => 1,
+    ];
+    $url = data_entry_helper::$base_url . 'index.php/services/data/location?' . http_build_query($params, '', '&');
     $response = self::getResponse($url);
     $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByIndirectId returned error. See log for details");
     $this->assertCount(1, $response, 'Data services get JSON for indirect ID did not return 1 record.');
@@ -165,28 +165,28 @@ SQL;
 
   public function testRequestDataGetRecordByQueryIn() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataGetRecordByQueryIn");
-    $params = array(
+    $params = [
       'mode' => 'json',
-      'auth_token'=>self::$auth['read']['auth_token'],
-      'nonce'=>self::$auth['read']['nonce'],
-      'query'=>json_encode(array('in'=>array('id', array(1))))
-    );
-    $url = data_entry_helper::$base_url.'index.php/services/data/location?'.http_build_query($params, '', '&');
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
+      'query' => json_encode(array('in'=>['id', [1]])),
+    ];
+    $url = data_entry_helper::$base_url . 'index.php/services/data/location?' . http_build_query($params, '', '&');
     $response = self::getResponse($url);
     $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByQueryIn returned error. See log for details");
     $this->assertCount(1, $response, 'Data services get JSON for in clause did not return 1 record.');
     $this->assertEquals('Test location', ($response[0]['name']), 'Data services get JSON for in clause did not return correct record.');
 
-    // repeat test, for alternative format of in clause
-    $params = array(
+    // Repeat test, for alternative format of in clause.
+    $params = [
       'mode' => 'json',
-      'auth_token'=>self::$auth['read']['auth_token'],
-      'nonce'=>self::$auth['read']['nonce'],
-      'query'=>json_encode(array(
-        'in'=>array('id'=>array(1), 'name'=>array('Test location')),
-      ))
-    );
-    $url = data_entry_helper::$base_url.'index.php/services/data/location?'.http_build_query($params, '', '&');
+      'auth_token' => self::$auth['read']['auth_token'],
+      'nonce' => self::$auth['read']['nonce'],
+      'query' => json_encode([
+        'in' => ['id' => [1], 'name' => ['Test location']],
+      ]),
+    ];
+    $url = data_entry_helper::$base_url . 'index.php/services/data/location?' . http_build_query($params, '', '&');
     $response = self::getResponse($url);
     $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByQueryIn returned error. See log for details");
     $this->assertCount(1, $response, 'Data services get JSON for in clause did not return 1 record.');
@@ -341,7 +341,7 @@ SQL;
       'location:centroid_sref_system' => 'osgb',
       'locAttr:1:' . $locAttr->id => 'saveTestAttr-update'
     );
-    $s = submission_builder::build_submission($array, array('model' => 'location'));
+    $s = submission_builder::build_submission($array, ['model' => 'location']);
     $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to location re-submit " . print_r($r, TRUE));
@@ -356,14 +356,14 @@ SQL;
     $this->assertEquals('saveTestAttr-update', $locAttr->text_value, 'Saved attribute value is not as expected');
 
     // Reepost the same location, with a deleted attribute value.
-    $array = array(
+    $array = [
       'location:id' => $locId,
       'location:name' => 'UnitTest2',
       'location:centroid_sref' => 'SU0101',
       'location:centroid_sref_system' => 'osgb',
-      'locAttr:1:' . $locAttr->id => ''
-    );
-    $s = submission_builder::build_submission($array, array('model' => 'location'));
+      'locAttr:1:' . $locAttr->id => '',
+    ];
+    $s = submission_builder::build_submission($array, ['model' => 'location']);
     $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
 
     Kohana::log('debug', "Submission response to location attribute delete " . print_r($r, TRUE));
@@ -680,6 +680,7 @@ SQL;
     // Specify different user should also alter the determiner.
     global $postedUserId;
     $postedUserId = 2;
+    $otherUserAuth = data_entry_helper::get_read_write_auth(1, 'password');
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -688,7 +689,7 @@ SQL;
       'occurrence:taxa_taxon_list_id' => 1,
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, $otherUserAuth['write_tokens']);
     $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
     $this->assertEquals(2, $row->determiner_id, 'Failed to use posted user_id to update determiner_id');
     $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
@@ -722,7 +723,8 @@ SQL;
     // Add more people so we can detect misuse of person_id instead of user_id.
     global $postedUserId;
     $postedUserId = self::$extraUserId;
-    echo "\nExtraUserId is $postedUserId\n";
+    $otherUserAuth = data_entry_helper::get_read_write_auth(1, 'password');
+    $otherUserAuth['write_tokens']['persist_auth'] = TRUE;
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -738,7 +740,7 @@ SQL;
       ],
     ];
     $s = submission_builder::build_submission($array, $structure);
-    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, $otherUserAuth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
     $occurrenceId = self::$db->query("select id from occurrences where sample_id=$r[success]")->current()->id;
     $array = [
@@ -748,7 +750,7 @@ SQL;
       'occurrence:taxa_taxon_list_id' => 2,
     ];
     $s = submission_builder::build_submission($array, ['model' => 'occurrence']);
-    $r = data_entry_helper::forward_post_to('occurrence', $s, self::$auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, $otherUserAuth['write_tokens']);
     $determinerInfo = self::$db->query("select created_by_id, person_name from determinations where occurrence_id=$occurrenceId")->current();
     $this->assertEquals(self::$extraUserId, $determinerInfo->created_by_id, 'Determination has not picked up correct user ID.');
     $this->assertEquals('Person3, Test3', $determinerInfo->person_name, 'Determination has not picked up correct person name.');
@@ -835,6 +837,32 @@ SQL;
   }
 
   /**
+   * Test a sample with a gibberish date.
+   *
+   * Ensure that date is reporting a validation error, not just a general 500
+   * error.
+   */
+  public function testSampleBadDate() {
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => 'gibbe 11 rish',
+    ];
+    $structure = [
+      'model' => 'sample',
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $this->assertFalse(isset($r['success']), 'Creating a sample with a bad date passed validation incorrectly');
+    $this->assertArrayHasKey('errors', $r, 'Submission with bad sample date did not return field errors list');
+    // Check error attached to correct field.
+    $this->assertArrayHasKey('sample:date_type', $r['errors'], 'Submission with bad sample date did not attached validation error to correct field.');
+    var_export($r);
+  }
+
+  /**
    * Test updating existing occurrence data with required values.
    *
    * If an existing occurrence has a value for a required attribute, it should
@@ -868,6 +896,7 @@ SQL;
     // Clear the cache to ensure that our required field is used.
     $cache = Cache::instance();
     $cache->delete_tag('required-fields');
+    $cache->delete_tag('attribute-lists');
     // Now, submitting an occurrence without the attribute filled in should
     // fail.
     $array = array(
@@ -945,6 +974,7 @@ SQL;
     // Remove the required field from the cache so it doesn't impact other tests.
     $cache = Cache::instance();
     $cache->delete_tag('required-fields');
+    $cache->delete_tag('attribute-lists');
   }
 
   /**
@@ -1062,7 +1092,7 @@ SQL;
     );
     $url = data_entry_helper::$base_url . "index.php/services/data/sample/$id?" . http_build_query($params, '', '&');
     $response = self::getResponse($url, FALSE);
-    $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByDirectId returned error. See log for details");
+    $this->assertFalse(isset($response['error']), "Sample service returned error. See log for details");
     // spoof the CSV data as a file, so we can use fgetcsv which understands line breaks in content
     $fp = fopen("php://temp", 'r+');
     // Fire regexpressions at the raw CSV data so we can check for things like missing escaping which

@@ -71,14 +71,20 @@ Warehouse instance.</p>
       'label' => 'Public key',
       'fieldname' => 'website:public_key',
       'default' => html::initial_value($values, 'website:public_key'),
-      'helpText' => 'Paste the public key from a private/public key pair here ' .
-        'to enable JWT API authentication.',
+      'helpText' => 'Paste the public key from a private/public key pair here to enable JWT API authentication.',
+    ]);
+
+    echo data_entry_helper::checkbox([
+      'label' => 'Allow anonymous JWT tokens to POST new records',
+      'fieldname' => 'website:allow_anon_jwt_post',
+      'default' => html::initial_value($values, 'website:allow_anon_jwt_post'),
     ]);
 
     echo data_entry_helper::checkbox([
       'label' => 'Enable auto-verification checks',
       'fieldname' => 'website:verification_checks_enabled',
       'default' => html::initial_value($values, 'website:verification_checks_enabled'),
+      'helpText' => 'Unless checked, JWT tokens must claim a user:id to declare the user making the request.',
     ]);
 
     ?>

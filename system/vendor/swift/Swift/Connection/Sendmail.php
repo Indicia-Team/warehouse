@@ -7,7 +7,7 @@
  * @package Swift_Connection
  * @license GNU Lesser General Public License
  */
- 
+
 require_once dirname(__FILE__) . "/../ClassLoader.php";
 Swift_ClassLoader::load("Swift_ConnectionBase");
 
@@ -58,7 +58,7 @@ class Swift_Connection_Sendmail extends Swift_ConnectionBase
    * @var int Seconds
    */
   protected $timeout = 10;
-  
+
   /**
    * Constructor
    * @param string The command to execute
@@ -166,7 +166,7 @@ class Swift_Connection_Sendmail extends Swift_ConnectionBase
   public function setCommand($command)
   {
     if ($command == self::AUTO_DETECT) $command = $this->findSendmail() . " -bs";
-    
+
     if (!strrpos($command, " -"))
     {
       throw new Swift_ConnectionException("Cannot set sendmail command with no command line flags. e.g. /usr/sbin/sendmail -t");
@@ -216,7 +216,7 @@ class Swift_Connection_Sendmail extends Swift_ConnectionBase
         throw new Swift_ConnectionException("There was a problem reading line " . $line . " of a sendmail SMTP response. The response so far was:<br />[" . $ret . "].  It appears the process has died.");
       }
       $ret .= trim($tmp) . "\r\n";
-      if ($tmp{3} == " ") break;
+      if ($tmp[3] == " ") break;
     }
     fflush($this->pipes[1]);
     return $ret = substr($ret, 0, -2);
@@ -292,13 +292,13 @@ class Swift_Connection_Sendmail extends Swift_ConnectionBase
       throw new Swift_ConnectionException(
         "Sendmail cannot be seen with lstat().  The command given [" . $this->getCommand() . "] does not appear to be valid.");
     }
-    
+
     $pipes_spec = array(
       array("pipe", "r"),
       array("pipe", "w"),
       array("pipe", "w")
     );
-    
+
     $this->proc = proc_open($this->getCommand(), $pipes_spec, $this->pipes);
 
     if (!$this->isAlive())
@@ -321,7 +321,7 @@ class Swift_Connection_Sendmail extends Swift_ConnectionBase
     {
       @fclose($pipe);
     }
-    
+
     if ($this->proc)
     {
       proc_close($this->proc);

@@ -25,7 +25,9 @@ require 'vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Reader\Xls;
+use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ImportDate;
 
 /**
  * PHPSpreadsheet filter for reading the header row.
@@ -151,7 +153,7 @@ class Import_Controller extends Service_Base_Controller {
   public function get_required_fields($model) {
     $this->authenticate('read');
     $model = ORM::factory($model);
-    // Identify the context of the import
+    // Identify the context of the import.
     $identifiers = [];
     if (!empty($_GET['website_id'])) {
       $identifiers['website_id'] = $_GET['website_id'];
@@ -184,7 +186,7 @@ class Import_Controller extends Service_Base_Controller {
     $this->authenticate('read');
     $model = ORM::factory($modelName);
     $submissionStruct = $model->get_submission_structure();
-    $combinations = array();
+    $combinations = [];
     if (isset($submissionStruct['superModels'])) {
       foreach ($submissionStruct['superModels'] as $superModelName => $details) {
         $superModel = ORM::factory($superModelName);
@@ -313,11 +315,8 @@ class Import_Controller extends Service_Base_Controller {
   private function getColumns($fileName) {
     $ext = $this->getFileExt($fileName);
     if ($ext === 'csv') {
-      // For simple CSV, don't need overhead of PHPSpreadsheet.
-      $handle = fopen($fileName, 'r');
-      $columns = fgetcsv($handle);
-      fclose($handle);
-      return $this->ensureAllColumnsTitled($columns);
+      $reader = new Csv();
+      $reader->setInputEncoding(Csv::GUESS_ENCODING);
     }
     elseif ($ext === 'xlsx') {
       $reader = new Xlsx();
@@ -466,7 +465,7 @@ class Import_Controller extends Service_Base_Controller {
     }
     else {
       // No previous file, so create default new metadata.
-      return array();
+      return [];
     }
   }
 
@@ -540,10 +539,10 @@ class Import_Controller extends Service_Base_Controller {
 
       // Check if the conditions for special field processing are met - all the
       // columns are in the mapping.
-      $specialFieldProcessing = array();
+      $specialFieldProcessing = [];
       if (isset($model->specialImportFieldProcessingDefn)) {
         foreach ($model->specialImportFieldProcessingDefn as $column => $defn) {
-          $columns = array();
+          $columns = [];
           $index = 0;
           foreach ($metadata['mappings'] as $col => $attr) {
             if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col != 'AllowLookup') {
@@ -564,7 +563,7 @@ class Import_Controller extends Service_Base_Controller {
           }
         }
       }
-      $specialMergeProcessing = array();
+      $specialMergeProcessing = [];
       if (isset($metadata['importMergeFields']) && is_string($metadata['importMergeFields'])) {
         $metadata['importMergeFields'] = json_decode($metadata['importMergeFields'], TRUE);
       }
@@ -597,6 +596,7 @@ class Import_Controller extends Service_Base_Controller {
       }
       $storedMeanings = $this->retrieveCachedStoredMeanings();
       while (($limit === FALSE || $count < $limit) && ($data = $this->getNextRow($file, $count + $offset + 1, $metadata))) {
+        $count++;
         if (!array_filter($data)) {
           // Skip empty rows.
           continue;
@@ -604,7 +604,6 @@ class Import_Controller extends Service_Base_Controller {
         // Can't just clear the model, as clear does not do a full reset -
         // leaves related entries: important for location joinsTo websites.
         $model = ORM::Factory($_GET['model']);
-        $count++;
         $index = 0;
         $saveArray = $model->getDefaults();
         // Note, the mappings will always be in the same order as the columns
@@ -616,9 +615,15 @@ class Import_Controller extends Service_Base_Controller {
               // '<Please select>' is a value fixed in
               // import_helper::model_field_options.
               if ($attr != '<Please select>' && $data[$index] !== '') {
-                // Add the data to the record save array. Utf8 encode if file
-                // does not have UTF8 BOM.
-                $saveArray[$attr] = $metadata['isUtf8'] ? $data[$index] : utf8_encode($data[$index]);
+                // Add the data to the record save array.
+                if (preg_match('/date$/', $attr) && preg_match('/^\d+$/', $data[$index])) {
+                  // Date fields are integers when read from Excel.
+                  $date = ImportDate::excelToDateTimeObject($data[$index]);
+                  $saveArray[$attr] = $date->format('d/m/Y');
+                }
+                else {
+                  $saveArray[$attr] = $data[$index];
+                }
               }
             }
             else {
@@ -649,7 +654,7 @@ class Import_Controller extends Service_Base_Controller {
           }
         }
         foreach ($specialMergeProcessing as $fieldSpec) {
-          $merge = array();
+          $merge = [];
           foreach ($fieldSpec['virtualFields'] as $subFieldSpec) {
             $col = $fieldSpec['fieldName'] . ':' . $subFieldSpec['fieldNameSuffix'];
             if (isset($saveArray[$col])) {
@@ -737,11 +742,6 @@ class Import_Controller extends Service_Base_Controller {
               $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
             );
-            // Get file position here otherwise the fgetcsv in the while loop
-            // will move it one record too far.
-            if ($ext === 'csv') {
-              $filepos = ftell($file);
-            }
             continue;
           }
           $mustExist = TRUE;
@@ -760,11 +760,6 @@ class Import_Controller extends Service_Base_Controller {
               $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
             );
-            // Get file position here otherwise the fgetcsv in the while loop
-            // will move it one record too far.
-            if ($ext === 'csv') {
-              $filepos = ftell($file);
-            }
             continue;
           }
         }
@@ -832,7 +827,7 @@ class Import_Controller extends Service_Base_Controller {
           // Try to wrap second record of original model.
           // As the submission builder needs a 1-1 match between field prefix
           // and model name, we need to generate an altered saveArray.
-          $associatedArray = array();
+          $associatedArray = [];
           foreach ($saveArray as $fieldname => $value) {
             $parts = explode(':', $fieldname);
             // Filter out original model feilds, any of its attributes and
@@ -974,15 +969,9 @@ class Import_Controller extends Service_Base_Controller {
             $metadata
           );
         }
-        // Get file position here otherwise the fgetcsv in the while loop will
-        // move it one record too far.
-        if ($ext === 'csv') {
-          $filepos = ftell($file);
-        }
       }
-      // Get percentage progress, based on file size (CSV) or rows done
-      // (PHPSpreadsheet).
-      $progress = $ext === 'csv' ? ($filepos * 100 / $metadata['fileSize']) : (($count + $offset) * 100 / $metadata['fileSize']);
+      // Get percentage progress, based on rows done.
+      $progress = ($count + $offset) * 100 / $metadata['fileSize'];
       $r = json_encode([
         'uploaded' => $count,
         'progress' => $progress,
@@ -998,7 +987,6 @@ class Import_Controller extends Service_Base_Controller {
         header('Content-Type: application/json');
       }
       echo $r;
-      $this->closeFile($file);
       fclose($errorHandle);
       $this->internalCacheUploadMetadata($metadata);
       $this->cacheStoredMeanings($storedMeanings);
@@ -1232,7 +1220,7 @@ class Import_Controller extends Service_Base_Controller {
               if (!isset($this->previousCsvSupermodel['attributeIds'][$modelName])) {
                 // Only fetch supermodel attribute data now as this is first
                 // time it is used.
-                $this->previousCsvSupermodel['attributeIds'][$modelName] = array();
+                $this->previousCsvSupermodel['attributeIds'][$modelName] = [];
                 $smattrs = ORM::factory($modelName . '_attribute_value')->where(array('deleted' => 'f', $modelName . '_id' => $this->previousCsvSupermodel['id'][$modelName]))->find_all();
                 foreach ($smattrs as $smattr) {
                   $this->previousCsvSupermodel['attributeIds'][$modelName][$smattr->__get($modelName . '_attribute_id')] = $smattr->id;
@@ -1346,7 +1334,7 @@ class Import_Controller extends Service_Base_Controller {
               $existing = $db->query($query)->result_array(FALSE);
             }
             else {
-              $existing = array();
+              $existing = [];
             }
             if (count($existing) > 0) {
               // If an previous record exists, we have to check for existing
@@ -1414,7 +1402,8 @@ class Import_Controller extends Service_Base_Controller {
   private function getFileSize($file) {
     $ext = $this->getFileExt($file);
     if ($ext === 'csv') {
-      return filesize($file);
+      $reader = new Csv();
+      $reader->setInputEncoding(Csv::GUESS_ENCODING);
     }
     elseif ($ext === 'xlsx') {
       $reader = new Xlsx();
@@ -1552,43 +1541,11 @@ class Import_Controller extends Service_Base_Controller {
     }
   }
 
-  /**
-   * Checks if there is a byte order marker at the beginning of the file (BOM).
-   *
-   * If so, sets this information in the $metadata. Rewinds the file to the
-   * beginning.
-   *
-   * @param array $metadata
-   *   Import metadata information.
-   * @param resource $handle
-   *   File handle.
-   */
-  private function checkIfUtf8(array &$metadata, $handle) {
-    if (!isset($metadata['isUtf8'])) {
-      fseek($handle, 0);
-      $bomCheck = fread($handle, 3);
-      // Flag if this file has a UTF8 BOM at the start.
-      $metadata['isUtf8'] = $bomCheck === chr(0xEF) . chr(0xBB) . chr(0xBF);
-    }
-  }
-
   private function openSpreadsheet($fileName, &$metadata, $filepos, $offset, $limit) {
     $ext = $this->getFileExt($fileName);
     if ($ext === 'csv') {
-      $handle = fopen($fileName, "r");
-      $this->checkIfUtf8($metadata, $handle);
-      if ($filepos == 0) {
-        // First row, so skip the header.
-        fseek($handle, 0);
-        fgetcsv($handle, 10000, ",");
-        // Also clear the lookup cache.
-        $cache = new Cache();
-        $cache->delete_tag('lookup');
-      }
-      else {
-        fseek($handle, $filepos);
-      }
-      return $handle;
+      $reader = new Csv();
+      $reader->setInputEncoding(Csv::GUESS_ENCODING);
     }
     elseif ($ext === 'xlsx') {
       $reader = new Xlsx();
@@ -1599,7 +1556,6 @@ class Import_Controller extends Service_Base_Controller {
     else {
       throw new exception('Unsupported file type');
     }
-    $metadata['isUtf8'] = FALSE;
     // @todo Check the following doesn't damage dates.
     $reader->setReadDataOnly(true);
     // Minimise data read from spreadsheet - first sheet only.
@@ -1615,41 +1571,20 @@ class Import_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Reads the next row from the data file.
+   * Reads the next row from the data.
    *
-   * @param resource $file
-   *   File handle (CSV) or data array (PHPSpreadsheet).
+   * @param resource $data
+   *   Data array.
    * @param int $row
-   *   Row to fetch (PHPSpreadsheet). For CSV just reads the next from the file
-   *   pointer.
+   *   Row to fetch.
    * @param array $metadata
-   *   Metadata including file size info.
+   *   Metadata including data size info.
    *
    * @return array
-   *   Data array.
+   *   Row data.
    */
-  private function getNextRow($file, $row, $metadata) {
-    if (is_array($file)) {
-      return ($row <= $metadata['fileSize']) ? $file[$row] : FALSE;
-    }
-    else {
-      return fgetcsv($file, 10000, ",");
-    }
+  private function getNextRow($data, $row, $metadata) {
+    return ($row <= $metadata['fileSize'] && isset($data[$row])) ? $data[$row] : FALSE;
   }
 
-  /**
-   * Closes the file.
-   *
-   * If CSV, calls fclose on the handle. For PHPSpreadsheet files nothing to
-   * do.
-   *
-   * @file
-   *   File information (handle or data read via PHPSpreadsheet).
-   */
-  private function closeFile($file) {
-    if (!is_array($file)) {
-      fclose($file);
-    }
-  }
 }
-

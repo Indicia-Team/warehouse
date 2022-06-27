@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Classification event results" description="Summarises classification events and results">
+  <query website_filter_field="g.website_id">
+    SELECT #columns#
+    FROM classification_events ce
+    JOIN occurrences o ON o.classification_event_id=ce.id and o.deleted=false
+    JOIN classification_results cr ON cr.classification_event_id=ce.id and cr.deleted=false
+    LEFT JOIN classification_suggestions cs ON cs.classification_result_id=cr.id and cs.deleted=false
+    LEFT JOIN cache_termlists_terms ct ON ct.id=cr.classifier_id
+    LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=cs.taxa_taxon_list_id
+    LEFT JOIN classification_results_occurrence_media crm ON crm.classification_result_id=cr.id
+    LEFT JOIN occurrence_media om ON om.id=crm.occurrence_media_id and om.deleted=false
+    #joins#
+    WHERE ce.deleted = false
+    AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>o.id</order_by>
+  </order_bys>
+  <params>
+
+  </params>
+  <columns>
+    <column name="occurrence_id" display="Occurrence ID" sql="o.id" datatype="integer" />
+    <column name="classification_result_id" display="Result ID" sql="cr.id" datatype="integer" in_count="true" />
+    <column name="classification_suggestion_id" display="Suggestion ID" sql="cs.id" datatype="integer" in_count="true" />
+    <column name="classifier_version" display="Classifier version" sql="cr.classifier_version" datatype="text" />
+    <column name="classifier" display="Classifier" sql="ct.term" datatype="text" />
+    <column name="additional_info_submitted" display="Additional info submitted" sql="cr.additional_info_submitted::text" datatype="text" />
+    <column name="results_raw" display="Raw results" sql="cr.results_raw::text" datatype="text" />
+    <column name="taxon_name_given" display="Given taxon name" sql="cs.taxon_name_given" datatype="text" />
+    <column name="taxon" display="Linked taxon name" sql="cttl.taxon" datatype="text" />
+    <column name="probability_given" display="Probability" sql="cs.probability_given" datatype="float" />
+    <column name="classifier_chosen" display="Classifier chosen" sql="cs.classifier_chosen" datatype="boolean" />
+    <column name="human_chosen" display="Human chosen" sql="cs.human_chosen" datatype="boolean" />
+    <column name="images" display="Images submitted" sql="string_agg(om.path, '; ')" datatype="string" aggregate="true" />
+  </columns>
+</report>

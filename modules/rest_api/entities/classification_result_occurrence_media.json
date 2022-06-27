@@ -1,0 +1,7 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "classification_event_id", "type": "integer" },
+    { "sql": "occurrence_media_id", "type": "integer" }
+  ]
+}

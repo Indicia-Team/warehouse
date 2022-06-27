@@ -64,6 +64,16 @@ $id = html::initial_value($values, 'taxon_association:id');
         'lookupValues' => $other_data['impact_terms'],
       ]);
     }
+    echo data_entry_helper::radio_group([
+      'label' => 'Fidelity',
+      'fieldname' => 'taxon_association:fidelity',
+      'default' => html::initial_value($values, 'taxon_association:fidelity'),
+      'lookupValues' => [
+        1 => '1 (high)',
+        2 => '2 (medium)',
+        3 => '3 (low)',
+      ],
+    ]);
     echo data_entry_helper::textarea([
       'label' => 'Comment',
       'fieldname' => 'taxon_association:comment',

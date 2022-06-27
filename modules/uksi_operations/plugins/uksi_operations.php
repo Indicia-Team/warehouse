@@ -20,7 +20,7 @@
  */
 
 /**
- * Create a menu item for the list of taxon designations.
+ * Create a menu item for the list of UKSI operations.
  */
 function uksi_operations_alter_menu($menu, $auth) {
   if ($auth->logged_in('CoreAdmin') || $auth->logged_in('UKSIAdmin')) {
@@ -31,7 +31,7 @@ function uksi_operations_alter_menu($menu, $auth) {
 }
 
 /**
- * Hook to ORM enable the relationship between taxon designations and taxa from the taxon end.
+ * Hook to ORM to expose the UKSI operations entity.
  */
 function uksi_operations_extend_orm() {
   return [

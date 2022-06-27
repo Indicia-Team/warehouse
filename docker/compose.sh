@@ -173,10 +173,12 @@ ____EOF
 
       echo "...Downloading the GBIF Backbone Taxonomy."
       cd GBIF
-      url=https://hosted-datasets.gbif.org/datasets/backbone/backbone-current-simple.txt.gz
+      url=https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz
       curl -O $url
       echo "...Decompressing the GBIF file."
-      gunzip -k backbone-current-simple.txt.gz
+      gunzip -k simple.txt.gz
+      # Rename to match expectations of the import script.
+      mv simple.txt backbone-current-simple.txt
 
       echo "...Executing the import on the warehouse."
       # Note, warehouse-path is in the warehouse container
@@ -232,6 +234,7 @@ ____EOF
           'data_cleaner_species_location'
           'data_cleaner_species_location_name'
           'data_cleaner_without_polygon'
+          'taxon_designations'
         )
         # This just has the effect of uncommenting all the modules.
         for module in ${module_array[@]}; do

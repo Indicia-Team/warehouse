@@ -27,7 +27,7 @@
 /**
  * Queue worker to update cache_occurrences_functional taxonomy related fields.
  *
- * E.g. for a rename taxon UKSI operation, occurrences get a new external key, 
+ * E.g. for a rename taxon UKSI operation, occurrences get a new external key,
  * so need to update cache_occurrences_functional.
  */
 class task_cache_builder_taxonomy_occurrence {
@@ -39,8 +39,8 @@ class task_cache_builder_taxonomy_occurrence {
 
   /**
    * Perform the processing for a task batch found in the queue.
-   * 
-   * Note that this task updates occurrences, but the stored record in the 
+   *
+   * Note that this task updates occurrences, but the stored record in the
    * work_queue task should be a taxa_taxon_list. Otherwise huge numbers of
    * work queue tasks are required.
    *
@@ -57,6 +57,22 @@ class task_cache_builder_taxonomy_occurrence {
    */
   public static function process($db, $taskType, $procId) {
     $masterListId = warehouse::getMasterTaxonListId();
+
+    // Unclaim any work queue tasks for taxa that are pending a cache update.
+    $sql = <<<SQL
+UPDATE work_queue q
+SET claimed_by=null, claimed_on=null
+FROM taxa_taxon_lists ttl
+LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=ttl.id
+WHERE q.claimed_by='$procId'
+AND q.entity='taxa_taxon_list'
+AND q.task='task_cache_builder_taxonomy_occurrence'
+AND q.record_id=ttl.id
+AND (cttl.id IS NULL OR cttl.cache_updated_on<ttl.updated_on)
+SQL;
+    $db->query($sql);
+
+    // Now process taxonomy where the cache update is already done.
     $sql = <<<SQL
 UPDATE cache_occurrences_functional o
 SET taxon_path=ctp.path,
@@ -72,10 +88,9 @@ SET taxon_path=ctp.path,
   non_native_flag=cttl.non_native_flag
 FROM work_queue q, cache_taxa_taxon_lists cttl
 LEFT JOIN cache_taxon_paths ctp
-  ON ctp.taxon_meaning_id=cttl.taxon_meaning_id
-  AND ctp.taxon_list_id=$masterListId
+  ON ctp.external_key=cttl.external_key
+  AND ctp.taxon_list_id=COALESCE($masterListId, cttl.taxon_list_id)
 WHERE cttl.id=o.taxa_taxon_list_id
-AND cttl.taxon_list_id=$masterListId
 AND o.taxa_taxon_list_id=q.record_id
 AND q.entity='taxa_taxon_list'
 AND q.task='task_cache_builder_taxonomy_occurrence'
@@ -83,4 +98,5 @@ AND q.claimed_by='$procId';
 SQL;
     $db->query($sql);
   }
+
 }

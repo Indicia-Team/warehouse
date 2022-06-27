@@ -236,7 +236,9 @@ class api_persist {
    * @todo Reuse the last sample if it matches
    */
   private static function getTaxonObservationValues($db, $website_id, array $observation, $ttl_id) {
-    $sensitive = isset($observation['sensitive']) && strtolower($observation['sensitive']) === 't';
+    $sensitivityPrecision = !empty($observation['sensitivityPrecision'])
+      ? $observation['sensitivityPrecision']
+      : (isset($observation['sensitive']) && strtolower($observation['sensitive']) === 't' ? 10000 : NULL);
     $values = [
       'website_id' => $website_id,
       'sample:date_start'     => $observation['startDate'],
@@ -246,7 +248,7 @@ class api_persist {
       'occurrence:taxa_taxon_list_id' => $ttl_id,
       'occurrence:external_key' => $observation['id'],
       'occurrence:zero_abundance' => isset($observation['zeroAbundance']) ? strtolower($observation['zeroAbundance']) : 'f',
-      'occurrence:sensitivity_precision' => $sensitive ? 10000 : NULL,
+      'occurrence:sensitivity_precision' => $sensitivityPrecision,
       'occurrence:verifier_only_data' => isset($observation['verifierOnlyData']) ? $observation['verifierOnlyData'] : NULL,
     ];
     if (!empty($observation['licenceCode'])) {
@@ -265,9 +267,15 @@ class api_persist {
         }
       }
     }
+    if (isset($observation['smpAttrs'])) {
+      foreach ($observation['smpAttrs'] as $id => $value) {
+        self::mapAttrValueToTermId($db, $id, 'sample', $value);
+        $values["smpAttr:$id"] = $value;
+      }
+    }
     if (isset($observation['occAttrs'])) {
       foreach ($observation['occAttrs'] as $id => $value) {
-        self::mapOccAttrValueToTermId($db, $id, $value);
+        self::mapAttrValueToTermId($db, $id, 'occurrence', $value);
         $values["occAttr:$id"] = $value;
       }
     }
@@ -314,15 +322,15 @@ class api_persist {
     }
   }
 
-  private static function mapOccAttrValueToTermId($db, $occAttrId, &$value) {
-    $cacheId = "occAttrIsLookup-$occAttrId";
+  private static function mapAttrValueToTermId($db, $attrId, $entity, &$value) {
+    $cacheId = "{$entity}AttrIsLookup-$attrId";
     $cache = Cache::instance();
     $attrInfo = $cache->get($cacheId);
     if ($attrInfo === NULL) {
       $qry = <<<SQL
 SELECT data_type, termlist_id
-FROM occurrence_attributes
-WHERE id=$occAttrId AND deleted=false
+FROM {$entity}_attributes
+WHERE id=$attrId AND deleted=false
 SQL;
       $attrRecord = $db->query($qry)->current();
       $attrInfo = [

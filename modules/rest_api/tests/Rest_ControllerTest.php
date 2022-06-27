@@ -5,6 +5,7 @@ use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
 
 /**
  * Unit test class for the REST api controller.
+ *
  * @todo Test sharing mode on project filters is respected.
  *
  */
@@ -118,7 +119,7 @@ KEY;
             'filter_id' => 2,
             'user_id' => 1,
             'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1
+            'created_by_id' => 1,
           ],
         ],
         'occurrence_comments' => [
@@ -138,8 +139,8 @@ KEY;
     $compositeDs->addDataSet($ds1);
     $compositeDs->addDataSet($ds2);
 
-    // Dependencies prevent us adding a user with known password, so we'll update the
-    // existing one with the hash for 'password'.
+    // Dependencies prevent us adding a user with known password, so we'll
+    // update the existing one with the hash for 'password'.
     $db = new Database();
     $db->update(
       'users',
@@ -176,11 +177,26 @@ KEY;
 
   }
 
+  /**
+   * Get user associated JWT.
+   */
   private function getJwt($privateKey, $iss, $userId, $exp) {
     require_once 'vendor/autoload.php';
     $payload = [
       'iss' => $iss,
       'http://indicia.org.uk/user:id' => $userId,
+      'exp' => $exp,
+    ];
+    return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
+  }
+
+  /**
+   * Get anonymous JWT.
+   */
+  private function getAnonJwt($privateKey, $iss, $exp) {
+    require_once 'vendor/autoload.php';
+    $payload = [
+      'iss' => $iss,
       'exp' => $exp,
     ];
     return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
@@ -242,10 +258,79 @@ KEY;
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 2, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
-    // Make an call with wrong key
+    // Make an call with wrong key.
     self::$jwt = $this->getJwt(self::$wrongPrivateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
+  }
+
+  /**
+   * Check use of anonymous website based JWT tokens.
+   */
+  public function testAnonJwt() {
+    $this->authMethod = 'jwtUser';
+    $cache = Cache::instance();
+    $cacheKey = 'website-by-url-' . preg_replace('/[^0-9a-zA-Z]/', '', 'http://www.indicia.org.uk');
+    // Store the public key so Indicia can check signed requests.
+    $db = new Database();
+    $db->update(
+      'websites',
+      ['public_key' => self::$publicKey, 'allow_anon_jwt_post' => 'f'],
+      ['id' => 1]
+    );
+    $cache->delete($cacheKey);
+    self::$jwt = $this->getAnonJwt(self::$privateKey, 'http://www.indicia.org.uk', time() + 120);
+    // PUT samples should be rejected.
+    $response = $this->callService(
+      'samples/1',
+      FALSE,
+      [
+        'values' => [
+          'date_start' => NULL,
+          'date_end' => NULL,
+          'date_type' => 'U',
+        ],
+      ],
+      [], 'PUT'
+    );
+    $this->assertTrue($response['httpCode'] === 404);
+    // POST samples should be rejected (website flag to allow anon
+    // submissions is off).
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+          'comment' => 'A sample comment test',
+        ],
+      ]
+    );
+    $this->assertTrue($response['httpCode'] === 400);
+    // POST samples should be accepted (website flag to allow anon
+    // submissions is on).
+    $db->update(
+      'websites',
+      ['allow_anon_jwt_post' => 't'],
+      ['id' => 1]
+    );
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+          'comment' => 'A sample create test',
+        ],
+      ]
+    );
+    $this->assertTrue($response['httpCode'] === 201);
   }
 
   public function testJwtHeaderCaseInsensitive() {
@@ -314,7 +399,7 @@ KEY;
     $this->assertArrayHasKey('values', $response['response']);
     $this->assertArrayHasKey('id', $response['response']['values']);
     $id = $response['response']['values']['id'];
-    $storedObj =$this->callService("$table/$id");
+    $storedObj = $this->callService("$table/$id");
     foreach ($exampleData as $field => $value) {
       $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
       $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
@@ -921,17 +1006,6 @@ KEY;
     $this->assertArrayHasKey('id', $response['response']['duplicate_of']);
     $this->assertArrayHasKey('href', $response['response']['duplicate_of']);
     $this->assertEquals($id, $response['response']['duplicate_of']['id']);
-    // In a diff survey, not considered a duplicate.
-    $data['survey_id'] = 2;
-    $response = $this->callService(
-      'samples',
-      FALSE,
-      ['values' => $data]
-    );
-    $this->assertEquals(
-      201, $response['httpCode'],
-      'Duplicate external key in different survey not accepted.'
-    );
     // PUT with same external key should be OK.
     $response = $this->callService(
       "samples/$id",
@@ -1172,7 +1246,7 @@ KEY;
     $smpMediaCount = $db->query("select count(*) from sample_media where sample_id=$id and path='$uploadedFileName'")
       ->current()->count;
     $this->assertEquals(
-      1, $smpMediaCount, 
+      1, $smpMediaCount,
       'No media created when submitted with a sample.'
     );
     $this->assertFileExists(
@@ -1282,6 +1356,128 @@ KEY;
     $this->assertResponseOk($response, "/occurrences/$occurrenceId GET");
   }
 
+  public function testJwtSampleOccurrenceClassifiedMediaPost() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Post into the media queue.
+    $rootFolder = dirname(dirname(dirname(dirname(__FILE__))));
+    $file = "$rootFolder/media/images/warehouse-banner.jpg";
+    // Submit 3 files with deliberate mix of by field array and single field
+    // value.
+    $response = $this->callService(
+      "media-queue",
+      FALSE,
+      [
+        'file[]' => curl_file_create(
+          $file,
+          'image/jpg',
+          basename($file)
+        ),
+      ],
+      [], NULL, TRUE
+    );
+    $uploadedFileName = $response['response']['file[0]']['name'];
+    $readAuth = data_entry_helper::get_read_auth(self::$websiteId, self::$websitePassword);
+    $classifierTerms = data_entry_helper::get_population_data([
+      'table' => 'termlists_term',
+      'extraParams' => $readAuth + [
+        'termlist_external_key' => 'indicia:classifiers',
+        'term' => 'Unknown',
+      ],
+    ]);
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'machine_involvement' => 3,
+          ],
+          'media' => [
+            [
+              'values' => [
+                'queued' => $uploadedFileName,
+                'caption' => 'Occurrence image',
+              ],
+            ],
+          ],
+          'classification_event' => [
+            'values' => [
+              'created_by_id' => self::$userId,
+            ],
+            'classification_results' => [
+              [
+                'values' => [
+                  'classifier_id' => $classifierTerms[0]['id'],
+                  'classifier_version' => '1.0',
+                ],
+                'classification_suggestions' => [
+                  [
+                    'values' => [
+                      'taxon_name_given' => 'A suggested name',
+                      'taxa_taxon_list_id' => 1,
+                      'probability' => 0.9,
+                    ],
+                    'values' => [
+                      'taxon_name_given' => 'An alternative name',
+                      'taxa_taxon_list_id' => 2,
+                      'probability' => 0.4,
+                    ],
+                  ],
+                ],
+                'metaFields' => [
+                  'mediaPaths' => [$uploadedFileName],
+                ],
+              ],
+            ],
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $sampleId = $response['response']['values']['id'];
+    $sql = <<<SQL
+select s.id as sample_id,
+  o.id as occurrence_id,
+  o.machine_involvement,
+  om.id as occurrence_medium_id,
+  ce.id as classification_event_id,
+  cr.id as classification_result_id,
+  cs.id as classification_suggestion_id,
+  crom.id as classification_results_occurrence_medium_id,
+  crom.occurrence_media_id as crom_om_id
+from samples s
+left join occurrences o on o.sample_id=s.id and o.deleted=false
+left join occurrence_media om on om.occurrence_id=o.id and om.deleted=false
+left join classification_events ce on ce.id=o.classification_event_id and ce.deleted=false
+left join classification_results cr on cr.classification_event_id=ce.id and cr.deleted=false
+left join classification_suggestions cs on cs.classification_result_id=cr.id and cs.deleted=false
+left join classification_results_occurrence_media crom on crom.classification_result_id=cr.id
+where s.id=$sampleId;
+SQL;
+    $checkData = $db->query($sql)->current();
+    $this->assertTrue(!empty($checkData->occurrence_id), 'REST Classification submission occurrence not created.');
+    $this->assertEquals(3, $checkData->machine_involvement, 'REST Classification submission machine_involvement saved incorrectly.');
+    $this->assertTrue(!empty($checkData->occurrence_medium_id), 'REST Classification submission occurrence_medium not created.');
+    $this->assertTrue(!empty($checkData->classification_event_id), 'REST Classification submission classification_event not created.');
+    $this->assertTrue(!empty($checkData->classification_result_id), 'REST Classification submission classification_result not created.');
+    $this->assertTrue(!empty($checkData->classification_suggestion_id), 'REST Classification submission classification_suggestion not created.');
+    $this->assertTrue(!empty($checkData->classification_results_occurrence_medium_id), 'REST Classification submission classification_results_occurrence_medium not created.');
+    $this->assertTrue(!empty($checkData->crom_om_id), 'REST Classification submission classification_results_occurrence_medium not linked to media file.');
+    $this->assertEquals($checkData->occurrence_medium_id, $checkData->crom_om_id, 'REST Classification submission mediaPaths linking incorrect.');
+  }
+
   public function testJwtSamplePut() {
     $this->putTest('samples', [
       'survey_id' => 1,
@@ -1356,7 +1552,7 @@ KEY;
     $id = $this->postTest('locations', [
       'name' => 'Test location',
       'centroid_sref' => 'ST1234',
-      'centroid_sref_system' => 'OSGB'
+      'centroid_sref_system' => 'OSGB',
     ], 'name');
     $db = new Database();
     $locationsWebsitesCount = $db->query("select count(*) from locations_websites where location_id=$id")
@@ -1380,12 +1576,60 @@ KEY;
     ]);
   }
 
+
+
+  public function testJwtLocationDuplicateCheck() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Post an initial location to check duplicates against.
+
+    // Need a sub-model locations_websites.website_id to cause duplicate to trigger.
+    $response = $this->callService(
+      'locations',
+      FALSE,
+      [
+        'values' => [
+          'name' => 'Test location 1',
+          'centroid_sref' => 'ST1234',
+          'centroid_sref_system' => 'OSGB',
+          'external_key' => 'textexternalkey',
+        ],
+      ],
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $response = $this->callService(
+      'locations',
+      FALSE,
+      [
+        'values' => [
+          'name' => 'Test location 2',
+          'centroid_sref' => 'SU345678',
+          'centroid_sref_system' => 'OSGB',
+          'external_key' => 'textexternalkey',
+        ],
+      ],
+    );
+    // Check a conflict in the response.
+    $this->assertEquals(409, $response['httpCode']);
+  }
+
   /**
-   * A basic test of /locations GET.
+   * A basic test of /locations/id GET.
    */
   public function testJwtLocationGet() {
     $this->getTest('locations', [
       'name' => 'Location GET test',
+      'centroid_sref' => 'ST1234',
+      'centroid_sref_system' => 'OSGB',
+    ]);
+  }
+
+  /**
+   * A basic test of /locations GET.
+   */
+  public function testJwtLocationGetList() {
+    $this->getListTest('locations', [
+      'name' => 'Test Location ' . microtime(TRUE),
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
     ]);
@@ -1923,7 +2167,7 @@ SQL;
     $this->checkResourceAuthentication('projects');
     $this->authMethod = 'directClient';
     $this->checkResourceAuthentication('projects');
-    // user and website authentications don't allow access to projects
+    // User and website authentications don't allow access to projects.
     $this->authMethod = 'hmacUser';
     $response = $this->callService('projects');
     $this->assertTrue(
@@ -1966,7 +2210,7 @@ SQL;
         'Incorrect number of projects returned from /projects.');
     foreach ($response['response']['data'] as $projDef) {
       $this->assertArrayHasKey(
-        $projDef['id'], $viaConfig, 
+        $projDef['id'], $viaConfig,
         "Unexpected project $projDef[id]returned by /projects."
       );
       $this->assertEquals($viaConfig[$projDef['id']]['title'], $projDef['title'],
@@ -2051,6 +2295,7 @@ SQL;
 
   /**
    * Test the /taxon-observations endpoint in valid use.
+   *
    * @todo Test the pagination responses
    * @todo Test the /taxon-observations/id endpoint
    */
@@ -2081,6 +2326,7 @@ SQL;
 
   /**
    * Test the /annotations endpoint in valid use.
+   *
    * @todo Test the pagination responses
    * @todo Test the annotations/id endpoint
    */
@@ -2175,18 +2421,18 @@ SQL;
     $this->assertResponseOk($response, '/reports');
     // Check a folder that should definitely exist.
     $this->checkReportFolderInReponse($response['response'], 'library');
-    // The demo report is not featured, so should not exist
+    // The demo report is not featured, so should not exist.
     $this->assertFalse(array_key_exists('demo', $response['response']));
 
-    // Repeat with an authMethod that allows access to non-featured reports. There
-    // should be an additional featured folder at the top level with shortcuts
-    // to favourite reports.
+    // Repeat with an authMethod that allows access to non-featured reports.
+    // There should be an additional featured folder at the top level with shortcuts
+    // shortcuts to favourite reports.
     $this->authMethod = 'hmacWebsite';
     $response = $this->callService("reports", ['proj_id' => $projDef['id']]);
     $this->checkReportFolderInReponse($response['response'], 'featured');
     $this->checkReportInReponse($response['response'], 'demo');
 
-    // now check some folder contents
+    // Now check some folder contents.
     $this->authMethod = 'hmacClient';
     $response = $this->callService("reports/featured", ['proj_id' => $projDef['id']]);
     $this->assertResponseOk($response, '/reports/featured');
@@ -2239,7 +2485,7 @@ SQL;
     $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('columns', $reportDef, 'Report response does not define columns');
     $this->assertArrayHasKey('href', $reportDef['columns'], 'Report columns missing href');
-    // Now grab the columns URL output and check it
+    // Now grab the columns URL output and check it.
     $response = $this->callUrl($reportDef['columns']['href']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml/columns');
     $this->assertArrayHasKey('data', $response['response']);
@@ -2257,7 +2503,7 @@ SQL;
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('href', $reportDef, 'Report response missing href');
-    // Now grab the columns URL output and check it
+    // Now grab the columns URL output and check it.
     $response = $this->callUrl($reportDef['href']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml');
     $this->assertArrayHasKey('data', $response['response']);
@@ -2302,7 +2548,7 @@ SQL;
     );
     $decoded = json_decode($response['response'], TRUE);
     $this->assertNotEquals(
-      NULL, $decoded, 
+      NULL, $decoded,
       'JSON response could not be decoded: ' . $response['response']
     );
     $this->assertEquals(200, $response['httpCode']);
@@ -2314,11 +2560,8 @@ SQL;
    * secret, then finally passing the correct details to check a valid response
    * returns.
    *
-   * @param $resource
-   * @param string $user
-   *   User identifier, either client system ID, user ID or website ID.
-   * @param string $secret
-   *   Secret or password to go with the $user.
+   * @param string $resource
+   *   Resource path.
    * @param array $query
    *   Query parameters to pass in the URL
    */
@@ -2353,7 +2596,7 @@ SQL;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
 
-    // break the user IDs
+    // Break the user IDs.
     self::$clientUserId = '---';
     self::$websiteId = '---';
     self::$userId = '---';
@@ -2403,9 +2646,11 @@ SQL;
 
   /**
    * Checks that an array retrieved from the API is a valid taxon-occurrence resource.
-   * @param $data Array to be tested as a taxon occurrence resource
+   *
+   * @param array $data
+   *   Array to be tested as a taxon occurrence resource
    */
-  private function checkValidTaxonObservation($data) {
+  private function checkValidTaxonObservation(array $data) {
     $this->assertIsArray($data, 'Taxon-observation object invalid. ' . var_export($data, TRUE));
     $mustHave = ['id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
         'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate'];
@@ -2420,9 +2665,11 @@ SQL;
 
   /**
    * Checks that an array retrieved from the API is a valid annotation resource.
-   * @param $data Array to be tested as an annotation resource
+   *
+   * @param array $data
+   *   Array to be tested as an annotation resource
    */
-  private function checkValidAnnotation($data) {
+  private function checkValidAnnotation(array $data) {
     $this->assertIsArray($data, 'Annotation object invalid. ' . var_export($data, TRUE));
     $mustHave = ['id', 'href', 'taxonObservation', 'taxonVersionKey', 'comment',
         'question', 'authorName', 'dateTime'];
@@ -2444,7 +2691,8 @@ SQL;
         'Invalid statusCode2 value for annotation'
       );
     }
-    // We should be able to request the taxon observation associated with the occurrence
+    // We should be able to request the taxon observation associated with the
+    // occurrence.
     $session = $this->initCurl($data['taxonObservation']['href']);
     $response = $this->getCurlResponse($session);
     $this->assertResponseOk($response, $data['taxonObservation']['href']);
@@ -2453,6 +2701,7 @@ SQL;
 
   /**
    * Assert that a folder exists in the response from a call to /reports.
+   *
    * @param array $response
    * @param string $folder
    */
@@ -2464,6 +2713,7 @@ SQL;
 
   /**
    * Assert that a folder exists in the response from a call to /reports.
+   *
    * @param array $response
    * @param string $reportFile
    */
@@ -2474,8 +2724,8 @@ SQL;
   }
 
   /**
-   * Sets the http header before a request. This includes the Authorization string and can also include additional
-   * header data when required.
+   * Sets the http header before a request. This includes the Authorization
+   * string and can also include additional header data when required.
    *
    * @param $session
    * @param $url

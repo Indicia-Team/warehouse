@@ -22,6 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+require_once 'application/views/multi_value_data_editing_support.php';
 warehouse::loadHelpers(['data_entry_helper', 'map_helper']);
 $id = html::initial_value($values, 'taxa_taxon_list:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
@@ -198,82 +199,18 @@ TXT;
     ?>
   </fieldset>
   <fieldset>
-    <legend>Taxon Attributes</legend>
+  <legend>Taxon Attributes</legend>
     <ol>
       <?php
-      foreach ($values['attributes'] as $attr) {
-        $name = "taxAttr:$attr[taxa_taxon_list_attribute_id]";
-        // If this is an existing attribute, tag it with the attribute value
-        // record id so we can re-save it.
-        if ($attr['id']) {
-          $name .= ":$attr[id]";
-        }
-        switch ($attr['data_type']) {
-          case 'D':
-            echo data_entry_helper::date_picker([
-              'label' => $attr['caption'],
-              'fieldname' => $name,
-              'default' => $attr['value'],
-            ]);
-            break;
-
-          case 'V':
-            echo data_entry_helper::date_picker([
-              'label' => $attr['caption'],
-              'fieldname' => $name,
-              'default' => $attr['value'],
-              'allowVagueDates' => TRUE,
-            ]);
-            break;
-
-          case 'L':
-            echo data_entry_helper::select([
-              'label' => $attr['caption'],
-              'fieldname' => $name,
-              'default' => $attr['raw_value'],
-              'lookupValues' => $values["terms_$attr[termlist_id]"],
-              'blankText' => '<Please select>',
-            ]);
-            break;
-
-          case 'B':
-            echo data_entry_helper::checkbox([
-              'label' => $attr['caption'],
-              'fieldname' => $name,
-              'default' => $attr['value'],
-            ]);
-            break;
-
-          case 'G':
-            echo "<input type=\"hidden\" name=\"$name\" value=\"$attr[value]\" id=\"imp-geom\"/>";
-            echo "<label>$attr[caption]:</label>";
-            echo map_helper::map_panel([
-              'presetLayers' => ['osm'],
-              'editLayer' => TRUE,
-              'clickForSpatialRef' => FALSE,
-              'layers' => [],
-              'initial_lat' => 55,
-              'initial_long' => -2,
-              'initial_zoom' => 4,
-              'width' => '100%',
-              'height' => 400,
-              'standardControls' => [
-                'panZoomBar',
-                'layerSwitcher',
-                'hoverFeatureHighlight',
-                'drawPolygon',
-                'modifyFeature',
-                'clearEditLayer',
-              ],
-            ]);
-            break;
-
-          default:
-            echo data_entry_helper::text_input([
-              'label' => $attr['caption'],
-              'fieldname' => $name,
-              'default' => $attr['value'],
-            ]);
+      // The $values['attributes'] array has multi-value attributes on separate rows, so organise these into sub array
+      $attrsWithMulti = organise_values_attribute_array('taxa_taxon_list_attribute', $values['attributes']);
+      // Cycle through the attributes and drawn them to the screen
+      foreach ($attrsWithMulti as $taxaTaxonListAttributeId => $wholeAttrToDraw) {
+        // Multi-attributes are in a sub array, so the caption is not present at the first level so we can detect this
+        if (!empty($wholeAttrToDraw['caption'])) {
+          handle_single_value_attributes('taxAttr', $taxaTaxonListAttributeId, $wholeAttrToDraw, $values);
+        } else {
+          handle_multi_value_attributes('taxAttr', $taxaTaxonListAttributeId, $wholeAttrToDraw, $values);
         }
       }
       ?>

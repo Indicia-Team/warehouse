@@ -1,26 +1,33 @@
 <report
-    title="List of terms"
-    description="A simple list of terms"
+    title="Flattened list of hierarchical terms"
+    description="List all terms in depth range as term_min->...->term_max"
 >
   <query website_filter_field="" training_filter_field="">
     with recursive nodes(id, path) as (
-        select id, term
+        select id, term, sort_order, 1 as level
         from cache_termlists_terms
         where parent_id is null
       and termlist_id=#termlist_id#
       and preferred=true
       and website_id in (#website_ids#)
     union all
-        select o.id, concat(path, '->', term)
+        select o.id, concat(path, '->', term), o.sort_order, level + 1
         from cache_termlists_terms o
         join nodes n on n.id = o.parent_id
       where o.preferred=true
+      and (#max_depth#=0 or level&lt;#max_depth#)
     )
     select id, path as term
     from nodes
-    order by path;
+    where (#min_depth#=0 or level&gt;=#min_depth#)
+	#order_by#
   </query>
+  <order_bys>
+    <order_by>path</order_by>
+  </order_bys>
   <params>
     <param name="termlist_id" display="Termlist" datatype="lookup" population_call="direct:termlist:id:title" />
+    <param name="min_depth" display="Min depth" datatype="integer" default="0" />
+    <param name="max_depth" display="Max depth" datatype="integer" default="0" />
   </params>
 </report>

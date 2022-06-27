@@ -48,7 +48,42 @@ class Groups_location_Model extends ORM {
       'superModels' => [
         'location' => ['fk' => 'location_id'],
       ],
+      'metaFields' => [
+        'location_website_id'
+      ],
     ];
   }
-  
+
+  /**
+   * Insert locations_website.
+   *
+   * Need to insert a locations_websites record for the groups_location where
+   * it has been specified in a mapping.
+   *
+   * @param bool $isInsert
+   *   Unused - indication if is an insert.
+   *
+   * @return bool
+   *   Always TRUE to indicate task completion
+   */
+  public function postSubmit($isInsert) {
+    if (!empty($this->submission['metaFields']) && !empty($this->submission['metaFields']['location_website_id'])) {
+      $websiteId = $this->submission['metaFields']['location_website_id']['value'];
+      if (!empty($websiteId) && $this->location_id) {
+        $selectLocationWebsite = "
+        SELECT id
+        FROM locations_websites
+        where location_id=$this->location_id and website_id = $websiteId and deleted = FALSE;";
+        $rows = $this->db->query($selectLocationWebsite)->current();
+        // Only add the locations_websites record if it doesn't already exist.
+        if (empty($rows)) {
+          $insertLocationWebsite = "
+          INSERT INTO locations_websites (location_id, website_id, created_on, created_by_id, updated_on, updated_by_id) VALUES
+          ('$this->location_id', '$websiteId', now(), 1, now(), 1);";
+          $this->db->query($insertLocationWebsite);
+        }
+      }
+    }
+    return TRUE;
+  }
 }

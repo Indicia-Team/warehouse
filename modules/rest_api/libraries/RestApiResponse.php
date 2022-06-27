@@ -108,6 +108,10 @@ HTML;
       'authIntro' => kohana::lang("rest_api.authIntroduction"),
       'authMethods' => kohana::lang("rest_api.authMethods"),
       'resources' => kohana::lang("rest_api.resourcesTitle"),
+      'filters' => kohana::lang("rest_api.filterTitle"),
+      'filterText' => kohana::lang("rest_api.filterText"),
+      'submissionFormat' => kohana::lang("rest_api.submissionFormatTitle"),
+      'submissionFormatText' => kohana::lang("rest_api.submissionFormatText"),
     ];
     $authRows = '';
     $extraInfo = Kohana::config('rest.allow_auth_tokens_in_url')
@@ -138,9 +142,11 @@ HTML;
                 $key = "rest_api.resourceOptionInfo-$resource-" . (is_int($option) ? '' : "$option-");
                 if ($value === TRUE) {
                   $key .= 'true';
-                } elseif ($value === TRUE) {
+                }
+                elseif ($value === TRUE) {
                   $key .= 'false';
-                } else  {
+                }
+                else  {
                   $key .= json_encode($value);
                 }
                 $optionTexts[] = '<li>' . kohana::lang($key) . '</li>';
@@ -182,6 +188,10 @@ HTML;
 <tbody>$authRows</tbody>
 <tfoot><tr><td colspan="2">* $extraInfo</td></tr></tfoot>
 </table>
+<h2>$lang[filters]</h2>
+$lang[filterText]
+<h2>$lang[submissionFormat]</h2>
+$lang[submissionFormatText]
 <h2>$lang[resources]</h2>
 HTML;
 
@@ -213,7 +223,7 @@ HTML;
           if ($method === 'GET') {
             $endpointPathOptions['params'] = array_merge([
               'format' => ['datatype' => 'text'],
-              ], $endpointPathOptions['params']);
+            ], $endpointPathOptions['params']);
           }
           if (count($endpointPathOptions['params']) > 0) {
             $endpointOutput .= '<table class="table table-bordered table-responsive"><caption>Parameters</caption>';
@@ -223,10 +233,11 @@ HTML;
               $endpointOutput .= "<tr><th scope=\"row\">$name</th>";
               $datatype = preg_match('/\[\]$/', $paramDef['datatype']) ?
                   'Single or JSON array of ' . substr($paramDef['datatype'], 0, -2) : $paramDef['datatype'];
-                  $endpointOutput .= "<td>$datatype</td>";
+              $endpointOutput .= "<td>$datatype</td>";
               if ($name === 'format') {
                 $help = kohana::lang('rest_api.format_param_help');
-              } else {
+              }
+              else {
                 $help = kohana::lang("rest_api.$method " . str_replace('.', '-', $endpointPath) . ".$name");
               }
               if (!empty($paramDef['options'])) {
@@ -493,10 +504,12 @@ ROW;
         if (is_object($value) || (is_array($value) && count($value) > 0 && is_int(array_keys($value)[0]))) {
           // recurse into pg result data
           $this->outputResultAsHtml($value, $options);
-        } elseif (is_array($value)) {
+        }
+        elseif (is_array($value)) {
           // recurse into plain array data
           $this->outputArrayAsHtml($value, $options);
-        } else {
+        }
+        else {
           // a simple value to output. If it contains an internal link then process it to hide user/secret data.
           if (preg_match('/^http(s)?:\/\//', $value)) {
             $parts = explode('?', $value);
@@ -547,7 +560,8 @@ ROW;
       }
       echo '</tr></thead>';
       $columns = array_keys($options['columns']);
-    } elseif (count($data) > 0) {
+    }
+    elseif (count($data) > 0) {
       $columns = array_keys((array)$data[0]);
     }
     echo '<tbody>';
@@ -561,7 +575,8 @@ ROW;
         if (is_array($value)) {
           // Might have nested data to output, e.g. for a foreign key.
           $this->outputArrayAsHtml($value, array());
-        } else {
+        }
+        else {
           echo $value;
         }
         echo '</td>';
@@ -579,14 +594,16 @@ ROW;
   private function succeedCsv($data, $options) {
     if (is_array($data) && isset($data['data'])) {
       $rows = $data['data'];
-    } elseif (is_object($data)) {
+    }
+    elseif (is_object($data)) {
       // outputting a single row from a pg result
       $rows = array($data);
     }
     if (isset($rows)) {
       if (isset($options['columns'])) {
         $columns = array_keys($options['columns']);
-      } else {
+      }
+      else {
         // If we don't have columns metadata, we have to calculate the complete list of columns so we can line things up
         $columns = $this->findCsvColumns($rows);
       }
@@ -628,40 +645,45 @@ ROW;
   }
 
   /**
-   * Return a line of CSV from an array or pg result object row. This is instead of PHP's fputcsv because that
-   * function only writes straight to a file, whereas we need a string.
-   * @param mixed $data Either an array or pg result object row.
-   * @param array $columns List of columns to output
+   * Return a line of CSV from an array or pg result object row.
+   *
+   * This is instead of PHP's fputcsv because that function only writes
+   * straight to a file, whereas we need a string.
+   *
+   * @param mixed $data
+   *   Either an array or pg result object row.
+   * @param array $columns
+   *   List of columns to output.
+   * @param array $options   *
    */
-  private function getCsvRow($data, $columns, $options)
-  {
+  private function getCsvRow($data, $columns, $options) {
     $output = '';
-    $delimiter=',';
-    $enclose='"';
+    $delimiter = ',';
+    $enclose = '"';
     $this->preProcessRow($data, $options, $columns);
     foreach ($columns as $column) {
-      // data can be either an array or pg result object row
+      // Data can be either an array or pg result object row.
       if (is_array($data)) {
         $cell = isset($data[$column]) ? $data[$column] : '';
-      } elseif (is_object($data)) {
+      }
+      elseif (is_object($data)) {
         $cell = isset($data->$column) ? $data->$column : '';
       }
       if (is_array($cell)) {
         $cell = json_encode($cell);
       }
-      // If not numeric and contains the delimiter, enclose the string
-      if (!is_numeric($cell) && (preg_match('/[' . $delimiter . '\r\n]/', $cell)))
-      {
-        //Escape the enclose
-        $cell = str_replace($enclose, $enclose.$enclose, $cell);
-        //Not numeric enclose
+      // If not numeric and contains the delimiter, enclose the string.
+      if (!is_numeric($cell) && (preg_match('/[' . $delimiter . '\r\n]/', $cell))) {
+        // Escape the enclose.
+        $cell = str_replace($enclose, $enclose . $enclose, $cell);
+        // Not numeric enclose.
         $cell = $enclose . $cell . $enclose;
       }
-      if ($output=='') {
+      if ($output == '') {
         $output = $cell;
       }
       else {
-        $output.=  $delimiter . $cell;
+        $output .=  $delimiter . $cell;
       }
     }
     return $output;
@@ -798,9 +820,11 @@ ROW;
       foreach ($acceptMimeTypes as $mimeType) {
         if (trim($mimeType) === 'application/json') {
           return 'json';
-        } elseif (trim($mimeType) === 'text/csv') {
+        }
+        elseif (trim($mimeType) === 'text/csv') {
           return 'csv';
-        } elseif (trim($mimeType) === 'text/html') {
+        }
+        elseif (trim($mimeType) === 'text/html') {
           return 'html';
         }
       }

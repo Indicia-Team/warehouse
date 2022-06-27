@@ -29,7 +29,7 @@ use PhpOffice\PhpSpreadsheet\Reader\Xls;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 
-define('ROWS_PER_BATCH', 10);
+define('ROWS_PER_BATCH', 50);
 
 /**
  * Shim function to allow client site code to work.
@@ -39,21 +39,6 @@ function hostsite_get_config_value($context, $name, $default = FALSE) {
     return kohana::config('indicia.master_list_id');
   }
   return $default;
-}
-
-/**
- * Shim function to allow client site code to work.
- */
-function hostsite_get_user_field($field) {
-  if ($field === 'indicia_user_id') {
-    return 0;
-  }
-  elseif ($field === 'training') {
-    return FALSE;
-  }
-  else {
-    throw new Exception("Field $field not supported");
-  }
 }
 
 /**
@@ -204,7 +189,7 @@ class rest_spreadsheet_verify {
     // Read the data from the spreadsheet.
     $spreadsheet = $reader->load($importFileName);
     $data = $spreadsheet->getActiveSheet()->toArray();
-    $_ids = [];
+    $ids = [];
     for ($i = $offset - 1; $i < $offset - 1 + ROWS_PER_BATCH; $i++) {
       // If failed to read more rows, then done.
       if (!isset($data[$i])) {
@@ -214,7 +199,7 @@ class rest_spreadsheet_verify {
       }
       $row = $data[$i];
       $id = $row[$metadata['idColIndex']];
-      $_ids[] = "$metadata[id_prefix]$id";
+      $ids[] = $id;
       $metadata['totalChecked']++;
       if (!preg_match('/\d+/', $id)) {
         // Log invalid ID value.
@@ -250,8 +235,6 @@ class rest_spreadsheet_verify {
         }
         // Save the status update to the list of changes we'll make during
         // processing.
-        kohana::log('debug', var_export($row, TRUE));
-        kohana::log('debug', var_export($metadata, TRUE));
         $verificationData = [
           $id,
           $status[0],
@@ -275,7 +258,7 @@ class rest_spreadsheet_verify {
       fputcsv($verificationsFile, $verificationData);
       $metadata['verificationsFound']++;
     }
-    self::checkAllIdsInFilter($_ids, $metadata);
+    self::checkAllIdsInFilter($ids, rtrim($metadata['id_prefix'], '|'), $metadata);
     fclose($errorsFile);
     fclose($verificationsFile);
   }
@@ -288,12 +271,12 @@ class rest_spreadsheet_verify {
    * all IDs in the spreadsheet are found within the filter, otherwise the
    * whole upload is aborted.
    *
-   * @param array $_ids
-   *   List of _id document identifiers to check.
-   * @param array $metadata
-   *   File upload metadata including filter_id and user_id.
+   * @param array $ids
+   *   List of document ids to check.
+   * @param string $warehouse
+   *   Warehouse prefix to filter to.
    */
-  private static function checkAllIdsInFilter(array $_ids, array $metadata) {
+  private static function checkAllIdsInFilter(array $ids, $warehouse, array $metadata) {
     require_once 'client_helpers/ElasticsearchProxyHelper.php';
     require_once 'client_helpers/helper_base.php';
     $readAuth = helper_base::get_read_auth(0 - $metadata['user_id'], kohana::config('indicia.private_key'));
@@ -306,7 +289,12 @@ class rest_spreadsheet_verify {
         ],
         [
           'terms' => [
-            '_id' => $_ids,
+            'id' => $ids,
+          ],
+        ],
+        [
+          'term' => [
+            'warehouse' => $warehouse,
           ],
         ],
       ],
@@ -323,13 +311,18 @@ class rest_spreadsheet_verify {
       'query' => ['bool' => $boolFilter],
       'size' => 0,
     ];
-    $response = json_decode($esApi->elasticRequest(json_decode(json_encode($doc)), 'json', TRUE, '_search'));
+    $docObject = json_decode(json_encode($doc));
+    $response = json_decode($esApi->elasticRequest($docObject, 'json', TRUE, '_search'));
     $hitsTotal = $response->hits->total;
+    if ($hitsTotal->relation && $hitsTotal->relation === 'gte') {
+      // More hits than ES bothers to count, so likely to be OK.
+      return;
+    }
     // ES versiion tolerance.
     $foundCount = isset($hitsTotal->value) ? $hitsTotal->value : $hitsTotal;
     // If the filtered set is smaller than the requested set, then the
     // spreadsheet contains records not in the filter.
-    if ($foundCount < count($_ids)) {
+    if ($foundCount < count($ids)) {
       RestObjects::$apiResponse->fail('Bad Request', 400,
         'The spreadsheet cannot be accepted as it contains records that are not in your current verification context filter.');
     }

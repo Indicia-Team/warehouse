@@ -50,7 +50,9 @@ class Base_licensed_medium_Model extends ORM {
       elseif (isset($_SESSION['auth_user'])) {
         $userId = $_SESSION['auth_user']->id;
       }
-      if (isset($userId)) {
+      // Set user's default media licence unless already specified in the
+      // submission.
+      if (isset($userId) && (empty($this->submission['fields']['licence_id']) || empty($this->submission['fields']['licence_id']['value']))) {
         $row = $this->db
           ->select('media_licence_id')
           ->from('users_websites')

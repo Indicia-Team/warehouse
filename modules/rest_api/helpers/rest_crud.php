@@ -35,7 +35,9 @@ class rest_crud {
   private static $entityConfig = [];
 
   /**
+   * List of definitions for fields required by a GET request.
    *
+   * @var array
    */
   private static $fieldDefs;
 
@@ -56,9 +58,15 @@ class rest_crud {
     if (!empty($values['id'])) {
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Cannot POST with id to update, use PUT instead.']));
     }
+    if (empty(RestObjects::$clientUserId)) {
+      $allowAnonPostCheck = RestObjects::$db->query('SELECT allow_anon_jwt_post FROM websites WHERE deleted=false AND id=' . RestObjects::$clientWebsiteId)->current();
+      if ($allowAnonPostCheck->allow_anon_jwt_post === 'f') {
+        RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:created_by_id" => 'Cannot POST without user authentication.']));
+      }
+    }
     $obj = ORM::factory($entity);
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
-      self::checkDuplicateFields($entity, $values);
+      self::checkDuplicateFields($entity, $values, $data);
     }
     return self::submit($entity, $obj, $data);
   }
@@ -83,11 +91,11 @@ class rest_crud {
   /**
    * Retrieves a list of definitions for fields required by a GET request.
    *
+   * Populates self::$fieldDefs with a list of SQL field definitions keyed by
+   * field name.
+   *
    * @param string $entity
    *   Entity name.
-   *
-   * @return array
-   *   List of SQL field definitions keyed by field name.
    */
   private static function loadFieldDefs($entity) {
     if (empty(self::$fieldDefs)) {
@@ -113,7 +121,7 @@ class rest_crud {
    * @return array
    *   List of SQL field strings to include in SELECT.
    */
-  private static function getSqlFieldsForOneTable($fields, $alias) {
+  private static function getSqlFieldsForOneTable(array $fields, $alias) {
     $list = [];
     foreach ($fields as $fieldDef) {
       // If field SQL is a simple fieldname we can alias it to the table.
@@ -165,22 +173,22 @@ class rest_crud {
         $list[] = $joinDef->sql;
       }
     }
-    return implode ("\n", $list);
+    return implode("\n", $list);
   }
 
   /**
    * Gets the list of SQL field definitions for filtering one table in a query.
+   *
+   * Populates self::$fieldDefs with a list of SQL field definitions keyed by
+   * field name, for a single table.
    *
    * @param array $fields
    *   Field list from configuration for entity or join.
    * @param string $alias
    *   Table alias to use.
    *
-   * @return array
-   *   List of SQL field definitions containing information required to filter,
-   *   keyed by field name.
    */
-  private static function getFieldDefsForOneTable($fields, $alias) {
+  private static function getFieldDefsForOneTable(array $fields, $alias) {
     foreach ($fields as $fieldDef) {
       // If field SQL is a simple fieldname we can alias it to the table.
       $fieldSql = preg_match('/^[a-z_]+$/', $fieldDef->sql) ? "$alias.$fieldDef->sql" : $fieldDef->sql;
@@ -215,6 +223,7 @@ class rest_crud {
       foreach ($_GET as $param => $value) {
         if (isset(self::$fieldDefs[$param])) {
           if (in_array(self::$fieldDefs[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
+            RestObjects::$db->connect();
             $value = pg_escape_literal($value);
           }
           elseif (in_array(self::$fieldDefs[$param]['type'], ['integer', 'float'])) {
@@ -250,16 +259,29 @@ SQL;
    * @param bool $userFilter
    *   Should a filter on created_by_id be applied? Default TRUE.
    *
-   * @todo Support for attribute values + verbose option.
    * @todo Support for reading a survey structure including attribute metadata.
    * @todo Add test case
    */
   public static function readList($entity, $extraFilter = '', $userFilter = TRUE) {
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $rows = RestObjects::$db->query($qry);
+
+    $attrs = [];
+    // If requested (and there are some rows), get attribute values.
+    if (array_key_exists('verbose', $_GET) && $rows->count() > 0) {
+      $ids = [];
+      foreach ($rows as $row) {
+        $ids[] = $row->id;
+      }
+      $attrs = self::readAttributes($entity, $ids);
+    }
+
     $r = [];
     foreach ($rows as $row) {
       unset($row->xmin);
+      if (array_key_exists($row->id, $attrs)) {
+        $row = array_merge((array) $row, $attrs[$row->id]);
+      }
       $r[] = ['values' => self::getValuesForResponse($row)];
     }
     RestObjects::$apiResponse->succeed($r);
@@ -279,15 +301,42 @@ SQL;
    */
   public static function read($entity, $id, $extraFilter = '', $userFilter = TRUE) {
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
-    $qry .= "AND t1.id=$id";
+    $qry .= "AND t1.id = $id";
     $row = RestObjects::$db->query($qry)->result(FALSE)->current();
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
       header("ETag: $row[xmin]");
       unset($row['xmin']);
       if (!empty(self::$entityConfig[$entity]->attributes)) {
-        $qry = <<<SQL
-SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type, a.multi_value,
+        $attrs = self::readAttributes($entity, [$id]);
+        if (array_key_exists($id, $attrs)) {
+          $row = array_merge((array) $row, $attrs[$id]);
+        }
+      }
+      RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
+    }
+    else {
+      RestObjects::$apiResponse->fail('Not found', 404);
+    }
+  }
+
+  /**
+   * Read attributes for records.
+   *
+   * @param string $entity
+   *   Entity name (singular).
+   * @param int[] $ids
+   *   Array of record IDs to obtain attributes for.
+   *
+   * @return array
+   *   List of attributes for records. First dimension is record id. Second
+   *   dimension is attribute key, e.g. locAttr:3
+   */
+  private static function readAttributes($entity, array $ids) {
+    $idList = implode(',', $ids);
+    $qry = <<<SQL
+SELECT av.{$entity}_id as record_id, a.id as attribute_id, av.id as value_id,
+  a.caption, a.data_type, a.multi_value,
   CASE a.data_type
     WHEN 'T'::bpchar THEN av.text_value
     WHEN 'L'::bpchar THEN t.term::text
@@ -321,32 +370,35 @@ SELECT a.id as attribute_id, av.id as value_id, a.caption, a.data_type, a.multi_
     ELSE NULL::double precision
   END AS upper_value
 FROM {$entity}_attribute_values av
-JOIN {$entity}_attributes a on a.id=av.{$entity}_attribute_id and a.deleted=false
-LEFT JOIN cache_termlists_terms t on a.data_type='L' and t.id=av.int_value
-WHERE av.deleted=false
-AND av.{$entity}_id=$id;
+JOIN {$entity}_attributes a on a.id = av.{$entity}_attribute_id and a.deleted = false
+LEFT JOIN cache_termlists_terms t on a.data_type = 'L' and t.id = av.int_value
+WHERE av.deleted = false
+AND av.{$entity}_id IN ($idList);
 SQL;
-        $attrValues = RestObjects::$db->query($qry);
-        $attrs = [];
-        foreach ($attrValues as $attr) {
-          $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
-          if ($attr->multi_value === 't') {
-            if (!isset($attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"])) {
-              $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = [];
-            }
-            $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"][] = $val;
-          }
-          else {
-            $attrs[self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id"] = $val;
-          }
-        }
-        $row = array_merge((array) $row, $attrs);
+    $attrValues = RestObjects::$db->query($qry);
+    $attrs = [];
+    foreach ($attrValues as $attr) {
+      $recordKey = $attr->record_id;
+      unset($attr->record_id);
+      $attrKey = self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id";
+      $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
+
+      if (!isset($attrs[$recordKey])) {
+        $attrs[$recordKey] = [];
       }
-      RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
+
+      if ($attr->multi_value === 't') {
+        if (!isset($attrs[$recordKey][$attrKey])) {
+          $attrs[$recordKey][$attrKey] = [];
+        }
+        $attrs[$recordKey][$attrKey][] = $val;
+      }
+      else {
+        $attrs[$recordKey][$attrKey] = $val;
+      }
     }
-    else {
-      RestObjects::$apiResponse->fail('Not found', 404);
-    }
+
+    return $attrs;
   }
 
   /**
@@ -371,10 +423,10 @@ SQL;
     $obj = ORM::factory($entity, $id);
     self::checkETags($entity, $id);
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
-      self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values));
+      self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values), $data);
     }
     if ($obj->created_by_id != RestObjects::$clientUserId) {
-      RestObjects::$apiResponse->fail('Not Found', 404);
+      RestObjects::$apiResponse->fail('Not Found', 404, 'Attempt to update record belonging to different user.');
     }
     // Keep existing values unless replaced by PUT data.
     $data['values'] = array_merge(
@@ -412,7 +464,8 @@ SQL;
       $obj->set_metadata();
       $obj->save();
       http_response_code(204);
-    } else {
+    }
+    else {
       RestObjects::$apiResponse->fail('Not found', 404);
     }
   }
@@ -447,6 +500,11 @@ SQL;
     return $extraData;
   }
 
+  /**
+   * Link any supermodels to a submission.
+   *
+   * Includes one to many relationships.
+   */
   private static function includeSubmodels($entity, array $postObj, $websiteId, &$s) {
     $subModels = [];
     if (isset(self::$entityConfig[$entity]->subModels)) {
@@ -473,7 +531,36 @@ SQL;
           'fkId' => $subModelCfg->fk,
           'model' => self::convertNewToOldSubmission(inflector::singular($subModelTable), $obj, $websiteId),
         ];
+        kohana::log('debug', 'Submission updated sub: ' . var_export($s, TRUE));
       }
+    }
+  }
+
+  /**
+   * Link any supermodels to a submission.
+   *
+   * Includes many to one relationships.
+   */
+  private static function includeSupermodels($entity, array $postObj, $websiteId, &$s) {
+    $superModels = [];
+    if (isset(self::$entityConfig[$entity]->superModels)) {
+      $superModels = array_intersect_key((array) self::$entityConfig[$entity]->superModels, $postObj);
+      unset($superModels['values']);
+    }
+    foreach ($superModels as $superModelTable => $superModelCfg) {
+      $s['superModels'][] = [
+        'fkId' => $superModelCfg->fk,
+        'model' => self::convertNewToOldSubmission(inflector::singular($superModelTable), $postObj[$superModelTable], $websiteId),
+      ];
+    }
+  }
+
+  /**
+   * Attach any posted metaFields to the submission.
+   */
+  private static function includeMetafields($entity, array $postObj, $websiteId, &$s) {
+    if (isset($postObj['metaFields'])) {
+      $s['metaFields'] = $postObj['metaFields'];
     }
   }
 
@@ -495,6 +582,7 @@ SQL;
       'fields' => [],
     ];
     if (!isset($postObj['values'])) {
+      kohana::log('debug', $entity . ': ' . var_export($postObj, TRUE));
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Incorrect submission format');
     }
     foreach ($postObj['values'] as $field => $value) {
@@ -510,6 +598,8 @@ SQL;
       $s['subModels'] = [];
     }
     self::includeSubmodels($entity, $postObj, $websiteId, $s);
+    self::includeSupermodels($entity, $postObj, $websiteId, $s);
+    self::includeMetafields($entity, $postObj, $websiteId, $s);
     return $s;
   }
 
@@ -522,32 +612,53 @@ SQL;
    * @param int $entity
    *   Entity name.
    * @param array $values
-   *   Values for the record being checked.
+   *   Values for the record being checked. For updates, will merge the
+   *   submitted values into the existing values.
+   * @param array $data
+   *   Submitted data.
    */
-  private static function checkDuplicateFields($entity, $values) {
+  private static function checkDuplicateFields($entity, array $values, array $data) {
+    kohana::log('debug', "Doing duplicate check for $entity");
     $table = inflector::plural($entity);
     $filters = [];
+    $joins = [];
     // If we are updating, then don't match the same record.
     if (!empty($values['id'])) {
       $filters[] = "id<>$values[id]";
     }
     foreach (self::$entityConfig[$entity]->duplicateCheckFields as $field) {
-      if (empty($values[$field])) {
-        // No need for check if some duplicate check values missing.
-        return;
+      $fieldParts = explode('.', $field);
+      $fieldName = array_pop($fieldParts);
+      // Anything left must be a duplicate check on a sub-model field.
+      if (count($fieldParts) === 1) {
+        $subModelTable = $fieldParts[0];
+        // Skip if sub-model not present, or does not contain a field value.
+        if (!isset($data[$subModelTable]) || !isset($data[$subModelTable][0]) || !isset($data[$subModelTable][0]['values']) || empty($data[$subModelTable][0]['values'][$fieldName])) {
+          return;
+        }
+        $value = $data[$subModelTable][0]['values'][$fieldName];
+        $joins[$subModelTable] = "\njoin $subModelTable on $subModelTable.{$entity}_id=$table.id and $subModelTable.$fieldName='$value'";
       }
-      $value = $values[$field];
-      $filters[] = "$field='$value'";
+      else {
+        if (empty($values[$field])) {
+          // No need for check if some duplicate check values missing.
+          return;
+        }
+        $value = $values[$field];
+        $filters[] = "$table.$fieldName='$value'";
+      }
     }
     $hit = RestObjects::$db
-      ->query("select id from $table where " . implode(' and ', $filters))
+      ->query("select $table.id from $table" . implode('', $joins) . " where " . implode(' and ', $filters))
       ->current();
     if ($hit) {
       $href = url::base() . "index.php/services/rest/$table/$hit->id";
-      RestObjects::$apiResponse->fail('Conflict', 409, 'Duplicate external_key would be created', ['duplicate_of' => [
-        'id' => $hit->id,
-        'href' => $href,
-      ]]);
+      RestObjects::$apiResponse->fail('Conflict', 409, 'Duplicate external_key would be created', [
+        'duplicate_of' => [
+          'id' => $hit->id,
+          'href' => $href,
+        ],
+      ]);
     }
   }
 
@@ -568,11 +679,10 @@ SQL;
    *
    * Dates will be ISO formatted.
    *
-   * @param string $entity
-   *   Entity name.
    * @param mixed $data
    *   Associative array or object of field names and values.
-   * @param array $fields Optional list of fields to restrict to.
+   * @param array $fields
+   *   Optional list of fields to restrict to.
    *
    * @return array
    *   Associative array of field names and values.
@@ -641,12 +751,14 @@ SQL;
    *
    * The API response is echoed and appropriate http status set.
    *
-   * @param obj $obj
+   * @param string $entity
+   *   Entity name.
+   * @param object $obj
    *   ORM object.
    * @param array $postObj
    *   Submission data.
    */
-  private static function submit($entity, $obj, $postObj) {
+  private static function submit($entity, $obj, array $postObj) {
     $obj->submission = rest_crud::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
     $id = $obj->submit();
     if ($id) {
@@ -657,7 +769,8 @@ SQL;
       // Include href and basic record metadata.
       $responseMetadata = $obj->getSubmissionResponseMetadata();
       return self::getResponseMetadata($responseMetadata);
-    } else {
+    }
+    else {
       RestObjects::$apiResponse->fail('Bad Request', 400, $obj->getAllErrors());
     }
   }

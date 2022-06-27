@@ -291,17 +291,22 @@ class RestApiElasticsearch {
     $thisProxyCfg = $esConfig[$this->elasticProxy];
     $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
     if (isset($thisProxyCfg['allowed'])) {
-      $allowed = FALSE;
-      if (isset($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])])) {
-        foreach (array_keys($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])]) as $regex) {
-          if (preg_match($regex, $resource)) {
-            $allowed = TRUE;
+      // OPTIONS request always allowed.
+      $allowed = $_SERVER['REQUEST_METHOD'] === 'OPTIONS';
+      if (!$allowed) {
+        // Not options, so need to check config allows the method/resource
+        // combination.
+        if (isset($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])])) {
+          foreach (array_keys($thisProxyCfg['allowed'][strtolower($_SERVER['REQUEST_METHOD'])]) as $regex) {
+            if (preg_match($regex, $resource)) {
+              $allowed = TRUE;
+            }
           }
         }
-      }
-      if (!$allowed) {
-        RestObjects::$apiResponse->fail('Bad request', 400,
-          "Elasticsearch request $resource ($_SERVER[REQUEST_METHOD]) disallowed by Warehouse REST API proxy configuration.");
+        if (!$allowed) {
+          RestObjects::$apiResponse->fail('Bad request', 400,
+            "Elasticsearch request $resource ($_SERVER[REQUEST_METHOD]) disallowed by Warehouse REST API proxy configuration.");
+        }
       }
     }
   }
@@ -346,7 +351,7 @@ class RestApiElasticsearch {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'No website_id available for website limited report.');
       }
       $filters[] = [
-        'term' => ['metadata.website.id', RestObjects::$clientWebsiteId],
+        'term' => ['metadata.website.id' => RestObjects::$clientWebsiteId],
       ];
     }
     // Apply limit to websites identified by scope if appropriate.
@@ -491,9 +496,21 @@ class RestApiElasticsearch {
       // Tolerate sample or event for sample attributes.
       $key = $params[0] === 'parent_event' ? 'parent_attributes' : 'attributes';
       $entity = in_array($params[0], ['sample', 'event', 'parent_event']) ? 'event' : 'occurrence';
+      $attrList = [];
       if (isset($doc[$entity][$key])) {
-        foreach ($doc[$entity][$key] as $attr) {
-          if ($attr['id'] == $params[1]) {
+        $attrList = $doc[$entity][$key];
+      }
+      // If requesting an event/sample attribute, the parent event/sample's
+      // data can also be considered.
+      if ($entity === 'event' && $key === 'attributes' && isset($doc['event']['parent_attributes'])) {
+        $attrList = array_merge($attrList, $doc['event']['parent_attributes']);
+      }
+      foreach ($attrList as $attr) {
+        if ($attr['id'] == $params[1]) {
+          if (is_array($attr['value'])) {
+            $r = array_merge($r, $attr['value']);
+          }
+          else {
             $r[] = $attr['value'];
           }
         }
@@ -842,13 +859,19 @@ class RestApiElasticsearch {
     $format = !empty($params) ? $params[0] : '';
     switch ($format) {
       case 'decimal':
+        if (isset($params[1])) {
+          // Format specifies decimal places to return.
+          return number_format($coords[0], $params[1]);
+        }
+        // Default is full precision.
         return $coords[0];
 
       // Implemented as the default.
       case 'nssuffix':
       default:
+        $precision = isset($params[1]) ? $params[1] : 3;
         $ns = $coords[0] >= 0 ? 'N' : 'S';
-        $lat = number_format(abs($coords[0]), 3);
+        $lat = number_format(abs($coords[0]), $precision);
         return "$lat$ns";
     }
   }
@@ -858,21 +881,24 @@ class RestApiElasticsearch {
    *
    * @param array $doc
    *   Elasticsearch document.
+   * @param array $params
+   *   An identifier for the format.
    *
    * @return string
    *   Formatted value.
    */
-  private function esGetSpecialFieldLatLon(array $doc) {
+  private function esGetSpecialFieldLatLon(array $doc, array $params) {
     // Check in case fields are in composite agg key.
     $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
     if (empty($root['point'])) {
       return 'n/a';
     }
     $coords = explode(',', $root['point']);
+    $precision = count($params) > 0 ? $params[0] : 3;
     $ns = $coords[0] >= 0 ? 'N' : 'S';
     $ew = $coords[1] >= 0 ? 'E' : 'W';
-    $lat = number_format(abs($coords[0]), 3);
-    $lon = number_format(abs($coords[1]), 3);
+    $lat = number_format(abs($coords[0]), $precision);
+    $lon = number_format(abs($coords[1]), $precision);
     return "$lat$ns $lon$ew";
   }
 
@@ -969,13 +995,19 @@ class RestApiElasticsearch {
     $format = !empty($params) ? $params[0] : "";
     switch ($format) {
       case "decimal":
+        if (isset($params[1])) {
+          // Format specifies decimal places to return.
+          return number_format($coords[1], $params[1]);
+        }
+        // Default is full precision.
         return $coords[1];
 
       // Implemented as the default.
       case "ewsuffix":
       default:
+        $precision = isset($params[1]) ? $params[1] : 3;
         $ew = $coords[1] >= 0 ? 'E' : 'W';
-        $lon = number_format(abs($coords[1]), 3);
+        $lon = number_format(abs($coords[1]), $precision);
         return "$lon$ew";
     }
   }
@@ -1854,6 +1886,11 @@ class RestApiElasticsearch {
           // Tolerate sample or event for entity parameter.
           $entity = in_array($matches[1], ['sample', 'event', 'parent_event']) ? 'event' : 'occurrence';
           $fields[] = "$entity.$key";
+          // When requesting an event attribute, allow the parent event
+          // attribute value to be used if necessary.
+          if ("$entity.$key" === 'event.attributes') {
+            $fields[] = 'event.parent_attributes';
+          }
         }
         elseif (preg_match('/^#null_if_zero:([a-z_]+(\.[a-z_]+)*)#$/', $field, $matches)) {
           $fields[] = $matches[1];
@@ -1960,7 +1997,7 @@ SQL;
    *   File array containing the name and handle.
    */
   private function preparePagingFile($format) {
-    rest_utils::purgeOldFiles('download', 3600);
+    rest_utils::purgeOldFiles('download/', 3600);
     $uniqId = uniqid('', TRUE);
     $filename = "download-$uniqId.$format";
     // Reopen file for appending.

@@ -125,6 +125,7 @@ $config['modules'] = array
          MODPATH.'indicia_svc_validation',// Validation services
          MODPATH.'indicia_svc_security',  // Security services
          MODPATH.'indicia_svc_spatial',   // Spatial services
+         MODPATH.'rest_api',              // REST API
          MODPATH.'indicia_setup',         // Setup procedures
          MODPATH.'sref_osgb',             // OSGB grid notation
          MODPATH.'sref_osie',             // Irish grid notation (TM75)
