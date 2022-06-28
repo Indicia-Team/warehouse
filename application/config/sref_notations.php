@@ -37,6 +37,7 @@ $config['sref_notations'] = [
   '29902' => 'TM65 / Irish Grid',
   '3006' => 'SWEREF99 TM / Swedish Transverse Mercator',
   '3021' => 'RT90 2.5 gon v / Swedish Grid',
+  '3765' => 'HTRS96 / Croatia TM',
   '3857' => 'Web Mercator',
 ];
 
@@ -50,6 +51,7 @@ $config['roundings'] = [
   '2169' => 0,
   '3006' => 0,
   '3021' => 0,
+  '3765' => 1,
 ];
 
 // provide a list of systems which translate x,y format into a proper Lat/Long format, and the default ouput format
