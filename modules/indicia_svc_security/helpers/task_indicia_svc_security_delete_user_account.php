@@ -1,8 +1,8 @@
 <?php
 
 /**
- * @file
- * Queue worker to update cache_occurrences_functional.taxon_path.
+ * @file 
+ * Queue worker to delete a user.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -25,10 +25,12 @@
  defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Test framework for handling when a user cancels their account.
+ * Handle when a user deletes their account on a website.
  *
- * Currently sends the user cancellation email to a test account defined by
- * the deletion_user_test_id variable.
+ * Anonymises a user's account by pointing their data at an anonymous account
+ * when they remove themselves from a website (an app can also trigger this).
+ * Also sends an email about other websites the user might be a member of if
+ * they still have websites on their account.
  */
 class task_indicia_svc_security_delete_user_account {
 
@@ -60,9 +62,325 @@ class task_indicia_svc_security_delete_user_account {
       ])
       ->get()->result();
     foreach ($jobs as $job) {
-      // Call function replaceUserIdWithAnonId($job->userId, $job->website_id, $anonymousUserId);
-      self::sendWebsitesListEmail($db, $procId, $job->user_id, $job->website_id);
+      self::replaceUserIdWithAnonId($db, $procId, $job->user_id, $job->website_id, $anonymousUserId);
+      self::sendWebsitesListEmail($db, $job->user_id, $job->website_id);
     }
+  }
+
+  /**
+   * Repoint user's data to anonymous account.
+   *
+   * Repoint the user's data to anonymous account, noting that some of it is only
+   * suitable for repointing if the user has no websites left
+   * @param object $db
+   *   Database connection object.
+   * @param string $procId
+   *   Unique identifier of this work queue processing run. Allows filtering
+   *   against the work_queue table's claimed_by field to determine which
+   *   tasks to perform.
+   * @param int $userId
+   *   User ID being deleted.
+   * @param int $websiteId
+   *   Website ID they are being deleted from.
+   * @param int $anonymousUserId
+   *   User ID of the special anonymous user.
+   */
+  public static function replaceUserIdWithAnonId($db, $procId, $userId, $websiteId, $anonymousUserId) {
+    $sql = <<<SQL
+    do $$
+    BEGIN 
+    -- Need to track updated rows so they can be added to the work_queue
+    CREATE TEMP TABLE IF NOT EXISTS updated_occurrences (idx serial PRIMARY KEY, changed_record_id int);
+    CREATE TEMP TABLE IF NOT EXISTS updated_samples (idx serial PRIMARY KEY, changed_record_id int);
+    CREATE TEMP TABLE IF NOT EXISTS updated_termlists_terms (idx serial PRIMARY KEY, changed_record_id int);
+
+    DELETE FROM updated_occurrences;
+    DELETE FROM updated_samples;
+    DELETE FROM updated_termlists_terms;
+
+    DELETE FROM users_websites
+    WHERE website_id = $websiteId AND user_id in 
+    (SELECT q.record_id
+    FROM work_queue q
+    WHERE q.entity='user'
+    AND q.task='task_indicia_svc_security_delete_user_account'
+    AND q.claimed_by='$procId');
+    -- Only repoint some items if no are websites left for the user
+    IF (NOT EXISTS (
+      select uw.id 
+      FROM users_websites uw
+      JOIN work_queue q on uw.user_id = q.record_id 
+      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    )) THEN 
+
+      UPDATE location_media lm
+      SET 
+        created_by_id = (CASE WHEN lm.created_by_id = q.record_id THEN $anonymousUserId ELSE lm.created_by_id END), 
+        updated_by_id = (CASE WHEN lm.updated_by_id = q.record_id THEN $anonymousUserId ELSE lm.updated_by_id END)
+      FROM locations l, locations_websites lw, work_queue q
+      WHERE (lm.created_by_id = q.record_id OR lm.updated_by_id = q.record_id) 
+        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND lm.location_id = l.id 
+      AND lw.location_id = l.id
+      AND lw.website_id = $websiteId;
+
+      UPDATE location_attribute_values lav
+      SET 
+        created_by_id = (CASE WHEN lav.created_by_id = q.record_id THEN $anonymousUserId ELSE lav.created_by_id END), 
+        updated_by_id = (CASE WHEN lav.updated_by_id = q.record_id THEN $anonymousUserId ELSE lav.updated_by_id END)
+      FROM locations l, locations_websites lw, work_queue q
+      WHERE (lav.created_by_id = q.record_id OR lav.updated_by_id = q.record_id) 
+      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND lav.location_id = l.id 
+      AND lw.location_id = l.id
+      AND lw.website_id = $websiteId;
+
+      UPDATE locations l
+      SET 
+        created_by_id = (CASE WHEN l.created_by_id = q.record_id THEN $anonymousUserId ELSE l.created_by_id END), 
+        updated_by_id = (CASE WHEN l.updated_by_id = q.record_id THEN $anonymousUserId ELSE l.updated_by_id END)
+      FROM locations_websites lw, work_queue q
+      WHERE (l.created_by_id = q.record_id OR l.updated_by_id = q.record_id) 
+      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND lw.location_id = l.id
+      AND lw.website_id = $websiteId;
+
+      -- For notifications there are 2 statements. 
+      -- This one repoints all notifications once user has no websites left
+      UPDATE notifications n
+      SET user_id = $anonymousUserId
+      FROM work_queue q
+      WHERE n.user_id = q.record_id
+      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account';
+
+      UPDATE people p
+      SET email_address = 'deleted' || p.id || '@anonymous.anonymous'
+      FROM users u
+      JOIN work_queue q on u.id = q.record_id AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      WHERE p.id = u.person_id;
+      
+    ELSE
+    END IF;
+
+    WITH updated AS (
+      UPDATE terms t
+      SET 
+        created_by_id = (CASE WHEN t.created_by_id = q.record_id THEN $anonymousUserId ELSE t.created_by_id END), 
+        updated_by_id = (CASE WHEN t.updated_by_id = q.record_id THEN $anonymousUserId ELSE t.updated_by_id END)
+      FROM termlists_terms tt, termlists tl, work_queue q
+      WHERE (t.created_by_id = q.record_id OR t.updated_by_id = q.record_id) 
+        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND t.id = tt.term_id
+      AND tt.termlist_id = tl.id
+      AND tl.website_id = $websiteId
+      RETURNING tt.id
+    )
+    INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
+
+    WITH updated AS (
+      UPDATE termlists_terms tt
+      SET 
+        created_by_id = (CASE WHEN tt.created_by_id = q.record_id THEN $anonymousUserId ELSE tt.created_by_id END), 
+        updated_by_id = (CASE WHEN tt.updated_by_id = q.record_id THEN $anonymousUserId ELSE tt.updated_by_id END)
+      FROM termlists tl, work_queue q
+      WHERE (tt.created_by_id = q.record_id OR tt.updated_by_id = q.record_id) 
+        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND tt.termlist_id = tl.id
+      AND tl.website_id = $websiteId
+      RETURNING tt.id
+    )
+    INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
+
+    WITH updated AS (
+      UPDATE occurrence_media om
+      SET 
+        created_by_id = (CASE WHEN om.created_by_id = q.record_id THEN $anonymousUserId ELSE om.created_by_id END), 
+        updated_by_id = (CASE WHEN om.updated_by_id = q.record_id THEN $anonymousUserId ELSE om.updated_by_id END)
+      FROM occurrences o, work_queue q
+      WHERE (om.created_by_id = q.record_id OR om.updated_by_id = q.record_id) 
+        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND om.occurrence_id = o.id 
+      AND o.website_id = $websiteId
+      RETURNING om.occurrence_id
+    )
+    INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
+
+    WITH updated AS (
+      UPDATE occurrence_attribute_values oav
+      SET 
+        created_by_id = (CASE WHEN oav.created_by_id = q.record_id THEN $anonymousUserId ELSE oav.created_by_id END), 
+        updated_by_id = (CASE WHEN oav.updated_by_id = q.record_id THEN $anonymousUserId ELSE oav.updated_by_id END)
+      FROM occurrences o, work_queue q
+      WHERE (oav.created_by_id = q.record_id OR oav.updated_by_id = q.record_id) 
+        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND oav.occurrence_id = o.id 
+      AND o.website_id = $websiteId
+      RETURNING oav.occurrence_id
+    )
+    INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
+
+    WITH updated AS (
+      UPDATE occurrences o
+      SET 
+        created_by_id = (CASE WHEN o.created_by_id = q.record_id THEN $anonymousUserId ELSE o.created_by_id END), 
+        updated_by_id = (CASE WHEN o.updated_by_id = q.record_id THEN $anonymousUserId ELSE o.updated_by_id END)
+      FROM work_queue q
+      WHERE (o.created_by_id = q.record_id OR o.updated_by_id = q.record_id) 
+      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND o.website_id = $websiteId
+      RETURNING o.id
+    )
+    INSERT INTO updated_occurrences (changed_record_id) SELECT id FROM updated;
+    
+    WITH updated AS (
+      UPDATE sample_media sm
+      SET 
+        created_by_id = (CASE WHEN sm.created_by_id = q.record_id THEN $anonymousUserId ELSE sm.created_by_id END), 
+        updated_by_id = (CASE WHEN sm.updated_by_id = q.record_id THEN $anonymousUserId ELSE sm.updated_by_id END)
+      FROM samples s, surveys surv, work_queue q
+      WHERE (sm.created_by_id = q.record_id OR sm.updated_by_id = q.record_id) 
+        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND sm.sample_id = s.id 
+      AND surv.id = s.survey_id
+      AND surv.website_id = $websiteId
+      RETURNING sm.sample_id
+    )
+    INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
+    WITH updated AS (
+      UPDATE sample_attribute_values sav
+      SET 
+        created_by_id = (CASE WHEN sav.created_by_id = q.record_id THEN $anonymousUserId ELSE sav.created_by_id END), 
+        updated_by_id = (CASE WHEN sav.updated_by_id = q.record_id THEN $anonymousUserId ELSE sav.updated_by_id END)
+      FROM samples s, surveys surv, work_queue q
+      WHERE (sav.created_by_id = q.record_id OR sav.updated_by_id = q.record_id) 
+        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND sav.sample_id = s.id 
+      AND surv.id = s.survey_id
+      AND surv.website_id = $websiteId
+      RETURNING sav.sample_id
+    )
+    INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
+
+    WITH updated AS (
+      UPDATE samples s
+      SET 
+        created_by_id = (CASE WHEN s.created_by_id = q.record_id THEN $anonymousUserId ELSE s.created_by_id END), 
+        updated_by_id = (CASE WHEN s.updated_by_id = q.record_id THEN $anonymousUserId ELSE s.updated_by_id END)
+      FROM surveys surv, work_queue q
+      WHERE (s.created_by_id = q.record_id OR s.updated_by_id = q.record_id) 
+        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      AND surv.id = s.survey_id
+      AND surv.website_id = $websiteId
+      RETURNING s.id
+    )
+    INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
+
+    UPDATE filters_users fu
+    SET 
+      created_by_id = (CASE WHEN fu.created_by_id = q.record_id THEN $anonymousUserId ELSE fu.created_by_id END), 
+      user_id = (CASE WHEN fu.user_id = q.record_id THEN $anonymousUserId ELSE fu.user_id END)
+    FROM filters f, work_queue q
+    WHERE (fu.created_by_id = q.record_id OR fu.user_id = q.record_id) 
+    AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    AND fu.filter_id = f.id
+    AND f.website_id = $websiteId;
+
+    UPDATE filters f
+    SET 
+      created_by_id = (CASE WHEN f.created_by_id = q.record_id THEN $anonymousUserId ELSE f.created_by_id END), 
+      updated_by_id = (CASE WHEN f.updated_by_id = q.record_id THEN $anonymousUserId ELSE f.updated_by_id END)
+    FROM work_queue q
+    WHERE (f.created_by_id = q.record_id OR f.updated_by_id = q.record_id) 
+    AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    AND f.website_id = $websiteId;
+
+    UPDATE group_pages gp
+    SET 
+      created_by_id = (CASE WHEN gp.created_by_id = q.record_id THEN $anonymousUserId ELSE gp.created_by_id END), 
+      updated_by_id = (CASE WHEN gp.updated_by_id = q.record_id THEN $anonymousUserId ELSE gp.updated_by_id END)
+    FROM groups g, work_queue q
+    WHERE (gp.created_by_id = q.record_id OR gp.updated_by_id = q.record_id) 
+    AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    AND gp.group_id = g.id
+    AND g.website_id = $websiteId;
+
+    UPDATE groups_users gu
+    SET 
+      created_by_id = (CASE WHEN gu.created_by_id = q.record_id THEN $anonymousUserId ELSE gu.created_by_id END), 
+      updated_by_id = (CASE WHEN gu.updated_by_id = q.record_id THEN $anonymousUserId ELSE gu.updated_by_id END),
+      user_id = (CASE WHEN gu.user_id = q.record_id THEN $anonymousUserId ELSE gu.user_id END)
+    FROM groups g, work_queue q
+    WHERE (gu.created_by_id = q.record_id OR gu.updated_by_id = q.record_id) 
+    AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    AND gu.group_id = g.id
+    AND g.website_id = $websiteId;
+
+    UPDATE groups g
+    SET 
+      created_by_id = (CASE WHEN g.created_by_id = q.record_id THEN $anonymousUserId ELSE g.created_by_id END), 
+      updated_by_id = (CASE WHEN g.updated_by_id = q.record_id THEN $anonymousUserId ELSE g.updated_by_id END)
+    FROM work_queue q
+    WHERE (g.created_by_id = q.record_id OR g.updated_by_id = q.record_id) 
+    AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    AND g.website_id = $websiteId;
+
+    -- For notifications there are 2 statements. 
+    -- This one repoints notifications associated with occurrences when they leave a website
+    UPDATE notifications n
+    SET user_id = $anonymousUserId
+    FROM occurrences o, work_queue q
+    WHERE n.user_id = q.record_id
+      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    AND n.linked_id = o.id 
+    AND o.website_id = $websiteId;
+
+    DELETE FROM
+      updated_samples a USING updated_samples b
+    WHERE
+      a.idx < b.idx AND a.changed_record_id = b.changed_record_id;
+
+    DELETE FROM
+      updated_occurrences c USING updated_occurrences d
+    WHERE
+      c.idx < d.idx AND c.changed_record_id = d.changed_record_id;
+
+    DELETE FROM
+      updated_termlists_terms e USING updated_termlists_terms f
+    WHERE
+      e.idx < f.idx AND e.changed_record_id = f.changed_record_id;
+
+    INSERT INTO indicia.work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+    SELECT 'task_cache_builder_update', 'occurrence', changed_record_id, 100, 2, now()
+    FROM updated_occurrences 
+    WHERE changed_record_id NOT IN (
+      SELECT record_id
+      FROM indicia.work_queue
+      WHERE task = 'task_cache_builder_update' AND entity = 'occurrence'
+    );
+
+    INSERT INTO indicia.work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+    SELECT 'task_cache_builder_update', 'sample', changed_record_id, 100, 2, now()
+    FROM updated_samples 
+    WHERE changed_record_id NOT IN (
+      SELECT record_id
+      FROM indicia.work_queue
+      WHERE task = 'task_cache_builder_update' AND entity = 'sample'
+    );
+
+    INSERT INTO indicia.work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+    SELECT 'task_cache_builder_update', 'termlists_term', changed_record_id, 100, 2, now()
+    FROM updated_termlists_terms
+    WHERE changed_record_id NOT IN (
+      SELECT record_id
+      FROM indicia.work_queue
+      WHERE task = 'task_cache_builder_update' AND entity = 'termlists_term'
+    );
+    
+    END
+    $$
+
+    SQL;
+    $db->query($sql);
   }
 
   /**
@@ -91,7 +409,7 @@ class task_indicia_svc_security_delete_user_account {
   }
 
   /**
-   * Send test email to tes user account.
+   * Send test email to test user account.
    *
    * Send email to user containing details of the websites they are still a
    * member of (after they have left their current website).
@@ -100,36 +418,31 @@ class task_indicia_svc_security_delete_user_account {
    *
    * @param object $db
    *   Database connection object.
-   * @param int $userId
+   * @param int $accountDeletionUserId
    *   User ID being deleted.
    * @param int $websiteId
    *   Website ID they are being deleted from.
    */
-  private static function sendWebsitesListEmail($db, $userId, $websiteId) {
-    if (kohana::config('indicia_svc_security.deletion_user_test_id') != 0) {
-      $deletionUserTestId = kohana::config('indicia_svc_security.deletion_user_test_id');
-    }
-    else {
-      $deletionUserTestId = NULL;
-    }
-    if (!empty($deletionUserTestId)) {
-      if (!empty($deletionUserTestId)) {
-        $peopleResults = $db
-          ->select('people.email_address')
-          ->from('people')
-          ->join('users', 'users.person_id', 'people.id')
-          ->where('users.id', $deletionUserTestId)
-          ->limit(1)
-          ->get()->result_array();
-      }
-
+  private static function sendWebsitesListEmail($db, $accountDeletionUserId, $websiteId) {
+    // Get name of website user is leaving
+    $websiteRemovalName = self::getWebsiteRemovalName($db, $websiteId);
+    // List of websites user is still member of
+    $websiteListUserIsStillMemberOf = self::getUserWebsitesList($db, $accountDeletionUserId);
+    // Only send email if they are still a member of some websites
+    if (!empty($websiteListUserIsStillMemberOf)) {
+      $peopleResults = $db
+        ->select('people.email_address')
+        ->from('people')
+        ->join('users', 'users.person_id', 'people.id')
+        ->where('users.id', $accountDeletionUserId)
+        ->limit(1)
+        ->get()->result_array();
       $swift = email::connect();
       $emailSenderAddress = self::setupEmailSenderAddress();
-      $emailSubject = self::setupEmailSubject();
-      $websiteListUserIsStillMemberOf = self::getUserWebsitesList($db, $deletionUserTestId);
-      $emailContent = self::setupEmailContent($db, $websiteListUserIsStillMemberOf);
+      $emailSubject = self::setupEmailSubject($websiteRemovalName);
+      $emailBody = self::setupEmailBody($db, $accountDeletionUserId, $websiteId, $websiteRemovalName,$websiteListUserIsStillMemberOf);
       $recipients = self::setupEmailRecipients($peopleResults[0]->email_address);
-      $message = new Swift_Message($emailSubject, "<html>$emailContent</html>", 'text/html');
+      $message = new Swift_Message($emailSubject, "<html>$emailBody</html>", 'text/html');
       $swift->send($message, $recipients, $emailSenderAddress);
       kohana::log('info', 'Website membership email sent to ' . $peopleResults[0]->email_address);
     }
@@ -154,13 +467,16 @@ class task_indicia_svc_security_delete_user_account {
 
   /**
    * Collect the subject line from configuration.
-   *
+   * 
+   * @param string $websiteRemovalName
+   *   Name of the website the user is deleting themselves from.
    * @return string
    *   String containing the subject line.
    */
-  private static function setupEmailSubject() {
+  private static function setupEmailSubject($websiteRemovalName) {
     try {
-      $emailSubject = kohana::config('indicia_svc_security.email_subject');
+      $emailSubject = str_replace('{website_name}', $websiteRemovalName ,kohana::config('indicia_svc_security.email_subject'));
+
     }
     // Handle config file not present.
     catch (Exception $e) {
@@ -170,32 +486,40 @@ class task_indicia_svc_security_delete_user_account {
   }
 
   /**
-   * Collect the email content.
+   * Collect the email body.
    *
    * @param object $db
    *   Database connection object.
+   * @param int $accountDeletionUserId
+   *   ID of the user whose account is being cancelled.
+   * @param int $websiteId
+   *   ID of the website the user is being removed from.
+   * @param string $websiteRemovalName
+   *   Name of the website the user is deleting themselves from.
    * @param array $websiteListUserIsStillMemberOf
-   *   A list of website names the user is still a member of.
+   *   Array of websites the user is still a member of.
    *
    * @return string
-   *   String containing the email's content.
+   *   String containing the email's body.
    */
-  private static function setupEmailContent($db, array $websiteListUserIsStillMemberOf) {
-
+  private static function setupEmailBody($db, $accountDeletionUserId, $websiteId, $websiteRemovalName, $websiteListUserIsStillMemberOf) {
     try {
-      $emailContent = kohana::config('indicia_svc_security.email_content');
-      if (!empty($websiteListUserIsStillMemberOf)) {
-        $emailContent .= "<div>" . implode("\n<br>", $websiteListUserIsStillMemberOf) . "</div>";
-      }
+      // Get separator for the list of websites the user is still a member of e.g. a line break, or comma separated
+      $websiteListImplosionSeparator = kohana::config('indicia_svc_security.website_list_implosion_separator');
+      // Insert the website name into the body
+      $emailBodyWithWebsiteName = str_replace('{website_name}', $websiteRemovalName ,kohana::config('indicia_svc_security.email_body'));
+      $websitesListHtmlString = implode($websiteListImplosionSeparator, $websiteListUserIsStillMemberOf);
+      // Insert the websites list into the body
+      $finishedEmailBody = "<div>" . str_replace('{websites_list}', $websitesListHtmlString, $emailBodyWithWebsiteName) . "</div>";
     }
     catch (Exception $e) {
-      throw new Exception('Could not send the website membership information email, because the email content configuration was not specified.');
+      throw new Exception('Could not send the website membership information email, because the email body creation failed.');
     }
-    return $emailContent;
+    return $finishedEmailBody;
   }
 
   /**
-   * Collect the email content that contains the details of the user's websites.
+   * Collect the email body that contains the details of the user's websites.
    *
    * @return string
    *   String containing the email address of the recipient.
@@ -204,6 +528,26 @@ class task_indicia_svc_security_delete_user_account {
     $recipients = new Swift_RecipientList();
     $recipients->addTo($emailAddress);
     return $recipients;
+  }
+
+  /**
+   * Collect the name of the website the user is being removed from.
+   *
+   * @param object $db
+   *   Database connection object.
+   * @param int $websiteId
+   *   Website Id the user is being removed from.
+   *
+   * @return string
+   *   Name of the website the user is being removed from.
+   */
+  private static function getWebsiteRemovalName($db, $websiteId) {
+    $websitesResults = $db
+      ->select('websites.title')
+      ->from('websites')
+      ->where(['websites.id' => $websiteId])
+      ->get()->result_array();
+    return $websitesResults[0]->title;
   }
 
   /**
@@ -227,7 +571,7 @@ class task_indicia_svc_security_delete_user_account {
     // Convert result into a one dimensional array.
     $streamlinedUsersWebsitesResults = [];
     foreach ($usersWebsitesResults as $usersWebsitesResult) {
-      $streamlinedUsersWebsitesResults[] = $usersWebsitesResult->title;
+      array_push($streamlinedUsersWebsitesResults, $usersWebsitesResult->title);
     }
     return $streamlinedUsersWebsitesResults;
   }
