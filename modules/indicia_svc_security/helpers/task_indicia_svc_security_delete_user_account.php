@@ -34,7 +34,7 @@
  */
 class task_indicia_svc_security_delete_user_account {
 
-  const BATCH_SIZE = 10;
+  const BATCH_SIZE = 1;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -99,49 +99,57 @@ class task_indicia_svc_security_delete_user_account {
     DELETE FROM updated_termlists_terms;
 
     DELETE FROM users_websites
-    WHERE website_id = $websiteId AND user_id in 
-    (SELECT q.record_id
-    FROM work_queue q
-    WHERE q.entity='user'
-    AND q.task='task_indicia_svc_security_delete_user_account'
-    AND q.claimed_by='$procId');
+    WHERE website_id = $websiteId AND user_id = $userId;
     -- Only repoint some items if no are websites left for the user
     IF (NOT EXISTS (
       select uw.id 
       FROM users_websites uw
-      JOIN work_queue q on uw.user_id = q.record_id 
-      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      WHERE uw.user_id = $userId
     )) THEN 
 
       UPDATE location_media lm
-      SET 
-        created_by_id = (CASE WHEN lm.created_by_id = q.record_id THEN $anonymousUserId ELSE lm.created_by_id END), 
-        updated_by_id = (CASE WHEN lm.updated_by_id = q.record_id THEN $anonymousUserId ELSE lm.updated_by_id END)
-      FROM locations l, locations_websites lw, work_queue q
-      WHERE (lm.created_by_id = q.record_id OR lm.updated_by_id = q.record_id) 
-        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId
+      FROM locations l, locations_websites lw
+      WHERE lm.created_by_id = $userId
+      AND lm.location_id = l.id 
+      AND lw.location_id = l.id
+      AND lw.website_id = $websiteId;
+
+      UPDATE location_media lm
+      SET updated_by_id = $anonymousUserId
+      FROM locations l, locations_websites lw
+      WHERE lm.updated_by_id = $userId
       AND lm.location_id = l.id 
       AND lw.location_id = l.id
       AND lw.website_id = $websiteId;
 
       UPDATE location_attribute_values lav
-      SET 
-        created_by_id = (CASE WHEN lav.created_by_id = q.record_id THEN $anonymousUserId ELSE lav.created_by_id END), 
-        updated_by_id = (CASE WHEN lav.updated_by_id = q.record_id THEN $anonymousUserId ELSE lav.updated_by_id END)
-      FROM locations l, locations_websites lw, work_queue q
-      WHERE (lav.created_by_id = q.record_id OR lav.updated_by_id = q.record_id) 
-      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId 
+      FROM locations l, locations_websites lw
+      WHERE lav.created_by_id = $userId 
+      AND lav.location_id = l.id 
+      AND lw.location_id = l.id
+      AND lw.website_id = $websiteId;
+
+      UPDATE location_attribute_values lav
+      SET updated_by_id = $anonymousUserId 
+      FROM locations l, locations_websites lw
+      WHERE lav.updated_by_id = $userId 
       AND lav.location_id = l.id 
       AND lw.location_id = l.id
       AND lw.website_id = $websiteId;
 
       UPDATE locations l
-      SET 
-        created_by_id = (CASE WHEN l.created_by_id = q.record_id THEN $anonymousUserId ELSE l.created_by_id END), 
-        updated_by_id = (CASE WHEN l.updated_by_id = q.record_id THEN $anonymousUserId ELSE l.updated_by_id END)
-      FROM locations_websites lw, work_queue q
-      WHERE (l.created_by_id = q.record_id OR l.updated_by_id = q.record_id) 
-      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId
+      FROM locations_websites lw
+      WHERE l.created_by_id = $userId
+      AND lw.location_id = l.id
+      AND lw.website_id = $websiteId;
+
+      UPDATE locations l
+      SET updated_by_id = $anonymousUserId
+      FROM locations_websites lw
+      WHERE l.updated_by_id = $userId
       AND lw.location_id = l.id
       AND lw.website_id = $websiteId;
 
@@ -149,27 +157,33 @@ class task_indicia_svc_security_delete_user_account {
       -- This one repoints all notifications once user has no websites left
       UPDATE notifications n
       SET user_id = $anonymousUserId
-      FROM work_queue q
-      WHERE n.user_id = q.record_id
-      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account';
+      WHERE n.user_id = $userId;
 
       UPDATE people p
       SET email_address = 'deleted' || p.id || '@anonymous.anonymous'
       FROM users u
-      JOIN work_queue q on u.id = q.record_id AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
-      WHERE p.id = u.person_id;
+      WHERE p.id = u.person_id AND u.id = $userId;
       
     ELSE
     END IF;
 
     WITH updated AS (
       UPDATE terms t
-      SET 
-        created_by_id = (CASE WHEN t.created_by_id = q.record_id THEN $anonymousUserId ELSE t.created_by_id END), 
-        updated_by_id = (CASE WHEN t.updated_by_id = q.record_id THEN $anonymousUserId ELSE t.updated_by_id END)
-      FROM termlists_terms tt, termlists tl, work_queue q
-      WHERE (t.created_by_id = q.record_id OR t.updated_by_id = q.record_id) 
-        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId
+      FROM termlists_terms tt, termlists tl
+      WHERE t.created_by_id = $userId
+      AND t.id = tt.term_id
+      AND tt.termlist_id = tl.id
+      AND tl.website_id = $websiteId
+      RETURNING tt.id
+    )
+    INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
+
+    WITH updated AS (
+      UPDATE terms t
+      SET updated_by_id = $anonymousUserId
+      FROM termlists_terms tt, termlists tl
+      WHERE t.updated_by_id = $userId 
       AND t.id = tt.term_id
       AND tt.termlist_id = tl.id
       AND tl.website_id = $websiteId
@@ -179,12 +193,20 @@ class task_indicia_svc_security_delete_user_account {
 
     WITH updated AS (
       UPDATE termlists_terms tt
-      SET 
-        created_by_id = (CASE WHEN tt.created_by_id = q.record_id THEN $anonymousUserId ELSE tt.created_by_id END), 
-        updated_by_id = (CASE WHEN tt.updated_by_id = q.record_id THEN $anonymousUserId ELSE tt.updated_by_id END)
-      FROM termlists tl, work_queue q
-      WHERE (tt.created_by_id = q.record_id OR tt.updated_by_id = q.record_id) 
-        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId
+      FROM termlists tl
+      WHERE tt.created_by_id = $userId 
+      AND tt.termlist_id = tl.id
+      AND tl.website_id = $websiteId
+      RETURNING tt.id
+    )
+    INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
+
+    WITH updated AS (
+      UPDATE termlists_terms tt
+      SET updated_by_id = $anonymousUserId
+      FROM termlists tl
+      WHERE tt.updated_by_id = $userId
       AND tt.termlist_id = tl.id
       AND tl.website_id = $websiteId
       RETURNING tt.id
@@ -193,12 +215,20 @@ class task_indicia_svc_security_delete_user_account {
 
     WITH updated AS (
       UPDATE occurrence_media om
-      SET 
-        created_by_id = (CASE WHEN om.created_by_id = q.record_id THEN $anonymousUserId ELSE om.created_by_id END), 
-        updated_by_id = (CASE WHEN om.updated_by_id = q.record_id THEN $anonymousUserId ELSE om.updated_by_id END)
-      FROM occurrences o, work_queue q
-      WHERE (om.created_by_id = q.record_id OR om.updated_by_id = q.record_id) 
-        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId
+      FROM occurrences o
+      WHERE om.created_by_id = $userId
+      AND om.occurrence_id = o.id 
+      AND o.website_id = $websiteId
+      RETURNING om.occurrence_id
+    )
+    INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
+
+    WITH updated AS (
+      UPDATE occurrence_media om
+      SET updated_by_id = $anonymousUserId 
+      FROM occurrences o
+      WHERE om.updated_by_id = $userId
       AND om.occurrence_id = o.id 
       AND o.website_id = $websiteId
       RETURNING om.occurrence_id
@@ -207,12 +237,20 @@ class task_indicia_svc_security_delete_user_account {
 
     WITH updated AS (
       UPDATE occurrence_attribute_values oav
-      SET 
-        created_by_id = (CASE WHEN oav.created_by_id = q.record_id THEN $anonymousUserId ELSE oav.created_by_id END), 
-        updated_by_id = (CASE WHEN oav.updated_by_id = q.record_id THEN $anonymousUserId ELSE oav.updated_by_id END)
-      FROM occurrences o, work_queue q
-      WHERE (oav.created_by_id = q.record_id OR oav.updated_by_id = q.record_id) 
-        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId
+      FROM occurrences o
+      WHERE oav.created_by_id = $userId
+      AND oav.occurrence_id = o.id 
+      AND o.website_id = $websiteId
+      RETURNING oav.occurrence_id
+    )
+    INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
+
+    WITH updated AS (
+      UPDATE occurrence_attribute_values oav
+      SET updated_by_id = $anonymousUserId
+      FROM occurrences o
+      WHERE oav.updated_by_id = $userId
       AND oav.occurrence_id = o.id 
       AND o.website_id = $websiteId
       RETURNING oav.occurrence_id
@@ -221,12 +259,17 @@ class task_indicia_svc_security_delete_user_account {
 
     WITH updated AS (
       UPDATE occurrences o
-      SET 
-        created_by_id = (CASE WHEN o.created_by_id = q.record_id THEN $anonymousUserId ELSE o.created_by_id END), 
-        updated_by_id = (CASE WHEN o.updated_by_id = q.record_id THEN $anonymousUserId ELSE o.updated_by_id END)
-      FROM work_queue q
-      WHERE (o.created_by_id = q.record_id OR o.updated_by_id = q.record_id) 
-      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId
+      WHERE o.created_by_id = $userId
+      AND o.website_id = $websiteId
+      RETURNING o.id
+    )
+    INSERT INTO updated_occurrences (changed_record_id) SELECT id FROM updated;
+
+    WITH updated AS (
+      UPDATE occurrences o
+      SET updated_by_id = $anonymousUserId
+      WHERE o.updated_by_id = $userId
       AND o.website_id = $websiteId
       RETURNING o.id
     )
@@ -234,26 +277,45 @@ class task_indicia_svc_security_delete_user_account {
     
     WITH updated AS (
       UPDATE sample_media sm
-      SET 
-        created_by_id = (CASE WHEN sm.created_by_id = q.record_id THEN $anonymousUserId ELSE sm.created_by_id END), 
-        updated_by_id = (CASE WHEN sm.updated_by_id = q.record_id THEN $anonymousUserId ELSE sm.updated_by_id END)
-      FROM samples s, surveys surv, work_queue q
-      WHERE (sm.created_by_id = q.record_id OR sm.updated_by_id = q.record_id) 
-        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId 
+      FROM samples s, surveys surv
+      WHERE sm.created_by_id = $userId
       AND sm.sample_id = s.id 
       AND surv.id = s.survey_id
       AND surv.website_id = $websiteId
       RETURNING sm.sample_id
     )
     INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
+
+    WITH updated AS (
+      UPDATE sample_media sm
+      SET updated_by_id = $anonymousUserId
+      FROM samples s, surveys surv
+      WHERE sm.updated_by_id = $userId
+      AND sm.sample_id = s.id 
+      AND surv.id = s.survey_id
+      AND surv.website_id = $websiteId
+      RETURNING sm.sample_id
+    )
+    INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
+    
     WITH updated AS (
       UPDATE sample_attribute_values sav
-      SET 
-        created_by_id = (CASE WHEN sav.created_by_id = q.record_id THEN $anonymousUserId ELSE sav.created_by_id END), 
-        updated_by_id = (CASE WHEN sav.updated_by_id = q.record_id THEN $anonymousUserId ELSE sav.updated_by_id END)
-      FROM samples s, surveys surv, work_queue q
-      WHERE (sav.created_by_id = q.record_id OR sav.updated_by_id = q.record_id) 
-        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId 
+      FROM samples s, surveys surv
+      WHERE sav.created_by_id = $userId
+      AND sav.sample_id = s.id 
+      AND surv.id = s.survey_id
+      AND surv.website_id = $websiteId
+      RETURNING sav.sample_id
+    )
+    INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
+
+    WITH updated AS (
+      UPDATE sample_attribute_values sav
+      SET updated_by_id = $anonymousUserId
+      FROM samples s, surveys surv
+      WHERE sav.updated_by_id = $userId
       AND sav.sample_id = s.id 
       AND surv.id = s.survey_id
       AND surv.website_id = $websiteId
@@ -263,12 +325,20 @@ class task_indicia_svc_security_delete_user_account {
 
     WITH updated AS (
       UPDATE samples s
-      SET 
-        created_by_id = (CASE WHEN s.created_by_id = q.record_id THEN $anonymousUserId ELSE s.created_by_id END), 
-        updated_by_id = (CASE WHEN s.updated_by_id = q.record_id THEN $anonymousUserId ELSE s.updated_by_id END)
-      FROM surveys surv, work_queue q
-      WHERE (s.created_by_id = q.record_id OR s.updated_by_id = q.record_id) 
-        AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+      SET created_by_id = $anonymousUserId 
+      FROM surveys surv
+      WHERE s.created_by_id = $userId
+      AND surv.id = s.survey_id
+      AND surv.website_id = $websiteId
+      RETURNING s.id
+    )
+    INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
+
+    WITH updated AS (
+      UPDATE samples s
+      SET updated_by_id = $anonymousUserId
+      FROM surveys surv
+      WHERE s.updated_by_id = $userId
       AND surv.id = s.survey_id
       AND surv.website_id = $websiteId
       RETURNING s.id
@@ -276,61 +346,80 @@ class task_indicia_svc_security_delete_user_account {
     INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
 
     UPDATE filters_users fu
-    SET 
-      created_by_id = (CASE WHEN fu.created_by_id = q.record_id THEN $anonymousUserId ELSE fu.created_by_id END), 
-      user_id = (CASE WHEN fu.user_id = q.record_id THEN $anonymousUserId ELSE fu.user_id END)
-    FROM filters f, work_queue q
-    WHERE (fu.created_by_id = q.record_id OR fu.user_id = q.record_id) 
-    AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    SET created_by_id = $anonymousUserId
+    FROM filters f
+    WHERE fu.created_by_id = $userId
+    AND fu.filter_id = f.id
+    AND f.website_id = $websiteId;
+
+    UPDATE filters_users fu
+    SET user_id = $anonymousUserId
+    FROM filters f
+    WHERE fu.user_id = $userId
     AND fu.filter_id = f.id
     AND f.website_id = $websiteId;
 
     UPDATE filters f
-    SET 
-      created_by_id = (CASE WHEN f.created_by_id = q.record_id THEN $anonymousUserId ELSE f.created_by_id END), 
-      updated_by_id = (CASE WHEN f.updated_by_id = q.record_id THEN $anonymousUserId ELSE f.updated_by_id END)
-    FROM work_queue q
-    WHERE (f.created_by_id = q.record_id OR f.updated_by_id = q.record_id) 
-    AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    SET created_by_id = $anonymousUserId
+    WHERE f.created_by_id = $userId
+    AND f.website_id = $websiteId;
+
+    UPDATE filters f
+    SET updated_by_id = $anonymousUserId
+    WHERE f.updated_by_id = $userId
     AND f.website_id = $websiteId;
 
     UPDATE group_pages gp
-    SET 
-      created_by_id = (CASE WHEN gp.created_by_id = q.record_id THEN $anonymousUserId ELSE gp.created_by_id END), 
-      updated_by_id = (CASE WHEN gp.updated_by_id = q.record_id THEN $anonymousUserId ELSE gp.updated_by_id END)
-    FROM groups g, work_queue q
-    WHERE (gp.created_by_id = q.record_id OR gp.updated_by_id = q.record_id) 
-    AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    SET created_by_id = $anonymousUserId 
+    FROM groups g
+    WHERE gp.created_by_id = $userId
+    AND gp.group_id = g.id
+    AND g.website_id = $websiteId;
+
+    UPDATE group_pages gp
+    SET updated_by_id = $anonymousUserId
+    FROM groups g
+    WHERE gp.updated_by_id = $userId
     AND gp.group_id = g.id
     AND g.website_id = $websiteId;
 
     UPDATE groups_users gu
-    SET 
-      created_by_id = (CASE WHEN gu.created_by_id = q.record_id THEN $anonymousUserId ELSE gu.created_by_id END), 
-      updated_by_id = (CASE WHEN gu.updated_by_id = q.record_id THEN $anonymousUserId ELSE gu.updated_by_id END),
-      user_id = (CASE WHEN gu.user_id = q.record_id THEN $anonymousUserId ELSE gu.user_id END)
-    FROM groups g, work_queue q
-    WHERE (gu.created_by_id = q.record_id OR gu.updated_by_id = q.record_id) 
-    AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    SET created_by_id = $anonymousUserId 
+    FROM groups g
+    WHERE gu.created_by_id = $userId
+    AND gu.group_id = g.id
+    AND g.website_id = $websiteId;
+
+    UPDATE groups_users gu
+    SET updated_by_id = $anonymousUserId
+    FROM groups g
+    WHERE gu.updated_by_id = $userId
+    AND gu.group_id = g.id
+    AND g.website_id = $websiteId;
+
+    UPDATE groups_users gu
+    SET user_id = $anonymousUserId
+    FROM groups g
+    WHERE gu.user_id = $userId
     AND gu.group_id = g.id
     AND g.website_id = $websiteId;
 
     UPDATE groups g
-    SET 
-      created_by_id = (CASE WHEN g.created_by_id = q.record_id THEN $anonymousUserId ELSE g.created_by_id END), 
-      updated_by_id = (CASE WHEN g.updated_by_id = q.record_id THEN $anonymousUserId ELSE g.updated_by_id END)
-    FROM work_queue q
-    WHERE (g.created_by_id = q.record_id OR g.updated_by_id = q.record_id) 
-    AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    SET created_by_id = $anonymousUserId 
+    WHERE g.created_by_id = $userId
+    AND g.website_id = $websiteId;
+
+    UPDATE groups g
+    SET updated_by_id = $anonymousUserId
+    WHERE g.updated_by_id = $userId
     AND g.website_id = $websiteId;
 
     -- For notifications there are 2 statements. 
     -- This one repoints notifications associated with occurrences when they leave a website
     UPDATE notifications n
     SET user_id = $anonymousUserId
-    FROM occurrences o, work_queue q
-    WHERE n.user_id = q.record_id
-      AND q.claimed_by='$procId' AND q.entity='user' AND q.task='task_indicia_svc_security_delete_user_account'
+    FROM occurrences o
+    WHERE n.user_id = $userId
     AND n.linked_id = o.id 
     AND o.website_id = $websiteId;
 
@@ -349,30 +438,30 @@ class task_indicia_svc_security_delete_user_account {
     WHERE
       e.idx < f.idx AND e.changed_record_id = f.changed_record_id;
 
-    INSERT INTO indicia.work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+    INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
     SELECT 'task_cache_builder_update', 'occurrence', changed_record_id, 100, 2, now()
     FROM updated_occurrences 
     WHERE changed_record_id NOT IN (
       SELECT record_id
-      FROM indicia.work_queue
+      FROM work_queue
       WHERE task = 'task_cache_builder_update' AND entity = 'occurrence'
     );
 
-    INSERT INTO indicia.work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+    INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
     SELECT 'task_cache_builder_update', 'sample', changed_record_id, 100, 2, now()
     FROM updated_samples 
     WHERE changed_record_id NOT IN (
       SELECT record_id
-      FROM indicia.work_queue
+      FROM work_queue
       WHERE task = 'task_cache_builder_update' AND entity = 'sample'
     );
 
-    INSERT INTO indicia.work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+    INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
     SELECT 'task_cache_builder_update', 'termlists_term', changed_record_id, 100, 2, now()
     FROM updated_termlists_terms
     WHERE changed_record_id NOT IN (
       SELECT record_id
-      FROM indicia.work_queue
+      FROM work_queue
       WHERE task = 'task_cache_builder_update' AND entity = 'termlists_term'
     );
     
