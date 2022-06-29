@@ -61,5 +61,3 @@ CREATE INDEX fki_groups_users_updated_by_id ON groups_users(updated_by_id);
 CREATE INDEX fki_groups_created_by_id ON groups(created_by_id);
 
 CREATE INDEX fki_groups_updated_by_id ON groups(updated_by_id);
-
-CREATE INDEX ix_people_email_address ON people(email_address);
