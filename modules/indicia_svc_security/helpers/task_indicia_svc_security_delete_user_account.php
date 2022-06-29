@@ -354,6 +354,21 @@ class task_indicia_svc_security_delete_user_account {
   )
   INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
 
+  -- Also anonymise if sample was created by user, but someone else (such as admin) filled in the email address
+  WITH updated AS (
+    UPDATE sample_attribute_values sav
+    SET text_value = 'anonymous'
+    FROM sample_attributes sa, samples s, surveys surv 
+    WHERE s.created_by_id = $userId
+    AND sav.sample_attribute_id = sa.id
+    AND sa.system_function = 'email'
+    AND sav.sample_id = s.id
+    AND surv.id = s.survey_id
+    AND surv.website_id = $websiteId
+    RETURNING sav.sample_id
+  )
+  INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
+
   WITH updated AS (
     UPDATE sample_attribute_values sav
     SET created_by_id = $anonymousUserId
