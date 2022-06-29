@@ -393,6 +393,27 @@ class task_indicia_svc_security_delete_user_account {
   )
   INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
 
+  -- Set recorder_names, but only if there is no attribute holding that information already and the recorder_names is null
+  WITH updated AS (
+    UPDATE samples s
+    SET recorder_names = (CASE WHEN p.first_name IS NOT NULL THEN p.surname || ', ' || p.first_name ELSE p.surname END)
+    FROM surveys surv, users u, people p
+    WHERE s.created_by_id = $userId
+    AND surv.id = s.survey_id
+    AND surv.website_id = $websiteId
+    AND u.id = s.created_by_id
+    AND p.id = u.person_id
+    AND s.recorder_names IS NULL
+    AND s.id NOT IN
+    (SELECT sample_id
+    FROM sample_attribute_values sav 
+    JOIN sample_attributes sa ON sa.id = sav.sample_attribute_id AND sa.system_function = 'full_name' AND sa.deleted = false
+    JOIN sample_attributes_websites saw ON saw.sample_attribute_id = sa.id AND saw.website_id = $websiteId
+    WHERE sav.text_value IS NOT NULL AND sav.deleted = false)
+    RETURNING s.id
+  )
+  INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
+
   WITH updated AS (
     UPDATE samples s
     SET created_by_id = $anonymousUserId
