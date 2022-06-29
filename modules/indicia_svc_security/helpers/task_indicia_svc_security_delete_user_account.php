@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file 
+ * @file
  * Queue worker to delete a user.
  *
  * Indicia, the OPAL Online Recording Toolkit.
@@ -22,7 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Handle when a user deletes their account on a website.
@@ -88,7 +88,7 @@ class task_indicia_svc_security_delete_user_account {
   public static function replaceUserIdWithAnonId($db, $procId, $userId, $websiteId, $anonymousUserId) {
     $sql = <<<SQL
     do $$
-    BEGIN 
+    BEGIN
     -- Need to track updated rows so they can be added to the work_queue
     CREATE TEMP TABLE IF NOT EXISTS updated_occurrences (idx serial PRIMARY KEY, changed_record_id int);
     CREATE TEMP TABLE IF NOT EXISTS updated_samples (idx serial PRIMARY KEY, changed_record_id int);
@@ -102,10 +102,10 @@ class task_indicia_svc_security_delete_user_account {
     WHERE website_id = $websiteId AND user_id = $userId;
     -- Only repoint some items if no are websites left for the user
     IF (NOT EXISTS (
-      select uw.id 
+      select uw.id
       FROM users_websites uw
       WHERE uw.user_id = $userId
-    )) THEN 
+    )) THEN
       -- Anonymise all remaining location related data
       -- once user removes last website
       UPDATE location_media lm
@@ -121,15 +121,15 @@ class task_indicia_svc_security_delete_user_account {
       AND lm.location_id = l.id;
 
       UPDATE location_attribute_values lav
-      SET created_by_id = $anonymousUserId 
+      SET created_by_id = $anonymousUserId
       FROM locations l
-      WHERE lav.created_by_id = $userId 
+      WHERE lav.created_by_id = $userId
       AND lav.location_id = l.id;
 
       UPDATE location_attribute_values lav
-      SET updated_by_id = $anonymousUserId 
+      SET updated_by_id = $anonymousUserId
       FROM locations l
-      WHERE lav.updated_by_id = $userId 
+      WHERE lav.updated_by_id = $userId
       AND lav.location_id = l.id;
 
       UPDATE locations l
@@ -140,7 +140,7 @@ class task_indicia_svc_security_delete_user_account {
       SET updated_by_id = $anonymousUserId
       WHERE l.updated_by_id = $userId;
 
-      -- For notifications there are 2 statements. 
+      -- For notifications there are 2 statements.
       -- This one repoints all notifications once user has no websites left
       UPDATE notifications n
       SET user_id = $anonymousUserId
@@ -150,7 +150,7 @@ class task_indicia_svc_security_delete_user_account {
       SET email_address = 'deleted' || p.id || '@anonymous.anonymous'
       FROM users u
       WHERE p.id = u.person_id AND u.id = $userId;
-      
+
     ELSE
     END IF;
 
@@ -161,7 +161,7 @@ class task_indicia_svc_security_delete_user_account {
     FROM locations l, locations_websites lw
     WHERE l.public = false
     AND lm.created_by_id = $userId
-    AND lm.location_id = l.id 
+    AND lm.location_id = l.id
     AND lw.location_id = l.id
     AND lw.website_id = $websiteId;
 
@@ -170,25 +170,25 @@ class task_indicia_svc_security_delete_user_account {
     FROM locations l, locations_websites lw
     WHERE l.public = false
     AND lm.updated_by_id = $userId
-    AND lm.location_id = l.id 
+    AND lm.location_id = l.id
     AND lw.location_id = l.id
     AND lw.website_id = $websiteId;
 
     UPDATE location_attribute_values lav
-    SET created_by_id = $anonymousUserId 
+    SET created_by_id = $anonymousUserId
     FROM locations l, locations_websites lw
     WHERE l.public = false
-    AND lav.created_by_id = $userId 
-    AND lav.location_id = l.id 
+    AND lav.created_by_id = $userId
+    AND lav.location_id = l.id
     AND lw.location_id = l.id
     AND lw.website_id = $websiteId;
 
     UPDATE location_attribute_values lav
-    SET updated_by_id = $anonymousUserId 
+    SET updated_by_id = $anonymousUserId
     FROM locations l, locations_websites lw
     WHERE l.public = false
-    AND lav.updated_by_id = $userId 
-    AND lav.location_id = l.id 
+    AND lav.updated_by_id = $userId
+    AND lav.location_id = l.id
     AND lw.location_id = l.id
     AND lw.website_id = $websiteId;
 
@@ -224,7 +224,7 @@ class task_indicia_svc_security_delete_user_account {
       UPDATE terms t
       SET updated_by_id = $anonymousUserId
       FROM termlists_terms tt, termlists tl
-      WHERE t.updated_by_id = $userId 
+      WHERE t.updated_by_id = $userId
       AND t.id = tt.term_id
       AND tt.termlist_id = tl.id
       AND tl.website_id = $websiteId
@@ -236,7 +236,7 @@ class task_indicia_svc_security_delete_user_account {
       UPDATE termlists_terms tt
       SET created_by_id = $anonymousUserId
       FROM termlists tl
-      WHERE tt.created_by_id = $userId 
+      WHERE tt.created_by_id = $userId
       AND tt.termlist_id = tl.id
       AND tl.website_id = $websiteId
       RETURNING tt.id
@@ -259,7 +259,7 @@ class task_indicia_svc_security_delete_user_account {
       SET created_by_id = $anonymousUserId
       FROM occurrences o
       WHERE om.created_by_id = $userId
-      AND om.occurrence_id = o.id 
+      AND om.occurrence_id = o.id
       AND o.website_id = $websiteId
       RETURNING om.occurrence_id
     )
@@ -267,10 +267,10 @@ class task_indicia_svc_security_delete_user_account {
 
     WITH updated AS (
       UPDATE occurrence_media om
-      SET updated_by_id = $anonymousUserId 
+      SET updated_by_id = $anonymousUserId
       FROM occurrences o
       WHERE om.updated_by_id = $userId
-      AND om.occurrence_id = o.id 
+      AND om.occurrence_id = o.id
       AND o.website_id = $websiteId
       RETURNING om.occurrence_id
     )
@@ -281,7 +281,7 @@ class task_indicia_svc_security_delete_user_account {
       SET created_by_id = $anonymousUserId
       FROM occurrences o
       WHERE oav.created_by_id = $userId
-      AND oav.occurrence_id = o.id 
+      AND oav.occurrence_id = o.id
       AND o.website_id = $websiteId
       RETURNING oav.occurrence_id
     )
@@ -292,7 +292,7 @@ class task_indicia_svc_security_delete_user_account {
       SET updated_by_id = $anonymousUserId
       FROM occurrences o
       WHERE oav.updated_by_id = $userId
-      AND oav.occurrence_id = o.id 
+      AND oav.occurrence_id = o.id
       AND o.website_id = $websiteId
       RETURNING oav.occurrence_id
     )
@@ -315,13 +315,13 @@ class task_indicia_svc_security_delete_user_account {
       RETURNING o.id
     )
     INSERT INTO updated_occurrences (changed_record_id) SELECT id FROM updated;
-    
+
     WITH updated AS (
       UPDATE sample_media sm
-      SET created_by_id = $anonymousUserId 
+      SET created_by_id = $anonymousUserId
       FROM samples s, surveys surv
       WHERE sm.created_by_id = $userId
-      AND sm.sample_id = s.id 
+      AND sm.sample_id = s.id
       AND surv.id = s.survey_id
       AND surv.website_id = $websiteId
       RETURNING sm.sample_id
@@ -333,19 +333,19 @@ class task_indicia_svc_security_delete_user_account {
       SET updated_by_id = $anonymousUserId
       FROM samples s, surveys surv
       WHERE sm.updated_by_id = $userId
-      AND sm.sample_id = s.id 
+      AND sm.sample_id = s.id
       AND surv.id = s.survey_id
       AND surv.website_id = $websiteId
       RETURNING sm.sample_id
     )
     INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
-    
+
     WITH updated AS (
       UPDATE sample_attribute_values sav
-      SET created_by_id = $anonymousUserId 
+      SET created_by_id = $anonymousUserId
       FROM samples s, surveys surv
       WHERE sav.created_by_id = $userId
-      AND sav.sample_id = s.id 
+      AND sav.sample_id = s.id
       AND surv.id = s.survey_id
       AND surv.website_id = $websiteId
       RETURNING sav.sample_id
@@ -357,7 +357,7 @@ class task_indicia_svc_security_delete_user_account {
       SET updated_by_id = $anonymousUserId
       FROM samples s, surveys surv
       WHERE sav.updated_by_id = $userId
-      AND sav.sample_id = s.id 
+      AND sav.sample_id = s.id
       AND surv.id = s.survey_id
       AND surv.website_id = $websiteId
       RETURNING sav.sample_id
@@ -366,7 +366,7 @@ class task_indicia_svc_security_delete_user_account {
 
     WITH updated AS (
       UPDATE samples s
-      SET created_by_id = $anonymousUserId 
+      SET created_by_id = $anonymousUserId
       FROM surveys surv
       WHERE s.created_by_id = $userId
       AND surv.id = s.survey_id
@@ -411,7 +411,7 @@ class task_indicia_svc_security_delete_user_account {
     AND f.website_id = $websiteId;
 
     UPDATE group_pages gp
-    SET created_by_id = $anonymousUserId 
+    SET created_by_id = $anonymousUserId
     FROM groups g
     WHERE gp.created_by_id = $userId
     AND gp.group_id = g.id
@@ -425,7 +425,7 @@ class task_indicia_svc_security_delete_user_account {
     AND g.website_id = $websiteId;
 
     UPDATE groups_users gu
-    SET created_by_id = $anonymousUserId 
+    SET created_by_id = $anonymousUserId
     FROM groups g
     WHERE gu.created_by_id = $userId
     AND gu.group_id = g.id
@@ -446,7 +446,7 @@ class task_indicia_svc_security_delete_user_account {
     AND g.website_id = $websiteId;
 
     UPDATE groups g
-    SET created_by_id = $anonymousUserId 
+    SET created_by_id = $anonymousUserId
     WHERE g.created_by_id = $userId
     AND g.website_id = $websiteId;
 
@@ -455,13 +455,13 @@ class task_indicia_svc_security_delete_user_account {
     WHERE g.updated_by_id = $userId
     AND g.website_id = $websiteId;
 
-    -- For notifications there are 2 statements. 
+    -- For notifications there are 2 statements.
     -- This one repoints notifications associated with occurrences when they leave a website
     UPDATE notifications n
     SET user_id = $anonymousUserId
     FROM occurrences o
     WHERE n.user_id = $userId
-    AND n.linked_id = o.id 
+    AND n.linked_id = o.id
     AND o.website_id = $websiteId;
 
     DELETE FROM
@@ -481,7 +481,7 @@ class task_indicia_svc_security_delete_user_account {
 
     INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
     SELECT 'task_cache_builder_update', 'occurrence', changed_record_id, 100, 2, now()
-    FROM updated_occurrences 
+    FROM updated_occurrences
     WHERE changed_record_id NOT IN (
       SELECT record_id
       FROM work_queue
@@ -490,7 +490,7 @@ class task_indicia_svc_security_delete_user_account {
 
     INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
     SELECT 'task_cache_builder_update', 'sample', changed_record_id, 100, 2, now()
-    FROM updated_samples 
+    FROM updated_samples
     WHERE changed_record_id NOT IN (
       SELECT record_id
       FROM work_queue
@@ -505,7 +505,7 @@ class task_indicia_svc_security_delete_user_account {
       FROM work_queue
       WHERE task = 'task_cache_builder_update' AND entity = 'termlists_term'
     );
-    
+
     END
     $$
 
@@ -519,7 +519,7 @@ class task_indicia_svc_security_delete_user_account {
    * @param object $db
    *   Database connection object.
    *
-   * @return integer
+   * @return int
    *   User ID of the special anonymous user.
    */
   public static function getAnonymousUserId($db) {
@@ -554,11 +554,11 @@ class task_indicia_svc_security_delete_user_account {
    *   Website ID they are being deleted from.
    */
   private static function sendWebsitesListEmail($db, $accountDeletionUserId, $websiteId) {
-    // Get name of website user is leaving
+    // Get name of website user is leaving.
     $websiteRemovalName = self::getWebsiteRemovalName($db, $websiteId);
-    // List of websites user is still member of
+    // List of websites user is still member of.
     $websiteListUserIsStillMemberOf = self::getUserWebsitesList($db, $accountDeletionUserId);
-    // Only send email if they are still a member of some websites
+    // Only send email if they are still a member of some websites.
     if (!empty($websiteListUserIsStillMemberOf)) {
       $peopleResults = $db
         ->select('people.email_address')
@@ -570,7 +570,7 @@ class task_indicia_svc_security_delete_user_account {
       $swift = email::connect();
       $emailSenderAddress = self::setupEmailSenderAddress();
       $emailSubject = self::setupEmailSubject($websiteRemovalName);
-      $emailBody = self::setupEmailBody($db, $accountDeletionUserId, $websiteId, $websiteRemovalName,$websiteListUserIsStillMemberOf);
+      $emailBody = self::setupEmailBody($websiteRemovalName, $websiteListUserIsStillMemberOf);
       $recipients = self::setupEmailRecipients($peopleResults[0]->email_address);
       $message = new Swift_Message($emailSubject, "<html>$emailBody</html>", 'text/html');
       $swift->send($message, $recipients, $emailSenderAddress);
@@ -597,15 +597,16 @@ class task_indicia_svc_security_delete_user_account {
 
   /**
    * Collect the subject line from configuration.
-   * 
+   *
    * @param string $websiteRemovalName
    *   Name of the website the user is deleting themselves from.
+   *
    * @return string
    *   String containing the subject line.
    */
   private static function setupEmailSubject($websiteRemovalName) {
     try {
-      $emailSubject = str_replace('{website_name}', $websiteRemovalName ,kohana::config('indicia_svc_security.email_subject'));
+      $emailSubject = str_replace('{website_name}', $websiteRemovalName, kohana::config('indicia_svc_security.email_subject'));
 
     }
     // Handle config file not present.
@@ -618,12 +619,6 @@ class task_indicia_svc_security_delete_user_account {
   /**
    * Collect the email body.
    *
-   * @param object $db
-   *   Database connection object.
-   * @param int $accountDeletionUserId
-   *   ID of the user whose account is being cancelled.
-   * @param int $websiteId
-   *   ID of the website the user is being removed from.
    * @param string $websiteRemovalName
    *   Name of the website the user is deleting themselves from.
    * @param array $websiteListUserIsStillMemberOf
@@ -632,14 +627,15 @@ class task_indicia_svc_security_delete_user_account {
    * @return string
    *   String containing the email's body.
    */
-  private static function setupEmailBody($db, $accountDeletionUserId, $websiteId, $websiteRemovalName, $websiteListUserIsStillMemberOf) {
+  private static function setupEmailBody($websiteRemovalName, array $websiteListUserIsStillMemberOf) {
     try {
-      // Get separator for the list of websites the user is still a member of e.g. a line break, or comma separated
+      // Get separator for the list of websites the user is still a member of
+      // e.g. a line break, or comma separated.
       $websiteListImplosionSeparator = kohana::config('indicia_svc_security.website_list_implosion_separator');
-      // Insert the website name into the body
-      $emailBodyWithWebsiteName = str_replace('{website_name}', $websiteRemovalName ,kohana::config('indicia_svc_security.email_body'));
+      // Insert the website name into the body.
+      $emailBodyWithWebsiteName = str_replace('{website_name}', $websiteRemovalName, kohana::config('indicia_svc_security.email_body'));
       $websitesListHtmlString = implode($websiteListImplosionSeparator, $websiteListUserIsStillMemberOf);
-      // Insert the websites list into the body
+      // Insert the websites list into the body.
       $finishedEmailBody = "<div>" . str_replace('{websites_list}', $websitesListHtmlString, $emailBodyWithWebsiteName) . "</div>";
     }
     catch (Exception $e) {
