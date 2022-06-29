@@ -25,18 +25,6 @@
 warehouse::loadHelpers(['data_entry_helper']);
 echo $grid;
 
-/**
- * Function shim.
- */
-function hostsite_get_user_field($field, $default = FALSE) {
-  if ($field === 'indicia_user_id') {
-    return $_SESSION['auth_user']->id;
-  }
-  else {
-    return $default;
-  }
-}
-
 $returnPath = url::site() . "uksi_operation/importer";
 ?>
 <form enctype="multipart/form-data" class="form-inline" method="post" action="<?php echo $returnPath; ?>">
