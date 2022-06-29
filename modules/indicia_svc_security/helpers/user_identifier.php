@@ -241,6 +241,27 @@ SQL;
   }
 
   /**
+   * Create work_queue item to process user deletion.
+   *
+   * @param array $userId
+   *   The ID of the user to delete.
+   * @param int $websiteId
+   *   The Indicia website ID the user is removing their account from.
+   */
+  public static function delete_user($userId, $websiteId) {
+    $q = new WorkQueue();
+    $db = new Database();
+    $q->enqueue($db, [
+      'task' => 'task_indicia_svc_security_delete_user_account',
+      'entity' => 'user',
+      'record_id' => $userId,
+      'params' => json_encode(['website_id' => $websiteId]),
+      'cost_estimate' => 100,
+      'priority' => 3,
+    ]);
+  }
+
+  /**
    * Finds the list of custom attribute values associated whith the person.
    *
    * @return array
