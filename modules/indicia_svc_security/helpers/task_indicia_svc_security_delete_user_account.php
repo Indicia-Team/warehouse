@@ -106,52 +106,39 @@ class task_indicia_svc_security_delete_user_account {
       FROM users_websites uw
       WHERE uw.user_id = $userId
     )) THEN 
-
+      -- Anonymise all remaining location related data
+      -- once user removes last website
       UPDATE location_media lm
       SET created_by_id = $anonymousUserId
-      FROM locations l, locations_websites lw
+      FROM locations l
       WHERE lm.created_by_id = $userId
-      AND lm.location_id = l.id 
-      AND lw.location_id = l.id
-      AND lw.website_id = $websiteId;
+      AND lm.location_id = l.id;
 
       UPDATE location_media lm
       SET updated_by_id = $anonymousUserId
-      FROM locations l, locations_websites lw
+      FROM locations l
       WHERE lm.updated_by_id = $userId
-      AND lm.location_id = l.id 
-      AND lw.location_id = l.id
-      AND lw.website_id = $websiteId;
+      AND lm.location_id = l.id;
 
       UPDATE location_attribute_values lav
       SET created_by_id = $anonymousUserId 
-      FROM locations l, locations_websites lw
+      FROM locations l
       WHERE lav.created_by_id = $userId 
-      AND lav.location_id = l.id 
-      AND lw.location_id = l.id
-      AND lw.website_id = $websiteId;
+      AND lav.location_id = l.id;
 
       UPDATE location_attribute_values lav
       SET updated_by_id = $anonymousUserId 
-      FROM locations l, locations_websites lw
+      FROM locations l
       WHERE lav.updated_by_id = $userId 
-      AND lav.location_id = l.id 
-      AND lw.location_id = l.id
-      AND lw.website_id = $websiteId;
+      AND lav.location_id = l.id;
 
       UPDATE locations l
       SET created_by_id = $anonymousUserId
-      FROM locations_websites lw
-      WHERE l.created_by_id = $userId
-      AND lw.location_id = l.id
-      AND lw.website_id = $websiteId;
+      WHERE l.created_by_id = $userId;
 
       UPDATE locations l
       SET updated_by_id = $anonymousUserId
-      FROM locations_websites lw
-      WHERE l.updated_by_id = $userId
-      AND lw.location_id = l.id
-      AND lw.website_id = $websiteId;
+      WHERE l.updated_by_id = $userId;
 
       -- For notifications there are 2 statements. 
       -- This one repoints all notifications once user has no websites left
@@ -166,6 +153,60 @@ class task_indicia_svc_security_delete_user_account {
       
     ELSE
     END IF;
+
+    -- Anonymise location related data providing it is linked to the
+    -- the website the user is being remove from and the location is not public
+    UPDATE location_media lm
+    SET created_by_id = $anonymousUserId
+    FROM locations l, locations_websites lw
+    WHERE l.public = false
+    AND lm.created_by_id = $userId
+    AND lm.location_id = l.id 
+    AND lw.location_id = l.id
+    AND lw.website_id = $websiteId;
+
+    UPDATE location_media lm
+    SET updated_by_id = $anonymousUserId
+    FROM locations l, locations_websites lw
+    WHERE l.public = false
+    AND lm.updated_by_id = $userId
+    AND lm.location_id = l.id 
+    AND lw.location_id = l.id
+    AND lw.website_id = $websiteId;
+
+    UPDATE location_attribute_values lav
+    SET created_by_id = $anonymousUserId 
+    FROM locations l, locations_websites lw
+    WHERE l.public = false
+    AND lav.created_by_id = $userId 
+    AND lav.location_id = l.id 
+    AND lw.location_id = l.id
+    AND lw.website_id = $websiteId;
+
+    UPDATE location_attribute_values lav
+    SET updated_by_id = $anonymousUserId 
+    FROM locations l, locations_websites lw
+    WHERE l.public = false
+    AND lav.updated_by_id = $userId 
+    AND lav.location_id = l.id 
+    AND lw.location_id = l.id
+    AND lw.website_id = $websiteId;
+
+    UPDATE locations l
+    SET created_by_id = $anonymousUserId
+    FROM locations_websites lw
+    WHERE l.public = false
+    AND l.created_by_id = $userId
+    AND lw.location_id = l.id
+    AND lw.website_id = $websiteId;
+
+    UPDATE locations l
+    SET updated_by_id = $anonymousUserId
+    FROM locations_websites lw
+    WHERE l.public = false
+    AND l.updated_by_id = $userId
+    AND lw.location_id = l.id
+    AND lw.website_id = $websiteId;
 
     WITH updated AS (
       UPDATE terms t
