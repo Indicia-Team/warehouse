@@ -482,6 +482,7 @@ class task_indicia_svc_security_delete_user_account {
   INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
   SELECT 'task_cache_builder_update', 'occurrence', changed_record_id, 100, 2, now()
   FROM updated_occurrences
+  JOIN occurrences o ON o.id=updated_occurrences.changed_record_id AND o.deleted=false
   WHERE changed_record_id NOT IN (
     SELECT record_id
     FROM work_queue
@@ -491,6 +492,7 @@ class task_indicia_svc_security_delete_user_account {
   INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
   SELECT 'task_cache_builder_update', 'sample', changed_record_id, 100, 2, now()
   FROM updated_samples
+  JOIN samples s ON s.id=updated_samples.changed_record_id AND s.deleted=false
   WHERE changed_record_id NOT IN (
     SELECT record_id
     FROM work_queue
@@ -500,6 +502,7 @@ class task_indicia_svc_security_delete_user_account {
   INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
   SELECT 'task_cache_builder_update', 'termlists_term', changed_record_id, 100, 2, now()
   FROM updated_termlists_terms
+  JOIN termlists_terms tlt ON tlt.id=updated_termlists_terms.changed_record_id AND tlt.deleted=false
   WHERE changed_record_id NOT IN (
     SELECT record_id
     FROM work_queue
