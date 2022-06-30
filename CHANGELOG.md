@@ -1,3 +1,8 @@
+
+# Version 8.2.0
+*2022-06-29*
+* Supports anonymisation of data for deleted user accounts.
+
 # Version 8.1.0
 *2022-05-17*
 

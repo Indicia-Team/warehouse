@@ -251,6 +251,11 @@ SQL;
   public static function delete_user($userId, $websiteId) {
     $q = new WorkQueue();
     $db = new Database();
+    // Removal of privileges should be immediate.
+    $db->query("DELETE FROM users_websites WHERE website_id = $websiteId AND user_id = $userId");
+    $cache = Cache::instance();
+    $cacheKey = "website-user-$websiteId-$userId";
+    $cache->delete($cacheKey);
     $q->enqueue($db, [
       'task' => 'task_indicia_svc_security_delete_user_account',
       'entity' => 'user',
