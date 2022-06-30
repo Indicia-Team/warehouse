@@ -990,7 +990,8 @@ KEY;
 
     // Test person email address is anonymised.
     $person = $db->query("SELECT email_address FROM people WHERE id=$personId")->current();
-    $this->assertTrue(preg_match('/@anonymous\.anonymous$/', $person->email_address), 'Person email address not anonymised correctly');
+    $this->assertEquals(1, preg_match('/@anonymous\.anonymous$/', $person->email_address), 'Person email address not anonymised correctly');
+
   }
 
   public function testJwtSamplePostList() {
