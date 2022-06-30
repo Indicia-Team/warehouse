@@ -87,482 +87,498 @@ class task_indicia_svc_security_delete_user_account {
    */
   public static function replaceUserIdWithAnonId($db, $procId, $userId, $websiteId, $anonymousUserId) {
     $sql = <<<SQL
-  do $$
-  BEGIN
-  -- Need to track updated rows so they can be added to the work_queue
-  CREATE TEMP TABLE IF NOT EXISTS updated_occurrences (idx serial PRIMARY KEY, changed_record_id int);
-  CREATE TEMP TABLE IF NOT EXISTS updated_samples (idx serial PRIMARY KEY, changed_record_id int);
-  CREATE TEMP TABLE IF NOT EXISTS updated_termlists_terms (idx serial PRIMARY KEY, changed_record_id int);
+do $$
+BEGIN
+-- Need to track updated rows so they can be added to the work_queue
+CREATE TEMP TABLE IF NOT EXISTS updated_occurrences (idx serial PRIMARY KEY, changed_record_id int);
+CREATE TEMP TABLE IF NOT EXISTS updated_samples (idx serial PRIMARY KEY, changed_record_id int);
+CREATE TEMP TABLE IF NOT EXISTS updated_termlists_terms (idx serial PRIMARY KEY, changed_record_id int);
 
-  DELETE FROM updated_occurrences;
-  DELETE FROM updated_samples;
-  DELETE FROM updated_termlists_terms;
+DELETE FROM updated_occurrences;
+DELETE FROM updated_samples;
+DELETE FROM updated_termlists_terms;
 
-  DELETE FROM users_websites
-  WHERE website_id = $websiteId AND user_id = $userId;
-  -- Only repoint some items if no are websites left for the user
-  IF (NOT EXISTS (
-    select uw.id
-    FROM users_websites uw
-    WHERE uw.user_id = $userId
-  )) THEN
-    -- Anonymise all remaining location related data
-    -- once user removes last website
-    UPDATE location_media lm
-    SET created_by_id = $anonymousUserId
-    FROM locations l
-    WHERE lm.created_by_id = $userId
-    AND lm.location_id = l.id;
-
-    UPDATE location_media lm
-    SET updated_by_id = $anonymousUserId
-    FROM locations l
-    WHERE lm.updated_by_id = $userId
-    AND lm.location_id = l.id;
-
-    UPDATE location_attribute_values lav
-    SET created_by_id = $anonymousUserId
-    FROM locations l
-    WHERE lav.created_by_id = $userId
-    AND lav.location_id = l.id;
-
-    UPDATE location_attribute_values lav
-    SET updated_by_id = $anonymousUserId
-    FROM locations l
-    WHERE lav.updated_by_id = $userId
-    AND lav.location_id = l.id;
-
-    UPDATE locations l
-    SET created_by_id = $anonymousUserId
-    WHERE l.created_by_id = $userId;
-
-    UPDATE locations l
-    SET updated_by_id = $anonymousUserId
-    WHERE l.updated_by_id = $userId;
-
-    -- For notifications there are 2 statements.
-    -- This one repoints all notifications once user has no websites left
-    UPDATE notifications n
-    SET user_id = $anonymousUserId
-    WHERE n.user_id = $userId;
-
-    UPDATE people p
-    SET email_address = 'deleted' || p.id || '@anonymous.anonymous'
-    FROM users u
-    WHERE p.id = u.person_id AND u.id = $userId;
-
-  ELSE
-  END IF;
-
-  -- Anonymise location related data providing it is linked to the
-  -- the website the user is being remove from and the location is not public
+-- Only repoint some items if no are websites left for the user
+IF (NOT EXISTS (
+  select uw.id
+  FROM users_websites uw
+  WHERE uw.user_id = $userId
+)) THEN
+  -- Anonymise all remaining location related data
+  -- once user removes last website
   UPDATE location_media lm
   SET created_by_id = $anonymousUserId
-  FROM locations l, locations_websites lw
-  WHERE l.public = false
-  AND lm.created_by_id = $userId
-  AND lm.location_id = l.id
-  AND lw.location_id = l.id
-  AND lw.website_id = $websiteId;
+  FROM locations l
+  WHERE lm.created_by_id = $userId
+  AND lm.location_id = l.id;
 
   UPDATE location_media lm
   SET updated_by_id = $anonymousUserId
-  FROM locations l, locations_websites lw
-  WHERE l.public = false
-  AND lm.updated_by_id = $userId
-  AND lm.location_id = l.id
-  AND lw.location_id = l.id
-  AND lw.website_id = $websiteId;
+  FROM locations l
+  WHERE lm.updated_by_id = $userId
+  AND lm.location_id = l.id;
 
   UPDATE location_attribute_values lav
   SET created_by_id = $anonymousUserId
-  FROM locations l, locations_websites lw
-  WHERE l.public = false
-  AND lav.created_by_id = $userId
-  AND lav.location_id = l.id
-  AND lw.location_id = l.id
-  AND lw.website_id = $websiteId;
+  FROM locations l
+  WHERE lav.created_by_id = $userId
+  AND lav.location_id = l.id;
 
   UPDATE location_attribute_values lav
   SET updated_by_id = $anonymousUserId
-  FROM locations l, locations_websites lw
-  WHERE l.public = false
-  AND lav.updated_by_id = $userId
-  AND lav.location_id = l.id
-  AND lw.location_id = l.id
-  AND lw.website_id = $websiteId;
+  FROM locations l
+  WHERE lav.updated_by_id = $userId
+  AND lav.location_id = l.id;
 
   UPDATE locations l
   SET created_by_id = $anonymousUserId
-  FROM locations_websites lw
-  WHERE l.public = false
-  AND l.created_by_id = $userId
-  AND lw.location_id = l.id
-  AND lw.website_id = $websiteId;
+  WHERE l.created_by_id = $userId;
 
   UPDATE locations l
   SET updated_by_id = $anonymousUserId
-  FROM locations_websites lw
-  WHERE l.public = false
-  AND l.updated_by_id = $userId
-  AND lw.location_id = l.id
-  AND lw.website_id = $websiteId;
-
-  WITH updated AS (
-    UPDATE terms t
-    SET created_by_id = $anonymousUserId
-    FROM termlists_terms tt, termlists tl
-    WHERE t.created_by_id = $userId
-    AND t.id = tt.term_id
-    AND tt.termlist_id = tl.id
-    AND tl.website_id = $websiteId
-    RETURNING tt.id
-  )
-  INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
-
-  WITH updated AS (
-    UPDATE terms t
-    SET updated_by_id = $anonymousUserId
-    FROM termlists_terms tt, termlists tl
-    WHERE t.updated_by_id = $userId
-    AND t.id = tt.term_id
-    AND tt.termlist_id = tl.id
-    AND tl.website_id = $websiteId
-    RETURNING tt.id
-  )
-  INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
-
-  WITH updated AS (
-    UPDATE termlists_terms tt
-    SET created_by_id = $anonymousUserId
-    FROM termlists tl
-    WHERE tt.created_by_id = $userId
-    AND tt.termlist_id = tl.id
-    AND tl.website_id = $websiteId
-    RETURNING tt.id
-  )
-  INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
-
-  WITH updated AS (
-    UPDATE termlists_terms tt
-    SET updated_by_id = $anonymousUserId
-    FROM termlists tl
-    WHERE tt.updated_by_id = $userId
-    AND tt.termlist_id = tl.id
-    AND tl.website_id = $websiteId
-    RETURNING tt.id
-  )
-  INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
-
-  WITH updated AS (
-    UPDATE occurrence_media om
-    SET created_by_id = $anonymousUserId
-    FROM occurrences o
-    WHERE om.created_by_id = $userId
-    AND om.occurrence_id = o.id
-    AND o.website_id = $websiteId
-    RETURNING om.occurrence_id
-  )
-  INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
-
-  WITH updated AS (
-    UPDATE occurrence_media om
-    SET updated_by_id = $anonymousUserId
-    FROM occurrences o
-    WHERE om.updated_by_id = $userId
-    AND om.occurrence_id = o.id
-    AND o.website_id = $websiteId
-    RETURNING om.occurrence_id
-  )
-  INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
-
-  WITH updated AS (
-    UPDATE occurrence_attribute_values oav
-    SET created_by_id = $anonymousUserId
-    FROM occurrences o
-    WHERE oav.created_by_id = $userId
-    AND oav.occurrence_id = o.id
-    AND o.website_id = $websiteId
-    RETURNING oav.occurrence_id
-  )
-  INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
-
-  WITH updated AS (
-    UPDATE occurrence_attribute_values oav
-    SET updated_by_id = $anonymousUserId
-    FROM occurrences o
-    WHERE oav.updated_by_id = $userId
-    AND oav.occurrence_id = o.id
-    AND o.website_id = $websiteId
-    RETURNING oav.occurrence_id
-  )
-  INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
-
-  WITH updated AS (
-    UPDATE occurrences o
-    SET created_by_id = $anonymousUserId
-    WHERE o.created_by_id = $userId
-    AND o.website_id = $websiteId
-    RETURNING o.id
-  )
-  INSERT INTO updated_occurrences (changed_record_id) SELECT id FROM updated;
-
-  WITH updated AS (
-    UPDATE occurrences o
-    SET updated_by_id = $anonymousUserId
-    WHERE o.updated_by_id = $userId
-    AND o.website_id = $websiteId
-    RETURNING o.id
-  )
-  INSERT INTO updated_occurrences (changed_record_id) SELECT id FROM updated;
-
-  WITH updated AS (
-    UPDATE sample_media sm
-    SET created_by_id = $anonymousUserId
-    FROM samples s, surveys surv
-    WHERE sm.created_by_id = $userId
-    AND sm.sample_id = s.id
-    AND surv.id = s.survey_id
-    AND surv.website_id = $websiteId
-    RETURNING sm.sample_id
-  )
-  INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
-
-  WITH updated AS (
-    UPDATE sample_media sm
-    SET updated_by_id = $anonymousUserId
-    FROM samples s, surveys surv
-    WHERE sm.updated_by_id = $userId
-    AND sm.sample_id = s.id
-    AND surv.id = s.survey_id
-    AND surv.website_id = $websiteId
-    RETURNING sm.sample_id
-  )
-  INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
-
-  WITH updated AS (
-    UPDATE sample_attribute_values sav
-    SET text_value = 'anonymous'
-    FROM sample_attributes sa, samples s, surveys surv 
-    WHERE sav.created_by_id = $userId
-    AND sav.sample_attribute_id = sa.id
-    AND sa.system_function = 'email'
-    AND sav.sample_id = s.id
-    AND surv.id = s.survey_id
-    AND surv.website_id = $websiteId
-    RETURNING sav.sample_id
-  )
-  INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
-
-  -- Also anonymise if sample was created by user, but someone else (such as admin) filled in the email address
-  WITH updated AS (
-    UPDATE sample_attribute_values sav
-    SET text_value = 'anonymous'
-    FROM sample_attributes sa, samples s, surveys surv 
-    WHERE s.created_by_id = $userId
-    AND sav.sample_attribute_id = sa.id
-    AND sa.system_function = 'email'
-    AND sav.sample_id = s.id
-    AND surv.id = s.survey_id
-    AND surv.website_id = $websiteId
-    RETURNING sav.sample_id
-  )
-  INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
-
-  WITH updated AS (
-    UPDATE sample_attribute_values sav
-    SET created_by_id = $anonymousUserId
-    FROM samples s, surveys surv
-    WHERE sav.created_by_id = $userId
-    AND sav.sample_id = s.id
-    AND surv.id = s.survey_id
-    AND surv.website_id = $websiteId
-    RETURNING sav.sample_id
-  )
-  INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
-
-  WITH updated AS (
-    UPDATE sample_attribute_values sav
-    SET updated_by_id = $anonymousUserId
-    FROM samples s, surveys surv
-    WHERE sav.updated_by_id = $userId
-    AND sav.sample_id = s.id
-    AND surv.id = s.survey_id
-    AND surv.website_id = $websiteId
-    RETURNING sav.sample_id
-  )
-  INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
-
-  -- Set recorder_names, but only if there is no attribute holding that information already and the recorder_names is null
-  WITH updated AS (
-    UPDATE samples s
-    SET recorder_names = (CASE WHEN p.first_name IS NOT NULL THEN p.surname || ', ' || p.first_name ELSE p.surname END)
-    FROM surveys surv, users u, people p
-    WHERE s.created_by_id = $userId
-    AND surv.id = s.survey_id
-    AND surv.website_id = $websiteId
-    AND u.id = s.created_by_id
-    AND p.id = u.person_id
-    AND s.recorder_names IS NULL
-    AND s.id NOT IN
-    (SELECT sample_id
-    FROM sample_attribute_values sav 
-    JOIN sample_attributes sa ON sa.id = sav.sample_attribute_id AND sa.system_function = 'full_name' AND sa.deleted = false
-    JOIN sample_attributes_websites saw ON saw.sample_attribute_id = sa.id AND saw.website_id = $websiteId
-    WHERE sav.text_value IS NOT NULL AND sav.deleted = false)
-    RETURNING s.id
-  )
-  INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
-
-  WITH updated AS (
-    UPDATE samples s
-    SET created_by_id = $anonymousUserId
-    FROM surveys surv
-    WHERE s.created_by_id = $userId
-    AND surv.id = s.survey_id
-    AND surv.website_id = $websiteId
-    RETURNING s.id
-  )
-  INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
-
-  WITH updated AS (
-    UPDATE samples s
-    SET updated_by_id = $anonymousUserId
-    FROM surveys surv
-    WHERE s.updated_by_id = $userId
-    AND surv.id = s.survey_id
-    AND surv.website_id = $websiteId
-    RETURNING s.id
-  )
-  INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
-
-  UPDATE filters_users fu
-  SET created_by_id = $anonymousUserId
-  FROM filters f
-  WHERE fu.created_by_id = $userId
-  AND fu.filter_id = f.id
-  AND f.website_id = $websiteId;
-
-  UPDATE filters_users fu
-  SET user_id = $anonymousUserId
-  FROM filters f
-  WHERE fu.user_id = $userId
-  AND fu.filter_id = f.id
-  AND f.website_id = $websiteId;
-
-  UPDATE filters f
-  SET created_by_id = $anonymousUserId
-  WHERE f.created_by_id = $userId
-  AND f.website_id = $websiteId;
-
-  UPDATE filters f
-  SET updated_by_id = $anonymousUserId
-  WHERE f.updated_by_id = $userId
-  AND f.website_id = $websiteId;
-
-  UPDATE group_pages gp
-  SET created_by_id = $anonymousUserId
-  FROM groups g
-  WHERE gp.created_by_id = $userId
-  AND gp.group_id = g.id
-  AND g.website_id = $websiteId;
-
-  UPDATE group_pages gp
-  SET updated_by_id = $anonymousUserId
-  FROM groups g
-  WHERE gp.updated_by_id = $userId
-  AND gp.group_id = g.id
-  AND g.website_id = $websiteId;
-
-  UPDATE groups_users gu
-  SET created_by_id = $anonymousUserId
-  FROM groups g
-  WHERE gu.created_by_id = $userId
-  AND gu.group_id = g.id
-  AND g.website_id = $websiteId;
-
-  UPDATE groups_users gu
-  SET updated_by_id = $anonymousUserId
-  FROM groups g
-  WHERE gu.updated_by_id = $userId
-  AND gu.group_id = g.id
-  AND g.website_id = $websiteId;
-
-  UPDATE groups_users gu
-  SET user_id = $anonymousUserId
-  FROM groups g
-  WHERE gu.user_id = $userId
-  AND gu.group_id = g.id
-  AND g.website_id = $websiteId;
-
-  UPDATE groups g
-  SET created_by_id = $anonymousUserId
-  WHERE g.created_by_id = $userId
-  AND g.website_id = $websiteId;
-
-  UPDATE groups g
-  SET updated_by_id = $anonymousUserId
-  WHERE g.updated_by_id = $userId
-  AND g.website_id = $websiteId;
+  WHERE l.updated_by_id = $userId;
 
   -- For notifications there are 2 statements.
-  -- This one repoints notifications associated with occurrences when they leave a website
+  -- This one repoints all notifications once user has no websites left
   UPDATE notifications n
   SET user_id = $anonymousUserId
+  WHERE n.user_id = $userId;
+
+  -- Before anonymising user, double check that all their samples have definitely had the recorder name copied across
+  WITH updated AS (
+  UPDATE samples s
+  SET recorder_names = (CASE WHEN p.first_name IS NOT NULL THEN p.surname || ', ' || p.first_name ELSE p.surname END)
+  FROM users u, people p
+  WHERE s.created_by_id = $userId
+  AND u.id = s.created_by_id
+  AND p.id = u.person_id
+  AND s.recorder_names IS NULL
+  AND s.id NOT IN
+  (SELECT sample_id
+  FROM sample_attribute_values sav
+  JOIN sample_attributes sa ON sa.id = sav.sample_attribute_id AND sa.system_function = 'full_name' AND sa.deleted = false
+  WHERE sav.text_value IS NOT NULL AND sav.deleted = false)
+  RETURNING s.id
+  )
+  INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
+
+  UPDATE people p
+  SET email_address = 'deleted' || p.id || '@anonymous.anonymous'
+  FROM users u
+  WHERE p.id = u.person_id AND u.id = $userId;
+
+ELSE
+END IF;
+
+-- Anonymise location related data providing it is linked to the
+-- the website the user is being remove from and the location is not public
+UPDATE location_media lm
+SET created_by_id = $anonymousUserId
+FROM locations l, locations_websites lw
+WHERE l.public = false
+AND lm.created_by_id = $userId
+AND lm.location_id = l.id
+AND lw.location_id = l.id
+AND lw.website_id = $websiteId;
+
+UPDATE location_media lm
+SET updated_by_id = $anonymousUserId
+FROM locations l, locations_websites lw
+WHERE l.public = false
+AND lm.updated_by_id = $userId
+AND lm.location_id = l.id
+AND lw.location_id = l.id
+AND lw.website_id = $websiteId;
+
+UPDATE location_attribute_values lav
+SET created_by_id = $anonymousUserId
+FROM locations l, locations_websites lw
+WHERE l.public = false
+AND lav.created_by_id = $userId
+AND lav.location_id = l.id
+AND lw.location_id = l.id
+AND lw.website_id = $websiteId;
+
+UPDATE location_attribute_values lav
+SET updated_by_id = $anonymousUserId
+FROM locations l, locations_websites lw
+WHERE l.public = false
+AND lav.updated_by_id = $userId
+AND lav.location_id = l.id
+AND lw.location_id = l.id
+AND lw.website_id = $websiteId;
+
+UPDATE locations l
+SET created_by_id = $anonymousUserId
+FROM locations_websites lw
+WHERE l.public = false
+AND l.created_by_id = $userId
+AND lw.location_id = l.id
+AND lw.website_id = $websiteId;
+
+UPDATE locations l
+SET updated_by_id = $anonymousUserId
+FROM locations_websites lw
+WHERE l.public = false
+AND l.updated_by_id = $userId
+AND lw.location_id = l.id
+AND lw.website_id = $websiteId;
+
+WITH updated AS (
+  UPDATE terms t
+  SET created_by_id = $anonymousUserId
+  FROM termlists_terms tt, termlists tl
+  WHERE t.created_by_id = $userId
+  AND t.id = tt.term_id
+  AND tt.termlist_id = tl.id
+  AND tl.website_id = $websiteId
+  RETURNING tt.id
+)
+INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
+
+WITH updated AS (
+  UPDATE terms t
+  SET updated_by_id = $anonymousUserId
+  FROM termlists_terms tt, termlists tl
+  WHERE t.updated_by_id = $userId
+  AND t.id = tt.term_id
+  AND tt.termlist_id = tl.id
+  AND tl.website_id = $websiteId
+  RETURNING tt.id
+)
+INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
+
+WITH updated AS (
+  UPDATE termlists_terms tt
+  SET created_by_id = $anonymousUserId
+  FROM termlists tl
+  WHERE tt.created_by_id = $userId
+  AND tt.termlist_id = tl.id
+  AND tl.website_id = $websiteId
+  RETURNING tt.id
+)
+INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
+
+WITH updated AS (
+  UPDATE termlists_terms tt
+  SET updated_by_id = $anonymousUserId
+  FROM termlists tl
+  WHERE tt.updated_by_id = $userId
+  AND tt.termlist_id = tl.id
+  AND tl.website_id = $websiteId
+  RETURNING tt.id
+)
+INSERT INTO updated_termlists_terms (changed_record_id) SELECT id FROM updated;
+
+WITH updated AS (
+  UPDATE occurrence_media om
+  SET created_by_id = $anonymousUserId
   FROM occurrences o
-  WHERE n.user_id = $userId
-  AND n.linked_id = o.id
-  AND o.website_id = $websiteId;
+  WHERE om.created_by_id = $userId
+  AND om.occurrence_id = o.id
+  AND o.website_id = $websiteId
+  RETURNING om.occurrence_id
+)
+INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
 
-  DELETE FROM
-    updated_samples a USING updated_samples b
-  WHERE
-    a.idx < b.idx AND a.changed_record_id = b.changed_record_id;
+WITH updated AS (
+  UPDATE occurrence_media om
+  SET updated_by_id = $anonymousUserId
+  FROM occurrences o
+  WHERE om.updated_by_id = $userId
+  AND om.occurrence_id = o.id
+  AND o.website_id = $websiteId
+  RETURNING om.occurrence_id
+)
+INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
 
-  DELETE FROM
-    updated_occurrences c USING updated_occurrences d
-  WHERE
-    c.idx < d.idx AND c.changed_record_id = d.changed_record_id;
+WITH updated AS (
+  UPDATE occurrence_attribute_values oav
+  SET created_by_id = $anonymousUserId
+  FROM occurrences o
+  WHERE oav.created_by_id = $userId
+  AND oav.occurrence_id = o.id
+  AND o.website_id = $websiteId
+  RETURNING oav.occurrence_id
+)
+INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
 
-  DELETE FROM
-    updated_termlists_terms e USING updated_termlists_terms f
-  WHERE
-    e.idx < f.idx AND e.changed_record_id = f.changed_record_id;
+WITH updated AS (
+  UPDATE occurrence_attribute_values oav
+  SET updated_by_id = $anonymousUserId
+  FROM occurrences o
+  WHERE oav.updated_by_id = $userId
+  AND oav.occurrence_id = o.id
+  AND o.website_id = $websiteId
+  RETURNING oav.occurrence_id
+)
+INSERT INTO updated_occurrences (changed_record_id) SELECT occurrence_id FROM updated;
 
-  INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-  SELECT 'task_cache_builder_update', 'occurrence', changed_record_id, 100, 2, now()
-  FROM updated_occurrences
-  JOIN occurrences o ON o.id=updated_occurrences.changed_record_id AND o.deleted=false
-  WHERE changed_record_id NOT IN (
-    SELECT record_id
-    FROM work_queue
-    WHERE task = 'task_cache_builder_update' AND entity = 'occurrence'
-  );
+WITH updated AS (
+  UPDATE occurrences o
+  SET created_by_id = $anonymousUserId
+  WHERE o.created_by_id = $userId
+  AND o.website_id = $websiteId
+  RETURNING o.id
+)
+INSERT INTO updated_occurrences (changed_record_id) SELECT id FROM updated;
 
-  INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-  SELECT 'task_cache_builder_update', 'sample', changed_record_id, 100, 2, now()
-  FROM updated_samples
-  JOIN samples s ON s.id=updated_samples.changed_record_id AND s.deleted=false
-  WHERE changed_record_id NOT IN (
-    SELECT record_id
-    FROM work_queue
-    WHERE task = 'task_cache_builder_update' AND entity = 'sample'
-  );
+WITH updated AS (
+  UPDATE occurrences o
+  SET updated_by_id = $anonymousUserId
+  WHERE o.updated_by_id = $userId
+  AND o.website_id = $websiteId
+  RETURNING o.id
+)
+INSERT INTO updated_occurrences (changed_record_id) SELECT id FROM updated;
 
-  INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-  SELECT 'task_cache_builder_update', 'termlists_term', changed_record_id, 100, 2, now()
-  FROM updated_termlists_terms
-  JOIN termlists_terms tlt ON tlt.id=updated_termlists_terms.changed_record_id AND tlt.deleted=false
-  WHERE changed_record_id NOT IN (
-    SELECT record_id
-    FROM work_queue
-    WHERE task = 'task_cache_builder_update' AND entity = 'termlists_term'
-  );
+WITH updated AS (
+  UPDATE sample_media sm
+  SET created_by_id = $anonymousUserId
+  FROM samples s, surveys surv
+  WHERE sm.created_by_id = $userId
+  AND sm.sample_id = s.id
+  AND surv.id = s.survey_id
+  AND surv.website_id = $websiteId
+  RETURNING sm.sample_id
+)
+INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
 
-  END
-  $$
+WITH updated AS (
+  UPDATE sample_media sm
+  SET updated_by_id = $anonymousUserId
+  FROM samples s, surveys surv
+  WHERE sm.updated_by_id = $userId
+  AND sm.sample_id = s.id
+  AND surv.id = s.survey_id
+  AND surv.website_id = $websiteId
+  RETURNING sm.sample_id
+)
+INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
 
-  SQL;
+WITH updated AS (
+  UPDATE sample_attribute_values sav
+  SET text_value = 'anonymous'
+  FROM sample_attributes sa, samples s, surveys surv
+  WHERE sav.created_by_id = $userId
+  AND sav.sample_attribute_id = sa.id
+  AND sa.system_function = 'email'
+  AND sav.sample_id = s.id
+  AND surv.id = s.survey_id
+  AND surv.website_id = $websiteId
+  RETURNING sav.sample_id
+)
+INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
+
+-- Also anonymise if sample was created by user, but someone else (such as admin) filled in the email address
+WITH updated AS (
+  UPDATE sample_attribute_values sav
+  SET text_value = 'anonymous'
+  FROM sample_attributes sa, samples s, surveys surv
+  WHERE s.created_by_id = $userId
+  AND sav.sample_attribute_id = sa.id
+  AND sa.system_function = 'email'
+  AND sav.sample_id = s.id
+  AND surv.id = s.survey_id
+  AND surv.website_id = $websiteId
+  RETURNING sav.sample_id
+)
+INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
+
+WITH updated AS (
+  UPDATE sample_attribute_values sav
+  SET created_by_id = $anonymousUserId
+  FROM samples s, surveys surv
+  WHERE sav.created_by_id = $userId
+  AND sav.sample_id = s.id
+  AND surv.id = s.survey_id
+  AND surv.website_id = $websiteId
+  RETURNING sav.sample_id
+)
+INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
+
+WITH updated AS (
+  UPDATE sample_attribute_values sav
+  SET updated_by_id = $anonymousUserId
+  FROM samples s, surveys surv
+  WHERE sav.updated_by_id = $userId
+  AND sav.sample_id = s.id
+  AND surv.id = s.survey_id
+  AND surv.website_id = $websiteId
+  RETURNING sav.sample_id
+)
+INSERT INTO updated_samples (changed_record_id) SELECT sample_id FROM updated;
+
+-- Set recorder_names, but only if there is no attribute holding that information already and the recorder_names is null
+WITH updated AS (
+  UPDATE samples s
+  SET recorder_names = (CASE WHEN p.first_name IS NOT NULL THEN p.surname || ', ' || p.first_name ELSE p.surname END)
+  FROM surveys surv, users u, people p
+  WHERE s.created_by_id = $userId
+  AND surv.id = s.survey_id
+  AND surv.website_id = $websiteId
+  AND u.id = s.created_by_id
+  AND p.id = u.person_id
+  AND s.recorder_names IS NULL
+  AND s.id NOT IN
+  (SELECT sample_id
+  FROM sample_attribute_values sav
+  JOIN sample_attributes sa ON sa.id = sav.sample_attribute_id AND sa.system_function = 'full_name' AND sa.deleted = false
+  JOIN sample_attributes_websites saw ON saw.sample_attribute_id = sa.id AND saw.website_id = $websiteId
+  WHERE sav.text_value IS NOT NULL AND sav.deleted = false)
+  RETURNING s.id
+)
+INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
+
+WITH updated AS (
+  UPDATE samples s
+  SET created_by_id = $anonymousUserId
+  FROM surveys surv
+  WHERE s.created_by_id = $userId
+  AND surv.id = s.survey_id
+  AND surv.website_id = $websiteId
+  RETURNING s.id
+)
+INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
+
+WITH updated AS (
+  UPDATE samples s
+  SET updated_by_id = $anonymousUserId
+  FROM surveys surv
+  WHERE s.updated_by_id = $userId
+  AND surv.id = s.survey_id
+  AND surv.website_id = $websiteId
+  RETURNING s.id
+)
+INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
+
+UPDATE filters_users fu
+SET created_by_id = $anonymousUserId
+FROM filters f
+WHERE fu.created_by_id = $userId
+AND fu.filter_id = f.id
+AND f.website_id = $websiteId;
+
+UPDATE filters_users fu
+SET user_id = $anonymousUserId
+FROM filters f
+WHERE fu.user_id = $userId
+AND fu.filter_id = f.id
+AND f.website_id = $websiteId;
+
+UPDATE filters f
+SET created_by_id = $anonymousUserId
+WHERE f.created_by_id = $userId
+AND f.website_id = $websiteId;
+
+UPDATE filters f
+SET updated_by_id = $anonymousUserId
+WHERE f.updated_by_id = $userId
+AND f.website_id = $websiteId;
+
+UPDATE group_pages gp
+SET created_by_id = $anonymousUserId
+FROM groups g
+WHERE gp.created_by_id = $userId
+AND gp.group_id = g.id
+AND g.website_id = $websiteId;
+
+UPDATE group_pages gp
+SET updated_by_id = $anonymousUserId
+FROM groups g
+WHERE gp.updated_by_id = $userId
+AND gp.group_id = g.id
+AND g.website_id = $websiteId;
+
+UPDATE groups_users gu
+SET created_by_id = $anonymousUserId
+FROM groups g
+WHERE gu.created_by_id = $userId
+AND gu.group_id = g.id
+AND g.website_id = $websiteId;
+
+UPDATE groups_users gu
+SET updated_by_id = $anonymousUserId
+FROM groups g
+WHERE gu.updated_by_id = $userId
+AND gu.group_id = g.id
+AND g.website_id = $websiteId;
+
+UPDATE groups_users gu
+SET user_id = $anonymousUserId
+FROM groups g
+WHERE gu.user_id = $userId
+AND gu.group_id = g.id
+AND g.website_id = $websiteId;
+
+UPDATE groups g
+SET created_by_id = $anonymousUserId
+WHERE g.created_by_id = $userId
+AND g.website_id = $websiteId;
+
+UPDATE groups g
+SET updated_by_id = $anonymousUserId
+WHERE g.updated_by_id = $userId
+AND g.website_id = $websiteId;
+
+-- For notifications there are 2 statements.
+-- This one repoints notifications associated with occurrences when they leave a website
+UPDATE notifications n
+SET user_id = $anonymousUserId
+FROM occurrences o
+WHERE n.user_id = $userId
+AND n.linked_id = o.id
+AND o.website_id = $websiteId;
+
+DELETE FROM
+  updated_samples a USING updated_samples b
+WHERE
+  a.idx < b.idx AND a.changed_record_id = b.changed_record_id;
+
+DELETE FROM
+  updated_occurrences c USING updated_occurrences d
+WHERE
+  c.idx < d.idx AND c.changed_record_id = d.changed_record_id;
+
+DELETE FROM
+  updated_termlists_terms e USING updated_termlists_terms f
+WHERE
+  e.idx < f.idx AND e.changed_record_id = f.changed_record_id;
+
+INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+SELECT 'task_cache_builder_update', 'occurrence', changed_record_id, 100, 2, now()
+FROM updated_occurrences
+JOIN occurrences o ON o.id=updated_occurrences.changed_record_id AND o.deleted=false
+WHERE changed_record_id NOT IN (
+  SELECT record_id
+  FROM work_queue
+  WHERE task = 'task_cache_builder_update' AND entity = 'occurrence'
+);
+
+INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+SELECT 'task_cache_builder_update', 'sample', changed_record_id, 100, 2, now()
+FROM updated_samples
+JOIN samples s ON s.id=updated_samples.changed_record_id AND s.deleted=false
+WHERE changed_record_id NOT IN (
+  SELECT record_id
+  FROM work_queue
+  WHERE task = 'task_cache_builder_update' AND entity = 'sample'
+);
+
+INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+SELECT 'task_cache_builder_update', 'termlists_term', changed_record_id, 100, 2, now()
+FROM updated_termlists_terms
+JOIN termlists_terms tlt ON tlt.id=updated_termlists_terms.changed_record_id AND tlt.deleted=false
+WHERE changed_record_id NOT IN (
+  SELECT record_id
+  FROM work_queue
+  WHERE task = 'task_cache_builder_update' AND entity = 'termlists_term'
+);
+
+END
+$$
+
+SQL;
     $db->query($sql);
   }
 
