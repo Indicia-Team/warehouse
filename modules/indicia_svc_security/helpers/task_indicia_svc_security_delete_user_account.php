@@ -425,7 +425,7 @@ WITH updated AS (
   FROM sample_attribute_values sav
   JOIN sample_attributes sa ON sa.id = sav.sample_attribute_id AND sa.system_function = 'full_name' AND sa.deleted = false
   JOIN sample_attributes_websites saw ON saw.sample_attribute_id = sa.id AND saw.website_id = $websiteId
-  WHERE sav.text_value IS NOT NULL AND sav.deleted = false)
+  WHERE sav.sample_id=s.id AND sav.text_value IS NOT NULL AND sav.deleted = false)
   RETURNING s.id
 )
 INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
