@@ -144,6 +144,24 @@ IF (NOT EXISTS (
   SET user_id = $anonymousUserId
   WHERE n.user_id = $userId;
 
+  -- Before anonymising user, double check that all their samples have definitely had the recorder name copied across
+  WITH updated AS (
+  UPDATE samples s
+  SET recorder_names = (CASE WHEN p.first_name IS NOT NULL THEN p.surname || ', ' || p.first_name ELSE p.surname END)
+  FROM users u, people p
+  WHERE s.created_by_id = $userId
+  AND u.id = s.created_by_id
+  AND p.id = u.person_id
+  AND s.recorder_names IS NULL
+  AND s.id NOT IN
+  (SELECT sample_id
+  FROM sample_attribute_values sav
+  JOIN sample_attributes sa ON sa.id = sav.sample_attribute_id AND sa.system_function = 'full_name' AND sa.deleted = false
+  WHERE sav.text_value IS NOT NULL AND sav.deleted = false)
+  RETURNING s.id
+  )
+  INSERT INTO updated_samples (changed_record_id) SELECT id FROM updated;
+
   UPDATE people p
   SET email_address = 'deleted' || p.id || '@anonymous.anonymous'
   FROM users u
