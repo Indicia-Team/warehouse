@@ -74,8 +74,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
       if (!preg_match('/^\d+$/', $userId) || !preg_match('/^\d+$/', $websiteId)) {
         throw new Exception('Parameters must be valid integers.');
       }
-      $r = user_identifier::delete_user($userId, $websiteId);
-      echo json_encode($r);
+      user_identifier::delete_user($userId, $websiteId);
+      http_response_code(202);
       if (class_exists('request_logging')) {
         request_logging::log('a', 'security', 'delete_user', 'user',
           $websiteId, $userId, $tm);
