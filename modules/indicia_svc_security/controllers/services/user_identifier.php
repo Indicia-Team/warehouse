@@ -75,7 +75,6 @@ class User_Identifier_Controller extends Service_Base_Controller {
         throw new Exception('Parameters must be valid integers.');
       }
       user_identifier::delete_user($userId, $websiteId);
-      http_response_code(202);
       if (class_exists('request_logging')) {
         request_logging::log('a', 'security', 'delete_user', 'user',
           $websiteId, $userId, $tm);
