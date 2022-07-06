@@ -42,10 +42,10 @@ function data_cleaner_alter_menu($menu, $auth) {
  *   List of additional entities to expose via the data services.
  */
 function data_cleaner_extend_data_services() {
-  return array(
-    'verification_rules' => array('readOnly', 'allow_full_access' => 1),
-    'verification_rule_metadata' => array('readOnly', 'allow_full_access' => 1),
-  );
+  return [
+    'verification_rules' => ['readOnly', 'allow_full_access' => 1],
+    'verification_rule_metadata' => ['readOnly', 'allow_full_access' => 1],
+  ];
 }
 
 /**
@@ -57,9 +57,9 @@ function data_cleaner_extend_data_services() {
  *   Metadata.
  */
 function data_cleaner_metadata() {
-  return array(
+  return [
     'requires_occurrences_delta' => TRUE,
-  );
+  ];
 }
 
 /**
@@ -85,7 +85,7 @@ function data_cleaner_scheduled_task($timestamp, $db, $endtime) {
  *   Database connection object.
  */
 function data_cleaner_cleanout_old_messages(array $rules, $db) {
-  $modulesDone = array();
+  $modulesDone = [];
   foreach ($rules as $rule) {
     if (!in_array($rule['plugin'], $modulesDone)) {
       // Mark delete any previous occurrence comments for this plugin for

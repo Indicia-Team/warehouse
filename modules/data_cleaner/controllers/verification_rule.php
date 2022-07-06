@@ -73,7 +73,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
         ->where(array('verification_rule_id' => $this->model->id, 'deleted' => 'f'))
         ->orderby(array('id' => 'ASC'))
         ->get()->result();
-      $outputs = array();
+      $outputs = [];
       foreach ($items as $item) {
         $outputs[] = "$item->key=$item->value";
       }
@@ -94,7 +94,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
         ->where(['verification_rule_id' => $this->model->id, 'deleted' => 'f'])
         ->orderby(['data_group' => 'ASC', 'id' => 'ASC'])
         ->get()->result();
-      $outputs = array();
+      $outputs = [];
       foreach ($items as $item) {
         // Space separate groups of metadata.
         $lastGroup = $lastGroup === NULL ? $item->data_group : $lastGroup;
@@ -130,13 +130,13 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $session = curl_init(kohana::config('data_cleaner.servers'));
     curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($session, CURLOPT_SSL_VERIFYPEER, FALSE);
-    $r = array();
+    $r = [];
     $response = curl_exec($session);
     if (curl_errno($session)) {
       $this->session->set_flash('flash_info', 'The list of verification rule servers could not be retrieved from the internet. ' .
           'More information is available in the server logs.');
       kohana::log('error', 'Error occurred when retrieving list of verification rule servers. ' . curl_error($session));
-      return array();
+      return [];
     }
     foreach (helper_base::explode_lines($response) as $line) {
       $tokens = explode('#', $line);
@@ -179,7 +179,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    * then initiates the actual import.
    */
   private function uploadRuleZip($zipfile) {
-    $ruleFiles = array();
+    $ruleFiles = [];
     $dir = $this->processRuleZipFile($zipfile['tmp_name'], TRUE);
     $dir_iterator = new RecursiveDirectoryIterator($dir);
     $iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
@@ -231,8 +231,8 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     fwrite($cacheHandle, json_encode(array(
       'zipfiles' => $zipfiles,
       'done' => 0,
-      'paths' => array(),
-      'files' => array(),
+      'paths' => [],
+      'files' => [],
     )));
     fclose($cacheHandle);
   }
@@ -255,7 +255,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       'title' => $file['title'],
     );
     // Unzip the file at the path and work out what files it contains.
-    $ruleFiles = array();
+    $ruleFiles = [];
     $dir_iterator = new RecursiveDirectoryIterator("$path[file]/extract");
     $iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
     foreach ($iterator as $file) {
@@ -307,7 +307,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     curl_setopt($session, CURLOPT_HEADER, TRUE);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($session, CURLOPT_SSL_VERIFYPEER, FALSE);
-    $files = array();
+    $files = [];
     $response = curl_exec($session);
     if (curl_errno($session)) {
       kohana::log('error', 'cUrl error : ' . curl_errno($session));
@@ -408,7 +408,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $cacheData = fread($cacheHandle, 10000000);
     fclose($cacheHandle);
     $cacheArr = json_decode($cacheData, TRUE);
-    $response = array('files' => array(), 'errors' => array());
+    $response = array('files' => [], 'errors' => []);
     // Do whatever we can get done in 10 seconds.
     while (time() < $start + 10 && $totaldone < count($cacheArr['files'])) {
       try {
@@ -604,7 +604,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
           fgetcsv($handle, 1000, ",");
         }
         $obj = $cache->get(basename($_GET['uploaded_csv']) . 'metadata');
-        $errors = array();
+        $errors = [];
         while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit === FALSE || $count < $limit)) {
           $line = implode('', $data);
           // Skip blank lines.
@@ -664,14 +664,14 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    *   Structured array defining the rule
    */
   private function parseCsvRow(array $headings, array $data) {
-    $r = array();
+    $r = [];
     foreach ($data as $idx => $value) {
       $tokens = explode(':', $headings[$idx]);
       // Skip columns that are not correct format as assumed to be irrelevant.
       if (count($tokens) === 2) {
         // Store a new section heading.
         if (!isset($r[$tokens[0]])) {
-          $r[$tokens[0]] = array();
+          $r[$tokens[0]] = [];
         }
         $r[$tokens[0]][$tokens[1]] = $value;
       }
