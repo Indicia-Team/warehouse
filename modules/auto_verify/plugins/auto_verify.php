@@ -19,30 +19,33 @@
  */
 
 /**
- * Returns plugin metadata.
+ * Returns plugin metadata so the task is always run.
  *
- * Identifies that the plugin uses the occdelta table to identify changes.
+ * Because updated_on doesn't always get changed to reflect when a record is
+ * ready for verification (e.g. if data_cleaner_result set), so we use tracking
+ * to scan instead.
  *
  * @return array
  *   Metadata.
  */
 function auto_verify_metadata() {
-  return array(
-    'requires_occurrences_delta' => TRUE,
+  return [
     'always_run' => TRUE,
-  );
+  ];
 }
 
 /**
- * Hook into the task scheduler. When run, the system checks the
- * cache_occurrences_functional table for records where the data cleaner has
- * marked the record as data_cleaner_result to true, record_status="C", the system
- * then sets the record to verified automatically (subject to taxon restriction
- * tests descrbed below).
+ * Hook into the task scheduler.
+ *
+ * When run, the system checks the cache_occurrences_functional table for
+ * records where the data cleaner has marked the record as data_cleaner_result
+ * to true, record_status="C", the system then sets the record to verified
+ * automatically (subject to taxon restriction tests descrbed below).
+ *
  * If the survey associated with the record has a value in its
  * auto_accept_taxa_filters field, then the taxon_meaning_id associated with
- * the record has to be the same as, or a decendent of, one of the
- * taxa stored in the auto_accept_taxa_filters to qualify for auto verification.
+ * the record has to be the same as, or a decendent of, one of the taxa stored
+ * in the auto_accept_taxa_filters to qualify for auto verification.
  *
  * @param string $last_run_date
  *   Date last run, or null if never run.
@@ -68,8 +71,8 @@ function auto_verify_scheduled_task($last_run_date, $db) {
 
   $maxRecordsNumber = kohana::config('auto_verify.max_num_records_to_process_at_once', FALSE, FALSE);
   $maxRecordsNumber = $maxRecordsNumber ? $maxRecordsNumber : 1000;
-
   $mode = variable::get('auto_verify_mode', 'initial');
+  $maxTracking = $db->query('SELECT max(tracking) FROM cache_occurrences_functional')->current()->max;
   if ($mode === 'initial') {
     // Use ID from last scan or config setting if starting from scratch.
     $startId = variable::get(
@@ -87,34 +90,10 @@ LIMIT $maxRecordsNumber
 SQL;
   }
   else {
-    // Use last run date to find lowest tracking ID since the last run. If
-    // based just on updated_on we would miss other changes (e.g. data cleaner
-    // result being set to true).
-    // Note this script uses a temp table to ensure index on updated_on used
-    // rather than on tracking.
-    $sql = <<<SQL
-DROP TABLE IF EXISTS tracking_values;
-
-SELECT tracking
-INTO TEMPORARY tracking_values
-FROM cache_occurrences_functional WHERE updated_on>='$last_run_date';
-
-SELECT min(tracking) as min_tracking FROM tracking_values;
-SQL;
-    $minTracking = $db
-      ->query($sql)
-      ->current()
-      ->min_tracking;
-
-    if (empty($minTracking)) {
-      echo "0 occurrence records have been automatically verified.<br/>"; 
-      return;
-    }
-    else {
-      $qryEnd = "AND delta.tracking>=$minTracking";
-    }
+    $minTracking = variable::get('auto_verify_last_tracking', 0, FALSE);
+    $qryEnd = "AND delta.tracking BETWEEN $minTracking AND $maxTracking";
   }
-  
+
   $verificationTime = gmdate("Y\/m\/d H:i:s");
   $query = <<<SQL
 DROP TABLE IF EXISTS records_to_auto_verify;
@@ -173,9 +152,13 @@ SQL;
       // Done, so switch mode.
       variable::set('auto_verify_mode', 'updates');
       variable::delete('auto_verify_start_at_id');
+      variable::set('auto_verify_last_tracking', $maxTracking);
     }
     else {
       variable::set('auto_verify_start_at_id', $stats->max + 1);
     }
+  }
+  else {
+    variable::set('auto_verify_last_tracking', $maxTracking);
   }
 }
