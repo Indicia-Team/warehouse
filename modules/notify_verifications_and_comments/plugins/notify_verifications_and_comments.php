@@ -32,18 +32,20 @@
  * Runs a query to find all comments and verification status updates that need
  * to be notified back to the recorder of a record.
  *
- * @param string $last_run_date
+ * @param string $lastRunDate
  *   Date & time that this module was last run.
  * @param object $db
  *   Database connection.
+ * @param string $maxTime
+ *   Date & time to select records up to for this processing batch.
  */
-function notify_verifications_and_comments_scheduled_task($last_run_date, $db) {
-  if (!$last_run_date) {
+function notify_verifications_and_comments_scheduled_task($lastRunDate, $db, $maxTime) {
+  if (!$lastRunDate) {
     // First run, so get all records changed in last day. Query will
     // automatically gradually pick up the rest.
-    $last_run_date = date('Y-m-d', time() - 60 * 60 * 24 * 50);
+    $lastRunDate = date('Y-m-d', time() - 60 * 60 * 24 * 50);
   }
-  $notifications = postgreSQL::selectVerificationAndCommentNotifications($last_run_date, $db);
+  $notifications = postgreSQL::selectVerificationAndCommentNotifications($lastRunDate, $maxTime, $db);
   foreach ($notifications as $notification) {
     $vd = [
       $notification->date_start,
@@ -102,7 +104,7 @@ Cleaner</a>. This does not mean the record is incorrect or is being disputed; th
 against the record that might provide useful information for recording and verification purposes.
 TXT;
       }
-      elseif ($notification->verified_on > $last_run_date && $notification->record_status !== 'I'
+      elseif ($notification->verified_on > $lastRunDate && $notification->record_status !== 'I'
           && $notification->record_status !== 'T' && $notification->record_status !== 'C') {
         if ($notification->record_owner === 't') {
           $comment = "Your record of $notification->taxon at $notification->public_entered_sref on $date was examined by an expert.";
