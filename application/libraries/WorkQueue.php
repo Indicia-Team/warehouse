@@ -22,13 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
- defined('SYSPATH') or die('No direct script access.');
-
- // For PHP 5, map throwable to exception so it doesn't cause errors.
- // Can be removed once PHP 5 support dropped.
- if (!interface_exists('Throwable')) {
-   class Throwable extends Exception {}
- }
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Library class to provide task queue processing functions.
@@ -70,10 +64,10 @@ class WorkQueue {
     $setValues = [];
     $existsCheckSql =
       'task=' . pg_escape_literal($fields['task']) .
-      'AND entity' . (empty($fields['entity']) ? ' IS NULL' : '=' . pg_escape_literal($fields['entity'])) .
-      'AND record_id' . (empty($fields['record_id']) ? ' IS NULL' : '=' . pg_escape_literal($fields['record_id'])) .
+      ' AND entity' . (empty($fields['entity']) ? ' IS NULL' : '=' . pg_escape_literal($fields['entity'])) .
+      ' AND record_id' . (empty($fields['record_id']) ? ' IS NULL' : '=' . pg_escape_literal($fields['record_id'])) .
       // Use JSONB to compare as valid in pgSQL.
-      'AND params' . (empty($fields['params']) ? ' IS NULL' : ('::jsonb=' . pg_escape_literal($fields['params']) . '::jsonb'));
+      ' AND params' . (empty($fields['params']) ? ' IS NULL' : ('::jsonb=' . pg_escape_literal($fields['params']) . '::jsonb'));
     foreach ($fields as $value) {
       $setValues[] = pg_escape_literal($value);
     }
@@ -115,12 +109,12 @@ SQL;
         // doing in the work_queue table and know they are ours.
         $procId = uniqid('', TRUE);
         try {
-          // Claim an appropriate number of records to do in a batch, depending on
-          // the helper class.
           if (!class_exists($helper)) {
             $this->failClassMissing($taskType);
             $errorCount++;
           }
+          // Claim an appropriate number of records to do in a batch, depending
+          // on the helper class.
           else {
             $claimedCount = $this->claim($taskType, $helper::BATCH_SIZE, $procId);
             if ($claimedCount === 0) {
@@ -254,26 +248,24 @@ SQL;
     // Use an atomic query to ensure we only claim tasks where they are not
     // already claimed.
     $sql = <<<SQL
-UPDATE work_queue
-SET claimed_by='$procId', claimed_on=now()
-WHERE id IN (
-  SELECT id FROM work_queue
-  WHERE claimed_by IS NULL
-  AND error_detail IS NULL
-  AND task='$taskType->task'
-  AND COALESCE(entity, '')='$taskType->entity'
-  ORDER BY priority, cost_estimate, id
-  LIMIT $batchSize
-);
+WITH rows AS (
+  UPDATE work_queue
+  SET claimed_by='$procId', claimed_on=now()
+  WHERE id IN (
+    SELECT id FROM work_queue
+    WHERE claimed_by IS NULL
+    AND error_detail IS NULL
+    AND task='$taskType->task'
+    AND COALESCE(entity, '')='$taskType->entity'
+    ORDER BY priority, cost_estimate, id
+    LIMIT $batchSize
+  )
+  AND claimed_by IS NULL
+  RETURNING 1
+)
+SELECT count(*) FROM rows;
 SQL;
-    $this->db->query($sql);
-    // Now return the count we actually claimed.
-    $sql = <<<SQL
-SELECT COUNT(id) FROM work_queue
-WHERE claimed_by='$procId'
-AND task='$taskType->task'
-AND COALESCE(entity, '')='$taskType->entity'
-SQL;
+    // Run query and return count claimed.
     return $this->db->query($sql)->current()->count;
   }
 
@@ -300,8 +292,10 @@ SQL;
    *   Task type database row object, defining the task and entity to process.
    * @param string $procId
    *   Unique ID of this worker process.
+   * @param Exception $e
+   *   Exception object.
    */
-  private function fail($taskType, $procId, $e) {
+  private function fail($taskType, $procId, Exception $e) {
     $this->db->update('work_queue', [
       'error_detail' => $e->__toString(),
     ], [
