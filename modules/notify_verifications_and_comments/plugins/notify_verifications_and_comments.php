@@ -34,23 +34,22 @@
  *
  * @param string $last_run_date
  *   Date & time that this module was last run.
- *
- * @throws \Kohana_Database_Exception
+ * @param object $db
+ *   Database connection.
  */
-function notify_verifications_and_comments_scheduled_task($last_run_date) {
+function notify_verifications_and_comments_scheduled_task($last_run_date, $db) {
   if (!$last_run_date) {
     // First run, so get all records changed in last day. Query will
     // automatically gradually pick up the rest.
     $last_run_date = date('Y-m-d', time() - 60 * 60 * 24 * 50);
   }
-  $db = new Database();
   $notifications = postgreSQL::selectVerificationAndCommentNotifications($last_run_date, $db);
   foreach ($notifications as $notification) {
-    $vd = array(
+    $vd = [
       $notification->date_start,
       $notification->date_end,
       $notification->date_type,
-    );
+    ];
     $date = vague_date::vague_date_to_string($vd);
     if (empty($notification->comment)) {
       switch ($notification->record_status . (empty($notification->record_substatus)
@@ -122,10 +121,10 @@ TXT;
       }
       $comment .= "<br/><em>$notification->comment</em>";
     }
-    $theNotificationToInsert = array(
+    $theNotificationToInsert = [
       'source' => 'Verifications and comments',
       'source_type' => $notification->source_type,
-      'data' => json_encode(array(
+      'data' => json_encode([
         'username' => $notification->username,
         'occurrence_id' => $notification->id,
         'comment' => $comment,
@@ -136,14 +135,14 @@ TXT;
         'record_status' => $notification->record_status,
         'record_substatus' => $notification->record_substatus,
         'updated_on' => $notification->updated_on,
-      )),
+      ]),
       'linked_id' => $notification->id,
       'user_id' => $notification->notify_user_id,
       // Use digest mode the user selected for this notification, or their
       // default if not specific.
       'digest_mode' => 'N',
       'source_detail' => $notification->source_detail,
-    );
+    ];
     $db->insert('notifications', $theNotificationToInsert);
   }
   echo count($notifications) . ' notifications generated<br/>';
