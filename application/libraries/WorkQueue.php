@@ -248,26 +248,24 @@ SQL;
     // Use an atomic query to ensure we only claim tasks where they are not
     // already claimed.
     $sql = <<<SQL
-UPDATE work_queue
-SET claimed_by='$procId', claimed_on=now()
-WHERE id IN (
-  SELECT id FROM work_queue
-  WHERE claimed_by IS NULL
-  AND error_detail IS NULL
-  AND task='$taskType->task'
-  AND COALESCE(entity, '')='$taskType->entity'
-  ORDER BY priority, cost_estimate, id
-  LIMIT $batchSize
+WITH rows AS (
+  UPDATE work_queue
+  SET claimed_by='$procId', claimed_on=now()
+  WHERE id IN (
+    SELECT id FROM work_queue
+    WHERE claimed_by IS NULL
+    AND error_detail IS NULL
+    AND task='$taskType->task'
+    AND COALESCE(entity, '')='$taskType->entity'
+    ORDER BY priority, cost_estimate, id
+    LIMIT $batchSize
+  )
+  AND claimed_by IS NULL
+  RETURNING 1
 )
+SELECT count(*) FROM rows;
 SQL;
-    $this->db->query($sql);
-    // Now return the count we actually claimed.
-    $sql = <<<SQL
-SELECT COUNT(id) FROM work_queue
-WHERE claimed_by='$procId'
-AND task='$taskType->task'
-AND COALESCE(entity, '')='$taskType->entity'
-SQL;
+    // Run query and return count claimed.
     return $this->db->query($sql)->current()->count;
   }
 
