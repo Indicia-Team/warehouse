@@ -22,13 +22,20 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-/*
- * Scheduled task for generating species alerts, scans occdelta for any new occurrences matching species alert records and then
- * generates a notification for each match
+/**
+ * Scheduled task for generating species alerts.
+ *
+ * Scans occdelta for any new occurrences matching species alert records and
+ * then generates a notification for each match.
+ *
+ * @param string $lastRunDate
+ *   Date & time that this module was last run.
+ * @param object $db
+ *   Database connection.
  */
-function species_alerts_scheduled_task($last_run_date, $db) {
+function species_alerts_scheduled_task($lastRunDate, $db) {
   // Additional time allowed for the spatial indexing to catch up. If just
-  // based on last_run_date, we'd miss records that get scanned before spatial
+  // based on lastRunDate, we'd miss records that get scanned before spatial
   // indexing.
   $extraTimeScanned = '2 days';
   // Get all new occurrences from the database that are either new occurrences
@@ -79,11 +86,11 @@ LEFT JOIN notifications n_verify ON n_verify.user_id=sa.user_id AND n_verify.lin
   AND n_verify.data LIKE '%"record_status":"V"%' and n_verify.data like '%"taxon":"' || cttl.taxon || '"%'
 WHERE delta.training='f' AND delta.confidential='f'
 AND (
-  (n_create.id IS NULL AND sa.alert_on_entry='t' AND delta.created_on> TO_TIMESTAMP('$last_run_date', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval)
-  OR (n_verify.id IS NULL AND sa.alert_on_verify='t' AND delta.record_status='V' AND delta.verified_on > TO_TIMESTAMP('$last_run_date', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval)
+  (n_create.id IS NULL AND sa.alert_on_entry='t' AND delta.created_on> TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval)
+  OR (n_verify.id IS NULL AND sa.alert_on_verify='t' AND delta.record_status='V' AND delta.verified_on > TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval)
 )
 -- Following just to allow index to be used.
-AND delta.updated_on> TO_TIMESTAMP('$last_run_date', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval
+AND delta.updated_on> TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval
 GROUP BY delta.id,
   cttl.taxon,
   delta.record_status,
@@ -103,10 +110,16 @@ SQL;
   }
 }
 
-/*
- * Create a notification for each new/verified occurrence that matches an item in the species_alerts table
+/**
+ * Create notification records.
+ *
+ * Create a notification for each new/verified occurrence that matches an item
+ * in the species_alerts table.
+ *
+ * @param array $newOccDataForSpeciesAlert
+ *   List of occurrence information to notify for.
  */
-function species_alerts_create_notifications($newOccDataForSpeciesAlert) {
+function species_alerts_create_notifications(array $newOccDataForSpeciesAlert) {
   $notificationCounter = 0;
   // For any new occurrence record which has a matching species alert record,
   // we need to generate a notification for the user.
@@ -132,7 +145,7 @@ function species_alerts_create_notifications($newOccDataForSpeciesAlert) {
 }
 
 /**
- * Creates a single notification
+ * Creates a single notification.
  */
 function species_alerts_create_notification($speciesAlertOccurrenceData, $action) {
   $sref = $speciesAlertOccurrenceData['entered_sref'];
@@ -143,7 +156,8 @@ function species_alerts_create_notification($speciesAlertOccurrenceData, $action
     date("Y\/m\/d", strtotime($speciesAlertOccurrenceData['created_on'])) . " has been $action.<br\/>";
   try {
     $from = kohana::config('species_alerts.from');
-  } catch (Exception $e) {
+  }
+  catch (Exception $e) {
     $from = 'system';
   }
   $notificationObj = ORM::factory('notification');
@@ -155,7 +169,7 @@ function species_alerts_create_notification($speciesAlertOccurrenceData, $action
   $notificationObj->linked_id = $speciesAlertOccurrenceData['occurrence_id'];
   $notificationObj->data =
     json_encode(
-      array(
+      [
         'username' => $from,
         'occurrence_id' => $speciesAlertOccurrenceData['occurrence_id'],
         'comment' => $commentText,
@@ -164,23 +178,20 @@ function species_alerts_create_notification($speciesAlertOccurrenceData, $action
         'entered_sref' => $speciesAlertOccurrenceData['entered_sref'],
         'auto_generated' => 't',
         'record_status' => $speciesAlertOccurrenceData['record_status'],
-        'updated on' => date("Y-m-d H:i:s", strtotime($speciesAlertOccurrenceData['updated_on']))
-      )
+        'updated on' => date("Y-m-d H:i:s", strtotime($speciesAlertOccurrenceData['updated_on'])),
+      ]
     );
   $notificationObj->save();
 }
 
-/*
- * Tell the system that we need the occdelta table to find out which occurrences have been created/changed recently.
+/**
+ * Plugin metadata for allowing access to species_alerts table.
+ *
+ * @return array
+ *   Metadata.
  */
-/*function species_alerts_metadata() {
-  return array(
-    'requires_occurrences_delta'=>TRUE
-  );
-}*/
-
 function species_alerts_extend_data_services() {
-  return array(
-    'species_alerts'=>array()
-  );
+  return [
+    'species_alerts' => [],
+  ];
 }
