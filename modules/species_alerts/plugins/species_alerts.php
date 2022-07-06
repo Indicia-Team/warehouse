@@ -32,8 +32,10 @@
  *   Date & time that this module was last run.
  * @param object $db
  *   Database connection.
+ * @param string $maxTime
+ *   Date & time to select records up to for this processing batch.
  */
-function species_alerts_scheduled_task($lastRunDate, $db) {
+function species_alerts_scheduled_task($lastRunDate, $db, $maxTime) {
   // Additional time allowed for the spatial indexing to catch up. If just
   // based on lastRunDate, we'd miss records that get scanned before spatial
   // indexing.
@@ -86,11 +88,20 @@ LEFT JOIN notifications n_verify ON n_verify.user_id=sa.user_id AND n_verify.lin
   AND n_verify.data LIKE '%"record_status":"V"%' and n_verify.data like '%"taxon":"' || cttl.taxon || '"%'
 WHERE delta.training='f' AND delta.confidential='f'
 AND (
-  (n_create.id IS NULL AND sa.alert_on_entry='t' AND delta.created_on> TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval)
-  OR (n_verify.id IS NULL AND sa.alert_on_verify='t' AND delta.record_status='V' AND delta.verified_on > TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval)
+  (
+    n_create.id IS NULL
+    AND sa.alert_on_entry='t'
+    AND delta.created_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
+  )
+  OR (
+    n_verify.id IS NULL
+    AND sa.alert_on_verify='t'
+    AND delta.record_status='V'
+    AND delta.verified_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
+  )
 )
 -- Following just to allow index to be used.
-AND delta.updated_on> TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval
+AND delta.updated_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
 GROUP BY delta.id,
   cttl.taxon,
   delta.record_status,
@@ -101,6 +112,7 @@ GROUP BY delta.id,
   sa.user_id,
   u.username;
 SQL;
+
   $newOccDataForSpeciesAlert = $db->query($qry)->result_array(FALSE);
   if (!empty($newOccDataForSpeciesAlert)) {
     species_alerts_create_notifications($newOccDataForSpeciesAlert);
