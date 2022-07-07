@@ -36,7 +36,7 @@ define('ROWS_PER_BATCH', 50);
  */
 function hostsite_get_config_value($context, $name, $default = FALSE) {
   if ($context === 'iform' && $name === 'master_checklist_id') {
-    return kohana::config('indicia.master_list_id');
+    return warehouse::getMasterTaxonListId();
   }
   return $default;
 }
@@ -258,7 +258,7 @@ class rest_spreadsheet_verify {
       fputcsv($verificationsFile, $verificationData);
       $metadata['verificationsFound']++;
     }
-    self::checkAllIdsInFilter($ids, rtrim($metadata['id_prefix'], '|'), $metadata);
+    self::checkAllIdsInFilter($ids, $metadata['warehouse_name'], $metadata);
     fclose($errorsFile);
     fclose($verificationsFile);
   }
@@ -273,10 +273,10 @@ class rest_spreadsheet_verify {
    *
    * @param array $ids
    *   List of document ids to check.
-   * @param string $warehouse
-   *   Warehouse prefix to filter to.
+   * @param string $warehouseName
+   *   Warehouse name to filter to, in case multiple in the ES index.
    */
-  private static function checkAllIdsInFilter(array $ids, $warehouse, array $metadata) {
+  private static function checkAllIdsInFilter(array $ids, $warehouseName, array $metadata) {
     require_once 'client_helpers/ElasticsearchProxyHelper.php';
     require_once 'client_helpers/helper_base.php';
     $readAuth = helper_base::get_read_auth(0 - $metadata['user_id'], kohana::config('indicia.private_key'));
@@ -294,7 +294,7 @@ class rest_spreadsheet_verify {
         ],
         [
           'term' => [
-            'warehouse' => $warehouse,
+            'warehouse' => $warehouseName,
           ],
         ],
       ],
@@ -314,11 +314,11 @@ class rest_spreadsheet_verify {
     $docObject = json_decode(json_encode($doc));
     $response = json_decode($esApi->elasticRequest($docObject, 'json', TRUE, '_search'));
     $hitsTotal = $response->hits->total;
-    if ($hitsTotal->relation && $hitsTotal->relation === 'gte') {
+    if (is_object($hitsTotal) && $hitsTotal->relation && $hitsTotal->relation === 'gte') {
       // More hits than ES bothers to count, so likely to be OK.
       return;
     }
-    // ES versiion tolerance.
+    // ES version tolerance.
     $foundCount = isset($hitsTotal->value) ? $hitsTotal->value : $hitsTotal;
     // If the filtered set is smaller than the requested set, then the
     // spreadsheet contains records not in the filter.
@@ -496,6 +496,7 @@ class rest_spreadsheet_verify {
       'errorsFound' => 0,
       'state' => 'start',
       'id_prefix' => $_POST['id_prefix'],
+      'warehouse_name' => $_POST['warehouse_name'],
     ];
     $file = fopen(DOCROOT . "import/{$fileId}-metadata.json", "w");
     fwrite($file, json_encode($metadata));
@@ -593,8 +594,9 @@ class rest_spreadsheet_verify {
    * Returns the status code according to a spreadsheet row's status term value.
    *
    * @param array $row
-   *   Spreadsheet row values containing status, e.g. "Accepted as correct" or "Queried".
-   *   Some tolerance of alternative forms included, e.g. "Rejected :: incorrect".
+   *   Spreadsheet row values containing status, e.g. "Accepted as correct" or
+   *   "Queried". Some tolerance of alternative forms included, e.g.
+   *   "Rejected :: incorrect".
    * @param array $metadata
    *   File upload tracking metadata.
    *
