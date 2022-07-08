@@ -22,7 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Scheduled tasks controller.
@@ -154,14 +154,14 @@ class Scheduled_Tasks_Controller extends Controller {
           ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, trigger_actions.param3, users.default_digest_mode, people.email_address, users.core_role_id')
           ->from('trigger_actions, users')
           ->join('people', 'people.id', 'users.person_id')
-          ->where(array(
+          ->where([
             'trigger_id' => $trigger->id,
             'type' => "'E'",
             'users.id' => 'CAST(param1 AS INT)',
             'trigger_actions.deleted' => "'f'",
             'users.deleted' => "'f'",
             'people.deleted' => "'f'",
-          ), NULL, FALSE)
+          ], NULL, FALSE)
           ->get();
         foreach ($actions as $action) {
           if ($action->core_role_id !== 1) {
@@ -182,7 +182,7 @@ class Scheduled_Tasks_Controller extends Controller {
             $allowedData = $parsedData['websiteRecordData'];
           }
           else {
-            $allowedData = array();
+            $allowedData = [];
             foreach ($userWebsites as $allowedWebsite) {
               if (isset($parsedData['websiteRecordData'][$allowedWebsite->website_id])) {
                 $allowedData[$allowedWebsite->website_id] = $parsedData['websiteRecordData'][$allowedWebsite->website_id];
@@ -191,16 +191,19 @@ class Scheduled_Tasks_Controller extends Controller {
           }
           $digestMode = ($action->param2 === NULL ? $action->default_digest_mode : $action->param2);
           if (count($allowedData) > 0) {
-            $this->db->insert('notifications', array(
+            $this->db->insert('notifications', [
               'source' => $trigger->name,
               'source_type' => 'T',
-              'data' => json_encode(array('headings' => $parsedData['headingData'], 'data' => $allowedData)),
+              'data' => json_encode([
+                'headings' => $parsedData['headingData'],
+                'data' => $allowedData,
+              ]),
               'user_id' => $action->param1,
               // Use digest mode the user selected for this notification, or
               // their default if not specific.
               'digest_mode' => $digestMode,
               'cc' => $action->param3,
-            ));
+            ]);
           }
         }
         $this->doTriggerLogComments(
@@ -242,7 +245,7 @@ class Scheduled_Tasks_Controller extends Controller {
     foreach ($data['data'] as $websiteId => $records) {
       foreach ($records as $record) {
         if (!empty($record[$logCommentCol])) {
-          $this->db->insert('occurrence_comments', array(
+          $this->db->insert('occurrence_comments', [
             'comment' => $record[$logCommentCol],
             'created_by_id' => 1,
             'created_on' => date('Y-m-d H:i:s'),
@@ -250,7 +253,7 @@ class Scheduled_Tasks_Controller extends Controller {
             'updated_on' => date('Y-m-d H:i:s'),
             'occurrence_id' => $record[$occIDCol],
             'generated_by' => 'notifications',
-          ));
+          ]);
         }
         else {
           echo 'Skipping as no comment to insert: ' . $record[$occIDCol] . '<br/>';
@@ -323,12 +326,15 @@ class Scheduled_Tasks_Controller extends Controller {
   }
 
   /**
-  * Takes any notifications stored in the database and builds emails to send for any that are now due.
-  */
+   * Create email digests.
+   *
+   * Takes any notifications stored in the database and builds emails to send
+   * for any that are now due.
+   */
   private function doDigestNotifications($swift) {
     self::msg("Checking notifications");
     // First, build a list of the notifications we are going to do.
-    $digestTypes = array('I');
+    $digestTypes = ['I'];
     $date = getdate();
     $lastdate = getdate(strtotime($this->lastRunDate));
     if ($date['yday'] != $lastdate['yday'] || $date['year'] != $lastdate['year']) {
@@ -345,7 +351,7 @@ class Scheduled_Tasks_Controller extends Controller {
       ->from('notifications')
       ->where('acknowledged', 'f')
       ->in('notifications.digest_mode', $digestTypes)
-      ->orderby(array('notifications.user_id' => 'ASC', 'notifications.cc' => 'ASC'))
+      ->orderby(['notifications.user_id' => 'ASC', 'notifications.cc' => 'ASC'])
       ->get();
     $nrNotifications = count($notifications);
     if ($nrNotifications > 0) {
@@ -358,14 +364,14 @@ class Scheduled_Tasks_Controller extends Controller {
     $currentUserId = NULL;
     $currentCc = NULL;
     $emailContent = '';
-    $notificationIds = array();
+    $notificationIds = [];
     foreach ($notifications as $notification) {
       $notificationIds[] = $notification->id;
       if (($currentUserId != $notification->user_id) || ($currentCc != $notification->cc)) {
         if ($currentUserId) {
           // Send current email data.
           $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $currentCc);
-          $notificationIds = array();
+          $notificationIds = [];
         }
         $currentUserId = $notification->user_id;
         $currentCc = $notification->cc;
@@ -461,7 +467,7 @@ class Scheduled_Tasks_Controller extends Controller {
   private function parseData($data) {
     // Build the column headers. Get the HTML (for immediate use) as well as
     // the array data (for storing the notifications).
-    $headingData = array();
+    $headingData = [];
     foreach ($data['content']['columns'] as $column => $cfg) {
       if ($cfg['visible'] !== 'false') {
         $headingData[] = empty($cfg['display']) ? $column : $cfg['display'];
@@ -469,9 +475,9 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     // Build the blocks of data, one per website, so we can tailor the output
     // table to each recipient.
-    $websiteRecordData = array();
+    $websiteRecordData = [];
     foreach ($data['content']['records'] as $idx => $record) {
-      $recordAsArray = array();
+      $recordAsArray = [];
       foreach ($data['content']['columns'] as $column => $cfg) {
         if ($cfg['visible'] !== 'false') {
           // Allow for an incorrect column def in the report, as a broken
@@ -481,10 +487,10 @@ class Scheduled_Tasks_Controller extends Controller {
       }
       $websiteRecordData[$record['website_id']][] = $recordAsArray;
     }
-    return array(
+    return [
       'headingData' => $headingData,
-      'websiteRecordData' => $websiteRecordData
-    );
+      'websiteRecordData' => $websiteRecordData,
+    ];
   }
 
   /**
@@ -531,11 +537,11 @@ class Scheduled_Tasks_Controller extends Controller {
       ->join('sample_attributes as sa1', 'sa1.id', 'sav1.sample_attribute_id')
       ->join('sample_attribute_values as sav2', 'sav2.sample_id', 'samples.id')
       ->join('sample_attributes as sa2', 'sa2.id', 'sav2.sample_attribute_id')
-      ->where(array(
+      ->where([
         'sa1.caption' => 'Email me a copy of the record',
         'sa2.caption' => 'Email',
         'samples.created_on>=' => $this->lastRunDate,
-      ))
+      ])
       ->where('sav1.int_value<>0')
       ->get();
     // Get a list of the records we need details of, so we can hit the db more
@@ -566,11 +572,11 @@ class Scheduled_Tasks_Controller extends Controller {
     $occurrences = $qry->get();
     // Copy the occurrences to an array so we can build a structured list of
     // data, keyed by ID.
-    $occurrenceArray = array();
+    $occurrenceArray = [];
     foreach ($occurrences as $occurrence) {
       $occurrenceArray[$occurrence->id] = $occurrence;
     }
-    $attrArray = array();
+    $attrArray = [];
     // Get the sample attributes.
     $attrValues = $this->db
       ->select('o.id, av.caption, av.value')
@@ -611,7 +617,7 @@ class Scheduled_Tasks_Controller extends Controller {
     if ($useWorkflowModule) {
       foreach ($occurrences as $occurrence) {
         if ($occurrence->log_all_communications === 't') {
-          $this->db->insert('occurrence_comments', array(
+          $this->db->insert('occurrence_comments', [
             'occurrence_id' => $occurrence->id,
             'comment' => "An acknowledgement email was sent to the record contributor.",
             'correspondence_data' => json_encode([
@@ -628,7 +634,7 @@ class Scheduled_Tasks_Controller extends Controller {
             'created_on' => date('Y-m-d H:i:s'),
             'updated_by_id' => 1,
             'updated_on' => date('Y-m-d H:i:s'),
-          ));
+          ]);
         }
       }
     }
@@ -640,7 +646,7 @@ class Scheduled_Tasks_Controller extends Controller {
    * with one table cell for the key, and one for the value
    */
   private function addArrayToEmailTable($occurrenceId, $array, &$emailContent) {
-    $excludedFields = array(
+    $excludedFields = [
       'date_end',
       'date_type',
       'Email me a copy of the record',
@@ -648,14 +654,14 @@ class Scheduled_Tasks_Controller extends Controller {
       'CMS User ID',
       'Email',
       'Happy for Contact?',
-    );
+    ];
     foreach ($array[$occurrenceId] as $field => $value) {
       if ($field === 'date_start') {
-        $value = vague_date::vague_date_to_string(array(
+        $value = vague_date::vague_date_to_string([
           $array[$occurrenceId]->date_start,
           $array[$occurrenceId]->date_end,
           $array[$occurrenceId]->date_type,
-        ));
+        ]);
         $field = 'date';
       }
       if (!empty($value) && !in_array($field, $excludedFields)) {
@@ -674,8 +680,9 @@ class Scheduled_Tasks_Controller extends Controller {
    *   them all.
    */
   private function runScheduledPlugins($system, array $scheduledPlugins) {
-    // take 1 second off current time to use as the end of the scanned time period. Avoids possibilities of records
-    // being lost half way through the current second.
+    // Take 1 second off current time to use as the end of the scanned time
+    // period. Avoids possibilities of records being lost half way through the
+    // current second.
     $t = time() - 1;
     $maxTime = date("Y-m-d H:i:s", $t);
     $latestUnprocessed = $this->db
@@ -688,15 +695,17 @@ class Scheduled_Tasks_Controller extends Controller {
       $maxTime = $latestUnprocessed->maxtime;
     }
     $plugins = $this->getScheduledPlugins();
-    // Load the plugins and last run date info from the system table. Any not run before will start from the current timepoint.
-    // We need this to be sorted, so we can process the list of changed records for each group of plugins with the same timestamp together.
+    // Load the plugins and last run date info from the system table. Any not
+    // run before will start from the current timepoint. We need this to be
+    // sorted, so we can process the list of changed records for each group of
+    // plugins with the same timestamp together.
     $pluginsFromDb = $this->db
       ->select('name, last_scheduled_task_check')
       ->from('system')
       ->in('name', $plugins)
       ->orderby('last_scheduled_task_check', 'ASC')
       ->get();
-    $sortedPlugins = array();
+    $sortedPlugins = [];
     foreach ($pluginsFromDb as $plugin) {
       $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check === NULL
         ? $maxTime : $plugin->last_scheduled_task_check;
@@ -709,15 +718,15 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     // Make sure data_cleaner runs before auto_verify module.
     if (array_key_exists('data_cleaner', $sortedPlugins)) {
-      $sortedPlugins = array('data_cleaner' => $sortedPlugins['data_cleaner']) + $sortedPlugins;
+      $sortedPlugins = ['data_cleaner' => $sortedPlugins['data_cleaner']] + $sortedPlugins;
     }
     // Make sure the cache_builder and spatial_index_builders run first as some
     // other modules depend on the cache_occurrences_* tables.
     if (array_key_exists('spatial_index_builder', $sortedPlugins)) {
-      $sortedPlugins = array('spatial_index_builder' => $sortedPlugins['spatial_index_builder']) + $sortedPlugins;
+      $sortedPlugins = ['spatial_index_builder' => $sortedPlugins['spatial_index_builder']] + $sortedPlugins;
     }
     if (array_key_exists('cache_builder', $sortedPlugins)) {
-      $sortedPlugins = array('cache_builder' => $sortedPlugins['cache_builder']) + $sortedPlugins;
+      $sortedPlugins = ['cache_builder' => $sortedPlugins['cache_builder']] + $sortedPlugins;
     }
     // Make sure the verifier notification emails run last as the emails are
     // sent out based on the results of other modules such as notifications
@@ -729,7 +738,8 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     // Now go through timestamps in order of time since they were run.
     foreach ($sortedPlugins as $plugin => $timestamp) {
-      // allow the list of scheduled plugins we are running to be controlled from the URL parameters.
+      // Allow the list of scheduled plugins we are running to be controlled
+      // from the URL parameters.
       if (in_array('all_modules', $scheduledPlugins) || in_array($plugin, $scheduledPlugins)) {
         require_once MODPATH . "$plugin/plugins/$plugin.php";
         $this->loadPluginMetadata($plugin);
@@ -758,15 +768,16 @@ class Scheduled_Tasks_Controller extends Controller {
         // Mark the time of the last scheduled task check so we can get the
         // correct list of updates next time.
         $timestamp = $this->pluginMetadata['requires_occurrences_delta'] ? $this->occdeltaEndTimestamp : $maxTime;
-        if (!$this->db->update('system', array('last_scheduled_task_check' => $timestamp), array('name' => $plugin))->count())
-          $this->db->insert('system', array(
+        if (!$this->db->update('system', ['last_scheduled_task_check' => $timestamp], ['name' => $plugin])->count()) {
+          $this->db->insert('system', [
             'version' => '0.1.0',
             'name' => $plugin,
             'repository' => 'Not specified',
             'release_date' => date('Y-m-d', $t),
             'last_scheduled_task_check' => $timestamp,
             'last_run_script' => NULL,
-          ));
+          ]);
+        }
       }
     }
   }
@@ -777,7 +788,7 @@ class Scheduled_Tasks_Controller extends Controller {
     // Get list of plugins which integrate with scheduled tasks. Use cache so
     // we avoid loading all module files unnecessarily.
     if (!($plugins = $cache->get($cacheId))) {
-      $plugins = array();
+      $plugins = [];
       foreach (Kohana::config('config.modules') as $path) {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
@@ -887,11 +898,11 @@ drop table occlist;";
    *   Name of the plugin.
    */
   private function loadPluginMetadata($plugin) {
-    $this->pluginMetadata = function_exists($plugin . '_metadata') ? call_user_func($plugin . '_metadata') : array();
-    $this->pluginMetadata = array_merge(array(
+    $this->pluginMetadata = function_exists($plugin . '_metadata') ? call_user_func($plugin . '_metadata') : [];
+    $this->pluginMetadata = array_merge([
       'requires_occurrences_delta' => FALSE,
       'always_run' => FALSE,
-    ), $this->pluginMetadata);
+    ], $this->pluginMetadata);
   }
 
   /**

@@ -130,8 +130,8 @@ SQL
   private function runRules($db) {
     $rules = data_cleaner::getRules();
     if (!empty($_REQUEST['rule_types']))
-      $ruleTypes = json_decode(strtoupper($_REQUEST['rule_types']), true);
-    $r = array();
+      $ruleTypes = json_decode(strtoupper($_REQUEST['rule_types']), TRUE);
+    $r = [];
     foreach ($rules as $rule) {
       // skip rule types if only running certain ones
       if (isset($ruleTypes) && !in_array(strtoupper($rule['testType']), $ruleTypes))
