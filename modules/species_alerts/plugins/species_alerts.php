@@ -49,13 +49,21 @@ SELECT DISTINCT
   cttl.taxon as taxon,
   delta.record_status as record_status,
   snf.public_entered_sref as entered_sref,
-  delta.record_status as record_status,
   delta.created_on,
   delta.updated_on,
   sa.user_id as alerted_user_id,
   u.username as username,
-  MAX(CASE WHEN sa.alert_on_entry='t' THEN 1 ELSE 0 END) as notify_entry,
-  MAX(CASE WHEN sa.alert_on_verify='t' AND delta.record_status='V' THEN 1 ELSE 0 END) as notify_verify
+  (
+    n_create.id IS NULL
+    AND sa.alert_on_entry='t'
+    AND delta.created_on between TO_TIMESTAMP('2022-07-08 08:01:00', 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP('2022-07-08 09:01:00', 'YYYY-MM-DD HH24:MI:SS')
+  ) as notify_entry,
+  (
+    n_verify.id IS NULL
+    AND sa.alert_on_verify='t'
+    AND delta.record_status='V'
+    AND delta.verified_on between TO_TIMESTAMP('2022-07-08 08:01:00', 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP('2022-07-08 09:01:00', 'YYYY-MM-DD HH24:MI:SS')
+  ) as notify_verify
 FROM cache_occurrences_functional delta
 JOIN cache_samples_nonfunctional snf on snf.id=delta.sample_id
 JOIN cache_taxa_taxon_lists cttl on cttl.id=delta.taxa_taxon_list_id
@@ -83,9 +91,9 @@ JOIN users u ON
   u.id=sa.user_id AND u.deleted='f'
 -- Use left joins to exclude notifications that have already been generated.
 LEFT JOIN notifications n_create ON n_create.user_id=sa.user_id AND n_create.linked_id=delta.id AND n_create.source='species alerts'
-  AND n_create.data LIKE '%"record_status":"C"%' and n_create.data like '%"taxon":"' || cttl.taxon || '"%'
+  AND n_create.data LIKE '%has been entered%' and n_create.data like '%"taxon":' || replace(to_json(cttl.taxon)::text, '/', '\\/') || '%'
 LEFT JOIN notifications n_verify ON n_verify.user_id=sa.user_id AND n_verify.linked_id=delta.id AND n_verify.source='species alerts'
-  AND n_verify.data LIKE '%"record_status":"V"%' and n_verify.data like '%"taxon":"' || cttl.taxon || '"%'
+  AND n_verify.data LIKE '%has been verified%' and n_verify.data like '%"taxon":' || replace(to_json(cttl.taxon)::text, '/', '\\/') || '%'
 WHERE delta.training='f' AND delta.confidential='f'
 AND (
   (
@@ -102,15 +110,6 @@ AND (
 )
 -- Following just to allow index to be used.
 AND delta.updated_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
-GROUP BY delta.id,
-  cttl.taxon,
-  delta.record_status,
-  snf.public_entered_sref,
-  delta.record_status,
-  delta.created_on,
-  delta.updated_on,
-  sa.user_id,
-  u.username;
 SQL;
 
   $newOccDataForSpeciesAlert = $db->query($qry)->result_array(FALSE);
