@@ -294,7 +294,7 @@ class rest_spreadsheet_verify {
         ],
         [
           'term' => [
-            'warehouse' => $warehouseName,
+            'warehouse.keyword' => $warehouseName,
           ],
         ],
       ],
