@@ -119,7 +119,7 @@ function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
         '1km_CI',
       ))
       ->get()->result();
-    $wktList = array();
+    $wktList = [];
     foreach ($r as $gridSquare) {
       switch ($gridSquare->header_name) {
         case '10km_GB':
