@@ -98,16 +98,16 @@ function data_cleaner_cleanout_old_messages(array $rules, $db) {
       $db->query($query);
       $modulesDone[] = $rule['plugin'];
     }
-    // Cleanup the notifications generated previously for verifications and
-    // auto-checks.
-    $query = "delete
-      from notifications
-      using occdelta o
-      where source='Verifications and comments' and source_type in ('V','A')
-      and linked_id = o.id
-      and o.record_status not in ('I','V','R','D')";
-    $db->query($query);
   }
+  // Cleanup the notifications generated previously for verifications and
+  // auto-checks.
+  $query = "delete
+    from notifications
+    using occdelta o
+    where source='Verifications and comments' and source_type in ('V','A')
+    and linked_id = o.id
+    and o.record_status not in ('I','V','R','D')";
+  $db->query($query);
 }
 
 /**
@@ -161,8 +161,7 @@ SQL;
         echo 'Query failed<br/>' . $e->getMessage() . '<br/><pre style="color: red">' . $db->last_query() . '</pre><br/>';
       }
     }
-    $tm = microtime(TRUE) - $tm;
-    if ($tm > 3) {
+    if (microtime(TRUE) - $tm > 3) {
       kohana::log('alert', "Data cleaner rule $rule[testType] took $tm seconds");
     }
   }
