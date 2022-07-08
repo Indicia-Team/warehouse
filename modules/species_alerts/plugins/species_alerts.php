@@ -135,11 +135,11 @@ function species_alerts_create_notifications(array $newOccDataForSpeciesAlert) {
   // For any new occurrence record which has a matching species alert record,
   // we need to generate a notification for the user.
   foreach ($newOccDataForSpeciesAlert as $speciesAlertOccurrenceData) {
-    if ($speciesAlertOccurrenceData['notify_entry'] === '1') {
+    if ($speciesAlertOccurrenceData['notify_entry'] === 't') {
       species_alerts_create_notification($speciesAlertOccurrenceData, 'entered');
       $notificationCounter++;
     }
-    if ($speciesAlertOccurrenceData['notify_verify'] === '1') {
+    if ($speciesAlertOccurrenceData['notify_verify'] === 't') {
       species_alerts_create_notification($speciesAlertOccurrenceData, 'verified');
       $notificationCounter++;
     }
