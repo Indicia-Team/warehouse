@@ -120,11 +120,11 @@ select distinct 'V', co.id, co.created_by_id as notify_user_id, cttl.taxon, co.d
 from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
-left join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and  oc.created_on between '$last_run_date' and '$maxTime'
+left join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on between '$last_run_date' and '$maxTime'
   and oc.record_status is not null -- verifications
   and oc.auto_generated=false -- but exclude auto-generated verifications
   and oc.confidential=false
-where co.created_by_id<>1 and co.verified_on>'$last_run_date' and co.confidential=false
+where co.created_by_id<>1 and co.verified_on between '$last_run_date' and '$maxTime' and co.confidential=false
 -- a comment on your record
 union
 select distinct 'C', co.id, co.created_by_id as notify_user_id, cttl.taxon, co.date_start, co.date_end, co.date_type, snf.public_entered_sref,
@@ -135,7 +135,7 @@ join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
 join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and  oc.created_on between '$last_run_date' and '$maxTime'
   and oc.record_status is null and oc.auto_generated=false and oc.confidential=false
-left join occurrence_comments oc2 on oc2.occurrence_id=co.id and oc2.deleted=false and oc2.created_on>'$last_run_date'
+left join occurrence_comments oc2 on oc2.occurrence_id=co.id and oc2.deleted=false and oc2.created_on between '$last_run_date' and '$maxTime'
   and oc2.record_status is not null and oc2.auto_generated=false
 where co.created_by_id<>1 and co.created_by_id<>oc.created_by_id and co.confidential=false
 and oc2.id is null -- ignore comment if accompanied by a verification from same person
