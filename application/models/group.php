@@ -24,16 +24,21 @@
  */
 class Group_Model extends ORM {
 
-  protected $has_one = array('filter');
+  protected $has_one = ['filter'];
 
-  protected $has_and_belongs_to_many = array('users', 'locations');
+  protected $has_and_belongs_to_many = ['users', 'locations'];
 
-  protected $has_many = array('group_invitations', 'group_pages');
+  protected $has_many = ['group_invitations', 'group_pages'];
 
   /**
-   * @var boolean Flag indicating if the group's private records status is changing, indicating we need to update the release status of records.
+   * Release status needs updating?
+   *
+   * Flag indicating if the group's private record status is changing,
+   * indicating we need to update the release status of records.
+   *
+   * @var bool
    */
-  protected $wantToUpdateReleaseStatus=false;
+  protected $wantToUpdateReleaseStatus = FALSE;
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
@@ -41,12 +46,23 @@ class Group_Model extends ORM {
     $array->add_rules('group_type_id', 'required');
     $array->add_rules('website_id', 'required');
     $array->add_rules('code', 'length[1,20]');
-    $this->unvalidatedFields = array('code', 'description', 'from_date','to_date','private_records',
-        'filter_id', 'joining_method', 'deleted', 'implicit_record_inclusion', 'view_full_precision',
-        'logo_path', 'licence_id');
-    // has the private records flag changed?
+    $this->unvalidatedFields = [
+      'code',
+      'description',
+      'from_date',
+      'to_date',
+      'private_records',
+      'filter_id',
+      'joining_method',
+      'deleted',
+      'implicit_record_inclusion',
+      'view_full_precision',
+      'logo_path',
+      'licence_id',
+    ];
+    // Has the private records flag changed?
     $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) &&
-        $this->submission['fields']['private_records']!==$this->private_records;
+        $this->submission['fields']['private_records'] !== $this->private_records;
     return parent::validate($array, $save);
   }
 
@@ -55,8 +71,8 @@ class Group_Model extends ORM {
    */
   public function postSubmit($isInsert) {
     if (!$isInsert && $this->wantToUpdateReleaseStatus) {
-      $status = $this->private_records==='1' ? 'U' : 'R';
-      $sql="update #table# o
+      $status = $this->private_records === '1' ? 'U' : 'R';
+      $sql = "update #table# o
 set release_status='$status'
 from samples s
 where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
@@ -65,12 +81,13 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
     }
     $this->processIndexGroupsLocations();
     $this->processIndexGroupsTaxonGroups();
-    return true;
+    return TRUE;
   }
 
   /**
-   * Method to populate the indexed locations that this group intersects with. Makes it easy to do things like
-   * suggest groups based on geographic region.
+   * Method to populate the indexed locations that this group intersects with.
+   *
+   * Makes it easy to do things like suggest groups based on geographic region.
    */
   private function processIndexGroupsLocations() {
     $filter = json_decode($this->filter->definition, TRUE);
@@ -78,7 +95,7 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
       ->from('index_groups_locations')
       ->where('group_id', $this->id)
       ->get();
-    $location_ids = array();
+    $location_ids = [];
     // Backwards compatibility checks.
     if (!empty($filter['indexed_location_id']) && empty($filter['indexed_location_list'])) {
       $filter['indexed_location_list'] = $filter['location_id'];
@@ -159,7 +176,7 @@ SQL;
         }
       }
     }
-    $foundExistingLocationIds = array();
+    $foundExistingLocationIds = [];
     // Go through the existing index entries for this group. Remove any that
     // are not needed now.
     foreach ($exist as $record) {
@@ -172,7 +189,7 @@ SQL;
         }
         if (in_array($record->location_id, $foundExistingLocationIds)) {
           // This one must exist twice in the index so clean it up.
-          $this->db->delete('index_groups_locations', array('id' => $record->id));
+          $this->db->delete('index_groups_locations', ['id' => $record->id]);
         }
         else {
           $foundExistingLocationIds[] = $record->location_id;
@@ -180,15 +197,15 @@ SQL;
       }
       else {
         // Got one we didn't actually want.
-        $this->db->delete('index_groups_locations', array('id' => $record->id));
+        $this->db->delete('index_groups_locations', ['id' => $record->id]);
       }
     }
     // Any remaining in our list now need to be added.
     foreach ($location_ids as $location_id) {
-      $this->db->insert('index_groups_locations', array(
+      $this->db->insert('index_groups_locations', [
         'group_id' => $this->id,
         'location_id' => $location_id,
-      ));
+      ]);
     }
   }
 
@@ -206,7 +223,7 @@ SQL;
       ->where('group_id', $this->id)
       ->get();
 
-    $taxon_group_ids = array();
+    $taxon_group_ids = [];
 
     if (!empty($filter['taxon_group_list'])) {
       // Got a list of taxon groups linked to the group's filter, so these can
@@ -244,15 +261,15 @@ SQL;
       }
       else {
         // Got one we didn't actually want.
-        $this->db->delete('index_groups_taxon_groups', array('id' => $record->id));
+        $this->db->delete('index_groups_taxon_groups', ['id' => $record->id]);
       }
     }
     // Any remaining in our list now need to be added.
     foreach ($taxon_group_ids as $taxon_group_id) {
-      $this->db->insert('index_groups_taxon_groups', array(
+      $this->db->insert('index_groups_taxon_groups', [
         'group_id' => $this->id,
         'taxon_group_id' => $taxon_group_id,
-      ));
+      ]);
     }
   }
 

@@ -13,11 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
- * @subpackage Cache builder
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
 // No scheduled tasks
@@ -33,7 +31,7 @@ function audit_alter_menu($menu, $auth) {
  * @return array List of additional entities to expose via the data services.
  */
 function audit_extend_data_services() {
-	return array(
-			'logged_actions'=>array()
-	);
+	return [
+		'logged_actions' => [],
+	];
 }

@@ -67,10 +67,7 @@ class postgreSQL {
    * who verify or query a confidential record will be notified on
    * subsequent comments.
    */
-  public static function selectVerificationAndCommentNotifications($last_run_date, $db = NULL) {
-    if (!$db) {
-      $db = new Database();
-    }
+  public static function selectVerificationAndCommentNotifications($last_run_date, $maxTime, $db) {
     // Note this query excludes user 1 from the notifications (admin user) as
     // they are records which don't have a warehouse user ID. Also excludes any
     // previous notifications of this exact source for this user. ID difficulty
@@ -84,7 +81,7 @@ into temporary records_to_notify
 from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
-join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date'
+join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on between '$last_run_date' and '$maxTime'
   and oc.auto_generated=true
   and coalesce(oc.generated_by, '')<>'data_cleaner_identification_difficulty'
   and oc.record_status is null -- exclude auto-generated
@@ -98,7 +95,7 @@ select distinct 'A' as source_type, co.id, co.created_by_id as notify_user_id, c
 from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
-join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date'
+join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and  oc.created_on between '$last_run_date' and '$maxTime'
   and oc.auto_generated=true
   and coalesce(oc.generated_by, '') = 'data_cleaner_identification_difficulty'
   and coalesce(oc.generated_by_subtype, '') not in ('1','2')
@@ -123,11 +120,11 @@ select distinct 'V', co.id, co.created_by_id as notify_user_id, cttl.taxon, co.d
 from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
-left join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date'
+left join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on between '$last_run_date' and '$maxTime'
   and oc.record_status is not null -- verifications
   and oc.auto_generated=false -- but exclude auto-generated verifications
   and oc.confidential=false
-where co.created_by_id<>1 and co.verified_on>'$last_run_date' and co.confidential=false
+where co.created_by_id<>1 and co.verified_on between '$last_run_date' and '$maxTime' and co.confidential=false
 -- a comment on your record
 union
 select distinct 'C', co.id, co.created_by_id as notify_user_id, cttl.taxon, co.date_start, co.date_end, co.date_type, snf.public_entered_sref,
@@ -136,9 +133,9 @@ select distinct 'C', co.id, co.created_by_id as notify_user_id, cttl.taxon, co.d
 from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
-join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date'
+join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and  oc.created_on between '$last_run_date' and '$maxTime'
   and oc.record_status is null and oc.auto_generated=false and oc.confidential=false
-left join occurrence_comments oc2 on oc2.occurrence_id=co.id and oc2.deleted=false and oc2.created_on>'$last_run_date'
+left join occurrence_comments oc2 on oc2.occurrence_id=co.id and oc2.deleted=false and oc2.created_on between '$last_run_date' and '$maxTime'
   and oc2.record_status is not null and oc2.auto_generated=false
 where co.created_by_id<>1 and co.created_by_id<>oc.created_by_id and co.confidential=false
 and oc2.id is null -- ignore comment if accompanied by a verification from same person
@@ -152,7 +149,7 @@ from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
 join occurrence_comments ocprev on ocprev.occurrence_id=co.id and ocprev.deleted=false and ocprev.created_by_id<>co.created_by_id and ocprev.created_by_id<>1
-join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date'
+join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and  oc.created_on between '$last_run_date' and '$maxTime'
   and oc.created_by_id<>ocprev.created_by_id and oc.id>ocprev.id
 where co.created_by_id<>1 and oc.created_by_id<>1
 -- if not the verifier, then confidential records remain hidden

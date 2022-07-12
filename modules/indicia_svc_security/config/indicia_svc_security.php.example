@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * @file
+ * Configuration example for indicia_scv_security module.
+ *
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/warehouse
+ */
+
+// The address the website membership email is sent from.
+$config['email_sender_address'] = 'example@example.com';
+
+// The subject line (allows for a {website_name} replacement).
+$config['email_subject'] = 'Your account has been deleted from {website_name}';
+
+// The main content (allows {website_name} and {websites_list} replacements).
+$config['email_body'] = <<<HTML
+<p>Your account has been removed from the {website_name} website and any related apps.
+Records that you have previously added to {website_name} will be retained in the database as specified in our Terms of Use.</p>
+<p>Our records show that you are still registered with these linked websites:</p>
+<ul><li>{websites_list}</li></ul>
+<p>If you wish to remove your account from any of the linked websites please contact the administrator for that website.</p>
+HTML;
+
+// How would you like the list of websites to be separated?
+$config['website_list_implosion_separator'] = '</li><li>';

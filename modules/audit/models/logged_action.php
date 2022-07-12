@@ -29,14 +29,14 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Logged_action_Model extends ORM {
-  public $search_field='id';
+  public $search_field = 'id';
 
-  protected $belongs_to = array();
-  protected $has_and_belongs_to_many = array();
+  protected $belongs_to = [];
+  protected $has_and_belongs_to_many = [];
 
   public function validate(Validation $array, $save = FALSE) {
-  	// we are not allowing modification.
-  	return false;
+  	// We are not allowing modification.
+  	return FALSE;
   }
 
 }

@@ -241,6 +241,32 @@ SQL;
   }
 
   /**
+   * Create work_queue item to process user deletion.
+   *
+   * @param array $userId
+   *   The ID of the user to delete.
+   * @param int $websiteId
+   *   The Indicia website ID the user is removing their account from.
+   */
+  public static function delete_user($userId, $websiteId) {
+    $q = new WorkQueue();
+    $db = new Database();
+    // Removal of privileges should be immediate.
+    $db->query("DELETE FROM users_websites WHERE website_id = $websiteId AND user_id = $userId");
+    $cache = Cache::instance();
+    $cacheKey = "website-user-$websiteId-$userId";
+    $cache->delete($cacheKey);
+    $q->enqueue($db, [
+      'task' => 'task_indicia_svc_security_delete_user_account',
+      'entity' => 'user',
+      'record_id' => $userId,
+      'params' => json_encode(['website_id' => $websiteId]),
+      'cost_estimate' => 100,
+      'priority' => 3,
+    ]);
+  }
+
+  /**
    * Finds the list of custom attribute values associated whith the person.
    *
    * @return array
@@ -572,16 +598,16 @@ QRY
         foreach ($attrs as &$attr) {
           // Ignore any attributes we don't have a change value for.
           if (in_array($attr['caption'], $attrCaptions)) {
+            $valueFieldName = self::dataTypeToValueFieldName($attr['data_type']);
             $data = [
               'person_id' => $userPersonObj->person_id,
               'person_attribute_id' => $attr['id'],
-              'text_value' => $valueData[$attr['caption']],
+              $valueFieldName => $valueData[$attr['caption']],
             ];
             // Store the attribute value we are saving in the array of
             // attributes, so the full updated list can be returned to the
             // client website.
             $attr['value'] = $valueData[$attr['caption']];
-            kohana::log('debug', 'NEED TO GET CORRECT TYPE OF VALUE ABOVE');
             if (!empty($attr['value_id'])) {
               $data['id'] = $attr['value_id'];
               $pav->find($attr['value_id']);
@@ -593,8 +619,38 @@ QRY
             self::checkErrors($pav);
           }
         }
-
       }
+    }
+  }
+
+  /**
+   * Convert a data type code to the attribute value table value field name.
+   *
+   * @param string $dataType
+   *   Data type code ('T', 'I' etc).
+   *
+   * @return string
+   *   Value field name ('text_value', 'int_value' etc).
+   */
+  private static function dataTypeToValueFieldName($dataType) {
+    switch ($dataType) {
+      case 'T':
+        return 'text_value';
+
+      case 'F':
+        return 'float_value';
+
+      case 'I':
+      case 'L':
+      case 'B':
+        return 'int_value';
+
+      case 'D':
+      case 'V':
+        return 'date_start_value';
+
+      default:
+        throw new exception('Unsupported data type code ' . $dataType);
     }
   }
 

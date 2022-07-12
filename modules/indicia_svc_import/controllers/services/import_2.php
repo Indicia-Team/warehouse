@@ -24,9 +24,9 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
-define('BATCH_ROW_LIMIT', 5);
+define('BATCH_ROW_LIMIT', 100);
 define('SYSTEM_FIELD_NAMES', [
-  'id',
+  '_row_id',
   'errors',
 ]);
 
@@ -135,9 +135,12 @@ class Import_2_Controller extends Service_Base_Controller {
   /**
    * Controller function that returns the list of import fields for an entity.
    *
-   * Accepts optional $_GET parameters for the website_id and survey_id, which
-   * limit the available custom attribute fields as appropriate. Echoes JSON
-   * listing the fields that can be imported.
+   * Accepts optional $_GET parameters for the website_id, survey_id,
+   * taxon_list_id and use_associations which influences the required fields
+   * returned in the result, since custom attributes are only associated with
+   * certain website/survey dataset/taxon list combinations.
+   *
+   * Echoes JSON listing the fields that can be imported.
    *
    * @param string $entity
    *   Singular name of the entity to check.
@@ -171,7 +174,16 @@ class Import_2_Controller extends Service_Base_Controller {
       $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
     }
     $useAssociations = !empty($_GET['use_associations']) && $_GET['use_associations'] === 'true';
-    echo json_encode($model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $useAssociations));
+    $fields = $model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $useAssociations);
+    if (!empty($_GET['required']) && $_GET['required'] === 'true') {
+      $requiredFields = $model->getRequiredFields(TRUE, $identifiers, $useAssociations);
+      foreach ($requiredFields as &$field) {
+        $field = preg_replace('/:date_type$/', ':date', $field);
+      }
+      $fields = array_intersect_key($fields, array_combine($requiredFields, $requiredFields));
+    }
+    $this->provideFriendlyFieldCaptions($fields);
+    echo json_encode($fields);
   }
 
   /**
@@ -353,7 +365,6 @@ class Import_2_Controller extends Service_Base_Controller {
    */
   public function process_lookup_matching() {
     header("Content-Type: application/json");
-    kohana::log('debug', "In process_lookup_matching");
     try {
       $this->authenticate('write');
       $fileName = $_POST['data-file'];
@@ -414,18 +425,23 @@ SQL;
       }
       // Need to check all done.
       $sql = <<<SQL
-SELECT count(*) FROM import_temp.$config[tableName]
+SELECT DISTINCT {$sourceColName} AS value FROM import_temp.$config[tableName]
 WHERE {$sourceColName}<>'' AND {$sourceColName}_id IS NULL;
 SQL;
-      $countCheck = $db->query($sql)->result()->current()->count;
-      if ($countCheck === '0') {
+      $countCheck = $db->query($sql)->result_array();
+      if (count($countCheck) === 0) {
         echo json_encode([
           'status' => 'ok',
         ]);
       }
       else {
+        $unmatched = [];
+        foreach ($countCheck as $row) {
+          $unmatched[] = $row->value;
+        }
         echo json_encode([
           'status' => 'incomplete',
+          'unmatched' => $unmatched,
         ]);
       }
 
@@ -491,79 +507,193 @@ SQL;
         throw new exception('Parameter data-file refers to a missing file');
       }
       $config = $this->getConfig($fileName);
+      $isPrecheck = !empty($_POST['precheck']);
+      // If request to start again sent, go from beginning.
+      if (!empty($_POST['restart'])) {
+        $config['rowsProcessed'] = 0;
+        $config['parentEntityRowsProcessed'] = 0;
+      }
       $db = new Database();
       if (!empty($_POST['save-import-record'])) {
         $this->saveImportRecord($config, json_decode($_POST['save-import-record']));
       }
       // @todo Correctly set parent entity for other entities.
       // @todo Handling for entities without parent entity.
-      $parentEntity = 'sample';
-      $childEntity = 'occurrence';
-      $parentEntityFields = $this->findEntityFields($parentEntity, $config);
-      $childEntityFields = $this->findEntityFields($childEntity, $config);
+      $parentEntityFields = $this->findEntityFields($config['parentEntity'], $config);
+      $childEntityFields = $this->findEntityFields($config['entity'], $config);
       $parentEntityDataRows = $this->fetchParentEntityData($db, $parentEntityFields, $config);
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
         // @todo Updating existing data.
         // @todo tracking of records that are done in the import table so can restart.
-        $parent = ORM::factory($parentEntity);
+        $parent = ORM::factory($config['parentEntity']);
         $submission = [];
         $this->copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityFields, $config, $submission);
-        $this->applyGlobalValues($config, $parentEntity, $submission);
+        $this->applyGlobalValues($config, $config['parentEntity'], $parent->attrs_field_prefix ?? NULL, $submission);
+        $identifiers = [
+          'website_id' => $config['global-values']['website_id'],
+          'survey_id' => $submission['survey_id'],
+        ];
+        if ($config['parentEntitySupportsImportGuid']) {
+          $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
+        }
         $parent->set_submission_data($submission);
-        $parent->submit();
+        if ($isPrecheck) {
+          $errors = $parent->precheck($identifiers);
+          // A fake ID to allow check on children.
+          $parent->id = 1;
+        }
+        else {
+          $parent->submit();
+          $errors = $parent->getAllErrors();
+        }
         $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityFields, $config, $parentEntityDataRow);
-        if (count($parent->getAllErrors()) > 0) {
+        if (count($errors) > 0) {
           $config['errorsCount'] += count($childEntityDataRows);
           $config['rowsProcessed'] += count($childEntityDataRows);
           $this->saveErrorsToRows($db, $parentEntityDataRow, $parentEntityFields, $parent->getAllErrors(), $config);
         }
-        else {
+        // If sample saved OK, or we are just prechecking, process the matching
+        // occurrences.
+        if (count($errors) === 0 || $isPrecheck) {
           foreach ($childEntityDataRows as $childEntityDataRow) {
-            $child = ORM::factory($childEntity);
+            $child = ORM::factory($config['entity']);
             $submission = [
               'sample_id' => $parent->id,
             ];
             $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityFields, $config, $submission);
-            $this->applyGlobalValues($config, $childEntity, $submission);
-            $child->set_submission_data($submission);
-            $child->submit();
-            if (count($child->getAllErrors()) > 0) {
-              $config['importErrors']++;
-              $this->saveErrorsToRows($db, $parentEntityDataRow, $parentEntityFields, $parent->getAllErrors(), $config);
+            $this->applyGlobalValues($config, $config['entity'], $child->attrs_field_prefix ?? NULL, $submission);
+            if ($config['entitySupportsImportGuid']) {
+              $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
-            $config['rowsInserted']++;
+            $child->set_submission_data($submission);
+            if ($isPrecheck) {
+              $errors = $child->precheck($identifiers);
+            }
+            else {
+              $child->submit();
+              $errors = $child->getAllErrors();
+            }
+            if (count($errors) > 0) {
+              $config['errorsCount']++;
+              $this->saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
+            }
+            if (!$isPrecheck) {
+              $config['rowsInserted']++;
+            }
             $config['rowsProcessed']++;
           }
         }
-        $config['parentEntityRowsInserted']++;
+        $config['parentEntityRowsProcessed']++;
       }
 
       $progress = 100 * $config['rowsProcessed'] / $config['totalRows'];
-      if ($progress === 100 && $config['errorsCount'] === 0) {
+      if ($progress === 100 && $config['errorsCount'] === 0 && !$isPrecheck) {
         $this->tidyUpAfterImport($db, $config);
       }
       else {
         $this->saveConfig($fileName, $config);
       }
-      $this->saveImportRecord($config);
+      if (!$isPrecheck) {
+        $this->saveImportRecord($config);
+      }
       echo json_encode([
-        'status' => $config['rowsProcessed'] >= $config['totalRows'] ? 'done' : 'importing',
+        'status' => $config['rowsProcessed'] >= $config['totalRows'] ? 'done' : ($isPrecheck ? 'checking' : 'importing'),
         'progress' => 100 * $config['rowsProcessed'] / $config['totalRows'],
+        'rowsProcessed' => $config['rowsProcessed'],
+        'totalRows' => $config['totalRows'],
         'errorsCount' => $config['errorsCount'],
       ]);
     }
     catch (Exception $e) {
       // Save config as it tells us how far we got, making diagnosis and
       // continuation easier.
-      $this->saveConfig($fileName, $config);
-      $this->saveImportRecord($config);
-      error_logger::log_error('Error in save_lookup_matches_group', $e);
-      kohana::log('debug', 'Error in save_lookup_matches_group: ' . $e->getMessage());
+      if (isset($config)) {
+        $this->saveConfig($fileName, $config);
+        $this->saveImportRecord($config);
+      }
+      error_logger::log_error('Error in import_chunk', $e);
+      kohana::log('debug', 'Error in import_chunk: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'status' => 'error',
         'msg' => $e->getMessage(),
       ]);
+    }
+  }
+
+  /**
+   * Adds end-point for retrieving errors file.
+   *
+   * Sends CSV content for rows with errors to the output.
+   */
+  public function get_errors_file() {
+    if (empty($_GET['data-file'])) {
+      http_response_code(400);
+      echo json_encode([
+        'status' => 'error',
+        'msg' => 'A query parameter called data-file must be passed to get_errors_file end-point.',
+      ]);
+      return;
+    }
+    header("Content-Description: File Transfer");
+    header("Content-Type: text/csv");
+    header("Content-Disposition: attachment; filename=\"import-errors.csv\"");
+    $fileName = $_GET['data-file'];
+    $config = $this->getConfig($fileName);
+    $fields = array_merge(array_values($config['columns']), [
+      '_row_id',
+      'errors',
+    ]);
+    $fieldSql = implode(', ', $fields);
+    $query = <<<SQL
+SELECT $fieldSql
+FROM import_temp.$config[tableName]
+WHERE errors IS NOT NULL
+ORDER BY _row_id;
+SQL;
+    $db = new Database();
+    $results = $db->query($query)->result(FALSE);
+    $out = fopen('php://output', 'w');
+    fputcsv($out, array_merge(array_keys($config['columns']), [
+      '[Row no.]',
+      '[Errors]',
+    ]));
+    foreach ($results as $row) {
+      fputcsv($out, $row);
+    }
+    fclose($out);
+  }
+
+  /**
+   * Ensures all mappable fields have a readable caption.
+   *
+   * @param array $fields
+   *   Field name and available captions as associative array. Will be updated
+   *   so all fields have captions.
+   */
+  private function provideFriendlyFieldCaptions(array &$fields) {
+    // Some fields can have pre-set captions.
+    $friendlyCaptions = [
+      'occurrence:fk_taxa_taxon_list' => 'Species or taxon name',
+      'sample:entered_sref' => 'Grid reference or other spatial reference',
+      'sample:entered_sref_system' => 'Grid or spatial reference type',
+    ];
+    foreach ($friendlyCaptions as $field => $caption) {
+      if (isset($friendlyCaptions[$field])) {
+        $fields[$field] = $caption;
+      }
+    }
+    // Fill in autogenerated captions for any that remain.
+    foreach ($fields as $field => &$caption) {
+      if (empty($caption)) {
+        $fieldParts = explode(':', $field);
+        if (substr($fieldParts[1], 0, 3) === 'fk_') {
+          $caption = ucfirst(str_replace('_', ' ', substr($fieldParts[1], 3))) . ' (lookup in database)';
+        }
+        else {
+          $caption = ucfirst(str_replace('_', ' ', $fieldParts[1]));
+        }
+      }
     }
   }
 
@@ -613,13 +743,20 @@ SQL;
     }
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
-    foreach ($errors as $error) {
-      $errorsList[] = pg_escape_literal($error);
+    foreach ($errors as $field => $error) {
+      $fieldName = $field;
+      // Find the temp table field name for the error.
+      $dbFieldInTempTable = array_search($fieldName, $config['mappings']);
+      if ($dbFieldInTempTable) {
+        // Map back to find the import file's name for the column.
+        $fieldName = array_search($dbFieldInTempTable, $config['columns']);
+      }
+      $errorsList[$fieldName] = $error;
     }
-    $errorsArray = 'ARRAY[' . implode(', ', $errorsList) . ']';
+    $errorsJson = pg_escape_literal(json_encode($errorsList));
     $sql = <<<SQL
 UPDATE import_temp.$config[tableName]
-SET errors = errors || $errorsArray
+SET errors = COALESCE(errors, '{}'::jsonb) || $errorsJson::jsonb
 WHERE $wheres;
 SQL;
     $db->query($sql);
@@ -706,13 +843,15 @@ SQL;
    */
   private function fetchParentEntityData($db, array $fields, array $config) {
     $fieldsAsCsv = implode(', ', $fields);
-    $batchRowLimit = BATCH_ROW_LIMIT;
+    // Batch row limit div by arbitrary 10 to allow for multiple children per
+    // parent.
+    $batchRowLimit = BATCH_ROW_LIMIT / 10;
     $sql = <<<SQL
 SELECT DISTINCT $fieldsAsCsv
 FROM import_temp.$config[tableName]
 ORDER BY $fieldsAsCsv
 LIMIT $batchRowLimit
-OFFSET $config[parentEntityRowsInserted];
+OFFSET $config[parentEntityRowsProcessed];
 SQL;
     return $db->query($sql)->result();
   }
@@ -754,13 +893,17 @@ SQL;
    *   Import metadata configuration object.
    * @param string $entity
    *   Name of the entity to copy over values for.
+   * @param string $attrPrefix
+   *   Attribute fieldname prefix, e.g. smp or occ. Leave empty if not an
+   *   attribute table.
    * @param array $submission
    *   Submission data array that will be updated with the global values.
    */
-  private function applyGlobalValues(array $config, $entity, array &$submission) {
+  private function applyGlobalValues(array $config, $entity, $attrPrefix, array &$submission) {
     foreach ($config['global-values'] as $field => $value) {
       if (in_array($field, ['survey_id', 'website_id'])
-          || substr($field, 0, strlen($entity) + 1) === "$entity:") {
+          || substr($field, 0, strlen($entity) + 1) === "$entity:"
+          || ($attrPrefix && substr($field, 0, strlen($attrPrefix) + 1) === "{$attrPrefix}:")) {
         $submission[$field] = $value;
       }
     }
@@ -794,7 +937,7 @@ SQL;
 SELECT *
 FROM import_temp.$config[tableName]
 WHERE $wheres
-ORDER BY id;
+ORDER BY _row_id;
 SQL;
     return $db->query($sql)->result();
   }
@@ -860,7 +1003,7 @@ SQL;
     if (isset($thisSrcField)) {
       $r['sourceField'] = $thisSrcField;
     }
-    if (isset($unmatchedInfo)) {
+    if (isset($unmatchedInfo) && count($unmatchedInfo['values']) > 0) {
       $r['unmatchedInfo'] = $unmatchedInfo;
     }
     return $r;
@@ -1014,11 +1157,11 @@ SQL;
     $db = new Database();
     $tableName = 'import_' . date('YmdHi') . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', pathinfo($fileName, PATHINFO_FILENAME));
     $config['tableName'] = $tableName;
-    $colsArray = ['id serial'];
+    $colsArray = ['_row_id serial'];
     foreach (array_values($config['columns']) as $columnName) {
       $colsArray[] = "$columnName varchar";
     }
-    $colsArray[] = 'errors text[]';
+    $colsArray[] = 'errors jsonb';
     $colsList = implode(",\n", $colsArray);
     $qry = <<<SQL
 CREATE TABLE import_temp.$tableName (
@@ -1045,7 +1188,8 @@ SQL;
     $count = 0;
     $rows = [];
     while (($count < BATCH_ROW_LIMIT) && ($data = $this->getNextRow($file, $count + $config['rowsLoaded'] + 1, $config))) {
-      $data = array_map('pg_escape_literal', array_pad($data, count($config['columns']), ''));
+      // Trim and escape the data, then pad to correct number of columns.
+      $data = array_map('pg_escape_literal', array_pad(array_map('trim', $data), count($config['columns']), ''));
       $rows[] = '(' . implode(', ', $data) . ')';
       $count++;
     }
@@ -1103,13 +1247,21 @@ SQL;
       return json_decode($config, TRUE);
     }
     else {
+      // @todo Entity should by dynamic.
+      $entity = 'occurrence';
+      $model = ORM::Factory($entity);
+      $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
+      $config['parentEntity'] = 'sample';
+      $model = ORM::Factory($config['parentEntity']);
+      $parentSupportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
       // Create a new config object.
       return [
         'fileName' => $fileName,
         'tableName' => '',
         'isExcel' => in_array($ext, ['xls', 'xlsx']),
         // @todo Entity should be dynamic.
-        'entity' => 'occurrence',
+        'entity' => $entity,
+        'parentEntity' => $config['parentEntity'],
         'columns' => $this->loadColumnNamesFromFile($fileName),
         'state' => 'initial',
         'rowsLoaded' => 0,
@@ -1118,9 +1270,11 @@ SQL;
         'rowsInserted' => 0,
         'rowsUpdated' => 0,
         'rowsProcessed' => 0,
-        'parentEntityRowsInserted' => 0,
+        'parentEntityRowsProcessed' => 0,
         'errorsCount' => 0,
         'importGuid' => $this->createGuid(),
+        'entitySupportsImportGuid' => $supportsImportGuid,
+        'parentEntitySupportsImportGuid' => $parentSupportsImportGuid,
       ];
     }
   }

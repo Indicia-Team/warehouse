@@ -153,7 +153,7 @@ class Import_Controller extends Service_Base_Controller {
   public function get_required_fields($model) {
     $this->authenticate('read');
     $model = ORM::factory($model);
-    // Identify the context of the import
+    // Identify the context of the import.
     $identifiers = [];
     if (!empty($_GET['website_id'])) {
       $identifiers['website_id'] = $_GET['website_id'];
@@ -186,7 +186,7 @@ class Import_Controller extends Service_Base_Controller {
     $this->authenticate('read');
     $model = ORM::factory($modelName);
     $submissionStruct = $model->get_submission_structure();
-    $combinations = array();
+    $combinations = [];
     if (isset($submissionStruct['superModels'])) {
       foreach ($submissionStruct['superModels'] as $superModelName => $details) {
         $superModel = ORM::factory($superModelName);
@@ -465,7 +465,7 @@ class Import_Controller extends Service_Base_Controller {
     }
     else {
       // No previous file, so create default new metadata.
-      return array();
+      return [];
     }
   }
 
@@ -539,10 +539,10 @@ class Import_Controller extends Service_Base_Controller {
 
       // Check if the conditions for special field processing are met - all the
       // columns are in the mapping.
-      $specialFieldProcessing = array();
+      $specialFieldProcessing = [];
       if (isset($model->specialImportFieldProcessingDefn)) {
         foreach ($model->specialImportFieldProcessingDefn as $column => $defn) {
-          $columns = array();
+          $columns = [];
           $index = 0;
           foreach ($metadata['mappings'] as $col => $attr) {
             if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col != 'AllowLookup') {
@@ -563,7 +563,7 @@ class Import_Controller extends Service_Base_Controller {
           }
         }
       }
-      $specialMergeProcessing = array();
+      $specialMergeProcessing = [];
       if (isset($metadata['importMergeFields']) && is_string($metadata['importMergeFields'])) {
         $metadata['importMergeFields'] = json_decode($metadata['importMergeFields'], TRUE);
       }
@@ -616,7 +616,7 @@ class Import_Controller extends Service_Base_Controller {
               // import_helper::model_field_options.
               if ($attr != '<Please select>' && $data[$index] !== '') {
                 // Add the data to the record save array.
-                if (preg_match('/date$/', $attr) && preg_match('/\d+/', $data[$index])) {
+                if (preg_match('/date$/', $attr) && preg_match('/^\d+$/', $data[$index])) {
                   // Date fields are integers when read from Excel.
                   $date = ImportDate::excelToDateTimeObject($data[$index]);
                   $saveArray[$attr] = $date->format('d/m/Y');
@@ -654,7 +654,7 @@ class Import_Controller extends Service_Base_Controller {
           }
         }
         foreach ($specialMergeProcessing as $fieldSpec) {
-          $merge = array();
+          $merge = [];
           foreach ($fieldSpec['virtualFields'] as $subFieldSpec) {
             $col = $fieldSpec['fieldName'] . ':' . $subFieldSpec['fieldNameSuffix'];
             if (isset($saveArray[$col])) {
@@ -827,7 +827,7 @@ class Import_Controller extends Service_Base_Controller {
           // Try to wrap second record of original model.
           // As the submission builder needs a 1-1 match between field prefix
           // and model name, we need to generate an altered saveArray.
-          $associatedArray = array();
+          $associatedArray = [];
           foreach ($saveArray as $fieldname => $value) {
             $parts = explode(':', $fieldname);
             // Filter out original model feilds, any of its attributes and
@@ -1220,7 +1220,7 @@ class Import_Controller extends Service_Base_Controller {
               if (!isset($this->previousCsvSupermodel['attributeIds'][$modelName])) {
                 // Only fetch supermodel attribute data now as this is first
                 // time it is used.
-                $this->previousCsvSupermodel['attributeIds'][$modelName] = array();
+                $this->previousCsvSupermodel['attributeIds'][$modelName] = [];
                 $smattrs = ORM::factory($modelName . '_attribute_value')->where(array('deleted' => 'f', $modelName . '_id' => $this->previousCsvSupermodel['id'][$modelName]))->find_all();
                 foreach ($smattrs as $smattr) {
                   $this->previousCsvSupermodel['attributeIds'][$modelName][$smattr->__get($modelName . '_attribute_id')] = $smattr->id;
@@ -1334,7 +1334,7 @@ class Import_Controller extends Service_Base_Controller {
               $existing = $db->query($query)->result_array(FALSE);
             }
             else {
-              $existing = array();
+              $existing = [];
             }
             if (count($existing) > 0) {
               // If an previous record exists, we have to check for existing
@@ -1584,7 +1584,7 @@ class Import_Controller extends Service_Base_Controller {
    *   Row data.
    */
   private function getNextRow($data, $row, $metadata) {
-    return ($row <= $metadata['fileSize']) ? $data[$row] : FALSE;
+    return ($row <= $metadata['fileSize'] && isset($data[$row])) ? $data[$row] : FALSE;
   }
 
 }

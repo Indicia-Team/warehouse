@@ -58,13 +58,19 @@ function hostsite_get_user_field($field) {
     return 'en';
   }
   elseif ($field === 'indicia_user_id') {
-    return isset($_SESSION) ? $_SESSION['auth_user']->id : 0;
+    // PostedUserId is to support tests.
+    global $postedUserId;
+    return isset($_SESSION) ? $_SESSION['auth_user']->id : ($postedUserId ?? 0);
   }
   elseif ($field === 'training') {
     return FALSE;
   }
+  elseif ($field === 'taxon_groups' || $field === 'location' || $field === 'location_expertise' || $field === 'location_collation') {
+    // Unsupported client website fields.
+    return FALSE;
+  }
   else {
-    throw new exception("Unsuppoered hostsite_get_user_field call on warehouse for field $field");
+    throw new exception("Unsupported hostsite_get_user_field call on warehouse for field $field");
   }
 }
 
@@ -103,6 +109,53 @@ class warehouse {
     // Ensure correct protocol, in case both http and https supported.
     $protocol = empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off' ? 'http' : 'https';
     helper_base::$base_url = preg_replace('/^https?/', $protocol, helper_base::$base_url);
+  }
+
+  /**
+   * Clears files older than a certain age in a folder.
+   *
+   * @param string $path
+   *   Folder path relative to the DOCROOT, without leading or trailing slash.
+   * @param int $age
+   *   Age in seconds. Files older than this are deleted.
+   */
+  public static function purgeOldFiles($path, $age) {
+    // First, get an array of files sorted by date.
+    $files = [];
+    $dir = opendir($path);
+    // Skip certain file names.
+    $exclude = [
+      '.',
+      '..',
+      '.htaccess',
+      'web.config',
+      '.gitignore',
+    ];
+    if ($dir) {
+      while ($filename = readdir($dir)) {
+        $fullPath = DOCROOT . $path . DIRECTORY_SEPARATOR . $filename;
+        if (is_dir($fullPath) || in_array($filename, $exclude)) {
+          continue;
+        }
+        $lastModified = filemtime($fullPath);
+        $files[] = [$fullPath, $lastModified];
+      }
+    }
+    // Sort the file array by date, oldest first.
+    usort($files, ['warehouse', 'dateCmp']);
+    // Iterate files.
+    foreach ($files as $file) {
+      // If we have reached a file that is not old enough to expire, don't
+      // go any further. Expiry set to 1 hour.
+      if ($file[1] > (time() - $age)) {
+        break;
+      }
+      // Clear out the old file.
+      if (is_file($file[0])) {
+        // Ignore errors, will try again later if not deleted.
+        @unlink($file[0]);
+      }
+    }
   }
 
   /**
@@ -189,6 +242,27 @@ class warehouse {
   public static function sharingTermToCode($term) {
     $mappings = array_flip(self::$sharingMappings);
     return array_key_exists($term, $mappings) ? $mappings[$term] : $term;
+  }
+
+  /**
+   * Custom sort function for date comparison of files.
+   *
+   * @param int $a
+   *   Date value 1 as Unix timestamp.
+   * @param int $b
+   *   Date value 2 as Unix timestamp.
+   */
+  private static function dateCmp($a, $b) {
+    if ($a[1] < $b[1]) {
+      $r = -1;
+    }
+    elseif ($a[1] > $b[1]) {
+      $r = 1;
+    }
+    else {
+      $r = 0;
+    }
+    return $r;
   }
 
 }

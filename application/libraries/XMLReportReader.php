@@ -245,6 +245,18 @@ class XMLReportReader_Core implements ReportReader {
                   // to the id.
                   $this->people_id_field = 'p.id';
                 }
+                if (!$this->taxa_taxon_lists_id_field = $reader->getAttribute('taxa_taxon_lists_id_field')) {
+                  // Default table alias for the taxa_taxon_lists table, so we
+                  // can join to the preferred_taxa_taxon_list_id when getting
+                  // attributes. Attribute values are only attached to the
+                  // preferred taxa and not common names or synonyms.
+                  $this->taxa_taxon_lists_id_field = 'ttl.preferred_taxa_taxon_list_id';
+                }
+                if (!$this->termlists_terms_id_field = $reader->getAttribute('termlists_terms_id_field')) {
+                  // Default table alias for the termlists_terms table, so we
+                  // can join to the id.
+                  $this->termlists_terms_id_field = 'tlt.id';
+                }
                 if (!$this->count_field = $reader->getAttribute('count_field')) {
                   // Field used in count queries unless in_count fields are
                   // specified.

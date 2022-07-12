@@ -7,13 +7,8 @@ require_once 'client_helpers/submission_builder.php';
 
 $postedUserId = 1;
 
-function hostsite_get_user_field($field) {
-  if ($field === 'indicia_user_id') {
-    global $postedUserId;
-    return $postedUserId;
-  }
-  return NULL;
-}
+// This forces the get_hostsite_user_id shim to be made available.
+warehouse::getMasterTaxonListId();
 
 class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
@@ -837,6 +832,32 @@ SQL;
   }
 
   /**
+   * Test a sample with a gibberish date.
+   *
+   * Ensure that date is reporting a validation error, not just a general 500
+   * error.
+   */
+  public function testSampleBadDate() {
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => 'gibbe 11 rish',
+    ];
+    $structure = [
+      'model' => 'sample',
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $this->assertFalse(isset($r['success']), 'Creating a sample with a bad date passed validation incorrectly');
+    $this->assertArrayHasKey('errors', $r, 'Submission with bad sample date did not return field errors list');
+    // Check error attached to correct field.
+    $this->assertArrayHasKey('sample:date_type', $r['errors'], 'Submission with bad sample date did not attached validation error to correct field.');
+    var_export($r);
+  }
+
+  /**
    * Test updating existing occurrence data with required values.
    *
    * If an existing occurrence has a value for a required attribute, it should
@@ -870,6 +891,7 @@ SQL;
     // Clear the cache to ensure that our required field is used.
     $cache = Cache::instance();
     $cache->delete_tag('required-fields');
+    $cache->delete_tag('attribute-lists');
     // Now, submitting an occurrence without the attribute filled in should
     // fail.
     $array = array(
@@ -947,6 +969,7 @@ SQL;
     // Remove the required field from the cache so it doesn't impact other tests.
     $cache = Cache::instance();
     $cache->delete_tag('required-fields');
+    $cache->delete_tag('attribute-lists');
   }
 
   /**

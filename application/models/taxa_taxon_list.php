@@ -205,7 +205,11 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
    */
   protected function postSubmit($isInsert) {
     $result = TRUE;
-    if ($this->submission['fields']['preferred']['value'] == 't' && array_key_exists('metaFields', $this->submission)) {
+    // If we have synonyms or common names in the submission, handle them.
+    // Skip if not in the submission as may be an update not from the warehouse
+    // UI which doesn't include them.
+    if ($this->submission['fields']['preferred']['value'] == 't' && array_key_exists('metaFields', $this->submission)
+        && (array_key_exists('commonNames', $this->submission['metaFields']) || array_key_exists('synonyms', $this->submission['metaFields']))) {
       if (array_key_exists('commonNames', $this->submission['metaFields'])) {
         $arrCommonNames = $this->parseRelatedNames(
             $this->submission['metaFields']['commonNames']['value'],

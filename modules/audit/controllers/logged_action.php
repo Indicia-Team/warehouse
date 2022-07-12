@@ -35,12 +35,12 @@ class Logged_action_Controller extends Indicia_Controller {
    * $viewname and $controllerpath can be ommitted if the names are all the same.
    */
   public function __construct($modelname='logged_action', $viewname=NULL, $controllerpath=NULL, $gridId=NULL) {
-    $this->model=ORM::factory($modelname);
+    $this->model = ORM::factory($modelname);
     $this->modelname = $modelname;
-    $this->viewname=is_null($viewname) ? "$modelname/index" : $viewname;
-    $this->controllerpath=is_null($controllerpath) ? $modelname : $controllerpath;
+    $this->viewname = is_null($viewname) ? "$modelname/index" : $viewname;
+    $this->controllerpath = is_null($controllerpath) ? $modelname : $controllerpath;
     $this->gridId = $gridId;
-    $this->base_filter = array();
+    $this->base_filter = [];
     $this->auth_filter = null;
 
     parent::__construct();

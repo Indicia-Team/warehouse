@@ -176,11 +176,26 @@ KEY;
 
   }
 
+  /**
+   * Get user associated JWT.
+   */
   private function getJwt($privateKey, $iss, $userId, $exp) {
     require_once 'vendor/autoload.php';
     $payload = [
       'iss' => $iss,
       'http://indicia.org.uk/user:id' => $userId,
+      'exp' => $exp,
+    ];
+    return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
+  }
+
+  /**
+   * Get anonymous JWT.
+   */
+  private function getAnonJwt($privateKey, $iss, $exp) {
+    require_once 'vendor/autoload.php';
+    $payload = [
+      'iss' => $iss,
       'exp' => $exp,
     ];
     return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
@@ -246,6 +261,75 @@ KEY;
     self::$jwt = $this->getJwt(self::$wrongPrivateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
+  }
+
+  /**
+   * Check use of anonymous website based JWT tokens.
+   */
+  public function testAnonJwt() {
+    $this->authMethod = 'jwtUser';
+    $cache = Cache::instance();
+    $cacheKey = 'website-by-url-' . preg_replace('/[^0-9a-zA-Z]/', '', 'http://www.indicia.org.uk');
+    // Store the public key so Indicia can check signed requests.
+    $db = new Database();
+    $db->update(
+      'websites',
+      ['public_key' => self::$publicKey, 'allow_anon_jwt_post' => 'f'],
+      ['id' => 1]
+    );
+    $cache->delete($cacheKey);
+    self::$jwt = $this->getAnonJwt(self::$privateKey, 'http://www.indicia.org.uk', time() + 120);
+    // PUT samples should be rejected.
+    $response = $this->callService(
+      'samples/1',
+      FALSE,
+      [
+        'values' => [
+          'date_start' => NULL,
+          'date_end' => NULL,
+          'date_type' => 'U',
+        ],
+      ],
+      [], 'PUT'
+    );
+    $this->assertTrue($response['httpCode'] === 404);
+    // POST samples should be rejected (website flag to allow anon
+    // submissions is off).
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+          'comment' => 'A sample comment test',
+        ],
+      ]
+    );
+    $this->assertTrue($response['httpCode'] === 400);
+    // POST samples should be accepted (website flag to allow anon
+    // submissions is on).
+    $db->update(
+      'websites',
+      ['allow_anon_jwt_post' => 't'],
+      ['id' => 1]
+    );
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+          'comment' => 'A sample create test',
+        ],
+      ]
+    );
+    $this->assertTrue($response['httpCode'] === 201);
   }
 
   public function testJwtHeaderCaseInsensitive() {
@@ -824,6 +908,92 @@ KEY;
     $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
   }
 
+  public function testJwtSamplePostUserDeletionCheck() {
+    $db = new Database();
+
+    // Set up a user to test against.
+    $personId = $db->query('INSERT INTO people (first_name, surname, email_address, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ('usertodelete', 'Test', 'user" . microtime(TRUE) . "@example.com', 1, now(), 1, now())")->insert_id();
+    $userId = $db->query('INSERT INTO users (person_id, username, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($personId, 'user" . microtime(TRUE) . "', 1, now(), 1, now())")->insert_id();
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      "VALUES ($userId, 1, 3, 1, now(), 1, now())");
+
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    // Check we can post a record with our created user.
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $sampleId = $response['response']['values']['id'];
+    $occCount = $db->query("select count(*) from occurrences where sample_id=$sampleId")
+      ->current()->count;
+    $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
+
+    // Call the delete user service.
+    $response = user_identifier::delete_user($userId, 1);
+
+    // Test that the user account can no longer post data.
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    // Should be unauthorised.
+    $this->assertEquals(401, $response['httpCode']);
+
+    // Process the queue so anonymisation is done.
+    $db->query("UPDATE work_queue SET priority=1 WHERE task='task_indicia_svc_security_delete_user_account'");
+    $queue = new WorkQueue();
+    $queue->process($db);
+
+    // Get the anonymous user ID.
+    $anonUserId = $db->query("SELECT id FROM users WHERE username='anonymous'")->current()->id;
+
+    // No occurrences should remain linked to this user.
+    $occs = $db->query("SELECT count(*) as occ_count FROM occurrences WHERE created_by_id=$userId OR updated_by_id=$userId")->current();
+    $this->assertEquals(0, $occs->occ_count, 'Anonymised user ID still points to some occurrence data.');
+
+    // Test occurrence now points to anonymous user.
+    $occs = $db->query("SELECT created_by_id, updated_by_id FROM occurrences WHERE sample_id=$sampleId");
+    $this->assertEquals(1, $occs->count());
+    foreach ($occs as $occ) {
+      $this->assertEquals($anonUserId, $occ->created_by_id, 'Anonymised occurrence created_by_id is incorrect');
+      $this->assertEquals($anonUserId, $occ->updated_by_id, 'Anonymised occurrence updated_by_id is incorrect');
+    }
+
+    // Test existing sample now has a recorder name and points to anonymous
+    // user.
+    $sample = $db->query("SELECT recorder_names, created_by_id, updated_by_id FROM samples WHERE id=$sampleId")->current();
+    $this->assertEquals('Test, usertodelete', $sample->recorder_names);
+    $this->assertEquals($anonUserId, $sample->created_by_id, 'Anonymised sample created_by_id is incorrect');
+    $this->assertEquals($anonUserId, $sample->updated_by_id, 'Anonymised sample updated_by_id is incorrect');
+
+    // Test person email address is anonymised.
+    $person = $db->query("SELECT email_address FROM people WHERE id=$personId")->current();
+    $this->assertEquals(1, preg_match('/@anonymous\.anonymous$/', $person->email_address), 'Person email address not anonymised correctly');
+
+  }
+
   public function testJwtSamplePostList() {
     $this->authMethod = 'jwtUser';
     $db = new Database();
@@ -921,17 +1091,6 @@ KEY;
     $this->assertArrayHasKey('id', $response['response']['duplicate_of']);
     $this->assertArrayHasKey('href', $response['response']['duplicate_of']);
     $this->assertEquals($id, $response['response']['duplicate_of']['id']);
-    // In a diff survey, not considered a duplicate.
-    $data['survey_id'] = 2;
-    $response = $this->callService(
-      'samples',
-      FALSE,
-      ['values' => $data]
-    );
-    $this->assertEquals(
-      201, $response['httpCode'],
-      'Duplicate external key in different survey not accepted.'
-    );
     // PUT with same external key should be OK.
     $response = $this->callService(
       "samples/$id",
@@ -1502,6 +1661,43 @@ SQL;
     ]);
   }
 
+
+
+  public function testJwtLocationDuplicateCheck() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Post an initial location to check duplicates against.
+
+    // Need a sub-model locations_websites.website_id to cause duplicate to trigger.
+    $response = $this->callService(
+      'locations',
+      FALSE,
+      [
+        'values' => [
+          'name' => 'Test location 1',
+          'centroid_sref' => 'ST1234',
+          'centroid_sref_system' => 'OSGB',
+          'external_key' => 'textexternalkey',
+        ],
+      ],
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $response = $this->callService(
+      'locations',
+      FALSE,
+      [
+        'values' => [
+          'name' => 'Test location 2',
+          'centroid_sref' => 'SU345678',
+          'centroid_sref_system' => 'OSGB',
+          'external_key' => 'textexternalkey',
+        ],
+      ],
+    );
+    // Check a conflict in the response.
+    $this->assertEquals(409, $response['httpCode']);
+  }
+
   /**
    * A basic test of /locations/id GET.
    */
@@ -1612,7 +1808,7 @@ SQL;
     $db = new Database();
     // Should fail if we are not an admin.
     $db->query('UPDATE users SET core_role_id=null WHERE id=1');
-    // Should succeed if we are a site admin
+    // Should succeed if we are a site admin.
     $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
       ' VALUES (1, 1, 3, 1, now(), 1, now())');
     $response = $this->callService(

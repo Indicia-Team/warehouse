@@ -3,6 +3,9 @@
 # Enable extended globbing for easy removal of cache and log files.
 shopt -s extglob
 
+# Set the project name which determines the network and container names.
+export COMPOSE_PROJECT_NAME=indicia
+
 prompt="This will destroy your warehouse and erase all data. Proceed (y/N)?"
 read -rs -n 1 -p "$prompt" 
 echo
