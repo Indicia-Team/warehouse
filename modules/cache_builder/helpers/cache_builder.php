@@ -14,10 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
-
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
 /**
@@ -30,6 +29,8 @@ class cache_builder {
    *
    * Useful when processing large numbers of records where immediate visibility
    * of the results is not required.
+   *
+   * @var bool
    */
   public static $delayCacheUpdates = FALSE;
 
@@ -55,6 +56,11 @@ class cache_builder {
     }
   }
 
+  /**
+   * Apply changes to cache tables, with HTML table summary.
+   *
+   * See makeChanges().
+   */
   public static function makeChangesWithOutput($db, $table, $count) {
     echo <<<HTML
 <table>
@@ -66,8 +72,8 @@ class cache_builder {
     </tr>
 
 HTML;
-        cache_builder::makeChanges($db, $table);
-        echo <<<HTML
+    cache_builder::makeChanges($db, $table);
+    echo <<<HTML
   </tbody>
 </table>
 HTML;
@@ -143,10 +149,12 @@ HTML;
       else {
         $master_list_id = warehouse::getMasterTaxonListId();
         $queries = kohana::config("cache_builder.$table");
-        if (!isset($queries['key_field']))
+        if (!isset($queries['key_field'])) {
           throw new exception('Cannot do a specific record insert into cache as the key_field configuration not defined in cache_builder configuration');
-        if (!is_array($queries['insert']))
-          $queries['insert'] = array($queries['insert']);
+        }
+        if (!is_array($queries['insert'])) {
+          $queries['insert'] = [$queries['insert']];
+        }
         foreach ($queries['insert'] as $query) {
           $insertSql = str_replace(
             ['#join_needs_update#', '#master_list_id#'],
@@ -183,10 +191,12 @@ HTML;
       else {
         $master_list_id = warehouse::getMasterTaxonListId();
         $queries = kohana::config("cache_builder.$table");
-        if (!isset($queries['key_field']))
+        if (!isset($queries['key_field'])) {
           throw new exception('Cannot do a specific record update into cache as the key_field configuration not defined in cache_builder configuration');
-        if (!is_array($queries['update']))
-          $queries['update'] = array($queries['update']);
+        }
+        if (!is_array($queries['update'])) {
+          $queries['update'] = [$queries['update']];
+        }
         foreach ($queries['update'] as $query) {
           $updateSql = str_replace(
             ['#join_needs_update#', '#master_list_id#'],
@@ -220,8 +230,8 @@ HTML;
     else {
       foreach ($ids as $id) {
         if ($table === 'occurrences' || $table === 'samples') {
-          $db->delete("cache_{$table}_functional", array('id' => $id));
-          $db->delete("cache_{$table}_nonfunctional", array('id' => $id));
+          $db->delete("cache_{$table}_functional", ['id' => $id]);
+          $db->delete("cache_{$table}_nonfunctional", ['id' => $id]);
           if ($table === 'samples') {
             // Slightly more complex delete query to ensure indexes used.
             $sql = <<<SQL
@@ -238,7 +248,7 @@ SQL;
           }
         }
         else {
-          $db->delete("cache_$table", array('id' => $id));
+          $db->delete("cache_$table", ['id' => $id]);
         }
       }
     }
@@ -252,7 +262,7 @@ SQL;
    *
    * @param object $db
    *   Database object.
-   * @param array $occurrenceIds
+   * @param array $ids
    *   List of occurrences affected by a submission.
    */
   public static function updateSampleTrackingForOccurrences($db, array $ids) {
@@ -299,14 +309,17 @@ SQL;
     $queries = kohana::config("cache_builder.$table");
     $doneCount = 0;
     if (isset($queries['extra_single_record_updates'])) {
-      $idlist=implode(',', $ids);
-      if (is_array($queries['extra_single_record_updates']))
-        foreach($queries['extra_single_record_updates'] as $key=>&$sql) {
-          $result=$db->query(str_replace('#ids#', $idlist, $sql));
+      $idlist = implode(',', $ids);
+      if (is_array($queries['extra_single_record_updates'])) {
+        foreach ($queries['extra_single_record_updates'] as $key => &$sql) {
+          $result = $db->query(str_replace('#ids#', $idlist, $sql));
           $doneCount += $result->count();
-          if ($doneCount>=count($ids))
-            break; // we've updated all. So can drop out.
+          if ($doneCount >= count($ids)) {
+            // We've updated all, so can drop out.
+            break;
+          }
         }
+      }
       else {
         $db->query(str_replace('#ids#', $idlist, $queries['extra_single_record_updates']));
       }
