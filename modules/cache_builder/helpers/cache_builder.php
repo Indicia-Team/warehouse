@@ -42,7 +42,21 @@ class cache_builder {
       echo "<h3>$table</h3>";
       $count = cache_builder::getChangeList($db, $table, $queries, $last_run_date);
       if ($count > 0) {
-        echo <<<HTML
+        cache_builder::makeChangesWithOutput($db, $table, $count);
+      }
+      else {
+        echo "<p>No changes</p>";
+      }
+      $db->query("drop table needs_update_$table");
+    }
+    catch (Exception $e) {
+      $db->query("drop table needs_update_$table");
+      throw $e;
+    }
+  }
+
+  public static function makeChangesWithOutput($db, $table, $count) {
+    echo <<<HTML
 <table>
   <thead>
     <tr><th></th><th># records affected</th></tr>
@@ -57,16 +71,6 @@ HTML;
   </tbody>
 </table>
 HTML;
-      }
-      else {
-        echo "<p>No changes</p>";
-      }
-      $db->query("drop table needs_update_$table");
-    }
-    catch (Exception $e) {
-      $db->query("drop table needs_update_$table");
-      throw $e;
-    }
   }
 
   /**
