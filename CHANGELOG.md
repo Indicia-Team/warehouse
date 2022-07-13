@@ -1,6 +1,13 @@
+# Version 8.3.0
+* 2022-07-13*
+
+Scheduled tasks called from the command-line can now have the `tasks` parameter set from the
+command-line. Previously this parameter was only available when called from a browser URL via a
+query parameter.
 
 # Version 8.2.0
 *2022-06-29*
+
 * Supports anonymisation of data for deleted user accounts.
 
 # Version 8.1.0
