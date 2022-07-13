@@ -137,7 +137,17 @@
 
   UNION
 
-  SELECT 3 as group_weight, null::integer as id, 2 as weight, 'Recorder' as attribute_type, 'email' as system_function,
+  SELECT 3 as group_weight, null::integer as id, 0 as weight, 'Additional sample' as attribute_type, null as system_function,
+    'Text'::bpchar as data_type, 'Additional info' as caption,
+    replace(replace(trim(trim(jsonb_pretty(o.verifier_only_data::jsonb), '{' || CHR(10)), CHR(10) || '}'), CHR(10), '&lt;br/&gt;'), ',' || CHR(10), CHR(10)) as value,
+    jsonb_pretty(o.verifier_only_data::jsonb) as raw_value
+  FROM occurrences o
+  WHERE o.id=#occurrence_id#
+  AND o.verifier_only_data IS NOT NULL
+
+  UNION
+
+  SELECT 4 as group_weight, null::integer as id, 2 as weight, 'Recorder' as attribute_type, 'email' as system_function,
     'Text'::bpchar as data_type, 'Email' as caption,
     COALESCE(snf.attr_email, p.email_address, 'Email address not available') as value,
     COALESCE(snf.attr_email, p.email_address, 'Email address not available') as raw_value
