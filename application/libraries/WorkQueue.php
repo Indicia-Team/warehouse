@@ -151,25 +151,32 @@ SQL;
       2 => max(0, min(100, (integer) (145 - $load * 2))),
       3 => max(0, min(100, (integer) (130 - $load * 3))),
     ];
+    global $argv;
+    if (isset($argv)) {
+      parse_str(implode('&', array_slice($argv, 1)), $params);
+    }
+    else {
+      $params = $_GET;
+    }
     // Allow URL parameters to limit the maximum cost.
-    if (!empty($_GET['max-cost'])) {
+    if (!empty($params['max-cost'])) {
       // Check value 1 to 100.
-      if (!preg_match('/^[1-9][0-9]?$|^100$/', $_GET['max-cost'])) {
+      if (!preg_match('/^[1-9][0-9]?$|^100$/', $params['max-cost'])) {
         throw new exception('Invalid max-cost parameter - integer from 1 to 100 expected.');
       }
       foreach ($maxCostByPriority as $priority => &$maxCost) {
-        $maxCost = min($maxCost, $_GET['max-cost']);
+        $maxCost = min($maxCost, $params['max-cost']);
       }
     }
     // Allow URL parameters to limit the maximum priority.
-    if (!empty($_GET['max-priority'])) {
-      if (!preg_match('/^[1-3]$/', $_GET['max-priority'])) {
+    if (!empty($params['max-priority'])) {
+      if (!preg_match('/^[1-3]$/', $params['max-priority'])) {
         throw new exception('Invalid max-priority parameter - value from 1 to 3 expected.');
       }
-      if ($_GET['max-priority'] < 3) {
+      if ($params['max-priority'] < 3) {
         $maxCostByPriority[3] = 0;
       }
-      if ($_GET['max-priority'] < 2) {
+      if ($params['max-priority'] < 2) {
         $maxCostByPriority[2] = 0;
       }
     }

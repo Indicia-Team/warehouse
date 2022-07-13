@@ -43,19 +43,26 @@ class Scheduled_Tasks_Controller extends Controller {
    *
    * The index method is the default method called when you access this
    * controller, so we can use this to run the scheduled tasks. Takes an
-   * optional URL parameter "tasks", which is a comma separated list of
-   * the module names to schedule, plus can contain "notifications" to fire the
-   * built in notifications system or "all_modules" to fire every module that
-   * declares a scheduled task plugin. If tasks are not specified then
-   * everything is run.
+   * optional URL or command-line parameter "tasks", which is a comma separated
+   * list of the module names to schedule, plus can contain "notifications" to
+   * fire the built in notifications system or "all_modules" to fire every
+   * module that declares a scheduled task plugin. If tasks are not specified
+   * then everything is run.
    */
   public function index() {
     $tm = microtime(TRUE);
     $this->db = new Database();
     $system = new System_Model();
     $allNonPluginTasks = ['notifications', 'work_queue'];
-    if (isset($_GET['tasks'])) {
-      $requestedTasks = explode(',', $_GET['tasks']);
+    // Allow tasks to be specified on command line or URL parameter.
+    global $argv;
+    $args = [];
+    if ($argv) {
+      parse_str(implode('&', array_slice($argv, 1)), $args);
+    }
+    $tasks = $_GET['tasks'] ?? $args['tasks'];
+    if ($tasks !== NULL) {
+      $requestedTasks = explode(',', $tasks);
       $scheduledPlugins = array_diff($requestedTasks, $allNonPluginTasks);
       $nonPluginTasks = array_intersect($allNonPluginTasks, $requestedTasks);
     }
