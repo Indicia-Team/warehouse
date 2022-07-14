@@ -60,7 +60,7 @@ class Scheduled_Tasks_Controller extends Controller {
     if ($argv) {
       parse_str(implode('&', array_slice($argv, 1)), $args);
     }
-    $tasks = $_GET['tasks'] ?? $args['tasks'];
+    $tasks = $_GET['tasks'] ?? $args['tasks'] ?? NULL;
     if ($tasks !== NULL) {
       $requestedTasks = explode(',', $tasks);
       $scheduledPlugins = array_diff($requestedTasks, $allNonPluginTasks);
