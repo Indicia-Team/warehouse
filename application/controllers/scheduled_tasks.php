@@ -112,7 +112,7 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     // Mark the time of the last scheduled task check, so we can get diffs
     // next time.
-    $this->db->update('system', array('last_scheduled_task_check' => "'" . date('c', $currentTime) . "'"), array('id' => 1));
+    $this->db->update('system', ['last_scheduled_task_check' => "'" . date('c', $currentTime) . "'"], ['id' => 1]);
     self::msg("Ok!");
     $tm = microtime(TRUE) - $tm;
     if ($tm > 30) {
@@ -322,13 +322,13 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     // Now for each user, add their notifications.
     foreach ($userNotifications as $user => $userData) {
-      $this->db->insert('notifications', array(
+      $this->db->insert('notifications', [
         'source' => $triggerName,
         'source_type' => 'T',
         'data' => json_encode(['headings' => $data['headings'], 'data' => $userData]),
         'user_id' => str_replace('user:', '', $user),
         'digest_mode' => $digestMode,
-      ));
+      ]);
     }
   }
 
@@ -446,8 +446,10 @@ class Scheduled_Tasks_Controller extends Controller {
   }
 
   /**
-   * Return a query to get the list of triggers. Uses the query builder as gives us good performance without
-   * making additional work should we go database agnostic.
+   * Return a query to get the list of triggers.
+   *
+   * Uses the query builder as gives us good performance without making
+   * additional work should we go database agnostic.
    */
   private function getTriggerQuery() {
     // Additional join to trigger_actions just prevents us from processing
@@ -456,20 +458,26 @@ class Scheduled_Tasks_Controller extends Controller {
       ->select('DISTINCT triggers.id, triggers.name, triggers.trigger_template_file, triggers.params_json')
       ->from('triggers')
       ->join('trigger_actions', 'trigger_actions.trigger_id', 'triggers.id')
-      ->where(array(
+      ->where([
         'enabled' => 'true',
         'triggers.deleted' => 'false',
         'trigger_actions.deleted' => 'false',
-      ))
+      ])
       ->get();
   }
 
   /**
-   * Takes the output of a report. Parses it to return an associative array containing the following information:
-   *   'headingData' => Array of column headings
-   *   'websiteRecordData' => Array of records, each containing an array of values.
-   * Website records and record data are split into an array keyed by website ID, so that it is easier to provide
-   * data back to the notified users appropriate to their website rights.
+   * Parses the output of a report.
+   *
+   * Parses it to return an associative array containing the following
+   * information:
+   * * 'headingData' => Array of column headings
+   * * 'websiteRecordData' => Array of records, each containing an array of
+   *   values.
+   *
+   * Website records and record data are split into an array keyed by website
+   * ID, so that it is easier to provide data back to the notified users
+   * appropriate to their website rights.
    */
   private function parseData($data) {
     // Build the column headers. Get the HTML (for immediate use) as well as
@@ -526,7 +534,10 @@ class Scheduled_Tasks_Controller extends Controller {
   }
 
   /**
-   * Look for records posted by recorders who have given their email address and want to receive a summary of the record they are posting.
+   * Notify owners of posted records where requested.
+   *
+   * Look for records posted by recorders who have given their email address
+   * and want to receive a summary of the record they are posting.
    */
   private function doRecordOwnerNotifications($swift) {
     // Workflow module can dictate that communications should be logged for
@@ -695,7 +706,10 @@ class Scheduled_Tasks_Controller extends Controller {
     $latestUnprocessed = $this->db
       ->select("min(created_on) - '1 second'::interval as maxtime")
       ->from('work_queue')
-      ->in('task', ['task_spatial_index_builder_sample', ' task_spatial_index_builder_occurrence'])
+      ->in('task', [
+        'task_spatial_index_builder_sample',
+        ' task_spatial_index_builder_occurrence',
+        ])
       ->where('claimed_by', NULL)
       ->get()->current();
     if ($latestUnprocessed->maxtime !== NULL) {
