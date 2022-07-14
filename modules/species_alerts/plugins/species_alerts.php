@@ -56,13 +56,13 @@ SELECT DISTINCT
   (
     n_create.id IS NULL
     AND sa.alert_on_entry='t'
-    AND delta.created_on between TO_TIMESTAMP('2022-07-08 08:01:00', 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP('2022-07-08 09:01:00', 'YYYY-MM-DD HH24:MI:SS')
+    AND delta.created_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
   ) as notify_entry,
   (
     n_verify.id IS NULL
     AND sa.alert_on_verify='t'
     AND delta.record_status='V'
-    AND delta.verified_on between TO_TIMESTAMP('2022-07-08 08:01:00', 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP('2022-07-08 09:01:00', 'YYYY-MM-DD HH24:MI:SS')
+    AND delta.verified_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
   ) as notify_verify
 FROM cache_occurrences_functional delta
 JOIN cache_samples_nonfunctional snf on snf.id=delta.sample_id
@@ -91,9 +91,9 @@ JOIN users u ON
   u.id=sa.user_id AND u.deleted='f'
 -- Use left joins to exclude notifications that have already been generated.
 LEFT JOIN notifications n_create ON n_create.user_id=sa.user_id AND n_create.linked_id=delta.id AND n_create.source='species alerts'
-  AND n_create.data LIKE '%has been entered%' and n_create.data like '%"taxon":' || replace(to_json(cttl.taxon)::text, '/', '\\/') || '%'
+  AND n_create.data LIKE '%has been entered%' and n_create.data like '%"taxon":' || replace(to_json(cttl.taxon)::text, '/', '\\\\/') || '%'
 LEFT JOIN notifications n_verify ON n_verify.user_id=sa.user_id AND n_verify.linked_id=delta.id AND n_verify.source='species alerts'
-  AND n_verify.data LIKE '%has been verified%' and n_verify.data like '%"taxon":' || replace(to_json(cttl.taxon)::text, '/', '\\/') || '%'
+  AND n_verify.data LIKE '%has been verified%' and n_verify.data like '%"taxon":' || replace(to_json(cttl.taxon)::text, '/', '\\\\/') || '%'
 WHERE delta.training='f' AND delta.confidential='f'
 AND (
   (
