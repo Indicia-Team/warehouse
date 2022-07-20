@@ -501,6 +501,7 @@ class Import_Controller extends Service_Base_Controller {
    * Requires a $_GET parameter for uploaded_csv - the uploaded file name.
    */
   public function upload() {
+    Session::instance();
     $allowCommitToDB = isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : TRUE;
     $importTempFile = DOCROOT . "import/" . $_GET['uploaded_csv'];
     $ext = $this->getFileExt($_GET['uploaded_csv']);

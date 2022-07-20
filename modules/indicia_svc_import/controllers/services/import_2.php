@@ -500,6 +500,10 @@ SQL;
     header("Content-Type: application/json");
     try {
       $this->authenticate('write');
+      if ($this->in_warehouse) {
+        // Refresh session in case on the same page for a while.
+        Session::instance();
+      }
       // Don't process cache tables immediately to improve performance.
       cache_builder::$delayCacheUpdates = TRUE;
       $fileName = $_POST['data-file'];
