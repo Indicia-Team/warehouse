@@ -26,13 +26,13 @@
     JOIN cache_samples_functional s ON s.id=o.sample_id
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-    LEFT JOIN locations l ON l.id=o.location_id AND l.deleted=false;
+    LEFT JOIN locations l ON l.id=o.location_id AND l.deleted=false AND o.private=false AND o.sensitive=false;
 
     -- Parent sample data
     UPDATE output_rows o
-    SET recorded_parent_location_id = lp.id,
-      recorded_parent_location_name = lp.name,
-      recorded_parent_location_code = lp.code,
+    SET recorded_parent_location_id = CASE WHEN o.private='false' AND o.sensitive='false' THEN lp.id ELSE null END,
+      recorded_parent_location_name = CASE WHEN o.private='false' AND o.sensitive='false' THEN lp.name ELSE null END,
+      recorded_parent_location_code = CASE WHEN o.private='false' AND o.sensitive='false' THEN lp.code ELSE null END,
       parent_sample_attrs_json=snfp.attrs_json
     FROM samples sp
     JOIN cache_samples_nonfunctional snfp ON snfp.id=sp.id
@@ -48,7 +48,8 @@
     JOIN locations lc ON lc.id=sc.location_id AND lc.deleted=false
     JOIN locations lp ON lp.id = lc.parent_id AND lp.deleted=false
     WHERE sc.id=o.sample_id AND sc.deleted=false
-    AND o.recorded_parent_location_id IS NULL;
+    AND o.recorded_parent_location_id IS NULL
+    AND o.private='false' AND o.sensitive='false';
 
     SELECT *
     FROM output_rows o
