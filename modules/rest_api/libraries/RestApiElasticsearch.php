@@ -364,8 +364,10 @@ class RestApiElasticsearch {
           'metadata.website.id' => warehouse::getSharedWebsiteList([RestObjects::$clientWebsiteId], RestObjects::$db, RestObjects::$scope),
         ],
       ];
-      // Only verification gets full precision.
-      $blur = RestObjects::$scope === 'verification' ? 'F' : 'B';
+    }
+    if (substr(RestObjects::$authMethod, -6, 6) !== 'Client') {
+      // Only verification or user's own records get full precision.
+      $blur = (RestObjects::$scope === 'verification' || substr(RestObjects::$scope, 0, 4) === 'user') ? 'F' : 'B';
       $filters[] = ['query_string' => ['query' => "metadata.confidential:false AND metadata.release_status:R AND ((metadata.sensitivity_blur:$blur) OR (!metadata.sensitivity_blur:*))"]];
     }
     if (count($filters) > 0) {
@@ -379,6 +381,7 @@ class RestApiElasticsearch {
         $postObj->query->bool->must = [];
       }
       $postObj->query->bool->must = array_merge($postObj->query->bool->must, $filters);
+      kohana::log('debug', 'permissions: ' . var_export($filters, TRUE));
     }
   }
 
