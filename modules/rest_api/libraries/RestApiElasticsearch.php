@@ -381,7 +381,6 @@ class RestApiElasticsearch {
         $postObj->query->bool->must = [];
       }
       $postObj->query->bool->must = array_merge($postObj->query->bool->must, $filters);
-      kohana::log('debug', 'permissions: ' . var_export($filters, TRUE));
     }
   }
 
