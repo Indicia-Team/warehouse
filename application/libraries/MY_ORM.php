@@ -1903,6 +1903,9 @@ class ORM extends ORM_Core {
             // were included in the submission, so that we can mark-delete the
             // ones that are not in the submission.
             if ($attrDef->multi_value === 't' && count($arr)) {
+              if (substr($attrId, 0, 3) == 'fk_') {
+                $attrId = substr($attrId, 3);
+              }
               if (!isset($multiValueData["attr:$attrId"])) {
                 $multiValueData["attr:$attrId"] = array('attrId' => $attrId, 'ids' => []);
               }
