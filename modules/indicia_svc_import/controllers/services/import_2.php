@@ -876,7 +876,7 @@ SQL;
     foreach ($fields as $field) {
       $targetField = $config['mappings'][$field];
       // @todo Look for date fields more intelligently.
-      if ($config['isExcel'] && preg_match('/date$/', $targetField) && preg_match('/\d+/', $dataRow->$field)) {
+      if ($config['isExcel'] && preg_match('/date$/', $targetField) && preg_match('/^\d+$/', $dataRow->$field)) {
         // Date fields are integers when read from Excel.
         $date = ImportDate::excelToDateTimeObject($dataRow->$field);
         $submission[$targetField] = $date->format('d/m/Y');
@@ -1163,7 +1163,8 @@ SQL;
     $config['tableName'] = $tableName;
     $colsArray = ['_row_id serial'];
     foreach (array_values($config['columns']) as $columnName) {
-      $colsArray[] = "$columnName varchar";
+      // Enclose column names in "" in case reserved word.
+      $colsArray[] = "\"$columnName\" varchar";
     }
     $colsArray[] = 'errors jsonb';
     $colsList = implode(",\n", $colsArray);
@@ -1194,12 +1195,18 @@ SQL;
     while (($count < BATCH_ROW_LIMIT) && ($data = $this->getNextRow($file, $count + $config['rowsLoaded'] + 1, $config))) {
       // Trim and escape the data, then pad to correct number of columns.
       $data = array_map('pg_escape_literal', array_pad(array_map('trim', $data), count($config['columns']), ''));
+      // Also allow for their being too many columns (wider data row than
+      // column titles provided).
+      if (count($data) > count($config['columns'])) {
+        $data = array_slice($data, 0, count($config['columns']));
+      }
       $rows[] = '(' . implode(', ', $data) . ')';
       $count++;
     }
     $config['rowsLoaded'] = $config['rowsLoaded'] + $count;
     if (count($rows)) {
-      $columns = implode(', ', $config['columns']);
+      // Enclose column names in "" in case reserved word.
+      $columns = '"' . implode('", "', $config['columns']) . '"';
       $rowsList = implode("\n,", $rows);
       $query = <<<SQL
 INSERT INTO import_temp.$config[tableName]($columns)
@@ -1383,16 +1390,21 @@ SQL;
    */
   private function tidyUpColumnsList(array $columns) {
     $foundAProperColumn = FALSE;
+    $columns = array_map('trim', $columns);
     // Work backwords in case the spreadsheet contains empty columns on the
     // right.
     for ($i = count($columns) - 1; $i >= 0; $i--) {
-      if (!empty($columns[$i])) {
+      if (!$foundAProperColumn && !empty($columns[$i])) {
         $foundAProperColumn = TRUE;
       }
       elseif ($foundAProperColumn) {
-        if (empty(trim($columns[$i]))) {
+        if (empty($columns[$i])) {
           $columns[$i] = kohana::lang('misc.untitled') . ' - ' . ($i + 1);
         }
+      }
+      else {
+        // Remove columns to the right of the rightmost one with content.
+        unset($columns[$i]);
       }
     }
     $colsAndFieldNames = [];
