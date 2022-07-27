@@ -553,7 +553,11 @@ SQL;
         $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityFields, $config, $parentEntityDataRow);
         if (count($errors) > 0) {
           $config['errorsCount'] += count($childEntityDataRows);
-          $config['rowsProcessed'] += count($childEntityDataRows);
+          if (!$isPrecheck) {
+            // As we won't individually process the occurrences due to error in
+            // the sample, add them to the count.
+            $config['rowsProcessed'] += count($childEntityDataRows);
+          }
           $this->saveErrorsToRows($db, $parentEntityDataRow, $parentEntityFields, $parent->getAllErrors(), $config);
         }
         // If sample saved OK, or we are just prechecking, process the matching
@@ -581,7 +585,7 @@ SQL;
               $config['errorsCount']++;
               $this->saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
             }
-            if (!$isPrecheck) {
+            elseif (!$isPrecheck) {
               $config['rowsInserted']++;
             }
             $config['rowsProcessed']++;
