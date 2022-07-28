@@ -24,9 +24,16 @@
  */
 class Import_template_Model extends ORM {
 
+  protected $belongs_to = [
+    'group_id' => 'group',
+  ];
+
   public function validate(Validation $array, $save = FALSE) {
     // Cleanup leading/trailing whitespace.
     $array->pre_filter('trim');
+
+    // Field validation.
+    $array->add_rules('title', 'required');
     $array->add_rules('entity', 'required');
     $array->add_rules('mappings', 'required');
     $array->add_rules('global_values', 'required');
