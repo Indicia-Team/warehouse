@@ -35,6 +35,7 @@ class Import_template_Model extends ORM {
     // Field validation.
     $array->add_rules('title', 'required');
     $array->add_rules('entity', 'required');
+    $array->add_rules('website_id', 'integer');
     $array->add_rules('mappings', 'required');
     $array->add_rules('global_values', 'required');
     $array->add_rules('group_id', 'integer');
