@@ -134,6 +134,8 @@ class Service_Base_Controller extends Controller {
     // Read calls are done using get values, so we merge the two arrays.
     $array = array_merge($_POST, $_GET);
     $authentic = FALSE;
+    global $remoteAuthUserId;
+    global $remoteUserId;
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token', $array)) {
       $nonce = $array['nonce'];
       $this->cache = new Cache();
@@ -164,7 +166,7 @@ class Service_Base_Controller extends Controller {
           if (isset($password) && preg_match('/:(?<userId>\d+)$/', $array['auth_token'], $matches)
               && sha1("$nonce:$password:$matches[userId]") . ':' . $matches['userId'] === $array['auth_token']) {
             // Store the authorised user ID.
-            $this->auth_user_id = $matches['userId'];
+            $this->auth_user_id = (int) $matches['userId'];
             $authentic = TRUE;
           }
           elseif (isset($password) && sha1("$nonce:$password") === $array['auth_token']) {
@@ -174,23 +176,20 @@ class Service_Base_Controller extends Controller {
           }
           if ($authentic) {
             Kohana::log('info', "Authentication successful.");
+            // Store ID in a global for code outside the service classes.
+            $remoteAuthUserId = $this->auth_user_id;
             // Cache website_password for subsequent use by controllers.
             $this->website_password = $password;
-            // Store ID in a global for code outside the service classes.
-            global $remoteAuthUserId;
-            $remoteAuthUserId = $this->auth_user_id;
+
             if ($id > 0) {
               $this->website_id = $id;
-              if (!empty($_REQUEST['user_id']) && preg_match('/^\d+$/', $_REQUEST['user_id'])) {
-                if ($this->auth_user_id === -1 || $this->auth_user_id == $_REQUEST['user_id']) {
-                  // If the request included a user ID which matches the auth
-                  // token's user ID (if provided), use this ID as the logged
-                  // in user.
-                  $this->user_id = $_REQUEST['user_id'];
-                  global $remoteUserId;
-                  $remoteUserId = $this->user_id;
-                }
+              if ($this->auth_user_id !== -1) {
+                $this->user_id = $this->auth_user_id;
               }
+              elseif (!empty($_REQUEST['user_id']) && preg_match('/^\d+$/', $_REQUEST['user_id'])) {
+                $this->user_id = $_REQUEST['user_id'];
+              }
+              $remoteUserId = $this->user_id;
             }
             else {
               $this->in_warehouse = TRUE;
