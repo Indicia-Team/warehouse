@@ -39,6 +39,11 @@ use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ImportDate;
 
 /**
+ * Exception class for aborting.
+ */
+class RequestAbort extends Exception {}
+
+/**
  * PHPSpreadsheet filter for reading the header row.
  */
 class FirstRowReadFilter implements IReadFilter {
@@ -521,6 +526,9 @@ SQL;
       if (!empty($_POST['save-import-record'])) {
         $this->saveImportRecord($config, json_decode($_POST['save-import-record']));
       }
+      if (!empty($_POST['save-import-template'])) {
+        $this->saveImportTemplate($config, json_decode($_POST['save-import-template']));
+      }
       // @todo Correctly set parent entity for other entities.
       // @todo Handling for entities without parent entity.
       $parentEntityFields = $this->findEntityFields($config['parentEntity'], $config);
@@ -613,6 +621,10 @@ SQL;
       ]);
     }
     catch (Exception $e) {
+      if ($e instanceof RequestAbort) {
+        // Abort request implies response already sent.
+        return;
+      }
       // Save config as it tells us how far we got, making diagnosis and
       // continuation easier.
       if (isset($config)) {
@@ -717,6 +729,7 @@ SQL;
     $import = ORM::factory('import', ['import_guid' => $config['importGuid']]);
     $import->set_metadata();
     $import->entity = $config['entity'];
+    $import->website_id = $config['global-values']['website_id'];
     $import->inserted = $config['rowsInserted'];
     $import->updated = $config['rowsUpdated'];
     $import->errors = $config['errorsCount'];
@@ -728,6 +741,50 @@ SQL;
     }
     $import->import_guid = $config['importGuid'];
     $import->save();
+    $errors = $import->getAllErrors();
+    if (count($errors) > 0) {
+      // This should never happen.
+      throw new Exception(json_encode($errors, TRUE));
+    }
+  }
+
+  /**
+   * Saves an import configuration template.
+   *
+   * @param array $config
+   *   Import configuration.
+   * @param object $importTemplateInfo
+   *   Info about the template to save, including title and
+   *   forceTemplateOverwrite option.
+   */
+  private function saveImportTemplate(array $config, $importTemplateInfo) {
+    $template = ORM::factory('import_template')->find([
+      'title' => $importTemplateInfo->title,
+      'created_by_id' => $this->auth_user_id,
+    ]);
+
+    if ($template->id && !$importTemplateInfo->forceTemplateOverwrite) {
+      // Throw duplicate error, unless duplicates overwrite flag set.
+      http_response_code(409);
+      echo json_encode([
+        'status' => 'conflict',
+        'msg' => 'An import template with that title already exists',
+      ]);
+      throw new RequestAbort();
+    }
+
+    $template->set_metadata();
+    $template->title = $importTemplateInfo->title;
+    $template->entity = $config['entity'];
+    $template->website_id = $config['global-values']['website_id'];
+    $template->mappings = json_encode($config['mappings']);
+    $template->global_values = json_encode($config['global-values']);
+    $template->save();
+    $errors = $template->getAllErrors();
+    if (count($errors) > 0) {
+      // This should never happen.
+      throw new Exception(json_encode($errors, TRUE));
+    }
   }
 
   /**
