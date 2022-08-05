@@ -39,6 +39,11 @@ use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ImportDate;
 
 /**
+ * Exception class for aborting.
+ */
+class RequestAbort extends Exception {}
+
+/**
  * PHPSpreadsheet filter for reading the header row.
  */
 class FirstRowReadFilter implements IReadFilter {
@@ -309,6 +314,30 @@ class Import_2_Controller extends Service_Base_Controller {
   }
 
   /**
+   * Controller action to initialise the import configuration file.
+   */
+  public function init_server_config() {
+    header("Content-Type: application/json");
+    $fileName = $_POST['data-file'];
+    if (!file_exists(DOCROOT . "import/$fileName")) {
+      throw new exception('Parameter data-file refers to a missing file');
+    }
+    $config = $this->getConfig($fileName);
+    if (!empty($_POST['import_template_id'])) {
+      // Merge the template into the config.
+      $template = ORM::factory('import_template', $_POST['import_template_id']);
+      if ($template->id) {
+        // Save the template mappings in the config.
+        $config['mappings'] = json_decode($template->mappings, TRUE);
+      }
+    }
+    $this->saveConfig($fileName, $config);
+    echo json_encode([
+      'status' => 'ok',
+    ]);
+  }
+
+  /**
    * Extract a Zipped upload data file.
    *
    * Controller action that provides a web service
@@ -521,6 +550,9 @@ SQL;
       if (!empty($_POST['save-import-record'])) {
         $this->saveImportRecord($config, json_decode($_POST['save-import-record']));
       }
+      if (!empty($_POST['save-import-template'])) {
+        $this->saveImportTemplate($config, json_decode($_POST['save-import-template']));
+      }
       // @todo Correctly set parent entity for other entities.
       // @todo Handling for entities without parent entity.
       $parentEntityFields = $this->findEntityFields($config['parentEntity'], $config);
@@ -568,8 +600,8 @@ SQL;
             $submission = [
               'sample_id' => $parent->id,
             ];
-            $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityFields, $config, $submission);
             $this->applyGlobalValues($config, $config['entity'], $child->attrs_field_prefix ?? NULL, $submission);
+            $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityFields, $config, $submission);
             if ($config['entitySupportsImportGuid']) {
               $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
@@ -613,6 +645,10 @@ SQL;
       ]);
     }
     catch (Exception $e) {
+      if ($e instanceof RequestAbort) {
+        // Abort request implies response already sent.
+        return;
+      }
       // Save config as it tells us how far we got, making diagnosis and
       // continuation easier.
       if (isset($config)) {
@@ -717,6 +753,7 @@ SQL;
     $import = ORM::factory('import', ['import_guid' => $config['importGuid']]);
     $import->set_metadata();
     $import->entity = $config['entity'];
+    $import->website_id = $config['global-values']['website_id'];
     $import->inserted = $config['rowsInserted'];
     $import->updated = $config['rowsUpdated'];
     $import->errors = $config['errorsCount'];
@@ -728,6 +765,53 @@ SQL;
     }
     $import->import_guid = $config['importGuid'];
     $import->save();
+    $errors = $import->getAllErrors();
+    if (count($errors) > 0) {
+      // This should never happen.
+      throw new Exception(json_encode($errors, TRUE));
+    }
+  }
+
+  /**
+   * Saves an import configuration template.
+   *
+   * @param array $config
+   *   Import configuration.
+   * @param object $importTemplateInfo
+   *   Info about the template to save, including title and
+   *   forceTemplateOverwrite option.
+   */
+  private function saveImportTemplate(array $config, $importTemplateInfo) {
+    if (empty(trim($importTemplateInfo->title))) {
+      return;
+    }
+    $template = ORM::factory('import_template')->find([
+      'title' => $importTemplateInfo->title,
+      'created_by_id' => $this->auth_user_id,
+    ]);
+
+    if ($template->id && !$importTemplateInfo->forceTemplateOverwrite) {
+      // Throw duplicate error, unless duplicates overwrite flag set.
+      http_response_code(409);
+      echo json_encode([
+        'status' => 'conflict',
+        'msg' => 'An import template with that title already exists',
+      ]);
+      throw new RequestAbort();
+    }
+
+    $template->set_metadata();
+    $template->title = $importTemplateInfo->title;
+    $template->entity = $config['entity'];
+    $template->website_id = $config['global-values']['website_id'];
+    $template->mappings = json_encode($config['mappings']);
+    $template->global_values = json_encode($config['global-values']);
+    $template->save();
+    $errors = $template->getAllErrors();
+    if (count($errors) > 0) {
+      // This should never happen.
+      throw new Exception(json_encode($errors, TRUE));
+    }
   }
 
   /**
@@ -879,14 +963,17 @@ SQL;
   private function copyFieldsFromRowToSubmission($dataRow, array $fields, array $config, array &$submission) {
     foreach ($fields as $field) {
       $targetField = $config['mappings'][$field];
-      // @todo Look for date fields more intelligently.
-      if ($config['isExcel'] && preg_match('/date$/', $targetField) && preg_match('/^\d+$/', $dataRow->$field)) {
-        // Date fields are integers when read from Excel.
-        $date = ImportDate::excelToDateTimeObject($dataRow->$field);
-        $submission[$targetField] = $date->format('d/m/Y');
-      }
-      else {
-        $submission[$targetField] = $dataRow->$field;
+      // An empty field shouldn't overwrite a global value.
+      if (!empty($dataRow->$field) || empty($config['global-values'][$targetField])) {
+        // @todo Look for date fields more intelligently.
+        if ($config['isExcel'] && preg_match('/date$/', $targetField) && preg_match('/^\d+$/', $dataRow->$field)) {
+          // Date fields are integers when read from Excel.
+          $date = ImportDate::excelToDateTimeObject($dataRow->$field);
+          $submission[$targetField] = $date->format('d/m/Y');
+        }
+        else {
+          $submission[$targetField] = $dataRow->$field;
+        }
       }
     }
   }
@@ -1266,8 +1353,8 @@ SQL;
       $entity = 'occurrence';
       $model = ORM::Factory($entity);
       $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
-      $config['parentEntity'] = 'sample';
-      $model = ORM::Factory($config['parentEntity']);
+      $parentEntity = 'sample';
+      $model = ORM::Factory($parentEntity);
       $parentSupportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
       // Create a new config object.
       return [
@@ -1276,7 +1363,7 @@ SQL;
         'isExcel' => in_array($ext, ['xls', 'xlsx']),
         // @todo Entity should be dynamic.
         'entity' => $entity,
-        'parentEntity' => $config['parentEntity'],
+        'parentEntity' => $parentEntity,
         'columns' => $this->loadColumnNamesFromFile($fileName),
         'state' => 'initial',
         'rowsLoaded' => 0,

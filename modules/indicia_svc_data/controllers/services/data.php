@@ -134,6 +134,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   protected $tables_without_views = [
     'cache_taxon_searchterms',
     'cache_taxa_taxon_lists',
+    'import_templates',
     'index_websites_website_agreements',
     'verification_rule_data',
     'users_websites',
@@ -227,6 +228,15 @@ class Data_Controller extends Data_Service_Base_Controller {
    */
   public function groups_user() {
     $this->handle_call('groups_user');
+  }
+
+  /**
+   * Provides the /services/data/import_template service.
+   *
+   * Retrieves details of a single groups_user.
+   */
+  public function import_template() {
+    $this->handle_call('import_template');
   }
 
   /**
