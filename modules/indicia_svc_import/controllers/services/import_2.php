@@ -314,6 +314,30 @@ class Import_2_Controller extends Service_Base_Controller {
   }
 
   /**
+   * Controller action to initialise the import configuration file.
+   */
+  public function init_server_config() {
+    header("Content-Type: application/json");
+    $fileName = $_POST['data-file'];
+    if (!file_exists(DOCROOT . "import/$fileName")) {
+      throw new exception('Parameter data-file refers to a missing file');
+    }
+    $config = $this->getConfig($fileName);
+    if (!empty($_POST['import_template_id'])) {
+      // Merge the template into the config.
+      $template = ORM::factory('import_template', $_POST['import_template_id']);
+      if ($template->id) {
+        // Save the template mappings in the config.
+        $config['mappings'] = json_decode($template->mappings, TRUE);
+      }
+    }
+    $this->saveConfig($fileName, $config);
+    echo json_encode([
+      'status' => 'ok',
+    ]);
+  }
+
+  /**
    * Extract a Zipped upload data file.
    *
    * Controller action that provides a web service
@@ -576,8 +600,8 @@ SQL;
             $submission = [
               'sample_id' => $parent->id,
             ];
-            $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityFields, $config, $submission);
             $this->applyGlobalValues($config, $config['entity'], $child->attrs_field_prefix ?? NULL, $submission);
+            $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityFields, $config, $submission);
             if ($config['entitySupportsImportGuid']) {
               $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
@@ -758,6 +782,9 @@ SQL;
    *   forceTemplateOverwrite option.
    */
   private function saveImportTemplate(array $config, $importTemplateInfo) {
+    if (empty(trim($importTemplateInfo->title))) {
+      return;
+    }
     $template = ORM::factory('import_template')->find([
       'title' => $importTemplateInfo->title,
       'created_by_id' => $this->auth_user_id,
@@ -936,14 +963,17 @@ SQL;
   private function copyFieldsFromRowToSubmission($dataRow, array $fields, array $config, array &$submission) {
     foreach ($fields as $field) {
       $targetField = $config['mappings'][$field];
-      // @todo Look for date fields more intelligently.
-      if ($config['isExcel'] && preg_match('/date$/', $targetField) && preg_match('/^\d+$/', $dataRow->$field)) {
-        // Date fields are integers when read from Excel.
-        $date = ImportDate::excelToDateTimeObject($dataRow->$field);
-        $submission[$targetField] = $date->format('d/m/Y');
-      }
-      else {
-        $submission[$targetField] = $dataRow->$field;
+      // An empty field shouldn't overwrite a global value.
+      if (!empty($dataRow->$field) || empty($config['global-values'][$targetField])) {
+        // @todo Look for date fields more intelligently.
+        if ($config['isExcel'] && preg_match('/date$/', $targetField) && preg_match('/^\d+$/', $dataRow->$field)) {
+          // Date fields are integers when read from Excel.
+          $date = ImportDate::excelToDateTimeObject($dataRow->$field);
+          $submission[$targetField] = $date->format('d/m/Y');
+        }
+        else {
+          $submission[$targetField] = $dataRow->$field;
+        }
       }
     }
   }
@@ -1323,8 +1353,8 @@ SQL;
       $entity = 'occurrence';
       $model = ORM::Factory($entity);
       $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
-      $config['parentEntity'] = 'sample';
-      $model = ORM::Factory($config['parentEntity']);
+      $parentEntity = 'sample';
+      $model = ORM::Factory($parentEntity);
       $parentSupportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
       // Create a new config object.
       return [
@@ -1333,7 +1363,7 @@ SQL;
         'isExcel' => in_array($ext, ['xls', 'xlsx']),
         // @todo Entity should be dynamic.
         'entity' => $entity,
-        'parentEntity' => $config['parentEntity'],
+        'parentEntity' => $parentEntity,
         'columns' => $this->loadColumnNamesFromFile($fileName),
         'state' => 'initial',
         'rowsLoaded' => 0,
