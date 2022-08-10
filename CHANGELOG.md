@@ -1,5 +1,15 @@
+# Version 8.4.0
+*2022-08-10*
+
+* Change to authorisation so that user ID in authorisation token takes precedence over user ID in
+  request parameters.
+* Escaping of email addresses fixed when checking for duplicates.
+* Fixes purging of import files when scheduled tasks run from Cron with the working directory not
+  set to web root.
+* Support for configuration templates for the v2 importer.
+* Adds website_id to the data captured in the imports table (v2 importer).
 # Version 8.3.0
-* 2022-07-13*
+*2022-07-13*
 
 Scheduled tasks called from the command-line can now have the `tasks` parameter set from the
 command-line. Previously this parameter was only available when called from a browser URL via a
