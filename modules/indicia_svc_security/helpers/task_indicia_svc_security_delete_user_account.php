@@ -521,6 +521,30 @@ SET updated_by_id = $anonymousUserId
 WHERE g.updated_by_id = $userId
 AND g.website_id = $websiteId;
 
+-- Imports
+UPDATE imports
+SET created_by_id = $anonymousUserId
+WHERE created_by_id = $userId
+AND website_id = $websiteId;
+
+-- User specific (non-group) import templates can be anonymised and deleted.
+UPDATE import_templates i
+SET created_by_id = $anonymousUserId, deleted=true, updated_on=now()
+WHERE created_by_id = $userId
+AND website_id=$websiteId
+AND group_id IS NULL;
+
+-- Remaining templates are group specific, so anonymise.
+UPDATE import_templates
+SET created_by_id = $anonymousUserId
+WHERE created_by_id = $userId
+AND website_id = $websiteId;
+
+UPDATE import_templates
+SET updated_by_id = $anonymousUserId
+WHERE updated_by_id = $userId
+AND website_id = $websiteId;
+
 -- For notifications there are 2 statements.
 -- This one repoints notifications associated with occurrences when they leave a website
 UPDATE notifications n

@@ -172,8 +172,9 @@ class ORM extends ORM_Core {
    */
   public function __construct($id = NULL) {
     if (is_object($id) || $id != -1) {
-      // use caching, so things don't slow down if there are lots of plugins. the object_name does not
-      // exist yet as we haven't called the parent construct, so we build our own.
+      // Use caching, so things don't slow down if there are lots of plugins.
+      // The object_name does not exist yet as we haven't called the parent
+      // construct, so we build our own.
       $object_name = strtolower(substr(get_class($this), 0, -6));
       $cacheId = 'orm-' . $object_name;
       $this->cache = Cache::instance();
@@ -229,71 +230,78 @@ class ORM extends ORM_Core {
    * operation.
    */
   public function getSubmissionResponseMetadata() {
-    $r = array(
+    $r = [
       'model' => $this->object_name,
       'id' => $this->id,
-    );
+    ];
     // Add the external key and timestamps if present
-    if (!empty($this->external_key))
+    if (!empty($this->external_key)) {
       $r['external_key'] = $this->external_key;
-    if (!empty($this->search_code))
+    }
+    if (!empty($this->search_code)) {
       $r['search_code'] = $this->search_code;
-    if (!empty($this->created_on))
+    }
+    if (!empty($this->created_on)) {
       $r['created_on'] = $this->created_on;
-    if (!empty($this->updated_on))
+    }
+    if (!empty($this->updated_on)) {
       $r['updated_on'] = $this->updated_on;
-    if (count($this->nestedChildModelIds))
+    }
+    if (count($this->nestedChildModelIds)) {
       $r['children'] = $this->nestedChildModelIds;
-    if (count($this->nestedParentModelIds))
+    }
+    if (count($this->nestedParentModelIds)) {
       $r['parents'] = $this->nestedParentModelIds;
+    }
     return $r;
   }
 
   /**
-   * Override load_values to add in a vague date field. Also strips out any custom attribute values which don't go into this model.
-   * @param   array  values to load
-   * @return  ORM
+   * Override load_values to add in a vague date field.
+   *
+   * Also strips out any custom attribute values which don't go into this model.
+   *
+   * @param array $values
+   *   Values to load.
+   *
+   * @return ORM
    */
-  public function load_values(array $values)
-  {
-    // clear out any values which match this attribute field prefix
+  public function load_values(array $values) {
+    // Clear out any values which match this attribute field prefix.
     if (isset($this->attrs_field_prefix)) {
-      foreach ($values as $key=>$value) {
-        if (substr($key, 0, strlen($this->attrs_field_prefix)+1)==$this->attrs_field_prefix.':') {
+      foreach ($values as $key => $value) {
+        if (substr($key, 0, strlen($this->attrs_field_prefix) + 1) == $this->attrs_field_prefix . ':') {
           unset($values[$key]);
         }
       }
     }
     parent::load_values($values);
-    // Add in date field
-    if (array_key_exists('date_type', $this->object) && !empty($this->object['date_type']))
-    {
-      $vd = vague_date::vague_date_to_string(array
-      (
+    // Add in date field.
+    if (array_key_exists('date_type', $this->object) && !empty($this->object['date_type'])) {
+      $vd = vague_date::vague_date_to_string([
         $this->object['date_start'],
         $this->object['date_end'],
-        $this->object['date_type']
-      ));
+        $this->object['date_type'],
+      ]);
       $this->object['date'] = $vd;
     }
     return $this;
   }
 
   /**
-   * Override the reload_columns method to add the vague_date virtual field
-   * @param bool $force Reload the columns from the db even if already loaded
+   * Override the reload_columns method to add the vague_date virtual field.
+   *
+   * @param bool $force
+   *   Reload the columns from the db even if already loaded.
+   *
    * @return $this|\ORM
-   * @throws \Kohana_Database_Exception
    */
-  public function reload_columns($force = FALSE)
-  {
-    if ($force === TRUE OR empty($this->table_columns))
-    {
-      // Load table columns
+  public function reload_columns($force = FALSE) {
+    if ($force === TRUE OR empty($this->table_columns)) {
+      // Load table columns.
       $this->table_columns = postgreSQL::list_fields($this->table_name, $this->db);
-      // Vague date
-      if (array_key_exists('date_type', $this->table_columns))
-      {
+      // Vague date.
+      if (array_key_exists('date_type', $this->table_columns)) {
         $this->table_columns['date']['type'] = 'String';
       }
     }
@@ -302,29 +310,37 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Provide an accessor so that the view helper can retrieve the error for the model by field name.
-   * Will also retrieve errors from linked models (models that were posted in the same submission)
-   * if the field name is of the form model:fieldname.
+   * Get error for a given field name.
    *
-   * @param string $fieldname Name of the field to retrieve errors for. The fieldname can either be
-   * simple, or of the form model:fieldname in which linked models can also be checked for errors. If the
-   * submission structure defines the fieldPrefix for the model then this is used instead of the model name.
-   * @return string The error text.
+   * Provide an accessor so that the view helper can retrieve the error for the
+   * model by field name. Will also retrieve errors from linked models (models
+   * that were posted in the same submission) if the field name is of the form
+   * model:fieldname.
+   *
+   * @param string $fieldname
+   *   Name of the field to retrieve errors for. The fieldname can either be
+   *   simple, or of the form model:fieldname in which linked models can also
+   *   be checked for errors. If the submission structure defines the
+   *   fieldPrefix for the model then this is used instead of the model name.
+   *
+   * @return string
+   *   The error text.
    */
   public function getError($fieldname) {
-    $r='';
+    $r = '';
     if (array_key_exists($fieldname, $this->errors)) {
-      // model is unspecified, so load error from this model.
-      $r=$this->errors[$fieldname];
-    } elseif (strpos($fieldname, ':')!==FALSE) {
-      list($model, $field)=explode(':', $fieldname);
-      // model is specified
-      $struct=$this->get_submission_structure();
+      // Model is unspecified, so load error from this model.
+      $r = $this->errors[$fieldname];
+    }
+    elseif (strpos($fieldname, ':') !== FALSE) {
+      list($model, $field) = explode(':', $fieldname);
+      // Model is specified.
+      $struct = $this->get_submission_structure();
       $fieldPrefix = array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : $this->object_name;
-      if ($model==$fieldPrefix) {
-        // model is this model
+      if ($model == $fieldPrefix) {
+        // Model is this model.
         if (array_key_exists($field, $this->errors)) {
-          $r=$this->errors[$field];
+          $r = $this->errors[$field];
         }
       }
     }
@@ -333,14 +349,15 @@ class ORM extends ORM_Core {
 
   /**
    * Retrieve an array containing all errors.
+   *
    * The array entries are of the form 'entity:field => value'.
    */
-  public function getAllErrors()
-  {
-    // Get this model's errors, ensuring array keys have prefixes identifying the entity
+  public function getAllErrors() {
+    // Get this model's errors, ensuring array keys have prefixes identifying
+    // the entity.
     foreach ($this->errors as $key => $value) {
-      if (strpos($key, ':')===FALSE) {
-        $this->errors[$this->object_name.':'.$key]=$value;
+      if (strpos($key, ':') === FALSE) {
+        $this->errors[$this->object_name . ':' . $key] = $value;
         unset($this->errors[$key]);
       }
     }
@@ -361,13 +378,14 @@ class ORM extends ORM_Core {
   /**
    * ORM validate method.
    *
-   * Override the ORM validate method to store the validation errors in an array, making
-   * them accessible to the views.
+   * Override the ORM validate method to store the validation errors in an
+   * array, making them accessible to the views.
    *
    * @param Validation $array
    *   Validation array object.
    * @param bool $save
-   *   Optional. True if this call also saves the data, false to just validate. Default is false.
+   *   Optional. True if this call also saves the data, false to just validate.
+   *   Default is false.
    *
    * @return bool
    *   Returns TRUE on success or FALSE on fail.
@@ -404,13 +422,13 @@ class ORM extends ORM_Core {
           if (function_exists($plugin . '_orm_pre_save_processing')) {
             $state[$plugin] = call_user_func_array(
               $plugin . '_orm_pre_save_processing',
-              array(
+              [
                 $this->db,
                 empty($this->identifiers['website_id']) ? NULL : $this->identifiers['website_id'],
                 $this->object_name,
                 $this,
-                &$array
-              )
+                &$array,
+              ]
             );
           }
         }
@@ -419,8 +437,8 @@ class ORM extends ORM_Core {
 
     $modelFields = $array->as_array();
     $fields_to_copy = $this->unvalidatedFields;
-    // The created_by_id and updated_by_id fields can be specified by web service calls if the
-    // caller knows which Indicia user is making the post.
+    // The created_by_id and updated_by_id fields can be specified by web
+    // service calls if the caller knows which Indicia user is making the post.
     if (!empty($modelFields['created_by_id'])) {
       $fields_to_copy[] = 'created_by_id';
     }
@@ -429,9 +447,9 @@ class ORM extends ORM_Core {
     }
     foreach ($fields_to_copy as $a) {
       if (array_key_exists($a, $modelFields)) {
-        // When a field allows nulls, convert empty values to null. Otherwise we end up trying to store '' in non-string
-        // fields such as dates.
-        if ($array[$a] === '' && isset($this->table_columns[$a]['null']) && $this->table_columns[$a]['null']==1) {
+        // When a field allows nulls, convert empty values to null. Otherwise
+        // we end up trying to store '' in non-string fields such as dates.
+        if ($array[$a] === '' && isset($this->table_columns[$a]['null']) && $this->table_columns[$a]['null'] == 1) {
           $array[$a] = NULL;
         }
         $this->__set($a, $array[$a]);
@@ -478,32 +496,32 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * For a model that is about to be saved, sets the metadata created and
-   * updated field values.
+   * Sets the metadata created and updated field values before save.
    *
    * @param object $obj
    *   The object which will have metadata set on it. Defaults to this model.
    */
   public function set_metadata($obj = NULL) {
+    global $remoteUserId;
     if ($obj == NULL) {
       $obj = $this;
     }
     $force = TRUE;
-    // At this point we determine the id of the logged in user,
-    // and use this in preference to the default id if possible.
-    if (isset($_SESSION['auth_user']))
+    // Find the user ID from several possible places, in order of precedence.
+    if (isset($_SESSION['auth_user'])) {
+      // User logged into warehouse.
       $userId = $_SESSION['auth_user']->id;
+    }
+    elseif (isset($remoteUserId)) {
+      // User ID from request parameter.
+      $userId = $remoteUserId;
+    }
     else {
-      global $remoteUserId;
-      if (isset($remoteUserId))
-        $userId = $remoteUserId;
-      else {
-        // Don't force overwrite of user IDs that already exist in the record, since
-        // we are just using a default.
-        $force = FALSE;
-        $defaultUserId = Kohana::config('indicia.defaultPersonId');
-        $userId = ($defaultUserId ? $defaultUserId : 1);
-      }
+      // User ID from a global default.
+      $defaultUserId = Kohana::config('indicia.defaultPersonId');
+      $userId = ($defaultUserId ? $defaultUserId : 1);
+      // Don't force overwrite of user IDs that already exist in the record.
+      $force = FALSE;
     }
     // Set up the created and updated metadata for the record.
     if (!$obj->id && array_key_exists('created_on', $obj->table_columns)) {
@@ -512,8 +530,8 @@ class ORM extends ORM_Core {
         $obj->created_by_id = $userId;
       }
     }
-    // TODO: Check if updated metadata present in this entity,
-    // and also use correct user.
+    // @todo Check if updated metadata present in this entity, and also use
+    // correct user.
     if (array_key_exists('updated_on', $obj->table_columns)) {
       $obj->updated_on = date("Ymd H:i:s");
       if ($force or !$obj->updated_by_id) {
@@ -542,20 +560,29 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Return a displayable caption for the item, defined as the content of the field with the
-   * same name as search_field.
+   * Return a displayable caption for the item.
+   *
+   * Defined as the content of the field with the same name as search_field.
+   *
+   * @return string
+   *   Caption for an existing entry.
    */
   public function caption() {
     if ($this->id) {
       return $this->__get($this->search_field);
-    } else {
+    }
+    else {
       return $this->getNewItemCaption();
     }
   }
 
   /**
-   * Retrieve the caption of a new entry of this model type. Overrideable as required.
-   * @return string Caption for a new entry.
+   * Retrieve the caption of a new entry of this model type.
+   *
+   * Overrideable as required.
+   *
+   * @return string
+   *   Caption for a new entry.
    */
   protected function getNewItemCaption() {
     return ucwords(str_replace('_', ' ', $this->object_name));
@@ -564,7 +591,9 @@ class ORM extends ORM_Core {
   /**
    * Indicates if this model type can create new instances from data supplied in its caption format.
    * Overrideable as required.
-   * @return boolean, override to true if your model supports this.
+   *
+   * @return bool
+   *   Override to true if your model supports this.
    */
   protected function canCreateFromCaption() {
     return FALSE;
@@ -572,42 +601,47 @@ class ORM extends ORM_Core {
 
   /**
    * Puts each supplied caption in a submission and sends it to the supplied model.
-   * @return array, an array of record id values for the created records.
+   *
+   * @return array
+   *   An array of record id values for the created records.
    */
   private function createRecordsFromCaptions() {
     $r = [];
 
-    // Establish the right model and check it supports create from captions,
+    // Establish the right model and check it supports create from captions.
     $modelname = $this->submission['fields']['insert_captions_to_create']['value'];
     $m = ORM::factory($modelname);
     if ($m->canCreateFromCaption()) {
-      // get the array of captions
+      // Get the array of captions.
       $fieldname = $this->submission['fields']['insert_captions_use']['value'];
       if (empty($this->submission['fields'][$fieldname])
         || empty($this->submission['fields'][$fieldname]['value'])) {
         return $r;
       }
       $captions = $this->submission['fields'][$fieldname]['value'];
-      // build a skeleton submission
-      $sub = array(
+      // Build a skeleton submission.
+      $sub = [
         'id' => $modelname,
-        'fields' => array(
-          'caption' => []
-        )
-      );
-      // submit each caption to create a record, unless it exists
-      $i=0;
+        'fields' => [
+          'caption' => [],
+        ],
+      ];
+      // Submit each caption to create a record, unless it exists.
+      $i = 0;
       foreach ($captions as $value) {
-        // sanitize caption
-        $value = trim(preg_replace('/\s+/',' ', $value));
+        // Sanitize caption.
+        $value = trim(preg_replace('/\s+/', ' ', $value));
         $id = $m->findByCaption($value);
-        if ($id > 0) { // record exists
+        if ($id > 0) {
+          // Record exists.
           $r[$i] = $id;
-        } else { // create new record
+        }
+        else {
+          // Create new record.
           $sub['fields']['caption']['value'] = $value;
           $m = ORM::factory($modelname);
           $m->submission = $sub;
-          // copy down the website id and survey id
+          // Copy down the website id and survey id.
           $m->identifiers = array_merge($this->identifiers);
           $r[$i] = $m->inner_submit();
         }
@@ -622,18 +656,20 @@ class ORM extends ORM_Core {
    * When using a sublist control (or any similar multi-value control), non-existing
    * values added  to the list are posted as captions, These need to be converted to
    * IDs in the table identified
-   Puts each supplied record id into the submission to replace the captions
+   * Puts each supplied record id into the submission to replace the captions
    * so we store IDs instead.
+   *
    * @param array $ids
-   * @return boolean.
+   *
+   * @return bool
    */
-  private function createIdsFromCaptions($ids) {
+  private function createIdsFromCaptions(array $ids) {
     $fieldname = $this->submission['fields']['insert_captions_use']['value'];
     if (empty($ids)) {
-      $this->submission['fields'][$fieldname] = ['value'=>[]];
+      $this->submission['fields'][$fieldname] = ['value' => []];
     }
     else {
-      $keys = array_fill(0, sizeof($ids), 'value');
+      $keys = array_fill(0, count($ids), 'value');
       $a = array_fill_keys($keys, $ids);
       $this->submission['fields'][$fieldname] = $a;
     }
@@ -642,7 +678,10 @@ class ORM extends ORM_Core {
 
   /**
    * Overridden if this model type can create new instances from data supplied in its caption format.
-   * @return integer The id of the first matching record with the supplied caption or 0 if no match.
+   *
+   * @return int
+   *   The id of the first matching record with the supplied caption or 0 if no
+   *   match.
    */
   protected function findByCaption($caption) {
     return 0;
@@ -651,7 +690,9 @@ class ORM extends ORM_Core {
   /**
    * Overridden if this model type can create new instances from data supplied in its caption format.
    * Does nothing if not overridden.
-   * @return boolean, override to true if your model supports this.
+   *
+   * @return bool
+   *   Override to true if your model supports this.
    */
   protected function handleCaptionSubmission() {
     return FALSE;
@@ -1105,7 +1146,7 @@ class ORM extends ORM_Core {
       $exactMatches = [];
       foreach ($thisValues as $column => $value) {
         if (array_key_exists($column, $vArray) &&
-            !is_array($vArray[$column]) &&
+            !is_array($vArray[$column]) && !is_array($value) &&
             (string) $vArray[$column] === (string) $value) {
           $exactMatches[] = $value;
         }
@@ -1176,17 +1217,40 @@ class ORM extends ORM_Core {
    */
   private function populateFkLookups() {
     $r=TRUE;
+    // The row might have more than one parent, keep track of database matches for previous column so we can check they are consistent.
+    $previousParentFksArray = [];
+    // Does the row have more than one parent column, where there is no exact match for both in the database.
+    $inconsistentParentFkFound = FALSE;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
         if (!empty($b['fkSearchValue'])) {
           // if doing a parent lookup in a list based entity (terms or taxa), then filter to lookup within the list.
-          if (isset($this->list_id_field) && $b['fkIdField']==='parent_id' && !isset($b['fkSearchFilterField'])) {
-            $b['fkSearchFilterField']=$this->list_id_field;
-            $b['fkSearchFilterValue']=$this->submission['fields'][$this->list_id_field]['value'];
+          if (isset($this->list_id_field) && $b['fkIdField'] === 'parent_id' && !isset($b['fkSearchFilterField'])) {
+            $b['fkSearchFilterField'] = $this->list_id_field;
+            $b['fkSearchFilterValue'] = $this->submission['fields'][$this->list_id_field]['value'];
           }
           $fk = $this->fkLookup($b);
           if ($fk) {
-            $this->submission['fields'][$b['fkIdField']] = array('value' => $fk);
+            if ($b['fkIdField'] === 'parent_id') {
+              // A parent might match more than one item, for instance more than one location could have same name.
+              $allParentFksArray = [];
+              // Get all possible matches for parent column.
+              $allFks = $this->fkLookup($b, TRUE);
+              // Convert to single dimensional array.
+              foreach ($allFks as $idx => $fkItem) {
+                $allParentFksArray[$idx] = $fkItem->id;
+              }
+              // If the matches for the current parent column don't include any of the matches for the previous parent column, then we need to warn the user their data is inconsistent with the database.
+              if (!empty($previousParentFksArray) && empty(array_intersect($allParentFksArray, $previousParentFksArray))) {
+                $inconsistentParentFkFound = TRUE;
+              }
+              // If there is only 1 match for the current parent and it appears in the matches for the previous parent, then we know that must be the lookup we what to use.
+              if (count(array_intersect($allParentFksArray, $previousParentFksArray)) === 1) {
+                $fk = $allParentFksArray[0];
+              }
+              $previousParentFksArray = $allParentFksArray;
+            }
+            $this->submission['fields'][$b['fkIdField']] = ['value' => $fk];
           } else {
             // look for a translation of the field name
             $lookingIn = kohana::lang("default.dd:{$this->object_name}:$a");
@@ -1202,22 +1266,33 @@ class ORM extends ORM_Core {
         }
       }
     }
+    if ($inconsistentParentFkFound === TRUE) {
+      $this->errors[$a] = "More than one parent column has been specified, " .
+          "but there is no data on the system that matches all the parent columns in this row";
+      $r = FALSE;
+    }
     return $r;
   }
 
-  /**Function to return key of item defined in the fkArr parameter
-   * @param array $fkArr Contains definition of item to look up. Contains the following fields
-   *  fkTable => table in which to perform lookup
-   *  fkSearchField => field in table to search
-   *  fkSearchValue => value to find in search field
-   *  fkSearchFilterField => field by which to filter search
-   *  fkSearchFilterValue => filter value
-   *  fkExcludeDeletedRecords => whether to include a where clause to exclude deleted records.
-   *  fkWebsite => optional website_id filter.
+  /**
+   * Function to return key of item defined in the fkArr parameter.
    *
-   * @return Foreign key value or false if not found
+   * @param array $fkArr
+   *   Contains definition of item to look up. Contains the following fields
+   *   * fkTable => table in which to perform lookup
+   *   * fkSearchField => field in table to search
+   *   * fkSearchValue => value to find in search field
+   *   * fkSearchFilterField => field by which to filter search
+   *   * fkSearchFilterValue => filter value
+   *   * fkExcludeDeletedRecords => whether to include a where clause to exclude deleted records.
+   *   * fkWebsite => optional website_id filter.
+   * @param bool $returnAllResults
+   *   Should all possible matches be returned, or just one match chosen by the function logic.
+   *
+   * @return mixed
+   *   Object or array of foreign key value, or false if not found.
    */
-  protected function fkLookup($fkArr) {
+  protected function fkLookup($fkArr, $returnAllResults = FALSE) {
     $r = FALSE;
     $key = '';
     if (isset($fkArr['fkSearchFilterValue'])) {
@@ -1227,7 +1302,7 @@ class ORM extends ORM_Core {
         $filterValue = $fkArr['fkSearchFilterValue'];
     } else $filterValue = '';
 
-    if (ORM::$cacheFkLookups) {
+    if (ORM::$cacheFkLookups && $returnAllResults == FALSE) {
       $keyArr=array('lookup', $fkArr['fkTable'], $fkArr['fkSearchField'], $fkArr['fkSearchValue']);
       // cache must be unique per filtered value (e.g. when lookup up a taxa in a taxon list).
       if ($filterValue != '')
@@ -1243,42 +1318,60 @@ class ORM extends ORM_Core {
         $where[$fkArr['fkSearchFilterField']] = $filterValue;
       }
       if (isset($fkArr['fkExcludeDeletedRecords']) && $fkArr['fkExcludeDeletedRecords']) {
-          $where['deleted'] = 'f';
+        $where['deleted'] = 'f';
       }
       if (isset($fkArr['fkWebsite'])) {
-          $where['website_id'] = $fkArr['fkWebsite'];
+        $where['website_id'] = $fkArr['fkWebsite'];
       }
-      // for locations we have to filter by the website
-      $matches = $this->db
-        ->select('id')
-        ->from(inflector::plural($fkArr['fkTable']))
-        ->where($where)
-        ->limit(1)
-        ->get();
-      if (count($matches)===0 && $fkArr['fkSearchField']!='id') {
+      // for locations we have to filter by the website.
+      if ($returnAllResults == TRUE) {
+        $matches = $this->db
+          ->select('id')
+          ->from(inflector::plural($fkArr['fkTable']))
+          ->where($where)
+          ->get()->result_array();
+      }
+      else {
+        $matches = $this->db
+          ->select('id')
+          ->from(inflector::plural($fkArr['fkTable']))
+          ->where($where)
+          ->limit(1)
+          ->get();
+      }
+      if (count($matches) === 0 && $fkArr['fkSearchField'] != 'id') {
         // try a slower case insensitive search before giving up, but don't bother if id specified as ints don't like ilike
         $this->db
           ->select('id')
           ->from(inflector::plural($fkArr['fkTable']))
-          ->where("(".$fkArr['fkSearchField']." ilike '".strtolower(str_replace("'","''",$fkArr['fkSearchValue']))."')");
-        if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField'])
-          $this->db->where(array($fkArr['fkSearchFilterField']=>$filterValue));
-        $matches = $this->db
-          ->limit(1)
-          ->get();
+          ->where("($fkArr[fkSearchField] ilike '" . strtolower(str_replace("'", "''", $fkArr['fkSearchValue'])) . "')");
+        if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) {
+          $this->db->where([$fkArr['fkSearchFilterField'] => $filterValue]);
+        }
+        if ($returnAllResults == TRUE) {
+          $matches = $this->db
+            ->get()->result_array();
+        }
+        else {
+          $matches = $this->db
+            ->limit(1)
+            ->get();
+        }
       }
-      if (count($matches) > 0) {
-        $r = $matches[0]->id;
-        if (ORM::$cacheFkLookups) {
-          $this->cache->set($key, $r, array('lookup'));
+      if ($returnAllResults == TRUE) {
+        $r = $matches;
+      }
+      else {
+        if (count($matches) > 0) {
+          $r = $matches[0]->id;
+          if (ORM::$cacheFkLookups) {
+            $this->cache->set($key, $r, ['lookup']);
+          }
         }
       }
     }
-
     return $r;
   }
-
-
 
   /**
    * Generate any records that this model contains an FK reference to in the

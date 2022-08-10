@@ -20,26 +20,27 @@
  */
 
 /**
- * Model class for the imports table.
+ * Model class for the import_templates table.
  */
-class Import_Model extends ORM {
+class Import_template_Model extends ORM {
+
+  protected $belongs_to = [
+    'group_id' => 'group',
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
     // Cleanup leading/trailing whitespace.
     $array->pre_filter('trim');
 
     // Field validation.
+    $array->add_rules('title', 'required');
     $array->add_rules('entity', 'required');
     $array->add_rules('website_id', 'integer');
-    $array->add_rules('inserted', 'integer', 'required');
-    $array->add_rules('updated', 'integer', 'required');
-    $array->add_rules('import_guid', 'required');
     $array->add_rules('mappings', 'required');
     $array->add_rules('global_values', 'required');
+    $array->add_rules('group_id', 'integer');
 
-    $this->unvalidatedFields = [
-      'description',
-    ];
+    $this->unvalidatedFields = [];
     return parent::validate($array, $save);
   }
 

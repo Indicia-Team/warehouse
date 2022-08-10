@@ -122,7 +122,7 @@ class warehouse {
   public static function purgeOldFiles($path, $age) {
     // First, get an array of files sorted by date.
     $files = [];
-    $dir = opendir($path);
+    $dir = opendir(DOCROOT . $path);
     // Skip certain file names.
     $exclude = [
       '.',

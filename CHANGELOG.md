@@ -18,6 +18,7 @@ query parameter.
 * Adds report library/taxa/taxa_list_for_app to aid in extracting lists of taxa to use in apps.
 * Removes an unused field groups.published.
 * Docker image includes correct URL for GBIF backbone taxonomy.
+* Fix to verbose responses in REST API, with support for attributes across multiple records.
 # Version 8.0.0
 *2022-04-29*
 
