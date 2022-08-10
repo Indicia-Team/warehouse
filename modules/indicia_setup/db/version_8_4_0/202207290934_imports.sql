@@ -5,3 +5,4 @@ ALTER TABLE imports
       ON UPDATE NO ACTION ON DELETE NO ACTION;
 
 CREATE INDEX fki_imports_created_by_id ON imports(created_by_id);
+CREATE INDEX fki_imports_website_id ON imports(website_id);

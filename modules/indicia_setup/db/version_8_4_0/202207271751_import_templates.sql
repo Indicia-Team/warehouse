@@ -41,6 +41,6 @@ COMMENT ON COLUMN import_templates.updated_on IS 'Date this record was updated.'
 COMMENT ON COLUMN import_templates.updated_by_id IS 'Foreign key to the users table (updater).';
 COMMENT ON COLUMN import_templates.deleted IS 'Has this record been deleted?';
 
-CREATE UNIQUE INDEX ix_unique_user_import_templates ON import_templates (created_by_id, title)  WHERE deleted='f' AND group_id IS NULL;
-CREATE UNIQUE INDEX ix_unique_group_import_templates ON import_templates (group_id, title)  WHERE deleted='f' AND group_id IS NOT NULL;
-CREATE INDEX fki_import_templates_updated_by_id ON import_templates(updated_by_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ix_unique_user_import_templates ON import_templates (created_by_id, title)  WHERE deleted='f' AND group_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS  ix_unique_group_import_templates ON import_templates (group_id, title)  WHERE deleted='f' AND group_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS fki_import_templates_updated_by_id ON import_templates(updated_by_id);
