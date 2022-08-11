@@ -864,11 +864,11 @@ SQL;
    */
   private function findEntityFields($entity, array $config) {
     $fields = [];
+    $attrPrefix = $this->getAttrPrefix($entity);
     // @todo Also include attribute columns where appropriate.
     foreach ($config['mappings'] as $dbFieldInTempTable => $dest) {
       $dest = $config['mappings'][$dbFieldInTempTable];
       $destFieldParts = explode(':', $dest);
-      $attrPrefix = $this->getAttrPrefix($entity);
       if ($destFieldParts[0] === $entity || ($attrPrefix && $destFieldParts[0] === $attrPrefix)) {
         $fields[] = $dbFieldInTempTable;
       }
@@ -1024,7 +1024,7 @@ SQL;
     // Build a filter to extract rows for this parent entity.
     $wheresList = [];
     foreach ($fields as $field) {
-      $wheresList[] = "$field='" . $parentEntityDataRow->$field . "'";
+      $wheresList[] = "COALESCE($field::text, '')='" . $parentEntityDataRow->$field . "'";
     }
     $wheres = implode("\nAND ", $wheresList);
     // Now retrieve the sub-entity rows.
