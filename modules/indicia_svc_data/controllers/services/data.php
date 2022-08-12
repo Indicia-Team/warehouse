@@ -551,19 +551,19 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
   * Provides the /services/data/taxon_rank service.
-  * Provides access to taxon_lists.
+
+  * Provides access to taxon ranks.
   */
-  public function taxon_rank()
-  {
+  public function taxon_rank() {
     $this->handle_call('taxon_rank');
   }
 
   /**
-  * Provides the /services/data/taxa_search service.
-  * Provides access to taxon_lists.
-  */
-  public function taxa_search()
-  {
+   * Provides the /services/data/taxa_search service.
+   *
+   * Provides search for taxon names.
+   */
+  public function taxa_search() {
     if (array_key_exists('submission', $_POST)) {
       throw new exception('Cannot post to the taxa_search URL.');
     }
@@ -571,40 +571,44 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Provides the /services/data/taxon_relation_type service.
-  * Provides access to taxon_relation_types.
-  */
-  public function taxon_relation_type()
-  {
+   * Provides the /services/data/taxon_relation_type service.
+   *
+   * Provides access to taxon_relation_types.
+   */
+  public function taxon_relation_type() {
     $this->handle_call('taxon_relation_type');
   }
 
   /**
-  * Provides the /services/data/taxa_taxon_list service.
-  * Retrieves details of taxa on a taxon_list.
-  */
+   * Provides the /services/data/taxa_taxon_list service.
+   *
+   * Retrieves details of taxa on a taxon_list.
+   */
   public function taxa_taxon_list() {
     $this->handle_call('taxa_taxon_list');
   }
 
   /**
-  * Provides the /service/data/taxa_taxon_list_attribute service.
-  * Retrieves details of taxa on taxon list attributes.
-  */
+   * Provides the /service/data/taxa_taxon_list_attribute service.
+   *
+   * Retrieves details of taxa on taxon list attributes.
+   */
   public function taxa_taxon_list_attribute() {
     $this->handle_call('taxa_taxon_list_attribute');
   }
 
   /**
-  * Provides the /service/data/taxa_taxon_list_attribute_value service.
-  * Retrieves details of taxa on taxon list attribute values.
-  */
+   * Provides the /service/data/taxa_taxon_list_attribute_value service.
+   *
+   * Retrieves details of taxa on taxon list attribute values.
+   */
   public function taxa_taxon_list_attribute_value() {
     $this->handle_call('taxa_taxon_list_attribute_value');
   }
 
   /**
    * Provides the /service/data/termlists_term_attribute service.
+   *
    * Retrieves details of taxa on taxon list attributes.
    */
   public function termlists_term_attribute() {
@@ -613,73 +617,72 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
    * Provides the /service/data/termlists_term_attribute_value service.
+   *
    * Retrieves details of taxa on taxon list attribute values.
    */
-  public function termlists_term_attribute_value()
-  {
+  public function termlists_term_attribute_value() {
     $this->handle_call('termlists_term_attribute_value');
   }
 
   /**
-  * Provides the /services/data/taxa_relation service.
-  * Retrieves details of taxon_relations.
-  */
-  public function taxon_relation()
-  {
-  $this->handle_call('taxon_relation');
+   * Provides the /services/data/taxa_relation service.
+   *
+   * Retrieves details of taxon_relations.
+   */
+  public function taxon_relation() {
+    $this->handle_call('taxon_relation');
   }
 
   /**
   * Provides the /services/data/term service.
   * Retrieves details of a single term.
   */
-  public function term()
-  {
+  public function term() {
     $this->handle_call('term');
   }
 
   /**
-  * Provides the /services/data/termlist service.
-  * Retrieves details of a single termlist.
-  */
-  public function termlist()
-  {
+   * Provides the /services/data/termlist service.
+   *
+   * Retrieves details of a single termlist.
+   */
+  public function termlist() {
     $this->handle_call('termlist');
   }
 
   /**
-  * Provides the /services/data/termlists_term service.
-  * Retrieves details of a single termlists_term.
-  */
-  public function termlists_term()
-  {
+   * Provides the /services/data/termlists_term service.
+   *
+   * Retrieves details of a single termlists_term.
+   */
+  public function termlists_term() {
     $this->handle_call('termlists_term');
   }
 
   /**
-  * Provides the /services/data/title service.
-  * Retrieves details of titles.
-  */
-  public function title()
-  {
+   * Provides the /services/data/title service.
+   *
+   * Retrieves details of titles.
+   */
+  public function title() {
     $this->handle_call('title');
   }
 
   /**
-  * Provides the /services/data/user service.
-  * Retrieves details of a single user.
-  */
-  public function user()
-  {
+   * Provides the /services/data/user service.
+   *
+   * Retrieves details of a single user.
+   */
+  public function user() {
     $this->handle_call('user');
   }
 
   /**
-  * Provides the /services/data/user service.
-  * Retrieves details of a single user identifier.
-  */
-  public function user_identifier()
-  {
+   * Provides the /services/data/user service.
+   *
+   * Retrieves details of a single user identifier.
+   */
+  public function user_identifier() {
     $this->handle_call('user_identifier');
   }
 
@@ -958,9 +961,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     foreach ($possibleBools as $possibleBoolParam) {
       if (isset($params[$possibleBoolParam])) {
         if (in_array($params[$possibleBoolParam], array('true', 't', '1'))) {
-          $params[$possibleBoolParam] = true;
+          $params[$possibleBoolParam] = TRUE;
         } elseif (in_array($params[$possibleBoolParam], array('false', 'f', '0'))) {
-          $params[$possibleBoolParam] = false;
+          $params[$possibleBoolParam] = FALSE;
         }
       }
     }
@@ -1052,7 +1055,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           }
           if($subdir != "" && !is_dir($directory.$subdir)){
             kohana::log('debug', 'Creating Directory '.$directory.$subdir);
-            mkdir($directory.$subdir, 0755 , true);
+            mkdir($directory.$subdir, 0755 , TRUE);
           }
         }
         $fTmp = upload::save('media_upload', $finalName, $directory.$subdir);
@@ -1091,7 +1094,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $fields = array_keys(postgreSQL::list_fields($this->viewname, $this->db));
       $usedFields = [];
       $request = array_merge($_GET, $_POST);
-      $columns = isset($request['columns']) ? explode(',', $request['columns']) : false;
+      $columns = isset($request['columns']) ? explode(',', $request['columns']) : FALSE;
       foreach ($fields as &$field) {
         if (!$columns || in_array($field, $columns)) {
           // Geom binary data is no good to anyone. So convert to WKT.
@@ -1168,7 +1171,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       else {
         $r = $this->db->get()->result_array(FALSE);
         // If we got no record but asked for a specific one, check if this was a permissions issue?
-        if (!count($r) && $this->uri->total_arguments() !== 0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false)) {
+        if (!count($r) && $this->uri->total_arguments() !== 0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : FALSE)) {
           Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id ' . $this->uri->argument(1));
           throw new EntityAccessError('Attempt to access existing record failed - website_id ' . $this->website_id . ' does not match website for ' . $this->entity . ' id ' . $this->uri->argument(1), 1001);
         }
@@ -1402,7 +1405,7 @@ class Data_Controller extends Data_Service_Base_Controller {
    * @link http://code.google.com/p/indicia/wiki/DataServices#Using_the_query_parameter
    */
   protected function apply_query_def_to_db($value) {
-    $query = json_decode($value, true);
+    $query = json_decode($value, TRUE);
     foreach ($query as $cmd=>$params) {
       switch(strtolower($cmd)) {
         case 'in':
@@ -1443,7 +1446,7 @@ class Data_Controller extends Data_Service_Base_Controller {
               // like '%%' matches anything, but where x='' would break on an int field.
               if ($this_cmd == $cmd || !empty($value)) $this->db->$this_cmd($key,$value);
             } else {
-              throw new Exception("$cmd clause statement for $key is not of the correct structure. ".print_r($params, true));
+              throw new Exception("$cmd clause statement for $key is not of the correct structure. ".print_r($params, TRUE));
             }
           }
           // if param was supplied in form "cmd = array(field, value)" then foundfield and foundvalue would be set.
@@ -1474,7 +1477,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         $mode = $this->get_input_mode();
         switch ($mode) {
           case 'json':
-            $s = json_decode($_POST['submission'], true);
+            $s = json_decode($_POST['submission'], TRUE);
         }
         $response = $this->submit($s);
         // return a success message plus the id of the topmost record, e.g. the sample created, plus a summary structure of any other records created.
@@ -1557,20 +1560,20 @@ class Data_Controller extends Data_Service_Base_Controller {
       if (is_numeric($s['fields']['id']['value']))
         // there is an numeric id field so modifying an existing record
         if (!$this->check_record_access($entity, $s['fields']['id']['value'],
-            isset($_REQUEST['sharing']) && $_REQUEST['sharing'] !== 'reporting' ? $_REQUEST['sharing'] : false)) {
+            isset($_REQUEST['sharing']) && $_REQUEST['sharing'] !== 'reporting' ? $_REQUEST['sharing'] : FALSE)) {
           $msg = "Attempt to update existing record failed - website_id $this->website_id does not match website for " .
               "$entity id ".$s['fields']['id']['value'];
           Kohana::log('info', $msg);
           throw new AuthorisationError($msg, 2001);
         }
-    return true;
+    return TRUE;
   }
 
-  protected function check_record_access($entity, $id, $sharing=false)
+  protected function check_record_access($entity, $id, $sharing=FALSE)
   {
     // if $id is null, then we have a new record, so no need to check if we have access to the record
     if (is_null($id))
-      return true;
+      return TRUE;
     $viewname=$this->get_view_name($entity, 'list');
 
     if (!$this->db)
@@ -1603,14 +1606,14 @@ class Data_Controller extends Data_Service_Base_Controller {
       }
     }
     $number_rec = $this->db->count_records();
-    return ($number_rec > 0 ? true : false);
+    return ($number_rec > 0 ? TRUE : FALSE);
   }
 
   /**
    * Get the record count of the full grid result.
    */
   protected function record_count() {
-    return $this->build_query_results(true);
+    return $this->build_query_results(TRUE);
   }
 
 }
