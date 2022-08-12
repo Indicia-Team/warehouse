@@ -164,19 +164,19 @@ DESC;
     try {
       $sql = <<<SQL
 SELECT 'p1' as stat, count(*) FROM (
-  SELECT id FROM work_queue WHERE priority=1 LIMIT $maxP1+1
+  SELECT id FROM work_queue WHERE priority=1 AND error_detail IS NULL LIMIT $maxP1+1
   ) as sub
 UNION
 SELECT 'p1late', count(*) FROM (
-  SELECT id FROM work_queue WHERE priority=1 AND created_on<now() - '30 minutes'::interval LIMIT $maxP1Late+1
+  SELECT id FROM work_queue WHERE priority=1 AND error_detail IS NULL AND created_on<now() - '30 minutes'::interval LIMIT $maxP1Late+1
   ) as sub
 UNION
 SELECT 'p2', count(*) FROM (
-  SELECT id FROM work_queue WHERE priority=2 LIMIT $maxP2+1
+  SELECT id FROM work_queue WHERE priority=2 AND error_detail IS NULL LIMIT $maxP2+1
   ) AS sub
 UNION
 SELECT 'p3', count(*) FROM (
-  SELECT id FROM work_queue WHERE priority=3 LIMIT $maxP3+1
+  SELECT id FROM work_queue WHERE priority=3 AND error_detail IS NULL LIMIT $maxP3+1
   ) AS sub
 UNION
 (SELECT 'errors', CASE WHEN error_detail IS NOT NULL THEN 1 ELSE 0 END
@@ -201,9 +201,7 @@ SQL;
             if ($statRow->count > $maxP1Late) {
               $messages[] = array(
                 'title' => kohana::lang('general_errors.workQueueSlow', 1),
-                'description' =>
-                  kohana::lang('general_errors.workQueueTooFullDescription', $maxP1, 1) . ' ' .
-                  kohana::lang('general_errors.workQueueTooFullExplain'),
+                'description' => kohana::lang('general_errors.workQueueTooFullExplain'),
               );
             }
             break;
