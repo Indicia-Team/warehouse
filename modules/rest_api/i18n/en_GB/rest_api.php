@@ -97,6 +97,8 @@ $lang['hmacClient'] = 'HMAC as client system';
 $lang['hmacClientHelp'] = <<<HTML
 Use HMAC to authenticate as a configured client system. The configuration must be specified in the
 <code>\$config['clients']</code> section of the REST API's configuration file on the warehouse.
+See <a href="https://indicia-docs.readthedocs.io/en/latest/developing/rest-web-services/authentication.html#hmac">
+  the Indicia HMAC documentation</a> for more info.
 HTML;
 $lang['hmacClientHelpHeader'] = 'Set the authorisation header to <em>USER:[client system ID]:HMAC:[hmac]</em>';
 $lang['hmacWebsite'] = 'HMAC as website';
@@ -105,6 +107,8 @@ Use HMAC to authenticate as a website registered on the warehouse. The scope of 
 which includes records from all websites which share their records to the authenticated website for public reports.
 This can be overridden by setting the URL parameter <em>scope</em>, e.g. <em>scope=verification</em> and optionally
 <em>user_id=<warehouse user ID></em> where the scope requires a known user.
+See <a href="https://indicia-docs.readthedocs.io/en/latest/developing/rest-web-services/authentication.html#hmac">
+  the Indicia HMAC documentation</a> for more info.
 HTML;
 $lang['hmacWebsiteHelpHeader'] = 'Set the authorisation header to <em>WEBSITE_ID:[website ID]:HMAC:[hmac]</em>';
 $lang['directUser'] = 'Direct authentication as warehouse user';

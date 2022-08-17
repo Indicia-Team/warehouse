@@ -27,7 +27,7 @@ defined('SYSPATH') or die('No direct script access.');
 class Taxa_taxon_list_Model extends Base_Name_Model {
   public $search_field = 'taxon';
 
-  protected $lookup_against = 'lookup_taxa_taxon_list';
+  public $lookup_against = 'lookup_taxa_taxon_list';
 
   protected $belongs_to = [
     'taxon',
