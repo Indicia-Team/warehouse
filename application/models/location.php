@@ -26,7 +26,7 @@ class Location_Model extends ORM_Tree {
 
   public $search_field='name';
 
-  protected $lookup_against='detail_location';
+  public $lookup_against='detail_location';
   // This needs id, name, code, external_key, website_id and location_type_id
 
   protected $ORM_Tree_children = "locations";
