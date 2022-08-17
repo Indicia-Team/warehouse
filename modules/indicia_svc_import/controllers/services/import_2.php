@@ -44,6 +44,11 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ImportDate;
 class RequestAbort extends Exception {}
 
 /**
+ * Exception class for failure to find item in a list.
+ */
+class NotFoundException extends Exception {}
+
+/**
  * PHPSpreadsheet filter for reading the header row.
  */
 class FirstRowReadFilter implements IReadFilter {
@@ -182,6 +187,8 @@ class Import_2_Controller extends Service_Base_Controller {
     $fields = $model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $useAssociations);
     if (!empty($_GET['required']) && $_GET['required'] === 'true') {
       $requiredFields = $model->getRequiredFields(TRUE, $identifiers, $useAssociations);
+      // Use the calculated date field for vague date, rather than individual
+      // fields.
       foreach ($requiredFields as &$field) {
         $field = preg_replace('/:date_type$/', ':date', $field);
       }
@@ -328,7 +335,7 @@ class Import_2_Controller extends Service_Base_Controller {
       $template = ORM::factory('import_template', $_POST['import_template_id']);
       if ($template->id) {
         // Save the template mappings in the config.
-        $config['mappings'] = json_decode($template->mappings, TRUE);
+        $config['columns'] = json_decode($template->mappings, TRUE);
       }
     }
     $this->saveConfig($fileName, $config);
@@ -510,6 +517,34 @@ SQL;
   }
 
   /**
+   * Controller action specifically to save the mappings to warehouse fields.
+   *
+   * Updates the columns config to identify the warehouse field for each
+   * mapping.
+   */
+  public function save_mappings() {
+    header("Content-Type: application/json");
+    $this->authenticate('write');
+    $fileName = $_POST['data-file'];
+    $config = $this->getConfig($fileName);
+    foreach (json_decode($_POST['mappings']) as $key => $value) {
+      try {
+        if (!empty($value)) {
+          $columnLabel = $this->getColumnLabelForTempDbField($config['columns'], $key);
+          $config['columns'][$columnLabel]['warehouseField'] = $value;
+        }
+      }
+      catch (NotFoundException $e) {
+        // No column label, as form value not a field mapping.
+      }
+    }
+    $this->saveConfig($fileName, $config);
+    echo json_encode([
+      'status' => 'ok',
+    ]);
+  }
+
+  /**
    * Controller action that retrieves the config file for an import.
    */
   public function get_config() {
@@ -545,6 +580,8 @@ SQL;
       if (!empty($_POST['restart'])) {
         $config['rowsProcessed'] = 0;
         $config['parentEntityRowsProcessed'] = 0;
+        $config['errorsCount'] = 0;
+        $this->saveConfig($fileName, $config);
       }
       $db = new Database();
       if (!empty($_POST['save-import-record'])) {
@@ -555,15 +592,15 @@ SQL;
       }
       // @todo Correctly set parent entity for other entities.
       // @todo Handling for entities without parent entity.
-      $parentEntityFields = $this->findEntityFields($config['parentEntity'], $config);
-      $childEntityFields = $this->findEntityFields($config['entity'], $config);
-      $parentEntityDataRows = $this->fetchParentEntityData($db, $parentEntityFields, $config);
+      $parentEntityColumns = $this->findEntityColumns($config['parentEntity'], $config);
+      $childEntityColumns = $this->findEntityColumns($config['entity'], $config);
+      $parentEntityDataRows = $this->fetchParentEntityData($db, $parentEntityColumns, $config);
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
         // @todo Updating existing data.
         // @todo tracking of records that are done in the import table so can restart.
         $parent = ORM::factory($config['parentEntity']);
         $submission = [];
-        $this->copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityFields, $config, $submission);
+        $this->copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityColumns, $config, $submission);
         $this->applyGlobalValues($config, $config['parentEntity'], $parent->attrs_field_prefix ?? NULL, $submission);
         $identifiers = [
           'website_id' => $config['global-values']['website_id'],
@@ -582,7 +619,7 @@ SQL;
           $parent->submit();
           $errors = $parent->getAllErrors();
         }
-        $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityFields, $config, $parentEntityDataRow);
+        $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityColumns, $config, $parentEntityDataRow);
         if (count($errors) > 0) {
           $config['errorsCount'] += count($childEntityDataRows);
           if (!$isPrecheck) {
@@ -590,7 +627,8 @@ SQL;
             // the sample, add them to the count.
             $config['rowsProcessed'] += count($childEntityDataRows);
           }
-          $this->saveErrorsToRows($db, $parentEntityDataRow, $parentEntityFields, $parent->getAllErrors(), $config);
+          $keyFields = $this->getDestFieldsForColumns($parentEntityColumns);
+          $this->saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $parent->getAllErrors(), $config);
         }
         // If sample saved OK, or we are just prechecking, process the matching
         // occurrences.
@@ -601,7 +639,7 @@ SQL;
               'sample_id' => $parent->id,
             ];
             $this->applyGlobalValues($config, $config['entity'], $child->attrs_field_prefix ?? NULL, $submission);
-            $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityFields, $config, $submission);
+            $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityColumns, $config, $submission);
             if ($config['entitySupportsImportGuid']) {
               $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
@@ -684,7 +722,8 @@ SQL;
     header("Content-Disposition: attachment; filename=\"import-errors.csv\"");
     $fileName = $_GET['data-file'];
     $config = $this->getConfig($fileName);
-    $fields = array_merge(array_values($config['columns']), [
+
+    $fields = array_merge(array_values($this->getColumnTempDbFieldMappings($config['columns'])), [
       '_row_id',
       'errors',
     ]);
@@ -706,6 +745,87 @@ SQL;
       fputcsv($out, $row);
     }
     fclose($out);
+  }
+
+  /**
+   * Finds the label used in the import file that's linked to a temp db field.
+   *
+   * @param array $columns
+   *   Columns config to search.
+   * @param string $fieldName
+   *   Temp db fieldname to search for.
+   *
+   * @return string
+   *   Column label from the import file.
+   */
+  private function getColumnLabelForTempDbField(array $columns, $fieldName) {
+    foreach ($columns as $columnLabel => $info) {
+      if ($info['tempDbField'] === $fieldName || (isset($info['tempDbField']) && $info['tempDbField'] === $fieldName)) {
+        return $columnLabel;
+      }
+    }
+    throw new NotFoundException("Field $fieldName not found");
+  }
+
+  /**
+   * Finds the column info for a column identified by any property value.
+   *
+   * E.g. find the column info by tempDbField, or warehouseField.
+   *
+   * @param array $columns
+   *   Columns config to search.
+   * @param string $property
+   *   Property name to search in (tempDbField or warehouseField).
+   * @param string $value
+   *   Value to search for.
+   *
+   * @return array
+   *   Column info array.
+   */
+  private function getColumnInfoByProperty(array $columns, $property, $value) {
+    foreach ($columns as $columnLabel => $info) {
+      if (isset($info[$property]) && $info[$property] === $value) {
+        return array_merge($info, ['columnLabel' => $columnLabel]);
+      }
+    }
+    throw new NotFoundException("Property value $property=$value not found");
+  }
+
+  /**
+   * Find the list of destination fields for a list of column definitions.
+   *
+   * @param array $columns
+   *   List of column definitions.
+   *
+   * @return array
+   *   List of destination field names.
+   */
+  private function getDestFieldsForColumns(array $columns) {
+    $fields = [];
+    foreach ($columns as $info) {
+      $fields[] = empty($info['isFkField']) ? $info['tempDbField'] : "$info[tempDbField]_id";
+    }
+    return $fields;
+  }
+
+  /**
+   * Retrieves column label to temp DB field mappings.
+   *
+   * Converts the columns config to an associative array of column names and
+   * temp db table fields.
+   *
+   * @param array $columns
+   *   Columns config.
+   *
+   * @return array
+   *   Associative array.
+   */
+  private function getColumnTempDbFieldMappings(array $columns) {
+    $r = [];
+    foreach ($columns as $columnLabel => $info) {
+      $r[$columnLabel] = $info['tempDbField'];
+    }
+    return $r;
   }
 
   /**
@@ -757,7 +877,7 @@ SQL;
     $import->inserted = $config['rowsInserted'];
     $import->updated = $config['rowsUpdated'];
     $import->errors = $config['errorsCount'];
-    $import->mappings = json_encode($config['mappings']);
+    $import->mappings = json_encode($config['columns']);
     $import->global_values = json_encode($config['global-values']);
     if ($importInfo && !empty($importInfo->description)) {
       // This will only get specified on initial save.
@@ -804,7 +924,7 @@ SQL;
     $template->title = $importTemplateInfo->title;
     $template->entity = $config['entity'];
     $template->website_id = $config['global-values']['website_id'];
-    $template->mappings = json_encode($config['mappings']);
+    $template->mappings = json_encode($config['columns']);
     $template->global_values = json_encode($config['global-values']);
     $template->save();
     $errors = $template->getAllErrors();
@@ -836,14 +956,23 @@ SQL;
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
     foreach ($errors as $field => $error) {
-      $fieldName = $field;
-      // Find the temp table field name for the error.
-      $dbFieldInTempTable = array_search($fieldName, $config['mappings']);
-      if ($dbFieldInTempTable) {
-        // Map back to find the import file's name for the column.
-        $fieldName = array_search($dbFieldInTempTable, $config['columns']);
+      $field = preg_replace('/date_type$/', 'date', $field);
+      try {
+        $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', $field);
       }
-      $errorsList[$fieldName] = $error;
+      catch (NotFoundException $e) {
+        if (preg_match('/date_type$/', $field)) {
+          // A date error might be reported against date_type field, but can
+          // map back to the calculated date field if separate date fields not
+          // being used.
+          $field = preg_replace('/date_type$/', 'date', $field);
+          $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', $field);
+        }
+        else {
+          throw $e;
+        }
+      }
+      $errorsList[$columnInfo['columnLabel']] = $error;
     }
     $errorsJson = pg_escape_literal(json_encode($errorsList));
     $sql = <<<SQL
@@ -855,25 +984,29 @@ SQL;
   }
 
   /**
-   * Finds mapped database fields that relate to an entity.
+   * Finds mapped database import columns that relate to an entity.
    *
    * @param string $entity
    *   Entity name, e.g. sample, occurrence.
    * @param array $config
    *   Import metadata configuration object.
+   *
+   * @return array
+   *   List of column definitions.
    */
-  private function findEntityFields($entity, array $config) {
-    $fields = [];
+  private function findEntityColumns($entity, array $config) {
+    $columns = [];
     $attrPrefix = $this->getAttrPrefix($entity);
     // @todo Also include attribute columns where appropriate.
-    foreach ($config['mappings'] as $dbFieldInTempTable => $dest) {
-      $dest = $config['mappings'][$dbFieldInTempTable];
-      $destFieldParts = explode(':', $dest);
-      if ($destFieldParts[0] === $entity || ($attrPrefix && $destFieldParts[0] === $attrPrefix)) {
-        $fields[] = $dbFieldInTempTable;
+    foreach ($config['columns'] as $info) {
+      if (isset($info['warehouseField'])) {
+        $destFieldParts = explode(':', $info['warehouseField']);
+        if ($destFieldParts[0] === $entity || ($attrPrefix && $destFieldParts[0] === $attrPrefix)) {
+          $columns[] = $info;
+        }
       }
     }
-    return $fields;
+    return $columns;
   }
 
   /**
@@ -928,12 +1061,13 @@ SQL;
    *
    * @param object $db
    *   Database connection.
-   * @param array $fields
-   *   List of field names to look for uniqueness in the values of.
+   * @param array $columns
+   *   List of column definitions to look for uniqueness in the values of.
    * @param array $config
    *   Import metadata configuration object.
    */
-  private function fetchParentEntityData($db, array $fields, array $config) {
+  private function fetchParentEntityData($db, array $columns, array $config) {
+    $fields = $this->getDestFieldsForColumns($columns);
     $fieldsAsCsv = implode(', ', $fields);
     // Batch row limit div by arbitrary 10 to allow for multiple children per
     // parent.
@@ -953,26 +1087,38 @@ SQL;
    *
    * @param object $dataRow
    *   Data read from the import file.
-   * @param array $fields
-   *   List of field names to copy.
+   * @param array $columns
+   *   List of column definitions to copy the field value for.
    * @param array $config
    *   Import metadata configuration object.
    * @param array $submission
    *   Submission data array that will be updated with the copied values.
    */
-  private function copyFieldsFromRowToSubmission($dataRow, array $fields, array $config, array &$submission) {
-    foreach ($fields as $field) {
-      $targetField = $config['mappings'][$field];
+  private function copyFieldsFromRowToSubmission($dataRow, array $columns, array $config, array &$submission) {
+    foreach ($columns as $info) {
+      $srcFieldName = $info['tempDbField'];
+      $destFieldName = $info['warehouseField'];
+      // Fk fields need to alter the fake field name to a real one and use the
+      // mapped source field.
+      if (!empty($info['isFkField'])) {
+        $srcFieldName .= '_id';
+        $destFieldParts = explode(':', $destFieldName);
+        $destFieldName = "$destFieldParts[0]:" .
+            // Fieldname without fk_ prefix.
+            substr($destFieldParts[1], 3) .
+            // Append _id if not a custom attribute lookup.
+            (preg_match('/^[a-z]{3}Attr$/', $destFieldParts[0]) ? '' : '_id');
+      }
       // An empty field shouldn't overwrite a global value.
-      if (!empty($dataRow->$field) || empty($config['global-values'][$targetField])) {
+      if (!empty($dataRow->$srcFieldName) || empty($config['global-values'][$destFieldName])) {
         // @todo Look for date fields more intelligently.
-        if ($config['isExcel'] && preg_match('/date$/', $targetField) && preg_match('/^\d+$/', $dataRow->$field)) {
+        if ($config['isExcel'] && preg_match('/date$/', $destFieldName) && preg_match('/^\d+$/', $dataRow->$srcFieldName)) {
           // Date fields are integers when read from Excel.
-          $date = ImportDate::excelToDateTimeObject($dataRow->$field);
-          $submission[$targetField] = $date->format('d/m/Y');
+          $date = ImportDate::excelToDateTimeObject($dataRow->$srcFieldName);
+          $submission[$destFieldName] = $date->format('d/m/Y');
         }
         else {
-          $submission[$targetField] = $dataRow->$field;
+          $submission[$destFieldName] = $dataRow->$srcFieldName;
         }
       }
     }
@@ -1009,9 +1155,8 @@ SQL;
    *
    * @param object $db
    *   Database connection.
-   * @param array $fields
-   *   List of parent field names that will be filtered to find the child data
-   *   rows.
+   * @param array $columns
+   *   List of parent columns that will be filtered to find the child data rows.
    * @param array $config
    *   Import metadata configuration object.
    * @param object $parentEntityDataRow
@@ -1020,7 +1165,8 @@ SQL;
    * @return object
    *   Database result containing child rows.
    */
-  private function fetchChildEntityData($db, array $fields, array $config, $parentEntityDataRow) {
+  private function fetchChildEntityData($db, array $columns, array $config, $parentEntityDataRow) {
+    $fields = $this->getDestFieldsForColumns($columns);
     // Build a filter to extract rows for this parent entity.
     $wheresList = [];
     foreach ($fields as $field) {
@@ -1047,59 +1193,50 @@ SQL;
    *   lookup fields.
    */
   private function findNextLookupField($db, array &$config) {
-    if (!isset($config['lookupFields'])) {
-      $config['lookupFields'] = [];
+    if (!isset($config['lookupFieldsMatched'])) {
+      $config['lookupFieldsMatched'] = [];
     }
-    $foundOne = FALSE;
-    foreach ($config['mappings'] as $src => $dest) {
-      if ($dest) {
-        $destFieldParts = explode(':', $dest);
-        if (substr($destFieldParts[1], 0, 3) === 'fk_' && !in_array($dest, $config['lookupFields'])) {
-          $foundOne = TRUE;
-          $colTitle = array_search($src, $config['columns']);
-          $valueToMapColName = $src;
-          $thisSrcField = $src;
-          $config['lookupFields'][] = $dest;
+    // Default response.
+    $r = [
+      'status' => 'ok',
+      'msgKey' => 'findLookupFieldsDone',
+    ];
+    foreach ($config['columns'] as $columnLabel => &$info) {
+      if (isset($info['warehouseField'])) {
+        $destFieldParts = explode(':', $info['warehouseField']);
+        if (substr($destFieldParts[1], 0, 3) === 'fk_' && !in_array($info['warehouseField'], $config['lookupFieldsMatched'])) {
+          $info['isFkField'] = TRUE;
+          $config['lookupFieldsMatched'][] = $info['warehouseField'];
           // Add an ID field to the data table.
           $sql = <<<SQL
 ALTER TABLE import_temp.$config[tableName]
-ADD COLUMN IF NOT EXISTS {$valueToMapColName}_id integer;
+ADD COLUMN IF NOT EXISTS $info[tempDbField]_id integer;
 SQL;
           $db->query($sql);
-          // Replace the mapping.
-          unset($config['mappings'][$valueToMapColName]);
-          $config['mappings']["{$valueToMapColName}_id"] =
-            "$destFieldParts[0]:" .
-            // Fieldname without fk_ prefix.
-            substr($destFieldParts[1], 3) .
-            // Append _id if not a custom attribute lookup.
-            (preg_match('/^[a-z]{3}Attr$/', $destFieldParts[0]) ? '' : '_id');
-
           // Query to fill in ID for all obvious matches.
           if (substr($destFieldParts[0], -4) === 'Attr' and strlen($destFieldParts[0]) === 7) {
-            $unmatchedInfo = $this->autofillLookupAttrIds($db, $config, $destFieldParts, $valueToMapColName);
+            $unmatchedInfo = $this->autofillLookupAttrIds($db, $config, $destFieldParts, $info['tempDbField']);
           }
-          elseif ($dest === 'occurrence:fk_taxa_taxon_list') {
-            $unmatchedInfo = $this->autofillTaxonIds($db, $config, $valueToMapColName);
+          elseif ($info['warehouseField'] === 'occurrence:fk_taxa_taxon_list') {
+            $unmatchedInfo = $this->autofillTaxonIds($db, $config, $info['tempDbField']);
+          }
+          else {
+            $unmatchedInfo = $this->autofillOtherFkIds($db, $config, $info);
           }
           // Respond with values that don't match plus list of matches, or a
           // success message.
+          $r = [
+            'status' => 'ok',
+            'msgKey' => 'lookupFieldFound',
+            'columnLabel' => $columnLabel,
+            'sourceField' => $info['tempDbField'],
+          ];
+          if (isset($unmatchedInfo) && count($unmatchedInfo['values']) > 0) {
+            $r['unmatchedInfo'] = $unmatchedInfo;
+          }
           break;
         }
       }
-    }
-    $r = [
-      'status' => 'ok',
-      'msgKey' => $foundOne ? 'lookupFieldFound' : 'findLookupFieldsDone',
-    ];
-    if (isset($colTitle)) {
-      $r['columnTitle'] = $colTitle;
-    }
-    if (isset($thisSrcField)) {
-      $r['sourceField'] = $thisSrcField;
-    }
-    if (isset($unmatchedInfo) && count($unmatchedInfo['values']) > 0) {
-      $r['unmatchedInfo'] = $unmatchedInfo;
     }
     return $r;
   }
@@ -1178,6 +1315,9 @@ SQL;
    * @param string $valueToMapColName
    *   Name of the column containing the taxon to lookup. The ID column that
    *   gets populated will have the same name, with _id appended.
+   *
+   * @return array
+   *   Array containing information about the result.
    */
   private function autofillTaxonIds($db, array $config, $valueToMapColName) {
     $filtersList = [];
@@ -1239,6 +1379,79 @@ SQL;
   }
 
   /**
+   * Autofills the taxa_taxon_list ID foreign keys for lookup taxon text values.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param array $config
+   *   Import configuration object.
+   * @param array $info
+   *   Column info data for the column being autofilled.
+   *
+   * @return array
+   *   Array containing information about the result.
+   */
+  private function autofillOtherFkIds($db, array $config, array $info) {
+    $destFieldParts = explode(':', $info['warehouseField']);
+    $entity = ORM::factory($destFieldParts[0], -1);
+    $fieldName = preg_replace('/^fk_/', '', $destFieldParts[1]);
+    if (array_key_exists($fieldName, $entity->belongs_to)) {
+      $fkEntity = $entity->belongs_to[$fieldName];
+    }
+    elseif (array_key_exists($fieldName, $entity->has_one)) {
+      // This ignores the ones which are just models in list: the key is used
+      // to point to another model.
+      $fkEntity = $entity->has_one[$fieldName];
+    }
+    elseif ($entity instanceof ORM_Tree && $fieldName == 'parent') {
+      $fkEntity = inflector::singular($entity->getChildren());
+    }
+    else {
+      $fkEntity = inflector::plural($fieldName);
+    }
+    // Create model without initialising, so we can just check the lookup
+    // variables.
+    $fkModel = ORM::Factory($fkEntity, -1);
+    // Let the model map the lookup against a view if necessary.
+    $lookupAgainst = inflector::plural(isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkEntity);
+    $sql = <<<SQL
+UPDATE import_temp.$config[tableName] i
+SET {$info['tempDbField']}_id=l.id
+FROM $lookupAgainst l
+WHERE trim(lower(i.$info[tempDbField]))=lower(l.$fkModel->search_field);
+SQL;
+    $db->query($sql);
+    $sql = <<<SQL
+SELECT DISTINCT trim(lower($info[tempDbField])) as value
+FROM import_temp.$config[tableName]
+WHERE {$info['tempDbField']}_id IS NULL
+AND $info[tempDbField] <> ''
+ORDER BY trim(lower($info[tempDbField]));
+SQL;
+    $values = [];
+    $rows = $db->query($sql)->result();
+    foreach ($rows as $row) {
+      $values[] = $row->value;
+    }
+    // Find the available possible options from the fk lookup list.
+    $sql = <<<SQL
+SELECT l.id, l.$fkModel->search_field
+FROM $lookupAgainst l
+ORDER BY l.$fkModel->search_field
+SQL;
+    $matchOptions = [];
+    $rows = $db->query($sql)->result();
+    foreach ($rows as $row) {
+      $matchOptions[$row->id] = $row->term;
+    }
+    return [
+      'values' => $values,
+      'matchOptions' => $matchOptions,
+      'type' => 'otherFk',
+    ];
+  }
+
+  /**
    * Creates a temporary table in the import_temp schema.
    *
    * Provides an area to hold records in whilst processing them.
@@ -1253,9 +1466,10 @@ SQL;
     $tableName = 'import_' . date('YmdHi') . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', pathinfo($fileName, PATHINFO_FILENAME));
     $config['tableName'] = $tableName;
     $colsArray = ['_row_id serial'];
-    foreach (array_values($config['columns']) as $columnName) {
+    $dbFieldNames = $this->getColumnTempDbFieldMappings($config['columns']);
+    foreach ($dbFieldNames as $fieldName) {
       // Enclose column names in "" in case reserved word.
-      $colsArray[] = "\"$columnName\" varchar";
+      $colsArray[] = "\"$fieldName\" varchar";
     }
     $colsArray[] = 'errors jsonb';
     $colsList = implode(",\n", $colsArray);
@@ -1296,11 +1510,12 @@ SQL;
     }
     $config['rowsLoaded'] = $config['rowsLoaded'] + $count;
     if (count($rows)) {
-      // Enclose column names in "" in case reserved word.
-      $columns = '"' . implode('", "', $config['columns']) . '"';
+      $fieldNames = $this->getColumnTempDbFieldMappings($config['columns']);
+      // Enclose field names in "" in case reserved word.
+      $fields = '"' . implode('", "', $fieldNames) . '"';
       $rowsList = implode("\n,", $rows);
       $query = <<<SQL
-INSERT INTO import_temp.$config[tableName]($columns)
+INSERT INTO import_temp.$config[tableName]($fields)
 VALUES $rowsList;
 SQL;
       $db = new Database();
@@ -1361,7 +1576,6 @@ SQL;
         'fileName' => $fileName,
         'tableName' => '',
         'isExcel' => in_array($ext, ['xls', 'xlsx']),
-        // @todo Entity should be dynamic.
         'entity' => $entity,
         'parentEntity' => $parentEntity,
         'columns' => $this->loadColumnNamesFromFile($fileName),
@@ -1477,7 +1691,8 @@ SQL;
    *
    * @return array
    *   Associative array, list of column titles with blanks filled in, with
-   *   values being the database field name for the temp table.
+   *   values being the an info array containing the database field name for
+   *   the temp table.
    */
   private function tidyUpColumnsList(array $columns) {
     $foundAProperColumn = FALSE;
@@ -1498,15 +1713,20 @@ SQL;
         unset($columns[$i]);
       }
     }
-    $colsAndFieldNames = [];
+    $colsAndFieldInfo = [];
+    // Track to ensure all field names used are unique.
+    $uniqueFieldNames = [];
     foreach ($columns as $column) {
       $proposedFieldName = preg_replace('/[^a-z0-9]/', '_', strtolower($column));
-      if (in_array($proposedFieldName, $colsAndFieldNames) || in_array($proposedFieldName, SYSTEM_FIELD_NAMES)) {
+      if (in_array($proposedFieldName, $uniqueFieldNames) || in_array($proposedFieldName, SYSTEM_FIELD_NAMES)) {
         $proposedFieldName .= '_' . uniqid();
       }
-      $colsAndFieldNames[$column] = $proposedFieldName;
+      $uniqueFieldNames[] = $proposedFieldName;
+      $colsAndFieldInfo[$column] = [
+        'tempDbField' => $proposedFieldName,
+      ];
     }
-    return $colsAndFieldNames;
+    return $colsAndFieldInfo;
   }
 
   /**
