@@ -108,6 +108,7 @@ HTML;
       'authIntro' => kohana::lang("rest_api.authIntroduction"),
       'authMethods' => kohana::lang("rest_api.authMethods"),
       'resources' => kohana::lang("rest_api.resourcesTitle"),
+      'resourcesIntro' => kohana::lang("rest_api.resourcesIntroduction"),
       'filters' => kohana::lang("rest_api.filterTitle"),
       'filterText' => kohana::lang("rest_api.filterText"),
       'submissionFormat' => kohana::lang("rest_api.submissionFormatTitle"),
@@ -193,6 +194,7 @@ $lang[filterText]
 <h2>$lang[submissionFormat]</h2>
 $lang[submissionFormatText]
 <h2>$lang[resources]</h2>
+<p>$lang[resourcesIntro]</p>
 HTML;
 
     $apiRoot = url::base() . 'index.php/services/rest';
@@ -208,6 +210,9 @@ HTML;
           }
           $badge = empty($endpointPathOptions['deprecated']) ? '' : ' <span class="label label-warning">deprecated</span>';
           $endpointOutput .= "<h4>$method $endpointPath$badge</h4>";
+          if (!empty($endpointPathOptions['deprecated'])) {
+            $endpointOutput .= '<p class="alert alert-warning">' . kohana::lang('rest_api.deprecatedEndpoint') . '</p>';
+          }
           $endpointOutput .= "<p>Example URL: $apiRoot/" . str_replace(
             ['{id}', '{path}', '{file.xml}'],
             ['123', 'library/occurrences', 'filterable_explore_list.xml'],

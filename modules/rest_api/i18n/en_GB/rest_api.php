@@ -90,6 +90,11 @@ wrap the child object in an array (as only one is possible). The nested object's
 then saved into the current record as a foreign key.</p>
 HTML;
 $lang['resourcesTitle'] = 'Resources';
+$lang['resourcesIntroduction'] = <<<TXT
+Resources available through the REST API are listed below. Reload the page with ?deprecated in the
+URL to include deprecated resources in the list.
+TXT;
+$lang['deprecatedEndpoint'] = 'This endpoint is deprecated and may be removed in a future API version.';
 $lang['authMethods'] = 'Allowed authentication methods';
 $lang['jwtUser'] = 'JWT as warehouse user';
 $lang['jwtUserHelp'] = 'Use JWT access token to authenticate as a warehouse user';
@@ -197,7 +202,8 @@ $lang['format_param_help'] = 'Request a response in this format, either html or 
 // Help text for each end-point/method combination.
 $lang['resources'] = [];
 $lang['resources']['annotations'] = <<<TXT
-A list of comments and verification decisions attached to taxon-observation resources.
+A list of comments and verification decisions attached to taxon-observation resources. Described fully in the
+<a href="http://indicia-online-recording-rest-api.readthedocs.io/en/latest/">online recording REST API documentation</a>.
 TXT;
 $lang['resources']['GET annotations'] = 'Retrieve a list of annotations available to this client ID.';
 $lang['resources']['GET annotations/{id}'] = <<<TXT
@@ -647,7 +653,10 @@ $lang['resources']['GET taxa/search'] = <<<TXT
 Search resource for taxa. Perform full text searches against the taxonomy information held in the
 warehouse.
 TXT;
-$lang['resources']['taxon-observations'] = 'Occurrence data provided in the deprecated NBN Gateway exchange format.';
+$lang['resources']['taxon-observations'] = <<<TXT
+Occurrence data provided in the deprecated NBN Gateway exchange format. Described fully in the
+<a href="http://indicia-online-recording-rest-api.readthedocs.io/en/latest/">online recording REST API documentation</a>.
+TXT;
 $lang['resources']['POST taxon-observations'] = 'Creates an occurrence using the deprecated NBN Gateway exchange format.';
 $lang['resources']['GET reports'] = <<<TXT
 Retrieves the contents of the top level of the reports directory on the warehouse. Can retrieve the
