@@ -31,9 +31,9 @@
   </params>
   <columns>
     <column name="annotationID" datatype="text"
-            sql="COALESCE(oc.external_key, '#system_user_id#' || oc.id::varchar)" />
+            sql="coalesce(oc.external_key, '#system_user_id#' || oc.id::varchar)" />
     <column name="occurrenceID" datatype="integer"
-            sql="COALESCE(occ.external_key, '#system_user_id#' || o.id::varchar)" />
+            sql="coalesce(occ.external_key, '#system_user_id#' || o.id::varchar)" />
     <column name="comment" datatype="text" sql="case oc.comment when case oc.record_status || coalesce(oc.record_substatus::text, '')
                 when 'V' then 'Accepted'
                 when 'V1' then 'Accepted as correct'
@@ -63,7 +63,7 @@
     <column name="answeredAnnotationID" datatype="text"
             sql="case oc.query
             when false then
-              (select id from occurrence_comments oc2 where oc2.occurrence_id=occ.id and oc2.deleted=false and oc2.query=true and oc2.id&lt;oc.id order by id desc limit 1)
+              (select coalesce(oc2.external_key, '#system_user_id#' || oc2.id::varchar) from occurrence_comments oc2 where oc2.occurrence_id=occ.id and oc2.deleted=false and oc2.query=true and oc2.id&lt;oc.id order by oc2.id desc limit 1)
             else null
         end" />
     <column name="authorName" datatype="text"
