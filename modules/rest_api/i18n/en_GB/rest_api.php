@@ -667,7 +667,11 @@ $lang['resources']['GET reports/{path}'] = <<<TXT
 Retrieves the contents of the folder specified by {path} of the reports directory on the warehouse.
 URL.
 TXT;
-$lang['resources']['GET reports/{path}/{file-xml}'] = 'Access the output for a report specified by the supplied path.';
+$lang['resources']['GET reports/{path}/{file-xml}'] = <<<TXT
+Access the output for a report specified by the supplied path. As well as the system parameters
+defined here, each report defines a list of it's own parameters available via the /params endpoint
+described below.
+TXT;
 $lang['resources']['GET reports/{path}/{file-xml}/params'] = <<<TXT
 Get metadata about the list of parameters available to filter this report by.
 TXT;
@@ -942,6 +946,13 @@ Provides a list of well maintained reports which are recommended as a starting p
 the library of reports.
 TXT;
 $lang['GET reports/{path}/{file-xml}'] = [];
+$lang['GET reports/{path}/{file-xml}']['autofeed'] = <<<TXT
+Set to 't' to enable autofeed mode when populating an Elasticsearch instance by connecting Logstash
+to a warehouse via the REST API, using one of the "list_for_elastic" reports which supports this
+mode. The request must authenticate using a client project ID which then enables the API to
+automatically feed through all new and changed records since the last request, up to a limit
+(normally 10,000).
+TXT;
 $lang['GET reports/{path}/{file-xml}']['filter_id'] = <<<TXT
 Optional when authenticated as a warehouse user. Must point to the ID of a filter in the filters
 table which has defines_permissions set to true and is linked to the authenticated user. When used,
@@ -949,6 +960,14 @@ switches the set of records that are accessible from those created by the curren
 of records identified by the filter.
 TXT;
 $lang['GET reports/{path}/{file-xml}']['limit'] = 'Limit the number of records in the response.';
+$lang['GET reports/{path}/{file-xml}']['max_time'] = <<<TXT
+Use in conjuction with `autofeed` mode when populating an Elasticsearch instance by connecting
+Logstash to a warehouse via the REST API, using one of the "list_for_elastic" reports which
+supports this mode. Defines a maximum number of seconds for the request to take before autofeed
+tracking is cancelled. This is because Logstash will always timeout a request that takes too long
+so the `max_time` should be set to a lower value in order to cause the next request to retrieve the
+same set of records again and avoid skipping a block of records.
+TXT;
 $lang['GET reports/{path}/{file-xml}']['offset'] = 'Offset from the start of the dataset that the response will start.';
 $lang['GET reports/{path}/{file-xml}']['sortby'] = <<<TXT
 The field to sort by. Must be compatible with the SQL generated for the report.
