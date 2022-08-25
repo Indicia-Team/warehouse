@@ -19,13 +19,18 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
+/**
+ * Class which manages responses from the REST API.
+ */
 class RestApiResponse {
 
   private $startTime;
 
   /**
-   * A template to define the header of any HTML pages output. Replace
-   * {{ base }} with the root path of the warehouse.
+   * A template to define the header of any HTML pages output.
+   *
+   * Replace {{ base }} with the root path of the warehouse.
+   *
    * @var string
    */
   private $htmlHeader = <<<'HTML'
@@ -43,6 +48,13 @@ class RestApiResponse {
   <div class="container">
 HTML;
 
+  /**
+   * A template to define the footer of any HTML pages output.
+   *
+   * Replace {{ base }} with the root path of the warehouse.
+   *
+   * @var string
+   */
   private $htmlFooter = <<<'HTML'
   </div>
   <script src="{{ base }}media/js/jquery.js"></script>
@@ -64,14 +76,14 @@ HTML;
    *
    * @var bool
    */
-  public $wantIndex = false;
+  public $wantIndex = FALSE;
 
   /**
    * Include empty output cells in HTML?
    *
    * @var bool
    */
-  public $includeEmptyValues = true;
+  public $includeEmptyValues = TRUE;
 
   /**
    * Index method which provides top level help for the API resource endpoints.
@@ -98,7 +110,7 @@ HTML;
    *   Configuration for the list of available resources and the methods they
    *   support.
    */
-  private function indexHtml($resourceConfig) {
+  private function indexHtml(array $resourceConfig) {
     // Output an HTML page header.
     echo str_replace('{{ base }}', url::base(), $this->htmlHeader);
     $lang = [
@@ -147,7 +159,7 @@ HTML;
                 elseif ($value === TRUE) {
                   $key .= 'false';
                 }
-                else  {
+                else {
                   $key .= json_encode($value);
                 }
                 $optionTexts[] = '<li>' . kohana::lang($key) . '</li>';
@@ -405,6 +417,7 @@ HTML;
 
   /**
    * Echos a successful response in HTML format.
+   *
    * @param array $data
    * @param array $options
    */
@@ -418,11 +431,11 @@ HTML;
       $this->outputArrayAsHtml($options['metadata']);
     }
 
-    // output an index table if present for this output
+    // Output an index table if present for this output.
     if ($this->wantIndex && isset($data['data'])) {
       echo $this->getIndexAsHtml($data['data']);
     }
-    // output the main response body
+    // Output the main response body.
     if (isset($options['metadata']) || !empty($this->responseTitle)) {
       echo '<h2>Response</h2>';
     }
@@ -432,14 +445,19 @@ HTML;
     elseif (is_object($data)) {
       $options['preprocess'] = true;
       // We are returning a single row from the database.
-      $this->outputResultAsHtml(array($data), $options);
+      $this->outputResultAsHtml([$data], $options);
     }
     echo str_replace('{{ base }}', url::base(), $this->htmlFooter);
   }
 
   /**
-   * For some resources when output as HTML, we insert an index into the top of the page.
-   * @return string HTML for the index.
+   * Insert an HTML index.
+   *
+   * For some resources when output as HTML, we insert an index into the top of
+   * the page.
+   *
+   * @return string
+   *   HTML for the index.
    */
   private function getIndexAsHtml($data) {
     $r = '';
@@ -472,13 +490,15 @@ ROW;
   }
 
   /**
-   * Dumps out a nested array as a nested HTML table. Used to output response data when the
-   * format type requested is HTML.
+   * Dumps out a nested array as a nested HTML table.
    *
-   * @param array $array Data to output
+   * Used to output response data when the format type requested is HTML.
+   *
+   * @param array $array
+   *   Data to output
    * @param array $options
    */
-  private function outputArrayAsHtml($array, $options = array()) {
+  private function outputArrayAsHtml($array, $options = []) {
     if (count($array)) {
       $id = isset($options['tableId']) ? " id=\"$options[tableId]\"" : '';
       echo "<table class=\"table table-bordered table-responsive\"$id>";
@@ -490,36 +510,39 @@ ROW;
         echo "<caption>$label</caption>";
       }
       $keys = array_keys($array);
-      $col1 = is_integer($keys[0]) ? 'Row' : 'Field';
-      $col2 = is_integer($keys[0]) ? 'Record' : 'Value';
+      $col1 = is_int($keys[0]) ? 'Row' : 'Field';
+      $col2 = is_int($keys[0]) ? 'Record' : 'Value';
       $this->preProcessRow($array, $options);
       echo "<thead><th scope=\"col\">$col1</th><th scope=\"col\">$col2</th></thead>";
       echo '<tbody>';
-      foreach ($array as $key=>$value) {
-        if (empty($value) && !$this->includeEmptyValues)
+      foreach ($array as $key => $value) {
+        if (empty($value) && !$this->includeEmptyValues) {
           continue;
-        // If in a simple list of data or pg output, start preprocessing rows. Other structural output elements are not
-        // preprocessed.
+        }
+        // If in a simple list of data or pg output, start preprocessing rows.
+        // Other structural output elements are not preprocessed.
         $options['preprocess'] = is_int($key) || is_object($value);
         $class = is_array($value) && !empty($value['type']) ? " class=\"type-$value[type]\"" : '';
         echo "<tr><th scope=\"row\"$class>$key</th><td>";
         $options['tableId'] = $key;
-        // Object data here means a pg result object. Or, if it is an non-associative array so a simple list, then
-        // output as a table rather than a nested structure.
+        // Object data here means a pg result object. Or, if it is an
+        // non-associative array so a simple list, then output as a table
+        // rather than a nested structure.
         if (is_object($value) || (is_array($value) && count($value) > 0 && is_int(array_keys($value)[0]))) {
           // recurse into pg result data
           $this->outputResultAsHtml($value, $options);
         }
         elseif (is_array($value)) {
-          // recurse into plain array data
+          // Recurse into plain array data.
           $this->outputArrayAsHtml($value, $options);
         }
         else {
-          // a simple value to output. If it contains an internal link then process it to hide user/secret data.
+          // A simple value to output. If it contains an internal link then
+          // process it to hide user/secret data.
           if (preg_match('/^http(s)?:\/\//', $value)) {
             $parts = explode('?', $value);
             $displayUrl = $parts[0];
-            if (count($parts)>1) {
+            if (count($parts) > 1) {
               parse_str($parts[1], $params);
               unset($params['user']);
               unset($params['user_id']);
@@ -541,21 +564,24 @@ ROW;
 
   /**
    * Dumps out an HTML table containing results from a PostgreSQL query.
-   * @param array $data PG result data to iterate through.
-   * @param array $options Options array. If this has a columns element, it is used to generate a header row and control
-   * the output.
+   *
+   * @param array $data
+   *   PG result data to iterate through.
+   * @param array $options
+   *   Options array. If this has a columns element, it is used to generate a
+   *   header row and control the output.
    */
-  private function outputResultAsHtml($data, $options) {
+  private function outputResultAsHtml(array $data, array $options) {
     echo '<table class="table table-bordered table-responsive">';
     if (isset($options['columns'])) {
       // Ensure href and foriegn key column titles are added if we are including either of them. That's because these
       // are dynamically added to the data for each row as we go.
       if (!empty($options['preprocess'])) {
         if (!empty($options['attachHref']) && !in_array('href', $options['columns'])) {
-          $options['columns']['href'] = array();
+          $options['columns']['href'] = [];
         }
         if (!empty($options['attachFkLink']) && !in_array($options['attachFkLink'][0], $options['columns'])) {
-          $options['columns'][$options['attachFkLink'][0]] = array();
+          $options['columns'][$options['attachFkLink'][0]] = [];
         }
       }
       echo '<thead><tr>';
