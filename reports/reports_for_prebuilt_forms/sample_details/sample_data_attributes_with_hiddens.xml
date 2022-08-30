@@ -18,7 +18,7 @@
         END AS data_type,
         CASE '#language#' WHEN '' THEN a.caption ELSE COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) END AS caption,
         CASE a.data_type
-            WHEN 'T' THEN av.text_value
+            WHEN 'T' THEN get_formatted_attr_text_value(a.caption, av.text_value, '#output_formatting#')
             WHEN 'L' THEN lookup.term::text
             WHEN 'I' THEN coalesce(l.name, av.int_value::varchar)
             WHEN 'B' THEN av.int_value::varchar
@@ -65,7 +65,7 @@
         END AS data_type,
         CASE '#language#' WHEN '' THEN a.caption ELSE COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) END AS caption,
         CASE a.data_type
-            WHEN 'T' THEN av.text_value
+            WHEN 'T' THEN get_formatted_attr_text_value(a.caption, av.text_value, '#output_formatting#')
             WHEN 'L' THEN lookup.term::text
             WHEN 'I' THEN coalesce(l.name, av.int_value::varchar)
             WHEN 'B' THEN av.int_value::varchar
@@ -109,5 +109,6 @@
         datatype='lookup' lookup_values='in:Include,not in:Exclude' />
     <param name='language' display='Language' description="ISO 3 letter code of language to use for captions if available."
         datatype='text' default='' />
+    <param name="output_formatting" display="Output formatting" description="Auto-format HTML links and newlines" datatype="boolean" default="f" />
   </params>
 </report>

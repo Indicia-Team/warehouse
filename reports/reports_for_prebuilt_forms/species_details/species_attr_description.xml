@@ -14,28 +14,19 @@ FROM (
       COALESCE(subcat_l.term, subcat.term) as subcategory,
       CASE '#include_captions#' WHEN '1' THEN
           trim(regexp_replace(regexp_replace(
-          	  CASE '#language#' WHEN '' THEN 
-          		'&lt;b&gt;' || a.caption || '&lt;/b&gt;' 
-          	  ELSE 
-          	  	'&lt;b&gt;' || COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->>'#language#')::varchar), a.caption) || '&lt;/b&gt;' 
+          	  CASE '#language#' WHEN '' THEN
+          		'&lt;b&gt;' || a.caption || '&lt;/b&gt;'
+          	  ELSE
+          	  	'&lt;b&gt;' || COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->>'#language#')::varchar), a.caption) || '&lt;/b&gt;'
           	  END,
           ' \(95%\)$', ''), '^' || COALESCE(subcat_l.term, subcat.term), '')) || ': '
-      ELSE 
-      	  '' 
+      ELSE
+      	  ''
       END as caption,
       a.caption as raw_caption,
       tlttla.weight,
       CASE a.data_type
-          WHEN 'T'::bpchar THEN
-            CASE
-              -- colour value with a secondary colour.
-              WHEN av.text_value LIKE '#%;%' THEN '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || split_part(av.text_value, ';', 1) || '"&gt; &lt;/span&gt;'
-                || '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || split_part(av.text_value, ';', 2) || '"&gt; &lt;/span&gt;'
-              -- single colour value.
-              WHEN av.text_value LIKE '#%' THEN '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || av.text_value || '"&gt; &lt;/span&gt;'
-              -- any other value.
-              ELSE av.text_value
-            END
+          WHEN 'T' THEN get_formatted_attr_text_value(a.caption, av.text_value, '#output_formatting#')
           WHEN 'L'::bpchar THEN COALESCE(t_l.term::text, t.term::text)
           WHEN 'I'::bpchar THEN
             CASE
@@ -106,6 +97,7 @@ FROM (
     <param name="include_captions" datatype="boolean" default="1" />
     <param name="language" display="Language" description="ISO 3 letter code of language to use for captions if available."
         datatype="text" default="eng" />
+    <param name="output_formatting" display="Output formatting" description="Auto-format HTML links and newlines" datatype="boolean" default="f" />
   </params>
   <columns>
     <column name="catsort" sql="catsort" />
