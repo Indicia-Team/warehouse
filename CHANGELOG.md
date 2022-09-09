@@ -1,3 +1,10 @@
+# Version 8.6.0
+*2022-09-09"
+
+* Support for new output_formatting option in reports for details pages (occurrences, samples,
+  locations) with auto-formatting of hyperlinks for text attribute data.
+* Improvements to the REST API's auto-generated documentation.
+
 # Version 8.5.0
 *2022-09-09*
 
