@@ -1,3 +1,9 @@
+# Version 8.5.0
+*2022-09-09*
+
+* Adds a new standard filter parameter for filtering occurrences by sample ID (smp_id).
+* Adds reports required to support a new recording_system_links Drupal module.
+
 # Version 8.4.0
 *2022-08-10*
 
