@@ -66,6 +66,13 @@ class report_standard_params_occurrences {
         'description' => 'Operator to use in conjunction with a value provided in the occ_id parameter.',
         'lookup_values' => '=:is,>=:is at least,<=:is at most',
       ],
+      'smp_id' => [
+        'datatype' => 'lookup',
+        'default' => 'in',
+        'display' => 'Sample ID operation',
+        'description' => 'Operator to use in conjunction with a value provided in the smp_id parameter.',
+        'lookup_values' => '=:is,>=:is at least,<=:is at most',
+      ],
       'website_list' => [
         'datatype' => 'lookup',
         'default' => 'in',
@@ -143,6 +150,18 @@ class report_standard_params_occurrences {
             'value' => '',
             'operator' => '',
             'sql' => "o.id #occ_id_op# #occ_id#",
+          ],
+        ],
+      ],
+      'smp_id' => [
+        'datatype' => 'integer',
+        'display' => 'Sample ID',
+        'description' => 'Limit by sample ID.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "o.sample_id #smp_id_op# #smp_id#",
           ],
         ],
       ],
@@ -1215,6 +1234,7 @@ class report_standard_params_occurrences {
   public static function getDefaultParameterValues() {
     return [
       'occ_id_op' => '=',
+      'smp_id_op' => '=',
       'taxon_rank_sort_order_op' => '=',
       'website_list_op' => 'in',
       'survey_list_op' => 'in',
@@ -1223,6 +1243,7 @@ class report_standard_params_occurrences {
       'indexed_location_list_op' => 'in',
       'identification_difficulty_op' => '=',
       'occ_id_op_context' => '=',
+      'smp_id_op_context' => '=',
       'website_list_op_context' => 'in',
       'survey_list_op_context' => 'in',
       'input_form_list_op_context' => 'in',

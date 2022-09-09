@@ -810,7 +810,7 @@ class ORM extends ORM_Core {
    * occurrence_associations to the correct records.
    */
   private function postProcess() {
-    if (class_exists('cache_builder')) {
+    if (class_exists('cache_builder') && (!isset($_REQUEST['cache_updates']) || $_REQUEST['cache_updates'] !== 'off')) {
       $occurrences = [];
       $deletedOccurrences = [];
       if (!empty(self::$changedRecords['insert']['occurrence'])) {
