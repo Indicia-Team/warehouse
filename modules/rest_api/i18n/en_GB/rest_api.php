@@ -90,6 +90,11 @@ wrap the child object in an array (as only one is possible). The nested object's
 then saved into the current record as a foreign key.</p>
 HTML;
 $lang['resourcesTitle'] = 'Resources';
+$lang['resourcesIntroduction'] = <<<TXT
+Resources available through the REST API are listed below. Reload the page with ?deprecated in the
+URL to include deprecated resources in the list.
+TXT;
+$lang['deprecatedEndpoint'] = 'This endpoint is deprecated and may be removed in a future API version.';
 $lang['authMethods'] = 'Allowed authentication methods';
 $lang['jwtUser'] = 'JWT as warehouse user';
 $lang['jwtUserHelp'] = 'Use JWT access token to authenticate as a warehouse user';
@@ -197,7 +202,8 @@ $lang['format_param_help'] = 'Request a response in this format, either html or 
 // Help text for each end-point/method combination.
 $lang['resources'] = [];
 $lang['resources']['annotations'] = <<<TXT
-A list of comments and verification decisions attached to taxon-observation resources.
+A list of comments and verification decisions attached to taxon-observation resources. Described fully in the
+<a href="http://indicia-online-recording-rest-api.readthedocs.io/en/latest/">online recording REST API documentation</a>.
 TXT;
 $lang['resources']['GET annotations'] = 'Retrieve a list of annotations available to this client ID.';
 $lang['resources']['GET annotations/{id}'] = <<<TXT
@@ -647,7 +653,10 @@ $lang['resources']['GET taxa/search'] = <<<TXT
 Search resource for taxa. Perform full text searches against the taxonomy information held in the
 warehouse.
 TXT;
-$lang['resources']['taxon-observations'] = 'Occurrence data provided in the deprecated NBN Gateway exchange format.';
+$lang['resources']['taxon-observations'] = <<<TXT
+Occurrence data provided in the deprecated NBN Gateway exchange format. Described fully in the
+<a href="http://indicia-online-recording-rest-api.readthedocs.io/en/latest/">online recording REST API documentation</a>.
+TXT;
 $lang['resources']['POST taxon-observations'] = 'Creates an occurrence using the deprecated NBN Gateway exchange format.';
 $lang['resources']['GET reports'] = <<<TXT
 Retrieves the contents of the top level of the reports directory on the warehouse. Can retrieve the
@@ -658,7 +667,11 @@ $lang['resources']['GET reports/{path}'] = <<<TXT
 Retrieves the contents of the folder specified by {path} of the reports directory on the warehouse.
 URL.
 TXT;
-$lang['resources']['GET reports/{path}/{file-xml}'] = 'Access the output for a report specified by the supplied path.';
+$lang['resources']['GET reports/{path}/{file-xml}'] = <<<TXT
+Access the output for a report specified by the supplied path. As well as the system parameters
+defined here, each report defines a list of it's own parameters available via the /params endpoint
+described below.
+TXT;
 $lang['resources']['GET reports/{path}/{file-xml}/params'] = <<<TXT
 Get metadata about the list of parameters available to filter this report by.
 TXT;
@@ -933,6 +946,13 @@ Provides a list of well maintained reports which are recommended as a starting p
 the library of reports.
 TXT;
 $lang['GET reports/{path}/{file-xml}'] = [];
+$lang['GET reports/{path}/{file-xml}']['autofeed'] = <<<TXT
+Set to 't' to enable autofeed mode when populating an Elasticsearch instance by connecting Logstash
+to a warehouse via the REST API, using one of the "list_for_elastic" reports which supports this
+mode. The request must authenticate using a client project ID which then enables the API to
+automatically feed through all new and changed records since the last request, up to a limit
+(normally 10,000).
+TXT;
 $lang['GET reports/{path}/{file-xml}']['filter_id'] = <<<TXT
 Optional when authenticated as a warehouse user. Must point to the ID of a filter in the filters
 table which has defines_permissions set to true and is linked to the authenticated user. When used,
@@ -940,6 +960,14 @@ switches the set of records that are accessible from those created by the curren
 of records identified by the filter.
 TXT;
 $lang['GET reports/{path}/{file-xml}']['limit'] = 'Limit the number of records in the response.';
+$lang['GET reports/{path}/{file-xml}']['max_time'] = <<<TXT
+Use in conjuction with `autofeed` mode when populating an Elasticsearch instance by connecting
+Logstash to a warehouse via the REST API, using one of the "list_for_elastic" reports which
+supports this mode. Defines a maximum number of seconds for the request to take before autofeed
+tracking is cancelled. This is because Logstash will always timeout a request that takes too long
+so the `max_time` should be set to a lower value in order to cause the next request to retrieve the
+same set of records again and avoid skipping a block of records.
+TXT;
 $lang['GET reports/{path}/{file-xml}']['offset'] = 'Offset from the start of the dataset that the response will start.';
 $lang['GET reports/{path}/{file-xml}']['sortby'] = <<<TXT
 The field to sort by. Must be compatible with the SQL generated for the report.

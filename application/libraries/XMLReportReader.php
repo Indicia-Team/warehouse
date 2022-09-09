@@ -848,7 +848,7 @@ class XMLReportReader_Core implements ReportReader {
   /**
    */
   public function getAttributeDefns() {
-     return $this->attributes;
+    return $this->attributes;
   }
 
   public function getVagueDateProcessing() {
@@ -1005,7 +1005,7 @@ TBL;
       'population_call',
       'linked_to',
       'linked_filter_field',
-      'order_by'
+      'order_by',
     ]);
 
     if ($this->params[$name]['datatype'] === 'lookup') {
@@ -1030,21 +1030,21 @@ TBL;
             if (!isset($this->params[$name]['joins'])) {
               $this->params[$name]['joins'] = [];
             }
-            $this->params[$name]['joins'][] = array(
+            $this->params[$name]['joins'][] = [
               'value' => $reader->getAttribute('value'),
               'operator' => $reader->getAttribute('operator'),
               'sql' => $reader->readString(),
-            );
+            ];
           }
           if ($reader->nodeType == XMLREADER::ELEMENT && $reader->name === 'where') {
             if (!isset($this->params[$name]['wheres'])) {
               $this->params[$name]['wheres'] = [];
             }
-            $this->params[$name]['wheres'][] = array(
+            $this->params[$name]['wheres'][] = [
               'value' => $reader->getAttribute('value'),
               'operator' => $reader->getAttribute('operator'),
               'sql' => $reader->readString(),
-            );
+            ];
           }
         }
       }
@@ -1238,8 +1238,7 @@ TBL;
 
   private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='',
     $orderby='', $mappable='', $autodef=TRUE) {
-    if (array_key_exists($name, $this->columns))
-    {
+    if (array_key_exists($name, $this->columns)) {
       if ($display != '') $this->columns[$name]['display'] = $display;
       if ($style != '') $this->columns[$name]['style'] = $style;
       if ($feature_style != '') $this->columns[$name]['feature_style'] = $feature_style;
@@ -1256,17 +1255,17 @@ TBL;
     }
     else
     {
-      $this->columns[$name] = array(
-          'display' => $display,
-          'style' => $style,
-          'feature_style' => $feature_style,
-          'class' => $class,
-          'visible' => $visible == '' ? 'true' : $visible,
-          'img' => $img == '' ? 'false' : $img,
-          'orderby' => $orderby,
-          'mappable' => empty($mappable) ? 'false' : $mappable,
-          'autodef' => $autodef,
-        );
+      $this->columns[$name] = [
+        'display' => $display,
+        'style' => $style,
+        'feature_style' => $feature_style,
+        'class' => $class,
+        'visible' => $visible == '' ? 'true' : $visible,
+        'img' => $img == '' ? 'false' : $img,
+        'orderby' => $orderby,
+        'mappable' => empty($mappable) ? 'false' : $mappable,
+        'autodef' => $autodef,
+      ];
     }
   }
 
@@ -1275,51 +1274,55 @@ TBL;
     $this->tableIndex = 0;
     $this->nextTableIndex = 1;
     $this->tables[$this->tableIndex] = [
-        'tablename' => $tablename,
-        'parent' => -1,
-        'parentKey' => '',
-        'tableKey' => '',
-        'join' => '',
-        'attributes' => '',
-        'where' => $where,
-        'columns' => []
+      'tablename' => $tablename,
+      'parent' => -1,
+      'parentKey' => '',
+      'tableKey' => '',
+      'join' => '',
+      'attributes' => '',
+      'where' => $where,
+      'columns' => [],
     ];
   }
 
   private function setSubTable($tablename, $parentKey, $tableKey, $join, $where) {
-    if($tableKey == ''){
-      if($parentKey == 'id'){
-        $tableKey = 'lt'.$this->nextTableIndex.".".(inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
+    if ($tableKey == '') {
+      if ($parentKey == 'id') {
+        $tableKey = 'lt' . $this->nextTableIndex . "." . (inflector::singular($this->tables[$this->tableIndex]['tablename'])) . '_id';
       } else {
-        $tableKey = 'lt'.$this->nextTableIndex.'.id';
+        $tableKey = 'lt' . $this->nextTableIndex . '.id';
       }
     } else {
-      $tableKey = 'lt'.$this->nextTableIndex.".".$tableKey;
+      $tableKey = 'lt' . $this->nextTableIndex . "." . $tableKey;
     }
-    if($parentKey == ''){
-      $parentKey = 'lt'.$this->tableIndex.".".(inflector::singular($tablename)).'_id';
-    } else { // force the link as this table has foreign key to parent table, standard naming convention.
-      $parentKey = 'lt'.$this->tableIndex.".".$parentKey;
+    if ($parentKey == '') {
+      $parentKey = 'lt' . $this->tableIndex . "." . (inflector::singular($tablename)) . '_id';
     }
-    $this->tables[$this->nextTableIndex] = array(
-          'tablename' => $tablename,
-           'parent' => $this->tableIndex,
-          'parentKey' => $parentKey,
-          'tableKey' => $tableKey,
-           'join' => $join,
-          'attributes' => '',
-          'where' => $where,
-           'columns' => []);
-    $this->tableIndex=$this->nextTableIndex;
+    else {
+      // Force the link as this table has foreign key to parent table, standard
+      // naming convention.
+      $parentKey = 'lt' . $this->tableIndex . '.' . $parentKey;
+    }
+    $this->tables[$this->nextTableIndex] = [
+      'tablename' => $tablename,
+      'parent' => $this->tableIndex,
+      'parentKey' => $parentKey,
+      'tableKey' => $tableKey,
+      'join' => $join,
+      'attributes' => '',
+      'where' => $where,
+      'columns' => [],
+    ];
+    $this->tableIndex = $this->nextTableIndex;
     $this->nextTableIndex++;
   }
 
-  private function mergeTabColumn($name, $func = '', $display = '', $style = '', $feature_style = '', $class='', $visible='', $autodef=FALSE) {
+  private function mergeTabColumn($name, $func = '', $display = '', $style = '', $feature_style = '', $class = '', $visible = '', $autodef = FALSE) {
     $found = FALSE;
-    for($r = 0; $r < count($this->tables[$this->tableIndex]['columns']); $r++){
-      if($this->tables[$this->tableIndex]['columns'][$r]['name'] == $name) {
+    for ($r = 0; $r < count($this->tables[$this->tableIndex]['columns']); $r++){
+      if ($this->tables[$this->tableIndex]['columns'][$r]['name'] == $name) {
         $found = TRUE;
-        if($func != '') {
+        if ($func != '') {
           $this->tables[$this->tableIndex]['columns'][$r]['func'] = $func;
         }
       }
@@ -1329,7 +1332,7 @@ TBL;
         'name' => $name,
         'func' => $func,
       ];
-      if($display == '') {
+      if ($display == '') {
         $display = $this->tables[$this->tableIndex]['tablename']." ".$name;
       }
     }
@@ -1371,7 +1374,7 @@ TBL;
     $thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
     $thisDefn->separator = $separator;
     $thisDefn->hideVagueDateFields = $hideVagueDateFields;
-    $thisDefn->columnPrefix = 'attr_' . $this->tableIndex.'_';
+    $thisDefn->columnPrefix = 'attr_' . $this->tableIndex . '_';
     // Folowing is used the query builder only.
     $thisDefn->parentTableIndex = $this->tableIndex;
     $thisDefn->where = $where;
@@ -1392,14 +1395,13 @@ TBL;
   * matching from. Commas that are part of nested selects or function calls are ignored
   * provided they are enclosed in brackets.
   */
-  private function inferFromQuery()
-  {
-    // Find the columns we're searching for - nested between a SELECT and a FROM.
-    // To ensure we can detect the words FROM, SELECT and AS, use a regex to wrap
-    // spaces around them, then can do a regular string search
-    $this->query=preg_replace("/\b(select)\b/i", ' select ', $this->query);
-    $this->query=preg_replace("/\b(from)\b/i", ' from ', $this->query);
-    $this->query=preg_replace("/\b(as)\b/i", ' as ', $this->query);
+  private function inferFromQuery() {
+    // Find the columns we're searching for - nested between a SELECT and a
+    // FROM. To ensure we can detect the words FROM, SELECT and AS, use a regex
+    // to wrap spaces around them, then can do a regular string search.
+    $this->query = preg_replace("/\b(select)\b/i", ' select ', $this->query);
+    $this->query = preg_replace("/\b(from)\b/i", ' from ', $this->query);
+    $this->query = preg_replace("/\b(as)\b/i", ' as ', $this->query);
     $i0 = strpos($this->query, ' select ') + 7;
     $nesting = 1;
     $offset = $i0;
@@ -1407,13 +1409,13 @@ TBL;
       $nextSelect = strpos($this->query, ' select ', $offset);
       $nextFrom = strpos($this->query, ' from ', $offset);
       if ($nextSelect !== FALSE && $nextSelect < $nextFrom) {
-        //found start of sub-query
+        // Found start of sub-query.
         $nesting++;
         $offset = $nextSelect + 7;
       } else {
         $nesting--;
         if ($nesting != 0) {
-          //found end of sub-query
+          // Found end of sub-query.
           $offset = $nextFrom + 5;
         }
       }
@@ -1425,36 +1427,36 @@ TBL;
     $colString = str_replace('#fields#', '', substr($this->query, $i0, $i1));
 
     // Now divide up the list of columns, which are comma separated, but ignore
-    // commas nested in brackets
+    // commas nested in brackets.
     $colStart = 0;
-    $nextComma =  strpos($colString, ',', $colStart);
-    while ($nextComma !== FALSE)
-    {//loop through columns
-      $nextOpen =  strpos($colString, '(', $colStart);
-      while ($nextOpen !== FALSE && $nextComma !==FALSE && $nextOpen < $nextComma)
-      { //skipping commas in brackets
+    $nextComma = strpos($colString, ',', $colStart);
+    while ($nextComma !== FALSE) {
+      // Loop through columns.
+      $nextOpen = strpos($colString, '(', $colStart);
+      while ($nextOpen !== FALSE && $nextComma !== FALSE && $nextOpen < $nextComma) {
+        // Skipping commas in brackets.
         $offset = $this->strposclose($colString, $nextOpen) + 1;
-        $nextComma =  strpos($colString, ',', $offset);
-        $nextOpen =  strpos($colString, '(', $offset);
+        $nextComma = strpos($colString, ',', $offset);
+        $nextOpen = strpos($colString, '(', $offset);
       }
       if ($nextComma !== FALSE) {
-        //extract column and move on to next
+        // Extract column and move on to next.
         $cols[] = substr($colString, $colStart, ($nextComma - $colStart));
         $colStart = $nextComma + 1;
-        $nextComma =  strpos($colString, ',', $colStart);
-     }
+        $nextComma = strpos($colString, ',', $colStart);
+      }
     }
-    //extract final column
+    // Extract final column.
     $cols[] = substr($colString, $colStart);
 
-    // We have cols, which may either be of the form 'x', 'table.x' or 'x as y'. Either way the column name is the part after the last
-    // space and full stop.
-    foreach ($cols as $col)
-    {
-      // break down by spaces
-      $b = explode(' ' , trim($col));
-      // break down the part after the last space, by
-      $c = explode('.' , array_pop($b));
+    // We have cols, which may either be of the form 'x', 'table.x' or 'x as
+    // y'. Either way the column name is the part after the last space and full
+    // stop.
+    foreach ($cols as $col) {
+      // Break down by spaces.
+      $b = explode(' ', trim($col));
+      // Break down the part after the last space.
+      $c = explode('.', array_pop($b));
       $d = array_pop($c);
       $this->mergeColumn(trim($d));
     }
@@ -1462,34 +1464,41 @@ TBL;
     // Okay, now we need to find parameters, which we do with regex.
     preg_match_all('/#([a-z0-9_]+)#%/i', $this->query, $matches);
     // Here is why I remember (yet again) why I hate PHP...
-    foreach ($matches[1] as $param)
-    {
+    foreach ($matches[1] as $param) {
       $this->mergeParam($param);
     }
   }
 
   /**
-   * Returns the numeric position of the closing bracket matching the opening bracket
-   * @param <string> $haystack The string to search
-   * @param <int> $open The numeric position of the opening bracket
-   * @return The numeric position of the closing bracket or FALSE if not present
+   * Returns numeric pos of the closing bracket matching an opening bracket.
+   *
+   * @param string $haystack
+   *   The string to search.
+   * @param int $open
+   *   The numeric position of the opening bracket.
+   *
+   * @return int
+   *   The numeric position of the closing bracket or FALSE if not present.
    */
   private function strposclose($haystack, $open) {
     $nesting = 1;
     $offset = $open + 1;
     do {
-      $nextOpen =  strpos($haystack, '(', $offset);
-      $nextClose =  strpos($haystack, ')', $offset);
-      if ($nextClose === FALSE) return FALSE;
+      $nextOpen = strpos($haystack, '(', $offset);
+      $nextClose = strpos($haystack, ')', $offset);
+      if ($nextClose === FALSE) {
+        return FALSE;
+      }
       if ($nextOpen !== FALSE and $nextOpen < $nextClose) {
         $nesting++;
         $offset = $nextOpen + 1;
-      } else {
+      }
+      else {
         $nesting--;
         $offset = $nextClose + 1;
       }
-    }
-    while ($nesting > 0);
-    return $offset -1;
+    } while ($nesting > 0);
+    return $offset - 1;
   }
+
 }

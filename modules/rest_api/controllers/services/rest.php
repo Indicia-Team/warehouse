@@ -457,10 +457,16 @@ class Rest_Controller extends Controller {
         'reports/{path}' => [],
         'reports/{path}/{file.xml}' => [
           'params' => [
+            'autofeed' => [
+              'datatype' => 'boolean',
+            ],
             'filter_id' => [
               'datatype' => 'integer',
             ],
             'limit' => [
+              'datatype' => 'integer',
+            ],
+            'max_time' => [
               'datatype' => 'integer',
             ],
             'offset' => [
@@ -1776,12 +1782,12 @@ class Rest_Controller extends Controller {
       }
     }
     elseif ($datatype === 'boolean') {
-      if (!preg_match('/^(true|false)$/', $trimmed)) {
+      if (!preg_match('/^(true|false|t|f)$/', $trimmed)) {
         RestObjects::$apiResponse->fail('Bad request', 400,
             "Invalid boolean for $paramName parameter, value should be true or false");
       }
       // Set the value to a real bool.
-      $value = $trimmed === 'true';
+      $value = $trimmed === 'true' || $trimmed === 't';
     }
     // If a limited options set available then check the value is in the list.
     if (!empty($paramDef['options']) && !in_array($trimmed, $paramDef['options'])) {
