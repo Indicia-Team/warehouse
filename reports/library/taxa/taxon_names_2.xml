@@ -3,7 +3,7 @@
     description="Report used to retrieve details of a species excluding custom attributes for the species details form. Includes default common name and external key."
 >
   <query>
-    select distinct tall.id, tall.taxon_meaning_id, tall.external_key, tall.default_common_name,
+    select distinct tall.id, tall.taxon_meaning_id, tall.external_key, tall.default_common_name, tall.taxon as taxon_plain,
       case tall.language_iso when 'lat' then '&lt;em&gt;' || tall.taxon || '&lt;/em&gt;' || coalesce(' ' || tall.authority, '') else tall.taxon end,
       tall.language_iso,
       tall.language_iso='lat' as latin,
