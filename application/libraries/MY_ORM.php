@@ -1293,7 +1293,6 @@ class ORM extends ORM_Core {
    *   Object or array of foreign key value, or false if not found.
    */
   protected function fkLookup($fkArr, $returnAllResults = FALSE) {
-    $r = FALSE;
     $key = '';
     if (isset($fkArr['fkSearchFilterValue'])) {
       if(is_array($fkArr['fkSearchFilterValue']))
@@ -1311,7 +1310,7 @@ class ORM extends ORM_Core {
       $r = $this->cache->get($key);
     }
 
-    if (!$r) {
+    if (!isset($r)) {
       $where = array($fkArr['fkSearchField'] => $fkArr['fkSearchValue']);
       // does the lookup need to be filtered, e.g. to a taxon or term list?
       if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) {
@@ -1364,9 +1363,13 @@ class ORM extends ORM_Core {
       else {
         if (count($matches) > 0) {
           $r = $matches[0]->id;
-          if (ORM::$cacheFkLookups) {
-            $this->cache->set($key, $r, ['lookup']);
-          }
+        }
+        else {
+          $r = FALSE;
+        }
+        // Cache the result, even if a match not found.
+        if (ORM::$cacheFkLookups) {
+          $this->cache->set($key, $r, ['lookup']);
         }
       }
     }
