@@ -1355,10 +1355,11 @@ class ORM extends ORM_Core {
       if (count($matches) === 0 && $fkArr['fkSearchField'] != 'id') {
         // Try a slower case insensitive search before giving up, but don't
         // bother if id specified as ints don't like ilike.
+        $searchValue = strtolower(str_replace("'", "''", $fkArr['fkSearchValue']));
         $this->db
           ->select('id')
           ->from(inflector::plural($fkArr['fkTable']))
-          ->where("($fkArr[fkSearchField] ilike '" . strtolower(str_replace("'", "''", $fkArr['fkSearchValue'])) . "')");
+          ->where("($fkArr[fkSearchField] ilike '$searchValue')");
         if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) {
           $this->db->where([$fkArr['fkSearchFilterField'] => $filterValue]);
         }
