@@ -40,11 +40,10 @@
   from occurrence_attributes a
   left join (occurrence_attribute_values av
     join occurrences o on o.id=av.occurrence_id and o.deleted=false and o.website_id in (#website_ids#)
-  ) on av.occurrence_attribute_id=a.id and av.deleted=false
+  ) on av.occurrence_attribute_id=a.id and av.deleted=false and av.occurrence_id=#occurrence_id#
   left join cache_termlists_terms lookup on a.data_type='L' and lookup.id=av.int_value
   where a.id=#occurrence_attribute_id#
   and a.deleted=false
-  and av.occurrence_id=#occurrence_id#
   group by a.system_function, a.id, a.data_type, a.caption
   </query>
   <params>

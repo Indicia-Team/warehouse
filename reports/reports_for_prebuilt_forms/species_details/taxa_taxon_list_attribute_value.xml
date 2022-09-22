@@ -39,9 +39,9 @@
           STRING_AGG(CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN av.upper_value::text ELSE null::text END, '; ') AS upper_value
   from taxa_taxon_list_attributes a
   left join taxa_taxon_list_attribute_values av on av.taxa_taxon_list_attribute_id=a.id and av.deleted=false
+    and av.taxa_taxon_list_id=#taxa_taxon_list_id#
   left join cache_termlists_terms lookup on a.data_type='L' and lookup.id=av.int_value
-  where av.taxa_taxon_list_id=#taxa_taxon_list_id#
-  and a.deleted=false
+  where a.deleted=false
   and a.id=#taxa_taxon_list_attribute_id#
   group by a.system_function, a.id, a.data_type, a.caption
   </query>

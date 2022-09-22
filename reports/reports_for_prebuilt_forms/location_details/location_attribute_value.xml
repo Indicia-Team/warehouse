@@ -41,10 +41,9 @@
   left join (location_attribute_values av
     left join locations_websites lw on lw.location_id=av.location_id and lw.deleted=false and lw.website_id in (#website_ids#)
     join locations l on l.id=av.location_id and l.deleted=false and (l.public=true or lw.id is not null)
-  ) on av.location_attribute_id=a.id and av.deleted=false
+  ) on av.location_attribute_id=a.id and av.deleted=false and av.location_id=#location_id#
   left join cache_termlists_terms lookup on a.data_type='L' and lookup.id=av.int_value
-  where av.location_id=#location_id#
-  and a.deleted=false
+  where a.deleted=false
   and a.id=#location_attribute_id#
   and (lw.id is not null or l.public)
   group by a.system_function, a.id, a.data_type, a.caption
