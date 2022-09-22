@@ -41,10 +41,9 @@
   left join (sample_attribute_values av
     join samples s on s.id=av.sample_id and s.deleted=false
     join surveys srv on srv.id=s.survey_id and srv.deleted=false and srv.website_id in (#website_ids#)
-  ) on av.sample_attribute_id=a.id and av.deleted=false
+  ) on av.sample_attribute_id=a.id and av.deleted=false and av.sample_id=#sample_id#
   left join cache_termlists_terms lookup on a.data_type='L' and lookup.id=av.int_value
-  where av.sample_id=#sample_id#
-  and a.deleted=false
+  where a.deleted=false
   and a.id=#sample_attribute_id#
   group by a.system_function, a.id, a.data_type, a.caption
   </query>
