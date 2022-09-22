@@ -1,3 +1,17 @@
+# Version 8.8.0
+*2022-09-22*
+
+* Adds a location_comments table.
+* Adds a report for retrieving summary data for location comments that contain structured voting or
+  review data.
+* Updates the occurrences edit form sensitivity control so that all precision levels are supported.
+
+# Version 8.7.0
+*2022-09-11*
+
+* Adds reports which support the record, sample and location details pages to allow a single
+  attribute value to be output in a block (rather than a data list of all attribute values).
+
 # Version 8.6.0
 *2022-09-09"
 
