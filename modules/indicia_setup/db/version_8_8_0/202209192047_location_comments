@@ -33,6 +33,9 @@ CREATE TABLE IF NOT EXISTS location_comments
 COMMENT ON TABLE location_comments
     IS 'List of comments regarding the location posted by users viewing the location subsequent to initial data entry.';
 
+COMMENT ON COLUMN location_comments.comment
+    IS 'Location comment text.';
+
 COMMENT ON COLUMN location_comments.created_by_id
     IS 'Foreign key to the users table (creator), if user was logged in when comment created.';
 
