@@ -1284,36 +1284,49 @@ class ORM extends ORM_Core {
    *   * fkSearchValue => value to find in search field
    *   * fkSearchFilterField => field by which to filter search
    *   * fkSearchFilterValue => filter value
-   *   * fkExcludeDeletedRecords => whether to include a where clause to exclude deleted records.
+   *   * fkExcludeDeletedRecords => whether to include a where clause to exclude
+   *     deleted records.
    *   * fkWebsite => optional website_id filter.
    * @param bool $returnAllResults
-   *   Should all possible matches be returned, or just one match chosen by the function logic.
+   *   Should all possible matches be returned, or just one match chosen by the
+   *   function logic.
    *
    * @return mixed
    *   Object or array of foreign key value, or false if not found.
    */
-  protected function fkLookup($fkArr, $returnAllResults = FALSE) {
-    $r = FALSE;
+  protected function fkLookup(array $fkArr, $returnAllResults = FALSE) {
     $key = '';
     if (isset($fkArr['fkSearchFilterValue'])) {
-      if(is_array($fkArr['fkSearchFilterValue']))
+      if (is_array($fkArr['fkSearchFilterValue'])) {
         $filterValue = $fkArr['fkSearchFilterValue']['value'];
-      else
+      }
+      else {
         $filterValue = $fkArr['fkSearchFilterValue'];
-    } else $filterValue = '';
+      }
+    }
+    else {
+      $filterValue = '';
+    }
 
     if (ORM::$cacheFkLookups && $returnAllResults == FALSE) {
-      $keyArr=array('lookup', $fkArr['fkTable'], $fkArr['fkSearchField'], $fkArr['fkSearchValue']);
-      // cache must be unique per filtered value (e.g. when lookup up a taxa in a taxon list).
-      if ($filterValue != '')
+      $keyArr = [
+        'lookup',
+        $fkArr['fkTable'],
+        $fkArr['fkSearchField'],
+        $fkArr['fkSearchValue'],
+      ];
+      // Cache must be unique per filtered value (e.g. when lookup up a taxa in
+      // a taxon list).
+      if ($filterValue != '') {
         $keyArr[] = $filterValue;
+      }
       $key = implode('-', $keyArr);
       $r = $this->cache->get($key);
     }
 
-    if (!$r) {
-      $where = array($fkArr['fkSearchField'] => $fkArr['fkSearchValue']);
-      // does the lookup need to be filtered, e.g. to a taxon or term list?
+    if (!isset($r)) {
+      $where = [$fkArr['fkSearchField'] => $fkArr['fkSearchValue']];
+      // Does the lookup need to be filtered, e.g. to a taxon or term list?
       if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) {
         $where[$fkArr['fkSearchFilterField']] = $filterValue;
       }
@@ -1323,7 +1336,7 @@ class ORM extends ORM_Core {
       if (isset($fkArr['fkWebsite'])) {
         $where['website_id'] = $fkArr['fkWebsite'];
       }
-      // for locations we have to filter by the website.
+      // For locations we have to filter by the website.
       if ($returnAllResults == TRUE) {
         $matches = $this->db
           ->select('id')
@@ -1340,11 +1353,13 @@ class ORM extends ORM_Core {
           ->get();
       }
       if (count($matches) === 0 && $fkArr['fkSearchField'] != 'id') {
-        // try a slower case insensitive search before giving up, but don't bother if id specified as ints don't like ilike
+        // Try a slower case insensitive search before giving up, but don't
+        // bother if id specified as ints don't like ilike.
+        $searchValue = strtolower(str_replace("'", "''", $fkArr['fkSearchValue']));
         $this->db
           ->select('id')
           ->from(inflector::plural($fkArr['fkTable']))
-          ->where("($fkArr[fkSearchField] ilike '" . strtolower(str_replace("'", "''", $fkArr['fkSearchValue'])) . "')");
+          ->where("($fkArr[fkSearchField] ilike '$searchValue')");
         if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) {
           $this->db->where([$fkArr['fkSearchFilterField'] => $filterValue]);
         }
@@ -1364,9 +1379,13 @@ class ORM extends ORM_Core {
       else {
         if (count($matches) > 0) {
           $r = $matches[0]->id;
-          if (ORM::$cacheFkLookups) {
-            $this->cache->set($key, $r, ['lookup']);
-          }
+        }
+        else {
+          $r = FALSE;
+        }
+        // Cache the result, even if a match not found.
+        if (ORM::$cacheFkLookups) {
+          $this->cache->set($key, $r, ['lookup']);
         }
       }
     }
