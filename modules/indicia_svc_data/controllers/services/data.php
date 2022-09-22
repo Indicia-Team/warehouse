@@ -73,6 +73,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'group_relation',
     'location',
     'location_attribute_value',
+    'location_comment',
     'location_medium',
     'notification',
     'occurrence',
@@ -91,7 +92,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'survey',
     'survey_attribute',
     'survey_attribute_value',
-    'sample_comment',
+    'survey_comment',
     'survey_medium',
     'taxa_taxon_list',
     'taxa_taxon_list_attribute',
@@ -303,6 +304,13 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
+   * Provides the /services/data/location_comments service.
+   */
+  public function location_comment() {
+    $this->handle_call('location_comment');
+  }
+
+  /**
    * Provides the /service/data/location_image service.
    *
    * Retrieves details of location media.
@@ -374,6 +382,13 @@ class Data_Controller extends Data_Service_Base_Controller {
    */
   public function occurrence_attribute_value() {
     $this->handle_call('occurrence_attribute_value');
+  }
+
+  /**
+   * Provides the /services/data/occurrence_comments service.
+   */
+  public function occurrence_comment() {
+    $this->handle_call('occurrence_comment');
   }
 
   /**
@@ -457,6 +472,13 @@ class Data_Controller extends Data_Service_Base_Controller {
    */
   public function sample_attribute_value() {
     $this->handle_call('sample_attribute_value');
+  }
+
+  /**
+   * Provides the /services/data/sample_comments service.
+   */
+  public function sample_comment() {
+    $this->handle_call('sample_comment');
   }
 
   /**
@@ -744,22 +766,6 @@ class Data_Controller extends Data_Service_Base_Controller {
    */
   public function trigger() {
     $this->handle_call('trigger');
-  }
-
-  /**
-  * Provides the /services/data/occurrence_comments service.
-  */
-  public function occurrence_comment()
-  {
-    $this->handle_call('occurrence_comment');
-  }
-
-  /**
-  * Provides the /services/data/sample_comments service.
-  */
-  public function sample_comment()
-  {
-    $this->handle_call('sample_comment');
   }
 
   /**

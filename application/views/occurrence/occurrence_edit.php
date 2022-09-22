@@ -118,7 +118,9 @@ $(document).ready(function() {
       'fieldname' => 'occurrence:sensitivity_precision',
       'default' => html::initial_value($values, 'occurrence:sensitivity_precision'),
       'lookupValues' => [
+        '100' => '100m',
         '1000' => '1km',
+        '2000' => '2km',
         '10000' => '10km',
         '100000' => '100km',
       ],
