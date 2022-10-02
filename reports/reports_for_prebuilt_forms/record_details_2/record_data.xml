@@ -36,6 +36,8 @@
   </params>
   <columns>
     <column name='occurrence_id' sql='o.id' />
+    <column name='sample_id' sql='o.sample_id' />
+    <column name='parent_sample_id' sql='o.parent_sample_id' />
     <column name='occurrence_external_key' sql='o.external_key' />
     <column name='taxon' sql="case o.zero_abundance when true then '&lt;span class=&quot;zero-abundance&quot;&gt;' || cttl.taxon || '&lt;span&gt; - zero abundance found' else cttl.taxon end" />
     <column name='taxon_as_entered' sql="cttl.taxon" />
