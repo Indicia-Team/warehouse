@@ -180,13 +180,18 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     // For existing records, need to assess if the occurrences cache data needs
     // a taxonomy refresh.
     if ($this->id) {
-      $keyFields = [
+      $triggerFields = [
         'parent_id',
         'taxon_meaning_id',
+        'external_key',
+        'search_code',
+        'organism_key',
+        'taxon_rank_id',
+        'taxon_group_id',
       ];
-      foreach ($keyFields as $keyField) {
-        if (isset($this->submission['fields'][$keyField]) && isset($this->submission['fields'][$keyField]['value'])) {
-          if ($this->submission['fields'][$keyField]['value'] !== (string) $this->$keyField) {
+      foreach ($triggerFields as $triggerField) {
+        if (isset($this->submission['fields'][$triggerField]) && isset($this->submission['fields'][$triggerField]['value'])) {
+          if ($this->submission['fields'][$triggerField]['value'] !== (string) $this->$triggerField) {
             $this->updateAffectsOccurrenceCache = TRUE;
             break;
           }
