@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Warehouse version configuration.
+ * View template for the survey comment list.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -22,25 +22,8 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-defined('SYSPATH') or die('No direct script access.');
-
-/**
- * The application files' version number.
- *
- * @var string
- */
-$config['version'] = '8.9.0';
-
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2022-10-03';
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+echo $grid;
+?>
+<form action="<?php echo url::site() . 'location_comment/create/' . $location_id; ?>">
+<input type="submit" value="New location comment" class="btn btn-primary" />
+</form>
