@@ -1,3 +1,8 @@
+# Version 8.9.0
+*2022-10-03*
+
+* Adds missing Comments tab to UI for locations.
+
 # Version 8.8.0
 *2022-09-22*
 
