@@ -37,7 +37,8 @@ class Location_comment_model extends ORM {
     // fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('comment', 'required');
-    $array->add_rules('location_id', 'required');
+    $array->add_rules('location_id', 'required', 'integer');
+    $array->add_rules('reply_to_id', 'integer');
     // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = [
       'email_address',

@@ -23,33 +23,35 @@
  * Model class for the Sample_Comments table.
  */
 class Sample_comment_model extends ORM {
+
   public $search_field = 'comment';
 
-  protected $belongs_to = array(
+  protected $belongs_to = [
     'created_by' => 'user',
     'updated_by' => 'user',
-    'sample'
-  );
+    'sample',
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace before validation.
     $array->pre_filter('trim');
     $array->add_rules('comment', 'required');
-    $array->add_rules('sample_id', 'required');
+    $array->add_rules('sample_id', 'required', 'integer');
+    $array->add_rules('reply_to_id', 'integer');
 
     // Explicitly add those fields for which we don't do validation.
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'email_address',
       'person_name',
       'deleted',
       'query',
       'record_status',
-    );
+    ];
     return parent::validate($array, $save);
   }
 
   /**
-   * Returns an abbreviated version of the comment to act as a caption
+   * Returns an abbreviated version of the comment to act as a caption.
    */
   public function caption() {
     if (strlen($this->comment) > 30) {

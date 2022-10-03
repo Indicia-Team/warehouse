@@ -662,21 +662,26 @@ class Location_Controller extends Gridview_Base_Controller {
    * Return a list of the tabs to display for this controller's actions.
    */
   protected function getTabs($name) {
-    return array(
-      array(
+    return [
+      [
         'controller' => 'location/children',
         'title' => 'Child locations',
-        'actions' => array('edit')
-      ), array(
+        'actions' => ['edit'],
+      ], [
         'controller' => 'sample/index_from_location',
         'title' => 'Samples',
-        'actions' => array('edit')
-      ), array(
+        'actions' => ['edit'],
+      ], [
         'controller' => 'location_medium',
         'title' => 'Media files',
-        'actions' => array('edit')
-      )
-    );
+        'actions' => ['edit'],
+      ],
+      [
+        'controller' => 'location_comment',
+        'title' => 'Comments',
+        'actions' => ['edit'],
+      ],
+    ];
   }
 
 }

@@ -1,3 +1,10 @@
+# Version 8.9.0
+*2022-10-03*
+
+* Adds missing Comments tab to UI for locations.
+* Database & API changes to add a reply_to_id so that comments can refer to the comment they reply
+  to.
+
 # Version 8.8.0
 *2022-09-22*
 
