@@ -7,6 +7,7 @@
     JOIN location_comments c ON c.location_id=l.id AND c.deleted=false
     JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false AND lw.website_id in (#website_ids#)
     WHERE l.deleted=false
+    AND c.comment like '{%}'
     #filters#
    </query>
   <order_bys>
