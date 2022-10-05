@@ -299,10 +299,10 @@ SQL;
    *   Task type database row object, defining the task and entity to process.
    * @param string $procId
    *   Unique ID of this worker process.
-   * @param Exception $e
+   * @param Throwable $e
    *   Exception object.
    */
-  private function fail($taskType, $procId, Exception $e) {
+  private function fail($taskType, $procId, Throwable $e) {
     $this->db->update('work_queue', [
       'error_detail' => $e->__toString(),
     ], [
