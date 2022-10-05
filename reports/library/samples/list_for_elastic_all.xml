@@ -68,6 +68,10 @@
     FROM output_rows s
     #order_by#
   </query>
+  <count_query>
+    SELECT count(*) FROM filtered_samples s
+    WHERE 1=1
+  </count_query>
   <params>
     <!-- last_id and autofeed_tracking_from parameters required for autofeed to work. -->
     <param name="last_id" display="Last ID" datatype="integer" default="" order_by="s.id ASC">
