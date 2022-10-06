@@ -34,7 +34,14 @@
  */
 class task_cache_builder_attr_value_sample {
 
-  const BATCH_SIZE = 10000;
+  public const BATCH_SIZE = 10000;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   /**
    * Perform the processing for a task batch found in the queue.

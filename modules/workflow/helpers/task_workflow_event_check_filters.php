@@ -22,7 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Queue worker to apply filters which limit the scope of a workflow event.
@@ -36,7 +36,15 @@
  * @todo ensure this runs after spatial indexing.
  */
 class task_workflow_event_check_filters {
-  const BATCH_SIZE = 100;
+
+  public const BATCH_SIZE = 100;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   public static function process($db, $taskType, $procId) {
     // Retrieve work queue tasks for this procId, where the task links to an

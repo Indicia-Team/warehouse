@@ -36,7 +36,14 @@ class task_cache_builder_path_occurrence {
   /**
    * Fairly fast, so processing large batches is OK.
    */
-  const BATCH_SIZE = 50000;
+  public const BATCH_SIZE = 50000;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   /**
    * Perform the processing for a task batch found in the queue.
