@@ -36,7 +36,14 @@ class task_cache_builder_attrs_sample {
   /**
    * Fairly fast, so processing large batches is OK.
    */
-  const BATCH_SIZE = 50000;
+  public const BATCH_SIZE = 50000;
+
+  /**
+   * This class will expire the completed tasks itself.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = TRUE;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -130,6 +137,12 @@ UPDATE cache_samples_nonfunctional u
 SET attrs_json=a.attrs
 FROM attrs a
 WHERE a.sample_id=u.id;
+
+DELETE FROM work_queue q
+USING attrs a
+WHERE a.sample_id=q.record_id
+AND q.entity='sample'
+AND q.task='task_cache_builder_attrs_sample';
 
 DROP TABLE attrs;
 
