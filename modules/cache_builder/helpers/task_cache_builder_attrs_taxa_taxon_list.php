@@ -36,7 +36,14 @@ class task_cache_builder_attrs_taxa_taxon_list {
   /**
    * Fairly fast, so processing large batches is OK.
    */
-  const BATCH_SIZE = 50000;
+  public const BATCH_SIZE = 50000;
+
+  /**
+   * This class will expire the completed tasks itself.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = TRUE;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -130,6 +137,12 @@ UPDATE cache_taxa_taxon_lists u
 SET attrs_json=a.attrs
 FROM attrs a
 WHERE a.taxa_taxon_list_id=u.id;
+
+DELETE FROM work_queue q
+USING attrs a
+WHERE a.taxa_taxon_list_id=q.record_id
+AND q.entity='taxa_taxon_list'
+AND q.task='task_cache_builder_attrs_taxa_taxon_list';
 
 DROP TABLE attrs;
 
