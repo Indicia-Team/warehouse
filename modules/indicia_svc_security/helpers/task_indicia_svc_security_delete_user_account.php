@@ -34,7 +34,14 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class task_indicia_svc_security_delete_user_account {
 
-  const BATCH_SIZE = 1;
+  public const BATCH_SIZE = 1;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   /**
    * Perform the processing for a task batch found in the queue.

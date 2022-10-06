@@ -35,7 +35,14 @@ class task_cache_builder_taxonomy_occurrence {
   /**
    * Not a fast operation.
    */
-  const BATCH_SIZE = 10;
+  public const BATCH_SIZE = 10;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   /**
    * Perform the processing for a task batch found in the queue.

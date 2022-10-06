@@ -29,7 +29,14 @@
  */
 class task_spatial_index_builder_location_delete {
 
-  const BATCH_SIZE = 100;
+  public const BATCH_SIZE = 100;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   /**
    * Perform the processing for a task batch found in the queue.

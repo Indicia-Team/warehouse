@@ -39,6 +39,13 @@ class task_cache_builder_user_privacy {
   const BATCH_SIZE = 5;
 
   /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
+
+  /**
    * Perform the processing for a task batch found in the queue.
    *
    * @param object $db
