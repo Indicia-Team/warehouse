@@ -121,7 +121,16 @@ SQL;
               break;
             }
             call_user_func("$helper::process", $db, $taskType, $procId);
-            $this->expire($taskType, $procId);
+            // Tasks can be responsible for their own task garbage collection,
+            // or allow a generic cleanup of all claimed tasks.
+            if ($helper::SELF_CLEANUP) {
+              // Any remaining tasks haven't been self-cleaned by the task
+              // class, so reset them.
+              $this->reset($taskType, $procId);
+            }
+            else {
+              $this->expire($taskType, $procId);
+            }
             $doneCount += $claimedCount;
           }
         }
@@ -286,6 +295,27 @@ SQL;
    */
   private function expire($taskType, $procId) {
     $this->db->delete('work_queue', [
+      'claimed_by' => $procId,
+      'task' => $taskType->task,
+      'entity' => $taskType->entity,
+    ]);
+  }
+
+  /**
+   *
+   * Resets a batch of claimed tasks that were claimed but never done.
+   *
+   * @param object $taskType
+   *   Task type database row object, defining the task and entity to process.
+   * @param string $procId
+   *   Unique ID of this worker process.
+   */
+  private function reset($taskType, $procId) {
+    $this->db->update('work_queue', [
+      'error_detail' => NULL,
+      'claimed_by' => NULL,
+      'claimed_on' => NULL,
+    ], [
       'claimed_by' => $procId,
       'task' => $taskType->task,
       'entity' => $taskType->entity,
