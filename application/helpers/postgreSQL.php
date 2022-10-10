@@ -50,7 +50,7 @@ class postgreSQL {
         $db = new Database();
       }
       $wkt = pg_escape_literal($db->getLink(), $wkt);
-      $result = $db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('$wkt',$fromSrid),$toSrid)) AS wkt;")->current();
+      $result = $db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText($wkt,$fromSrid),$toSrid)) AS wkt;")->current();
       return $result->wkt;
     }
     else {
@@ -516,7 +516,7 @@ SQL;
    * into the taxon search query.
    *
    * @param object $db
-   *   Datbaase connection.
+   *   Database connection.
    * @param array $options
    *   Options passed to taxon search.
    * @param string $name
@@ -528,7 +528,7 @@ SQL;
       $optionValue = is_array($options[$name]) ? $options[$name] : [$options[$name]];
       // Escape quotes in the strings and wrap in single quotes ready for SQL
       // in clause.
-      $func = function ($value) {
+      $func = function ($value) use ($db) {
         return $value === 'null' ? 'null' : pg_escape_literal($db->getLink(), $value);
       };
       $options[$name] = implode(',', array_map($func, $optionValue));

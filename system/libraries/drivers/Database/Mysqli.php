@@ -290,6 +290,7 @@ class Kohana_Mysqli_Result extends Database_Result {
 		return FALSE;
 	}
 
+	#[\ReturnTypeWillChange]
 	public function offsetGet($offset) {
 		if ( ! $this->seek($offset)) {
 			return FALSE;
