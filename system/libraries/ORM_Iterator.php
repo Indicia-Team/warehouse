@@ -130,18 +130,15 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	/**
 	 * Countable: count
 	 */
-	public function count()
-	{
+	public function count(): int {
 		return $this->result->count();
 	}
 
 	/**
 	 * Iterator: current
 	 */
-	public function current()
-	{
-		if ($row = $this->result->current())
-		{
+	public function current(): mixed{
+		if ($row = $this->result->current()) {
 			// Import class name
 			$class = $this->class_name;
 
@@ -154,24 +151,23 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	/**
 	 * Iterator: key
 	 */
-	public function key()
-	{
+	public function key()	{
 		return $this->result->key();
 	}
 
 	/**
 	 * Iterator: next
 	 */
-	public function next()
-	{
+	#[\ReturnTypeWillChange]
+	public function next(): mixed	{
 		return $this->result->next();
 	}
 
 	/**
 	 * Iterator: rewind
 	 */
-	public function rewind()
-	{
+	#[\ReturnTypeWillChange]
+	public function rewind(): mixed {
 		$this->result->rewind();
 	}
 

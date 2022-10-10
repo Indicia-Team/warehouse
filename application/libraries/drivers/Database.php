@@ -574,8 +574,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Countable: count
    */
-  public function count()
-  {
+  public function count(): int {
     return $this->total_rows;
   }
 
@@ -626,24 +625,22 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Iterator: current
    */
-  public function current()
-  {
+  public function current(): mixed {
     return $this->offsetGet($this->current_row);
   }
 
   /**
    * Iterator: key
    */
-  public function key()
-  {
+  public function key(): mixed {
     return $this->current_row;
   }
 
   /**
    * Iterator: next
    */
-  public function next()
-  {
+  #[\ReturnTypeWillChange]
+  public function next(): mixed {
     ++$this->current_row;
     return $this;
   }
@@ -651,8 +648,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Iterator: prev
    */
-  public function prev()
-  {
+  public function prev() {
     --$this->current_row;
     return $this;
   }
@@ -660,8 +656,8 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Iterator: rewind
    */
-  public function rewind()
-  {
+  #[\ReturnTypeWillChange]
+  public function rewind(): mixed {
     $this->current_row = 0;
     return $this;
   }
