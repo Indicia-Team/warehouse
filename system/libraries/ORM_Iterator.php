@@ -174,8 +174,7 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	/**
 	 * Iterator: valid
 	 */
-	public function valid()
-	{
+	public function valid(): bool {
 		return $this->result->valid();
 	}
 

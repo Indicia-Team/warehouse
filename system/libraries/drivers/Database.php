@@ -628,8 +628,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Iterator: valid
    */
-  public function valid()
-  {
+  public function valid(): bool {
     return $this->offsetExists($this->current_row);
   }
 
