@@ -290,7 +290,7 @@ class Kohana_Mysqli_Result extends Database_Result {
 		return FALSE;
 	}
 
-	public function offsetGet($offset): mixed	{
+	public function offsetGet($offset) {
 		if ( ! $this->seek($offset)) {
 			return FALSE;
 		}

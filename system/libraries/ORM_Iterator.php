@@ -130,15 +130,18 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	/**
 	 * Countable: count
 	 */
-	public function count(): int {
+	public function count()
+	{
 		return $this->result->count();
 	}
 
 	/**
 	 * Iterator: current
 	 */
-	public function current(): mixed{
-		if ($row = $this->result->current()) {
+	public function current()
+	{
+		if ($row = $this->result->current())
+		{
 			// Import class name
 			$class = $this->class_name;
 
@@ -151,45 +154,50 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	/**
 	 * Iterator: key
 	 */
-	public function key()	{
+	public function key()
+	{
 		return $this->result->key();
 	}
 
 	/**
 	 * Iterator: next
 	 */
-	#[\ReturnTypeWillChange]
-	public function next(): mixed	{
+	public function next()
+	{
 		return $this->result->next();
 	}
 
 	/**
 	 * Iterator: rewind
 	 */
-	#[\ReturnTypeWillChange]
-	public function rewind(): mixed {
+	public function rewind()
+	{
 		$this->result->rewind();
 	}
 
 	/**
 	 * Iterator: valid
 	 */
-	public function valid(): bool {
+	public function valid()
+	{
 		return $this->result->valid();
 	}
 
 	/**
 	 * ArrayAccess: offsetExists
 	 */
-	public function offsetExists($offset): bool {
+	public function offsetExists($offset)
+	{
 		return $this->result->offsetExists($offset);
 	}
 
 	/**
 	 * ArrayAccess: offsetGet
 	 */
-	public function offsetGet($offset): mixed	{
-		if ($this->result->offsetExists($offset))	{
+	public function offsetGet($offset)
+	{
+		if ($this->result->offsetExists($offset))
+		{
 			// Import class name
 			$class = $this->class_name;
 
@@ -202,7 +210,8 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	 *
 	 * @throws  Kohana_Database_Exception
 	 */
-	public function offsetSet($offset, $value): void {
+	public function offsetSet($offset, $value)
+	{
 		throw new Kohana_Database_Exception('database.result_read_only');
 	}
 
@@ -211,7 +220,8 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	 *
 	 * @throws  Kohana_Database_Exception
 	 */
-	public function offsetUnset($offset): void {
+	public function offsetUnset($offset)
+	{
 		throw new Kohana_Database_Exception('database.result_read_only');
 	}
 

@@ -506,7 +506,7 @@ class Pgsql_Result extends Database_Result {
   /**
    * ArrayAccess: offsetGet
    */
-  public function offsetGet($offset): mixed {
+  public function offsetGet($offset) {
     if (!$this->seek($offset)) {
       return FALSE;
     }

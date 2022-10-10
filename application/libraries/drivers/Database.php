@@ -574,14 +574,14 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Countable: count
    */
-  public function count(): int {
+  public function count() {
     return $this->total_rows;
   }
 
   /**
    * ArrayAccess: offsetExists
    */
-  public function offsetExists($offset): bool {
+  public function offsetExists($offset) {
     if ($this->total_rows > 0) {
       $min = 0;
       $max = $this->total_rows - 1;
@@ -595,7 +595,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * ArrayAccess: offsetGet
    */
-  public function offsetGet($offset): mixed {
+  public function offsetGet($offset) {
     if ( ! $this->seek($offset)) {
       return FALSE;
     }
@@ -609,7 +609,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
    *
    * @throws  Kohana_Database_Exception
    */
-  final public function offsetSet($offset, $value): void {
+  final public function offsetSet($offset, $value) {
     throw new Kohana_Database_Exception('database.result_read_only');
   }
 
@@ -618,21 +618,21 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
    *
    * @throws  Kohana_Database_Exception
    */
-  final public function offsetUnset($offset): void {
+  final public function offsetUnset($offset) {
     throw new Kohana_Database_Exception('database.result_read_only');
   }
 
   /**
    * Iterator: current
    */
-  public function current(): mixed {
+  public function current() {
     return $this->offsetGet($this->current_row);
   }
 
   /**
    * Iterator: key
    */
-  public function key(): mixed {
+  public function key() {
     return $this->current_row;
   }
 
@@ -640,7 +640,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
    * Iterator: next
    */
   #[\ReturnTypeWillChange]
-  public function next(): mixed {
+  public function next() {
     ++$this->current_row;
     return $this;
   }
@@ -657,7 +657,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
    * Iterator: rewind
    */
   #[\ReturnTypeWillChange]
-  public function rewind(): mixed {
+  public function rewind() {
     $this->current_row = 0;
     return $this;
   }
@@ -665,7 +665,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Iterator: valid
    */
-  public function valid(): bool {
+  public function valid() {
     return $this->offsetExists($this->current_row);
   }
 
