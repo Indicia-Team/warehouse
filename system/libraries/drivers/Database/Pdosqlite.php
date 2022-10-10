@@ -444,19 +444,16 @@ class Pdosqlite_Result extends Database_Result {
 		return $rows;
 	}
 
-	public function list_fields()
-	{
+	public function list_fields()	{
 		$field_names = array();
-		for ($i = 0, $max = $this->result->columnCount(); $i < $max; $i++)
-		{
+		for ($i = 0, $max = $this->result->columnCount(); $i < $max; $i++) {
 			$info = $this->result->getColumnMeta($i);
 			$field_names[] = $info['name'];
 		}
 		return $field_names;
 	}
 
-	public function seek($offset)
-	{
+	public function seek($offset)	{
 		// To request a scrollable cursor for your PDOStatement object, you must
 		// set the PDO::ATTR_CURSOR attribute to PDO::CURSOR_SCROLL when you
 		// prepare the statement.
@@ -465,20 +462,16 @@ class Pdosqlite_Result extends Database_Result {
 		return FALSE;
 	}
 
-	public function offsetGet($offset)
-	{
-		try
-		{
+	public function offsetGet($offset): mixed	{
+		try {
 			return $this->result->fetch($this->fetch_type, PDO::FETCH_ORI_ABS, $offset);
 		}
-		catch(PDOException $e)
-		{
+		catch(PDOException $e) {
 			throw new Kohana_Database_Exception('database.error', $e->getMessage());
 		}
 	}
 
-	public function rewind()
-	{
+	public function rewind() {
 		// Same problem that seek() has, see above.
 		return $this->seek(0);
 	}

@@ -119,7 +119,7 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     }
     if (count($this->operationErrors) > 0) {
       http_response_code(400);
-      $errors = pg_escape_literal(implode("\n", array_unique($this->operationErrors)));
+      $errors = pg_escape_literal($this->db->getLink(), implode("\n", array_unique($this->operationErrors)));
       $this->db
         ->query("UPDATE uksi_operations SET error_detail=$errors WHERE id=$operation->id;");
       echo json_encode(['error' => "Operation $operationLink failed. More details provided in the error_detail field."]);

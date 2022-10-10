@@ -574,18 +574,15 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Countable: count
    */
-  public function count()
-  {
+  public function count(): int {
     return $this->total_rows;
   }
 
   /**
    * ArrayAccess: offsetExists
    */
-  public function offsetExists($offset)
-  {
-    if ($this->total_rows > 0)
-    {
+  public function offsetExists($offset): bool {
+    if ($this->total_rows > 0) {
       $min = 0;
       $max = $this->total_rows - 1;
 
@@ -598,10 +595,10 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * ArrayAccess: offsetGet
    */
-  public function offsetGet($offset)
-  {
-    if ( ! $this->seek($offset))
+  public function offsetGet($offset): mixed {
+    if ( ! $this->seek($offset)) {
       return FALSE;
+    }
 
     // Return the row by calling the defined fetching callback
     return call_user_func($this->fetch_type, $this->result, $this->return_type);
@@ -612,8 +609,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
    *
    * @throws  Kohana_Database_Exception
    */
-  final public function offsetSet($offset, $value)
-  {
+  final public function offsetSet($offset, $value): void {
     throw new Kohana_Database_Exception('database.result_read_only');
   }
 
@@ -622,32 +618,29 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
    *
    * @throws  Kohana_Database_Exception
    */
-  final public function offsetUnset($offset)
-  {
+  final public function offsetUnset($offset): void {
     throw new Kohana_Database_Exception('database.result_read_only');
   }
 
   /**
    * Iterator: current
    */
-  public function current()
-  {
+  public function current(): mixed {
     return $this->offsetGet($this->current_row);
   }
 
   /**
    * Iterator: key
    */
-  public function key()
-  {
+  public function key(): mixed {
     return $this->current_row;
   }
 
   /**
    * Iterator: next
    */
-  public function next()
-  {
+  #[\ReturnTypeWillChange]
+  public function next(): mixed {
     ++$this->current_row;
     return $this;
   }
@@ -655,8 +648,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Iterator: prev
    */
-  public function prev()
-  {
+  public function prev() {
     --$this->current_row;
     return $this;
   }
@@ -664,8 +656,8 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Iterator: rewind
    */
-  public function rewind()
-  {
+  #[\ReturnTypeWillChange]
+  public function rewind(): mixed {
     $this->current_row = 0;
     return $this;
   }
@@ -673,8 +665,7 @@ abstract class Database_Result implements ArrayAccess, Iterator, Countable {
   /**
    * Iterator: valid
    */
-  public function valid()
-  {
+  public function valid(): bool {
     return $this->offsetExists($this->current_row);
   }
 

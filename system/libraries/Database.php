@@ -756,7 +756,7 @@ class Database_Core {
 
 		foreach ($orderby as $column => $direction)
 		{
-			$direction = strtoupper(trim($direction));
+			$direction = strtoupper(trim($direction ?? ''));
 
 			// Add a direction if the provided one isn't valid
 			if ( ! in_array($direction, array('ASC', 'DESC', 'RAND()', 'RANDOM()', 'NULL')))

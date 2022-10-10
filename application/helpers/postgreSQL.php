@@ -49,6 +49,7 @@ class postgreSQL {
       if (!$db) {
         $db = new Database();
       }
+      $wkt = pg_escape_literal($db->getLink(), $wkt);
       $result = $db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('$wkt',$fromSrid),$toSrid)) AS wkt;")->current();
       return $result->wkt;
     }
@@ -381,7 +382,7 @@ SQL;
         // Grab config data for this data type.
         $fieldInfo[$row->column_name] = self::sql_type($row->data_type);
 
-        if (!strncmp($row->column_default, 'nextval(', 8)) {
+        if ($row->column_default !== NULL && !strncmp($row->column_default, 'nextval(', 8)) {
           $fieldInfo[$row->column_name]['sequenced'] = TRUE;
         }
 
@@ -514,19 +515,21 @@ SQL;
    * Checks the format of a parameter of type string[] and converts it to a comma separated list ready for insertion
    * into the taxon search query.
    *
+   * @param object $db
+   *   Datbaase connection.
    * @param array $options
    *   Options passed to taxon search.
    * @param string $name
    *   Name of the option to check.
    */
-  private static function stringListOption(array &$options, $name) {
+  private static function stringListOption($db, array &$options, $name) {
     if (!empty($options[$name])) {
       // Convert single values to arrays so can treat everything the same.
       $optionValue = is_array($options[$name]) ? $options[$name] : [$options[$name]];
       // Escape quotes in the strings and wrap in single quotes ready for SQL
       // in clause.
       $func = function ($value) {
-        return $value === 'null' ? 'null' : pg_escape_literal($value);
+        return $value === 'null' ? 'null' : pg_escape_literal($db->getLink(), $value);
       };
       $options[$name] = implode(',', array_map($func, $optionValue));
     }
@@ -553,34 +556,36 @@ SQL;
   /**
    * Performs sanity checking on the options passed to the taxon search query.
    *
+   * @param object $db
+   *   Database connection object.
    * @param array $options
    */
-  private static function taxonSearchCheckOptions(&$options) {
+  private static function taxonSearchCheckOptions($db, array &$options) {
     // Apply default options.
-    $options = array_merge(array(
-        'language' => array(),
-        'abbreviations' => TRUE,
-        'searchAuthors' => FALSE,
-        'wholeWords' => FALSE,
-        'count' => FALSE
-    ), $options);
+    $options = array_merge([
+      'language' => array(),
+      'abbreviations' => TRUE,
+      'searchAuthors' => FALSE,
+      'wholeWords' => FALSE,
+      'count' => FALSE,
+    ], $options);
     // taxon_list_id option required.
     self::assert(!empty($options['taxon_list_id']) || !empty($options['taxa_taxon_list_id']),
         'taxonSearchQuery requires a taxon_list_id or taxa_taxa_list_id option.');
     self::integerListOption($options, 'taxon_list_id');
     self::integerListOption($options, 'scratchpad_list_id');
     self::integerListOption($options, 'taxon_group_id');
-    self::stringListOption($options, 'taxon_group');
+    self::stringListOption($db, $options, 'taxon_group');
     self::integerListOption($options, 'taxon_meaning_id');
     self::integerListOption($options, 'taxa_taxon_list_id');
     self::integerListOption($options, 'preferred_taxa_taxon_list_id');
     self::integerListOption($options, 'exclude_taxon_meaning_id');
     self::integerListOption($options, 'exclude_taxa_taxon_list_id');
     self::integerListOption($options, 'exclude_preferred_taxa_taxon_list_id');
-    self::stringListOption($options, 'preferred_taxon');
-    self::stringListOption($options, 'external_key');
+    self::stringListOption($db, $options, 'preferred_taxon');
+    self::stringListOption($db, $options, 'external_key');
     self::integerListOption($options, 'parent_id');
-    self::stringListOption($options, 'language');
+    self::stringListOption($db, $options, 'language');
     self::checkBooleanOptions($options, [
       'preferred',
       'synonyms',
@@ -751,6 +756,8 @@ SQL;
    * Returns a construct containing several bits of information required to
    * build the taxon search SQL.
    *
+   * @param object $db
+   *   Database connection.
    * @param array $options
    *   Options as passed to the taxonSearchQuery function.
    *
@@ -766,13 +773,13 @@ SQL;
    *     taxonomic sort order + taxon alphabetic, rather than a more advanced
    *     sort based on full text word positions etc.
    */
-  private static function taxonSearchGetQuerySearchFilterData(array $options) {
+  private static function taxonSearchGetQuerySearchFilterData($db, array $options) {
     if (!empty($options['searchQuery'])) {
-      $searchFilters = array();
+      $searchFilters = [];
       // Cleanup.
       $search = trim(preg_replace('/\s+/', ' ', str_replace('-', ' ', $options['searchQuery'])));
-      $fullTextSearchTerm = pg_escape_string(self::taxonSearchGetFullTextSearchTerm($search, $options));
-      $searchTerm = str_replace(array(' and ', ' or ', ' & ', ' | '), '', $search);
+      $fullTextSearchTerm = pg_escape_string($db->getLink(), self::taxonSearchGetFullTextSearchTerm($search, $options));
+      $searchTerm = str_replace([' and ', ' or ', ' & ', ' | '], '', $search);
       $searchTermNoWildcards = str_replace('*', ' ', $searchTerm);
       $searchField = 'original';
       if ($options['searchAuthors']) {
@@ -782,7 +789,7 @@ SQL;
         // Search contains mo alphanumerics. Do a simple search for the special
         // character input, e.g. the + symbol used to denote a species not on
         // the list by some schemes.
-        $likesearchterm = str_replace(array('*', ' '), '%', $searchTerm) . '%';
+        $likesearchterm = str_replace(['*', ' '], '%', $searchTerm) . '%';
         $searchFilters[] = "(cts.simplified=false and searchterm like '$likesearchterm')";
         $headlineColumnSql = 'cts.original as highlighted';
       }
@@ -790,7 +797,7 @@ SQL;
         // Search term contains a wildcard not at the end of a word, so enable
         // a basic text search which supports this. Use term simplification to
         // reduce misses due to punctuation, spacing, capitalisation etc.
-        $likesearchterm = pg_escape_string(
+        $likesearchterm = pg_escape_string($db->getLink(),
           preg_replace(
             '/[^a-zA-Z0-9%\+\?*]/',
             '',
@@ -798,7 +805,7 @@ SQL;
           ) . '%'
         );
         $searchFilters[] = "(cts.simplified=true and searchterm like /***/ '$likesearchterm')";
-        $highlightRegex = pg_escape_string('(' . preg_replace(array(
+        $highlightRegex = pg_escape_string($db->getLink(), '(' . preg_replace(array(
           // Wildcard * at the beginning is removed so leading characters not
           // highlighted.
           '/^\*/',
@@ -890,6 +897,8 @@ SQL;
   /**
    * Returns the SQL for the order by section of the taxon search query.
    *
+   * @param object $db
+   *   Database connection object.
    * @param bool $isCount
    *   Set to true for a count query. Order by is not required for count
    *   queries.
@@ -899,7 +908,7 @@ SQL;
    * @return string
    *   SQL for the ORDER BY clause.
    */
-  private static function taxonSearchGetOrderBySql($isCount, array $searchFilterData) {
+  private static function taxonSearchGetOrderBySql($db, $isCount, array $searchFilterData) {
     if ($isCount) {
       return '';
     }
@@ -909,7 +918,7 @@ order by taxonomic_sort_order, original
 SQL;
     }
     else {
-      $escapedTerm = pg_escape_string($searchFilterData['searchTermNoWildcards']);
+      $escapedTerm = pg_escape_string($db->getLink(), $searchFilterData['searchTermNoWildcards']);
       return <<<SQL
 order by
 -- abbreviation hits come first if enabled
@@ -964,6 +973,8 @@ SQL;
    *
    * Optimised to use full text search where possible.
    *
+   * @param object $db
+   *   Database connection.
    * @param array $options
    *   Options to control the search, including:
    *   * taxon_list_id - required unless filtering by a specific list of
@@ -1042,9 +1053,9 @@ SQL;
    * @throws exception
    *   If parameters are of incorrect format.
    */
-  public static function taxonSearchQuery(array $options = []) {
-    self::taxonSearchCheckOptions($options);
-    $searchFilterData = self::taxonSearchGetQuerySearchFilterData($options);
+  public static function taxonSearchQuery($db, array $options = []) {
+    self::taxonSearchCheckOptions($db, $options);
+    $searchFilterData = self::taxonSearchGetQuerySearchFilterData($db, $options);
     $nameTypesFilter = self::taxonSearchGetQueryNameTypesFilter($options);
     // Name types filter can be empty. If not we need an extra AND.
     if (!empty($nameTypesFilter)) {
@@ -1052,7 +1063,7 @@ SQL;
     }
     $contextFilter = self::taxonSearchGetQueryContextFilter($options);
     $cols = self::taxonSearchGetColsListSql($options['count'], $searchFilterData);
-    $orderBy = self::taxonSearchGetOrderBySql($options['count'], $searchFilterData);
+    $orderBy = self::taxonSearchGetOrderBySql($db, $options['count'], $searchFilterData);
     $limitOffsetSql = self::taxonSearchGetLimitOffsetSql($options);
     // Build SQL query.
     $query = <<<SQL

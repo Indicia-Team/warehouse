@@ -451,7 +451,7 @@ class Import_2_Controller extends Service_Base_Controller {
         if (!preg_match('/\d+/', $termlist_term_id)) {
           throw new exception('Mapped termlist term ID is not an integer.');
         }
-        $literal = pg_escape_literal($value);
+        $literal = pg_escape_literal($db->getLink(), $value);
         $sql = <<<SQL
 UPDATE import_temp.$config[tableName]
 SET {$sourceColName}_id=$termlist_term_id
@@ -974,7 +974,7 @@ SQL;
       }
       $errorsList[$columnInfo['columnLabel']] = $error;
     }
-    $errorsJson = pg_escape_literal(json_encode($errorsList));
+    $errorsJson = pg_escape_literal($db->getLink(), json_encode($errorsList));
     $sql = <<<SQL
 UPDATE import_temp.$config[tableName]
 SET errors = COALESCE(errors, '{}'::jsonb) || $errorsJson::jsonb
@@ -1325,7 +1325,7 @@ SQL;
     foreach ($config['global-values'] as $fieldDef => $value) {
       if (substr($fieldDef, 0, 36) === 'occurrence:fkFilter:taxa_taxon_list:') {
         $filterField = str_replace('occurrence:fkFilter:taxa_taxon_list:', '', $fieldDef);
-        $escaped = pg_escape_literal($value);
+        $escaped = pg_escape_literal($db->getLink(), $value);
         $filtersList[] = "AND cttl.$filterField=$escaped";
         $filterForTaxonSearchAPI[$filterField] = $value;
       }
@@ -1497,9 +1497,12 @@ SQL;
     $file = $this->openSpreadsheet($fileName, $config);
     $count = 0;
     $rows = [];
+    $db = new Database();
     while (($count < BATCH_ROW_LIMIT) && ($data = $this->getNextRow($file, $count + $config['rowsLoaded'] + 1, $config))) {
       // Trim and escape the data, then pad to correct number of columns.
-      $data = array_map('pg_escape_literal', array_pad(array_map('trim', $data), count($config['columns']), ''));
+      $data = array_map(function ($s) use ($db) {
+        return pg_escape_literal($db->getLink(), $s);
+      }, array_pad(array_map('trim', $data), count($config['columns']), ''));
       // Also allow for their being too many columns (wider data row than
       // column titles provided).
       if (count($data) > count($config['columns'])) {
@@ -1518,7 +1521,6 @@ SQL;
 INSERT INTO import_temp.$config[tableName]($fields)
 VALUES $rowsList;
 SQL;
-      $db = new Database();
       $db->query($query);
       $errorCheck = pg_last_error();
       if (!empty($errorCheck)) {
