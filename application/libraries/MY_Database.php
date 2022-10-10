@@ -219,4 +219,15 @@ class Database extends Database_Core {
     }
   }
 
+  /**
+   * Accessor for database connection.
+   *
+   * @return mixed
+   *   Database connection resource or PgSql/Connection.
+   */
+  public function getLink() {
+    $this->link or $this->connect();
+    return $this->link;
+  }
+
 }
