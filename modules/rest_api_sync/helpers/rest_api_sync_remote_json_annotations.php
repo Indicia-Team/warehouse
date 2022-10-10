@@ -115,7 +115,7 @@ class rest_api_sync_remote_json_annotations {
           "Error occurred submitting an annotation with ID $annotation[id]\n" . $e->getMessage(),
           $tracker
         );
-        $msg = pg_escape_string($e->getMessage());
+        $msg = pg_escape_string($db->getLink(), $e->getMessage());
         $createdById = isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
         $sql = <<<QRY
 INSERT INTO rest_api_sync_skipped_records (

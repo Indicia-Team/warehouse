@@ -224,7 +224,7 @@ class rest_crud {
         if (isset(self::$fieldDefs[$param])) {
           if (in_array(self::$fieldDefs[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
             RestObjects::$db->connect();
-            $value = pg_escape_literal($value);
+            $value = pg_escape_literal(RestObjects::$db->getLink(), $value);
           }
           elseif (in_array(self::$fieldDefs[$param]['type'], ['integer', 'float'])) {
             if (!is_numeric($value)) {

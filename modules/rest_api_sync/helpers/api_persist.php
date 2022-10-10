@@ -473,12 +473,12 @@ SQL;
       // words in case different way of annotation subsp.
       $words = explode(' ', $lookup['original']);
       $searchTerm = $words[0] . (count($words) > 1 ? " $words[1]" : '');
-      $filter = "AND searchterm like '" . pg_escape_string($searchTerm) . "%'\n";
+      $filter = "AND searchterm like '" . pg_escape_string($db->getLink(), $searchTerm) . "%'\n";
       // Now build a custom exact match filter that looks for alternative ssp.
       // annotations.
-      $exactMatches = ["'" . pg_escape_string($lookup['original']) . "'"];
+      $exactMatches = ["'" . pg_escape_string($db->getLink(), $lookup['original']) . "'"];
       if (count($words) === 3) {
-        $exactMatches[] = "'" . pg_escape_string("$words[0] $words[1] subsp. $words[2]") . "'";
+        $exactMatches[] = "'" . pg_escape_string($db->getLink(), "$words[0] $words[1] subsp. $words[2]") . "'";
       }
       $filter .= 'AND original in (' . implode(',', $exactMatches) . ")\n";
       $qry = <<<SQL

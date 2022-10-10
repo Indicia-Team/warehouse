@@ -973,7 +973,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         }
       }
     }
-    $query = postgreSQL::taxonSearchQuery($params);
+    $query = postgreSQL::taxonSearchQuery($this->db, $params);
     $response = $this->db->query($query)->result_array(FALSE);
     return $response;
   }
@@ -1340,7 +1340,7 @@ class Data_Controller extends Data_Service_Base_Controller {
               $where["$this->viewname.$param"] = $value;
             }
             else {
-              $like["$this->viewname.$param"] = pg_escape_string(str_replace('*', '%', $value));
+              $like["$this->viewname.$param"] = pg_escape_string($this->db->getLink(), str_replace('*', '%', $value));
             }
           }
           else {

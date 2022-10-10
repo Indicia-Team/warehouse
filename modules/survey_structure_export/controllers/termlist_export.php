@@ -45,12 +45,12 @@ class Termlist_export_Controller extends Indicia_Controller {
    * @const SQL_FETCH_ALL_TERMS Query definition which retrieves all the terms for a termlist ID
    * in preparation for export.
    */
-  const SQL_FETCH_ALL_TERMS = "SELECT array_to_string(array_agg(entry), '**') AS terms FROM 
+  const SQL_FETCH_ALL_TERMS = "SELECT array_to_string(array_agg(entry), '**') AS terms FROM
   (
-    SELECT 
-      t.term || '|' || 
+    SELECT
+      t.term || '|' ||
       t.language_iso || '|' ||
-      coalesce(t.sort_order::varchar, '') || '|' || 
+      coalesce(t.sort_order::varchar, '') || '|' ||
       coalesce(tp.term::varchar, '')::varchar || '|' ||
       array_to_string(array_agg(ts.term || '~' || ts.language_iso ORDER BY ts.term, ts.language_iso), '`'::varchar) AS entry
     FROM cache_termlists_terms t
@@ -177,8 +177,8 @@ class Termlist_export_Controller extends Indicia_Controller {
       // The tokens defining the term are separated by pipes.
       $term = explode('|', $term);
       // SQL escaping.
-      $escapedTerm = pg_escape_string($term[0]);
-      $escapedParent = pg_escape_string($term[3]);
+      $escapedTerm = pg_escape_string($this->db->getLink(), $term[0]);
+      $escapedParent = pg_escape_string($this->db->getLink(), $term[3]);
       // Does the term already exist in the list?
       $existing = $this->db->query(str_replace(
         ['{termlist_id}', '{term}', '{language_iso}', '{sort_order}', '{parent}'],
@@ -202,14 +202,14 @@ class Termlist_export_Controller extends Indicia_Controller {
       $term = explode('|', $term);
       if (!empty($term[3])) {
         // SQL escaping.
-        $escapedTerm = pg_escape_string($term[0]);
-        $escapedParent = pg_escape_string($term[3]);
+        $escapedTerm = pg_escape_string($this->db->getLink(), $term[0]);
+        $escapedParent = pg_escape_string($this->db->getLink(), $term[3]);
         $this->db->query("UPDATE termlists_terms tlt SET parent_id = tltp.id, updated_on = now()
           FROM terms t, termlists_terms tltp
           JOIN terms tp ON tp.id = tltp.term_id AND tp.deleted = false AND tp.term = '$escapedParent'
-          WHERE 
-            tlt.termlist_id = $termlist_id AND t.id = tlt.term_id  
-            AND t.deleted = false AND t.term = '$escapedTerm'  
+          WHERE
+            tlt.termlist_id = $termlist_id AND t.id = tlt.term_id
+            AND t.deleted = false AND t.term = '$escapedTerm'
             AND tltp.termlist_id = tlt.termlist_id AND tltp.deleted = false"
         );
       }

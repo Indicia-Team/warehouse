@@ -137,8 +137,8 @@ class user_identifier {
       // Email is a special identifier used to create person.
       $email = NULL;
       foreach ($identifiers as $identifier) {
-        $ident = pg_escape_string($identifier->identifier);
-        $type = pg_escape_string($identifier->type);
+        $ident = pg_escape_string($userPersonObj->db->getLink(), $identifier->identifier);
+        $type = pg_escape_string($userPersonObj->db->getLink(), $identifier->type);
         $sql = '';
         if ($identifier->type === 'email') {
           $email = $identifier->identifier;

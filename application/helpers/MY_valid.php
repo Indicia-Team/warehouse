@@ -110,7 +110,7 @@ class Valid extends valid_Core {
   public static function unique($column_value, array $args) {
     $db = new Database();
     $idFilter = empty($args[2]) ? '' : "AND id<>$args[2]";
-    $value = pg_escape_literal($column_value);
+    $value = pg_escape_literal($db->getLink(), $column_value);
     $qry = <<<SQL
 SELECT 1 AS hit
 FROM $args[0]

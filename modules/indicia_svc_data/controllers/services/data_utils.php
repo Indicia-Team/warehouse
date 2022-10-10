@@ -77,12 +77,12 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
             }
             if ($matches['bracketType'] === '{') {
               // Escape string parameters.
-              $param = "'" . pg_escape_string($param) . "'";
+              $param = "'" . pg_escape_string($db->getLink(), $param) . "'";
             }
           }
           else {
             // Non-bracketed parameters are fixed strings defined in config.
-            $param = "'" . pg_escape_string($param) . "'";
+            $param = "'" . pg_escape_string($db->getLink(), $param) . "'";
           }
         }
       }
