@@ -176,7 +176,7 @@ class Database extends Database_Core {
 
     foreach ($orderby as $column => $direction)
     {
-      $direction = strtoupper(trim($direction));
+      $direction = strtoupper(trim($direction ?? ''));
 
       if ( ! in_array($direction, array('ASC', 'DESC', 'RAND()', 'RANDOM()', 'NULL')))
       {
