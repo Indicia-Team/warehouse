@@ -27,19 +27,19 @@ class Database_Pgsql_Driver extends Database_Driver {
     Kohana::log('debug', 'PgSQL Database Driver Initialized');
   }
 
-  public function connect()
-  {
-    // Check if link already exists
-    if (is_resource($this->link))
+  public function connect() {
+    // Check if link already exists.
+    if ($this->isConnected($this->link)) {
       return $this->link;
+    }
 
-    // Import the connect variables
+    // Import the connect variables.
     extract($this->db_config['connection']);
 
     // Persistent connections enabled?
     $connect = ($this->db_config['persistent'] == TRUE) ? 'pg_pconnect' : 'pg_connect';
 
-    // Build the connection info
+    // Build the connection info.
     $port = isset($port) ? 'port=\''.$port.'\'' : '';
     $host = isset($host) ? 'host=\''.$host.'\' '.$port : ''; // if no host, connect with the socket
 
@@ -91,10 +91,10 @@ class Database_Pgsql_Driver extends Database_Driver {
     $this->query('SET client_encoding TO '.pg_escape_string($this->link, $charset));
   }
 
-  public function escape_table($table)
-  {
-    if (!$this->db_config['escape'])
+  public function escape_table($table) {
+    if (!$this->db_config['escape']) {
       return $table;
+    }
 
     return '"'.str_replace('.', '"."', $table).'"';
   }
@@ -228,20 +228,20 @@ class Database_Pgsql_Driver extends Database_Driver {
     return $sql;
   }
 
-  public function escape_str($str)
-  {
-    if (!$this->db_config['escape'])
+  public function escape_str($str) {
+    if (!$this->db_config['escape']) {
       return $str;
+    }
 
-    is_resource($this->link) or $this->connect();
+    $this->isConnected($this->link) or $this->connect();
 
     return pg_escape_string($this->link, $str);
   }
 
-  public function escape_identifier($str)
-  {
-    if (!$this->db_config['escape'])
+  public function escape_identifier($str) {
+    if (!$this->db_config['escape']) {
       return $str;
+    }
 
     is_resource($this->link) or $this->connect();
 
@@ -307,6 +307,20 @@ class Database_Pgsql_Driver extends Database_Driver {
     return $result->result_array(TRUE);
   }
 
+  /**
+   * Check if a database connection object is connected.
+   *
+   * @param object $obj
+   *   Connection object.
+   *
+   * @return bool
+   *   True if connected.
+   */
+  private function isConnected($obj) {
+    // Pre PHP 8.1 uses is_resource. From PHP 8.1 objects in PgSQL namespace used instead.
+    return is_resource($obj) || $obj instanceof PgSql\Result || $obj instanceof PgSql\Connection;
+  }
+
 } // End Database_Pgsql_Driver Class
 
 /**
@@ -326,17 +340,14 @@ class Pgsql_Result extends Database_Result {
    * @param  boolean   return objects or arrays
    * @param  string    SQL query that was run
    */
-  public function __construct($result, $link, $object, $sql)
-  {
+  public function __construct($result, $link, $object, $sql) {
     $this->link = $link;
     $this->result = $result;
 
-    // If the query is a resource, it was a SELECT, SHOW, DESCRIBE, EXPLAIN query
-    if (is_resource($result))
-    {
-      // Its an DELETE, INSERT, REPLACE, or UPDATE query
-      if (preg_match('/^(?:delete|insert|replace|update)\b/iD', trim($sql), $matches))
-      {
+    // If the query is a resource, it was a SELECT, SHOW, DESCRIBE, EXPLAIN query.
+    if (is_resource($result) || $result instanceof PgSql\Result) {
+      // Its an DELETE, INSERT, REPLACE, or UPDATE query.
+      if (preg_match('/^(?:delete|insert|replace|update)\b/iD', trim($sql), $matches)) {
         $this->insert_id  = (strtolower($matches[0]) == 'insert') ? $this->insert_id() : FALSE;
         $this->total_rows = pg_affected_rows($this->result);
       }
