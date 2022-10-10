@@ -186,18 +186,15 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	/**
 	 * ArrayAccess: offsetExists
 	 */
-	public function offsetExists($offset)
-	{
+	public function offsetExists($offset): bool {
 		return $this->result->offsetExists($offset);
 	}
 
 	/**
 	 * ArrayAccess: offsetGet
 	 */
-	public function offsetGet($offset)
-	{
-		if ($this->result->offsetExists($offset))
-		{
+	public function offsetGet($offset): mixed	{
+		if ($this->result->offsetExists($offset))	{
 			// Import class name
 			$class = $this->class_name;
 
@@ -210,8 +207,7 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	 *
 	 * @throws  Kohana_Database_Exception
 	 */
-	public function offsetSet($offset, $value)
-	{
+	public function offsetSet($offset, $value): void {
 		throw new Kohana_Database_Exception('database.result_read_only');
 	}
 
@@ -220,8 +216,7 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	 *
 	 * @throws  Kohana_Database_Exception
 	 */
-	public function offsetUnset($offset)
-	{
+	public function offsetUnset($offset): void {
 		throw new Kohana_Database_Exception('database.result_read_only');
 	}
 

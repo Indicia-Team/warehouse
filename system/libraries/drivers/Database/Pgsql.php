@@ -458,7 +458,7 @@ class Pgsql_Result extends Database_Result {
         $insert_id = pg_fetch_array($result, NULL, PGSQL_ASSOC);
         $this->insert_id = $insert_id['insert_id'];
       }
-        
+
       // Reset error reporting
       error_reporting($ER);
     }
@@ -495,12 +495,12 @@ class Pgsql_Result extends Database_Result {
   /**
    * ArrayAccess: offsetGet
    */
-  public function offsetGet($offset)
-  {
-    if ( ! $this->seek($offset))
+  public function offsetGet($offset): mixed {
+    if (!$this->seek($offset)) {
       return FALSE;
+    }
 
-    // Return the row by calling the defined fetching callback
+    // Return the row by calling the defined fetching callback.
     $fetch = $this->fetch_type;
     return $fetch($this->result, NULL, $this->return_type);
   }
