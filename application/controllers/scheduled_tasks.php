@@ -708,8 +708,8 @@ class Scheduled_Tasks_Controller extends Controller {
       ->from('work_queue')
       ->in('task', [
         'task_spatial_index_builder_sample',
-        ' task_spatial_index_builder_occurrence',
-        ])
+        'task_spatial_index_builder_occurrence',
+      ])
       ->where('claimed_by', NULL)
       ->get()->current();
     if ($latestUnprocessed->maxtime !== NULL) {
