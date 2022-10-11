@@ -215,11 +215,17 @@ class Scheduled_Tasks_Controller extends Controller {
         }
         $this->doTriggerLogComments(
           $trigger->name,
-          ['headings' => $parsedData['headingData'], 'data' => $parsedData['websiteRecordData']]
+          [
+            'headings' => $parsedData['headingData'],
+            'data' => $parsedData['websiteRecordData'],
+          ]
         );
         $this->doDirectTriggerNotifications(
           $trigger->name,
-          ['headings' => $parsedData['headingData'], 'data' => $parsedData['websiteRecordData']],
+          [
+            'headings' => $parsedData['headingData'],
+            'data' => $parsedData['websiteRecordData'],
+          ],
           $digestMode
         );
       }
@@ -325,7 +331,10 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->db->insert('notifications', [
         'source' => $triggerName,
         'source_type' => 'T',
-        'data' => json_encode(['headings' => $data['headings'], 'data' => $userData]),
+        'data' => json_encode([
+          'headings' => $data['headings'],
+          'data' => $userData,
+        ]),
         'user_id' => str_replace('user:', '', $user),
         'digest_mode' => $digestMode,
       ]);
@@ -658,10 +667,13 @@ class Scheduled_Tasks_Controller extends Controller {
     }
   }
 
-  /*
-   * Takes the content of an array keyed bby occurrence ID, looks up the item for the required
-   * occurrence, and puts the content of this item into a set of rows (one row per name/value pair)
-   * with one table cell for the key, and one for the value
+  /**
+   * Builds HTML table for notification emails.
+   *
+   * Takes the content of an array keyed by occurrence ID, looks up the item
+   * for the required occurrence, and puts the content of this item into a set
+   * of rows (one row per name/value pair) with one table cell for the key, and
+   * one for the value.
    */
   private function addArrayToEmailTable($occurrenceId, $array, &$emailContent) {
     $excludedFields = [
@@ -803,6 +815,13 @@ class Scheduled_Tasks_Controller extends Controller {
     }
   }
 
+  /**
+   * Retrieve a list of the modules that are scheduled plugins.
+   *
+   * @return array
+   *   List of machine names of plugins which implement <plugin>_scheduled_task
+   *   and should be called during each scheduled task run.
+   */
   private function getScheduledPlugins() {
     $cacheId = 'scheduled-plugin-names';
     $cache = Cache::instance();
