@@ -533,17 +533,20 @@ class Auth_Core {
   /**
    * Finds the salt from a password, based on the configured salt pattern.
    *
-   * @param   string  hashed password
-   * @return  string
+   * @param string $password
+   *   Hashed password.
+   *
+   * @return string
+   *   Salt.
    */
-  protected function find_salt($password)
-  {
+  protected function find_salt($password) {
     $salt = '';
 
-    foreach ($this->config['salt_pattern'] as $i => $offset)
-    {
-      // Find salt characters... take a good long look..
-      $salt .= substr($password, $offset + $i, 1);
+    if (!empty($password)) {
+      foreach ($this->config['salt_pattern'] as $i => $offset) {
+        // Find salt characters... take a good long look..
+        $salt .= substr($password, $offset + $i, 1);
+      }
     }
 
     return $salt;
