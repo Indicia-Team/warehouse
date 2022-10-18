@@ -44,6 +44,7 @@ function species_alerts_scheduled_task($lastRunDate, $db, $maxTime) {
   // or verified and match them with species_alert records and return the
   // matches.
   $qry = <<<SQL
+DROP TABLE IF EXISTS delta;
 SELECT o.id, o.website_id, snf.public_entered_sref, cttl.taxon, o.location_ids, o.record_status,
   o.taxa_taxon_list_external_key, o.taxon_meaning_id, o.survey_id, o.verified_on, o.created_on, o.updated_on,
   array_agg(cttlall.taxon_list_id) as taxon_list_ids, array_agg(iwwa.from_website_id) as from_website_ids
