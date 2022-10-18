@@ -44,11 +44,28 @@ function species_alerts_scheduled_task($lastRunDate, $db, $maxTime) {
   // or verified and match them with species_alert records and return the
   // matches.
   $qry = <<<SQL
+SELECT o.id, o.website_id, snf.public_entered_sref, cttl.taxon, o.location_ids, o.record_status,
+  o.taxa_taxon_list_external_key, o.taxon_meaning_id, o.survey_id, o.verified_on, o.created_on, o.updated_on,
+  array_agg(cttlall.taxon_list_id) as taxon_list_ids, array_agg(iwwa.from_website_id) as from_website_ids
+INTO temporary delta
+FROM cache_occurrences_functional o
+JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
+JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=o.taxon_meaning_id
+    OR (cttlall.external_key IS NOT NULL AND o.taxa_taxon_list_external_key IS NOT NULL AND cttlall.external_key=o.taxa_taxon_list_external_key)
+JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=o.website_id and iwwa.receive_for_reporting=true
+WHERE
+-- Following just to allow index to be used.
+o.updated_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
+AND  o.training='f' AND o.confidential='f'
+GROUP BY o.id, o.website_id, snf.public_entered_sref, cttl.taxon, o.location_ids, o.record_status,
+  o.taxa_taxon_list_external_key, o.taxon_meaning_id, o.survey_id, o.verified_on, o.created_on;
+
 SELECT DISTINCT
   delta.id as occurrence_id,
-  cttl.taxon as taxon,
+  delta.taxon as taxon,
   delta.record_status as record_status,
-  snf.public_entered_sref as entered_sref,
+  delta.public_entered_sref as entered_sref,
   delta.created_on,
   delta.updated_on,
   sa.user_id as alerted_user_id,
@@ -64,12 +81,7 @@ SELECT DISTINCT
     AND delta.record_status='V'
     AND delta.verified_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
   ) as notify_verify
-FROM cache_occurrences_functional delta
-JOIN cache_samples_nonfunctional snf on snf.id=delta.sample_id
-JOIN cache_taxa_taxon_lists cttl on cttl.id=delta.taxa_taxon_list_id
-LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=delta.taxon_meaning_id
-    OR (cttlall.external_key IS NOT NULL AND delta.taxa_taxon_list_external_key IS NOT NULL AND cttlall.external_key=delta.taxa_taxon_list_external_key)
-JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=delta.website_id and iwwa.receive_for_reporting=true
+FROM delta
 JOIN species_alerts sa ON
   (sa.location_id IS NULL OR delta.location_ids @> ARRAY[sa.location_id])
   AND (sa.survey_id IS NULL OR delta.survey_id = sa.survey_id)
@@ -78,23 +90,24 @@ JOIN species_alerts sa ON
     OR
     sa.external_key = delta.taxa_taxon_list_external_key
     OR
-    sa.taxon_list_id = cttlall.taxon_list_id)
+    ARRAY[sa.taxon_list_id] && delta.taxon_list_ids)
   AND
     ((sa.alert_on_entry='t' AND delta.record_status='C')
     OR
     (sa.alert_on_verify='t' AND delta.record_status='V'))
   AND
-    sa.website_id=iwwa.from_website_id
+    ARRAY[sa.website_id] && delta.from_website_ids
   AND
     sa.deleted='f'
 JOIN users u ON
   u.id=sa.user_id AND u.deleted='f'
 -- Use left joins to exclude notifications that have already been generated.
 LEFT JOIN notifications n_create ON n_create.user_id=sa.user_id AND n_create.linked_id=delta.id AND n_create.source='species alerts'
-  AND n_create.data LIKE '%has been entered%' and n_create.data like '%"taxon":' || replace(to_json(cttl.taxon)::text, '/', '\\\\/') || '%'
+  AND n_create.data LIKE '%has been entered%' and n_create.data like '%"taxon":' || replace(to_json(delta.taxon)::text, '/', '\\\\/') || '%'
+  AND n_create.triggered_on>=TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval
 LEFT JOIN notifications n_verify ON n_verify.user_id=sa.user_id AND n_verify.linked_id=delta.id AND n_verify.source='species alerts'
-  AND n_verify.data LIKE '%has been verified%' and n_verify.data like '%"taxon":' || replace(to_json(cttl.taxon)::text, '/', '\\\\/') || '%'
-WHERE delta.training='f' AND delta.confidential='f'
+  AND n_verify.data LIKE '%has been verified%' and n_verify.data like '%"taxon":' || replace(to_json(delta.taxon)::text, '/', '\\\\/') || '%'
+  AND n_verify.triggered_on>=TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval
 AND (
   (
     n_create.id IS NULL
@@ -107,9 +120,7 @@ AND (
     AND delta.record_status='V'
     AND delta.verified_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
   )
-)
--- Following just to allow index to be used.
-AND delta.updated_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
+);
 SQL;
 
   $newOccDataForSpeciesAlert = $db->query($qry)->result_array(FALSE);
