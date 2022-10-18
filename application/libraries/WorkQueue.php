@@ -209,6 +209,18 @@ SQL;
         $maxCostByPriority[2] = 0;
       }
     }
+    // Also, allow URL parameters to limit the minimum priority.
+    if (!empty($params['min-priority'])) {
+      if (!preg_match('/^[1-3]$/', $params['min-priority'])) {
+        throw new exception('Invalid min-priority parameter - value from 1 to 3 expected.');
+      }
+      if ($params['min-priority'] > 1) {
+        $maxCostByPriority[1] = 0;
+      }
+      if ($params['min-priority'] > 2) {
+        $maxCostByPriority[2] = 0;
+      }
+    }
     return $maxCostByPriority;
   }
 
