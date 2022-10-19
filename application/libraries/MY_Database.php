@@ -159,36 +159,37 @@ class Database extends Database_Core {
   }
 
   /**
-  * Chooses which column(s) to order the select query by.
-  * Overridden to handle 'vague_date' fields which don't exist in the db but are presented in the
-  * ORM controller.
-  *
-  * @param   string|array  column(s) to order on, can be an array, single column, or comma seperated list of columns
-  * @param   string        direction of the order
-  * @return  Database_Core        This Database object.
-  */
-  public function orderby($orderby, $direction = NULL)
-  {
-    if ( ! is_array($orderby))
-    {
-      $orderby = array($orderby => $direction);
+   * Chooses which column(s) to order the select query by.
+   *
+   * Overridden to handle 'vague_date' fields which don't exist in the db but
+   * are presented in the ORM controller.
+   *
+   * @param string|array $orderby
+   *   Column(s) to order on, can be an array, single column, or comma
+   *   seperated list of columns.
+   * @param string $direction
+   *   Direction of the order.
+   *
+   * @return Database_Core
+   *   This Database object.
+   */
+  public function orderby($orderby, $direction = NULL) {
+    if (!is_array($orderby)) {
+      $orderby = [$orderby => $direction];
     }
 
-    foreach ($orderby as $column => $direction)
-    {
-      $direction = strtoupper(trim($direction));
+    foreach ($orderby as $column => $direction) {
+      $direction = strtoupper(trim($direction ?? ''));
 
-      if ( ! in_array($direction, array('ASC', 'DESC', 'RAND()', 'RANDOM()', 'NULL')))
-      {
+      if (!in_array($direction, ['ASC', 'DESC', 'RAND()', 'RANDOM()', 'NULL'])) {
         $direction = 'ASC';
       }
 
-      if (strtolower(trim($column)) == 'vague_date')
-      {
+      if (strtolower(trim($column)) == 'vague_date') {
         $column = 'date_start';
       }
 
-      $this->orderby[] = $this->driver->escape_column($column).' '.$direction;
+      $this->orderby[] = $this->driver->escape_column($column) . ' ' . $direction;
     }
 
     return $this;
@@ -196,6 +197,7 @@ class Database extends Database_Core {
 
   /**
     * See if a table exists in the database.
+
     * Overriden to allow schema to be ignored.
     *
     * @param   string   table name
@@ -217,6 +219,17 @@ class Database extends Database_Core {
       else
               return in_array($table_name, $this->list_tables());
     }
+  }
+
+  /**
+   * Accessor for database connection.
+   *
+   * @return mixed
+   *   Database connection resource or PgSql/Connection.
+   */
+  public function getLink() {
+    $this->link or $this->connect();
+    return $this->link;
   }
 
 }

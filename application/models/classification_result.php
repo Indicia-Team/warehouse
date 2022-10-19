@@ -113,7 +113,9 @@ class Classification_result_Model extends ORM {
       // Find the list of missing occurrence_media IDs that correspond to the
       // paths.
       $pathsArray = is_string($joinInfo['pathsJson']) ? json_decode($joinInfo['pathsJson']) : $joinInfo['pathsJson'];
-      $paths = implode(', ', array_map('pg_escape_literal', $pathsArray));
+      $paths = implode(', ', array_map(function ($s) use ($db) {
+        return pg_escape_literal($db->getLink(), $s);
+      }, $pathsArray));
       $occurrenceMediaQuery = <<<SQL
 SELECT om.id as occurrence_media_id
 FROM occurrence_media om

@@ -134,7 +134,7 @@ class Occurrence_Model extends ORM {
       $releaseStatusChanging = !empty($fields['release_status']) && $fields['release_status']['value'] !== $this->release_status;
       $metadataFieldChanging = !empty($fields['metadata']) && $fields['metadata']['value'] !== $this->metadata;
       $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
-      $isAlreadyReviewed = preg_match('/[RDV]/', $this->record_status) || $this->record_substatus === 3;
+      $isAlreadyReviewed = (!empty($this->record_status) && preg_match('/[RDV]/', $this->record_status)) || $this->record_substatus === 3;
       // Is this post going to change the record status or substatus?
       if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {

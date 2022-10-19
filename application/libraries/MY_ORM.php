@@ -401,10 +401,12 @@ class ORM extends ORM_Core {
         ->where('id', $this->identifiers['survey_id'])
         ->get()
         ->current();
-      $rules = json_decode($qry->core_validation_rules, TRUE);
-      if (isset($rules[$this->object_name])) {
-        foreach ($rules[$this->object_name] as $field => $rules) {
-          $array->add_rules($field, $rules);
+      if (!empty($qry->core_validation_rules)) {
+        $rules = json_decode($qry->core_validation_rules, TRUE);
+        if (isset($rules[$this->object_name])) {
+          foreach ($rules[$this->object_name] as $field => $rules) {
+            $array->add_rules($field, $rules);
+          }
         }
       }
     }
@@ -2176,7 +2178,7 @@ class ORM extends ORM_Core {
             return FALSE;
           }
           elseif ($creatingTerm) {
-            $escapedTerm = pg_escape_string($value);
+            $escapedTerm = pg_escape_string($this->db->getLink(), $value);
             $value = $this->db
               ->query("select insert_term('$escapedTerm', '$allowTermCreationLang', null, $attrDef->termlist_id, null);")
               ->insert_id();

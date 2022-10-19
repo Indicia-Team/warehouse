@@ -1,3 +1,9 @@
+# Version 8.10.0
+*2022-10-19*
+
+* Adds new fields for term code and description of terms in lookup lists.
+* Implements changes required for PHP 8.1 but not yet fully tested.
+
 # Version 8.9.0
 *2022-10-03*
 

@@ -465,6 +465,7 @@ class Pdosqlite_Result extends Database_Result {
 		return FALSE;
 	}
 
+	#[\ReturnTypeWillChange]
 	public function offsetGet($offset)
 	{
 		try

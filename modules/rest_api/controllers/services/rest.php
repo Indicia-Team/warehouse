@@ -1261,15 +1261,15 @@ class Rest_Controller extends Controller {
       'limit' => REST_API_DEFAULT_PAGE_SIZE,
       'include' => ['data', 'count', 'paging', 'columns'],
     ], $this->request);
+    $db = new Database();
     try {
       $params['count'] = FALSE;
-      $query = postgreSQL::taxonSearchQuery($params);
+      $query = postgreSQL::taxonSearchQuery($db, $params);
     }
     catch (Exception $e) {
       RestObjects::$apiResponse->fail('Bad request', 400, $e->getMessage());
       error_logger::log_error('REST Api exception during build of taxon search query', $e);
     }
-    $db = new Database();
     $result = [];
     if (in_array('data', $params['include'])) {
       $result['data'] = $db->query($query);
@@ -1280,7 +1280,7 @@ class Rest_Controller extends Controller {
       }
       else {
         $params['count'] = TRUE;
-        $countQuery = postgreSQL::taxonSearchQuery($params);
+        $countQuery = postgreSQL::taxonSearchQuery($db, $params);
         $countData = $db->query($countQuery)->current();
         $count = $countData->count;
       }
@@ -2679,7 +2679,7 @@ class Rest_Controller extends Controller {
     if (($userId !== NULL && !preg_match('/^\d+$/', $userId)) || !preg_match('/^\d+$/', $websiteId)) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
     }
-    $password = pg_escape_string($password);
+    $password = pg_escape_string(RestObjects::$db->getLink(), $password);
     $websites = RestObjects::$db->select('id')
       ->from('websites')
       ->where(['id' => $websiteId, 'password' => $password])

@@ -81,9 +81,10 @@ class Spatial_Controller extends Service_Base_Controller {
       // system is validated in internal_wkt_to_sref() and sref_to_internal_wkt()
       // mapsystem is validated in internal_wkt_to_wkt()
       // precision, output and metresAccuracy are not used in queries.
-      $wkt = pg_escape_string ($_GET['wkt']);
+      // $wkt is escaped before running queries.
+      $wkt = $_GET['wkt'];
 
-      if (array_key_exists('wktsystem',$_GET)) {
+      if (array_key_exists('wktsystem', $_GET)) {
         // Optionally convert WKT from wktsystem.
         $wktsystem = security::checkParam($_GET['wktsystem'], 'int');
         if ($wktsystem === FALSE) {
@@ -185,7 +186,7 @@ class Spatial_Controller extends Service_Base_Controller {
         $db = new Database;
         // Test/escape parameters that are passed in to queries to prevent
         // SQL injection.
-        $wkt = pg_escape_string ($params['wkt']);
+        $wkt = pg_escape_literal($db->getLink(), $params['wkt']);
         $buffer = security::checkParam($params['buffer'], 'int');
         if ($buffer === FALSE) {
           Kohana::log('alert', "Invalid parameter, buffer, with value '{$params['buffer']}' in request to spatial/buffer service.");
@@ -197,7 +198,7 @@ class Spatial_Controller extends Service_Base_Controller {
 SELECT st_astext(
   st_transform(
     st_buffer(
-      st_transform(st_geomfromtext('$wkt', 3857), $params[projection]),
+      st_transform(st_geomfromtext($wkt, 3857), $params[projection]),
       $buffer,
       $params[segmentsInQuarterCircle]
     ),
@@ -210,7 +211,7 @@ SQL;
           $qry = <<<SQL
 SELECT st_astext(
   st_buffer(
-    st_geomfromtext('$wkt'),
+    st_geomfromtext($wkt),
     $buffer,
     $params[segmentsInQuarterCircle]
   )

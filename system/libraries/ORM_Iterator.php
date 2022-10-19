@@ -130,18 +130,16 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	/**
 	 * Countable: count
 	 */
-	public function count()
-	{
+	public function count(): int {
 		return $this->result->count();
 	}
 
 	/**
 	 * Iterator: current
 	 */
-	public function current()
-	{
-		if ($row = $this->result->current())
-		{
+	#[\ReturnTypeWillChange]
+	public function current()	{
+		if ($row = $this->result->current()) {
 			// Import class name
 			$class = $this->class_name;
 
@@ -154,46 +152,44 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	/**
 	 * Iterator: key
 	 */
-	public function key()
-	{
+	#[\ReturnTypeWillChange]
+	public function key() {
 		return $this->result->key();
 	}
 
 	/**
 	 * Iterator: next
 	 */
-	public function next()
-	{
+	#[\ReturnTypeWillChange]
+	public function next() {
 		return $this->result->next();
 	}
 
 	/**
 	 * Iterator: rewind
 	 */
-	public function rewind()
-	{
+	public function rewind(): void {
 		$this->result->rewind();
 	}
 
 	/**
 	 * Iterator: valid
 	 */
-	public function valid()
-	{
+	public function valid(): bool	{
 		return $this->result->valid();
 	}
 
 	/**
 	 * ArrayAccess: offsetExists
 	 */
-	public function offsetExists($offset)
-	{
+	public function offsetExists($offset): bool	{
 		return $this->result->offsetExists($offset);
 	}
 
 	/**
 	 * ArrayAccess: offsetGet
 	 */
+	#[\ReturnTypeWillChange]
 	public function offsetGet($offset)
 	{
 		if ($this->result->offsetExists($offset))
@@ -210,8 +206,7 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	 *
 	 * @throws  Kohana_Database_Exception
 	 */
-	public function offsetSet($offset, $value)
-	{
+	public function offsetSet($offset, $value): void {
 		throw new Kohana_Database_Exception('database.result_read_only');
 	}
 
@@ -220,8 +215,7 @@ class ORM_Iterator_Core implements Iterator, ArrayAccess, Countable {
 	 *
 	 * @throws  Kohana_Database_Exception
 	 */
-	public function offsetUnset($offset)
-	{
+	public function offsetUnset($offset): void {
 		throw new Kohana_Database_Exception('database.result_read_only');
 	}
 
