@@ -23,17 +23,30 @@
  * Model class for the Term table.
  */
 class Term_Model extends ORM {
-  public $search_field='term';
+  public $search_field = 'term';
 
-  protected $belongs_to = array('meaning', 'language', 'created_by' => 'user', 'updated_by' => 'user');
-  protected $has_many = array('termlists_terms');
-  protected $has_and_belongs_to_many = array('termlists');
+  protected $belongs_to = [
+    'meaning',
+    'language',
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  ];
+  protected $has_many = [
+    'termlists_terms',
+  ];
+  protected $has_and_belongs_to_many = [
+    'termlists',
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('term', 'required');
     $array->add_rules('language_id', 'required');
+    $this->unvalidatedFields = [
+      'code',
+      'description',
+    ];
     return parent::validate($array, $save);
   }
-}
 
+}
