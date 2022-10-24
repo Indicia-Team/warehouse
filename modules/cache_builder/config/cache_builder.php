@@ -572,7 +572,8 @@ $config['taxon_searchterms']['update']['standard terms'] = "update cache_taxon_s
       external_key=cttl.external_key,
       authority=cttl.authority,
       search_code=cttl.search_code,
-      taxonomic_sort_order=cttl.taxonomic_sort_order
+      taxonomic_sort_order=cttl.taxonomic_sort_order,
+      taxon_rank=cttl.taxon_rank
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=false";
@@ -608,7 +609,8 @@ $config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_se
       external_key=cttl.external_key,
       authority=cttl.authority,
       search_code=cttl.search_code,
-      taxonomic_sort_order=cttl.taxonomic_sort_order
+      taxonomic_sort_order=cttl.taxonomic_sort_order,
+      taxon_rank=cttl.taxon_rank
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type='A' and cttl.language_iso='lat'";
@@ -649,7 +651,8 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
       external_key=cttl.external_key,
       authority=cttl.authority,
       search_code=cttl.search_code,
-      taxonomic_sort_order=cttl.taxonomic_sort_order
+      taxonomic_sort_order=cttl.taxonomic_sort_order,
+      taxon_rank=cttl.taxon_rank
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
     where cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true";
@@ -681,7 +684,8 @@ $config['taxon_searchterms']['update']['codes'] = "update cache_taxon_searchterm
       external_key=cttl.external_key,
       authority=cttl.authority,
       search_code=cttl.search_code,
-      taxonomic_sort_order=cttl.taxonomic_sort_order
+      taxonomic_sort_order=cttl.taxonomic_sort_order,
+      taxon_rank=cttl.taxon_rank
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
     join taxon_codes tc on tc.taxon_meaning_id=cttl.taxon_meaning_id
@@ -704,7 +708,7 @@ $config['taxon_searchterms']['insert']['standard terms'] = "insert into cache_ta
       default_common_name, preferred_authority, language_iso,
       name_type, simplified, code_type_id, preferred, searchterm_length, parent_id, preferred_taxa_taxon_list_id,
       marine_flag, freshwater_flag, terrestrial_flag, non_native_flag,
-      external_key, authority, search_code, taxonomic_sort_order
+      external_key, authority, search_code, taxonomic_sort_order, taxon_rank
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, cttl.taxon || coalesce(' ' || cttl.authority, ''),
       cttl.taxon, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id,
@@ -715,7 +719,7 @@ $config['taxon_searchterms']['insert']['standard terms'] = "insert into cache_ta
         else 'V'
       end, false, null, cttl.preferred, length(cttl.taxon), cttl.parent_id, cttl.preferred_taxa_taxon_list_id,
       cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag,
-      cttl.external_key, cttl.authority, cttl.search_code, cttl.taxonomic_sort_order
+      cttl.external_key, cttl.authority, cttl.search_code, cttl.taxonomic_sort_order, cttl.taxon_rank
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified='f'
@@ -725,13 +729,13 @@ $config['taxon_searchterms']['insert']['abbreviations'] = "insert into cache_tax
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
       name_type, simplified, code_type_id, preferred, searchterm_length, parent_id, preferred_taxa_taxon_list_id,
-      marine_flag, freshwater_flag, terrestrial_flag, non_native_flag, external_key, authority, search_code, taxonomic_sort_order
+      marine_flag, freshwater_flag, terrestrial_flag, non_native_flag, external_key, authority, search_code, taxonomic_sort_order, taxon_rank
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, taxon_abbreviation(cttl.taxon), cttl.taxon, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
       cttl.default_common_name, cttl.authority, cttl.language_iso,
       'A', null, null, cttl.preferred, length(taxon_abbreviation(cttl.taxon)), cttl.parent_id, cttl.preferred_taxa_taxon_list_id,
       cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag,
-      cttl.external_key, cttl.authority, cttl.search_code, cttl.taxonomic_sort_order
+      cttl.external_key, cttl.authority, cttl.search_code, cttl.taxonomic_sort_order, cttl.taxon_rank
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='A'
@@ -741,7 +745,7 @@ $config['taxon_searchterms']['insert']['simplified terms'] = "insert into cache_
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
       default_common_name, preferred_authority, language_iso,
       name_type, simplified, code_type_id, preferred, searchterm_length, parent_id, preferred_taxa_taxon_list_id,
-      marine_flag, freshwater_flag, terrestrial_flag, non_native_flag, external_key, authority, search_code, taxonomic_sort_order
+      marine_flag, freshwater_flag, terrestrial_flag, non_native_flag, external_key, authority, search_code, taxonomic_sort_order, taxon_rank
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id,
       regexp_replace(lower(
@@ -759,7 +763,7 @@ $config['taxon_searchterms']['insert']['simplified terms'] = "insert into cache_
         ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       cttl.parent_id, cttl.preferred_taxa_taxon_list_id,
       cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag, cttl.external_key, cttl.authority,
-      cttl.search_code, cttl.taxonomic_sort_order
+      cttl.search_code, cttl.taxonomic_sort_order, cttl.taxon_rank
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
@@ -771,13 +775,13 @@ $config['taxon_searchterms']['insert']['codes'] = "insert into cache_taxon_searc
       name_type, simplified, code_type_id, source_id, preferred, searchterm_length,
       parent_id, preferred_taxa_taxon_list_id,
       marine_flag, freshwater_flag, terrestrial_flag, non_native_flag,
-      external_key, authority, search_code, taxonomic_sort_order
+      external_key, authority, search_code, taxonomic_sort_order, taxon_rank
     )
     select distinct on (tc.id) cttl.id, cttl.taxon_list_id, tc.code, tc.code, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
       cttl.default_common_name, cttl.authority, null, 'C', null, tc.code_type_id, tc.id, cttl.preferred, length(tc.code),
       cttl.parent_id, cttl.preferred_taxa_taxon_list_id,
       cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag,
-      cttl.external_key, cttl.authority, cttl.search_code, cttl.taxonomic_sort_order
+      cttl.external_key, cttl.authority, cttl.search_code, cttl.taxonomic_sort_order, cttl.taxon_rank
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
     join taxon_codes tc on tc.taxon_meaning_id=cttl.taxon_meaning_id and tc.deleted=false
