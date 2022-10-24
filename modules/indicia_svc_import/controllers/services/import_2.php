@@ -1339,10 +1339,21 @@ ADD COLUMN IF NOT EXISTS {$valueToMapColName}_id_choices json;
 
 -- Find possible taxon name matches. If a name is not accepted, but has an
 -- accepted alternative, it gets skipped.
-SELECT trim(lower(i.{$valueToMapColName})) as taxon, ARRAY_AGG(DISTINCT cttl.id) AS choices,
-  JSON_AGG((SELECT row_to_json(taxonfields) FROM (
-	  SELECT cttl.id, cttl.taxon, cttl.authority, cttl.language_iso, cttl.preferred_taxon, cttl.preferred_authority, cttl.preferred_language_iso, cttl.default_common_name, cttl.taxon_group, cttl.taxon_rank, cttl.taxon_rank_sort_order
-  ) AS taxonfields)) AS choice_info
+SELECT trim(lower(i.{$valueToMapColName})) as taxon,
+  ARRAY_AGG(DISTINCT cttl.id) AS choices,
+  JSON_AGG(DISTINCT jsonb_build_object(
+	  'id', cttl.id,
+    'taxon', cttl.taxon,
+    'authority', cttl.authority,
+    'language_iso', cttl.language_iso,
+    'preferred_taxon', cttl.preferred_taxon,
+    'preferred_authority', cttl.preferred_authority,
+    'preferred_language_iso', cttl.preferred_language_iso,
+    'default_common_name', cttl.default_common_name,
+    'taxon_group', cttl.taxon_group,
+    'taxon_rank', cttl.taxon_rank,
+    'taxon_rank_sort_order', cttl.taxon_rank_sort_order
+  )) AS choice_info
 INTO TEMPORARY species_matches_$uniq
 FROM import_temp.$config[tableName] i
 JOIN cache_taxa_taxon_lists cttl
