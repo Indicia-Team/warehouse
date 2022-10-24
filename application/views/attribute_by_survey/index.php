@@ -27,16 +27,16 @@ warehouse::loadHelpers(['data_entry_helper']);
 <form action="" method="get" class="form-inline">
 <?php
 
-echo data_entry_helper::select(array(
+echo data_entry_helper::select([
   'fieldname' => 'type',
   'label' => 'Display attributes for',
-  'lookupValues' => array(
+  'lookupValues' => [
     'sample' => 'Samples',
     'occurrence' => 'Occurrences',
     'location' => 'Locations',
-  ),
+  ],
   'default' => $_GET['type'],
-));
+]);
 ?>
 <input type="submit" class="btn btn-default" id="change-type" value="Go" />
 </form>
@@ -89,9 +89,9 @@ get_controls(NULL, $controlfilter, $this->db);
  *
  * @param string $block_id
  *   ID of the block, or NULL for top level.
- * @param array$$controlFilter
+ * @param array $controlFilter
  *   Filter to apply, e.g. to the correct survey.
- * @param db
+ * @param object $db
  *   Database object.
  */
 function get_controls($block_id, array $controlFilter, $db) {
@@ -191,7 +191,7 @@ HTML;
   echo '</ul>Attributes marked ' . $indicia_templates['requiredsuffix'] . ' are required';
 }
 
-  ?>
+?>
 </div>
 
 <form style="display: none" id="layout-change-form" class="inline-form panel alert alert-info" action="<?php
