@@ -888,7 +888,8 @@ SQL;
   cts.parent_id,
   cts.identification_difficulty,
   cts.id_diff_verification_rule_id,
-  cts.taxon_rank_sort_order
+  cts.taxon_rank_sort_order,
+  cts.taxon_rank
 
 SQL;
     }
