@@ -1,3 +1,12 @@
+# Version 8.11.0
+*2022-10-24*
+
+* Adds `taxon_rank` field to the `cache_taxon_searchterms` table, allowing taxon search controls to
+  use the taxon rank name as one of the fields available for separating out taxa.
+* The version 2 importer includes taxon rank and other taxon information in the match info returned
+  to the client when there are duplicate possible taxon name matches. This allows the client to
+  display a user interface for the user to choose the correct taxon to match.
+
 # Version 8.10.0
 *2022-10-19*
 
