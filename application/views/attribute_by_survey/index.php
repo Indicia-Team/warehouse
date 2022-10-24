@@ -173,8 +173,8 @@ function get_controls($block_id, array $controlFilter, $db) {
       $restrictionList[] = $control->restrict_to_location_type;
     }
     $restrictions = empty($restrictionList) ? '' : ', restricted to ' . implode(', ', $restrictionList);
-    $required = strpos($control->aw_validation_rules, 'required') === FALSE
-      && strpos($control->validation_rules, 'required') === FALSE ? '' : " $indicia_templates[requiredsuffix]";
+    $required = strpos($control->aw_validation_rules ?? '', 'required') === FALSE
+      && strpos($control->validation_rules ?? '', 'required') === FALSE ? '' : " $indicia_templates[requiredsuffix]";
     echo <<<HTML
 <li id="control-$control->id" class="$attrId draggable-control panel panel-primary clearfix">
   <span class="handle">&nbsp;</span>
