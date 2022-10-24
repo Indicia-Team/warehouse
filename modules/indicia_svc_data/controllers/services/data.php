@@ -1336,7 +1336,7 @@ class Data_Controller extends Data_Service_Base_Controller {
               }
               $where["$this->viewname.$param"] = $value;
             }
-            elseif (strpos($value, '*') === FALSE) {
+            elseif ($value === NULL || strpos($value, '*') === FALSE) {
               $where["$this->viewname.$param"] = $value;
             }
             else {

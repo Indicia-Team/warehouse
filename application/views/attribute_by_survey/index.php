@@ -27,16 +27,16 @@ warehouse::loadHelpers(['data_entry_helper']);
 <form action="" method="get" class="form-inline">
 <?php
 
-echo data_entry_helper::select(array(
+echo data_entry_helper::select([
   'fieldname' => 'type',
   'label' => 'Display attributes for',
-  'lookupValues' => array(
+  'lookupValues' => [
     'sample' => 'Samples',
     'occurrence' => 'Occurrences',
     'location' => 'Locations',
-  ),
+  ],
   'default' => $_GET['type'],
-));
+]);
 ?>
 <input type="submit" class="btn btn-default" id="change-type" value="Go" />
 </form>
@@ -89,9 +89,9 @@ get_controls(NULL, $controlfilter, $this->db);
  *
  * @param string $block_id
  *   ID of the block, or NULL for top level.
- * @param array$$controlFilter
+ * @param array $controlFilter
  *   Filter to apply, e.g. to the correct survey.
- * @param db
+ * @param object $db
  *   Database object.
  */
 function get_controls($block_id, array $controlFilter, $db) {
@@ -173,8 +173,8 @@ function get_controls($block_id, array $controlFilter, $db) {
       $restrictionList[] = $control->restrict_to_location_type;
     }
     $restrictions = empty($restrictionList) ? '' : ', restricted to ' . implode(', ', $restrictionList);
-    $required = strpos($control->aw_validation_rules, 'required') === FALSE
-      && strpos($control->validation_rules, 'required') === FALSE ? '' : " $indicia_templates[requiredsuffix]";
+    $required = strpos($control->aw_validation_rules ?? '', 'required') === FALSE
+      && strpos($control->validation_rules ?? '', 'required') === FALSE ? '' : " $indicia_templates[requiredsuffix]";
     echo <<<HTML
 <li id="control-$control->id" class="$attrId draggable-control panel panel-primary clearfix">
   <span class="handle">&nbsp;</span>
@@ -191,7 +191,7 @@ HTML;
   echo '</ul>Attributes marked ' . $indicia_templates['requiredsuffix'] . ' are required';
 }
 
-  ?>
+?>
 </div>
 
 <form style="display: none" id="layout-change-form" class="inline-form panel alert alert-info" action="<?php
