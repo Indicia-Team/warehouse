@@ -351,22 +351,20 @@ class Pgsql_Result extends Database_Result {
         $this->insert_id  = (strtolower($matches[0]) == 'insert') ? $this->insert_id() : FALSE;
         $this->total_rows = pg_affected_rows($this->result);
       }
-      else
-      {
+      else {
         $this->current_row = 0;
         $this->total_rows  = pg_num_rows($this->result);
         $this->fetch_type = ($object === TRUE) ? 'pg_fetch_object' : 'pg_fetch_array';
       }
     }
-    else
-    {
-      throw new Kohana_Database_Exception('database.error', pg_last_error().' - '.$sql);
+    else {
+      throw new Kohana_Database_Exception('database.error', pg_last_error($link) . ' - ' . $sql);
     }
 
-    // Set result type
+    // Set result type.
     $this->result($object);
 
-    // Store the SQL
+    // Store the SQL.
     $this->sql = $sql;
   }
 

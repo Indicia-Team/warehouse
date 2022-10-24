@@ -1335,15 +1335,20 @@ SQL;
     $uniq = uniqid(TRUE);
     $sql = <<<SQL
 ALTER TABLE import_temp.$config[tableName]
-ADD COLUMN IF NOT EXISTS {$valueToMapColName}_id_choices integer[];
+ADD COLUMN IF NOT EXISTS {$valueToMapColName}_id_choices json;
 
--- First prioritise accepted names.
-SELECT trim(lower(i.{$valueToMapColName})) as taxon, ARRAY_AGG(DISTINCT cttl.id) AS choices
+-- Find possible taxon name matches. If a name is not accepted, but has an
+-- accepted alternative, it gets skipped.
+SELECT trim(lower(i.{$valueToMapColName})) as taxon, ARRAY_AGG(DISTINCT cttl.id) AS choices,
+  JSON_AGG((SELECT row_to_json(taxonfields) FROM (
+	  SELECT cttl.id, cttl.taxon, cttl.authority, cttl.language_iso, cttl.preferred_taxon, cttl.preferred_authority, cttl.preferred_language_iso, cttl.default_common_name, cttl.taxon_group, cttl.taxon_rank, cttl.taxon_rank_sort_order
+  ) AS taxonfields)) AS choice_info
 INTO TEMPORARY species_matches_$uniq
 FROM import_temp.$config[tableName] i
 JOIN cache_taxa_taxon_lists cttl
   ON trim(lower(i.{$valueToMapColName}))=lower(cttl.taxon) AND cttl.allow_data_entry=true
   $filters
+-- Drop if accepted name exists which also matches.
 LEFT JOIN cache_taxa_taxon_lists cttlaccepted
   ON trim(lower(i.{$valueToMapColName}))=lower(cttlaccepted.taxon) AND cttlaccepted.id<>cttl.id
   AND cttlaccepted.allow_data_entry=true AND cttlaccepted.preferred=true
@@ -1354,7 +1359,7 @@ GROUP BY i.{$valueToMapColName};
 
 UPDATE import_temp.$config[tableName] i
 SET {$valueToMapColName}_id=CASE ARRAY_LENGTH(sm.choices, 1) WHEN 1 THEN ARRAY_TO_STRING(sm.choices, '') ELSE NULL END::integer,
-{$valueToMapColName}_id_choices=sm.choices
+{$valueToMapColName}_id_choices=sm.choice_info
 FROM species_matches_$uniq sm
 WHERE trim(lower(i.{$valueToMapColName}))=sm.taxon;
 
@@ -1362,7 +1367,7 @@ DROP TABLE species_matches_$uniq;
 SQL;
     $db->query($sql);
     $sql = <<<SQL
-SELECT DISTINCT {$valueToMapColName} as value, {$valueToMapColName}_id_choices as choices
+SELECT DISTINCT {$valueToMapColName} as value, {$valueToMapColName}_id_choices::text as choices
 FROM import_temp.$config[tableName]
 WHERE {$valueToMapColName}_id IS NULL;
 SQL;
@@ -1379,7 +1384,9 @@ SQL;
   }
 
   /**
-   * Autofills the taxa_taxon_list ID foreign keys for lookup taxon text values.
+   * Auto-fills the foreign keys for lookup taxon text values
+   *
+   * Excluding taxon lookups which are handled separately.
    *
    * @param object $db
    *   Database connection.
@@ -1479,7 +1486,7 @@ CREATE TABLE import_temp.$tableName (
 );
 SQL;
     $db->query($qry);
-    $errorCheck = pg_last_error();
+    $errorCheck = pg_last_error($db->getLink());
     if (!empty($errorCheck)) {
       throw new exception($errorCheck);
     }
@@ -1522,7 +1529,7 @@ INSERT INTO import_temp.$config[tableName]($fields)
 VALUES $rowsList;
 SQL;
       $db->query($query);
-      $errorCheck = pg_last_error();
+      $errorCheck = pg_last_error($db->getLink());
       if (!empty($errorCheck)) {
         throw new exception($errorCheck);
       }
