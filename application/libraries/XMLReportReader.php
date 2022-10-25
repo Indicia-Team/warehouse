@@ -409,10 +409,6 @@ class XMLReportReader_Core implements ReportReader {
         // ones.
         $this->inferFromQuery();
       }
-      if ($this->query) {
-        $this->query = str_replace('#master_list_id', warehouse::getMasterTaxonListId(), $this->query);
-        $this->countQueryBase = str_replace('#master_list_id', warehouse::getMasterTaxonListId(), $this->countQueryBase);
-      }
     }
     catch (Exception $e) {
       throw new Exception("Report: $report\n" . $e->getMessage());
