@@ -73,7 +73,9 @@ if (isset($jsFile)) {
 ?>
 <script type="text/javascript">
 $(document).ready(function() {
-  $('a.fancybox').fancybox({ afterLoad: indiciaFns.afterFancyboxLoad });
+  if (typeof indiciaFns !== 'undefined') {
+    $('a.fancybox').fancybox({ afterLoad: indiciaFns.afterFancyboxLoad });
+  }
 });
 </script>
 </head>
