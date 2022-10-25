@@ -144,6 +144,7 @@ class Indicia_Controller extends Template_Controller {
       }
       if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin')) {
         $menu['Taxonomy'] = [
+          'Taxa search' => 'taxa_search',
           'Species lists' => 'taxon_list',
           'Taxon groups' => 'taxon_group',
         ];

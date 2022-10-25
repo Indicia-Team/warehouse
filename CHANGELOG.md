@@ -1,3 +1,10 @@
+# Version 8.12.0
+*2022-10-25*
+
+* Moves the taxon search form into the core warehouse code.
+* Enhances the taxon search form to allow search by taxon name and external key (TVK) as well as
+  organism key.
+
 # Version 8.11.0
 *2022-10-24*
 
