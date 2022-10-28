@@ -43,7 +43,8 @@ if (!empty($_GET['filter-taxon_list_id'])) {
       <select id="filter-taxon_list_id" name="filter-taxon_list_id" class="form-control">
         <option value="">-Please select-</option>
         <?php foreach ($taxonLists as $id => $title) {
-          $selected = $id == $defaultListId ? ' selected' : '';
+          // Select the default list, or select if only 1 available to this user.
+          $selected = (count($taxonLists) === 1 || $id == $defaultListId) ? ' selected' : '';
           echo "<option value=\"$id\"$selected>$title</option>";
         } ?>
       </select>
