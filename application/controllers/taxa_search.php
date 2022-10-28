@@ -27,6 +27,7 @@ class Taxa_search_Controller extends Indicia_Controller {
   public function index() {
     $view = new View('taxa_search/index');
     $view->defaultListId = kohana::config('uksi_operations.taxon_list_id', FALSE, FALSE);
+    $this->set_website_access('admin');
     $view->taxonLists = $this->loadPermittedTaxonLists();
     $this->template->title = 'Taxon search';
     $this->template->content = $view;
@@ -53,6 +54,8 @@ class Taxa_search_Controller extends Indicia_Controller {
       ->where('taxon_lists.deleted', 'f');
     if (!empty($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
       $query->in('taxon_lists.website_id', $this->auth_filter['values']);
+      // Actually don't want the public lists.
+      $query->where('taxon_lists.website_id is not null');
     }
     $lists = [];
     foreach ($query->get()->result() as $list) {
