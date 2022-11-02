@@ -109,7 +109,7 @@ LEFT JOIN notifications n_create ON n_create.user_id=sa.user_id AND n_create.lin
 LEFT JOIN notifications n_verify ON n_verify.user_id=sa.user_id AND n_verify.linked_id=delta.id AND n_verify.source='species alerts'
   AND n_verify.data LIKE '%has been verified%' and n_verify.data like '%"taxon":' || replace(to_json(delta.taxon)::text, '/', '\\\\/') || '%'
   AND n_verify.triggered_on>=TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval
-AND (
+WHERE (
   (
     n_create.id IS NULL
     AND sa.alert_on_entry='t'
