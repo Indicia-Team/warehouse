@@ -956,23 +956,19 @@ SQL;
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
     foreach ($errors as $field => $error) {
-      $field = preg_replace('/date_type$/', 'date', $field);
+      // A date error might be reported against a vague date component
+      // field, but can map back to the calculated date field if separate
+      // date fields not being used.
+      $field = preg_replace('/date_(start|end|type)$/', 'date', $field);
       try {
         $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', $field);
+        $errorsList[$columnInfo['columnLabel']] = $error;
       }
       catch (NotFoundException $e) {
-        if (preg_match('/date_type$/', $field)) {
-          // A date error might be reported against date_type field, but can
-          // map back to the calculated date field if separate date fields not
-          // being used.
-          $field = preg_replace('/date_type$/', 'date', $field);
-          $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', $field);
-        }
-        else {
-          throw $e;
-        }
+        // Shouldn't happen, but means we need better logic from mapping from
+        // the errored field to the mapped field name.
+        $errorsList['unknown column'] = $error;
       }
-      $errorsList[$columnInfo['columnLabel']] = $error;
     }
     $errorsJson = pg_escape_literal($db->getLink(), json_encode($errorsList));
     $sql = <<<SQL
