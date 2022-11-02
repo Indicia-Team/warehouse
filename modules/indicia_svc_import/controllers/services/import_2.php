@@ -1513,6 +1513,10 @@ SQL;
     $rows = [];
     $db = new Database();
     while (($count < BATCH_ROW_LIMIT) && ($data = $this->getNextRow($file, $count + $config['rowsLoaded'] + 1, $config))) {
+      // Nulls need to be empty strings for trim() to work.
+      $data = array_map(function ($value) {
+        return $value === NULL ? '' : $value;
+      }, $data);
       // Trim and escape the data, then pad to correct number of columns.
       $data = array_map(function ($s) use ($db) {
         return pg_escape_literal($db->getLink(), $s);
