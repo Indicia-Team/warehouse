@@ -31,17 +31,18 @@ class Indicia
     /**
      * Convert PHP errors to exceptions so that they can be handled nicely.
      */
-    public static function indicia_error_handler($errno, $errstr, $errfile, $errline)
-    {
-      // if error reporting has been switched off completely we don't want to convert the error to an exception
-      // should really do a binary AND between error_reporting() and $errno; which would only raise exceptions for those which are
-      // flagged by error_reporting(), but this may impact unknown assumptions elsewhere.
-      if(error_reporting() == 0)
-        return true;
- 
+    public static function indicia_error_handler($errno, $errstr, $errfile, $errline) {
+      // if error reporting has been switched off completely we don't want to
+      // convert the error to an exception. Also ignores errors suppressed by
+      // @.
+      if (!(error_reporting() & $errno)) {
+        return TRUE;
+      }
+
       try {
         throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
-      } catch (Exception $e) {
+      }
+      catch (Exception $e) {
         error_logger::log_error('Error converted to exception', $e);
         throw $e;
       }
