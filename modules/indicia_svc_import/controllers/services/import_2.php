@@ -993,11 +993,15 @@ SQL;
   private function findEntityColumns($entity, array $config) {
     $columns = [];
     $attrPrefix = $this->getAttrPrefix($entity);
-    // @todo Also include attribute columns where appropriate.
     foreach ($config['columns'] as $info) {
       if (isset($info['warehouseField'])) {
         $destFieldParts = explode(':', $info['warehouseField']);
-        if ($destFieldParts[0] === $entity || ($attrPrefix && $destFieldParts[0] === $attrPrefix)) {
+        // If a field targeting the destination entity, or an attribute table
+        // linked to the entity, or a media table linked to the table, then
+        // include the column.
+        if ($destFieldParts[0] === $entity
+            || ($attrPrefix && $destFieldParts[0] === $attrPrefix)
+            || $destFieldParts[0] === inflector::singular($entity) . '_medium') {
           $columns[] = $info;
         }
       }
