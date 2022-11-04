@@ -55,6 +55,9 @@
         <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" />
         <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" datatype="integer" />
         <param name='idlist' display='List of IDs' description='Comma separated list of location IDs to filter to.' datatype='idlist' fieldname='l.id' alias='id' default='' />
+        <param name="website_id" display="Limit to website ID" datatype="integer" default="">
+          <where>lw.website_id=#website_id#</where>
+        </param>
       </params>
       <columns>
         <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
