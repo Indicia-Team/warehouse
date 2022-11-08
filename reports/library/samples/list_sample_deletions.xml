@@ -3,7 +3,7 @@
     description="A list of samples IDs that have been deleted."
 >
   <query website_filter_field="srv.website_id" samples_id_field="s.id"
-         count_field="s.*">
+         count_field="s.*" created_by_id_field="s.created_by_id">
     SELECT #columns#
     FROM samples s
     JOIN surveys srv ON srv.id=s.survey_id

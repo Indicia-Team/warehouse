@@ -262,14 +262,19 @@ class XMLReportReader_Core implements ReportReader {
                   // specified.
                   $this->count_field = '*';
                 }
-                // load the standard set of parameters for consistent filtering of reports?
+                // Load the standard set of parameters for consistent filtering
+                // of reports?
                 $standardParams = $reader->getAttribute('standard_params');
-                if ($standardParams !== null)
-                  // default to loading the occurrences standard parameters set. But this can be overridden.
+                if ($standardParams !== NULL) {
+                  // Default to loading the occurrences standard parameters
+                  // set. But this can be overridden.
                   $this->loadStandardParamsSet = $standardParams === 'true' ? 'occurrences' : $standardParams;
-                // reports using the old cache_occurrences structure set standard params to true rather than occurrences
-                if ($standardParams === 'true')
+                }
+                // Reports using the old cache_occurrences structure set
+                // standard params to true rather than occurrences.
+                if ($standardParams === 'true') {
                   $this->loadLegacyStandardParamsSet = TRUE;
+                }
                 $reader->read();
                 $this->query = $reader->value;
                 break;
@@ -282,7 +287,7 @@ class XMLReportReader_Core implements ReportReader {
               case 'field_sql':
                 $reader->read();
                 $field_sql = $reader->value;
-                // drop a marker in so we can insert custom attr fields later
+                // Drop a marker in so we can insert custom attr fields later.
                 $field_sql .= '#fields#';
                 break;
 
@@ -332,15 +337,23 @@ class XMLReportReader_Core implements ReportReader {
                 $this->setAttributes(
                     $reader->getAttribute('where'),
                     $reader->getAttribute('separator'),
-                    $reader->getAttribute('hideVagueDateFields'),// determines whether to hide the main vague date fields for attributes.
-                    $reader->getAttribute('meaningIdLanguage'));//if not set, lookup lists use term_id. If set, look up lists use meaning_id, with value either 'preferred' or the 3 letter iso language to use.
+                    // Determines whether to hide the main vague date fields
+                    // for attributes.
+                    $reader->getAttribute('hideVagueDateFields'),
+                    // If not set, lookup lists use term_id. If set, look up
+                    // lists use meaning_id, with value either 'preferred' or
+                    // the 3 letter iso language to use.
+                    $reader->getAttribute('meaningIdLanguage'));
                 break;
 
-              case 'vagueDate': // This switches off vague date processing.
+              case 'vagueDate':
+                // This switches off vague date processing.
                 $this->vagueDateProcessing = $reader->getAttribute('enableProcessing');
                 break;
 
-              case 'download': // This enables download processing.. potentially dangerous as updates DB.
+              case 'download':
+                // This enables download processing.. potentially dangerous as
+                // updates DB.
                 $this->setDownload($reader->getAttribute('mode'));
                 break;
 
@@ -427,14 +440,22 @@ class XMLReportReader_Core implements ReportReader {
           }
         }
       }
-      $idList = implode(',', $websiteIds);
+      $websiteIdList = implode(',', $websiteIds);
       // Query can either pull in the filter or just the list of website ids.
-      $filter = empty($this->websiteFilterField) ? "1=1" : "({$this->websiteFilterField} in ($idList) or {$this->websiteFilterField} is null)";
-      $query = str_replace(['#website_filter#', '#website_ids#'], [$filter, $idList], $query);
+      $filter = empty($this->websiteFilterField) ? "1=1" : "({$this->websiteFilterField} in ($websiteIdList) or {$this->websiteFilterField} is null)";
+      $query = str_replace(
+        ['#website_filter#', '#website_ids#'],
+        [$filter, $websiteIdList],
+        $query
+      );
     }
     else {
       // Use a dummy filter to return all websites if core admin.
-      $query = str_replace(['#website_filter#', '#website_ids#'], ['1=1', 'SELECT id FROM websites'], $query);
+      $query = str_replace(
+        ['#website_filter#', '#website_ids#'],
+        ['1=1', 'SELECT id FROM websites'],
+        $query
+      );
     }
     if (!empty($this->trainingFilterField)) {
       $boolStr = $providedParams['training'] === 'true' ? 'true' : 'false';
@@ -456,9 +477,9 @@ class XMLReportReader_Core implements ReportReader {
       // 'me' is a subtype of reporting
       $sharing = 'reporting';
     }
-    if (isset($idList)) {
+    if (isset($websiteIdList)) {
       if ($sharing === 'website') {
-        $sharingFilters[] = "{$this->websiteFilterField} in ($idList)";
+        $sharingFilters[] = "{$this->websiteFilterField} in ($websiteIdList)";
       }
       elseif (!empty($this->websiteFilterField)) {
         // Implement the appropriate sharing agreement across websites.
@@ -468,7 +489,7 @@ class XMLReportReader_Core implements ReportReader {
         $sharedWebsiteIdList = implode(',', warehouse::getSharedWebsiteList($websiteIds, $this->db, $sharing));
         if (!empty($this->blockedSharingTasksField)) {
           $sharingCode = warehouse::sharingTermToCode($sharing);
-          $sharingFilters[] = "($this->websiteFilterField in ($idList) OR $this->createdByField=1 OR " .
+          $sharingFilters[] = "($this->websiteFilterField in ($websiteIdList) OR $this->createdByField=1 OR " .
             "$this->blockedSharingTasksField IS NULL OR NOT $this->blockedSharingTasksField @> ARRAY['$sharingCode'::character ])";
           // Some reports may rely on the syntax of an agreement join being
           // present. Therefore we insert a dummy join that will have little or
@@ -477,7 +498,7 @@ class XMLReportReader_Core implements ReportReader {
         }
         else {
           $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=$this->createdByField";
-          $sharingFilters[] = "($this->websiteFilterField in ($idList) OR privacyusers.id=1 OR " .
+          $sharingFilters[] = "($this->websiteFilterField in ($websiteIdList) OR privacyusers.id=1 OR " .
               "privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)";
         }
         // If scope not controlled by a survey standard parameter filter, then
@@ -496,7 +517,11 @@ class XMLReportReader_Core implements ReportReader {
     }
     $query = str_replace(
       ['#agreements_join#', '#sharing_filter#', '#sharing#'],
-      [implode("\n", $agreementsJoins), implode("\n AND ", $sharingFilters), $sharing],
+      [
+        implode("\n", $agreementsJoins),
+        implode("\n AND ", $sharingFilters),
+        $sharing,
+      ],
       $query
     );
   }
@@ -571,20 +596,24 @@ class XMLReportReader_Core implements ReportReader {
     $distinctSql = [];
     $countSql = [];
     foreach ($this->columns as $col => $def) {
-      if (!empty($this->colsToInclude) && !in_array($col, $this->colsToInclude))
+      if (!empty($this->colsToInclude) && !in_array($col, $this->colsToInclude)) {
         continue;
+      }
       if (isset($def['sql'])) {
-        if (!isset($def['on_demand']) || $def['on_demand'] !== "true")
+        if (!isset($def['on_demand']) || $def['on_demand'] !== "true") {
           $sql[] = $def['sql'] . ' as ' . $this->db->escape_identifier($col);
+        }
         if (isset($def['distincton']) && $def['distincton'] == 'true') {
           $distinctSql[] = $def['internal_sql'];
-          // in_count lets the xml file exclude distinct on columns from the count query
+          // In_count lets the xml file exclude distinct on columns from the
+          // count query.
           if (!isset($def['in_count']) || $def['in_count'] == 'true') {
             $countSql[] = $def['internal_sql'];
           }
         }
         else {
-          // if the column is not distinct on, then it defaults to not in the count
+          // If the column is not distinct on, then it defaults to not in the
+          // count.
           if (isset($def['in_count']) && $def['in_count'] == 'true') {
             $countSql[] = $def['internal_sql'];
           }
