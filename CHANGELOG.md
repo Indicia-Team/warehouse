@@ -1,3 +1,8 @@
+# Version 8.13.0
+*2022-11-29*
+
+* Changed view to allow verifier information to be displayed on species grid.
+
 # Version 8.12.0
 *2022-10-25*
 
