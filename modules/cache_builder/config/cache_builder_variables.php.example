@@ -25,12 +25,12 @@
  * configuration is changed then requeue the attrs_json for an update using
  * the following SQL:
 INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
-SELECT DISTINCT 'task_cache_builder_attrs_occurrences', 'occurrence', id, 2, 60, now()
+SELECT DISTINCT 'task_cache_builder_attrs_occurrence', 'occurrence', id, 2, 60, now()
 FROM occurrences
 WHERE deleted=false;
 
 INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
-SELECT DISTINCT 'task_cache_builder_attrs_samples', 'sample', id, 2, 60, now()
+SELECT DISTINCT 'task_cache_builder_attrs_sample', 'sample', id, 2, 60, now()
 FROM samples
 WHERE deleted=false;
  */
