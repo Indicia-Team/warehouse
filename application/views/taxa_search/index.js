@@ -14,7 +14,6 @@ $(document).ready(function() {
     $('#filter-taxa_taxon_list_id').val('');
   });
   setTimeout(function() {
-    console.log('loaded');
     setTaxonListFilter();
   }, 100);
 });
