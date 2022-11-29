@@ -202,11 +202,13 @@ TXT;
   <legend>Taxon Attributes</legend>
     <ol>
       <?php
-      // The $values['attributes'] array has multi-value attributes on separate rows, so organise these into sub array
+      // The $values['attributes'] array has multi-value attributes on separate
+      // rows, so organise these into sub array.
       $attrsWithMulti = organise_values_attribute_array('taxa_taxon_list_attribute', $values['attributes']);
-      // Cycle through the attributes and drawn them to the screen
+      // Cycle through the attributes and drawn them to the screen.
       foreach ($attrsWithMulti as $taxaTaxonListAttributeId => $wholeAttrToDraw) {
-        // Multi-attributes are in a sub array, so the caption is not present at the first level so we can detect this
+        // Multi-attributes are in a sub array, so the caption is not present
+        // at the first level so we can detect this.
         if (!empty($wholeAttrToDraw['caption'])) {
           handle_single_value_attributes('taxAttr', $taxaTaxonListAttributeId, $wholeAttrToDraw, $values);
         } else {
@@ -218,6 +220,33 @@ TXT;
   </fieldset>
   <?php
   echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id') !== NULL);
+  ?>
+  <div id="delete-replacement-check-msg" class="alert alert-info" style="display: none">
+    Checking if there are existing occurrences for this taxon...
+  </div>
+  <div id="delete-replacement" class="alert alert-warning" style="display: none">
+    <p>There are existing occurrences for this taxon. Please confirm which taxon you would like to replace them with.</p>
+    <?php
+    echo data_entry_helper::select([
+      'label' => 'List to search in',
+      'fieldname' => 'filter-taxon_list_id',
+      'lookupValues' => $other_data['taxon_lists'],
+      'default' => html::initial_value($values, 'taxa_taxon_list:taxon_list_id'),
+    ]);
+    echo data_entry_helper::species_autocomplete([
+      'label' => 'Replacement taxon',
+      'fieldname' => 'new_taxa_taxon_list_id',
+      'extraParams' => $readAuth + [
+        'taxon_list_id' => $values['taxa_taxon_list:taxon_list_id'],
+      ],
+      'speciesIncludeBothNames' => TRUE,
+      'speciesIncludeAuthorities' => TRUE,
+      'speciesIncludeTaxonGroup' => TRUE,
+    ]);
+    ?>
+    <input type="submit" name="submit" value="Delete" class="btn btn-warning" id="confirm-delete-btn" />
+  </div>
+  <?php
   data_entry_helper::enable_validation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
