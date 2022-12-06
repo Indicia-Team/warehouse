@@ -138,9 +138,10 @@ class Occurrence_Model extends ORM {
       // Is this post going to change the record status or substatus?
       if ($newStatus !== $this->record_status || (string) $newSubstatus !== (string) $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {
-          // If verifying or rejecting, then set the verification metadata.
-          $array->verified_by_id = $this->getCurrentUserId();
-          $array->verified_on = date("Ymd H:i:s");
+          // If verifying or rejecting, then set the verification metadata to
+          // provided values, if present, else current values.
+          $array->verified_by_id = empty($fields['verified_by_id']) ? $this->getCurrentUserId() : $fields['verified_by_id']['value'];
+          $array->verified_on = empty($fields['verified_on']) ? date("Ymd H:i:s") : $fields['verified_on']['value'];
         }
         else {
           // If any status other than verified or rejected we don't want
