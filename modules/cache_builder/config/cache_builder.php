@@ -1894,7 +1894,7 @@ AND o.sensitivity_precision IS NOT NULL
 
 $config['occurrences']['insert']['nonfunctional'] = "
 INSERT INTO cache_occurrences_nonfunctional(
-            id, comment, sensitivity_precision, privacy_precision, output_sref, output_sref_system, licence_code)
+            id, comment, sensitivity_precision, privacy_precision, output_sref, output_sref_system, verifier, licence_code)
 SELECT o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
@@ -1918,6 +1918,7 @@ SELECT o.id,
   get_output_system(
     reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
   ),
+  pv.surname || ', ' || pv.first_name,
   li.code
 FROM occurrences o
 #join_needs_update#
@@ -1931,6 +1932,8 @@ LEFT JOIN (sample_attribute_values spv
   JOIN sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
       and spa.system_function='sref_precision'
 ) on spv.sample_id=s.id and spv.deleted=false
+LEFT JOIN users uv on uv.id=o.verified_by_id and uv.deleted=false
+LEFT JOIN people pv on pv.id=uv.person_id and pv.deleted=false
 WHERE o.deleted=false
 AND co.id IS NULL
 ";
