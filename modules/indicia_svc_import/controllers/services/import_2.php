@@ -494,29 +494,6 @@ SQL;
   }
 
   /**
-   * Controller action that saves config about an import to a temporary file.
-   *
-   * Implements the services/import/save_config endpoint The config values
-   * to save into the file should be in the $_POST data with field names that
-   * match the config value to update.
-   */
-  public function save_config() {
-    header("Content-Type: application/json");
-    $this->authenticate('write');
-    $fileName = $_POST['data-file'];
-    $config = $this->getConfig($fileName);
-    foreach ($_POST as $key => $value) {
-      if ($key !== 'data-file') {
-        $config[$key] = json_decode($value);
-      }
-    }
-    $this->saveConfig($fileName, $config);
-    echo json_encode([
-      'status' => 'ok',
-    ]);
-  }
-
-  /**
    * Controller action specifically to save the mappings to warehouse fields.
    *
    * Updates the columns config to identify the warehouse field for each
@@ -536,6 +513,29 @@ SQL;
       }
       catch (NotFoundException $e) {
         // No column label, as form value not a field mapping.
+      }
+    }
+    $this->saveConfig($fileName, $config);
+    echo json_encode([
+      'status' => 'ok',
+    ]);
+  }
+
+  /**
+   * Controller action that saves config about an import to a temporary file.
+   *
+   * Implements the services/import/save_config endpoint The config values
+   * to save into the file should be in the $_POST data with field names that
+   * match the config value to update.
+   */
+  public function save_config() {
+    header("Content-Type: application/json");
+    $this->authenticate('write');
+    $fileName = $_POST['data-file'];
+    $config = $this->getConfig($fileName);
+    foreach ($_POST as $key => $value) {
+      if ($key !== 'data-file') {
+        $config[$key] = json_decode($value);
       }
     }
     $this->saveConfig($fileName, $config);
