@@ -133,7 +133,7 @@ class Occurrence_Model extends ORM {
       $newSubstatus = empty($fields['record_substatus']) ? $this->record_substatus : $fields['record_substatus']['value'];
       $releaseStatusChanging = !empty($fields['release_status']) && $fields['release_status']['value'] !== $this->release_status;
       $metadataFieldChanging = !empty($fields['metadata']) && $fields['metadata']['value'] !== $this->metadata;
-      $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
+      $identChanging = !empty($fields['taxa_taxon_list_id']) && (string) $fields['taxa_taxon_list_id']['value'] !== (string) $this->taxa_taxon_list_id;
       $isAlreadyReviewed = (!empty($this->record_status) && preg_match('/[RDV]/', $this->record_status)) || $this->record_substatus === 3;
       // Is this post going to change the record status or substatus?
       if ($newStatus !== $this->record_status || (string) $newSubstatus !== (string) $this->record_substatus) {
