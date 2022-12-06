@@ -136,7 +136,7 @@ class Occurrence_Model extends ORM {
       $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
       $isAlreadyReviewed = (!empty($this->record_status) && preg_match('/[RDV]/', $this->record_status)) || $this->record_substatus === 3;
       // Is this post going to change the record status or substatus?
-      if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
+      if ($newStatus !== $this->record_status || (string) $newSubstatus !== (string) $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {
           // If verifying or rejecting, then set the verification metadata.
           $array->verified_by_id = $this->getCurrentUserId();
