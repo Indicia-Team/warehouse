@@ -181,7 +181,7 @@ class Cache_Core {
   }
 
   /**
-   * Ensure cache key safe to use in the cache filename.   *
+   * Ensure cache key safe to use in the cache filename.
    *
    * @param string $id
    *   Cache id.
@@ -189,7 +189,7 @@ class Cache_Core {
    *   Sanitized id.
    */
   protected function sanitize_id($id) {
-    return str_replace(array('/', '\\', ' '), '_', $id);
+    return str_replace(array('/', '\\', ':', '*', '?', '"', '<', '>', '|', ' '), '_', $id);
   }
 
 } // End Cache
