@@ -336,6 +336,8 @@ class Import_2_Controller extends Service_Base_Controller {
       if ($template->id) {
         // Save the template mappings in the config.
         $config['columns'] = json_decode($template->mappings, TRUE);
+        $config['importTemplateId'] = $template->id;
+        $config['importTemplateTitle'] = $template->title;
       }
     }
     $this->saveConfig($fileName, $config);
@@ -494,29 +496,6 @@ SQL;
   }
 
   /**
-   * Controller action that saves config about an import to a temporary file.
-   *
-   * Implements the services/import/save_config endpoint The config values
-   * to save into the file should be in the $_POST data with field names that
-   * match the config value to update.
-   */
-  public function save_config() {
-    header("Content-Type: application/json");
-    $this->authenticate('write');
-    $fileName = $_POST['data-file'];
-    $config = $this->getConfig($fileName);
-    foreach ($_POST as $key => $value) {
-      if ($key !== 'data-file') {
-        $config[$key] = json_decode($value);
-      }
-    }
-    $this->saveConfig($fileName, $config);
-    echo json_encode([
-      'status' => 'ok',
-    ]);
-  }
-
-  /**
    * Controller action specifically to save the mappings to warehouse fields.
    *
    * Updates the columns config to identify the warehouse field for each
@@ -536,6 +515,292 @@ SQL;
       }
       catch (NotFoundException $e) {
         // No column label, as form value not a field mapping.
+      }
+    }
+    $this->saveConfig($fileName, $config);
+    echo json_encode([
+      'status' => 'ok',
+    ]);
+  }
+
+  /**
+   * Controller action which implements the next preprocessing step.
+   *
+   * Preprocessing is done once the data are loaded and mappings are done. It
+   * can include checking that updates to existing records are valid and cross
+   * table validation rules.
+   */
+  public function preprocess() {
+    header("Content-Type: application/json");
+    $this->authenticate('write');
+    $fileName = $_POST['data-file'];
+    $stepIndex = $_POST['index'];
+    $config = $this->getConfig($fileName);
+    $steps = [];
+    $parentTable = inflector::plural($config['parentEntity']);
+    if (isset($config['global-values']['config:allowUpdates']) && $config['global-values']['config:allowUpdates'] === '1') {
+      foreach ($config['columns'] as $info) {
+        if (isset($info['warehouseField'])) {
+          if ($info['warehouseField'] === "$config[entity]:id") {
+            $steps[] = [
+              'checkRecordIdsOwnedByUser',
+              'Checking record permissions',
+            ];
+            $config['pkFieldInTempTable'] = $info['tempDbField'];
+          }
+          elseif ($info['warehouseField'] === "$config[entity]:external_key") {
+            $steps[] = [
+              'mapExternalKeyToExistingRecords',
+              'Finding existing records',
+            ];
+            $config['pkFieldInTempTable'] = "_$config[entity]_id";
+          }
+        }
+      }
+      if (!empty($config['parentEntity'])) {
+        $steps[] = [
+          'findOriginalParentEntityIds',
+          "Finding existing $parentTable",
+        ];
+        $steps[] = [
+          'clearParentEntityIdsIfNotAllChildrenPresent',
+          "Checking links to $parentTable - step 1",
+        ];
+        $steps[] = [
+          'clearNewParentEntityIdsIfNowMultipleSamples',
+          "Checking links to $parentTable - step 2",
+        ];
+      }
+    }
+    if ($stepIndex >= count($steps)) {
+      echo json_encode([
+        'status' => 'done',
+      ]);
+    }
+    else {
+      $r = array_merge([
+        'step' => $steps[$stepIndex][0],
+        'description' => $steps[$stepIndex][1],
+      ], call_user_func([$this, $steps[$stepIndex][0]], $fileName, $config));
+      if ($stepIndex < count($steps) - 1) {
+        // Another step to do...
+        $r['nextStep'] = $steps[$stepIndex + 1][0];
+        $r['nextDescription'] = $steps[$stepIndex + 1][1];
+      }
+      echo json_encode($r);
+    }
+  }
+
+  /**
+   * Preprocessing to check existing record updates limited to user's records.
+   */
+  private function checkRecordIdsOwnedByUser($fileName, array $config) {
+    $db = new Database();
+    $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', 'occurrence:id');
+    $websiteId = $config['global-values']['website_id'];
+    $errorsJson = pg_escape_literal($db->getLink(), json_encode([
+      $columnInfo['columnLabel'] => 'You do not have permission to update this record or the record referred to does not exist.',
+    ]));
+    $table = inflector::plural($config['entity']);
+    // @todo For tables other than occurrences, method of accessing website ID differs.
+    $sql = <<<SQL
+UPDATE import_temp.$config[tableName] u
+SET errors = COALESCE(u.errors, '{}'::jsonb) || $errorsJson::jsonb
+FROM import_temp.$config[tableName] t
+LEFT JOIN $table exist
+  ON exist.id=t.$columnInfo[tempDbField]::integer
+  AND exist.created_by_id=$this->auth_user_id
+  AND exist.website_id=$websiteId
+WHERE exist.id IS NULL
+AND t.$columnInfo[tempDbField] ~ '^\d+$'
+AND t._row_id=u._row_id;
+SQL;
+    $updated = $db->query($sql)->count();
+    if ($updated > 0) {
+      return ['error' => 'The import cannot proceed as you do not have permission to update some of the records or the records referred to do not exist.'];
+    }
+    $sql = <<<SQL
+SELECT count(DISTINCT $columnInfo[tempDbField]) as distinct_count, count(*) as total_count
+FROM import_temp.$config[tableName]
+WHERE $columnInfo[tempDbField]<>''
+SQL;
+    $counts = $db->query($sql)->current();
+    if ($counts->distinct_count !== $counts->total_count) {
+      return ['error' => 'The import file appears to refer to the same existing record more than once.'];
+    }
+    return [
+      'message' => [
+        "{1} existing {2} found",
+        $counts->distinct_count,
+        $table,
+      ],
+    ];
+  }
+
+  /**
+   * Preprocessing to map a provided external key to a record ID.
+   *
+   * Only maps to records from the same website and created by the same user.
+   */
+  private function mapExternalKeyToExistingRecords($fileName, array $config) {
+    $db = new Database();
+    $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', 'occurrence:external_key');
+    $websiteId = $config['global-values']['website_id'];
+    $table = inflector::plural($config['entity']);
+    // @todo For tables other than occurrences, method of accessing website ID differs.
+    $sql = <<<SQL
+ALTER TABLE import_temp.$config[tableName]
+ADD COLUMN IF NOT EXISTS _$config[entity]_id integer;
+
+UPDATE import_temp.$config[tableName] u
+SET _$config[entity]_id=exist.id
+FROM $table exist
+WHERE exist.external_key::text=u.$columnInfo[tempDbField]
+  AND exist.created_by_id=$this->auth_user_id
+  AND exist.website_id=$websiteId
+  AND exist.deleted=false;
+SQL;
+    $db->query($sql);
+    // Remember the mapping we just created.
+    $config['systemAddedColumns'][ucfirst($config['entity']) . ' ID'] = [
+      'tempDbField' => "_$config[entity]_id",
+      'warehouseField' => "$config[entity]:id",
+      'skipIfEmpty' => TRUE,
+    ];
+    $this->saveConfig($fileName, $config);
+    $sql = <<<SQL
+SELECT count(DISTINCT _$config[entity]_id) as distinct_count, count(*) as total_count
+FROM import_temp.$config[tableName]
+WHERE _$config[entity]_id IS NOT NULL
+SQL;
+    $counts = $db->query($sql)->current();
+    if ($counts->distinct_count !== $counts->total_count) {
+      return ['error' => 'The import file appears to refer to the same existing record more than once.'];
+    }
+    return [
+      'message' => [
+        "{1} existing {2} found",
+        $counts->distinct_count,
+        $table,
+      ],
+    ];
+  }
+
+  /**
+   * Preprocessing to capture the original parent IDs for existing records.
+   *
+   * E.g. when updating existing occurrences, find the previous parent sample
+   * IDs for each occurrence.
+   */
+  private function findOriginalParentEntityIds($fileName, array $config) {
+    $db = new Database();
+    $table = inflector::plural($config['entity']);
+    $sql = <<<SQL
+ALTER TABLE import_temp.$config[tableName]
+ADD COLUMN IF NOT EXISTS _$config[parentEntity]_id integer;
+
+UPDATE import_temp.$config[tableName] u
+SET _$config[parentEntity]_id=exist.$config[parentEntity]_id
+FROM $table exist
+WHERE u.$config[pkFieldInTempTable] ~ '^\d+$'
+AND exist.id=u.$config[pkFieldInTempTable]::integer
+AND exist.deleted=false;
+SQL;
+    $db->query($sql);
+    $updated = $db->query("SELECT count(DISTINCT _$config[parentEntity]_id) FROM import_temp.$config[tableName] WHERE _$config[parentEntity]_id IS NOT NULL")->current()->count;
+    // Remember the mapping we just created.
+    $config['systemAddedColumns'][ucfirst($config['parentEntity']) . ' ID'] = [
+      'tempDbField' => "_$config[parentEntity]_id",
+      'warehouseField' => "$config[parentEntity]:id",
+      'skipIfEmpty' => TRUE,
+    ];
+    $this->saveConfig($fileName, $config);
+    return [
+      'message' => [
+        "{1} existing {2} found",
+        $updated,
+        inflector::plural($config['parentEntity']),
+      ],
+    ];
+  }
+
+  /**
+   * Preprocessing to clear parent IDs when not all children present.
+   *
+   * If an existing record's parent ID has been identified (e.g. an
+   * occurrence's sample ID), then we will only use the existing parent record
+   * if all the existing children of that parent record are included in the
+   * import. So, if importing a record from an existing sample where the sample
+   * has other records that are not in the import, the existing records will be
+   * relocated to a new sample so the other records remain unaffected.
+   */
+  private function clearParentEntityIdsIfNotAllChildrenPresent($fileName, array $config) {
+    $db = new Database();
+    $table = inflector::plural($config['entity']);
+    $parentTable = inflector::plural($config['parentEntity']);
+    $sql = <<<SQL
+UPDATE import_temp.$config[tableName] u
+SET _$config[parentEntity]_id=null
+FROM $parentTable parent
+JOIN import_temp.$config[tableName] t ON t._$config[parentEntity]_id=parent.id
+JOIN $table allchildren ON allchildren.$config[parentEntity]_id=parent.id AND allchildren.deleted=false AND allchildren.deleted=false
+LEFT JOIN import_temp.$config[tableName] exist ON exist.$config[pkFieldInTempTable] ~ '^\d+$' AND COALESCE(exist.$config[pkFieldInTempTable], '0')::integer=allchildren.id
+WHERE exist._row_id IS NULL
+AND parent.id=u._$config[parentEntity]_id
+AND parent.deleted=false;
+SQL;
+    $db->query($sql);
+    return [];
+  }
+
+  /**
+   * Preprocessing to clear parent IDs when data now vary.
+   *
+   * If several existing records (e.g. occurrences) share the same parent (e.g.
+   * sample) before an import, but the import now contains different parent
+   * data, then the parent (sample) ID is cleared so that there is no confusion
+   * and new parents get created.
+   */
+  private function clearNewParentEntityIdsIfNowMultipleSamples($fileName, array $config) {
+    $db = new Database();
+    $parentEntityColumns = $this->findEntityColumns($config['parentEntity'], $config);
+    $parentColNames = [];
+    foreach ($parentEntityColumns as $info) {
+      $parentColNames[] = $info['tempDbField'];
+    }
+    $parentColsList = implode(" || '||' || ", $parentColNames);
+    $sql = <<<SQL
+    SELECT t._$config[parentEntity]_id, COUNT(DISTINCT $parentColsList)
+    INTO TEMPORARY to_clear
+    FROM import_temp.$config[tableName] t
+    GROUP BY t._$config[parentEntity]_id
+    HAVING COUNT(DISTINCT $parentColsList)>1;
+
+    UPDATE import_temp.$config[tableName] u
+    SET _$config[parentEntity]_id=null
+    FROM to_clear c
+    WHERE c._$config[parentEntity]_id=u._$config[parentEntity]_id;
+SQL;
+    // @todo Would be nice if these queries reported back the changes they were making.
+    $db->query($sql);
+    return [];
+  }
+
+  /**
+   * Controller action that saves config about an import to a temporary file.
+   *
+   * Implements the services/import/save_config endpoint The config values
+   * to save into the file should be in the $_POST data with field names that
+   * match the config value to update.
+   */
+  public function save_config() {
+    header("Content-Type: application/json");
+    $this->authenticate('write');
+    $fileName = $_POST['data-file'];
+    $config = $this->getConfig($fileName);
+    foreach ($_POST as $key => $value) {
+      if ($key !== 'data-file') {
+        $config[$key] = json_decode($value);
       }
     }
     $this->saveConfig($fileName, $config);
@@ -993,7 +1258,8 @@ SQL;
   private function findEntityColumns($entity, array $config) {
     $columns = [];
     $attrPrefix = $this->getAttrPrefix($entity);
-    foreach ($config['columns'] as $info) {
+    $allColumns = array_merge($config['columns'], $config['systemAddedColumns']);
+    foreach ($allColumns as $info) {
       if (isset($info['warehouseField'])) {
         $destFieldParts = explode(':', $info['warehouseField']);
         // If a field targeting the destination entity, or an attribute table
@@ -1109,17 +1375,25 @@ SQL;
             // Append _id if not a custom attribute lookup.
             (preg_match('/^[a-z]{3}Attr$/', $destFieldParts[0]) ? '' : '_id');
       }
-      // An empty field shouldn't overwrite a global value.
-      if (!empty($dataRow->$srcFieldName) || empty($config['global-values'][$destFieldName])) {
-        // @todo Look for date fields more intelligently.
-        if ($config['isExcel'] && preg_match('/date$/', $destFieldName) && preg_match('/^\d+$/', $dataRow->$srcFieldName)) {
-          // Date fields are integers when read from Excel.
-          $date = ImportDate::excelToDateTimeObject($dataRow->$srcFieldName);
-          $submission[$destFieldName] = $date->format('d/m/Y');
+      if (empty($dataRow->$srcFieldName)) {
+        if (empty($config['global-values'][$destFieldName])) {
+          // An empty field shouldn't overwrite a global value.
+          continue;
         }
-        else {
-          $submission[$destFieldName] = $dataRow->$srcFieldName;
+        elseif (!empty($info['skipIfEmpty'])) {
+          // Some fields (e.g. existing record ID mappings) should be skipped
+          // if empty.
+          continue;
         }
+      }
+      // @todo Look for date fields more intelligently.
+      if ($config['isExcel'] && preg_match('/date$/', $destFieldName) && preg_match('/^\d+$/', $dataRow->$srcFieldName)) {
+        // Date fields are integers when read from Excel.
+        $date = ImportDate::excelToDateTimeObject($dataRow->$srcFieldName);
+        $submission[$destFieldName] = $date->format('d/m/Y');
+      }
+      else {
+        $submission[$destFieldName] = $dataRow->$srcFieldName;
       }
     }
   }
@@ -1513,27 +1787,39 @@ SQL;
    */
   private function loadNextRecordsBatch($fileName, array &$config) {
     $file = $this->openSpreadsheet($fileName, $config);
+    $rowPos = 0;
     $count = 0;
     $rows = [];
     $db = new Database();
-    while (($count < BATCH_ROW_LIMIT) && ($data = $this->getNextRow($file, $count + $config['rowsLoaded'] + 1, $config))) {
+    while (($rowPos < BATCH_ROW_LIMIT) && ($data = $this->getNextRow($file, $rowPos + $config['rowsRead'] + 1, $config))) {
       // Nulls need to be empty strings for trim() to work.
       $data = array_map(function ($value) {
         return $value === NULL ? '' : $value;
       }, $data);
-      // Trim and escape the data, then pad to correct number of columns.
-      $data = array_map(function ($s) use ($db) {
-        return pg_escape_literal($db->getLink(), $s);
-      }, array_pad(array_map('trim', $data), count($config['columns']), ''));
-      // Also allow for their being too many columns (wider data row than
-      // column titles provided).
-      if (count($data) > count($config['columns'])) {
-        $data = array_slice($data, 0, count($config['columns']));
+      // Skip empty rows.
+      if (!empty(implode('', $data))) {
+        // Trim and escape the data, then pad to correct number of columns.
+        $data = array_map(function ($s) use ($db) {
+          return pg_escape_literal($db->getLink(), $s);
+        }, array_pad(array_map('trim', $data), count($config['columns']), ''));
+        // Also allow for their being too many columns (wider data row than
+        // column titles provided).
+        if (count($data) > count($config['columns'])) {
+          $data = array_slice($data, 0, count($config['columns']));
+        }
+        if (implode('', $data) <> '') {
+          $rows[] = '(' . implode(', ', $data) . ')';
+        }
+        $count++;
       }
-      $rows[] = '(' . implode(', ', $data) . ')';
-      $count++;
+      else {
+        // Skipping empty row so correct the total expected.
+        $config['totalRows']--;
+      }
+      $rowPos++;
     }
     $config['rowsLoaded'] = $config['rowsLoaded'] + $count;
+    $config['rowsRead'] = $config['rowsRead'] + $rowPos;
     if (count($rows)) {
       $fieldNames = $this->getColumnTempDbFieldMappings($config['columns']);
       // Enclose field names in "" in case reserved word.
@@ -1603,8 +1889,12 @@ SQL;
         'entity' => $entity,
         'parentEntity' => $parentEntity,
         'columns' => $this->loadColumnNamesFromFile($fileName),
+        'systemAddedColumns' => [],
         'state' => 'initial',
+        // Rows loaded into the temp table (excludes blanks).
         'rowsLoaded' => 0,
+        // Rows read from the import file (includes blanks).
+        'rowsRead' => 0,
         'progress' => 0,
         'totalRows' => $this->getTotalRows($fileName),
         'rowsInserted' => 0,
@@ -1782,7 +2072,7 @@ SQL;
   }
 
   /**
-   * Opens a CSV or spreadsheet file and winds to current rowsLoaded offset.
+   * Opens a CSV or spreadsheet file and winds to current rowsRead offset.
    *
    * @param string $fileName
    *   The data file to open.
@@ -1799,7 +2089,7 @@ SQL;
     $reader->setLoadSheetsOnly($worksheetData[0]['worksheetName']);
     // Add two to the range start, as it is indexed from one not zero unlike
     // the data array read out and we skip the header row.
-    $reader->setReadFilter(new RangeReadFilter($config['rowsLoaded'] + 2, BATCH_ROW_LIMIT));
+    $reader->setReadFilter(new RangeReadFilter($config['rowsRead'] + 2, BATCH_ROW_LIMIT));
     $file = $reader->load(DOCROOT . "import/$fileName");
     return $file->getActiveSheet()->toArray();
   }
