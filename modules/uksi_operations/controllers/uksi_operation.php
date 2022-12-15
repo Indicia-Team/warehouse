@@ -885,7 +885,9 @@ SQL;
     if (!empty($operation->rank)) {
       $rank = $this->db->select('id')
         ->from('taxon_ranks')
-        ->where(['rank' => $operation->rank, 'deleted' => 'f'])
+        ->where('deleted', 'f')
+        // Use like (=ilike) as case-insensitive.
+        ->like('rank', $operation->rank)
         ->get()->current();
       if ($rank) {
         return $rank->id;
