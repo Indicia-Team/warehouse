@@ -609,11 +609,10 @@ class Import_Controller extends Service_Base_Controller {
         // of the CSV file.
         foreach ($metadata['mappings'] as $col => $attr) {
           // Skip cols to do with remembered mappings.
-          if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col != 'AllowLookup') {
-            if (isset($data[$index])) {
-              // '<Please select>' is a value fixed in
-              // import_helper::model_field_options.
-              if ($attr != '<Please select>' && $data[$index] !== '') {
+          if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col !== 'AllowLookup') {
+            if ($index <= count($data)) {
+              // Not mapped value depends on version of client.
+              if ($attr !== '<Not imported>' && $attr !== '<Please select>' && $data[$index] !== '') {
                 // Add the data to the record save array.
                 if (preg_match('/date$/', $attr) && preg_match('/^\d+$/', $data[$index])) {
                   // Date fields are integers when read from Excel.
