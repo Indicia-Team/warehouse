@@ -115,8 +115,6 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
     $cache = Cache::instance();
     kohana::log('debug', 'in upload method');
     if (file_exists($csvTempFile)) {
-      // Following helps for files from Macs.
-      ini_set('auto_detect_line_endings', 1);
       // Create the file pointer, plus one for errors.
       $handle = fopen($csvTempFile, "r");
       $count = 0;
