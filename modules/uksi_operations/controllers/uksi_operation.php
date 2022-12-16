@@ -88,6 +88,14 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     $operation = $this->db
       ->query('SELECT * FROM uksi_operations WHERE operation_processed=false ORDER BY batch_processed_on ASC, sequence ASC;')
       ->current();
+    $duplicateOf = $this->operationIsDuplicate($operation);
+    if ($duplicateOf) {
+      $msg = "Operation skipped as it is a duplicate of $duplicateOf";
+      $this->db
+        ->query("UPDATE uksi_operations SET operation_processed=true, processed_on=now(), error_detail='$msg' WHERE id=$operation->id;");
+      echo json_encode(['message' => $msg]);
+      return;
+    }
     if (!$operation) {
       echo json_encode(['message' => 'Nothing to do']);
       return;
@@ -109,7 +117,6 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       ]);
       return;
     }
-    kohana::log('debug', "Calling $fn");
     $this->operationErrors = [];
     try {
       $message = $this->$fn($operation);
@@ -129,6 +136,52 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
         ->query("UPDATE uksi_operations SET operation_processed=true, processed_on=now() WHERE id=$operation->id;");
       echo json_encode(['message' => $message]);
     }
+  }
+
+  /**
+   * Checks if an operation is a duplicate.
+   *
+   * Counts as a duplicate if there is an identical operation within the same
+   * batch.
+   *
+   * @param object $operation
+   *   Operation details.
+   *
+   * @return int
+   *   Sequence ID of operation this duplicates, or NULL if not.
+   */
+  private function operationIsDuplicate($operation) {
+    $marine = $operation->marine === TRUE ? 'true' : ($operation->marine === FALSE ? 'false' : '');
+    $terrestrial = $operation->terrestrial === TRUE ? 'true' : ($operation->terrestrial === FALSE ? 'false' : '');
+    $freshwater = $operation->freshwater === TRUE ? 'true' : ($operation->freshwater === FALSE ? 'false' : '');
+    $non_native = $operation->non_native === TRUE ? 'true' : ($operation->non_native === FALSE ? 'false' : '');
+    $redundant = $operation->redundant === TRUE ? 'true' : ($operation->redundant === FALSE ? 'false' : '');
+    $sql = <<<SQL
+SELECT sequence
+FROM uksi_operations
+WHERE operation='$operation->operation'
+AND COALESCE(organism_key, '')=COALESCE('$operation->organism_key', '')
+AND COALESCE(taxon_version_key, '')=COALESCE('$operation->taxon_version_key', '')
+AND COALESCE(rank, '')=COALESCE('$operation->rank', '')
+AND COALESCE(taxon_name, '')=COALESCE('$operation->taxon_name', '')
+AND COALESCE(authority, '')=COALESCE('$operation->authority', '')
+AND COALESCE(attribute, '')=COALESCE('$operation->attribute', '')
+AND COALESCE(parent_organism_key, '')=COALESCE('$operation->parent_organism_key', '')
+AND COALESCE(parent_name, '')=COALESCE('$operation->parent_name', '')
+AND COALESCE(synonym, '')=COALESCE('$operation->synonym', '')
+AND COALESCE(taxon_group_key, '')=COALESCE('$operation->taxon_group_key', '')
+AND COALESCE(marine::text, '')='$marine'
+AND COALESCE(terrestrial::text, '')='$terrestrial'
+AND COALESCE(freshwater::text, '')='$freshwater'
+AND COALESCE(non_native::text, '')='$non_native'
+AND COALESCE(redundant::text, '')='$redundant'
+AND COALESCE(deleted_date::text, '')='$operation->deleted_date'
+AND batch_processed_on::text='$operation->batch_processed_on'
+AND COALESCE(current_organism_key, '')=COALESCE('$operation->current_organism_key', '')
+AND sequence<$operation->sequence
+SQL;
+    $check = $this->db->query($sql)->current();
+    return $check ? $check->sequence : NULL;
   }
 
   /**
