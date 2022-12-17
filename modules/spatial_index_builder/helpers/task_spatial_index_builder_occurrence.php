@@ -57,6 +57,17 @@ class task_spatial_index_builder_occurrence {
    */
   public static function process($db, $taskType, $procId) {
     $qry = <<<SQL
+-- Delete entries which no longer require processing - normally a result of a
+-- deletion since the queue entry created.
+DELETE FROM work_queue q
+FROM occurrences o
+JOIN samples s ON s.id=o.sample_id
+WHERE o.id=q.record_id
+AND q.claimed_by='$procId'
+AND q.entity='occurrence'
+AND q.task='task_spatial_index_builder_occurrence'
+AND (s.deleted=true OR o.deleted=true);
+
 DROP TABLE IF EXISTS occlist;
 
 SELECT q.id as work_queue_id, o.id, s.location_ids
@@ -75,10 +86,10 @@ FROM occlist ol
 WHERE ol.id=o.id
 AND (o.location_ids <> ol.location_ids OR (o.location_ids IS NULL)<>(ol.location_ids IS NULL));
 
+-- Delete processed.
 DELETE FROM work_queue q
 USING occlist ol
 WHERE ol.work_queue_id=q.id;
-
 SQL;
     $db->query($qry);
   }
