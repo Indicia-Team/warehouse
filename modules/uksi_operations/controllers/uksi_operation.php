@@ -85,8 +85,14 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
   public function process_next() {
     header('Content-type: application/json');
     $this->auto_render = FALSE;
+    // Note operations processed in task type order.
+    $qry = <<<SQL
+SELECT * FROM uksi_operations
+WHERE operation_processed=false
+ORDER BY batch_processed_on asc, operation_priority asc, sequence asc;
+SQL;
     $operation = $this->db
-      ->query('SELECT * FROM uksi_operations WHERE operation_processed=false ORDER BY batch_processed_on ASC, sequence ASC;')
+      ->query($qry)
       ->current();
     $duplicateOf = $this->operationIsDuplicate($operation);
     if ($duplicateOf) {
@@ -376,18 +382,53 @@ SQL;
   }
 
   /**
+   * Implements the remove deprecation operation.
+   *
+   * Flags a name as availabnle for data entry.
+   *
+   * @param object $operation
+   *   Operation details.
+   */
+  public function processRemoveDeprecation($operation) {
+    $this->checkOperationRequiredFields('Remove deprecation', $operation, ['synonym']);
+    $namesToUpdate = $this->getTaxaForTaxonVersionKey($operation->synonym);
+    // Should be only one name for TVK, but just in case do a loop.
+    foreach ($namesToUpdate as $nameInfo) {
+      // Flag as not for data entry.
+      $ttl = ORM::factory('taxa_taxon_list', $nameInfo->id);
+      $ttl->allow_data_entry = 't';
+      $ttl->set_metadata();
+      $ttl->save();
+    }
+    return "Name with key $operation->synonym undeprecated.";
+  }
+
+  /**
    * Extracts a junion synonym to create a new taxon.
+   *
+   * Note, this operation does not check current organism key.
    *
    * @param object $operation
    *   Operation details.
    */
   public function processExtractName($operation) {
     $this->checkOperationRequiredFields('Extract name', $operation, [
-      'current_organism_key',
       'synonym',
       'organism_key',
     ]);
     $namesToUpdate = $this->getTaxaForTaxonVersionKey($operation->synonym);
+    // Check names found.
+    if (count($namesToUpdate) === 0) {
+      $this->operationErrors[] = 'Name with taxon version key given in Synonym for Extract Name operation not found.';
+    }
+    foreach ($namesToUpdate as $nameInfo) {
+      if ($nameInfo->preferred === 't') {
+        $this->operationErrors[] = 'Name with taxon version key given in Synonym for Extract Name operation is for the accepted name, not a synonym.';
+      }
+    }
+    if (count($this->operationErrors) > 0) {
+      return 'Error';
+    }
     // Should be only one name for TVK, but just in case do a loop.
     foreach ($namesToUpdate as $nameInfo) {
       // Assign new taxon_meaning_id to taxa_taxon_lists.
@@ -404,8 +445,9 @@ where taxon_meaning_id=$nameInfo->taxon_meaning_id
 and preferred=true;
 SQL;
       $ttl->parent_id = $this->db->query($qry)->current()->parent_id;
-      // Give the name a new meaning.
+      // Give the name a new meaning and make it preferred.
       $ttl->taxon_meaning_id = $newTxMeaning->id;
+      $ttl->preferred = TRUE;
       $ttl->set_metadata();
       $ttl->save();
 
@@ -504,6 +546,23 @@ SQL;
     return "New taxon $operation->taxon_name added";
   }
 
+  private function setNameInfoForProcessName($operation, $nameInfo, $preferred, $parentId) {
+    $ttl = ORM::factory('taxa_taxon_list', $nameInfo->id);
+    $ttl->preferred = $preferred ? 't' : 'f';
+    if ($parentId) {
+      $ttl->parent_id = $parentId;
+    }
+    $ttl->set_metadata();
+    $ttl->save();
+    $this->repointLinksFromSynonymsToPreferredName($ttl->id);
+    $tx = ORM::factory('taxon', $nameInfo->taxon_id);
+    if ($preferred) {
+      $tx->external_key = $operation->synonym;
+    }
+    $tx->set_metadata();
+    $tx->save();
+  }
+
   /**
    * Implements the Promote name operation.
    *
@@ -520,50 +579,31 @@ SQL;
       'current_organism_key',
       'synonym',
     ]);
-    $allExistingNames = $this->getTaxaForOrganismKey($operation->current_organism_key);
-    $foundNameToPromote = FALSE;
-    foreach ($allExistingNames as $existingNameInfo) {
-      $foundNameToPromote = $foundNameToPromote || ($existingNameInfo->search_code === $operation->synonym);
-    }
-    if (count($this->operationErrors) > 0) {
-      return 'Error';
-    }
-    if (!$foundNameToPromote) {
-      $this->operationErrors[] = 'Name identified by Synonym value could not be found for Promote name operation';
-    }
     // If parent changing, lookup the parent.
     if (!empty($operation->parent_name) || !empty($operation->parent_organism_key)) {
       $parentId = $this->getParentTtlId($operation);
     }
+    else {
+      $parentId = NULL;
+    }
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    foreach ($allExistingNames as $existingNameInfo) {
-      if ($existingNameInfo->search_code === $operation->synonym) {
-        $promotedName = $existingNameInfo->taxon;
+    // Need to get names by TVK and Organism Key, because the name being
+    // promoted might be for a different organism (which I think is incorrect
+    // according to the spec, but it happens).
+    $nameToPromote = $this->getTaxaForTaxonVersionKey($operation->synonym);
+    $namesForOrganismKey = $this->getTaxaForOrganismKey($operation->current_organism_key);
+    foreach ($nameToPromote as $nameInfo) {
+      $this->setNameInfoForProcessName($operation, $nameInfo, TRUE, $parentId);
+      $promotedName = $nameInfo->taxon;
+    }
+    foreach ($namesForOrganismKey as $nameInfo) {
+      if ($nameInfo->search_code === $operation->synonym) {
+        // Promoted name already done.
+        continue;
       }
-      // If the preferred flag wrong or parent changing, we need to update.
-      $currentlyPreferred = $existingNameInfo->preferred === 't';
-      $shouldBePreferred = $existingNameInfo->search_code === $operation->synonym;
-      if (isset($parentId) || ($currentlyPreferred !== $shouldBePreferred)) {
-        $ttl = ORM::factory('taxa_taxon_list', $existingNameInfo->id);
-        $ttl->preferred = $ttl->taxon->search_code === $operation->synonym ? 't' : 'f';
-        if (isset($parentId)) {
-          $ttl->parent_id = $parentId;
-        }
-        $ttl->set_metadata();
-        $ttl->save();
-        if ($currentlyPreferred !== $shouldBePreferred) {
-          $this->repointLinksFromSynonymsToPreferredName($ttl->id);
-        }
-      }
-      // Taxa need external key updated.
-      if ($existingNameInfo->external_key !== $operation->synonym) {
-        $tx = ORM::factory('taxon', $existingNameInfo->taxon_id);
-        $tx->external_key = $operation->synonym;
-        $tx->set_metadata();
-        $tx->save();
-      }
+      $this->setNameInfoForProcessName($operation, $nameInfo, FALSE, $parentId);
     }
     return "$promotedName promoted.";
   }
@@ -862,18 +902,16 @@ SQL;
    */
   private function getParentTtlId($operation) {
     if (!empty($operation->parent_name) && empty($operation->parent_organism_key)) {
-      // Parent identified by name which must refer to a recently added taxa.
-      // So use the new taxon operation to find the parent's organism key.
-      // @todo This query should filter to the current batch if possible
-      // rather than use the date.
+      // Parent identified by name which must refer to the last added taxa with
+      // the given name. So use the new taxon operation to find the parent's
+      // organism key.
       $qry = <<<SQL
 SELECT organism_key
 FROM uksi_operations
-WHERE sequence < $operation->sequence
-AND taxon_name='$operation->parent_name'
-AND operation='New taxon'
-AND batch_processed_on='$operation->batch_processed_on'
-ORDER BY sequence DESC
+WHERE (batch_processed_on<'$operation->batch_processed_on' OR (batch_processed_on='$operation->batch_processed_on' AND operation_priority<'$operation->operation_priority') OR sequence<$operation->sequence)
+AND lower(taxon_name)=lower('$operation->parent_name')
+AND lower(operation)='new taxon'
+ORDER BY batch_processed_on DESC, operation_priority DESC, sequence DESC
 LIMIT 1
 SQL;
       $parentAddedInOperation = $this->db->query($qry)->current();
