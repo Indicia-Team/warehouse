@@ -87,6 +87,9 @@ class Taxon_Model extends ORM {
       'non_native_flag',
       'organism_key',
       'scientific',
+      'organism_deprecated',
+      'name_deprecated',
+      'name_form',
     ];
     return parent::validate($array, $save);
   }

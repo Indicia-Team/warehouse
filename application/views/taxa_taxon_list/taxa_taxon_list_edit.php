@@ -191,12 +191,49 @@ TXT;
       'fieldname' => 'taxon:non_native_flag',
       'default' => html::initial_value($values, 'taxon:non_native_flag'),
     ]);
-    echo data_entry_helper::checkbox([
-      'label' => 'Allow data entry',
-      'fieldname' => 'taxa_taxon_list:allow_data_entry',
-      'default' => html::initial_value($values, 'taxa_taxon_list:allow_data_entry'),
-    ]);
     ?>
+  </fieldset>
+  <fieldset class="row">
+    <legend>Taxon or name deprecation flags</legend>
+    <div class="col-md-3">
+      <?php
+      echo data_entry_helper::checkbox([
+        'label' => 'Allow data entry',
+        'fieldname' => 'taxa_taxon_list:allow_data_entry',
+        'default' => html::initial_value($values, 'taxa_taxon_list:allow_data_entry'),
+      ]);
+      ?>
+    </div>
+    <div class="col-md-3">
+      <?php
+      echo data_entry_helper::checkbox([
+        'label' => 'Organism deprecated',
+        'fieldname' => 'taxon:organism_deprecated',
+        'default' => html::initial_value($values, 'taxon:organism_deprecated'),
+        'helpText' => 'For internal use by scripts which sync names from other databases.',
+      ]);
+      ?>
+    </div>
+    <div class="col-md-3">
+      <?php
+      echo data_entry_helper::checkbox([
+        'label' => 'Name deprecated',
+        'fieldname' => 'taxon:name_deprecated',
+        'default' => html::initial_value($values, 'taxon:name_deprecated'),
+        'helpText' => 'For internal use by scripts which sync names from other databases.',
+      ]);
+      ?>
+    </div>
+    <div class="col-md-3">
+      <?php
+      echo data_entry_helper::text_input([
+        'label' => 'Name form',
+        'fieldname' => 'taxon:name_form',
+        'default' => html::initial_value($values, 'taxon:name_form'),
+        'helpText' => 'For internal use by scripts which sync names from other databases.',
+      ]);
+      ?>
+    </div>
   </fieldset>
   <fieldset>
   <legend>Taxon Attributes</legend>
