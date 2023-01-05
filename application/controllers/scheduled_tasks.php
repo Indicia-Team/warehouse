@@ -410,7 +410,10 @@ class Scheduled_Tasks_Controller extends Controller {
     $this->db->begin();
     try {
       $this->db
-        ->set('acknowledged', 't')
+        ->set([
+          'acknowledged' => 't',
+          'email_sent' => 't',
+          ])
         ->from('notifications')
         ->in('id', $notificationIds)
         ->update();
