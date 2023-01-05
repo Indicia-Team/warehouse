@@ -39,6 +39,13 @@ class Scheduled_Tasks_Controller extends Controller {
   private $pluginMetadata;
 
   /**
+   * Database connection.
+   *
+   * @var Database
+   */
+  private Database $db;
+
+  /**
    * Main entry point for scheduled tasks.
    *
    * The index method is the default method called when you access this
