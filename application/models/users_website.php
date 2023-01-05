@@ -19,39 +19,48 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+defined('SYSPATH') or die('No direct script access.');
+
 /**
  * Model class for the Users_Websites table.
  */
-class Users_website_Model extends ORM
-{
+class Users_website_Model extends ORM {
 
-  protected $has_one = array(
+  protected $has_one = [
     'user',
     'website',
-    'site_role'
-  );
-  protected $belongs_to = array(
-    'created_by'=>'user',
-    'updated_by'=>'user'
-  );
+    'site_role',
+  ];
+  protected $belongs_to = [
+    'created_by' => 'user',
+    'updated_by' => 'user'
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
-    if ($save)
+    if ($save) {
       $this->applyLicence($array->as_array());
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    }
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
 
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'user_id',
       'website_id',
       'site_role_id',
       'licence_id',
       'media_licence_id',
-    );
+    ];
     return parent::validate($array, $save);
   }
 
-  public function applyLicence($new) {
+  /**
+   * If a user sets a licence for the first time, update their records.
+   *
+   * @param array $new
+   *   New data being saved.
+   */
+  public function applyLicence(array $new) {
     // Are we applying a first time licence for records belonging to this user?
     if (!empty($new['licence_id']) && empty($this->licence_id)) {
       $sql = <<<SQL

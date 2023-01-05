@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -14,45 +14,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the user email notification settings table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class User_email_notification_setting_Model extends ORM {
 
-  protected $belongs_to = array(
+  protected $belongs_to = [
     'user',
-    'created_by'=>'user',
-    'updated_by'=>'user'
-  );
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
-    $array->add_rules('user_id','required');
+    $array->add_rules('user_id', 'required');
     $array->add_rules('notification_source_type', 'required', 'length[1,2]');
     $array->add_rules('notification_frequency', 'required', 'length[1,2]');
-    $this->unvalidatedFields = array('deleted');
+    $this->unvalidatedFields = ['deleted'];
     return parent::validate($array, $save);
   }
 
-  /**
-   * Return the submission structure
-   *
-   * @return array Submission structure
-   */
-  public function get_submission_structure() {
-    $r = parent::get_submission_structure();
-    return $r;
-  }
 }
