@@ -26,11 +26,26 @@
  * Hook ORM to enable the relationship from users to notification settings.
  */
 function notification_emails_extend_orm() {
-  return array(
-    'user' => array(
-      'has_many' => array('user_email_notification_settings'),
-    ),
-  );
+  return [
+    'user' => [
+      'has_many' => ['user_email_notification_settings'],
+    ],
+    'website' => [
+      'has_many' => ['website_email_notification_settings'],
+    ],
+  ];
+}
+
+function notification_emails_extend_ui() {
+  return [
+    [
+      'view' => 'website/website_edit',
+      'type' => 'tab',
+      'controller' => 'website_email_notification_setting',
+      'title' => 'Notification email defaults',
+      'allowForNew' => FALSE,
+    ],
+  ];
 }
 
 /**
@@ -43,11 +58,13 @@ function notification_emails_extend_orm() {
  *   List of database entities exposed by this plugin with configuration.
  */
 function notification_emails_extend_data_services() {
-  return array(
-    'user_email_notification_settings' => array(
+  // No need to expose website_email_notification_settings as it's only used
+  // internally.
+  return [
+    'user_email_notification_settings' => [
       'allow_full_access' => TRUE,
-    ),
-  );
+    ],
+  ];
 }
 
 /**

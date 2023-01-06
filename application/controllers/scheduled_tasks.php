@@ -39,6 +39,13 @@ class Scheduled_Tasks_Controller extends Controller {
   private $pluginMetadata;
 
   /**
+   * Database connection.
+   *
+   * @var Database
+   */
+  private Database $db;
+
+  /**
    * Main entry point for scheduled tasks.
    *
    * The index method is the default method called when you access this
@@ -95,7 +102,7 @@ class Scheduled_Tasks_Controller extends Controller {
       else {
         $swift = email::connect();
         $this->doRecordOwnerNotifications($swift);
-        $this->doDigestNotifications($swift);
+        $this->doNotificationDigestEmailsForTriggers($swift);
       }
     }
     if (in_array('work_queue', $nonPluginTasks)) {
@@ -342,12 +349,14 @@ class Scheduled_Tasks_Controller extends Controller {
   }
 
   /**
-   * Create email digests.
+   * Create email digests for trigger notifications.
    *
-   * Takes any notifications stored in the database and builds emails to send
-   * for any that are now due.
+   * Takes any notifications stored in the database which specify their own
+   * digest_mode and builds emails to send for any that are now due.
+   * Notifications that specify a digest_mode are always from the warehouse's
+   * triggers & notifications section.
    */
-  private function doDigestNotifications($swift) {
+  private function doNotificationDigestEmailsForTriggers($swift) {
     self::msg("Checking notifications");
     // First, build a list of the notifications we are going to do.
     $digestTypes = ['I'];
@@ -410,7 +419,10 @@ class Scheduled_Tasks_Controller extends Controller {
     $this->db->begin();
     try {
       $this->db
-        ->set('acknowledged', 't')
+        ->set([
+          'acknowledged' => 't',
+          'email_sent' => 't',
+          ])
         ->from('notifications')
         ->in('id', $notificationIds)
         ->update();

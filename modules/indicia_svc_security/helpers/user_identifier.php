@@ -177,7 +177,6 @@ SQL;
           $sql .= "\nAND u.id IN ($usersToMerge)";
         }
         $r = $userPersonObj->db->query($sql)->result_array(TRUE);
-        kohana::log('debug', $sql);
         foreach ($r as $existingUser) {
           // Create a placeholder for the known user we just found.
           if (!isset($existingUsers[$existingUser->user_id])) {
@@ -518,6 +517,7 @@ QRY
    * Only created if the association does not already exist.
    */
   private static function associateWebsite($userId, $userPersonObj, $websiteId) {
+    $newAssociation = FALSE;
     $qry = $userPersonObj->db->select('id')
       ->from('users_websites')
       ->where(['user_id' => $userId, 'website_id' => $websiteId])
@@ -526,6 +526,7 @@ QRY
     if (count($qry) === 0) {
       // Insert new join record.
       $uw = ORM::factory('users_website');
+      $newAssociation = TRUE;
     }
     else {
       // Update existing.
@@ -543,6 +544,9 @@ QRY
     ];
     $uw->validate(new Validation($data), TRUE);
     self::checkErrors($uw);
+    if ($newAssociation) {
+      $uw->addEmailSettings();
+    }
   }
 
   /**

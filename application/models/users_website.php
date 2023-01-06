@@ -19,39 +19,48 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+defined('SYSPATH') or die('No direct script access.');
+
 /**
  * Model class for the Users_Websites table.
  */
-class Users_website_Model extends ORM
-{
+class Users_website_Model extends ORM {
 
-  protected $has_one = array(
+  protected $has_one = [
     'user',
     'website',
-    'site_role'
-  );
-  protected $belongs_to = array(
-    'created_by'=>'user',
-    'updated_by'=>'user'
-  );
+    'site_role',
+  ];
+  protected $belongs_to = [
+    'created_by' => 'user',
+    'updated_by' => 'user'
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
-    if ($save)
+    if ($save) {
       $this->applyLicence($array->as_array());
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    }
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
 
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'user_id',
       'website_id',
       'site_role_id',
       'licence_id',
       'media_licence_id',
-    );
+    ];
     return parent::validate($array, $save);
   }
 
-  public function applyLicence($new) {
+  /**
+   * If a user sets a licence for the first time, update their records.
+   *
+   * @param array $new
+   *   New data being saved.
+   */
+  private function applyLicence(array $new) {
     // Are we applying a first time licence for records belonging to this user?
     if (!empty($new['licence_id']) && empty($this->licence_id)) {
       $sql = <<<SQL
@@ -129,6 +138,29 @@ inner join locations_websites lw on lw.location_id=l.id and lw.website_id=$new[w
 where u.created_by_id=$new[user_id]
 and u.location_id=l.id
 and u.licence_id is null;
+SQL;
+      $this->db->query($sql);
+    }
+  }
+
+  /**
+   * Apply default notification email settings for the website to the user.
+   */
+  public function addEmailSettings() {
+    if (in_array(MODPATH . 'notification_emails', kohana::config('config.modules'))) {
+      $sql = <<<SQL
+INSERT INTO user_email_notification_settings(user_id, notification_source_type, notification_frequency,
+  created_on, created_by_id, updated_on, updated_by_id)
+SELECT DISTINCT $this->user_id, w.notification_source_type, w.notification_frequency,
+  now(), $this->user_id, now(), $this->user_id
+FROM website_email_notification_settings w
+LEFT JOIN user_email_notification_settings u
+  ON u.user_id=$this->user_id
+  AND u.notification_source_type=w.notification_source_type
+  AND u.notification_frequency=w.notification_frequency
+  AND u.deleted=false
+WHERE w.website_id=$this->website_id
+AND w.deleted=false;
 SQL;
       $this->db->query($sql);
     }

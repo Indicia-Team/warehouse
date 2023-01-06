@@ -22,12 +22,12 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Model class for the user email notification settings table.
+ * Model class for the website email notification settings table.
  */
-class User_email_notification_setting_Model extends ORM {
+class Website_email_notification_setting_Model extends ORM {
 
   protected $belongs_to = [
-    'user',
+    'website' => 'website',
     'created_by' => 'user',
     'updated_by' => 'user',
   ];
@@ -36,7 +36,7 @@ class User_email_notification_setting_Model extends ORM {
     // Uses PHP trim() to remove whitespace from beginning and end of all
     // fields before validation.
     $array->pre_filter('trim');
-    $array->add_rules('user_id', 'required');
+    $array->add_rules('website_id', 'required');
     $array->add_rules('notification_source_type', 'required', 'length[1,2]');
     $array->add_rules('notification_frequency', 'required', 'length[1,2]');
     $this->unvalidatedFields = ['deleted'];
