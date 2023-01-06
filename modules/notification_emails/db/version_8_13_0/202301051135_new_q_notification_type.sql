@@ -1,0 +1,5 @@
+ALTER TABLE user_email_notification_settings DROP CONSTRAINT chk_notification_source_type;
+ALTER TABLE user_email_notification_settings
+  ADD CONSTRAINT chk_notification_source_type CHECK (notification_source_type = 'T' OR notification_source_type = 'V' OR notification_source_type = 'C' OR notification_source_type = 'Q' OR notification_source_type = 'A' OR notification_source_type = 'S' OR notification_source_type = 'VT' OR notification_source_type = 'M' OR notification_source_type = 'PT');
+
+COMMENT ON COLUMN user_email_notification_settings.notification_source_type IS 'The notification type the setting relates to, as described in the notification Source Type. Value can be T (= trigger), C (= comment), Q (= query), V (= verification), A (= automated record check), S (= species alert), VT (= verifier task), M (= milestone), PT (= pending record task). Needs updating when notification.source_type constraint is altered.';
