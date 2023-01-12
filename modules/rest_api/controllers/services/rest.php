@@ -2390,7 +2390,7 @@ class Rest_Controller extends Controller {
     require_once 'vendor/autoload.php';
     $suppliedToken = $this->getBearerAuthToken(TRUE);
     if ($suppliedToken && substr_count($suppliedToken, '.') === 2) {
-      list($jwtHeader, $jwtPayload, $jwtSignature) = explode('.', $suppliedToken);
+      [$jwtHeader, $jwtPayload, $jwtSignature] = explode('.', $suppliedToken);
       $payload = $this->base64urlDecode($jwtPayload);
       if (!$payload) {
         RestObjects::$apiResponse->fail('Bad request', 400);
@@ -2465,12 +2465,12 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Attempts to authenticate using the HMAC client protocal.
+   * Attempts to authenticate using the HMAC client protocol.
    */
   private function authenticateUsingHmacClient() {
     $authHeader = $this->getAuthHeader();
     if (substr_count($authHeader, ':') === 3) {
-      list($u, $clientSystemId, $h, $supplied_hmac) = explode(':', $authHeader);
+      [$u, $clientSystemId, $h, $supplied_hmac] = explode(':', $authHeader);
       $config = Kohana::config('rest.clients');
       if ($u === 'USER' && $h === 'HMAC' && array_key_exists($clientSystemId, $config)) {
         $protocol = $this->isHttps ? 'https' : 'http';
@@ -2500,12 +2500,12 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Attempts to authenticate using the HMAC website protocal.
+   * Attempts to authenticate using the HMAC website protocol.
    */
   private function authenticateUsingHmacWebsite() {
     $authHeader = $this->getAuthHeader();
     if (substr_count($authHeader, ':') === 3) {
-      list($u, $websiteId, $h, $supplied_hmac) = explode(':', $authHeader);
+      [$u, $websiteId, $h, $supplied_hmac] = explode(':', $authHeader);
       if ($u === 'WEBSITE_ID' && $h === 'HMAC') {
         // Input validation.
         if (!preg_match('/^\d+$/', $websiteId)) {
@@ -2543,7 +2543,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Attempts to authenticate using the direct user protocal.
+   * Attempts to authenticate using the direct user protocol.
    */
   private function authenticateUsingDirectUser() {
     $authHeader = $this->getAuthHeader();
@@ -2594,13 +2594,13 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Attempts to authenticate using the direct client protocal.
+   * Attempts to authenticate using the direct client protocol.
    */
   private function authenticateUsingDirectClient() {
     $config = Kohana::config('rest.clients');
     $authHeader = $this->getAuthHeader();
     if ($authHeader && substr_count($authHeader, ':') === 3) {
-      list($u, $clientSystemId, $h, $secret) = explode(':', $authHeader);
+      [$u, $clientSystemId, $h, $secret] = explode(':', $authHeader);
       if ($u !== 'USER' || $h !== 'SECRET') {
         return;
       }
@@ -2649,7 +2649,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Attempts to authenticate using the direct website protocal.
+   * Attempts to authenticate using the direct website protocol.
    */
   private function authenticateUsingDirectWebsite() {
     $authHeader = $this->getAuthHeader();
