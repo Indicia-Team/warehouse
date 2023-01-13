@@ -323,7 +323,6 @@ JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
 WHERE o.id=$occurrenceId;
 SQL;
       $occ = $db->query($sql)->current();
-      kohana::log('debug', var_export($occ, TRUE));
       $dateParts = [$occ->date_start, $occ->date_end, $occ->date_type];
       return strtr($comment, [
         '{{ date }}' => vague_date::vague_date_to_string($dateParts),
