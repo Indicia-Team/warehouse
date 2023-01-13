@@ -2021,7 +2021,7 @@ SQL;
       // Can only use an inner join for definitely required fields. If they are
       // required only at the per-survey level, we must use left joins as the
       // survey could vary per record.
-      $joinType = (strpos($attr->validation_rules, 'required') === FALSE) ? 'LEFT JOIN' : 'JOIN';
+      $joinType = (strpos($attr->validation_rules ?? '', 'required') === FALSE) ? 'LEFT JOIN' : 'JOIN';
       // Find out what alias and field name the query uses for the table &
       // field we need to join to (samples.id, occurrences.id, locations.id
       // taxa_taxon_lists.id, termlists_terms.id, survey.id or person.id).

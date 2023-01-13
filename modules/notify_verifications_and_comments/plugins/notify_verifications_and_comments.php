@@ -55,43 +55,10 @@ function notify_verifications_and_comments_scheduled_task($lastRunDate, $db, $ma
     $date = vague_date::vague_date_to_string($vd);
     $taxonLabel = notification_taxon_label($notification);
     if (empty($notification->comment)) {
-      switch ($notification->record_status . (empty($notification->record_substatus)
-        ? '' : $notification->record_substatus)) {
-        case 'V':
-          $action = 'accepted';
-          break;
-
-        case 'V1':
-          $action = 'accepted as correct';
-          break;
-
-        case 'V2':
-          $action = 'accepted as correct';
-          break;
-
-        case 'C3':
-          $action = 'plausible';
-          break;
-
-        case 'D':
-          $action = 'queried';
-          break;
-
-        case 'R':
-          $action = 'not accepted';
-          break;
-
-        case 'R4':
-          $action = 'not accepted as unable to verify';
-          break;
-
-        case 'R5':
-          $action = 'not accepted as incorrect';
-          break;
-
-        default:
-          $action = 'amended';
-      }
+      $action = warehouse::recordStatusCodeToTerm(
+        $notification->record_status . (empty($notification->record_substatus) ? '' : $notification->record_substatus),
+        'amended'
+      );
       $comment = "The record of $notification->taxon at $notification->public_entered_sref on $date was $action.";
     }
     else {

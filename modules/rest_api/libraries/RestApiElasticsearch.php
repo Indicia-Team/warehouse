@@ -366,8 +366,9 @@ class RestApiElasticsearch {
       ];
     }
     if (substr(RestObjects::$authMethod, -6, 6) !== 'Client') {
-      // Only verification or user's own records get full precision.
-      $blur = (RestObjects::$scope === 'verification' || substr(RestObjects::$scope, 0, 4) === 'user') ? 'F' : 'B';
+      // Only verification or user's own records get full precision, but not if
+      // downloading currently.
+      $blur = ($this->pagingMode !== 'scroll' && (RestObjects::$scope === 'verification' || substr(RestObjects::$scope, 0, 4) === 'user')) ? 'F' : 'B';
       $filters[] = ['query_string' => ['query' => "metadata.confidential:false AND metadata.release_status:R AND ((metadata.sensitivity_blur:$blur) OR (!metadata.sensitivity_blur:*))"]];
     }
     if (count($filters) > 0) {

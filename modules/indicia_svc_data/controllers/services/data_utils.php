@@ -105,7 +105,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       error_logger::log_error("Exception during custom data_utils action $name", $e);
       $this->handle_error($e);
       if (class_exists('request_logging')) {
-        request_logging::log('a', 'data', 'data_utils', $name, $this->website_id, $this->user_id, $tm, $db, $e->getMessage());
+        request_logging::log('a', 'data', 'data_utils', $name, $this->website_id, $this->user_id, $tm, NULL, $e->getMessage());
       }
     }
   }
@@ -137,13 +137,13 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     $report = $_POST['report'];
     $params = json_decode($_POST['params'], TRUE);
     $params['sharing'] = 'verification';
-    $websites = $this->website_id ? array($this->website_id) : NULL;
+    $websites = $this->website_id ? [$this->website_id] : NULL;
     $reportEngine = new ReportEngine($websites, $this->user_id);
     try {
       // Load the report used for the verification grid with the same params.
       $data = $reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
       // Now get a list of all the occurrence ids.
-      $ids = array();
+      $ids = [];
       // Get some status related stuff ready.
       if (empty($_POST['record_substatus'])) {
         $status = 'accepted';
@@ -158,7 +158,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           (!empty($record['pass']) || $_POST['ignore'] === 'true')) {
           $ids[$record['occurrence_id']] = $record['occurrence_id'];
           if (!$dryRun) {
-            $db->insert('occurrence_comments', array(
+            $db->insert('occurrence_comments', [
               'occurrence_id' => $record['occurrence_id'],
               'comment' => "This record is $status",
               'created_by_id' => $this->user_id,
@@ -167,7 +167,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
               'updated_on' => date('Y-m-d H:i:s'),
               'record_status' => 'V',
               'record_substatus' => $substatus,
-            ));
+            ]);
           }
         }
       }
@@ -271,21 +271,20 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
         foreach ($ids as $id) {
           if (!empty($_POST['occurrence_comment:comment'])) {
-            $db->insert('occurrence_comments', array(
+            $action = $_POST['occurrence:record_status'] . (empty($_POST['occurrence:record_substatus']) ? '' : $_POST['occurrence:record_substatus']);
+            $db->insert('occurrence_comments', [
               'occurrence_id' => $id,
-              'comment' => $_POST['occurrence_comment:comment'],
+              'comment' => $this->applyVerificationTemplateReplacements($db, $_POST['occurrence_comment:comment'], $id, $action),
               'created_by_id' => $this->user_id,
               'created_on' => date('Y-m-d H:i:s'),
               'updated_by_id' => $this->user_id,
               'updated_on' => date('Y-m-d H:i:s'),
               'record_status' => $_POST['occurrence:record_status'],
-              'record_substatus' => empty($_POST['occurrence:record_substatus'])
-                ? NULL : $_POST['occurrence:record_substatus'],
-            ));
+              'record_substatus' => empty($_POST['occurrence:record_substatus']) ? NULL : $_POST['occurrence:record_substatus'],
+            ]);
           }
         }
         echo 'OK';
-        kohana::log('debug', 'done array_verify');
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'array_verify', $this->website_id, $this->user_id, $tm, $db, NULL, $ids);
         }
@@ -294,10 +293,70 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         echo $e->getMessage();
         error_logger::log_error('Exception during single record verify', $e);
         if (class_exists('request_logging')) {
-          request_logging::log('a', 'data', NULL, 'array_verify', $this->website_id, $this->user_id, $tm, $db, $e->getMessage, $ids);
+          request_logging::log('a', 'data', NULL, 'array_verify', $this->website_id, $this->user_id, $tm, $db, $e->getMessage(), $ids);
         }
       }
     }
+  }
+
+  /**
+   * Apply token replacements to a verification template.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param string $comment
+   *   Comment containing tokens to replace.
+   * @param int $occurrenceId
+   *   Occurrence ID.
+   * @param string $action
+   *   Action being performed.
+   */
+  private function applyVerificationTemplateReplacements($db, $comment, $occurrenceId, $action) {
+    if (preg_match('/\{\{ [a-z ]+ \}\}/', $comment)) {
+      // Comment contains template tokens, so load the occurrence.
+      $sql = <<<SQL
+SELECT o.date_start, o.date_end, o.date_type, onf.output_sref, cttl.taxon, cttl.default_common_name, cttl.preferred_taxon, cttl.taxon_rank, o.location_name
+FROM cache_occurrences_functional o
+JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
+JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
+JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+WHERE o.id=$occurrenceId;
+SQL;
+      $occ = $db->query($sql)->current();
+      kohana::log('debug', var_export($occ, TRUE));
+      $dateParts = [$occ->date_start, $occ->date_end, $occ->date_type];
+      return strtr($comment, [
+        '{{ date }}' => vague_date::vague_date_to_string($dateParts),
+        '{{ sref }}' => $occ->output_sref,
+        '{{ taxon }}' => $occ->taxon,
+        '{{ common name }}' => $occ->default_common_name ?? $occ->preferred_taxon ?? $occ->taxon,
+        '{{ preferred name }}' => $occ->preferred_taxon ?? $occ->taxon,
+        '{{ taxon full name }}' => $this->getTaxonNameLabel($occ),
+        '{{ rank }}' => lcfirst($occ->taxon_rank),
+        '{{ action }}' => warehouse::recordStatusCodeToTerm($action),
+        '{{ location name }}' => $occ->location_name ?? 'unknown',
+      ]);
+    }
+    return $comment;
+  }
+
+  /**
+   * Returns a full label for a taxon name for an occurrence.
+   *
+   * Includes the accepted name and common name if there is one.
+   *
+   * @param object $occ
+   *   Occurrence data row loaded from the database.
+   *
+   * @return string
+   *   Taxon names string.
+   */
+  private function getTaxonNameLabel($occ) {
+    $scientific = $occ->preferred_taxon ?? $occ->taxon;
+    if (!empty($occ->default_common_name) && $occ->default_common_name !== $scientific) {
+      return $scientific . ' (' . $occ->default_common_name . ')';
+    }
+    return $scientific;
   }
 
   /**
