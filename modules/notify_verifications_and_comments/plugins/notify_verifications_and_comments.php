@@ -59,7 +59,7 @@ function notify_verifications_and_comments_scheduled_task($lastRunDate, $db, $ma
         $notification->record_status . (empty($notification->record_substatus) ? '' : $notification->record_substatus),
         'amended'
       );
-      $comment = "The record of $notification->taxon at $notification->public_entered_sref on $date was $action.";
+      $comment = "The record of $taxonLabel at $notification->public_entered_sref on $date was $action.";
     }
     else {
       if ($notification->auto_generated === 't' && substr($notification->generated_by, 0, 12) === 'data_cleaner'
