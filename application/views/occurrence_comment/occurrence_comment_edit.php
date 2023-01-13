@@ -46,42 +46,7 @@ $id = html::initial_value($values, 'occurrence_comment:id');
       $status = html::initial_value($values, 'occurrence_comment:record_status')
         . (empty(html::initial_value($values, 'occurrence_comment:record_substatus')) ?
         '' : html::initial_value($values, 'occurrence_comment:record_substatus'));
-      switch ($status) {
-        case 'V':
-          $action = 'accepted';
-          break;
-
-        case 'V1':
-          $action = 'accepted as correct';
-          break;
-
-        case 'V2':
-          $action = 'accepted as correct';
-          break;
-
-        case 'C3':
-          $action = 'plausible';
-          break;
-
-        case 'D':
-          $action = 'queried';
-          break;
-
-        case 'R':
-          $action = 'not accepted';
-          break;
-
-        case 'R4':
-          $action = 'not accepted as unable to verify';
-          break;
-
-        case 'R5':
-          $action = 'not accepted as incorrect';
-          break;
-
-        default:
-          $action = $status;
-      }
+      $action = warehouse::recordStatusCodeToTerm($status);
       switch (html::initial_value($values, 'occurrence_comment:record_status')) {
         case 'V':
           $alert = 'success';

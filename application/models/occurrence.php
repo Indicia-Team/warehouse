@@ -133,14 +133,15 @@ class Occurrence_Model extends ORM {
       $newSubstatus = empty($fields['record_substatus']) ? $this->record_substatus : $fields['record_substatus']['value'];
       $releaseStatusChanging = !empty($fields['release_status']) && $fields['release_status']['value'] !== $this->release_status;
       $metadataFieldChanging = !empty($fields['metadata']) && $fields['metadata']['value'] !== $this->metadata;
-      $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
+      $identChanging = !empty($fields['taxa_taxon_list_id']) && (string) $fields['taxa_taxon_list_id']['value'] !== (string) $this->taxa_taxon_list_id;
       $isAlreadyReviewed = (!empty($this->record_status) && preg_match('/[RDV]/', $this->record_status)) || $this->record_substatus === 3;
       // Is this post going to change the record status or substatus?
-      if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
+      if ($newStatus !== $this->record_status || (string) $newSubstatus !== (string) $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {
-          // If verifying or rejecting, then set the verification metadata.
-          $array->verified_by_id = $this->getCurrentUserId();
-          $array->verified_on = date("Ymd H:i:s");
+          // If verifying or rejecting, then set the verification metadata to
+          // provided values, if present, else current values.
+          $array->verified_by_id = empty($fields['verified_by_id']) ? $this->getCurrentUserId() : $fields['verified_by_id']['value'];
+          $array->verified_on = empty($fields['verified_on']) ? date("Ymd H:i:s") : $fields['verified_on']['value'];
         }
         else {
           // If any status other than verified or rejected we don't want

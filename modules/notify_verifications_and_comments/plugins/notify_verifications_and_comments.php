@@ -53,51 +53,19 @@ function notify_verifications_and_comments_scheduled_task($lastRunDate, $db, $ma
       $notification->date_type,
     ];
     $date = vague_date::vague_date_to_string($vd);
+    $taxonLabel = notification_taxon_label($notification);
     if (empty($notification->comment)) {
-      switch ($notification->record_status . (empty($notification->record_substatus)
-        ? '' : $notification->record_substatus)) {
-        case 'V':
-          $action = 'accepted';
-          break;
-
-        case 'V1':
-          $action = 'accepted as correct';
-          break;
-
-        case 'V2':
-          $action = 'accepted as correct';
-          break;
-
-        case 'C3':
-          $action = 'plausible';
-          break;
-
-        case 'D':
-          $action = 'queried';
-          break;
-
-        case 'R':
-          $action = 'not accepted';
-          break;
-
-        case 'R4':
-          $action = 'not accepted as unable to verify';
-          break;
-
-        case 'R5':
-          $action = 'not accepted as incorrect';
-          break;
-
-        default:
-          $action = 'amended';
-      }
-      $comment = "The record of $notification->taxon at $notification->public_entered_sref on $date was $action.";
+      $action = warehouse::recordStatusCodeToTerm(
+        $notification->record_status . (empty($notification->record_substatus) ? '' : $notification->record_substatus),
+        'amended'
+      );
+      $comment = "The record of $taxonLabel at $notification->public_entered_sref on $date was $action.";
     }
     else {
       if ($notification->auto_generated === 't' && substr($notification->generated_by, 0, 12) === 'data_cleaner'
           && $notification->record_owner === 't') {
         $comment = <<<TXT
-The following message was attached to your record of $notification->taxon at $notification->public_entered_sref on $date
+The following message was attached to your record of $taxonLabel at $notification->public_entered_sref on $date
 when it was checked using the
 <a target="_blank" href="http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner.aspx"> NBN Record
 Cleaner</a>. This does not mean the record is incorrect or is being disputed; the information below is merely a flag
@@ -107,18 +75,18 @@ TXT;
       elseif ($notification->verified_on > $lastRunDate && $notification->record_status !== 'I'
           && $notification->record_status !== 'T' && $notification->record_status !== 'C') {
         if ($notification->record_owner === 't') {
-          $comment = "Your record of $notification->taxon at $notification->public_entered_sref on $date was examined by an expert.";
+          $comment = "Your record of $taxonLabel at $notification->public_entered_sref on $date was examined by an expert.";
         }
         else {
-          $comment = "A record of $notification->taxon at $notification->public_entered_sref on $date which you'd " .
+          $comment = "A record of $taxonLabel at $notification->public_entered_sref on $date which you'd " .
             "previously commented on was examined by an expert.";
         }
       }
       elseif ($notification->record_owner === 't') {
-        $comment = "A comment was added to your record of $notification->taxon at $notification->public_entered_sref on $date.";
+        $comment = "A comment was added to your record of $taxonLabel at $notification->public_entered_sref on $date.";
       }
       else {
-        $comment = "A reply was added to the record of $notification->taxon at $notification->public_entered_sref " .
+        $comment = "A reply was added to the record of $taxonLabel at $notification->public_entered_sref " .
           "on $date which you've previously commented on.";
       }
       $comment .= "<br/><em>$notification->comment</em>";
@@ -130,7 +98,7 @@ TXT;
         'username' => $notification->username,
         'occurrence_id' => $notification->id,
         'comment' => $comment,
-        'taxon' => $notification->taxon,
+        'taxon' => $taxonLabel,
         'date' => $date,
         'entered_sref' => $notification->public_entered_sref,
         'auto_generated' => $notification->auto_generated,
@@ -148,4 +116,33 @@ TXT;
     $db->insert('notifications', $theNotificationToInsert);
   }
   echo count($notifications) . ' notifications generated<br/>';
+}
+
+/**
+ * Builds an informative taxon label for a notification.
+ *
+ * @param object $notification
+ *   Notification data read from the database, including taxon,
+ *   preferred_taxon and default_common_name.
+ */
+function notification_taxon_label($notification) {
+  $recordedName = $notification->language_iso === 'lat' ? "<em>$notification->taxon</em>" : $notification->taxon;
+  $recordedNameIsDefaultCommonName = strcasecmp($notification->default_common_name ?: '', $notification->taxon) === 0;
+  $recordedNameIsPreferredName = strcasecmp($notification->preferred_taxon, $notification->taxon) === 0;
+  if (empty($notification->default_common_name)) {
+    $r = "<em>$notification->preferred_taxon</em>";
+    if (!$recordedNameIsPreferredName) {
+      $r .= " (recorded as $recordedName)";
+    }
+  }
+  else {
+    $r = "$notification->default_common_name";
+    if (!($recordedNameIsPreferredName || $recordedNameIsDefaultCommonName)) {
+      $r .= " (<em>$notification->preferred_taxon</em>, recorded as $recordedName)";
+    }
+    else {
+      $r .= " (<em>$notification->preferred_taxon</em>)";
+    }
+  }
+  return $r;
 }

@@ -1,3 +1,33 @@
+# Version 8.13.0
+*2023-01-13*
+
+* Improved support for PHP 8.1, though it is not yet fully tested.
+* The way that taxon names are written in notifications has been improved. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1395.
+* When a taxon is deleted, if there are existing occurrences then the user is able to nominate an
+  alternative taxa which the occurrences will be mapped to.
+* When notifications for trigger templates are sent as emails, the notification.email_sent field is
+  set to 't'.
+* Fixes the incorrect updating of verification metadata in occurrences. See
+  https://github.com/Indicia-Team/warehouse/issues/466.
+* Support for warehouse configuration of the default user email notification settings for a website.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1247.
+* Fixes setting the verifier field in the cache_occurrences_nonfunctional table when importing
+  already imported occurrences. See https://github.com/Indicia-Team/warehouse/issues/452.
+* Improvements to Importer v2:
+  * Skips empty rows
+  * Provides better feedback in the UI if a template selected.
+* When using website based authentication for Elasticsearch, verification mode only retrieves full
+  precision occurrence data for reporting. For data downloads, the data are blurred if the record
+  is sensitive.
+* New fields for tracking the status of names provided by UKSI, for future improvements in the UKSI
+  synchronisation process.
+* Significant revision and improvements to the code for updating the UKSI species list data from
+  UKSI using the UKSI_History table (as opposed to full synchronisation).
+* Fixes a bug where certain characters in cache keys could not be saved to the cache due to invalid
+  file names being generated.
+* Changed detail_occurrences view to allow verifier information to be displayed on species grid.
+
 # Version 8.12.0
 *2022-10-25*
 

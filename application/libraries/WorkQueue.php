@@ -159,7 +159,8 @@ USING $table s
 WHERE q.record_id=s.id
 AND s.deleted=true
 AND q.task='$taskType->task'
-AND q.entity='$taskType->entity';
+AND q.entity='$taskType->entity'
+AND q.error_detail IS NULL;
 SQL;
     $this->db->query($sql);
   }
@@ -330,6 +331,7 @@ SQL;
       'claimed_by' => $procId,
       'task' => $taskType->task,
       'entity' => $taskType->entity,
+      'error_detail' => NULL,
     ]);
   }
 

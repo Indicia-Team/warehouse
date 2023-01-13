@@ -24,8 +24,8 @@
 class Uksi_operation_Model extends ORM {
 
   protected $belongs_to = [
-    'created_by'=>'user',
-    'updated_by'=>'user',
+    'created_by' => 'user',
+    'updated_by' => 'user',
   ];
 
   public $search_field = 'sequence';
@@ -35,6 +35,7 @@ class Uksi_operation_Model extends ORM {
     $array->add_rules('sequence', 'required', 'integer');
     $array->add_rules('operation', 'required');
     $array->add_rules('batch_processed_on', 'required');
+    $array->add_rules('operation_priority', 'integer');
     $this->unvalidatedFields = [
       'operation_processed',
       'error_detail',
@@ -61,6 +62,29 @@ class Uksi_operation_Model extends ORM {
       'testing_comment',
     ];
     return parent::validate($array, $save);
+  }
+
+  /**
+   * Auto-populate operation_priority so easy to process in correct order.
+   */
+  protected function preSubmit() {
+    if (array_key_exists('operation', $this->submission['fields']) && !empty($this->submission['fields']['operation']['value'])) {
+      $mappings = [
+        'new taxon' => 1,
+        'extract name' => 2,
+        'amend taxon' => 3,
+        'promote name' => 4,
+        'rename taxon' => 5,
+        'merge taxa' => 6,
+        'add synonym' => 7,
+        'amend name' => 8,
+        'move name' => 9,
+        'deprecate name' => 10,
+        'remove deprecation' => 11,
+      ];
+      $priority = isset($mappings[strtolower($this->submission['fields']['operation']['value'])]) ? $mappings[strtolower($this->submission['fields']['operation']['value'])] : 999;
+      $this->submission['fields']['operation_priority'] = ['value' => $priority];
+    }
   }
 
 }

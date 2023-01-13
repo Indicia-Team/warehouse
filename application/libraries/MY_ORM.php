@@ -1754,7 +1754,7 @@ class ORM extends ORM_Core {
    * @param array $identifiers
    *   Website ID, survey ID and/or taxon list ID that define the context of
    *   the list of fields, used to determine the custom attributes to include.
-   * @param int @attrTypeFilter
+   * @param int $attrTypeFilter
    *   Specify a location type meaning id or a sample method meaning id to
    *   filter the returned attributes to those which apply to the given type or
    *   method.
@@ -1762,7 +1762,7 @@ class ORM extends ORM_Core {
    * @return array
    *   The list of submittable field definitions.
    */
-  public function getSubmittableFields($fk = FALSE, array $identifiers = [], $attrTypeFilter=NULL, $use_associations = FALSE) {
+  public function getSubmittableFields($fk = FALSE, array $identifiers = [], $attrTypeFilter = NULL, $use_associations = FALSE) {
     $this->identifiers = $identifiers;
     $fields = $this->getPrefixedColumnsArray($fk);
     $fields = array_merge($fields, $this->additional_csv_fields);
@@ -1898,24 +1898,28 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Returns the array of columns, with each column prefixed by the model name then :.
+   * Return the columns array, each column prefixed by the model name then :.
    *
-   * @return array Prefixed columns.
+   * @return array
+   *   Prefixed columns.
    */
-  protected function getPrefixedColumnsArray($fk=FALSE, $skipHiddenFields=TRUE) {
+  protected function getPrefixedColumnsArray($fk = FALSE, $skipHiddenFields = TRUE) {
     $r = [];
-    $prefix=$this->object_name;
+    $prefix = $this->object_name;
     $sub = $this->get_submission_structure();
-    foreach ($this->table_columns as $column=>$type) {
-      if ($skipHiddenFields && isset($this->hidden_fields) && in_array($column, $this->hidden_fields))
+    foreach ($this->table_columns as $column => $type) {
+      if ($skipHiddenFields && isset($this->hidden_fields) && in_array($column, $this->hidden_fields)) {
         continue;
+      }
       if ($fk && substr($column, -3) == "_id") {
-        // don't include the fk link field if the submission is supposed to contain full data
-        // for the supermodel record rather than just a link
-        if (!isset($sub['superModels'][substr($column, 0, -3)]))
-          $r["$prefix:fk_".substr($column, 0, -3)]='';
-      } else {
-        $r["$prefix:$column"]='';
+        // Don't include the fk link field if the submission is supposed to
+        // contain full data for the supermodel record rather than just a link.
+        if (!isset($sub['superModels'][substr($column, 0, -3)])) {
+          $r["$prefix:fk_" . substr($column, 0, -3)] = '';
+        }
+      }
+      else {
+        $r["$prefix:$column"] = '';
       }
     }
     return $r;
@@ -2228,37 +2232,40 @@ class ORM extends ORM_Core {
         return FALSE;
       }
     }
-    // set metadata
+    // Set metadata.
     $exactMatches = array_intersect_assoc($oldValues, $attrValueModel->as_array());
-    // which fields do we have in the submission?
+    // Which fields do we have in the submission?
     $fieldsWithValuesInSubmission = array_intersect_key($oldValues, $attrValueModel->as_array());
     // Hook to the owning entity (the sample, location, taxa_taxon_list or occurrence)
-    $thisFk = $this->object_name.'_id';
+    $thisFk = $this->object_name . '_id';
     $attrValueModel->$thisFk = $this->id;
-    // and hook to the attribute
-    $attrFk = $this->object_name.'_attribute_id';
+    // Hook to the attribute
+    $attrFk = $this->object_name . '_attribute_id';
     $attrValueModel->$attrFk = $attrId;
-    // we'll update metadata only if at least one of the fields have changed
-    $wantToUpdateAttrMetadata = count($exactMatches)!==count($fieldsWithValuesInSubmission);
-    if (!$wantToUpdateAttrMetadata)
-      $attrValueModel->wantToUpdateMetadata=FALSE;
+    // We'll update metadata only if at least one of the fields have changed
+    $wantToUpdateAttrMetadata = count($exactMatches) !== count($fieldsWithValuesInSubmission);
+    if (!$wantToUpdateAttrMetadata) {
+      $attrValueModel->wantToUpdateMetadata = FALSE;
+    }
     try {
-      $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()), TRUE);
-    } catch (Exception $e) {
+      $v = $attrValueModel->validate(new Validation($attrValueModel->as_array()), TRUE);
+    }
+    catch (Exception $e) {
       $v = FALSE;
-      $this->errors[$fieldId]=$e->getMessage();
+      $this->errors[$fieldId] = $e->getMessage();
       error_logger::log_error('Exception during validation', $e);
     }
     if (!$v) {
-      foreach($attrValueModel->errors as $key=>$value) {
-        // concatenate the errors if more than one per field.
+      foreach ($attrValueModel->errors as $key => $value) {
+        // Concatenate the errors if more than one per field.
         $this->errors[$fieldId] = array_key_exists($fieldId, $this->errors) ? $this->errors[$fieldId] . '  ' . $value : $value;
       }
       return FALSE;
     }
     $attrValueModel->save();
     if ($wantToUpdateAttrMetadata && !$this->wantToUpdateMetadata) {
-      // we didn't update the parent's metadata. But a custom attribute value has changed, so it makes sense to update it now.
+      // We didn't update the parent's metadata. But a custom attribute value
+      // has changed, so it makes sense to update it now.
       $this->wantToUpdateMetadata = TRUE;
       $this->set_metadata();
       $this->validate(new Validation($this->as_array()), TRUE);
@@ -2270,38 +2277,51 @@ class ORM extends ORM_Core {
 
   /**
    * Load the definition of an attribute from the database (cached)
-   * @param string $attrTable Attribute type name, e.g. sample or occurrence
-   * @param integer $attrId The ID of the attribute
-   * @return Object The definition of the attribute.
+   *
+   * @param string $attrTable
+   *   Attribute type name, e.g. sample or occurrence
+   * @param int $attrId
+   *   The ID of the attribute
+   * @return object
+   *   The definition of the attribute.
+   *
    * @throws Exception When attribute ID not found.
    */
   protected function loadAttrDef($attrType, $attrId) {
-    if (substr($attrId, 0, 3) == 'fk_')
-      // an attribute value lookup
+    if (substr($attrId, 0, 3) == 'fk_') {
+      // An attribute value lookup.
       $attrId = substr($attrId, 3);
+    }
     // Cache ID includes 2 - version number, to prevent old cache records being
     // used after inclusion of allow_ranges field.
     $cacheId = "attrInfo.2_{$attrType}_{$attrId}";
     $this->cache = Cache::instance();
     $attr = $this->cache->get($cacheId);
-    if ($attr===NULL) {
+    if ($attr === NULL) {
       $attr = $this->db
-          ->select('caption', 'data_type', 'multi_value', 'termlist_id', 'validation_rules', 'allow_ranges')
-          ->from($attrType.'_attributes')
-          ->where(array('id'=>$attrId))
-          ->get()->result_array();
-      if (count($attr)===0)
+        ->select('caption', 'data_type', 'multi_value', 'termlist_id', 'validation_rules', 'allow_ranges')
+        ->from($attrType . '_attributes')
+        ->where(['id' => $attrId])
+        ->get()->result_array();
+      if (count($attr) === 0) {
         throw new Exception("Invalid $attrType attribute ID $attrId");
+      }
       $this->cache->set($cacheId, $attr[0]);
       return $attr[0];
-    } else
+    }
+    else {
       return $attr;
+    }
   }
 
   /**
    * Overrideable function to allow some models to handle additional records created on submission.
-   * @param boolean True if this is a new inserted record, false for an update.
-   * @return boolean True if successful.
+   *
+   * @param bool
+   *   True if this is a new inserted record, false for an update.
+   *
+   * @return bool
+   *   True if successful.
    */
   protected function postSubmit($isInsert) {
     return TRUE;
@@ -2324,32 +2344,36 @@ class ORM extends ORM_Core {
    * form post data). The submission is built as a wrapped structure ready to be
    * saved.
    *
-   * @param array $array Associative array of data to submit.
-   * @param boolean $fklink
+   * @param array $array
+   *   Associative array of data to submit.
+   * @param bool $fklink
    */
-  public function set_submission_data($array, $fklink=false) {
+  public function set_submission_data($array, $fklink = FALSE) {
     $this->submission = $this->wrap($array, $fklink);
   }
 
   /**
-  * Wraps a standard $_POST type array into a save array suitable for use in saving
-  * records.
-  *
-  * @param array $array Array to wrap
-  * @param bool $fkLink=false Link foreign keys?
-  * @return array Wrapped array
-  */
-  protected function wrap($array, $fkLink = FALSE)
-  {
+   * Wraps a standard $_POST type array into a save array suitable for use in saving
+   * records.
+   *
+   * @param array $array
+   *  Array to wrap
+   * @param bool $fkLink
+   *   Link foreign keys?
+   *
+   * @return array
+   *   Wrapped array.
+   */
+  protected function wrap($array, $fkLink = FALSE) {
     // share the wrapping library with the client helpers
     require_once(DOCROOT.'client_helpers/submission_builder.php');
     $r = submission_builder::build_submission($array, $this->get_submission_structure());
-      // Map fk_* fields to the looked up id
+    // Map fk_* fields to the looked up id.
     if ($fkLink) {
       $r = $this->getFkFields($r, $array);
     }
     if (array_key_exists('superModels', $r)) {
-      $idx=0;
+      $idx = 0;
       foreach ($r['superModels'] as $super) {
         $r['superModels'][$idx]['model'] = $this->getFkFields($super['model'], $array);
         $idx++;
@@ -2362,28 +2386,38 @@ class ORM extends ORM_Core {
    * Converts any fk_* fields in a save array into the fkFields structure ready to be looked up.
    * [occ|smp|loc|srv|psn]Attr:fk_* are looked up in createAttributeRecord()
    *
-   * @param $submission array Submission containing the foreign key field definitions to convert
-   * @param $saveArray array Original form data being wrapped, which can contain filters to operate against the lookup table
-   * of the form fkFilter:table:field=value.
-   * @return array The submission structure containing the fkFields element.
+   * @param $submission array
+   *   Submission containing the foreign key field definitions to convert
+   * @param $saveArray array
+   *   Original form data being wrapped, which can contain filters to operate
+   *   against the lookup table of the form fkFilter:table:field=value.
+   *
+   * @return array
+   *   The submission structure containing the fkFields element.
    */
   public function getFkFields($submission, $saveArray) {
-    if($this->object_name != $submission['id'])
+    if ($this->object_name != $submission['id']) {
       $submissionModel = ORM::Factory($submission['id'], -1);
-    else $submissionModel = $this;
-    foreach ($submission['fields'] as $field=>$value) {
-      if (substr($field, 0, 3)=='fk_') {
+    }
+    else {
+      $submissionModel = $this;
+    }
+    foreach ($submission['fields'] as $field => $value) {
+      if (substr($field, 0, 3) === 'fk_') {
         // This field is a fk_* field which contains the text caption of a record which we need to lookup.
         // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
-        $fieldTokens = explode(':', substr($field,3));
+        $fieldTokens = explode(':', substr($field, 3));
         $fieldName = $fieldTokens[0];
         if (array_key_exists($fieldName, $submissionModel->belongs_to)) {
           $fkTable = $submissionModel->belongs_to[$fieldName];
-        } elseif (array_key_exists($fieldName, $submissionModel->has_one)) { // this ignores the ones which are just models in list: the key is used to point to another model
+        }
+        elseif (array_key_exists($fieldName, $submissionModel->has_one)) { // this ignores the ones which are just models in list: the key is used to point to another model
           $fkTable = $submissionModel->has_one[$fieldName];
-        } elseif ($submissionModel instanceof ORM_Tree && $fieldName == 'parent') {
+        }
+        elseif ($submissionModel instanceof ORM_Tree && $fieldName == 'parent') {
           $fkTable = inflector::singular($submissionModel->getChildren());
-        } else {
+        }
+        else {
            $fkTable = $fieldName;
         }
         // Create model without initialising, so we can just check the lookup variables

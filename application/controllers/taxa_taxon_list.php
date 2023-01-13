@@ -413,4 +413,91 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller {
     echo json_encode($messages);
   }
 
+  /**
+   * Controller action for AJAX to check if occurrences exist when deleting.
+   *
+   * Informs the delete button UI if occurrences exist for this taxa, giving
+   * the user the chance to replace the taxon with another.
+   */
+  public function check_occurrences() {
+    header("Content-Type: application/json");
+    if (empty($_GET['taxa_taxon_list_id'])) {
+      http_response_code(400);
+      $this->template->content = json_encode(['status' => 400, 'msg' => 'Bad Request']);
+      return;
+    }
+    $taxaTaxonListId = $_GET['taxa_taxon_list_id'];
+    if (!$this->record_authorised($taxaTaxonListId)) {
+      http_response_code(404);
+      $this->template->content = json_encode(['status' => 404, 'msg' => 'Unauthorized']);
+      return;
+    };
+    $sql = <<<SQL
+SELECT 1 FROM occurrences WHERE taxa_taxon_list_id IN (
+  SELECT ttl.id FROM taxa_taxon_lists ttl
+  JOIN taxa_taxon_lists ttlany ON ttlany.taxon_meaning_id=ttl.taxon_meaning_id AND ttlany.id=$taxaTaxonListId
+) AND deleted=false LIMIT 1;
+SQL;
+    $existsCheck = $this->db->query($sql)->current();
+    $this->template->content = json_encode([
+      'status' => 200,
+      'msg' => 'OK',
+      'found' => $existsCheck ? TRUE : FALSE,
+    ]);
+  }
+
+  /**
+   * Additional information for the edit view.
+   *
+   * Returns some addition information required by the edit view, which is not
+   * associated with a particular record.
+   */
+  protected function prepareOtherViewData(array $values) {
+    return [
+      'taxon_lists' => $this->loadPermittedTaxonLists(),
+    ];
+  }
+
+  /**
+   * Retrieves the list of lists that the user has rights to.
+   *
+   * @return array
+   *   List of taxon list titles, keyed by ID.
+   */
+  private function loadPermittedTaxonLists() {
+    $query = $this->db->select('taxon_lists.id, taxon_lists.title')
+      ->from('taxon_lists')
+      ->join('websites', 'websites.id', 'taxon_lists.website_id', 'LEFT')
+      ->orderby('taxon_lists.title')
+      ->where('taxon_lists.deleted', 'f');
+    if (!empty($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
+      $query->in('taxon_lists.website_id', $this->auth_filter['values']);
+      // Actually don't want the public lists.
+      $query->where('taxon_lists.website_id is not null');
+    }
+    $lists = [];
+    foreach ($query->get()->result() as $list) {
+      $lists[$list->id] = $list->title;
+    }
+    return $lists;
+  }
+
+  /**
+   * Override save so we can safely map records to a proposed replacement taxa.
+   */
+  public function save() {
+    if ($this->page_authorised() && $_POST['submit'] == kohana::lang('misc.delete') && !empty($_POST['new_taxa_taxon_list_id'])) {
+      $q = new WorkQueue();
+      $q->enqueue($this->db, [
+        'task' => 'task_replace_taxon',
+        'entity' => 'taxa_taxon_list',
+        'record_id' => $_POST['new_taxa_taxon_list_id'],
+        'params' => json_encode(['old_taxa_taxon_list_id' => $_POST['taxa_taxon_list:id']]),
+        'cost_estimate' => 100,
+        'priority' => 3,
+      ]);
+    }
+    parent::save();
+  }
+
 }
