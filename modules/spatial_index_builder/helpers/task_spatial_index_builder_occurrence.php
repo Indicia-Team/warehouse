@@ -60,7 +60,7 @@ class task_spatial_index_builder_occurrence {
 -- Delete entries which no longer require processing - normally a result of a
 -- deletion since the queue entry created.
 DELETE FROM work_queue q
-FROM occurrences o
+USING occurrences o
 JOIN samples s ON s.id=o.sample_id
 WHERE o.id=q.record_id
 AND q.claimed_by='$procId'
