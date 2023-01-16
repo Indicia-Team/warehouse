@@ -554,7 +554,7 @@ class Import_Controller extends Service_Base_Controller {
           // The genus, specific name and qualifier are all merge fields.
           // However the qualifier is not mandatory, so if a qualifier is not specified, we effectively tell the system it has been specified
           // so that the system doesn't ask for it. Ideally this code should be generalised going forward.
-          if ((in_array('taxon:taxon:genus',$metadata['mappings']) || in_array('taxon:taxon:specific',$metadata['mappings'])) &&  !in_array('taxon:taxon:qualifier',$metadata['mappings'])) {
+          if ((in_array('taxon:taxon:genus', $metadata['mappings']) || in_array('taxon:taxon:specific', $metadata['mappings'])) &&  !in_array('taxon:taxon:qualifier', $metadata['mappings'])) {
             $columns['taxon:taxon:qualifier'] = TRUE;
           }
           if (count($defn['columns']) === count(array_keys($columns))) {
@@ -610,7 +610,7 @@ class Import_Controller extends Service_Base_Controller {
         foreach ($metadata['mappings'] as $col => $attr) {
           // Skip cols to do with remembered mappings.
           if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col !== 'AllowLookup') {
-            if ($index <= count($data)) {
+            if ($index < count($data)) {
               // Not mapped value depends on version of client.
               if ($attr !== '<Not imported>' && $attr !== '<Please select>' && $data[$index] !== '') {
                 // Add the data to the record save array.
@@ -634,7 +634,7 @@ class Import_Controller extends Service_Base_Controller {
         // The genus, specific name and qualifier are all merge fields.
         // However the qualifier is not mandatory, so if a qualifier is not specified, we effectively tell the system it has been specified
         // so that the system doesn't ask for it. Ideally this code should be generalised going forward.
-        if ((array_key_exists('taxon:taxon:genus',$saveArray) || array_key_exists('taxon:taxon:specific',$saveArray)) &&  !array_key_exists('taxon:taxon:qualifier',$saveArray)) {
+        if ((array_key_exists('taxon:taxon:genus', $saveArray) || array_key_exists('taxon:taxon:specific', $saveArray)) &&  !array_key_exists('taxon:taxon:qualifier', $saveArray)) {
           $saveArray['taxon:taxon:qualifier'] = '';
         }
         foreach (array_keys($specialFieldProcessing) as $col) {
