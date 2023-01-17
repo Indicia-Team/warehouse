@@ -223,10 +223,8 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    * * occurrence:record_status
    * * user_id (the verifier)
    * * occurrence_comment:comment (optional comment).
-   * * occurrence:taxa_taxon_list_id (optional ID for redeterminations).
    * Updates the records. This is provided as a more optimised alternative to
-   * using the normal data services calls. If occurrence:taxa_taxon_list_id is
-   * supplied then a redetermination will get triggered for each record.
+   * using the normal data services calls.
    */
   public function list_verify() {
     if (empty($_POST['occurrence:ids'])) {
@@ -255,7 +253,6 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     }
     else {
       try {
-        kohana::log('debug', 'in array_verify');
         $tm = microtime(TRUE);
         $db = new Database();
         $this->authenticate('write');
@@ -300,6 +297,86 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   }
 
   /**
+   * List of records redetermination service end-point.
+   *
+   * Provides the services/data_utils/list_redet service. This takes an the
+   * following parameters in the POST:
+   * * occurrence:ids - a comma separated list of IDs.
+   * * occurrence:taxa_taxon_list_id - the new identification.
+   * * user_id (the verifier)
+   * * occurrence_comment:comment (optional comment).
+   * This is provided as a more optimised alternative to using the normal data
+   * services calls.
+   */
+  public function list_redet() {
+    if (empty($_POST['occurrence:ids'])) {
+      echo 'occurrence:ids not supplied';
+      kohana::log('debug', 'Invalid occurrence:ids to list_redet: ' . var_export($_POST, TRUE));
+      return;
+    }
+    $this->array_redet(explode(',', $_POST['occurrence:ids']));
+  }
+
+  /**
+   * Internal method which provides the code for single or list redet.
+   *
+   * @param array $ids
+   *   Array of IDs.
+   */
+  private function array_redet($ids) {
+    if (empty($_POST['occurrence:taxa_taxon_list_id']) || !preg_match('/^\d+$/', $_POST['occurrence:taxa_taxon_list_id'])) {
+      echo 'occurrence:taxa_taxon_list_id not supplied or invalid';
+    }
+    else {
+      try {
+        $tm = microtime(TRUE);
+        $db = new Database();
+        $this->authenticate('write');
+        // Field updates for the occurrences table and related cache tables.
+        $updates = data_utils::getOccurrenceTableRedetUpdateValues(
+          $db,
+          $this->user_id,
+          $_POST['occurrence:taxa_taxon_list_id'],
+        );
+        // Give the workflow module a chance to rewind or update the values
+        // before updating.
+        data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
+        $q = new WorkQueue();
+        foreach ($ids as $id) {
+          $q->enqueue($db, [
+            'task' => 'task_cache_builder_taxonomy_occurrence',
+            'entity' => 'occurrence',
+            'record_id' => $id,
+            'cost_estimate' => 50,
+            'priority' => 1,
+          ]);
+          if (!empty($_POST['occurrence_comment:comment'])) {
+            $db->insert('occurrence_comments', [
+              'occurrence_id' => $id,
+              'comment' => $this->applyVerificationTemplateReplacements($db, $_POST['occurrence_comment:comment'], $id, 'DT'),
+              'created_by_id' => $this->user_id,
+              'created_on' => date('Y-m-d H:i:s'),
+              'updated_by_id' => $this->user_id,
+              'updated_on' => date('Y-m-d H:i:s'),
+            ]);
+          }
+        }
+        echo 'OK';
+        if (class_exists('request_logging')) {
+          request_logging::log('a', 'data', NULL, 'array_redet', $this->website_id, $this->user_id, $tm, $db, NULL, $ids);
+        }
+      }
+      catch (Exception $e) {
+        echo $e->getMessage();
+        error_logger::log_error('Exception during list redet', $e);
+        if (class_exists('request_logging')) {
+          request_logging::log('a', 'data', NULL, 'array_redet', $this->website_id, $this->user_id, $tm, $db, $e->getMessage(), $ids);
+        }
+      }
+    }
+  }
+
+  /**
    * Apply token replacements to a verification template.
    *
    * @param Database $db
@@ -324,7 +401,7 @@ WHERE o.id=$occurrenceId;
 SQL;
       $occ = $db->query($sql)->current();
       $dateParts = [$occ->date_start, $occ->date_end, $occ->date_type];
-      return strtr($comment, [
+      $replacements = [
         '{{ date }}' => vague_date::vague_date_to_string($dateParts),
         '{{ sref }}' => $occ->output_sref,
         '{{ taxon }}' => $occ->taxon,
@@ -334,7 +411,23 @@ SQL;
         '{{ rank }}' => lcfirst($occ->taxon_rank),
         '{{ action }}' => warehouse::recordStatusCodeToTerm($action),
         '{{ location name }}' => $occ->location_name ?? 'unknown',
-      ]);
+      ];
+      if (!empty($_POST['occurrence:taxa_taxon_list_id']) && preg_match('/\{\{ new [a-z ]+ \}\}/', $comment)) {
+        // A redet so additional fields required for the new taxon.
+        $ttlId = $_POST['occurrence:taxa_taxon_list_id'];
+        $sql = <<<SQL
+SELECT taxon, default_common_name, preferred_taxon, taxon_rank
+FROM cache_taxa_taxon_lists
+WHERE id=$ttlId;
+SQL;
+        $taxonDetails = $db->query($sql)->current();
+        $replacements['{{ new taxon }}'] = $taxonDetails->taxon;
+        $replacements['{{ new common name }}'] = $taxonDetails->default_common_name ?? $taxonDetails->preferred_taxon ?? $taxonDetails->taxon;
+        $replacements['{{ new preferred name }}'] = $taxonDetails->preferred_taxon ?? $taxonDetails->taxon;
+        $replacements['{{ new taxon full name }}'] = $this->getTaxonNameLabel($taxonDetails);
+        $replacements['{{ new rank }}'] = lcfirst($taxonDetails->taxon_rank);
+      }
+      return strtr($comment, $replacements);
     }
     return $comment;
   }
@@ -344,16 +437,16 @@ SQL;
    *
    * Includes the accepted name and common name if there is one.
    *
-   * @param object $occ
-   *   Occurrence data row loaded from the database.
+   * @param object $data
+   *   Data row loaded from the database.
    *
    * @return string
    *   Taxon names string.
    */
-  private function getTaxonNameLabel($occ) {
-    $scientific = $occ->preferred_taxon ?? $occ->taxon;
-    if (!empty($occ->default_common_name) && $occ->default_common_name !== $scientific) {
-      return $scientific . ' (' . $occ->default_common_name . ')';
+  private function getTaxonNameLabel($data) {
+    $scientific = $data->preferred_taxon ?? $data->taxon;
+    if (!empty($data->default_common_name) && $data->default_common_name !== $scientific) {
+      return $scientific . ' (' . $data->default_common_name . ')';
     }
     return $scientific;
   }
