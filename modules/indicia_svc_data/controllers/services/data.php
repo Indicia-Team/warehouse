@@ -518,6 +518,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
    * Provides the /service/data/survey_medium service.
+   *
    * Retrieves details of sample media.
    */
   public function survey_medium() {
@@ -1298,7 +1299,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           if (substr($value, 0, 3) === '%7B') {
             $value = urldecode($value);
           }
-          $this->apply_query_def_to_db($value);
+          $this->applyQueryDefToDb($value);
           break;
 
         case 'mode':
@@ -1405,75 +1406,112 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-   * Takes the value of a query parameter passed to the data service, and processes it to apply the filter conditions
-   * defined in the JSON to $this->db, ready for when the service query is run.
-   * @param string $value The value of the parameter called query, which should contain a JSON object.
-   * @link http://code.google.com/p/indicia/wiki/DataServices#Using_the_query_parameter
+   * Apply a query parameter to the db object.
+   *
+   * Takes the value of a query parameter passed to the data service, and
+   * processes it to apply the filter conditions defined in the JSON to
+   * $this->db, ready for when the service query is run.
+   *
+   * @param string $value
+   *   The value of the parameter called query, which should contain a JSON
+   *   object.
+   *
+   * @link https://indicia-docs.readthedocs.io/en/latest/developing/web-services/data-services-read-dataset.html
    */
-  protected function apply_query_def_to_db($value) {
+  protected function applyQueryDefToDb($value) {
     $query = json_decode($value, TRUE);
-    foreach ($query as $cmd=>$params) {
-      switch(strtolower($cmd)) {
+    foreach ($query as $cmd => $params) {
+      switch (strtolower($cmd)) {
         case 'in':
         case 'notin':
           unset($foundfield);
           unset($foundvalue);
-          foreach($params as $key=>$value) {
+          foreach ($params as $key => $value) {
             if (is_int($key)) {
-              if ($key===0) $foundfield = $value;
-              elseif ($key===1) $foundvalue = $value;
-              else throw new Exception("In clause statement for $key is not of the correct structure");
-            } elseif (is_array($value)) {
-              $this->db->$cmd($this->viewname.'.'.$key,$value);
-            } else {
+              if ($key === 0) {
+                $foundfield = $value;
+              }
+              elseif ($key === 1) {
+                $foundvalue = $value;
+              }
+              else {
+                throw new Exception("In clause statement for $key is not of the correct structure");
+              }
+            }
+            elseif (is_array($value)) {
+              $this->db->$cmd($this->viewname . '.' . $key, $value);
+            }
+            else {
               throw new Exception("In clause statement for $key is not of the correct structure");
             }
           }
-          // if param was supplied in form "cmd = array(field, values)" then foundfield and foundvalue would be set.
+          // If param was supplied in form "cmd = array(field, values)" then
+          // foundfield and foundvalue would be set.
           if (isset($foundfield) && isset($foundvalue))
-            $this->db->$cmd($this->viewname.'.'.$foundfield,$foundvalue);
+            $this->db->$cmd($this->viewname . '.' . $foundfield, $foundvalue);
           break;
+
         case 'where':
         case 'orwhere':
         case 'like':
         case 'orlike':
-          $this_cmd=$cmd;
+          $this_cmd = $cmd;
           unset($foundfield);
           unset($foundvalue);
-          foreach($params as $key=>$value) {
+          foreach ($params as $key => $value) {
             if (is_int($key)) {
-              if ($key===0) $foundfield = $value;
-              elseif ($key===1) $foundvalue = $value;
-              else throw new Exception("In clause statement for $key is not of the correct structure");
-            } elseif (!is_array($value)) {
-              // id fields must be queried by Where clause not Like.
-              $this_cmd = ($key=='id') ? str_replace('like', 'where', $cmd) : $cmd;
-              // Apply the filter command. if we are switching a like to a where clause, but no value is provided, then don't filter because
-              // like '%%' matches anything, but where x='' would break on an int field.
-              if ($this_cmd == $cmd || !empty($value)) $this->db->$this_cmd($key,$value);
-            } else {
+              if ($key === 0) {
+                $foundfield = $value;
+              }
+              elseif ($key === 1) {
+                $foundvalue = $value;
+              }
+              else {
+                throw new Exception("In clause statement for $key is not of the correct structure");
+              }
+            }
+            elseif (!is_array($value)) {
+              // Id fields must be queried by Where clause not Like.
+              $this_cmd = ($key === 'id') ? str_replace('like', 'where', $cmd) : $cmd;
+              // Apply the filter command. if we are switching a like to a
+              // where clause, but no value is provided, then don't filter
+              // because like '%%' matches anything, but where x='' would break
+              // on an int field.
+              if ($this_cmd == $cmd || !empty($value)) {
+                $this->db->$this_cmd($key, $value);
+              }
+            }
+            else {
               throw new Exception("$cmd clause statement for $key is not of the correct structure. ".print_r($params, TRUE));
             }
           }
-          // if param was supplied in form "cmd = array(field, value)" then foundfield and foundvalue would be set.
+          // If param was supplied in form "cmd = array(field, value)" then
+          // foundfield and foundvalue would be set.
           if (isset($foundfield) && isset($foundvalue)) {
             // id fields must be queried by Where clause not Like.
-            if ($foundfield=='id') $this_cmd = str_replace('like', 'where', $cmd);
-            if ($this_cmd == $cmd || !empty($foundvalue)) $this->db->$this_cmd($foundfield,$foundvalue);
-          } elseif (isset($foundfield) && ($cmd==='where' || $cmd==='orwhere')) {
-            // with just 1 parameter passed through, a where can contain something more complex such as an OR in brackets.
+            if ($foundfield === 'id') {
+              $this_cmd = str_replace('like', 'where', $cmd);
+            }
+            if ($this_cmd == $cmd || !empty($foundvalue)) {
+              $this->db->$this_cmd($foundfield, $foundvalue);
+            }
+          }
+          elseif (isset($foundfield) && ($cmd === 'where' || $cmd === 'orwhere')) {
+            // With just 1 parameter passed through, a where can contain
+            // something more complex such as an OR in brackets.
             $this->db->$cmd($foundfield);
           }
           break;
+
         default:
-          kohana::log('error',"Unsupported query command $cmd");
+          kohana::log('error', "Unsupported query command $cmd");
       }
     }
   }
 
   /**
-  * Accepts a submission from POST data and attempts to save to the database.
-  */
+   * Accepts a submission from POST data and attempts to save to the database.
+   */
   public function save() {
     $tm = microtime(TRUE);
     try {
@@ -1486,11 +1524,19 @@ class Data_Controller extends Data_Service_Base_Controller {
             $s = json_decode($_POST['submission'], TRUE);
         }
         $response = $this->submit($s);
-        // return a success message plus the id of the topmost record, e.g. the sample created, plus a summary structure of any other records created.
-        $response = array('success'=>'multiple records', 'outer_table'=>$s['id'], 'outer_id'=>$response['id'], 'struct'=>$response['struct']);
-        // if the saved form contained a transaction Id, return it.
-        if (isset($s['fields']['transaction_id']['value']))
+        // Return a success message plus the id of the topmost record, e.g. the
+        // sample created, plus a summary structure of any other records
+        // created.
+        $response = [
+          'success' => 'multiple records',
+          'outer_table' => $s['id'],
+          'outer_id' => $response['id'],
+          'struct' => $response['struct'],
+        ];
+        // If the saved form contained a transaction Id, return it.
+        if (isset($s['fields']['transaction_id']['value'])) {
           $response['transaction_id'] = $s['fields']['transaction_id']['value'];
+        }
         echo json_encode($response);
       }
       $this->delete_nonce();
