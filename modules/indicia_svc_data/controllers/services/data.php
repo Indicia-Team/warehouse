@@ -19,9 +19,9 @@
  * @link https://github.com/Indicia-Team/warehouse
  */
 
- /**
-  * Controller class for data services request.
-  */
+/**
+ * Controller class for data services request.
+ */
 class Data_Controller extends Data_Service_Base_Controller {
 
   protected $model;
@@ -402,9 +402,9 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Provides the /service/data/occurrence_medium service.
-  * Retrieves details of occurrence media.
-  */
+   * Provides the /service/data/occurrence_medium service.
+   * Retrieves details of occurrence media.
+   */
   public function occurrence_medium() {
     $this->handle_call('occurrence_medium');
   }
@@ -509,10 +509,9 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Provides the /services/data/survey_comment service.
-  */
-  public function survey_comment()
-  {
+   * Provides the /services/data/survey_comment service.
+   */
+  public function survey_comment() {
     $this->handle_call('survey_comment');
   }
 
@@ -1016,12 +1015,11 @@ class Data_Controller extends Data_Service_Base_Controller {
    * the current time is prefixed to the name to make it unique.
    */
   public function handle_media() {
-    try
-    {
+    try {
       // Ensure we have write permissions.
       $this->authenticate();
-      // We will be using a POST array to send data, and presumably a FILES array for the
-      // media.
+      // We will be using a POST array to send data, and presumably a FILES
+      // array for the media.
       // Upload size.
       $ups = Kohana::config('indicia.maxUploadSize');
       // Get comma separated list of allowed file types.
@@ -1042,38 +1040,41 @@ class Data_Controller extends Data_Service_Base_Controller {
         "upload::type[$types]", "upload::size[$ups]"
       );
       if ($_FILES->validate()) {
-        if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true')
+        if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid'] == 'true') {
           $finalName = strtolower($_FILES['media_upload']['name']);
-        else
-          $finalName = time().strtolower($_FILES['media_upload']['name']);
-        // time is approx 10 characters long at the moment & will be for forseeable future
-        // If we use first 3 sets of pairs for directory name, then will get a new directory every 3 hours.
+        }
+        else {
+          $finalName = time() . strtolower($_FILES['media_upload']['name']);
+        }
+        // Time is approx 10 characters long at the moment & will be for
+        // forseeable future. If we use first 3 sets of pairs for directory
+        // name, then will get a new directory every 3 hours.
         $levels = Kohana::config('upload.use_sub_directory_levels');
-        $subdir = "";
+        $subdir = '';
         $directory = Kohana::config('upload.directory', TRUE);
-        if($levels){
-          $now = (string)time();
-          for($i = 0; $i < $levels; $i++){
-            $dirname=substr($now,0,2);
-            if(strlen($dirname)){
-              $subdir .= $dirname.'/';
-              $now = substr($now,2);
+        if ($levels) {
+          $now = (string) time();
+          for ($i = 0; $i < $levels; $i++) {
+            $dirname = substr($now, 0, 2);
+            if (strlen($dirname)) {
+              $subdir .= $dirname . '/';
+              $now = substr($now, 2);
             }
           }
-          if($subdir != "" && !is_dir($directory.$subdir)){
-            kohana::log('debug', 'Creating Directory '.$directory.$subdir);
-            mkdir($directory.$subdir, 0755 , TRUE);
+          if ($subdir != "" && !is_dir($directory . $subdir)){
+            kohana::log('debug', "Creating Directory $directory$subdir");
+            mkdir($directory . $subdir, 0755, TRUE);
           }
         }
-        $fTmp = upload::save('media_upload', $finalName, $directory.$subdir);
+        $fTmp = upload::save('media_upload', $finalName, $directory . $subdir);
         Image::create_image_files($directory, basename($fTmp), $subdir, $this->website_id);
-        $this->response=$subdir.basename($fTmp);
+        $this->response = $subdir . basename($fTmp);
         $this->send_response();
-        kohana::log('debug', 'Successfully uploaded media to '. $subdir.basename($fTmp));
+        kohana::log('debug', 'Successfully uploaded media to ' . $subdir . basename($fTmp));
       }
       else {
-        kohana::log('info', 'Validation errors uploading media '. $_FILES['media_upload']['name']);
-        Throw new ValidationError('Validation error', 2003, $_FILES->errors('form_error_messages'));
+        kohana::log('info', 'Validation errors uploading media ' . $_FILES['media_upload']['name']);
+        throw new ValidationError('Validation error', 2003, $_FILES->errors('form_error_messages'));
       }
     }
     catch (Exception $e) {
@@ -1223,8 +1224,9 @@ class Data_Controller extends Data_Service_Base_Controller {
    * Works out what filter and other options to set on the db object according to the
    * $_REQUEST parameters currently available, when retrieving a list of items.
    *
-   * @param boolean $count
-   *   Set to true when doing a count query, so the limit and offset are skipped.
+   * @param bool $count
+   *   Set to true when doing a count query, so the limit and offset are
+   *   skipped.
    */
   protected function apply_get_parameters_to_db($count = FALSE) {
     $sortdir = [];
@@ -1563,33 +1565,36 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Takes a submission array and attempts to save to the database. The submission array
   * can either contain a submission list or a single submission.
   */
-  protected function submit($s)
-  {
+  protected function submit($s) {
     kohana::log('info', 'submit');
-    if (array_key_exists('submission_list',$s)) {
-      foreach ($s['submission_list']['entries'] as $m)
-      {
+    if (array_key_exists('submission_list', $s)) {
+      foreach ($s['submission_list']['entries'] as $m) {
         $r = $this->submit_single($m);
       }
-    } else {
+    }
+    else {
       $r = $this->submit_single($s);
     }
     return $r;
   }
 
   /**
-  * Takes a single submission entry and attempts to save to the database.
-  */
+   * Takes a single submission entry and attempts to save to the database.
+   */
   protected function submit_single($item) {
     $model = ORM::factory($item['id']); // id is the entity.
     $this->check_update_access($item['id'], $item);
     $model->submission = $item;
-    ORM::$authorisedWebsiteId=$this->website_id;
+    ORM::$authorisedWebsiteId = $this->website_id;
     $result = $model->submit();
-    if (!$result)
+    if (!$result) {
       throw new ValidationError('Validation error', 2003, $model->getAllErrors());
-    // return the outermost model's id
-    return array('id'=>$model->id, 'struct'=>$model->getSubmissionResponseMetadata());
+    }
+    // Return the outermost model's id.
+    return [
+      'id' => $model->id,
+      'struct' => $model->getSubmissionResponseMetadata(),
+    ];
   }
 
  /**
@@ -1597,10 +1602,9 @@ class Data_Controller extends Data_Service_Base_Controller {
   * The submission array is checked to see if there is a primary key ('id').
   * Returns true if access OK, otherwise throws an exception.
   */
-  protected function check_update_access($entity, $s)
-  {
+  protected function check_update_access($entity, $s) {
     if (!in_array($entity, $this->allow_updates)) {
-      // check if an extension module declares write access to this entity
+      // Check if an extension module declares write access to this entity.
       $this->loadExtensions($entity);
     }
     if (!in_array($entity, $this->allow_updates)) {
@@ -1608,52 +1612,60 @@ class Data_Controller extends Data_Service_Base_Controller {
       Kohana::log('info', $msg);
       throw new EntityAccessError($msg, 2002);
     }
-    if (array_key_exists('id', $s['fields']))
-      if (is_numeric($s['fields']['id']['value']))
-        // there is an numeric id field so modifying an existing record
+    if (array_key_exists('id', $s['fields'])) {
+      if (is_numeric($s['fields']['id']['value'])) {
+        // There is an numeric id field so modifying an existing record.
         if (!$this->check_record_access($entity, $s['fields']['id']['value'],
             isset($_REQUEST['sharing']) && $_REQUEST['sharing'] !== 'reporting' ? $_REQUEST['sharing'] : FALSE)) {
           $msg = "Attempt to update existing record failed - website_id $this->website_id does not match website for " .
-              "$entity id ".$s['fields']['id']['value'];
+              "$entity id " . $s['fields']['id']['value'];
           Kohana::log('info', $msg);
           throw new AuthorisationError($msg, 2001);
         }
+      }
+    }
     return TRUE;
   }
 
-  protected function check_record_access($entity, $id, $sharing=FALSE)
-  {
-    // if $id is null, then we have a new record, so no need to check if we have access to the record
-    if (is_null($id))
+  protected function check_record_access($entity, $id, $sharing = FALSE) {
+    // If $id is null, then we have a new record, so no need to check if we
+    // have access to the record.
+    if (is_null($id)) {
       return TRUE;
-    $viewname=$this->get_view_name($entity, 'list');
+    }
+    $viewname = $this->get_view_name($entity, 'list');
 
-    if (!$this->db)
+    if (!$this->db) {
       $this->db = new Database();
+    }
     $fields = postgreSQL::list_fields($viewname, $this->db);
-    if(empty($fields)) {
-      Kohana::log('info', $viewname.' not present so cannot access entity');
-      throw new EntityAccessError('Access to entity '.$entity.' not available via requested view.', 1003);
+    if (empty($fields)) {
+      Kohana::log('info', $viewname . ' not present so cannot access entity');
+      throw new EntityAccessError('Access to entity ' . $entity . ' not available via requested view.', 1003);
     }
     $this->db->from("$viewname as record");
-    $this->db->where(array('record.id' => $id));
+    $this->db->where(['record.id' => $id]);
 
     if (!in_array($entity, $this->allow_full_access)) {
       if (array_key_exists('website_id', $fields)) {
-        // check if a request for shared data is being made. Also check this is valid to prevent injection.
+        // Check if a request for shared data is being made. Also check this is
+        // valid to prevent injection.
         if ($sharing && preg_match('/(reporting|peer_review|verification|data_flow|moderation|editing)/', $sharing)) {
-          // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So
-          // we can use this to work out access to other website data.
-          $this->db->join('index_websites_website_agreements as iwwa', array(
-              'iwwa.from_website_id'=>'record.website_id',
-              'iwwa.provide_for_'.$sharing."='t'"=>''
-          ), NULL, 'LEFT');
+          // Request specifies the sharing mode (i.e. the task being performed,
+          // such as verification, moderation). So we can use this to work out
+          // access to other website data.
+          $this->db->join('index_websites_website_agreements as iwwa', [
+              'iwwa.from_website_id' => 'record.website_id',
+              'iwwa.provide_for_' . $sharing . "='t'" => ''
+          ], NULL, 'LEFT');
           $this->db->where("(record.website_id IS NULL OR iwwa.to_website_id=$this->website_id)");
-        } else {
-          $this->db->in('record.website_id', array(null, $this->website_id));
         }
-      } elseif (!$this->in_warehouse) {
-        Kohana::log('info', $viewname.' does not have a website_id - access denied');
+        else {
+          $this->db->in('record.website_id', [NULL, $this->website_id]);
+        }
+      }
+      elseif (!$this->in_warehouse) {
+        Kohana::log('info', "$viewname does not have a website_id - access denied");
         throw new EntityAccessError('No access to entity ' . $entity . ' allowed.', 1004);
       }
     }
