@@ -532,14 +532,21 @@ SQL;
   }
 
   /**
-   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   * Fixed values form for import.
+   *
+   * Define a form that is used to capture a set of predetermined values that
+   * apply to every record during an import.
    *
    * @param array $options
    *   Model specific options, including
-   *   * **occurrence_associations** - Set to 't' to enable occurrence associations options. The
-   *     relevant warehouse module must also be enabled.
+   *   * **occurrence_associations** - Set to 't' to enable occurrence
+   *     associations options. The relevant warehouse module must also be
+   *     enabled.
+   *
+   * @return array
+   *   List of control definitions.
    */
-  public function fixedValuesForm($options = []) {
+  public function fixedValuesForm(array $options = []) {
     $srefs = [];
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title) {

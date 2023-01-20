@@ -71,6 +71,13 @@ class ReportEngine {
   private $doneStandardParamJoins = [];
 
   /**
+   * Database connection for reports.
+   *
+   * @var Database
+   */
+  private $reportDb;
+
+  /**
    * List of filters to put in HAVING.
    *
    * @var array
@@ -110,6 +117,13 @@ class ReportEngine {
   private $authorisedReports = [];
 
   /**
+   * Column definitions loaded for the report.
+   *
+   * @var array
+   */
+  private $columns;
+
+  /**
    * Constructor.
    *
    * @param array $websiteIds
@@ -125,7 +139,7 @@ class ReportEngine {
     $this->websiteIds = $websiteIds;
     $this->userId = $userId;
     $this->localReportDir = Kohana::config('indicia.localReportDir');
-    $this->reportDb = $db === NULL ? new Database('report') : $db;
+    $this->reportDb = $db ?? new Database('report');
   }
 
   /**
@@ -184,7 +198,8 @@ class ReportEngine {
     $dir = opendir($fullPath);
 
     while (FALSE !== ($file = readdir($dir))) {
-      // The following skips the tmp folder in the report root as this is used for provided reports.
+      // The following skips the tmp folder in the report root as this is used
+      // for provided reports.
       if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file") &&
           ($file !== 'tmp' || $path !== '/')) {
         $folderInfo = [

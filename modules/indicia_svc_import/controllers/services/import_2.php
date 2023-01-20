@@ -829,6 +829,7 @@ SQL;
     header("Content-Type: application/json");
     try {
       $this->authenticate('write');
+      ORM::$authorisedWebsiteId = $this->website_id;
       if ($this->in_warehouse) {
         // Refresh session in case on the same page for a while.
         Session::instance();

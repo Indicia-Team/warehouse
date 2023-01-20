@@ -773,7 +773,7 @@ class ORM extends ORM_Core {
       $this->postProcess();
     }
     catch (Exception $e) {
-      $this->errors['general'] = '<strong>An error occurred</strong><br/>' . $e->getMessage();
+      $this->errors['general'] = 'An error occurred: ' . $e->getMessage();
       error_logger::log_error('Exception during submit.', $e);
       $res = NULL;
     }
@@ -1108,6 +1108,31 @@ class ORM extends ORM_Core {
   }
 
   /**
+   * Permissions check if accessing a different website to the one authorised.
+   *
+   * @param int $authorisedWebsiteId
+   *   Website ID passed with authentication.
+   * @param int $otherWebsiteId
+   *   Website ID that is being accessed.
+   * @param string $sharingMode
+   *   Sharing mode to check for, e.g. editing.
+   */
+  private function checkHasWebsiteRights($authorisedWebsiteId, $otherWebsiteId, $sharingMode) {
+    if ((integer) $authorisedWebsiteId === 0 || $authorisedWebsiteId == $otherWebsiteId) {
+      // Warehouse access with full rights, or authorised on the same website.
+      return;
+    }
+    $sql = <<<SQL
+SELECT count(*) FROM index_websites_website_agreements
+WHERE to_website_id=$authorisedWebsiteId and from_website_id=$otherWebsiteId
+AND provide_for_$sharingMode=true
+SQL;
+    if ((integer) $this->db->query($sql)->current()->count === 0) {
+      throw new Exception('Access to this website denied.', 2001);
+    }
+  }
+
+  /**
    * Actually validate and submit the inner submission.
    *
    * @return int
@@ -1122,12 +1147,11 @@ class ORM extends ORM_Core {
     $vArray = array_map(function ($arr) {
       return is_array($arr) ? $arr["value"] : $arr;
     }, $this->submission['fields']);
-    if (!empty($vArray['website_id']) && !empty(self::$authorisedWebsiteId) &&
-        $vArray['website_id'] !== self::$authorisedWebsiteId) {
-      throw new Exception('Access to write to this website denied.', 2001);
+    if (!empty($vArray['website_id']) && $vArray['website_id'] !== self::$authorisedWebsiteId) {
+      $this->checkHasWebsiteRights(self::$authorisedWebsiteId, $vArray['website_id'], 'editing');
     }
     // If we're editing an existing record, merge with the existing data.
-    // NB id is 0, not null, when creating a new user
+    // NB id is 0, not null, when creating a new user.
     if (array_key_exists('id', $vArray) && $vArray['id'] != NULL && $vArray['id'] != 0) {
       $this->find($vArray['id']);
       $thisValues = $this->as_array();
@@ -1137,6 +1161,10 @@ class ORM extends ORM_Core {
       // verification portals end up grabbing records to their own website ID.
       if (!empty($thisValues['website_id']) && !empty($vArray['website_id'])) {
         unset($vArray['website_id']);
+        // This means we have a request to update a record come in from a
+        // different website to the origin. So check edit rights on the
+        // origin...
+        $this->checkHasWebsiteRights(self::$authorisedWebsiteId, $thisValues['website_id'], 'editing');
       }
       // If there are no changed fields between the current and new record,
       // skip the metadata update. We have the problem that array objects

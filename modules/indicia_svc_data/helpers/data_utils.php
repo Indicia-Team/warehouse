@@ -54,6 +54,20 @@ class data_utils {
   }
 
   /**
+   * Retrieves the values that must change for each entity after a verification.
+   */
+  public static function getOccurrenceTableRedetUpdateValues($db, $userId, $taxaTaxonListId) {
+    // Field updates for the occurrences table.
+    $r['occurrences'] = [
+      'taxa_taxon_list_id' => $taxaTaxonListId,
+      'updated_by_id' => $userId,
+      'updated_on' => date('Y-m-d H:i:s'),
+    ];
+    // Work queue will update the cache tables.
+    return $r;
+  }
+
+  /**
    * Applies workflow changes to updates to apply to occurrence data.
    *
    * This gives the workflow module (if installed) the chance to alter the
@@ -174,15 +188,20 @@ class data_utils {
       ->set($updates['occurrences'])
       ->in('id', $idList)
       ->update();
-    // Since we bypass ORM here for performance, update the cache_occurrences_* tables.
-    $db->from('cache_occurrences_functional')
-      ->set($updates['cache_occurrences_functional'])
-      ->in('id', $idList)
-      ->update();
-    $db->from('cache_occurrences_nonfunctional')
-      ->set($updates['cache_occurrences_nonfunctional'])
-      ->in('id', $idList)
-      ->update();
+    // Since we bypass ORM here for performance, update the cache_occurrences_*
+    // tables.
+    if (isset($updates['cache_occurrences_functional'])) {
+      $db->from('cache_occurrences_functional')
+        ->set($updates['cache_occurrences_functional'])
+        ->in('id', $idList)
+        ->update();
+    }
+    if (isset($updates['cache_occurrences_nonfunctional'])) {
+      $db->from('cache_occurrences_nonfunctional')
+        ->set($updates['cache_occurrences_nonfunctional'])
+        ->in('id', $idList)
+        ->update();
+    }
   }
 
   /**

@@ -1,3 +1,13 @@
+# Version 8.14.0
+*2023-01-20*
+
+* Permissions changes relating to the ability to use the importer to import records into a
+  different website to the one authorised. The other website must provide editing rights
+  via a sharing agreement. Relates to https://github.com/BiologicalRecordsCentre/iRecord/issues/1396.
+* Add new endpoints to the data_utils service for bulk redetermination using the verification tools.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/674.
+* Improves search performance for taxon groups in the filter builder tool.
+
 # Version 8.13.0
 *2023-01-13*
 
