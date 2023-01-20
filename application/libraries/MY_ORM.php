@@ -1118,8 +1118,8 @@ class ORM extends ORM_Core {
    *   Sharing mode to check for, e.g. editing.
    */
   private function checkHasWebsiteRights($authorisedWebsiteId, $otherWebsiteId, $sharingMode) {
-    if ((integer) $authorisedWebsiteId === 0) {
-      // Warehouse access with full rights.
+    if ((integer) $authorisedWebsiteId === 0 || $authorisedWebsiteId == $otherWebsiteId) {
+      // Warehouse access with full rights, or authorised on the same website.
       return;
     }
     $sql = <<<SQL
