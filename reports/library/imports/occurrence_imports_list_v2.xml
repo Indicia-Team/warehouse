@@ -1,0 +1,29 @@
+<report
+    title="List of occurrence imports (v2 importer)"
+    description="Lists each import event and the count of records added by it."
+>
+  <query>
+    SELECT #columns#
+    FROM imports i
+    JOIN users u ON u.id=i.created_by_id
+    JOIN people p ON p.id=u.person_id
+    WHERE website_id in (#sharing_website_ids#)
+  </query>
+  <order_bys>
+    <order_by>i.created_on</order_by>
+  </order_bys>
+  <params>
+    <param name="currentUser" display="User ID" datatype="integer">
+      <where>i.created_by_id=#currentUser#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" sql="i.id" in_count="true" visible="false" datatype="integer" />
+    <column name="website_id" sql="i.website_id" visible="false" datatype="integer"  />
+    <column name="import_guid" sql="i.import_guid" visible="false" datatype="text" />
+    <column name="date_time" display="Date/time started" sql="i.created_on" datatype="date" />
+    <column name="imported_by" display="Imported by" sql="coalesce(p.first_name || ' ', '') || p.surname" datatype="text" />
+    <column name="records" display="# Records" sql="i.inserted + i.updated" datatype="integer" />
+    <column name="description" display="Description" sql="i.description" datatype="text" />
+  </columns>
+</report>
