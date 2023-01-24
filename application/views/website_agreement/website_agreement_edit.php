@@ -27,7 +27,7 @@ $id = html::initial_value($values, 'website_agreement:id');
 ?>
 <form action="<?php echo url::site() . 'website_agreement/save' ?>" method="post" id="entry_form">
   <fieldset>
-    <legend>Website Agreement Details<?php echo $metadata; ?></legend>
+    <legend>Website data sharing agreement details<?php echo $metadata; ?></legend>
     <input type="hidden" name="website_agreement:id" value="<?php echo html::initial_value($values, 'website_agreement:id'); ?>" />
     <?php
     echo data_entry_helper::text_input([
