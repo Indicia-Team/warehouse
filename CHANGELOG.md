@@ -1,3 +1,8 @@
+# Version 8.15.0
+*2023-01-24*
+
+* Adds import_guid field to list of fields extracted to Elasticsearch for an occurrrence document.
+
 # Version 8.14.0
 *2023-01-20*
 

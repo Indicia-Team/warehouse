@@ -24,24 +24,26 @@
  */
 class Trigger_Model extends ORM {
 
-  protected $has_many = array('trigger_actions');
+  protected $has_many = ['trigger_actions'];
 
-  protected $belongs_to = array(
-    'created_by'=>'user',
-    'updated_by'=>'user'
-  );
+  protected $belongs_to = [
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  ];
 
-  public $search_field='name';
+  public $search_field = 'name';
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('name', 'required', 'length[1,100]');
     $array->add_rules('trigger_template_file', 'required');
     $array->add_rules('params_json', 'required');
     $values = $array->as_array();
-    $array['public'] = (isset($values['public']) && ($values['public']=='on' || $values['public']==1)) ? 't' : 'f';
-    $this->unvalidatedFields = array('description','public');
+    $array['public'] = (isset($values['public']) && ($values['public'] == 'on' || $values['public'] == 1)) ? 't' : 'f';
+    $this->unvalidatedFields = ['description', 'public'];
     return parent::validate($array, $save);
   }
+
 }
