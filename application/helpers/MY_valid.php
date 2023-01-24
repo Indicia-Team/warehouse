@@ -66,7 +66,7 @@ class Valid extends valid_Core {
   /**
    * Checks that a date string can be correctly parsed into a vague date.
    *
-   * @param	string $sDate
+   * @param string $sDate
    *   Date string.
    *
    * @return bool

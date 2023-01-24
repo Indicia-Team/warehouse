@@ -69,7 +69,7 @@ HTML;
    * loaded from the $_POST array (if reloading after a failed attempt to save)
    * or from the model or initial default value otherwise.
    *
-   * @param ORM $values
+   * @param array $values
    *   List of values to load in an array.
    * @param string $fieldname
    *   The fieldname should be of form model:fieldname. If the model part
