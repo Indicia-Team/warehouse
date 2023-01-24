@@ -31,18 +31,18 @@ class Base_Name_Model extends ORM_Tree {
 
   protected function parseRelatedNames($value, $parser) {
     $arrLine = explode("\n", trim($value));
-    $arrNames = array();
+    $arrNames = [];
 
     foreach ($arrLine as $line) {
       if (trim($line) == '') {
         break;
       }
-      $c = array();
+      $c = [];
       $b = preg_split("/(?<!\\\\ )\|/", $line);
       foreach ($b as $d) {
         $c[] = trim($d);
       }
-      call_user_func_array(array($this, $parser), array($c, &$arrNames));
+      call_user_func_array([$this, $parser], [$c, &$arrNames]);
     }
     return $arrNames;
   }

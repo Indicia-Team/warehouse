@@ -8,8 +8,9 @@ class Indicia {
   }
 
   /**
-   * Implements the deletion of old logs if the indicia.log_rotate config item exists
-   * @throws \Kohana_Exception
+   * Deletion of old log files.
+   *
+   * Implements the deletion of old logs if the indicia.log_rotate config item exists.
    */
   public static function log_rotate() {
     $rotate_days = Kohana::config('indicia.log_rotate', FALSE, FALSE);
@@ -32,7 +33,7 @@ class Indicia {
    * Convert PHP errors to exceptions so that they can be handled nicely.
    */
   public static function indicia_error_handler($errno, $errstr, $errfile, $errline) {
-    // if error reporting has been switched off completely we don't want to
+    // If error reporting has been switched off completely we don't want to
     // convert the error to an exception. Also ignores errors suppressed by
     // @.
     if (!(error_reporting() & $errno)) {
