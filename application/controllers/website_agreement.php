@@ -37,7 +37,7 @@ class Website_agreement_Controller extends Gridview_Base_Controller
         'description' => ''
     );
 
-    $this->pagetitle = "Website Agreements";
+    $this->pagetitle = "Website data sharing agreements";
     $this->set_website_access('admin');
   }
 

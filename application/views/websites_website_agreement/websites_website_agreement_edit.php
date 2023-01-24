@@ -81,7 +81,7 @@ data_entry_helper::$javascript .= "
 ?>
 <form action="<?php echo url::site() . 'websites_website_agreement/save' ?>" method="post" id="entry_form">
   <fieldset>
-    <legend>Website Agreement Participation Details<?php echo $metadata; ?></legend>
+    <legend>Website data sharing agreement participation details<?php echo $metadata; ?></legend>
     <input type="hidden" name="websites_website_agreement:id" value="<?php echo html::initial_value($values, 'websites_website_agreement:id'); ?>" />
     <input type="hidden" name="websites_website_agreement:website_id" value="<?php echo html::initial_value($values, 'websites_website_agreement:website_id'); ?>" />
 
@@ -92,8 +92,8 @@ data_entry_helper::$javascript .= "
     }
     echo data_entry_helper::select([
       'id' => 'agreement-select',
-      'label' => 'Agreement to participate in',
-      'helpText' => 'Select the agreement that this website should belong to',
+      'label' => 'Data sharing agreement to participate in',
+      'helpText' => 'Select the data sharing agreement that this website should belong to',
       'fieldname' => 'websites_website_agreement:website_agreement_id',
       'default' => html::initial_value($values, 'websites_website_agreement:website_agreement_id'),
       'labelClass' => 'control-width-4',
