@@ -13,14 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
- * @subpackage Data services
- * @author	Indicia Team
+ * @author Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link http://code.google.com/p/indicia/
  */
 
-$config['actions'] = array(
+$config['actions'] = [
   // key will be the URL action, e.g. data_utils/process_ecmc_import
   'process_ecmc_import' => array(
     // name of the stored procedure in the database
@@ -42,4 +40,11 @@ $config['actions'] = array(
       '[1]'
     )
   )
-);
+];
+
+$config['bulk_move_allowed_mappings'] = [
+  [
+    'src' => ['website_id' => 1, 'survey_id' => 1],
+    'dest' => ['website_id' => 2, 'survey_id' => 2],
+  ],
+];

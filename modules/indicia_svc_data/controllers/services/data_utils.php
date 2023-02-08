@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @subpackage Data
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
 /**
@@ -501,7 +499,7 @@ SQL;
             'created_on' => date('Y-m-d H:i:s'),
             'updated_by_id' => $this->user_id,
             'updated_on' => date('Y-m-d H:i:s'),
-            'record_status' => $_POST['sample:record_status']
+            'record_status' => $_POST['sample:record_status'],
           ));
         }
         echo 'OK';
@@ -594,7 +592,6 @@ SQL;
    * The response is an HTTP response containing the following:
    * * action - either delete or none (for trial runs)
    * * affected - a list of entities with the count of affected records.
-   *
    */
   public function bulk_delete_occurrences() {
     header('Content-Type: application/json');
@@ -673,15 +670,266 @@ SQL;
     }
   }
 
-  private function fail($message, $code, $text) {
-    $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-    header($protocol . ' ' . $code . ' ' . $message);
-    $response = array(
+  /**
+   * Emits a failure HTTP response.
+   *
+   * @param string $status
+   *   Response status, e.g. Unauthorized or Bad Request.
+   * @param int $code
+   *   Response code, e.g. 401.
+   * @param string $text
+   *   Text to include in response.
+   */
+  private function fail($status, $code, $text) {
+    $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.0';
+    header($protocol . ' ' . $code . ' ' . $status);
+    $response = [
       'code' => $code,
-      'status' => $message,
+      'status' => $status,
       'message' => $text,
-    );
+    ];
+    kohana::log('alert', 'Data utils fail called: ' . $text);
     echo json_encode($response);
+  }
+
+  /**
+   * Checks that the POST data contains the required parameters for a bulk move.
+   *
+   * Also checks the auth_user_id is available from the authentication tokens.
+   *
+   * @return bool
+   *   TRUE if required parameters available in $_POST.
+   */
+  private function checkBulkMovePostParams() {
+    if (empty($this->auth_user_id) || $this->auth_user_id === -1) {
+      $this->fail('Unauthorized', 401, 'User ID not specified in authentication tokens. Requires an upgraded iform module.');
+      return FALSE;
+    }
+    if (!isset($_POST['occurrence:ids'])) {
+      $this->fail('Bad Request', 400, 'The occurrence:ids parameter was not provided.');
+      return FALSE;
+    }
+    if (empty($_POST['occurrence:ids'])) {
+      $this->fail('Bad Request', 400, 'There are no occurrences to move.');
+      return FALSE;
+    }
+    if (!preg_match('/\d+(,\d+)*/', $_POST['occurrence:ids'])) {
+      $this->fail('Bad Request', 400, 'Incorrect format for occurrence:ids parameter.');
+      return FALSE;
+    }
+    if (empty($_POST['datasetMappings'])) {
+      $this->fail('Bad Request', 400, 'The datasetMappings parameter was not provided.');
+      return FALSE;
+    }
+    return TRUE;
+  }
+
+  /**
+   * Checks that the proposed list of occurrence IDs is OK to move.
+   *
+   * Before a bulk move, checks:
+   * * Occurrences are all in surveys that the request wants to move records
+   *   out of.
+   * * None of the occurrences are confidential.
+   * * All occurrences belong to the authorised user.
+   *
+   * Emits a failure response if appropriate.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param string $occurrenceIdList
+   *   CSV List of occurrences to check.
+   * @param array $validSrcSurveyIds
+   *   CSV list of valid survey IDs to move occurrences from.
+   * @param object $result
+   *   Results of the database count query will be returned in this parameter.
+   *
+   * @return bool
+   *   True if OK, else false.
+   */
+  private function precheckBulkMoveOccurrences($db, $occurrenceIdList, $validSrcSurveyIds, &$result) {
+    $validSrcSurveyList = implode(',', $validSrcSurveyIds);
+    $qry = <<<SQL
+SELECT SUM(CASE WHEN s.survey_id IN ($validSrcSurveyList) THEN 0 ELSE 1 END) as invalid_survey_count,
+  SUM(CASE WHEN o.confidential THEN 1 ELSE 0 END) as confidential_count,
+  SUM(CASE WHEN o.created_by_id<>$this->auth_user_id THEN 1 ELSE 0 END) as other_user_count,
+  COUNT(o.id) as occurrence_count,
+  COUNT(s.id) as sample_count
+FROM occurrences o
+JOIN samples s ON s.id=o.sample_id AND s.deleted=false
+WHERE o.id IN ($occurrenceIdList)
+AND o.deleted=false
+SQL;
+    $result = $db->query($qry)->current();
+    $invalidSurveyCount = $result->invalid_survey_count;
+    if ($invalidSurveyCount > 0) {
+      $this->fail('Bad Request', 400, 'Attempt to move occurrences that are not in the correct survey dataset.');
+      return FALSE;
+    }
+    $confidentialCount = $result->confidential_count;
+    if ($confidentialCount > 0) {
+      $this->fail('Bad Request', 400, 'Attempt to move occurrences that are confidential is disallowed.');
+      return FALSE;
+    }
+    $otherUserCount = $result->other_user_count;
+    if ($otherUserCount > 0) {
+      $this->fail('Bad Request', 400, 'Attempt to move occurrences that were input by other users is disallowed.');
+      return FALSE;
+    }
+    // Check affected samples don't contain records not in the move request.
+    $qry = <<<SQL
+SELECT o2.id as excluded_id, o.id as included_id, o2.sample_id
+FROM occurrences o
+JOIN occurrences o2 ON o2.sample_id=o.sample_id AND o2.deleted=false
+WHERE o.id IN ($occurrenceIdList)
+AND o2.id NOT IN ($occurrenceIdList)
+AND o.deleted=false
+LIMIT 1;
+SQL;
+    $results = $db->query($qry)->current();
+    if ($results) {
+      $this->fail('Bad Request', 400, 'Cannot move occurrences if other occurrences within the same sample are not being moved. ' .
+        "For example, sample $results->sample_id for occurrence $results->included_id also contains occurrence $results->excluded_id which is not in the list of records to move.");
+      return FALSE;
+    }
+    return TRUE;
+  }
+
+  /**
+   * Ensure edit rights available to all websites impacted by a bulk move.
+   */
+  private function checkWebsitesAuthorisedForMove($db, $impactedWebsiteIds) {
+    $impactedWebsiteList = implode(',', $impactedWebsiteIds);
+    $qry = <<<SQL
+SELECT count(*)
+FROM websites w
+WHERE w.id IN ($impactedWebsiteList)
+AND w.id NOT IN (SELECT from_website_id FROM index_websites_website_agreements WHERE provide_for_editing=true AND to_website_id=$this->website_id);
+SQL;
+    if ($db->query($qry)->current()->count > 0) {
+      $this->fail('Unauthorized', 401, 'Request to move occurrences from websites that don\'t provide editing rights.');
+      return FALSE;
+    }
+    return TRUE;
+  }
+
+  /**
+   * Controller action for the bulk move end-point.
+   *
+   * Moves a list of records from one website/survey to another. Limited to a
+   * user's own records and allowed combinations of source/dest surveys and
+   * websites only.
+   *
+   * Batches of IDs submitted must be in sample ID order, with all records for
+   * a sample within a batch, as it is not possible to move some records and
+   * not others because this action affects the both the sample and occurrence
+   * tables.
+   *
+   * POST parameters:
+   * * occurrence:ids - CSV List of occurrences.
+   * * datasetMappings - requested mapping in JSON format, containing
+   *   properties called src and dest. Each contains a property for the
+   *   website_id and survey_id.
+   * * precheck - must be set to 'f'' to actually take any action, otherwise a
+   *   precheck is performed to validate that the selection of records to move
+   *   is allowed.   *
+   */
+  public function bulk_move() {
+    header('Content-Type: application/json');
+    $tm = microtime(TRUE);
+    $this->authenticate('write');
+    if (!$this->checkBulkMovePostParams()) {
+      kohana::log('debug', 'Bulk move post params failed');
+      return;
+    }
+    // @todo Check move from and to websites are authorised for editing according to authenticated website's sharing.
+    $datasetMappings = json_decode($_POST['datasetMappings']);
+    if (empty($datasetMappings)) {
+      $this->fail('Bad Request', 400, 'The datasetMappings parameter was not valid JSON.');
+      kohana::log('debug', 'Bulk move mappings contain invalid JSON: ' . $_POST['datasetMappings']);
+      return;
+    }
+    // Validate that list of website/survey mappings in the request all match
+    // one in the configured list of allowed valid pairings.
+    $allowedMappings = kohana::config('data_utils.bulk_move_allowed_mappings');
+    $validSrcSurveyIds = [];
+    $impactedWebsiteIds = [];
+    // Snippets of SQL that can be used in SQL CASE statement to update IDs.
+    $websiteMappingSqlSnippets = [];
+    $surveyMappingSqlSnippets = [];
+    // Check and process each requested mapping.
+    foreach ($datasetMappings as $mapping) {
+      $allowed = FALSE;
+      foreach ($allowedMappings as $allowedMapping) {
+        if ($allowedMapping['src']['survey_id'] === $mapping->src->survey_id
+            && $allowedMapping['src']['website_id'] === $mapping->src->website_id
+            && $allowedMapping['dest']['survey_id'] === $mapping->dest->survey_id
+            && $allowedMapping['dest']['website_id'] === $mapping->dest->website_id) {
+          $allowed = TRUE;
+          break;
+        }
+      }
+      // Requesting a mapping that wasn't in the configured list of allowed
+      // mappings.
+      if (!$allowed) {
+        $this->fail('Bad Request', 400, 'The datasetMappings parameter contains a disallowed website/survey combination.');
+        return;
+      }
+      else {
+        $validSrcSurveyIds[] = $mapping->src->survey_id;
+        $impactedWebsiteIds[] = $mapping->src->website_id;
+        $impactedWebsiteIds[] = $mapping->dest->website_id;
+        $websiteMappingSqlSnippets[] = 'WHEN ' . $mapping->src->website_id . ' THEN ' . $mapping->dest->website_id;
+        $surveyMappingSqlSnippets[] = 'WHEN ' . $mapping->src->survey_id . ' THEN ' . $mapping->dest->survey_id;
+      }
+    }
+    $db = new Database();
+    $occurrenceIds = $_POST['occurrence:ids'];
+    if (!$this->checkWebsitesAuthorisedForMove($db, $impactedWebsiteIds)) {
+      return;
+    }
+    // Checks the requested list of occurrences are actually OK to move.
+    if (!$this->precheckBulkMoveOccurrences($db, $occurrenceIds, $validSrcSurveyIds, $countStats)) {
+      return;
+    }
+    if ($_POST['precheck'] === 'f') {
+      $websiteMappingSqlSnippetList = implode(' ', $websiteMappingSqlSnippets);
+      $surveyMappingSqlSnippetList = implode(' ', $surveyMappingSqlSnippets);
+      // Change IDs in occurrences and samples table.
+      $sql = <<<SQL
+UPDATE occurrences
+SET website_id=CASE website_id $websiteMappingSqlSnippetList END
+WHERE id IN ($occurrenceIds)
+AND deleted=false;
+
+UPDATE samples
+SET survey_id=CASE survey_id $surveyMappingSqlSnippetList END
+WHERE id IN (SELECT DISTINCT sample_id FROM occurrences WHERE id IN ($occurrenceIds))
+AND deleted=false;
+
+INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+SELECT 'task_cache_builder_post_move', 'occurrence', o.id, 100, 2, now()
+FROM occurrences o
+LEFT JOIN work_queue q ON q.record_id=o.id AND q.task='task_cache_builder_post_move' AND q.entity='occurrence'
+WHERE o.id IN ($occurrenceIds)
+AND o.deleted=false
+AND q.id IS NULL;
+SQL;
+      $db->query($sql);
+    }
+    $response = [
+      'code' => 200,
+      'status' => 'OK',
+      'action' => !empty($_POST['precheck']) && $_POST['precheck'] === 'f' ? 'records moved' : 'none',
+      'affected' => [
+        'occurrences' => $countStats->occurrence_count,
+        'samples' => $countStats->sample_count,
+      ]
+      ];
+    echo json_encode($response);
+    if (class_exists('request_logging')) {
+      request_logging::log('a', 'data', NULL, 'bulk_move', $this->website_id, $this->auth_user_id, $tm, $db);
+    }
   }
 
 }
