@@ -499,7 +499,7 @@ SQL;
             'created_on' => date('Y-m-d H:i:s'),
             'updated_by_id' => $this->user_id,
             'updated_on' => date('Y-m-d H:i:s'),
-            'record_status' => $_POST['sample:record_status']
+            'record_status' => $_POST['sample:record_status'],
           ));
         }
         echo 'OK';
@@ -592,7 +592,6 @@ SQL;
    * The response is an HTTP response containing the following:
    * * action - either delete or none (for trial runs)
    * * affected - a list of entities with the count of affected records.
-   *
    */
   public function bulk_delete_occurrences() {
     header('Content-Type: application/json');
@@ -779,14 +778,18 @@ SQL;
     }
     // Check affected samples don't contain records not in the move request.
     $qry = <<<SQL
-SELECT count(o2.id)
+SELECT o2.id as excluded_id, o.id as included_id, o2.sample_id
 FROM occurrences o
 JOIN occurrences o2 ON o2.sample_id=o.sample_id AND o2.deleted=false
 WHERE o.id IN ($occurrenceIdList)
-AND o2.id NOT IN ($occurrenceIdList);
+AND o2.id NOT IN ($occurrenceIdList)
+AND o.deleted=false
+LIMIT 1;
 SQL;
-    if ($db->query($qry)->current()->count > 0) {
-      $this->fail('Bad Request', 400, 'Cannot move occurrences if other occurrences within the same sample are not being moved.');
+    $results = $db->query($qry)->current();
+    if ($results) {
+      $this->fail('Bad Request', 400, 'Cannot move occurrences if other occurrences within the same sample are not being moved. ' .
+        "For example, sample $results->sample_id for occurrence $results->included_id also contains occurrence $results->excluded_id which is not in the list of records to move.");
       return FALSE;
     }
     return TRUE;
@@ -824,8 +827,9 @@ SQL;
    *
    * POST parameters:
    * * occurrence:ids - CSV List of occurrences.
-   * * mapping - requested mapping in JSON format, containing properties called
-   *   src and dest. Each contains a property for the website_id and survey_id.
+   * * datasetMappings - requested mapping in JSON format, containing
+   *   properties called src and dest. Each contains a property for the
+   *   website_id and survey_id.
    * * precheck - must be set to 'f'' to actually take any action, otherwise a
    *   precheck is performed to validate that the selection of records to move
    *   is allowed.   *
