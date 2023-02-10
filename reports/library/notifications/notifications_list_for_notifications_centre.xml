@@ -21,7 +21,7 @@
     <param name="user_id" display="User ID" description="Warehouse user ID" datatype="text" />
     <!-- parameter for grid drop-down filter -->
     <param name="source_filter" display="Show notifications for" datatype='lookup'
-           lookup_values="all:Anything,queries:Queried,rejections:Not accepted,redets:Redeterminations,record_comments:Commented on,verifications:Records accepted,record_cleaner:Failed automated checks,pending_groups_users:Requests to join a group you administer">
+           lookup_values="all:Anything,queries:Queried,rejections:Not accepted,redets:Redeterminations,record_comments:Commented on,verifications:Accepted,record_cleaner:Failed automated checks,pending_groups_users:Requests to join a group you administer">
       <wheres>
         <where value="queries" operator="equal">n.source_type='Q'</where>
         <where value="redets" operator="equal">n.source_type='RD'</where>
