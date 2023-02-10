@@ -61,6 +61,14 @@ echo data_entry_helper::select([
 ]);
 
 echo data_entry_helper::select([
+  'fieldname' => 'notification_source_type:RD',
+  'label' => 'Redetermination notification emails',
+  'lookupValues' => $frequencyOptions,
+  'blankText' => '- no emails -',
+  'default' => empty($data['RD']) ? NULL : $data['RD'],
+]);
+
+echo data_entry_helper::select([
   'fieldname' => 'notification_source_type:C',
   'label' => 'Other comment notification emails',
   'lookupValues' => $frequencyOptions,
@@ -102,7 +110,7 @@ echo data_entry_helper::select([
 
 echo data_entry_helper::select([
   'fieldname' => 'notification_source_type:M',
-  'label' => 'Moderation notification emails',
+  'label' => 'Milestone achievement emails',
   'lookupValues' => $frequencyOptions,
   'blankText' => '- no emails -',
   'default' => empty($data['M']) ? NULL : $data['M'],
@@ -110,7 +118,7 @@ echo data_entry_helper::select([
 
 echo data_entry_helper::select([
   'fieldname' => 'notification_source_type:PT',
-  'label' => 'Pending record notification emails',
+  'label' => 'Pending records to moderate task emails',
   'lookupValues' => $frequencyOptions,
   'blankText' => '- no emails -',
   'default' => empty($data['PT']) ? NULL : $data['PT'],
@@ -129,6 +137,7 @@ jQuery('document').ready(function($) {
       website_id: <?php echo $website_id; ?>,
       V: $('#notification_source_type\\:V').val(),
       Q: $('#notification_source_type\\:Q').val(),
+      RD: $('#notification_source_type\\:RD').val(),
       C: $('#notification_source_type\\:C').val(),
       A: $('#notification_source_type\\:A').val(),
       T: $('#notification_source_type\\:T').val(),

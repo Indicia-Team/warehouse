@@ -34,7 +34,7 @@ $config['record_details_page_urls'] = array(
 );
 
 // Populate the following array with a list of notification types you want to control the output of email text for.
-// Each entry must have the type code as a key ('S', 'C', 'V', 'A', 'VT', 'M', 'PT', 'GU') and an array as the value.
+// Each entry must have the type code as a key ('S', 'C', 'V', 'Q', 'RD', 'A', 'VT', 'M', 'PT', 'GU') and an array as the value.
 // The sub arrays can contain optional title and/or description elements to set the text included in the notification
 // email.
 $config['notification_types']=array();
