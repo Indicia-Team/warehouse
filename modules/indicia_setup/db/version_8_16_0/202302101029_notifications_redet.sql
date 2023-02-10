@@ -1,5 +1,3 @@
--- #slow script#
-
 ALTER TABLE notifications
   ADD COLUMN redet_taxa_taxon_list_id integer;
 
