@@ -40,6 +40,8 @@ class notification_emails {
     $defaultTypeNames = array(
       'S' => 'Species alerts',
       'C' => 'Comments on your records',
+      'Q' => 'Queries on your records',
+      'RD' => 'Redeterminations of your records',
       'V' => 'Verification of your records',
       'A' => 'Record Cleaner results for your records',
       'VT' => 'Incoming records for you to verify',
@@ -47,7 +49,7 @@ class notification_emails {
       'PT' => 'Incoming pending records for you to check',
       'GU' => 'Pending users in groups you administer',
     );
-    $r = array();
+    $r = [];
     foreach ($defaultTypeNames as $code => $defaultTitle) {
       $typeData = array(
         'title' => $defaultTitle,
