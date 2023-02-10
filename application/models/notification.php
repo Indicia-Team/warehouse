@@ -40,7 +40,6 @@ class Notification_Model extends ORM {
     $array->add_rules('acknowledged', 'required');
     $array->add_rules('user_id', 'required');
     $array->add_rules('triggered_on', 'required');
-    $array->add_rules('redet_taxa_taxon_list_id', 'integer');
     $this->unvalidatedFields = [
       'digest_mode',
       'cc',

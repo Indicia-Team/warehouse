@@ -37,6 +37,7 @@ class Occurrence_comment_model extends ORM {
     $array->add_rules('comment', 'required');
     $array->add_rules('occurrence_id', 'required', 'integer');
     $array->add_rules('reply_to_id', 'integer');
+    $array->add_rules('redet_taxa_taxon_list_id', 'integer');
     // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = [
       'email_address',

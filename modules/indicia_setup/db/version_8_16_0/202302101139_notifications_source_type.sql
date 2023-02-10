@@ -40,6 +40,5 @@ CREATE OR REPLACE VIEW list_notifications AS
     n.user_id,
     n.triggered_on,
     n.digest_mode,
-    n.cc,
-    n.redet_taxa_taxon_list_id
+    n.cc
    FROM notifications n;
