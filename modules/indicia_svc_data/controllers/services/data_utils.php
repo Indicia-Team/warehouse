@@ -276,6 +276,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
               'updated_on' => date('Y-m-d H:i:s'),
               'record_status' => $_POST['occurrence:record_status'],
               'record_substatus' => empty($_POST['occurrence:record_substatus']) ? NULL : $_POST['occurrence:record_substatus'],
+              'redet_taxa_taxon_list_id' => $_POST['occurrence:taxa_taxon_list_id'] ?? NULL,
             ]);
           }
         }
@@ -356,6 +357,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
               'created_on' => date('Y-m-d H:i:s'),
               'updated_by_id' => $this->user_id,
               'updated_on' => date('Y-m-d H:i:s'),
+              'redet_taxa_taxon_list_id' => $_POST['occurrence:taxa_taxon_list_id'],
             ]);
           }
         }
