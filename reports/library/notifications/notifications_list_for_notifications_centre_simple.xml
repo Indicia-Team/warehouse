@@ -21,14 +21,12 @@
     <param name="user_id" display="User ID" description="Warehouse user ID" datatype="text" />
     <!-- parameter for grid drop-down filter -->
     <param name="source_filter" display="Show notifications for" datatype='lookup'
-           lookup_values="all:Anything,queries:Record queries,verifications:Records accepted,rejections:Records not-accepted,rejections_queries:Rejections and queries,record_comments:Record comments,record_cleaner:Automated checks,pending_groups_users:Requests to join a group you administer">
+           lookup_values="all:Anything,queries:Queried,rejections:Not accepted,record_comments:Commented on,verifications:Records accepted,record_cleaner:Failed automated checks,pending_groups_users:Requests to join a group you administer">
       <wheres>
-        <where value="all" operator="equal">n.source_type != ''</where>
         <where value="queries" operator="equal">oc.query=true</where>
-        <where value="verifications" operator="equal">n.source_type='V' AND oc.record_status='V'</where>
         <where value="rejections" operator="equal">n.source_type='V' AND oc.record_status='R'</where>
-        <where value="rejections_queries" operator="equal">(n.source_type='V' AND oc.record_status='R') or oc.query=true</where>
         <where value="record_comments" operator="equal">n.source_type='C'</where>
+        <where value="verifications" operator="equal">n.source_type='V' AND oc.record_status='V'</where>
         <where value="record_cleaner" operator="equal">n.source_type ='A'</where>
         <where value="pending_groups_users" operator="equal">n.source_type='GU'</where>
       </wheres>
