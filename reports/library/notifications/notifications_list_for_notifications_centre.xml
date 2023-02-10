@@ -6,12 +6,12 @@
   SELECT #columns#
     FROM notifications n
       LEFT JOIN cache_occurrences_functional o ON o.id=n.linked_id AND n.source_type&lt;&gt;'GU'
-      LEFT JOIN occurrence_comments oc on oc.id=(regexp_match(n.source_detail, 'oc_id:(\d+)'))[1]::int
+      LEFT JOIN occurrence_comments oc ON n.source_type='V' AND oc.id=(regexp_match(n.source_detail, 'oc_id:(\d+)'))[1]::int
       #joins#
     WHERE n.acknowledged=false
-      and n.user_id=#user_id#
-      and (o.training=#training# or o.id is null)
-      and n.source_type&lt;&gt;'T' -- skip trigger notifications which don't display correctly in the grid
+      AND n.user_id=#user_id#
+      AND (o.training=#training# or o.id is null)
+      AND n.source_type&lt;&gt;'T' -- skip trigger notifications which don't display correctly in the grid
     #order_by#
   </query>
   <order_bys>
@@ -21,9 +21,10 @@
     <param name="user_id" display="User ID" description="Warehouse user ID" datatype="text" />
     <!-- parameter for grid drop-down filter -->
     <param name="source_filter" display="Show notifications for" datatype='lookup'
-           lookup_values="all:Anything,queries:Queried,rejections:Not accepted,record_comments:Commented on,verifications:Records accepted,record_cleaner:Failed automated checks,pending_groups_users:Requests to join a group you administer">
+           lookup_values="all:Anything,queries:Queried,rejections:Not accepted,redets:Redeterminations,record_comments:Commented on,verifications:Records accepted,record_cleaner:Failed automated checks,pending_groups_users:Requests to join a group you administer">
       <wheres>
-        <where value="queries" operator="equal">oc.query=true</where>
+        <where value="queries" operator="equal">n.source_type='Q'</where>
+        <where value="redets" operator="equal">n.source_type='RD'</where>
         <where value="rejections" operator="equal">n.source_type='V' AND oc.record_status='R'</where>
         <where value="record_comments" operator="equal">n.source_type='C'</where>
         <where value="verifications" operator="equal">n.source_type='V' AND oc.record_status='V'</where>
