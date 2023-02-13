@@ -1700,7 +1700,7 @@ SQL;
       $fkEntity = inflector::singular($entity->getChildren());
     }
     else {
-      $fkEntity = inflector::plural($fieldName);
+      $fkEntity = $fieldName;
     }
     // Create model without initialising, so we can just check the lookup
     // variables.
@@ -1735,7 +1735,7 @@ SQL;
     $matchOptions = [];
     $rows = $db->query($sql)->result();
     foreach ($rows as $row) {
-      $matchOptions[$row->id] = $row->term;
+      $matchOptions[$row->id] = $row->{$fkModel->search_field};
     }
     return [
       'values' => $values,
@@ -1835,6 +1835,9 @@ SQL;
       if (!empty($errorCheck)) {
         throw new exception($errorCheck);
       }
+    }
+    if ($config['totalRows'] === 0) {
+      throw new exception('The import file does not contain any data to import.');
     }
     $config['progress'] = $config['rowsLoaded'] * 100 / $config['totalRows'];
     if ($config['rowsLoaded'] >= $config['totalRows']) {
