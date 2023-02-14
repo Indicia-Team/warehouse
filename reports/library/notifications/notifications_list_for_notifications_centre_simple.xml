@@ -6,7 +6,7 @@
   <query>
   SELECT #columns#
     FROM notifications n
-      LEFT JOIN occurrence_comments oc ON n.source_type='V' AND oc.id=(regexp_match(n.source_detail, 'oc_id:(\d+)'))[1]::int
+      LEFT JOIN occurrence_comments oc ON n.source_type='V' AND oc.id=(regexp_matches(n.source_detail, 'oc_id:(\d+)'))[1]::int
       #joins#
     WHERE n.acknowledged=false
       AND n.user_id=#user_id#
