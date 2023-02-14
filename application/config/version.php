@@ -29,22 +29,14 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @var string
  */
-<<<<<<< HEAD
 $config['version'] = '8.16.0';
-=======
-$config['version'] = '8.15.1';
->>>>>>> hotfix-import
 
 /**
  * Version release date.
  *
  * @var string
  */
-<<<<<<< HEAD
-$config['release_date'] = '2023-02-10';
-=======
 $config['release_date'] = '2023-02-14';
->>>>>>> hotfix-import
 
 /**
  * Link to the code repository downloads page.
