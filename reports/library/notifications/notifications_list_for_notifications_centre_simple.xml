@@ -1,13 +1,10 @@
 <report
     title="Notifications list for notifications centre (simplified)"
-    description="A list of notifications for use with the notifications centre extension,
-                 has additional functionality for handling edit and view icons on the grid when compared to the notifications_list.xml report.
+    description="A list of notifications for use with the notifications centre extension.
                  Simplified with no join to occurrences for performance - training mode disables responses.">
   <query>
   SELECT #columns#
     FROM notifications n
-      LEFT JOIN occurrence_comments oc ON n.source_type='V' AND oc.id=(regexp_matches(n.source_detail, 'oc_id:(\d+)'))[1]::int
-      #joins#
     WHERE n.acknowledged=false
       AND n.user_id=#user_id#
       AND #training#=false
@@ -19,19 +16,6 @@
   </order_bys>
   <params>
     <param name="user_id" display="User ID" description="Warehouse user ID" datatype="text" />
-    <!-- parameter for grid drop-down filter -->
-    <param name="source_filter" display="Show notifications for" datatype='lookup'
-           lookup_values="all:Anything,queries:Queried,rejections:Not accepted,redets:Redeterminations,record_comments:Commented on,verifications:Accepted,record_cleaner:Failed automated checks,pending_groups_users:Requests to join a group you administer">
-      <wheres>
-        <where value="queries" operator="equal">n.source_type='Q'</where>
-        <where value="redets" operator="equal">n.source_type='RD'</where>
-        <where value="rejections" operator="equal">n.source_type='V' AND oc.record_status='R'</where>
-        <where value="record_comments" operator="equal">n.source_type='C'</where>
-        <where value="verifications" operator="equal">n.source_type='V' AND oc.record_status='V'</where>
-        <where value="record_cleaner" operator="equal">n.source_type ='A'</where>
-        <where value="pending_groups_users" operator="equal">n.source_type='GU'</where>
-      </wheres>
-    </param>
     <!-- parameter for user configurable source types on edit tab. -->
     <param name="source_types" display="Source Types"
         description="Comma separated list of source types with each item single quoted, or blank to allow all." datatype="text[]" default=''>

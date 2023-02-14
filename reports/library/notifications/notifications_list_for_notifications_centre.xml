@@ -6,7 +6,9 @@
   SELECT #columns#
     FROM notifications n
       LEFT JOIN cache_occurrences_functional o ON o.id=n.linked_id AND n.source_type&lt;&gt;'GU'
-      LEFT JOIN occurrence_comments oc ON n.source_type='V' AND oc.id=(regexp_matches(n.source_detail, 'oc_id:(\d+)'))[1]::int
+      LEFT JOIN occurrence_comments oc ON n.source_type='V'
+        AND n.source_detail LIKE 'oc_id:%'
+        AND oc.id=replace(n.source_detail, 'oc_id:', '')::int
       #joins#
     WHERE n.acknowledged=false
       AND n.user_id=#user_id#
