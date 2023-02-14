@@ -1490,13 +1490,17 @@ SQL;
           $db->query($sql);
           // Query to fill in ID for all obvious matches.
           if (substr($destFieldParts[0], -4) === 'Attr' and strlen($destFieldParts[0]) === 7) {
+            // Attribute lookup values. e.g. occAttr:n.
             $unmatchedInfo = $this->autofillLookupAttrIds($db, $config, $destFieldParts, $info['tempDbField']);
           }
-          elseif ($info['warehouseField'] === 'occurrence:fk_taxa_taxon_list') {
-            $unmatchedInfo = $this->autofillTaxonIds($db, $config, $info['tempDbField']);
+          elseif ($destFieldParts[0] === 'occurrence' && $destFieldParts[1] === 'fk_taxa_taxon_list') {
+            $unmatchedInfo = $this->autofillOccurrenceTaxonIds($db, $config, $info['tempDbField'], $destFieldParts);
+          }
+          elseif ($destFieldParts[0] === 'sample' && $destFieldParts[1] === 'fk_location') {
+            $unmatchedInfo = $this->autofillSampleLocationIds($db, $config, $info['tempDbField'], $destFieldParts);
           }
           else {
-            $unmatchedInfo = $this->autofillOtherFkIds($db, $config, $info);
+            $unmatchedInfo = $this->autofillOtherFkIds($db, $config, $info, $destFieldParts);
           }
           // Respond with values that don't match plus list of matches, or a
           // success message.
@@ -1594,7 +1598,7 @@ SQL;
    * @return array
    *   Array containing information about the result.
    */
-  private function autofillTaxonIds($db, array $config, $valueToMapColName) {
+  private function autofillOccurrenceTaxonIds($db, array $config, $valueToMapColName) {
     $filtersList = [];
     $filterForTaxonSearchAPI = [];
     foreach ($config['global-values'] as $fieldDef => $value) {
@@ -1670,9 +1674,122 @@ SQL;
   }
 
   /**
-   * Auto-fills the foreign keys for lookup taxon text values
+   * Autofills the sample location ID foreign keys for lookup text values.
    *
-   * Excluding taxon lookups which are handled separately.
+   * @param object $db
+   *   Database connection.
+   * @param array $config
+   *   Import configuration object.
+   * @param string $valueToMapColName
+   *   Name of the column containing the location value to lookup. The ID column that
+   *   gets populated will have the same name, with _id appended.
+   *
+   * @return array
+   *   Array containing information about the result.
+   */
+  private function autofillSampleLocationIds($db, array $config, $valueToMapColName, array $destFieldParts) {
+    $websiteId = $config['global-values']['website_id'];
+    $matchAll = [
+      'l.deleted=false',
+      "(lw.website_id=$websiteId OR l.public)",
+    ];
+    $extraJoins = [];
+    $filterForLocationSearchAPI = [];
+    foreach ($config['global-values'] as $fieldDef => $value) {
+      if (substr($fieldDef, 0, 25) === 'sample:fkFilter:location:') {
+        $filterField = str_replace('sample:fkFilter:location:', '', $fieldDef);
+        $escaped = pg_escape_literal($db->getLink(), $value);
+        $matchAll[] = "l.$filterField=$escaped";
+        $filterForLocationSearchAPI[$filterField] = $value;
+      }
+    }
+    // If no filter specified, revert to the defaults.
+    if (empty($filtersList)) {
+      $matchAny = [
+        "l.created_by_id=$this->auth_user_id",
+      ];
+      // Add locations for the recording group if importing into a group.
+      if (!empty($config['global-values']['sample:group_id'])) {
+        $groupId = $config['global-values']['sample:group_id'];
+        $extraJoins[] = <<<SQL
+LEFT JOIN (groups_locations gl
+  JOIN groups g ON g.id=gl.group_id AND g.deleted=false AND g.id=$groupId
+  JOIN groups_users gu ON gu.group_id=g.id AND gu.user_id=$this->auth_user_id AND gu.pending=false AND gu.deleted=false
+) ON gl.location_id=l.id AND gl.deleted=false
+SQL;
+        $matchAny[] = 'gl.id IS NOT NULL';
+        $filterForLocationSearchAPI['group_id'] = $groupId;
+      }
+      // @todo If psnAttr ID can be passed through from config to here, it
+      // could be used as an extra filter possibility (include locations the
+      // user is joined to).
+      $matchAll[] = '(' . implode(" OR ", $matchAny) . ')';
+    }
+    $filters = implode("\nAND ", $matchAll);
+    $joins = implode("\n", $extraJoins);
+    // Add a column to capture potential multiple matching taxa.
+    $uniq = uniqid(TRUE);
+    $sql = <<<SQL
+ALTER TABLE import_temp.$config[tableName]
+ADD COLUMN IF NOT EXISTS {$valueToMapColName}_id_choices json;
+
+-- Find possible taxon name matches. If a name is not accepted, but has an
+-- accepted alternative, it gets skipped.
+SELECT trim(lower(i.{$valueToMapColName})) as locinfo,
+  ARRAY_AGG(DISTINCT l.id) AS choices,
+  JSON_AGG(DISTINCT jsonb_build_object(
+	  'id', l.id,
+    'name', l.name,
+    'code', l.code,
+    'centroid_sref', l.centroid_sref,
+    'type', lt.term,
+    'external_key', l.external_key,
+    'parent_name', lp.name
+  )) AS choice_info
+INTO TEMPORARY location_matches_$uniq
+FROM import_temp.$config[tableName] i
+JOIN locations l
+  ON trim(lower(i.{$valueToMapColName}))=lower(l.$destFieldParts[2])
+LEFT JOIN locations lp ON lp.id=l.parent_id AND lp.deleted=false
+LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
+$joins
+WHERE $filters
+GROUP BY i.{$valueToMapColName};
+
+UPDATE import_temp.$config[tableName] i
+SET {$valueToMapColName}_id=CASE ARRAY_LENGTH(sm.choices, 1) WHEN 1 THEN ARRAY_TO_STRING(sm.choices, '') ELSE NULL END::integer,
+{$valueToMapColName}_id_choices=sm.choice_info
+FROM location_matches_$uniq sm
+WHERE trim(lower(i.{$valueToMapColName}))=sm.locinfo;
+
+DROP TABLE location_matches_$uniq;
+SQL;
+    $db->query($sql);
+    // Now find and return the list of values that still need to be matched to
+    // a location by the user.
+    $sql = <<<SQL
+SELECT DISTINCT {$valueToMapColName} as value, {$valueToMapColName}_id_choices::text as choices
+FROM import_temp.$config[tableName]
+WHERE {$valueToMapColName}_id IS NULL AND trim($valueToMapColName)<>'';
+SQL;
+    $rows = $db->query($sql)->result();
+    $values = [];
+    foreach ($rows as $row) {
+      $values[$row->value] = $row->choices;
+    }
+    return [
+      'values' => $values,
+      'type' => 'location',
+      'locationFilters' => $filterForLocationSearchAPI,
+    ];
+  }
+
+  /**
+   * Auto-fills the foreign keys for any other lookups, e.g. licence.
+   *
+   * Excluding taxon, location and attribute value lookups which are handled
+   * separately.
    *
    * @param object $db
    *   Database connection.
@@ -1680,11 +1797,13 @@ SQL;
    *   Import configuration object.
    * @param array $info
    *   Column info data for the column being autofilled.
+   * @param array $destFieldParts
+   *   Tokens that make up the desination field, e.g. extracted from location:name.
    *
    * @return array
    *   Array containing information about the result.
    */
-  private function autofillOtherFkIds($db, array $config, array $info) {
+  private function autofillOtherFkIds($db, array $config, array $info, array $destFieldParts) {
     $destFieldParts = explode(':', $info['warehouseField']);
     $entity = ORM::factory($destFieldParts[0], -1);
     $fieldName = preg_replace('/^fk_/', '', $destFieldParts[1]);
@@ -1700,18 +1819,24 @@ SQL;
       $fkEntity = inflector::singular($entity->getChildren());
     }
     else {
-      $fkEntity = inflector::plural($fieldName);
+      $fkEntity = $fieldName;
     }
+    $fkTable = inflector::plural($fkEntity);
     // Create model without initialising, so we can just check the lookup
     // variables.
     $fkModel = ORM::Factory($fkEntity, -1);
     // Let the model map the lookup against a view if necessary.
-    $lookupAgainst = inflector::plural(isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkEntity);
+    $lookupAgainst = inflector::plural($fkModel->lookup_against ?? "list_$fkTable");
+    // Search field is lookup model default, but if there are 3 tokens in the
+    // destination field name then the 3rd token overrides this.
+    $searchField = $destFieldParts[2] ?? $fkModel->search_field;
+    $websiteId = $config['global-values']['website_id'];
     $sql = <<<SQL
 UPDATE import_temp.$config[tableName] i
 SET {$info['tempDbField']}_id=l.id
 FROM $lookupAgainst l
-WHERE trim(lower(i.$info[tempDbField]))=lower(l.$fkModel->search_field);
+WHERE trim(lower(i.$info[tempDbField]))=lower(l.$searchField)
+AND l.website_id=$websiteId;
 SQL;
     $db->query($sql);
     $sql = <<<SQL
@@ -1728,14 +1853,14 @@ SQL;
     }
     // Find the available possible options from the fk lookup list.
     $sql = <<<SQL
-SELECT l.id, l.$fkModel->search_field
+SELECT l.id, l.$searchField
 FROM $lookupAgainst l
-ORDER BY l.$fkModel->search_field
+ORDER BY l.$searchField
 SQL;
     $matchOptions = [];
     $rows = $db->query($sql)->result();
     foreach ($rows as $row) {
-      $matchOptions[$row->id] = $row->term;
+      $matchOptions[$row->id] = $row->{$searchField};
     }
     return [
       'values' => $values,
@@ -1835,6 +1960,9 @@ SQL;
       if (!empty($errorCheck)) {
         throw new exception($errorCheck);
       }
+    }
+    if ($config['totalRows'] === 0) {
+      throw new exception('The import file does not contain any data to import.');
     }
     $config['progress'] = $config['rowsLoaded'] * 100 / $config['totalRows'];
     if ($config['rowsLoaded'] >= $config['totalRows']) {
