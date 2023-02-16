@@ -254,6 +254,9 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         $tm = microtime(TRUE);
         $db = new Database();
         $this->authenticate('write');
+        if (count($ids) === 1 && !empty($_POST['applyDecisionToParentSample'])) {
+          $ids = $this->findSameTaxonInParentSample($db, $ids[0]);
+        }
         // Field updates for the occurrences table and related cache tables.
         $updates = data_utils::getOccurrenceTableVerificationUpdateValues(
           $db,
@@ -262,7 +265,8 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           empty($_POST['occurrence:record_substatus']) ? NULL : $_POST['occurrence:record_substatus'],
           empty($_POST['occurrence:record_decision_source']) ? 'H' : $_POST['occurrence:record_decision_source']
         );
-        // Give the workflow module a chance to rewind or update the values before updating.
+        // Give the workflow module a chance to rewind or update the values
+        // before updating.
         data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
         foreach ($ids as $id) {
           if (!empty($_POST['occurrence_comment:comment'])) {
@@ -293,6 +297,34 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         }
       }
     }
+  }
+
+  /**
+   * Expand the list of IDs to include same taxon in the wider sample.
+   *
+   * If verifying transects or timed counts, there is an option to verify all
+   * records of the same taxon in the parent sample. This function expands the
+   * selected record to the full list, excluding records that have already been
+   * verified.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param int $id
+   *   Selected record ID.
+   *
+   * @return array
+   *   List of IDs.
+   */
+  private function findSameTaxonInParentSample(Database $db, $id) {
+    $sql = <<<SQL
+SELECT string_agg(o2.id::text, ',') as expanded
+FROM cache_occurrences_functional o1
+JOIN cache_occurrences_functional o2 ON o2.parent_sample_id=o1.parent_sample_id AND o2.preferred_taxa_taxon_list_id=o1.preferred_taxa_taxon_list_id
+WHERE o1.id=$id
+-- Always include the selected record. Include other records only if unverified.
+AND (o2.id=$id OR (o2.record_status='C' AND o2.record_substatus IS NULL));
+SQL;
+    return explode(',', $db->query($sql)->current()->expanded);
   }
 
   /**
