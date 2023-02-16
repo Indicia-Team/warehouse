@@ -319,7 +319,11 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     $sql = <<<SQL
 SELECT string_agg(o2.id::text, ',') as expanded
 FROM cache_occurrences_functional o1
-JOIN cache_occurrences_functional o2 ON o2.parent_sample_id=o1.parent_sample_id AND o2.preferred_taxa_taxon_list_id=o1.preferred_taxa_taxon_list_id
+JOIN cache_occurrences_functional o2 ON o2.parent_sample_id=o1.parent_sample_id
+  AND (
+    o2.preferred_taxa_taxon_list_id=o1.preferred_taxa_taxon_list_id
+    OR o2.external_key=o1.external_key
+  )
 WHERE o1.id=$id
 -- Always include the selected record. Include other records only if unverified.
 AND (o2.id=$id OR (o2.record_status='C' AND o2.record_substatus IS NULL));
