@@ -6,7 +6,7 @@
     }
   ],
   "require": {
-    "firebase/php-jwt": "^5.4",
+    "firebase/php-jwt": "^6.0",
     "phpoffice/phpspreadsheet": "^1.18"
   },
   "require-dev": {
