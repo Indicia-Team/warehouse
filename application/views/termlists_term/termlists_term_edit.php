@@ -62,7 +62,6 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'label' => 'Description',
       'fieldname' => 'term:description',
       'default' => html::initial_value($values, 'term:description'),
-      'validation' => ['required'],
       'helpText' => 'Description of the term',
     ]);
     $helpText = <<<TXT
