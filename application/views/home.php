@@ -24,6 +24,38 @@
 
 warehouse::loadHelpers(['report_helper']);
 ?>
+
+
+
+<?php
+
+echo customVerificationRules::helpBlock();
+echo customVerificationRules::exampleBlock();
+echo customVerificationRules::mappingHelpBlock();
+$rulesetId = 1;
+$requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId);
+$db = new Database();
+$ruleset = $db->select('*')->from('custom_verification_rulesets')->where('id', $rulesetId)->get()->current();
+echo <<<HTML
+<div class="panel panel-info">
+  <div class="panel-heading">
+    <h3>$ruleset->title</h3>
+  </div>
+  <div class="panel-body">
+    <p>$ruleset->description</p>
+<pre>
+$requestBody
+</pre>
+  </div>
+</div>
+
+HTML;
+?>
+
+
+
+
+
 <script type='text/javascript'>
 jQuery(document).ready(function($){
   $('div#issues').hide();
@@ -38,8 +70,8 @@ jQuery(document).ready(function($){
 </script>
 <?php if (version_compare($app_version, $db_version) === 1) : ?>
 <div class="alert alert-warning"><p>Your database needs to be upgraded as the application version is
-<?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.</p>
-<a class="btn btn-primary" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a>
+  <?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.</p>
+  <a class="btn btn-primary" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a>
 </div>
 <?php endif; ?>
 <p>Indicia is a toolkit that simplifies the construction of new websites which allow data entry, mapping and reporting
@@ -53,7 +85,7 @@ Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for E
 if (count($gettingStartedTips)) {
   echo '<h2>Getting started</h2>';
   foreach ($gettingStartedTips as $msg) {
-    $severity = empty($msg['severity'])? 'info' : $msg['severity'];
+    $severity = empty($msg['severity']) ? 'info' : $msg['severity'];
     echo <<<TIP
 <div class="alert alert-$severity alert-dismissible">
   <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>

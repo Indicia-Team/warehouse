@@ -1445,7 +1445,8 @@ SQL;
     // Build a filter to extract rows for this parent entity.
     $wheresList = [];
     foreach ($fields as $field) {
-      $wheresList[] = "COALESCE($field::text, '')='" . $parentEntityDataRow->$field . "'";
+      $value = pg_escape_literal($db->getLink(), $parentEntityDataRow->$field ?? '');
+      $wheresList[] = "COALESCE($field::text, '')=$value";
     }
     $wheres = implode("\nAND ", $wheresList);
     // Now retrieve the sub-entity rows.
