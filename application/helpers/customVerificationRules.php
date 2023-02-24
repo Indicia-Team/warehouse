@@ -167,10 +167,20 @@ TXT;
 TXT;
   }
 
-  public static function buildCustomRuleRequest($rulesetId) {
-    // @todo Make user ID dynamic.
-    $userID = 5;
-
+  /**
+   * Builds the request body that applies a custom ruleset.
+   *
+   * @param int $rulesetId
+   *   ID of the ruleset to build the request for.
+   * @param array $query
+   *   Query containing the current outer filter to merge with.
+   * @param int $userId
+   *   Warehouse user ID.
+   *
+   * @return string
+   *   Request body.
+   */
+  public static function buildCustomRuleRequest($rulesetId, array $query, $userId) {
     $db = new Database();
     $datetime = new DateTime();
     $timestamp = $datetime->format('Y-m-d H:i:s');
@@ -181,7 +191,15 @@ TXT;
     }
     // Get the filters that limit the set of records this ruleset can be
     // applied to.
-    $rulesetFilterText = json_encode(self::getRulesetFilters($db, $ruleset));
+    $rulesetFilters = self::getRulesetFilters($db, $ruleset);
+    if (!isset($query['bool'])) {
+      $query['bool'] = [];
+    }
+    if (!isset($query['bool']['must'])) {
+      $query['bool']['must'] = [];
+    }
+    $query['bool']['must'] = array_merge($query['bool']['must'], $rulesetFilters);
+    $queryText = json_encode($query);
 
     $rules = $db->select('*')
       ->from('custom_verification_rules')
@@ -196,65 +214,59 @@ TXT;
     foreach ($rules as $rule) {
       $ruleScripts[] = self::getRuleScript($ruleset, $rule);
     }
-
     $allRuleScripts = implode("\n", $ruleScripts);
+    $scriptSource = <<<PAINLESS
+/* Build an failure flag object to store in the document */
+HashMap failInfo(int ruleId, String icon, String message) {
+  return [
+    'custom_verification_ruleset_id': $ruleset->id,
+    'custom_verification_rules_id': ruleId,
+    'created_by_id': $userId,
+    'result': 'fail',
+    'icon': icon,
+    'message': message,
+    'check_date_time': '$timestamp'
+  ];
+}
 
+/* Check if higher geography of a document intersects with a list of location Ids. */
+boolean higherGeoIntersection(def higherGeoList, ArrayList list) {
+  ArrayList recordGeoIds = new ArrayList();
+  if (higherGeoList !== null) {
+    for (id in higherGeoList) {
+      recordGeoIds.add(id);
+    }
+  }
+  recordGeoIds.retainAll(list);
+  return recordGeoIds.size() > 0;
+}
+
+if (ctx._source.identification.custom_verification_rule_flags == null) {
+  ctx._source.identification.custom_verification_rule_flags = new ArrayList();
+}
+ArrayList flags = ctx._source.identification.custom_verification_rule_flags;
+flags.removeIf(a -> a.custom_verification_ruleset_id === $ruleset->id);
+/* Prep some data to make the tests simpler. */
+ArrayList geoIds = new ArrayList();
+if (ctx._source.location.higher_geography !== null) {
+  for (item in ctx._source.location.higher_geography) {
+    geoIds.add(Integer.parseInt(item.id));
+  }
+}
+def latLng = ctx._source.location.point.splitOnToken(',');
+def lat = Float.parseFloat(latLng[0]);
+def lng = Float.parseFloat(latLng[1]);
+$allRuleScripts
+PAINLESS;
+    // Remove linefeed so the JSON format is valid.
+    $scriptSourceEscaped = str_replace("\n", ' ', $scriptSource);
     $requestBody = <<<TXT
-    POST occurrence_v1/_update_by_query
     {
       "script": {
-        "source": """
-
-          // Function to build the info to store for a rule fail.
-          HashMap errorInfo(int ruleId, String icon, String message) {
-            return [
-              'custom_verification_ruleset_id': $ruleset->id,
-              'custom_verification_rules_id': ruleId,
-              'created_by_id': $userID,
-              'result': 'fail',
-              'icon': icon,
-              'message': message,
-              'check_date_time': '$timestamp'
-            ];
-          }
-
-          // Function to check record higher geography list against list of IDs in a rule.
-          boolean higherGeoIntersection(def higherGeoList, ArrayList list) {
-            ArrayList recordGeoIds = new ArrayList();
-            if (higherGeoList !== null) {
-              for (id in higherGeoList) {
-                recordGeoIds.add(id);
-              }
-            }
-            recordGeoIds.retainAll(list);
-            return recordGeoIds.size() > 0;
-          }
-
-          if (ctx._source.identification.custom_verification_rule_flags == null) {
-            ctx._source.identification.custom_verification_rule_flags = new ArrayList();
-          }
-          ArrayList flags = ctx._source.identification.custom_verification_rule_flags;
-          flags.removeIf(a -> a.custom_verification_ruleset_id === $ruleset->id);
-          // Prep some data to make the tests simpler.
-          ArrayList geoIds = new ArrayList();
-          if (ctx._source.location.higher_geography !== null) {
-            for (item in ctx._source.location.higher_geography) {
-              geoIds.add(Integer.parseInt(item.id));
-            }
-          }
-          def latLng = ctx._source.location.point.splitOnToken(',');
-          def lat = Float.parseFloat(latLng[0]);
-          def lng = Float.parseFloat(latLng[1]);
-$allRuleScripts
-        """,
+        "source": "$scriptSourceEscaped",
         "lang": "painless"
       },
-      "query": {
-        "bool": {
-          "must":
-            $rulesetFilterText
-        }
-      }
+      "query": $queryText
     }
 TXT;
     return $requestBody;
@@ -265,13 +277,13 @@ TXT;
    *
    * @param Database $db
    *   Database connection.
-   * @param obj $ruleset
+   * @param object $ruleset
    *   Ruleset metadata read from the database.
    *
    * @return array
    *   List of filter definitions, e.g. life stage or geographic limits.
    */
-  private static function getRulesetFilters($db, $ruleset) {
+  private static function getRulesetFilters(Database $db, $ruleset) {
     // The outer filter will be restricted to the taxa in the rules within the
     // set.
     $allTaxaKeys = $db->query("SELECT string_agg(DISTINCT taxon_external_key, ',') as keylist FROM custom_verification_rules WHERE deleted=false AND custom_verification_ruleset_id=$ruleset->id")->current()->keylist;
@@ -357,7 +369,8 @@ TXT;
         break;
 
       case 'species_recorded':
-        // Just a presence check so no additional checks required to fire the rule.
+        // Just a presence check so no additional checks required to fire the
+        // rule.
         break;
 
       default:
@@ -366,10 +379,10 @@ TXT;
 
     $testForFail = implode(' || ', $checks);
     return <<<TXT
-          // Rule ID $rule->id.
+          /* Rule ID $rule->id. */
           if ($ruleIsToBeAppliedChecks) {
             if ($testForFail) {
-              flags.add(errorInfo($rule->id, '$icon', '$message'));
+              flags.add(failInfo($rule->id, '$icon', '$message'));
             }
           }
 TXT;
@@ -395,8 +408,9 @@ TXT;
     // Rule may be only applicable to certain stages.
     if (!empty($rule->limit_to_stages)) {
       $stages = str_getcsv(substr($rule->limit_to_stages, 1, strlen($rule->limit_to_stages) - 2));
+      // Escape so can be inserted into Painless script string.
       $stages = array_map(function ($stage) {
-        return "'" . str_replace(["'", '\"'], ["\\'", '"'], $stage) . "'";
+        return "'" . str_replace("'", "\\\'", strtolower($stage)) . "'";
       }, $stages);
       $stageTxt = implode(', ', $stages);
       $applicabilityCheckList[] = "ctx._source.occurrence.life_stage != null";
