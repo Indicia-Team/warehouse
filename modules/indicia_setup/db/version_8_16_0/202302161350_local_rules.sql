@@ -7,12 +7,16 @@ CREATE TABLE IF NOT EXISTS custom_verification_rulesets
     fail_message text NOT NULL,
     limit_to_stages character varying[],
     limit_to_geography json,
+    website_id integer NOT NULL,
     created_on timestamp without time zone,
     created_by_id integer NOT NULL,
     updated_on timestamp without time zone,
     updated_by_id integer NOT NULL,
     deleted boolean NOT NULL DEFAULT false,
     CONSTRAINT pk_custom_verification_rulesets PRIMARY KEY (id),
+    CONSTRAINT fk_custom_verification_rulesets_website FOREIGN KEY (website_id)
+        REFERENCES websites (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
     CONSTRAINT fk_custom_verification_rulesets_creator FOREIGN KEY (created_by_id)
         REFERENCES users (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -33,6 +37,7 @@ COMMENT ON COLUMN custom_verification_rulesets.limit_to_geography IS
   'If this ruleset only applies to a geopgraphic area, define the area here, either by constraining to a range by
   latitude/longitude, or by defining the IDs of higher geogprahy locations that the ruleset is applied to. JSON object,
   possible properties are min_lat, min_lng, max_lat, max_lng, higher_geography_ids (array of IDs).';
+COMMENT ON COLUMN custom_verification_rulesets.website_id IS 'Website this ruleset was created for.';
 COMMENT ON COLUMN custom_verification_rulesets.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN custom_verification_rulesets.created_by_id IS 'Foreign key to the users table (creator).';
 COMMENT ON COLUMN custom_verification_rulesets.updated_on IS 'Date this record was updated.';
@@ -90,3 +95,8 @@ COMMENT ON COLUMN custom_verification_rules.created_by_id IS 'Foreign key to the
 COMMENT ON COLUMN custom_verification_rules.updated_on IS 'Date this record was updated.';
 COMMENT ON COLUMN custom_verification_rules.updated_by_id IS 'Foreign key to the users table (updater).';
 COMMENT ON COLUMN custom_verification_rules.deleted IS 'Has this record been deleted?';
+
+CREATE OR REPLACE VIEW list_custom_verification_rulesets AS
+  SELECT rs.id, rs.title, rs.description, rs.fail_icon, rs.fail_message, rs.limit_to_stages, rs.limit_to_geography, rs.website_id
+  FROM custom_verification_rulesets rs
+  WHERE rs.deleted = false;
