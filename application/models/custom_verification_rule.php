@@ -22,18 +22,12 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Model class for the custom_verification_rulesets table.
+ * Model class for the custom_verification_rules table.
  */
-class Custom_verification_ruleset_Model extends ORM {
-
-  public $search_field = 'title';
-
-  protected $has_many = [
-    'custom_verification_rules',
-  ];
+class Custom_verification_rule_Model extends ORM {
 
   protected $belongs_to = [
-    'website' => 'website',
+    'custom_verification_ruleset' => 'custom_verification_ruleset',
     'created_by' => 'user',
     'updated_by' => 'user',
   ];
@@ -42,14 +36,17 @@ class Custom_verification_ruleset_Model extends ORM {
     // Uses PHP trim() to remove whitespace from beginning and end of all
     // fields before validation.
     $array->pre_filter('trim');
-    $array->add_rules('title', 'required');
-    $array->add_rules('fail_icon', 'required');
-    $array->add_rules('fail_message', 'required');
-    $array->add_rules('website_id', 'required', 'integer');
+    $array->add_rules('custom_verification_ruleset_id', 'integer', 'required');
+    $array->add_rules('taxon_external_key', 'required');
+    $array->add_rules('rule_type', 'required');
+    $array->add_rules('definition', 'required');
+
     $this->unvalidatedFields = [
-      'description',
+      'fail_icon',
+      'fail_message',
       'limit_to_stages',
       'limit_to_geography',
+      'reverse_rule',
     ];
     return parent::validate($array, $save);
   }
