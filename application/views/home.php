@@ -24,38 +24,6 @@
 
 warehouse::loadHelpers(['report_helper']);
 ?>
-
-
-
-<?php
-
-echo customVerificationRules::helpBlock();
-echo customVerificationRules::exampleBlock();
-echo customVerificationRules::mappingHelpBlock();
-$rulesetId = 1;
-$requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId);
-$db = new Database();
-$ruleset = $db->select('*')->from('custom_verification_rulesets')->where('id', $rulesetId)->get()->current();
-echo <<<HTML
-<div class="panel panel-info">
-  <div class="panel-heading">
-    <h3>$ruleset->title</h3>
-  </div>
-  <div class="panel-body">
-    <p>$ruleset->description</p>
-<pre>
-$requestBody
-</pre>
-  </div>
-</div>
-
-HTML;
-?>
-
-
-
-
-
 <script type='text/javascript'>
 jQuery(document).ready(function($){
   $('div#issues').hide();
