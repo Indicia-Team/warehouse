@@ -73,12 +73,12 @@ class osgb {
       $east = $east * 10000 + floor(($sq_code_letter_ord - 65) / 5) * 2000;
       $north = $north * 10000 + (($sq_code_letter_ord - 65) % 5) * 2000;
     } else {
-      // Normal Numeric Format
-      $coordLen = (strlen($sref) - 2)/2;
-      // extract the easting and northing
+      // Normal Numeric Format.
+      $coordLen = (strlen($sref) - 2) / 2;
+      // Extract the easting and northing.
       $east  = strlen($sref) > 2 ? substr($sref, 2, $coordLen) : 0;
       $north = strlen($sref) > 2 ? substr($sref, 2 + $coordLen) : 0;
-      // if < 10 figure the easting and northing need to be multiplied up to the power of 10
+      // If < 10 figure the easting and northing need to be multiplied up to the power of 10.
       $sq_size = pow(10, 5 - $coordLen);
       kohana::log('debug', "$sref " . var_export($east, TRUE) . ' ' . var_export($sq_size, TRUE));
       $east = $east * $sq_size;
@@ -86,8 +86,8 @@ class osgb {
     }
     $westEdge = $east + $sq_100['x'];
     $southEdge = $north + $sq_100['y'];
-    $eastEdge = $westEdge+$sq_size;
-    $northEdge = $southEdge+$sq_size;
+    $eastEdge = $westEdge + $sq_size;
+    $northEdge = $southEdge + $sq_size;
     return "POLYGON(($westEdge $southEdge,$westEdge $northEdge,$eastEdge $northEdge,$eastEdge $southEdge,$westEdge $southEdge))";
   }
 
@@ -95,14 +95,15 @@ class osgb {
    * Converts a WKT polygon for a grid square (easting northing OSGB) into the
    * spatial reference notation. Only accepts POINT & POLYGON WKT at the moment.
    */
-  public static function wkt_to_sref($wkt, $precision=null)
-  {
-    if (substr($wkt, 0, 7) == 'POLYGON')
+  public static function wkt_to_sref($wkt, $precision = null) {
+    if (substr($wkt, 0, 7) == 'POLYGON') {
       $points = substr($wkt, 9, -2);
+    }
     elseif (substr($wkt, 0, 5) == 'POINT') {
       $points = substr($wkt, 6, -1);
-      if ($precision===null)
+      if ($precision === NULL) {
         throw new Exception('wkt_to_sref translation for POINTs requires an accuracy.');
+      }
     }
     else
       throw new Exception('wkt_to_sref translation only works for POINT or POLYGON wkt.');
