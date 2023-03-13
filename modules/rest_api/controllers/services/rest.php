@@ -2660,11 +2660,7 @@ class Rest_Controller extends Controller {
     $authHeader = $this->getAuthHeader();
     // 4, 6 or 8 colon separated tokens possible in auth header.
     $tokens = explode(':', $authHeader);
-    if (!empty($_GET['user_id']) && !empty($_GET['secret'])) {
-      echo 'sss';
-    }
     if (in_array(count($tokens), [4, 6, 8])) {
-      echo 'jhhjhj';
       if ($tokens[0] !== 'WEBSITE_ID' || $tokens[2] !== 'SECRET' || (count($tokens) >= 6 && $tokens[4] !== 'SCOPE') || (count($tokens) === 8 && $tokens[6] !== 'USER_ID')) {
         // Not a valid header for this auth method.
         return;
