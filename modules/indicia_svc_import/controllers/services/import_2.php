@@ -1895,7 +1895,7 @@ SQL;
         'isExcel' => in_array($ext, ['xls', 'xlsx']),
         'entity' => $entity,
         'parentEntity' => $parentEntity,
-        'columns' => $this->tidyUpColumnsList($importTools->loadColumnNamesFromFile($fileName)),
+        'columns' => $this->tidyUpColumnsList($importTools->loadColumnTitlesFromFile($fileName, FALSE)),
         'systemAddedColumns' => [],
         'state' => 'initial',
         // Rows loaded into the temp table (excludes blanks).
@@ -1964,7 +1964,6 @@ SQL;
    */
   private function tidyUpColumnsList(array $columns) {
     $foundAProperColumn = FALSE;
-    $columns = array_map('trim', $columns);
     // Work backwords in case the spreadsheet contains empty columns on the
     // right.
     for ($i = count($columns) - 1; $i >= 0; $i--) {

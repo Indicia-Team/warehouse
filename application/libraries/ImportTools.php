@@ -185,11 +185,13 @@ class ImportTools {
    *
    * @param string $fileName
    *   The data file to load.
+   * @param bool $lowercase
+   *   Set to true if the result should be in lowercase.
    *
    * @return array
    *   List of columns titles read from the file.
    */
-  public function loadColumnNamesFromFile($fileName) {
+  public function loadColumnTitlesFromFile($fileName, $lowercase) {
     $reader = $this->getReader($fileName);
     // Minimise data read from spreadsheet - first sheet only.
     $worksheetData = $reader->listWorksheetInfo(DOCROOT . "import/$fileName");
@@ -204,7 +206,13 @@ class ImportTools {
     if (count($data) === 0) {
       throw new exception('The spreadsheet file is empty');
     }
-    return $data[0];
+    $columnTitles = $data[0];
+    // Tidy.
+    if ($lowercase) {
+      $columnTitles = array_map('strtolower', $columnTitles);
+    }
+    array_walk($columnTitles, 'trim');
+    return $columnTitles;
   }
 
   /**
