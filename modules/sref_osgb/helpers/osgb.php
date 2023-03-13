@@ -63,30 +63,32 @@ class osgb {
     if (strlen($sref)==5) {
       // Assume DINTY Tetrad format 2km squares
       // extract the easting and northing
-      $east  = substr($sref, 2, 1);
+      $east = substr($sref, 2, 1);
       $north = substr($sref, 3, 1);
       $sq_code_letter_ord = ord(substr($sref, 4, 1));
-      if ($sq_code_letter_ord > 79) $sq_code_letter_ord--; // Adjust for no O
+      if ($sq_code_letter_ord > 79) {
+        $sq_code_letter_ord--; // Adjust for no O
+      }
       $sq_size = 2000;
       $east = $east * 10000 + floor(($sq_code_letter_ord - 65) / 5) * 2000;
       $north = $north * 10000 + (($sq_code_letter_ord - 65) % 5) * 2000;
     } else {
       // Normal Numeric Format
-      $coordLen = (strlen($sref)-2)/2;
+      $coordLen = (strlen($sref) - 2)/2;
       // extract the easting and northing
-      $east  = substr($sref, 2, $coordLen);
-      $north = substr($sref, 2+$coordLen);
+      $east  = strlen($sref) > 2 ? substr($sref, 2, $coordLen) : 0;
+      $north = strlen($sref) > 2 ? substr($sref, 2 + $coordLen) : 0;
       // if < 10 figure the easting and northing need to be multiplied up to the power of 10
-      $sq_size = pow(10, 5-$coordLen);
+      $sq_size = pow(10, 5 - $coordLen);
+      kohana::log('debug', "$sref " . var_export($east, TRUE) . ' ' . var_export($sq_size, TRUE));
       $east = $east * $sq_size;
       $north = $north * $sq_size;
     }
-    $westEdge=$east + $sq_100['x'];
-    $southEdge=$north + $sq_100['y'];
-    $eastEdge=$westEdge+$sq_size;
-    $northEdge=$southEdge+$sq_size;
-    return "POLYGON(($westEdge $southEdge,$westEdge $northEdge,".
-             "$eastEdge $northEdge,$eastEdge $southEdge,$westEdge $southEdge))";
+    $westEdge = $east + $sq_100['x'];
+    $southEdge = $north + $sq_100['y'];
+    $eastEdge = $westEdge+$sq_size;
+    $northEdge = $southEdge+$sq_size;
+    return "POLYGON(($westEdge $southEdge,$westEdge $northEdge,$eastEdge $northEdge,$eastEdge $southEdge,$westEdge $southEdge))";
   }
 
   /**
