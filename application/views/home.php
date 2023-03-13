@@ -38,8 +38,8 @@ jQuery(document).ready(function($){
 </script>
 <?php if (version_compare($app_version, $db_version) === 1) : ?>
 <div class="alert alert-warning"><p>Your database needs to be upgraded as the application version is
-<?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.</p>
-<a class="btn btn-primary" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a>
+  <?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.</p>
+  <a class="btn btn-primary" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a>
 </div>
 <?php endif; ?>
 <p>Indicia is a toolkit that simplifies the construction of new websites which allow data entry, mapping and reporting
@@ -53,7 +53,7 @@ Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for E
 if (count($gettingStartedTips)) {
   echo '<h2>Getting started</h2>';
   foreach ($gettingStartedTips as $msg) {
-    $severity = empty($msg['severity'])? 'info' : $msg['severity'];
+    $severity = empty($msg['severity']) ? 'info' : $msg['severity'];
     echo <<<TIP
 <div class="alert alert-$severity alert-dismissible">
   <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>

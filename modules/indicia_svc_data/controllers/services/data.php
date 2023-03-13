@@ -62,6 +62,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'attribute_sets_survey',
     'attribute_sets_taxon_restriction',
     'comment_quick_reply_page_auth',
+    'custom_verification_ruleset',
     'determination',
     'filter',
     'filters_user',
@@ -157,6 +158,15 @@ class Data_Controller extends Data_Service_Base_Controller {
    */
   public function cache_taxon_searchterm() {
     $this->handle_call('cache_taxon_searchterm');
+  }
+
+  /**
+   * Provides the /services/data/custom_verification_ruleset service.
+   *
+   * Retrieves details of a single custom_verification_ruleset.
+   */
+  public function custom_verification_ruleset() {
+    $this->handle_call('custom_verification_ruleset');
   }
 
   /**

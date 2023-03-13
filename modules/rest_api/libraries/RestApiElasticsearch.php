@@ -313,15 +313,25 @@ class RestApiElasticsearch {
 
   /**
    * Handles a request to Elasticsearch via a proxy.
+   *
+   * @param object|string $requestBody
+   *   Request payload.
+   * @param string $format
+   *   Response format, e.g. 'csv', 'json'.
+   * @param bool $ret
+   *   Set to TRUE if the response should be returned rather than echoed.
+   * @param bool $requestIsRawString
+   *   Set to TRUE if the request is a raw string to be sent as-is rather than
+   *   an object to be encoded as a string.
    */
-  public function elasticRequest($requestBody, $format, $ret = FALSE, $resource = NULL) {
+  public function elasticRequest($requestBody, $format, $ret = FALSE, $resource = NULL, $requestIsRawString = FALSE) {
     $esConfig = kohana::config('rest.elasticsearch');
     $thisProxyCfg = $esConfig[$this->elasticProxy];
     if (!$resource) {
       $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
     }
     $url = "$thisProxyCfg[url]/$thisProxyCfg[index]/$resource";
-    return $this->proxyToEs($url, $requestBody, $format, $ret);
+    $this->proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString);
   }
 
   /**
@@ -1672,7 +1682,8 @@ class RestApiElasticsearch {
     else {
       if (!empty($_GET)) {
         $params = array_merge($_GET);
-        // Don't pass on the auth tokens and other non-elasticsearch tags.
+        // Don't pass on the auth tokens and other non-elasticsearch GET parameters.
+        unset($params['alias']);
         unset($params['user']);
         unset($params['website_id']);
         unset($params['secret']);
@@ -2021,28 +2032,36 @@ SQL;
    *
    * @param string $url
    *   URL to proxy to.
-   * @param string $requestBody
+   * @param object $requestBody
    *   Request data.
    * @param string $format
    *   Response format, e.g. 'csv', 'json'.
    * @param bool $ret
    *   Set to TRUE if the response should be returned rather than echoed.
+   * @param bool $requestIsRawString
+   *   Set to TRUE if the request is a raw string to be sent as-is rather than
+   *   an object to be encoded as a string.
    */
-  private function proxyToEs($url, $requestBody, $format, $ret) {
-    $this->getPagingMode($format);
-    $this->getColumnsTemplate($requestBody);
-    $file = NULL;
-    if ($this->pagingModeState === 'initial') {
-      // First iteration of a scrolled request, so prepare an output file.
-      $file = $this->preparePagingFile($format);
-    }
-    elseif ($this->pagingModeState === 'nextPage') {
-      $file = $this->openPagingFile($format);
+  private function proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString) {
+    if ($requestIsRawString) {
+      $postData = $requestBody;
     }
     else {
-      echo $this->getEsOutputHeader($format);
+      $this->getPagingMode($format);
+      $this->getColumnsTemplate($requestBody);
+      $file = NULL;
+      if ($this->pagingModeState === 'initial') {
+        // First iteration of a scrolled request, so prepare an output file.
+        $file = $this->preparePagingFile($format);
+      }
+      elseif ($this->pagingModeState === 'nextPage') {
+        $file = $this->openPagingFile($format);
+      }
+      else {
+        echo $this->getEsOutputHeader($format);
+      }
+      $postData = $this->getEsPostData($requestBody, $format, $file, preg_match('/\/_search/', $url));
     }
-    $postData = $this->getEsPostData($requestBody, $format, $file, preg_match('/\/_search/', $url));
     $actualUrl = $this->getEsActualUrl($url);
     $session = curl_init($actualUrl);
     if (!empty($postData) && $postData !== '[]') {

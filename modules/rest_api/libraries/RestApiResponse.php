@@ -565,13 +565,13 @@ ROW;
   /**
    * Dumps out an HTML table containing results from a PostgreSQL query.
    *
-   * @param array $data
+   * @param object $data
    *   PG result data to iterate through.
    * @param array $options
    *   Options array. If this has a columns element, it is used to generate a
    *   header row and control the output.
    */
-  private function outputResultAsHtml(array $data, array $options) {
+  private function outputResultAsHtml($data, array $options) {
     echo '<table class="table table-bordered table-responsive">';
     if (isset($options['columns'])) {
       // Ensure href and foriegn key column titles are added if we are including either of them. That's because these
@@ -593,7 +593,7 @@ ROW;
       $columns = array_keys($options['columns']);
     }
     elseif (count($data) > 0) {
-      $columns = array_keys((array)$data[0]);
+      $columns = array_keys((array) $data[0]);
     }
     echo '<tbody>';
 
