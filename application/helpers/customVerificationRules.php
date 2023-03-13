@@ -185,7 +185,7 @@ TXT;
       throw new exception('No rules in this ruleset');
     }
     $rulesetFilters = [
-      ['terms' => ['taxon.taxon_id' => explode(',', $allTaxaKeys)]],
+      ['terms' => ['taxon.accepted_taxon_id' => explode(',', $allTaxaKeys)]],
     ];
     // Also limit to stages if the ruleset has limit_to_stages set.
     if (!empty($ruleset->limit_to_stages)) {
@@ -297,7 +297,7 @@ TXT;
   private static function getApplicabilityChecksForRule($rule) {
     // Start with a filter on the taxon ID.
     $applicabilityCheckList = [
-      "ctx._source.taxon.taxon_id == '$rule->taxon_external_key'",
+      "ctx._source.taxon.accepted_taxon_id == '$rule->taxon_external_key'",
     ];
     // Rule may be only applicable to certain stages.
     if (!empty($rule->limit_to_stages)) {
