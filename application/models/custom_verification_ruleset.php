@@ -54,4 +54,25 @@ class Custom_verification_ruleset_Model extends ORM {
     return parent::validate($array, $save);
   }
 
+  /**
+   * Handle field value conversion.
+   *
+   * E.g. form may submit stages from a text area so convert to array.
+   */
+  protected function preSubmit() {
+    if (isset($this->submission['fields']['limit_to_stages_list'])) {
+      if (!empty($this->submission['fields']['limit_to_stages_list']['value'])) {
+        $stageList = str_replace("\r\n", "\n", $this->submission['fields']['limit_to_stages_list']['value']);
+        $stageList = str_replace("\r", "\n", $stageList);
+        $stageList = explode("\n", trim($stageList));
+        $this->submission['fields']['limit_to_stages'] = ['value' => $stageList];
+        unset($this->submission['fields']['limit_to_stages_list']);
+      }
+      else {
+        // Specified but empty, so null it out.
+        $this->submission['fields']['limit_to_stages'] = ['value' => NULL];
+      }
+    }
+  }
+
 }

@@ -4,6 +4,8 @@ class customVerificationRules {
 
   /**
    * Returns help information.
+   *
+   * @todo Tranfser to the main Read the Docs documentation.
    */
   public static function helpBlock() {
     return <<<TXT
@@ -22,146 +24,38 @@ class customVerificationRules {
           Skip ruleset if location not one of ... (indexed)
 
         Data import format for rules:
-          Ruleset ID *
-          Taxon *
-          Fail icon
-          Fail message
-          Skip rule if life stage not one of ... (comma separated)
-          Skip rule if latitude not greater than ...
-          Skip rule if latitude not less than ...
-          Skip rule if longitude not greater than ...
-          Skip rule if longitude not less than ...
-          Skip rule if location not one of ... (indexed)
-          Rule type *, one of the following:
+          taxon
+          taxon id
+          fail icon
+          fail message
+          grid ref system - system code (e.g. OSGB or OSIE) for the grid references in 'grid refs' or 'limit to grid refs'. Applies to all grid refs specified for this rule.
+          limit to stages - semi-colon separated list of life stages that this rule applies to.
+          limit to grid refs - semi-colon separated list of grid references covering the records that this rule applies to.
+          limit to min longitude - decimal minimum allowed longitude for the records that this rule applies to.
+          limit to min latitude - decimal minimum allowed latitude for the records that this rule applies to.
+          limit to max longitude - decimal maximum allowed longitude for the records that this rule applies to.
+          limit to max latitude - decimal maximum allowed latitude for the records that this rule applies to.
+          limit to location IDs - semi-colon separated list of location IDs.
+          reverse rule - if set (TO TRUE/T?), then the outcome of the rule checks are reversed, e.g. geography rules define a region inside which records will be flagged, or an abundance check flag is raised for records with a count less than the defined value.
+          rule type - one of the following:
             abundance - checks for records of a species which have an exact count given for their abundance and the count is greater than a certain value.
             geography - checks for records of a species that are outside an area which you define, e.g. a bounding box, grid reference, or administrative location. Can also find records north or south of a latitude line, or east or west of a longitude line.
             period - checks for records before or after a given year, e.g. can highlight records before the year of arrival of a newly arrived species.
-            phenology - checks for records that don't fall in a defined time of year.
-            species_recorded - checks for any records of a species, e.g. can be used to build a rarity list ruleset.
-          Reverse rule - if set, then the outcome of the rule checks are reversed, e.g. geography rules define a region inside which records will be flagged, or an abundance check flag is raised for records with a count less than the defined value.
-
-          abundance:
-            max_individual_count
-          geography:
-            min_lat
-            max_lat
-            min_lng
-            max_lng
-            grid_refs
-              (with grid_refs_system)
-            higher_geography_ids
-          phenology:
-            start_day_of_year
-            end_day_of_year
-            or:
-            start_month
-            end_month
-          period:
-            start_year
-            end_year
-          species_recorded:
-            # no parameters for this rule.
-
-      </pre>
-TXT;
-  }
-
-  public static function exampleBlock() {
-    return <<<TXT
-    <pre>
-      <strong>Example</strong>
-
-      # A verification rule in YAML format.
-      # Note the higher geography info and taxon name info will be mapped back to the relevant key when importing the rule data.
-      title: Southwest abundance
-      description: Ladybird abundance checks for South Devon and Dorset.
-      fail_icon: count
-      fail_message: An unusually high count of individuals which warrants further checking.
-      limit_to_geography:
-        locations:
-          - Vice County|Dorset
-          - Vice County|South Devon
-
-      rule:
-        type: abundance
-        taxon_id: NBNSYS0012345678
-        max_individual_count: 10
-
-      rule:
-        type: abundance
-        taxon_name: '2 spot ladybird'
-        fail_message: It's very rare that you'll find more than 20 2-spot Ladybirds in a single location.
-        max_individual_count: 20
-
-    </pre>
-
-    <pre>
-
-      <strong>Example</strong>
-
-      # A verification rule in YAML format.
-      title: Various checks
-      fail_icon: warning
-      fail_message: A local verification rule check has failed.
-      limit_to_geography:
-        min_lat: 52.5
-
-      rule:
-        type: phenology
-        taxon_id: NBNSYS0012345678
-        limit_to_stages:
-          - adult
-        limit_to_geography:
-          grid_ref:
-            SY99
-        fail_message: This is a late spring and summer species. Record is outside the expected time of year so should be checked.
-        fail_icon: calendar
-        start_month: 4
-        end_month: 8
-
-      rule:
-        type: geography
-        taxon_name: '13-spot ladybird'
-        fail_message: 13-spot ladybirds are highly localised.
-        geography:
-          min_lat: 52.313
-          max_lat: 52.562
-          min_lng: -2.552
-          max_lng: -2.212
-
-      rule:
-        type: species_recorded
-        taxon_id: NBNSYS0012345678
-
-    </pre>
-TXT;
-  }
-
-  public static function mappingHelpBlock() {
-    return <<<TXT
-      <pre>
-
-        # Add a mapping to hold the custom flags.
-        PUT occurrence_v1/_mapping
-        {
-          "properties": {
-            "identification.custom_verification_rule_flags": {
-              "type": "nested",
-              "properties": {
-                "custom_verification_ruleset_id": { "type": "integer" },
-                "custom_verification_rule_id": { "type": "integer" },
-                "created_by_id": { "type": "integer" },
-                "result": { "type": "keyword" },
-                "icon": { "type": "keyword" },
-                "message": { "type": "text" },
-                "check_date_time": {
-                  "type": "date",
-                  "format": "8yyyy-MM-dd HH:mm:ss"
-                }
-              }
-            }
-          }
-        }
+            phenology - checks for records that don't fall in a defined time of year. Phenology check ranges can be specified using days of the year (1-366) or months (1-2).
+            species_recorded - checks for any records of a species, e.g. can be used to build a rarity list ruleset. No additional parameters are required for this rule type.
+          max individual count - required for abundance rules.
+          grid refs - optional list of grid references the records are allowed in, for geography checks.
+          min longitude - optional min decimal longitude allowed for records, for geography checks.
+          min latitude - optional min decimal latitude allowed for records, for geography checks.
+          max longitude - optional max decimal longitude allowed for records, for geography checks.
+          max latitude - optional max decimal latitude allowed for records, for geography checks.
+          location IDs - optional list of indexed location IDs (i.e. higher geography), for geography checks.
+          min year - optional minimum 4 digit year, for period checks.
+          max year - optional maximum 4 digit year, for period checks.
+          min month - optional minumum month (1-12) for phenology checks.
+          max month - optional maximum month (1-12) for phenology checks.
+          min day of year - optional minumum day of year (1-366) for phenology checks.
+          max day of year - optional maximum day of year (1-366) for phenology checks.
 
       </pre>
 TXT;
@@ -187,7 +81,7 @@ TXT;
 
     $ruleset = $db->select('*')->from('custom_verification_rulesets')->where('id', $rulesetId)->get()->current();
     if (empty($ruleset)) {
-      throw new exception('Ruleset not found');
+      throw new exception("Ruleset id $rulesetId not found");
     }
     // Get the filters that limit the set of records this ruleset can be
     // applied to.
@@ -315,13 +209,13 @@ TXT;
         ];
       }
       // Limit on higher geography (indexed location) IDs.
-      if (!empty($geoLimits->higher_geography_ids)) {
+      if (!empty($geoLimits->location_ids)) {
         $rulesetFilters[] = [
           'nested' => [
             'path' => 'location.higher_geography',
             'query' => [
               'terms' => [
-                'location.higher_geography.id' => $geoLimits->higher_geography_ids,
+                'location.higher_geography.id' => $geoLimits->location_ids,
               ],
             ],
           ],
@@ -438,8 +332,8 @@ TXT;
    *   * max_lat
    *   * min_lng
    *   * max_lng
-   *   * higher_geography_ids.
-   *   * @todo grid_refs
+   *   * location_ids
+   *   * grid_refs + grid_ref_system
    * @param bool $includeIfTouches
    *   Should the result include records where the point lies on the line, or
    *   only those which are completely over the line.
@@ -474,9 +368,9 @@ TXT;
     }
     // Checks against indexed locations (higher geogprahy IDs) such as Vice
     // Counties.
-    if (!empty($geoParams->higher_geography_ids)) {
+    if (!empty($geoParams->location_ids)) {
       $checkInOrOut = $includeRecordsWhichPassChecks ? '' : '!';
-      $checks[] = $checkInOrOut . 'higherGeoIntersection([' . implode(',', $geoParams->higher_geography_ids) . '], geoIds)';
+      $checks[] = $checkInOrOut . 'higherGeoIntersection([' . implode(',', $geoParams->location_ids) . '], geoIds)';
     }
     if (!empty($geoParams->grid_refs)) {
       if (empty($geoParams->grid_ref_system) || !spatial_ref::is_valid_system($geoParams->grid_ref_system)) {
@@ -561,11 +455,11 @@ TXT;
     // Prepare operators according to the reverse_rule setting.
     $opStart = $rule->reverse_rule === 't' ? '>' : '<';
     $opEnd = $rule->reverse_rule === 't' ? '<' : '>';
-    if (!empty($ruleParams->start_year)) {
-      $checks[] = "Integer.parseInt(ctx._source.event.year) $opStart $ruleParams->start_year";
+    if (!empty($ruleParams->min_year)) {
+      $checks[] = "Integer.parseInt(ctx._source.event.year) $opStart $ruleParams->min_year";
     }
-    if (!empty($ruleParams->end_year)) {
-      $checks[] = "Integer.parseInt(ctx._source.event.year) $opEnd $ruleParams->end_year";
+    if (!empty($ruleParams->max_year)) {
+      $checks[] = "Integer.parseInt(ctx._source.event.year) $opEnd $ruleParams->max_year";
     }
   }
 
@@ -585,18 +479,18 @@ TXT;
     $opStart = $rule->reverse_rule === 't' ? '>' : '<';
     $opEnd = $rule->reverse_rule === 't' ? '<' : '>';
     // Checks based on day in the year 1 to 365.
-    if (!empty($ruleParams->start_day_of_year)) {
-      $checks[] = "Integer.parseInt(ctx._source.event.day_of_year) $opStart $ruleParams->start_day_of_year";
+    if (!empty($ruleParams->min_day_of_year)) {
+      $checks[] = "Integer.parseInt(ctx._source.event.day_of_year) $opStart $ruleParams->min_day_of_year";
     }
-    if (!empty($ruleParams->end_day_of_year)) {
-      $checks[] = "Integer.parseInt(ctx._source.event.day_of_year) $opEnd $ruleParams->end_day_of_year";
+    if (!empty($ruleParams->max_day_of_year)) {
+      $checks[] = "Integer.parseInt(ctx._source.event.day_of_year) $opEnd $ruleParams->max_day_of_year";
     }
     // Checks based on month 1-12.
-    if (!empty($ruleParams->start_month)) {
-      $checks[] = "Integer.parseInt(ctx._source.event.month) $opStart $ruleParams->start_month";
+    if (!empty($ruleParams->min_month)) {
+      $checks[] = "Integer.parseInt(ctx._source.event.month) $opStart $ruleParams->min_month";
     }
-    if (!empty($ruleParams->end_month)) {
-      $checks[] = "Integer.parseInt(ctx._source.event.month) $opEnd $ruleParams->end_month";
+    if (!empty($ruleParams->max_month)) {
+      $checks[] = "Integer.parseInt(ctx._source.event.month) $opEnd $ruleParams->max_month";
     }
   }
 

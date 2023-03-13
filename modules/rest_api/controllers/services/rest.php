@@ -2660,7 +2660,11 @@ class Rest_Controller extends Controller {
     $authHeader = $this->getAuthHeader();
     // 4, 6 or 8 colon separated tokens possible in auth header.
     $tokens = explode(':', $authHeader);
+    if (!empty($_GET['user_id']) && !empty($_GET['secret'])) {
+      echo 'sss';
+    }
     if (in_array(count($tokens), [4, 6, 8])) {
+      echo 'jhhjhj';
       if ($tokens[0] !== 'WEBSITE_ID' || $tokens[2] !== 'SECRET' || (count($tokens) >= 6 && $tokens[4] !== 'SCOPE') || (count($tokens) === 8 && $tokens[6] !== 'USER_ID')) {
         // Not a valid header for this auth method.
         return;
@@ -2671,7 +2675,7 @@ class Rest_Controller extends Controller {
       $userId = count($tokens) === 8 ? $tokens[7] : NULL;
     }
     elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
-          !empty($_GET['user_id']) && !empty($_GET['secret'])) {
+          !empty($_GET['website_id']) && !empty($_GET['secret'])) {
       $websiteId = $_GET['website_id'];
       $password = $_GET['secret'];
       $scope = !empty($_GET['scope']) ? $_GET['scope'] : NULL;
@@ -2776,9 +2780,15 @@ class Rest_Controller extends Controller {
     $postRaw = file_get_contents('php://input');
     $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
     $query = $postObj['query'] ?? [];
-    $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, RestObjects::$clientUserId);
-    $es = new RestApiElasticsearch($_GET['alias']);
-    $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
+    try {
+      $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, RestObjects::$clientUserId);
+      $es = new RestApiElasticsearch($_GET['alias']);
+      $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
+    }
+    catch (Exception $e) {
+      error_logger::log_error('Exception whilst attempting to run a custom verification ruleset.', $e);
+      RestObjects::$apiResponse->fail('Bad Request', 500, $e->getMessage());
+    }
   }
 
   /**

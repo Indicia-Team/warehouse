@@ -35,8 +35,8 @@ COMMENT ON COLUMN custom_verification_rulesets.fail_message IS 'Message to show 
 COMMENT ON COLUMN custom_verification_rulesets.limit_to_stages IS 'If this ruleset only applies to certain life stages, list the stage terms here.';
 COMMENT ON COLUMN custom_verification_rulesets.limit_to_geography IS
   'If this ruleset only applies to a geopgraphic area, define the area here, either by constraining to a range by
-  latitude/longitude, or by defining the IDs of higher geogprahy locations that the ruleset is applied to. JSON object,
-  possible properties are min_lat, min_lng, max_lat, max_lng, higher_geography_ids (array of IDs).';
+  latitude/longitude, or by defining the IDs of higher geography locations that the ruleset is applied to. JSON object,
+  possible properties are grid_refs (array), min_lat, min_lng, max_lat, max_lng, location_ids (array).';
 COMMENT ON COLUMN custom_verification_rulesets.website_id IS 'Website this ruleset was created for.';
 COMMENT ON COLUMN custom_verification_rulesets.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN custom_verification_rulesets.created_by_id IS 'Foreign key to the users table (creator).';
@@ -83,8 +83,8 @@ COMMENT ON COLUMN custom_verification_rules.limit_to_stages IS
   limit, then a record stage must match one of the rule stages AND one of the ruleset stages in order to be checked.';
 COMMENT ON COLUMN custom_verification_rules.limit_to_geography IS
   'If this rule only applies to a geopgraphic area, define the area here, either by constraining to a range by
-  latitude/longitude, or by defining the IDs of higher geogprahy locations that the ruleset is applied to. JSON object,
-  possible properties are min_lat, min_lng, max_lat, max_lng, higher_geography_ids (array of IDs). If the ruleset
+  latitude/longitude, or by defining the IDs of higher geography locations that the ruleset is applied to. JSON object,
+  possible properties are grid_refs (array), min_lat, min_lng, max_lat, max_lng, location_ids (array). If the ruleset
   also defines a geography limit, then a record must match the geography constraints of both the rule and the ruleset
   in order to be checked.';
 COMMENT ON COLUMN custom_verification_rules.rule_type IS 'Type of rule, either abundance, geography, phenology, period or species_recorded.';
@@ -97,6 +97,7 @@ COMMENT ON COLUMN custom_verification_rules.updated_by_id IS 'Foreign key to the
 COMMENT ON COLUMN custom_verification_rules.deleted IS 'Has this record been deleted?';
 
 CREATE OR REPLACE VIEW list_custom_verification_rulesets AS
-  SELECT rs.id, rs.title, rs.description, rs.fail_icon, rs.fail_message, rs.limit_to_stages, rs.limit_to_geography, rs.website_id
+  SELECT rs.id, rs.title, rs.description, rs.fail_icon, rs.fail_message,
+    rs.limit_to_stages, rs.limit_to_geography, rs.website_id, rs.created_by_id
   FROM custom_verification_rulesets rs
   WHERE rs.deleted = false;
