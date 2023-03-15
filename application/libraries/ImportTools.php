@@ -207,11 +207,13 @@ class ImportTools {
       throw new exception('The spreadsheet file is empty');
     }
     $columnTitles = $data[0];
+    for ($i = count($columnTitles) - 1; $i >= 0 && $columnTitles[$i] === NULL; $i--) {
+      unset($columnTitles[$i]);
+    }
     // Tidy.
     if ($lowercase) {
-      $columnTitles = array_map('strtolower', $columnTitles);
+      $columnTitles = array_map(fn ($value) => trim(strtolower($value ?? '')), $columnTitles);
     }
-    array_walk($columnTitles, 'trim');
     return $columnTitles;
   }
 
