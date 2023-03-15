@@ -96,8 +96,8 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
         'max year',
         'min month',
         'max month',
-        'min day of year',
-        'max day of year',
+        'min day',
+        'max day',
       ]);
       $errors = [];
       if (count($wrongCols) > 0) {
@@ -170,8 +170,8 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
             'max year',
             'min month',
             'max month',
-            'min day of year',
-            'max day of year',
+            'min day',
+            'max day',
             'max individual count',
           ]);
           $this->validateFloats($errors, $row, $spreadsheetRow, $titleIndexes, [
@@ -310,7 +310,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    */
   private function validateLocationIdFields(array &$errors, array $row, $spreadsheetRow, array $titleIndexes, $locationIdsColTitle) {
     $locationIds = $this->getValue($row, $titleIndexes, $locationIdsColTitle);
-    if (!empty($locationIds) && !preg_match('/^\d+(,\s*\d+)*$/', $locationIds)) {
+    if (!empty($locationIds) && !preg_match('/^\d+(;\s*\d+)*$/', $locationIds)) {
       $errors[] = "Invalid format for $locationIdsColTitle ($locationIds) on row $spreadsheetRow.";
     }
   }
@@ -328,39 +328,59 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    *   Array of column position indexes by column title.
    */
   private function validatePhenology(array &$errors, array $row, $spreadsheetRow, array $titleIndexes) {
+    $origErrorCount = count($errors);
     $this->validateAnyRequired($errors, $row, $spreadsheetRow, $titleIndexes, [
       'min month',
       'max month',
-      'min day of year',
-      'max day of year',
     ]);
     $this->validateIntegers($errors, $row, $spreadsheetRow, $titleIndexes, [
       'min month',
       'max month',
-      'min day of year',
-      'max day of year',
+      'min day',
+      'max day',
     ]);
+    // Abort if missing values or non-integers already found.
+    if (count($errors) > $origErrorCount) {
+      return;
+    }
     $minMonth = $this->getValue($row, $titleIndexes, 'min month');
     $maxMonth = $this->getValue($row, $titleIndexes, 'max month');
-    $minDayOfYear = $this->getValue($row, $titleIndexes, 'min day of year');
-    $minDayOfYear = $this->getValue($row, $titleIndexes, 'max day of year');
+    $minDay = $this->getValue($row, $titleIndexes, 'min day');
+    $maxDay = $this->getValue($row, $titleIndexes, 'max day');
     if (!empty($minMonth) && ($minMonth < 1 || $minMonth > 12)) {
       $errors[] = "Invalid month number for min month in row $spreadsheetRow.";
     }
     if (!empty($maxMonth) && ($maxMonth < 1 || $maxMonth > 12)) {
       $errors[] = "Invalid month number for max month in row $spreadsheetRow.";
     }
-    if (!empty($minMonth) && !empty($maxMonth) && $maxMonth < $minMonth) {
-      $errors[] = "Min and max month wrong way round in row $spreadsheetRow.";
+    if (!empty($maxDay) && empty($maxMonth)) {
+      $errors[] = "Row $spreadsheetRow specifies a min day, but does not specify the min month so it is meaningless.";
     }
-    if (!empty($minDayOfYear) && ($minDayOfYear < 1 || $minDayOfYear > 366)) {
-      $errors[] = "Invalid day of year number for min day of year in row $spreadsheetRow.";
+    if (!empty($maxDay) && empty($maxMonth)) {
+      $errors[] = "Row $spreadsheetRow specifies a max day, but does not specify the max month so it is meaningless.";
     }
-    if (!empty($maxDayOfYear) && ($maxDayOfYear < 1 || $maxDayOfYear > 366)) {
-      $errors[] = "Invalid day of year number for max day of year in row $spreadsheetRow.";
+    // Abort if invalid month numbers or missing months as remaining tests require them.
+    if (count($errors) > $origErrorCount) {
+      return;
     }
-    if (!empty($minDayOfYear) && !empty($maxDayOfYear) && $maxDayOfYear < $minDayOfYear) {
-      $errors[] = "Min and max day of year wrong way round in row $spreadsheetRow.";
+    if (!empty($minDay) && !empty($minMonth) && ($minDay < 1 || $minDay > customVerificationRules::getDaysInMonth($minMonth))) {
+      $errors[] = "Invalid day number for min day in row $spreadsheetRow.";
+    }
+    if (!empty($maxDay) && !empty($maxMonth) && ($maxDay < 1 || $maxDay > customVerificationRules::getDaysInMonth($maxMonth))) {
+      $errors[] = "Invalid day number for max day in row $spreadsheetRow.";
+    }
+    // Abort if invalid day numbers as remaining tests require them.
+    if (count($errors) > $origErrorCount) {
+      return;
+    }
+    // Check if min and max wrong way round.
+    if (!empty($minMonth) && !empty($maxMonth)) {
+      // Convert to day of year for easy comparison.
+      $minDoy = customVerificationRules::dayInMonthToDayInYear(FALSE, $minMonth, $minDay);
+      $maxDoy = customVerificationRules::dayInMonthToDayInYear(TRUE, $maxMonth, $maxDay);
+      if ($minDoy > $maxDoy) {
+        $errors[] = "Min and max dates wrong way round in row $spreadsheetRow.";
+      }
     }
   }
 
@@ -600,7 +620,7 @@ SQL;
         return;
       }
     }
-    $errors[] = "Value required for at leat on of the values for fields " . implode(';', $cols) . " on row $spreadsheetRow.";
+    $errors[] = "Value required for at least one of the values for fields " . implode(';', $cols) . " on row $spreadsheetRow.";
   }
 
   /**
@@ -784,11 +804,11 @@ SQL;
     if ($maxMonth = $this->getValue($row, $titleIndexes, 'max month')) {
       $definition['max_month'] = $maxMonth;
     }
-    if ($minDayOfYear = $this->getValue($row, $titleIndexes, 'min day of year')) {
-      $definition['min_day_of_year'] = $minDayOfYear;
+    if ($minDayOfYear = $this->getValue($row, $titleIndexes, 'min day')) {
+      $definition['min_day'] = $minDayOfYear;
     }
-    if ($maxDayOfYear = $this->getValue($row, $titleIndexes, 'max day of year')) {
-      $definition['max_day_of_year'] = $maxDayOfYear;
+    if ($maxDayOfYear = $this->getValue($row, $titleIndexes, 'max day')) {
+      $definition['max_day'] = $maxDayOfYear;
     }
     return $definition;
   }

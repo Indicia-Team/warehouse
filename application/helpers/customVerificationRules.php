@@ -49,13 +49,13 @@ class customVerificationRules {
           min latitude - optional min decimal latitude allowed for records, for geography checks.
           max longitude - optional max decimal longitude allowed for records, for geography checks.
           max latitude - optional max decimal latitude allowed for records, for geography checks.
-          location IDs - optional list of indexed location IDs (i.e. higher geography), for geography checks.
+          location IDs - optional semi-colon separated list of indexed location IDs (i.e. higher geography), for geography checks.
           min year - optional minimum 4 digit year, for period checks.
           max year - optional maximum 4 digit year, for period checks.
           min month - optional minumum month (1-12) for phenology checks.
           max month - optional maximum month (1-12) for phenology checks.
-          min day of year - optional minumum day of year (1-366) for phenology checks.
-          max day of year - optional maximum day of year (1-366) for phenology checks.
+          min day - optional minumum day within the specified min month (1-31) for phenology checks.
+          max day - optional maximum day within the specified max month (1-31) for phenology checks.
 
       </pre>
 TXT;
@@ -164,6 +164,58 @@ PAINLESS;
     }
 TXT;
     return $requestBody;
+  }
+
+  /**
+   * Get the maximum days in a given month number.
+   *
+   * For validation purposes, so assumes a leap year.
+   *
+   * @param int $month
+   *   Month number (1-12).
+   *
+   * @return int
+   *   Number of days.
+   */
+  public function getDaysInMonth($month) {
+    return [
+      31,
+      29,
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31,
+      30,
+      31,
+    ][$month - 1];
+  }
+
+  /**
+   * Converts a month and optional day in month to day of year.
+   *
+   * @param bool $defaultMonthEnd
+   *   If the day is not specified, return the first day of the month (false)
+   *   or the last day of the month (true).
+   * @param int $month
+   *   Month number (1-12).
+   * @param int $day
+   *   Optional day number (1-31).
+   *
+   * @return int
+   *   Day of year (1-365).
+   */
+  public static function dayInMonthToDayInYear($defaultMonthEnd, $month, $day = NULL) {
+    $day = $day ?? ($defaultMonthEnd ? self::getDaysInMonth($month) : 1);
+    // Use current year as arbitrary default.
+    $year = date('Y');
+    $date = DateTimeImmutable::createFromFormat('Y-j-n', "$year-$month-$day");
+    // Convert to day of year (0-365) and add one to match ES day_of_year field
+    // (1-366).
+    return ((integer) date('z', $date)) + 1;
   }
 
   /**
@@ -478,19 +530,23 @@ TXT;
     // Prepare operators according to the reverse_rule setting.
     $opStart = $rule->reverse_rule === 't' ? '>' : '<';
     $opEnd = $rule->reverse_rule === 't' ? '<' : '>';
-    // Checks based on day in the year 1 to 365.
-    if (!empty($ruleParams->min_day_of_year)) {
-      $checks[] = "Integer.parseInt(ctx._source.event.day_of_year) $opStart $ruleParams->min_day_of_year";
-    }
-    if (!empty($ruleParams->max_day_of_year)) {
-      $checks[] = "Integer.parseInt(ctx._source.event.day_of_year) $opEnd $ruleParams->max_day_of_year";
-    }
-    // Checks based on month 1-12.
     if (!empty($ruleParams->min_month)) {
-      $checks[] = "Integer.parseInt(ctx._source.event.month) $opStart $ruleParams->min_month";
+      if (!empty($ruleParams->min_day)) {
+        $minDoy = self::dayInMonthToDayInYear(FALSE, $ruleParams->min_month, $ruleParams->min_day);
+        $checks[] = "Integer.parseInt(ctx._source.event.day_of_year) $opStart $minDoy";
+      }
+      else {
+        $checks[] = "Integer.parseInt(ctx._source.event.month) $opStart $ruleParams->min_month";
+      }
     }
     if (!empty($ruleParams->max_month)) {
-      $checks[] = "Integer.parseInt(ctx._source.event.month) $opEnd $ruleParams->max_month";
+      if (!empty($ruleParams->max_day)) {
+        $maxDoy = self::dayInMonthToDayInYear(TRUE, $ruleParams->max_month, $ruleParams->max_day);
+        $checks[] = "Integer.parseInt(ctx._source.event.day_of_year) $opEnd $maxDoy";
+      }
+      else {
+        $checks[] = "Integer.parseInt(ctx._source.event.month) $opEnd $ruleParams->max_month";
+      }
     }
   }
 
