@@ -34,6 +34,41 @@
 class Indicia_Controller extends Template_Controller {
 
   /**
+   * Database connection.
+   * 
+   * @var Database
+   */
+  protected $db;
+
+  /**
+   * Authorisation object instance.
+   * 
+   * @var Auth
+   */
+  protected $auth;
+
+  /**
+   * Model instance.
+   * 
+   * @var ORM
+   */
+  protected $model;
+
+  /**
+   * Session object instance.
+   * 
+   * @var Session
+   */
+  protected $session;
+
+  /**
+   * Authorisation filter, e.g. website IDs that user can see.
+   * 
+   * @var array
+   */
+  protected array|NULL $auth_filter;
+
+  /**
    * Name of the main template view file.
    *
    * @var string
@@ -46,6 +81,13 @@ class Indicia_Controller extends Template_Controller {
    * @var array
    */
   protected $page_breadcrumbs = array();
+
+  /**
+   * Page title.
+   * 
+   * @var string
+   */
+  protected $pagetitle;
 
   /**
    * List of person IDs the user has edit rights to.
