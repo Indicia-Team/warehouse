@@ -340,8 +340,8 @@ class Rest_Controller extends Controller {
     ],
     'custom-verification-rulesets' => [
       'POST' => [
-        'custom-verification-rulesets/{id}/run_request' => [],
-        'custom-verification-rulesets/clear_flags' => [],
+        'custom-verification-rulesets/{id}/run-request' => [],
+        'custom-verification-rulesets/clear-flags' => [],
       ],
     ],
     'media-queue' => [
@@ -2767,12 +2767,12 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Request handler for POST /custom-verification-rulesets/{id}/run_request.
+   * Request handler for POST /custom-verification-rulesets/{id}/run-request.
    *
    * Requests a run of a custom verification ruleset, using the filter supplied
    * in the POST body.
    */
-  public function customVerificationRulesetsPostIdRun_request() {
+  public function customVerificationRulesetsPostIdRunRequest() {
     $rulesetId = $this->uri->segment(4);
     $postRaw = file_get_contents('php://input');
     $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
@@ -2791,12 +2791,12 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Request handler for POST /custom-verification-rulesets/clear_flags.
+   * Request handler for POST /custom-verification-rulesets/clear-flags.
    *
    * Clears a user's custom verification rule check flags from the filter
    * supplied in the POST body.
    */
-  public function customVerificationRulesetsPostClear_flags() {
+  public function customVerificationRulesetsPostClearFlags() {
     $postRaw = file_get_contents('php://input');
     $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
     $query = $postObj['query'] ?? [];
