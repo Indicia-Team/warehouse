@@ -167,6 +167,57 @@ TXT;
   }
 
   /**
+   * Builds the request body that clears a user's flags from a dataset.
+   *
+   * @param array $query
+   *   Query containing the current outer filter to merge with.
+   * @param int $userId
+   *   Warehouse user ID.
+   *
+   * @return string
+   *   Request body.
+   */
+  public static function buildClearFlagsRequest(array $query, $userId) {
+    // Adjust query so only fetching records that have a flag added by this
+    // user.
+    if (!isset($query['bool'])) {
+      $query['bool'] = [];
+    }
+    if (!isset($query['bool']['must'])) {
+      $query['bool']['must'] = [];
+    }
+    $query['bool']['must'][] = [
+      'nested' => [
+        'path' => 'identification.custom_verification_rule_flags',
+        'query' => [
+          'term' => [
+            'identification.custom_verification_rule_flags.created_by_id' => $userId,
+          ],
+        ],
+      ],
+    ];
+    $queryText = json_encode($query);
+    $scriptSource = <<<PAINLESS
+      if (ctx._source.identification.custom_verification_rule_flags != null) {
+        ArrayList flags = ctx._source.identification.custom_verification_rule_flags;
+        flags.removeIf(a -> a.created_by_id == $userId);
+      }
+PAINLESS;
+    // Remove linefeed so the JSON format is valid.
+    $scriptSourceEscaped = str_replace("\n", ' ', $scriptSource);
+    $requestBody = <<<TXT
+    {
+      "script": {
+        "source": "$scriptSourceEscaped",
+        "lang": "painless"
+      },
+      "query": $queryText
+    }
+TXT;
+    return $requestBody;
+  }
+
+  /**
    * Get the maximum days in a given month number.
    *
    * For validation purposes, so assumes a leap year.

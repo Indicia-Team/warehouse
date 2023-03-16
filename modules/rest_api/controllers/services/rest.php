@@ -341,6 +341,7 @@ class Rest_Controller extends Controller {
     'custom-verification-rulesets' => [
       'POST' => [
         'custom-verification-rulesets/{id}/run_request' => [],
+        'custom-verification-rulesets/clear_flags' => [],
       ],
     ],
     'media-queue' => [
@@ -2783,7 +2784,32 @@ class Rest_Controller extends Controller {
     }
     catch (Exception $e) {
       error_logger::log_error('Exception whilst attempting to run a custom verification ruleset.', $e);
-      RestObjects::$apiResponse->fail('Bad Request', 500, $e->getMessage());
+      if (!$e instanceof RestApiAbort) {
+        RestObjects::$apiResponse->fail('Internal server error', 500, $e->getMessage());
+      }
+    }
+  }
+
+  /**
+   * Request handler for POST /custom-verification-rulesets/clear_flags.
+   *
+   * Clears a user's custom verification rule check flags from the filter
+   * supplied in the POST body.
+   */
+  public function customVerificationRulesetsPostClear_flags() {
+    $postRaw = file_get_contents('php://input');
+    $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
+    $query = $postObj['query'] ?? [];
+    try {
+      $requestBody = customVerificationRules::buildClearFlagsRequest($query, RestObjects::$clientUserId);
+      $es = new RestApiElasticsearch($_GET['alias']);
+      $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
+    }
+    catch (Exception $e) {
+      error_logger::log_error('Exception whilst attempting to clear custom verification rule flags.', $e);
+      if (!$e instanceof RestApiAbort) {
+        RestObjects::$apiResponse->fail('Internal server error', 500, $e->getMessage());
+      }
     }
   }
 
