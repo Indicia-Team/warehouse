@@ -318,7 +318,7 @@ SQL;
     }
 
     // Add allowance for range.
-    $pattern = "/^${pattern}(\s*-\s*${pattern})?$/";
+    $pattern = "/^{$pattern}(\s*-\s*{$pattern})?$/";
 
     return (bool) preg_match($pattern, (string) $str);
   }
