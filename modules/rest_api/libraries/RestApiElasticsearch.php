@@ -1953,8 +1953,8 @@ class RestApiElasticsearch {
     else {
       $sql = <<<SQL
 SELECT a.caption, a.id
-FROM ${type}_attributes_websites aw
-JOIN ${type}_attributes a on a.id = aw.${type}_attribute_id
+FROM {$type}_attributes_websites aw
+JOIN {$type}_attributes a on a.id = aw.{$type}_attribute_id
 WHERE restrict_to_survey_id=$id;
 SQL;
       $columns = [];

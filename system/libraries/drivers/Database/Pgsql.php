@@ -328,6 +328,13 @@ class Database_Pgsql_Driver extends Database_Driver {
  */
 class Pgsql_Result extends Database_Result {
 
+  /**
+   * Database connection link.
+   * 
+   * @var PgSql\Connection
+   */
+  protected $link;
+
   // Data fetching types
   protected $fetch_type  = 'pgsql_fetch_object';
   protected $return_type = PGSQL_ASSOC;

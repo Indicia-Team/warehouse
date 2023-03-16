@@ -34,6 +34,63 @@ class Setup_Check_Controller extends Template_Controller {
 
   private $error = NULL;
 
+  private $session;
+
+  /**
+   * Database connection
+   * 
+   * @var Database;
+   */
+  private $db;
+
+  /**
+   * Variables to pass to the view.
+   * 
+   * @var array
+   */
+  private array $view_var;
+
+  /**
+   * Database parameters captured from the setup form.
+   * @var array
+   */
+  private array $dbparam = [];
+
+  /**
+   * Path to file containing sequence schema SQL.
+   * 
+   * @var string
+   */
+  private $db_file_indicia_sequences;
+
+  /**
+   * Path to file containing table schema SQL.
+   * 
+   * @var string
+   */
+  private $db_file_indicia_tables;
+
+  /**
+   * Path to file containing view schema SQL.
+   * 
+   * @var string
+   */
+  private $db_file_indicia_views;
+
+  /**
+   * Path to file containing PostGIS modification SQL.
+   * 
+   * @var string
+   */
+  private $db_file_postgis_alterations;
+
+  /**
+   * Path to file containing default data insertion SQL.
+   * 
+   * @var string
+   */
+  private $db_file_indicia_data;
+
   /**
    * Template name
    *
@@ -217,7 +274,7 @@ class Setup_Check_Controller extends Template_Controller {
       $this->template->content->error = $this->error;
 
       // Init and default values of view vars.
-      $this->view_var = array();
+      $this->view_var = [];
 
       $description = str_replace(
         array('*code*', '*code_user*', '*code_perm*'),

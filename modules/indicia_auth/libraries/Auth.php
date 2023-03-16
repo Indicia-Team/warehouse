@@ -13,6 +13,8 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class Auth_Core {
 
+  private $driver;
+
   // Session instance.
   protected $session;
 
@@ -485,7 +487,7 @@ class Auth_Core {
     if ($salt === FALSE)
     {
       // Create a salt seed, same length as the number of offsets in the pattern
-      $salt = substr($this->hash(uniqid(NULL, TRUE)), 0, count($this->config['salt_pattern']));
+      $salt = substr($this->hash(uniqid('', TRUE)), 0, count($this->config['salt_pattern']));
     }
 
     // Password hash that the salt will be inserted into
