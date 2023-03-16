@@ -32,6 +32,41 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
 
   protected $gridReport = FALSE;
 
+  /**
+   * Name of the associated model.
+   * 
+   * @var string
+   */
+  protected $modelname;
+
+  /**
+   * Name of the associated view.
+   * 
+   * @var string
+   */
+  protected $viewname;
+
+  /**
+   * The view object.
+   * 
+   * @var mixed
+   */
+  protected $view;
+
+  /**
+   * Path to the controller class (excluding .php).
+   * 
+   * @var string
+   */
+  protected $controllerpath;
+
+  /**
+   * Key/value pairs for filters to be applied to the data.
+   * 
+   * @var array
+   */
+  protected array $base_filter;
+
   /* Constructor.
    *
    * @param string $modelname
@@ -40,7 +75,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    *   Name of the view which contains the grid. Defaults to the model name +
    *   /index.
    * @param string $controllerpath
-   *   Path the controller from the controllers folder. $viewname and
+   *   Path to the controller from the controllers folder. $viewname and
    *   $controllerpath can be ommitted if the names are all the same.
    */
   public function __construct($modelname, $viewname = NULL, $controllerpath = NULL) {
