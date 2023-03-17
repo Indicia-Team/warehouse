@@ -1,3 +1,24 @@
+# Version 8.16.0
+*2023-03-17*
+
+* Changed menu item "Admin -> Website agreements" to "Admin -> Website data sharing agreements".
+* Changed "Agreements" tab title to "Data sharing" for the website details page.
+* New database tables and APIs added to support custom verification rules (aka local rules). These
+  allow verifiers to define their own verification check rules, e.g. to flag records outside a
+  known grid square, or outside a particular time of year.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1403.
+* Some fixes relating to PHP 8.1.
+* Notifications are no longer generated for training records.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/108.
+* A description is no longer required when editing a term in a termlist using the warehouse UI.
+* API support added allowing a set of records to be moved between a publically shared website and a
+  private website and vice versa, effectively allowing control of their publication status.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1396.
+* Updated categories for notifications, so that queries and redeterminations can be properly
+  tracked. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1362.
+* The verification API now supports applying a verification decision to all records within a parent
+  sample of the same taxon in one step. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1274.
+
 # Version 8.15.0
 *2023-01-24*
 
