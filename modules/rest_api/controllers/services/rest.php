@@ -338,6 +338,12 @@ class Rest_Controller extends Controller {
         ],
       ],
     ],
+    'custom-verification-rulesets' => [
+      'POST' => [
+        'custom-verification-rulesets/{id}/run-request' => [],
+        'custom-verification-rulesets/clear-flags' => [],
+      ],
+    ],
     'media-queue' => [
       'POST' => [
         'media-queue' => [],
@@ -2666,7 +2672,7 @@ class Rest_Controller extends Controller {
       $userId = count($tokens) === 8 ? $tokens[7] : NULL;
     }
     elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
-          !empty($_GET['user_id']) && !empty($_GET['secret'])) {
+          !empty($_GET['website_id']) && !empty($_GET['secret'])) {
       $websiteId = $_GET['website_id'];
       $password = $_GET['secret'];
       $scope = !empty($_GET['scope']) ? $_GET['scope'] : NULL;
@@ -2761,6 +2767,53 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Request handler for POST /custom-verification-rulesets/{id}/run-request.
+   *
+   * Requests a run of a custom verification ruleset, using the filter supplied
+   * in the POST body.
+   */
+  public function customVerificationRulesetsPostIdRunRequest() {
+    $rulesetId = $this->uri->segment(4);
+    $postRaw = file_get_contents('php://input');
+    $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
+    $query = $postObj['query'] ?? [];
+    try {
+      $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, RestObjects::$clientUserId);
+      $es = new RestApiElasticsearch($_GET['alias']);
+      $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
+    }
+    catch (Exception $e) {
+      error_logger::log_error('Exception whilst attempting to run a custom verification ruleset.', $e);
+      if (!$e instanceof RestApiAbort) {
+        RestObjects::$apiResponse->fail('Internal server error', 500, $e->getMessage());
+      }
+    }
+  }
+
+  /**
+   * Request handler for POST /custom-verification-rulesets/clear-flags.
+   *
+   * Clears a user's custom verification rule check flags from the filter
+   * supplied in the POST body.
+   */
+  public function customVerificationRulesetsPostClearFlags() {
+    $postRaw = file_get_contents('php://input');
+    $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
+    $query = $postObj['query'] ?? [];
+    try {
+      $requestBody = customVerificationRules::buildClearFlagsRequest($query, RestObjects::$clientUserId);
+      $es = new RestApiElasticsearch($_GET['alias']);
+      $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
+    }
+    catch (Exception $e) {
+      error_logger::log_error('Exception whilst attempting to clear custom verification rule flags.', $e);
+      if (!$e instanceof RestApiAbort) {
+        RestObjects::$apiResponse->fail('Internal server error', 500, $e->getMessage());
+      }
+    }
+  }
+
+  /**
    * Request handler for POST /rest/media-queue.
    *
    * Allows media to be cached on the server prior to submitting the data the
@@ -2777,7 +2830,7 @@ class Rest_Controller extends Controller {
     }
     else {
       // Implode array of arrays.
-      $types = implode(',', array_map(function($a){
+      $types = implode(',', array_map(function ($a) {
         return implode(',', $a);
       }, $config));
     }

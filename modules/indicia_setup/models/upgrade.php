@@ -103,6 +103,13 @@ class Upgrade_Model extends Model {
 
   private $couldBeSlow = TRUE;
 
+  /**
+   * Root directory, used to locate upgrade scripts.
+   * 
+   * @var string
+   */
+  private $base_dir;
+
   public $pgUserScriptsToBeApplied = '';
 
   public $slowScriptsToBeApplied = '';

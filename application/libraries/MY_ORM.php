@@ -297,7 +297,7 @@ class ORM extends ORM_Core {
    * @return $this|\ORM
    */
   public function reload_columns($force = FALSE) {
-    if ($force === TRUE OR empty($this->table_columns)) {
+    if ($force === TRUE || empty($this->table_columns)) {
       // Load table columns.
       $this->table_columns = postgreSQL::list_fields($this->table_name, $this->db);
       // Vague date.

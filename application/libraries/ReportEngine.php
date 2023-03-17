@@ -1143,7 +1143,7 @@ SQL;
                 $pqValue = count($output) > 0 ? implode(',', $output[0]) : NULL;
                 if (empty($pqValue)) {
                   // Create a dummy value so as to not cause a syntax error.
-                  if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'])) {
+                  if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'] ?? '')) {
                     $pqValue = "-999999";
                   }
                   else {

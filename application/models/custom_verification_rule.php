@@ -22,28 +22,31 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Model class for the notifications table.
+ * Model class for the custom_verification_rules table.
  */
-class Notification_Model extends ORM {
+class Custom_verification_rule_Model extends ORM {
 
-  protected $has_many = ['taxa'];
-
-  protected $belongs_to = ['user'];
+  protected $belongs_to = [
+    'custom_verification_ruleset' => 'custom_verification_ruleset',
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
     // Uses PHP trim() to remove whitespace from beginning and end of all
     // fields before validation.
     $array->pre_filter('trim');
-    $array->add_rules('source', 'required');
-    $array->add_rules('source_type', 'required');
-    $array->add_rules('data', 'required');
-    $array->add_rules('acknowledged', 'required');
-    $array->add_rules('user_id', 'required');
-    $array->add_rules('triggered_on', 'required');
+    $array->add_rules('custom_verification_ruleset_id', 'integer', 'required');
+    $array->add_rules('taxon_external_key', 'required');
+    $array->add_rules('rule_type', 'required');
+    $array->add_rules('definition', 'required');
+
     $this->unvalidatedFields = [
-      'digest_mode',
-      'cc',
-      'linked_id',
+      'fail_icon',
+      'fail_message',
+      'limit_to_stages',
+      'limit_to_geography',
+      'reverse_rule',
     ];
     return parent::validate($array, $save);
   }

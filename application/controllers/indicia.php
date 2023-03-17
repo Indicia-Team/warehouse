@@ -34,6 +34,41 @@
 class Indicia_Controller extends Template_Controller {
 
   /**
+   * Database connection.
+   * 
+   * @var Database
+   */
+  protected $db;
+
+  /**
+   * Authorisation object instance.
+   * 
+   * @var Auth
+   */
+  protected $auth;
+
+  /**
+   * Model instance.
+   * 
+   * @var ORM
+   */
+  protected $model;
+
+  /**
+   * Session object instance.
+   * 
+   * @var Session
+   */
+  protected $session;
+
+  /**
+   * Authorisation filter, e.g. website IDs that user can see.
+   * 
+   * @var array
+   */
+  protected array|NULL $auth_filter;
+
+  /**
    * Name of the main template view file.
    *
    * @var string
@@ -46,6 +81,13 @@ class Indicia_Controller extends Template_Controller {
    * @var array
    */
   protected $page_breadcrumbs = array();
+
+  /**
+   * Page title.
+   * 
+   * @var string
+   */
+  protected $pagetitle;
 
   /**
    * List of person IDs the user has edit rights to.
@@ -168,7 +210,7 @@ class Indicia_Controller extends Template_Controller {
         $menu['Admin']['Users'] = 'user';
       }
       if ($this->auth->logged_in('CoreAdmin')) {
-        $menu['Admin']['Website agreements'] = 'website_agreement';
+        $menu['Admin']['Website data sharing agreements'] = 'website_agreement';
         $menu['Admin']['Performance diagnostics'] = 'diagnostics';
       }
       $menu['Logged in as ' . $_SESSION['auth_user']->username] = [

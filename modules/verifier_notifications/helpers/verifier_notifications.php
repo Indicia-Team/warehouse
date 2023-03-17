@@ -62,7 +62,8 @@ DROP TABLE IF EXISTS occdelta_overdue;
 SELECT co.*
 INTO TEMPORARY occdelta_overdue
 FROM cache_occurrences_functional co
-WHERE co.id IN ($occurrenceIdList);
+WHERE co.id IN ($occurrenceIdList)
+AND co.training=false;
 SQL;
         $db->query($sql);
         // Run all filters against occdelta_overdue and generate notifications

@@ -210,6 +210,80 @@ $lang['resources']['GET annotations/{id}'] = <<<TXT
 Retrieve the details of a single annotation where {id} is replaced by the observation
 ID.
 TXT;
+$lang['resources']['custom-verification-rulesets'] = <<<TXT
+Endpoints for functionality relating to a user's sets of custom verification rules. Custom verification rulesets are
+a feature that allows a verifier to upload their own rule definitions to apply checks to the list of species records
+they can verify. For example, they can flag records which are outside an expected region or time of year, or have an
+unusually high abundance count.
+TXT;
+$lang['resources']['POST custom-verification-rulesets/{id}/run-request'] = <<<TXT
+<p>POST a filter definition to this endpoint to run the custom verification ruleset {id} against the filtered set of records.</p>
+<p>Example:</p>
+<pre><code>
+POST /index.php/services/rest/custom-verification-rulesets/123/run-request
+{
+	"query": {
+		"bool": {
+			"must": [{
+				"query_string": {
+					"query": "identification.verification_status:C AND identification.verification_substatus:0 AND NOT identification.query:Q"
+				}
+			}, {
+				"term": {
+					"metadata.trial": false
+				}
+			}, {
+				"term": {
+					"metadata.confidential": false
+				}
+			}, {
+				"term": {
+					"metadata.release_status": "R"
+				}
+			}, {
+				"term": {
+					"event.year": 2023
+				}
+			}]
+		}
+	}
+}
+</code></pre>
+TXT;
+$lang['resources']['POST custom-verification-rulesets/clear-flags'] = <<<TXT
+<p>POST a filter definition to this endpoint to clear any custom verification rule flags from the filtered list of records. Only affects rule flags created by this user.</p>
+<p>Example:</p>
+<pre><code>
+POST /index.php/services/rest/custom-verification-rulesets/clear-flags
+{
+	"query": {
+		"bool": {
+			"must": [{
+				"query_string": {
+					"query": "identification.verification_status:C AND identification.verification_substatus:0 AND NOT identification.query:Q"
+				}
+			}, {
+				"term": {
+					"metadata.trial": false
+				}
+			}, {
+				"term": {
+					"metadata.confidential": false
+				}
+			}, {
+				"term": {
+					"metadata.release_status": "R"
+				}
+			}, {
+				"term": {
+					"event.year": 2023
+				}
+			}]
+		}
+	}
+}
+</code></pre>
+TXT;
 $lang['resources']['locations'] = 'A list of a user\'s saved sites and other locations.';
 $lang['resources']['GET locations'] = 'Retrieves a list of a user\'s saved sites and other locations.';
 $lang['resources']['GET locations/{id}'] = 'Retrieves the user\'s saved site or other location identified by {id}.';

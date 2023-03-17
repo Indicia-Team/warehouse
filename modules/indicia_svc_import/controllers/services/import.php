@@ -113,6 +113,7 @@ class Import_Controller extends Service_Base_Controller {
     $this->authenticate('read');
     switch ($model) {
       case 'sample':
+      case 'occurrence':
         $attrTypeFilter = empty($_GET['sample_method_id']) ? NULL : $_GET['sample_method_id'];
         break;
 
@@ -125,7 +126,7 @@ class Import_Controller extends Service_Base_Controller {
         break;
     }
     $model = ORM::factory($model);
-    // Identify the context of the import
+    // Identify the context of the import.
     $identifiers = [];
     if (!empty($_GET['website_id'])) {
       $identifiers['website_id'] = $_GET['website_id'];

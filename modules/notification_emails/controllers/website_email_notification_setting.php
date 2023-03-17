@@ -59,6 +59,7 @@ class Website_email_notification_setting_Controller extends Indicia_Controller {
     $types = [
       'V',
       'Q',
+      'RD',
       'C',
       'A',
       'T',
