@@ -123,7 +123,7 @@ select distinct 'V', co.id, co.created_by_id as notify_user_id, cttl.taxon, cttl
 from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
-left join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on between '$last_run_date' and '$maxTime'
+join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on between '$last_run_date' and '$maxTime'
   and oc.record_status is not null -- verifications
   and oc.auto_generated=false -- but exclude auto-generated verifications
   and oc.confidential=false
