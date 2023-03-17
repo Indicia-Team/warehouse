@@ -35,38 +35,38 @@ class Indicia_Controller extends Template_Controller {
 
   /**
    * Database connection.
-   * 
+   *
    * @var Database
    */
   protected $db;
 
   /**
    * Authorisation object instance.
-   * 
+   *
    * @var Auth
    */
   protected $auth;
 
   /**
    * Model instance.
-   * 
+   *
    * @var ORM
    */
   protected $model;
 
   /**
    * Session object instance.
-   * 
+   *
    * @var Session
    */
   protected $session;
 
   /**
    * Authorisation filter, e.g. website IDs that user can see.
-   * 
+   *
    * @var array
    */
-  protected array|NULL $auth_filter;
+  protected mixed $auth_filter;
 
   /**
    * Name of the main template view file.
@@ -84,7 +84,7 @@ class Indicia_Controller extends Template_Controller {
 
   /**
    * Page title.
-   * 
+   *
    * @var string
    */
   protected $pagetitle;
@@ -710,11 +710,12 @@ class Indicia_Controller extends Template_Controller {
    */
   protected function set_website_access($level='admin') {
     // If not logged in as a Core admin, restrict access to available websites.
-    if ($this->auth->logged_in('CoreAdmin'))
-      $this->auth_filter = null;
+    if ($this->auth->logged_in('CoreAdmin')) {
+      $this->auth_filter = NULL;
+    }
     else {
       $ids = $this->get_allowed_website_id_list($level);
-      $this->auth_filter = array('field' => 'website_id', 'values' => $ids);
+      $this->auth_filter = ['field' => 'website_id', 'values' => $ids];
     }
   }
 
@@ -722,24 +723,28 @@ class Indicia_Controller extends Template_Controller {
    * Gets a list of the website IDs a user can access at a certain level.
    */
   protected function get_allowed_website_id_list($level, $includeNull=true) {
-    if ($this->auth->logged_in('CoreAdmin'))
-      return null;
+    if ($this->auth->logged_in('CoreAdmin')) {
+      return NULL;
+    }
     else {
       switch ($level) {
-        case 'admin': $role=1; break;
-        case 'editor': $role=2; break;
-        case 'user': $role=3; break;
+        case 'admin': $role = 1; break;
+        case 'editor': $role = 2; break;
+        case 'user': $role = 3; break;
       }
-      $user_websites = ORM::factory('users_website')->where(
-          array('user_id' => $_SESSION['auth_user']->id,
-          'site_role_id <=' => $role, 'site_role_id IS NOT' => NULL))->find_all();
-      $ids = array();
+      $user_websites = ORM::factory('users_website')->where([
+        'user_id' => $_SESSION['auth_user']->id,
+        'site_role_id <=' => $role,
+        'site_role_id IS NOT' => NULL,
+      ])->find_all();
+      $ids = [];
       foreach ($user_websites as $user_website) {
         $ids[] = $user_website->website_id;
       }
       if ($includeNull) {
-        // include a null to allow through records which have no associated website.
-        $ids[] = null;
+        // Include a null to allow through records which have no associated
+        // website.
+        $ids[] = NULL;
       }
       return $ids;
     }
