@@ -1136,10 +1136,12 @@ class Data_Controller extends Data_Service_Base_Controller {
       $select = implode(', ', $usedFields);
       $this->db->select($select);
     }
-    // If not in the warehouse, then the entity must explicitly allow full access, or contain a website ID to filter on.
+    // If not in the warehouse, then the entity must explicitly allow full
+    // access, or contain a website ID to filter on.
     if (!$this->in_warehouse && !array_key_exists('website_id', $this->view_columns) &&
         !array_key_exists('from_website_id', $this->view_columns) && !in_array($this->entity, $this->allow_full_access)) {
-      // If access is from remote website, then either table allows full access or exposes a website ID to filter on.
+      // If access is from remote website, then either table allows full access
+      // or exposes a website ID to filter on.
       Kohana::log('info', "$this->viewname does not have a website_id - access denied");
       throw new EntityAccessError("No access to entity $this->entity allowed through view $this->viewname", 1004);
     }
@@ -1156,8 +1158,9 @@ class Data_Controller extends Data_Service_Base_Controller {
         // Check if a request for shared data is being made. Also check this is
         // valid to prevent injection.
         if (isset($_REQUEST['sharing']) && preg_match('/(reporting|peer_review|verification|data_flow|moderation|editing)/', $_REQUEST['sharing'])) {
-          // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So
-          // we can use this to work out access to other website data.
+          // Request specifies the sharing mode (i.e. the task being performed,
+          // such as verification, moderation). So we can use this to work out
+          // access to other website data.
           $this->db->join('index_websites_website_agreements as iwwa', [
             'iwwa.from_website_id' => $this->viewname . '.' . $websiteFilterField,
             'iwwa.provide_for_' . $_REQUEST['sharing'] . "='t'" => '',
@@ -1169,7 +1172,8 @@ class Data_Controller extends Data_Service_Base_Controller {
         }
       }
       elseif ($this->in_warehouse && !$this->user_is_core_admin) {
-        // User is on Warehouse, but not core admin, so do a filter to all their websites.
+        // User is on Warehouse, but not core admin, so do a filter to all their
+        // websites.
         $allowedWebsiteValues = array_merge($this->user_websites);
         $allowedWebsiteValues[] = NULL;
         $this->db->in('website_id', $allowedWebsiteValues);
@@ -1188,9 +1192,10 @@ class Data_Controller extends Data_Service_Base_Controller {
       }
       else {
         $r = $this->db->get()->result_array(FALSE);
-        // If we got no record but asked for a specific one, check if this was a permissions issue?
+        // If we got no record but asked for a specific one, check if this was
+        // a permissions issue?
         if (!count($r) && $this->uri->total_arguments() !== 0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : FALSE)) {
-          Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id ' . $this->uri->argument(1));
+          Kohana::log('info', 'Attempt to access existing record failed - website_id ' . this->website_id . ' does not match website for '.$this->entity.' id ' . $this->uri->argument(1));
           throw new EntityAccessError('Attempt to access existing record failed - website_id ' . $this->website_id . ' does not match website for ' . $this->entity . ' id ' . $this->uri->argument(1), 1001);
         }
         return $r;
@@ -1208,9 +1213,11 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-   * Returns the name of the view for the request. This is a view
-   * associated with the entity, but prefixed by either list, gv or max depending
-   * on the GET view parameter, or as is if the table has no views.
+   * Returns the name of the view for the request.
+   *
+   * This is a view associated with the entity, but prefixed by either list, gv
+   * or max depending on the GET view parameter, or as is if the table has no
+   * views.
    */
   protected function get_view_name($table = '', $prefix = '') {
     if (!$table) {
