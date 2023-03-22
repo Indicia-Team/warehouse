@@ -139,6 +139,13 @@ class RestObjects {
 class Rest_Controller extends Controller {
 
   /**
+   * Report generation class instance.
+   *
+   * @var obj
+   */
+  private $reportEngine;
+
+  /**
    * Set sensible defaults for the authentication methods available.
    *
    * @var array
@@ -1101,13 +1108,13 @@ class Rest_Controller extends Controller {
    *
    * Outputs a single taxon observations's details.
    *
+   * @param string $id
+   *   Unique ID for the taxon-observations to output.
+   *
    * @deprecated
    *   Deprecated in version 6.3 and may be removed in future. Use the
    *   sync-taxon-observations end-point provided by the rest_api_sync module
    *   instead.
-   *
-   * @param string $id
-   *   Unique ID for the taxon-observations to output.
    */
   private function taxonObservationsGetId($id) {
     if (substr($id, 0, strlen(kohana::config('rest.user_id'))) === kohana::config('rest.user_id')) {
@@ -2631,7 +2638,7 @@ class Rest_Controller extends Controller {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
     RestObjects::$clientSystemId = $clientSystemId;
-    $this->projects = isset($config[$clientSystemId]['projects']) ? $config[$clientSystemId]['projects'] : [];
+    $this->projects = $config[$clientSystemId]['projects'] ?? [];
     $this->clientConfig = $config[$clientSystemId];
     unset($this->clientConfig['shared_secret']);
     // Taxon observations and annotations resource end-points will need a
