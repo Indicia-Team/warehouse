@@ -2782,10 +2782,11 @@ class Rest_Controller extends Controller {
     $postRaw = file_get_contents('php://input');
     $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
     $query = $postObj['query'] ?? [];
+    // User ID may be as authenticated, or less ideally, from a query
+    // parameter.
+    $userId = RestObjects::$clientUserId ?? $_GET['user_id'];
     try {
-      // User ID may be as authenticated, or less ideally, from a query
-      // parameter.
-      $userId = RestObjects::$clientUserId ?? $_GET['user_id'];
+
       $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, $userId);
       $es = new RestApiElasticsearch($_GET['alias']);
       $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
@@ -2808,8 +2809,11 @@ class Rest_Controller extends Controller {
     $postRaw = file_get_contents('php://input');
     $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
     $query = $postObj['query'] ?? [];
+    // User ID may be as authenticated, or less ideally, from a query
+    // parameter.
+    $userId = RestObjects::$clientUserId ?? $_GET['user_id'];
     try {
-      $requestBody = customVerificationRules::buildClearFlagsRequest($query, RestObjects::$clientUserId);
+      $requestBody = customVerificationRules::buildClearFlagsRequest($query, $userId);
       $es = new RestApiElasticsearch($_GET['alias']);
       $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
     }
