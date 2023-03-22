@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Example configuration file for REST API.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -103,13 +106,19 @@ $config['authentication_methods'] = [
   ],
 ];
 
-/**
+/*
  * Should authorisation tokens be allowed in the query parameters rather than the
  * authorisation header? Recommended for development servers only.
  */
 $config['allow_auth_tokens_in_url'] = FALSE;
 
-/**
+/*
+ * Specify Elasticsearch version. Important for version 6 as some code has to
+ * be adapted.
+ */
+$config['elasticsearch_version'] = '8.6';
+
+/*
  * If this warehouse is configured to work with an Elasticsearch instance then
  * the REST API can act as a proxy to avoid having to expose all the public
  * APIs. The proxy can point to index aliases to limit the search filter.
