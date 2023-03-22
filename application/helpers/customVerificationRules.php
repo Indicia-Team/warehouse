@@ -70,11 +70,14 @@ TXT;
    *   Query containing the current outer filter to merge with.
    * @param int $userId
    *   Warehouse user ID.
+   * @param int $esMajorVersion
+   *   Major esVersion, if defined in the config. Version 6 has some code
+   *   adaptations in Painless script for missing functions.
    *
    * @return string
    *   Request body.
    */
-  public static function buildCustomRuleRequest($rulesetId, array $query, $userId) {
+  public static function buildCustomRuleRequest($rulesetId, array $query, $userId, $esMajorVersion) {
     $db = new Database();
     $datetime = new DateTime();
     $timestamp = $datetime->format('Y-m-d H:i:s');
@@ -109,31 +112,8 @@ TXT;
       $ruleScripts[] = self::getRuleScript($ruleset, $rule);
     }
     $allRuleScripts = implode("\n", $ruleScripts);
-    $scriptSource = <<<PAINLESS
-/* Build an failure flag object to store in the document */
-HashMap failInfo(int ruleId, String icon, String message) {
-  return [
-    'custom_verification_ruleset_id': $ruleset->id,
-    'custom_verification_rules_id': ruleId,
-    'created_by_id': $userId,
-    'result': 'fail',
-    'icon': icon,
-    'message': message,
-    'check_date_time': '$timestamp'
-  ];
-}
-
-/* Check if higher geography of a document intersects with a list of location Ids. */
-boolean higherGeoIntersection(def higherGeoList, ArrayList list) {
-  ArrayList recordGeoIds = new ArrayList();
-  if (higherGeoList !== null) {
-    for (id in higherGeoList) {
-      recordGeoIds.add(id);
-    }
-  }
-  recordGeoIds.retainAll(list);
-  return recordGeoIds.size() > 0;
-}
+    $scriptSource = self::getPainlessFunctions($ruleset->id, $userId, $timestamp, $esMajorVersion);
+    $scriptSource .= <<<PAINLESS
 
 if (ctx._source.identification.custom_verification_rule_flags == null) {
   ctx._source.identification.custom_verification_rule_flags = new ArrayList();
@@ -147,10 +127,11 @@ if (ctx._source.location.higher_geography !== null) {
     geoIds.add(Integer.parseInt(item.id));
   }
 }
-def latLng = ctx._source.location.point.splitOnToken(',');
+def latLng = splitString(ctx._source.location.point, ',');
 def lat = Float.parseFloat(latLng[0]);
 def lng = Float.parseFloat(latLng[1]);
 $allRuleScripts
+
 PAINLESS;
     // Remove linefeed so the JSON format is valid.
     $scriptSourceEscaped = str_replace("\n", ' ', $scriptSource);
@@ -599,6 +580,94 @@ TXT;
         $checks[] = "Integer.parseInt(ctx._source.event.month) $opEnd $ruleParams->max_month";
       }
     }
+  }
+
+  /**
+   * Retrieves functions to add to Painless custom rule scripts.
+   *
+   * A couple of general purpose functions. Also adds a splitString function
+   * which is version safe (unlike String.splitOnToken).
+   *
+   * @param int $rulesetId
+   *   ID of the ruleset.
+   * @param int $userId
+   *   User warehouse ID.
+   * @param string $timestamp
+   *   Formatted timestamp to store against flags.
+   * @param string $esMajorVersion
+   *   Elasticsearch major version numbers, so polyfills for unsupported
+   *   functions can be added.
+   *
+   * @return string
+   *   Painless script.
+   */
+  private static function getPainlessFunctions($rulesetId, $userId, $timestamp, $esMajorVersion) {
+    $functions = <<<PAINLESS
+
+/* Build an failure flag object to store in the document */
+HashMap failInfo(int ruleId, String icon, String message) {
+  return [
+    'custom_verification_ruleset_id': $rulesetId,
+    'custom_verification_rules_id': ruleId,
+    'created_by_id': $userId,
+    'result': 'fail',
+    'icon': icon,
+    'message': message,
+    'check_date_time': '$timestamp'
+  ];
+}
+
+/* Check if higher geography of a document intersects with a list of location Ids. */
+boolean higherGeoIntersection(def higherGeoList, ArrayList list) {
+  ArrayList recordGeoIds = new ArrayList();
+  if (higherGeoList !== null) {
+    for (id in higherGeoList) {
+      recordGeoIds.add(id);
+    }
+  }
+  recordGeoIds.retainAll(list);
+  return recordGeoIds.size() > 0;
+}
+
+PAINLESS;
+    // Elasticsearch 6 doesn't support splitOnToken - see
+    // https://github.com/elastic/elasticsearch/issues/20952. Can be dropped
+    // once BRC community warehouse on ES 7+.
+    if ($esMajorVersion === 6) {
+      $functions .= <<<PAINLESS
+
+List splitString(String input, String ch) {
+  int off = 0;
+  int next = 0;
+  ArrayList list = new ArrayList();
+
+  while ((next = input.indexOf(ch, off)) != -1) {
+    list.add(input.substring(off, next));
+    off = next + 1;
+  }
+
+  if (off == 0) {
+    list.add(input);
+    return list;
+  }
+
+  list.add(input.substring(off, input.length()));
+
+  return list;
+}
+
+PAINLESS;
+    }
+    else {
+      $functions .= <<<PAINLESS
+
+String[] splitString(String input, String ch) {
+  return input.splitOnToken(ch);
+}
+
+PAINLESS;
+    }
+    return $functions;
   }
 
 }

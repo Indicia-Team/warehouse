@@ -2793,9 +2793,8 @@ class Rest_Controller extends Controller {
     // parameter.
     $userId = RestObjects::$clientUserId ?? $_GET['user_id'];
     try {
-
-      $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, $userId);
       $es = new RestApiElasticsearch($_GET['alias']);
+      $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, $userId, $es->getMajorVersion());
       $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
     }
     catch (Exception $e) {
