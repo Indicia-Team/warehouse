@@ -335,6 +335,22 @@ class RestApiElasticsearch {
   }
 
   /**
+   * Retrieves the Elasticsearch major version number from the config.
+   *
+   * If not specified returns null.
+   *
+   * @return int
+   *   Major version number.
+   */
+  public function getMajorVersion() {
+    $esVersion = kohana::config('rest.elasticsearch_version');
+    if (!empty($esVersion)) {
+      return (integer) (explode('.', $esVersion, 2)[0]);
+    }
+    return NULL;
+  }
+
+  /**
    * Adds permissions filters to ES search, based on website ID and user ID.
    *
    * If the authentication method configuration (e.g. jwtUser) includes the
