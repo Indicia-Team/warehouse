@@ -859,9 +859,14 @@ class Rest_Controller extends Controller {
           if (count($ids) > 0) {
             $requestForId = $ids[0];
           }
-          // When using a client system ID, we also want a project ID in most cases.
+          // When using a client system ID, we also want a project ID in most
+          // cases.
           if (isset(RestObjects::$clientSystemId)
-              && !in_array($name, ['projects', 'taxa'])) {
+              && !in_array($name, [
+                'projects',
+                'taxa',
+                'custom_verification_rulesets',
+              ])) {
             if (empty($this->request['proj_id'])) {
               // Should not have got this far - just in case.
               RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
@@ -2778,7 +2783,10 @@ class Rest_Controller extends Controller {
     $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
     $query = $postObj['query'] ?? [];
     try {
-      $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, RestObjects::$clientUserId);
+      // User ID may be as authenticated, or less ideally, from a query
+      // parameter.
+      $userId = RestObjects::$clientUserId ?? $_GET['user_id'];
+      $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, $userId);
       $es = new RestApiElasticsearch($_GET['alias']);
       $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
     }
