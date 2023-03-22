@@ -139,6 +139,13 @@ class RestObjects {
 class Rest_Controller extends Controller {
 
   /**
+   * Report generation class instance.
+   *
+   * @var obj
+   */
+  private $reportEngine;
+
+  /**
    * Set sensible defaults for the authentication methods available.
    *
    * @var array
@@ -859,9 +866,14 @@ class Rest_Controller extends Controller {
           if (count($ids) > 0) {
             $requestForId = $ids[0];
           }
-          // When using a client system ID, we also want a project ID in most cases.
+          // When using a client system ID, we also want a project ID in most
+          // cases.
           if (isset(RestObjects::$clientSystemId)
-              && !in_array($name, ['projects', 'taxa'])) {
+              && !in_array($name, [
+                'projects',
+                'taxa',
+                'custom_verification_rulesets',
+              ])) {
             if (empty($this->request['proj_id'])) {
               // Should not have got this far - just in case.
               RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
@@ -1096,13 +1108,13 @@ class Rest_Controller extends Controller {
    *
    * Outputs a single taxon observations's details.
    *
+   * @param string $id
+   *   Unique ID for the taxon-observations to output.
+   *
    * @deprecated
    *   Deprecated in version 6.3 and may be removed in future. Use the
    *   sync-taxon-observations end-point provided by the rest_api_sync module
    *   instead.
-   *
-   * @param string $id
-   *   Unique ID for the taxon-observations to output.
    */
   private function taxonObservationsGetId($id) {
     if (substr($id, 0, strlen(kohana::config('rest.user_id'))) === kohana::config('rest.user_id')) {
@@ -2626,7 +2638,7 @@ class Rest_Controller extends Controller {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
     RestObjects::$clientSystemId = $clientSystemId;
-    $this->projects = isset($config[$clientSystemId]['projects']) ? $config[$clientSystemId]['projects'] : [];
+    $this->projects = $config[$clientSystemId]['projects'] ?? [];
     $this->clientConfig = $config[$clientSystemId];
     unset($this->clientConfig['shared_secret']);
     // Taxon observations and annotations resource end-points will need a
@@ -2777,8 +2789,12 @@ class Rest_Controller extends Controller {
     $postRaw = file_get_contents('php://input');
     $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
     $query = $postObj['query'] ?? [];
+    // User ID may be as authenticated, or less ideally, from a query
+    // parameter.
+    $userId = RestObjects::$clientUserId ?? $_GET['user_id'];
     try {
-      $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, RestObjects::$clientUserId);
+
+      $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, $userId);
       $es = new RestApiElasticsearch($_GET['alias']);
       $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
     }
@@ -2800,8 +2816,11 @@ class Rest_Controller extends Controller {
     $postRaw = file_get_contents('php://input');
     $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
     $query = $postObj['query'] ?? [];
+    // User ID may be as authenticated, or less ideally, from a query
+    // parameter.
+    $userId = RestObjects::$clientUserId ?? $_GET['user_id'];
     try {
-      $requestBody = customVerificationRules::buildClearFlagsRequest($query, RestObjects::$clientUserId);
+      $requestBody = customVerificationRules::buildClearFlagsRequest($query, $userId);
       $es = new RestApiElasticsearch($_GET['alias']);
       $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
     }
