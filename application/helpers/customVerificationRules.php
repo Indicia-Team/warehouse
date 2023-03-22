@@ -24,9 +24,26 @@ class customVerificationRules {
           Skip ruleset if location not one of ... (indexed)
 
         Data import format for rules:
-          taxon
-          taxon id
-          fail icon
+          taxon - name of the taxon the rule is for, or use taxon id.
+          taxon id - axon id - Taxon Version Key of the taxon the rule is for, alternative to using taxon.
+          fail icon - select from the following options:
+            bar-chart
+            bug
+            calendar
+            calendar-cross
+            calendar-tick
+            clock
+            count
+            cross
+            exclamation
+            flag
+            globe
+            history
+            leaf
+            spider
+            tick
+            tick-in-box
+            warning-triangle
           fail message
           grid ref system - system code (e.g. OSGB or OSIE) for the grid references in 'grid refs' or 'limit to grid refs'. Applies to all grid refs specified for this rule.
           limit to stages - semi-colon separated list of life stages that this rule applies to.
