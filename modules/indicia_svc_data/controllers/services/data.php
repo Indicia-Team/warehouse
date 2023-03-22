@@ -1168,7 +1168,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           $this->db->where('(' . $this->viewname . '.' . $websiteFilterField . ' IS NULL OR iwwa.to_website_id=' . $this->website_id . ')');
         }
         else {
-          $this->db->in($this->viewname . '.'  .$websiteFilterField, [NULL, $this->website_id]);
+          $this->db->in($this->viewname . '.' . $websiteFilterField, [NULL, $this->website_id]);
         }
       }
       elseif ($this->in_warehouse && !$this->user_is_core_admin) {
@@ -1195,7 +1195,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         // If we got no record but asked for a specific one, check if this was
         // a permissions issue?
         if (!count($r) && $this->uri->total_arguments() !== 0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : FALSE)) {
-          Kohana::log('info', 'Attempt to access existing record failed - website_id ' . this->website_id . ' does not match website for '.$this->entity.' id ' . $this->uri->argument(1));
+          Kohana::log('info', 'Attempt to access existing record failed - website_id ' . $this->website_id . ' does not match website for ' . $this->entity . ' id ' . $this->uri->argument(1));
           throw new EntityAccessError('Attempt to access existing record failed - website_id ' . $this->website_id . ' does not match website for ' . $this->entity . ' id ' . $this->uri->argument(1), 1001);
         }
         return $r;
