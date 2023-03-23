@@ -397,9 +397,12 @@ class Sample_Model extends ORM_Tree {
   }
 
   /**
-   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   * Fixed values form for sample import.
+   *
+   * Define a form that is used to capture a set of predetermined values that
+   * apply to every record during an import.
    */
-  public function fixedValuesForm($options = array()) {
+  public function fixedValuesForm($options = []) {
     $srefs = [];
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title) {
