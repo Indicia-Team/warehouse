@@ -338,8 +338,10 @@ SQL;
       ),
       'location:centroid_sref_system' => array(
         'display' => 'Spatial Ref. System',
-        'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
-            'column in the import file which is mapped to the Location Spatial Reference System field containing the spatial reference system code.',
+        'description' => 'Select the spatial reference system used in this import file. Note, if you have an import ' .
+          'file with a mix of spatial reference systems then you need to include a column in the file that shows ' .
+          'the spatial reference system code, so that his can be mapped to the Sample Spatial Reference System ' .
+          'field on the next page.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $srefs),
       ),

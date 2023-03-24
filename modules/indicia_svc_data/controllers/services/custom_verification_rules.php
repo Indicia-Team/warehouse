@@ -103,10 +103,10 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
       if (count($wrongCols) > 0) {
         $errors[] = 'The rules spreadsheet cannot be imported because there are unexpected columns in uploaded spreadsheet: ' . implode('; ', $wrongCols);
       }
-      if (!in_array('taxon', $columnTitles) && !in_array('taxon_id', $columnTitles)) {
+      if (!in_array('taxon', $columnTitles) && !in_array('taxon id', $columnTitles)) {
         $errors[] = 'The rules spreadsheet cannot be imported because rules need either a taxon or taxon id column to determine which taxon the rule applies to.';
       }
-      if (!in_array('taxon', $columnTitles)) {
+      if (!in_array('rule type', $columnTitles)) {
         $errors[] = 'The rules spreadsheet cannot be imported because rules need a rule type column.';
       }
       if (in_array('grid refs', $columnTitles) && !in_array('grid ref system', $columnTitles)) {
@@ -332,12 +332,6 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
     $this->validateAnyRequired($errors, $row, $spreadsheetRow, $titleIndexes, [
       'min month',
       'max month',
-    ]);
-    $this->validateIntegers($errors, $row, $spreadsheetRow, $titleIndexes, [
-      'min month',
-      'max month',
-      'min day',
-      'max day',
     ]);
     // Abort if missing values or non-integers already found.
     if (count($errors) > $origErrorCount) {
