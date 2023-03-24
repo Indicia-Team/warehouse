@@ -194,6 +194,10 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
           // Validate geography limits.
           $this->validateGridRefFields($errors, $row, $spreadsheetRow, $titleIndexes, 'limit to grid refs', 'grid ref system');
           $this->validateLocationIdFields($errors, $row, $spreadsheetRow, $titleIndexes, 'limit to grid ids');
+          $reverseRule = $this->getValue($row, $titleIndexes, 'reverse rule');
+          if (!in_array($reverseRule, ['yes', 'no', NULL])) {
+            $errors[] = "Invalid value $reverseRule for rule type on row $spreadsheetRow";
+          }
           switch (strtolower($this->getValue($row, $titleIndexes, 'rule type'))) {
             case 'abundance':
               $this->validateRequired($errors, $row, $spreadsheetRow, $titleIndexes, ['max individual count']);
@@ -394,7 +398,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
    *   Data value.
    */
   private function getValue(array $row, array $titleIndexes, $col) {
-    return isset($titleIndexes[$col]) && !empty(trim($row[$titleIndexes[$col]] ?? ''))
+    return isset($titleIndexes[$col]) && trim($row[$titleIndexes[$col]] ?? '') !== ''
       ? trim($row[$titleIndexes[$col]]) : NULL;
   }
 
@@ -588,7 +592,7 @@ SQL;
    */
   private function validateRequired(array &$errors, array $row, $spreadsheetRow, array $titleIndexes, array $cols) {
     foreach ($cols as $col) {
-      if (empty($this->getValue($row, $titleIndexes, $col))) {
+      if ($this->getValue($row, $titleIndexes, $col) === NULL) {
         $errors[] = "Value required for the $col value on row $spreadsheetRow.";
       }
     }
@@ -642,6 +646,7 @@ SQL;
           $spreadsheetRow = $rowIndex + 1;
           $ruleType = strtolower($this->getValue($row, $titleIndexes, 'rule type'));
           $taxonKey = $this->getTaxonExternalKey($db, $row, $spreadsheetRow, $titleIndexes);
+          $reverseRule = strtolower($this->getValue($row, $titleIndexes, 'reverse rule') ?? '') === 'yes' ? 't' : 'f';
           switch ($ruleType) {
             case 'abundance':
               $definition = $this->getAbundanceDefinition($row, $titleIndexes);
@@ -695,17 +700,12 @@ SQL;
           }
           // @todo check limit to location ids are validated
           $limitToGeography = empty($limitToGeographyArr) ? 'null' : pg_escape_literal($db->getLink(), json_encode($limitToGeographyArr)) . '::json';
-
           $insertSql = <<<SQL
             INSERT INTO custom_verification_rules(custom_verification_ruleset_id, taxon_external_key,
-              limit_to_stages,
-              limit_to_geography,
-              rule_type, definition,
+              limit_to_stages, limit_to_geography, rule_type, definition, reverse_rule,
               created_by_id, created_on, updated_by_id, updated_on)
             VALUES ($rulesetId, '$taxonKey',
-              $limitToStages,
-              $limitToGeography,
-              '$ruleType', $definitionAsJson::json,
+              $limitToStages, $limitToGeography, '$ruleType', $definitionAsJson::json, '$reverseRule',
               $this->auth_user_id, now(), $this->auth_user_id, now());
 SQL;
           $db->query($insertSql);
