@@ -1011,7 +1011,6 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->viewname = $this->get_view_name();
       $this->view_columns = postgreSQL::list_fields($this->viewname, $this->db);
       $result = $this->build_query_results();
-      kohana::log('debug', "Query ran for service call:\n" . $this->db->last_query());
     }
     return ['records' => $result];
   }
@@ -1188,10 +1187,13 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     try {
       if ($count) {
-        return $this->db->count_records();
+        $r = $this->db->count_records();
+        kohana::log('debug', "Query ran for count service call:\n" . $this->db->last_query());
+        return $r;
       }
       else {
         $r = $this->db->get()->result_array(FALSE);
+        kohana::log('debug', "Query ran for service call:\n" . $this->db->last_query());
         // If we got no record but asked for a specific one, check if this was
         // a permissions issue?
         if (!count($r) && $this->uri->total_arguments() !== 0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : FALSE)) {
