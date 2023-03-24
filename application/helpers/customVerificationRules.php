@@ -53,7 +53,7 @@ class customVerificationRules {
           limit to max longitude - decimal maximum allowed longitude for the records that this rule applies to.
           limit to max latitude - decimal maximum allowed latitude for the records that this rule applies to.
           limit to location IDs - semi-colon separated list of location IDs.
-          reverse rule - if set (TO TRUE/T?), then the outcome of the rule checks are reversed, e.g. geography rules define a region inside which records will be flagged, or an abundance check flag is raised for records with a count less than the defined value.
+          reverse rule - if set to "yes", then the outcome of the rule checks are reversed, e.g. geography rules define a region inside which records will be flagged, or an abundance check flag is raised for records with a count less than the defined value.
           rule type - one of the following:
             abundance - checks for records of a species which have an exact count given for their abundance and the count is greater than a certain value.
             geography - checks for records of a species that are outside an area which you define, e.g. a bounding box, grid reference, or administrative location. Can also find records north or south of a latitude line, or east or west of a longitude line.
@@ -69,9 +69,9 @@ class customVerificationRules {
           location IDs - optional semi-colon separated list of indexed location IDs (i.e. higher geography), for geography checks.
           min year - optional minimum 4 digit year, for period checks.
           max year - optional maximum 4 digit year, for period checks.
-          min month - optional minumum month (1-12) for phenology checks.
+          min month - optional minimum month (1-12) for phenology checks.
           max month - optional maximum month (1-12) for phenology checks.
-          min day - optional minumum day within the specified min month (1-31) for phenology checks.
+          min day - optional minimum day within the specified min month (1-31) for phenology checks.
           max day - optional maximum day within the specified max month (1-31) for phenology checks.
 
       </pre>
