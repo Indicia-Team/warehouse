@@ -73,20 +73,23 @@ class spatial_ref {
   }
 
   /**
-   * Retrieves an associative array of supported spatial system codes and titles, suitable for
-   * passing to a data_entry_helper::select control as the lookupValues option.
+   * Retrieves an array of supported spatial system codes and titles.
    *
-   * @return array Associative array of supported systems.
+   * Suitable for passing to a data_entry_helper::select control as the
+   * lookupValues option.
+   *
+   * @return array
+   *   Associative array of supported systems.
    */
   public static function system_list() {
     $systems = self::system_metadata();
-    $r = array();
-    foreach ($systems as $code=>$metadata) {
+    $r = [];
+    foreach ($systems as $code => $metadata) {
       $code = strtoupper(preg_replace('/^EPSG:/', '', $code));
       $r[$code] = $metadata['title'];
     }
+    asort($r);
     return $r;
-
   }
 
   /**

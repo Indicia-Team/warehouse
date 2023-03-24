@@ -59,7 +59,7 @@ class customVerificationRules {
             geography - checks for records of a species that are outside an area which you define, e.g. a bounding box, grid reference, or administrative location. Can also find records north or south of a latitude line, or east or west of a longitude line.
             period - checks for records before or after a given year, e.g. can highlight records before the year of arrival of a newly arrived species.
             phenology - checks for records that don't fall in a defined time of year. Phenology check ranges can be specified using days of the year (1-366) or months (1-2).
-            species_recorded - checks for any records of a species, e.g. can be used to build a rarity list ruleset. No additional parameters are required for this rule type.
+            species recorded - checks for any records of a species, e.g. can be used to build a rarity list ruleset. No additional parameters are required for this rule type.
           max individual count - required for abundance rules.
           grid refs - optional list of grid references the records are allowed in, for geography checks.
           min longitude - optional min decimal longitude allowed for records, for geography checks.
@@ -226,7 +226,7 @@ TXT;
    * @return int
    *   Number of days.
    */
-  public function getDaysInMonth($month) {
+  public static function getDaysInMonth($month) {
     return [
       31,
       29,
@@ -261,10 +261,10 @@ TXT;
     $day = $day ?? ($defaultMonthEnd ? self::getDaysInMonth($month) : 1);
     // Use current year as arbitrary default.
     $year = date('Y');
-    $date = DateTimeImmutable::createFromFormat('Y-j-n', "$year-$month-$day");
+    $ts = DateTimeImmutable::createFromFormat('Y-n-j', "$year-$month-$day")->getTimestamp();
     // Convert to day of year (0-365) and add one to match ES day_of_year field
     // (1-366).
-    return ((integer) date('z', $date)) + 1;
+    return ((integer) date('z', $ts)) + 1;
   }
 
   /**
@@ -363,7 +363,7 @@ TXT;
         self::getPhenologyChecks($rule, $ruleParams, $checks);
         break;
 
-      case 'species_recorded':
+      case 'species recorded':
         // Just a presence check so no additional checks required to fire the
         // rule.
         break;
