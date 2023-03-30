@@ -964,8 +964,18 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     unset($params['auth_token']);
     unset($params['nonce']);
-    $possibleArrays = ['taxon_list_id', 'language', 'taxon_group_id', 'taxon_group', 'family_taxa_taxon_list_id',
-        'taxon_meaning_id', 'preferred_taxon', 'external_key', 'taxa_taxon_list_id'];
+    $possibleArrays = [
+      'taxon_list_id',
+      'language',
+      'taxon_group_id',
+      'taxon_group',
+      'family_taxa_taxon_list_id',
+      'taxon_meaning_id',
+      'preferred_taxon',
+      'external_key',
+      'organism_key',
+      'taxa_taxon_list_id',
+    ];
     foreach ($possibleArrays as $possibleArrayParam) {
       if (isset($params[$possibleArrayParam])) {
         $params[$possibleArrayParam] = $this->decodeArrayParameter($params[$possibleArrayParam]);
