@@ -1,3 +1,10 @@
+#Version 8.17.0
+*2023-03-30*
+
+* Adds organism_key to the cache_taxa_taxon_lists and cache_taxon_searchterms tables to provide
+  a more reliable option for filtering species lists when taxonomy is dynamic. See
+  https://github.com/BiologicalRecordsCentre/NPMS/issues/268.
+
 # Version 8.16.0
 *2023-03-17*
 
