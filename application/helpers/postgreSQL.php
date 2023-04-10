@@ -132,7 +132,7 @@ and co.training=false
 union
 
 -- a comment on your record, including redets or queries.
-select distinct CASE WHEN oc.query=true then 'q' when oc.redet_taxa_taxon_list_id is not null then 'RD' else 'C' end as source_type,
+select distinct CASE WHEN oc.query=true then 'Q' when oc.redet_taxa_taxon_list_id is not null then 'RD' else 'C' end as source_type,
         co.id, co.created_by_id as notify_user_id, cttl.taxon, cttl.language_iso, cttl.preferred_taxon, cttl.default_common_name, co.date_start, co.date_end, co.date_type, snf.public_entered_sref,
         co.verified_on, oc.comment, false as auto_generated, oc.generated_by, co.record_status, co.record_substatus, co.updated_on, oc.created_by_id as occurrence_comment_created_by_id,
         'oc_id:' || oc.id::varchar as source_detail, 't' as record_owner
