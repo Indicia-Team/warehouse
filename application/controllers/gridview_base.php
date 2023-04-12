@@ -33,39 +33,53 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   protected $gridReport = FALSE;
 
   /**
+   * Columns to add to the grid view.
+   *
+   * @var array
+   */
+  protected $columns;
+
+  /**
    * Name of the associated model.
-   * 
+   *
    * @var string
    */
   protected $modelname;
 
   /**
    * Name of the associated view.
-   * 
+   *
    * @var string
    */
   protected $viewname;
 
   /**
    * The view object.
-   * 
+   *
    * @var mixed
    */
   protected $view;
 
   /**
    * Path to the controller class (excluding .php).
-   * 
+   *
    * @var string
    */
   protected $controllerpath;
 
   /**
    * Key/value pairs for filters to be applied to the data.
-   * 
+   *
    * @var array
    */
   protected array $base_filter;
+
+  /**
+   * View containing the upload CSV file form.
+   *
+   * @var View
+   */
+  protected $upload_csv_form;
 
   /* Constructor.
    *

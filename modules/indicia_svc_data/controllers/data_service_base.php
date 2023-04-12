@@ -35,16 +35,15 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   * Cleanup a write once nonce from the cache. Should be called after a call to authenticate.
   * Read nonces do not need to be deleted - they are left to expire.
   */
-  protected function delete_nonce()
-  {
+  protected function delete_nonce() {
     // Unless the request explicitly requests that the nonce should persist, delete it as a write nonce is
     // one time only. The exception to this is when a submission contains images which are sent afterwards,
     // in which case the last image will delete the nonce
     if (!array_key_exists('persist_auth', $_REQUEST) || $_REQUEST['persist_auth']!='true') {
-      if (array_key_exists('nonce', $_REQUEST))
-      {
+      if (array_key_exists('nonce', $_REQUEST)) {
         $nonce = $_REQUEST['nonce'];
-        $this->cache->delete($nonce);
+        $cache = new Cache();
+        $cache->delete($nonce);
       }
     }
   }

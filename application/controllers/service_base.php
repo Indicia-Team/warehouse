@@ -94,6 +94,13 @@ class Service_Base_Controller extends Controller {
   protected $website_id = NULL;
 
   /**
+   * Password used to authenticate.
+   *
+   * @var string
+   */
+  protected $website_password = NULL;
+
+  /**
    * Id of the indicia user ID calling the service.
    *
    * Obtained when performing read authentication and can be used to filter the
@@ -138,16 +145,16 @@ class Service_Base_Controller extends Controller {
     global $remoteUserId;
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token', $array)) {
       $nonce = $array['nonce'];
-      $this->cache = new Cache();
+      $cache = new Cache();
       // Get all cache entries that match this nonce.
-      $paths = $this->cache->exists($nonce);
+      $paths = $cache->exists($nonce);
       foreach ($paths as $path) {
         // Find the parts of each file name, which is the cache entry ID, then
         // the mode.
         $tokens = explode('~', basename($path));
         // Check this cached nonce is for the correct read or write operation.
         if ($mode == $tokens[1]) {
-          $id = $this->cache->get($tokens[0]);
+          $id = $cache->get($tokens[0]);
           if ($id > 0) {
             // Normal state, the ID is positive, which means we are
             // authenticating a remote website.
@@ -217,7 +224,7 @@ class Service_Base_Controller extends Controller {
             // reset if not already timed out.
             if (array_key_exists('reset_timeout', $array) && $array['reset_timeout'] == 'true') {
               Kohana::log('info', "Nonce timeout reset.");
-              $this->cache->set($nonce, $id, $mode);
+              $cache->set($nonce, $id, $mode);
             }
           }
         }
