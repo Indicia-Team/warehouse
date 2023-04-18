@@ -37,6 +37,7 @@ class FirstRowReadFilter implements IReadFilter {
   public function readCell($column, $row, $worksheetName = '') {
     return $row == 1;
   }
+
 }
 
 /**
@@ -44,8 +45,18 @@ class FirstRowReadFilter implements IReadFilter {
  */
 class RangeReadFilter implements IReadFilter {
 
+  /**
+   * Offset of range to read.
+   *
+   * @var int
+   */
   private $offset;
 
+  /**
+   * Limit of number of records of range to read.
+   *
+   * @var int
+   */
   private $limit;
 
   public function __construct($offset, $limit) {
@@ -59,6 +70,7 @@ class RangeReadFilter implements IReadFilter {
   public function readCell($column, $row, $worksheetName = '') {
     return $row >= $this->offset && $row < $this->offset + $this->limit;
   }
+
 }
 /**
  * Controller class for import web services.
@@ -1066,15 +1078,10 @@ class Import_Controller extends Service_Base_Controller {
       }, $fields);
     $join = self::buildJoin($fieldPrefix, $fields, $table, $saveArray);
     $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
-    kohana::log('debug', 'Save Array: ' . var_export($saveArray, TRUE));
-    kohana::log('debug', 'Fields: ' . var_export($fields, TRUE));
-    kohana::log('debug', 'In (output): ' . var_export($in, TRUE));
     if ($wheres !== FALSE) {
       $db = Database::instance();
       // Have to use a db as this may have a join.
       $existing = $db->query("SELECT DISTINCT $table.id FROM $table $join WHERE " . $wheres)->result_array(FALSE);
-      kohana::log('debug', "SELECT DISTINCT $table.id FROM $table $join WHERE " . $wheres);
-      kohana::log('debug', var_export($in, TRUE));
       if (count($existing) > 0) {
         // If an previous record exists, we have to check for existing
         // attributes.
