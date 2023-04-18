@@ -1066,10 +1066,15 @@ class Import_Controller extends Service_Base_Controller {
       }, $fields);
     $join = self::buildJoin($fieldPrefix, $fields, $table, $saveArray);
     $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
+    kohana::log('debug', 'Save Array: ' . var_export($saveArray, TRUE));
+    kohana::log('debug', 'Fields: ' . var_export($fields, TRUE));
+    kohana::log('debug', 'In (output): ' . var_export($in, TRUE));
     if ($wheres !== FALSE) {
       $db = Database::instance();
       // Have to use a db as this may have a join.
       $existing = $db->query("SELECT DISTINCT $table.id FROM $table $join WHERE " . $wheres)->result_array(FALSE);
+      kohana::log('debug', "SELECT DISTINCT $table.id FROM $table $join WHERE " . $wheres);
+      kohana::log('debug', var_export($in, TRUE));
       if (count($existing) > 0) {
         // If an previous record exists, we have to check for existing
         // attributes.
@@ -1111,6 +1116,8 @@ class Import_Controller extends Service_Base_Controller {
    * as each new one is imported (as it wasn't checking the search code/external key, the final result would be that only one row would import).
    * Note this function might need improving/generalising for other models, although I did check occurrence/sample import which
    * did not seem to show the same issue.
+   *
+   * @todo These are special cases which could be generalised to use ORM to work out the required SQL.
    */
   public static function buildJoin($fieldPrefix, $fields, $table, $saveArray) {
     $r = '';
@@ -1119,6 +1126,9 @@ class Import_Controller extends Service_Base_Controller {
     }
     elseif (!empty($saveArray['taxon:search_code']) && $table === 'taxa_taxon_lists') {
       $r = "join taxa t on t.id = $table.taxon_id AND t.search_code='" . $saveArray['taxon:search_code'] . "' AND t.deleted=false";
+    }
+    elseif (!empty($saveArray['taxon:taxon']) && $table === 'taxa_taxon_lists') {
+      $r = "join taxa t on t.id = $table.taxon_id AND t.taxon='" . $saveArray['taxon:taxon'] . "' AND t.deleted=false";
     }
     return $r;
   }
