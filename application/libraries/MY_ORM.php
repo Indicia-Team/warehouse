@@ -2651,6 +2651,9 @@ SQL;
    * 3) There is a match between [<model>:]fk_fieldname[:lookupfield] in the saveArray, and [<model>:]fieldname_id in the fields list.
    *    The value in the saveArray is looked up, and the where clause is the fieldname_id => looked up value.
    * If the model is included in one, it must be included in the other.
+   *
+   * @todo Review this code as it doesn't handle lookup of existing records
+   * where the filter field is not in the main table in a tidy way.
    */
   public function buildWhereFromSaveArray($saveArray, $fields, $wheres, &$join, $assocSuffix = "") {
     $struct = $this->get_submission_structure();
