@@ -23,13 +23,13 @@
  */
 
 /**
- * Hook into the data cleaner to declare checks for the test of eBMS phenology within biogeographical region. 
+ * Hook into the data cleaner to declare checks for the test of phenology within biogeographical region. 
  * @return type array of rules.
  */
-function data_cleaner_ebms_phen_biogeoreg_data_cleaner_rules() {
+function data_cleaner_phen_biogeoreg_data_cleaner_rules() {
 
   return [
-    'testType' => 'ebmsPhenBiogeoreg',
+    'testType' => 'phenBiogeoreg',
     'optional' => [
       'Metadata' => [
         'Tvk',
@@ -60,7 +60,7 @@ function data_cleaner_ebms_phen_biogeoreg_data_cleaner_rules() {
           vrm.deleted = false
         JOIN verification_rules vr ON
           vr.id = vrm.verification_rule_id AND
-          vr.test_type = 'ebmsPhenBiogeoreg' AND
+          vr.test_type = 'phenBiogeoreg' AND
           vr.deleted = false	  
         JOIN verification_rule_metadata vrmdBgr ON 
           vrmdBgr.verification_rule_id = vr.id AND 
@@ -77,7 +77,7 @@ function data_cleaner_ebms_phen_biogeoreg_data_cleaner_rules() {
           vrdEndDate.deleted = false
         JOIN locations l ON
           l.code = vrmdBgr.value AND
-          l.location_type_id = " . kohana::config('data_cleaner_ebms_phen_biogeoreg.location_type_id') . " AND
+          l.location_type_id = " . kohana::config('data_cleaner_phen_biogeoreg.location_type_id') . " AND
           l.deleted = false AND
           l.id = ANY (co.location_ids)",
         'groupBy' => 
