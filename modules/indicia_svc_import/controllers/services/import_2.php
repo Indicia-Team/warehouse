@@ -982,6 +982,9 @@ SQL;
       'occurrence:fk_taxa_taxon_list' => 'Species or taxon name',
       'sample:entered_sref' => 'Grid reference or other spatial reference',
       'sample:entered_sref_system' => 'Grid or spatial reference type',
+      'sample:fk_group' => 'Group or activity title (lookup in Groups table)',
+      'sample:fk_licence' => 'Licence title (lookup in Licences table)',
+      'sample:fk_licence:code' => 'Licence code, e.g. "CC0" or "CC BY-NC" (lookup in Licences table)',
     ];
     foreach ($friendlyCaptions as $field => $caption) {
       if (isset($friendlyCaptions[$field])) {
@@ -1697,12 +1700,13 @@ SQL;
     else {
       $fkEntity = $fieldName;
     }
-    $fkTable = inflector::plural($fkEntity);
     // Create model without initialising, so we can just check the lookup
     // variables.
     $fkModel = ORM::Factory($fkEntity, -1);
     // Let the model map the lookup against a view if necessary.
-    $lookupAgainst = inflector::plural($fkModel->lookup_against ?? "list_$fkTable");
+    $lookupAgainst = inflector::plural($fkModel->lookup_against ?? $fkEntity);
+    // If a lookup view is used, then the deleted rows are already filtered.
+    $deleteFilter = empty($fkModel->lookup_against) ? 'AND l.deleted=false' : '';
     // Search field is lookup model default, but if there are 3 tokens in the
     // destination field name then the 3rd token overrides this.
     $searchField = $destFieldParts[2] ?? $fkModel->search_field;
@@ -1712,7 +1716,8 @@ UPDATE import_temp.$config[tableName] i
 SET {$info['tempDbField']}_id=l.id
 FROM $lookupAgainst l
 WHERE trim(lower(i.$info[tempDbField]))=lower(l.$searchField)
-AND l.website_id=$websiteId;
+AND l.website_id=$websiteId
+$deleteFilter;
 SQL;
     $db->query($sql);
     $sql = <<<SQL
