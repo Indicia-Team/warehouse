@@ -987,7 +987,7 @@ SQL;
       'sample:fk_licence:code' => 'Licence code, e.g. "CC0" or "CC BY-NC" (lookup in Licences table)',
     ];
     foreach ($friendlyCaptions as $field => $caption) {
-      if (isset($friendlyCaptions[$field])) {
+      if (isset($field[$field])) {
         $fields[$field] = $caption;
       }
     }
@@ -1704,9 +1704,7 @@ SQL;
     // variables.
     $fkModel = ORM::Factory($fkEntity, -1);
     // Let the model map the lookup against a view if necessary.
-    $lookupAgainst = inflector::plural($fkModel->lookup_against ?? $fkEntity);
-    // If a lookup view is used, then the deleted rows are already filtered.
-    $deleteFilter = empty($fkModel->lookup_against) ? 'AND l.deleted=false' : '';
+    $lookupAgainst = inflector::plural($fkModel->lookup_against ?? "list_$fkEntity");
     // Search field is lookup model default, but if there are 3 tokens in the
     // destination field name then the 3rd token overrides this.
     $searchField = $destFieldParts[2] ?? $fkModel->search_field;
@@ -1716,8 +1714,7 @@ UPDATE import_temp.$config[tableName] i
 SET {$info['tempDbField']}_id=l.id
 FROM $lookupAgainst l
 WHERE trim(lower(i.$info[tempDbField]))=lower(l.$searchField)
-AND l.website_id=$websiteId
-$deleteFilter;
+AND l.website_id=$websiteId;
 SQL;
     $db->query($sql);
     $sql = <<<SQL
