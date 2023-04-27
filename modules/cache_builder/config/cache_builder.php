@@ -136,7 +136,6 @@ $config['taxa_taxon_lists']['get_changed_items_query'] = "
       join taxon_lists tl on tl.id=ttl.taxon_list_id
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
-      left join taxa tc on tc.id=ttl.common_taxon_id
       where ttl.updated_on>'#date#'
       union
       select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
@@ -144,7 +143,6 @@ $config['taxa_taxon_lists']['get_changed_items_query'] = "
       join taxon_lists tl on tl.id=ttl.taxon_list_id
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
-      left join taxa tc on tc.id=ttl.common_taxon_id
       where tl.updated_on>'#date#'
       union
       select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
@@ -152,7 +150,6 @@ $config['taxa_taxon_lists']['get_changed_items_query'] = "
       join taxon_lists tl on tl.id=ttl.taxon_list_id
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
-      left join taxa tc on tc.id=ttl.common_taxon_id
       where t.updated_on>'#date#'
       union
       select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
@@ -160,7 +157,6 @@ $config['taxa_taxon_lists']['get_changed_items_query'] = "
       join taxon_lists tl on tl.id=ttl.taxon_list_id
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
-      left join taxa tc on tc.id=ttl.common_taxon_id
       where l.updated_on>'#date#'
       union
       select ttl.id, ttl.deleted or tl.deleted or t.deleted or l.deleted as deleted
