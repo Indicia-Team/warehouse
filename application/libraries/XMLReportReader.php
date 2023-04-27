@@ -49,17 +49,17 @@ class XMLReportReader_Core implements ReportReader {
   private $createdByField;
   private $colsToInclude = [];
 
-  private $surveys_id_field;
-  private $samples_id_field;
-  private $samples2_id_field;
-  private $occurrences_id_field;
-  private $occurrences2_id_field;
-  private $locations_id_field;
-  private $locations2_id_field;
-  private $people_id_field;
-  private $taxa_taxon_lists_id_field;
-  private $termlists_terms_id_field;
-  private $count_field;
+  public $surveys_id_field;
+  public $samples_id_field;
+  public $samples2_id_field;
+  public $occurrences_id_field;
+  public $occurrences2_id_field;
+  public $locations_id_field;
+  public $locations2_id_field;
+  public $people_id_field;
+  public $taxa_taxon_lists_id_field;
+  public $termlists_terms_id_field;
+  public $count_field;
 
   /**
    * Database connection object.
