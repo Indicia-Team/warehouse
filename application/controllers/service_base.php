@@ -127,6 +127,20 @@ class Service_Base_Controller extends Controller {
   protected $user_is_core_admin = false;
 
   /**
+   * Content type, if specified for the response.
+   *
+   * @var string
+   */
+  protected $content_type;
+
+  /**
+   * Response content.
+   *
+   * @var string
+   */
+  protected $response;
+
+  /**
    * Authenticate a data services request.
    *
    * Before a request is accepted, this method ensures that the POST data

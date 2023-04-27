@@ -32,6 +32,20 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   protected $failedRequestDetail = '';
 
   /**
+   * Name of the entity being accessed.
+   *
+   * @var string
+   */
+  protected $entity;
+
+  /**
+   * List of columns being displayed.
+   *
+   * @var array
+   */
+  protected $view_columns;
+
+  /**
   * Cleanup a write once nonce from the cache. Should be called after a call to authenticate.
   * Read nonces do not need to be deleted - they are left to expire.
   */
