@@ -29,10 +29,6 @@ class Occurrence_controller extends Gridview_Base_Controller {
   public function __construct() {
     parent::__construct('occurrence');
     $this->pagetitle = 'Occurrences';
-    $this->actionColumns = [
-      'Edit Occ' => 'occurrence/edit/{id}',
-      'Edit Smp' => 'sample/edit/{sample_id}',
-    ];
     $this->columns = [
       'id' => 'ID',
       'website' => 'Website',
@@ -54,6 +50,22 @@ class Occurrence_controller extends Gridview_Base_Controller {
       $this->base_filter = array('sample_id' => $this->uri->argument(1));
     }
     parent::index();
+  }
+
+  /**
+   * Return the action columns for the grid.
+   */
+  protected function get_action_columns() {
+    return [
+      [
+        'caption' => 'edit',
+        'url' => $this->controllerpath . "/edit/{id}"
+      ],
+      [
+        'caption' => 'edit sample',
+        'url' => 'sample/edit/{sample_id}'
+      ],
+    ];
   }
 
   /**
