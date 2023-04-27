@@ -1,4 +1,16 @@
-#Version 8.17.0
+
+# Version 8.18.0
+*2023-04-27*
+
+* New module for automatic verification rule checks for phenology of records by biogeographic
+  region.
+* Fixes action columns for the occurrences list page.
+* Improves captions provided for some columns available for import using the v2 importer.
+* Fixes v2 importer when importing a licence for a record - see
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1445/.
+* Fixes for PHP 8.2 (experimental).
+
+# Version 8.17.0
 *2023-03-30*
 
 * Adds organism_key to the cache_taxa_taxon_lists and cache_taxon_searchterms tables to provide

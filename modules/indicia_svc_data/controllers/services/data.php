@@ -33,7 +33,6 @@ class Data_Controller extends Data_Service_Base_Controller {
   // following are used to store the response till all finished, so we don't output anything
   // if there is an error
   protected $response;
-  protected $content_type;
 
   // Read/Write Access to entities: there are several options:
   // 1) Standard: Restricted read and write access dependant on website id.

@@ -2,8 +2,6 @@
 
 /**
  * @file
- * Warehouse version configuration.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,30 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
+ * @package Core
+ * @subpackage Data Cleaner
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @link http://code.google.com/p/indicia/
  */
 
 defined('SYSPATH') or die('No direct script access.');
 
-/**
- * The application files' version number.
- *
- * @var string
- */
-$config['version'] = '8.18.0';
-
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2023-04-27';
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+// The location type ID for the Europen biogeographical regions. The 'code' column for this
+// location type are matched against the values of the 'bgr' field in the rules.
+$config['location_type_id'] = 151;

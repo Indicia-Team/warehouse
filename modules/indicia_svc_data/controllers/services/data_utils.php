@@ -379,7 +379,7 @@ SQL;
         $q = new WorkQueue();
         foreach ($ids as $id) {
           $q->enqueue($db, [
-            'task' => 'task_cache_builder_taxonomy_occurrence',
+            'task' => 'task_cache_builder_update',
             'entity' => 'occurrence',
             'record_id' => $id,
             'cost_estimate' => 50,

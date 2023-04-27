@@ -60,7 +60,22 @@ class ReportEngine {
   private $report;
   private $reportFormat;
   private $response;
+
+  /**
+   * Query string.
+   *
+   * @var string
+   */
   private $query;
+
+
+  /**
+   * Count query string.
+   *
+   * @var string
+   */
+  private $countQuery;
+
   private $reportReader;
   private $expectedParams;
   private $providedParams;
@@ -122,6 +137,34 @@ class ReportEngine {
    * @var array
    */
   private $columns;
+
+  /**
+   * Limit if specified as a report parameter.
+   *
+   * @var int
+   */
+  private $limit;
+
+  /**
+   * Offset if specified as a report parameter.
+   *
+   * @var int
+   */
+  private $offset;
+
+  /**
+   * Sort direction (ASC|DESC) if specified as a report parameter.
+   *
+   * @var string
+   */
+  private $sortdir;
+
+  /**
+   * Order by fields if specified as a report parameter.
+   *
+   * @var string
+   */
+  private $orderby;
 
   /**
    * Constructor.
