@@ -987,7 +987,7 @@ SQL;
       'sample:fk_licence:code' => 'Licence code, e.g. "CC0" or "CC BY-NC" (lookup in Licences table)',
     ];
     foreach ($friendlyCaptions as $field => $caption) {
-      if (isset($friendlyCaptions[$field])) {
+      if (isset($field[$field])) {
         $fields[$field] = $caption;
       }
     }
