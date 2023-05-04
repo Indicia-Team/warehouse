@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Warehouse version configuration.
+ * Plugin for the Process Checker warehouse module.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -19,28 +19,17 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @link https://github.com/indicia-team/warehouse/
  */
 
-defined('SYSPATH') or die('No direct script access.');
-
-/**
- * The application files' version number.
- *
- * @var string
- */
-$config['version'] = '8.19.0';
-
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2023-05-04';
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+function process_checker_scheduled_task($last_run_date, $db) {
+  $processChecker = new ProcessChecker();
+  $config = Kohana::config('process_checker.checks', TRUE, FALSE);
+  if (empty($config)) {
+    kohana::log('alert', 'Process Checker warehouse module is enabled but not configured.');
+    return;
+  }
+  foreach ($config as $title => $processItem) {
+    $processChecker->process($db, $title, $processItem);
+  }
+}

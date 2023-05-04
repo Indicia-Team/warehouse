@@ -1491,7 +1491,7 @@ SQL;
     if (array_key_exists('subModels', $this->submission)) {
       // Iterate through the subModel array, linking them to this model.
       foreach ($this->submission['subModels'] as $key => $a) {
-        Kohana::log("debug", "Submitting submodel ".$a['model']['id'].".");
+        Kohana::log("debug", "Submitting submodel " . $a['model']['id'] . ".");
         // Establish the right model.
         $modelName = $a['model']['id'];
         // Alias old images tables to new media tables.
@@ -1521,9 +1521,11 @@ SQL;
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
         $this->nestedChildModelIds[] = $m->getSubmissionResponseMetadata();
-        if ($m->wantToUpdateMetadata && !$this->wantToUpdateMetadata && preg_match('/_(image|medium)$/', $m->object_name)) {
-          // we didn't update the parent's metadata. But a child image has been changed, so we want to update the parent record metadata.
-          // i.e. adding an image to a record causes the record to be edited and therefore to get its status reset.
+        if ($m->wantToUpdateMetadata && !$this->wantToUpdateMetadata && preg_match('/_(image|medium|value)$/', $m->object_name)) {
+          // We didn't update the parent's metadata. But a child image or
+          // attribute value has been changed, so we want to update the parent
+          // record metadata. I.e. adding an image to a record causes the
+          // record to be edited and therefore to get its status reset.
           $this->wantToUpdateMetadata = TRUE;
           $this->set_metadata();
           $this->validate(new Validation($this->as_array()), TRUE);
