@@ -155,7 +155,6 @@ OFFSET $batchLimit
 LIMIT 1
 SQL;
     $checkTail = $this->db->query($qry)->current();
-    kohana::log('debug', 'Tail check: ' . $this->db->last_query());
     if ($checkTail) {
       // We can't split within a set of records with the same updated_on. So an
       // updated_on date filter ensures we get all records up to the division
@@ -269,7 +268,6 @@ SELECT DISTINCT 'task_cache_builder_update', '$processItem[entity]', t.id, 100, 
 $baseQuery
 SQL;
       $count = $this->db->query($qry)->count();
-      kohana::log('debug', $qry);
       if ($count) {
         kohana::log('alert', "$count cache entries for $processItem[entity] were missing and have been re-queued for creation.");
       }
@@ -311,7 +309,6 @@ WHERE id IN (
 )
 SQL;
       $count = $this->db->query($qry)->count();
-      kohana::log('debug', $qry);
       if ($count) {
         kohana::log('alert', "$count cache_{$table}_{$cacheTableType} entries for $processItem[entity] were incorrectly present and have been deleted.");
       }
@@ -348,7 +345,6 @@ SELECT DISTINCT 'task_spatial_index_builder_$processItem[entity]', '$processItem
 $baseQuery
 SQL;
       $count = $this->db->query($qry)->count();
-      kohana::log('debug', $qry);
       if ($count) {
         kohana::log('alert', "$count spatial index entries for $processItem[entity] were missing and have been re-queued.");
       }
@@ -391,7 +387,6 @@ SELECT DISTINCT 'task_cache_builder_attrs_$processItem[entity]', '$processItem[e
 $baseQuery
 SQL;
       $count = $this->db->query($qry)->count();
-      kohana::log('debug', $qry);
       if ($count) {
         kohana::log('alert', "$count attrs_json values for $processItem[entity] were missing and have been re-queued.");
       }
@@ -537,7 +532,6 @@ JSON;
    *   Configuration entry for the set of records to check processing on.
    */
   private function checkBatchInEs($title, $idBatch, $processItem) {
-    kohana::log('debug', 'Got batch: ' . implode(', ', $idBatch));
     $hits = $this->getDocIdsFromEs($idBatch, $processItem);
 
     foreach ($hits as $doc) {
@@ -553,7 +547,6 @@ JSON;
   UPDATE cache_{$table}_functional SET website_id=website_id WHERE id IN ($updateStr);
   SQL;
       $this->db->query($qry);
-      kohana::log('debug', $qry);
       kohana::log('alert', count($toUpdate) . " missing documents were requeued for Elasticsearch for $title");
     }
   }
@@ -573,7 +566,7 @@ JSON;
     $hits = $this->getDocIdsFromEs($idBatch, $processItem);
     foreach ($hits as $doc) {
       if (array_search('"' . $doc->_id . '"', $idBatch)) {
-        kohana::log('debug', "Deleting $doc->_id for process check $title");
+        kohana::log('alert', "Deleting $doc->_id for process check $title");
         $this->deleteFromEs($doc->_id, $processItem);
         // Also delete the sensitive copy.
         $this->deleteFromEs("$doc->_id!", $processItem);
