@@ -30,6 +30,6 @@ function process_checker_scheduled_task($last_run_date, $db) {
     return;
   }
   foreach ($config as $title => $processItem) {
-    $processChecker->process($db, $title, $processItem, $config['elasticsearch'] ?? FALSE);
+    $processChecker->process($db, $title, $processItem);
   }
 }

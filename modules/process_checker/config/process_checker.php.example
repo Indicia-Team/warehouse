@@ -35,7 +35,8 @@ $config['checks'] = [
     'checks' => ['cache_presence', 'cache_absence', 'cache_spatial_index', 'cache_attributes', 'es_presence', 'es_absence'],
     // Check entity occurrence or sample.
     'entity' => 'occurrence',
-    'elasticsearch' => TRUE,
+    'esEndpoint' => 'es',
+    'esIdPrefix' => 'dev|',
   ],
   'survey2checkSamples' => [
     'website_id' => 1,
@@ -49,5 +50,7 @@ $config['checks'] = [
     'checks' => ['cache_presence', 'cache_absence', 'cache_spatial_index', 'cache_attributes', 'es_presence', 'es_absence'],
     // Check entity occurrence or sample.
     'entity' => 'sample',
+    'esEndpoint' => 'es-samples',
+    'esIdPrefix' => 'dev|',
   ],
 ];
