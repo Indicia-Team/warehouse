@@ -1370,16 +1370,16 @@ SQL;
           // Query to fill in ID for all obvious matches.
           if (substr($destFieldParts[0], -4) === 'Attr' and strlen($destFieldParts[0]) === 7) {
             // Attribute lookup values. e.g. occAttr:n.
-            $unmatchedInfo = $this->autofillLookupAttrIds($db, $config, $destFieldParts, $info['tempDbField']);
+            $unmatchedInfo = $this->autofillLookupAttrIds($db, $config, $info);
           }
           elseif ($destFieldParts[0] === 'occurrence' && $destFieldParts[1] === 'fk_taxa_taxon_list') {
-            $unmatchedInfo = $this->autofillOccurrenceTaxonIds($db, $config, $info['tempDbField'], $destFieldParts);
+            $unmatchedInfo = $this->autofillOccurrenceTaxonIds($db, $config, $info);
           }
           elseif ($destFieldParts[0] === 'sample' && $destFieldParts[1] === 'fk_location') {
-            $unmatchedInfo = $this->autofillSampleLocationIds($db, $config, $info['tempDbField'], $destFieldParts);
+            $unmatchedInfo = $this->autofillSampleLocationIds($db, $config, $info);
           }
           else {
-            $unmatchedInfo = $this->autofillOtherFkIds($db, $config, $info, $destFieldParts);
+            $unmatchedInfo = $this->autofillOtherFkIds($db, $config, $info);
           }
           // Respond with values that don't match plus list of matches, or a
           // success message.
@@ -1406,18 +1406,17 @@ SQL;
    *   Database connection.
    * @param array $config
    *   Import configuration object.
-   * @param array $destFieldParts
-   *   Database entity and fieldname that the column's values are destined for.
-   * @param string $valueToMapColName
-   *   Name of the column containing the term to lookup. The ID column that
-   *   gets populated will have the same name, with _id appended.
+   * @param array $info
+   *   Column info data for the column being autofilled.
    *
    * @return array
    *   Matching info, including a list of match options, a list of unmatched
    *   values that require user input to fix, plus info about the attribute
    *   we are trying to match values for.
    */
-  private function autofillLookupAttrIds($db, array $config, array $destFieldParts, $valueToMapColName) {
+  private function autofillLookupAttrIds($db, array $config, array $info) {
+    $valueToMapColName = $info['tempDbField'];
+    $destFieldParts = explode(':', $info['warehouseField']);
     $attrEntity = $this->getEntityFromAttrPrefix($destFieldParts[0]);
     $attrId = str_replace('fk_', '', $destFieldParts[1]);
     $sql = <<<SQL
@@ -1470,14 +1469,16 @@ SQL;
    *   Database connection.
    * @param array $config
    *   Import configuration object.
-   * @param string $valueToMapColName
-   *   Name of the column containing the taxon to lookup. The ID column that
-   *   gets populated will have the same name, with _id appended.
+   * @param array $info
+   *   Column info data for the column being autofilled.
    *
    * @return array
    *   Array containing information about the result.
    */
-  private function autofillOccurrenceTaxonIds($db, array $config, $valueToMapColName) {
+  private function autofillOccurrenceTaxonIds($db, array $config, array $info) {
+    $valueToMapColName = $info['tempDbField'];
+    $destFieldParts = explode(':', $info['warehouseField']);
+    $searchField = $destFieldParts[2] ?? 'taxon';
     $filtersList = [];
     $filterForTaxonSearchAPI = [];
     foreach ($config['global-values'] as $fieldDef => $value) {
@@ -1515,7 +1516,7 @@ SELECT trim(lower(i.{$valueToMapColName})) as taxon,
 INTO TEMPORARY species_matches_$uniq
 FROM import_temp.$config[tableName] i
 JOIN cache_taxa_taxon_lists cttl
-  ON trim(lower(i.{$valueToMapColName}))=lower(cttl.taxon) AND cttl.allow_data_entry=true
+  ON trim(lower(i.{$valueToMapColName}))=lower(cttl.$searchField) AND cttl.allow_data_entry=true
   $filters
 -- Drop if accepted name exists which also matches.
 LEFT JOIN cache_taxa_taxon_lists cttlaccepted
@@ -1559,14 +1560,15 @@ SQL;
    *   Database connection.
    * @param array $config
    *   Import configuration object.
-   * @param string $valueToMapColName
-   *   Name of the column containing the location value to lookup. The ID column that
-   *   gets populated will have the same name, with _id appended.
+   * @param array $info
+   *   Column info data for the column being autofilled.
    *
    * @return array
    *   Array containing information about the result.
    */
-  private function autofillSampleLocationIds($db, array $config, $valueToMapColName, array $destFieldParts) {
+  private function autofillSampleLocationIds($db, array $config, array $info) {
+    $valueToMapColName = $info['tempDbField'];
+    $destFieldParts = explode(':', $info['warehouseField']);
     $websiteId = $config['global-values']['website_id'];
     $matchAll = [
       'l.deleted=false',
@@ -1676,13 +1678,11 @@ SQL;
    *   Import configuration object.
    * @param array $info
    *   Column info data for the column being autofilled.
-   * @param array $destFieldParts
-   *   Tokens that make up the desination field, e.g. extracted from location:name.
    *
    * @return array
    *   Array containing information about the result.
    */
-  private function autofillOtherFkIds($db, array $config, array $info, array $destFieldParts) {
+  private function autofillOtherFkIds($db, array $config, array $info) {
     $destFieldParts = explode(':', $info['warehouseField']);
     $entity = ORM::factory($destFieldParts[0], -1);
     $fieldName = preg_replace('/^fk_/', '', $destFieldParts[1]);
