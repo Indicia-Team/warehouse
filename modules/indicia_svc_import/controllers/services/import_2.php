@@ -1479,6 +1479,11 @@ SQL;
     $valueToMapColName = $info['tempDbField'];
     $destFieldParts = explode(':', $info['warehouseField']);
     $searchField = $destFieldParts[2] ?? 'taxon';
+    // Skip matching using the species name epithet field as we'll combine it
+    // with the genus when that is done.
+    if ($searchField === 'specific') {
+      return NULL;
+    }
     $filtersList = [];
     $filterForTaxonSearchAPI = [];
     foreach ($config['global-values'] as $fieldDef => $value) {
@@ -1490,6 +1495,18 @@ SQL;
       }
     }
     $filters = implode("\n", $filtersList);
+    $matchingFieldSql = "i.{$valueToMapColName}";
+    if ($searchField === 'genus') {
+      // When matching genus, add the species name epithet paired field to the
+      // SQL used for matching.
+      foreach ($config['columns'] as $colInfo) {
+        if ($colInfo['warehouseField'] = 'occurrence:fk_taxa_taxon_list:specific') {
+          $matchingFieldSql = "i.{$valueToMapColName} || ' ' || i.{$colInfo['tempDbField']}";
+        }
+      }
+      // Match against the whole taxon name.
+      $searchField = 'taxon';
+    }
     // Add a column to capture potential multiple matching taxa.
     $uniq = uniqid(TRUE);
     $sql = <<<SQL
@@ -1498,7 +1515,7 @@ ADD COLUMN IF NOT EXISTS {$valueToMapColName}_id_choices json;
 
 -- Find possible taxon name matches. If a name is not accepted, but has an
 -- accepted alternative, it gets skipped.
-SELECT trim(lower(i.{$valueToMapColName})) as taxon,
+SELECT trim(lower($matchingFieldSql)) as taxon,
   ARRAY_AGG(DISTINCT cttl.id) AS choices,
   JSON_AGG(DISTINCT jsonb_build_object(
 	  'id', cttl.id,
@@ -1516,22 +1533,22 @@ SELECT trim(lower(i.{$valueToMapColName})) as taxon,
 INTO TEMPORARY species_matches_$uniq
 FROM import_temp.$config[tableName] i
 JOIN cache_taxa_taxon_lists cttl
-  ON trim(lower(i.{$valueToMapColName}))=lower(cttl.$searchField) AND cttl.allow_data_entry=true
+  ON trim(lower($matchingFieldSql))=lower(cttl.$searchField) AND cttl.allow_data_entry=true
   $filters
 -- Drop if accepted name exists which also matches.
 LEFT JOIN cache_taxa_taxon_lists cttlaccepted
-  ON trim(lower(i.{$valueToMapColName}))=lower(cttlaccepted.taxon) AND cttlaccepted.id<>cttl.id
+  ON trim(lower($matchingFieldSql))=lower(cttlaccepted.$searchField) AND cttlaccepted.id<>cttl.id
   AND cttlaccepted.allow_data_entry=true AND cttlaccepted.preferred=true
   AND cttlaccepted.taxon_meaning_id=cttl.taxon_meaning_id
   AND cttlaccepted.taxon_list_id=cttl.taxon_list_id
 WHERE cttlaccepted.id IS NULL
-GROUP BY i.{$valueToMapColName};
+GROUP BY $matchingFieldSql;
 
 UPDATE import_temp.$config[tableName] i
 SET {$valueToMapColName}_id=CASE ARRAY_LENGTH(sm.choices, 1) WHEN 1 THEN ARRAY_TO_STRING(sm.choices, '') ELSE NULL END::integer,
 {$valueToMapColName}_id_choices=sm.choice_info
 FROM species_matches_$uniq sm
-WHERE trim(lower(i.{$valueToMapColName}))=sm.taxon;
+WHERE trim(lower($matchingFieldSql))=sm.taxon;
 
 DROP TABLE species_matches_$uniq;
 SQL;
