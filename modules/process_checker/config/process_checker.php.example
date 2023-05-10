@@ -27,7 +27,6 @@ $config['checks'] = [
     'website_id' => 1,
     'survey_id' => 2,
     'start_record_id' => 1000000,
-    'start_date' => '2023-01-01',
     // Ignore records added recently as they may still be being processed.
     // Format must be one that is accepted when casting to interval in plpgsql,
     // e.g. '2 days'::interval.
@@ -42,7 +41,6 @@ $config['checks'] = [
     'website_id' => 1,
     'survey_id' => 2,
     'start_record_id' => 1000000,
-    'start_date' => '2023-01-01',
     // Ignore records added recently as they may still be being processed.
     // Format must be one that is accepted when casting to interval in plpgsql,
     // e.g. '2 days'::interval.

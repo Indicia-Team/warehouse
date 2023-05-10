@@ -143,8 +143,8 @@ class ProcessChecker {
     // Find the record at the top limit of our range.
     $updatedOnFrom = variable::get("processChecker-$title", FALSE, FALSE);
     $tailCheckWheres = $updatedOnFrom
-      ? ["updated_on BETWEEN '$updatedOnFrom' AND now()-'$processItem[ignore_recent]'::interval"]
-      : ["updated_on<=now()-'$processItem[ignore_recent]'::interval"];
+      ? ["t.updated_on BETWEEN '$updatedOnFrom' AND now()-'$processItem[ignore_recent]'::interval"]
+      : ["t.updated_on<=now()-'$processItem[ignore_recent]'::interval"];
     $baseQuery = $this->getBaseQuery($title, $processItem, [], [], $tailCheckWheres);
     $batchLimit = BATCH_LIMIT;
     $qry = <<<SQL
@@ -202,11 +202,21 @@ SQL;
    */
   private function getBaseQuery($title, array $processItem, array $cacheJoins = [], array $joinList = [], array $whereList = []) {
     $table = inflector::plural($processItem['entity']);
-    if ($table === 'samples' && !empty($processItem['website_id'])) {
-      $joinList[] = "JOIN surveys srv ON srv.id=s.survey_id AND srv.website_id=$processItem[website_id]";
+    if ($table === 'samples') {
+      if (!empty($processItem['website_id'])) {
+        $joinList[] = "JOIN surveys srv ON srv.id=t.survey_id AND srv.website_id=$processItem[website_id]";
+      }
+      if (!empty($processItem['survey_id'])) {
+        $whereList[] = "t.survey_id=$processItem[survey_id]";
+      }
     }
-    if ($table === 'occurrences' && !empty($processItem['survey_id'])) {
-      $joinList[] = "JOIN samples s ON s.id=o.sample_id AND s.survey_id=$processItem[survey_id]";
+    if ($table === 'occurrences') {
+      if (!empty($processItem['website_id'])) {
+        $whereList[] = "t.website_id=$processItem[website_id]";
+      }
+      if (!empty($processItem['survey_id'])) {
+        $joinList[] = "JOIN samples s ON s.id=t.sample_id AND s.survey_id=$processItem[survey_id]";
+      }
     }
     if (in_array('functional', $cacheJoins)) {
       $joinList[] = "LEFT JOIN cache_{$table}_functional f ON f.id=t.id";
@@ -269,7 +279,7 @@ $baseQuery
 SQL;
       $count = $this->db->query($qry)->count();
       if ($count) {
-        kohana::log('alert', "$count cache entries for $processItem[entity] were missing and have been re-queued for creation.");
+        kohana::log('alert', "Process checker:  $count cache entries for $processItem[entity] were missing and have been re-queued for creation.");
       }
       return $count > 0;
     }
@@ -299,7 +309,8 @@ SQL;
         't.deleted=true',
       ]);
       $baseQuery = $this->getBaseQuery($title, $processItem, [$cacheTableType], [], $wheres);
-      // Now delete any cache entries that are present for records deleted in the raw data.
+      // Now delete any cache entries that are present for records deleted in
+      // the raw data.
       $table = inflector::plural($processItem['entity']);
       $qry = <<<SQL
 DELETE FROM cache_{$table}_{$cacheTableType}
@@ -310,7 +321,7 @@ WHERE id IN (
 SQL;
       $count = $this->db->query($qry)->count();
       if ($count) {
-        kohana::log('alert', "$count cache_{$table}_{$cacheTableType} entries for $processItem[entity] were incorrectly present and have been deleted.");
+        kohana::log('alert', "Process checker: $count cache_{$table}_{$cacheTableType} entries for $processItem[entity] were incorrectly present and have been deleted.");
       }
     }
   }
@@ -346,7 +357,7 @@ $baseQuery
 SQL;
       $count = $this->db->query($qry)->count();
       if ($count) {
-        kohana::log('alert', "$count spatial index entries for $processItem[entity] were missing and have been re-queued.");
+        kohana::log('alert', "Process checker: $count spatial index entries for $processItem[entity] were missing and have been re-queued.");
       }
     }
   }
@@ -388,7 +399,7 @@ $baseQuery
 SQL;
       $count = $this->db->query($qry)->count();
       if ($count) {
-        kohana::log('alert', "$count attrs_json values for $processItem[entity] were missing and have been re-queued.");
+        kohana::log('alert', "Process checker: $count attrs_json values for $processItem[entity] were missing and have been re-queued.");
       }
     }
   }
@@ -457,7 +468,7 @@ SQL;
       foreach ($idRows as $idRow) {
         $idBatch[] = '"' . $processItem['esIdPrefix'] . $idRow->id . '"';
         if (count($idBatch) >= 100) {
-          $this->checkBatchInEs($title, $idBatch, $processItem);
+          $this->checkBatchNotInEs($title, $idBatch, $processItem);
           $idBatch = [];
         }
       }
@@ -502,7 +513,6 @@ JSON;
     curl_setopt($session, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     curl_setopt($session, CURLOPT_HEADER, FALSE);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($session, CURLOPT_REFERER, $_SERVER['HTTP_HOST']);
     // Do the POST and then close the session.
     $response = curl_exec($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
@@ -544,10 +554,10 @@ JSON;
       $updateStr = implode(',', $toUpdate);
       $table = inflector::plural($processItem['entity']);
       $qry = <<<SQL
-  UPDATE cache_{$table}_functional SET website_id=website_id WHERE id IN ($updateStr);
-  SQL;
+UPDATE cache_{$table}_functional SET website_id=website_id WHERE id IN ($updateStr);
+SQL;
       $this->db->query($qry);
-      kohana::log('alert', count($toUpdate) . " missing documents were requeued for Elasticsearch for $title");
+      kohana::log('alert', 'Process checker: ' . count($toUpdate) . " missing documents were requeued for Elasticsearch for $title: " . json_encode($toUpdate));
     }
   }
 
@@ -566,7 +576,7 @@ JSON;
     $hits = $this->getDocIdsFromEs($idBatch, $processItem);
     foreach ($hits as $doc) {
       if (array_search('"' . $doc->_id . '"', $idBatch)) {
-        kohana::log('alert', "Deleting $doc->_id for process check $title");
+        kohana::log('alert', "Process checker: deleting $doc->_id for process check $title");
         $this->deleteFromEs($doc->_id, $processItem);
         // Also delete the sensitive copy.
         $this->deleteFromEs("$doc->_id!", $processItem);
@@ -591,7 +601,6 @@ JSON;
     curl_setopt($session, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     curl_setopt($session, CURLOPT_HEADER, FALSE);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($session, CURLOPT_REFERER, $_SERVER['HTTP_HOST']);
     // Do the POST and then close the session.
     $response = curl_exec($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);

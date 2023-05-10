@@ -1370,16 +1370,16 @@ SQL;
           // Query to fill in ID for all obvious matches.
           if (substr($destFieldParts[0], -4) === 'Attr' and strlen($destFieldParts[0]) === 7) {
             // Attribute lookup values. e.g. occAttr:n.
-            $unmatchedInfo = $this->autofillLookupAttrIds($db, $config, $destFieldParts, $info['tempDbField']);
+            $unmatchedInfo = $this->autofillLookupAttrIds($db, $config, $info);
           }
           elseif ($destFieldParts[0] === 'occurrence' && $destFieldParts[1] === 'fk_taxa_taxon_list') {
-            $unmatchedInfo = $this->autofillOccurrenceTaxonIds($db, $config, $info['tempDbField'], $destFieldParts);
+            $unmatchedInfo = $this->autofillOccurrenceTaxonIds($db, $config, $info);
           }
           elseif ($destFieldParts[0] === 'sample' && $destFieldParts[1] === 'fk_location') {
-            $unmatchedInfo = $this->autofillSampleLocationIds($db, $config, $info['tempDbField'], $destFieldParts);
+            $unmatchedInfo = $this->autofillSampleLocationIds($db, $config, $info);
           }
           else {
-            $unmatchedInfo = $this->autofillOtherFkIds($db, $config, $info, $destFieldParts);
+            $unmatchedInfo = $this->autofillOtherFkIds($db, $config, $info);
           }
           // Respond with values that don't match plus list of matches, or a
           // success message.
@@ -1406,18 +1406,17 @@ SQL;
    *   Database connection.
    * @param array $config
    *   Import configuration object.
-   * @param array $destFieldParts
-   *   Database entity and fieldname that the column's values are destined for.
-   * @param string $valueToMapColName
-   *   Name of the column containing the term to lookup. The ID column that
-   *   gets populated will have the same name, with _id appended.
+   * @param array $info
+   *   Column info data for the column being autofilled.
    *
    * @return array
    *   Matching info, including a list of match options, a list of unmatched
    *   values that require user input to fix, plus info about the attribute
    *   we are trying to match values for.
    */
-  private function autofillLookupAttrIds($db, array $config, array $destFieldParts, $valueToMapColName) {
+  private function autofillLookupAttrIds($db, array $config, array $info) {
+    $valueToMapColName = $info['tempDbField'];
+    $destFieldParts = explode(':', $info['warehouseField']);
     $attrEntity = $this->getEntityFromAttrPrefix($destFieldParts[0]);
     $attrId = str_replace('fk_', '', $destFieldParts[1]);
     $sql = <<<SQL
@@ -1470,14 +1469,21 @@ SQL;
    *   Database connection.
    * @param array $config
    *   Import configuration object.
-   * @param string $valueToMapColName
-   *   Name of the column containing the taxon to lookup. The ID column that
-   *   gets populated will have the same name, with _id appended.
+   * @param array $info
+   *   Column info data for the column being autofilled.
    *
    * @return array
    *   Array containing information about the result.
    */
-  private function autofillOccurrenceTaxonIds($db, array $config, $valueToMapColName) {
+  private function autofillOccurrenceTaxonIds($db, array $config, array $info) {
+    $valueToMapColName = $info['tempDbField'];
+    $destFieldParts = explode(':', $info['warehouseField']);
+    $searchField = $destFieldParts[2] ?? 'taxon';
+    // Skip matching using the species name epithet field as we'll combine it
+    // with the genus when that is done.
+    if ($searchField === 'specific') {
+      return NULL;
+    }
     $filtersList = [];
     $filterForTaxonSearchAPI = [];
     foreach ($config['global-values'] as $fieldDef => $value) {
@@ -1489,6 +1495,18 @@ SQL;
       }
     }
     $filters = implode("\n", $filtersList);
+    $matchingFieldSql = "i.{$valueToMapColName}";
+    if ($searchField === 'genus') {
+      // When matching genus, add the species name epithet paired field to the
+      // SQL used for matching.
+      foreach ($config['columns'] as $colInfo) {
+        if ($colInfo['warehouseField'] = 'occurrence:fk_taxa_taxon_list:specific') {
+          $matchingFieldSql = "i.{$valueToMapColName} || ' ' || i.{$colInfo['tempDbField']}";
+        }
+      }
+      // Match against the whole taxon name.
+      $searchField = 'taxon';
+    }
     // Add a column to capture potential multiple matching taxa.
     $uniq = uniqid(TRUE);
     $sql = <<<SQL
@@ -1497,7 +1515,7 @@ ADD COLUMN IF NOT EXISTS {$valueToMapColName}_id_choices json;
 
 -- Find possible taxon name matches. If a name is not accepted, but has an
 -- accepted alternative, it gets skipped.
-SELECT trim(lower(i.{$valueToMapColName})) as taxon,
+SELECT trim(lower($matchingFieldSql)) as taxon,
   ARRAY_AGG(DISTINCT cttl.id) AS choices,
   JSON_AGG(DISTINCT jsonb_build_object(
 	  'id', cttl.id,
@@ -1515,22 +1533,22 @@ SELECT trim(lower(i.{$valueToMapColName})) as taxon,
 INTO TEMPORARY species_matches_$uniq
 FROM import_temp.$config[tableName] i
 JOIN cache_taxa_taxon_lists cttl
-  ON trim(lower(i.{$valueToMapColName}))=lower(cttl.taxon) AND cttl.allow_data_entry=true
+  ON trim(lower($matchingFieldSql))=lower(cttl.$searchField) AND cttl.allow_data_entry=true
   $filters
 -- Drop if accepted name exists which also matches.
 LEFT JOIN cache_taxa_taxon_lists cttlaccepted
-  ON trim(lower(i.{$valueToMapColName}))=lower(cttlaccepted.taxon) AND cttlaccepted.id<>cttl.id
+  ON trim(lower($matchingFieldSql))=lower(cttlaccepted.$searchField) AND cttlaccepted.id<>cttl.id
   AND cttlaccepted.allow_data_entry=true AND cttlaccepted.preferred=true
   AND cttlaccepted.taxon_meaning_id=cttl.taxon_meaning_id
   AND cttlaccepted.taxon_list_id=cttl.taxon_list_id
 WHERE cttlaccepted.id IS NULL
-GROUP BY i.{$valueToMapColName};
+GROUP BY $matchingFieldSql;
 
 UPDATE import_temp.$config[tableName] i
 SET {$valueToMapColName}_id=CASE ARRAY_LENGTH(sm.choices, 1) WHEN 1 THEN ARRAY_TO_STRING(sm.choices, '') ELSE NULL END::integer,
 {$valueToMapColName}_id_choices=sm.choice_info
 FROM species_matches_$uniq sm
-WHERE trim(lower(i.{$valueToMapColName}))=sm.taxon;
+WHERE trim(lower($matchingFieldSql))=sm.taxon;
 
 DROP TABLE species_matches_$uniq;
 SQL;
@@ -1559,14 +1577,15 @@ SQL;
    *   Database connection.
    * @param array $config
    *   Import configuration object.
-   * @param string $valueToMapColName
-   *   Name of the column containing the location value to lookup. The ID column that
-   *   gets populated will have the same name, with _id appended.
+   * @param array $info
+   *   Column info data for the column being autofilled.
    *
    * @return array
    *   Array containing information about the result.
    */
-  private function autofillSampleLocationIds($db, array $config, $valueToMapColName, array $destFieldParts) {
+  private function autofillSampleLocationIds($db, array $config, array $info) {
+    $valueToMapColName = $info['tempDbField'];
+    $destFieldParts = explode(':', $info['warehouseField']);
     $websiteId = $config['global-values']['website_id'];
     $matchAll = [
       'l.deleted=false',
@@ -1676,13 +1695,11 @@ SQL;
    *   Import configuration object.
    * @param array $info
    *   Column info data for the column being autofilled.
-   * @param array $destFieldParts
-   *   Tokens that make up the desination field, e.g. extracted from location:name.
    *
    * @return array
    *   Array containing information about the result.
    */
-  private function autofillOtherFkIds($db, array $config, array $info, array $destFieldParts) {
+  private function autofillOtherFkIds($db, array $config, array $info) {
     $destFieldParts = explode(':', $info['warehouseField']);
     $entity = ORM::factory($destFieldParts[0], -1);
     $fieldName = preg_replace('/^fk_/', '', $destFieldParts[1]);
