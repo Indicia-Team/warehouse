@@ -825,8 +825,8 @@ SQL;
    * @param object $names
    *   Query object containing a list of names which will be moved.
    * @param object $linkToName
-   *   Current record for a name in the destination concept which the moving
-   *   names will be linked to.
+   *   Current record for the preferred name in the destination concept which
+   *   the moving names will be linked to.
    * @param object $operation
    *   Operation data, which may include a new parent.
    */
@@ -836,8 +836,12 @@ SQL;
     $taxonMeaningId = $linkToName->taxon_meaning_id;
     $externalKey = $linkToName->external_key;
     $parentId = $linkToName->parent_id;
+    $preferredNameChange = FALSE;
     foreach ($names as $mergedNameInfo) {
       $ttl = ORM::factory('taxa_taxon_list', $mergedNameInfo->id);
+      if ($ttl->preferred === 't') {
+        $preferredNameChange = TRUE;
+      }
       $ttl->preferred = 'f';
       $ttl->taxon_meaning_id = $taxonMeaningId;
       $ttl->allow_data_entry = $linkToName->allow_data_entry;
@@ -848,6 +852,9 @@ SQL;
       $ttl->taxon->organism_key = $linkToName->organism_key;
       $ttl->taxon->set_metadata();
       $ttl->taxon->save();
+    }
+    if ($preferredNameChange) {
+      $this->repointLinksFromSynonymsToPreferredName($linkToName->id);
     }
     return "$juniorName merged into $seniorName";
   }
