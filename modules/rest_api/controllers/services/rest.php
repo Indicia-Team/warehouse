@@ -902,12 +902,23 @@ class Rest_Controller extends Controller {
     catch (RestApiAbort $e) {
       // No action if a proper abort.
     }
+    catch (Exception $e) {
+      if (class_exists('request_logging')) {
+        $io = in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE']) ? 'i' : 'o';
+        $websiteId = RestObjects::$clientWebsiteId ?? 0;
+        $userId = RestObjects::$clientUserId ?? 0;
+        $subTask = implode('/', $arguments);
+        request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db, $e->getMessage());
+      }
+      error_logger::log_error('Error in Rest API report request', $e);
+      throw $e;
+    }
     if (class_exists('request_logging')) {
       $io = in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE']) ? 'i' : 'o';
-      $websiteId = isset(RestObjects::$clientWebsiteId) ? RestObjects::$clientWebsiteId : 0;
-      $userId = isset(RestObjects::$clientUserId) ? RestObjects::$clientUserId : 0;
+      $websiteId = RestObjects::$clientWebsiteId ?? 0;
+      $userId = RestObjects::$clientUserId ?? 0;
       $subTask = implode('/', $arguments);
-      request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db);
+      request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db, RestObjects::$apiResponse->responseFailMessage);
     }
   }
 
