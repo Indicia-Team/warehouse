@@ -2485,8 +2485,9 @@ class Rest_Controller extends Controller {
         }
         else {
           // The first specified scope in the token is default if not specified
-          // in query parameters.
-          RestObjects::$scope = $allowedScopes[0];
+          // in query parameters. Authenticated scope can just map to a
+          // reporting request.
+          RestObjects::$scope = $allowedScopes[0] === 'authenticated' ? 'reporting' : $allowedScopes[0];
         }
       }
       $this->authenticated = TRUE;
