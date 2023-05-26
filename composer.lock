@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2fccf8723ed1dfa22f7247880fd11bd9",
+    "content-hash": "391e3bb1f212e3d2ed970e8bc532dad1",
     "packages": [
         {
             "name": "ezyang/htmlpurifier",
@@ -885,31 +885,30 @@
         },
         {
             "name": "misantron/dbunit",
-            "version": "dev-master",
+            "version": "5.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/misantron/dbunit.git",
-                "reference": "73a9c07dca119c68e92002adb4fab9022235a91f"
+                "reference": "2b68c5d1de61b8748cbcef610b939f02a7b9f453"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/misantron/dbunit/zipball/73a9c07dca119c68e92002adb4fab9022235a91f",
-                "reference": "73a9c07dca119c68e92002adb4fab9022235a91f",
+                "url": "https://api.github.com/repos/misantron/dbunit/zipball/2b68c5d1de61b8748cbcef610b939f02a7b9f453",
+                "reference": "2b68c5d1de61b8748cbcef610b939f02a7b9f453",
                 "shasum": ""
             },
             "require": {
                 "ext-pdo": "*",
                 "php": "^7.2 || ^8.0",
                 "phpunit/phpunit": "^8.5 || ^9.2",
-                "symfony/yaml": "^4.4 || ^5.0"
+                "symfony/yaml": "^4.4 || ^5.0 || ^6.0"
             },
             "require-dev": {
-                "friendsofphp/php-cs-fixer": "^2.18 || ^3.0",
-                "php-coveralls/php-coveralls": "^2.4",
-                "phpstan/phpstan": "^0.12.98",
+                "friendsofphp/php-cs-fixer": "^2.18 || ^3.3",
+                "php-coveralls/php-coveralls": "^2.5",
+                "phpstan/phpstan": "^1.2",
                 "squizlabs/php_codesniffer": "^3.6"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -941,10 +940,10 @@
                 "testing"
             ],
             "support": {
-                "source": "https://github.com/misantron/dbunit/tree/master",
+                "source": "https://github.com/misantron/dbunit/tree/5.2.1",
                 "issues": "https://github.com/misantron/dbunit/issues"
             },
-            "time": "2021-09-09T19:30:23+00:00"
+            "time": "2021-12-04T11:15:07+00:00"
         },
         {
             "name": "myclabs/deep-copy",
@@ -3114,12 +3113,10 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "misantron/dbunit": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "2.0.0"
+    "plugin-api-version": "2.3.0"
 }
