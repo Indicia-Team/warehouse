@@ -10,7 +10,7 @@
  * @license    http://kohanaphp.com/license.html
  */
 class text_Core {
-  
+
   /**
    * @var string used to pass replacement in to censor_replace_callback
    * as the function signature is fixed.
@@ -224,7 +224,7 @@ class text_Core {
   private static function censor_replace_callback($matches) {
     return str_repeat(self::$replacement, utf8::strlen($matches[1]));
   }
-  
+
 	/**
 	 * Finds the text that is similar between a set of words.
 	 *
@@ -382,7 +382,7 @@ class text_Core {
 		$format = ($format === NULL) ? '%01.2f %s' : (string) $format;
 
 		// IEC prefixes (binary)
-		if ($si == FALSE OR strpos($force_unit, 'i') !== FALSE)
+		if ($si == FALSE OR strpos($force_unit ?? '', 'i') !== FALSE)
 		{
 			$units = array('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB');
 			$mod   = 1024;
