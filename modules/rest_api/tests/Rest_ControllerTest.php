@@ -180,13 +180,16 @@ KEY;
   /**
    * Get user associated JWT.
    */
-  private function getJwt($privateKey, $iss, $userId, $exp) {
+  private function getJwt($privateKey, $iss, $userId, $exp, $scope = NULL) {
     require_once 'vendor/autoload.php';
     $payload = [
       'iss' => $iss,
       'http://indicia.org.uk/user:id' => $userId,
       'exp' => $exp,
     ];
+    if ($scope) {
+      $payload['scope'] = $scope;
+    }
     return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
   }
 
@@ -456,10 +459,12 @@ KEY;
    *   End-point (table) name.
    * @param array $exampleData
    *   Example values to POST then GET to check.
+   * @param string $scope
+   *   Optional JWT token scope claim.
    */
-  private function getTest($table, $exampleData) {
+  private function getTest($table, $exampleData, $scope = NULL) {
     $this->authMethod = 'jwtUser';
-    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120, $scope);
     // First POST to create.
     $response = $this->callService(
       $table,
@@ -2152,6 +2157,67 @@ SQL;
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
     ]);
+  }
+
+  /**
+   * A basic test of /occurrences/id GET.
+   */
+  public function testJwtOccurrenceGetScope() {
+    // Create a sample using the default user ID.
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $db = new Database();
+    // Create a different user to query with with.
+    $db->query("insert into people(first_name, surname, created_on, created_by_id, updated_on, updated_by_id) " .
+      "values ('test', 'extrauser', now(), 1, now(), 1)");
+    $tm = microtime(TRUE);
+    $db->query("insert into users (username, person_id,  created_on, created_by_id, updated_on, updated_by_id) " .
+    "values ('test_extrauser$tm', (select max(id) from people), now(), 1, now(), 1)");
+    $userId = $db->query('select max(id) from users')->current()->max;
+    // Grant website access.
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userId, 1, 3, 1, now(), 1, now())");
+    // Authenticate as the added user.
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    // Try to GET the sample.
+    $response = $this->callService("samples/$sampleId");
+    $this->assertEquals(
+      404, $response['httpCode'],
+      "Request for another user's sample does not return 404."
+    );
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Try to GET the sample.
+    $response = $this->callService("samples/$sampleId");
+    $this->assertEquals(
+      200, $response['httpCode'],
+      "Request for a user's sample does not return 200."
+    );
+    // Authenticated scope should default to user's own records, so expect 404
+    // if requesting for the created user.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120, 'authenticated');
+    // Try to GET the sample.
+    $response = $this->callService("samples/$sampleId");
+    $this->assertEquals(
+      404, $response['httpCode'],
+      "Request for another user's sample does not return 404 with authenticated scope."
+    );
+    // Same for user scope.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120, 'user');
+    // Try to GET the sample.
+    $response = $this->callService("samples/$sampleId");
+    $this->assertEquals(
+      404, $response['httpCode'],
+      "Request for another user's sample does not return 404 with user scope."
+    );
+    // Same for reporting scope - as using JwtUser, it will widen the scope to
+    // other websites but not other users.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120, 'reporting');
+    // Try to GET the sample.
+    $response = $this->callService("samples/$sampleId");
+    $this->assertEquals(
+      404, $response['httpCode'],
+      "Request for another user's sample does not return 404 with reporting scope."
+    );
   }
 
   /**

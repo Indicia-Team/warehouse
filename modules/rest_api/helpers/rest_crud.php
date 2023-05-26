@@ -691,10 +691,10 @@ SQL;
     if (is_object($data)) {
       $data = (array) $data;
     }
-    $values = $fields ?  array_intersect_key($data, array_flip($fields)) : $data;
+    $values = $fields ? array_intersect_key($data, array_flip($fields)) : $data;
     foreach ($values as $field => &$value) {
       if (isset(self::$fieldDefs[$field])) {
-        if (self::$fieldDefs[$field]['type'] === 'date') {
+        if (self::$fieldDefs[$field]['type'] === 'date' && !empty($value)) {
           // Date values need reformatting.
           $value = date('c', strtotime($value));
         }
