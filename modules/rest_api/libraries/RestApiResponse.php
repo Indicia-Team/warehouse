@@ -27,6 +27,13 @@ class RestApiResponse {
   private $startTime;
 
   /**
+   * Track any response failure info to add to the request log.
+   *
+   * @var string
+   */
+  public $responseFailMessage = NULL;
+
+  /**
    * A template to define the header of any HTML pages output.
    *
    * Replace {{ base }} with the root path of the warehouse.
@@ -384,11 +391,12 @@ HTML;
       header('Content-Type: application/json');
       echo json_encode($response);
     }
+    $this->responseFailMessage = "Rest API request failed: HTTP $code $status.";
     if ($msg) {
-      $msg = is_array($msg) ? json_encode($msg) : $msg;
-      kohana::log('debug', "HTTP code: $code. $msg");
-      kohana::log_save();
+      $this->responseFailMessage .= "\n" . (is_array($msg) ? json_encode($msg) : $msg);
     }
+    kohana::log('error', $this->responseFailMessage);
+    kohana::log_save();
     throw new RestApiAbort($status);
   }
 

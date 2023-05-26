@@ -657,99 +657,73 @@ SQL;
       'rank',
       'taxon_group_key',
     ]);
-    // Although the operation specifies a current organism key, we actually
-    // apply this operation to all organisms which contain the same accepted
-    // taxon. This can occur due to dodgy redundant organisms which are copies
-    // of other organisms in UKSI. Must do it this way to match the behaviour
-    // of rename taxon within UKSI itself.
-    $duplicateOrganismKeys = $this->getDuplicateOrganismKeys($operation->current_organism_key);
-    foreach ($duplicateOrganismKeys as $organismKey) {
-      // Find other taxa with same organism key.
-      $allExistingNames = $this->getTaxaForKey($organismKey, 'organism_key');
-      // Fail if none found.
-      if (count($allExistingNames) === 0) {
-        $this->operationErrors[] = "Organism key $organismKey not found for rename taxon operation";
-        return 'Error';
-      }
-      // All existing names sorted so preferred name is first.
-      $previousPreferredName = $allExistingNames->current();
-      $originalName = $previousPreferredName->taxon;
-      $this->applyTaxonDefaultsToOperation($previousPreferredName, $operation);
-      // Add the taxon as per new taxon, using the existing taxon meaning Id.
-      $fields = $this->getCreateTaxonFields($operation);
-      // The rename taxon operation only updates the parent from the operation
-      // if for the correct organism key (in order to match UKSI operations
-      // behaviour).
-      if ($operation->current_organism_key !== $organismKey) {
-        $fields['taxa_taxon_list:parent_id'] = $previousPreferredName->parent_id;
-      }
-      $fields['taxon:organism_key'] = $organismKey;
-      $fields['taxa_taxon_list:taxon_meaning_id'] = $previousPreferredName->taxon_meaning_id;
-      if (empty($fields['taxa_taxon_list:parent_id'])) {
-        // If parent not specified in operation, keep the original.
-        $fields['taxa_taxon_list:parent_id'] = $previousPreferredName->parent_id;
-      }
-      // The new name inherits the existing organism deprecation state. This is
-      // just a taxon operation, so only the name_deprecated flag gets set
-      // according to the operation redundant flag.
-      $fields['taxon:organism_deprecated'] = $previousPreferredName->organism_deprecated;
-      $fields['taxa_taxon_list:allow_data_entry'] = $fields['taxon:organism_deprecated'] === 'f' && $fields['taxon:name_deprecated'] === 'f' ? 't' : 'f';
-      if (count($this->operationErrors) > 0) {
-        return 'Error';
-      }
-      $taxa_taxon_list = ORM::factory('taxa_taxon_list');
-      $taxa_taxon_list->set_submission_data($fields);
-      if (!$taxa_taxon_list->submit()) {
-        $this->operationErrors[] = implode("\n", $taxa_taxon_list->getAllErrors());
-        return 'Error';
-      }
-      // Update the other taxa with same organism key so not preferred, same
-      // group and parent correct.
-      $synonymTtlIds = [];
-      foreach ($allExistingNames as $existingNameInfo) {
-        $synonymTtlIds[] = $existingNameInfo->id;
-      }
-      $existingSynonyms = ORM::factory('taxa_taxon_list')->in('id', $synonymTtlIds)->find_all();
-      foreach ($existingSynonyms as $existingSynonym) {
-        // Note, the operation redundant flag does not alter the other synonyms.
-        // Don't undeprecate the name if there is a better formed version of the
-        // same name.
-        $existingSynonym->allow_data_entry = $this->checkIfSynonymAllowsDataEntry($existingSynonym, $existingSynonyms->as_array());
-        $existingSynonym->preferred = 'f';
-        $existingSynonym->parent_id = $fields['taxa_taxon_list:parent_id'];
-        $existingSynonym->set_metadata();
-        $existingSynonym->save();
-        // Keep the synonym taxon details consistent.
-        $existingSynonym->taxon->external_key = $fields['taxon:external_key'];
-        $existingSynonym->taxon->taxon_group_id = $fields['taxon:taxon_group_id'];
-        $existingSynonym->taxon->marine_flag = $fields['taxon:marine_flag'];
-        $existingSynonym->taxon->terrestrial_flag = $fields['taxon:terrestrial_flag'];
-        $existingSynonym->taxon->freshwater_flag = $fields['taxon:freshwater_flag'];
-        $existingSynonym->taxon->non_native_flag = $fields['taxon:non_native_flag'];
-        $existingSynonym->taxon->set_metadata();
-        $existingSynonym->taxon->save();
-      }
-      $this->repointLinksFromSynonymsToPreferredName($taxa_taxon_list->id);
+    // Find other taxa with same organism key.
+    $allExistingNames = $this->getTaxaForKey($operation->current_organism_key, 'organism_key');
+    // Fail if none found.
+    if (count($allExistingNames) === 0) {
+      $this->operationErrors[] = "Organism key $operation->current_organism_key not found for rename taxon operation";
+      return 'Error';
     }
+    // All existing names sorted so preferred name is first.
+    $previousPreferredName = $allExistingNames->current();
+    $originalName = $previousPreferredName->taxon;
+    $this->applyTaxonDefaultsToOperation($previousPreferredName, $operation);
+    // Add the taxon as per new taxon, using the existing taxon meaning Id.
+    $fields = $this->getCreateTaxonFields($operation);
+    // The rename taxon operation only updates the parent from the operation
+    // if for the correct organism key (in order to match UKSI operations
+    // behaviour).
+    if ($operation->current_organism_key !== $operation->current_organism_key) {
+      $fields['taxa_taxon_list:parent_id'] = $previousPreferredName->parent_id;
+    }
+    $fields['taxon:organism_key'] = $operation->current_organism_key;
+    $fields['taxa_taxon_list:taxon_meaning_id'] = $previousPreferredName->taxon_meaning_id;
+    if (empty($fields['taxa_taxon_list:parent_id'])) {
+      // If parent not specified in operation, keep the original.
+      $fields['taxa_taxon_list:parent_id'] = $previousPreferredName->parent_id;
+    }
+    // The new name inherits the existing organism deprecation state. This is
+    // just a taxon operation, so only the name_deprecated flag gets set
+    // according to the operation redundant flag.
+    $fields['taxon:organism_deprecated'] = $previousPreferredName->organism_deprecated;
+    $fields['taxa_taxon_list:allow_data_entry'] = $fields['taxon:organism_deprecated'] === 'f' && $fields['taxon:name_deprecated'] === 'f' ? 't' : 'f';
+    if (count($this->operationErrors) > 0) {
+      return 'Error';
+    }
+    $taxa_taxon_list = ORM::factory('taxa_taxon_list');
+    $taxa_taxon_list->set_submission_data($fields);
+    if (!$taxa_taxon_list->submit()) {
+      $this->operationErrors[] = implode("\n", $taxa_taxon_list->getAllErrors());
+      return 'Error';
+    }
+    // Update the other taxa with same organism key so not preferred, same
+    // group and parent correct.
+    $synonymTtlIds = [];
+    foreach ($allExistingNames as $existingNameInfo) {
+      $synonymTtlIds[] = $existingNameInfo->id;
+    }
+    $existingSynonyms = ORM::factory('taxa_taxon_list')->in('id', $synonymTtlIds)->find_all();
+    foreach ($existingSynonyms as $existingSynonym) {
+      // Note, the operation redundant flag does not alter the other synonyms.
+      // Don't undeprecate the name if there is a better formed version of the
+      // same name.
+      $existingSynonym->allow_data_entry = $this->checkIfSynonymAllowsDataEntry($existingSynonym, $existingSynonyms->as_array());
+      $existingSynonym->preferred = 'f';
+      $existingSynonym->parent_id = $fields['taxa_taxon_list:parent_id'];
+      $existingSynonym->set_metadata();
+      $existingSynonym->save();
+      // Keep the synonym taxon details consistent.
+      $existingSynonym->taxon->external_key = $fields['taxon:external_key'];
+      $existingSynonym->taxon->taxon_group_id = $fields['taxon:taxon_group_id'];
+      $existingSynonym->taxon->marine_flag = $fields['taxon:marine_flag'];
+      $existingSynonym->taxon->terrestrial_flag = $fields['taxon:terrestrial_flag'];
+      $existingSynonym->taxon->freshwater_flag = $fields['taxon:freshwater_flag'];
+      $existingSynonym->taxon->non_native_flag = $fields['taxon:non_native_flag'];
+      $existingSynonym->taxon->set_metadata();
+      $existingSynonym->taxon->save();
+    }
+    $this->repointLinksFromSynonymsToPreferredName($taxa_taxon_list->id);
     return "Taxon $originalName renamed to $operation->taxon_name";
-  }
-
-  private function getDuplicateOrganismKeys($organismKey) {
-    $keys = [];
-    $taxonListId = $this->getTaxonListId();
-    $sql = <<<SQL
-SELECT DISTINCT t2.organism_key
-FROM taxa t1
-JOIN taxa t2 ON t2.external_key=t1.external_key AND t2.deleted=false
-JOIN taxa_taxon_lists ttl1 ON ttl1.id=t1.id AND ttl1.taxon_list_id=$taxonListId
-JOIN taxa_taxon_lists ttl2 ON ttl2.id=t2.id AND ttl2.deleted=false AND ttl2.taxon_list_id=$taxonListId
-WHERE t1.organism_key='$organismKey'
-SQL;
-    $results = $this->db->query($sql);
-    foreach ($results as $row) {
-      $keys[] = $row->organism_key;
-    }
-    return $keys;
   }
 
   private function checkIfSynonymAllowsDataEntry($synonym, array $allNamesForTaxon) {

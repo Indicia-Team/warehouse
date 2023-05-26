@@ -142,9 +142,10 @@ class ProcessChecker {
   private function getDefaultWhereClauses($title, array $processItem) {
     // Find the record at the top limit of our range.
     $updatedOnFrom = variable::get("processChecker-$title", FALSE, FALSE);
-    $tailCheckWheres = $updatedOnFrom
-      ? ["t.updated_on BETWEEN '$updatedOnFrom' AND now()-'$processItem[ignore_recent]'::interval"]
-      : ["t.updated_on<=now()-'$processItem[ignore_recent]'::interval"];
+    $tailCheckWheres = ["t.updated_on<=now()-'$processItem[ignore_recent]'::interval"];
+    if ($updatedOnFrom) {
+      $tailCheckWheres[] = "t.updated_on>'$updatedOnFrom'";
+    }
     $baseQuery = $this->getBaseQuery($title, $processItem, [], [], $tailCheckWheres);
     $batchLimit = BATCH_LIMIT;
     $qry = <<<SQL
@@ -168,12 +169,9 @@ SQL;
       $date = new DateTime("now - $processItem[ignore_recent]");
       $this->lastUpdatedOn = $date->format('Y-m-d H:i:s');
     }
-    $updatedOnFrom = variable::get("processChecker-$title", FALSE, FALSE);
+    $defaultWhereClauses = ["t.updated_on<='$this->lastUpdatedOn'"];
     if ($updatedOnFrom) {
-      $defaultWhereClauses = ["t.updated_on BETWEEN '$updatedOnFrom' AND '$this->lastUpdatedOn'"];
-    }
-    else {
-      $defaultWhereClauses = ["t.updated_on<='$this->lastUpdatedOn'"];
+      $defaultWhereClauses[] = "t.updated_on>'$updatedOnFrom'";
     }
     if (!empty($processItem['start_record_id'])) {
       $defaultWhereClauses[] = "t.id >= $processItem[start_record_id]";
