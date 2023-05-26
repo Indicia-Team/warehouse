@@ -138,6 +138,12 @@ SET attrs_json=a.attrs
 FROM attrs a
 WHERE a.sample_id=u.id;
 
+-- Force tracking update.
+UPDATE cache_samples_functional u
+SET website_id=u.website_id
+FROM attrs a
+WHERE a.sample_id=u.id;
+
 DROP TABLE attrs;
 
 SQL;
