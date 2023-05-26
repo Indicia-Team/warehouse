@@ -22,10 +22,20 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
-use \Firebase\JWT;
+use Firebase\JWT;
 
 define("REST_API_DEFAULT_PAGE_SIZE", 100);
 define("AUTOFEED_DEFAULT_PAGE_SIZE", 10000);
+const ALLOWED_SCOPES = [
+  'reporting',
+  'peer_review',
+  'verification',
+  'data_flow',
+  'moderation',
+  'editing',
+  'user',
+  'userWithinWebsite',
+];
 
 if (!function_exists('apache_request_headers')) {
   Kohana::log('debug', 'PHP apache_request_headers() function does not exist. Replacement function used.');
@@ -2485,9 +2495,9 @@ class Rest_Controller extends Controller {
         }
         else {
           // The first specified scope in the token is default if not specified
-          // in query parameters. Authenticated scope can just map to a
-          // reporting request.
-          RestObjects::$scope = $allowedScopes[0] === 'authenticated' ? 'reporting' : $allowedScopes[0];
+          // in query parameters. Any non-recognised scope will just map to a
+          // user request within the website (the most restrictive).
+          RestObjects::$scope = in_array($allowedScopes[0], ALLOWED_SCOPES) ? $allowedScopes[0] : 'userWithinWebsite';
         }
       }
       $this->authenticated = TRUE;
@@ -2615,7 +2625,7 @@ class Rest_Controller extends Controller {
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
       RestObjects::$clientWebsiteId = $websiteId;
       RestObjects::$clientUserId = $userId;
-      RestObjects::$scope = $scope === NULL ? 'userWithinWebsite' : $scope;
+      RestObjects::$scope = $scope ?? 'userWithinWebsite';
       $this->authenticated = TRUE;
     }
     else {
