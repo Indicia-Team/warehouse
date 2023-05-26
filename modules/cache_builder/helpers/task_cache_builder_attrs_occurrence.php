@@ -138,6 +138,12 @@ SET attrs_json=a.attrs
 FROM attrs a
 WHERE a.occurrence_id=u.id;
 
+-- Force tracking update.
+UPDATE cache_occurrences_functional u
+SET website_id=u.website_id
+FROM attrs a
+WHERE a.occurrence_id=u.id;
+
 DELETE FROM work_queue q
 USING attrs a
 WHERE a.occurrence_id=q.record_id
