@@ -363,7 +363,7 @@ META;
     $output = '';
     foreach ($data as $idx => $cell) {
       // If not numeric and contains the delimiter, enclose the string.
-      if (!is_numeric($cell) && (preg_match('/[' . $delimiter . $enclose . '\r\n]/', $cell))) {
+      if (!empty($cell) && !is_numeric($cell) && (preg_match('/[' . $delimiter . $enclose . '\r\n]/', $cell))) {
         // Escape the enclose.
         $cell = str_replace($enclose, $enclose . $enclose, $cell);
         // Not numeric enclose.
