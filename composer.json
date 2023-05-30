@@ -11,6 +11,6 @@
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5",
-    "misantron/dbunit": "dev-master"
+    "misantron/dbunit": "^5.2"
   }
 }
