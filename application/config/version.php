@@ -36,7 +36,7 @@ $config['version'] = '8.20.0';
  *
  * @var string
  */
-$config['release_date'] = '2023-06-02';
+$config['release_date'] = '2023-06-05';
 
 /**
  * Link to the code repository downloads page.
