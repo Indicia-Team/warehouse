@@ -142,13 +142,18 @@ class Person_Controller extends Gridview_Base_Controller {
     $this->template->content->warning_message='';
     if($this->model->loaded) {
       $user=ORM::factory('user', array('person_id' => $this->model->id));
-      if(!is_null($this->gen_auth_filter)){
+      if (!is_null($this->auth_filter)) {
         // Non Core Admin user
-        $my_users_websites=ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->in('website_id', $this->gen_auth_filter['values'])->find_all();
+        if ($this->auth_filter['field'] !== 'website_id') {
+          throw new Exception('Unexpected auth filter');
+        }
+        $my_users_websites=ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->in('website_id', $this->auth_filter['values'])->find_all();
         $all_users_websites=ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->find_all();
-        if($all_users_websites->count() > 0)
+        if($all_users_websites->count() > 0) {
           $this->session->set_flash('flash_info', '<li>Warning: This person is set up as a user on '.$all_users_websites->count().' websites, of which you have the Admin role for '.$my_users_websites->count().' website(s).</li>');
-      } else {
+        }
+      }
+      else {
         // Core Admin user
         $users_websites=ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->find_all();
         $this->session->set_flash('flash_info', 'Number of websites this person is a user on: '.$users_websites->count());
