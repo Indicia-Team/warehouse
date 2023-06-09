@@ -16,6 +16,11 @@
   <order_bys>
     <order_by>s.title ASC</order_by>
   </order_bys>
+  <params>
+    <param name="website_ids" display="Limit to website IDs" datatype="integer[]" default="">
+      <where>s.website_id in (#website_ids#)</where>
+    </param>
+  </params>
   <columns>
     <column name="id" visible="false" sql="s.id" />
     <column name="title" display='Title' datatype="text" sql="s.title" />
