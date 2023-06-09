@@ -308,7 +308,7 @@ class Import_Controller extends Service_Base_Controller {
         $foundAProperColumn = TRUE;
       }
       elseif ($foundAProperColumn) {
-        if (empty(trim($columns[$i]))) {
+        if (empty(trim($columns[$i] ?? ''))) {
           $columns[$i] = kohana::lang('misc.untitled') . ' - ' . ($i + 1);
         }
       }
