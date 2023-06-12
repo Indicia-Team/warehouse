@@ -104,6 +104,10 @@ class Scheduled_Tasks_Controller extends Controller {
         $this->doRecordOwnerNotifications($swift);
         $this->doNotificationDigestEmailsForTriggers($swift);
       }
+      // The value of the last_scheduled_task_check on the Indicia system entry
+      // is used to mark the last time notifications were handled, so we can
+      // process new notification info next time notifications are handled.
+      $this->db->update('system', ['last_scheduled_task_check' => "'" . date('c', $currentTime) . "'"], ['id' => 1]);
     }
     if (in_array('work_queue', $nonPluginTasks)) {
       $timeAtStart = microtime(TRUE);
@@ -117,9 +121,6 @@ class Scheduled_Tasks_Controller extends Controller {
         request_logging::log('a', 'scheduled_tasks', NULL, 'work_queue', 0, 0, $timeAtStart, $this->db);
       }
     }
-    // Mark the time of the last scheduled task check, so we can get diffs
-    // next time.
-    $this->db->update('system', ['last_scheduled_task_check' => "'" . date('c', $currentTime) . "'"], ['id' => 1]);
     self::msg("Ok!");
     $tm = microtime(TRUE) - $tm;
     if ($tm > 30) {
@@ -148,6 +149,9 @@ class Scheduled_Tasks_Controller extends Controller {
       $params = json_decode($trigger->params_json, TRUE);
       $params['date'] = $this->lastRunDate;
       $reportEngine = new ReportEngine();
+      if ($trigger->trigger_template_file === 'trigger_templates/shoresearch_notify_added_surveys') {
+        kohana::log('error', 'Loading trigger ' . $trigger->trigger_template_file);
+      }
       try {
         $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
       }
@@ -155,6 +159,11 @@ class Scheduled_Tasks_Controller extends Controller {
         self::msg($trigger->name . ": " . $e, 'error');
         continue;
       }
+      if ($trigger->trigger_template_file === 'trigger_templates/shoresearch_notify_added_surveys') {
+        kohana::log('error', 'Params: ' . var_export($params, TRUE));
+        kohana::log('error', 'data: ' . var_export($data, TRUE));
+      }
+
       if (!isset($data['content']['records'])) {
         kohana::log('error', 'Error in trigger file ' . $trigger->trigger_template_file . '.xml');
         continue;

@@ -236,6 +236,7 @@ SQL;
     $fields['taxon:terrestrial_flag'] = $allExistingNames->current()->terrestrial_flag;
     $fields['taxon:non_native_flag'] = $allExistingNames->current()->non_native_flag;
     $fields['taxon:organism_key'] = $allExistingNames->current()->organism_key;
+    $fields['taxon:external_key'] = $allExistingNames->current()->external_key;
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
