@@ -17,6 +17,7 @@
   where smp.id=#sample_id#
   and smp.deleted=false
   and #sharing_filter#
+  #group_bys#
   
   UNION
 
@@ -35,6 +36,7 @@
   where smp.id=#sample_id#
   and smp.deleted=false
   and #sharing_filter#
+  #group_bys#
   </query>
   <params>
     <param name='sample_id' display='Sample ID' description='ID of the sample to load' datatype='text' />
