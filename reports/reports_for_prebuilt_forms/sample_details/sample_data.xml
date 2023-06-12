@@ -40,8 +40,14 @@
     <param name='sample_id' display='Sample ID' description='ID of the sample to load' datatype='text' />
     <param name="allow_sensitive_full_precision" datatype="boolean" default="0"
            description="Allow viewing of sensitive records at full precision" />
-    <param name="includes_confidential" datatype="integer" default="0" />
-    <param name="includes_unreleased" datatype="integer" default="0" />
+    <param name="allow_confidential" datatype="boolean" default="0"
+           description="Allow viewing of confidential records">
+      <where value="0" operator="equal">o.confidential=false</where>
+    </param>
+    <param name="allow_unreleased" datatype="boolean" default="0"
+           description="Allow viewing of unreleased records">
+      <where value="0" operator="equal">o.release_status='R'</where>
+    </param>
   </params>
   <columns>
     <column name="sample_id" sql="s.id" />
