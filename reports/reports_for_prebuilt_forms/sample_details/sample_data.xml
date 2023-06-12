@@ -17,6 +17,7 @@
   where smp.id=#sample_id#
   and smp.deleted=false
   and #sharing_filter#
+  #filters#
   #group_bys#
   
   UNION
@@ -36,6 +37,7 @@
   where smp.id=#sample_id#
   and smp.deleted=false
   and #sharing_filter#
+  #filters#
   #group_bys#
   </query>
   <params>
