@@ -3,6 +3,7 @@
     description="Report used to retrieve details of a sample excluding custom attributes for the sample details prebuilt form."
 >
   <query website_filter_field="su.website_id" created_by_field="smp.created_by_id" training_filter_field="">
+  -- Include occurrences on the sample.
   select #columns#
   from samples smp
   join cache_samples_functional s on s.id=smp.id
@@ -11,7 +12,24 @@
   join surveys su on su.id=smp.survey_id and su.deleted=false
   join users u on u.id=s.created_by_id
   join people p on p.id=u.person_id
+  #agreements_join#
+  #joins#
+  where smp.id=#sample_id#
+  and smp.deleted=false
+  and #sharing_filter#
+  
+  UNION
 
+  -- And occurrences on any subsamples too.
+  select #columns#
+  from samples smp
+  join cache_samples_functional s on s.id=smp.id
+  join cache_samples_nonfunctional snf on snf.id=s.id
+  join cache_samples_functional subsamples on subsamples.parent_sample_id=s.id
+  left join cache_occurrences_functional o on o.sample_id=subsamples.id
+  join surveys su on su.id=smp.survey_id and su.deleted=false
+  join users u on u.id=s.created_by_id
+  join people p on p.id=u.person_id
   #agreements_join#
   #joins#
   where smp.id=#sample_id#
