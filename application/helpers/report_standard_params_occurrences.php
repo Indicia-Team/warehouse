@@ -122,6 +122,34 @@ class report_standard_params_occurrences {
         'description' => 'Identification difficulty lookup operation',
         'lookup_values' => '=:is,>=:is at least,<=:is at most',
       ],
+      'date_year' => [
+        'datatype' => 'lookup',
+        'default' => '',
+        'display' => 'Year filter operation',
+        'description' => 'Operation for filtering on date',
+        'lookup_values' => '=:is,>=:is in or after,<=:is in or before',
+      ],
+      'input_date_year' => [
+        'datatype' => 'lookup',
+        'default' => '',
+        'display' => 'Year of input filter operation',
+        'description' => 'Operation for filtering on input date',
+        'lookup_values' => '=:is,>=:is in or after,<=:is in or before',
+      ],
+      'edited_date_year' => [
+        'datatype' => 'lookup',
+        'default' => '',
+        'display' => 'Year of last editfilter operation',
+        'description' => 'Operation for filtering on last edit date',
+        'lookup_values' => '=:is,>=:is in or after,<=:is in or before',
+      ],
+      'verified_date_year' => [
+        'datatype' => 'lookup',
+        'default' => '',
+        'display' => 'Year of last verification filter operation',
+        'description' => 'Operation for filtering on last verification date',
+        'lookup_values' => '=:is,>=:is in or after,<=:is in or before',
+      ],
     ];
   }
 
@@ -256,6 +284,18 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'date_year' => [
+        'datatype' => 'integer',
+        'display' => 'Year',
+        'description' => 'Filter by year of the record',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "extract(year from o.date_start) #date_year_op# #date_year#",
+          ],
+        ],
+      ],
       'date_from' => [
         'datatype' => 'date',
         'display' => 'Date from',
@@ -289,6 +329,18 @@ class report_standard_params_occurrences {
             'value' => '',
             'operator' => '',
             'sql' => "o.date_start>now()-'#date_age#'::interval",
+          ],
+        ],
+      ],
+      'input_date_year' => [
+        'datatype' => 'integer',
+        'display' => 'Input year',
+        'description' => 'Filter by year of the input date of the record',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "extract(year from o.created_on) #input_date_year_op# #input_date_year#",
           ],
         ],
       ],
@@ -333,6 +385,18 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'edited_date_year' => [
+        'datatype' => 'integer',
+        'display' => 'Last update date year',
+        'description' => 'Filter by year of the last update of the record',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "extract(year from o.updated_on) #edited_date_year_op# #edited_date_year#",
+          ],
+        ],
+      ],
       'edited_date_from' => [
         'datatype' => 'date',
         'display' => 'Last update date from',
@@ -366,6 +430,18 @@ class report_standard_params_occurrences {
             'value' => '',
             'operator' => '',
             'sql' => "o.updated_on>now()-'#edited_date_age#'::interval",
+          ],
+        ],
+      ],
+      'verified_date_year' => [
+        'datatype' => 'integer',
+        'display' => 'Verification year',
+        'description' => 'Filter by year of the last verification of the record',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "extract(year from o.verified_on) #verified_date_year_op# #verified_date_year#",
           ],
         ],
       ],
@@ -1233,6 +1309,10 @@ class report_standard_params_occurrences {
    */
   public static function getDefaultParameterValues() {
     return [
+      'date_year_op' => '=',
+      'input_date_year_op' => '=',
+      'edited_date_year_op' => '=',
+      'verified_date_year_op' => '=',
       'occ_id_op' => '=',
       'smp_id_op' => '=',
       'taxon_rank_sort_order_op' => '=',
@@ -1242,6 +1322,10 @@ class report_standard_params_occurrences {
       'location_list_op' => 'in',
       'indexed_location_list_op' => 'in',
       'identification_difficulty_op' => '=',
+      'date_year_op_context' => '=',
+      'input_date_year_op_context' => '=',
+      'edited_date_year_op_context' => '=',
+      'verified_date_year_op_context' => '=',
       'occ_id_op_context' => '=',
       'smp_id_op_context' => '=',
       'website_list_op_context' => 'in',
