@@ -60,22 +60,22 @@
   </params>
   <columns>
     <column name="sample_id" sql="s.id" />
-    <column name="parent_sample_id" />
-    <column name="survey_id" />
+    <column name="parent_sample_id" sql="parent_sample_id" />
+    <column name="survey_id" sql="survey_id" />
     <column name="sample_external_key" sql="external_key" />
-    <column name="survey_title" />
+    <column name="survey_title" sql="survey_title" />
     <column name="recorder" sql="recorders" />
     <column name="inputter" sql="case inputter when recorders then null else inputter end" />
-    <column name="date_start" visible="false" />
-    <column name="date_end" visible="false" />
-    <column name="date_type" visible="false" />
+    <column name="date_start" sql="date_start" visible="false" />
+    <column name="date_end" sql="date_end" visible="false" />
+    <column name="date_type" sql="date_type" visible="false" />
     <column name="date" display="Date" datatype="date" />
     <column name="entered_sref" sql="case when coalesce(bool_or(sensitive), false) = false or #allow_sensitive_full_precision# = '1'
         then entered_sref
         else (select output_sref from cache_occurrences_nonfunctional onf join cache_occurrences_functional o on o.id = onf.id and o.sample_id = #sample_id# order by onf.sensitivity_precision desc nulls last limit 1) end"
         internal_sql="entered_sref" />
     <column name="sref_precision" sql="attr_sref_precision" />
-    <column name="location_name" />
+    <column name="location_name" sql="location_name" />
     <column name="sample_comment" sql="case when coalesce(bool_or(sensitive), false) = false or #allow_sensitive_full_precision# = '1' then comment else null end"
       internal_sql="comment" />
     <column name="geom" sql="case
@@ -89,11 +89,11 @@
     end" />
     <column name="lat" sql="st_y(st_transform(st_centroid(public_geom), 4326))" />
     <column name="long" sql="st_x(st_transform(st_centroid(public_geom), 4326))" />
-    <column name="created_by_id" />
-    <column name="website_id" />
-    <column name="created_on" />
-    <column name="updated_on" />
-    <column name='input_form' />
+    <column name="created_by_id" sql="s.created_by_id" />
+    <column name="website_id" sql="s.website_id" />
+    <column name="created_on" sql="s.created_on" />
+    <column name="updated_on" sql="s.updated_on" />
+    <column name='input_form' sql="s.input_form" />
     <column name="includes_confidential" sql="max(confidential::integer)" aggregate="true" />
     <column name="includes_unreleased" sql="max((release_status&lt;&gt;'R')::integer)" aggregate="true" />
     <column name="includes_sensitive" sql="max(sensitive::integer)" aggregate="true" />
