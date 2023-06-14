@@ -10,6 +10,11 @@
   <order_bys>
     <order_by>s.input_form ASC</order_by>
   </order_bys>
+  <params>
+    <param name="survey_ids" display="Limit to survey IDs" datatype="integer[]" default="">
+      <where>s.survey_id in (#survey_ids#)</where>
+    </param>
+  </params>
   <columns>
     <column name="input_form" sql="s.input_form" display="Input form" distincton="true"/>
     <column name="survey_id" visible="false" sql="s.survey_id" />

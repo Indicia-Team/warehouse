@@ -62,7 +62,7 @@ function notify_verifications_and_comments_scheduled_task($lastRunDate, $db, $ma
       $comment = "The record of $taxonLabel at $notification->public_entered_sref on $date was $action.";
     }
     else {
-      if ($notification->auto_generated === 't' && substr($notification->generated_by, 0, 12) === 'data_cleaner'
+      if ($notification->auto_generated === 't' && substr($notification->generated_by ?? '', 0, 12) === 'data_cleaner'
           && $notification->record_owner === 't') {
         $comment = <<<TXT
 The following message was attached to your record of $taxonLabel at $notification->public_entered_sref on $date

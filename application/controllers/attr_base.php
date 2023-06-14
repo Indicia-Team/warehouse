@@ -28,6 +28,20 @@
 abstract class Attr_Base_Controller extends Gridview_Base_Controller {
 
   /**
+   * Entity name to prefix to *_attribute or *_attribute_values.
+   *
+   * @var string
+   */
+  protected $prefix;
+
+  /**
+   * View for UI to define assocation from attribute to container, e.g. survey.
+   *
+   * @var View
+   */
+  protected $associationsView;
+
+  /**
    * Controller constructor.
    *
    * Initialises grid columns.
