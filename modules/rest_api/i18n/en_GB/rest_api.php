@@ -377,20 +377,20 @@ POST /index.php/services/rest/samples
     "entered_sref_system": "OSGB",
     "date": "01\/08\/2020"
   },
-  "media": [{
-    "values": {
-      "queued": "5f3698a2e587b1.59610000.png",
-      "caption": "Sample image"
+  "media": [
+    {
+      "values": {
+        "queued": "5f3698a2e587b1.59610000.png",
+        "caption": "Sample image"
+      },
     },
-  },
-  {
     {
       "values": {
         "queued": "5f3698a2e587c1.59610000.png",
         "caption": "2nd sample image"
       }
     }
-  }]
+  ]
 }
 </pre></code>
 
