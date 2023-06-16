@@ -157,8 +157,12 @@ class warehouse {
     if ($dir) {
       while ($filename = readdir($dir)) {
         $fullPath = DOCROOT . $path . DIRECTORY_SEPARATOR . $filename;
-        if (is_dir($fullPath) || in_array($filename, $exclude)) {
+        if (in_array($filename, $exclude)) {
           continue;
+        }
+        elseif (is_dir($fullPath)) {
+          // Recurse into sub-folders.
+          self::purgeOldFiles($path . DIRECTORY_SEPARATOR . $filename, $age);
         }
         $lastModified = filemtime($fullPath);
         $files[] = [$fullPath, $lastModified];

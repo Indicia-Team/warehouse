@@ -356,11 +356,11 @@ myfile[]=IMAGE FILE
 Response:
 {
   "file[0]": {
-    "name": "5f3698a2e587b1.59610000.png",
+    "name": "18/60/23/5f3698a2e587b1.59610000.png",
     "tempPath": "http://localhost/warehouse-test/upload-queue/5f3698a2e587b1.59610000.png"
   },
   "file[1]": {
-    "name": "5f3698a2e587c1.59610000.png",
+    "name": "18/60/23/5f3698a2e587c1.59610000.png",
     "tempPath": "http://localhost/warehouse-test/upload-queue/5f3698a2e587c1.59610000.png"
   }
 }
@@ -380,13 +380,13 @@ POST /index.php/services/rest/samples
   "media": [
     {
       "values": {
-        "queued": "5f3698a2e587b1.59610000.png",
+        "queued": "18/60/23/5f3698a2e587b1.59610000.png",
         "caption": "Sample image"
       },
     },
     {
       "values": {
-        "queued": "5f3698a2e587c1.59610000.png",
+        "queued": "18/60/23/5f3698a2e587c1.59610000.png",
         "caption": "2nd sample image"
       }
     }
@@ -487,7 +487,7 @@ POST /index.php/services/rest/samples
       "media": [
         {
           "values": {
-            "queued": "abcdefg.jpg",
+            "queued": "18/60/23/abcdefg.jpg",
             "caption": "Occurrence image"
           }
         }
@@ -658,7 +658,7 @@ POST /index.php/services/rest/samples
     },
     "media": [{
       "values": {
-        "queued": "5f36a6d2b51472.42086512.jpg",
+        "queued": "18/60/23/5f36a6d2b51472.42086512.jpg",
         "caption": "Occurrence image"
       }
     }]
