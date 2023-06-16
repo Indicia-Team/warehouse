@@ -22,7 +22,7 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
- const BATCH_SIZE = 100;
+ const BATCH_SIZE = 1000;
 
  class EAbort extends Exception {};
 
@@ -98,9 +98,8 @@ SQL;
         // Do the path update. We don't update the metadata, as we don't want
         // to fire the cache builder (we can rebuild just the images more
         // efficiently).
-        $sql = <<<SQL
-UPDATE {$entity}_media SET path = '$subdir$image->path' WHERE id=$image->id;
-SQL;
+        $newPath = pg_escape_literal($this->db->getLink(), $subdir . $image->path);
+        $sql = "UPDATE {$entity}_media SET path = $newPath WHERE id=$image->id;";
         $this->db->query($sql);
         $successCount++;
         // Track the unique base entity (e.g. occurrence or sample) IDs so we
@@ -289,6 +288,7 @@ SQL;
       return;
     }
     $ids = implode(',', $baseEntityIds);
+    // First update the path info in the cache nonfunctional table.
     $qry = <<<SQL
 UPDATE cache_{$entity}s_nonfunctional nf
 SET media=(
@@ -297,6 +297,17 @@ SET media=(
 )
 FROM {$entity}s e
 WHERE e.id=nf.id
+AND e.deleted=false
+AND e.id IN ($ids)
+SQL;
+    $this->db->query($qry);
+    // Also ensure the logstash pipeline to Elasticsearch is notified of the
+    // update.
+    $qry = <<<SQL
+UPDATE cache_{$entity}s_functional f
+SET website_id=f.website_id
+FROM {$entity}s e
+WHERE e.id=f.id
 AND e.deleted=false
 AND e.id IN ($ids)
 SQL;

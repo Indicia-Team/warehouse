@@ -7,9 +7,19 @@ echo data_entry_helper::dump_javascript();
 
 ?>
 
-<button type="button" class="btn btn-primary" id="move-batch">Move batch</button>
+<p class="alert alert-info">The following button can be used to initiate copying images from the
+  root of the /upload folder on the warehouse to sub-folders based on the image created timestamp.
+  The path information in the database is updated but the original copies are left in place,
+  allowing time for client sites to update cached versions of the image paths before the original
+  images are actually deleted.
+</p>
+<button type="button" class="btn btn-primary" id="move-batch">Begin relocation</button>
 
-<button type="button" class="btn btn-primary" id="delete-batch">Delete batch</button>
+<p class="alert alert-info">Once images have been relocated and client sites given a chance to
+  update their caches, use the following button to remove the original copies of any files that
+  have been successfully copied to a new location.
+</p>
+<button type="button" class="btn btn-primary" id="delete-batch">Delete relocated images</button>
 
 <div class="alert alert-info" id="current-status"></div>
 
