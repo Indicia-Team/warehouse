@@ -47,10 +47,10 @@ class Image_organiser_Controller extends Indicia_Controller {
     // No template as this is for AJAX.
     $this->auto_render = FALSE;
     header('Content-Type: application/javascript');
-    if (!$this->checkWorkQueueOk()) {
+    if (!$this->checkLogstashOk()) {
       echo json_encode([
         'status' => 'Paused',
-        'reason' => 'Work queue too long so waiting for it to clear.',
+        'reason' => 'Logstash has too many pending updates so pausing.',
       ]);
       return;
     }
@@ -272,7 +272,7 @@ SQL;
    * @return bool
    *   True if queue length < 20000.
    */
-  private function checkWorkQueueOk() {
+  private function checkLogstashOk() {
     $todo = $this->db->query("select (select max(tracking) from cache_occurrences_functional) - (select (value::json->0->>'last_tracking_id')::integer from variables where name = 'rest-autofeed-BRC5') as todo")
       ->current()->todo;
     return $todo < 20000;
