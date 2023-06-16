@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Warehouse version configuration.
+ * Plugin for an image file re-organiser tool's UI.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -19,28 +19,15 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @link https://github.com/indicia-team/warehouse/
  */
 
-defined('SYSPATH') or die('No direct script access.');
-
-/**
- * The application files' version number.
- *
- * @var string
- */
-$config['version'] = '8.20.0';
-
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2023-06-15';
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+ /**
+  * Extend the warehouse menu to add organiser page link.
+  */
+function image_organiser_alter_menu($menu, $auth) {
+  if ($auth->logged_in('CoreAdmin')) {
+    $menu['Admin']['Image organiser'] = 'image_organiser';
+  }
+  return $menu;
+}
