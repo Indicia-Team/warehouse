@@ -115,15 +115,19 @@ class Base_licensed_medium_Model extends ORM {
   public function postSubmit($isInsert) {
     if (isset($this->queuedFile)) {
       $queuedFile = DOCROOT . 'upload-queue/' . $this->queuedFile;
-      $destDir = Kohana::config('upload.directory', TRUE);
-      $destFile = "$destDir$this->queuedFile";
-      // Move the file.
+      // Recreate the sub-directories based on the timestamp.
+      $subdir = dirname($this->queuedFile);
+      $destDir = Kohana::config('upload.directory', TRUE) . $subdir;
+      if (!is_dir($destDir)) {
+        mkdir($destDir, 0755, TRUE);
+      }
+      $destFile = $destDir . '/' . basename($this->queuedFile);
       $r = rename($queuedFile, $destFile);
       if (!$r) {
         $this->errors['queued'] = "Failed to move queued file to upload folder: $this->queuedFile";
       }
       // Create thumbnails and other versions.
-      Image::create_image_files($destDir, $this->queuedFile, '', $this->identifiers['website_id']);
+      Image::create_image_files(Kohana::config('upload.directory', TRUE), basename($this->queuedFile), $subdir, $this->identifiers['website_id']);
     }
     return TRUE;
   }

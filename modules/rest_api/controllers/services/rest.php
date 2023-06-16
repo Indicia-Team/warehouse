@@ -2882,13 +2882,41 @@ class Rest_Controller extends Controller {
     foreach ($files as $key => $file) {
       $typeParts = explode('/', $file['type']);
       $fileName = uniqid('', TRUE) . '.' . $typeParts[1];
-      upload::save($file, $fileName, 'upload-queue');
+      $subdir = $this->getMediaSubdir();
+      $dest = DOCROOT . "upload-queue/$subdir";
+      if (!is_dir($dest)) {
+        mkdir($dest, 0755, TRUE);
+      }
+      upload::save($file, $subdir . $fileName, 'upload-queue');
       $response[$key] = [
-        'name' => $fileName,
-        'tempPath' => url::base() . "upload-queue/$fileName",
+        'name' => "$subdir$fileName",
+        'tempPath' => url::base() . "upload-queue/$subdir$fileName",
       ];
     }
     RestObjects::$apiResponse->succeed($response);
+  }
+
+  /**
+   * Works out a sub-directory structure for a new queued media file.
+   *
+   * Based on the current timestamp.
+   *
+   * @return string
+   *   Sub-folder structure, e.g. '60/20/15/', including trailing slash.
+   */
+  private function getMediaSubdir() {
+    $subdir = '';
+    // $levels = Kohana::config('upload.use_sub_directory_levels');
+    $levels = 3;
+    $ts = time();
+    for ($i = 0; $i < $levels; $i++) {
+      $dirname = substr($ts, 0, 2);
+      if (strlen($dirname)) {
+        $subdir .= $dirname . '/';
+        $ts = substr($ts, 2);
+      }
+    }
+    return $subdir;
   }
 
   /**
