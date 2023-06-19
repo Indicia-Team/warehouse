@@ -29,11 +29,7 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @var string
  */
-<<<<<<< HEAD
 $config['version'] = '8.21.0';
-=======
-$config['version'] = '8.20.3';
->>>>>>> hotfix-notifications
 
 /**
  * Version release date.
