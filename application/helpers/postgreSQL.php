@@ -166,7 +166,7 @@ and (ocprev.record_status is not null or ocprev.query='t' or (co.confidential=fa
 and ocprev.created_by_id<>oc.created_by_id and ocprev.created_by_id<>co.created_by_id;
 
 
-select rn.*, case u.id when 1 then u.username else p.first_name || ', ' || p.surname end as username
+select rn.*, case u.id when 1 then u.username else p.first_name || ' ' || p.surname end as username
 from records_to_notify rn
 join occurrences o on o.id=rn.id
 left join notifications n on n.linked_id=o.id
