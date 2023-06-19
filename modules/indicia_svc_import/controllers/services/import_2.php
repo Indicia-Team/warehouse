@@ -1266,7 +1266,7 @@ SQL;
         }
       }
       // @todo Look for date fields more intelligently.
-      if ($config['isExcel'] && preg_match('/date$/', $destFieldName) && preg_match('/^\d+$/', $dataRow->$srcFieldName)) {
+      if ($config['isExcel'] && preg_match('/date(_start|_end)?$/', $destFieldName) && preg_match('/^\d+$/', $dataRow->$srcFieldName)) {
         // Date fields are integers when read from Excel.
         $date = ImportDate::excelToDateTimeObject($dataRow->$srcFieldName);
         $submission[$destFieldName] = $date->format('d/m/Y');
