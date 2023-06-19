@@ -376,6 +376,7 @@ SQL;
         // Give the workflow module a chance to rewind or update the values
         // before updating.
         data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
+        $this->updateDeterminerAttributes($db, $ids);
         $q = new WorkQueue();
         foreach ($ids as $id) {
           $q->enqueue($db, [
@@ -410,6 +411,40 @@ SQL;
         }
       }
     }
+  }
+
+  /**
+   * Updates any determination attributes with name of a redeterminer.
+   *
+   * When applying a re-determination, the new determiner's name is used to
+   * overwrite the existing custom attribute values (e.g. Identified By).
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param array $occurrenceIds
+   *   CSV List of occurrences to check.
+   */
+  private function updateDeterminerAttributes(Database $db, array $occurrenceIds) {
+    $idCsv = implode(',', $occurrenceIds);
+    $sql = <<<SQL
+UPDATE occurrence_attribute_values v
+SET text_value=CASE a.system_function
+  WHEN 'det_full_name' THEN TRIM(COALESCE(p.first_name || ' ', '') || p.surname)
+  WHEN 'det_first_name' THEN p.first_name
+  WHEN 'det_last_name' THEN p.surname
+END
+FROM occurrence_attributes a, users u
+JOIN people p ON p.id=u.person_id
+  AND p.deleted=false
+WHERE a.deleted=false
+AND v.deleted=false
+AND v.occurrence_attribute_id=a.id
+AND v.occurrence_id in ($idCsv)
+AND a.system_function in ('det_full_name', 'det_first_name', 'det_last_name')
+AND u.id=$this->user_id
+AND u.deleted=false
+SQL;
+    $db->query($sql);
   }
 
   /**
