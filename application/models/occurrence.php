@@ -314,7 +314,8 @@ UPDATE occurrence_attribute_values v
 SET text_value=CASE a.system_function
   WHEN 'det_full_name' THEN TRIM(COALESCE(p.first_name || ' ', '') || p.surname)
   WHEN 'det_first_name' THEN p.first_name
-  WHEN 'det_last_name' THEN p.surname
+  WHEN 'det_last_name' THEN p.surname,
+  updated_on=now(), updated_by_id=$redetByUserId
 END
 FROM occurrence_attributes a, users u
 JOIN people p ON p.id=u.person_id
