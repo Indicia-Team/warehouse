@@ -28,7 +28,7 @@ class Termlists_term_attribute_value_Model extends Attribute_Value_ORM {
   protected $belongs_to = array(
     'created_by'=>'user',
     'updated_by'=>'user',
-    'termlist',
+    'termlists_term',
     'termlists_term_attribute'
   );
 
