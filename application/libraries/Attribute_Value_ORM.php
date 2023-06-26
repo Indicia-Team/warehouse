@@ -232,7 +232,7 @@ abstract class Attribute_Value_ORM extends ORM {
   protected function postSubmit($isInsert) {
     if ($this->wantToUpdateMetadata) {
       // Value has changed, so trigger metadata update on parent.
-      $parentEntity = substr($this->object_name, 0, strpos($this->object_name, '_'));
+      $parentEntity = str_replace('_attribute_value','',$this->object_name);
       $parentTable = inflector::plural($parentEntity);
       $parentTableFk = $parentEntity . '_id';
       $parentTableId = $this->$parentTableFk;
