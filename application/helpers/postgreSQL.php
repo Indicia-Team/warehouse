@@ -943,9 +943,9 @@ case
     then length(searchterm) - length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*?'), '', 'i'))
   else 9999 end,
 cts.preferred desc,
--- finally alpha sort
-taxon,
-authority
+-- finally case and non-alpha insensitive alpha sort
+regexp_replace(lower(original), '[^a-z0-9]', '', 'g'),
+regexp_replace(lower(authority), '[^a-z0-9]', '', 'g')
 SQL;
     }
   }
