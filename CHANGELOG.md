@@ -1,3 +1,7 @@
+# Version 8.21.0
+*2023-06-28*
+
+* Allow termlists_term_attribute_value submissions from websites.
 
 # Version 8.18.0
 *2023-04-27*
