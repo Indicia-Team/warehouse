@@ -102,6 +102,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'taxon_relation',
     'taxon_group',
     'termlists_term',
+    'termlists_term_attribute_value',
     'user',
     'user_trust',
     'users_website',
