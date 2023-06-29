@@ -274,6 +274,20 @@ class RestApiElasticsearch {
   ];
 
   /**
+   * The columns specified in the request to add to the template.
+   *
+   * @var array
+   */
+  private $esCsvTemplateAddColumns;
+
+  /**
+   * The columns specified in the request to remove from the template.
+   *
+   * @var array
+   */
+  private $esCsvTemplateRemoveColumns;
+
+  /**
    * Constructor.
    */
   public function __construct($elasticProxy) {
