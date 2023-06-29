@@ -220,6 +220,17 @@ class Rest_Controller extends Controller {
   private $authConfig;
 
   /**
+   * Config settings relating to elasticsearch.
+   *
+   * An empty array if $authConfig['resource_options']['elasticsearch'] is a
+   * simple array of ES endpoints with no config. Otherwise holds config from
+   * $authConfig['resource_options']['elasticsearch'][<es-endpoint>]
+   *
+   * @var array
+   */
+  private $esConfig;
+
+  /**
    * Config settings relating to the authenticated client if any.
    *
    * @var array
