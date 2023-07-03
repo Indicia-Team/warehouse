@@ -21,6 +21,8 @@ class Image_Core {
 	const HORIZONTAL = 5;
 	const VERTICAL = 6;
 
+	private array $config;
+
 	// Allowed image types
 	public static $allowed_types = array
 	(

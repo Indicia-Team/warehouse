@@ -3,6 +3,21 @@
 warehouse::loadHelpers(['data_entry_helper']);
 helper_base::add_resource('indiciaFns');
 helper_base::$indiciaData['siteUrl'] = url::site();
+
+echo data_entry_helper::select([
+  'label' => 'Select image type',
+  'fieldname' => 'entity',
+  'lookupValues' => [
+    'occurrence' => 'Occurrences',
+    'sample' => 'Samples',
+    'location' => 'Locations',
+    'taxon' => 'Taxon',
+    'survey' => 'Survey',
+  ],
+  'helpText' => 'Select which type of images to process',
+  'blankText' => '- Please select -',
+]);
+
 echo data_entry_helper::dump_javascript();
 
 ?>
