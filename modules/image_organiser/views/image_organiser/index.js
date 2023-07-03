@@ -1,18 +1,31 @@
 $(document).ready(function documentReady() {
 
-  function doRelocations() {
+  function doRelocations(type) {
+    if (typeof type === 'undefined') {
+      if ($('#entity').val()) {
+        type = $('#entity').val();
+        $('#entity').attr('disabled', true);
+      }
+      else {
+        alert('Please select a type of media to process first.');
+        return;
+      }
+    }
     $.ajax({
       type: "POST",
       url: indiciaData.siteUrl + 'image_organiser/process_relocate_batch',
       dataType: 'json',
+      data: {
+        type: type
+      }
     }).done(
-      function(data, textStatus) {
+      function(data) {
         if (data.status === 'OK' || data.status === 'Done') {
           $('#output').append(data.moved + ' images were relocated. Now up to ID ' + data.id + ' in the ' + data.entity + ' data.\n');
         }
         if (data.status === 'OK') {
           $('#current-status').text('Processing');
-          doRelocations();
+          doRelocations(type);
         } else if (data.status === 'Done') {
           $('#current-status').text('Complete');
           $('#current-status').removeClass('alert-info');
@@ -22,7 +35,9 @@ $(document).ready(function documentReady() {
             $('#current-status').text(data.reason);
           }
           if (data.status === 'Paused') {
-            setTimeout(doRelocations, 30 * 1000);
+            setTimeout(function() {
+              doRelocations(type);
+            }, 30 * 1000);
           }
           else {
             $('#current-status').removeClass('alert-info');
@@ -35,13 +50,26 @@ $(document).ready(function documentReady() {
 
   $('#move-batch').click(doRelocations);
 
-  function doDeletes() {
+  function doDeletes(type) {
+    if (typeof type === 'undefined') {
+      if ($('#entity').val()) {
+        type = $('#entity').val();
+        $('#entity').attr('disabled', true);
+      }
+      else {
+        alert('Please select a type of media to process first.');
+        return;
+      }
+    }
     $.ajax({
       type: "POST",
       url: indiciaData.siteUrl + 'image_organiser/process_delete_batch',
       dataType: 'json',
+      data: {
+        type: type
+      }
     }).done(
-      function(data, textStatus) {
+      function(data) {
         $('#output').append(data.deleted + ' images were deleted. Now up to ID ' + data.id + ' in the ' + data.entity + ' data.\n');
         if (data.reason) {
           $('#output').append(data.reason + '\n');
@@ -49,7 +77,7 @@ $(document).ready(function documentReady() {
         if (data.status === 'OK') {
           $('#current-status').text('Deleting');
           // Do another batch.
-          doDeletes();
+          doDeletes(type);
         } else if (data.status === 'Done') {
           $('#current-status').text('Complete');
           $('#current-status').removeClass('alert-info');
