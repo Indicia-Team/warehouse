@@ -47,20 +47,20 @@ class Image_organiser_Controller extends Indicia_Controller {
     // No template as this is for AJAX.
     $this->auto_render = FALSE;
     header('Content-Type: application/javascript');
-    if (!$this->checkLogstashOk()) {
+    $entity = $_POST['type'];
+    if ($entity === 'occurrence' && !$this->checkLogstashOk()) {
       echo json_encode([
         'status' => 'Paused',
         'reason' => 'Logstash has too many pending updates so pausing.',
       ]);
       return;
     }
-    $moveFrom = variable::get('image_organiser_tracking', 'occurrence:0', FALSE);
-    [$entity, $fromId] = explode(':', $moveFrom);
+    $fromId = variable::get("image_organiser_tracking_$entity", 0, FALSE);
     $batchSize = BATCH_SIZE;
     $baseEntityIds = [];
-    $entityIdField = "{$entity}_id";
+    $entityIdField = $entity === 'taxon' ? 'taxon_meaning_id' : "{$entity}_id";
     $qry = <<<SQL
-SELECT id, path, occurrence_id, created_on
+SELECT id, path, {$entityIdField}, created_on
 FROM {$entity}_media
 WHERE id>$fromId
 AND deleted=false
@@ -124,12 +124,11 @@ SQL;
       $lastId = $image->id;
     }
     $this->updateCacheMedia($entity, $baseEntityIds);
-    $trackingVar = "occurrence:$lastId";
-    variable::set('image_organiser_tracking', $trackingVar);
+    variable::set("image_organiser_tracking_$entity", $lastId);
     echo json_encode([
       'status' => count($images) > 0 ? 'OK' : 'Done',
       'moved' => $successCount,
-      'entity' => 'occurrence',
+      'entity' => $entity,
       'id' => $lastId,
     ]);
   }
@@ -144,8 +143,8 @@ SQL;
   public function process_delete_batch() {
     // No template as this is for AJAX.
     $this->auto_render = FALSE;
-    $deleteFrom = variable::get('image_organiser_tracking_deletes', 'occurrence:0', FALSE);
-    [$entity, $fromId] = explode(':', $deleteFrom);
+    $entity = $_POST['type'];
+    $fromId = variable::get("image_organiser_tracking_deletes_$entity", 0, FALSE);
     $batchSize = BATCH_SIZE;
     $qry = <<<SQL
 SELECT m.id, m.path, m.created_on, m.updated_on
@@ -180,13 +179,12 @@ SQL;
     catch (EAbort $e) {
       $abortReason = $e->getMessage();
     }
-    $trackingVar = "occurrence:$lastId";
-    variable::set('image_organiser_tracking_deletes', $trackingVar);
+    variable::set("image_organiser_tracking_deletes_$entity", $lastId);
     header('Content-Type: application/javascript');
     echo json_encode([
       'status' => empty($abortReason) ? (count($images) > 0 ? 'OK' : 'Done') : 'Failed',
       'deleted' => $successCount,
-      'entity' => 'occurrence',
+      'entity' => $entity,
       'id' => $lastId,
       'reason' => $abortReason,
     ]);
@@ -293,7 +291,7 @@ SQL;
 UPDATE cache_{$entity}s_nonfunctional nf
 SET media=(
   SELECT array_to_string(array_agg(m.path), ',')
-  FROM {$entity}_media m WHERE m.occurrence_id=nf.id AND m.deleted=false
+  FROM {$entity}_media m WHERE m.{$entity}_id=nf.id AND m.deleted=false
 )
 FROM {$entity}s e
 WHERE e.id=nf.id
