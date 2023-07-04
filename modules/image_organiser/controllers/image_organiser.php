@@ -60,67 +60,71 @@ class Image_organiser_Controller extends Indicia_Controller {
     $baseEntityIds = [];
     $entityIdField = $entity === 'taxon' ? 'taxon_meaning_id' : "{$entity}_id";
     $qry = <<<SQL
-SELECT id, path, {$entityIdField}, created_on
+SELECT id, path, {$entityIdField}, created_on, deleted
 FROM {$entity}_media
 WHERE id>$fromId
-AND deleted=false
 AND media_type_id=(SELECT id FROM cache_termlists_terms WHERE term='Image:Local' AND termlist_title='Media types')
 AND path NOT LIKE 'http%'
--- Not already done.
-AND NOT path ~ '^\d\d[\\\\\\/]'
+-- Not already done unless deleted as may need to be moved to deleted subdir.
+AND (path !~ '^\d\d[\\\\\\/]' or deleted=true)
 ORDER BY id LIMIT $batchSize;
 SQL;
     $images = $this->db->query($qry);
-    $directory = Kohana::config('upload.directory', TRUE);
+    $uploadDir = Kohana::config('upload.directory', TRUE);
     $lastId = $fromId;
     $successCount = 0;
     foreach ($images as $image) {
+      $destDir = $image->deleted === 't' ? "{$uploadDir}deleted/" : $uploadDir;
       $subdir = $this->getImageSubdir($image->created_on);
-      if (!is_dir($directory . $subdir)) {
-        kohana::log('debug', "Creating Directory $directory$subdir");
-        mkdir($directory . $subdir, 0755, TRUE);
+      if (!is_dir($destDir . $subdir)) {
+        kohana::log('debug', "Creating Directory $destDir$subdir");
+        mkdir($destDir . $subdir, 0755, TRUE);
       }
-      if (!is_dir($directory . 'thumb-' . $subdir)) {
-        kohana::log('debug', "Creating Directory $directory$subdir");
-        mkdir($directory . 'thumb-' . $subdir, 0755, TRUE);
+      if (!is_dir($destDir . 'thumb-' . $subdir)) {
+        kohana::log('debug', "Creating Directory {$destDir}thumb-$subdir");
+        mkdir($destDir . 'thumb-' . $subdir, 0755, TRUE);
       }
-      if (!is_dir($directory . 'med-' . $subdir)) {
-        kohana::log('debug', "Creating Directory $directory$subdir");
-        mkdir($directory . 'med-' . $subdir, 0755, TRUE);
+      if (!is_dir($destDir . 'med-' . $subdir)) {
+        kohana::log('debug', "Creating Directory {$destDir}med-$subdir");
+        mkdir($destDir . 'med-' . $subdir, 0755, TRUE);
       }
-      $src = $directory . $image->path;
-      $dest = $directory . $subdir . $image->path;
-      // File already moved, or copy successful.
-      if (!file_exists($src)) {
-        $this->log($entity, $image, 'Main image file missing');
-      }
-      elseif (file_exists($dest) || copy($src, $dest)) {
-        // Do the path update. We don't update the metadata, as we don't want
-        // to fire the cache builder (we can rebuild just the images more
-        // efficiently).
-        $newPath = pg_escape_literal($this->db->getLink(), $subdir . $image->path);
-        $sql = "UPDATE {$entity}_media SET path = $newPath WHERE id=$image->id;";
-        $this->db->query($sql);
-        $successCount++;
-        // Track the unique base entity (e.g. occurrence or sample) IDs so we
-        // can update them.
-        $baseEntityIds[$image->$entityIdField] = $image->$entityIdField;
-        if (!file_exists($directory . 'thumb-' . $image->path)) {
-          $this->log($entity, $image, 'Thumb image file missing');
+      $src = $uploadDir . $image->path;
+      $dest = $destDir . $subdir . basename($image->path);
+      // Proceed only if not already done.
+      if (!file_exists($dest)) {
+        if (!file_exists($src)) {
+          $this->log($entity, $image, 'Main image file missing');
         }
-        elseif (!file_exists($directory . 'thumb-' . $subdir . $image->path) && !copy($directory . 'thumb-' . $image->path, $directory . 'thumb-' . $subdir . $image->path)) {
-          $this->log($entity, $image, 'Thumb image file failed to copy');
-        };
-        if (!file_exists($directory . 'med-' . $image->path)) {
-          $this->log($entity, $image, 'Med image file missing');
+        elseif (copy($src, $dest)) {
+          // Do the path update. We don't update the metadata, as we don't want
+          // to fire the cache builder (we can rebuild just the images more
+          // efficiently).
+          $newPath = pg_escape_literal($this->db->getLink(), $subdir . basename($image->path));
+          $sql = "UPDATE {$entity}_media SET path = $newPath WHERE id=$image->id;";
+          $this->db->query($sql);
+          $successCount++;
+          // Track the unique base entity (e.g. occurrence or sample) IDs so we
+          // can update them.
+          $baseEntityIds[$image->$entityIdField] = $image->$entityIdField;
+          $dest = $destDir . 'thumb-' . $subdir . basename($image->path);
+          if (!file_exists($uploadDir . 'thumb-' . $image->path)) {
+            $this->log($entity, $image, 'Thumb image file missing');
+          }
+          elseif (!file_exists($dest) && !copy($uploadDir . 'thumb-' . $image->path, $dest)) {
+            $this->log($entity, $image, 'Thumb image file failed to copy');
+          };
+          $dest = $destDir . 'med-' . $subdir . basename($image->path);
+          if (!file_exists($uploadDir . 'med-' . $image->path)) {
+            $this->log($entity, $image, 'Med image file missing');
+          }
+          elseif (!file_exists($dest) && !copy($uploadDir . 'med-' . $image->path, $dest)) {
+            $this->log($entity, $image, 'Med image file failed to copy');
+          };
         }
-        elseif (!file_exists($directory . 'med-' . $subdir . $image->path) && !copy($directory . 'med-' . $image->path, $directory . 'med-' . $subdir . $image->path)) {
-          $this->log($entity, $image, 'Med image file failed to copy');
-        };
+        else {
+          $this->log($entity, $image, 'Main image file failed to copy');
+        }
       }
-      else {
-        $this->log($entity, $image, 'Main image file failed to copy');
-      };
       $lastId = $image->id;
     }
     $this->updateCacheMedia($entity, $baseEntityIds);
@@ -147,11 +151,10 @@ SQL;
     $fromId = variable::get("image_organiser_tracking_deletes_$entity", 0, FALSE);
     $batchSize = BATCH_SIZE;
     $qry = <<<SQL
-SELECT m.id, m.path, m.created_on, m.updated_on
+SELECT m.id, m.path, m.created_on, m.updated_on, m.deleted
 FROM {$entity}_media m
 LEFT JOIN image_organiser_problems p ON p.media_id=m.id AND p.entity='$entity'
 WHERE m.id>$fromId
-AND m.deleted=false
 AND m.media_type_id=(SELECT id FROM cache_termlists_terms WHERE term='Image:Local' AND termlist_title='Media types')
 AND m.path NOT LIKE 'http%'
 AND p.id IS NULL
@@ -202,11 +205,17 @@ SQL;
    */
   private function log($entity, $image, $problem) {
     $userId = $_SESSION['auth_user']->id;
-    $sql = <<<SQL
+    // A simple UPSERT - insert if not already in the log.
+    $precheck = <<<SQL
+SELECT id FROM image_organiser_problems WHERE problem='$problem' AND media_id=$image->id AND entity='$entity';
+SQL;
+    if (!$this->db->query($precheck)->current()) {
+      $sql = <<<SQL
 INSERT INTO image_organiser_problems (problem, media_id, entity, created_on, created_by_id)
 VALUES ('$problem', $image->id, '$entity', now(), $userId);
 SQL;
-    $this->db->query($sql);
+      $this->db->query($sql);
+    }
   }
 
   /**
@@ -218,24 +227,31 @@ SQL;
    *   Image data from the db.
    * @param string $imageSize
    *   Empty string for original image, or 'thumb', 'med' etc.
+   *
+   *
    */
   private function deleteOldImageFile($entity, $image, $imageSize) {
     $imageSizePrefix = $imageSize === '' ? '' : "$imageSize-";
-    $directory = Kohana::config('upload.directory', TRUE);
+    $uploadDir = Kohana::config('upload.directory', TRUE);
     // Strip sub-folders to find original image location.
-    $originalPath = preg_replace('/^\d\d[\\\\\\/]\d\d[\\\\\\/]\d\d[\\\\\\/]/', '', $image->path);
-    $src = $directory . $imageSizePrefix . $originalPath;
-    $dest = $directory . $imageSizePrefix . $image->path;
-    kohana::log('debug', 'Looking to delete ' . $src);
-    if (file_exists($src)) {
-      if (file_exists($dest)) {
-        if (!unlink($src)) {
-          throw new EAbort("Aborting as failed to delete image $src for: {$entity}_media $image->id");
+    $originalPath = basename($image->path);
+    $oldFiles = [$originalPath];
+    if ($image->deleted === 't') {
+      $oldFiles[] = $image->path;
+    }
+    $destDir = $image->deleted === 't' ? "{$uploadDir}deleted/" : $uploadDir;
+    $dest = $destDir . $imageSizePrefix . $image->path;
+    if (file_exists($dest)) {
+      foreach ($oldFiles as $oldFile) {
+        if (file_exists($uploadDir . $imageSizePrefix . $oldFile)) {
+          if (!unlink($uploadDir . $imageSizePrefix . $oldFile)) {
+            throw new EAbort("Aborting as failed to delete image $oldFile for: {$entity}_media $image->id");
+          }
         }
       }
-      else {
-        throw new EAbort("Aborting as path modified but destination file $dest missing: $image->id");
-      }
+    }
+    else {
+      throw new EAbort("Aborting old image file deletion as destination file $dest missing: $image->id");
     }
   }
 
