@@ -515,6 +515,8 @@ class RestApiElasticsearch {
    *   The parameters should be:
    *   * 0 - the entity (event|occurrence)
    *   * 1 - the attribute ID.
+   *   * 2 - optional - whether to merge event and parent_event attributes.
+   *         Merges by default. Does not merge if set.
    *
    * @return string
    *   Formatted string
@@ -531,7 +533,12 @@ class RestApiElasticsearch {
       }
       // If requesting an event/sample attribute, the parent event/sample's
       // data can also be considered.
-      if ($entity === 'event' && $key === 'attributes' && isset($doc['event']['parent_attributes'])) {
+      if (
+        $entity === 'event' &&
+        $key === 'attributes' &&
+        isset($doc['event']['parent_attributes']) &&
+        !isset($params[2])
+      ) {
         $attrList = array_merge($attrList, $doc['event']['parent_attributes']);
       }
       foreach ($attrList as $attr) {
