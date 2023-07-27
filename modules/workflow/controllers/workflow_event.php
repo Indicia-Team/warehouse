@@ -59,17 +59,18 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
   protected function getModelValues() {
     $r = parent::getModelValues();
     $r['location_ids_filter_array'] = [];
-    if (preg_match('/^{(?<list>\d+(,\d+)*)}$/', $r['workflow_event:location_ids_filter'], $matches)) {
-      $ids = explode(',', $matches['list']);
-      foreach ($ids as $id) {
-        $location = ORM::factory('location', $id);
-        $r['location_ids_filter_array'][] = [
-          'caption' => $location->name,
-          'fieldname' => 'workflow_event:location_ids_filter[]',
-          'default' => $id,
-        ];
+    if (isset($r['workflow_event:location_ids_filter'])) {
+      if (preg_match('/^{(?<list>\d+(,\d+)*)}$/', $r['workflow_event:location_ids_filter'], $matches)) {
+        $ids = explode(',', $matches['list']);
+        foreach ($ids as $id) {
+          $location = ORM::factory('location', $id);
+          $r['location_ids_filter_array'][] = [
+            'caption' => $location->name,
+            'fieldname' => 'workflow_event:location_ids_filter[]',
+            'default' => $id,
+          ];
+        }
       }
-
     }
     return $r;
   }
