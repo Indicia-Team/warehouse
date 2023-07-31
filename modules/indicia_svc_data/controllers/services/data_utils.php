@@ -449,8 +449,11 @@ SQL;
     // Insert work queue entries to update the cache tables.
     $sql = <<<SQL
 INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-SELECT 'task_cache_builder_attrs_occurrence', 'occurrence', id, 50, 2, now()
-FROM occurrences WHERE deleted=false AND id IN ($idCsv);
+SELECT 'task_cache_builder_attrs_occurrence', 'occurrence', o.id, 50, 2, now()
+FROM occurrences o
+LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_occurrence' AND q.entity='occurrence' AND q.record_id=o.id
+WHERE o.deleted=false AND o.id IN ($idCsv)
+AND q.id IS NULL;
 SQL;
     $db->query($sql);
   }
