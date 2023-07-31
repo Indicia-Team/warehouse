@@ -1872,7 +1872,7 @@ JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
-JOIN users u ON u.id=o.created_by_id AND u.deleted=false
+JOIN users u ON u.id=o.created_by_id -- deleted users records still included.
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
 LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
 LEFT JOIN (occurrence_attribute_values oav
