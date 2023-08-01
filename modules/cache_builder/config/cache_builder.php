@@ -216,8 +216,8 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       taxon_list_id=tl.id,
       taxon_list_title=tl.title,
       website_id=tl.website_id,
-      preferred_taxa_taxon_list_id=ttlpref.id,
-      parent_id=ttlpref.parent_id,
+      preferred_taxa_taxon_list_id=coalesce(ttlpref.id, ttlprefredundant.id),
+      parent_id=coalesce(ttlpref.parent_id, ttlprefredundant.parent_id),
       taxonomic_sort_order=ttlpref.taxonomic_sort_order,
       taxon=t.taxon || coalesce(' ' || t.attribute, ''),
       authority=t.authority,
@@ -231,7 +231,7 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       search_name=regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'),
       external_key=tpref.external_key,
       organism_key=tpref.organism_key,
-      taxon_meaning_id=ttlpref.taxon_meaning_id,
+      taxon_meaning_id=coalesce(ttlpref.taxon_meaning_id, ttlprefredundant.taxon_meaning_id),
       taxon_group_id = tpref.taxon_group_id,
       taxon_group = tg.title,
       taxon_rank_id = tr.id,
@@ -248,19 +248,27 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id
     #join_needs_update#
-    join taxa_taxon_lists ttlpref
+    -- Select the preferred name which isn't redundant (allow_data_entry=true)
+    left join taxa_taxon_lists ttlpref
       on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id
-      and ttlpref.preferred=true
+      and ttlpref.preferred='t'
       and ttlpref.taxon_list_id=ttl.taxon_list_id
       and ttlpref.deleted=false
-      and (ttlpref.allow_data_entry=ttl.allow_data_entry or ttlpref.allow_data_entry=true)
+      and ttlpref.allow_data_entry=true
+    -- A fallback preferred name which is redundant (allow_data_entry=false)
+    left join taxa_taxon_lists ttlprefredundant
+      on ttlprefredundant.taxon_meaning_id=ttl.taxon_meaning_id
+      and ttlprefredundant.preferred='t'
+      and ttlprefredundant.taxon_list_id=ttl.taxon_list_id
+      and ttlprefredundant.deleted=false
+      and ttlprefredundant.allow_data_entry=false
     join taxa t on t.id=ttl.taxon_id and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false
-    join taxa tpref on tpref.id=ttlpref.taxon_id and tpref.deleted=false
+    join taxa tpref on tpref.id=coalesce(ttlpref.taxon_id, ttlprefredundant.taxon_id) and tpref.deleted=false
     join taxon_groups tg on tg.id=tpref.taxon_group_id and tg.deleted=false
     left join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false
     join languages lpref on lpref.id=tpref.language_id and lpref.deleted=false
-    left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id and tcommon.deleted=false
+    left join taxa tcommon on tcommon.id=coalesce(ttlpref.common_taxon_id, ttlprefredundant.common_taxon_id) and tcommon.deleted=false
     where cttl.id=ttl.id";
 
 $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
@@ -276,14 +284,18 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
     )
     select distinct on (ttl.id) ttl.id, ttl.preferred,
       tl.id as taxon_list_id, tl.title as taxon_list_title, tl.website_id,
-      ttlpref.id as preferred_taxa_taxon_list_id, ttlpref.parent_id, ttlpref.taxonomic_sort_order,
+      coalesce(ttlpref.id, ttlprefredundant.id) as preferred_taxa_taxon_list_id,
+      coalesce(ttlpref.parent_id, ttlprefredundant.parent_id) as parent_id,
+      coalesce(ttlpref.taxonomic_sort_order, ttlprefredundant.taxonomic_sort_order) as taxonomic_sort_order,
       t.taxon || coalesce(' ' || t.attribute, ''), t.authority,
       l.iso as language_iso, l.language,
       tpref.taxon || coalesce(' ' || tpref.attribute, '') as preferred_taxon, tpref.authority as preferred_authority,
       lpref.iso as preferred_language_iso, lpref.language as preferred_language,
       tcommon.taxon as default_common_name,
       regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'),
-      tpref.external_key, tpref.organism_key, ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
+      tpref.external_key, tpref.organism_key,
+      coalesce(ttlpref.taxon_meaning_id, ttlprefredundant.taxon_meaning_id) as taxon_meaning_id,
+      tpref.taxon_group_id, tg.title,
       tr.id, tr.rank, tr.sort_order,
       now(), now(), ttl.allow_data_entry,
       t.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag,
@@ -292,20 +304,30 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id and ttl.deleted=false
     #join_needs_update#
     left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
-    join taxa_taxon_lists ttlpref
+    -- Select the preferred name which isn't redundant (allow_data_entry=true)
+    left join taxa_taxon_lists ttlpref
       on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id
       and ttlpref.preferred='t'
       and ttlpref.taxon_list_id=ttl.taxon_list_id
       and ttlpref.deleted=false
-      and ttlpref.allow_data_entry=ttl.allow_data_entry
+      and ttlpref.allow_data_entry=true
+    -- A fallback preferred name which is redundant (allow_data_entry=false)
+    left join taxa_taxon_lists ttlprefredundant
+      on ttlprefredundant.taxon_meaning_id=ttl.taxon_meaning_id
+      and ttlprefredundant.preferred='t'
+      and ttlprefredundant.taxon_list_id=ttl.taxon_list_id
+      and ttlprefredundant.deleted=false
+      and ttlprefredundant.allow_data_entry=false
     join taxa t on t.id=ttl.taxon_id and t.deleted=false and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false and l.deleted=false
-    join taxa tpref on tpref.id=ttlpref.taxon_id and tpref.deleted=false
+    join taxa tpref on tpref.id=coalesce(ttlpref.taxon_id, ttlprefredundant.taxon_id) and tpref.deleted=false
     join taxon_groups tg on tg.id=tpref.taxon_group_id and tg.deleted=false
     left join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false
     join languages lpref on lpref.id=tpref.language_id and lpref.deleted=false
-    left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id and tcommon.deleted=false
-    where cttl.id is null and tl.deleted=false";
+    left join taxa tcommon on tcommon.id=coalesce(ttlpref.common_taxon_id, ttlprefredundant.common_taxon_id) and tcommon.deleted=false
+    where cttl.id is null and tl.deleted=false
+    -- Must have one or other preferred name available.
+    and (ttlpref.id is not null or ttlprefredundant.id is not null)";
 
 $config['taxa_taxon_lists']['join_needs_update'] = 'join needs_update_taxa_taxon_lists nu on nu.id=ttl.id and nu.deleted=false';
 $config['taxa_taxon_lists']['key_field'] = 'ttl.id';
