@@ -26,7 +26,7 @@ $config['termlists_terms']['get_missing_items_query'] = "
     select distinct on (tlt.id) tlt.id, tl.deleted or tlt.deleted or tltpref.deleted or t.deleted or l.deleted or tpref.deleted or lpref.deleted as deleted
       from termlists tl
       join termlists_terms tlt on tlt.termlist_id=tl.id
-      join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred='t'
+      join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred=true
       join terms t on t.id=tlt.term_id
       join languages l on l.id=t.language_id
       join terms tpref on tpref.id=tltpref.term_id
@@ -40,7 +40,7 @@ $config['termlists_terms']['get_changed_items_query'] = "
     select distinct on (tlt.id) tlt.id, tl.deleted or tlt.deleted or tltpref.deleted or t.deleted or l.deleted or tpref.deleted or lpref.deleted as deleted
       from termlists tl
       join termlists_terms tlt on tlt.termlist_id=tl.id
-      join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred='t'
+      join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred=true
       join terms t on t.id=tlt.term_id
       join languages l on l.id=t.language_id
       join terms tpref on tpref.id=tltpref.term_id
@@ -74,7 +74,7 @@ $config['termlists_terms']['update'] = "update cache_termlists_terms ctlt
     from termlists tl
     join termlists_terms tlt on tlt.termlist_id=tl.id
     #join_needs_update#
-    join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred='t'
+    join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred=true
     join terms t on t.id=tlt.term_id
     join languages l on l.id=t.language_id
     join terms tpref on tpref.id=tltpref.term_id
@@ -99,7 +99,7 @@ $config['termlists_terms']['insert'] = "insert into cache_termlists_terms (
     join termlists_terms tlt on tlt.termlist_id=tl.id
     #join_needs_update#
     left join cache_termlists_terms ctlt on ctlt.id=tlt.id
-    join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred='t'
+    join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred=true
     join terms t on t.id=tlt.term_id and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false
     join terms tpref on tpref.id=tltpref.term_id
@@ -116,7 +116,7 @@ $config['taxa_taxon_lists']['get_missing_items_query'] = "
         or l.deleted or tpref.deleted or tg.deleted or lpref.deleted as deleted
       from taxon_lists tl
       join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' and ttlpref.taxon_list_id=ttl.taxon_list_id
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
       join taxa tpref on tpref.id=ttlpref.taxon_id
@@ -251,14 +251,14 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     -- Select the preferred name which isn't redundant (allow_data_entry=true)
     left join taxa_taxon_lists ttlpref
       on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id
-      and ttlpref.preferred='t'
+      and ttlpref.preferred=true
       and ttlpref.taxon_list_id=ttl.taxon_list_id
       and ttlpref.deleted=false
       and ttlpref.allow_data_entry=true
     -- A fallback preferred name which is redundant (allow_data_entry=false)
     left join taxa_taxon_lists ttlprefredundant
       on ttlprefredundant.taxon_meaning_id=ttl.taxon_meaning_id
-      and ttlprefredundant.preferred='t'
+      and ttlprefredundant.preferred=true
       and ttlprefredundant.taxon_list_id=ttl.taxon_list_id
       and ttlprefredundant.deleted=false
       and ttlprefredundant.allow_data_entry=false
@@ -307,14 +307,14 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
     -- Select the preferred name which isn't redundant (allow_data_entry=true)
     left join taxa_taxon_lists ttlpref
       on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id
-      and ttlpref.preferred='t'
+      and ttlpref.preferred=true
       and ttlpref.taxon_list_id=ttl.taxon_list_id
       and ttlpref.deleted=false
       and ttlpref.allow_data_entry=true
     -- A fallback preferred name which is redundant (allow_data_entry=false)
     left join taxa_taxon_lists ttlprefredundant
       on ttlprefredundant.taxon_meaning_id=ttl.taxon_meaning_id
-      and ttlprefredundant.preferred='t'
+      and ttlprefredundant.preferred=true
       and ttlprefredundant.taxon_list_id=ttl.taxon_list_id
       and ttlprefredundant.deleted=false
       and ttlprefredundant.allow_data_entry=false
@@ -458,7 +458,7 @@ $config['taxon_searchterms']['get_missing_items_query'] = "
       from taxon_lists tl
       join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id
-        and ttlpref.preferred='t'
+        and ttlpref.preferred=true
         and ttlpref.taxon_list_id=ttl.taxon_list_id
       join taxa t on t.id=ttl.taxon_id
       join languages l on l.id=t.language_id
@@ -745,7 +745,7 @@ $config['taxon_searchterms']['insert']['standard terms'] = "insert into cache_ta
       cttl.external_key, cttl.organism_key, cttl.authority, cttl.search_code, cttl.taxonomic_sort_order, cttl.taxon_rank
     from cache_taxa_taxon_lists cttl
     #join_needs_update#
-    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified='f'
+    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=false
     where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=true";
 
 $config['taxon_searchterms']['insert']['abbreviations'] = "insert into cache_taxon_searchterms (
@@ -1651,8 +1651,8 @@ JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
 LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=COALESCE(#master_list_id#, cttl.taxon_list_id)
 LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
-    JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
-  ) ON oav.occurrence_id=o.id AND oav.deleted='f'
+    JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted=false and oa.system_function='certainty'
+  ) ON oav.occurrence_id=o.id AND oav.deleted=false
 LEFT JOIN occurrence_comments oc1 ON oc1.occurrence_id=o.id AND oc1.deleted=false AND oc1.auto_generated=false
     AND oc1.query=true AND (o.verified_on IS NULL OR oc1.created_on>o.verified_on)
 LEFT JOIN occurrence_comments oc2 ON oc2.occurrence_id=o.id AND oc2.deleted=false AND oc2.auto_generated=false
@@ -1899,8 +1899,8 @@ JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
 LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
 LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
-    JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
-  ) ON oav.occurrence_id=o.id AND oav.deleted='f'
+    JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted=false and oa.system_function='certainty'
+  ) ON oav.occurrence_id=o.id AND oav.deleted=false
 WHERE o.deleted=false
 AND co.id IS NULL
 ";
