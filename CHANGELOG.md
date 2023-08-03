@@ -1,3 +1,9 @@
+# Version 8.22.0
+*2023-08-03*
+
+* Adds a special field handler for Elasticsearch data that supports a coalesce function, returning
+  the value of the first field that has a non-empty value, selected from a list of provided fields.
+
 # Version 8.21.0
 *2023-06-28*
 
