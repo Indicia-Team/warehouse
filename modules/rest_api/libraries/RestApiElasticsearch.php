@@ -556,6 +556,34 @@ class RestApiElasticsearch {
   }
 
   /**
+   * Special field handler returns the value for the first non-empty field.
+   *
+   * Provide a comma-separated list of field names as the parameter. The value
+   * of the first field in the list to have a non-empty value is returned.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Parameters defined for the special field.
+   *
+   * @return string
+   *   Field value.
+   */
+  private function esGetSpecialFieldCoalesce(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for coalesce field';
+    }
+    $fields = explode(',', $params[0]);
+    foreach ($fields as $field) {
+      $value = $this->getRawEsFieldValue($doc, $field);
+      if ($value !== '') {
+        return $value;
+      }
+    }
+    return '';
+  }
+
+  /**
    * Special field handler which returns a constant value.
    *
    * For an empty column set the second argument to an empty string.
@@ -1917,6 +1945,9 @@ class RestApiElasticsearch {
         }
         elseif (preg_match('/^#query(.*)#$/', $field)) {
           $fields[] = 'identification.query';
+        }
+        elseif (preg_match('/^#coalesce:(.*)#$/', $field, $matches)) {
+          $fields = array_merge($fields, explode(',', $matches[1]));
         }
         elseif (preg_match('/^#attr_value:(event|sample|parent_event|occurrence):(\d+)#$/', $field, $matches)) {
           $key = $matches[1] === 'parent_event' ? 'parent_attributes' : 'attributes';
