@@ -62,6 +62,10 @@ class data_utils {
       'taxa_taxon_list_id' => $taxaTaxonListId,
       'updated_by_id' => $userId,
       'updated_on' => date('Y-m-d H:i:s'),
+      'record_status' => 'C',
+      'record_substatus' => NULL,
+      'verified_by_id' => NULL,
+      'verified_on' => NULL,
     ];
     // Work queue will update the cache tables.
     return $r;
