@@ -1183,7 +1183,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       elseif ($this->in_warehouse && !$this->user_is_core_admin) {
         // User is on Warehouse, but not core admin, so do a filter to all their
         // websites.
-        $allowedWebsiteValues = array_merge($this->user_websites);
+        $allowedWebsiteValues = array_merge($this->userWebsites);
         $allowedWebsiteValues[] = NULL;
         $this->db->in('website_id', $allowedWebsiteValues);
       }
