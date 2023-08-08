@@ -261,7 +261,7 @@ SQL;
         return FALSE;
       }
       // Skip records already provided to BTO.
-      $numericId = (integer) str_replace($observation['id'], 'BTO', '');
+      $numericId = (integer) str_replace(['BTO', 'OBS'], '', $observation['id']);
       if ($numericId <= 290186151) {
         return FALSE;
       }
