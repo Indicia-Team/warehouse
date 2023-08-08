@@ -127,11 +127,25 @@ class Service_Base_Controller extends Controller {
   protected $user_is_core_admin = false;
 
   /**
+   * List of website IDs the user is authorised to see.
+   *
+   * @var array
+   */
+  protected $userWebsites;
+
+  /**
    * Content type, if specified for the response.
    *
    * @var string
    */
   protected $content_type;
+
+  /**
+   * If response in a file, provide the file name.
+   *
+   * @var string
+   */
+  protected $responseFile;
 
   /**
    * Response content.
@@ -223,14 +237,14 @@ class Service_Base_Controller extends Controller {
               $user = ORM::Factory('user', $this->user_id);
               $this->user_is_core_admin = ($user->core_role_id === 1);
               if (!$this->user_is_core_admin) {
-                $this->user_websites = [];
+                $this->userWebsites = [];
                 $userWebsites = ORM::Factory('users_website')->where([
                   'user_id' => $this->user_id,
                   'site_role_id is not' => NULL,
                   'banned' => 'f',
                 ])->find_all();
                 foreach ($userWebsites as $userWebsite) {
-                  $this->user_websites[] = $userWebsite->website_id;
+                  $this->userWebsites[] = $userWebsite->website_id;
                 }
               }
             }
@@ -284,7 +298,9 @@ class Service_Base_Controller extends Controller {
   /**
    * Return an error XML or json document to the client.
    *
-   * @param string
+   * @param Throwable $e
+   *   The exception.
+   * @param string $transaction_id
    *   Id of the transaction calling the service. Optional. Returned to the
    *   calling code.
    */
