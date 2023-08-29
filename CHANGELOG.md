@@ -9,6 +9,20 @@
 
 * Allow termlists_term_attribute_value submissions from websites.
 
+# Version 8.20.0
+*2023-06-16*
+
+* New image organiser warehouse module for restructuring the upload folder into sub-folders based
+  on timestamp.
+* Queued images added via the REST API are now automatically placed in the new sub-folder image
+  structure.
+
+# Version 8.19.0
+*2023-05-04*
+
+* New process checker warehouse module to ensure that records missing spatial indexing get
+  picked up.
+
 # Version 8.18.0
 *2023-04-27*
 
