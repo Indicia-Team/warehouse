@@ -149,9 +149,6 @@ class Scheduled_Tasks_Controller extends Controller {
       $params = json_decode($trigger->params_json, TRUE);
       $params['date'] = $this->lastRunDate;
       $reportEngine = new ReportEngine();
-      if ($trigger->trigger_template_file === 'trigger_templates/shoresearch_notify_added_surveys') {
-        kohana::log('error', 'Loading trigger ' . $trigger->trigger_template_file);
-      }
       try {
         $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
       }
