@@ -14,6 +14,7 @@ JOIN taxa_taxon_lists ttlpref
   ON ttlpref.taxon_meaning_id=ttl.taxon_meaning_id
   AND ttlpref.taxon_list_id=ttl.taxon_list_id
   AND ttlpref.preferred=true
+JOIN taxa tpref ON tpref.id=ttlpref.taxon_id AND tpref.deleted=false
 WHERE ttl.id=av.taxa_taxon_list_id
 AND ttl.preferred=false
 AND ttl.deleted=false
@@ -28,7 +29,8 @@ JOIN taxa_taxon_lists ttlpref
   ON ttlpref.taxon_meaning_id=ttl.taxon_meaning_id
   AND ttlpref.taxon_list_id=ttl.taxon_list_id
   AND ttlpref.preferred=true
-WHERE ttl.taxon_id=av.taxon_id
+JOIN taxa tpref ON tpref.id=ttlpref.taxon_id AND tpref.deleted=false
+WHERE ttl.taxon_id=ttd.taxon_id
 AND ttl.preferred=false
 AND ttl.deleted=false
 AND ttd.deleted=false
