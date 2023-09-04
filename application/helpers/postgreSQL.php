@@ -314,11 +314,11 @@ SQL;
           $updateFilterSQL[] = "map_sq_{$km}km_id IS NULL OR map_sq_{$km}km_id<>$msqId";
         }
         $db->query("UPDATE cache_occurrences_functional SET " . implode(', ', $updateFieldSQL) .
-          "WHERE sample_id={$s->id} " .
-          'AND (' . implode(' OR ', $updateFilterSQL) . ')');
+          " WHERE sample_id={$s->id}" .
+          ' AND (' . implode(' OR ', $updateFilterSQL) . ')');
         $db->query("UPDATE cache_samples_functional SET " . implode(', ', $updateFieldSQL) .
-          "WHERE id={$s->id} " .
-          'AND (' . implode(' OR ', $updateFilterSQL) . ')');
+          " WHERE id={$s->id}" .
+          ' AND (' . implode(' OR ', $updateFilterSQL) . ')');
       }
     }
   }
