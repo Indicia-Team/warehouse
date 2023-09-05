@@ -1497,6 +1497,35 @@ class RestApiElasticsearch {
   }
 
   /**
+   * Special field handler for templated text.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   The first parameter must be the text template.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldTemplate(array $doc, $params) {
+    // Find fields embedded in the template and replace them.
+    preg_match_all('/\[.*\]/', $params[0], $matches);
+    $replaceKeys = [];
+    $replaceValues = [];
+    foreach ($matches as $group) {
+      foreach ($group as $token) {
+        $fieldPath = str_replace(['[', ']'], '', $token);
+        $value = $this->getRawEsFieldValue($doc, $fieldPath);
+        $replaceKeys[] = $token;
+        $replaceValues[] = $value;
+      }
+    }
+    $output = str_replace($replaceKeys, $replaceValues, $params[0]);
+    // Strip HTML tokens, as this is for CSV.
+    return preg_replace('/<.[^<>]*?>/', ' ', $output);
+  }
+
+  /**
    * Special field handler to translate true/false values to specified output.
    *
    * Return the translated value.
@@ -1942,6 +1971,16 @@ class RestApiElasticsearch {
         }
         elseif (preg_match('/^#sitename(.*)#$/', $field)) {
           $fields[] = 'location.verbatim_locality';
+        }
+        elseif (preg_match('/^#template(.*)#$/', $field)) {
+          // Find fields embedded in the template and add them.
+          preg_match_all('/\[.*\]/', $field, $matches);
+          foreach ($matches as $group) {
+            foreach ($group as $token) {
+              $fieldPath = str_replace(['[', ']'], '', $token);
+              $fields[] = $fieldPath;
+            }
+          }
         }
         elseif (preg_match('/^#method(.*)#$/', $field)) {
           $fields[] = 'event.sampling_protocol';
