@@ -1497,19 +1497,21 @@ class RestApiElasticsearch {
   }
 
   /**
-   * Special field handler for templated text.
+   * Applies ES field values to a template.
+   *
+   * Field names can be supplied in [] inside the template and will be replaced
+   * by the respectiv values.
    *
    * @param array $doc
    *   Elasticsearch document.
-   * @param array $params
-   *   The first parameter must be the text template.
+   * @param string $template
+   *   Text template.
    *
    * @return string
-   *   Formatted value.
+   *   Template with tokens replaced by values.
    */
-  private function esGetSpecialFieldTemplate(array $doc, $params) {
-    // Find fields embedded in the template and replace them.
-    preg_match_all('/\[.*\]/', $params[0], $matches);
+  private function applyFieldReplacements(array $doc, $template) {
+    preg_match_all('/\[.*\]/', $template, $matches);
     $replaceKeys = [];
     $replaceValues = [];
     foreach ($matches as $group) {
@@ -1520,7 +1522,38 @@ class RestApiElasticsearch {
         $replaceValues[] = $value;
       }
     }
-    $output = str_replace($replaceKeys, $replaceValues, $params[0]);
+    return str_replace($replaceKeys, $replaceValues, $template);
+  }
+
+  /**
+   * Special field handler for templated text.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   The first parameter must be the text template. An optional second
+   *   parameter can indicate the path to a nested ES object - if present then
+   *   the template will be repeated for each object and fields inside the
+   *   current object will be available as token replacements.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldTemplate(array $doc, $params) {
+    $output = '';
+    if (count($params) > 1) {
+      // 2nd parameter is a nested object path.
+      $objects = $this->getRawEsFieldValue($doc, $params[1]);
+      if (is_array($objects)) {
+        foreach ($objects as $object) {
+          $output .= $this->applyFieldReplacements($object, $params[0]);
+        };
+      }
+    }
+    else {
+      $output = $params[0];
+    }
+    $output = $this->applyFieldReplacements($doc, $output);
     // Strip HTML tokens, as this is for CSV.
     return preg_replace('/<.[^<>]*?>/', ' ', $output);
   }
@@ -1980,6 +2013,11 @@ class RestApiElasticsearch {
               $fieldPath = str_replace(['[', ']'], '', $token);
               $fields[] = $fieldPath;
             }
+          }
+          // Also 2nd parameter can be a path to a nested object.
+          $tokens = explode(':', $field);
+          if (count($tokens) > 2) {
+            $fields[] = trim($tokens[2], '#');
           }
         }
         elseif (preg_match('/^#method(.*)#$/', $field)) {
