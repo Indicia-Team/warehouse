@@ -162,6 +162,11 @@ SQL;
     $freshwater = $operation->freshwater === TRUE ? 'true' : ($operation->freshwater === FALSE ? 'false' : '');
     $non_native = $operation->non_native === TRUE ? 'true' : ($operation->non_native === FALSE ? 'false' : '');
     $redundant = $operation->redundant === TRUE ? 'true' : ($operation->redundant === FALSE ? 'false' : '');
+    $taxonName = pg_escape_literal($operation->taxon_name);
+    $authority = pg_escape_literal($operation->authority);
+    $attribute = pg_escape_literal($operation->attribute);
+    $parentName = pg_escape_literal($operation->parent_name);
+    $synonym = pg_escape_literal($operation->synonym);
     $sql = <<<SQL
 SELECT sequence
 FROM uksi_operations
@@ -169,12 +174,12 @@ WHERE operation='$operation->operation'
 AND COALESCE(organism_key, '')=COALESCE('$operation->organism_key', '')
 AND COALESCE(taxon_version_key, '')=COALESCE('$operation->taxon_version_key', '')
 AND COALESCE(rank, '')=COALESCE('$operation->rank', '')
-AND COALESCE(taxon_name, '')=COALESCE('$operation->taxon_name', '')
-AND COALESCE(authority, '')=COALESCE('$operation->authority', '')
-AND COALESCE(attribute, '')=COALESCE('$operation->attribute', '')
+AND COALESCE(taxon_name, '')=COALESCE($taxonName, '')
+AND COALESCE(authority, '')=COALESCE($authority, '')
+AND COALESCE(attribute, '')=COALESCE($attribute, '')
 AND COALESCE(parent_organism_key, '')=COALESCE('$operation->parent_organism_key', '')
-AND COALESCE(parent_name, '')=COALESCE('$operation->parent_name', '')
-AND COALESCE(synonym, '')=COALESCE('$operation->synonym', '')
+AND COALESCE(parent_name, '')=COALESCE($parentName, '')
+AND COALESCE(synonym, '')=COALESCE($synonym, '')
 AND COALESCE(taxon_group_key, '')=COALESCE('$operation->taxon_group_key', '')
 AND COALESCE(marine::text, '')='$marine'
 AND COALESCE(terrestrial::text, '')='$terrestrial'
@@ -910,11 +915,12 @@ SQL;
    */
   private function getCurrentTaxa(&$operation) {
     if (empty($operation->current_organism_key) && !empty($operation->current_name)) {
+      $currentName = pg_escape_literal($operation->current_name);
       $qry = <<<SQL
 SELECT organism_key
 FROM uksi_operations
 WHERE sequence < $operation->sequence
-AND taxon_name='$operation->current_name'
+AND taxon_name=$currentName
 AND operation='New taxon'
 AND batch_processed_on='$operation->batch_processed_on'
 ORDER BY sequence DESC
@@ -1010,11 +1016,12 @@ SQL;
       // Parent identified by name which must refer to the last added taxa with
       // the given name. So use the new taxon operation to find the parent's
       // organism key.
+      $parentName = pg_escape_literal($operation->parent_name);
       $qry = <<<SQL
 SELECT organism_key
 FROM uksi_operations
 WHERE (batch_processed_on<'$operation->batch_processed_on' OR (batch_processed_on='$operation->batch_processed_on' AND operation_priority<'$operation->operation_priority') OR sequence<$operation->sequence)
-AND lower(taxon_name)=lower('$operation->parent_name')
+AND lower(taxon_name)=lower($parentName)
 AND lower(operation)='new taxon'
 ORDER BY batch_processed_on DESC, operation_priority DESC, sequence DESC
 LIMIT 1
