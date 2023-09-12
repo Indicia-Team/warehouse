@@ -22,7 +22,7 @@
       select
         'determination' as type,
         d.created_on,
-        'Record was determined as ' || ttl.preferred_taxon as comment,
+        'Record was determined as ' || ttl.taxon || case when ttl.preferred_taxon=ttl.taxon then '' else ' (' || ttl.preferred_taxon || ')' end || '.' as comment,
         null as correspondence_data,
         null as reference,
         null::character as record_status,
@@ -40,7 +40,7 @@
       select distinct
         'current name' as type,
         d.updated_on,
-        'Record was determined as ' || ttl.preferred_taxon as comment,
+        'Record was determined as ' || ttl.taxon || case when ttl.preferred_taxon=ttl.taxon then '' else ' (' || ttl.preferred_taxon || ')' end || '.' as comment,
         null as correspondence_data,
         null as reference,
         null::character as record_status,
