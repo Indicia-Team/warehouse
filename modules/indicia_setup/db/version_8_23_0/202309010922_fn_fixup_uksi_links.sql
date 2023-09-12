@@ -157,6 +157,8 @@ insert into cache_verification_rules_without_polygon
   select * from cache_verification_rules_without_polygon2;
 drop table cache_verification_rules_without_polygon2;
 
+return true;
+
 END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
