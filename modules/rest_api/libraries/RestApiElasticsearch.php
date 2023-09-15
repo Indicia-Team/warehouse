@@ -507,10 +507,11 @@ class RestApiElasticsearch {
     $output = [];
     if (isset($doc['occurrence']['associations'])) {
       foreach ($doc['occurrence']['associations'] as $assoc) {
-        $label = $assoc->accepted_name;
-        if (!empty($assoc->vernacular_name)) {
-          $label = $assoc->vernacular_name + " ($label)";
+        $label = $assoc['accepted_name'];
+        if (!empty($assoc['vernacular_name'])) {
+          $label = $assoc['vernacular_name'] . " ($label)";
         }
+        $output[] = $label;
       }
     }
     return implode('; ', $output);
@@ -1947,6 +1948,9 @@ class RestApiElasticsearch {
         }
         if (preg_match('/^[a-z_]+(\.[a-z_]+)*$/', $field)) {
           $fields[] = $field;
+        }
+        elseif ($field === '#associations#') {
+          $fields[] = 'occurrence.associations';
         }
         elseif (preg_match('/^#higher_geography(.*)#$/', $field)) {
           $fields[] = 'location.higher_geography.*';
