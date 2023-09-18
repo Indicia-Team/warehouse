@@ -250,86 +250,10 @@ class Occurrence_Model extends ORM {
     if (!empty($this->taxa_taxon_list_id) &&
         !empty($this->submission['fields']['taxa_taxon_list_id']['value']) &&
         $this->taxa_taxon_list_id != $this->submission['fields']['taxa_taxon_list_id']['value']) {
-      // Only log a determination for the occurrence if the species is changed.
-      // Also the all_info_in_determinations flag must be off to avoid clashing
-      // with other functionality and the config setting must be enabled.
-      if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
-        $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->userIdFromPersonId($this->determiner_id);
-        $determination = [
-          // We log the old taxon.
-          'taxa_taxon_list_id' => $this->taxa_taxon_list_id,
-          // And classification event it came from.
-          'machine_involvement' => $this->machine_involvement,
-          'classification_event_id' => $this->classification_event_id,
-          'determination_type' => 'B',
-          'occurrence_id' => $this->id,
-          // Last change to the occurrence is really the create metadata for
-          // this determination, since we are copying it out of the existing
-          // occurrence record.
-          'created_by_id' => $oldDeterminerUserId,
-          'updated_by_id' => $oldDeterminerUserId,
-          'created_on' => $this->getWhenRecordLastDetermined(),
-          'updated_on' => date("Ymd H:i:s"),
-          'person_name' => $this->getPreviousDeterminerName(),
-        ];
-        $this->db
-          ->from('determinations')
-          ->set($determination)
-          ->insert();
-        if (empty($this->submission['fields']['machine_involvement'])) {
-          $array->machine_involvement = NULL;
-        }
-        if (empty($this->submission['fields']['classification_event_id'])) {
-          $array->classification_event_id = NULL;
-        }
-      }
-      if (!empty($this->submission['fields']['determiner_id']) && !empty($this->submission['fields']['determiner_id']['value'])) {
-        // Redetermination by user ID provided in submission.
-        $redetByPersonId = (int) $this->submission['fields']['determiner_id']['value'];
-        if ($redetByPersonId === -1) {
-          // Determiner person ID -1 is special case, means don't assign new
-          // determiner name on redet.
-          unset($this->submission['fields']['determiner_id']);
-          unset($array->determiner_id);
-          return;
-        }
-        $userInfo = $this->userIdFromPersonId($redetByPersonId);
-        $redetByUserId = $this->userIdFromPersonId($redetByPersonId);
-      }
-      else {
-        // Redetermination doesn't specify user ID, so use logged in user
-        // account.
-        $redetByUserId = (int) $this->getCurrentUserId();
-        $userInfo = $this->db->select('person_id')->from('users')->where('id', $redetByUserId)->get()->current();
-        $redetByPersonId = $userInfo->person_id;
-        if ($redetByUserId !== 1) {
-          // Store in the occurrences.determiner_id field.
-          $array->determiner_id = $redetByPersonId;
-        }
-      }
-      if ($redetByUserId !== 1) {
-        // Update any determiner occurrence attributes.
-        $sql = <<<SQL
-UPDATE occurrence_attribute_values v
-SET text_value=CASE a.system_function
-  WHEN 'det_full_name' THEN TRIM(COALESCE(p.first_name || ' ', '') || p.surname)
-  WHEN 'det_first_name' THEN p.first_name
-  WHEN 'det_last_name' THEN p.surname
-END,
-updated_on=now(), updated_by_id=$redetByUserId
-FROM occurrence_attributes a, users u
-JOIN people p ON p.id=u.person_id
-  AND p.deleted=false
-WHERE a.deleted=false
-AND v.deleted=false
-AND v.occurrence_attribute_id=a.id
-AND v.occurrence_id=$this->id
-AND a.system_function in ('det_full_name', 'det_first_name', 'det_last_name')
-AND u.id=$redetByUserId
-AND u.deleted=false
-SQL;
-        $this->db->query($sql);
-      }
+      $logDeterminations = kohana::config('indicia.auto_log_determinations') === TRUE ? 'true' : 'false';
+      $resetClassification = empty($this->submission['fields']['classification_event_id']) ? 'true' : 'false';
+      $sql = "SELECT f_handle_determination(ARRAY[$this->id], $this->updated_by_id, $logDeterminations, $resetClassification);";
+      $this->db->query($sql);
       $array->last_verification_check_date = NULL;
     }
   }

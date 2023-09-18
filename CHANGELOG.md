@@ -1,7 +1,27 @@
+# Version 8.22.0
+*2023-08-03*
+
+* Adds a special field handler for Elasticsearch data that supports a coalesce function, returning
+  the value of the first field that has a non-empty value, selected from a list of provided fields.
+
 # Version 8.21.0
 *2023-06-28*
 
 * Allow termlists_term_attribute_value submissions from websites.
+
+# Version 8.20.0
+*2023-06-16*
+
+* New image organiser warehouse module for restructuring the upload folder into sub-folders based
+  on timestamp.
+* Queued images added via the REST API are now automatically placed in the new sub-folder image
+  structure.
+
+# Version 8.19.0
+*2023-05-04*
+
+* New process checker warehouse module to ensure that records missing spatial indexing get
+  picked up.
 
 # Version 8.18.0
 *2023-04-27*

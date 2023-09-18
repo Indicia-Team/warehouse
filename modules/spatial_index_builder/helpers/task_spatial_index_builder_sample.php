@@ -112,7 +112,7 @@ AND q.entity='sample'
 AND q.task='task_spatial_index_builder_sample';
 
 DELETE FROM work_queue q
-USING changed_samples s, occurrences o
+USING changed_samples s, cache_occurrences_functional o
 WHERE s.sample_id=o.sample_id
 AND o.id=q.record_id
 AND q.entity='occurrence'

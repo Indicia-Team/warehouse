@@ -507,10 +507,11 @@ class RestApiElasticsearch {
     $output = [];
     if (isset($doc['occurrence']['associations'])) {
       foreach ($doc['occurrence']['associations'] as $assoc) {
-        $label = $assoc->accepted_name;
-        if (!empty($assoc->vernacular_name)) {
-          $label = $assoc->vernacular_name + " ($label)";
+        $label = $assoc['accepted_name'];
+        if (!empty($assoc['vernacular_name'])) {
+          $label = $assoc['vernacular_name'] . " ($label)";
         }
+        $output[] = $label;
       }
     }
     return implode('; ', $output);
@@ -567,6 +568,34 @@ class RestApiElasticsearch {
       }
     }
     return implode('; ', $r);
+  }
+
+  /**
+   * Special field handler returns the value for the first non-empty field.
+   *
+   * Provide a comma-separated list of field names as the parameter. The value
+   * of the first field in the list to have a non-empty value is returned.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Parameters defined for the special field.
+   *
+   * @return string
+   *   Field value.
+   */
+  private function esGetSpecialFieldCoalesce(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for coalesce field';
+    }
+    $fields = explode(',', $params[0]);
+    foreach ($fields as $field) {
+      $value = $this->getRawEsFieldValue($doc, $field);
+      if ($value !== '') {
+        return $value;
+      }
+    }
+    return '';
   }
 
   /**
@@ -1469,6 +1498,68 @@ class RestApiElasticsearch {
   }
 
   /**
+   * Applies ES field values to a template.
+   *
+   * Field names can be supplied in [] inside the template and will be replaced
+   * by the respectiv values.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param string $template
+   *   Text template.
+   *
+   * @return string
+   *   Template with tokens replaced by values.
+   */
+  private function applyFieldReplacements(array $doc, $template) {
+    preg_match_all('/\[.*\]/', $template, $matches);
+    $replaceKeys = [];
+    $replaceValues = [];
+    foreach ($matches as $group) {
+      foreach ($group as $token) {
+        $fieldPath = str_replace(['[', ']'], '', $token);
+        $value = $this->getRawEsFieldValue($doc, $fieldPath);
+        $replaceKeys[] = $token;
+        $replaceValues[] = $value;
+      }
+    }
+    return str_replace($replaceKeys, $replaceValues, $template);
+  }
+
+  /**
+   * Special field handler for templated text.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   The first parameter must be the text template. An optional second
+   *   parameter can indicate the path to a nested ES object - if present then
+   *   the template will be repeated for each object and fields inside the
+   *   current object will be available as token replacements.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldTemplate(array $doc, $params) {
+    $output = '';
+    if (count($params) > 1) {
+      // 2nd parameter is a nested object path.
+      $objects = $this->getRawEsFieldValue($doc, $params[1]);
+      if (is_array($objects)) {
+        foreach ($objects as $object) {
+          $output .= $this->applyFieldReplacements($object, $params[0]);
+        };
+      }
+    }
+    else {
+      $output = $params[0];
+    }
+    $output = $this->applyFieldReplacements($doc, $output);
+    // Strip HTML tokens, as this is for CSV.
+    return preg_replace('/<.[^<>]*?>/', ' ', $output);
+  }
+
+  /**
    * Special field handler to translate true/false values to specified output.
    *
    * Return the translated value.
@@ -1858,6 +1949,9 @@ class RestApiElasticsearch {
         if (preg_match('/^[a-z_]+(\.[a-z_]+)*$/', $field)) {
           $fields[] = $field;
         }
+        elseif ($field === '#associations#') {
+          $fields[] = 'occurrence.associations';
+        }
         elseif (preg_match('/^#higher_geography(.*)#$/', $field)) {
           $fields[] = 'location.higher_geography.*';
         }
@@ -1915,6 +2009,21 @@ class RestApiElasticsearch {
         elseif (preg_match('/^#sitename(.*)#$/', $field)) {
           $fields[] = 'location.verbatim_locality';
         }
+        elseif (preg_match('/^#template(.*)#$/', $field)) {
+          // Find fields embedded in the template and add them.
+          preg_match_all('/\[.*\]/', $field, $matches);
+          foreach ($matches as $group) {
+            foreach ($group as $token) {
+              $fieldPath = str_replace(['[', ']'], '', $token);
+              $fields[] = $fieldPath;
+            }
+          }
+          // Also 2nd parameter can be a path to a nested object.
+          $tokens = explode(':', $field);
+          if (count($tokens) > 2) {
+            $fields[] = trim($tokens[2], '#');
+          }
+        }
         elseif (preg_match('/^#method(.*)#$/', $field)) {
           $fields[] = 'event.sampling_protocol';
         }
@@ -1931,6 +2040,9 @@ class RestApiElasticsearch {
         }
         elseif (preg_match('/^#query(.*)#$/', $field)) {
           $fields[] = 'identification.query';
+        }
+        elseif (preg_match('/^#coalesce:(.*)#$/', $field, $matches)) {
+          $fields = array_merge($fields, explode(',', $matches[1]));
         }
         elseif (preg_match('/^#attr_value:(event|sample|parent_event|occurrence):(\d+)#$/', $field, $matches)) {
           $key = $matches[1] === 'parent_event' ? 'parent_attributes' : 'attributes';
