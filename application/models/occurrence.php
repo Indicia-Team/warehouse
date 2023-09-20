@@ -252,7 +252,27 @@ class Occurrence_Model extends ORM {
         $this->taxa_taxon_list_id != $this->submission['fields']['taxa_taxon_list_id']['value']) {
       $logDeterminations = kohana::config('indicia.auto_log_determinations') === TRUE ? 'true' : 'false';
       $resetClassification = empty($this->submission['fields']['classification_event_id']) ? 'true' : 'false';
-      $sql = "SELECT f_handle_determination(ARRAY[$this->id], $this->updated_by_id, $logDeterminations, $resetClassification);";
+      $currentUserId = $this->getCurrentUserId();
+      if (empty($this->submission['fields']['determiner_id']) && empty($this->submission['fields']['determiner_id']['value'])) {
+        // Determiner ID not provided, so use the authorised user_id to work
+        // it out.
+        $userInfo = $this->db->select('person_id')->from('users')->where('id', $currentUserId)->get()->current();
+        $determinerPersonId = $userInfo->person_id;
+        if ($determinerPersonId !== '1') {
+          // Store in the occurrences.determiner_id field.
+          $array->determiner_id = $determinerPersonId;
+        }
+      }
+      else {
+        $determinerPersonId = $this->submission['fields']['determiner_id']['value'];
+      }
+      if ((int) $determinerPersonId === -1) {
+        // Determiner person ID -1 is special case, means don't assign new
+        // determiner name on redet.
+        unset($this->submission['fields']['determiner_id']);
+        unset($array->determiner_id);
+      }
+      $sql = "SELECT f_handle_determination(ARRAY[$this->id], $currentUserId, $determinerPersonId, $logDeterminations, $resetClassification);";
       $this->db->query($sql);
       $array->last_verification_check_date = NULL;
     }

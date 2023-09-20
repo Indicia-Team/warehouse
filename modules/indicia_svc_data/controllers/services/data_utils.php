@@ -430,7 +430,7 @@ SQL;
   private function redeterminationDbProcessing(Database $db, array $occurrenceIds, $userId) {
     $idCsv = implode(',', $occurrenceIds);
     $logDeterminations = kohana::config('indicia.auto_log_determinations') === TRUE ? 'true' : 'false';
-    $sql = "SELECT f_handle_determination(ARRAY[$idCsv], $userId, $logDeterminations, true);";
+    $sql = "SELECT f_handle_determination(ARRAY[$idCsv], $userId, null, $logDeterminations, true);";
     $db->query($sql);
   }
 
