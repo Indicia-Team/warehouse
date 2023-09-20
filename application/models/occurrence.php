@@ -269,8 +269,13 @@ class Occurrence_Model extends ORM {
       if ((int) $determinerPersonId === -1) {
         // Determiner person ID -1 is special case, means don't assign new
         // determiner name on redet.
-        unset($this->submission['fields']['determiner_id']);
         unset($array->determiner_id);
+      }
+      if (empty($this->submission['fields']['machine_involvement'])) {
+        $array->machine_involvement = NULL;
+      }
+      if (empty($this->submission['fields']['classification_event_id'])) {
+        $array->classification_event_id = NULL;
       }
       $sql = "SELECT f_handle_determination(ARRAY[$this->id], $currentUserId, $determinerPersonId, $logDeterminations, $resetClassification);";
       $this->db->query($sql);
