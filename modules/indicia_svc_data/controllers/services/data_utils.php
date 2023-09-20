@@ -373,10 +373,10 @@ SQL;
           $this->user_id,
           $_POST['occurrence:taxa_taxon_list_id'],
         );
+        $this->redeterminationDbProcessing($db, $ids, $this->user_id);
         // Give the workflow module a chance to rewind or update the values
         // before updating.
         data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
-        $this->updateDeterminerAttributes($db, $ids);
         $q = new WorkQueue();
         foreach ($ids as $id) {
           $q->enqueue($db, [
@@ -405,7 +405,7 @@ SQL;
       }
       catch (Exception $e) {
         echo $e->getMessage();
-        error_logger::log_error('Exception during list redet', $e);
+        error_logger::log_error('Exception during redet', $e);
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'array_redet', $this->website_id, $this->user_id, $tm, $db, $e->getMessage(), $ids);
         }
@@ -414,6 +414,9 @@ SQL;
   }
 
   /**
+   * Database processing for a redetermination.
+   *
+   * Inserts records into the determinations table.
    * Updates any determination attributes with name of a redeterminer.
    *
    * When applying a re-determination, the new determiner's name is used to
@@ -424,34 +427,10 @@ SQL;
    * @param array $occurrenceIds
    *   CSV List of occurrences to check.
    */
-  private function updateDeterminerAttributes(Database $db, array $occurrenceIds) {
+  private function redeterminationDbProcessing(Database $db, array $occurrenceIds, $userId) {
     $idCsv = implode(',', $occurrenceIds);
-    $sql = <<<SQL
-UPDATE occurrence_attribute_values v
-SET text_value=CASE a.system_function
-  WHEN 'det_full_name' THEN TRIM(COALESCE(p.first_name || ' ', '') || p.surname)
-  WHEN 'det_first_name' THEN p.first_name
-  WHEN 'det_last_name' THEN p.surname
-END, updated_on=now(), updated_by_id=$this->user_id
-FROM occurrence_attributes a, users u
-JOIN people p ON p.id=u.person_id
-  AND p.deleted=false
-WHERE a.deleted=false
-AND v.deleted=false
-AND v.occurrence_attribute_id=a.id
-AND v.occurrence_id in ($idCsv)
-AND a.system_function in ('det_full_name', 'det_first_name', 'det_last_name')
-AND u.id=$this->user_id
-AND u.deleted=false
-SQL;
-    $db->query($sql);
-
-    // Insert work queue entries to update the cache tables.
-    $sql = <<<SQL
-INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-SELECT 'task_cache_builder_attrs_occurrence', 'occurrence', id, 50, 2, now()
-FROM occurrences WHERE deleted=false AND id IN ($idCsv);
-SQL;
+    $logDeterminations = kohana::config('indicia.auto_log_determinations') === TRUE ? 'true' : 'false';
+    $sql = "SELECT f_handle_determination(ARRAY[$idCsv], $userId, null, $logDeterminations, true);";
     $db->query($sql);
   }
 

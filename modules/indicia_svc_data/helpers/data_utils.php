@@ -66,6 +66,8 @@ class data_utils {
       'record_substatus' => NULL,
       'verified_by_id' => NULL,
       'verified_on' => NULL,
+      'machine_involvement' => NULL,
+      'classification_event_id' => NULL,
     ];
     // Work queue will update the cache tables.
     return $r;

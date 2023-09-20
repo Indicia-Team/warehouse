@@ -71,7 +71,7 @@ class Indicia_Controller extends Template_Controller {
   /**
    * Name of the main template view file.
    *
-   * @var string
+   * @var string|object
    */
   public $template = 'templates/template';
 
@@ -80,7 +80,7 @@ class Indicia_Controller extends Template_Controller {
    *
    * @var array
    */
-  protected $page_breadcrumbs = array();
+  protected $page_breadcrumbs = [];
 
   /**
    * Page title.
@@ -111,21 +111,24 @@ class Indicia_Controller extends Template_Controller {
     if ($this->auth->logged_in()) {
       $this->template->menu = self::getMenu();
     }
-    // If there is a file with same name as the controller actionw, load it
-    // into a variable in the template so the script can be included. Treat
-    // the edit and create actions as the same for this purpose.
-    $method = Router::$method === 'create' ? 'edit' : Router::$method;
-    $jsFile = preg_replace(
-      '/\/controllers\/.*/',
-      '/views/' . Router::$controller . "/$method.js",
-      Router::$controller_path
-    );
-    if (file_exists($jsFile)) {
-      $this->template->jsFile = str_replace(str_replace('\\', '/', DOCROOT), '', $jsFile);
-    }
-    $cssFile = str_replace('.js', '.css', $jsFile);
-    if (file_exists($cssFile)) {
-      $this->template->cssFile = str_replace(str_replace('\\', '/', DOCROOT), '', $cssFile);
+    // If being called from inside a browser, check for CSS/JS to add.
+    if (Router::$controller_path) {
+      // If there is a file with same name as the controller action, load it
+      // into a variable in the template so the script can be included. Treat
+      // the edit and create actions as the same for this purpose.
+      $method = Router::$method === 'create' ? 'edit' : Router::$method;
+      $jsFile = preg_replace(
+        '/\/controllers\/.*/',
+        '/views/' . Router::$controller . "/$method.js",
+        Router::$controller_path
+      );
+      if (file_exists($jsFile)) {
+        $this->template->jsFile = str_replace(str_replace('\\', '/', DOCROOT), '', $jsFile);
+      }
+      $cssFile = str_replace('.js', '.css', $jsFile);
+      if (file_exists($cssFile)) {
+        $this->template->cssFile = str_replace(str_replace('\\', '/', DOCROOT), '', $cssFile);
+      }
     }
     $title = kohana::config('indicia.warehouse_title');
     $this->template->warehouseTitle = $title ? $title : 'Indicia Warehouse';
@@ -598,35 +601,35 @@ class Indicia_Controller extends Template_Controller {
    * Override the load view behaviour to display better error information when a view
    * fails to load.
    */
-  public function _kohana_load_view($kohana_view_filename, $kohana_input_data)
-  {
-    if ($kohana_view_filename == '')
+  public function _kohana_load_view($kohana_view_filename, $kohana_input_data) {
+    if ($kohana_view_filename == '') {
       return;
+    }
 
-    // Buffering on
+    // Buffering on.
     ob_start();
 
-    // Import the view variables to local namespace
+    // Import the view variables to local namespace.
     extract($kohana_input_data, EXTR_SKIP);
 
     // Views are straight HTML pages with embedded PHP, so importing them
     // this way insures that $this can be accessed as if the user was in
-    // the controller, which gives the easiest access to libraries in views
+    // the controller, which gives the easiest access to libraries in views.
 
-    // Put the include in a try catch block
+    // Put the include in a try catch block.
     try {
       include $kohana_view_filename;
     }
     catch (Exception $e){
-      // Put the error out
+      // Put the error out.
       error_logger::log_error('Error occurred when loading view.', $e);
       // Can't set a flash message here, as view has already failed to load.
-      echo "<div class=\"alert alert-danger page-notice\">".
-          "<strong>Error occurred when loading page.</strong><br/>".$e->getMessage().
+      echo "<div class=\"alert alert-danger page-notice\">" .
+          "<strong>Error occurred when loading page.</strong><br/>" . $e->getMessage() .
           "<br/>For more information refer to the application log file.</div>";
     }
 
-    // Fetch the output and close the buffer
+    // Fetch the output and close the buffer.
     return ob_get_clean();
   }
 
@@ -637,7 +640,9 @@ class Indicia_Controller extends Template_Controller {
   protected function get_return_page() {
     $r = $this->model->object_name;
     if (isset($_POST['what-next'])) {
-      if ($_POST['what-next']=='add') $r .= '/create';
+      if ($_POST['what-next'] == 'add') {
+        $r .= '/create';
+      }
     }
     return $r;
 
@@ -646,36 +651,48 @@ class Indicia_Controller extends Template_Controller {
   /**
    * Returns a set of terms for a termlist, which can be used to populate a termlist drop down.
    *
-   * @param string $termlist ID of the termlist or name of the termlist, from the
-   * termlist's external_key field.
-   * @param array $where Associative array of field values to filter for.
-   * @return array Associative array of terms, with each entry being id => term.
+   * @param string $termlist
+   *   ID of the termlist or name of the termlist, from the termlist's
+   *   external_key field.
+   * @param array $where
+   *   Associative array of field values to filter for.
+   * @return array
+   *   Associative array of terms, with each entry being id => term.
    */
-  protected function get_termlist_terms($termlist, $where=null) {
-    $arr=array();
+  protected function get_termlist_terms($termlist, $where = NULL) {
+    $arr = [];
     if (!is_numeric($termlist)) {
-      // termlist is a string so check the termlist from the external key field
+      // Termlist is a string so check the termlist from the external key
+      // field.
       $query = $this->db
-          ->select('id')
-          ->from('termlists')
-          ->where('external_key', $termlist)
-          ->get()->as_array();
-      if (count($query)>0)
-        $row=$query[0];
-      elseif (count($query)>1)
+        ->select('id')
+        ->from('termlists')
+        ->where('external_key', $termlist)
+        ->get()->as_array();
+      if (count($query) > 0) {
+        $row = $query[0];
+      }
+      elseif (count($query) > 1) {
         throw new exception("Duplicate termlist $termlist.");
-      else
+      }
+      else {
         throw new exception("Termlist $termlist not found.");
+      }
       $termlist = $row->id;
     }
     $terms = $this->db
-        ->select('termlists_terms.id, term')
-        ->from('termlists_terms')
-        ->join('terms', 'terms.id', 'termlists_terms.term_id')
-        ->where(array('termlists_terms.termlist_id' => $termlist, 'termlists_terms.deleted' => 'f', 'terms.deleted' => 'f'))
-        ->orderby(array('termlists_terms.sort_order' => 'ASC', 'terms.term' => 'ASC'));
-    if ($where)
+      ->select('termlists_terms.id, term')
+      ->from('termlists_terms')
+      ->join('terms', 'terms.id', 'termlists_terms.term_id')
+      ->where([
+        'termlists_terms.termlist_id' => $termlist,
+        'termlists_terms.deleted' => 'f',
+        'terms.deleted' => 'f',
+      ])
+      ->orderby(['termlists_terms.sort_order' => 'ASC', 'terms.term' => 'ASC']);
+    if ($where) {
       $terms = $terms->where($where);
+    }
     $terms = $terms->get();
     foreach ($terms as $term) {
       $arr[$term->id] = $term->term;

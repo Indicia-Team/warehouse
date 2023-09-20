@@ -832,17 +832,17 @@ class Data_Controller extends Data_Service_Base_Controller {
       $cache->set($cacheId, $extensions);
     }
     if (array_key_exists(inflector::plural($entity), $extensions)) {
-      $this->extensionOpts = $extensions[inflector::plural($entity)];
+      $extensionOpts = $extensions[inflector::plural($entity)];
     }
-    if (isset($this->extensionOpts) && (!isset($this->extensionOpts['readOnly']) || $this->extensionOpts['readOnly'] !== TRUE)) {
+    if (isset($extensionOpts) && (!isset($extensionOpts['readOnly']) || $extensionOpts['readOnly'] !== TRUE)) {
       $this->allow_updates[] = $entity;
     }
     // Allow modules to provide an option when extending data services to
     // allow tables without website ids to be written to.
-    if (isset($this->extensionOpts['allow_full_access']) && $this->extensionOpts['allow_full_access'] == 1) {
+    if (isset($extensionOpts['allow_full_access']) && $extensionOpts['allow_full_access'] == 1) {
       $this->allow_full_access[] = $entity;
     }
-    if (isset($this->extensionOpts['table_without_views']) && $this->extensionOpts['table_without_views'] == 1) {
+    if (isset($extensionOpts['table_without_views']) && $extensionOpts['table_without_views'] == 1) {
       $this->tables_without_views[] = inflector::plural($entity);
     }
     return $extensions;

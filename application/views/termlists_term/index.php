@@ -48,7 +48,7 @@ var add_parent_term = function() {
 
 warehouse::loadHelpers(['data_entry_helper']);
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-echo '<div class="linear-form">';
+echo '<div class="form-inline">';
 echo data_entry_helper::autocomplete(array(
   'label' => 'Add term',
   'fieldname' => 'add-from-parent',

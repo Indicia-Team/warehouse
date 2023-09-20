@@ -314,11 +314,11 @@ SQL;
           $updateFilterSQL[] = "map_sq_{$km}km_id IS NULL OR map_sq_{$km}km_id<>$msqId";
         }
         $db->query("UPDATE cache_occurrences_functional SET " . implode(', ', $updateFieldSQL) .
-          "WHERE sample_id={$s->id} " .
-          'AND (' . implode(' OR ', $updateFilterSQL) . ')');
+          " WHERE sample_id={$s->id}" .
+          ' AND (' . implode(' OR ', $updateFilterSQL) . ')');
         $db->query("UPDATE cache_samples_functional SET " . implode(', ', $updateFieldSQL) .
-          "WHERE id={$s->id} " .
-          'AND (' . implode(' OR ', $updateFilterSQL) . ')');
+          " WHERE id={$s->id}" .
+          ' AND (' . implode(' OR ', $updateFilterSQL) . ')');
       }
     }
   }
@@ -943,9 +943,9 @@ case
     then length(searchterm) - length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*?'), '', 'i'))
   else 9999 end,
 cts.preferred desc,
--- finally alpha sort
-taxon,
-authority
+-- finally case and non-alpha insensitive alpha sort
+regexp_replace(lower(original), '[^a-z0-9]', '', 'g'),
+regexp_replace(lower(authority), '[^a-z0-9]', '', 'g')
 SQL;
     }
   }

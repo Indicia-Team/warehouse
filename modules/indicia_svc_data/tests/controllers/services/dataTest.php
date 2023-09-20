@@ -629,7 +629,7 @@ SQL;
 
   public function testRedetOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRedetOccurrence");
-    $array = array(
+    $array = [
       'website_id' => 1,
       'survey_id' => 1,
       'sample:entered_sref' => 'SU1234',
@@ -637,7 +637,7 @@ SQL;
       'sample:date' => '02/09/2017',
       'occurrence:taxa_taxon_list_id' => 1,
       'occAttr:1' => 'Test recorder',
-    );
+    ];
     $structure = [
       'model' => 'sample',
       'subModels' => [
@@ -747,11 +747,13 @@ SQL;
     $s = submission_builder::build_submission($array, ['model' => 'occurrence']);
     $r = data_entry_helper::forward_post_to('occurrence', $s, $otherUserAuth['write_tokens']);
     $determinerInfo = self::$db->query("select created_by_id, person_name from determinations where occurrence_id=$occurrenceId")->current();
+    $this->assertNotFalse($determinerInfo, 'Determinations record not created after modifying an occurrence taxa_taxon_list_id.');
     $this->assertEquals(self::$extraUserId, $determinerInfo->created_by_id, 'Determination has not picked up correct user ID.');
     $this->assertEquals('Person3, Test3', $determinerInfo->person_name, 'Determination has not picked up correct person name.');
     // Reset.
     $postedUserId = 1;
     self::$db->query("delete from determinations where occurrence_id=$occurrenceId");
+    self::$db->query('delete from occurrence_attribute_values where created_by_id=' . self::$extraUserId);
     self::$db->query('delete from occurrences where created_by_id=' . self::$extraUserId);
     self::$db->query('delete from samples where created_by_id=' . self::$extraUserId);
   }

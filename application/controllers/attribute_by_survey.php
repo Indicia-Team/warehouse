@@ -27,6 +27,13 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
   private $_website_id = NULL;
   private $_survey_id = NULL;
 
+  /**
+   * Attribute type, e.g. occurrence, survey.
+   *
+   * @var string
+   */
+  public $type;
+
   public function __construct() {
     parent::__construct();
     if (!is_numeric($this->uri->last_segment()))
@@ -38,7 +45,6 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
     $this->type = $_GET['type'];
     $this->pagetitle = 'Attributes for a survey';
     $this->get_auth();
-    $this->auth_filter = $this->gen_auth_filter;
     $this->model = ORM::factory($this->type . '_attributes_website');
   }
 
@@ -188,7 +194,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
 
   /**
    * Retrieve the list of websites the user has access to. The list is then stored in
-   * $this->gen_auth_filter. Also checks if the user is core admin.
+   * $this->auth_filter. Also checks if the user is core admin.
    */
   protected function get_auth() {
     // If not logged in as a Core admin, restrict access to available websites.
@@ -202,10 +208,10 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
         $website_id_values[] = $website->website_id;
       }
       $website_id_values[] = NULL;
-      $this->gen_auth_filter = array('field' => 'website_id', 'values' => $website_id_values);
+      $this->auth_filter = array('field' => 'website_id', 'values' => $website_id_values);
     }
     else {
-      $this->gen_auth_filter = NULL;
+      $this->auth_filter = NULL;
     }
   }
 

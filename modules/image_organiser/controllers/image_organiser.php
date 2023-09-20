@@ -74,22 +74,21 @@ SQL;
     $lastId = $fromId;
     $successCount = 0;
     foreach ($images as $image) {
-      $destDir = $image->deleted === 't' ? "{$uploadDir}deleted/" : $uploadDir;
-      $subdir = $this->getImageSubdir($image->created_on);
-      if (!is_dir($destDir . $subdir)) {
+      $subdir = $this->getImageSubdir($image);
+      if (!is_dir($uploadDir . $subdir)) {
         kohana::log('debug', "Creating Directory $destDir$subdir");
-        mkdir($destDir . $subdir, 0755, TRUE);
+        mkdir($uploadDir . $subdir, 0755, TRUE);
       }
-      if (!is_dir($destDir . 'thumb-' . $subdir)) {
+      if (!is_dir($uploadDir . 'thumb-' . $subdir)) {
         kohana::log('debug', "Creating Directory {$destDir}thumb-$subdir");
-        mkdir($destDir . 'thumb-' . $subdir, 0755, TRUE);
+        mkdir($uploadDir . 'thumb-' . $subdir, 0755, TRUE);
       }
-      if (!is_dir($destDir . 'med-' . $subdir)) {
+      if (!is_dir($uploadDir . 'med-' . $subdir)) {
         kohana::log('debug', "Creating Directory {$destDir}med-$subdir");
-        mkdir($destDir . 'med-' . $subdir, 0755, TRUE);
+        mkdir($uploadDir . 'med-' . $subdir, 0755, TRUE);
       }
       $src = $uploadDir . $image->path;
-      $dest = $destDir . $subdir . basename($image->path);
+      $dest = $uploadDir . $subdir . basename($image->path);
       // Proceed only if not already done.
       if (!file_exists($dest)) {
         if (!file_exists($src)) {
@@ -258,17 +257,17 @@ SQL;
   /**
    * Converts a file date to a sub-directory structure for the file.
    *
-   * @param string $fileDate
-   *   Image created on value, as a string.
+   * @param obj $image
+   *   Image data loaded from the database.
    *
    * @return string
    *   Sub-folder structure, e.g. '60/20/15/', including trailing slash.
    */
-  private function getImageSubdir($fileDate) {
-    $subdir = '';
+  private function getImageSubdir($image) {
+    $subdir = $image->deleted === 't' ? 'deleted/' : '';
     // $levels = Kohana::config('upload.use_sub_directory_levels');
     $levels = 3;
-    $ts = strtotime($fileDate);
+    $ts = strtotime($image->created_on);
     for ($i = 0; $i < $levels; $i++) {
       $dirname = substr($ts, 0, 2);
       if (strlen($dirname)) {

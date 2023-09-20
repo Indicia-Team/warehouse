@@ -1,0 +1,19 @@
+<report
+    title="Count occurrences in parent sample"
+    description="A list of occurrences designed for tabular output."
+>
+  <query website_filter_field="o.website_id" count_field="o.*">
+  SELECT #columns#
+  FROM cache_occurrences_functional o
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  AND parent_sample_id=#parent_sample_id#
+  </query>
+  <params>
+    <param name='parent_sample_id' display='Parent sample ID' datatype='integer' />
+  </params>
+  <columns>
+    <column name='occurrence_id' display='ID' sql='o.id' datatype="integer" />
+  </columns>
+</report>

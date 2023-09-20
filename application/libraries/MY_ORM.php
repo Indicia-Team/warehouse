@@ -2116,8 +2116,8 @@ SQL;
       // If we don't know the ID, but an existing record, then we can search
       // for the existing value as there should only be one.
       $attrValueModel->where([
-        $this->object_name.'_attribute_id' => $attrId,
-        $this->object_name.'_id' => $this->id,
+        $this->object_name . '_attribute_id' => $attrId,
+        $this->object_name . '_id' => $this->id,
         'deleted' => 'f',
       ])->find();
     }
@@ -2126,10 +2126,10 @@ SQL;
     $dataType = $attrDef->data_type;
     $vf = NULL;
 
-    $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
+    $fieldPrefix = (array_key_exists('field_prefix', $this->submission)) ? $this->submission['field_prefix'] . ':' : '';
     // For attribute value errors, we need to report e.g smpAttr:attrId[:attrValId] as the error key name, not
     // the table and field name as normal.
-    $fieldId = $fieldPrefix.$this->attrs_field_prefix.':'.$attrId;
+    $fieldId = $fieldPrefix . $this->attrs_field_prefix . ':' . $attrId;
     if ($attrValueModel->id) {
       $fieldId .= ':' . $attrValueModel->id;
     }
@@ -2138,39 +2138,41 @@ SQL;
       case 'T':
         $vf = 'text_value';
         break;
+
       case 'F':
         // Preseerve the value entered as text because, when converted to float,
         // we may lose trailing zeroes.
         $attrValueModel->text_value = $value;
         $vf = 'float_value';
         break;
+
       case 'D':
       case 'V':
-        // Date
+        // Date.
         if (!empty($value)) {
-          $vd=vague_date::string_to_vague_date($value);
+          $vd = vague_date::string_to_vague_date($value);
           if ($vd) {
             $attrValueModel->date_start_value = $vd[0];
             $attrValueModel->date_end_value = $vd[1];
             $attrValueModel->date_type_value = $vd[2];
-            kohana::log('debug', "Accepted value $value for attribute $fieldId");
-            kohana::log('debug', "  date_start_value=".$attrValueModel->date_start_value);
-            kohana::log('debug', "  date_end_value=".$attrValueModel->date_end_value);
-            kohana::log('debug', "  date_type_value=".$attrValueModel->date_type_value);
-          } else {
+          }
+          else {
             $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
             kohana::log('debug', "Could not accept value $value into date fields for attribute $fieldId.");
             return FALSE;
           }
-        } else {
+        }
+        else {
           $attrValueModel->date_start_value = NULL;
           $attrValueModel->date_end_value = NULL;
           $attrValueModel->date_type_value = NULL;
         }
         break;
+
       case 'G':
         $vf = 'geom_value';
         break;
+
       case 'B':
         // Boolean
         $vf = 'int_value';
@@ -2183,8 +2185,9 @@ SQL;
           }
         }
         break;
+
       case 'L':
-        // Lookup list
+        // Lookup list.
         $vf = 'int_value';
         if (!empty($value)) {
           $creatingTerm = $allowTermCreationLang && substr($value, 0, 11) === 'createTerm:';
@@ -2193,13 +2196,13 @@ SQL;
             $value = substr($value, 11);
           }
           // Find existing value.
-          $r = $this->fkLookup(array(
+          $r = $this->fkLookup([
             'fkTable' => 'lookup_term',
             'fkSearchField' => 'term',
             'fkSearchValue' => $value,
             'fkSearchFilterField' => 'termlist_id',
             'fkSearchFilterValue' => $attrDef->termlist_id,
-          ));
+          ]);
           if (($fk || $creatingTerm) && $r) {
             // Term lookup succeeded and we are submitting fk_field, or a
             // normal field that allows term creation. In the latter case
@@ -2219,8 +2222,9 @@ SQL;
           }
         }
         break;
+
       default:
-        // Integer
+        // Integer.
         $vf = 'int_value';
         break;
     }
@@ -2266,13 +2270,14 @@ SQL;
     $exactMatches = array_intersect_assoc($oldValues, $attrValueModel->as_array());
     // Which fields do we have in the submission?
     $fieldsWithValuesInSubmission = array_intersect_key($oldValues, $attrValueModel->as_array());
-    // Hook to the owning entity (the sample, location, taxa_taxon_list or occurrence)
+    // Hook to the owning entity (the sample, location, taxa_taxon_list or
+    // occurrence).
     $thisFk = $this->object_name . '_id';
     $attrValueModel->$thisFk = $this->id;
-    // Hook to the attribute
+    // Hook to the attribute.
     $attrFk = $this->object_name . '_attribute_id';
     $attrValueModel->$attrFk = $attrId;
-    // We'll update metadata only if at least one of the fields have changed
+    // We'll update metadata only if at least one of the fields have changed.
     $wantToUpdateAttrMetadata = count($exactMatches) !== count($fieldsWithValuesInSubmission);
     if (!$wantToUpdateAttrMetadata) {
       $attrValueModel->wantToUpdateMetadata = FALSE;
