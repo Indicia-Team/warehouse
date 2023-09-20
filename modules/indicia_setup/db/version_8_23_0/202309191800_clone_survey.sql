@@ -48,34 +48,36 @@ insert into occurrence_attributes_websites (
   default_int_value,
   default_date_start_value,
   default_date_end_value,
-  default_date_type_value)
+  default_date_type_value,
+  default_upper_value)
 select distinct
   to_website_id,
-  oaw.occurrence_attribute_id,
+  aw.occurrence_attribute_id,
   now(),
   user_id,
   to_survey_id,
   destblock.id,
-  oaw.validation_rules,
-  oaw.weight,
-  oaw.control_type_id,
-  oaw.default_text_value,
-  oaw.default_float_value,
-  oaw.default_int_value,
-  oaw.default_date_start_value,
-  oaw.default_date_end_value,
-  oaw.default_date_type_value
-from occurrence_attributes_websites oaw
-left join form_structure_blocks sourceblock on sourceblock.id=oaw.form_structure_block_id
-left join form_structure_blocks sourcepblock on sourcepblock.id=sourceblock.parent_id -- parent block from the source oaw record
+  aw.validation_rules,
+  aw.weight,
+  aw.control_type_id,
+  aw.default_text_value,
+  aw.default_float_value,
+  aw.default_int_value,
+  aw.default_date_start_value,
+  aw.default_date_end_value,
+  aw.default_date_type_value,
+  aw.default_upper_value
+from occurrence_attributes_websites aw
+left join form_structure_blocks sourceblock on sourceblock.id=aw.form_structure_block_id
+left join form_structure_blocks sourcepblock on sourcepblock.id=sourceblock.parent_id -- parent block from the source aw record
 -- find the matching destination block, with the correct parent.
 left join form_structure_blocks destblock on destblock.survey_id=to_survey_id and destblock.name=sourceblock.name
 left join form_structure_blocks destpblock on destpblock.survey_id=to_survey_id and destpblock.id=destblock.parent_id and coalesce(destpblock.name,'')=coalesce(sourcepblock.name, '')
 where restrict_to_survey_id=from_survey_id
 and coalesce(sourceblock.name || coalesce(sourcepblock.name, ''), '')=coalesce(destblock.name || coalesce(destpblock.name, ''), '')
-and oaw.deleted=false;
+and aw.deleted=false;
 
--- clone the samples_attributes_websites
+-- clone the sample_attributes_websites
 insert into sample_attributes_websites (
   website_id,
   sample_attribute_id,
@@ -92,33 +94,82 @@ insert into sample_attributes_websites (
   default_date_start_value,
   default_date_end_value,
   default_date_type_value,
-  restrict_to_sample_method_id)
+  restrict_to_sample_method_id,
+  default_upper_value)
 select distinct
   to_website_id,
-  oaw.sample_attribute_id,
+  aw.sample_attribute_id,
   now(),
   user_id,
   to_survey_id,
   destblock.id,
-  oaw.validation_rules,
-  oaw.weight,
-  oaw.control_type_id,
-  oaw.default_text_value,
-  oaw.default_float_value,
-  oaw.default_int_value,
-  oaw.default_date_start_value,
-  oaw.default_date_end_value,
-  oaw.default_date_type_value,
-  oaw.restrict_to_sample_method_id
-from sample_attributes_websites oaw
-left join form_structure_blocks sourceblock on sourceblock.id=oaw.form_structure_block_id -- block from the source oaw record
-left join form_structure_blocks sourcepblock on sourcepblock.id=sourceblock.parent_id -- parent block from the source oaw record
+  aw.validation_rules,
+  aw.weight,
+  aw.control_type_id,
+  aw.default_text_value,
+  aw.default_float_value,
+  aw.default_int_value,
+  aw.default_date_start_value,
+  aw.default_date_end_value,
+  aw.default_date_type_value,
+  aw.restrict_to_sample_method_id,
+  aw.default_upper_value
+from sample_attributes_websites aw
+left join form_structure_blocks sourceblock on sourceblock.id=aw.form_structure_block_id -- block from the source aw record
+left join form_structure_blocks sourcepblock on sourcepblock.id=sourceblock.parent_id -- parent block from the source aw record
 -- find the matching destination block, with the correct parent.
 left join form_structure_blocks destblock on destblock.survey_id=to_survey_id and destblock.name=sourceblock.name
 left join form_structure_blocks destpblock on destpblock.survey_id=to_survey_id and destpblock.id=destblock.parent_id and coalesce(destpblock.name,'')=coalesce(sourcepblock.name, '')
 where restrict_to_survey_id=from_survey_id
 and coalesce(sourceblock.name || coalesce(sourcepblock.name, ''), '')=coalesce(destblock.name || coalesce(destpblock.name, ''), '')
-and oaw.deleted=false;
+and aw.deleted=false;
+
+-- clone the location_attributes_websites
+insert into location_attributes_websites (
+  website_id,
+  location_attribute_id,
+  created_on,
+  created_by_id,
+  restrict_to_survey_id,
+  form_structure_block_id,
+  validation_rules,
+  weight,
+  control_type_id,
+  default_text_value,
+  default_float_value,
+  default_int_value,
+  default_date_start_value,
+  default_date_end_value,
+  default_date_type_value,
+  restrict_to_location_type_id,
+  default_upper_value)
+select distinct
+  to_website_id,
+  aw.location_attribute_id,
+  now(),
+  user_id,
+  to_survey_id,
+  destblock.id,
+  aw.validation_rules,
+  aw.weight,
+  aw.control_type_id,
+  aw.default_text_value,
+  aw.default_float_value,
+  aw.default_int_value,
+  aw.default_date_start_value,
+  aw.default_date_end_value,
+  aw.default_date_type_value,
+  aw.restrict_to_location_type_id,
+  aw.default_upper_value
+from location_attributes_websites aw
+left join form_structure_blocks sourceblock on sourceblock.id=aw.form_structure_block_id -- block from the source aw record
+left join form_structure_blocks sourcepblock on sourcepblock.id=sourceblock.parent_id -- parent block from the source aw record
+-- find the matching destination block, with the correct parent.
+left join form_structure_blocks destblock on destblock.survey_id=to_survey_id and destblock.name=sourceblock.name
+left join form_structure_blocks destpblock on destpblock.survey_id=to_survey_id and destpblock.id=destblock.parent_id and coalesce(destpblock.name,'')=coalesce(sourcepblock.name, '')
+where restrict_to_survey_id=from_survey_id
+and coalesce(sourceblock.name || coalesce(sourcepblock.name, ''), '')=coalesce(destblock.name || coalesce(destpblock.name, ''), '')
+and aw.deleted=false;
 
 END;
 $BODY$
