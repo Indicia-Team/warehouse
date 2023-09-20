@@ -1,3 +1,32 @@
+# Version 8.23.0
+*2023-09-20*
+
+* Fixes for PHP 8.1 & 8.2 (8.2 requires further testing).
+* Fix some issues in the sort order of taxa returned when searching. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1511.
+* Enhanced support for dates in standard parameter filters. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1491.
+* Fixes issue with determiner name not being stored against a record after a redetermination. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/899.
+* Tables added for linkage between recording schemes and their taxonomic coverage. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/876.
+* Provides a standard PostgreSQL function for tidying taxonomic data after a UKSI update -
+  `f_fixup_uksi_links`.
+* PostgreSQL function for cloning surveys now includes location attribute links - `f_clone_survey`.
+* Database triggers added to ensure consistency in the training flag between samples and
+  occurrences.
+* Improves logging of errors in the REST API.
+* Support for an Elasticsearch special field type #template# that uses an HTML template with token
+  replacements to generate output.
+* Fix the #associations# Elasticsearch special field type so that associations data can be
+  downloaded.
+* Adds a new table `rest_api_sync_taxon_mappings` which can be populated to allow unknown taxon
+  names in remote systems to be mapped to local taxa when synchronising data. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1222.
+* UTM 30N (ED50) grid system renamed to Channel Islands Grid (UTM ED50) for clarity.
+* Modify reports used for verification comments to clarify difference between determinations and
+  comments.
+
 # Version 8.22.0
 *2023-08-03*
 
