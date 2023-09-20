@@ -253,7 +253,7 @@ class Occurrence_Model extends ORM {
       $logDeterminations = kohana::config('indicia.auto_log_determinations') === TRUE ? 'true' : 'false';
       $resetClassification = empty($this->submission['fields']['classification_event_id']) ? 'true' : 'false';
       $currentUserId = $this->getCurrentUserId();
-      if (empty($this->submission['fields']['determiner_id']) && empty($this->submission['fields']['determiner_id']['value'])) {
+      if (empty($this->submission['fields']['determiner_id']) || empty($this->submission['fields']['determiner_id']['value'])) {
         // Determiner ID not provided, so use the authorised user_id to work
         // it out.
         $userInfo = $this->db->select('person_id')->from('users')->where('id', $currentUserId)->get()->current();
