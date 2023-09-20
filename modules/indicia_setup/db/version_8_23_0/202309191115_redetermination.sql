@@ -46,7 +46,7 @@ BEGIN
 
   -- Person_id -1 is a special case which means don't update attribute values.
   -- Also don't want to update if user ID = 1 (anonymous).
-  IF redet_by_person_id NOT IN (-1, 1) THEN
+  IF redet_by_person_id IS NULL OR redet_by_person_id NOT IN (-1, 1) THEN
 
     -- Update pre-existing determiner custom attributes.
     UPDATE occurrence_attribute_values v
