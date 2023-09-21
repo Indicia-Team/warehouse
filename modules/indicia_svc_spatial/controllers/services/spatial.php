@@ -1,7 +1,10 @@
 <?php
+
 class Spatial_Controller extends Service_Base_Controller {
 
   /**
+   * Convert a spatial reference to WKT format.
+   *
    * Handle a service request to convert a spatial reference into WKT
    * representing the reference using the internal SRID (normally spherical
    * mercator since it is compatible with Google Maps). Optionally returns an
@@ -13,33 +16,33 @@ class Spatial_Controller extends Service_Base_Controller {
    * mapsystem: (optional) Sref system code for additional WKT in response.
    * callback: For returning JSONP.
    */
-  public function sref_to_wkt()
-  {
-    try
-    {
+  public function sref_to_wkt() {
+    try {
       // Test/escape parameters that are passed in to queries to prevent
       // SQL injection.
       // sref is not passed to query
       // system is validated in sref_to_internal_wkt()
       // mapsystem is validated in internal_wkt_to_wkt()
-      $r = array('wkt'=>spatial_ref::sref_to_internal_wkt($_GET['sref'], $_GET['system']));
-      if (array_key_exists('mapsystem', $_GET)){
+      $r = ['wkt' => spatial_ref::sref_to_internal_wkt($_GET['sref'], $_GET['system'])];
+      if (array_key_exists('mapsystem', $_GET)) {
         $r['mapwkt'] = spatial_ref::internal_wkt_to_wkt($r['wkt'], $_GET['mapsystem']);
       }
       $r = json_encode($r);
-      // enable a JSONP request
-      if (array_key_exists('callback', $_GET)){
-        $r = $_GET['callback']."(".$r.")";
+      // Enable a JSONP request.
+      if (array_key_exists('callback', $_GET)) {
+        $r = "$_GET[callback]($r)";
+        header('Content-Type: application/javascript; charset=utf-8');
       }
       echo $r;
     }
-    catch (Exception $e)
-    {
+    catch (Exception $e) {
       $this->handle_error($e);
     }
   }
 
   /**
+   * Convert WKT format text to a spatial reference notation.
+   *
    * Handle a service request to convert a WKT representing the reference
    * using the internal SRID (normally spherical mercator since it is compatible with Google Maps)
    * into a spatial reference, though this can optionally be overriden by providing a wktsystem.
@@ -59,22 +62,26 @@ class Spatial_Controller extends Service_Base_Controller {
    *   degrees and minutes, or decimal degrees (default).
    * callback: For returning JSONP.
    */
-  public function wkt_to_sref()
-  {
-    try
-    {
-      if (array_key_exists('precision',$_GET))
+  public function wkt_to_sref() {
+    try {
+      if (array_key_exists('precision', $_GET)) {
         $precision = $_GET['precision'];
-      else
-        $precision = null;
-      if (array_key_exists('metresAccuracy',$_GET))
+      }
+      else {
+        $precision = NULL;
+      }
+      if (array_key_exists('metresAccuracy', $_GET)) {
         $metresAccuracy = $_GET['metresAccuracy'];
-      else
-        $metresAccuracy = null;
-      if (array_key_exists('output',$_GET))
+      }
+      else {
+        $metresAccuracy = NULL;
+      }
+      if (array_key_exists('output', $_GET)) {
         $output = $_GET['output'];
-      else
-        $output = null;
+      }
+      else {
+        $output = NULL;
+      }
 
       // Test/escape parameters that are passed in to queries to prevent
       // SQL injection.
@@ -97,22 +104,22 @@ class Spatial_Controller extends Service_Base_Controller {
       $sref = spatial_ref::internal_wkt_to_sref($wkt, $_GET['system'], $precision, $output, $metresAccuracy);
       // Note we also need to return the wkt of the actual sref, which may be a square now.
       $wkt = spatial_ref::sref_to_internal_wkt($sref, $_GET['system']);
-      $r = array('sref' => $sref,'wkt' => $wkt);
+      $r = ['sref' => $sref,'wkt' => $wkt];
 
-      if (array_key_exists('mapsystem', $_GET)){
+      if (array_key_exists('mapsystem', $_GET)) {
         // Optionally output WKT of sref in mapsystem as well.
         $r['mapwkt'] = spatial_ref::internal_wkt_to_wkt($r['wkt'], $_GET['mapsystem']);
       }
 
       $r = json_encode($r);
-      // enable a JSONP request
-      if (array_key_exists('callback', $_GET)){
-        $r = $_GET['callback']."(".$r.")";
+      // Enable a JSONP request.
+      if (array_key_exists('callback', $_GET)) {
+        $r = "$_GET[callback]($r)";
+        header('Content-Type: application/javascript; charset=utf-8');
       }
       echo $r;
     }
-    catch (Exception $e)
-    {
+    catch (Exception $e) {
       $this->handle_error($e);
     }
   }
@@ -128,10 +135,8 @@ class Spatial_Controller extends Service_Base_Controller {
    *   expected to be accurate by. E.g.may be set according to the current zoom
    *   scale of the map. Provided as an alternative to precision.
    */
-  public function convert_sref()
-  {
-    try
-    {
+  public function convert_sref() {
+    try {
       // Test/escape parameters that are passed in to queries to prevent
       // SQL injection.
       // from_sref is not passed to query
@@ -139,18 +144,21 @@ class Spatial_Controller extends Service_Base_Controller {
       // to_systen us validated in internal_wkt_to_sref()
       // precision and metresAccuracy are not used in queries.
       $wkt = spatial_ref::sref_to_internal_wkt($_GET['from_sref'], $_GET['from_system']);
-      if (array_key_exists('precision',$_GET))
+      if (array_key_exists('precision', $_GET)) {
         $precision = $_GET['precision'];
-      else
-        $precision = null;
-      if (array_key_exists('metresAccuracy',$_GET))
+      }
+      else {
+        $precision = NULL;
+      }
+      if (array_key_exists('metresAccuracy', $_GET)) {
         $metresAccuracy = $_GET['metresAccuracy'];
-      else
-        $metresAccuracy = null;
-      echo spatial_ref::internal_wkt_to_sref($wkt, $_GET['to_system'], $precision, null, $metresAccuracy);
+      }
+      else {
+        $metresAccuracy = NULL;
+      }
+      echo spatial_ref::internal_wkt_to_sref($wkt, $_GET['to_system'], $precision, NULL, $metresAccuracy);
     }
-    catch (Exception $e)
-    {
+    catch (Exception $e) {
       $this->handle_error($e);
     }
   }
@@ -183,7 +191,7 @@ class Spatial_Controller extends Service_Base_Controller {
         $r = $params['wkt'];
       }
       else {
-        $db = new Database;
+        $db = new Database();
         // Test/escape parameters that are passed in to queries to prevent
         // SQL injection.
         $wkt = pg_escape_literal($db->getLink(), $params['wkt']);
@@ -224,11 +232,11 @@ SQL;
     } else {
       $r = 'No wkt or buffer to process';
     }
-    if (array_key_exists('callback', $_REQUEST))
-    {
-      $json=json_encode(array('response'=>$r));
-      $r = $_REQUEST['callback']."(".$json.")";
-      $this->content_type = 'Content-Type: application/javascript';
+    // Enable a JSONP request.
+    if (array_key_exists('callback', $_REQUEST)) {
+      $json = json_encode(['response' => $r]);
+      $r = "$_REQUEST[callback]($json)";
+      header('Content-Type: application/javascript; charset=utf-8');
     }
     echo $r;
   }

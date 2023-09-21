@@ -83,6 +83,16 @@ class Occurrence_Model extends ORM {
   ];
 
   /**
+   * Indicates database trigger on table which accesses a sequence.
+   *
+   * Set to true as set_occurrence_to_training_from_sample_trigger was
+   * added. 
+   *
+   * @var bool
+   */
+  protected $hasTriggerWithSequence = TRUE;
+
+  /**
    * Methods of identifying duplicates during import.
    *
    * Define field combinations that can be used to lookup existing records for
