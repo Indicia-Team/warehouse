@@ -158,6 +158,10 @@ class ORM extends ORM_Core {
    * the insert. Setting this to TRUE causes a more reliable method of
    * detecting the inserted record ID to be used which avoids this problem.
    *
+   * In order for this method to work the sequence must be associated with
+   * the table. You may need to execute a query like
+   * ALTER SEQUENCE occurrences_id_seq OWNED BY occurrences.id
+   *
    * @var bool
    */
   protected $hasTriggerWithSequence = FALSE;
