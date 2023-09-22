@@ -15,7 +15,7 @@ php:
 
 env:
   # Test oldest and newest maintained versions.
-  - PGVERSION=9.6
+  - PGVERSION=11
   - PGVERSION=13
 
 before_install:
