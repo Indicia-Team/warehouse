@@ -26,21 +26,41 @@ BEGIN
     ELSE
         thisRow = NEW;
     END IF;
-    audit_row = ROW(
-        NEXTVAL('audit.logged_actions_id_seq'),       -- id
-        txid_current(),                               -- transaction ID
-        CURRENT_TIMESTAMP,                            -- action_tstamp_tx
-        TG_TABLE_SCHEMA::text,                        -- schema_name
-        TG_TABLE_NAME::text,                          -- event_table_name
-        SUBSTRING(TG_OP,1,1),                         -- action
-        'f',                                          -- statement_only
-        thisRow.id,                                       -- Indicia row primary key
-        TG_TABLE_NAME::text,                          -- Indicia row search_table_name
-        thisRow.id,                                       -- Indicia search_key
-        session_user::text,                           -- Indicia session_user_name
-        thisRow.updated_by_id,                            -- Indicia updated_by_id
-        NULL, NULL                                    -- row_data, changed_fields
-    );
+    IF TG_OP = 'TRUNCATE' THEN
+        audit_row = ROW(
+            NEXTVAL('audit.logged_actions_id_seq'),       -- id
+            txid_current(),                               -- transaction ID
+            CURRENT_TIMESTAMP,                            -- action_tstamp_tx
+            TG_TABLE_SCHEMA::text,                        -- schema_name
+            TG_TABLE_NAME::text,                          -- event_table_name
+            SUBSTRING(TG_OP,1,1),                         -- action
+            'f',                                          -- statement_only
+            NULL,                                         -- Indicia row primary key
+            TG_TABLE_NAME::text,                          -- Indicia row search_table_name
+            NULL,                                         -- Indicia search_key
+            session_user::text,                           -- Indicia session_user_name
+            NULL,                                         -- Indicia updated_by_id
+            NULL, NULL                                    -- row_data, changed_fields
+        );
+
+    ELSE
+        audit_row = ROW(
+            NEXTVAL('audit.logged_actions_id_seq'),       -- id
+            txid_current(),                               -- transaction ID
+            CURRENT_TIMESTAMP,                            -- action_tstamp_tx
+            TG_TABLE_SCHEMA::text,                        -- schema_name
+            TG_TABLE_NAME::text,                          -- event_table_name
+            SUBSTRING(TG_OP,1,1),                         -- action
+            'f',                                          -- statement_only
+            thisRow.id,                                   -- Indicia row primary key
+            TG_TABLE_NAME::text,                          -- Indicia row search_table_name
+            thisRow.id,                                   -- Indicia search_key
+            session_user::text,                           -- Indicia session_user_name
+            thisRow.updated_by_id,                        -- Indicia updated_by_id
+            NULL, NULL                                    -- row_data, changed_fields
+        );
+
+    END IF;
 
     IF (TG_OP = 'INSERT' AND TG_LEVEL = 'ROW') THEN
       -- Temporary sequences are dropped automatically at end of session
@@ -60,13 +80,13 @@ BEGIN
     END IF;
 
     --- Override search details for child records
-    IF (TG_ARGV[0] = 'sample_id') THEN
+    IF (TG_ARGV[0] = 'sample_id' AND TG_OP <> 'TRUNCATE') THEN
     	audit_row.search_table_name = 'samples';
     	audit_row.search_key = thisRow.sample_id;
-    ELSIF (TG_ARGV[0] = 'occurrence_id') THEN
+    ELSIF (TG_ARGV[0] = 'occurrence_id' AND TG_OP <> 'TRUNCATE') THEN
     	audit_row.search_table_name = 'occurrences';
     	audit_row.search_key = thisRow.occurrence_id;
-    ELSIF (TG_ARGV[0] = 'location_id') THEN
+    ELSIF (TG_ARGV[0] = 'location_id' AND TG_OP <> 'TRUNCATE') THEN
     	audit_row.search_table_name = 'locations';
     	audit_row.search_key = thisRow.location_id;
     END IF;
@@ -108,35 +128,3 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER
   COST 100;
-
-COMMENT ON FUNCTION audit.if_modified_func() IS '
-Track changes TO a TABLE at the statement AND/OR ROW level.
-
-Optional parameters TO TRIGGER IN CREATE TRIGGER CALL:
-
-param 0: text, COLUMN used to  source primary key; for subtables this
-         will point to the parent records primary key.
-
-param 1: text[], COLUMNS TO IGNORE IN updates. DEFAULT [].
-
-         Updates TO ignored cols are omitted FROM changed_fields.
-
-         Updates WITH ONLY ignored cols changed are NOT inserted
-         INTO the audit log.
-
-         Almost ALL the processing WORK IS still done FOR updates
-         that ignored. IF you need TO save the LOAD, you need TO USE
-         WHEN clause ON the TRIGGER instead.
-
-         No warning OR error IS issued IF ignored_cols contains COLUMNS
-         that do NOT exist IN the target TABLE. This lets you specify
-         a standard SET OF ignored COLUMNS.
-
-There IS no parameter TO disable logging OF VALUES. ADD this TRIGGER AS
-a ''FOR EACH STATEMENT'' rather than ''FOR EACH ROW'' TRIGGER IF you do NOT
-want TO log ROW VALUES.
-
-Note that the USER name logged IS the login ROLE FOR the SESSION. The audit TRIGGER
-cannot obtain the active ROLE because it IS reset BY the SECURITY DEFINER invocation
-OF the audit TRIGGER its SELF.
-';
