@@ -519,9 +519,10 @@ KEY;
     // Search for the one we posted.
     $found = FALSE;
     foreach ($storedList['response'] as $storedItem) {
-      $allMatch = $storedItem['values']['id'] === $id;
+      // Typecast as ID returned from warehouse may be a string datatype.
+      $allMatch = (integer) $storedItem['values']['id'] === (integer) $id;
       foreach ($exampleData as $field => $value) {
-        $allMatch = $allMatch && ((string) $value === $storedItem['values'][$field]);
+        $allMatch = $allMatch && ((string) $value === (string) $storedItem['values'][$field]);
       }
       if ($allMatch) {
         $found = TRUE;
@@ -530,16 +531,17 @@ KEY;
       }
     }
     $this->assertTrue($found, "POSTed $table not found in retrieved list using GET.");
-    // Repeat with a filter
+    // Repeat with a filter.
     $filterField = array_keys($exampleData)[1];
     $storedList = $this->callService($table, [$filterField => $exampleData[$filterField]]);
     $this->assertResponseOk($storedList, "/$table GET");
     // Search for the one we posted.
     $found = FALSE;
     foreach ($storedList['response'] as $storedItem) {
-      $allMatch = $storedItem['values']['id'] === $id;
+      // Typecast as ID returned from warehouse may be a string datatype.
+      $allMatch = (integer) $storedItem['values']['id'] === (integer) $id;
       foreach ($exampleData as $field => $value) {
-        $allMatch = $allMatch && ((string) $value === $storedItem['values'][$field]);
+        $allMatch = $allMatch && ((string) $value === (string) $storedItem['values'][$field]);
       }
       if ($allMatch) {
         $found = TRUE;
