@@ -86,7 +86,7 @@ class Occurrence_Model extends ORM {
    * Indicates database trigger on table which accesses a sequence.
    *
    * Set to true as set_occurrence_to_training_from_sample_trigger was
-   * added. 
+   * added.
    *
    * @var bool
    */
@@ -217,34 +217,6 @@ class Occurrence_Model extends ORM {
       $array->add_rules('downloaded_flag', 'chars[N,I]');
     }
     return parent::validate($array, $save);
-  }
-
-  /**
-   * Retrieve date of last determination.
-   *
-   * @return string
-   *   Date as string.
-   */
-  private function getWhenRecordLastDetermined() {
-    if (empty($this->id)) {
-      // Use now as default for new records - should not really happen.
-      return date("Ymd H:i:s");
-    }
-    else {
-      $rows = $this->db
-        ->select('max(updated_on) as last_update')
-        ->from('determinations')
-        ->where([
-          'occurrence_id' => $this->id,
-          'deleted' => 'f',
-        ])->get()->result_array();
-    }
-    if (count($rows) > 0 && !empty($rows[0]->last_update)) {
-      return $rows[0]->last_update;
-    }
-    else {
-      return $this->created_on;
-    }
   }
 
   /**
