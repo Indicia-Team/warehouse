@@ -93,6 +93,9 @@ $config['authentication_methods'] = [
   ],
   'jwtUser' => [
     // TRUE to allow CORS from any domain, or provide an array of domain regexes.
+    // OPTIONS requests always return CORS header unless this is FALSE which
+    // completely disables the headers (assuming CORS is not allowed, or is
+    // handled at the web-server level).
     'allow_cors' => TRUE,
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
