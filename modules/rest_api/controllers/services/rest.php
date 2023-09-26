@@ -2233,7 +2233,7 @@ class Rest_Controller extends Controller {
   private function applyCorsHeader() {
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' ||
         (isset($this->authConfig) && array_key_exists('allow_cors', $this->authConfig))) {
-      if ($this->authConfig['allow_cors'] === FALSE) {
+      if (isset($this->authConfig) && array_key_exists('allow_cors', $this->authConfig) && $this->authConfig['allow_cors'] === FALSE) {
         return;
       }
       if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' || $this->authConfig['allow_cors'] === TRUE) {
