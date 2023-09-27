@@ -839,12 +839,28 @@ class report_standard_params_occurrences {
       ],
       'my_records' => [
         'datatype' => 'boolean',
-        'display' => "Only include my records",
+        'display' => 'Include or exclude my records',
         'wheres' => [
+          [
+            'value' => '0',
+            'operator' => 'equal',
+            'sql' => "o.created_by_id<>#user_id#",
+          ],
           [
             'value' => '1',
             'operator' => 'equal',
             'sql' => "o.created_by_id=#user_id#",
+          ],
+        ],
+      ],
+      'recorder_name' => [
+        'datatype' => 'text',
+        'display' => 'Recorder name contains',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "snf.recorders ~* regexp_replace('#recorder_name#', '[^a-zA-Z0-9]+', '|')",
           ],
         ],
       ],
