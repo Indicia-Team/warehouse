@@ -273,7 +273,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     ['user_id' => 2],
     ['my_records' => 1],
     ['created_by_id' => 1],
-    ['recorder_name' => 'foobar'],
+    ['recorder_name' => 'foo bar'],
     ['group_id' => 1],
     ['implicit_group_id' => 2],
     ['website_list' => '1,2'],
