@@ -290,11 +290,34 @@ class report_standard_params_samples {
         ],
       ],
       'user_id' => array('datatype'=>'integer', 'display'=>"Current user's warehouse ID"),
-      'my_records' => array('datatype'=>'boolean', 'display'=>"Only include my records",
-        'wheres' => array(
-          array('value'=>'1', 'operator'=>'equal', 'sql'=>"s.created_by_id=#user_id#")
-        )
-      ),
+      'my_records' => [
+        'datatype' => 'boolean',
+        'display' => 'Include or exclude my records',
+        'wheres' => [
+          [
+            'value' => '0',
+            'operator' => 'equal',
+            'sql' => "s.created_by_id<>#user_id#",
+          ],
+          [
+            'value' => '1',
+            'operator' => 'equal',
+            'sql' => "s.created_by_id=#user_id#",
+          ],
+        ],
+      ],
+      'recorder_name' => [
+        'datatype' => 'text',
+        'display' => 'Recorder name contains',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "sj_smp_snf.recorders ~* regexp_replace('#recorder_name#', '[^a-zA-Z0-9]+', '|')",
+          ],
+        ],
+        'standard_join' => 'sj_smp_snf',
+      ],
       'created_by_id' => array('datatype' => 'integer', 'display'=>'Limit to samples created by this user ID',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"s.created_by_id=#created_by_id#")

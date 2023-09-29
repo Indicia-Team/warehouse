@@ -517,15 +517,20 @@ class report_standard_params_occurrences {
         'datatype' => 'lookup',
         'display' => 'Quality',
         'description' => 'Minimum quality of records to include',
-        'lookup_values' => 'V1:Accepted as correct records only,V:Accepted records only,-3:Reviewer agreed at least plausible,' .
+        'lookup_values' => 'V1:Accepted as correct records only,V2:Accepted as considered correct records only,V:Accepted records only,-3:Reviewer agreed at least plausible,' .
           'C3:Plausible records only,C:Recorder was certain,L:Recorder thought the record was at least likely,' .
           'P:Not reviewed,T:Not reviewed but trusted recorder,!D:Exclude queried or not accepted records,!R:Exclude not accepted records,D:Queried records only,'.
-          'A:Answered records,R:Not accepted records only,R4:Not accepted because unable to verify records only,DR:Queried or not accepted records,all:All records',
+          'A:Answered records,R:Not accepted records only,R4:Not accepted because unable to verify records only,R5:Not accepted as incorrect records only,DR:Queried or not accepted records,all:All records',
         'wheres' => [
           [
             'value' => 'V1',
             'operator' => 'equal',
             'sql' => "o.record_status='V' and o.record_substatus=1",
+          ],
+          [
+            'value' => 'V2',
+            'operator' => 'equal',
+            'sql' => "o.record_status='V' and o.record_substatus=2",
           ],
           [
             'value' => 'V',
@@ -591,6 +596,11 @@ class report_standard_params_occurrences {
             'value' => 'R4',
             'operator' => 'equal',
             'sql' => "o.record_status='R' and o.record_substatus=4",
+          ],
+          [
+            'value' => 'R5',
+            'operator' => 'equal',
+            'sql' => "o.record_status='R' and o.record_substatus=5",
           ],
           [
             'value' => 'DR',
@@ -856,11 +866,18 @@ class report_standard_params_occurrences {
       'recorder_name' => [
         'datatype' => 'text',
         'display' => 'Recorder name contains',
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'standard_join' => 'sj_snf',
+          ],
+        ],
         'wheres' => [
           [
             'value' => '',
             'operator' => '',
-            'sql' => "snf.recorders ~* regexp_replace('#recorder_name#', '[^a-zA-Z0-9]+', '|')",
+            'sql' => "sj_snf.recorders ~* regexp_replace('#recorder_name#', '[^a-zA-Z0-9]+', '|')",
           ],
         ],
       ],
@@ -1190,19 +1207,19 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'standard_join' => 'prefcttl',
+            'standard_join' => 'sj_prefcttl',
           ],
         ],
         'wheres' => [
           [
             'value' => 'Y',
             'operator' => 'equal',
-            'sql' => "prefcttl.marine_flag=true",
+            'sql' => "sj_prefcttl.marine_flag=true",
           ],
           [
             'value' => 'N',
             'operator' => 'equal',
-            'sql' => "(prefcttl.marine_flag is null or prefcttl.marine_flag=false)",
+            'sql' => "(sj_prefcttl.marine_flag is null or sj_prefcttl.marine_flag=false)",
           ],
           // The all filter does not need any SQL.
         ],
@@ -1212,19 +1229,19 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'standard_join' => 'prefcttl',
+            'standard_join' => 'sj_prefcttl',
           ],
         ],
         'wheres' => [
           [
             'value' => 'Y',
             'operator' => 'equal',
-            'sql' => "prefcttl.freshwater_flag=true",
+            'sql' => "sj_prefcttl.freshwater_flag=true",
           ],
           [
             'value' => 'N',
             'operator' => 'equal',
-            'sql' => "(prefcttl.freshwater_flag is null or prefcttl.freshwater_flag=false)",
+            'sql' => "(sj_prefcttl.freshwater_flag is null or sj_prefcttl.freshwater_flag=false)",
           ],
           // The all filter does not need any SQL.
         ],
@@ -1234,19 +1251,19 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'standard_join' => 'prefcttl',
+            'standard_join' => 'sj_prefcttl',
           ],
         ],
         'wheres' => [
           [
             'value' => 'Y',
             'operator' => 'equal',
-            'sql' => "prefcttl.terrestrial_flag=true",
+            'sql' => "sj_prefcttl.terrestrial_flag=true",
           ],
           [
             'value' => 'N',
             'operator' => 'equal',
-            'sql' => "(prefcttl.terrestrial_flag is null or prefcttl.terrestrial_flag=false)",
+            'sql' => "(sj_prefcttl.terrestrial_flag is null or sj_prefcttl.terrestrial_flag=false)",
           ],
           // The all filter does not need any SQL.
         ],
@@ -1256,19 +1273,19 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'standard_join' => 'prefcttl',
+            'standard_join' => 'sj_prefcttl',
           ],
         ],
         'wheres' => [
           [
             'value' => 'Y',
             'operator' => 'equal',
-            'sql' => "prefcttl.non_native_flag=true",
+            'sql' => "sj_prefcttl.non_native_flag=true",
           ],
           [
             'value' => 'N',
             'operator' => 'equal',
-            'sql' => "(prefcttl.non_native_flag is null or prefcttl.non_native_flag=false)",
+            'sql' => "(sj_prefcttl.non_native_flag is null or sj_prefcttl.non_native_flag=false)",
           ],
           // The all filter does not need any SQL.
         ],
