@@ -1,0 +1,24 @@
+<report
+    title="Recording Schemes and Societies for taxon"
+    description="Report used to retrieve the names of Recording Schemes and Societies associated with a taxon as recorded in the UKSI."
+>
+  <query>
+    select rst.recording_scheme_id, rs.external_key, rs.title
+    from cache_taxon_paths ctp
+    join cache_taxa_taxon_lists cttl on cttl.taxon_meaning_id = ANY(ctp.path) and cttl.preferred = true
+    join recording_scheme_taxa rst on rst.organism_key = cttl.organism_key
+    join recording_schemes rs on rs.id = rst.recording_scheme_id
+    where 1=1
+  </query>
+  <order_bys>
+    <order_by>rs.title asc</order_by>
+  </order_bys>
+  <params>
+    <param name='taxon_meaning_id' display='Taxon Meaning ID' default='' description='Taxon meaning ID of the taxon from which to get associated RSS.' datatype='text'>
+      <where>ctp.taxon_meaning_id=#taxon_meaning_id#</where>
+    </param>
+    <param name='taxon_list_id' display='Taxon List ID' default='' description='Taxon List ID for the UKSI.' datatype='text'>
+      <where>cttl.taxon_list_id=#taxon_list_id#</where>
+    </param>
+  </params>
+</report>
