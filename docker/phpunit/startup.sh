@@ -8,9 +8,12 @@ until pg_isready; do
     sleep 1
 done
 
-# Create indicia database
+# Set password for user postgres so we can log in from pgAdmin.
+runuser -u postgres -- psql -d postgres -c "ALTER USER postgres WITH PASSWORD 'password';"
+
+# Create indicia database.
 runuser -u postgres -- psql -d postgres -c 'CREATE DATABASE indicia;'
-# Configure indicia database
+# Configure indicia database.
 runuser -u postgres -- psql -d indicia <<EOF
 -- Add extension for PostGIS
 CREATE EXTENSION postgis;
