@@ -80,7 +80,7 @@ class attribute_sets {
    *   Cleaned up caption.
    */
   public static function removePercentiles($allowRanges, $text) {
-    if ($allowRanges) {
+    if ($allowRanges && !empty($text)) {
       return preg_replace('/ \(\d+%\)/', '', $text);
     }
     return $text;

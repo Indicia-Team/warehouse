@@ -270,21 +270,17 @@ class Kohana_Mysqli_Result extends Database_Result {
 		return isset($rows) ? $rows : array();
 	}
 
-	public function list_fields()
-	{
+	public function list_fields()	{
 		$field_names = array();
-		while ($field = $this->result->fetch_field())
-		{
+		while ($field = $this->result->fetch_field()) {
 			$field_names[] = $field->name;
 		}
 
 		return $field_names;
 	}
 
-	public function seek($offset)
-	{
-		if ($this->offsetExists($offset) AND $this->result->data_seek($offset))
-		{
+	public function seek($offset)	{
+		if ($this->offsetExists($offset) AND $this->result->data_seek($offset)) {
 			// Set the current row to the offset
 			$this->current_row = $offset;
 
@@ -294,10 +290,11 @@ class Kohana_Mysqli_Result extends Database_Result {
 		return FALSE;
 	}
 
-	public function offsetGet($offset)
-	{
-		if ( ! $this->seek($offset))
+	#[\ReturnTypeWillChange]
+	public function offsetGet($offset) {
+		if ( ! $this->seek($offset)) {
 			return FALSE;
+		}
 
 		// Return the row
 		$fetch = $this->fetch_type;

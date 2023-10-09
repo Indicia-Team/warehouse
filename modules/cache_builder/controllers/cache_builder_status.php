@@ -18,7 +18,7 @@
  * @subpackage Controllers
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/Indicia-Team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
@@ -31,24 +31,22 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class Cache_builder_status_Controller extends Indicia_Controller {
 
-  public function index()
-  {
+  public function index() {
     $config = kohana::config('cache_builder');
-  	  	 
+
     $this->template->title = 'Cache Builder Status';
     $this->template->content = new View('cache_builder_status/index');
-    $values = array();
-    foreach($config as $table => $discard){
+    $values = [];
+    foreach ($config as $table => $discard) {
     	$values[$table] = variable::get("populated-$table");
     }
     $this->template->content->values = $values;
   }
 
-  public function save()
-  {
+  public function save() {
   	$state = true;
   	$config = kohana::config('cache_builder');
-  	 
+
 	if (isset($_POST))
   		foreach($config as $table => $discard){
 			// can only switch on the catchup, not switch it off.

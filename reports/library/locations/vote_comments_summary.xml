@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Vote comments summary" description="Where comments are used to store JSON vote data, summarises the data.">
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations l
+    JOIN location_comments c ON c.location_id=l.id AND c.deleted=false
+    JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false AND lw.website_id in (#website_ids#)
+    WHERE l.deleted=false
+    AND c.comment like '{%}'
+    #filters#
+   </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name="location_id" display="Location Id" description="A location id used if we only want to return results for a single location." datatype="integer" default="" emptyvalue="">
+      <where>l.id=#location_id#</where>
+    </param>
+    <param name="location_type_ids" display="Location Type Ids" description="Comma separated list of location type ids we want to return results for." datatype="text" default="" emptyvalue="">
+      <where>l.location_type_id in (#location_type_ids#)</where>
+    </param>
+    <param name="key1" display="Vote question key 1" datatype="text" default="key1" />
+    <param name="key2" display="Vote question key 2" datatype="text" default="key2" />
+    <param name="key3" display="Vote question key 3" datatype="text" default="key3" />
+    <param name="key4" display="Vote question key 4" datatype="text" default="key4" />
+  </params>
+  <columns>
+    <column name="location_id" display="Location Id" sql="l.id" datatype="integer" visible="false" in_count="true"/>
+    <column name="location_name" display="Location" sql="l.name" datatype="text" />
+    <column name="vote_count" display="Votes" sql="COUNT(CASE WHEN c.comment LIKE '{%}' THEN c.id ELSE NULL END)" datatype="integer" aggregate="true"/>
+    <column name="vote_avg" display="Overall score" sql="ROUND(
+        (COALESCE(SUM((c.comment::json->>'#key1#')::int), 0) + COALESCE(SUM((c.comment::json->>'#key2#')::int), 0) + COALESCE(SUM((c.comment::json->>'#key3#')::int), 0) + COALESCE(SUM((c.comment::json->>'#key4#')::int), 0))
+        / NULLIF((COUNT(c.comment::json->>'#key1#') + COUNT(c.comment::json->>'#key2#') + COUNT(c.comment::json->>'#key3#') + COUNT(c.comment::json->>'#key4#'))::numeric, 0)
+      , 1)" datatype="float" aggregate="true" />
+    <column name="key1_avg" display="Key1 average" sql="ROUND(AVG((c.comment::json->>'#key1#')::int), 1)" datatype="float" aggregate="true" />
+    <column name="key1_count" display="key1 count" sql="COUNT(c.comment::json->>'#key1#')" datatype="integer" aggregate="true" />
+    <column name="key2_avg" display="Key2 average" sql="ROUND(AVG((c.comment::json->>'#key2#')::int), 1)" datatype="float" aggregate="true" />
+    <column name="key2_count" display="Key2 count" sql="COUNT(c.comment::json->>'#key2#')" datatype="integer" aggregate="true" />
+    <column name="key3_avg" display="Key3 average" sql="ROUND(AVG((c.comment::json->>'#key3#')::int), 1)" datatype="float" aggregate="true" />
+    <column name="key3_count" display="Key3 count" sql="COUNT(c.comment::json->>'#key3#')" datatype="integer" aggregate="true" />
+    <column name="key4_avg" display="Key4 average" sql="ROUND(AVG((c.comment::json->>'#key4#')::int), 1)" datatype="float" aggregate="true" />
+    <column name="key4_count" display="Key4 count" sql="COUNT(c.comment::json->>'#key4#')" datatype="integer" aggregate="true" />
+  </columns>
+</report>

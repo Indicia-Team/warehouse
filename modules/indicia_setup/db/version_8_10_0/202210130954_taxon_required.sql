@@ -1,0 +1,2 @@
+ALTER TABLE taxa
+  ALTER COLUMN taxon SET NOT NULL;

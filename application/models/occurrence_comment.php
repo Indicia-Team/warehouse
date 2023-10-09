@@ -25,15 +25,21 @@
 class Occurrence_comment_model extends ORM {
   public $search_field = 'comment';
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'occurrence');
+  protected $belongs_to = [
+    'created_by' => 'user',
+    'updated_by' => 'user',
+    'occurrence',
+  ];
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace before validation.
     $array->pre_filter('trim');
-    $array->add_rules('comment','required');
-    $array->add_rules('occurrence_id', 'required');
-    // Explicitly add those fields for which we don't do validation
-    $this->unvalidatedFields = array(
+    $array->add_rules('comment', 'required');
+    $array->add_rules('occurrence_id', 'required', 'integer');
+    $array->add_rules('reply_to_id', 'integer');
+    $array->add_rules('redet_taxa_taxon_list_id', 'integer');
+    // Explicitly add those fields for which we don't do validation.
+    $this->unvalidatedFields = [
       'email_address',
       'person_name',
       'deleted',
@@ -47,7 +53,7 @@ class Occurrence_comment_model extends ORM {
       'correspondence_data',
       'reference',
       'confidential',
-    );
+    ];
     return parent::validate($array, $save);
 
   }
@@ -78,8 +84,8 @@ class Occurrence_comment_model extends ORM {
   public function postSubmit($isInsert) {
     if ($isInsert && $this->auto_generated!=='t' and $this->query==='t') {
       $sql = <<<SQL
-update cache_occurrences_functional set query='Q' 
-where id={$this->occurrence_id} 
+update cache_occurrences_functional set query='Q'
+where id={$this->occurrence_id}
 and (query<>'Q' or query IS NULL)
 SQL;
       $this->db->query($sql);

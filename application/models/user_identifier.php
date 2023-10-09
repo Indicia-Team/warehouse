@@ -24,16 +24,16 @@
  */
 class User_Identifier_Model extends ORM {
 
-  protected $belongs_to = array(
+  protected $belongs_to = [
     'user',
-    'created_by'=>'user',
-    'updated_by'=>'user'
-  );
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  ];
 
-  public $search_field='identifier';
+  public $search_field = 'identifier';
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('identifier', 'required', 'length[1,300]');
     $array->add_rules('type_id', 'required');

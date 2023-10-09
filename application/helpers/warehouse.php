@@ -58,7 +58,9 @@ function hostsite_get_user_field($field) {
     return 'en';
   }
   elseif ($field === 'indicia_user_id') {
-    return isset($_SESSION) ? $_SESSION['auth_user']->id : 0;
+    // PostedUserId is to support tests.
+    global $postedUserId;
+    return isset($_SESSION) ? $_SESSION['auth_user']->id : ($postedUserId ?? 0);
   }
   elseif ($field === 'training') {
     return FALSE;
@@ -77,6 +79,11 @@ function hostsite_get_user_field($field) {
  */
 class warehouse {
 
+  /**
+   * Mappings from sharing codes to associated terms for website agreements.
+   *
+   * @var array
+   */
   private static $sharingMappings = [
     'R' => 'reporting',
     'V' => 'verification',
@@ -84,6 +91,24 @@ class warehouse {
     'D' => 'data flow',
     'M' => 'moderation',
     'E' => 'editing',
+  ];
+
+  /**
+   * Mappings from record status codes to associated phrases.
+   *
+   * @var array
+   */
+  private static $recordStatusMappings = [
+    'V' => 'accepted',
+    'V1' => 'accepted as correct',
+    'V2' => 'accepted as considered correct',
+    'C3' => 'marked as plausible',
+    'Q' => 'queried',
+    'R' => 'not accepted',
+    'R4' => 'not accepted as unable to verify',
+    'R5' => 'not accepted as incorrect',
+    // Legacy.
+    'D' => 'queried',
   ];
 
   /**
@@ -120,7 +145,7 @@ class warehouse {
   public static function purgeOldFiles($path, $age) {
     // First, get an array of files sorted by date.
     $files = [];
-    $dir = opendir($path);
+    $dir = opendir(DOCROOT . $path);
     // Skip certain file names.
     $exclude = [
       '.',
@@ -132,8 +157,12 @@ class warehouse {
     if ($dir) {
       while ($filename = readdir($dir)) {
         $fullPath = DOCROOT . $path . DIRECTORY_SEPARATOR . $filename;
-        if (is_dir($fullPath) || in_array($filename, $exclude)) {
+        if (in_array($filename, $exclude)) {
           continue;
+        }
+        elseif (is_dir($fullPath)) {
+          // Recurse into sub-folders.
+          self::purgeOldFiles($path . DIRECTORY_SEPARATOR . $filename, $age);
         }
         $lastModified = filemtime($fullPath);
         $files[] = [$fullPath, $lastModified];
@@ -240,6 +269,23 @@ class warehouse {
   public static function sharingTermToCode($term) {
     $mappings = array_flip(self::$sharingMappings);
     return array_key_exists($term, $mappings) ? $mappings[$term] : $term;
+  }
+
+  /**
+   * Expand a record status code to the full term.
+   *
+   * @param string $code
+   *   Record status code to expand.
+   * @param string $default
+   *   Default to return if code not recognised. If not set, then the original
+   *   code is returned.
+   *
+   * @return string
+   *   Expanded term.
+   */
+  public static function recordStatusCodeToTerm($code, $default = NULL) {
+    $default = $default ?? $code;
+    return array_key_exists($code, self::$recordStatusMappings) ? self::$recordStatusMappings[$code] : $default;
   }
 
   /**

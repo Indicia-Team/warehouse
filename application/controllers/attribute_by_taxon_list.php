@@ -31,7 +31,6 @@ class Attribute_By_Taxon_List_Controller extends Indicia_Controller {
       throw new Exception('Page cannot be accessed without a taxon list filter');
     $this->pagetitle = 'Attributes for a taxon list';
     $this->get_auth();
-    $this->auth_filter = $this->gen_auth_filter;
     $this->model = ORM::factory('taxon_lists_taxa_taxon_list_attribute');
   }
 
@@ -44,7 +43,7 @@ class Attribute_By_Taxon_List_Controller extends Indicia_Controller {
 
   /**
    * Retrieve the list of websites the user has access to. The list is then stored in
-   * $this->gen_auth_filter. Also checks if the user is core admin.
+   * $this->auth_filter. Also checks if the user is core admin.
    */
   protected function get_auth() {
     // If not logged in as a Core admin, restrict access to available websites.
@@ -58,10 +57,10 @@ class Attribute_By_Taxon_List_Controller extends Indicia_Controller {
         $website_id_values[] = $website->website_id;
       }
       $website_id_values[] = NULL;
-      $this->gen_auth_filter = array('field' => 'website_id', 'values' => $website_id_values);
+      $this->auth_filter = array('field' => 'website_id', 'values' => $website_id_values);
     }
     else {
-      $this->gen_auth_filter = NULL;
+      $this->auth_filter = NULL;
     }
   }
 

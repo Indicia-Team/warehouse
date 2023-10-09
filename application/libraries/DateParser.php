@@ -141,7 +141,7 @@ class DateParser_Core {
           // Year.
           sscanf($sDate, "%4d%[^\\n]", $nValue, $sDateAfter);
 
-          if (strlen($nValue) != 4) {
+          if (strlen($nValue ?? '') != 4) {
             return FALSE;
           }
 
@@ -156,13 +156,13 @@ class DateParser_Core {
           if (!isset($nValue)) {
             return FALSE;
           }
-          if (strlen($nValue) == 1) {
+          if ($nValue !== NULL && strlen($nValue) == 1) {
             // Must be in range 0-9.
             $nValue = '0' . $nValue;
           }
           // Get the century as %C not supported on Windows.
-          $c = substr(strftime("%Y"), 0, 2);
-          if ($nValue <= strftime("%y")) {
+          $c = substr(date('Y'), 0, 2);
+          if ($nValue <= date('y')) {
             // This century.
             $nValue = "$c$nValue";
           } else {

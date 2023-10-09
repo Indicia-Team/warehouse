@@ -66,7 +66,7 @@ class Valid extends valid_Core {
   /**
    * Checks that a date string can be correctly parsed into a vague date.
    *
-   * @param	string $sDate
+   * @param string $sDate
    *   Date string.
    *
    * @return bool
@@ -110,11 +110,12 @@ class Valid extends valid_Core {
   public static function unique($column_value, array $args) {
     $db = new Database();
     $idFilter = empty($args[2]) ? '' : "AND id<>$args[2]";
+    $value = pg_escape_literal($db->getLink(), $column_value);
     $qry = <<<SQL
 SELECT 1 AS hit
 FROM $args[0]
 WHERE deleted=false
-AND LOWER($args[1]) = LOWER('$column_value')
+AND LOWER($args[1]) = LOWER($value)
 $idFilter
 LIMIT 1
 SQL;
@@ -317,7 +318,7 @@ SQL;
     }
 
     // Add allowance for range.
-    $pattern = "/^${pattern}(\s*-\s*${pattern})?$/";
+    $pattern = "/^{$pattern}(\s*-\s*{$pattern})?$/";
 
     return (bool) preg_match($pattern, (string) $str);
   }

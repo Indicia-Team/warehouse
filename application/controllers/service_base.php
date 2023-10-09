@@ -94,6 +94,13 @@ class Service_Base_Controller extends Controller {
   protected $website_id = NULL;
 
   /**
+   * Password used to authenticate.
+   *
+   * @var string
+   */
+  protected $website_password = NULL;
+
+  /**
    * Id of the indicia user ID calling the service.
    *
    * Obtained when performing read authentication and can be used to filter the
@@ -120,6 +127,34 @@ class Service_Base_Controller extends Controller {
   protected $user_is_core_admin = false;
 
   /**
+   * List of website IDs the user is authorised to see.
+   *
+   * @var array
+   */
+  protected $userWebsites;
+
+  /**
+   * Content type, if specified for the response.
+   *
+   * @var string
+   */
+  protected $content_type;
+
+  /**
+   * If response in a file, provide the file name.
+   *
+   * @var string
+   */
+  protected $responseFile;
+
+  /**
+   * Response content.
+   *
+   * @var string
+   */
+  protected $response;
+
+  /**
    * Authenticate a data services request.
    *
    * Before a request is accepted, this method ensures that the POST data
@@ -134,18 +169,20 @@ class Service_Base_Controller extends Controller {
     // Read calls are done using get values, so we merge the two arrays.
     $array = array_merge($_POST, $_GET);
     $authentic = FALSE;
+    global $remoteAuthUserId;
+    global $remoteUserId;
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token', $array)) {
       $nonce = $array['nonce'];
-      $this->cache = new Cache();
+      $cache = new Cache();
       // Get all cache entries that match this nonce.
-      $paths = $this->cache->exists($nonce);
+      $paths = $cache->exists($nonce);
       foreach ($paths as $path) {
         // Find the parts of each file name, which is the cache entry ID, then
         // the mode.
         $tokens = explode('~', basename($path));
         // Check this cached nonce is for the correct read or write operation.
         if ($mode == $tokens[1]) {
-          $id = $this->cache->get($tokens[0]);
+          $id = $cache->get($tokens[0]);
           if ($id > 0) {
             // Normal state, the ID is positive, which means we are
             // authenticating a remote website.
@@ -164,7 +201,7 @@ class Service_Base_Controller extends Controller {
           if (isset($password) && preg_match('/:(?<userId>\d+)$/', $array['auth_token'], $matches)
               && sha1("$nonce:$password:$matches[userId]") . ':' . $matches['userId'] === $array['auth_token']) {
             // Store the authorised user ID.
-            $this->auth_user_id = $matches['userId'];
+            $this->auth_user_id = (int) $matches['userId'];
             $authentic = TRUE;
           }
           elseif (isset($password) && sha1("$nonce:$password") === $array['auth_token']) {
@@ -174,23 +211,20 @@ class Service_Base_Controller extends Controller {
           }
           if ($authentic) {
             Kohana::log('info', "Authentication successful.");
+            // Store ID in a global for code outside the service classes.
+            $remoteAuthUserId = $this->auth_user_id;
             // Cache website_password for subsequent use by controllers.
             $this->website_password = $password;
-            // Store ID in a global for code outside the service classes.
-            global $remoteAuthUserId;
-            $remoteAuthUserId = $this->auth_user_id;
+
             if ($id > 0) {
               $this->website_id = $id;
-              if (!empty($_REQUEST['user_id']) && preg_match('/^\d+$/', $_REQUEST['user_id'])) {
-                if ($this->auth_user_id === -1 || $this->auth_user_id == $_REQUEST['user_id']) {
-                  // If the request included a user ID which matches the auth
-                  // token's user ID (if provided), use this ID as the logged
-                  // in user.
-                  $this->user_id = $_REQUEST['user_id'];
-                  global $remoteUserId;
-                  $remoteUserId = $this->user_id;
-                }
+              if ($this->auth_user_id !== -1) {
+                $this->user_id = $this->auth_user_id;
               }
+              elseif (!empty($_REQUEST['user_id']) && preg_match('/^\d+$/', $_REQUEST['user_id'])) {
+                $this->user_id = $_REQUEST['user_id'];
+              }
+              $remoteUserId = $this->user_id;
             }
             else {
               $this->in_warehouse = TRUE;
@@ -203,14 +237,14 @@ class Service_Base_Controller extends Controller {
               $user = ORM::Factory('user', $this->user_id);
               $this->user_is_core_admin = ($user->core_role_id === 1);
               if (!$this->user_is_core_admin) {
-                $this->user_websites = [];
+                $this->userWebsites = [];
                 $userWebsites = ORM::Factory('users_website')->where([
                   'user_id' => $this->user_id,
                   'site_role_id is not' => NULL,
                   'banned' => 'f',
                 ])->find_all();
                 foreach ($userWebsites as $userWebsite) {
-                  $this->user_websites[] = $userWebsite->website_id;
+                  $this->userWebsites[] = $userWebsite->website_id;
                 }
               }
             }
@@ -218,7 +252,7 @@ class Service_Base_Controller extends Controller {
             // reset if not already timed out.
             if (array_key_exists('reset_timeout', $array) && $array['reset_timeout'] == 'true') {
               Kohana::log('info', "Nonce timeout reset.");
-              $this->cache->set($nonce, $id, $mode);
+              $cache->set($nonce, $id, $mode);
             }
           }
         }
@@ -264,7 +298,9 @@ class Service_Base_Controller extends Controller {
   /**
    * Return an error XML or json document to the client.
    *
-   * @param string
+   * @param Throwable $e
+   *   The exception.
+   * @param string $transaction_id
    *   Id of the transaction calling the service. Optional. Returned to the
    *   calling code.
    */

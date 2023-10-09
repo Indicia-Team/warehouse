@@ -26,6 +26,13 @@ class task_summary_builder_sample {
   public const BATCH_SIZE = 1000;
 
   /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
+
+  /**
    * Perform the processing for a task batch found in the queue.
    *
    * @param object $db

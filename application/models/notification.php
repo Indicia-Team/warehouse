@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -19,17 +19,20 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+defined('SYSPATH') or die('No direct script access.');
+
 /**
  * Model class for the notifications table.
  */
 class Notification_Model extends ORM {
 
-  protected $has_many = array('taxa');
+  protected $has_many = ['taxa'];
 
-  protected $belongs_to = array('user');
+  protected $belongs_to = ['user'];
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('source', 'required');
     $array->add_rules('source_type', 'required');
@@ -37,7 +40,12 @@ class Notification_Model extends ORM {
     $array->add_rules('acknowledged', 'required');
     $array->add_rules('user_id', 'required');
     $array->add_rules('triggered_on', 'required');
-    $this->unvalidatedFields = array('digest_mode','cc','linked_id');
+    $this->unvalidatedFields = [
+      'digest_mode',
+      'cc',
+      'linked_id',
+    ];
     return parent::validate($array, $save);
   }
+
 }

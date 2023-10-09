@@ -112,9 +112,14 @@ class api_persist {
     elseif (!empty($observation['taxonName'])) {
       $lookup = ['original' => $observation['taxonName']];
     }
-    $ttl_id = self::findTaxon($db, $taxon_list_id, $lookup);
+    $ttl_id = self::findTaxon($db, $taxon_list_id, $survey_id, $lookup);
+    if (!$ttl_id && !empty($observation['taxonName'])) {
+      // If looking up a taxon name but not found, there might be a resolution
+      // in the mappings table.
+      $ttl_id = self::findMappedTaxon($db, $taxon_list_id, $survey_id, $observation['taxonName']);
+    }
     if (!$ttl_id) {
-      throw new exception("Could not find taxon for $observation[taxonVersionKey]");
+      throw new exception("Could not find taxon for observation $observation[id] using lookup " . json_encode($lookup));
     }
     $values = self::getTaxonObservationValues($db, $website_id, $observation, $ttl_id);
 
@@ -457,28 +462,30 @@ SQL;
    *   Database instance.
    * @param int $taxon_list_id
    *   Taxon list to lookup against.
+   * @param int $survey_id
+   *   Survey being imported into, only used if a lookup mapping is used to
+   *   resolve duplicates.
    * @param array $lookup
    *   Array of field/value pairs look up (e.g
    *   ['external_key' => '<Taxon version key>'])
    *
    * @return int
-   *   Taxa_taxon_list_id of the found record.
-   *
-   * @throws \exception
+   *   Taxa_taxon_list_id of the found record, or NULL if could not identify
+   *   a unique taxon.
    */
-  private static function findTaxon($db, $taxon_list_id, array $lookup) {
+  private static function findTaxon($db, $taxon_list_id, $survey_id, array $lookup) {
     $filter = '';
     if (!empty($lookup['original'])) {
       // This facilitates use of an index on searchterm. Only search on first 2
       // words in case different way of annotation subsp.
       $words = explode(' ', $lookup['original']);
       $searchTerm = $words[0] . (count($words) > 1 ? " $words[1]" : '');
-      $filter = "AND searchterm like '" . pg_escape_string($searchTerm) . "%'\n";
+      $filter = "AND searchterm like '" . pg_escape_string($db->getLink(), $searchTerm) . "%'\n";
       // Now build a custom exact match filter that looks for alternative ssp.
       // annotations.
-      $exactMatches = ["'" . pg_escape_string($lookup['original']) . "'"];
+      $exactMatches = ["'" . pg_escape_string($db->getLink(), $lookup['original']) . "'"];
       if (count($words) === 3) {
-        $exactMatches[] = "'" . pg_escape_string("$words[0] $words[1] subsp. $words[2]") . "'";
+        $exactMatches[] = "'" . pg_escape_string($db->getLink(), "$words[0] $words[1] subsp. $words[2]") . "'";
       }
       $filter .= 'AND original in (' . implode(',', $exactMatches) . ")\n";
       $qry = <<<SQL
@@ -518,9 +525,51 @@ SQL;
       return $taxa[0]['taxa_taxon_list_id'];
     }
     else {
-      // If ambiguous about the concept then the search has failed.
-      throw new exception('Could not find a unique preferred taxon for lookup ' . json_encode($lookup));
+      return NULL;
     }
+  }
+
+  /**
+   * Use the mappings table to resolve unrecognised taxon names or duplicates.
+   *
+   * @param object $db
+   *   Database instance.
+   * @param int $taxon_list_id
+   *   Taxon list to lookup against.
+   * @param int $survey_id
+   *   Survey being imported into, only used if a lookup mapping is used to
+   *   resolve duplicates.
+   * @param string $taxonName
+   *   Provided name of the taxon to resolve.
+   *
+   * @return int
+   *   Taxa_taxon_list_id of the found record, or NULL if could not identify
+   */
+  private static function findMappedTaxon($db, $taxon_list_id, $survey_id, $taxonName) {
+    $taxonName = pg_escape_literal($db->getLink(), $taxonName);
+    $sql = <<<SQL
+SELECT mapped_taxon_name, mapped_search_code
+FROM rest_api_sync_taxon_mappings
+WHERE mapped_taxon_list_id=$taxon_list_id
+AND other_taxon_name=$taxonName
+AND (restrict_to_survey_id IS NULL OR restrict_to_survey_id=$survey_id)
+ORDER BY restrict_to_survey_id IS NULL ASC, mapped_search_code IS NULL ASC;
+SQL;
+
+    $results = $db->query($sql)->current();
+    if ($results) {
+      // Use the mapping details to do a new lookup.
+      if (!empty($results->mapped_search_code)) {
+        // Use a search code lookup if available, in preference to a name
+        // lookup.
+        $lookup = ['search_code' => $results->mapped_search_code];
+      }
+      else {
+        $lookup = ['original' => $results->mapped_taxon_name];
+      }
+      return self::findTaxon($db, $taxon_list_id, $survey_id, $lookup);
+    }
+    return NULL;
   }
 
   /**

@@ -37,6 +37,7 @@ class FirstRowReadFilter implements IReadFilter {
   public function readCell($column, $row, $worksheetName = '') {
     return $row == 1;
   }
+
 }
 
 /**
@@ -44,8 +45,18 @@ class FirstRowReadFilter implements IReadFilter {
  */
 class RangeReadFilter implements IReadFilter {
 
+  /**
+   * Offset of range to read.
+   *
+   * @var int
+   */
   private $offset;
 
+  /**
+   * Limit of number of records of range to read.
+   *
+   * @var int
+   */
   private $limit;
 
   public function __construct($offset, $limit) {
@@ -59,6 +70,7 @@ class RangeReadFilter implements IReadFilter {
   public function readCell($column, $row, $worksheetName = '') {
     return $row >= $this->offset && $row < $this->offset + $this->limit;
   }
+
 }
 /**
  * Controller class for import web services.
@@ -113,6 +125,7 @@ class Import_Controller extends Service_Base_Controller {
     $this->authenticate('read');
     switch ($model) {
       case 'sample':
+      case 'occurrence':
         $attrTypeFilter = empty($_GET['sample_method_id']) ? NULL : $_GET['sample_method_id'];
         break;
 
@@ -125,7 +138,7 @@ class Import_Controller extends Service_Base_Controller {
         break;
     }
     $model = ORM::factory($model);
-    // Identify the context of the import
+    // Identify the context of the import.
     $identifiers = [];
     if (!empty($_GET['website_id'])) {
       $identifiers['website_id'] = $_GET['website_id'];
@@ -295,7 +308,7 @@ class Import_Controller extends Service_Base_Controller {
         $foundAProperColumn = TRUE;
       }
       elseif ($foundAProperColumn) {
-        if (empty(trim($columns[$i]))) {
+        if (empty(trim($columns[$i] ?? ''))) {
           $columns[$i] = kohana::lang('misc.untitled') . ' - ' . ($i + 1);
         }
       }
@@ -501,6 +514,7 @@ class Import_Controller extends Service_Base_Controller {
    * Requires a $_GET parameter for uploaded_csv - the uploaded file name.
    */
   public function upload() {
+    Session::instance();
     $allowCommitToDB = isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : TRUE;
     $importTempFile = DOCROOT . "import/" . $_GET['uploaded_csv'];
     $ext = $this->getFileExt($_GET['uploaded_csv']);
@@ -518,8 +532,6 @@ class Import_Controller extends Service_Base_Controller {
     // Make sure the file still exists.
     if (file_exists($importTempFile)) {
       $tm = microtime(TRUE);
-      // Following helps for files from Macs.
-      ini_set('auto_detect_line_endings', 1);
       $model = ORM::Factory($_GET['model']);
       $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
       // Create an error file pointer.
@@ -555,7 +567,7 @@ class Import_Controller extends Service_Base_Controller {
           // The genus, specific name and qualifier are all merge fields.
           // However the qualifier is not mandatory, so if a qualifier is not specified, we effectively tell the system it has been specified
           // so that the system doesn't ask for it. Ideally this code should be generalised going forward.
-          if ((in_array('taxon:taxon:genus',$metadata['mappings']) || in_array('taxon:taxon:specific',$metadata['mappings'])) &&  !in_array('taxon:taxon:qualifier',$metadata['mappings'])) {
+          if ((in_array('taxon:taxon:genus', $metadata['mappings']) || in_array('taxon:taxon:specific', $metadata['mappings'])) &&  !in_array('taxon:taxon:qualifier', $metadata['mappings'])) {
             $columns['taxon:taxon:qualifier'] = TRUE;
           }
           if (count($defn['columns']) === count(array_keys($columns))) {
@@ -610,11 +622,10 @@ class Import_Controller extends Service_Base_Controller {
         // of the CSV file.
         foreach ($metadata['mappings'] as $col => $attr) {
           // Skip cols to do with remembered mappings.
-          if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col != 'AllowLookup') {
-            if (isset($data[$index])) {
-              // '<Please select>' is a value fixed in
-              // import_helper::model_field_options.
-              if ($attr != '<Please select>' && $data[$index] !== '') {
+          if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col !== 'AllowLookup') {
+            if ($index < count($data)) {
+              // Not mapped value depends on version of client.
+              if ($attr !== '<Not imported>' && $attr !== '<Please select>' && $data[$index] !== '') {
                 // Add the data to the record save array.
                 if (preg_match('/date$/', $attr) && preg_match('/^\d+$/', $data[$index])) {
                   // Date fields are integers when read from Excel.
@@ -636,7 +647,7 @@ class Import_Controller extends Service_Base_Controller {
         // The genus, specific name and qualifier are all merge fields.
         // However the qualifier is not mandatory, so if a qualifier is not specified, we effectively tell the system it has been specified
         // so that the system doesn't ask for it. Ideally this code should be generalised going forward.
-        if ((array_key_exists('taxon:taxon:genus',$saveArray) || array_key_exists('taxon:taxon:specific',$saveArray)) &&  !array_key_exists('taxon:taxon:qualifier',$saveArray)) {
+        if ((array_key_exists('taxon:taxon:genus', $saveArray) || array_key_exists('taxon:taxon:specific', $saveArray)) &&  !array_key_exists('taxon:taxon:qualifier', $saveArray)) {
           $saveArray['taxon:taxon:qualifier'] = '';
         }
         foreach (array_keys($specialFieldProcessing) as $col) {
@@ -1112,6 +1123,8 @@ class Import_Controller extends Service_Base_Controller {
    * as each new one is imported (as it wasn't checking the search code/external key, the final result would be that only one row would import).
    * Note this function might need improving/generalising for other models, although I did check occurrence/sample import which
    * did not seem to show the same issue.
+   *
+   * @todo These are special cases which could be generalised to use ORM to work out the required SQL.
    */
   public static function buildJoin($fieldPrefix, $fields, $table, $saveArray) {
     $r = '';
@@ -1120,6 +1133,9 @@ class Import_Controller extends Service_Base_Controller {
     }
     elseif (!empty($saveArray['taxon:search_code']) && $table === 'taxa_taxon_lists') {
       $r = "join taxa t on t.id = $table.taxon_id AND t.search_code='" . $saveArray['taxon:search_code'] . "' AND t.deleted=false";
+    }
+    elseif (!empty($saveArray['taxon:taxon']) && $table === 'taxa_taxon_lists') {
+      $r = "join taxa t on t.id = $table.taxon_id AND t.taxon='" . $saveArray['taxon:taxon'] . "' AND t.deleted=false";
     }
     return $r;
   }

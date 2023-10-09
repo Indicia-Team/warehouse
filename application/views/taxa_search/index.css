@@ -1,0 +1,13 @@
+article {
+  margin-top: 15px;
+}
+.name-italic {
+  font-style: italic;
+}
+.dl-horizontal {
+  border: solid silver 1px;
+  border-radius: 4px;
+}
+.taxon-Accepted {
+  font-weight: bold;
+}

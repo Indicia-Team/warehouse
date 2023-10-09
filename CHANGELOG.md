@@ -1,3 +1,219 @@
+# Version 8.23.0
+*2023-09-20*
+
+* Fixes for PHP 8.1 & 8.2 (8.2 requires further testing).
+* Fix some issues in the sort order of taxa returned when searching. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1511.
+* Enhanced support for dates in standard parameter filters. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1491.
+* Fixes issue with determiner name not being stored against a record after a redetermination. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/899.
+* Tables added for linkage between recording schemes and their taxonomic coverage. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/876.
+* Provides a standard PostgreSQL function for tidying taxonomic data after a UKSI update -
+  `f_fixup_uksi_links`.
+* PostgreSQL function for cloning surveys now includes location attribute links - `f_clone_survey`.
+* Database triggers added to ensure consistency in the training flag between samples and
+  occurrences.
+* Improves logging of errors in the REST API.
+* Support for an Elasticsearch special field type #template# that uses an HTML template with token
+  replacements to generate output.
+* Fix the #associations# Elasticsearch special field type so that associations data can be
+  downloaded.
+* Adds a new table `rest_api_sync_taxon_mappings` which can be populated to allow unknown taxon
+  names in remote systems to be mapped to local taxa when synchronising data. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1222.
+* UTM 30N (ED50) grid system renamed to Channel Islands Grid (UTM ED50) for clarity.
+* Modify reports used for verification comments to clarify difference between determinations and
+  comments.
+
+# Version 8.22.0
+*2023-08-03*
+
+* Adds a special field handler for Elasticsearch data that supports a coalesce function, returning
+  the value of the first field that has a non-empty value, selected from a list of provided fields.
+
+# Version 8.21.0
+*2023-06-28*
+
+* Allow termlists_term_attribute_value submissions from websites.
+
+# Version 8.20.0
+*2023-06-16*
+
+* New image organiser warehouse module for restructuring the upload folder into sub-folders based
+  on timestamp.
+* Queued images added via the REST API are now automatically placed in the new sub-folder image
+  structure.
+
+# Version 8.19.0
+*2023-05-04*
+
+* New process checker warehouse module to ensure that records missing spatial indexing get
+  picked up.
+
+# Version 8.18.0
+*2023-04-27*
+
+* New module for automatic verification rule checks for phenology of records by biogeographic
+  region.
+* Fixes action columns for the occurrences list page.
+* Improves captions provided for some columns available for import using the v2 importer.
+* Fixes v2 importer when importing a licence for a record - see
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1445/.
+* Fixes for PHP 8.2 (experimental).
+
+# Version 8.17.0
+*2023-03-30*
+
+* Adds organism_key to the cache_taxa_taxon_lists and cache_taxon_searchterms tables to provide
+  a more reliable option for filtering species lists when taxonomy is dynamic. See
+  https://github.com/BiologicalRecordsCentre/NPMS/issues/268.
+
+# Version 8.16.0
+*2023-03-17*
+
+* Changed menu item "Admin -> Website agreements" to "Admin -> Website data sharing agreements".
+* Changed "Agreements" tab title to "Data sharing" for the website details page.
+* New database tables and APIs added to support custom verification rules (aka local rules). These
+  allow verifiers to define their own verification check rules, e.g. to flag records outside a
+  known grid square, or outside a particular time of year.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1403.
+* Some fixes relating to PHP 8.1.
+* Notifications are no longer generated for training records.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/108.
+* A description is no longer required when editing a term in a termlist using the warehouse UI.
+* API support added allowing a set of records to be moved between a publically shared website and a
+  private website and vice versa, effectively allowing control of their publication status.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1396.
+* Updated categories for notifications, so that queries and redeterminations can be properly
+  tracked. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1362.
+* The verification API now supports applying a verification decision to all records within a parent
+  sample of the same taxon in one step. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1274.
+
+# Version 8.15.0
+*2023-01-24*
+
+* Adds import_guid field to list of fields extracted to Elasticsearch for an occurrrence document.
+
+# Version 8.14.0
+*2023-01-20*
+
+* Permissions changes relating to the ability to use the importer to import records into a
+  different website to the one authorised. The other website must provide editing rights
+  via a sharing agreement. Relates to https://github.com/BiologicalRecordsCentre/iRecord/issues/1396.
+* Add new endpoints to the data_utils service for bulk redetermination using the verification tools.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/674.
+* Improves search performance for taxon groups in the filter builder tool.
+
+# Version 8.13.0
+*2023-01-13*
+
+* Improved support for PHP 8.1, though it is not yet fully tested.
+* The way that taxon names are written in notifications has been improved. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1395.
+* When a taxon is deleted, if there are existing occurrences then the user is able to nominate an
+  alternative taxa which the occurrences will be mapped to.
+* When notifications for trigger templates are sent as emails, the notification.email_sent field is
+  set to 't'.
+* Fixes the incorrect updating of verification metadata in occurrences. See
+  https://github.com/Indicia-Team/warehouse/issues/466.
+* Support for warehouse configuration of the default user email notification settings for a website.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1247.
+* Fixes setting the verifier field in the cache_occurrences_nonfunctional table when importing
+  already imported occurrences. See https://github.com/Indicia-Team/warehouse/issues/452.
+* Improvements to Importer v2:
+  * Skips empty rows
+  * Provides better feedback in the UI if a template selected.
+* When using website based authentication for Elasticsearch, verification mode only retrieves full
+  precision occurrence data for reporting. For data downloads, the data are blurred if the record
+  is sensitive.
+* New fields for tracking the status of names provided by UKSI, for future improvements in the UKSI
+  synchronisation process.
+* Significant revision and improvements to the code for updating the UKSI species list data from
+  UKSI using the UKSI_History table (as opposed to full synchronisation).
+* Fixes a bug where certain characters in cache keys could not be saved to the cache due to invalid
+  file names being generated.
+* Changed detail_occurrences view to allow verifier information to be displayed on species grid.
+
+# Version 8.12.0
+*2022-10-25*
+
+* Moves the taxon search form into the core warehouse code.
+* Enhances the taxon search form to allow search by taxon name and external key (TVK) as well as
+  organism key.
+
+# Version 8.11.0
+*2022-10-24*
+
+* Adds `taxon_rank` field to the `cache_taxon_searchterms` table, allowing taxon search controls to
+  use the taxon rank name as one of the fields available for separating out taxa.
+* The version 2 importer includes taxon rank and other taxon information in the match info returned
+  to the client when there are duplicate possible taxon name matches. This allows the client to
+  display a user interface for the user to choose the correct taxon to match.
+
+# Version 8.10.0
+*2022-10-19*
+
+* Adds new fields for term code and description of terms in lookup lists.
+* Implements changes required for PHP 8.1 but not yet fully tested.
+
+# Version 8.9.0
+*2022-10-03*
+
+* Adds missing Comments tab to UI for locations.
+* Database & API changes to add a reply_to_id so that comments can refer to the comment they reply
+  to.
+
+# Version 8.8.0
+*2022-09-22*
+
+* Adds a location_comments table.
+* Adds a report for retrieving summary data for location comments that contain structured voting or
+  review data.
+* Updates the occurrences edit form sensitivity control so that all precision levels are supported.
+
+# Version 8.7.0
+*2022-09-11*
+
+* Adds reports which support the record, sample and location details pages to allow a single
+  attribute value to be output in a block (rather than a data list of all attribute values).
+
+# Version 8.6.0
+*2022-09-09"
+
+* Support for new output_formatting option in reports for details pages (occurrences, samples,
+  locations) with auto-formatting of hyperlinks for text attribute data.
+* Improvements to the REST API's auto-generated documentation.
+
+# Version 8.5.0
+*2022-09-09*
+
+* Adds a new standard filter parameter for filtering occurrences by sample ID (smp_id).
+* Adds reports required to support a new recording_system_links Drupal module.
+
+# Version 8.4.0
+*2022-08-10*
+
+* Change to authorisation so that user ID in authorisation token takes precedence over user ID in
+  request parameters.
+* Escaping of email addresses fixed when checking for duplicates.
+* Fixes purging of import files when scheduled tasks run from Cron with the working directory not
+  set to web root.
+* Support for configuration templates for the v2 importer.
+* Adds website_id to the data captured in the imports table (v2 importer).
+# Version 8.3.0
+*2022-07-13*
+
+Scheduled tasks called from the command-line can now have the `tasks` parameter set from the
+command-line. Previously this parameter was only available when called from a browser URL via a
+query parameter.
+
+# Version 8.2.0
+*2022-06-29*
+
+* Supports anonymisation of data for deleted user accounts.
+
 # Version 8.1.0
 *2022-05-17*
 

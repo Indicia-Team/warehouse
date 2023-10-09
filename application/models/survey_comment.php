@@ -32,18 +32,19 @@ class Survey_comment_model extends ORM {
   ];
 
   public function validate(Validation $array, $save = FALSE) {
-    // Uses PHP trim() to remove whitespace from beginning and end of all fields before validation.
+    // Uses PHP trim() to remove whitespace before validation.
     $array->pre_filter('trim');
     $array->add_rules('comment', 'required');
-    $array->add_rules('survey_id', 'required');
+    $array->add_rules('survey_id', 'required', 'integer');
+    $array->add_rules('reply_to_id', 'integer');
 
     // Explicitly add those fields for which we don't do validation.
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'email_address',
       'person_name',
       'deleted',
       'external_key',
-    );
+    ];
     return parent::validate($array, $save);
   }
 

@@ -52,6 +52,18 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'captionField' => 'language',
       'extraParams' => $readAuth,
     ]);
+    echo data_entry_helper::text_input([
+      'label' => 'Code',
+      'fieldname' => 'term:code',
+      'default' => html::initial_value($values, 'term:code'),
+      'helpText' => 'A code or other reference number associatd with the term.',
+    ]);
+    echo data_entry_helper::textarea([
+      'label' => 'Description',
+      'fieldname' => 'term:description',
+      'default' => html::initial_value($values, 'term:description'),
+      'helpText' => 'Description of the term',
+    ]);
     $helpText = <<<TXT
 If an image is required to explain the term, select it here. The image can be
 displayed alongside the input control on the data entry form.

@@ -177,8 +177,6 @@ class Location_Controller extends Gridview_Base_Controller {
       $zipTempFile = upload::save('zip_upload');
       $_SESSION['uploaded_zip'] = $zipTempFile;
 
-      // Following helps for files from Macs.
-      ini_set('auto_detect_line_endings', 1);
       $view = new View('location/upload_shp');
       $zip = new ZipArchive();
       $res = $zip->open($zipTempFile);
@@ -300,7 +298,6 @@ class Location_Controller extends Gridview_Base_Controller {
     // At this point do I need to extract the zipfile again? will assume at the
     // moment that it is already extracted: TODO make sure the extracted files
     // still exist.
-    ini_set('auto_detect_line_endings', 1);
     $view = new View('location/upload_shp2');
     $view->update = [];
     $view->create = [];
@@ -662,21 +659,26 @@ class Location_Controller extends Gridview_Base_Controller {
    * Return a list of the tabs to display for this controller's actions.
    */
   protected function getTabs($name) {
-    return array(
-      array(
+    return [
+      [
         'controller' => 'location/children',
         'title' => 'Child locations',
-        'actions' => array('edit')
-      ), array(
+        'actions' => ['edit'],
+      ], [
         'controller' => 'sample/index_from_location',
         'title' => 'Samples',
-        'actions' => array('edit')
-      ), array(
+        'actions' => ['edit'],
+      ], [
         'controller' => 'location_medium',
         'title' => 'Media files',
-        'actions' => array('edit')
-      )
-    );
+        'actions' => ['edit'],
+      ],
+      [
+        'controller' => 'location_comment',
+        'title' => 'Comments',
+        'actions' => ['edit'],
+      ],
+    ];
   }
 
 }

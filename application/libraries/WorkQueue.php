@@ -22,13 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
- defined('SYSPATH') or die('No direct script access.');
-
- // For PHP 5, map throwable to exception so it doesn't cause errors.
- // Can be removed once PHP 5 support dropped.
- if (!interface_exists('Throwable')) {
-   class Throwable extends Exception {}
- }
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Library class to provide task queue processing functions.
@@ -69,13 +63,13 @@ class WorkQueue {
     // to avoid duplicates in the queue.
     $setValues = [];
     $existsCheckSql =
-      'task=' . pg_escape_literal($fields['task']) .
-      'AND entity' . (empty($fields['entity']) ? ' IS NULL' : '=' . pg_escape_literal($fields['entity'])) .
-      'AND record_id' . (empty($fields['record_id']) ? ' IS NULL' : '=' . pg_escape_literal($fields['record_id'])) .
+      'task=' . pg_escape_literal($db->getLink(), $fields['task']) .
+      ' AND entity' . (empty($fields['entity']) ? ' IS NULL' : '=' . pg_escape_literal($db->getLink(), $fields['entity'])) .
+      ' AND record_id' . (empty($fields['record_id']) ? ' IS NULL' : '=' . pg_escape_literal($db->getLink(), $fields['record_id'])) .
       // Use JSONB to compare as valid in pgSQL.
-      'AND params' . (empty($fields['params']) ? ' IS NULL' : ('::jsonb=' . pg_escape_literal($fields['params']) . '::jsonb'));
+      ' AND params' . (empty($fields['params']) ? ' IS NULL' : ('::jsonb=' . pg_escape_literal($db->getLink(), $fields['params']) . '::jsonb'));
     foreach ($fields as $value) {
-      $setValues[] = pg_escape_literal($value);
+      $setValues[] = pg_escape_literal($db->getLink(), $value);
     }
     $setFieldList = implode(', ', array_keys($fields));
     $setValueList = implode(', ', $setValues);
@@ -108,6 +102,7 @@ SQL;
       $helper = $taskType->task;
       $doneCount = 0;
       $errorCount = 0;
+      $this->cleanupTasksForDeletedRecords($taskType);
       // Loop to claim batches of tasks for this task type. Only actually
       // iterate more than once for priority 1 tasks.
       do {
@@ -115,19 +110,28 @@ SQL;
         // doing in the work_queue table and know they are ours.
         $procId = uniqid('', TRUE);
         try {
-          // Claim an appropriate number of records to do in a batch, depending on
-          // the helper class.
           if (!class_exists($helper)) {
             $this->failClassMissing($taskType);
             $errorCount++;
           }
+          // Claim an appropriate number of records to do in a batch, depending
+          // on the helper class.
           else {
             $claimedCount = $this->claim($taskType, $helper::BATCH_SIZE, $procId);
             if ($claimedCount === 0) {
               break;
             }
             call_user_func("$helper::process", $db, $taskType, $procId);
-            $this->expire($taskType, $procId);
+            // Tasks can be responsible for their own task garbage collection,
+            // or allow a generic cleanup of all claimed tasks.
+            if ($helper::SELF_CLEANUP) {
+              // Any remaining tasks haven't been self-cleaned by the task
+              // class, so reset them.
+              $this->reset($taskType, $procId);
+            }
+            else {
+              $this->expire($taskType, $procId);
+            }
             $doneCount += $claimedCount;
           }
         }
@@ -139,6 +143,26 @@ SQL;
       $errors = $errorCount === 0 ? '' : " with $errorCount batch failure(s).";
       echo "Work queue - $taskType->task ($taskType->entity): $doneCount done$errors<br/>";
     }
+  }
+
+  /**
+   * Deleted records don't need further processing so delete associated tasks.
+   *
+   * @param object $taskType
+   *   Task data read from the database.
+   */
+  private function cleanupTasksForDeletedRecords($taskType) {
+    $table = inflector::plural($taskType->entity);
+    $sql = <<<SQL
+DELETE FROM work_queue q
+USING $table s
+WHERE q.record_id=s.id
+AND s.deleted=true
+AND q.task='$taskType->task'
+AND q.entity='$taskType->entity'
+AND q.error_detail IS NULL;
+SQL;
+    $this->db->query($sql);
   }
 
   /**
@@ -157,25 +181,44 @@ SQL;
       2 => max(0, min(100, (integer) (145 - $load * 2))),
       3 => max(0, min(100, (integer) (130 - $load * 3))),
     ];
+    global $argv;
+    if (isset($argv)) {
+      parse_str(implode('&', array_slice($argv, 1)), $params);
+    }
+    else {
+      $params = $_GET;
+    }
     // Allow URL parameters to limit the maximum cost.
-    if (!empty($_GET['max-cost'])) {
+    if (!empty($params['max-cost'])) {
       // Check value 1 to 100.
-      if (!preg_match('/^[1-9][0-9]?$|^100$/', $_GET['max-cost'])) {
+      if (!preg_match('/^[1-9][0-9]?$|^100$/', $params['max-cost'])) {
         throw new exception('Invalid max-cost parameter - integer from 1 to 100 expected.');
       }
       foreach ($maxCostByPriority as $priority => &$maxCost) {
-        $maxCost = min($maxCost, $_GET['max-cost']);
+        $maxCost = min($maxCost, $params['max-cost']);
       }
     }
     // Allow URL parameters to limit the maximum priority.
-    if (!empty($_GET['max-priority'])) {
-      if (!preg_match('/^[1-3]$/', $_GET['max-priority'])) {
+    if (!empty($params['max-priority'])) {
+      if (!preg_match('/^[1-3]$/', $params['max-priority'])) {
         throw new exception('Invalid max-priority parameter - value from 1 to 3 expected.');
       }
-      if ($_GET['max-priority'] < 3) {
+      if ($params['max-priority'] < 3) {
         $maxCostByPriority[3] = 0;
       }
-      if ($_GET['max-priority'] < 2) {
+      if ($params['max-priority'] < 2) {
+        $maxCostByPriority[2] = 0;
+      }
+    }
+    // Also, allow URL parameters to limit the minimum priority.
+    if (!empty($params['min-priority'])) {
+      if (!preg_match('/^[1-3]$/', $params['min-priority'])) {
+        throw new exception('Invalid min-priority parameter - value from 1 to 3 expected.');
+      }
+      if ($params['min-priority'] > 1) {
+        $maxCostByPriority[1] = 0;
+      }
+      if ($params['min-priority'] > 2) {
         $maxCostByPriority[2] = 0;
       }
     }
@@ -254,26 +297,24 @@ SQL;
     // Use an atomic query to ensure we only claim tasks where they are not
     // already claimed.
     $sql = <<<SQL
-UPDATE work_queue
-SET claimed_by='$procId', claimed_on=now()
-WHERE id IN (
-  SELECT id FROM work_queue
-  WHERE claimed_by IS NULL
-  AND error_detail IS NULL
-  AND task='$taskType->task'
-  AND COALESCE(entity, '')='$taskType->entity'
-  ORDER BY priority, cost_estimate, id
-  LIMIT $batchSize
-);
+WITH rows AS (
+  UPDATE work_queue
+  SET claimed_by='$procId', claimed_on=now()
+  WHERE id IN (
+    SELECT id FROM work_queue
+    WHERE claimed_by IS NULL
+    AND error_detail IS NULL
+    AND task='$taskType->task'
+    AND COALESCE(entity, '')='$taskType->entity'
+    ORDER BY priority, cost_estimate, id
+    LIMIT $batchSize
+  )
+  AND claimed_by IS NULL
+  RETURNING 1
+)
+SELECT count(*) FROM rows;
 SQL;
-    $this->db->query($sql);
-    // Now return the count we actually claimed.
-    $sql = <<<SQL
-SELECT COUNT(id) FROM work_queue
-WHERE claimed_by='$procId'
-AND task='$taskType->task'
-AND COALESCE(entity, '')='$taskType->entity'
-SQL;
+    // Run query and return count claimed.
     return $this->db->query($sql)->current()->count;
   }
 
@@ -290,6 +331,28 @@ SQL;
       'claimed_by' => $procId,
       'task' => $taskType->task,
       'entity' => $taskType->entity,
+      'error_detail' => NULL,
+    ]);
+  }
+
+  /**
+   *
+   * Resets a batch of claimed tasks that were claimed but never done.
+   *
+   * @param object $taskType
+   *   Task type database row object, defining the task and entity to process.
+   * @param string $procId
+   *   Unique ID of this worker process.
+   */
+  private function reset($taskType, $procId) {
+    $this->db->update('work_queue', [
+      'error_detail' => NULL,
+      'claimed_by' => NULL,
+      'claimed_on' => NULL,
+    ], [
+      'claimed_by' => $procId,
+      'task' => $taskType->task,
+      'entity' => $taskType->entity,
     ]);
   }
 
@@ -300,8 +363,10 @@ SQL;
    *   Task type database row object, defining the task and entity to process.
    * @param string $procId
    *   Unique ID of this worker process.
+   * @param Throwable $e
+   *   Exception object.
    */
-  private function fail($taskType, $procId, $e) {
+  private function fail($taskType, $procId, Throwable $e) {
     $this->db->update('work_queue', [
       'error_detail' => $e->__toString(),
     ], [

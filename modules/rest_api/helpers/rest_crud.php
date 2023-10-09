@@ -224,7 +224,7 @@ class rest_crud {
         if (isset(self::$fieldDefs[$param])) {
           if (in_array(self::$fieldDefs[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
             RestObjects::$db->connect();
-            $value = pg_escape_literal($value);
+            $value = pg_escape_literal(RestObjects::$db->getLink(), $value);
           }
           elseif (in_array(self::$fieldDefs[$param]['type'], ['integer', 'float'])) {
             if (!is_numeric($value)) {
@@ -691,10 +691,10 @@ SQL;
     if (is_object($data)) {
       $data = (array) $data;
     }
-    $values = $fields ?  array_intersect_key($data, array_flip($fields)) : $data;
+    $values = $fields ? array_intersect_key($data, array_flip($fields)) : $data;
     foreach ($values as $field => &$value) {
       if (isset(self::$fieldDefs[$field])) {
-        if (self::$fieldDefs[$field]['type'] === 'date') {
+        if (self::$fieldDefs[$field]['type'] === 'date' && !empty($value)) {
           // Date values need reformatting.
           $value = date('c', strtotime($value));
         }

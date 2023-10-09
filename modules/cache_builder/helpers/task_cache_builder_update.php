@@ -35,7 +35,14 @@ class task_cache_builder_update {
   /**
    * Update limit to 1000 so not too resource hungry.
    */
-  const BATCH_SIZE = 1000;
+  public const BATCH_SIZE = 1000;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -61,13 +68,14 @@ WHERE entity='$taskType->entity' AND claimed_by='$procId'
 SQL;
     $db->query($sql);
     $db->query("ALTER TABLE needs_update_$table ADD CONSTRAINT ix_nu_$table PRIMARY KEY (id)");
-    cache_builder::makeChanges($db, $table);
-    $ids = [];
     $sql = <<<SQL
 SELECT DISTINCT id FROM needs_update_$table;
 SQL;
     $rows = $db->query($sql)->result();
-    foreach($rows as $row) {
+    cache_builder::makeChangesWithOutput($db, $table, $rows->count());
+    $ids = [];
+
+    foreach ($rows as $row) {
       $ids[] = $row->id;
     }
     if ($table === 'samples') {

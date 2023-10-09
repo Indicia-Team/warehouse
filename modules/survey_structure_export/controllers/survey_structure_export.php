@@ -47,9 +47,9 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    */
   const SQL_FETCH_ALL_SURVEY_ATTRS = "SELECT
     a.caption,
-    (with table_of_caption_i18n as 
+    (with table_of_caption_i18n as
       (
-        select 
+        select
         value || '|' || key as cap_pipe_lang
         from json_each_text(a.caption_i18n)
 	    )
@@ -60,9 +60,9 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     a.term_name,
     a.term_identifier,
     a.description,
-    (with table_of_description_i18n as 
+    (with table_of_description_i18n as
       (
-        select 
+        select
         value || '|' || key as desc_pipe_lang
         from json_each_text(a.description_i18n)
 	    )
@@ -75,21 +75,21 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     a.allow_ranges,
     a.public,
     a.validation_rules,
-    aw.validation_rules AS aw_validation_rules, 
-    aw.weight AS aw_weight, 
+    aw.validation_rules AS aw_validation_rules,
+    aw.weight AS aw_weight,
     aw.control_type_id AS aw_control_type_id,
-    aw.website_id AS aw_website_id, 
-    aw.default_text_value AS aw_default_text_value, 
-    aw.default_float_value AS aw_default_float_value, 
+    aw.website_id AS aw_website_id,
+    aw.default_text_value AS aw_default_text_value,
+    aw.default_float_value AS aw_default_float_value,
     aw.default_int_value AS aw_default_int_value,
-    aw.default_date_start_value AS aw_default_date_start_value, 
-    aw.default_date_end_value AS aw_default_date_end_value, 
+    aw.default_date_start_value AS aw_default_date_start_value,
+    aw.default_date_end_value AS aw_default_date_end_value,
     aw.default_date_type_value AS aw_default_date_type_value,
     aw.default_upper_value AS aw_default_upper_value,
     t.termlist_title,
     (
       SELECT array_to_string(array_agg(
-        CASE a.data_type 
+        CASE a.data_type
         WHEN 'T' THEN
           coalesce(av.text_value, '')
         WHEN 'F' THEN
@@ -101,13 +101,13 @@ class Survey_structure_export_Controller extends Indicia_Controller {
           coalesce(av.int_value::varchar, '') || '|' ||
           coalesce(av.upper_value::varchar, '')
         WHEN 'V' THEN
-          coalesce(av.date_start_value::varchar, '') || '|' || 
-          coalesce(av.date_end_value::varchar, '') || '|' || 
+          coalesce(av.date_start_value::varchar, '') || '|' ||
+          coalesce(av.date_end_value::varchar, '') || '|' ||
           coalesce(av.date_type_value::varchar, '')
         END
-      ), '**') 
+      ), '**')
       FROM survey_attribute_values av
-      LEFT JOIN cache_termlists_terms t 
+      LEFT JOIN cache_termlists_terms t
         ON t.termlist_id = a.termlist_id
         AND t.id = av.int_value
       WHERE av.survey_attribute_id = a.id
@@ -115,15 +115,15 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     ) AS av_values,
     array_to_string(array_agg(
       (
-        t.term || '|' || 
-        t.language_iso || '|' || 
-        coalesce(t.sort_order::varchar, '') || '|' || 
+        t.term || '|' ||
+        t.language_iso || '|' ||
+        coalesce(t.sort_order::varchar, '') || '|' ||
         coalesce(tp.term::varchar, '')
       )::varchar ORDER BY t.sort_order, t.term
     ), '**') AS terms
   FROM survey_attributes a
-  JOIN survey_attributes_websites aw 
-    ON aw.survey_attribute_id = a.id 
+  JOIN survey_attributes_websites aw
+    ON aw.survey_attribute_id = a.id
     AND aw.deleted = false
   LEFT JOIN cache_termlists_terms t ON t.termlist_id = a.termlist_id
   LEFT JOIN cache_termlists_terms tp ON tp.id = t.parent_id
@@ -131,7 +131,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   AND aw.website_id = {website_id}
   GROUP BY a.caption, a_caption_i18n, a.unit, a.term_name,
     a.term_identifier, a.description, a_description_i18n, a.system_function,
-    a.data_type, a.multi_value, a.allow_ranges, a.public, a.validation_rules, 
+    a.data_type, a.multi_value, a.allow_ranges, a.public, a.validation_rules,
     aw.validation_rules, aw.weight, aw.control_type_id, aw.website_id,
     aw.default_text_value, aw.default_float_value, aw.default_int_value,
     aw.default_date_start_value, aw.default_date_end_value,
@@ -143,11 +143,11 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * @const SQL_FETCH_ALL_SAMPLE_ATTRS Query definition which retrieves all
    * the sample attribute details for a survey ID in preparation for export.
    */
-  const SQL_FETCH_ALL_SAMPLE_ATTRS = "SELECT 
-    a.caption, 
-    (with table_of_caption_i18n as 
+  const SQL_FETCH_ALL_SAMPLE_ATTRS = "SELECT
+    a.caption,
+    (with table_of_caption_i18n as
       (
-        select 
+        select
         value || '|' || key as cap_pipe_lang
         from json_each_text(a.caption_i18n)
 	    )
@@ -158,9 +158,9 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     a.term_name,
     a.term_identifier,
     a.description,
-    (with table_of_description_i18n as 
+    (with table_of_description_i18n as
       (
-        select 
+        select
         value || '|' || key as desc_pipe_lang
         from json_each_text(a.description_i18n)
 	    )
@@ -168,34 +168,34 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       from table_of_description_i18n
     ) as a_description_i18n,
     a.system_function,
-    a.data_type, 
-    a.multi_value, 
+    a.data_type,
+    a.multi_value,
     a.allow_ranges,
-    a.public, 
-    a.validation_rules, 
-    a.applies_to_location, 
-    a.applies_to_recorder, 
-    sm.term AS aw_restrict_to_sample_method_id_term, 
-    aw.validation_rules AS aw_validation_rules, 
-    aw.weight AS aw_weight, 
+    a.public,
+    a.validation_rules,
+    a.applies_to_location,
+    a.applies_to_recorder,
+    sm.term AS aw_restrict_to_sample_method_id_term,
+    aw.validation_rules AS aw_validation_rules,
+    aw.weight AS aw_weight,
     aw.control_type_id AS aw_control_type_id,
-    aw.website_id AS aw_website_id, 
-    aw.default_text_value AS aw_default_text_value, 
-    aw.default_float_value AS aw_default_float_value, 
+    aw.website_id AS aw_website_id,
+    aw.default_text_value AS aw_default_text_value,
+    aw.default_float_value AS aw_default_float_value,
     aw.default_int_value AS aw_default_int_value,
-    aw.default_date_start_value AS aw_default_date_start_value, 
-    aw.default_date_end_value AS aw_default_date_end_value, 
+    aw.default_date_start_value AS aw_default_date_start_value,
+    aw.default_date_end_value AS aw_default_date_end_value,
     aw.default_date_type_value AS aw_default_date_type_value,
-    fsb1.name AS fsb1_name, 
-    fsb1.weight AS fsb1_weight, 
-    fsb2.name AS fsb2_name, 
-    fsb2.weight AS fsb2_weight, 
+    fsb1.name AS fsb1_name,
+    fsb1.weight AS fsb1_weight,
+    fsb2.name AS fsb2_name,
+    fsb2.weight AS fsb2_weight,
     t.termlist_title AS termlist_title,
     array_to_string(array_agg(
       (
-        t.term || '|' || 
-        t.language_iso || '|' || 
-        coalesce(t.sort_order::varchar, '') || '|' || 
+        t.term || '|' ||
+        t.language_iso || '|' ||
+        coalesce(t.sort_order::varchar, '') || '|' ||
         coalesce(tp.term::varchar, '')
       )::varchar ORDER BY t.sort_order, t.term
     ), '**') AS terms
@@ -204,11 +204,11 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   LEFT JOIN cache_termlists_terms t ON t.termlist_id = a.termlist_id
   LEFT JOIN cache_termlists_terms tp ON tp.id = t.parent_id
   LEFT JOIN cache_termlists_terms sm ON sm.id = aw.restrict_to_sample_method_id
-  LEFT JOIN form_structure_blocks fsb1 
-    ON fsb1.id = aw.form_structure_block_id 
+  LEFT JOIN form_structure_blocks fsb1
+    ON fsb1.id = aw.form_structure_block_id
     AND fsb1.survey_id = aw.restrict_to_survey_id
-  LEFT JOIN form_structure_blocks fsb2 
-    ON fsb2.id = fsb1.parent_id 
+  LEFT JOIN form_structure_blocks fsb2
+    ON fsb2.id = fsb1.parent_id
     AND fsb2.survey_id = aw.restrict_to_survey_id
   WHERE a.deleted = false
     AND aw.restrict_to_survey_id = {survey_id}
@@ -217,7 +217,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     a.data_type, a.multi_value, a.allow_ranges, a.public,
     a.validation_rules, a.applies_to_location, a.applies_to_recorder,
     sm.term, aw.validation_rules, aw.weight, aw.control_type_id,
-    aw.website_id, aw.default_text_value, aw.default_float_value, 
+    aw.website_id, aw.default_text_value, aw.default_float_value,
     aw.default_int_value, aw.default_date_start_value,
     aw.default_date_end_value, aw.default_date_type_value,
     fsb1.name, fsb1.weight, fsb2.name, fsb2.weight, t.termlist_title
@@ -228,11 +228,11 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * all the occurrence attribute details for a survey ID in preparation for
    * export.
    */
-  const SQL_FETCH_ALL_OCCURRENCE_ATTRS = "SELECT 
-    a.caption, 
-    (with table_of_caption_i18n as 
+  const SQL_FETCH_ALL_OCCURRENCE_ATTRS = "SELECT
+    a.caption,
+    (with table_of_caption_i18n as
       (
-        select 
+        select
         value || '|' || key as cap_pipe_lang
         from json_each_text(a.caption_i18n)
 	    )
@@ -243,9 +243,9 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     a.term_name,
     a.term_identifier,
     a.description,
-    (with table_of_description_i18n as 
+    (with table_of_description_i18n as
       (
-        select 
+        select
         value || '|' || key as desc_pipe_lang
         from json_each_text(a.description_i18n)
 	    )
@@ -253,45 +253,45 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       from table_of_description_i18n
     ) as a_description_i18n,
     a.system_function,
-    a.data_type, 
-    a.multi_value, 
+    a.data_type,
+    a.multi_value,
     a.allow_ranges,
-    a.public, 
-    a.validation_rules, 
-    aw.validation_rules AS aw_validation_rules, 
-    aw.weight AS aw_weight, 
+    a.public,
+    a.validation_rules,
+    aw.validation_rules AS aw_validation_rules,
+    aw.weight AS aw_weight,
     aw.control_type_id AS aw_control_type_id,
-    aw.website_id AS aw_website_id, 
-    aw.default_text_value AS aw_default_text_value, 
-    aw.default_float_value AS aw_default_float_value, 
+    aw.website_id AS aw_website_id,
+    aw.default_text_value AS aw_default_text_value,
+    aw.default_float_value AS aw_default_float_value,
     aw.default_int_value AS aw_default_int_value,
-    aw.default_date_start_value AS aw_default_date_start_value, 
-    aw.default_date_end_value AS aw_default_date_end_value, 
+    aw.default_date_start_value AS aw_default_date_start_value,
+    aw.default_date_end_value AS aw_default_date_end_value,
     aw.default_date_type_value AS aw_default_date_type_value,
-    fsb1.name AS fsb1_name, 
-    fsb1.weight AS fsb1_weight, 
-    fsb2.name AS fsb2_name, 
-    fsb2.weight AS fsb2_weight, 
+    fsb1.name AS fsb1_name,
+    fsb1.weight AS fsb1_weight,
+    fsb2.name AS fsb2_name,
+    fsb2.weight AS fsb2_weight,
     t.termlist_title AS termlist_title,
     array_to_string(array_agg(
       (
-        t.term || '|' || 
-        t.language_iso || '|' || 
-        coalesce(t.sort_order::varchar, '') || '|' || 
+        t.term || '|' ||
+        t.language_iso || '|' ||
+        coalesce(t.sort_order::varchar, '') || '|' ||
         coalesce(tp.term::varchar, '')
       )::varchar ORDER BY t.sort_order, t.term
     ), '**') AS terms
   FROM occurrence_attributes a
-  JOIN occurrence_attributes_websites aw 
-    ON aw.occurrence_attribute_id = a.id 
+  JOIN occurrence_attributes_websites aw
+    ON aw.occurrence_attribute_id = a.id
     AND aw.deleted = false
   LEFT JOIN cache_termlists_terms t ON t.termlist_id = a.termlist_id
   LEFT JOIN cache_termlists_terms tp ON tp.id = t.parent_id
-  LEFT JOIN form_structure_blocks fsb1 
-    ON fsb1.id = aw.form_structure_block_id 
+  LEFT JOIN form_structure_blocks fsb1
+    ON fsb1.id = aw.form_structure_block_id
     AND fsb1.survey_id = aw.restrict_to_survey_id
-  LEFT JOIN form_structure_blocks fsb2 
-    ON fsb2.id = fsb1.parent_id 
+  LEFT JOIN form_structure_blocks fsb2
+    ON fsb2.id = fsb1.parent_id
     AND fsb2.survey_id = aw.restrict_to_survey_id
   WHERE a.deleted = false
     AND aw.restrict_to_survey_id = {survey_id}
@@ -299,7 +299,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     a.term_identifier, a.description, a_description_i18n, a.system_function,
     a.data_type, a.multi_value, a.allow_ranges, a.public,
     a.validation_rules, aw.validation_rules, aw.weight, aw.control_type_id,
-    aw.website_id, aw.default_text_value, aw.default_float_value, 
+    aw.website_id, aw.default_text_value, aw.default_float_value,
     aw.default_int_value, aw.default_date_start_value,
     aw.default_date_end_value, aw.default_date_type_value,
     fsb1.name, fsb1.weight, fsb2.name, fsb2.weight, t.termlist_title
@@ -313,12 +313,12 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * aggregates in the where clause. The order by clause puts any attributes
    * already used by this website at the top.
    */
-  const SQL_FIND_ATTRS = "SELECT 
-    a.id, 
-    a.caption, 
-    (with table_of_caption_i18n as 
+  const SQL_FIND_ATTRS = "SELECT
+    a.id,
+    a.caption,
+    (with table_of_caption_i18n as
       (
-        select 
+        select
         value || '|' || key as cap_pipe_lang
         from json_each_text(a.caption_i18n)
 	    )
@@ -329,9 +329,9 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     a.term_name,
     a.term_identifier,
     a.description,
-    (with table_of_description_i18n as 
+    (with table_of_description_i18n as
       (
-        select 
+        select
         value || '|' || key as desc_pipe_lang
         from json_each_text(a.description_i18n)
 	    )
@@ -339,27 +339,27 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       from table_of_description_i18n
     ) as a_description_i18n,
     a.system_function,
-    a.data_type, 
-    a.multi_value, 
+    a.data_type,
+    a.multi_value,
     a.allow_ranges,
-    a.public, 
+    a.public,
     a.validation_rules{extraFields},
-	  t.termlist_title AS termlist_title, 
+	  t.termlist_title AS termlist_title,
     aw.website_id,
 	  array_to_string(array_agg(
       (
-        t.term || '|' || 
-        t.language_iso || '|' || 
-        coalesce(t.sort_order::varchar, '') || '|' || 
+        t.term || '|' ||
+        t.language_iso || '|' ||
+        coalesce(t.sort_order::varchar, '') || '|' ||
         coalesce(tp.term::varchar, '')
       )::varchar order by t.sort_order, t.term
     ), '**') AS terms
   FROM {type}_attributes a
   LEFT JOIN cache_termlists_terms t ON t.termlist_id = a.termlist_id
   LEFT JOIN cache_termlists_terms tp ON tp.id = t.parent_id
-  LEFT JOIN {type}_attributes_websites aw 
-    ON aw.{type}_attribute_id = a.id 
-    AND aw.deleted = false 
+  LEFT JOIN {type}_attributes_websites aw
+    ON aw.{type}_attribute_id = a.id
+    AND aw.deleted = false
     AND aw.website_id = {websiteId}
   WHERE a.deleted = false
   AND (a.public = true OR aw.id IS NOT NULL)
@@ -377,14 +377,14 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * after running the query, since PostgreSQL does not support aggregates in
    * the where clause.
    */
-  const SQL_FIND_TERMLIST = "SELECT 
-    t.termlist_id, 
+  const SQL_FIND_TERMLIST = "SELECT
+    t.termlist_id,
     t.termlist_title,
     array_to_string(array_agg(
       (
-        t.term || '|' || 
-        t.language_iso || '|' || 
-        coalesce(t.sort_order::varchar, '') || '|' || 
+        t.term || '|' ||
+        t.language_iso || '|' ||
+        coalesce(t.sort_order::varchar, '') || '|' ||
         coalesce(tp.term::varchar, '')
       )::varchar ORDER BY t.sort_order, t.term
     ), '**') AS terms
@@ -546,7 +546,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     // attribute meets our needs.
     $where = '';
     foreach ($fieldsToMatch as $field => $fieldsql) {
-      $value = pg_escape_string($importAttrDef[$field]);
+      $value = pg_escape_string($this->db->getLink(), $importAttrDef[$field]);
       if ($importAttrDef[$field] === '' || $importAttrDef[$field] === NULL) {
         $where .= "and coalesce($fieldsql, '') = '$value' ";
       }
@@ -694,7 +694,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         // The tokens defining the term are separated by pipes.
         $term = explode('|', $term);
         // SQL escaping.
-        $escapedTerm = pg_escape_string($term[0]);
+        $escapedTerm = pg_escape_string($this->db->getLink(), $term[0]);
         // Sanitise the sort order.
         $term[2] = empty($term[2]) ? 'null' : $term[2];
         $this->db->query(
@@ -707,19 +707,19 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         $term = explode('|', $term);
         if (!empty($term[3])) {
           // SQL escaping.
-          $escapedTerm = pg_escape_string($term[0]);
-          $escapedParent = pg_escape_string($term[3]);
+          $escapedTerm = pg_escape_string($this->db->getLink(), $term[0]);
+          $escapedParent = pg_escape_string($this->db->getLink(), $term[3]);
           $this->db->query("UPDATE termlists_terms tlt set parent_id = tltp.id
             FROM terms t, termlists_terms tltp
-            JOIN terms tp 
-              ON tp.id = tltp.term_id 
-              AND tp.deleted = false 
+            JOIN terms tp
+              ON tp.id = tltp.term_id
+              AND tp.deleted = false
               AND tp.term = '$escapedParent'
-            WHERE tlt.termlist_id = {$tl->id} 
-              AND t.id = tlt.term_id 
-              AND t.deleted = false 
+            WHERE tlt.termlist_id = {$tl->id}
+              AND t.id = tlt.term_id
+              AND t.deleted = false
               AND t.term = '$escapedTerm'
-              AND tltp.termlist_id = tlt.termlist_id 
+              AND tltp.termlist_id = tlt.termlist_id
               AND tltp.deleted = false");
         }
       }
@@ -784,17 +784,17 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       if ($type === 'sample' && !empty($importAttrDef['aw_restrict_to_sample_method_id_term'])) {
         $sm = $this->db->query(
           "SELECT id FROM list_termlists_terms
-          WHERE termlist='Sample methods' 
+          WHERE termlist='Sample methods'
           AND term='$importAttrDef[aw_restrict_to_sample_method_id_term]'"
         )->result_array(FALSE);
 
         if (count($sm) === 0) {
           $this->db->query(
             "SELECT insert_term(
-              '$importAttrDef[aw_restrict_to_sample_method_id_term]', 
-              'eng', 
-              null, 
-              null, 
+              '$importAttrDef[aw_restrict_to_sample_method_id_term]',
+              'eng',
+              null,
+              null,
               'indicia:sample_methods'
             );"
           );
@@ -837,8 +837,8 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       $query .= 'AND fsb2.id is null';
     }
     else {
-      $query .= "AND fsb2.name = '$attrDef[fsb2_name]' 
-          AND fsb2.survey_id = $_POST[survey_id] 
+      $query .= "AND fsb2.name = '$attrDef[fsb2_name]'
+          AND fsb2.survey_id = $_POST[survey_id]
           AND fsb2.type = '$type'";
     }
     $matches = $this->db->query($query)->result_array(FALSE);

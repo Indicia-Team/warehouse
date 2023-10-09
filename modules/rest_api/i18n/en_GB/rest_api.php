@@ -90,6 +90,11 @@ wrap the child object in an array (as only one is possible). The nested object's
 then saved into the current record as a foreign key.</p>
 HTML;
 $lang['resourcesTitle'] = 'Resources';
+$lang['resourcesIntroduction'] = <<<TXT
+Resources available through the REST API are listed below. Reload the page with ?deprecated in the
+URL to include deprecated resources in the list.
+TXT;
+$lang['deprecatedEndpoint'] = 'This endpoint is deprecated and may be removed in a future API version.';
 $lang['authMethods'] = 'Allowed authentication methods';
 $lang['jwtUser'] = 'JWT as warehouse user';
 $lang['jwtUserHelp'] = 'Use JWT access token to authenticate as a warehouse user';
@@ -97,6 +102,8 @@ $lang['hmacClient'] = 'HMAC as client system';
 $lang['hmacClientHelp'] = <<<HTML
 Use HMAC to authenticate as a configured client system. The configuration must be specified in the
 <code>\$config['clients']</code> section of the REST API's configuration file on the warehouse.
+See <a href="https://indicia-docs.readthedocs.io/en/latest/developing/rest-web-services/authentication.html#hmac">
+  the Indicia HMAC documentation</a> for more info.
 HTML;
 $lang['hmacClientHelpHeader'] = 'Set the authorisation header to <em>USER:[client system ID]:HMAC:[hmac]</em>';
 $lang['hmacWebsite'] = 'HMAC as website';
@@ -105,6 +112,8 @@ Use HMAC to authenticate as a website registered on the warehouse. The scope of 
 which includes records from all websites which share their records to the authenticated website for public reports.
 This can be overridden by setting the URL parameter <em>scope</em>, e.g. <em>scope=verification</em> and optionally
 <em>user_id=<warehouse user ID></em> where the scope requires a known user.
+See <a href="https://indicia-docs.readthedocs.io/en/latest/developing/rest-web-services/authentication.html#hmac">
+  the Indicia HMAC documentation</a> for more info.
 HTML;
 $lang['hmacWebsiteHelpHeader'] = 'Set the authorisation header to <em>WEBSITE_ID:[website ID]:HMAC:[hmac]</em>';
 $lang['directUser'] = 'Direct authentication as warehouse user';
@@ -193,12 +202,87 @@ $lang['format_param_help'] = 'Request a response in this format, either html or 
 // Help text for each end-point/method combination.
 $lang['resources'] = [];
 $lang['resources']['annotations'] = <<<TXT
-A list of comments and verification decisions attached to taxon-observation resources.
+A list of comments and verification decisions attached to taxon-observation resources. Described fully in the
+<a href="http://indicia-online-recording-rest-api.readthedocs.io/en/latest/">online recording REST API documentation</a>.
 TXT;
 $lang['resources']['GET annotations'] = 'Retrieve a list of annotations available to this client ID.';
 $lang['resources']['GET annotations/{id}'] = <<<TXT
 Retrieve the details of a single annotation where {id} is replaced by the observation
 ID.
+TXT;
+$lang['resources']['custom-verification-rulesets'] = <<<TXT
+Endpoints for functionality relating to a user's sets of custom verification rules. Custom verification rulesets are
+a feature that allows a verifier to upload their own rule definitions to apply checks to the list of species records
+they can verify. For example, they can flag records which are outside an expected region or time of year, or have an
+unusually high abundance count.
+TXT;
+$lang['resources']['POST custom-verification-rulesets/{id}/run-request'] = <<<TXT
+<p>POST a filter definition to this endpoint to run the custom verification ruleset {id} against the filtered set of records.</p>
+<p>Example:</p>
+<pre><code>
+POST /index.php/services/rest/custom-verification-rulesets/123/run-request
+{
+	"query": {
+		"bool": {
+			"must": [{
+				"query_string": {
+					"query": "identification.verification_status:C AND identification.verification_substatus:0 AND NOT identification.query:Q"
+				}
+			}, {
+				"term": {
+					"metadata.trial": false
+				}
+			}, {
+				"term": {
+					"metadata.confidential": false
+				}
+			}, {
+				"term": {
+					"metadata.release_status": "R"
+				}
+			}, {
+				"term": {
+					"event.year": 2023
+				}
+			}]
+		}
+	}
+}
+</code></pre>
+TXT;
+$lang['resources']['POST custom-verification-rulesets/clear-flags'] = <<<TXT
+<p>POST a filter definition to this endpoint to clear any custom verification rule flags from the filtered list of records. Only affects rule flags created by this user.</p>
+<p>Example:</p>
+<pre><code>
+POST /index.php/services/rest/custom-verification-rulesets/clear-flags
+{
+	"query": {
+		"bool": {
+			"must": [{
+				"query_string": {
+					"query": "identification.verification_status:C AND identification.verification_substatus:0 AND NOT identification.query:Q"
+				}
+			}, {
+				"term": {
+					"metadata.trial": false
+				}
+			}, {
+				"term": {
+					"metadata.confidential": false
+				}
+			}, {
+				"term": {
+					"metadata.release_status": "R"
+				}
+			}, {
+				"term": {
+					"event.year": 2023
+				}
+			}]
+		}
+	}
+}
+</code></pre>
 TXT;
 $lang['resources']['locations'] = 'A list of a user\'s saved sites and other locations.';
 $lang['resources']['GET locations'] = 'Retrieves a list of a user\'s saved sites and other locations.';
@@ -272,11 +356,11 @@ myfile[]=IMAGE FILE
 Response:
 {
   "file[0]": {
-    "name": "5f3698a2e587b1.59610000.png",
+    "name": "18/60/23/5f3698a2e587b1.59610000.png",
     "tempPath": "http://localhost/warehouse-test/upload-queue/5f3698a2e587b1.59610000.png"
   },
   "file[1]": {
-    "name": "5f3698a2e587c1.59610000.png",
+    "name": "18/60/23/5f3698a2e587c1.59610000.png",
     "tempPath": "http://localhost/warehouse-test/upload-queue/5f3698a2e587c1.59610000.png"
   }
 }
@@ -293,20 +377,20 @@ POST /index.php/services/rest/samples
     "entered_sref_system": "OSGB",
     "date": "01\/08\/2020"
   },
-  "media": [{
-    "values": {
-      "queued": "5f3698a2e587b1.59610000.png",
-      "caption": "Sample image"
-    },
-  },
-  {
+  "media": [
     {
       "values": {
-        "queued": "5f3698a2e587c1.59610000.png",
+        "queued": "18/60/23/5f3698a2e587b1.59610000.png",
+        "caption": "Sample image"
+      },
+    },
+    {
+      "values": {
+        "queued": "18/60/23/5f3698a2e587c1.59610000.png",
         "caption": "2nd sample image"
       }
     }
-  }]
+  ]
 }
 </pre></code>
 
@@ -403,7 +487,7 @@ POST /index.php/services/rest/samples
       "media": [
         {
           "values": {
-            "queued": "abcdefg.jpg",
+            "queued": "18/60/23/abcdefg.jpg",
             "caption": "Occurrence image"
           }
         }
@@ -574,7 +658,7 @@ POST /index.php/services/rest/samples
     },
     "media": [{
       "values": {
-        "queued": "5f36a6d2b51472.42086512.jpg",
+        "queued": "18/60/23/5f36a6d2b51472.42086512.jpg",
         "caption": "Occurrence image"
       }
     }]
@@ -643,7 +727,10 @@ $lang['resources']['GET taxa/search'] = <<<TXT
 Search resource for taxa. Perform full text searches against the taxonomy information held in the
 warehouse.
 TXT;
-$lang['resources']['taxon-observations'] = 'Occurrence data provided in the deprecated NBN Gateway exchange format.';
+$lang['resources']['taxon-observations'] = <<<TXT
+Occurrence data provided in the deprecated NBN Gateway exchange format. Described fully in the
+<a href="http://indicia-online-recording-rest-api.readthedocs.io/en/latest/">online recording REST API documentation</a>.
+TXT;
 $lang['resources']['POST taxon-observations'] = 'Creates an occurrence using the deprecated NBN Gateway exchange format.';
 $lang['resources']['GET reports'] = <<<TXT
 Retrieves the contents of the top level of the reports directory on the warehouse. Can retrieve the
@@ -654,7 +741,11 @@ $lang['resources']['GET reports/{path}'] = <<<TXT
 Retrieves the contents of the folder specified by {path} of the reports directory on the warehouse.
 URL.
 TXT;
-$lang['resources']['GET reports/{path}/{file-xml}'] = 'Access the output for a report specified by the supplied path.';
+$lang['resources']['GET reports/{path}/{file-xml}'] = <<<TXT
+Access the output for a report specified by the supplied path. As well as the system parameters
+defined here, each report defines a list of it's own parameters available via the /params endpoint
+described below.
+TXT;
 $lang['resources']['GET reports/{path}/{file-xml}/params'] = <<<TXT
 Get metadata about the list of parameters available to filter this report by.
 TXT;
@@ -929,6 +1020,13 @@ Provides a list of well maintained reports which are recommended as a starting p
 the library of reports.
 TXT;
 $lang['GET reports/{path}/{file-xml}'] = [];
+$lang['GET reports/{path}/{file-xml}']['autofeed'] = <<<TXT
+Set to 't' to enable autofeed mode when populating an Elasticsearch instance by connecting Logstash
+to a warehouse via the REST API, using one of the "list_for_elastic" reports which supports this
+mode. The request must authenticate using a client project ID which then enables the API to
+automatically feed through all new and changed records since the last request, up to a limit
+(normally 10,000).
+TXT;
 $lang['GET reports/{path}/{file-xml}']['filter_id'] = <<<TXT
 Optional when authenticated as a warehouse user. Must point to the ID of a filter in the filters
 table which has defines_permissions set to true and is linked to the authenticated user. When used,
@@ -936,6 +1034,14 @@ switches the set of records that are accessible from those created by the curren
 of records identified by the filter.
 TXT;
 $lang['GET reports/{path}/{file-xml}']['limit'] = 'Limit the number of records in the response.';
+$lang['GET reports/{path}/{file-xml}']['max_time'] = <<<TXT
+Use in conjuction with `autofeed` mode when populating an Elasticsearch instance by connecting
+Logstash to a warehouse via the REST API, using one of the "list_for_elastic" reports which
+supports this mode. Defines a maximum number of seconds for the request to take before autofeed
+tracking is cancelled. This is because Logstash will always timeout a request that takes too long
+so the `max_time` should be set to a lower value in order to cause the next request to retrieve the
+same set of records again and avoid skipping a block of records.
+TXT;
 $lang['GET reports/{path}/{file-xml}']['offset'] = 'Offset from the start of the dataset that the response will start.';
 $lang['GET reports/{path}/{file-xml}']['sortby'] = <<<TXT
 The field to sort by. Must be compatible with the SQL generated for the report.

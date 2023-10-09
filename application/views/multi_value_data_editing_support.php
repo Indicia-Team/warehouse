@@ -92,9 +92,9 @@ function handle_multi_value_attributes($fieldPrefix, $attributeId, $multiAttr, &
     // Typically, the complex_attr_grid takes data encoded in a multi-value text
     // attribute and shows it in a table. Each value makes a row in the table
     // and each value is decoded in to columns. By default, JSON ecoding is
-    // used. In this instance, however, we are using it to show multi-value 
-    // attributes in a single column and we must be careful NOT to do any 
-    // decoding of values. The `encoding` string has to be set to something 
+    // used. In this instance, however, we are using it to show multi-value
+    // attributes in a single column and we must be careful NOT to do any
+    // decoding of values. The `encoding` string has to be set to something
     // that will never be encountered (or is very very unlikely).
     echo data_entry_helper::complex_attr_grid([
       'fieldname' => $name,
@@ -113,7 +113,7 @@ function handle_multi_value_attributes($fieldPrefix, $attributeId, $multiAttr, &
 
 /**
  * Handle single value attributes
- * 
+ *
  * Draw single value attributes to the screen when called
  */
 function handle_single_value_attributes($fieldPrefix, $attributeId, $attr, $values) {
@@ -187,7 +187,7 @@ function handle_single_value_attributes($fieldPrefix, $attributeId, $attr, $valu
       echo data_entry_helper::text_input([
         'label' => $attr['caption'],
         'fieldname' => $name,
-        'default' => htmlspecialchars($attr['value']),
+        'default' => htmlspecialchars($attr['value'] ?? ''),
       ]);
   }
 }

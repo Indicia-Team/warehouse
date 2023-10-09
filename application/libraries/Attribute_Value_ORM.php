@@ -159,10 +159,12 @@ abstract class Attribute_Value_ORM extends ORM {
   }
 
   public function save() {
-    if ($this->delete_if_empty())
+    if ($this->delete_if_empty()) {
       return $this;
-    else
+    }
+    else {
       return parent::save();
+    }
   }
 
   /**
@@ -193,10 +195,8 @@ abstract class Attribute_Value_ORM extends ORM {
   /**
   * Override set handler to translate WKT to PostGIS internal spatial data.
   */
-  public function __set($key, $value)
-  {
-    if ($key === 'geom_value')
-    {
+  public function __set($key, $value) {
+    if ($key === 'geom_value') {
       if ($value) {
         $row = $this->db->query("SELECT ST_GeomFromText('$value', ".kohana::config('sref_notations.internal_srid').") AS geom")->current();
         $value = $row->geom;
@@ -208,16 +208,37 @@ abstract class Attribute_Value_ORM extends ORM {
   /**
   * Override get handler to translate PostGIS internal spatial data to WKT.
   */
-  public function __get($column)
-  {
+  public function __get($column) {
     $value = parent::__get($column);
 
-    if ($column === 'geom_value' && !empty($value))
-    {
+    if ($column === 'geom_value' && !empty($value)) {
       $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
       $value = $row->wkt;
     }
     return $value;
+  }
+
+  /**
+   * Post submit of a single attribute value.
+   *
+   * Occurs only when an attribute value submitted in isolation. Updates the
+   * parent record updated metadata to reflect the change in the attribute
+   * value, making it easier to detect when anything about a record has been
+   * changed.
+   *
+   * @param bool $isInsert
+   *   True if the operation is an insert, false for an update.
+   */
+  protected function postSubmit($isInsert) {
+    if ($this->wantToUpdateMetadata) {
+      // Value has changed, so trigger metadata update on parent.
+      $parentEntity = str_replace('_attribute_value','',$this->object_name);
+      $parentTable = inflector::plural($parentEntity);
+      $parentTableFk = $parentEntity . '_id';
+      $parentTableId = $this->$parentTableFk;
+      $this->db->query("UPDATE $parentTable SET updated_on='now()', updated_by_id=$this->updated_by_id WHERE id=$parentTableId");
+    }
+    return parent::postSubmit($isInsert);
   }
 
 }

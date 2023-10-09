@@ -66,6 +66,13 @@ class report_standard_params_occurrences {
         'description' => 'Operator to use in conjunction with a value provided in the occ_id parameter.',
         'lookup_values' => '=:is,>=:is at least,<=:is at most',
       ],
+      'smp_id' => [
+        'datatype' => 'lookup',
+        'default' => 'in',
+        'display' => 'Sample ID operation',
+        'description' => 'Operator to use in conjunction with a value provided in the smp_id parameter.',
+        'lookup_values' => '=:is,>=:is at least,<=:is at most',
+      ],
       'website_list' => [
         'datatype' => 'lookup',
         'default' => 'in',
@@ -115,6 +122,34 @@ class report_standard_params_occurrences {
         'description' => 'Identification difficulty lookup operation',
         'lookup_values' => '=:is,>=:is at least,<=:is at most',
       ],
+      'date_year' => [
+        'datatype' => 'lookup',
+        'default' => '',
+        'display' => 'Year filter operation',
+        'description' => 'Operation for filtering on date',
+        'lookup_values' => '=:is,>=:is in or after,<=:is in or before',
+      ],
+      'input_date_year' => [
+        'datatype' => 'lookup',
+        'default' => '',
+        'display' => 'Year of input filter operation',
+        'description' => 'Operation for filtering on input date',
+        'lookup_values' => '=:is,>=:is in or after,<=:is in or before',
+      ],
+      'edited_date_year' => [
+        'datatype' => 'lookup',
+        'default' => '',
+        'display' => 'Year of last editfilter operation',
+        'description' => 'Operation for filtering on last edit date',
+        'lookup_values' => '=:is,>=:is in or after,<=:is in or before',
+      ],
+      'verified_date_year' => [
+        'datatype' => 'lookup',
+        'default' => '',
+        'display' => 'Year of last verification filter operation',
+        'description' => 'Operation for filtering on last verification date',
+        'lookup_values' => '=:is,>=:is in or after,<=:is in or before',
+      ],
     ];
   }
 
@@ -143,6 +178,18 @@ class report_standard_params_occurrences {
             'value' => '',
             'operator' => '',
             'sql' => "o.id #occ_id_op# #occ_id#",
+          ],
+        ],
+      ],
+      'smp_id' => [
+        'datatype' => 'integer',
+        'display' => 'Sample ID',
+        'description' => 'Limit by sample ID.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "o.sample_id #smp_id_op# #smp_id#",
           ],
         ],
       ],
@@ -237,6 +284,18 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'date_year' => [
+        'datatype' => 'integer',
+        'display' => 'Year',
+        'description' => 'Filter by year of the record',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "extract(year from o.date_start) #date_year_op# #date_year#",
+          ],
+        ],
+      ],
       'date_from' => [
         'datatype' => 'date',
         'display' => 'Date from',
@@ -270,6 +329,18 @@ class report_standard_params_occurrences {
             'value' => '',
             'operator' => '',
             'sql' => "o.date_start>now()-'#date_age#'::interval",
+          ],
+        ],
+      ],
+      'input_date_year' => [
+        'datatype' => 'integer',
+        'display' => 'Input year',
+        'description' => 'Filter by year of the input date of the record',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "extract(year from o.created_on) #input_date_year_op# #input_date_year#",
           ],
         ],
       ],
@@ -314,6 +385,18 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'edited_date_year' => [
+        'datatype' => 'integer',
+        'display' => 'Last update date year',
+        'description' => 'Filter by year of the last update of the record',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "extract(year from o.updated_on) #edited_date_year_op# #edited_date_year#",
+          ],
+        ],
+      ],
       'edited_date_from' => [
         'datatype' => 'date',
         'display' => 'Last update date from',
@@ -347,6 +430,18 @@ class report_standard_params_occurrences {
             'value' => '',
             'operator' => '',
             'sql' => "o.updated_on>now()-'#edited_date_age#'::interval",
+          ],
+        ],
+      ],
+      'verified_date_year' => [
+        'datatype' => 'integer',
+        'display' => 'Verification year',
+        'description' => 'Filter by year of the last verification of the record',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "extract(year from o.verified_on) #verified_date_year_op# #verified_date_year#",
           ],
         ],
       ],
@@ -422,15 +517,20 @@ class report_standard_params_occurrences {
         'datatype' => 'lookup',
         'display' => 'Quality',
         'description' => 'Minimum quality of records to include',
-        'lookup_values' => 'V1:Accepted as correct records only,V:Accepted records only,-3:Reviewer agreed at least plausible,' .
+        'lookup_values' => 'V1:Accepted as correct records only,V2:Accepted as considered correct records only,V:Accepted records only,-3:Reviewer agreed at least plausible,' .
           'C3:Plausible records only,C:Recorder was certain,L:Recorder thought the record was at least likely,' .
           'P:Not reviewed,T:Not reviewed but trusted recorder,!D:Exclude queried or not accepted records,!R:Exclude not accepted records,D:Queried records only,'.
-          'A:Answered records,R:Not accepted records only,R4:Not accepted because unable to verify records only,DR:Queried or not accepted records,all:All records',
+          'A:Answered records,R:Not accepted records only,R4:Not accepted because unable to verify records only,R5:Not accepted as incorrect records only,DR:Queried or not accepted records,all:All records',
         'wheres' => [
           [
             'value' => 'V1',
             'operator' => 'equal',
             'sql' => "o.record_status='V' and o.record_substatus=1",
+          ],
+          [
+            'value' => 'V2',
+            'operator' => 'equal',
+            'sql' => "o.record_status='V' and o.record_substatus=2",
           ],
           [
             'value' => 'V',
@@ -496,6 +596,11 @@ class report_standard_params_occurrences {
             'value' => 'R4',
             'operator' => 'equal',
             'sql' => "o.record_status='R' and o.record_substatus=4",
+          ],
+          [
+            'value' => 'R5',
+            'operator' => 'equal',
+            'sql' => "o.record_status='R' and o.record_substatus=5",
           ],
           [
             'value' => 'DR',
@@ -744,12 +849,35 @@ class report_standard_params_occurrences {
       ],
       'my_records' => [
         'datatype' => 'boolean',
-        'display' => "Only include my records",
+        'display' => 'Include or exclude my records',
         'wheres' => [
+          [
+            'value' => '0',
+            'operator' => 'equal',
+            'sql' => "o.created_by_id<>#user_id#",
+          ],
           [
             'value' => '1',
             'operator' => 'equal',
             'sql' => "o.created_by_id=#user_id#",
+          ],
+        ],
+      ],
+      'recorder_name' => [
+        'datatype' => 'text',
+        'display' => 'Recorder name contains',
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'standard_join' => 'sj_snf',
+          ],
+        ],
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "sj_snf.recorders ~* regexp_replace('#recorder_name#', '[^a-zA-Z0-9]+', '|')",
           ],
         ],
       ],
@@ -1079,19 +1207,19 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'standard_join' => 'prefcttl',
+            'standard_join' => 'sj_prefcttl',
           ],
         ],
         'wheres' => [
           [
             'value' => 'Y',
             'operator' => 'equal',
-            'sql' => "prefcttl.marine_flag=true",
+            'sql' => "sj_prefcttl.marine_flag=true",
           ],
           [
             'value' => 'N',
             'operator' => 'equal',
-            'sql' => "(prefcttl.marine_flag is null or prefcttl.marine_flag=false)",
+            'sql' => "(sj_prefcttl.marine_flag is null or sj_prefcttl.marine_flag=false)",
           ],
           // The all filter does not need any SQL.
         ],
@@ -1101,19 +1229,19 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'standard_join' => 'prefcttl',
+            'standard_join' => 'sj_prefcttl',
           ],
         ],
         'wheres' => [
           [
             'value' => 'Y',
             'operator' => 'equal',
-            'sql' => "prefcttl.freshwater_flag=true",
+            'sql' => "sj_prefcttl.freshwater_flag=true",
           ],
           [
             'value' => 'N',
             'operator' => 'equal',
-            'sql' => "(prefcttl.freshwater_flag is null or prefcttl.freshwater_flag=false)",
+            'sql' => "(sj_prefcttl.freshwater_flag is null or sj_prefcttl.freshwater_flag=false)",
           ],
           // The all filter does not need any SQL.
         ],
@@ -1123,19 +1251,19 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'standard_join' => 'prefcttl',
+            'standard_join' => 'sj_prefcttl',
           ],
         ],
         'wheres' => [
           [
             'value' => 'Y',
             'operator' => 'equal',
-            'sql' => "prefcttl.terrestrial_flag=true",
+            'sql' => "sj_prefcttl.terrestrial_flag=true",
           ],
           [
             'value' => 'N',
             'operator' => 'equal',
-            'sql' => "(prefcttl.terrestrial_flag is null or prefcttl.terrestrial_flag=false)",
+            'sql' => "(sj_prefcttl.terrestrial_flag is null or sj_prefcttl.terrestrial_flag=false)",
           ],
           // The all filter does not need any SQL.
         ],
@@ -1145,19 +1273,19 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'standard_join' => 'prefcttl',
+            'standard_join' => 'sj_prefcttl',
           ],
         ],
         'wheres' => [
           [
             'value' => 'Y',
             'operator' => 'equal',
-            'sql' => "prefcttl.non_native_flag=true",
+            'sql' => "sj_prefcttl.non_native_flag=true",
           ],
           [
             'value' => 'N',
             'operator' => 'equal',
-            'sql' => "(prefcttl.non_native_flag is null or prefcttl.non_native_flag=false)",
+            'sql' => "(sj_prefcttl.non_native_flag is null or sj_prefcttl.non_native_flag=false)",
           ],
           // The all filter does not need any SQL.
         ],
@@ -1214,7 +1342,12 @@ class report_standard_params_occurrences {
    */
   public static function getDefaultParameterValues() {
     return [
+      'date_year_op' => '=',
+      'input_date_year_op' => '=',
+      'edited_date_year_op' => '=',
+      'verified_date_year_op' => '=',
       'occ_id_op' => '=',
+      'smp_id_op' => '=',
       'taxon_rank_sort_order_op' => '=',
       'website_list_op' => 'in',
       'survey_list_op' => 'in',
@@ -1222,7 +1355,12 @@ class report_standard_params_occurrences {
       'location_list_op' => 'in',
       'indexed_location_list_op' => 'in',
       'identification_difficulty_op' => '=',
+      'date_year_op_context' => '=',
+      'input_date_year_op_context' => '=',
+      'edited_date_year_op_context' => '=',
+      'verified_date_year_op_context' => '=',
       'occ_id_op_context' => '=',
+      'smp_id_op_context' => '=',
       'website_list_op_context' => 'in',
       'survey_list_op_context' => 'in',
       'input_form_list_op_context' => 'in',

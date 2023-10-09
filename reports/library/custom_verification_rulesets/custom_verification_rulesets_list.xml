@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="List of custom verification rulesets" description="A simple list of a user's custom verification rulesets">
+  <query website_filter_field="rs.website_id">
+    SELECT #columns#
+    FROM custom_verification_rulesets rs
+    LEFT JOIN custom_verification_rules r on r.custom_verification_ruleset_id=rs.id AND r.deleted=false
+    WHERE rs.deleted=false
+    AND rs.created_by_id=#user_id#
+  </query>
+  <params>
+    <param name='user_id' display='User ID' description='ID of the user to return rulesets for.' datatype="integer"/>
+  </params>
+  <columns>
+    <column name="id" display="ID" visible="false" sql="rs.id" datatype="integer" />
+    <column name="title" display="Title" sql="rs.title" datatype="text" />
+    <column name="description" display="Description" sql="rs.description" datatype="text" />
+    <column name="rules_count" display="No. of rules" sql="count(r.*)" datatype="integer" aggregate="true"/>
+  </columns>
+</report>

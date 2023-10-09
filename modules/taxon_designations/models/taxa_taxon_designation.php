@@ -34,10 +34,10 @@ class Taxa_taxon_designation_Model extends ORM {
     'taxa',
     'taxon_designation',
     'created_by' => 'user',
-    'updated_by' => 'user'
+    'updated_by' => 'user',
   );
 
-  protected $lookup_against='gv_taxa_taxon_designations';
+  public $lookup_against = gv_taxa_taxon_designations';
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');

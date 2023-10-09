@@ -34,7 +34,14 @@
  */
 class task_cache_builder_attr_value_sample {
 
-  const BATCH_SIZE = 10000;
+  public const BATCH_SIZE = 10000;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -128,6 +135,12 @@ GROUP BY sample_id;
 
 UPDATE cache_samples_nonfunctional u
 SET attrs_json=a.attrs
+FROM attrs a
+WHERE a.sample_id=u.id;
+
+-- Force tracking update.
+UPDATE cache_samples_functional u
+SET website_id=u.website_id
 FROM attrs a
 WHERE a.sample_id=u.id;
 

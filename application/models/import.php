@@ -27,7 +27,10 @@ class Import_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     // Cleanup leading/trailing whitespace.
     $array->pre_filter('trim');
+
+    // Field validation.
     $array->add_rules('entity', 'required');
+    $array->add_rules('website_id', 'integer');
     $array->add_rules('inserted', 'integer', 'required');
     $array->add_rules('updated', 'integer', 'required');
     $array->add_rules('import_guid', 'required');
@@ -39,4 +42,5 @@ class Import_Model extends ORM {
     ];
     return parent::validate($array, $save);
   }
+
 }

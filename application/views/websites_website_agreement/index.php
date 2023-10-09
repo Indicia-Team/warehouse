@@ -26,6 +26,6 @@ echo $grid;
 if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin')) :
 ?>
 <form action="<?php echo url::site() . 'websites_website_agreement/create/' . $this->uri->argument(1); ?>">
-  <input type="submit" value="Join Website Agreement" class="ui-corner-all ui-state-default button" />
+  <input type="submit" value="Join website data sharing agreement" class="ui-corner-all ui-state-default button" />
 </form>
 <?php endif;

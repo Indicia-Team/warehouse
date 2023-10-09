@@ -447,25 +447,23 @@ class Validation_Core extends ArrayObject {
       }
     }
 
-    // Swap the array back into the object
+    // Swap the array back into the object.
     $this->exchangeArray($array);
 
-    // Get all defined field names
+    // Get all defined field names.
     $fields = array_keys($array);
 
-    foreach ($this->pre_filters as $field => $callbacks)
-    {
-      foreach ($callbacks as $callback)
-      {
-        if ($field === '*')
-        {
-          foreach ($fields as $f)
-          {
-            $this[$f] = is_array($this[$f]) ? array_map($callback, $this[$f]) : call_user_func($callback, $this[$f]);
+    foreach ($this->pre_filters as $field => $callbacks) {
+      foreach ($callbacks as $callback) {
+        if ($field === '*') {
+          foreach ($fields as $f) {
+            // Can't trim NULL from PHP 8.1.
+            if ($this[$f] !== NULL || $callback !== 'trim') {
+              $this[$f] = is_array($this[$f]) ? array_map($callback, $this[$f]) : call_user_func($callback, $this[$f]);
+            }
           }
         }
-        else
-        {
+        else {
           $this[$field] = is_array($this[$field]) ? array_map($callback, $this[$field]) : call_user_func($callback, $this[$field]);
         }
       }
@@ -474,11 +472,9 @@ class Validation_Core extends ArrayObject {
     if ($this->submitted === FALSE)
       return FALSE;
 
-    foreach ($this->rules as $field => $callbacks)
-    {
+    foreach ($this->rules as $field => $callbacks) {
 
-      foreach ($callbacks as $callback)
-      {
+      foreach ($callbacks as $callback) {
         // Separate the callback and arguments
         list ($callback, $args) = $callback;
 

@@ -116,8 +116,7 @@ $config['extension_prefix'] = 'MY_';
  * or relative to the docroot. Modules can include any resource that can exist
  * in your application directory, configuration files, controllers, views, etc.
  */
-$config['modules'] = array
-(
+$config['modules'] = [
   MODPATH.'indicia_auth',            // Authentication
   MODPATH.'indicia_svc_base',        // Services
   MODPATH.'indicia_svc_data',        // Data services
@@ -147,5 +146,7 @@ $config['modules'] = array
   MODPATH.'attribute_sets',          // custom attribute management functionality
   MODPATH.'request_logging',         // track report and data timings
   MODPATH.'survey_structure_export', // import/export of attributes
+  MODPATH.'audit',                   // audit trail
+  MODPATH.'summary_occurrences',     // summary occurrences
   MODPATH.'phpUnit',                 // Required for testing
-);
+];

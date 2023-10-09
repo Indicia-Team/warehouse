@@ -23,7 +23,14 @@ defined('SYSPATH') or die('No direct script access.');
 
 class task_summary_builder_taxon {
 
-  const BATCH_SIZE = 2;
+  public const BATCH_SIZE = 2;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -50,7 +57,7 @@ SET so.taxon_list_id = dttl.taxon_list_id,
   so.default_common_name = dttl.common,
   so.taxon_meaning_id = dttl.taxon_meaning_id
 FROM detail_taxa_taxon_lists dttl
-WHERE 
+WHERE
   so.taxa_taxon_list_id = dttl.id
     AND so.taxa_taxon_list_id in (SELECT record_id
         FROM work_queue

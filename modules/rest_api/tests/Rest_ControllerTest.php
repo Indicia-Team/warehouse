@@ -180,13 +180,16 @@ KEY;
   /**
    * Get user associated JWT.
    */
-  private function getJwt($privateKey, $iss, $userId, $exp) {
+  private function getJwt($privateKey, $iss, $userId, $exp, $scope = NULL) {
     require_once 'vendor/autoload.php';
     $payload = [
       'iss' => $iss,
       'http://indicia.org.uk/user:id' => $userId,
       'exp' => $exp,
     ];
+    if ($scope) {
+      $payload['scope'] = $scope;
+    }
     return \Firebase\JWT\JWT::encode($payload, $privateKey, 'RS256');
   }
 
@@ -456,10 +459,12 @@ KEY;
    *   End-point (table) name.
    * @param array $exampleData
    *   Example values to POST then GET to check.
+   * @param string $scope
+   *   Optional JWT token scope claim.
    */
-  private function getTest($table, $exampleData) {
+  private function getTest($table, $exampleData, $scope = NULL) {
     $this->authMethod = 'jwtUser';
-    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120, $scope);
     // First POST to create.
     $response = $this->callService(
       $table,
@@ -514,9 +519,10 @@ KEY;
     // Search for the one we posted.
     $found = FALSE;
     foreach ($storedList['response'] as $storedItem) {
-      $allMatch = $storedItem['values']['id'] === $id;
+      // Typecast as ID returned from warehouse may be a string datatype.
+      $allMatch = (integer) $storedItem['values']['id'] === (integer) $id;
       foreach ($exampleData as $field => $value) {
-        $allMatch = $allMatch && ((string) $value === $storedItem['values'][$field]);
+        $allMatch = $allMatch && ((string) $value === (string) $storedItem['values'][$field]);
       }
       if ($allMatch) {
         $found = TRUE;
@@ -525,16 +531,17 @@ KEY;
       }
     }
     $this->assertTrue($found, "POSTed $table not found in retrieved list using GET.");
-    // Repeat with a filter
+    // Repeat with a filter.
     $filterField = array_keys($exampleData)[1];
     $storedList = $this->callService($table, [$filterField => $exampleData[$filterField]]);
     $this->assertResponseOk($storedList, "/$table GET");
     // Search for the one we posted.
     $found = FALSE;
     foreach ($storedList['response'] as $storedItem) {
-      $allMatch = $storedItem['values']['id'] === $id;
+      // Typecast as ID returned from warehouse may be a string datatype.
+      $allMatch = (integer) $storedItem['values']['id'] === (integer) $id;
       foreach ($exampleData as $field => $value) {
-        $allMatch = $allMatch && ((string) $value === $storedItem['values'][$field]);
+        $allMatch = $allMatch && ((string) $value === (string) $storedItem['values'][$field]);
       }
       if ($allMatch) {
         $found = TRUE;
@@ -907,6 +914,92 @@ KEY;
     $occCount = $db->query("select count(*) from occurrences where sample_id=$id")
       ->current()->count;
     $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
+  }
+
+  public function testJwtSamplePostUserDeletionCheck() {
+    $db = new Database();
+
+    // Set up a user to test against.
+    $personId = $db->query('INSERT INTO people (first_name, surname, email_address, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ('usertodelete', 'Test', 'user" . microtime(TRUE) . "@example.com', 1, now(), 1, now())")->insert_id();
+    $userId = $db->query('INSERT INTO users (person_id, username, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($personId, 'user" . microtime(TRUE) . "', 1, now(), 1, now())")->insert_id();
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      "VALUES ($userId, 1, 3, 1, now(), 1, now())");
+
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    // Check we can post a record with our created user.
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $sampleId = $response['response']['values']['id'];
+    $occCount = $db->query("select count(*) from occurrences where sample_id=$sampleId")
+      ->current()->count;
+    $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
+
+    // Call the delete user service.
+    $response = user_identifier::delete_user($userId, 1);
+
+    // Test that the user account can no longer post data.
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    // Should be unauthorised.
+    $this->assertEquals(401, $response['httpCode']);
+
+    // Process the queue so anonymisation is done.
+    $db->query("UPDATE work_queue SET priority=1 WHERE task='task_indicia_svc_security_delete_user_account'");
+    $queue = new WorkQueue();
+    $queue->process($db);
+
+    // Get the anonymous user ID.
+    $anonUserId = $db->query("SELECT id FROM users WHERE username='anonymous'")->current()->id;
+
+    // No occurrences should remain linked to this user.
+    $occs = $db->query("SELECT count(*) as occ_count FROM occurrences WHERE created_by_id=$userId OR updated_by_id=$userId")->current();
+    $this->assertEquals(0, $occs->occ_count, 'Anonymised user ID still points to some occurrence data.');
+
+    // Test occurrence now points to anonymous user.
+    $occs = $db->query("SELECT created_by_id, updated_by_id FROM occurrences WHERE sample_id=$sampleId");
+    $this->assertEquals(1, $occs->count());
+    foreach ($occs as $occ) {
+      $this->assertEquals($anonUserId, $occ->created_by_id, 'Anonymised occurrence created_by_id is incorrect');
+      $this->assertEquals($anonUserId, $occ->updated_by_id, 'Anonymised occurrence updated_by_id is incorrect');
+    }
+
+    // Test existing sample now has a recorder name and points to anonymous
+    // user.
+    $sample = $db->query("SELECT recorder_names, created_by_id, updated_by_id FROM samples WHERE id=$sampleId")->current();
+    $this->assertEquals('Test, usertodelete', $sample->recorder_names);
+    $this->assertEquals($anonUserId, $sample->created_by_id, 'Anonymised sample created_by_id is incorrect');
+    $this->assertEquals($anonUserId, $sample->updated_by_id, 'Anonymised sample updated_by_id is incorrect');
+
+    // Test person email address is anonymised.
+    $person = $db->query("SELECT email_address FROM people WHERE id=$personId")->current();
+    $this->assertEquals(1, preg_match('/@anonymous\.anonymous$/', $person->email_address), 'Person email address not anonymised correctly');
+
   }
 
   public function testJwtSamplePostList() {
@@ -1723,7 +1816,7 @@ SQL;
     $db = new Database();
     // Should fail if we are not an admin.
     $db->query('UPDATE users SET core_role_id=null WHERE id=1');
-    // Should succeed if we are a site admin
+    // Should succeed if we are a site admin.
     $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
       ' VALUES (1, 1, 3, 1, now(), 1, now())');
     $response = $this->callService(
@@ -2066,6 +2159,67 @@ SQL;
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
     ]);
+  }
+
+  /**
+   * A basic test of /occurrences/id GET.
+   */
+  public function testJwtOccurrenceGetScope() {
+    // Create a sample using the default user ID.
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $db = new Database();
+    // Create a different user to query with with.
+    $db->query("insert into people(first_name, surname, created_on, created_by_id, updated_on, updated_by_id) " .
+      "values ('test', 'extrauser', now(), 1, now(), 1)");
+    $tm = microtime(TRUE);
+    $db->query("insert into users (username, person_id,  created_on, created_by_id, updated_on, updated_by_id) " .
+    "values ('test_extrauser$tm', (select max(id) from people), now(), 1, now(), 1)");
+    $userId = $db->query('select max(id) from users')->current()->max;
+    // Grant website access.
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userId, 1, 3, 1, now(), 1, now())");
+    // Authenticate as the added user.
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    // Try to GET the sample.
+    $response = $this->callService("samples/$sampleId");
+    $this->assertEquals(
+      404, $response['httpCode'],
+      "Request for another user's sample does not return 404."
+    );
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Try to GET the sample.
+    $response = $this->callService("samples/$sampleId");
+    $this->assertEquals(
+      200, $response['httpCode'],
+      "Request for a user's sample does not return 200."
+    );
+    // Authenticated scope should default to user's own records, so expect 404
+    // if requesting for the created user.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120, 'authenticated');
+    // Try to GET the sample.
+    $response = $this->callService("samples/$sampleId");
+    $this->assertEquals(
+      404, $response['httpCode'],
+      "Request for another user's sample does not return 404 with authenticated scope."
+    );
+    // Same for user scope.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120, 'user');
+    // Try to GET the sample.
+    $response = $this->callService("samples/$sampleId");
+    $this->assertEquals(
+      404, $response['httpCode'],
+      "Request for another user's sample does not return 404 with user scope."
+    );
+    // Same for reporting scope - as using JwtUser, it will widen the scope to
+    // other websites but not other users.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120, 'reporting');
+    // Try to GET the sample.
+    $response = $this->callService("samples/$sampleId");
+    $this->assertEquals(
+      404, $response['httpCode'],
+      "Request for another user's sample does not return 404 with reporting scope."
+    );
   }
 
   /**

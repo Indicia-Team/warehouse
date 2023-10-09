@@ -35,7 +35,14 @@ class task_cache_builder_taxonomy_occurrence {
   /**
    * Not a fast operation.
    */
-  const BATCH_SIZE = 10;
+  public const BATCH_SIZE = 10;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -86,12 +93,14 @@ SET taxon_path=ctp.path,
   freshwater_flag=cttl.freshwater_flag,
   terrestrial_flag=cttl.terrestrial_flag,
   non_native_flag=cttl.non_native_flag
-FROM work_queue q, cache_taxa_taxon_lists cttl
+FROM work_queue q, cache_taxa_taxon_lists cttlm
+JOIN cache_taxa_taxon_lists cttl ON cttl.taxon_meaning_id=cttlm.taxon_meaning_id
+JOIN occurrences occ ON occ.taxa_taxon_list_id=cttl.id
 LEFT JOIN cache_taxon_paths ctp
   ON ctp.external_key=cttl.external_key
   AND ctp.taxon_list_id=COALESCE($masterListId, cttl.taxon_list_id)
-WHERE cttl.id=o.taxa_taxon_list_id
-AND o.taxa_taxon_list_id=q.record_id
+WHERE o.id=occ.id
+AND cttlm.id=q.record_id
 AND q.entity='taxa_taxon_list'
 AND q.task='task_cache_builder_taxonomy_occurrence'
 AND q.claimed_by='$procId';

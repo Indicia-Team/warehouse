@@ -29,7 +29,14 @@
  */
 class task_spatial_index_builder_occurrence {
 
-  const BATCH_SIZE = 5000;
+  public const BATCH_SIZE = 5000;
+
+  /**
+   * This class will expire the completed tasks itself.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = TRUE;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -50,20 +57,39 @@ class task_spatial_index_builder_occurrence {
    */
   public static function process($db, $taskType, $procId) {
     $qry = <<<SQL
+-- Delete entries which no longer require processing - normally a result of a
+-- deletion since the queue entry created.
+DELETE FROM work_queue q
+USING occurrences o
+JOIN samples s ON s.id=o.sample_id
+WHERE o.id=q.record_id
+AND q.claimed_by='$procId'
+AND q.entity='occurrence'
+AND q.task='task_spatial_index_builder_occurrence'
+AND (s.deleted=true OR o.deleted=true);
+
 DROP TABLE IF EXISTS occlist;
 
-SELECT record_id INTO TEMPORARY occlist
-FROM work_queue
-WHERE claimed_by='$procId'
-AND entity='occurrence'
-AND task='task_spatial_index_builder_occurrence';
+SELECT q.id as work_queue_id, o.id, s.location_ids
+INTO TEMPORARY occlist
+FROM work_queue q
+JOIN cache_occurrences_functional o ON o.id=q.record_id
+-- s.location_ids will be null if the sample not yet indexed.
+JOIN cache_samples_functional s ON s.id=o.sample_id AND s.location_ids IS NOT NULL
+WHERE q.claimed_by='$procId'
+AND q.entity='occurrence'
+AND q.task='task_spatial_index_builder_occurrence';
 
 UPDATE cache_occurrences_functional o
-SET location_ids = s.location_ids
-FROM occlist ol, cache_samples_functional s
-WHERE s.id=o.sample_id
-AND o.id=ol.record_id
-AND (o.location_ids <> s.location_ids OR (o.location_ids IS NULL)<>(s.location_ids IS NULL));
+SET location_ids = ol.location_ids
+FROM occlist ol
+WHERE ol.id=o.id
+AND (o.location_ids <> ol.location_ids OR (o.location_ids IS NULL)<>(ol.location_ids IS NULL));
+
+-- Delete processed.
+DELETE FROM work_queue q
+USING occlist ol
+WHERE ol.work_queue_id=q.id;
 SQL;
     $db->query($qry);
   }

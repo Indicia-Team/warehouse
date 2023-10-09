@@ -25,9 +25,9 @@
  * @return array Spatial system metadata
  */
 function sref_utm_sref_systems() {
-  return array(
-    'utm30ed50' => array(
-      'title' => 'UTM 30N (ED50)',
+  return [
+    'utm30ed50' => [
+      'title' => 'Channel Islands Grid (UTM ED50)',
       /* IMPORTANT
        * Because there are many possible datum shifts available for this projection
        * by default PostGIS does none. I have applied the mean shift by updating the
@@ -38,11 +38,12 @@ function sref_utm_sref_systems() {
        * The datum shift was taken from http://earth-info.nga.mil/GandG/coordsys/onlinedatum/CountryEuropeTable.html
        */
       'srid' => 23030,
-      'treat_srid_as_x_y_metres' => true
-    ), 'utm30wgs84' => array(
+      'treat_srid_as_x_y_metres' => TRUE,
+    ],
+    'utm30wgs84' => [
       'title' => 'UTM 30N (WGS84)',
       'srid' => 32630,
-      'treat_srid_as_x_y_metres' => true
-    )
-  );
+      'treat_srid_as_x_y_metres' => TRUE,
+    ],
+  ];
 }

@@ -54,7 +54,7 @@ class Occurrence_Model extends ORM {
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
     'occurrence:fk_taxa_taxon_list:search_code' => 'Species or taxon search code',
     // Needs to be more complex version so import recognises it as same field as above.
-    'occurrence:fk_taxa_taxon_list:id' => 'Species or taxon taxa_taxon_lists.id',
+    'occurrence:fk_taxa_taxon_list:id' => 'Species or taxon database ID (taxa_taxon_lists.id)',
     // Allow details of 4 images to be uploaded in CSV files.
     'occurrence_medium:path:1' => 'Media Path 1',
     'occurrence_medium:caption:1' => 'Media Caption 1',
@@ -81,6 +81,16 @@ class Occurrence_Model extends ORM {
       'columns' => ['sample:date:year', 'sample:date:month', 'sample:date:day'],
     ],
   ];
+
+  /**
+   * Indicates database trigger on table which accesses a sequence.
+   *
+   * Set to true as set_occurrence_to_training_from_sample_trigger was
+   * added.
+   *
+   * @var bool
+   */
+  protected $hasTriggerWithSequence = TRUE;
 
   /**
    * Methods of identifying duplicates during import.
@@ -133,14 +143,15 @@ class Occurrence_Model extends ORM {
       $newSubstatus = empty($fields['record_substatus']) ? $this->record_substatus : $fields['record_substatus']['value'];
       $releaseStatusChanging = !empty($fields['release_status']) && $fields['release_status']['value'] !== $this->release_status;
       $metadataFieldChanging = !empty($fields['metadata']) && $fields['metadata']['value'] !== $this->metadata;
-      $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
-      $isAlreadyReviewed = preg_match('/[RDV]/', $this->record_status) || $this->record_substatus === 3;
+      $identChanging = !empty($fields['taxa_taxon_list_id']) && (string) $fields['taxa_taxon_list_id']['value'] !== (string) $this->taxa_taxon_list_id;
+      $isAlreadyReviewed = (!empty($this->record_status) && preg_match('/[RDV]/', $this->record_status)) || $this->record_substatus === 3;
       // Is this post going to change the record status or substatus?
-      if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
+      if ($newStatus !== $this->record_status || (string) $newSubstatus !== (string) $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {
-          // If verifying or rejecting, then set the verification metadata.
-          $array->verified_by_id = $this->getCurrentUserId();
-          $array->verified_on = date("Ymd H:i:s");
+          // If verifying or rejecting, then set the verification metadata to
+          // provided values, if present, else current values.
+          $array->verified_by_id = empty($fields['verified_by_id']) ? $this->getCurrentUserId() : $fields['verified_by_id']['value'];
+          $array->verified_on = empty($fields['verified_on']) ? date("Ymd H:i:s") : $fields['verified_on']['value'];
         }
         else {
           // If any status other than verified or rejected we don't want
@@ -209,34 +220,6 @@ class Occurrence_Model extends ORM {
   }
 
   /**
-   * Retrieve date of last determination.
-   *
-   * @return string
-   *   Date as string.
-   */
-  private function getWhenRecordLastDetermined() {
-    if (empty($this->id)) {
-      // Use now as default for new records - should not really happen.
-      return date("Ymd H:i:s");
-    }
-    else {
-      $rows = $this->db
-        ->select('max(updated_on) as last_update')
-        ->from('determinations')
-        ->where([
-          'occurrence_id' => $this->id,
-          'deleted' => 'f',
-        ])->get()->result_array();
-    }
-    if (count($rows) > 0 && !empty($rows[0]->last_update)) {
-      return $rows[0]->last_update;
-    }
-    else {
-      return $this->created_on;
-    }
-  }
-
-  /**
    * Handle cases where an existing record is redetermined.
    *
    * This includes logging of the change to the determinations table and
@@ -249,85 +232,35 @@ class Occurrence_Model extends ORM {
     if (!empty($this->taxa_taxon_list_id) &&
         !empty($this->submission['fields']['taxa_taxon_list_id']['value']) &&
         $this->taxa_taxon_list_id != $this->submission['fields']['taxa_taxon_list_id']['value']) {
-      // Only log a determination for the occurrence if the species is changed.
-      // Also the all_info_in_determinations flag must be off to avoid clashing
-      // with other functionality and the config setting must be enabled.
-      if (kohana::config('indicia.auto_log_determinations') === TRUE && $this->all_info_in_determinations !== 'Y') {
-        $oldDeterminerUserId = empty($this->determiner_id) ? $this->updated_by_id : $this->userIdFromPersonId($this->determiner_id);
-        $determination = [
-          // We log the old taxon.
-          'taxa_taxon_list_id' => $this->taxa_taxon_list_id,
-          // And classification event it came from.
-          'machine_involvement' => $this->machine_involvement,
-          'classification_event_id' => $this->classification_event_id,
-          'determination_type' => 'B',
-          'occurrence_id' => $this->id,
-          // Last change to the occurrence is really the create metadata for
-          // this determination, since we are copying it out of the existing
-          // occurrence record.
-          'created_by_id' => $oldDeterminerUserId,
-          'updated_by_id' => $oldDeterminerUserId,
-          'created_on' => $this->getWhenRecordLastDetermined(),
-          'updated_on' => date("Ymd H:i:s"),
-          'person_name' => $this->getPreviousDeterminerName(),
-        ];
-        $this->db
-          ->from('determinations')
-          ->set($determination)
-          ->insert();
-        if (empty($this->submission['fields']['machine_involvement'])) {
-          $array->machine_involvement = NULL;
+      $logDeterminations = kohana::config('indicia.auto_log_determinations') === TRUE ? 'true' : 'false';
+      $resetClassification = empty($this->submission['fields']['classification_event_id']) ? 'true' : 'false';
+      $currentUserId = $this->getCurrentUserId();
+      if (empty($this->submission['fields']['determiner_id']) || empty($this->submission['fields']['determiner_id']['value'])) {
+        // Determiner ID not provided, so use the authorised user_id to work
+        // it out.
+        $userInfo = $this->db->select('person_id')->from('users')->where('id', $currentUserId)->get()->current();
+        $determinerPersonId = $userInfo->person_id;
+        if ($determinerPersonId !== '1') {
+          // Store in the occurrences.determiner_id field.
+          $array->determiner_id = $determinerPersonId;
         }
-        if (empty($this->submission['fields']['classification_event_id'])) {
-          $array->classification_event_id = NULL;
-        }
-      }
-      if (!empty($this->submission['fields']['determiner_id']) && !empty($this->submission['fields']['determiner_id']['value'])) {
-        // Redetermination by user ID provided in submission.
-        $redetByPersonId = (int) $this->submission['fields']['determiner_id']['value'];
-        if ($redetByPersonId === -1) {
-          // Determiner person ID -1 is special case, means don't assign new
-          // determiner name on redet.
-          unset($this->submission['fields']['determiner_id']);
-          unset($array->determiner_id);
-          return;
-        }
-        $userInfo = $this->userIdFromPersonId($redetByPersonId);
-        $redetByUserId = $this->userIdFromPersonId($redetByPersonId);
       }
       else {
-        // Redetermination doesn't specify user ID, so use logged in user
-        // account.
-        $redetByUserId = (int) $this->getCurrentUserId();
-        $userInfo = $this->db->select('person_id')->from('users')->where('id', $redetByUserId)->get()->current();
-        $redetByPersonId = $userInfo->person_id;
-        if ($redetByUserId !== 1) {
-          // Store in the occurrences.determiner_id field.
-          $array->determiner_id = $redetByPersonId;
-        }
+        $determinerPersonId = $this->submission['fields']['determiner_id']['value'];
       }
-      if ($redetByUserId !== 1) {
-        // Update any determiner occurrence attributes.
-        $sql = <<<SQL
-UPDATE occurrence_attribute_values v
-SET text_value=CASE a.system_function
-  WHEN 'det_full_name' THEN TRIM(COALESCE(p.first_name || ' ', '') || p.surname)
-  WHEN 'det_first_name' THEN p.first_name
-  WHEN 'det_last_name' THEN p.surname
-END
-FROM occurrence_attributes a, users u
-JOIN people p ON p.id=u.person_id
-  AND p.deleted=false
-WHERE a.deleted=false
-AND v.deleted=false
-AND v.occurrence_attribute_id=a.id
-AND v.occurrence_id=$this->id
-AND a.system_function in ('det_full_name', 'det_first_name', 'det_last_name')
-AND u.id=$redetByUserId
-AND u.deleted=false
-SQL;
-        $this->db->query($sql);
+      if ((int) $determinerPersonId === -1) {
+        // Determiner person ID -1 is special case, means don't assign new
+        // determiner name on redet.
+        unset($array->determiner_id);
       }
+      if (empty($this->submission['fields']['machine_involvement'])) {
+        $array->machine_involvement = NULL;
+      }
+      if (empty($this->submission['fields']['classification_event_id'])) {
+        $array->classification_event_id = NULL;
+      }
+      $sql = "SELECT f_handle_determination(ARRAY[$this->id], $currentUserId, $determinerPersonId, $logDeterminations, $resetClassification);";
+      $this->db->query($sql);
       $array->last_verification_check_date = NULL;
     }
   }
@@ -531,14 +464,21 @@ SQL;
   }
 
   /**
-   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   * Fixed values form for import.
+   *
+   * Define a form that is used to capture a set of predetermined values that
+   * apply to every record during an import.
    *
    * @param array $options
    *   Model specific options, including
-   *   * **occurrence_associations** - Set to 't' to enable occurrence associations options. The
-   *     relevant warehouse module must also be enabled.
+   *   * **occurrence_associations** - Set to 't' to enable occurrence
+   *     associations options. The relevant warehouse module must also be
+   *     enabled.
+   *
+   * @return array
+   *   List of control definitions.
    */
-  public function fixedValuesForm($options = []) {
+  public function fixedValuesForm(array $options = []) {
     $srefs = [];
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title) {
@@ -585,8 +525,10 @@ SQL;
       ],
       'sample:entered_sref_system' => [
         'display' => 'Spatial ref. system',
-        'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
-            'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.',
+        'description' => 'Select the spatial reference system used in this import file. Note, if you have an import ' .
+          'file with a mix of spatial reference systems then you need to include a column in the file that shows ' .
+          'the spatial reference system code, so that his can be mapped to the Sample Spatial Reference System ' .
+          'field on the next page.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $srefs),
       ],

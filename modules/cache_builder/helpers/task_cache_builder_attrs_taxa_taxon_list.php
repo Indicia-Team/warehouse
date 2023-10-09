@@ -36,7 +36,14 @@ class task_cache_builder_attrs_taxa_taxon_list {
   /**
    * Fairly fast, so processing large batches is OK.
    */
-  const BATCH_SIZE = 50000;
+  public const BATCH_SIZE = 50000;
+
+  /**
+   * This class will expire the completed tasks itself.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = TRUE;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -62,7 +69,7 @@ class task_cache_builder_attrs_taxa_taxon_list {
 
   UNION
 
-  SELECT av.taxa_taxon_list_id, a.multi_value,
+  SELECT q.record_id as taxa_taxon_list_id, a.multi_value,
     av.taxa_taxon_list_attribute_id::text || ':$lang' as f,
     array_agg(COALESCE(ti18n.term, t.term) ORDER BY COALESCE(tlti18n.sort_order, tlt.sort_order)) as v
   FROM work_queue q
@@ -77,7 +84,7 @@ class task_cache_builder_attrs_taxa_taxon_list {
   ) ON tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
   WHERE q.entity='taxa_taxon_list' AND q.task='task_cache_builder_attrs_taxa_taxon_list' AND q.claimed_by='$procId'
   AND a.data_type='L'
-  GROUP BY av.taxa_taxon_list_id, av.taxa_taxon_list_attribute_id, a.multi_value
+  GROUP BY q.record_id, av.taxa_taxon_list_attribute_id, a.multi_value
 
 SQL;
       }
@@ -90,7 +97,7 @@ SELECT taxa_taxon_list_id, ('{' || string_agg(
 , ',') || '}')::json AS attrs
 INTO temporary attrs
 FROM (
-  SELECT av.taxa_taxon_list_id, a.multi_value,
+  SELECT q.record_id as taxa_taxon_list_id, a.multi_value,
     av.taxa_taxon_list_attribute_id::text as f,
     array_agg(
       CASE a.data_type
@@ -121,7 +128,7 @@ FROM (
   LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND a.data_type='L' AND tlt.deleted=false
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
   WHERE q.entity='taxa_taxon_list' AND q.task='task_cache_builder_attrs_taxa_taxon_list' AND claimed_by='$procId'
-  GROUP BY av.taxa_taxon_list_id, av.taxa_taxon_list_attribute_id, a.multi_value
+  GROUP BY q.record_id, av.taxa_taxon_list_attribute_id, a.multi_value
   $langTermSql
 ) AS subquery
 GROUP BY taxa_taxon_list_id;
@@ -130,6 +137,12 @@ UPDATE cache_taxa_taxon_lists u
 SET attrs_json=a.attrs
 FROM attrs a
 WHERE a.taxa_taxon_list_id=u.id;
+
+DELETE FROM work_queue q
+USING attrs a
+WHERE a.taxa_taxon_list_id=q.record_id
+AND q.entity='taxa_taxon_list'
+AND q.task='task_cache_builder_attrs_taxa_taxon_list';
 
 DROP TABLE attrs;
 

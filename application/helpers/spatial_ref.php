@@ -73,20 +73,23 @@ class spatial_ref {
   }
 
   /**
-   * Retrieves an associative array of supported spatial system codes and titles, suitable for
-   * passing to a data_entry_helper::select control as the lookupValues option.
+   * Retrieves an array of supported spatial system codes and titles.
    *
-   * @return array Associative array of supported systems.
+   * Suitable for passing to a data_entry_helper::select control as the
+   * lookupValues option.
+   *
+   * @return array
+   *   Associative array of supported systems.
    */
   public static function system_list() {
     $systems = self::system_metadata();
-    $r = array();
-    foreach ($systems as $code=>$metadata) {
+    $r = [];
+    foreach ($systems as $code => $metadata) {
       $code = strtoupper(preg_replace('/^EPSG:/', '', $code));
       $r[$code] = $metadata['title'];
     }
+    asort($r);
     return $r;
-
   }
 
   /**
@@ -137,54 +140,62 @@ class spatial_ref {
    * Returns true if a spatial reference system is recognisable as a notation
    * or EPSG code.
    */
-  public static function is_valid_system($system)
-  {
+  public static function is_valid_system($system) {
     $db = new Database();
     if (is_numeric($system)) {
       $found = $db->count_records('spatial_ref_sys', array('auth_srid' => $system));
-    } else {
+    }
+    else {
       $found = array_key_exists(strtolower($system), self::system_metadata());
     }
-    return $found>0;
+    return $found > 0;
   }
 
   /**
-   * Reformat an input spatial ref to enforce consistency, e.g. OSGB is capitalised and spaces removed.
-   * @param type $sref
-   * @param type $sref_system
+   * Reformat an input spatial ref to enforce consistency.
+   *
+   * For example OSGB is capitalised and spaces removed.
+   *
+   * @param string $sref
+   * @param string $sref_system
+   *
    * @return string Reformatted spatial ref.
    */
   public static function sref_format_tidy($sref, $sref_system) {
     $system = strtolower($sref_system);
-    if (!is_numeric($system) && method_exists($system, 'sref_format_tidy'))
+    if (!is_numeric($system) && method_exists($system, 'sref_format_tidy')) {
       return call_user_func("$system::sref_format_tidy", $sref);
-    else
+    }
+    else {
       return $sref;
+    }
   }
 
   /**
    * Provides a wrapper for dynamic calls to a spatial reference module's
    * spatial_ref_to_wkt method (produces well known text from an sref).
    *
-   * @return string Well Known Text for the point or polygon described by the sref, in
-   * the WGS84 datum.
+   * @return string
+   *   Well Known Text for the point or polygon described by the sref, in the
+   *   WGS84 datum.
    */
-  public static function sref_to_internal_wkt($sref, $sref_system)
-  {
+  public static function sref_to_internal_wkt($sref, $sref_system) {
     $system = strtolower($sref_system);
     $sref = strtoupper($sref);
     if (is_numeric($system)) {
       // EPSG code
-      // first check if this $system expects Lat/Long format, rather than x,y
-      if(array_key_exists($system, kohana::config('sref_notations.lat_long_systems'))) {
+      // First check if this $system expects Lat/Long format, rather than x,y.
+      if (array_key_exists($system, kohana::config('sref_notations.lat_long_systems'))) {
         $wkt = self::lat_long_to_wkt($sref);
-      } else {
-        // else this is just a pair of numbers with a list separator
+      }
+      else {
+        // Else this is just a pair of numbers with a list separator.
         $coords = explode(kohana::lang('misc.x_y_separator'), $sref);
-        $wkt = 'POINT('.$coords[0].' '.$coords[1].')';
+        $wkt = "POINT($coords[0] $coords[1])";
       }
       $srid = $system;
-    } else {
+    }
+    else {
       self::validateSystemClass($system);
       $wkt = call_user_func("$system::sref_to_wkt", $sref);
       $systems = self::system_metadata();
@@ -198,18 +209,15 @@ class spatial_ref {
    *
    * @todo Consider moving PostGIS specific code into a driver.
    */
-  public static function wkt_to_internal_wkt($wkt, $srid)
-  {
+  public static function wkt_to_internal_wkt($wkt, $srid) {
     return postgreSQL::transformWkt($wkt, $srid, kohana::config('sref_notations.internal_srid'));
   }
 
   /**
    * Converts WKT text in internally stored srid to WKT in a known SRID.
    * This is used to produce a drawable geometry when map geometry is not the same as internal one.
-   * @todo Consider moving PostGIS specific code into a driver.
    */
-  public static function internal_wkt_to_wkt($wkt, $sref_system)
-  {
+  public static function internal_wkt_to_wkt($wkt, $sref_system) {
     $system = strtolower($sref_system);
     $wkt = strtoupper($wkt);
     if (is_numeric($system)) {
@@ -233,8 +241,7 @@ class spatial_ref {
    * @param float $metresAccuracy Approximate number of metres the point can be expected to be accurate by. E.g.
    * may be set according to the current zoom scale of the map. Provided as an alternative to $precision.
    */
-  public static function internal_wkt_to_sref($wkt, $sref_system, $precision=null, $output=null, $metresAccuracy=null)
-  {
+  public static function internal_wkt_to_sref($wkt, $sref_system, $precision=null, $output=null, $metresAccuracy=null) {
     $system = strtolower($sref_system);
     if (is_numeric($system))
       $srid = $system;
@@ -259,44 +266,44 @@ class spatial_ref {
    * Convert a point wkt into a x, y representation.
    * @param int $system The SRID of the system, used to determine the rounding that should be applied to the x,y values.
    */
-  protected static function point_to_x_y($wkt, $system)
-  {
+  protected static function point_to_x_y($wkt, $system) {
     $locale=localeconv();
-    if ((bool) preg_match('/^POINT\([-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+[ ]*[-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+\)$/D', $wkt)) {
+    if ((bool) preg_match('/^POINT\([-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+[ ]*[-+]?[0-9]*\\' . $locale['decimal_point'].'?[0-9]+\)$/D', $wkt)) {
       $coords = explode(' ', substr($wkt, 6, strlen($wkt)-7));
       $roundings = kohana::config('sref_notations.roundings');
       if (array_key_exists($system, $roundings))
         $round = $roundings[$system];
       else
         $round = 0;
-      return round($coords[0],$round).Kohana::lang('misc.x_y_separator')." ".round($coords[1],$round);
+      return round($coords[0],$round).Kohana::lang('misc.x_y_separator') . " " . round($coords[1],$round);
     } else {
       throw new Exception('point_to_x_y passed invalid wkt - '.$wkt);
     }
   }
 
-  protected static function process_lat_long($sref)
-  {
+  protected static function process_lat_long($sref) {
     //due to 3 different basic formats for each of lat and long, and then the various different positions of +-NSEW, process each individually
-    $latitude = strtok($sref, ' '.Kohana::lang('misc.x_y_separator'));
-    $longitude = strtok(' '.Kohana::lang('misc.x_y_separator'));
+    $latitude = strtok($sref, ' ' . Kohana::lang('misc.x_y_separator'));
+    $longitude = strtok(' ' . Kohana::lang('misc.x_y_separator'));
     $results = array();
-    $locale=localeconv();
-    if (strtok(' '.Kohana::lang('misc.x_y_separator')) != false)
+    $locale = localeconv();
+    if (strtok(' ' . Kohana::lang('misc.x_y_separator')) != false)
       return false;
-    if ((bool) preg_match('/^([-+NS]?)([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([NS]?)$/D', $latitude, $matches)) {
+    if ((bool) preg_match('/^([-+NS]?)([0-9]*\\' . $locale['decimal_point'] . '?[0-9]+)([NS]?)$/D', $latitude, $matches)) {
       if (($matches[1] != '' and $matches[3] != '') or $matches[2] > 90)
         return false;
       $results['lat'] = $matches[2];
       if ($matches[1] == '-' or $matches[1] == 'S' or $matches[3] == 'S')
         $results['lat'] *= -1;
-    } else if ((bool) preg_match('/^([-+NS]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([NS]?)$/D', $latitude, $matches)) {
+    }
+    else if ((bool) preg_match('/^([-+NS]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\' . $locale['decimal_point'].'?[0-9]+)([NS]?)$/D', $latitude, $matches)) {
       if (($matches[1] != '' and $matches[4] != '') or $matches[2] > 90 or $matches[3] > 60)
         return false;
       $results['lat'] = $matches[2]+($matches[3]/60);
       if ($matches[1] == '-' or $matches[1] == 'S' or $matches[4] == 'S')
         $results['lat'] *= -1;
-    } else if ((bool) preg_match('/^([-+NS]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*)'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([NS]?)$/D', $latitude, $matches)) {
+    }
+    else if ((bool) preg_match('/^([-+NS]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*)' . Kohana::lang('misc.d_m_s_separator').'([0-9]*\\' . $locale['decimal_point'] . '?[0-9]+)([NS]?)$/D', $latitude, $matches)) {
       if (($matches[1] != '' and $matches[5] != '') or $matches[2] > 90 or $matches[3] > 60 or $matches[4] > 60)
         return false;
       $results['lat'] = $matches[2]+($matches[3]/60)+($matches[4]/3600);
@@ -310,13 +317,15 @@ class spatial_ref {
       $results['long'] = $matches[2];
       if ($matches[1] == '-' or $matches[1] == 'W' or $matches[3] == 'W')
         $results['long'] *= -1;
-    } else if ((bool) preg_match('/^([-+EW]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([EW]?)$/D', $longitude, $matches)) {
+    }
+    else if ((bool) preg_match('/^([-+EW]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\' . $locale['decimal_point'].'?[0-9]+)([EW]?)$/D', $longitude, $matches)) {
       if (($matches[1] != '' and $matches[4] != '') or $matches[2] > 180 or $matches[3] > 60)
         return false;
       $results['long'] = $matches[2]+($matches[3]/60);
       if ($matches[1] == '-' or $matches[1] == 'W' or $matches[4] == 'W')
         $results['long'] *= -1;
-    } else if ((bool) preg_match('/^([-+EW]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*)'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([EW]?)$/D', $longitude, $matches)) {
+    }
+    else if ((bool) preg_match('/^([-+EW]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*)'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([EW]?)$/D', $longitude, $matches)) {
       if (($matches[1] != '' and $matches[5] != '') or $matches[2] > 180 or $matches[3] > 60 or $matches[4] > 60)
         return false;
       $results['long'] = $matches[2]+($matches[3]/60)+($matches[4]/3600);
@@ -336,8 +345,8 @@ class spatial_ref {
   {
     $results = self::process_lat_long($sref);
     if ($results === false)
-      throw new Exception('lat_long_to_wkt passed invalid latitude/longitude - '.$sref, 4001);
-    $wkt = 'POINT('.$results['long'].' '.$results['lat'].')';
+      throw new Exception('lat_long_to_wkt passed invalid latitude/longitude - ' . $sref, 4001);
+    $wkt = 'POINT(' . $results['long'] . ' '.$results['lat'] . ')';
     return $wkt;
   }
 
@@ -350,7 +359,7 @@ class spatial_ref {
    */
   protected static function point_to_lat_long($wkt, $system, $output=null)
   {
-    $locale=localeconv();
+    $locale = localeconv();
     if ((bool) preg_match(
           '/^POINT\([-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+[ ]*[-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+\)$/D', $wkt)) {
       $lat_res = '';

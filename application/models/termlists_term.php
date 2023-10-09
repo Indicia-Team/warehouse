@@ -26,7 +26,7 @@ class Termlists_term_Model extends Base_Name_Model {
 
   public $search_field = 'term';
 
-  protected $lookup_against = 'lookup_term';
+  public $lookup_against = 'lookup_term';
 
   protected $list_id_field = 'termlist_id';
 

@@ -36,7 +36,14 @@ class task_cache_builder_attrs_sample {
   /**
    * Fairly fast, so processing large batches is OK.
    */
-  const BATCH_SIZE = 50000;
+  public const BATCH_SIZE = 50000;
+
+  /**
+   * This class will expire the completed tasks itself.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = TRUE;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -62,7 +69,7 @@ class task_cache_builder_attrs_sample {
 
   UNION
 
-  SELECT av.sample_id, a.multi_value,
+  SELECT q.record_id as sample_id, a.multi_value,
     av.sample_attribute_id::text || ':$lang' as f,
     array_agg(COALESCE(ti18n.term, t.term) ORDER BY COALESCE(tlti18n.sort_order, tlt.sort_order)) as v
   FROM work_queue q
@@ -77,7 +84,7 @@ class task_cache_builder_attrs_sample {
   ) ON tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
   WHERE q.entity='sample' AND q.task='task_cache_builder_attrs_sample' AND claimed_by='$procId'
   AND a.data_type='L'
-  GROUP BY av.sample_id, av.sample_attribute_id, a.multi_value
+  GROUP BY q.record_id, av.sample_attribute_id, a.multi_value
 
 SQL;
       }
@@ -90,7 +97,7 @@ SELECT sample_id, ('{' || string_agg(
 , ',') || '}')::json AS attrs
 INTO temporary attrs
 FROM (
-  SELECT av.sample_id, a.multi_value,
+  SELECT q.record_id as sample_id, a.multi_value,
     av.sample_attribute_id::text as f,
     array_agg(
       CASE a.data_type
@@ -121,7 +128,7 @@ FROM (
   LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND a.data_type='L' AND tlt.deleted=false
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
   WHERE q.entity='sample' AND q.task='task_cache_builder_attrs_sample' AND claimed_by='$procId'
-  GROUP BY av.sample_id, av.sample_attribute_id, a.multi_value
+  GROUP BY q.record_id, av.sample_attribute_id, a.multi_value
   $langTermSql
 ) AS subquery
 GROUP BY sample_id;
@@ -130,6 +137,18 @@ UPDATE cache_samples_nonfunctional u
 SET attrs_json=a.attrs
 FROM attrs a
 WHERE a.sample_id=u.id;
+
+-- Force tracking update.
+UPDATE cache_samples_functional u
+SET website_id=u.website_id
+FROM attrs a
+WHERE a.sample_id=u.id;
+
+DELETE FROM work_queue q
+USING attrs a
+WHERE a.sample_id=q.record_id
+AND q.entity='sample'
+AND q.task='task_cache_builder_attrs_sample';
 
 DROP TABLE attrs;
 

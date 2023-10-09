@@ -55,6 +55,10 @@
     FROM output_rows o
     #order_by#
   </query>
+  <count_query>
+    SELECT count(*) FROM filtered_occurrences o
+    WHERE 1=1
+  </count_query>
   <params>
     <!-- last_id and autofeed_tracking_from parameters required for autofeed to work. -->
     <param name="last_id" display="Last ID" datatype="integer" default="" order_by="o.id ASC">
@@ -76,6 +80,7 @@
     <column name="sample_id" sql="o.sample_id" datatype="integer" />
     <column name="parent_sample_id" sql="o.parent_sample_id" datatype="integer" />
     <column name="group_id" sql="o.group_id" datatype="integer" />
+    <column name="import_guid" sql="o.import_guid" datatype="text" />
     <column name="website_title" sql="snf.website_title" datatype="text" />
     <column name="survey_title" sql="snf.survey_title" datatype="text" />
     <column name="group_title" sql="snf.group_title" datatype="text" />

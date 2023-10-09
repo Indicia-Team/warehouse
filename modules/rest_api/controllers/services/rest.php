@@ -22,10 +22,20 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
-use \Firebase\JWT;
+use Firebase\JWT;
 
 define("REST_API_DEFAULT_PAGE_SIZE", 100);
 define("AUTOFEED_DEFAULT_PAGE_SIZE", 10000);
+const ALLOWED_SCOPES = [
+  'reporting',
+  'peer_review',
+  'verification',
+  'data_flow',
+  'moderation',
+  'editing',
+  'user',
+  'userWithinWebsite',
+];
 
 if (!function_exists('apache_request_headers')) {
   Kohana::log('debug', 'PHP apache_request_headers() function does not exist. Replacement function used.');
@@ -139,6 +149,13 @@ class RestObjects {
 class Rest_Controller extends Controller {
 
   /**
+   * Report generation class instance.
+   *
+   * @var obj
+   */
+  private $reportEngine;
+
+  /**
    * Set sensible defaults for the authentication methods available.
    *
    * @var array
@@ -201,6 +218,17 @@ class Rest_Controller extends Controller {
    * @var array
    */
   private $authConfig;
+
+  /**
+   * Config settings relating to elasticsearch.
+   *
+   * An empty array if $authConfig['resource_options']['elasticsearch'] is a
+   * simple array of ES endpoints with no config. Otherwise holds config from
+   * $authConfig['resource_options']['elasticsearch'][<es-endpoint>]
+   *
+   * @var array
+   */
+  private $esConfig;
 
   /**
    * Config settings relating to the authenticated client if any.
@@ -338,6 +366,12 @@ class Rest_Controller extends Controller {
         ],
       ],
     ],
+    'custom-verification-rulesets' => [
+      'POST' => [
+        'custom-verification-rulesets/{id}/run-request' => [],
+        'custom-verification-rulesets/clear-flags' => [],
+      ],
+    ],
     'media-queue' => [
       'POST' => [
         'media-queue' => [],
@@ -457,10 +491,16 @@ class Rest_Controller extends Controller {
         'reports/{path}' => [],
         'reports/{path}/{file.xml}' => [
           'params' => [
+            'autofeed' => [
+              'datatype' => 'boolean',
+            ],
             'filter_id' => [
               'datatype' => 'integer',
             ],
             'limit' => [
+              'datatype' => 'integer',
+            ],
+            'max_time' => [
               'datatype' => 'integer',
             ],
             'offset' => [
@@ -847,9 +887,14 @@ class Rest_Controller extends Controller {
           if (count($ids) > 0) {
             $requestForId = $ids[0];
           }
-          // When using a client system ID, we also want a project ID in most cases.
+          // When using a client system ID, we also want a project ID in most
+          // cases.
           if (isset(RestObjects::$clientSystemId)
-              && !in_array($name, ['projects', 'taxa'])) {
+              && !in_array($name, [
+                'projects',
+                'taxa',
+                'custom_verification_rulesets',
+              ])) {
             if (empty($this->request['proj_id'])) {
               // Should not have got this far - just in case.
               RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
@@ -878,12 +923,23 @@ class Rest_Controller extends Controller {
     catch (RestApiAbort $e) {
       // No action if a proper abort.
     }
+    catch (Exception $e) {
+      if (class_exists('request_logging')) {
+        $io = in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE']) ? 'i' : 'o';
+        $websiteId = RestObjects::$clientWebsiteId ?? 0;
+        $userId = RestObjects::$clientUserId ?? 0;
+        $subTask = implode('/', $arguments);
+        request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db, $e->getMessage());
+      }
+      error_logger::log_error('Error in Rest API report request', $e);
+      throw $e;
+    }
     if (class_exists('request_logging')) {
       $io = in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE']) ? 'i' : 'o';
-      $websiteId = isset(RestObjects::$clientWebsiteId) ? RestObjects::$clientWebsiteId : 0;
-      $userId = isset(RestObjects::$clientUserId) ? RestObjects::$clientUserId : 0;
+      $websiteId = RestObjects::$clientWebsiteId ?? 0;
+      $userId = RestObjects::$clientUserId ?? 0;
       $subTask = implode('/', $arguments);
-      request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db);
+      request_logging::log($io, 'rest', $subTask, $name, $websiteId, $userId, $tm, RestObjects::$db, RestObjects::$apiResponse->responseFailMessage);
     }
   }
 
@@ -1084,13 +1140,13 @@ class Rest_Controller extends Controller {
    *
    * Outputs a single taxon observations's details.
    *
+   * @param string $id
+   *   Unique ID for the taxon-observations to output.
+   *
    * @deprecated
    *   Deprecated in version 6.3 and may be removed in future. Use the
    *   sync-taxon-observations end-point provided by the rest_api_sync module
    *   instead.
-   *
-   * @param string $id
-   *   Unique ID for the taxon-observations to output.
    */
   private function taxonObservationsGetId($id) {
     if (substr($id, 0, strlen(kohana::config('rest.user_id'))) === kohana::config('rest.user_id')) {
@@ -1255,15 +1311,15 @@ class Rest_Controller extends Controller {
       'limit' => REST_API_DEFAULT_PAGE_SIZE,
       'include' => ['data', 'count', 'paging', 'columns'],
     ], $this->request);
+    $db = new Database();
     try {
       $params['count'] = FALSE;
-      $query = postgreSQL::taxonSearchQuery($params);
+      $query = postgreSQL::taxonSearchQuery($db, $params);
     }
     catch (Exception $e) {
       RestObjects::$apiResponse->fail('Bad request', 400, $e->getMessage());
       error_logger::log_error('REST Api exception during build of taxon search query', $e);
     }
-    $db = new Database();
     $result = [];
     if (in_array('data', $params['include'])) {
       $result['data'] = $db->query($query);
@@ -1274,7 +1330,7 @@ class Rest_Controller extends Controller {
       }
       else {
         $params['count'] = TRUE;
-        $countQuery = postgreSQL::taxonSearchQuery($params);
+        $countQuery = postgreSQL::taxonSearchQuery($db, $params);
         $countData = $db->query($countQuery)->current();
         $count = $countData->count;
       }
@@ -1776,12 +1832,12 @@ class Rest_Controller extends Controller {
       }
     }
     elseif ($datatype === 'boolean') {
-      if (!preg_match('/^(true|false)$/', $trimmed)) {
+      if (!preg_match('/^(true|false|t|f)$/', $trimmed)) {
         RestObjects::$apiResponse->fail('Bad request', 400,
             "Invalid boolean for $paramName parameter, value should be true or false");
       }
       // Set the value to a real bool.
-      $value = $trimmed === 'true';
+      $value = $trimmed === 'true' || $trimmed === 't';
     }
     // If a limited options set available then check the value is in the list.
     if (!empty($paramDef['options']) && !in_array($trimmed, $paramDef['options'])) {
@@ -2177,6 +2233,9 @@ class Rest_Controller extends Controller {
   private function applyCorsHeader() {
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' ||
         (isset($this->authConfig) && array_key_exists('allow_cors', $this->authConfig))) {
+      if (isset($this->authConfig) && array_key_exists('allow_cors', $this->authConfig) && $this->authConfig['allow_cors'] === FALSE) {
+        return;
+      }
       if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' || $this->authConfig['allow_cors'] === TRUE) {
         $corsSetting = '*';
       }
@@ -2384,7 +2443,7 @@ class Rest_Controller extends Controller {
     require_once 'vendor/autoload.php';
     $suppliedToken = $this->getBearerAuthToken(TRUE);
     if ($suppliedToken && substr_count($suppliedToken, '.') === 2) {
-      list($jwtHeader, $jwtPayload, $jwtSignature) = explode('.', $suppliedToken);
+      [$jwtHeader, $jwtPayload, $jwtSignature] = explode('.', $suppliedToken);
       $payload = $this->base64urlDecode($jwtPayload);
       if (!$payload) {
         RestObjects::$apiResponse->fail('Bad request', 400);
@@ -2450,8 +2509,9 @@ class Rest_Controller extends Controller {
         }
         else {
           // The first specified scope in the token is default if not specified
-          // in query parameters.
-          RestObjects::$scope = $allowedScopes[0];
+          // in query parameters. Any non-recognised scope will just map to a
+          // user request within the website (the most restrictive).
+          RestObjects::$scope = in_array($allowedScopes[0], ALLOWED_SCOPES) ? $allowedScopes[0] : 'userWithinWebsite';
         }
       }
       $this->authenticated = TRUE;
@@ -2459,12 +2519,12 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Attempts to authenticate using the HMAC client protocal.
+   * Attempts to authenticate using the HMAC client protocol.
    */
   private function authenticateUsingHmacClient() {
     $authHeader = $this->getAuthHeader();
     if (substr_count($authHeader, ':') === 3) {
-      list($u, $clientSystemId, $h, $supplied_hmac) = explode(':', $authHeader);
+      [$u, $clientSystemId, $h, $supplied_hmac] = explode(':', $authHeader);
       $config = Kohana::config('rest.clients');
       if ($u === 'USER' && $h === 'HMAC' && array_key_exists($clientSystemId, $config)) {
         $protocol = $this->isHttps ? 'https' : 'http';
@@ -2494,12 +2554,12 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Attempts to authenticate using the HMAC website protocal.
+   * Attempts to authenticate using the HMAC website protocol.
    */
   private function authenticateUsingHmacWebsite() {
     $authHeader = $this->getAuthHeader();
     if (substr_count($authHeader, ':') === 3) {
-      list($u, $websiteId, $h, $supplied_hmac) = explode(':', $authHeader);
+      [$u, $websiteId, $h, $supplied_hmac] = explode(':', $authHeader);
       if ($u === 'WEBSITE_ID' && $h === 'HMAC') {
         // Input validation.
         if (!preg_match('/^\d+$/', $websiteId)) {
@@ -2537,7 +2597,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Attempts to authenticate using the direct user protocal.
+   * Attempts to authenticate using the direct user protocol.
    */
   private function authenticateUsingDirectUser() {
     $authHeader = $this->getAuthHeader();
@@ -2579,7 +2639,7 @@ class Rest_Controller extends Controller {
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
       RestObjects::$clientWebsiteId = $websiteId;
       RestObjects::$clientUserId = $userId;
-      RestObjects::$scope = $scope === NULL ? 'userWithinWebsite' : $scope;
+      RestObjects::$scope = $scope ?? 'userWithinWebsite';
       $this->authenticated = TRUE;
     }
     else {
@@ -2588,13 +2648,13 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Attempts to authenticate using the direct client protocal.
+   * Attempts to authenticate using the direct client protocol.
    */
   private function authenticateUsingDirectClient() {
     $config = Kohana::config('rest.clients');
     $authHeader = $this->getAuthHeader();
     if ($authHeader && substr_count($authHeader, ':') === 3) {
-      list($u, $clientSystemId, $h, $secret) = explode(':', $authHeader);
+      [$u, $clientSystemId, $h, $secret] = explode(':', $authHeader);
       if ($u !== 'USER' || $h !== 'SECRET') {
         return;
       }
@@ -2614,7 +2674,7 @@ class Rest_Controller extends Controller {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
     RestObjects::$clientSystemId = $clientSystemId;
-    $this->projects = isset($config[$clientSystemId]['projects']) ? $config[$clientSystemId]['projects'] : [];
+    $this->projects = $config[$clientSystemId]['projects'] ?? [];
     $this->clientConfig = $config[$clientSystemId];
     unset($this->clientConfig['shared_secret']);
     // Taxon observations and annotations resource end-points will need a
@@ -2643,7 +2703,7 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Attempts to authenticate using the direct website protocal.
+   * Attempts to authenticate using the direct website protocol.
    */
   private function authenticateUsingDirectWebsite() {
     $authHeader = $this->getAuthHeader();
@@ -2660,7 +2720,7 @@ class Rest_Controller extends Controller {
       $userId = count($tokens) === 8 ? $tokens[7] : NULL;
     }
     elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
-          !empty($_GET['user_id']) && !empty($_GET['secret'])) {
+          !empty($_GET['website_id']) && !empty($_GET['secret'])) {
       $websiteId = $_GET['website_id'];
       $password = $_GET['secret'];
       $scope = !empty($_GET['scope']) ? $_GET['scope'] : NULL;
@@ -2673,7 +2733,7 @@ class Rest_Controller extends Controller {
     if (($userId !== NULL && !preg_match('/^\d+$/', $userId)) || !preg_match('/^\d+$/', $websiteId)) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
     }
-    $password = pg_escape_string($password);
+    $password = pg_escape_string(RestObjects::$db->getLink(), $password);
     $websites = RestObjects::$db->select('id')
       ->from('websites')
       ->where(['id' => $websiteId, 'password' => $password])
@@ -2755,6 +2815,59 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Request handler for POST /custom-verification-rulesets/{id}/run-request.
+   *
+   * Requests a run of a custom verification ruleset, using the filter supplied
+   * in the POST body.
+   */
+  public function customVerificationRulesetsPostIdRunRequest() {
+    $rulesetId = $this->uri->segment(4);
+    $postRaw = file_get_contents('php://input');
+    $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
+    $query = $postObj['query'] ?? [];
+    // User ID may be as authenticated, or less ideally, from a query
+    // parameter.
+    $userId = RestObjects::$clientUserId ?? $_GET['user_id'];
+    try {
+      $es = new RestApiElasticsearch($_GET['alias']);
+      $requestBody = customVerificationRules::buildCustomRuleRequest($rulesetId, $query, $userId, $es->getMajorVersion());
+      $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
+    }
+    catch (Exception $e) {
+      error_logger::log_error('Exception whilst attempting to run a custom verification ruleset.', $e);
+      if (!$e instanceof RestApiAbort) {
+        RestObjects::$apiResponse->fail('Internal server error', 500, $e->getMessage());
+      }
+    }
+  }
+
+  /**
+   * Request handler for POST /custom-verification-rulesets/clear-flags.
+   *
+   * Clears a user's custom verification rule check flags from the filter
+   * supplied in the POST body.
+   */
+  public function customVerificationRulesetsPostClearFlags() {
+    $postRaw = file_get_contents('php://input');
+    $postObj = empty($postRaw) ? [] : json_decode($postRaw, TRUE);
+    $query = $postObj['query'] ?? [];
+    // User ID may be as authenticated, or less ideally, from a query
+    // parameter.
+    $userId = RestObjects::$clientUserId ?? $_GET['user_id'];
+    try {
+      $requestBody = customVerificationRules::buildClearFlagsRequest($query, $userId);
+      $es = new RestApiElasticsearch($_GET['alias']);
+      $es->elasticRequest($requestBody, 'json', FALSE, '_update_by_query', TRUE);
+    }
+    catch (Exception $e) {
+      error_logger::log_error('Exception whilst attempting to clear custom verification rule flags.', $e);
+      if (!$e instanceof RestApiAbort) {
+        RestObjects::$apiResponse->fail('Internal server error', 500, $e->getMessage());
+      }
+    }
+  }
+
+  /**
    * Request handler for POST /rest/media-queue.
    *
    * Allows media to be cached on the server prior to submitting the data the
@@ -2771,7 +2884,7 @@ class Rest_Controller extends Controller {
     }
     else {
       // Implode array of arrays.
-      $types = implode(',', array_map(function($a){
+      $types = implode(',', array_map(function ($a) {
         return implode(',', $a);
       }, $config));
     }
@@ -2794,13 +2907,41 @@ class Rest_Controller extends Controller {
     foreach ($files as $key => $file) {
       $typeParts = explode('/', $file['type']);
       $fileName = uniqid('', TRUE) . '.' . $typeParts[1];
-      upload::save($file, $fileName, 'upload-queue');
+      $subdir = $this->getMediaSubdir();
+      $dest = DOCROOT . "upload-queue/$subdir";
+      if (!is_dir($dest)) {
+        mkdir($dest, 0755, TRUE);
+      }
+      upload::save($file, $subdir . $fileName, 'upload-queue');
       $response[$key] = [
-        'name' => $fileName,
-        'tempPath' => url::base() . "upload-queue/$fileName",
+        'name' => "$subdir$fileName",
+        'tempPath' => url::base() . "upload-queue/$subdir$fileName",
       ];
     }
     RestObjects::$apiResponse->succeed($response);
+  }
+
+  /**
+   * Works out a sub-directory structure for a new queued media file.
+   *
+   * Based on the current timestamp.
+   *
+   * @return string
+   *   Sub-folder structure, e.g. '60/20/15/', including trailing slash.
+   */
+  private function getMediaSubdir() {
+    $subdir = '';
+    // $levels = Kohana::config('upload.use_sub_directory_levels');
+    $levels = 3;
+    $ts = time();
+    for ($i = 0; $i < $levels; $i++) {
+      $dirname = substr($ts, 0, 2);
+      if (strlen($dirname)) {
+        $subdir .= $dirname . '/';
+        $ts = substr($ts, 2);
+      }
+    }
+    return $subdir;
   }
 
   /**

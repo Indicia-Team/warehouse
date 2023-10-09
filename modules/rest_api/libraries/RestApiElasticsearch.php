@@ -274,6 +274,20 @@ class RestApiElasticsearch {
   ];
 
   /**
+   * The columns specified in the request to add to the template.
+   *
+   * @var array
+   */
+  private $esCsvTemplateAddColumns;
+
+  /**
+   * The columns specified in the request to remove from the template.
+   *
+   * @var array
+   */
+  private $esCsvTemplateRemoveColumns;
+
+  /**
    * Constructor.
    */
   public function __construct($elasticProxy) {
@@ -313,15 +327,41 @@ class RestApiElasticsearch {
 
   /**
    * Handles a request to Elasticsearch via a proxy.
+   *
+   * @param object|string $requestBody
+   *   Request payload.
+   * @param string $format
+   *   Response format, e.g. 'csv', 'json'.
+   * @param bool $ret
+   *   Set to TRUE if the response should be returned rather than echoed.
+   * @param bool $requestIsRawString
+   *   Set to TRUE if the request is a raw string to be sent as-is rather than
+   *   an object to be encoded as a string.
    */
-  public function elasticRequest($requestBody, $format, $ret = FALSE, $resource = NULL) {
+  public function elasticRequest($requestBody, $format, $ret = FALSE, $resource = NULL, $requestIsRawString = FALSE) {
     $esConfig = kohana::config('rest.elasticsearch');
     $thisProxyCfg = $esConfig[$this->elasticProxy];
     if (!$resource) {
       $resource = str_replace("$_SERVER[SCRIPT_NAME]/services/rest/$this->elasticProxy/", '', $_SERVER['PHP_SELF']);
     }
     $url = "$thisProxyCfg[url]/$thisProxyCfg[index]/$resource";
-    return $this->proxyToEs($url, $requestBody, $format, $ret);
+    $this->proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString);
+  }
+
+  /**
+   * Retrieves the Elasticsearch major version number from the config.
+   *
+   * If not specified returns null.
+   *
+   * @return int
+   *   Major version number.
+   */
+  public function getMajorVersion() {
+    $esVersion = kohana::config('rest.elasticsearch_version');
+    if (!empty($esVersion)) {
+      return (integer) (explode('.', $esVersion, 2)[0]);
+    }
+    return NULL;
   }
 
   /**
@@ -364,8 +404,11 @@ class RestApiElasticsearch {
           'metadata.website.id' => warehouse::getSharedWebsiteList([RestObjects::$clientWebsiteId], RestObjects::$db, RestObjects::$scope),
         ],
       ];
-      // Only verification gets full precision.
-      $blur = RestObjects::$scope === 'verification' ? 'F' : 'B';
+    }
+    if (substr(RestObjects::$authMethod, -6, 6) !== 'Client') {
+      // Only verification or user's own records get full precision, but not if
+      // downloading currently.
+      $blur = ($this->pagingMode !== 'scroll' && (RestObjects::$scope === 'verification' || substr(RestObjects::$scope, 0, 4) === 'user')) ? 'F' : 'B';
       $filters[] = ['query_string' => ['query' => "metadata.confidential:false AND metadata.release_status:R AND ((metadata.sensitivity_blur:$blur) OR (!metadata.sensitivity_blur:*))"]];
     }
     if (count($filters) > 0) {
@@ -464,10 +507,11 @@ class RestApiElasticsearch {
     $output = [];
     if (isset($doc['occurrence']['associations'])) {
       foreach ($doc['occurrence']['associations'] as $assoc) {
-        $label = $assoc->accepted_name;
-        if (!empty($assoc->vernacular_name)) {
-          $label = $assoc->vernacular_name + " ($label)";
+        $label = $assoc['accepted_name'];
+        if (!empty($assoc['vernacular_name'])) {
+          $label = $assoc['vernacular_name'] . " ($label)";
         }
+        $output[] = $label;
       }
     }
     return implode('; ', $output);
@@ -486,6 +530,8 @@ class RestApiElasticsearch {
    *   The parameters should be:
    *   * 0 - the entity (event|occurrence)
    *   * 1 - the attribute ID.
+   *   * 2 - optional - whether to merge event and parent_event attributes.
+   *         Merges by default. Does not merge if set.
    *
    * @return string
    *   Formatted string
@@ -502,7 +548,12 @@ class RestApiElasticsearch {
       }
       // If requesting an event/sample attribute, the parent event/sample's
       // data can also be considered.
-      if ($entity === 'event' && $key === 'attributes' && isset($doc['event']['parent_attributes'])) {
+      if (
+        $entity === 'event' &&
+        $key === 'attributes' &&
+        isset($doc['event']['parent_attributes']) &&
+        !isset($params[2])
+      ) {
         $attrList = array_merge($attrList, $doc['event']['parent_attributes']);
       }
       foreach ($attrList as $attr) {
@@ -517,6 +568,34 @@ class RestApiElasticsearch {
       }
     }
     return implode('; ', $r);
+  }
+
+  /**
+   * Special field handler returns the value for the first non-empty field.
+   *
+   * Provide a comma-separated list of field names as the parameter. The value
+   * of the first field in the list to have a non-empty value is returned.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Parameters defined for the special field.
+   *
+   * @return string
+   *   Field value.
+   */
+  private function esGetSpecialFieldCoalesce(array $doc, array $params) {
+    if (count($params) !== 1) {
+      return 'Incorrect params for coalesce field';
+    }
+    $fields = explode(',', $params[0]);
+    foreach ($fields as $field) {
+      $value = $this->getRawEsFieldValue($doc, $field);
+      if ($value !== '') {
+        return $value;
+      }
+    }
+    return '';
   }
 
   /**
@@ -1419,6 +1498,68 @@ class RestApiElasticsearch {
   }
 
   /**
+   * Applies ES field values to a template.
+   *
+   * Field names can be supplied in [] inside the template and will be replaced
+   * by the respectiv values.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param string $template
+   *   Text template.
+   *
+   * @return string
+   *   Template with tokens replaced by values.
+   */
+  private function applyFieldReplacements(array $doc, $template) {
+    preg_match_all('/\[.*\]/', $template, $matches);
+    $replaceKeys = [];
+    $replaceValues = [];
+    foreach ($matches as $group) {
+      foreach ($group as $token) {
+        $fieldPath = str_replace(['[', ']'], '', $token);
+        $value = $this->getRawEsFieldValue($doc, $fieldPath);
+        $replaceKeys[] = $token;
+        $replaceValues[] = $value;
+      }
+    }
+    return str_replace($replaceKeys, $replaceValues, $template);
+  }
+
+  /**
+   * Special field handler for templated text.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   The first parameter must be the text template. An optional second
+   *   parameter can indicate the path to a nested ES object - if present then
+   *   the template will be repeated for each object and fields inside the
+   *   current object will be available as token replacements.
+   *
+   * @return string
+   *   Formatted value.
+   */
+  private function esGetSpecialFieldTemplate(array $doc, $params) {
+    $output = '';
+    if (count($params) > 1) {
+      // 2nd parameter is a nested object path.
+      $objects = $this->getRawEsFieldValue($doc, $params[1]);
+      if (is_array($objects)) {
+        foreach ($objects as $object) {
+          $output .= $this->applyFieldReplacements($object, $params[0]);
+        };
+      }
+    }
+    else {
+      $output = $params[0];
+    }
+    $output = $this->applyFieldReplacements($doc, $output);
+    // Strip HTML tokens, as this is for CSV.
+    return preg_replace('/<.[^<>]*?>/', ' ', $output);
+  }
+
+  /**
    * Special field handler to translate true/false values to specified output.
    *
    * Return the translated value.
@@ -1669,7 +1810,8 @@ class RestApiElasticsearch {
     else {
       if (!empty($_GET)) {
         $params = array_merge($_GET);
-        // Don't pass on the auth tokens and other non-elasticsearch tags.
+        // Don't pass on the auth tokens and other non-elasticsearch GET parameters.
+        unset($params['alias']);
         unset($params['user']);
         unset($params['website_id']);
         unset($params['secret']);
@@ -1807,6 +1949,9 @@ class RestApiElasticsearch {
         if (preg_match('/^[a-z_]+(\.[a-z_]+)*$/', $field)) {
           $fields[] = $field;
         }
+        elseif ($field === '#associations#') {
+          $fields[] = 'occurrence.associations';
+        }
         elseif (preg_match('/^#higher_geography(.*)#$/', $field)) {
           $fields[] = 'location.higher_geography.*';
         }
@@ -1864,6 +2009,21 @@ class RestApiElasticsearch {
         elseif (preg_match('/^#sitename(.*)#$/', $field)) {
           $fields[] = 'location.verbatim_locality';
         }
+        elseif (preg_match('/^#template(.*)#$/', $field)) {
+          // Find fields embedded in the template and add them.
+          preg_match_all('/\[.*\]/', $field, $matches);
+          foreach ($matches as $group) {
+            foreach ($group as $token) {
+              $fieldPath = str_replace(['[', ']'], '', $token);
+              $fields[] = $fieldPath;
+            }
+          }
+          // Also 2nd parameter can be a path to a nested object.
+          $tokens = explode(':', $field);
+          if (count($tokens) > 2) {
+            $fields[] = trim($tokens[2], '#');
+          }
+        }
         elseif (preg_match('/^#method(.*)#$/', $field)) {
           $fields[] = 'event.sampling_protocol';
         }
@@ -1880,6 +2040,9 @@ class RestApiElasticsearch {
         }
         elseif (preg_match('/^#query(.*)#$/', $field)) {
           $fields[] = 'identification.query';
+        }
+        elseif (preg_match('/^#coalesce:(.*)#$/', $field, $matches)) {
+          $fields = array_merge($fields, explode(',', $matches[1]));
         }
         elseif (preg_match('/^#attr_value:(event|sample|parent_event|occurrence):(\d+)#$/', $field, $matches)) {
           $key = $matches[1] === 'parent_event' ? 'parent_attributes' : 'attributes';
@@ -1950,8 +2113,8 @@ class RestApiElasticsearch {
     else {
       $sql = <<<SQL
 SELECT a.caption, a.id
-FROM ${type}_attributes_websites aw
-JOIN ${type}_attributes a on a.id = aw.${type}_attribute_id
+FROM {$type}_attributes_websites aw
+JOIN {$type}_attributes a on a.id = aw.{$type}_attribute_id
 WHERE restrict_to_survey_id=$id;
 SQL;
       $columns = [];
@@ -1997,7 +2160,7 @@ SQL;
    *   File array containing the name and handle.
    */
   private function preparePagingFile($format) {
-    rest_utils::purgeOldFiles('download/', 3600);
+    rest_utils::purgeOldFiles('download', 3600);
     $uniqId = uniqid('', TRUE);
     $filename = "download-$uniqId.$format";
     // Reopen file for appending.
@@ -2018,28 +2181,36 @@ SQL;
    *
    * @param string $url
    *   URL to proxy to.
-   * @param string $requestBody
+   * @param object $requestBody
    *   Request data.
    * @param string $format
    *   Response format, e.g. 'csv', 'json'.
    * @param bool $ret
    *   Set to TRUE if the response should be returned rather than echoed.
+   * @param bool $requestIsRawString
+   *   Set to TRUE if the request is a raw string to be sent as-is rather than
+   *   an object to be encoded as a string.
    */
-  private function proxyToEs($url, $requestBody, $format, $ret) {
-    $this->getPagingMode($format);
-    $this->getColumnsTemplate($requestBody);
-    $file = NULL;
-    if ($this->pagingModeState === 'initial') {
-      // First iteration of a scrolled request, so prepare an output file.
-      $file = $this->preparePagingFile($format);
-    }
-    elseif ($this->pagingModeState === 'nextPage') {
-      $file = $this->openPagingFile($format);
+  private function proxyToEs($url, $requestBody, $format, $ret, $requestIsRawString) {
+    if ($requestIsRawString) {
+      $postData = $requestBody;
     }
     else {
-      echo $this->getEsOutputHeader($format);
+      $this->getPagingMode($format);
+      $this->getColumnsTemplate($requestBody);
+      $file = NULL;
+      if ($this->pagingModeState === 'initial') {
+        // First iteration of a scrolled request, so prepare an output file.
+        $file = $this->preparePagingFile($format);
+      }
+      elseif ($this->pagingModeState === 'nextPage') {
+        $file = $this->openPagingFile($format);
+      }
+      else {
+        echo $this->getEsOutputHeader($format);
+      }
+      $postData = $this->getEsPostData($requestBody, $format, $file, preg_match('/\/_search/', $url));
     }
-    $postData = $this->getEsPostData($requestBody, $format, $file, preg_match('/\/_search/', $url));
     $actualUrl = $this->getEsActualUrl($url);
     $session = curl_init($actualUrl);
     if (!empty($postData) && $postData !== '[]') {

@@ -60,7 +60,22 @@ class ReportEngine {
   private $report;
   private $reportFormat;
   private $response;
+
+  /**
+   * Query string.
+   *
+   * @var string
+   */
   private $query;
+
+
+  /**
+   * Count query string.
+   *
+   * @var string
+   */
+  private $countQuery;
+
   private $reportReader;
   private $expectedParams;
   private $providedParams;
@@ -69,6 +84,13 @@ class ReportEngine {
   private $userId = NULL;
   private $sharingMode = 'reporting';
   private $doneStandardParamJoins = [];
+
+  /**
+   * Database connection for reports.
+   *
+   * @var Database
+   */
+  private $reportDb;
 
   /**
    * List of filters to put in HAVING.
@@ -110,6 +132,41 @@ class ReportEngine {
   private $authorisedReports = [];
 
   /**
+   * Column definitions loaded for the report.
+   *
+   * @var array
+   */
+  private $columns;
+
+  /**
+   * Limit if specified as a report parameter.
+   *
+   * @var int
+   */
+  private $limit;
+
+  /**
+   * Offset if specified as a report parameter.
+   *
+   * @var int
+   */
+  private $offset;
+
+  /**
+   * Sort direction (ASC|DESC) if specified as a report parameter.
+   *
+   * @var string
+   */
+  private $sortdir;
+
+  /**
+   * Order by fields if specified as a report parameter.
+   *
+   * @var string
+   */
+  private $orderby;
+
+  /**
    * Constructor.
    *
    * @param array $websiteIds
@@ -125,7 +182,7 @@ class ReportEngine {
     $this->websiteIds = $websiteIds;
     $this->userId = $userId;
     $this->localReportDir = Kohana::config('indicia.localReportDir');
-    $this->reportDb = $db === NULL ? new Database('report') : $db;
+    $this->reportDb = $db ?? new Database('report');
   }
 
   /**
@@ -184,7 +241,8 @@ class ReportEngine {
     $dir = opendir($fullPath);
 
     while (FALSE !== ($file = readdir($dir))) {
-      // The following skips the tmp folder in the report root as this is used for provided reports.
+      // The following skips the tmp folder in the report root as this is used
+      // for provided reports.
       if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file") &&
           ($file !== 'tmp' || $path !== '/')) {
         $folderInfo = [
@@ -1128,7 +1186,7 @@ SQL;
                 $pqValue = count($output) > 0 ? implode(',', $output[0]) : NULL;
                 if (empty($pqValue)) {
                   // Create a dummy value so as to not cause a syntax error.
-                  if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'])) {
+                  if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'] ?? '')) {
                     $pqValue = "-999999";
                   }
                   else {
@@ -2021,7 +2079,7 @@ SQL;
       // Can only use an inner join for definitely required fields. If they are
       // required only at the per-survey level, we must use left joins as the
       // survey could vary per record.
-      $joinType = (strpos($attr->validation_rules, 'required') === FALSE) ? 'LEFT JOIN' : 'JOIN';
+      $joinType = (strpos($attr->validation_rules ?? '', 'required') === FALSE) ? 'LEFT JOIN' : 'JOIN';
       // Find out what alias and field name the query uses for the table &
       // field we need to join to (samples.id, occurrences.id, locations.id
       // taxa_taxon_lists.id, termlists_terms.id, survey.id or person.id).
@@ -2052,11 +2110,22 @@ SQL;
           $joins[] = $joinDef['sql'];
         }
         elseif (!empty($joinDef['standard_join']) && !in_array($joinDef['standard_join'], $this->doneStandardParamJoins)) {
-          // A parameter can reference a standard join, so that several params can share 1 join to a table rather than
-          // join to it multiple times.
+          // A parameter can reference a standard join, so that several params
+          // can share 1 join to a table rather than join to it multiple times.
           switch ($joinDef['standard_join']) {
-            case 'prefcttl':
-              $joins[] = "JOIN cache_taxa_taxon_lists prefcttl ON prefcttl.id=o.preferred_taxa_taxon_list_id";
+            case 'sj_prefcttl':
+              // Preferred taxon join for occurrences reports.
+              $joins[] = "JOIN cache_taxa_taxon_lists sj_prefcttl ON sj_prefcttl.id=o.preferred_taxa_taxon_list_id";
+              break;
+
+            case 'sj_snf':
+              // Samples_non_functional join for occurrences reports.
+              $joins[] = "JOIN cache_samples_nonfunctional sj_snf ON sj_snf.id=o.sample_id";
+              break;
+
+            case 'sj_smp_snf':
+              // Samples_non_functional join for samples reports.
+              $joins[] = "JOIN cache_samples_nonfunctional sj_snf ON sj_smp_snf.id=s.id";
               break;
 
             default:

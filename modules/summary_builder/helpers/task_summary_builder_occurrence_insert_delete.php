@@ -23,7 +23,14 @@ defined('SYSPATH') or die('No direct script access.');
 
 class task_summary_builder_occurrence_insert_delete {
 
-  const BATCH_SIZE = 1000;
+  public const BATCH_SIZE = 2000;
+
+  /**
+   * Work_queue class will automatically expire the completed tasks.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = FALSE;
 
   /**
    * Perform the processing for a task batch found in the queue.

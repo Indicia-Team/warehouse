@@ -34,9 +34,44 @@
 class Indicia_Controller extends Template_Controller {
 
   /**
+   * Database connection.
+   *
+   * @var Database
+   */
+  protected $db;
+
+  /**
+   * Authorisation object instance.
+   *
+   * @var Auth
+   */
+  protected $auth;
+
+  /**
+   * Model instance.
+   *
+   * @var ORM
+   */
+  protected $model;
+
+  /**
+   * Session object instance.
+   *
+   * @var Session
+   */
+  protected $session;
+
+  /**
+   * Authorisation filter, e.g. website IDs that user can see.
+   *
+   * @var array
+   */
+  protected mixed $auth_filter;
+
+  /**
    * Name of the main template view file.
    *
-   * @var string
+   * @var string|object
    */
   public $template = 'templates/template';
 
@@ -45,7 +80,14 @@ class Indicia_Controller extends Template_Controller {
    *
    * @var array
    */
-  protected $page_breadcrumbs = array();
+  protected $page_breadcrumbs = [];
+
+  /**
+   * Page title.
+   *
+   * @var string
+   */
+  protected $pagetitle;
 
   /**
    * List of person IDs the user has edit rights to.
@@ -69,21 +111,24 @@ class Indicia_Controller extends Template_Controller {
     if ($this->auth->logged_in()) {
       $this->template->menu = self::getMenu();
     }
-    // If there is a file with same name as the controller actionw, load it
-    // into a variable in the template so the script can be included. Treat
-    // the edit and create actions as the same for this purpose.
-    $method = Router::$method === 'create' ? 'edit' : Router::$method;
-    $jsFile = preg_replace(
-      '/\/controllers\/.*/',
-      '/views/' . Router::$controller . "/$method.js",
-      Router::$controller_path
-    );
-    if (file_exists($jsFile)) {
-      $this->template->jsFile = str_replace(str_replace('\\', '/', DOCROOT), '', $jsFile);
-    }
-    $cssFile = str_replace('.js', '.css', $jsFile);
-    if (file_exists($cssFile)) {
-      $this->template->cssFile = str_replace(str_replace('\\', '/', DOCROOT), '', $cssFile);
+    // If being called from inside a browser, check for CSS/JS to add.
+    if (Router::$controller_path) {
+      // If there is a file with same name as the controller action, load it
+      // into a variable in the template so the script can be included. Treat
+      // the edit and create actions as the same for this purpose.
+      $method = Router::$method === 'create' ? 'edit' : Router::$method;
+      $jsFile = preg_replace(
+        '/\/controllers\/.*/',
+        '/views/' . Router::$controller . "/$method.js",
+        Router::$controller_path
+      );
+      if (file_exists($jsFile)) {
+        $this->template->jsFile = str_replace(str_replace('\\', '/', DOCROOT), '', $jsFile);
+      }
+      $cssFile = str_replace('.js', '.css', $jsFile);
+      if (file_exists($cssFile)) {
+        $this->template->cssFile = str_replace(str_replace('\\', '/', DOCROOT), '', $cssFile);
+      }
     }
     $title = kohana::config('indicia.warehouse_title');
     $this->template->warehouseTitle = $title ? $title : 'Indicia Warehouse';
@@ -144,6 +189,7 @@ class Indicia_Controller extends Template_Controller {
       }
       if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin')) {
         $menu['Taxonomy'] = [
+          'Taxa search' => 'taxa_search',
           'Species lists' => 'taxon_list',
           'Taxon groups' => 'taxon_group',
         ];
@@ -167,7 +213,7 @@ class Indicia_Controller extends Template_Controller {
         $menu['Admin']['Users'] = 'user';
       }
       if ($this->auth->logged_in('CoreAdmin')) {
-        $menu['Admin']['Website agreements'] = 'website_agreement';
+        $menu['Admin']['Website data sharing agreements'] = 'website_agreement';
         $menu['Admin']['Performance diagnostics'] = 'diagnostics';
       }
       $menu['Logged in as ' . $_SESSION['auth_user']->username] = [
@@ -555,35 +601,35 @@ class Indicia_Controller extends Template_Controller {
    * Override the load view behaviour to display better error information when a view
    * fails to load.
    */
-  public function _kohana_load_view($kohana_view_filename, $kohana_input_data)
-  {
-    if ($kohana_view_filename == '')
+  public function _kohana_load_view($kohana_view_filename, $kohana_input_data) {
+    if ($kohana_view_filename == '') {
       return;
+    }
 
-    // Buffering on
+    // Buffering on.
     ob_start();
 
-    // Import the view variables to local namespace
+    // Import the view variables to local namespace.
     extract($kohana_input_data, EXTR_SKIP);
 
     // Views are straight HTML pages with embedded PHP, so importing them
     // this way insures that $this can be accessed as if the user was in
-    // the controller, which gives the easiest access to libraries in views
+    // the controller, which gives the easiest access to libraries in views.
 
-    // Put the include in a try catch block
+    // Put the include in a try catch block.
     try {
       include $kohana_view_filename;
     }
     catch (Exception $e){
-      // Put the error out
+      // Put the error out.
       error_logger::log_error('Error occurred when loading view.', $e);
       // Can't set a flash message here, as view has already failed to load.
-      echo "<div class=\"alert alert-danger page-notice\">".
-          "<strong>Error occurred when loading page.</strong><br/>".$e->getMessage().
+      echo "<div class=\"alert alert-danger page-notice\">" .
+          "<strong>Error occurred when loading page.</strong><br/>" . $e->getMessage() .
           "<br/>For more information refer to the application log file.</div>";
     }
 
-    // Fetch the output and close the buffer
+    // Fetch the output and close the buffer.
     return ob_get_clean();
   }
 
@@ -594,7 +640,9 @@ class Indicia_Controller extends Template_Controller {
   protected function get_return_page() {
     $r = $this->model->object_name;
     if (isset($_POST['what-next'])) {
-      if ($_POST['what-next']=='add') $r .= '/create';
+      if ($_POST['what-next'] == 'add') {
+        $r .= '/create';
+      }
     }
     return $r;
 
@@ -603,36 +651,48 @@ class Indicia_Controller extends Template_Controller {
   /**
    * Returns a set of terms for a termlist, which can be used to populate a termlist drop down.
    *
-   * @param string $termlist ID of the termlist or name of the termlist, from the
-   * termlist's external_key field.
-   * @param array $where Associative array of field values to filter for.
-   * @return array Associative array of terms, with each entry being id => term.
+   * @param string $termlist
+   *   ID of the termlist or name of the termlist, from the termlist's
+   *   external_key field.
+   * @param array $where
+   *   Associative array of field values to filter for.
+   * @return array
+   *   Associative array of terms, with each entry being id => term.
    */
-  protected function get_termlist_terms($termlist, $where=null) {
-    $arr=array();
+  protected function get_termlist_terms($termlist, $where = NULL) {
+    $arr = [];
     if (!is_numeric($termlist)) {
-      // termlist is a string so check the termlist from the external key field
+      // Termlist is a string so check the termlist from the external key
+      // field.
       $query = $this->db
-          ->select('id')
-          ->from('termlists')
-          ->where('external_key', $termlist)
-          ->get()->as_array();
-      if (count($query)>0)
-        $row=$query[0];
-      elseif (count($query)>1)
+        ->select('id')
+        ->from('termlists')
+        ->where('external_key', $termlist)
+        ->get()->as_array();
+      if (count($query) > 0) {
+        $row = $query[0];
+      }
+      elseif (count($query) > 1) {
         throw new exception("Duplicate termlist $termlist.");
-      else
+      }
+      else {
         throw new exception("Termlist $termlist not found.");
+      }
       $termlist = $row->id;
     }
     $terms = $this->db
-        ->select('termlists_terms.id, term')
-        ->from('termlists_terms')
-        ->join('terms', 'terms.id', 'termlists_terms.term_id')
-        ->where(array('termlists_terms.termlist_id' => $termlist, 'termlists_terms.deleted' => 'f', 'terms.deleted' => 'f'))
-        ->orderby(array('termlists_terms.sort_order' => 'ASC', 'terms.term' => 'ASC'));
-    if ($where)
+      ->select('termlists_terms.id, term')
+      ->from('termlists_terms')
+      ->join('terms', 'terms.id', 'termlists_terms.term_id')
+      ->where([
+        'termlists_terms.termlist_id' => $termlist,
+        'termlists_terms.deleted' => 'f',
+        'terms.deleted' => 'f',
+      ])
+      ->orderby(['termlists_terms.sort_order' => 'ASC', 'terms.term' => 'ASC']);
+    if ($where) {
       $terms = $terms->where($where);
+    }
     $terms = $terms->get();
     foreach ($terms as $term) {
       $arr[$term->id] = $term->term;
@@ -667,11 +727,12 @@ class Indicia_Controller extends Template_Controller {
    */
   protected function set_website_access($level='admin') {
     // If not logged in as a Core admin, restrict access to available websites.
-    if ($this->auth->logged_in('CoreAdmin'))
-      $this->auth_filter = null;
+    if ($this->auth->logged_in('CoreAdmin')) {
+      $this->auth_filter = NULL;
+    }
     else {
       $ids = $this->get_allowed_website_id_list($level);
-      $this->auth_filter = array('field' => 'website_id', 'values' => $ids);
+      $this->auth_filter = ['field' => 'website_id', 'values' => $ids];
     }
   }
 
@@ -679,24 +740,28 @@ class Indicia_Controller extends Template_Controller {
    * Gets a list of the website IDs a user can access at a certain level.
    */
   protected function get_allowed_website_id_list($level, $includeNull=true) {
-    if ($this->auth->logged_in('CoreAdmin'))
-      return null;
+    if ($this->auth->logged_in('CoreAdmin')) {
+      return NULL;
+    }
     else {
       switch ($level) {
-        case 'admin': $role=1; break;
-        case 'editor': $role=2; break;
-        case 'user': $role=3; break;
+        case 'admin': $role = 1; break;
+        case 'editor': $role = 2; break;
+        case 'user': $role = 3; break;
       }
-      $user_websites = ORM::factory('users_website')->where(
-          array('user_id' => $_SESSION['auth_user']->id,
-          'site_role_id <=' => $role, 'site_role_id IS NOT' => NULL))->find_all();
-      $ids = array();
+      $user_websites = ORM::factory('users_website')->where([
+        'user_id' => $_SESSION['auth_user']->id,
+        'site_role_id <=' => $role,
+        'site_role_id IS NOT' => NULL,
+      ])->find_all();
+      $ids = [];
       foreach ($user_websites as $user_website) {
         $ids[] = $user_website->website_id;
       }
       if ($includeNull) {
-        // include a null to allow through records which have no associated website.
-        $ids[] = null;
+        // Include a null to allow through records which have no associated
+        // website.
+        $ids[] = NULL;
       }
       return $ids;
     }

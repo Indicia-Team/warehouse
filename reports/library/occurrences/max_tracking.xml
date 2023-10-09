@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Max tracking" definition="Simply fetch the current max tracking ID from the occurrences cache"
+  description="Can be used then to fetch all changes since this point in time">
+	<query>
+		SELECT max(tracking) as max_tracking FROM cache_occurrences_functional
+	</query>
+	<columns>
+		<column name="max_tracking" />
+	</columns>
+</report>

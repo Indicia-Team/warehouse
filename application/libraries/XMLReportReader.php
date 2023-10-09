@@ -49,6 +49,18 @@ class XMLReportReader_Core implements ReportReader {
   private $createdByField;
   private $colsToInclude = [];
 
+  public $surveys_id_field;
+  public $samples_id_field;
+  public $samples2_id_field;
+  public $occurrences_id_field;
+  public $occurrences2_id_field;
+  public $locations_id_field;
+  public $locations2_id_field;
+  public $people_id_field;
+  public $taxa_taxon_lists_id_field;
+  public $termlists_terms_id_field;
+  public $count_field;
+
   /**
    * Database connection object.
    *
@@ -262,14 +274,19 @@ class XMLReportReader_Core implements ReportReader {
                   // specified.
                   $this->count_field = '*';
                 }
-                // load the standard set of parameters for consistent filtering of reports?
+                // Load the standard set of parameters for consistent filtering
+                // of reports?
                 $standardParams = $reader->getAttribute('standard_params');
-                if ($standardParams !== null)
-                  // default to loading the occurrences standard parameters set. But this can be overridden.
+                if ($standardParams !== NULL) {
+                  // Default to loading the occurrences standard parameters
+                  // set. But this can be overridden.
                   $this->loadStandardParamsSet = $standardParams === 'true' ? 'occurrences' : $standardParams;
-                // reports using the old cache_occurrences structure set standard params to true rather than occurrences
-                if ($standardParams === 'true')
+                }
+                // Reports using the old cache_occurrences structure set
+                // standard params to true rather than occurrences.
+                if ($standardParams === 'true') {
                   $this->loadLegacyStandardParamsSet = TRUE;
+                }
                 $reader->read();
                 $this->query = $reader->value;
                 break;
@@ -282,7 +299,7 @@ class XMLReportReader_Core implements ReportReader {
               case 'field_sql':
                 $reader->read();
                 $field_sql = $reader->value;
-                // drop a marker in so we can insert custom attr fields later
+                // Drop a marker in so we can insert custom attr fields later.
                 $field_sql .= '#fields#';
                 break;
 
@@ -332,15 +349,23 @@ class XMLReportReader_Core implements ReportReader {
                 $this->setAttributes(
                     $reader->getAttribute('where'),
                     $reader->getAttribute('separator'),
-                    $reader->getAttribute('hideVagueDateFields'),// determines whether to hide the main vague date fields for attributes.
-                    $reader->getAttribute('meaningIdLanguage'));//if not set, lookup lists use term_id. If set, look up lists use meaning_id, with value either 'preferred' or the 3 letter iso language to use.
+                    // Determines whether to hide the main vague date fields
+                    // for attributes.
+                    $reader->getAttribute('hideVagueDateFields'),
+                    // If not set, lookup lists use term_id. If set, look up
+                    // lists use meaning_id, with value either 'preferred' or
+                    // the 3 letter iso language to use.
+                    $reader->getAttribute('meaningIdLanguage'));
                 break;
 
-              case 'vagueDate': // This switches off vague date processing.
+              case 'vagueDate':
+                // This switches off vague date processing.
                 $this->vagueDateProcessing = $reader->getAttribute('enableProcessing');
                 break;
 
-              case 'download': // This enables download processing.. potentially dangerous as updates DB.
+              case 'download':
+                // This enables download processing.. potentially dangerous as
+                // updates DB.
                 $this->setDownload($reader->getAttribute('mode'));
                 break;
 
@@ -409,10 +434,6 @@ class XMLReportReader_Core implements ReportReader {
         // ones.
         $this->inferFromQuery();
       }
-      if ($this->query) {
-        $this->query = str_replace('#master_list_id', warehouse::getMasterTaxonListId(), $this->query);
-        $this->countQueryBase = str_replace('#master_list_id', warehouse::getMasterTaxonListId(), $this->countQueryBase);
-      }
     }
     catch (Exception $e) {
       throw new Exception("Report: $report\n" . $e->getMessage());
@@ -431,14 +452,22 @@ class XMLReportReader_Core implements ReportReader {
           }
         }
       }
-      $idList = implode(',', $websiteIds);
+      $websiteIdList = implode(',', $websiteIds);
       // Query can either pull in the filter or just the list of website ids.
-      $filter = empty($this->websiteFilterField) ? "1=1" : "({$this->websiteFilterField} in ($idList) or {$this->websiteFilterField} is null)";
-      $query = str_replace(['#website_filter#', '#website_ids#'], [$filter, $idList], $query);
+      $filter = empty($this->websiteFilterField) ? "1=1" : "({$this->websiteFilterField} in ($websiteIdList) or {$this->websiteFilterField} is null)";
+      $query = str_replace(
+        ['#website_filter#', '#website_ids#'],
+        [$filter, $websiteIdList],
+        $query
+      );
     }
     else {
       // Use a dummy filter to return all websites if core admin.
-      $query = str_replace(['#website_filter#', '#website_ids#'], ['1=1', 'SELECT id FROM websites'], $query);
+      $query = str_replace(
+        ['#website_filter#', '#website_ids#'],
+        ['1=1', 'SELECT id FROM websites'],
+        $query
+      );
     }
     if (!empty($this->trainingFilterField)) {
       $boolStr = $providedParams['training'] === 'true' ? 'true' : 'false';
@@ -460,9 +489,9 @@ class XMLReportReader_Core implements ReportReader {
       // 'me' is a subtype of reporting
       $sharing = 'reporting';
     }
-    if (isset($idList)) {
+    if (isset($websiteIdList)) {
       if ($sharing === 'website') {
-        $sharingFilters[] = "{$this->websiteFilterField} in ($idList)";
+        $sharingFilters[] = "{$this->websiteFilterField} in ($websiteIdList)";
       }
       elseif (!empty($this->websiteFilterField)) {
         // Implement the appropriate sharing agreement across websites.
@@ -472,7 +501,7 @@ class XMLReportReader_Core implements ReportReader {
         $sharedWebsiteIdList = implode(',', warehouse::getSharedWebsiteList($websiteIds, $this->db, $sharing));
         if (!empty($this->blockedSharingTasksField)) {
           $sharingCode = warehouse::sharingTermToCode($sharing);
-          $sharingFilters[] = "($this->websiteFilterField in ($idList) OR $this->createdByField=1 OR " .
+          $sharingFilters[] = "($this->websiteFilterField in ($websiteIdList) OR $this->createdByField=1 OR " .
             "$this->blockedSharingTasksField IS NULL OR NOT $this->blockedSharingTasksField @> ARRAY['$sharingCode'::character ])";
           // Some reports may rely on the syntax of an agreement join being
           // present. Therefore we insert a dummy join that will have little or
@@ -481,7 +510,7 @@ class XMLReportReader_Core implements ReportReader {
         }
         else {
           $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=$this->createdByField";
-          $sharingFilters[] = "($this->websiteFilterField in ($idList) OR privacyusers.id=1 OR " .
+          $sharingFilters[] = "($this->websiteFilterField in ($websiteIdList) OR privacyusers.id=1 OR " .
               "privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)";
         }
         // If scope not controlled by a survey standard parameter filter, then
@@ -500,7 +529,11 @@ class XMLReportReader_Core implements ReportReader {
     }
     $query = str_replace(
       ['#agreements_join#', '#sharing_filter#', '#sharing#'],
-      [implode("\n", $agreementsJoins), implode("\n AND ", $sharingFilters), $sharing],
+      [
+        implode("\n", $agreementsJoins),
+        implode("\n AND ", $sharingFilters),
+        $sharing,
+      ],
       $query
     );
   }
@@ -575,20 +608,24 @@ class XMLReportReader_Core implements ReportReader {
     $distinctSql = [];
     $countSql = [];
     foreach ($this->columns as $col => $def) {
-      if (!empty($this->colsToInclude) && !in_array($col, $this->colsToInclude))
+      if (!empty($this->colsToInclude) && !in_array($col, $this->colsToInclude)) {
         continue;
+      }
       if (isset($def['sql'])) {
-        if (!isset($def['on_demand']) || $def['on_demand'] !== "true")
+        if (!isset($def['on_demand']) || $def['on_demand'] !== "true") {
           $sql[] = $def['sql'] . ' as ' . $this->db->escape_identifier($col);
+        }
         if (isset($def['distincton']) && $def['distincton'] == 'true') {
           $distinctSql[] = $def['internal_sql'];
-          // in_count lets the xml file exclude distinct on columns from the count query
+          // In_count lets the xml file exclude distinct on columns from the
+          // count query.
           if (!isset($def['in_count']) || $def['in_count'] == 'true') {
             $countSql[] = $def['internal_sql'];
           }
         }
         else {
-          // if the column is not distinct on, then it defaults to not in the count
+          // If the column is not distinct on, then it defaults to not in the
+          // count.
           if (isset($def['in_count']) && $def['in_count'] == 'true') {
             $countSql[] = $def['internal_sql'];
           }
@@ -848,7 +885,7 @@ class XMLReportReader_Core implements ReportReader {
   /**
    */
   public function getAttributeDefns() {
-     return $this->attributes;
+    return $this->attributes;
   }
 
   public function getVagueDateProcessing() {
@@ -1005,7 +1042,7 @@ TBL;
       'population_call',
       'linked_to',
       'linked_filter_field',
-      'order_by'
+      'order_by',
     ]);
 
     if ($this->params[$name]['datatype'] === 'lookup') {
@@ -1030,21 +1067,21 @@ TBL;
             if (!isset($this->params[$name]['joins'])) {
               $this->params[$name]['joins'] = [];
             }
-            $this->params[$name]['joins'][] = array(
+            $this->params[$name]['joins'][] = [
               'value' => $reader->getAttribute('value'),
               'operator' => $reader->getAttribute('operator'),
               'sql' => $reader->readString(),
-            );
+            ];
           }
           if ($reader->nodeType == XMLREADER::ELEMENT && $reader->name === 'where') {
             if (!isset($this->params[$name]['wheres'])) {
               $this->params[$name]['wheres'] = [];
             }
-            $this->params[$name]['wheres'][] = array(
+            $this->params[$name]['wheres'][] = [
               'value' => $reader->getAttribute('value'),
               'operator' => $reader->getAttribute('operator'),
               'sql' => $reader->readString(),
-            );
+            ];
           }
         }
       }
@@ -1238,8 +1275,7 @@ TBL;
 
   private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='',
     $orderby='', $mappable='', $autodef=TRUE) {
-    if (array_key_exists($name, $this->columns))
-    {
+    if (array_key_exists($name, $this->columns)) {
       if ($display != '') $this->columns[$name]['display'] = $display;
       if ($style != '') $this->columns[$name]['style'] = $style;
       if ($feature_style != '') $this->columns[$name]['feature_style'] = $feature_style;
@@ -1256,17 +1292,17 @@ TBL;
     }
     else
     {
-      $this->columns[$name] = array(
-          'display' => $display,
-          'style' => $style,
-          'feature_style' => $feature_style,
-          'class' => $class,
-          'visible' => $visible == '' ? 'true' : $visible,
-          'img' => $img == '' ? 'false' : $img,
-          'orderby' => $orderby,
-          'mappable' => empty($mappable) ? 'false' : $mappable,
-          'autodef' => $autodef,
-        );
+      $this->columns[$name] = [
+        'display' => $display,
+        'style' => $style,
+        'feature_style' => $feature_style,
+        'class' => $class,
+        'visible' => $visible == '' ? 'true' : $visible,
+        'img' => $img == '' ? 'false' : $img,
+        'orderby' => $orderby,
+        'mappable' => empty($mappable) ? 'false' : $mappable,
+        'autodef' => $autodef,
+      ];
     }
   }
 
@@ -1275,51 +1311,55 @@ TBL;
     $this->tableIndex = 0;
     $this->nextTableIndex = 1;
     $this->tables[$this->tableIndex] = [
-        'tablename' => $tablename,
-        'parent' => -1,
-        'parentKey' => '',
-        'tableKey' => '',
-        'join' => '',
-        'attributes' => '',
-        'where' => $where,
-        'columns' => []
+      'tablename' => $tablename,
+      'parent' => -1,
+      'parentKey' => '',
+      'tableKey' => '',
+      'join' => '',
+      'attributes' => '',
+      'where' => $where,
+      'columns' => [],
     ];
   }
 
   private function setSubTable($tablename, $parentKey, $tableKey, $join, $where) {
-    if($tableKey == ''){
-      if($parentKey == 'id'){
-        $tableKey = 'lt'.$this->nextTableIndex.".".(inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
+    if ($tableKey == '') {
+      if ($parentKey == 'id') {
+        $tableKey = 'lt' . $this->nextTableIndex . "." . (inflector::singular($this->tables[$this->tableIndex]['tablename'])) . '_id';
       } else {
-        $tableKey = 'lt'.$this->nextTableIndex.'.id';
+        $tableKey = 'lt' . $this->nextTableIndex . '.id';
       }
     } else {
-      $tableKey = 'lt'.$this->nextTableIndex.".".$tableKey;
+      $tableKey = 'lt' . $this->nextTableIndex . "." . $tableKey;
     }
-    if($parentKey == ''){
-      $parentKey = 'lt'.$this->tableIndex.".".(inflector::singular($tablename)).'_id';
-    } else { // force the link as this table has foreign key to parent table, standard naming convention.
-      $parentKey = 'lt'.$this->tableIndex.".".$parentKey;
+    if ($parentKey == '') {
+      $parentKey = 'lt' . $this->tableIndex . "." . (inflector::singular($tablename)) . '_id';
     }
-    $this->tables[$this->nextTableIndex] = array(
-          'tablename' => $tablename,
-           'parent' => $this->tableIndex,
-          'parentKey' => $parentKey,
-          'tableKey' => $tableKey,
-           'join' => $join,
-          'attributes' => '',
-          'where' => $where,
-           'columns' => []);
-    $this->tableIndex=$this->nextTableIndex;
+    else {
+      // Force the link as this table has foreign key to parent table, standard
+      // naming convention.
+      $parentKey = 'lt' . $this->tableIndex . '.' . $parentKey;
+    }
+    $this->tables[$this->nextTableIndex] = [
+      'tablename' => $tablename,
+      'parent' => $this->tableIndex,
+      'parentKey' => $parentKey,
+      'tableKey' => $tableKey,
+      'join' => $join,
+      'attributes' => '',
+      'where' => $where,
+      'columns' => [],
+    ];
+    $this->tableIndex = $this->nextTableIndex;
     $this->nextTableIndex++;
   }
 
-  private function mergeTabColumn($name, $func = '', $display = '', $style = '', $feature_style = '', $class='', $visible='', $autodef=FALSE) {
+  private function mergeTabColumn($name, $func = '', $display = '', $style = '', $feature_style = '', $class = '', $visible = '', $autodef = FALSE) {
     $found = FALSE;
-    for($r = 0; $r < count($this->tables[$this->tableIndex]['columns']); $r++){
-      if($this->tables[$this->tableIndex]['columns'][$r]['name'] == $name) {
+    for ($r = 0; $r < count($this->tables[$this->tableIndex]['columns']); $r++){
+      if ($this->tables[$this->tableIndex]['columns'][$r]['name'] == $name) {
         $found = TRUE;
-        if($func != '') {
+        if ($func != '') {
           $this->tables[$this->tableIndex]['columns'][$r]['func'] = $func;
         }
       }
@@ -1329,7 +1369,7 @@ TBL;
         'name' => $name,
         'func' => $func,
       ];
-      if($display == '') {
+      if ($display == '') {
         $display = $this->tables[$this->tableIndex]['tablename']." ".$name;
       }
     }
@@ -1371,7 +1411,7 @@ TBL;
     $thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
     $thisDefn->separator = $separator;
     $thisDefn->hideVagueDateFields = $hideVagueDateFields;
-    $thisDefn->columnPrefix = 'attr_' . $this->tableIndex.'_';
+    $thisDefn->columnPrefix = 'attr_' . $this->tableIndex . '_';
     // Folowing is used the query builder only.
     $thisDefn->parentTableIndex = $this->tableIndex;
     $thisDefn->where = $where;
@@ -1392,14 +1432,13 @@ TBL;
   * matching from. Commas that are part of nested selects or function calls are ignored
   * provided they are enclosed in brackets.
   */
-  private function inferFromQuery()
-  {
-    // Find the columns we're searching for - nested between a SELECT and a FROM.
-    // To ensure we can detect the words FROM, SELECT and AS, use a regex to wrap
-    // spaces around them, then can do a regular string search
-    $this->query=preg_replace("/\b(select)\b/i", ' select ', $this->query);
-    $this->query=preg_replace("/\b(from)\b/i", ' from ', $this->query);
-    $this->query=preg_replace("/\b(as)\b/i", ' as ', $this->query);
+  private function inferFromQuery() {
+    // Find the columns we're searching for - nested between a SELECT and a
+    // FROM. To ensure we can detect the words FROM, SELECT and AS, use a regex
+    // to wrap spaces around them, then can do a regular string search.
+    $this->query = preg_replace("/\b(select)\b/i", ' select ', $this->query);
+    $this->query = preg_replace("/\b(from)\b/i", ' from ', $this->query);
+    $this->query = preg_replace("/\b(as)\b/i", ' as ', $this->query);
     $i0 = strpos($this->query, ' select ') + 7;
     $nesting = 1;
     $offset = $i0;
@@ -1407,13 +1446,13 @@ TBL;
       $nextSelect = strpos($this->query, ' select ', $offset);
       $nextFrom = strpos($this->query, ' from ', $offset);
       if ($nextSelect !== FALSE && $nextSelect < $nextFrom) {
-        //found start of sub-query
+        // Found start of sub-query.
         $nesting++;
         $offset = $nextSelect + 7;
       } else {
         $nesting--;
         if ($nesting != 0) {
-          //found end of sub-query
+          // Found end of sub-query.
           $offset = $nextFrom + 5;
         }
       }
@@ -1425,36 +1464,36 @@ TBL;
     $colString = str_replace('#fields#', '', substr($this->query, $i0, $i1));
 
     // Now divide up the list of columns, which are comma separated, but ignore
-    // commas nested in brackets
+    // commas nested in brackets.
     $colStart = 0;
-    $nextComma =  strpos($colString, ',', $colStart);
-    while ($nextComma !== FALSE)
-    {//loop through columns
-      $nextOpen =  strpos($colString, '(', $colStart);
-      while ($nextOpen !== FALSE && $nextComma !==FALSE && $nextOpen < $nextComma)
-      { //skipping commas in brackets
+    $nextComma = strpos($colString, ',', $colStart);
+    while ($nextComma !== FALSE) {
+      // Loop through columns.
+      $nextOpen = strpos($colString, '(', $colStart);
+      while ($nextOpen !== FALSE && $nextComma !== FALSE && $nextOpen < $nextComma) {
+        // Skipping commas in brackets.
         $offset = $this->strposclose($colString, $nextOpen) + 1;
-        $nextComma =  strpos($colString, ',', $offset);
-        $nextOpen =  strpos($colString, '(', $offset);
+        $nextComma = strpos($colString, ',', $offset);
+        $nextOpen = strpos($colString, '(', $offset);
       }
       if ($nextComma !== FALSE) {
-        //extract column and move on to next
+        // Extract column and move on to next.
         $cols[] = substr($colString, $colStart, ($nextComma - $colStart));
         $colStart = $nextComma + 1;
-        $nextComma =  strpos($colString, ',', $colStart);
-     }
+        $nextComma = strpos($colString, ',', $colStart);
+      }
     }
-    //extract final column
+    // Extract final column.
     $cols[] = substr($colString, $colStart);
 
-    // We have cols, which may either be of the form 'x', 'table.x' or 'x as y'. Either way the column name is the part after the last
-    // space and full stop.
-    foreach ($cols as $col)
-    {
-      // break down by spaces
-      $b = explode(' ' , trim($col));
-      // break down the part after the last space, by
-      $c = explode('.' , array_pop($b));
+    // We have cols, which may either be of the form 'x', 'table.x' or 'x as
+    // y'. Either way the column name is the part after the last space and full
+    // stop.
+    foreach ($cols as $col) {
+      // Break down by spaces.
+      $b = explode(' ', trim($col));
+      // Break down the part after the last space.
+      $c = explode('.', array_pop($b));
       $d = array_pop($c);
       $this->mergeColumn(trim($d));
     }
@@ -1462,34 +1501,41 @@ TBL;
     // Okay, now we need to find parameters, which we do with regex.
     preg_match_all('/#([a-z0-9_]+)#%/i', $this->query, $matches);
     // Here is why I remember (yet again) why I hate PHP...
-    foreach ($matches[1] as $param)
-    {
+    foreach ($matches[1] as $param) {
       $this->mergeParam($param);
     }
   }
 
   /**
-   * Returns the numeric position of the closing bracket matching the opening bracket
-   * @param <string> $haystack The string to search
-   * @param <int> $open The numeric position of the opening bracket
-   * @return The numeric position of the closing bracket or FALSE if not present
+   * Returns numeric pos of the closing bracket matching an opening bracket.
+   *
+   * @param string $haystack
+   *   The string to search.
+   * @param int $open
+   *   The numeric position of the opening bracket.
+   *
+   * @return int
+   *   The numeric position of the closing bracket or FALSE if not present.
    */
   private function strposclose($haystack, $open) {
     $nesting = 1;
     $offset = $open + 1;
     do {
-      $nextOpen =  strpos($haystack, '(', $offset);
-      $nextClose =  strpos($haystack, ')', $offset);
-      if ($nextClose === FALSE) return FALSE;
+      $nextOpen = strpos($haystack, '(', $offset);
+      $nextClose = strpos($haystack, ')', $offset);
+      if ($nextClose === FALSE) {
+        return FALSE;
+      }
       if ($nextOpen !== FALSE and $nextOpen < $nextClose) {
         $nesting++;
         $offset = $nextOpen + 1;
-      } else {
+      }
+      else {
         $nesting--;
         $offset = $nextClose + 1;
       }
-    }
-    while ($nesting > 0);
-    return $offset -1;
+    } while ($nesting > 0);
+    return $offset - 1;
   }
+
 }

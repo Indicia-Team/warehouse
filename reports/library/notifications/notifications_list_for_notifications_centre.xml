@@ -5,13 +5,15 @@
   <query>
   SELECT #columns#
     FROM notifications n
-      LEFT JOIN cache_occurrences_functional o ON o.id=n.linked_id AND (n.source='Verifications and comments' OR n.source_type='S')
-      LEFT JOIN cache_occurrences_functional coFilter ON n.linked_id=coFilter.id
+      LEFT JOIN cache_occurrences_functional o ON o.id=n.linked_id AND n.source_type&lt;&gt;'GU'
+      LEFT JOIN occurrence_comments oc ON n.source_type='V'
+        AND n.source_detail LIKE 'oc_id:%'
+        AND oc.id=replace(n.source_detail, 'oc_id:', '')::int
       #joins#
     WHERE n.acknowledged=false
-      and n.user_id=#user_id#
-      and (o.training=#training# or o.id is null)
-      and n.source_type&lt;&gt;'T' -- skip trigger notifications which don't display correctly in the grid
+      AND n.user_id=#user_id#
+      AND (o.training=#training# or o.id is null)
+      AND n.source_type&lt;&gt;'T' -- skip trigger notifications which don't display correctly in the grid
     #order_by#
   </query>
   <order_bys>
@@ -21,16 +23,15 @@
     <param name="user_id" display="User ID" description="Warehouse user ID" datatype="text" />
     <!-- parameter for grid drop-down filter -->
     <param name="source_filter" display="Show notifications for" datatype='lookup'
-           lookup_values='all:Anything,verifications:Verifications,rejections_queries:Rejections and queries,record_cleaner:Record Cleaner,record_comments:Record comments,pending_groups_users:Requests to join a group you administer'>
+           lookup_values="all:Anything,queries:Queried,rejections:Not accepted,redets:Redeterminations,record_comments:Commented on,verifications:Accepted,record_cleaner:Failed automated checks,pending_groups_users:Requests to join a group you administer">
       <wheres>
-        <where value="all" operator="equal">n.source_type != ''</where>
-        <where value="verifications" operator="equal">n.source_type='V' AND coFilter.record_status='V'</where>
-        <where value="rejections_queries" operator="equal">n.source_type='V' AND (coFilter.record_status='R' or coFilter.record_status='D')</where>
-        <where value="record_cleaner" operator="equal">n.source_type ='A'</where>
+        <where value="queries" operator="equal">n.source_type='Q'</where>
+        <where value="redets" operator="equal">n.source_type='RD'</where>
+        <where value="rejections" operator="equal">n.source_type='V' AND oc.record_status='R'</where>
         <where value="record_comments" operator="equal">n.source_type='C'</where>
+        <where value="verifications" operator="equal">n.source_type='V' AND oc.record_status='V'</where>
+        <where value="record_cleaner" operator="equal">n.source_type ='A'</where>
         <where value="pending_groups_users" operator="equal">n.source_type='GU'</where>
-        <!--<where value="achievements" operator="equal">n.source_type='AC'</where>-->
-        <!--<where value="other" operator="equal">n.source_type!='V' AND n.source_type!='A' AND n.source_type!='C' AND n.source_type!='AC'</where>-->
       </wheres>
     </param>
     <!-- parameter for user configurable source types on edit tab. -->
@@ -54,12 +55,12 @@
     </param>
     <param name="taxon_meaning_id" display="Taxon meaning ID" description="Filter to only show notifications for records in this taxonomic branch. Should be a taxon on the master list." datatype="integer" default="">
       <wheres>
-        <where>#taxon_meaning_id#=ANY(coFilter.taxon_path)</where>
+        <where>#taxon_meaning_id#=ANY(o.taxon_path)</where>
       </wheres>
     </param>
     <param name="taxon_group_id" display="Taxon group ID" description="Filter to only show notifications for records in this taxonomic grouping." datatype="integer" default="">
       <wheres>
-        <where>coFilter.taxon_group_id=#taxon_group_id#</where>
+        <where>o.taxon_group_id=#taxon_group_id#</where>
       </wheres>
     </param>
   </params>

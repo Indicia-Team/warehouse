@@ -397,9 +397,12 @@ class Sample_Model extends ORM_Tree {
   }
 
   /**
-   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   * Fixed values form for sample import.
+   *
+   * Define a form that is used to capture a set of predetermined values that
+   * apply to every record during an import.
    */
-  public function fixedValuesForm($options = array()) {
+  public function fixedValuesForm($options = []) {
     $srefs = [];
     $systems = spatial_ref::system_list();
     foreach ($systems as $code => $title) {
@@ -442,8 +445,10 @@ class Sample_Model extends ORM_Tree {
       ],
       'sample:entered_sref_system' => [
         'display' => 'Spatial Ref. System',
-        'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
-            'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.',
+        'description' => 'Select the spatial reference system used in this import file. Note, if you have an import ' .
+          'file with a mix of spatial reference systems then you need to include a column in the file that shows ' .
+          'the spatial reference system code, so that his can be mapped to the Sample Spatial Reference System ' .
+          'field on the next page.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $srefs),
       ],

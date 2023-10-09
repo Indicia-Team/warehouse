@@ -10,12 +10,12 @@ language: php
 
 php:
   # Test oldest and newest maintained versions.
-  - '7.4.29'
   - '8.0'
+  - '8.1'
 
 env:
   # Test oldest and newest maintained versions.
-  - PGVERSION=9.6
+  - PGVERSION=11
   - PGVERSION=13
 
 before_install:
@@ -72,6 +72,8 @@ before_script:
   - psql -U postgres -d indicia -c "create extension postgis_topology"
   # Add extension for btree_gin indexes.
   - psql -U postgres -d indicia -c "create extension btree_gin"
+  # Add extension for hstore and the audit trail.
+  - psql -U postgres -d indicia -c "create extension hstore"
   # Set up database.
   - .travis/postgres_setup.sh
   # Enable the phpunit module in config.php (meaning initialise() is not tested)

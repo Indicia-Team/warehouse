@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="UKSI taxon search" description="Quick way of reviewing UKSI changes.">
+  <query>
+  select #columns#
+  from taxa_taxon_lists ttl
+  join taxa t on t.id=ttl.taxon_id and t.deleted=false
+  left join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false
+  left join taxa_taxon_lists ttlp on ttlp.id=ttl.parent_id and ttlp.deleted=false and ttlp.taxon_list_id=15
+  left join taxa tp on tp.id=ttlp.taxon_id and tp.deleted=false
+  join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
+  #joins#
+  where ttl.taxon_list_id=#taxon_list_id#
+  and ttl.deleted=false
+  #filters#
+  </query>
+  <order_bys>
+    <order_by>
+      ttl.preferred desc, t.language_id=2 desc, t.taxon, t.attribute, t.authority
+    </order_by>
+  </order_bys>
+  <params>
+    <param name="taxon_list_id" display="Taxon list ID" datatype="integer" />
+    <param name="key" display="Key (Organism or TVK)" datatype="text" default="">
+      <where>(('#key_type#'='org' and t.organism_key='#key#') or (('#key_type#'='tvk' and t.external_key='#key#')))</where>
+    </param>
+    <param name="key_type" display="Key type" datatype="lookup" lookup_values="org:Organism key,tvk:Taxon version key" default="org" />
+    <param name="taxa_taxon_list_id" display="" datatype="text" default="">
+      <join>join taxa_taxon_lists ttlany on ttlany.taxon_meaning_id=ttl.taxon_meaning_id and ttlany.id=#taxa_taxon_list_id#</join>
+    </param>
+  </params>
+  <columns>
+    <column name="name_type" display="Name type" datatype="text"
+      sql="CASE WHEN ttl.preferred=true THEN 'Accepted' WHEN t.language_id=2 THEN 'Synonym' ELSE 'Vernacular' END" />
+    <column name="taxon" display="Taxon" datatype="text" sql="t.taxon" />
+    <column name="attribute" display="Attribute" datatype="text" sql="t.attribute" />
+    <column name="authority" display="Authority" datatype="text" sql="t.authority" />
+    <column name="rank" display="Rank" datatype="text" sql="tr.rank" />
+    <column name="search_code" display="TVK" datatype="text" sql="t.search_code" />
+    <column name="external_key" display="Accepted name TVK" datatype="text" sql="t.external_key" />
+    <column name="organism_key" display="Organism Key" datatype="text" sql="t.organism_key" />
+    <column name="pref_taxa_taxon_list_id" display="Taxa taxon list ID" datatype="integer" sql="ttlpref.id" />
+    <column name="taxon_meaning_id" display="Taxon Meaning ID" datatype="integer" sql="ttl.taxon_meaning_id" />
+    <column name="parent_taxon" display="Parent taxon" datatype="text" sql="tp.taxon" />
+    <column name="parent_organism_key" display="Parant Organism Key" datatype="text" sql="tp.organism_key" />
+    <column name="redundant" display="Redundant" datatype="text" sql="case when ttl.allow_data_entry then 'No' else 'Yes' end" />
+    <column name="name_class" display="Class" datatype="text" sql="case when tr.sort_order >= 300 and t.language_id=2 then 'name-italic' else '' end" />
+  </columns>
+</report>

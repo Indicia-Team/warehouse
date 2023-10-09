@@ -1,0 +1,57 @@
+<report
+    title="Sample attribute value"
+    description="Report used to retrieve custom attribute values of a sample for a specific attribute."
+>
+  <query website_filter_field="">
+  select
+      a.system_function, a.id as attr_id,
+      CASE a.data_type
+              WHEN 'T' THEN 'Text'
+              WHEN 'L' THEN 'Lookup List'
+              WHEN 'I' THEN 'Integer'
+              WHEN 'B' THEN 'Boolean'
+              WHEN 'F' THEN 'Float'
+              WHEN 'D' THEN 'Specific Date'
+              WHEN 'V' THEN 'Vague Date'
+              ELSE a.data_type
+          END AS data_type,
+          CASE '#language#' WHEN '' THEN a.caption ELSE COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) END AS caption,
+          STRING_AGG(CASE a.data_type
+              WHEN 'T' THEN get_formatted_attr_text_value(a.caption, av.text_value, '#output_formatting#')
+              WHEN 'L' THEN lookup.term::text
+              WHEN 'I' THEN av.int_value::varchar
+              WHEN 'B' THEN av.int_value::varchar
+              WHEN 'F' THEN av.float_value::varchar
+              WHEN 'D' THEN av.date_start_value::varchar
+              WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
+              ELSE NULL::text
+          END || CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN COALESCE(' - ' || av.upper_value::text, '') ELSE '' END, '; ') AS value,
+          STRING_AGG(CASE a.data_type
+              WHEN 'T' THEN av.text_value
+              WHEN 'L' THEN av.int_value::varchar
+              WHEN 'I' THEN av.int_value::varchar
+              WHEN 'B' THEN av.int_value::varchar
+              WHEN 'F' THEN av.float_value::varchar
+              WHEN 'D' THEN av.date_start_value::varchar
+              WHEN 'V' THEN (av.date_start_value::varchar || ' - '::text) || av.date_end_value::varchar
+              ELSE NULL::text
+          END, '; ') AS raw_value,
+          STRING_AGG(CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges=true THEN av.upper_value::text ELSE null::text END, '; ') AS upper_value
+  from sample_attributes a
+  left join (sample_attribute_values av
+    join samples s on s.id=av.sample_id and s.deleted=false
+    join surveys srv on srv.id=s.survey_id and srv.deleted=false and srv.website_id in (#website_ids#)
+  ) on av.sample_attribute_id=a.id and av.deleted=false and av.sample_id=#sample_id#
+  left join cache_termlists_terms lookup on a.data_type='L' and lookup.id=av.int_value
+  where a.deleted=false
+  and a.id=#sample_attribute_id#
+  group by a.system_function, a.id, a.data_type, a.caption
+  </query>
+  <params>
+    <param name="sample_id" display="sample ID" description="ID of the sample to load" datatype="integer" />
+    <param name="sample_attribute_id" display="Attribute ID" description="Single sample attribute ID" datatype="integer" />
+    <param name="language" display="Language" description="ISO 3 letter code of language to use for captions if available."
+        datatype="text" default="" />
+    <param name="output_formatting" display="Output formatting" description="Auto-format HTML links and newlines" datatype="boolean" default="f" />
+  </params>
+</report>

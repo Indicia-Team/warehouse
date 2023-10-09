@@ -42,7 +42,7 @@ function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
 ?>
 <p>This page allows you to specify the details of a UKSI operation.</p>
 <?php if ($values['uksi_operation:operation_processed'] === 't') : ?>
-<div class="alert alert-success">This operation was processed on <?php echo strftime('%c', strtotime($values['uksi_operation:processed_on'])); ?>.</div>
+<div class="alert alert-success">This operation was processed on <?php echo date('Y-m-d H:i:s', strtotime($values['uksi_operation:processed_on'])); ?>.</div>
 <?php endif; ?>
 
 <form id="uksi-operation-edit" action="<?php echo url::site() . 'uksi_operation/save'; ?>" method="post">

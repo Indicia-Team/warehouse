@@ -1,0 +1,39 @@
+<report
+    title="List of occurrrence images"
+    description="A list of occurrrence images for the species details 2 page, excludes unverified and confidential records."
+    featured="true"
+>
+  <query website_filter_field="o.website_id">
+  SELECT #columns#
+  FROM cache_occurrences_functional o
+  JOIN occurrence_media om ON om.occurrence_id=o.id AND om.deleted=false
+  JOIN cache_termlists_terms t ON t.id=om.media_type_id
+  LEFT JOIN licences l ON l.id=om.licence_id AND l.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  AND o.media_count>0
+  AND o.confidential=false
+  AND o.record_status='V'
+  AND o.taxa_taxon_list_external_key='#external_key#'
+  </query>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="external_key" datatype="string"/>
+  </params>
+  <columns>
+    <column name='occurrence_id' sql='o.id' datatype="integer" />
+    <column name='id' sql='om.id' datatype="integer" />
+    <column name='record_status' sql='o.record_status' visible="false" />
+    <column name='record_substatus' sql='o.record_substatus' visible="false" />
+    <column name='query' sql='query' visible="false" />
+    <column name='certainty' sql='o.certainty' visible="false" />
+    <column name='path' sql='om.path' img='true' />
+    <column name='caption' sql='om.caption' />
+    <column name='licence_code' sql='l.code' />
+    <column name='licence_title' sql='l.title' />
+    <column name='media_type' sql='t.term' />
+  </columns>
+</report>

@@ -29,7 +29,14 @@
  */
 class task_spatial_index_builder_sample {
 
-  const BATCH_SIZE = 5000;
+  public const BATCH_SIZE = 5000;
+
+  /**
+   * This class will expire the completed tasks itself.
+   *
+   * @const bool
+   */
+  public const SELF_CLEANUP = TRUE;
 
   /**
    * Perform the processing for a task batch found in the queue.
@@ -94,6 +101,22 @@ FROM cache_samples_functional s
 JOIN changed_samples cs on cs.sample_id=s.id
 WHERE o.sample_id=s.id
 AND (o.location_ids <> s.location_ids OR (o.location_ids IS NULL)<>(s.location_ids IS NULL));
+
+-- Garbage collection, taking care to only remove samples that got indexed
+-- properly. We can clear do the occurrence tasks for the samples that are
+-- done to save extra work.
+DELETE FROM work_queue q
+USING changed_samples s
+WHERE s.sample_id=q.record_id
+AND q.entity='sample'
+AND q.task='task_spatial_index_builder_sample';
+
+DELETE FROM work_queue q
+USING changed_samples s, cache_occurrences_functional o
+WHERE s.sample_id=o.sample_id
+AND o.id=q.record_id
+AND q.entity='occurrence'
+AND q.task='task_spatial_index_builder_occurrence';
 SQL;
     $db->query($qry);
   }

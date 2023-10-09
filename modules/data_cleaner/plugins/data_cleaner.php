@@ -42,10 +42,10 @@ function data_cleaner_alter_menu($menu, $auth) {
  *   List of additional entities to expose via the data services.
  */
 function data_cleaner_extend_data_services() {
-  return array(
-    'verification_rules' => array('readOnly', 'allow_full_access' => 1),
-    'verification_rule_metadata' => array('readOnly', 'allow_full_access' => 1),
-  );
+  return [
+    'verification_rules' => ['readOnly', 'allow_full_access' => 1],
+    'verification_rule_metadata' => ['readOnly', 'allow_full_access' => 1],
+  ];
 }
 
 /**
@@ -57,9 +57,9 @@ function data_cleaner_extend_data_services() {
  *   Metadata.
  */
 function data_cleaner_metadata() {
-  return array(
+  return [
     'requires_occurrences_delta' => TRUE,
-  );
+  ];
 }
 
 /**
@@ -85,7 +85,7 @@ function data_cleaner_scheduled_task($timestamp, $db, $endtime) {
  *   Database connection object.
  */
 function data_cleaner_cleanout_old_messages(array $rules, $db) {
-  $modulesDone = array();
+  $modulesDone = [];
   foreach ($rules as $rule) {
     if (!in_array($rule['plugin'], $modulesDone)) {
       // Mark delete any previous occurrence comments for this plugin for
@@ -98,16 +98,16 @@ function data_cleaner_cleanout_old_messages(array $rules, $db) {
       $db->query($query);
       $modulesDone[] = $rule['plugin'];
     }
-    // Cleanup the notifications generated previously for verifications and
-    // auto-checks.
-    $query = "delete
-      from notifications
-      using occdelta o
-      where source='Verifications and comments' and source_type in ('V','A')
-      and linked_id = o.id
-      and o.record_status not in ('I','V','R','D')";
-    $db->query($query);
   }
+  // Cleanup the notifications generated previously for verifications and
+  // auto-checks.
+  $query = "delete
+    from notifications
+    using occdelta o
+    where source='Verifications and comments' and source_type in ('V','A')
+    and linked_id = o.id
+    and o.record_status not in ('I','V','R','D')";
+  $db->query($query);
 }
 
 /**
@@ -161,8 +161,7 @@ SQL;
         echo 'Query failed<br/>' . $e->getMessage() . '<br/><pre style="color: red">' . $db->last_query() . '</pre><br/>';
       }
     }
-    $tm = microtime(TRUE) - $tm;
-    if ($tm > 3) {
+    if (microtime(TRUE) - $tm > 3) {
       kohana::log('alert', "Data cleaner rule $rule[testType] took $tm seconds");
     }
   }

@@ -1,0 +1,28 @@
+<report
+    title="Verification Template list"
+    description="A list of verification templates for the Elasticsearch verification tools."
+>
+  <query website_filter_field="o.website_id" count_field="id">
+  SELECT #columns#
+  FROM verification_templates vt
+  WHERE vt.deleted = 'f'
+  AND (vt.restrict_to_website_id = 'f' OR #website_id# = vt.website_id)
+  </query>
+  <order_bys>
+    <order_by>vt.title ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='website_id' display='Website ID' description='Select the website to return data for' datatype='integer' />
+    <param name='template_status' display='Template Status' description='Template Status' datatype='text'  default='' >
+      <where>vt.template_statuses @> ARRAY['#template_status#'::varchar]</where>
+    </param>
+    <param name="created_by_id" display="Created by ID" description="Limit to templates created by this user">
+      <where>vt.created_by_id=#created_by_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name='id' sql="vt.id" display='ID' />
+    <column name='title' sql="vt.title" display='Title' />
+    <column name='template' sql="vt.template" display='Template' />
+  </columns>
+</report>

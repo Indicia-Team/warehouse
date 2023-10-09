@@ -7,13 +7,8 @@ require_once 'client_helpers/submission_builder.php';
 
 $postedUserId = 1;
 
-function hostsite_get_user_field($field) {
-  if ($field === 'indicia_user_id') {
-    global $postedUserId;
-    return $postedUserId;
-  }
-  return NULL;
-}
+// This forces the get_hostsite_user_id shim to be made available.
+warehouse::getMasterTaxonListId();
 
 class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
@@ -634,7 +629,7 @@ SQL;
 
   public function testRedetOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRedetOccurrence");
-    $array = array(
+    $array = [
       'website_id' => 1,
       'survey_id' => 1,
       'sample:entered_sref' => 'SU1234',
@@ -642,7 +637,7 @@ SQL;
       'sample:date' => '02/09/2017',
       'occurrence:taxa_taxon_list_id' => 1,
       'occAttr:1' => 'Test recorder',
-    );
+    ];
     $structure = [
       'model' => 'sample',
       'subModels' => [
@@ -711,6 +706,76 @@ SQL;
     $this->assertEquals('Unknown', $val->text_value);
   }
 
+  public function testSampleTrainingMode() {
+
+    // Add a handful of samples to de-sync the IDs.
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+    ];
+    $structure = [
+      'model' => 'sample',
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+
+    // Add sample and occurrence - change sample to training, check occurrence.
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testSampleTrainingMode");
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'occurrence:taxa_taxon_list_id' => 1,
+      'occAttr:1' => 'Test recorder',
+    ];
+    $structure = [
+      'model' => 'sample',
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+    $sampleId = $r['success'];
+    // Change the sample to training and ensure that the occurrence is also
+    // updated.
+    $array = [
+      'id' => $sampleId,
+      'website_id' => 1,
+      'training' => 't',
+    ];
+    $s = submission_builder::build_submission($array, ['model' => 'sample']);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $occ1 = ORM::factory('occurrence', ['sample_id' => $sampleId]);
+    $this->assertEquals('t', $occ1->training);
+    // Add a second occurrence.
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample_id' => $sampleId,
+      'taxa_taxon_list_id' => 1,
+    ];
+    $s = submission_builder::build_submission($array, ['model' => 'occurrence']);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, self::$auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Adding an occurrence to a sample did not return success response');
+    $occ2Id = $r['success'];
+    // Check that any triggers didn't mess up the returned ID.
+    $this->assertEquals($occ1->id + 1, $occ2Id);
+    // Check it inherited training mode from the sample.
+    $occ2 = ORM::factory('occurrence', $occ2Id);
+    $this->assertEquals('t', $occ2->training);
+  }
+
   /**
    * Ensures that a redetermination picks up correct person details.
    *
@@ -752,11 +817,13 @@ SQL;
     $s = submission_builder::build_submission($array, ['model' => 'occurrence']);
     $r = data_entry_helper::forward_post_to('occurrence', $s, $otherUserAuth['write_tokens']);
     $determinerInfo = self::$db->query("select created_by_id, person_name from determinations where occurrence_id=$occurrenceId")->current();
+    $this->assertNotFalse($determinerInfo, 'Determinations record not created after modifying an occurrence taxa_taxon_list_id.');
     $this->assertEquals(self::$extraUserId, $determinerInfo->created_by_id, 'Determination has not picked up correct user ID.');
     $this->assertEquals('Person3, Test3', $determinerInfo->person_name, 'Determination has not picked up correct person name.');
     // Reset.
     $postedUserId = 1;
     self::$db->query("delete from determinations where occurrence_id=$occurrenceId");
+    self::$db->query('delete from occurrence_attribute_values where created_by_id=' . self::$extraUserId);
     self::$db->query('delete from occurrences where created_by_id=' . self::$extraUserId);
     self::$db->query('delete from samples where created_by_id=' . self::$extraUserId);
   }
