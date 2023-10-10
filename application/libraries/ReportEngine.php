@@ -2173,10 +2173,10 @@ SQL;
     foreach ($valueList as $value) {
       foreach ($paramDef['wheres'] as $whereDef) {
         $includeWhere = FALSE;
-        if (empty($whereDef['value'])) {
+        if (!isset($whereDef['value']) || $whereDef['value'] === '') {
           // If value not qualified in the where definition, any value except
           // empty triggers the inclusion.
-          $includeWhere = !empty($value) && $value !== "NULL";
+          $includeWhere = $value !== '' && $value !== "NULL";
         }
         else {
           // Value qualified in the definition, so it must match or not match,
