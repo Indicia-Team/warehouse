@@ -1099,6 +1099,10 @@ KEY;
     $this->assertArrayHasKey('id', $response['response']['duplicate_of']);
     $this->assertArrayHasKey('href', $response['response']['duplicate_of']);
     $this->assertEquals($id, $response['response']['duplicate_of']['id']);
+    $db = new Database();
+    $smpCount = $db->query("select count(*) from samples where external_key='123'")
+      ->current()->count;
+    $this->assertEquals(1, $smpCount, 'Inserting duplicate sample external key succeeded when it should have failed.');
     // PUT with same external key should be OK.
     $response = $this->callService(
       "samples/$id",
