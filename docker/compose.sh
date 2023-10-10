@@ -260,3 +260,4 @@ echo
 echo "You can visit the warehouse at http://localhost:8080"
 echo "You can see email it sends at http://localhost:8025"
 echo "You can examine the database at http://localhost:8070"
+echo "You can manage GeoServer at http://localhost:8090/geoserver"

@@ -2110,11 +2110,22 @@ SQL;
           $joins[] = $joinDef['sql'];
         }
         elseif (!empty($joinDef['standard_join']) && !in_array($joinDef['standard_join'], $this->doneStandardParamJoins)) {
-          // A parameter can reference a standard join, so that several params can share 1 join to a table rather than
-          // join to it multiple times.
+          // A parameter can reference a standard join, so that several params
+          // can share 1 join to a table rather than join to it multiple times.
           switch ($joinDef['standard_join']) {
-            case 'prefcttl':
-              $joins[] = "JOIN cache_taxa_taxon_lists prefcttl ON prefcttl.id=o.preferred_taxa_taxon_list_id";
+            case 'sj_prefcttl':
+              // Preferred taxon join for occurrences reports.
+              $joins[] = "JOIN cache_taxa_taxon_lists sj_prefcttl ON sj_prefcttl.id=o.preferred_taxa_taxon_list_id";
+              break;
+
+            case 'sj_snf':
+              // Samples_non_functional join for occurrences reports.
+              $joins[] = "JOIN cache_samples_nonfunctional sj_snf ON sj_snf.id=o.sample_id";
+              break;
+
+            case 'sj_smp_snf':
+              // Samples_non_functional join for samples reports.
+              $joins[] = "JOIN cache_samples_nonfunctional sj_snf ON sj_smp_snf.id=s.id";
               break;
 
             default:

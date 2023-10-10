@@ -8,3 +8,22 @@ services:
         # Share the warehouse code between host and container
         volumes:
             - ..:/var/www/html/
+
+    # A container running pgAdmin to help us examine the database.
+    # Accessible on http://localhost:8070
+    # Login with the email and password configured below.
+    pgadmin:
+        # See https://hub.docker.com/r/dpage/pgadmin4/tags
+        # for other versions available.
+        image: dpage/pgadmin4:5.5
+        environment:
+            PGADMIN_DEFAULT_EMAIL: pgadmin@example.com
+            PGADMIN_DEFAULT_PASSWORD: password
+        volumes:
+            # Persist configuration in a named volume.
+            - pgadmin:/var/lib/pgadmin
+        ports: 
+            - "8070:80"
+
+volumes:
+    pgadmin:

@@ -147,5 +147,6 @@ $config['modules'] = [
   MODPATH.'request_logging',         // track report and data timings
   MODPATH.'survey_structure_export', // import/export of attributes
   MODPATH.'audit',                   // audit trail
+  MODPATH.'summary_occurrences',     // summary occurrences
   MODPATH.'phpUnit',                 // Required for testing
 ];
