@@ -108,6 +108,13 @@ class report_standard_params_occurrences {
         'description' => 'Include or exclude the list of indexed locations',
         'lookup_values' => 'in:Include,not in:Exclude',
       ],
+      'quality' => [
+        'datatype' => 'lookup',
+        'default' => 'in',
+        'display' => 'Quality filter mode',
+        'description' => 'Include or exclude the list of quality codes',
+        'lookup_values' => 'in:Include,not in:Exclude',
+      ],
       'taxon_rank_sort_order' => [
         'datatype' => 'lookup',
         'default' => '',
@@ -175,8 +182,6 @@ class report_standard_params_occurrences {
         'description' => 'Limit by occurrence ID.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.id #occ_id_op# #occ_id#",
           ],
         ],
@@ -187,8 +192,6 @@ class report_standard_params_occurrences {
         'description' => 'Limit by sample ID.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.sample_id #smp_id_op# #smp_id#",
           ],
         ],
@@ -199,8 +202,6 @@ class report_standard_params_occurrences {
         'description' => 'Limit to a single record matching this occurrence external key.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.external_key='#occurrence_external_key#'",
           ],
         ],
@@ -211,8 +212,6 @@ class report_standard_params_occurrences {
         'description' => 'Boundary to search within, in Well Known Text format using Web Mercator projection.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "st_intersects(#sample_geom_field#, st_makevalid(st_geomfromtext('#searchArea#',900913)))",
           ],
         ],
@@ -223,8 +222,6 @@ class report_standard_params_occurrences {
         'description' => 'Name of location to filter to (starts with search)',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.location_name ilike replace('#location_name#', '*', '%') || '%'",
           ],
         ],
@@ -235,8 +232,6 @@ class report_standard_params_occurrences {
         'description' => 'Comma separated list of location IDs',
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "JOIN locations #alias:lfilt# ON #alias:lfilt#.id #location_list_op# (#location_list#) AND #alias:lfilt#.deleted=false " .
               "AND st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#) " .
               "AND (st_geometrytype(#sample_geom_field#)='ST_Point' OR NOT st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#))",
@@ -247,14 +242,10 @@ class report_standard_params_occurrences {
         'datatype' => 'integer[]',
         'display' => 'Location IDs (indexed)',
         'description' => 'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
+        'param_op' => 'inOrNotIn',
         'wheres' => [
           [
-            'param_op' => 'in',
-            'sql' => "o.location_ids && ARRAY[#indexed_location_list#]",
-          ],
-          [
-            'param_op' => 'not in',
-            'sql' => "(NOT (o.location_ids && ARRAY[#indexed_location_list#]) OR o.location_ids IS NULL)",
+            'sql' => "o.location_ids IS NOT NULL AND o.location_ids && ARRAY[#indexed_location_list#]",
           ],
         ],
       ],
@@ -265,8 +256,6 @@ class report_standard_params_occurrences {
           'of these types will be included.',
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => 'join locations ltype on o.location_ids @> ARRAY[ltype.id] ' .
               'and ltype.location_type_id in (#indexed_location_type_list#) and ltype.deleted=false',
           ],
@@ -278,8 +267,6 @@ class report_standard_params_occurrences {
         'description' => 'Comma separated list of output spatial reference systems to filter to. Allows broad geographic limits to be applied.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "onf.output_sref_system IN (#output_sref_systems#)",
           ],
         ],
@@ -290,8 +277,6 @@ class report_standard_params_occurrences {
         'description' => 'Filter by year of the record',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "extract(year from o.date_start) #date_year_op# #date_year#",
           ],
         ],
@@ -302,8 +287,6 @@ class report_standard_params_occurrences {
         'description' => 'Date of first record to include in the output',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "('#date_from#'='Click here' OR o.date_end >= CAST(COALESCE('#date_from#','1500-01-01') as date))",
           ],
         ],
@@ -314,8 +297,6 @@ class report_standard_params_occurrences {
         'description' => 'Date of last record to include in the output',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "('#date_to#'='Click here' OR o.date_start <= CAST(COALESCE('#date_to#','1500-01-01') as date))",
           ],
         ],
@@ -326,8 +307,6 @@ class report_standard_params_occurrences {
         'description' => 'E.g. enter "1 week" or "3 days" to define the how old records can be before they are dropped from the report.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.date_start>now()-'#date_age#'::interval",
           ],
         ],
@@ -338,8 +317,6 @@ class report_standard_params_occurrences {
         'description' => 'Filter by year of the input date of the record',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "extract(year from o.created_on) #input_date_year_op# #input_date_year#",
           ],
         ],
@@ -350,8 +327,6 @@ class report_standard_params_occurrences {
         'description' => 'Input date of first record to include in the output',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             // Use filter on both created_on and updated_on, as the latter is
             // indexed.
             'sql' => "o.created_on >= '#input_date_from#'::timestamp AND o.updated_on >= '#input_date_from#'::timestamp",
@@ -365,8 +340,6 @@ class report_standard_params_occurrences {
         'Input date of last record to include in the output',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "('#input_date_to#'='Click here' OR (o.created_on <= '#input_date_to#'::timestamp OR (length('#input_date_to#')<=10 AND o.created_on < cast('#input_date_to#' as date) + '1 day'::interval)))",
           ],
         ],
@@ -377,8 +350,6 @@ class report_standard_params_occurrences {
         'description' => 'E.g. enter "1 week" or "3 days" to define the how long ago records can be input before they are dropped from the report.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             // Use filter on both created_on and updated_on, as the latter is
             // indexed.
             'sql' => "o.created_on>now()-'#input_date_age#'::interval AND o.updated_on>now()-'#input_date_age#'::interval",
@@ -391,8 +362,6 @@ class report_standard_params_occurrences {
         'description' => 'Filter by year of the last update of the record',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "extract(year from o.updated_on) #edited_date_year_op# #edited_date_year#",
           ],
         ],
@@ -403,8 +372,6 @@ class report_standard_params_occurrences {
         'description' => 'Last update date of first record to include in the output',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "('#edited_date_from#'='Click here' OR o.updated_on >= '#edited_date_from#'::timestamp)",
           ],
         ],
@@ -415,8 +382,6 @@ class report_standard_params_occurrences {
         'description' => 'Last update date of last record to include in the output',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "('#edited_date_to#'='Click here' OR (o.updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND o.updated_on < cast('#edited_date_to#' as date) + '1 day'::interval)))",
           ],
         ],
@@ -427,8 +392,6 @@ class report_standard_params_occurrences {
         'description' => 'E.g. enter "1 week" or "3 days" to define the how long ago records can be last updated before they are dropped from the report.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.updated_on>now()-'#edited_date_age#'::interval",
           ],
         ],
@@ -439,8 +402,6 @@ class report_standard_params_occurrences {
         'description' => 'Filter by year of the last verification of the record',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "extract(year from o.verified_on) #verified_date_year_op# #verified_date_year#",
           ],
         ],
@@ -451,8 +412,6 @@ class report_standard_params_occurrences {
         'description' => 'Verification status change date of first record to include in the output',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "('#verified_date_from#'='Click here' OR o.verified_on >= CAST('#verified_date_from#' as date))",
           ],
         ],
@@ -463,10 +422,7 @@ class report_standard_params_occurrences {
         'description' => 'Verification status change date of last record to include in the output',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
-            'sql' =>
-            "('#verified_date_to#'='Click here' OR o.verified_on < CAST('#verified_date_to#' as date)+'1 day'::interval)",
+            'sql' => "('#verified_date_to#'='Click here' OR o.verified_on < CAST('#verified_date_to#' as date)+'1 day'::interval)",
           ],
         ],
       ],
@@ -476,10 +432,7 @@ class report_standard_params_occurrences {
         'description' => 'E.g. enter "1 week" or "3 days" to define the how long ago records can have last had their status changed before they are dropped from the report.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
-            'sql' =>
-            "o.verified_on>now()-'#verified_date_age#'::interval",
+            'sql' => "o.verified_on>now()-'#verified_date_age#'::interval",
           ],
         ],
       ],
@@ -491,10 +444,7 @@ class report_standard_params_occurrences {
           'affected in any way, not just when it is edited. E.g. an update to spatial indexing will update the tracking.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
-            'sql' =>
-            "o.tracking >= #tracking_from#",
+            'sql' => 'o.tracking >= #tracking_from#',
           ],
         ],
       ],
@@ -506,20 +456,19 @@ class report_standard_params_occurrences {
           'affected in any way, not just when it is edited. E.g. an update to spatial indexing will update the tracking.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
-            'sql' =>
-            "o.tracking <= #tracking_from#",
+            'sql' => 'o.tracking <= #tracking_from#',
           ],
         ],
       ],
       'quality' => [
         'datatype' => 'lookup',
         'display' => 'Quality',
+        'multiselect' => TRUE,
+        'param_op' => 'inOrNotIn',
         'description' => 'Minimum quality of records to include',
         'lookup_values' => 'V1:Accepted as correct records only,V2:Accepted as considered correct records only,V:Accepted records only,-3:Reviewer agreed at least plausible,' .
           'C3:Plausible records only,C:Recorder was certain,L:Recorder thought the record was at least likely,' .
-          'P:Not reviewed,T:Not reviewed but trusted recorder,!D:Exclude queried or not accepted records,!R:Exclude not accepted records,D:Queried records only,'.
+          'P:Not reviewed,T:Not reviewed but trusted recorder,!D:Exclude queried or not accepted records,!R:Exclude not accepted records,D:Queried records only,' .
           'A:Answered records,R:Not accepted records only,R4:Not accepted because unable to verify records only,R5:Not accepted as incorrect records only,DR:Queried or not accepted records,all:All records',
         'wheres' => [
           [
@@ -632,8 +581,6 @@ class report_standard_params_occurrences {
         'description' => 'Exclude sensitive records?',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.sensitive=false",
           ],
         ],
@@ -803,8 +750,6 @@ class report_standard_params_occurrences {
         'description' => 'Filter to only include records that have failed this rule.',
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autocheck_rule#]%'",
           ],
         ],
@@ -868,15 +813,11 @@ class report_standard_params_occurrences {
         'display' => 'Recorder name contains',
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'standard_join' => 'sj_snf',
           ],
         ],
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "sj_snf.recorders ~* regexp_replace('#recorder_name#', '[^a-zA-Z0-9]+', '|')",
           ],
         ],
@@ -886,8 +827,6 @@ class report_standard_params_occurrences {
         'display' => 'Limit to records created by this user ID',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.created_by_id=#created_by_id#",
           ],
         ],
@@ -898,8 +837,6 @@ class report_standard_params_occurrences {
         'description' => 'Specify the ID of a recording group. This filters the report to the records added to this group.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.group_id=#group_id#",
           ],
         ],
@@ -910,8 +847,6 @@ class report_standard_params_occurrences {
         'description' => 'Specify the ID of a recording group. This filters the report to the members of the group.',
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#implicit_group_id# and #alias:gu#.deleted=false",
           ],
         ],
@@ -924,8 +859,6 @@ class report_standard_params_occurrences {
           'websites you have permission to access records for.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.website_id #website_list_op# (#website_list#)",
           ],
         ],
@@ -936,8 +869,6 @@ class report_standard_params_occurrences {
         'description' => 'Comma separated list of IDs of survey datasets to limit to.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.survey_id #survey_list_op# (#survey_list#)",
           ],
         ],
@@ -948,8 +879,6 @@ class report_standard_params_occurrences {
         'description' => 'Comma separated list of input form paths',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.input_form #input_form_list_op# (#input_form_list#)",
           ],
         ],
@@ -960,8 +889,6 @@ class report_standard_params_occurrences {
         'description' => 'Comma separated list of GUIDs of occurrence imports to limit to.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.import_guid IN (#import_guid_list#)",
           ],
         ],
@@ -972,8 +899,6 @@ class report_standard_params_occurrences {
         'description' => 'Rank of the identified taxon in the taxonomic hierarchy',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#",
           ],
         ],
@@ -984,8 +909,6 @@ class report_standard_params_occurrences {
         'description' => 'Comma separated list of IDs of taxon groups to limit to.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.taxon_group_id in (#taxon_group_list#)",
           ],
         ],
@@ -996,8 +919,6 @@ class report_standard_params_occurrences {
         'description' => 'Comma separated list of preferred IDs.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.taxon_path && ARRAY[#taxon_meaning_ids_from_ids#]",
           ],
         ],
@@ -1014,8 +935,6 @@ class report_standard_params_occurrences {
         'description' => 'Comma separated list of taxon meaning IDs',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "(o.taxon_path && ARRAY[#taxon_meaning_ids#] OR o.taxon_meaning_id in (#taxon_meaning_list-unprocessed#))",
           ],
         ],
@@ -1032,8 +951,6 @@ class report_standard_params_occurrences {
         'description' => 'Comma separated list of taxon external keys',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.taxon_path && ARRAY[#taxon_meaning_ids_from_keys#]",
           ],
         ],
@@ -1049,8 +966,6 @@ class report_standard_params_occurrences {
         'description' => 'Comma separated list of taxon designation IDs',
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' =>
               "join taxa_taxon_lists ttlpref on ttlpref.id=o.preferred_taxa_taxon_list_id and ttlpref.deleted=false\n" .
               "join taxa_taxon_designations ttd on ttd.taxon_id=ttlpref.taxon_id and ttd.deleted=false " .
@@ -1064,8 +979,6 @@ class report_standard_params_occurrences {
         'description' => 'Identification difficulty on a scale of 1 to 5',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "coalesce(o.identification_difficulty, 0) #identification_difficulty_op# #identification_difficulty#",
           ],
         ],
@@ -1083,8 +996,6 @@ class report_standard_params_occurrences {
           'taxon list attributes. Use in conjunction with taxa_taxon_list_attribute_ids.',
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => 'join taxa_taxon_list_attribute_values ttl_attribute_terms ' .
               'on ttl_attribute_terms.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id ' .
               'and ttl_attribute_terms.taxa_taxon_list_attribute_id in (#taxa_taxon_list_attribute_ids#) ' .
@@ -1098,8 +1009,6 @@ class report_standard_params_occurrences {
         'description' => 'Limit to taxa listed in a scratchpad list.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.taxon_group_id IN (#taxon_group_ids#) and o.taxon_path && ARRAY[#taxon_meaning_ids_from_scratchpad#]",
           ],
         ],
@@ -1134,8 +1043,6 @@ class report_standard_params_occurrences {
       'input_date_from' => [
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             // Use filter on both created_on and updated_on, as the latter is
             // indexed.
             'sql' => "o.cache_created_on >= '#input_date_from#'::timestamp AND o.cache_updated_on >= '#input_date_from#'::timestamp",
@@ -1145,8 +1052,6 @@ class report_standard_params_occurrences {
       'input_date_to' => [
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' =>
               "('#input_date_to#'='Click here' OR (o.cache_created_on <= '#input_date_to#'::timestamp " .
               "OR (length('#input_date_to#')<=10 AND o.cache_created_on < cast('#input_date_to#' as date) + '1 day'::interval)))",
@@ -1156,8 +1061,6 @@ class report_standard_params_occurrences {
       'input_date_age' => [
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             // Use filter on both created_on and updated_on, as the latter is
             // indexed.
             'sql' => "o.cache_created_on>now()-'#input_date_age#'::interval AND o.cache_updated_on>now()-'#input_date_age#'::interval",
@@ -1167,8 +1070,6 @@ class report_standard_params_occurrences {
       'edited_date_from' => [
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "('#edited_date_from#'='Click here' OR o.cache_updated_on >= '#edited_date_from#'::timestamp)",
           ],
         ],
@@ -1176,8 +1077,6 @@ class report_standard_params_occurrences {
       'edited_date_to' => [
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' =>
               "('#edited_date_to#'='Click here' OR (o.cache_updated_on <= '#edited_date_to#'::timestamp " .
               "OR (length('#edited_date_to#')<=10 AND o.cache_updated_on < cast('#edited_date_to#' as date) + '1 day'::interval)))",
@@ -1187,8 +1086,6 @@ class report_standard_params_occurrences {
       'edited_date_age' => [
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.cache_updated_on>now()-'#edited_date_age#'::interval",
           ],
         ],
@@ -1196,8 +1093,6 @@ class report_standard_params_occurrences {
       'exclude_sensitive' => [
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.sensitivity_precision is null",
           ],
         ],
@@ -1205,8 +1100,6 @@ class report_standard_params_occurrences {
       'marine_flag' => [
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'standard_join' => 'sj_prefcttl',
           ],
         ],
@@ -1227,8 +1120,6 @@ class report_standard_params_occurrences {
       'freshwater_flag' => [
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'standard_join' => 'sj_prefcttl',
           ],
         ],
@@ -1249,8 +1140,6 @@ class report_standard_params_occurrences {
       'terrestrial_flag' => [
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'standard_join' => 'sj_prefcttl',
           ],
         ],
@@ -1271,8 +1160,6 @@ class report_standard_params_occurrences {
       'non_native_flag' => [
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'standard_join' => 'sj_prefcttl',
           ],
         ],
@@ -1321,8 +1208,6 @@ class report_standard_params_occurrences {
       'taxon_rank_sort_order' => [
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "o.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#",
           ],
         ],
@@ -1355,6 +1240,7 @@ class report_standard_params_occurrences {
       'location_list_op' => 'in',
       'indexed_location_list_op' => 'in',
       'identification_difficulty_op' => '=',
+      'quality_op' => 'in',
       'date_year_op_context' => '=',
       'input_date_year_op_context' => '=',
       'edited_date_year_op_context' => '=',
@@ -1367,6 +1253,7 @@ class report_standard_params_occurrences {
       'location_list_op_context' => 'in',
       'indexed_location_list_op_context' => 'in',
       'identification_difficulty_op_context' => '=',
+      'quality_op_context' => 'in',
       'release_status' => 'R',
       'confidential' => 'f',
     ];
