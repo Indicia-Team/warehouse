@@ -50,7 +50,12 @@ Any mail sent by the warehouse can be viewed at http://localhost:8025.
 GeoServer can be configured at http://localhost:8090/geoserver.
 
 #### PgAdmin
-To connect pgAdmin to the database, configure the connection with
+To log in , the default credentials are
+ - Email: pgadmin@example.com
+ - Password: password
+
+To connect pgAdmin to the database, add a new server and configure the
+connection with
  - Host name: The docker container name e.g. indicia_postgres_1
  - Port: 5432
  - Username: postgres
