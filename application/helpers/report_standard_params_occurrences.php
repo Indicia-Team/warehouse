@@ -471,71 +471,31 @@ class report_standard_params_occurrences {
           'P:Not reviewed,T:Not reviewed but trusted recorder,!D:Exclude queried or not accepted records,!R:Exclude not accepted records,D:Queried records only,' .
           'A:Answered records,R:Not accepted records only,R4:Not accepted because unable to verify records only,R5:Not accepted as incorrect records only,DR:Queried or not accepted records,all:All records',
         'wheres' => [
-          [
-            'value' => 'V1',
-            'operator' => 'equal',
-            'sql' => "o.record_status='V' and o.record_substatus=1",
-          ],
-          [
-            'value' => 'V2',
-            'operator' => 'equal',
-            'sql' => "o.record_status='V' and o.record_substatus=2",
-          ],
-          [
-            'value' => 'V',
-            'operator' => 'equal',
-            'sql' => "o.record_status='V'",
-          ],
-          [
-            'value' => '-3',
-            'operator' => 'equal',
-            'sql' => "(o.record_status='V' or o.record_substatus<=3)",
-          ],
-          [
-            'value' => 'C3',
-            'operator' => 'equal',
-            'sql' => "(o.record_status='C' and o.record_substatus=3)",
-          ],
-          [
-            'value' => 'C',
-            'operator' => 'equal',
-            'sql' => "o.record_status<>'R' and o.certainty='C'",
-          ],
-          [
-            'value' => 'L',
-            'operator' => 'equal',
-            'sql' => "o.record_status<>'R' and o.certainty in ('C','L')",
-          ],
-          [
-            'value' => 'P',
-            'operator' => 'equal',
-            'sql' => "o.record_status='C' and o.record_substatus is null and (o.query<>'Q' or o.query is null)",
-          ],
-          [
-            'value' => 'T',
-            'operator' => 'equal',
-            'sql' => "o.record_status='C' and o.record_substatus is null",
-          ],
-          [
-            'value' => '!D',
-            'operator' => 'equal',
-            'sql' => "(o.record_status not in ('R','D') and (o.query<>'Q' or o.query is null))",
-          ],
-          [
-            'value' => '!R',
-            'operator' => 'equal',
-            'sql' => "o.record_status<>'R'",
-          ],
-          [
-            'value' => 'D',
-            'operator' => 'equal',
-            'sql' => "(o.record_status='D' or o.query='Q')",
-          ],
+          // Query has been answered.
           [
             'value' => 'A',
             'operator' => 'equal',
             'sql' => "o.query='A'",
           ],
+          // Plausible.
+          [
+            'value' => 'C3',
+            'operator' => 'equal',
+            'sql' => "(o.record_status='C' and o.record_substatus=3)",
+          ],
+          // Queried (or legacy Dubious).
+          [
+            'value' => 'D',
+            'operator' => 'equal',
+            'sql' => "(o.record_status='D' or o.query='Q')",
+          ],
+          // Pending.
+          [
+            'value' => 'P',
+            'operator' => 'equal',
+            'sql' => "o.record_status='C' and o.record_substatus is null and (o.query<>'Q' or o.query is null)",
+          ],
+          // Not accepted.
           [
             'value' => 'R',
             'operator' => 'equal',
@@ -551,11 +511,66 @@ class report_standard_params_occurrences {
             'operator' => 'equal',
             'sql' => "o.record_status='R' and o.record_substatus=5",
           ],
+          // Accepted.
+          [
+            'value' => 'V1',
+            'operator' => 'equal',
+            'sql' => "o.record_status='V' and o.record_substatus=1",
+          ],
+          [
+            'value' => 'V2',
+            'operator' => 'equal',
+            'sql' => "o.record_status='V' and o.record_substatus=2",
+          ],
+          [
+            'value' => 'V',
+            'operator' => 'equal',
+            'sql' => "o.record_status='V'",
+          ],
+          // The following parameters are legacy to support old filters.
+          // Plausible or accepted.
+          [
+            'value' => '-3',
+            'operator' => 'equal',
+            'sql' => "(o.record_status='V' or o.record_substatus<=3)",
+          ],
+          // Not queried, dubious or rejected.
+          [
+            'value' => '!D',
+            'operator' => 'equal',
+            'sql' => "(o.record_status not in ('R','D') and (o.query<>'Q' or o.query is null))",
+          ],
+          // Not rejected.
+          [
+            'value' => '!R',
+            'operator' => 'equal',
+            'sql' => "o.record_status<>'R'",
+          ],
+          // Recorder thinks identification is certain to be correct.
+          [
+            'value' => 'C',
+            'operator' => 'equal',
+            'sql' => "o.record_status<>'R' and o.certainty='C'",
+          ],
+          // Queried, dubious or rejected.
           [
             'value' => 'DR',
             'operator' => 'equal',
             'sql' => "(o.record_status in ('R','D') or o.query='Q')",
           ],
+          // Recorder thinks identification is likely to be correct.
+          [
+            'value' => 'L',
+            'operator' => 'equal',
+            'sql' => "o.record_status<>'R' and o.certainty in ('C','L')",
+          ],
+          // Trusted recorders.
+          [
+            'value' => 'T',
+            'operator' => 'equal',
+            'sql' => "o.record_status='C' and o.record_substatus is null",
+          ],
+
           // The all filter does not need any SQL.
         ],
         'joins' => [
