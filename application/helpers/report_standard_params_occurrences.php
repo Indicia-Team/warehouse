@@ -575,6 +575,35 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'certainty' => [
+        'datatype' => 'lookup',
+        'display' => 'Certainty',
+        'multiselect' => TRUE,
+        'description' => "Recorder's certainty of the identification",
+        'lookup_values' => 'C:Certain,L:Likely,U:Uncertain,NS:Not stated',
+        'wheres' => [
+          [
+            'value' => 'C',
+            'operator' => 'equal',
+            'sql' => "o.certainty='C'",
+          ],
+          [
+            'value' => 'L',
+            'operator' => 'equal',
+            'sql' => "o.certainty='L'",
+          ],
+          [
+            'value' => 'U',
+            'operator' => 'equal',
+            'sql' => "o.certainty='U'",
+          ],
+          [
+            'value' => 'NS',
+            'operator' => 'equal',
+            'sql' => "o.certainty IS NULL",
+          ],
+        ],
+      ],
       'exclude_sensitive' => [
         'datatype' => 'boolean',
         'display' => 'Exclude sensitive records',
