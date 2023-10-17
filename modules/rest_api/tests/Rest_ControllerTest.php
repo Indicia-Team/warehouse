@@ -2894,19 +2894,19 @@ SQL;
       case 'hmacUser':
         $user = self::$userId;
         $website = self::$websiteId;
-        $hmac = hash_hmac("sha1", $url, self::$userPassword, $raw_output = FALSE);
+        $hmac = hash_hmac('sha1', $url, self::$userPassword);
         $authString = "USER_ID:$user:WEBSITE_ID:$website:HMAC:$hmac";
         break;
 
       case 'hmacClient':
         $user = self::$clientUserId;
-        $hmac = hash_hmac("sha1", $url, self::$config['shared_secret'], $raw_output = FALSE);
+        $hmac = hash_hmac('sha1', $url, self::$config['shared_secret']);
         $authString = "USER:$user:HMAC:$hmac";
         break;
 
       case 'hmacWebsite':
         $user = self::$websiteId;
-        $hmac = hash_hmac("sha1", $url, self::$websitePassword, $raw_output = FALSE);
+        $hmac = hash_hmac('sha1', $url, self::$websitePassword);
         $authString = "WEBSITE_ID:$user:HMAC:$hmac";
         break;
 
