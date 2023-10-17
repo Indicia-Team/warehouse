@@ -381,7 +381,7 @@ SQL;
       $recordKey = $attr->record_id;
       unset($attr->record_id);
       $attrKey = self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id";
-      $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
+      $val = array_key_exists('verbose', $_GET) ? (array) $attr : $attr->value;
 
       if (!isset($attrs[$recordKey])) {
         $attrs[$recordKey] = [];
@@ -397,7 +397,6 @@ SQL;
         $attrs[$recordKey][$attrKey] = $val;
       }
     }
-
     return $attrs;
   }
 
