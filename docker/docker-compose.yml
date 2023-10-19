@@ -55,9 +55,42 @@ services:
             # Persist configuration in a named volume.
             - geoserver:/opt/geoserver_data
         ports:
-            - "8090:8080"         
+            - "8090:8080"
+
+    # The ElasticSearch container
+    elastic:
+        # build: ./elastic 
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
+        environment:
+            # The password for the 'elastic' user.
+            ELASTIC_PASSWORD: password
+            # Devleopment mode, bootstrap checks disabled.
+            discovery.type: single-node
+        volumes:
+            # Persist indexes in a named volume.
+            - elastic:/usr/share/elasticsearch/data
+        ports: 
+            - "9200:9200"
+        deploy:
+            resources:
+                limits:
+                    memory: 1G
+
+    # The Kibana container
+    kibana:
+        image: docker.elastic.co/kibana/kibana:8.10.4
+        environment:
+            # The url of the ElasticSearch server.
+            ELASTICSEARCH_HOSTS: http://indicia_elastic_1:9200
+            ELASTICSEARCH_USERNAME: kibana_system
+            ELASTICSEARCH_PASSWORD: password
+        ports: 
+            - "5601:5601"
+        depends_on:
+            - elastic
 
 volumes:
     postgres:
     pgadmin:
     geoserver:
+    elastic:

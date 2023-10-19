@@ -23,7 +23,7 @@ RUN apt-get -y install postgresql-client
 # Install cron for scheduled tasks
 RUN apt-get -y install cron
 
-# Create a user the same identity as the host user so that it can 
+# Create a user with the same identity as the host user so that it can 
 # share files on the bind mount containing the warehouse code which 
 # docker-compose is going to set up.
 ARG UID

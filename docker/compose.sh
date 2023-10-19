@@ -18,6 +18,10 @@ composer --working-dir=../ install --no-dev
 # the setup script in the image.
 # The warehouse container is built with PHP extensions added
 # and a user created with the same identity as the host user.
+
+# For additional debug information and to see the output of RUN
+# commands in docker files modify the build command as follows:
+#     BUILDKIT_PROGRESS=plain docker-compose build \
 docker-compose build \
   --build-arg UID=$(id -u) \
   --build-arg GID=$(id -g) \
@@ -252,6 +256,30 @@ ____EOF
   fi # End of initialise indicia schema.
 fi # End of setup.
 
+# Wait for ElasticSearch to be up
+until curl --silent --output outputfile --user elastic:password localhost:9200; do
+  echo -ne "Waiting for ElasticSearch... | \r"
+  sleep 1
+  echo -ne "Waiting for ElasticSearch... / \r"
+  sleep 1
+  echo -ne "Waiting for ElasticSearch... - \r"
+  sleep 1
+  echo -ne "Waiting for ElasticSearch... \\ \r"
+  sleep 1
+done
+echo
+echo "ElasticSearch is up."
+
+# Set 'kibana_system' password (to 'password').
+# (But, you will log in to the Kibana UI as 'elastic')
+curl localhost:9200/_security/user/kibana_system/_password \
+  --silent \
+  --request POST \
+  --user elastic:password \
+  --header "Content-Type: application/json" \
+  --data "{\"password\":\"password\"}" \
+  --output outputfile
+  
 # Clean up.
 rm -f cookiefile
 rm -f outputfile
@@ -261,3 +289,5 @@ echo "You can visit the warehouse at http://localhost:8080"
 echo "You can see email it sends at http://localhost:8025"
 echo "You can examine the database at http://localhost:8070"
 echo "You can manage GeoServer at http://localhost:8090/geoserver"
+echo "You can access the ElasticSearch API at http://localhost:9200"
+echo "You can vieuse Kibana to view the indexes at http://localhost:5601"
