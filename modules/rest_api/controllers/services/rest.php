@@ -885,7 +885,7 @@ class Rest_Controller extends Controller {
           $ids = preg_grep('/^([A-Z]{3})?\d+$/', $arguments);
           $projectId = NULL;
           if (count($ids) > 0) {
-            $requestForId = $ids[0];
+            $requestForId = array_values($ids)[0];
           }
           // When using a client system ID, we also want a project ID in most
           // cases.
@@ -3336,7 +3336,7 @@ SQL;
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user not found.');
     }
     if (empty($user->site_role_id) && empty($user->core_role_id)) {
-      RestObjects::$apiResponse->fail('Unauthorized', 401, 'User does not have access to website.');
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'User does not have required level of access to this website.');
     }
   }
 
