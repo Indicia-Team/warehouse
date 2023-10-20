@@ -4,4 +4,4 @@
 FROM postgis/postgis:13-3.3
 # Copy the database setup script to a location where it will be
 # automatically found and executed.
-COPY ./startup.sh /docker-entrypoint-initdb.d
+COPY ./setup.sh /docker-entrypoint-initdb.d

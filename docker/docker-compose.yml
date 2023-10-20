@@ -1,6 +1,8 @@
 services:
     # The postgres database container.
     postgres:
+        # The postgres container is built by us so that we can include
+        # the setup script for database initialisation.
         build: ./postgres
         environment:
             # The password for the postgres user (not indicia user)
@@ -59,12 +61,12 @@ services:
 
     # The ElasticSearch container
     elastic:
-        # build: ./elastic 
         image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
         environment:
             # The password for the 'elastic' user.
             ELASTIC_PASSWORD: password
             # Devleopment mode, bootstrap checks disabled.
+            # Avoids max virtual memory areas vm.max_map_count is too low error.
             discovery.type: single-node
         volumes:
             # Persist indexes in a named volume.
