@@ -3416,7 +3416,7 @@ SQL;
     $this->assertRecordFromCurrentWebsite('surveys', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('survey', $id, $putArray);
+    $r = rest_crud::update('survey', $id, $putArray, FALSE);
     echo json_encode($r);
   }
 
@@ -3545,7 +3545,7 @@ SQL;
         && $putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
       $this->updateAttributeTermlist($putArray);
     }
-    $r = rest_crud::update('sample_attribute', $id, $putArray);
+    $r = rest_crud::update('sample_attribute', $id, $putArray, FALSE);
     echo json_encode($r);
   }
 
@@ -3651,7 +3651,8 @@ SQL;
   /**
    * API end-point to DELETE a sample attribute.
    *
-   * Will only be deleted if the survey was created by the current user.
+   * Will only be deleted if the current user has edit rights to the website
+   * the attribute is used by and the attribute has no values.
    *
    * @param int $id
    *   Survey ID to delete.
@@ -3705,7 +3706,7 @@ SQL;
       ])
       ->get()->current();
     if ($existing) {
-      $r = rest_crud::update('sample_attributes_website', $existing->id, $postArray);
+      $r = rest_crud::update('sample_attributes_website', $existing->id, $postArray, FALSE);
       echo json_encode($r);
     }
     else {
@@ -3724,7 +3725,7 @@ SQL;
     $this->assertRecordFromCurrentWebsite('sample_attributes_websites', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('sample_attributes_website', $id, $putArray);
+    $r = rest_crud::update('sample_attributes_website', $id, $putArray, FALSE);
     echo json_encode($r);
   }
 
@@ -3794,14 +3795,15 @@ SQL;
         && $putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
       $this->updateAttributeTermlist($putArray);
     }
-    $r = rest_crud::update('occurrence_attribute', $id, $putArray);
+    $r = rest_crud::update('occurrence_attribute', $id, $putArray, FALSE);
     echo json_encode($r);
   }
 
   /**
    * API end-point to DELETE an occurrence attribute.
    *
-   * Will only be deleted if the survey was created by the current user.
+   * Will only be deleted if the current user has edit rights to the website
+   * the attribute is used by and the attribute has no values.
    *
    * @param int $id
    *   Survey ID to delete.
@@ -3855,7 +3857,7 @@ SQL;
       ])
       ->get()->current();
     if ($existing) {
-      $r = rest_crud::update('occurrence_attributes_website', $existing->id, $postArray);
+      $r = rest_crud::update('occurrence_attributes_website', $existing->id, $postArray, FALSE);
       echo json_encode($r);
     }
     else {
@@ -3874,7 +3876,7 @@ SQL;
     $this->assertRecordFromCurrentWebsite('occurrence_attributes_websites', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('occurrence_attributes_website', $id, $putArray);
+    $r = rest_crud::update('occurrence_attributes_website', $id, $putArray, FALSE);
     echo json_encode($r);
   }
 
