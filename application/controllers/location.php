@@ -148,10 +148,9 @@ class Location_Controller extends Gridview_Base_Controller {
    * Adds the upload csv form to the view (which should then insert it at the bottom of the grid).
    */
   protected function add_upload_shp_form() {
-    $this->upload_shp_form = new View('templates/upload_shp');
-    $this->upload_shp_form->staticFields = NULL;
-    $this->upload_shp_form->controllerpath = $this->controllerpath;
-    $this->view->upload_shp_form = $this->upload_shp_form;
+    $this->view->upload_shp_form = new View('templates/upload_shp');
+    $this->view->upload_shp_form->staticFields = NULL;
+    $this->view->upload_shp_form->controllerpath = $this->controllerpath;
   }
 
   /**
