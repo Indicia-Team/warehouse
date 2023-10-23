@@ -91,8 +91,16 @@ services:
         depends_on:
             - elastic
 
+    # The Logstash container
+    logstash:
+        image: docker.elastic.co/logstash/logstash:8.10.4
+        volumes:
+            # Persist pipelines in a named volume.
+            - elastic:/usr/share/logstash/pipeline/
+
 volumes:
     postgres:
     pgadmin:
     geoserver:
     elastic:
+    logstash:
