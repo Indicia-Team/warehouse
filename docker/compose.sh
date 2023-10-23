@@ -56,7 +56,7 @@ echo
 echo "ElasticSearch is up."
 
 # Run elasticsearch setup.
-source elastic.sh
+source elastic/setup.sh
 
 # Clean up.
 rm -f cookiefile
@@ -68,4 +68,4 @@ echo "You can see email it sends at http://localhost:8025"
 echo "You can examine the database at http://localhost:8070"
 echo "You can manage GeoServer at http://localhost:8090/geoserver"
 echo "You can access the ElasticSearch API at http://localhost:9200"
-echo "You can vieuse Kibana to view the indexes at http://localhost:5601"
+echo "You can use Kibana to view the indexes at http://localhost:5601"
