@@ -1,0 +1,484 @@
+{
+  "aliases" : {
+    "sample_brc1_index" : { },
+    "sample_search" : {
+      "filter" : {
+        "bool" : {
+          "must" : [
+            {
+              "query_string" : {
+                "query" : "metadata.confidential:false AND metadata.release_status:R AND metadata.trial:false AND ((metadata.sensitivity_blur:B) OR (!metadata.sensitivity_blur:*))",
+                "analyze_wildcard" : true,
+                "default_field" : "*"
+              }
+            }
+          ]
+        }
+      }
+    }
+},
+"mappings" : {
+    "date_detection" : false,
+    "properties" : {
+      "@timestamp" : {
+        "type" : "date"
+      },
+      "@version" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "event" : {
+        "properties" : {
+          "attributes" : {
+            "type" : "nested",
+            "properties" : {
+              "id" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "value" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "date_end" : {
+            "type" : "date"
+          },
+          "date_start" : {
+            "type" : "date"
+          },
+          "date_type" : {
+            "type" : "keyword"
+          },
+          "day_of_year" : {
+            "type" : "short"
+          },
+          "event_id" : {
+            "type" : "integer"
+          },
+          "event_remarks" : {
+            "type" : "text"
+          },
+          "habitat" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "media" : {
+            "type" : "nested",
+            "properties" : {
+              "caption" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "licence" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "path" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "type" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "month" : {
+            "type" : "byte"
+          },
+          "parent_attributes" : {
+            "type" : "nested",
+            "properties" : {
+              "id" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "value" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "parent_event_id" : {
+            "type" : "integer"
+          },
+          "recorded_by" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "sampling_protocol" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "source_system_key" : {
+            "type" : "keyword"
+          },
+          "ukbms_week" : {
+            "type" : "byte"
+          },
+          "week" : {
+            "type" : "byte"
+          },
+          "year" : {
+            "type" : "short"
+          }
+        }
+      },
+      "id" : {
+        "type" : "integer"
+      },
+      "indexed_location_ids" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "location" : {
+        "properties" : {
+          "code" : {
+            "type" : "keyword"
+          },
+          "coordinate_uncertainty_in_meters" : {
+            "type" : "integer"
+          },
+          "geom" : {
+            "type" : "geo_shape"
+          },
+          "grid_square" : {
+            "properties" : {
+              "10km" : {
+                "properties" : {
+                  "centre" : {
+                    "type" : "keyword"
+                  }
+                }
+              },
+              "1km" : {
+                "properties" : {
+                  "centre" : {
+                    "type" : "keyword"
+                  }
+                }
+              },
+              "2km" : {
+                "properties" : {
+                  "centre" : {
+                    "type" : "keyword"
+                  }
+                }
+              },
+              "srid" : {
+                "type" : "integer"
+              }
+            }
+          },
+          "higher_geography" : {
+            "type" : "nested",
+            "properties" : {
+              "code" : {
+                "type" : "keyword"
+              },
+              "id" : {
+                "type" : "integer"
+              },
+              "name" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "type" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "input_sref" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "input_sref_system" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "location_id" : {
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "output_sref" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "output_sref_system" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "parent" : {
+            "properties" : {
+              "code" : {
+                "type" : "keyword"
+              },
+              "location_id" : {
+                "type" : "integer"
+              },
+              "name" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "point" : {
+            "type" : "geo_point"
+          },
+          "verbatim_locality" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          }
+        }
+      },
+      "metadata" : {
+        "properties" : {
+          "confidential" : {
+            "type" : "boolean"
+          },
+          "created_by_id" : {
+            "type" : "integer"
+          },
+          "created_on" : {
+            "type" : "date",
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+          },
+          "group" : {
+            "properties" : {
+              "id" : {
+                "type" : "integer"
+              },
+              "title" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "input_form" : {
+            "type" : "keyword"
+          },
+          "privacy_precision" : {
+            "type" : "integer"
+          },
+          "private" : {
+            "type" : "boolean"
+          },
+          "release_status" : {
+            "type" : "keyword"
+          },
+          "sensitive" : {
+            "type" : "boolean"
+          },
+          "sensitivity_blur" : {
+            "type" : "keyword"
+          },
+          "sensitivity_precision" : {
+            "type" : "integer"
+          },
+          "survey" : {
+            "properties" : {
+              "id" : {
+                "type" : "integer"
+              },
+              "title" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "tracking" : {
+            "type" : "integer"
+          },
+          "trial" : {
+            "type" : "boolean"
+          },
+          "updated_by_id" : {
+            "type" : "integer"
+          },
+          "updated_on" : {
+            "type" : "date",
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+          },
+          "verification_status" : {
+            "type" : "keyword"
+          },
+          "verified_on" : {
+            "type" : "date",
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+          },
+          "verifier" : {
+            "properties" : {
+              "id" : {
+                "type" : "integer"
+              }
+            }
+          },
+          "website" : {
+            "properties" : {
+              "id" : {
+                "type" : "integer"
+              },
+              "title" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "stats" : {
+        "properties" : {
+          "count_occurrences" : {
+            "type" : "integer"
+          },
+          "count_taxa" : {
+            "type" : "integer"
+          },
+          "count_taxon_groups" : {
+            "type" : "integer"
+          },
+          "sum_individual_count" : {
+            "type" : "integer"
+          }
+        }
+      }
+    }
+  },
+  "settings" : {
+    "index" : {
+      "number_of_shards" : "4",
+      "number_of_replicas" : "1"
+    }
+  }
+}

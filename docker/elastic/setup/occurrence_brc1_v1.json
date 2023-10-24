@@ -1,0 +1,1156 @@
+{
+  "aliases" : {
+    "occurrence_brc1_index" : { },
+    "occurrence_search" : {
+      "filter" : {
+        "bool" : {
+          "must" : [
+            {
+              "query_string" : {
+                "query" : "occurrence.zero_abundance:false AND metadata.confidential:false AND metadata.release_status:R AND metadata.trial:false AND ((metadata.sensitivity_blur:B) OR (!metadata.sensitivity_blur:*))",
+                "analyze_wildcard" : true,
+                "default_field" : "*"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "mappings" : {
+    "date_detection" : false,
+    "properties" : {
+      "@timestamp" : {
+        "type" : "date"
+      },
+      "@version" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "data_cleaner_info" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "date" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "event" : {
+        "properties" : {
+          "attributes" : {
+            "type" : "nested",
+            "properties" : {
+              "id" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "value" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "date_end" : {
+            "type" : "date"
+          },
+          "date_start" : {
+            "type" : "date"
+          },
+          "date_type" : {
+            "type" : "keyword"
+          },
+          "day_of_year" : {
+            "type" : "short"
+          },
+          "event_id" : {
+            "type" : "integer"
+          },
+          "event_remarks" : {
+            "type" : "text"
+          },
+          "habitat" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "media" : {
+            "type" : "nested",
+            "properties" : {
+              "caption" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "licence" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "path" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "type" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "month" : {
+            "type" : "byte"
+          },
+          "parent_attributes" : {
+            "type" : "nested",
+            "properties" : {
+              "id" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "value" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "parent_event_id" : {
+            "type" : "integer"
+          },
+          "recorded_by" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "sampling_protocol" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "source_system_key" : {
+            "type" : "keyword"
+          },
+          "ukbms_week" : {
+            "type" : "byte"
+          },
+          "week" : {
+            "type" : "byte"
+          },
+          "year" : {
+            "type" : "short"
+          }
+        }
+      },
+      "id" : {
+        "type" : "integer"
+      },
+      "identification" : {
+        "properties" : {
+          "auto_checks" : {
+            "properties" : {
+              "enabled" : {
+                "type" : "boolean"
+              },
+              "identification_difficulty" : {
+                "type" : "integer"
+              },
+              "output" : {
+                "properties" : {
+                  "message" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
+                    }
+                  },
+                  "rule_type" : {
+                    "type" : "text",
+                    "fields" : {
+                      "keyword" : {
+                        "type" : "keyword",
+                        "ignore_above" : 256
+                      }
+                    }
+                  }
+                }
+              },
+              "result" : {
+                "type" : "boolean"
+              },
+              "verification_rule_types_applied" : {
+                "type" : "keyword"
+              }
+            }
+          },
+          "custom_verification_rule_flags" : {
+            "type" : "nested",
+            "properties" : {
+              "check_date_time" : {
+                "type" : "date",
+                "format" : "yyyy-MM-dd HH:mm:ss"
+              },
+              "created_by_id" : {
+                "type" : "integer"
+              },
+              "custom_verification_rule_id" : {
+                "type" : "integer"
+              },
+              "custom_verification_ruleset_id" : {
+                "type" : "integer"
+              },
+              "icon" : {
+                "type" : "keyword"
+              },
+              "message" : {
+                "type" : "text"
+              },
+              "result" : {
+                "type" : "keyword"
+              }
+            }
+          },
+          "identified_by" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "query" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "recorder_certainty" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "verification_decision_source" : {
+            "type" : "keyword"
+          },
+          "verification_status" : {
+            "type" : "keyword"
+          },
+          "verification_substatus" : {
+            "type" : "integer"
+          },
+          "verified_on" : {
+            "type" : "date",
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+          },
+          "verifier" : {
+            "properties" : {
+              "id" : {
+                "type" : "integer"
+              },
+              "name" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "indexed_location_ids" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "input_form" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "input_sref" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "input_sref_system" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "location" : {
+        "properties" : {
+          "code" : {
+            "type" : "keyword"
+          },
+          "coordinate_uncertainty_in_meters" : {
+            "type" : "integer"
+          },
+          "geom" : {
+            "type" : "geo_shape"
+          },
+          "grid_square" : {
+            "properties" : {
+              "10km" : {
+                "properties" : {
+                  "centre" : {
+                    "type" : "keyword"
+                  },
+                  "geom" : {
+                    "type" : "geo_shape"
+                  }
+                }
+              },
+              "1km" : {
+                "properties" : {
+                  "centre" : {
+                    "type" : "keyword"
+                  },
+                  "geom" : {
+                    "type" : "geo_shape"
+                  }
+                }
+              },
+              "2km" : {
+                "properties" : {
+                  "centre" : {
+                    "type" : "keyword"
+                  },
+                  "geom" : {
+                    "type" : "geo_shape"
+                  }
+                }
+              },
+              "srid" : {
+                "type" : "integer"
+              }
+            }
+          },
+          "higher_geography" : {
+            "type" : "nested",
+            "properties" : {
+              "code" : {
+                "type" : "keyword"
+              },
+              "id" : {
+                "type" : "integer"
+              },
+              "name" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "type" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "input_sref" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "input_sref_system" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "location_id" : {
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "output_sref" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "output_sref_system" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "parent" : {
+            "properties" : {
+              "code" : {
+                "type" : "keyword"
+              },
+              "location_id" : {
+                "type" : "integer"
+              },
+              "name" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "point" : {
+            "type" : "geo_point"
+          },
+          "verbatim_locality" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          }
+        }
+      },
+      "map_sq_10km_geom" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "map_sq_1km_geom" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "map_sq_2km_geom" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "metadata" : {
+        "properties" : {
+          "confidential" : {
+            "type" : "boolean"
+          },
+          "created_by_id" : {
+            "type" : "integer"
+          },
+          "created_on" : {
+            "type" : "date",
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+          },
+          "group" : {
+            "properties" : {
+              "id" : {
+                "type" : "integer"
+              },
+              "title" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "import_guid" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "input_form" : {
+            "type" : "keyword"
+          },
+          "licence_code" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "privacy_precision" : {
+            "type" : "integer"
+          },
+          "private" : {
+            "type" : "boolean"
+          },
+          "release_status" : {
+            "type" : "keyword"
+          },
+          "sensitive" : {
+            "type" : "boolean"
+          },
+          "sensitivity_blur" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "sensitivity_precision" : {
+            "type" : "integer"
+          },
+          "survey" : {
+            "properties" : {
+              "id" : {
+                "type" : "integer"
+              },
+              "title" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "tracking" : {
+            "type" : "integer"
+          },
+          "trial" : {
+            "type" : "boolean"
+          },
+          "updated_by_id" : {
+            "type" : "integer"
+          },
+          "updated_on" : {
+            "type" : "date",
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+          },
+          "website" : {
+            "properties" : {
+              "id" : {
+                "type" : "integer"
+              },
+              "title" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "occurrence" : {
+        "properties" : {
+          "associated_media" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "associations" : {
+            "type" : "nested",
+            "properties" : {
+              "accepted_name" : {
+                "type" : "keyword",
+                "fields" : {
+                  "text" : {
+                    "type" : "text"
+                  }
+                }
+              },
+              "association_type" : {
+                "type" : "keyword"
+              },
+              "id" : {
+                "type" : "integer"
+              },
+              "vernacular_name" : {
+                "type" : "keyword",
+                "fields" : {
+                  "text" : {
+                    "type" : "text"
+                  }
+                }
+              }
+            }
+          },
+          "attributes" : {
+            "type" : "nested",
+            "properties" : {
+              "id" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "value" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "behaviour" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "individual_count" : {
+            "type" : "integer"
+          },
+          "life_stage" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "media" : {
+            "type" : "nested",
+            "properties" : {
+              "caption" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "licence" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "path" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              },
+              "type" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "occurrence_remarks" : {
+            "type" : "text"
+          },
+          "organism_quantity" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "reproductive_condition" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "sex" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "source_system_key" : {
+            "type" : "keyword"
+          },
+          "zero_abundance" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "occurrence_external_key" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "parent_sample_attrs_json" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "recorded_location_code" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "recorded_parent_location_code" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "sample_external_key" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "tags" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "taxa_taxon_list_id" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "taxon" : {
+        "properties" : {
+          "accepted_name" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "accepted_name_authorship" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "accepted_taxon_id" : {
+            "type" : "keyword"
+          },
+          "class" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "family" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "freshwater" : {
+            "type" : "boolean"
+          },
+          "genus" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "group" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "group_id" : {
+            "type" : "integer"
+          },
+          "higher_taxon_ids" : {
+            "type" : "keyword"
+          },
+          "input_group" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "input_group_id" : {
+            "type" : "integer"
+          },
+          "kingdom" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "marine" : {
+            "type" : "boolean"
+          },
+          "non_native" : {
+            "type" : "boolean"
+          },
+          "order" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "phylum" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "species" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "species_authorship" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "species_taxon_id" : {
+            "type" : "keyword"
+          },
+          "species_vernacular" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "subfamily" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "taxa_taxon_list_id" : {
+            "type" : "integer"
+          },
+          "taxon_id" : {
+            "type" : "keyword"
+          },
+          "taxon_list" : {
+            "properties" : {
+              "id" : {
+                "type" : "integer"
+              },
+              "title" : {
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                  }
+                }
+              }
+            }
+          },
+          "taxon_meaning_id" : {
+            "type" : "integer"
+          },
+          "taxon_name" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "taxon_name_authorship" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "taxon_rank" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "taxon_rank_sort_order" : {
+            "type" : "short"
+          },
+          "terrestrial" : {
+            "type" : "boolean"
+          },
+          "vernacular_name" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          }
+        }
+      },
+      "taxon_meaning_id" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "tracking" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "warehouse" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      }
+    }
+  },
+  "settings" : {
+    "index" : {
+      "number_of_shards" : "4",
+      "number_of_replicas" : "1"
+    }
+  }
+}
