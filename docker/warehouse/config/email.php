@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Config
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
@@ -37,19 +37,19 @@ $config['driver'] = 'smtp';
  * To enable TLS, set "encryption" to "tls".
  *
  * Driver options:
- * @param   null    native: no options
- * @param   string  sendmail: executable path, with -bs or equivalent attached
- * @param   array   smtp: hostname, (username), (password), (port), (auth), (encryption)
+ * @param null    native: no options
+ * @param string  sendmail: executable path, with -bs or equivalent attached
+ * @param array   smtp: hostname, (username), (password), (port), (auth), (encryption)
  */
-$config['options'] = array(
-'hostname' => 'mailhog',
-'username' => '',
-'password' => '',
-'port' => '1025',
-'auth' => '');
+$config['options'] = [
+  'hostname' => 'mailhog',
+  'username' => '',
+  'password' => '',
+  'port' => '1025',
+  'auth' => '',
+];
 
 $config['address'] = 'no-reply@indicia.org.uk';
 $config['forgotten_passwd_title'] = 'Forgotten password reminder';
 $config['server_name'] = 'Indicia';
 $config['test_result'] = 'pass';
-
