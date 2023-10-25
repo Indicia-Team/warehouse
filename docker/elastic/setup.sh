@@ -30,6 +30,24 @@ if [ $response = 404 ]; then
     --data '{"password":"password"}' \
     --output outputfile
 
+  echo "Creating logstash_writer role."
+  curl localhost:9200/_security/role/logstash_writer \
+    --silent \
+    --request POST \
+    --user elastic:password \
+    --header 'Content-Type: application/json' \
+    --data @elastic/setup/role_logstash_writer.json \
+    --output outputfile
+
+  echo "Creating logstash_pipeline user."
+  curl localhost:9200/_security/user/logstash_pipeline \
+    --silent \
+    --request POST \
+    --user elastic:password \
+    --header 'Content-Type: application/json' \
+    --data @elastic/setup/user_logstash_pipeline.json \
+    --output outputfile
+
   echo "Creating occurrence index."
   curl localhost:9200/occurrence_brc1_v1 \
     --silent \

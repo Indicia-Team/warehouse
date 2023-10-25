@@ -61,16 +61,24 @@ services:
 
     # The ElasticSearch container
     elastic:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
+        image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
         environment:
             # The password for the 'elastic' user.
             ELASTIC_PASSWORD: password
-            # Devleopment mode, bootstrap checks disabled.
-            # Avoids max virtual memory areas vm.max_map_count is too low error.
+            # single-node disables bootstrap checks avoiding max virtual memory
+            # areas vm.max_map_count is too low error. Also prevents any attempt
+            # to other clusters.
             discovery.type: single-node
+            # Limit Java heap size.
+            ES_JAVA_OPTS: "-Xms256m -Xmx256m"
         volumes:
             # Persist indexes in a named volume.
             - elastic:/usr/share/elasticsearch/data
+        networks:
+            default:
+                # Alias required as Logstash doesn't like underscore in name.
+                aliases:
+                    - elastic01
         ports: 
             - "9200:9200"
         deploy:
@@ -80,7 +88,7 @@ services:
 
     # The Kibana container
     kibana:
-        image: docker.elastic.co/kibana/kibana:8.10.4
+        image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
         environment:
             # The url of the ElasticSearch server.
             ELASTICSEARCH_HOSTS: http://indicia_elastic_1:9200
@@ -93,14 +101,37 @@ services:
 
     # The Logstash container
     logstash:
-        image: docker.elastic.co/logstash/logstash:8.10.4
-        volumes:
-            # Persist pipelines in a named volume.
-            - elastic:/usr/share/logstash/pipeline/
+        build: 
+            context: ./logstash
+            args:
+                ELASTIC_VERSION: ${ELASTIC_VERSION}
+                WAREHOUSE_URL: ${WAREHOUSE_URL}
+                WAREHOUSE_API_USER: ${WAREHOUSE_API_USER}
+                WAREHOUSE_API_SECRET: ${WAREHOUSE_API_SECRET}
+                WAREHOUSE_API_PROJECT_OCC: ${WAREHOUSE_API_PROJECT_OCC}
+                WAREHOUSE_API_PROJECT_OCC_DEL: ${WAREHOUSE_API_PROJECT_OCC_DEL}
+                WAREHOUSE_API_PROJECT_OCC_ASSOC: ${WAREHOUSE_API_PROJECT_OCC_ASSOC}
+                WAREHOUSE_API_PROJECT_SMP: ${WAREHOUSE_API_PROJECT_SMP}
+                WAREHOUSE_API_PROJECT_SMP_DEL: ${WAREHOUSE_API_PROJECT_SMP_DEL}
+                ELASTIC_URL: ${ELASTIC_URL}
+                WAREHOUSE_UNIQUE_NAME: ${WAREHOUSE_UNIQUE_NAME}
+                LOGSTASH_USER: ${LOGSTASH_USER}
+                LOGSTASH_PASSWORD: ${LOGSTASH_PASSWORD}
+        environment:
+            BUILDKIT_PROGRESS: ${BUILDKIT_PROGRESS}
+            # By disabling monitorin of Logstash by xpack I am side-stepping
+            # a difficulty with authentication.
+            XPACK_MONITORING_ENABLED: 'false'
+           # Limiting Java heap size. 4g to 8g recommended.
+            LS_JAVA_OPTS: "-Xms2g -Xmx2g"
+        depends_on:
+            - elastic
 
 volumes:
     postgres:
     pgadmin:
     geoserver:
     elastic:
-    logstash:
+
+networks:
+    default:
