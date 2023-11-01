@@ -17,14 +17,14 @@ composer --working-dir=../ install --no-dev
 # For additional debug information and to see the output of RUN
 # commands in docker files modify the build command as follows:
 #     BUILDKIT_PROGRESS=plain docker-compose build \
-docker-compose build \
+docker-compose build --pull \
   --build-arg UID=$(id -u) \
   --build-arg GID=$(id -g) \
   --build-arg USER=$(id -un) \
   --build-arg GROUP=$(id -gn)
 # When the containers are brought up the database will initialise
 # on first run.
-# The warehouse executes its setup script which copies in some 
+# The warehouse executes its startup script which copies in some 
 # config files then waits for the database to be ready. Next it 
 # starts Apache and will respond to http requests.
 # This is performed in the background.

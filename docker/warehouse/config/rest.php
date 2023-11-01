@@ -31,20 +31,21 @@ $config['authentication_methods'] = [
   'hmacClient' => [
     // HMAC is a bit safer over https as the authentication secrets are never
     // shared. There are still implications for the data itself though.
-    'allow_http',
+    'allow_http' => TRUE,
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
       'reports' => [],
     ],
   ],
   'hmacWebsite' => [
-    'allow_http',
+    'allow_http' => TRUE,
     'resource_options' => [
       // Featured reports with cached summary data only - highly restricted.
       'reports' => ['featured' => TRUE, 'summary' => TRUE, 'cached' => TRUE],
     ],
   ],
   'directClient' => [
+    'allow_http' => TRUE,
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
       'reports' => [],
@@ -85,22 +86,22 @@ $config['elasticsearch_version'] = '8.10';
 $config['elasticsearch'] = [
   'es-occurrences' => [
     'index' => 'occurrence_brc1_index',
-	  'url' => 'http://192.171.199.233:9200',
-	  'allowed' => [
+    'url' => '{{ Elasticsearch address }}',
+    'allowed' => [
       'get' => [
         '/^_search/' => 'GET requests to the search API (/_search?...)',
-    		'/^_mapping\/doc/' => 'GET requests to the mappings API (/_mapping/doc?...)',
+        '/^_mapping\/doc/' => 'GET requests to the mappings API (/_mapping/doc?...)',
       ],
-	    'post' => [
+      'post' => [
         '/^_search/' => 'POST requests to the search API (/_search?...)',
-		    '/^doc\/.*\/_update/' => 'POSTed document updates',
-		    '/^_update_by_query/' => 'POSTed multi-document updates',
+        '/^doc\/.*\/_update/' => 'POSTed document updates',
+        '/^_update_by_query/' => 'POSTed multi-document updates',
       ],
     ],
   ],
   'es-samples' => [
     'index' => 'sample_brc1_index',
-    'url' => 'http://indicia_elastic_1:9200',
+    'url' => '{{ Elasticsearch address }}',
     'allowed' => [
       'get' => [
         '/^_search/' => 'GET requests to the search API (/_search?...)',
@@ -119,13 +120,12 @@ $config['elasticsearch'] = [
 // available for each website.
 // @todo Move this configuration into a database table.
 $config['clients'] = [
-  'BRC' => [
-    'shared_secret' => 'password',
+  '{{ User }}' => [
+    'shared_secret' => '{{ Secret }}',
     'projects' => [
-      'ES_OCC' => [
+      '{{ Project Occ }}' => [
         // Project for Elastic integration.
-        'id' => 'ES_OCC',
-        'website_id' => 23,
+        'id' => '{{ Project Occ }}',
         'sharing' => 'reporting',
         // All reports, with restricted report access.
         'resource_options' => [
@@ -136,10 +136,9 @@ $config['clients'] = [
           ],
         ],
       ],
-      'ES_OCC_DEL' => [
+      '{{ Project OccDel }}' => [
         // Project for tracking deletions for Elastic integration.
-        'id' => 'ES_OCC_DEL',
-        'website_id' => 23,
+        'id' => '{{ Project OccDel }}',
         'sharing' => 'reporting',
         'resource_options' => [
           'reports' => [
@@ -149,9 +148,8 @@ $config['clients'] = [
           ],
         ],
       ],
-      'ES_OCC_ASSOC' => [
-        'id' => 'ES_OCC_ASSOC',
-        'website_id' => 23,
+      '{{ Project OccAssoc }}' => [
+        'id' => '{{ Project OccAssoc }}',
         'title' => 'Occurrence Associations',
         'sharing' => 'reporting',
         'autofeed' => TRUE,
@@ -163,10 +161,9 @@ $config['clients'] = [
           ],
         ],
       ],
-      'ES_SMP' => [
+      '{{ Project Smp }}' => [
         // Project for Elastic integration with samples.
-        'id' => 'ES_SMP',
-        'website_id' => 23,
+        'id' => '{{ Project Smp }}',
         'sharing' => 'reporting',
         // All reports, with restricted report access.
         'resource_options' => [
@@ -177,10 +174,9 @@ $config['clients'] = [
           ],
         ],
       ],
-      'ES_SMP_DEL' => [
+      '{{ Project SmpDel }}' => [
         // Project for Elastic integration with samples.
-        'id' => 'ES_SMP_DEL',
-        'website_id' => 23,
+        'id' => '{{ Project SmpDel }}',
         'sharing' => 'reporting',
         // All reports, with restricted report access.
         'resource_options' => [

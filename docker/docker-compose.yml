@@ -57,6 +57,16 @@ services:
     # Accessible on http://localhost:8080
     warehouse:
         build: ./warehouse
+        environment:
+            # Pass through settings for REST API.
+            WAREHOUSE_API_USER: ${WAREHOUSE_API_USER}
+            WAREHOUSE_API_SECRET: ${WAREHOUSE_API_SECRET}
+            WAREHOUSE_API_PROJECT_OCC: ${WAREHOUSE_API_PROJECT_OCC}
+            WAREHOUSE_API_PROJECT_OCC_DEL: ${WAREHOUSE_API_PROJECT_OCC_DEL}
+            WAREHOUSE_API_PROJECT_OCC_ASSOC: ${WAREHOUSE_API_PROJECT_OCC_ASSOC}
+            WAREHOUSE_API_PROJECT_SMP: ${WAREHOUSE_API_PROJECT_SMP}
+            WAREHOUSE_API_PROJECT_SMP_DEL: ${WAREHOUSE_API_PROJECT_SMP_DEL}
+            ELASTIC_URL: ${ELASTIC_URL}
         # Share the warehouse code between host and container
         volumes:
             - ..:/var/www/html/
@@ -85,7 +95,7 @@ services:
             # to other clusters.
             discovery.type: single-node
             # Limit Java heap size.
-            ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+            # ES_JAVA_OPTS: "-Xms256m -Xmx256m"
         volumes:
             # Persist indexes in a named volume.
             - elastic:/usr/share/elasticsearch/data

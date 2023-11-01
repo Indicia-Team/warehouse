@@ -44,6 +44,6 @@ ENV GROUP=${GROUP}
 RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf
 RUN sed -i 's/<VirtualHost *:80>/<VirtualHost *:8080>/' /etc/apache2/sites-enabled/000-default.conf
 
-# When a warehouse container is started, we need to execute a setup script.
+# When a warehouse container is started, we need to execute a startup script.
 # (The working directory is /var/www/html)
-CMD docker/warehouse/startup.sh
+ENTRYPOINT [ "/bin/sh", "docker/warehouse/startup.sh"]
