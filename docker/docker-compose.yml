@@ -14,6 +14,21 @@ services:
             - .:/var/docker
         ports:
             - "5432:5432"
+        command: 
+            # Enable logging to the volume.
+            # (/var/lib/docker/volumes/indicia_postgres on a linux host)
+            - "-c"
+            - "log_destination=stderr"
+            - "-c"
+            - "logging_collector=on"
+            - "-c"
+            - "log_directory=log"
+            - "-c"
+            - "log_filename=postgresql-%Y-%m-%d_%H%M%S.log"
+            - "-c"
+            - "log_rotation_age=1d"
+            - "-c"
+            - "log_statement=all"
 
     # A container running pgAdmin to help us examine the database.
     # Accessible on http://localhost:8070
