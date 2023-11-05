@@ -11,11 +11,22 @@ ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/do
 RUN chmod +x /usr/local/bin/install-php-extensions
 # Install required extensions that are not already present in image.
 RUN install-php-extensions gd pgsql zip xdebug
-# Configure the xdebug extension for single-step
-# debugging of code in the container.
-#ENV XDEBUG_CONFIG=discover_client_host=1
-ENV XDEBUG_CONFIG=client_host=172.17.0.1
+
+# Configure the xdebug extension for single-step debugging of code in the
+# container.
 ENV XDEBUG_MODE=debug
+# Xdebug has to know the IP of the host where your dev environment is. It is
+# thought a Docker host always has the IP of 172.17.0.1 on the docker network.
+ENV XDEBUG_CONFIG=client_host=172.17.0.1
+# Xdebug is set to trigger on all requests from browser, curl or whatever. This
+# means you can debug the scripted setup phase. Comment out the following and
+# rebuild if you prefer to trigger debugging with an XDEBUG_SESSION parameter or
+# cookie, (see https://xdebug.org/docs/step_debug). Be aware that breakpoints
+# will then only work on the first level. If the warehouse makes a second
+# request to itself, as when it calls REST services to populate a table on a
+# page, you'll need to insert a line of code containting "xdebug_break();" if
+# you want to break at that second level. 
+COPY config/xdebug.ini "$PHP_INI_DIR/conf.d/indicia-xdebug.ini"
 
 # Install a postgres client for the pg_isready command.
 RUN apt-get update
