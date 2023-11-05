@@ -17,7 +17,7 @@ composer --working-dir=../ install --no-dev
 # For additional debug information and to see the output of RUN
 # commands in docker files modify the build command as follows:
 #     BUILDKIT_PROGRESS=plain docker-compose build \
-docker-compose build --pull \
+docker compose build --pull \
   --build-arg UID=$(id -u) \
   --build-arg GID=$(id -g) \
   --build-arg USER=$(id -un) \
@@ -28,7 +28,7 @@ docker-compose build --pull \
 # config files then waits for the database to be ready. Next it 
 # starts Apache and will respond to http requests.
 # This is performed in the background.
-docker-compose up -d
+docker compose up -d
 
 # Wait for warehouse to be up
 echo "Waiting for warehouse..."

@@ -12,7 +12,7 @@ echo
 if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ]; then
 
     # Stop and remove containers and volumes.
-    docker-compose down -v
+    docker compose down -v
 
     # Remove config files
     rm -f ../application/config/config.php
