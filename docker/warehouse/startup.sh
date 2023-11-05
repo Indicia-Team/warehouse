@@ -19,7 +19,6 @@ if [ ! -f "$file" ]; then
     -e "s|{{ Secret }}|${WAREHOUSE_API_SECRET}|" \
     -e "s|{{ Project Occ }}|${WAREHOUSE_API_PROJECT_OCC}|" \
     -e "s|{{ Project OccDel }}|${WAREHOUSE_API_PROJECT_OCC_DEL}|" \
-    -e "s|{{ Project OccAssoc }}|${WAREHOUSE_API_PROJECT_OCC_ASSOC}|" \
     -e "s|{{ Project Smp }}|${WAREHOUSE_API_PROJECT_SMP}|" \
     -e "s|{{ Project SmpDel }}|${WAREHOUSE_API_PROJECT_SMP_DEL}|" \
     -e "s|{{ Elasticsearch address }}|${ELASTIC_URL}|" \

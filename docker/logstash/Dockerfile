@@ -28,7 +28,6 @@ ARG WAREHOUSE_API_USER
 ARG WAREHOUSE_API_SECRET
 ARG WAREHOUSE_API_PROJECT_OCC
 ARG WAREHOUSE_API_PROJECT_OCC_DEL
-ARG WAREHOUSE_API_PROJECT_OCC_ASSOC
 ARG WAREHOUSE_API_PROJECT_SMP
 ARG WAREHOUSE_API_PROJECT_SMP_DEL
 ARG ELASTIC_URL
@@ -52,41 +51,13 @@ RUN file=${SUPPORT_FILES_PATH}/logstash-config/occurrences-http-indicia \
     -e "s|{{ Logstash password }}|${LOGSTASH_PASSWORD}|" \
     $file.conf
 
-# Create occurrences-http-indicia-associations.conf from its template.
-RUN file=${SUPPORT_FILES_PATH}/logstash-config/occurrences-http-indicia-associations \
-  && cp $file.template $file.conf \
-  && sed -i -e "s|{{ Warehouse URL }}|${WAREHOUSE_URL}|" \
-    -e "s|{{ User }}|${WAREHOUSE_API_USER}|" \
-    -e "s|{{ Secret }}|${WAREHOUSE_API_SECRET}|" \
-    -e "s|{{ Project ID }}|${WAREHOUSE_API_PROJECT_OCC_DEL}|" \
-    -e "s|{{ Working folder path }}|${SUPPORT_FILES_PATH}|" \
-    -e "s|{{ Elasticsearch address }}|${ELASTIC_URL}|" \
-    -e "s|{{ Indicia warehouse unique name }}|${WAREHOUSE_UNIQUE_NAME}|" \
-    -e "s|{{ Logstash user }}|${LOGSTASH_USER}|" \
-    -e "s|{{ Logstash password }}|${LOGSTASH_PASSWORD}|" \
-    $file.conf
-
 # Create occurrences-http-indicia-deletions.conf from its template.
 RUN file=${SUPPORT_FILES_PATH}/logstash-config/occurrences-http-indicia-deletions \
   && cp $file.template $file.conf \
   && sed -i -e "s|{{ Warehouse URL }}|${WAREHOUSE_URL}|" \
     -e "s|{{ User }}|${WAREHOUSE_API_USER}|" \
     -e "s|{{ Secret }}|${WAREHOUSE_API_SECRET}|" \
-    -e "s|{{ Project ID }}|${WAREHOUSE_API_PROJECT_OCC_ASSOC}|" \
-    -e "s|{{ Working folder path }}|${SUPPORT_FILES_PATH}|" \
-    -e "s|{{ Elasticsearch address }}|${ELASTIC_URL}|" \
-    -e "s|{{ Indicia warehouse unique name }}|${WAREHOUSE_UNIQUE_NAME}|" \
-    -e "s|{{ Logstash user }}|${LOGSTASH_USER}|" \
-    -e "s|{{ Logstash password }}|${LOGSTASH_PASSWORD}|" \
-    $file.conf
-
-# Create occurrences-http-indicia-taxonomy.conf from its template.
-RUN file=${SUPPORT_FILES_PATH}/logstash-config/occurrences-http-indicia-taxonomy \
-  && cp $file.template $file.conf \
-  && sed -i -e "s|{{ Warehouse URL }}|${WAREHOUSE_URL}|" \
-    -e "s|{{ User }}|${WAREHOUSE_API_USER}|" \
-    -e "s|{{ Secret }}|${WAREHOUSE_API_SECRET}|" \
-    -e "s|{{ Project ID }}|${WAREHOUSE_API_PROJECT_TAXA}|" \
+    -e "s|{{ Project ID }}|${WAREHOUSE_API_PROJECT_OCC_DEL}|" \
     -e "s|{{ Working folder path }}|${SUPPORT_FILES_PATH}|" \
     -e "s|{{ Elasticsearch address }}|${ELASTIC_URL}|" \
     -e "s|{{ Indicia warehouse unique name }}|${WAREHOUSE_UNIQUE_NAME}|" \

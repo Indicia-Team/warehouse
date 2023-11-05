@@ -148,19 +148,6 @@ $config['clients'] = [
           ],
         ],
       ],
-      '{{ Project OccAssoc }}' => [
-        'id' => '{{ Project OccAssoc }}',
-        'title' => 'Occurrence Associations',
-        'sharing' => 'reporting',
-        'autofeed' => TRUE,
-        'resource_options' => [
-          'reports' => [
-            'authorise' => [
-              'library/occurrence_associations/list_for_elastic_all.xml',
-            ],
-          ],
-        ],
-      ],
       '{{ Project Smp }}' => [
         // Project for Elastic integration with samples.
         'id' => '{{ Project Smp }}',
