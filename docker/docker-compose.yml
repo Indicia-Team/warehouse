@@ -92,8 +92,11 @@ services:
             ELASTIC_PASSWORD: password
             # single-node disables bootstrap checks avoiding max virtual memory
             # areas vm.max_map_count is too low error. Also prevents any attempt
-            # to other clusters.
+            # to join other clusters.
             discovery.type: single-node
+            # Disable requirement for TLS encryption on interfaces so no
+            # certificates need to be set up.
+            xpack.security.enabled: 'false'
             # Limit Java heap size.
             # ES_JAVA_OPTS: "-Xms256m -Xmx256m"
         volumes:
