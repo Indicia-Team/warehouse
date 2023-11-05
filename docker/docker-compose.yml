@@ -127,11 +127,6 @@ services:
         volumes:
             # Persist indexes in a named volume.
             - elastic:/usr/share/elasticsearch/data
-        networks:
-            default:
-                # Alias required as Logstash doesn't like underscore in name.
-                aliases:
-                    - elastic01
         ports: 
             - "9200:9200"
         healthcheck:
@@ -147,7 +142,7 @@ services:
         image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
         environment:
             # The url of the ElasticSearch server.
-            ELASTICSEARCH_HOSTS: http://indicia_elastic_1:9200
+            ELASTICSEARCH_HOSTS: ${ELASTIC_URL}
             ELASTICSEARCH_USERNAME: kibana_system
             ELASTICSEARCH_PASSWORD: password
         ports: 

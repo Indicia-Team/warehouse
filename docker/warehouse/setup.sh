@@ -77,7 +77,7 @@ ____EOF
       curl $url | tar -xz --strip-components=1 support_files-master/UKSI
 
       echo "...Executing the import on the warehouse."
-      docker exec indicia_warehouse_1 sh -c '
+      docker exec indicia-warehouse-1 sh -c '
         cd docker/UKSI
         php import-uksi.php \
         --warehouse-path=/var/www/html \
@@ -146,7 +146,7 @@ ____EOF
       # Note, warehouse-path is in the warehouse container
       # but data-path is in the postgres container.
       # There are corresponding mounts in the compose file.
-      docker exec indicia_warehouse_1 sh -c '
+      docker exec indicia-warehouse-1 sh -c '
         cd docker/GBIF
         php import-gbif.php \
         --warehouse-path=/var/www/html \
@@ -169,9 +169,9 @@ ____EOF
     if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
       echo
       echo "Adding scheduled tasks to crontab."
-      cronspec="*/15 * * * * php /var/www/html/index.php scheduled_tasks"
+      cronspec="*/5 * * * * php /var/www/html/index.php scheduled_tasks"
       croncmd="echo $cronspec | crontab -u $(id -un) -"
-      docker exec indicia_warehouse_1 sh -c "set -f; $croncmd"
+      docker exec indicia-warehouse-1 sh -c "set -f; $croncmd"
 
       # With scheduled_tasks enabled we can enable the data_cleaner.
       echo
