@@ -30,30 +30,8 @@ docker compose build --pull \
 # This is performed in the background.
 docker compose up -d
 
-# Wait for warehouse to be up
-echo "Waiting for warehouse..."
-until curl --silent --output outputfile http://localhost:8080; do
-  sleep 1
-done
-echo "Warehouse is up."
-
 # Run warehouse setup.
 source warehouse/setup.sh
-
-# Wait for ElasticSearch to be up
-echo
-until curl --silent --output outputfile --user elastic:password localhost:9200; do
-  echo -ne "Waiting for ElasticSearch... | \r"
-  sleep 1
-  echo -ne "Waiting for ElasticSearch... / \r"
-  sleep 1
-  echo -ne "Waiting for ElasticSearch... - \r"
-  sleep 1
-  echo -ne "Waiting for ElasticSearch... \\ \r"
-  sleep 1
-done
-echo
-echo "ElasticSearch is up."
 
 # Run elasticsearch setup.
 source elastic/setup.sh

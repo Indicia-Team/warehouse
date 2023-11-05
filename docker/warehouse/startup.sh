@@ -27,14 +27,6 @@ if [ ! -f "$file" ]; then
   chown $UID:$GID $file
 fi
 
-
-
-# Wait till database is up before going any further.
-echo "Waiting for Postgres."
-until pg_isready -h postgres; do
-    sleep 1
-done
-
 # Run apache with the same id as the host user.
 export APACHE_RUN_USER=$USER
 export APACHE_RUN_GROUP=$GROUP

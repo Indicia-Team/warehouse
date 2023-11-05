@@ -29,6 +29,13 @@ services:
             - "log_rotation_age=1d"
             - "-c"
             - "log_statement=all"
+        healthcheck:
+            test: ["CMD", "pg_isready", "-h", "postgres"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 2m
+            start_interval: 5s
 
     # A container running pgAdmin to help us examine the database.
     # Accessible on http://localhost:8070
@@ -45,6 +52,9 @@ services:
             - pgadmin:/var/lib/pgadmin
         ports: 
             - "8070:80"
+        depends_on:
+            postgres:
+                condition: service_healthy
 
     # A fake mail server which allows the warehouse to send emails.
     # Received mail can be viewed at http://localhost:8025
@@ -73,6 +83,18 @@ services:
         # Apache is configured to run on port 8080 in warehouse/setup.sh  
         ports: 
             - "8080:8080"
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8080"]
+            interval: 20s
+            timeout: 10s
+            retries: 3
+            start_period: 2m
+            start_interval: 5s
+        depends_on:
+            postgres:
+                condition: service_healthy
+            mailhog:
+                condition: service_started
 
     # The Geoserver container
     # Accessible on http://localhost:8090
@@ -83,6 +105,9 @@ services:
             - geoserver:/opt/geoserver_data
         ports:
             - "8090:8080"
+        depends_on:
+            postgres:
+                condition: service_healthy
 
     # The ElasticSearch container
     elastic:
@@ -109,10 +134,13 @@ services:
                     - elastic01
         ports: 
             - "9200:9200"
-        deploy:
-            resources:
-                limits:
-                    memory: 1G
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:9200"]
+            interval: 1m
+            timeout: 5s
+            retries: 3
+            start_period: 5m
+            start_interval: 5s
 
     # The Kibana container
     kibana:
@@ -125,7 +153,8 @@ services:
         ports: 
             - "5601:5601"
         depends_on:
-            - elastic
+            elastic:
+                condition: service_healthy
 
     # The Logstash container
     logstash:
@@ -153,7 +182,10 @@ services:
            # Limiting Java heap size. 4g to 8g recommended.
             LS_JAVA_OPTS: "-Xms2g -Xmx2g"
         depends_on:
-            - elastic
+            elastic:
+                condition: service_healthy
+            warehouse:
+                condition: service_healthy
 
 volumes:
     postgres:
