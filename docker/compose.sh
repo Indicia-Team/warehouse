@@ -1,18 +1,33 @@
 #!/bin/bash
+# Exit script on error.
+set -e
 
 # Set the project name which determines the network and container names.
 export COMPOSE_PROJECT_NAME=indicia
 
 # Ensure dependencies of warehouse code have been installed on host.
 if [ ! $(which composer) ]; then
-  # First install composer if not present
-  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
-  && php -r "if (hash_file('sha384', 'composer-setup.php') === '756890a4488ce9024fc62c56153228907f1545c228516cbf63f885e036d37e9a59d27d63f46af1d4d07ee0f76181c7d3') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" \
-  && php composer-setup.php \
-  && php -r "unlink('composer-setup.php');" \
-  && mv composer.phar /usr/local/bin/composer
+  # Install composer locally if not present.
+  echo "Installing composer..."
+  ./getcomposer.sh
+  COMPOSER_CMD='php composer.phar'
+else
+  # Use existing composer installation.
+  COMPOSER_CMD='composer'
 fi
-composer --working-dir=../ install --no-dev
+
+$COMPOSER_CMD install \
+  --working-dir=../ \
+  --no-dev \
+  --ignore-platform-req=ext-mbstring \
+  --ignore-platform-req=ext-dom \
+  --ignore-platform-req=ext-gd \
+  --ignore-platform-req=ext-simplexml \
+  --ignore-platform-req=ext-xml \
+  --ignore-platform-req=ext-xmlreader \
+  --ignore-platform-req=ext-xmlwriter \
+  --ignore-platform-req=ext-zip
+
 
 # For additional debug information and to see the output of RUN
 # commands in docker files modify the build command as follows:
