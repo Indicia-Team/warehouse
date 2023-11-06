@@ -169,9 +169,8 @@ ____EOF
     if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
       echo
       echo "Adding scheduled tasks to crontab."
-      cronspec="*/5 * * * * /usr/local/bin/php /var/www/html/index.php scheduled_tasks"
-      croncmd="echo $cronspec | crontab -u $(id -un) -"
-      docker exec indicia-warehouse-1 sh -c "set -f; $croncmd"
+      croncmd="crontab -u $(id -un) docker/warehouse/config/crontab.txt"
+      docker exec indicia-warehouse-1 $croncmd
 
       # With scheduled_tasks enabled we can enable the data_cleaner.
       echo
