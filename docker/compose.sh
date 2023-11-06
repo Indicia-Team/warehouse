@@ -28,6 +28,10 @@ $COMPOSER_CMD install \
   --ignore-platform-req=ext-xmlwriter \
   --ignore-platform-req=ext-zip
 
+if [ "$COMPOSER_CMD" = "php composer.phar" ]; then
+  # Don't want this hanging around in our code base.
+  rm composer.phar
+fi
 
 # For additional debug information and to see the output of RUN
 # commands in docker files modify the build command as follows:
