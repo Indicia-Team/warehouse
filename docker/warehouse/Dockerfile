@@ -33,6 +33,10 @@ RUN apt-get update
 RUN apt-get -y install postgresql-client
 # Install cron for scheduled tasks
 RUN apt-get -y install cron
+# Install rsyslog to collect cron logs
+RUN apt-get -y install rsyslog
+# Configure cron to log more
+RUN echo 'EXTRA_OPTS="-L 15"' >> /etc/default/cron
 
 # Create a user with the same identity as the host user so that it can 
 # share files on the bind mount containing the warehouse code which 
@@ -46,8 +50,9 @@ RUN useradd -u ${UID} -g ${GID} ${USER}
 # Store the args in the environment for use at run time.
 ENV UID=${UID}
 ENV GID=${GID}
-ENV USER=${USER}
-ENV GROUP=${GROUP}
+# Run apache with the same id as the host user.
+ENV APACHE_RUN_USER=${USER}
+ENV APACHE_RUN_GROUP=${GROUP}
 
 # Change Apache to listen on port 8080.
 # We need it to appear on the same port both inside and outside the container

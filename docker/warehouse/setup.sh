@@ -169,7 +169,7 @@ ____EOF
     if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
       echo
       echo "Adding scheduled tasks to crontab."
-      cronspec="*/5 * * * * php /var/www/html/index.php scheduled_tasks"
+      cronspec="*/5 * * * * /usr/local/bin/php /var/www/html/index.php scheduled_tasks"
       croncmd="echo $cronspec | crontab -u $(id -un) -"
       docker exec indicia-warehouse-1 sh -c "set -f; $croncmd"
 

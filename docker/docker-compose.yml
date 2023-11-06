@@ -79,6 +79,7 @@ services:
         # Share the warehouse code between host and container
         volumes:
             - ..:/var/www/html/
+            - crontab:/var/spool/cron/crontabs
         # Apache is configured to run on port 8080 in warehouse/setup.sh  
         ports: 
             - "8080:8080"
@@ -185,6 +186,7 @@ volumes:
     pgadmin:
     geoserver:
     elastic:
+    crontab:
 
 networks:
     default:

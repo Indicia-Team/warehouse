@@ -26,8 +26,10 @@ if [ ! -f "$file" ]; then
   chown $UID:$GID $file
 fi
 
-# Run apache with the same id as the host user.
-export APACHE_RUN_USER=$USER
-export APACHE_RUN_GROUP=$GROUP
+# Start syslog
+rsyslogd
+# Start the cron daemon
+service cron start
+
 # Call the original entry point of the image to start apache.
 docker-php-entrypoint apache2-foreground
