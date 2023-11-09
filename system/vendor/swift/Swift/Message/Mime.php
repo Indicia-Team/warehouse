@@ -206,7 +206,7 @@ abstract class Swift_Message_Mime
   public function setEncoding($encoding, $recursive=false, $non_ascii=false)
   {
     $this->cache->clear("body");
-    switch (strtolower($encoding))
+    switch (strtolower($encoding ?? 'null'))
     {
       case "q": case "qp": case "quoted-printable":
         $encoding = "quoted-printable";
