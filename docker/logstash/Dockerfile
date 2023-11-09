@@ -8,14 +8,29 @@ RUN apt-get update \
   && apt-get clean
 USER logstash
 
+# WITH SECURITY
 # Getting version.json should ensure git clone will always run if the version
 # changes. See https://stackoverflow.com/a/39278224
-ADD https://api.github.com/repos/Indicia-Team/support_files/git/refs/heads/elastic-secure version.json
+#ADD https://api.github.com/repos/Indicia-Team/support_files/git/refs/heads/elastic-secure version.json
 # Clone the Elasticsearch folder of the support files repo to
 # /usr/share/logstash/support_files
 # Checkout the elastic-secure branch which includes extra config for
 # Elasticsearch with security enabled.
-RUN git clone -n --branch elastic-secure --depth=1 --filter=tree:0 \
+#RUN git clone -n --branch elastic-secure --depth=1 --filter=tree:0 \
+#    https://github.com/Indicia-Team/support_files.git \
+#  && cd support_files \
+#  && git sparse-checkout set Elasticsearch \
+#  && git checkout \
+#  && cd ..
+
+# WITHOUT SECURITY
+# Getting version.json should ensure git clone will always run if the version
+# changes. See https://stackoverflow.com/a/39278224
+ADD https://api.github.com/repos/Indicia-Team/support_files/git/refs/heads/master version.json
+# Clone the Elasticsearch folder of the support files repo to
+# /usr/share/logstash/support_files
+# Checkout the master branch which does not support elasticsearch security.
+RUN git clone -n --branch master --depth=1 --filter=tree:0 \
     https://github.com/Indicia-Team/support_files.git \
   && cd support_files \
   && git sparse-checkout set Elasticsearch \

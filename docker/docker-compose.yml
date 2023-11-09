@@ -120,10 +120,13 @@ services:
             # to join other clusters.
             discovery.type: single-node
             # Disable requirement for TLS encryption on interfaces so no
-            # certificates need to be set up.
+            # certificates needed and no user authentication.
             xpack.security.enabled: 'false'
+#            xpack.security.http.ssl.enabled: 'false'
+#            xpack.security.transport.ssl.enabled: 'false'
             # Limit Java heap size.
             # ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+            xpack.monitoring.collection.enabled: 'true'
         volumes:
             # Persist indexes in a named volume.
             - elastic:/usr/share/elasticsearch/data
@@ -131,6 +134,7 @@ services:
             - "9200:9200"
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:9200"]
+#            test: ["CMD", "curl", "-f", "--user", "elastic:password", "http://localhost:9200"]
             interval: 1m
             timeout: 5s
             retries: 3
@@ -170,9 +174,14 @@ services:
                 LOGSTASH_PASSWORD: ${LOGSTASH_PASSWORD}
         environment:
             BUILDKIT_PROGRESS: ${BUILDKIT_PROGRESS}
+            
+            # WITH SECURITY
             # By disabling monitorin of Logstash by xpack I am side-stepping
             # a difficulty with authentication.
-            XPACK_MONITORING_ENABLED: 'false'
+            #XPACK_MONITORING_ENABLED: 'false'
+            # WITHOUT SECURITY
+            XPACK_MONITORING_ENABLED: 'true'
+            XPACK_MONITORING_ELASTICSEARCH_HOSTS: ${ELASTIC_URL}
            # Limiting Java heap size. 4g to 8g recommended.
             LS_JAVA_OPTS: "-Xms2g -Xmx2g"
         depends_on:
