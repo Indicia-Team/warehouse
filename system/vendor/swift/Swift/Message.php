@@ -165,10 +165,10 @@ class Swift_Message extends Swift_Message_Mime
   public function generateId($idstring=null)
   {
     $midparams =  array(
-      "utctime" => gmstrftime("%Y%m%d%H%M%S"),
+      "utctime" => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('YmdHis'),
       "pid" => getmypid(),
       "randint" => mt_rand(),
-      "customstr" => (preg_match("/^(?<!\\.)[a-z0-9\\.]+(?!\\.)\$/iD", $idstring) ? $idstring : "swift") ,
+      "customstr" => (preg_match("/^(?<!\\.)[a-z0-9\\.]+(?!\\.)\$/iD", $idstring ?? 'null') ? $idstring : "swift") ,
       "hostname" => (isset($_SERVER["SERVER_NAME"]) ? $_SERVER["SERVER_NAME"] : php_uname("n")),
     );
     $this->setId(vsprintf("<%s.%d.%d.%s@%s>", $midparams));
