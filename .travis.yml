@@ -57,6 +57,9 @@ addons:
   apt:
     packages:
     - postgresql-14-postgis-3
+env:
+  global:
+    - PGPORT=5433
 
 install:
   # Install dependencies.
