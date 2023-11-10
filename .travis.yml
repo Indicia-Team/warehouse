@@ -69,15 +69,16 @@ install:
   - chmod +x .travis/postgres_setup.sh
 
 before_script:
+  - psql --version
   # Create database
-  - psql -c 'create database indicia;' -U postgres -d postgres
+  - psql -c 'create database indicia;' -U postgres -d postgres -p 5433
   # Add extension for PostGIS
-  - psql -U postgres -d indicia -c "create extension postgis"
-  - psql -U postgres -d indicia -c "create extension postgis_topology"
+  - psql -U postgres -d indicia -c "create extension postgis" -p 5433
+  - psql -U postgres -d indicia -c "create extension postgis_topology" -p 5433
   # Add extension for btree_gin indexes.
-  - psql -U postgres -d indicia -c "create extension btree_gin"
+  - psql -U postgres -d indicia -c "create extension btree_gin" -p 5433
   # Add extension for hstore and the audit trail.
-  - psql -U postgres -d indicia -c "create extension hstore"
+  - psql -U postgres -d indicia -c "create extension hstore" -p 5433
   # Set up database.
   - .travis/postgres_setup.sh
   # Enable the phpunit module in config.php (meaning initialise() is not tested)
