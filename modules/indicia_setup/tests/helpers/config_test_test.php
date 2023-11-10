@@ -10,16 +10,15 @@ class ConfigTestTest extends TestCase {
 
   protected function setUp(): void {
     // Check config assumes there is a session in place.
-    $this->session = Session::instance();
+    Session::instance();
   }
 
   /**
    *
    */
   public function testCheckConfigBeforeInstall() {
-
-    $checks = config_test::check_config(false, true);
-    foreach($checks as $check) {
+    $checks = config_test::check_config(FALSE, TRUE);
+    foreach ($checks as $check) {
       switch ($check['title']) {
         // These tests must pass for environment to be functional.
         case 'PHP Version':
