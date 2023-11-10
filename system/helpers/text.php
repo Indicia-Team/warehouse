@@ -148,7 +148,7 @@ class text_Core {
 		for ($i = 0; $i < $length; $i++)
 		{
 			// Select a random character from the pool and add it to the string
-			$str .= $pool[mt_rand(0, $max)];
+			$str .= $pool[mt_rand(0, max(0, $max))];
 		}
 
 		// Make sure alnum strings contain at least one letter and one digit
