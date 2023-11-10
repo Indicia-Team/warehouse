@@ -14,6 +14,7 @@ services:
 php:
   # Test oldest and newest maintained versions.
   - '8.1'
+  - '8.2'
 
 env:
   # Test oldest and newest maintained versions.
@@ -54,17 +55,6 @@ before_install:
   - sudo sed -e "s?%TRAVIS_BUILD_DIR%?$(pwd)?g" --in-place /etc/apache2/sites-available/000-default.conf
   - sudo service apache2 restart
 
-  # Reinstall PostgreSQL - see https://github.com/travis-ci/travis-ci/issues/7048#issuecomment-267731971
-  #- sudo apt-get autoremove postgis*
-  #- sudo apt-get autoremove postgresql*
-  #- sudo apt-get install postgresql-${PGVERSION}-postgis-3 postgresql-contrib-${PGVERSION}
-  #- PGDATA=/var/ramfs/postgresql/${PGVERSION}/main
-  #- PGBIN=/usr/lib/postgresql/${PGVERSION}/bin
-  #- sudo mkdir -p $PGDATA
-  #- sudo chown -R postgres:postgres /var/ramfs/postgresql
-  #- sudo -u postgres ${PGBIN}/initdb -D $PGDATA
-  #- sudo -u postgres ${PGBIN}/pg_ctl -D $PGDATA start
-
 install:
   # Install dependencies.
   - composer install
@@ -78,14 +68,14 @@ before_script:
   - psql --version
   - pg_lsclusters
   # Create database
-  - psql -c 'create database indicia;' -U ${PGUSER} -d postgres -p ${PGPORT}
+  - psql -d postgres -c 'create database indicia;' -U ${PGUSER} -p ${PGPORT}
   # Add extension for PostGIS
-  - psql -U ${PGUSER} -d indicia -c "create extension postgis" -p ${PGPORT}
-  - psql -U ${PGUSER} -d indicia -c "create extension postgis_topology" -p ${PGPORT}
+  - psql -d indicia -c "create extension postgis" -U ${PGUSER}  -p ${PGPORT}
+  - psql -d indicia -c "create extension postgis_topology" -U ${PGUSER} -p ${PGPORT}
   # Add extension for btree_gin indexes.
-  - psql -U ${PGUSER} -d indicia -c "create extension btree_gin" -p ${PGPORT}
+  - psql -d indicia -c "create extension btree_gin" -U ${PGUSER} -p ${PGPORT}
   # Add extension for hstore and the audit trail.
-  - psql -U ${PGUSER} -d indicia -c "create extension hstore" -p ${PGPORT}
+  - psql -d indicia -c "create extension hstore" -U ${PGUSER} -p ${PGPORT}
   # Set up database.
   - .travis/postgres_setup.sh
   # Enable the phpunit module in config.php (meaning initialise() is not tested)
