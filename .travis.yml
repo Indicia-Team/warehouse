@@ -8,6 +8,9 @@ branches:
 
 language: php
 
+services:
+  - postgresql
+
 php:
   # Test oldest and newest maintained versions.
   - '8.1'
@@ -15,6 +18,15 @@ php:
 env:
   # Test oldest and newest maintained versions.
   - PGVERSION=14
+
+addons:
+  apt:
+    packages:
+    - postgresql-${PGVERSION}-postgis-3
+env:
+  global:
+  - PGPORT=5433
+  - PGUSER=travis
 
 before_install:
   # Output info for debugging.
@@ -53,18 +65,6 @@ before_install:
   #- sudo -u postgres ${PGBIN}/initdb -D $PGDATA
   #- sudo -u postgres ${PGBIN}/pg_ctl -D $PGDATA start
 
-addons:
-  postgresql: "14"
-  apt:
-    packages:
-    - postgresql-14
-    - postgresql-client-14
-    - postgresql-14-postgis-3
-env:
-  global:
-  - PGPORT=5433
-  - PGUSER=travis
-
 install:
   # Install dependencies.
   - composer install
@@ -76,15 +76,16 @@ install:
 
 before_script:
   - psql --version
+  - pg_lsclusters
   # Create database
-  - psql -c 'create database indicia;' -U travis -d postgres -p 5433
+  - psql -c 'create database indicia;' -U ${PGUSER} -d postgres -p ${PGPORT}
   # Add extension for PostGIS
-  - psql -U travis -d indicia -c "create extension postgis" -p 5433
-  - psql -U travis -d indicia -c "create extension postgis_topology" -p 5433
+  - psql -U ${PGUSER} -d indicia -c "create extension postgis" -p ${PGPORT}
+  - psql -U ${PGUSER} -d indicia -c "create extension postgis_topology" -p ${PGPORT}
   # Add extension for btree_gin indexes.
-  - psql -U travis -d indicia -c "create extension btree_gin" -p 5433
+  - psql -U ${PGUSER} -d indicia -c "create extension btree_gin" -p ${PGPORT}
   # Add extension for hstore and the audit trail.
-  - psql -U travis -d indicia -c "create extension hstore" -p 5433
+  - psql -U ${PGUSER} -d indicia -c "create extension hstore" -p ${PGPORT}
   # Set up database.
   - .travis/postgres_setup.sh
   # Enable the phpunit module in config.php (meaning initialise() is not tested)
