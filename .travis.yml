@@ -5,7 +5,6 @@ branches:
   only:
   - master
   - develop
-  - hotfix-travis
 
 language: php
 
