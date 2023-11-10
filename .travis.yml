@@ -22,7 +22,7 @@ env:
 addons:
   apt:
     packages:
-    - postgresql-${PGVERSION}-postgis-3
+    - postgresql-14-postgis-3
 env:
   global:
   - PGPORT=5433
