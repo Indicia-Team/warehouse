@@ -1827,7 +1827,8 @@ class Rest_Controller extends Controller {
       else {
         $dt = DateTime::createFromFormat("Y-m-d\TH:i:s", $trimmed);
       }
-      if ($dt === FALSE || array_sum($dt->getLastErrors())) {
+      $dateErrors = $dt->getLastErrors();
+      if ($dt === FALSE || !empty($dateErrors['warning_count']) || !empty($dateErrors['error_count'])) {
         RestObjects::$apiResponse->fail('Bad request', 400, "Invalid date for $paramName parameter");
       }
     }

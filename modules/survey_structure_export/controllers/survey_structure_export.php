@@ -27,19 +27,32 @@
 class Survey_structure_export_Controller extends Indicia_Controller {
 
   /**
-   * @var array Holds a list of log messages describing the results of an import.
+   * Holds a list of log messages describing the results of an import.
+   *
+   * @var array
    */
   private $log = [];
 
   /**
-   * @var integer The user's ID.
+   * The user's ID.
+   *
+   * @var int
    */
   private $userId;
 
   /**
-   * @var integer The ID of the website we are importing into.
+   * The ID of the website we are importing into.
+   *
+   * @var int
    */
   private $website_id;
+
+  /**
+   * The controller view.
+   *
+   * @var object
+   */
+  public $view;
 
   /**
    * @const SQL_FETCH_ALL_SURVEY_ATTRS Query definition which retrieves all
@@ -471,9 +484,8 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       }
     }
 
-    $this->surveyTitle = $survey[0]['title'];
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
-    $this->page_breadcrumbs[] = html::anchor('survey/edit/' . $surveyId, $this->surveyTitle);
+    $this->page_breadcrumbs[] = html::anchor('survey/edit/' . $surveyId, $survey[0]['title']);
     $this->page_breadcrumbs[] = $this->template->title;
   }
 
