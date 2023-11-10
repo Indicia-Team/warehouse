@@ -406,7 +406,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * from elsewhere can be pasted.
    */
   public function index() {
-    $this->view = new View('survey_structure_export/index');
+    $view = new View('survey_structure_export/index');
     $surveyId = $this->uri->last_segment();
     // Get website ID for this survey.
     $survey = $this->db
@@ -416,12 +416,12 @@ class Survey_structure_export_Controller extends Indicia_Controller {
       ->get()->result_array(FALSE);
     $websiteId = $survey[0]['website_id'];
     $this->website_id = $websiteId;
-    $this->view->surveyId = $surveyId;
+    $view->surveyId = $surveyId;
     // Get the attribute data (including termlists) associated with the survey
     // ready to export.
     $export = $this->getSurveyAttributes($websiteId, $surveyId);
-    $this->view->export = json_encode($export);
-    $this->template->content = $this->view;
+    $view->export = json_encode($export);
+    $this->template->content = $view;
   }
 
   /**
@@ -441,10 +441,10 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     if (empty($_POST['import_survey_structure'])) {
       // Return error if import text was not provided.
       $this->template->title = 'Error during survey structure import';
-      $this->view = new View('templates/error_message');
-      $this->view->message = 'Please ensure you copy the details of a ' .
+      $view = new View('templates/error_message');
+      $view->message = 'Please ensure you copy the details of a ' .
       'survey\'s attributes into the "Import survey structure" box before importing.';
-      $this->template->content = $this->view;
+      $this->template->content = $view;
     }
     else {
       // Start a transaction for import.
@@ -453,9 +453,9 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         $importData = json_decode($_POST['import_survey_structure'], TRUE);
         $this->doImport($importData);
         $this->template->title = 'Import Complete';
-        $this->view = new View('survey_structure_export/import_complete');
-        $this->view->log = $this->log;
-        $this->template->content = $this->view;
+        $view = new View('survey_structure_export/import_complete');
+        $view->log = $this->log;
+        $this->template->content = $view;
         $this->db->query('COMMIT;');
       }
       catch (Exception $e) {
@@ -463,17 +463,16 @@ class Survey_structure_export_Controller extends Indicia_Controller {
         $this->db->query('ROLLBACK;');
         error_logger::log_error('Exception during survey structure import', $e);
         $this->template->title = 'Error during survey structure import';
-        $this->view = new View('templates/error_message');
-        $this->view->message = 'An error occurred during the survey structure ' .
+        $view = new View('templates/error_message');
+        $view->message = 'An error occurred during the survey structure ' .
         'import and no changes have been made to the database. Please make ' .
         'sure the import data is valid. More information can be found in the warehouse logs.';
-        $this->template->content = $this->view;
+        $this->template->content = $view;
       }
     }
 
-    $this->surveyTitle = $survey[0]['title'];
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
-    $this->page_breadcrumbs[] = html::anchor('survey/edit/' . $surveyId, $this->surveyTitle);
+    $this->page_breadcrumbs[] = html::anchor('survey/edit/' . $surveyId, $survey[0]['title']);
     $this->page_breadcrumbs[] = $this->template->title;
   }
 
