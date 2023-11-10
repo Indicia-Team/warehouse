@@ -54,12 +54,16 @@ before_install:
   #- sudo -u postgres ${PGBIN}/pg_ctl -D $PGDATA start
 
 addons:
+  postgresql: "14"
   apt:
     packages:
+    - postgresql-14
+    - postgresql-client-14
     - postgresql-14-postgis-3
 env:
   global:
-    - PGPORT=5433
+  - PGPORT=5433
+  - PGUSER=travis
 
 install:
   # Install dependencies.
@@ -73,14 +77,14 @@ install:
 before_script:
   - psql --version
   # Create database
-  - psql -c 'create database indicia;' -U postgres -d postgres -p 5433
+  - psql -c 'create database indicia;' -U travis -d postgres -p 5433
   # Add extension for PostGIS
-  - psql -U postgres -d indicia -c "create extension postgis" -p 5433
-  - psql -U postgres -d indicia -c "create extension postgis_topology" -p 5433
+  - psql -U travis -d indicia -c "create extension postgis" -p 5433
+  - psql -U travis -d indicia -c "create extension postgis_topology" -p 5433
   # Add extension for btree_gin indexes.
-  - psql -U postgres -d indicia -c "create extension btree_gin" -p 5433
+  - psql -U travis -d indicia -c "create extension btree_gin" -p 5433
   # Add extension for hstore and the audit trail.
-  - psql -U postgres -d indicia -c "create extension hstore" -p 5433
+  - psql -U travis -d indicia -c "create extension hstore" -p 5433
   # Set up database.
   - .travis/postgres_setup.sh
   # Enable the phpunit module in config.php (meaning initialise() is not tested)
