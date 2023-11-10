@@ -25,8 +25,8 @@ addons:
     - postgresql-14-postgis-3
 env:
   global:
-  - PGPORT=5433
-  - PGUSER=travis
+  - PGPORT=5432
+  - PGUSER=postgres
 
 before_install:
   # Output info for debugging.
