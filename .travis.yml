@@ -54,7 +54,6 @@ before_install:
   #- sudo -u postgres ${PGBIN}/pg_ctl -D $PGDATA start
 
 addons:
-  postgresql: 14.3
   apt:
     packages:
     - postgresql-14-postgis-3
