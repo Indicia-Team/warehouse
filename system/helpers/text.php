@@ -209,7 +209,7 @@ class text_Core {
 		if (utf8::strlen($replacement) == 1)
 		{
       self::$replacement = $replacement;
-      return preg_replace_callback($regex, 'self::censor_replace_callback', $str);
+      return preg_replace_callback($regex, 'text_Core::censor_replace_callback', $str);
  		}
 
 		return preg_replace($regex, $replacement, $str);
