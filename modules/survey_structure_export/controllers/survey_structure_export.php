@@ -52,7 +52,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    *
    * @var object
    */
-  private $view;
+  public $view;
 
   /**
    * @const SQL_FETCH_ALL_SURVEY_ATTRS Query definition which retrieves all
