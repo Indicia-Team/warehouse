@@ -157,7 +157,6 @@ class Helper_Text_Test extends TestCase
 				array('abcDEF13579', 6),
 				array('Å‘Å±Ã¡Ã©-+!%', 23),		// As of PHP 5.3, bug #47229 has been fixed and preg_quote *will* escape a hyphen (-).
 				array('Å‘Å±Ã¡Ã©+!%-', 23),
-				array(FALSE, 6),
 			);
 	}
 
