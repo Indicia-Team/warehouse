@@ -32,40 +32,40 @@ $id = html::initial_value($values, 'licence:id');
     <input type="hidden" name="licence:id" value="<?php echo $id ?>" />
     <legend>Licence details</legend>
     <?php
-    echo data_entry_helper::text_input(array(
+    echo data_entry_helper::text_input([
       'label' => 'Title',
       'fieldname' => 'licence:title',
-      'default' => html::initial_value($values, 'licence:title'),
+      'default' => $values['licence:title'] ?? NULL,
       'helpText' => 'The main label used for this licence.',
-      'validation' => array('required'),
-    ));
-    echo data_entry_helper::text_input(array(
+      'validation' => ['required'],
+    ]);
+    echo data_entry_helper::text_input([
       'label' => 'Code',
       'fieldname' => 'licence:code',
-      'default' => html::initial_value($values, 'licence:code'),
+      'default' => $values['licence:code'] ?? NULL,
       'helpText' => 'The abbreviation or code used for this licence.',
-      'validation' => array('required'),
-    ));
-    echo data_entry_helper::textarea(array(
+      'validation' => ['required'],
+    ]);
+    echo data_entry_helper::textarea([
       'label' => 'Description',
       'fieldname' => 'licence:description',
       'default' => html::initial_value($values, 'licence:description'),
       'helpText' => 'A description of this licence.',
-    ));
-    echo data_entry_helper::text_input(array(
+    ]);
+    echo data_entry_helper::text_input([
       'label' => 'URL (readable)',
       'fieldname' => 'licence:url_readable',
-      'default' => html::initial_value($values, 'licence:url_readable'),
+      'default' => $values['licence:url_readable'] ?? NULL,
       'helpText' => 'Link to the online licence page in plain rather than legal language if available.',
-      'validation' => array('url'),
-    ));
-    echo data_entry_helper::text_input(array(
+      'validation' => ['url'],
+    ]);
+    echo data_entry_helper::text_input([
       'label' => 'URL (legal)',
       'fieldname' => 'licence:url_legal',
-      'default' => html::initial_value($values, 'licence:url_legal'),
+      'default' => $values['licence:url_legal'] ?? NULL,
       'helpText' => 'Link to the online licence page in legal rather than plain language if available.',
-      'validation' => array('url'),
-    ));
+      'validation' => ['url'],
+    ]);
     ?>
   </fieldset>
   <?php

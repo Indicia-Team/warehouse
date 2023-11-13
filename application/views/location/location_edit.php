@@ -72,7 +72,7 @@ This page allows you to specify the details of a location.
       echo data_entry_helper::text_input([
         'label' => 'Name',
         'fieldname' => 'location:name',
-        'default' => html::initial_value($values, 'location:name'),
+        'default' => $values['location:name'] ?? NULL,
         'validation' => 'required',
         'disabled' => $disabled,
       ]);
@@ -120,7 +120,7 @@ This page allows you to specify the details of a location.
           echo data_entry_helper::text_input([
             'label' => 'Location code',
             'fieldname' => 'location:code',
-            'default' => html::initial_value($values, 'location:code'),
+            'default' => $values['location:code'] ?? NULL,
             'disabled' => $disabled,
           ]);
           echo data_entry_helper::select([
