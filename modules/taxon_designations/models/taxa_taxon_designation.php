@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -14,36 +14,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the taxa_taxon_designations table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxa_taxon_designation_Model extends ORM {
 
-  protected $belongs_to = array(
+  protected $belongs_to = [
     'taxa',
     'taxon_designation',
     'created_by' => 'user',
     'updated_by' => 'user',
-  );
+  ];
 
-  public $lookup_against = gv_taxa_taxon_designations';
+  public $lookup_against = 'gv_taxa_taxon_designations';
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('taxon_id', 'required');
     $array->add_rules('taxon_designation_id', 'required');
-    $this->unvalidatedFields = array('start_date', 'source', 'geographical_constraint', 'deleted');
+    $this->unvalidatedFields = [
+      'start_date',
+      'source',
+      'geographical_constraint',
+      'deleted',
+    ];
     return parent::validate($array, $save);
   }
 

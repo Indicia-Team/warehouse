@@ -779,15 +779,38 @@ class report_standard_params_occurrences {
           [
             'value' => 'F',
             'operator' => 'equal',
-            'sql' => "o.data_cleaner_result = 'f' and applied_verification_rule_types<>ARRAY[]::text[]",
+            'sql' => "o.data_cleaner_result = 'f' and o.applied_verification_rule_types<>ARRAY[]::text[]",
           ],
           [
             'value' => 'P',
             'operator' => 'equal',
-            'sql' => "o.data_cleaner_result = 't' and applied_verification_rule_types<>ARRAY[]::text[]",
+            'sql' => "o.data_cleaner_result = 't' and o.applied_verification_rule_types<>ARRAY[]::text[]",
+          ],
+        ],
+        'joins' => [
+          [
+            'value' => 'identification_difficulty',
+            'operator' => 'equal',
+            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autochecks#]%'",
+          ],
+          [
+            'value' => 'period',
+            'operator' => 'equal',
+            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autochecks#]%'",
+          ],
+          [
+            'value' => 'period_within_year',
+            'operator' => 'equal',
+            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autochecks#]%'",
+          ],
+          [
+            'value' => 'without_polygon',
+            'operator' => 'equal',
+            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autochecks#]%'",
           ],
         ],
       ],
+      // Autocheck_rule support is legacy.
       'autocheck_rule' => [
         'datatype' => 'text',
         'display' => 'Autocheck rules',
