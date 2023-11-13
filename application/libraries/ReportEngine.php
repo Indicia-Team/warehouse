@@ -647,7 +647,7 @@ class ReportEngine {
     $vagueDateProcessing = $this->reportReader->getVagueDateProcessing();
     foreach ($this->providedParams as $name => $value) {
       if (!is_array($value)) {
-        $vagueDateProcessing = preg_replace("/#$name#/", $value, $vagueDateProcessing);
+        $vagueDateProcessing = preg_replace("/#$name#/", $value ?? '', $vagueDateProcessing);
       }
     }
     return !($vagueDateProcessing == 'false');
