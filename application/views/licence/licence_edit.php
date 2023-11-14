@@ -66,6 +66,12 @@ $id = html::initial_value($values, 'licence:id');
       'helpText' => 'Link to the online licence page in legal rather than plain language if available.',
       'validation' => ['url'],
     ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Open licence',
+      'fieldname' => 'licence:open',
+      'default' => html::initial_value($values, 'licence:open'),
+      'helpText' => 'Tick this box if the licence is considered open, having few or no restrictions on use of the data.',
+    ]);
     ?>
   </fieldset>
   <?php
