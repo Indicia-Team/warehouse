@@ -137,6 +137,13 @@ class RestObjects {
    */
   public static $scope = 'reporting';
 
+  /**
+   * Elasticsearch config from the config file.
+   *
+   * @var array
+   */
+  public static $esConfig = [];
+
 }
 
 /**
@@ -2303,11 +2310,11 @@ class Rest_Controller extends Controller {
             }
             if (in_array($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
               // Simple array of ES endpoints with no config.
-              $this->esConfig = [];
+              RestObjects::$esConfig = [];
             }
             elseif (array_key_exists($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
               // Endpoints are keys with array values holding config.
-              $this->esConfig = $cfg['resource_options']['elasticsearch'][$this->elasticProxy];
+              RestObjects::$esConfig = $cfg['resource_options']['elasticsearch'][$this->elasticProxy];
             }
             else {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
