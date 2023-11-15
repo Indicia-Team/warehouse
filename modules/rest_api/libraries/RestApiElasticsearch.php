@@ -1934,6 +1934,8 @@ class RestApiElasticsearch {
     }
     if ($isSearch) {
       $this->applyEsPermissionsQuery($postObj);
+      // Ensure counts are accurate, not limited to 10K.
+      $postObj->track_total_hits = TRUE;
     }
     if ($format === 'csv') {
       $csvTemplate = $this->getEsCsvTemplate();
