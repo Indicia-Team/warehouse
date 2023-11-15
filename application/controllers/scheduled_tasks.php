@@ -455,7 +455,7 @@ class Scheduled_Tasks_Controller extends Controller {
         $recipients = new Swift_RecipientList();
         $name = "$user->first_name $user->surname";
         $recipients->addTo($user->email_address, $name);
-        $cc = isset($cc) ? explode(',', $cc) : null;
+        $cc = isset($cc) ? explode(',', $cc) : [];
         foreach ($cc as $ccEmail) {
           $recipients->addCc(trim($ccEmail));
         }
