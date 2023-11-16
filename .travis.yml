@@ -14,7 +14,7 @@ services:
 php:
   # Test oldest and newest maintained versions.
   - '8.1'
-  - '8.2'
+  # - '8.2' Temporarily stopped to save credits.
 
 env:
   # Test oldest and newest maintained versions.
