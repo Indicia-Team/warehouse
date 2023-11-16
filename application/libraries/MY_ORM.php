@@ -1981,6 +1981,11 @@ SQL;
         foreach ($this->submission['fields'] as $field => $content) {
           if (preg_match('/^'.$this->attrs_field_prefix.':(fk_)?[\d]+(:([\d]+)?(:[^:|upper]*)?)?$/', $field)) {
             $value = $content['value'];
+            if (is_null($value)) {
+              // The mobile apps do this and it upsets PHP8.1 later on.
+              // Just skip attributes submitted with a null value.
+              continue;
+            }
             // Attribute name is of form tblAttr:attrId:valId:uniqueIdx
             $arr = explode(':', $field);
             $attrId = $arr[1];
