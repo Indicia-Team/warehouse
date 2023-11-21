@@ -933,7 +933,7 @@ SQL;
     }
     else {
       $escapedTerm = pg_escape_string($db->getLink(), $searchFilterData['searchTermNoWildcards']);
-      $regexEscapedTerm = str_replace(['[', ']'], ['\[', '\]'], $escapedTerm);
+      $regexEscapedTerm = preg_quote($escapedTerm);
       return <<<SQL
 order by
 -- abbreviation hits come first if enabled
