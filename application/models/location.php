@@ -281,6 +281,7 @@ SQL;
    */
   private function preSubmitTidySref() {
     if (array_key_exists('centroid_sref', $this->submission['fields']) &&
+        !empty($this->submission['fields']['centroid_sref']['value']) &&
         array_key_exists('centroid_sref_system', $this->submission['fields'])) {
       $this->submission['fields']['centroid_sref']['value'] = spatial_ref::sref_format_tidy(
           $this->submission['fields']['centroid_sref']['value'],
