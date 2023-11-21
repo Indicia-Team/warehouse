@@ -353,6 +353,7 @@ class Sample_Model extends ORM_Tree {
    */
   private function preSubmitTidySref() {
     if (array_key_exists('entered_sref', $this->submission['fields']) &&
+        !empty($this->submission['fields']['entered_sref']['value']) &&
         array_key_exists('entered_sref_system', $this->submission['fields'])) {
       $this->submission['fields']['entered_sref']['value'] = spatial_ref::sref_format_tidy(
           $this->submission['fields']['entered_sref']['value'],
