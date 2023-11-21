@@ -2237,6 +2237,15 @@ SQL;
       kohana::log('error', 'URL: ' . $actualUrl);
       kohana::log('error', 'Query: ' . $postData);
       kohana::log('error', 'Response: ' . $response);
+      if (!empty(RestObjects::$clientSystemId)) {
+        kohana::log('error', 'ClientSystemId: ' . RestObjects::$clientSystemId);
+      }
+      if (!empty(RestObjects::$clientUserId)) {
+        kohana::log('error', 'ClientUserId: ' . RestObjects::$clientUserId);
+      }
+      if (!empty(RestObjects::$clientWebsiteId)) {
+        kohana::log('error', 'ClientWebsiteId: ' . RestObjects::$clientWebsiteId);
+      }
       RestObjects::$apiResponse->fail('Internal server error', 500, json_encode($error));
     }
     curl_close($session);
