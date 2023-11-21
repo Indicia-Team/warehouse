@@ -131,7 +131,7 @@ class osgb {
       // no action as all fixed.
     }
     else {
-      $accurcy = pow(10, (10 - $precision) / 2);
+      $accuracy = pow(10, (10 - $precision) / 2);
     }
 
     $hundredKmE = floor($easting / 100000);
