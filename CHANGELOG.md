@@ -1,3 +1,12 @@
+# Version 8.24.0
+
+* Slight improvement to the algorithm for sorting taxa in taxon search results.
+  Taxa between the ranks of species aggregate, species and species hybrid are
+  prioritised. See application/config/indicia_dist.php for an explanation of
+  2 new configuration values that can be specified to define the range of taxon
+  ranks that are given precedence, `preferred_taxon_rank_from` and
+  `preferred_taxon_rank_to`.
+
 # Version 8.23.0
 *2023-09-20*
 
