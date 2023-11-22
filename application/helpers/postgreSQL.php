@@ -934,6 +934,8 @@ SQL;
     else {
       $escapedTerm = pg_escape_string($db->getLink(), $searchFilterData['searchTermNoWildcards']);
       $regexEscapedTerm = preg_quote($escapedTerm);
+      $preferredTaxonRankFrom = kohana::config('indicia.preferred_taxon_rank_from', FALSE, FALSE) ?? 290;
+      $preferredTaxonRankTo = kohana::config('indicia.preferred_taxon_rank_from', FALSE, FALSE) ?? 304;
       return <<<SQL
 order by
 -- abbreviation hits come first if enabled
@@ -947,6 +949,11 @@ case
   when searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%'
     then length(searchterm) - length(regexp_replace(searchterm, replace('$regexEscapedTerm', ' ', '.*?'), '', 'i'))
   else 9999 end,
+-- prefer complete matches.
+replace(lower('$escapedTerm'), '[^a-z0-9]', '')=replace(lower(original), '[^a-z0-9]', '') desc,
+replace(lower('$escapedTerm'), '[^a-z0-9]', '')=replace(lower(searchterm), '[^a-z0-9]', '') desc,
+-- preferred range of ranks.
+cts.taxon_rank_sort_order between $preferredTaxonRankFrom and $preferredTaxonRankTo desc,
 cts.preferred desc,
 -- finally case and non-alpha insensitive alpha sort
 regexp_replace(lower(original), '[^a-z0-9]', '', 'g'),
