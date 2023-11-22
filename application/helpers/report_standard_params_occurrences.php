@@ -1094,6 +1094,49 @@ class report_standard_params_occurrences {
             where sle.scratchpad_list_id=#taxa_scratchpad_list_id#",
         ],
       ],
+      'licences' => [
+        'datatype' => 'string[]',
+        'display' => 'Record licence types',
+        'description' => 'Licence types to show records for. Options are none, open and restricted.',
+        'wheres' => [
+          [
+            'sql' => "o.licence_id in (#licences_from_licence_types#) or (o.licence_id is null and (array[#licences-unprocessed#] && array['none']))",
+          ],
+        ],
+        'preprocess' => [
+          'licences_from_licence_types' => "select string_agg(id::text, ', ')
+            from licences
+            where deleted=false
+            and case open
+              when true then array['open'] && array[#licences#]
+              else array['restricted'] && array[#licences#]
+            end",
+        ],
+      ],
+      'media_licences' => [
+        'datatype' => 'string[]',
+        'display' => 'Media licence types',
+        'description' => 'Licence types to show records with media licences for. Options are none, open and restricted.',
+        'wheres' => [
+          [
+            'sql' => "(o.media_count=0 OR exists(
+              select * from occurrence_media m
+              where m.deleted=false
+              and o.id=m.occurrence_id
+              and (m.licence_id in (#licences_from_licence_types#) or (m.licence_id is null and (array[#media_licences-unprocessed#] && array['none'])))
+            ))",
+          ],
+        ],
+        'preprocess' => [
+          'licences_from_licence_types' => "select string_agg(id::text, ', ')
+            from licences
+            where deleted=false
+            and case open
+              when true then array['open'] && array[#media_licences#]
+              else array['restricted'] && array[#media_licences#]
+            end",
+        ],
+      ],
     ];
   }
 
