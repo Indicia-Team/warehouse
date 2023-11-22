@@ -623,10 +623,14 @@ SQL;
    *   Full text search parameter.
    */
   private static function taxonSearchGetFullTextSearchTerm($search, array $options) {
-    $booleanTokens = array('&', '|');
+    // Remove tokens that break to_tsquery.
+    $search = str_replace(['(', ')', '[', ']'], ' ', $search);
+    // Remove any double spacing that results.
+    $search = trim(preg_replace('/\s+/', ' ', $search));
+    $booleanTokens = ['&', '|'];
     $searchWithBooleanLogic = trim(str_replace(
-      array(' and ', ' or ', '*'),
-      array(' & ', ' | ', ' '),
+      [' and ', ' or ', '*'],
+      [' & ', ' | ', ' '],
       $search
     ));
     $tokens = explode(' ', $searchWithBooleanLogic);
@@ -929,6 +933,7 @@ SQL;
     }
     else {
       $escapedTerm = pg_escape_string($db->getLink(), $searchFilterData['searchTermNoWildcards']);
+      $regexEscapedTerm = preg_quote($escapedTerm);
       return <<<SQL
 order by
 -- abbreviation hits come first if enabled
@@ -936,11 +941,11 @@ cts.name_type='A' DESC,
 -- prefer matches in correct epithet order
 searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%' DESC,
 -- prefer matches with searched phrase near start of term, by discarding the characters from the search term onwards and counting the rest
-length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*') || '.*', '','i')),
+length(regexp_replace(searchterm, replace('$regexEscapedTerm', ' ', '.*') || '.*', '','i')),
 -- prefer matches where the full search term is close together, by counting the characters in the area covered by the search term
 case
   when searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%'
-    then length(searchterm) - length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*?'), '', 'i'))
+    then length(searchterm) - length(regexp_replace(searchterm, replace('$regexEscapedTerm', ' ', '.*?'), '', 'i'))
   else 9999 end,
 cts.preferred desc,
 -- finally case and non-alpha insensitive alpha sort

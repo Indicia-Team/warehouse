@@ -775,7 +775,7 @@ class XMLReportReader_Core implements ReportReader {
    *   SQL statement.
    */
   public function getCountQuery() {
-    return str_replace('#count#', "COUNT($this->countFields)", $this->countQueryBase);
+    return str_replace('#count#', "COUNT($this->countFields)", ($this->countQueryBase ?? ''));
   }
 
   /**

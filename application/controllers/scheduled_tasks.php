@@ -156,10 +156,6 @@ class Scheduled_Tasks_Controller extends Controller {
         self::msg($trigger->name . ": " . $e, 'error');
         continue;
       }
-      if ($trigger->trigger_template_file === 'trigger_templates/shoresearch_notify_added_surveys') {
-        kohana::log('error', 'Params: ' . var_export($params, TRUE));
-        kohana::log('error', 'data: ' . var_export($data, TRUE));
-      }
 
       if (!isset($data['content']['records'])) {
         kohana::log('error', 'Error in trigger file ' . $trigger->trigger_template_file . '.xml');
@@ -455,7 +451,7 @@ class Scheduled_Tasks_Controller extends Controller {
         $recipients = new Swift_RecipientList();
         $name = "$user->first_name $user->surname";
         $recipients->addTo($user->email_address, $name);
-        $cc = explode(',', $cc);
+        $cc = isset($cc) ? explode(',', $cc) : [];
         foreach ($cc as $ccEmail) {
           $recipients->addCc(trim($ccEmail));
         }
