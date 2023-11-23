@@ -1,0 +1,59 @@
+<report
+    title="List of taxa for the iRecord app v2"
+    description="A list of taxon names."
+>
+  <query website_filter_field="">
+    SELECT #columns#
+    FROM cache_taxon_searchterms  cts
+    LEFT JOIN cache_taxon_paths ctp ON ctp.taxon_meaning_id=cts.taxon_meaning_id
+    WHERE cts.taxon_list_id = #taxon_list_id#
+      AND cts.simplified = false
+  </query>
+  <order_bys>
+    <order_by>cts.taxon_group, cts.preferred_taxon, cts.preferred desc, cts.name_type, cts.language_iso, cts.original</order_by>
+  </order_bys>
+  <params>
+    <param name="taxon_list_id" display="Taxon list ID" datatype="integer" />
+    <param name="taxon_group_id" display="Taxon group ID" datatype="integer" default="">
+      <where>cts.taxon_group_id=#taxon_group_id#</where>
+    </param>
+    <param name="language_iso" display="Language ISO code" description="Can be a comma separated list of ISO codes." datatype="text[]" default="">
+      <where>cts.language_iso IN (#language_iso#)</where>
+    </param>
+    <param name="min_taxon_rank_sort_order" display="Minimum taxon rank sort order" datatype="integer" default="">
+      <where>cts.taxon_rank_sort_order&gt;=#min_taxon_rank_sort_order#</where>
+    </param>
+    <param name="max_taxon_rank_sort_order" display="Maximum taxon rank sort order" datatype="integer" default="">
+      <where>cts.taxon_rank_sort_order&lt;=#max_taxon_rank_sort_order#</where>
+    </param>
+    <param name="branch_hierarchy_path_id" display="Limit to taxon branch by hierarchy path ID" datatype="integer" default="">
+      <where>ctp.path &amp;&amp; ARRAY[#branch_hierarchy_path_id#]</where>
+    </param>
+    <param name="taxattrs" display="Taxon attribute list" datatype="taxattrs" default=""
+          description="Comma separated list of taxa taxon list attribute IDs to include as columns in the report" />
+  </params>
+  <columns>
+    <column name="id" sql="cts.id" datatype="integer" />
+    <column name="taxon" sql="replace(cts.original, '[unassigned] ', '')" datatype="text" />
+    <column name="authority" sql="cts.authority" datatype="text" />
+    <column name="language_iso" sql="cts.language_iso" datatype="text" />
+    <column name="preferred" sql="cts.preferred" datatype="boolean" />
+    <column name="taxon_group_id" sql="cts.taxon_group_id" datatype="integer" />
+    <column name="taxon_group" sql="cts.taxon_group" datatype="text" />
+    <column name="taxon_rank" sql="cts.taxon_rank" datatype="text" />
+    <column name="taxon_rank_sort_order" sql="cts.taxon_rank_sort_order" datatype="integer" />
+    <column name="preferred_taxon" sql="replace(cts.preferred_taxon, '[unassigned] ', '')" datatype="text" />
+    <column name="preferred_authority" sql="cts.preferred_authority" datatype="text" />
+    <column name="name_type" sql="cts.name_type" datatype="text" />
+    <column name="marine_flag" sql="marine_flag" datatype="boolean" />
+    <column name="freshwater_flag" sql="freshwater_flag" datatype="boolean" />
+    <column name="terrestrial_flag" sql="terrestrial_flag" datatype="boolean" />
+    <column name="non_native_flag" sql="non_native_flag" datatype="boolean" />
+    <column name="taxon_version_key" sql="cts.search_code" datatype="text" />
+    <column name="accepted_name_taxon_version_key" sql="cts.external_key" datatype="text" />
+    <column name="organism_key" sql="cts.organism_key" datatype="text" />
+    <column name="parent_id" sql="cts.parent_id" datatype="integer" />
+    <column name="hierarchy_path_id" sql="cts.parent_id" datatype="integer" />
+    <column name="hierarchy_path" sql="ctp.path" datatype="integer[]" />
+  </columns>
+</report>
