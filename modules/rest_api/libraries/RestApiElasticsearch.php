@@ -380,12 +380,14 @@ class RestApiElasticsearch {
     $filters = [];
     // Apply limit to current user if appropriate.
     if (!empty(RestObjects::$esConfig['limit_to_own_data']) || RestObjects::$scope === 'user'  || RestObjects::$scope === 'userWithinWebsite') {
-      if (empty(RestObjects::$clientUserId)) {
+      if (empty(RestObjects::$clientUserId) && empty(RestObjects::$esConfig['allow_anonymous'])) {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'No user_id available for my records report.');
       }
-      $filters[] = [
-        'term' => ['metadata.created_by_id' => RestObjects::$clientUserId],
-      ];
+      if (!empty(RestObjects::$clientUserId)) {
+        $filters[] = [
+          'term' => ['metadata.created_by_id' => RestObjects::$clientUserId],
+        ];
+      }
     }
 
     // Apply limit to current website if appropriate.
