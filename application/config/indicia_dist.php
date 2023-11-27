@@ -29,8 +29,8 @@ $config['warehouse_title'] = 'Indicia Warehouse';
 /**
  * Prefix identifying Warehouse to add occurrence IDs in ES index
  * to make unique across different warehouses.
- * Uncomment this and set to the appropriate value if you want 
- * want IDs to be prefixed in report downloads. 
+ * Uncomment this and set to the appropriate value if you want
+ * want IDs to be prefixed in report downloads.
  */
 //$config['es_key_prefix'] = 'iBRC';
 
@@ -153,3 +153,12 @@ $config['http_status_responses'] = TRUE;
  * provides an overall taxonomic hierarchy.
  */
 $config['master_list_id'] = 0;
+
+/**
+ * Uncomment the following and place in indicia.php (if not already there), if
+ * the taxon search should prefer a range of taxon rank sort orders other than
+ * 290 to 304 which represents species aggregates, sensu lato, species, or
+ * species hybrid in UKSI.
+ */
+//$config['preferred_taxon_rank_from'] = 290;
+//$config['preferred_taxon_rank_to'] = 304;

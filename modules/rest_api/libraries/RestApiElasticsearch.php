@@ -334,6 +334,9 @@ class RestApiElasticsearch {
    *   Response format, e.g. 'csv', 'json'.
    * @param bool $ret
    *   Set to TRUE if the response should be returned rather than echoed.
+   * @param string $resource
+   *   Resource the request is for. Calculated from the request if not
+   *   specified.
    * @param bool $requestIsRawString
    *   Set to TRUE if the request is a raw string to be sent as-is rather than
    *   an object to be encoded as a string.
@@ -376,17 +379,19 @@ class RestApiElasticsearch {
   private function applyEsPermissionsQuery(&$postObj) {
     $filters = [];
     // Apply limit to current user if appropriate.
-    if (!empty($this->esConfig['limit_to_own_data']) || RestObjects::$scope === 'user'  || RestObjects::$scope === 'userWithinWebsite') {
-      if (empty(RestObjects::$clientUserId)) {
+    if (!empty(RestObjects::$esConfig['limit_to_own_data']) || RestObjects::$scope === 'user'  || RestObjects::$scope === 'userWithinWebsite') {
+      if (empty(RestObjects::$clientUserId) && empty(RestObjects::$esConfig['allow_anonymous'])) {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'No user_id available for my records report.');
       }
-      $filters[] = [
-        'term' => ['metadata.created_by_id' => RestObjects::$clientUserId],
-      ];
+      if (!empty(RestObjects::$clientUserId)) {
+        $filters[] = [
+          'term' => ['metadata.created_by_id' => RestObjects::$clientUserId],
+        ];
+      }
     }
 
     // Apply limit to current website if appropriate.
-    if (RestObjects::$scope === 'userWithinWebsite' || !empty($this->esConfig['limit_to_website'])) {
+    if (RestObjects::$scope === 'userWithinWebsite' || !empty(RestObjects::$esConfig['limit_to_website'])) {
       if (!RestObjects::$clientWebsiteId) {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'No website_id available for website limited report.');
       }
@@ -791,11 +796,9 @@ class RestApiElasticsearch {
       $format = "";
     }
     // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['event'];
-    $start = isset($root['date_start']) ? $root['date_start'] :
-      (isset($root['event-date_start']) ? $root['event-date_start'] : '');
-    $end = isset($root['date_end']) ? $root['date_end'] :
-      (isset($root['event-date_end']) ? $root['event-date_end'] : '');
+    $root = $doc['key'] ?? $doc['event'];
+    $start = $root['date_start'] ?? ($root['event-date_start'] ?? '');
+    $end = $root['date_end'] ?? ($root['event-date_end'] ?? '');
     if (preg_match('/^\-?\d+$/', $start)) {
       $start = date('d/m/Y', $start / 1000);
     }
@@ -930,7 +933,7 @@ class RestApiElasticsearch {
    */
   private function esGetSpecialFieldLat(array $doc, array $params) {
     // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    $root = $doc['key'] ?? $doc['location'];
     if (empty($root['point'])) {
       return 'n/a';
     }
@@ -948,7 +951,7 @@ class RestApiElasticsearch {
       // Implemented as the default.
       case 'nssuffix':
       default:
-        $precision = isset($params[1]) ? $params[1] : 3;
+        $precision = $params[1] ?? 3;
         $ns = $coords[0] >= 0 ? 'N' : 'S';
         $lat = number_format(abs($coords[0]), $precision);
         return "$lat$ns";
@@ -968,7 +971,7 @@ class RestApiElasticsearch {
    */
   private function esGetSpecialFieldLatLon(array $doc, array $params) {
     // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    $root = $doc['key'] ?? $doc['location'];
     if (empty($root['point'])) {
       return 'n/a';
     }
@@ -1066,7 +1069,7 @@ class RestApiElasticsearch {
    */
   private function esGetSpecialFieldLon(array $doc, array $params) {
     // Check in case fields are in composite agg key.
-    $root = isset($doc['key']) ? $doc['key'] : $doc['location'];
+    $root = $doc['key'] ?? $doc['location'];
     if (empty($root['point'])) {
       return 'n/a';
     }
@@ -1084,7 +1087,7 @@ class RestApiElasticsearch {
       // Implemented as the default.
       case "ewsuffix":
       default:
-        $precision = isset($params[1]) ? $params[1] : 3;
+        $precision = $params[1] ?? 3;
         $ew = $coords[1] >= 0 ? 'E' : 'W';
         $lon = number_format(abs($coords[1]), $precision);
         return "$lon$ew";
@@ -1277,8 +1280,8 @@ class RestApiElasticsearch {
    *   Combined comment string.
    */
   private function esGetSpecialFieldSampleOccurrenceComment(array $doc, array $params) {
-    $oComment = isset($doc['occurrence']['occurrence_remarks']) ? $doc['occurrence']['occurrence_remarks'] : '';
-    $sComment = isset($doc['event']['event_remarks']) ? $doc['event']['event_remarks'] : '';
+    $oComment = $doc['occurrence']['occurrence_remarks'] ?? '';
+    $sComment = $doc['event']['event_remarks'] ?? '';
     if (!empty($params) && in_array("notab", $params)) {
       $oComment = str_replace("\t", ' ', $oComment);
       $sComment = str_replace("\t", ' ', $sComment);
@@ -1934,6 +1937,8 @@ class RestApiElasticsearch {
     }
     if ($isSearch) {
       $this->applyEsPermissionsQuery($postObj);
+      // Ensure counts are accurate, not limited to 10K.
+      $postObj->track_total_hits = TRUE;
     }
     if ($format === 'csv') {
       $csvTemplate = $this->getEsCsvTemplate();
@@ -2140,7 +2145,7 @@ SQL;
    *   File details, array containing filename and handle.
    */
   private function openPagingFile($format) {
-    $uniqId = isset($_GET['uniq_id']) ? $_GET['uniq_id'] : $_GET['scroll_id'];
+    $uniqId = $_GET['uniq_id'] ?? $_GET['scroll_id'];
     $cache = Cache::instance();
     $info = $cache->get("es-paging-$uniqId");
     if ($info === NULL) {
@@ -2234,6 +2239,15 @@ SQL;
       kohana::log('error', 'URL: ' . $actualUrl);
       kohana::log('error', 'Query: ' . $postData);
       kohana::log('error', 'Response: ' . $response);
+      if (!empty(RestObjects::$clientSystemId)) {
+        kohana::log('error', 'ClientSystemId: ' . RestObjects::$clientSystemId);
+      }
+      if (!empty(RestObjects::$clientUserId)) {
+        kohana::log('error', 'ClientUserId: ' . RestObjects::$clientUserId);
+      }
+      if (!empty(RestObjects::$clientWebsiteId)) {
+        kohana::log('error', 'ClientWebsiteId: ' . RestObjects::$clientWebsiteId);
+      }
       RestObjects::$apiResponse->fail('Internal server error', 500, json_encode($error));
     }
     curl_close($session);
@@ -2257,7 +2271,7 @@ SQL;
     if ($this->pagingMode === 'scroll' && $this->pagingModeState === 'initial') {
       $file['scroll_id'] = $data['_scroll_id'];
       // ES6/7 tolerance.
-      $file['total'] = isset($data['hits']['total']['value']) ? $data['hits']['total']['value'] : $data['hits']['total'];
+      $file['total'] = $data['hits']['total']['value'] ?? $data['hits']['total'];
     }
     elseif ($this->pagingMode === 'scroll' && $this->pagingModeState === 'nextPage') {
       $file['scroll_id'] = $_GET['scroll_id'];
