@@ -2,12 +2,13 @@
     title="List of taxa for a scratchpad"
     description="Lists details for all taxa identified by a scratchpad list. Includes hierarchical children.
       Designed to link to the [sensitivity scratchpad] control on a data entry form.">
-  <query>
+  <query taxa_taxon_lists_id_field="cttl.preferred_taxa_taxon_list_id">
     SELECT DISTINCT #columns#
     FROM scratchpad_list_entries sle
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=sle.entry_id
     JOIN cache_taxon_paths ctp ON ctp.path @> ARRAY[cttl.taxon_meaning_id]
     JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
+    #joins#
     WHERE sle.scratchpad_list_id=#scratchpad_list_id#
   </query>
   <params>
@@ -22,6 +23,8 @@
     <param name="preferred" display="preferred" description="Set to true to limit to preferred name entries." default="" datatype="boolean" >
       <where>cttlany.preferred=true</where>
     </param>
+    <param name="taxattrs" display="Taxon attribute list" datatype="taxattrs" default=""
+           description="Comma separated list of taxa taxon list attribute IDs to include as columns in the report" />
   </params>
   <columns>
     <column name="taxa_taxon_list_id" display="Taxa taxon list ID" sql="cttlany.id" datatype="integer" in_count="true" />
@@ -32,6 +35,8 @@
     <column name="prefered_taxa_taxon_list_id" display="Preferred_taxa taxon list ID" sql="cttlany.preferred_taxa_taxon_list_id" datatype="integer" />
     <column name="preferred_taxon" display="Accepted name" sql="cttlany.preferred_taxon" datatype="text" />
     <column name="preferred_authority" display="Accepted name authority" sql="cttlany.preferred_authority" datatype="text" />
+    <column name="taxon_group_id" display="Taxon group ID" sql="cttlany.taxon_group_id" datatype="integer" />
+    <column name="taxon_group" display="Taxon group" sql="cttlany.taxon_group" datatype="text" />
     <column name="search_code" display="Accepted name" sql="cttlany.search_code" datatype="text"  />
     <column name="external_key" display="Accepted name" sql="cttlany.external_key" datatype="text"  />
     <column name="organism_key" display="Accepted name" sql="cttlany.organism_key" datatype="text"  />
