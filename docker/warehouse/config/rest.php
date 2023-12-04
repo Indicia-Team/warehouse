@@ -82,7 +82,7 @@ $config['authentication_methods'] = [
  * the REST API can act as a proxy to avoid having to expose all the public
  * APIs. The proxy can point to index aliases to limit the search filter.
  */
-$config['elasticsearch_version'] = '8.10';
+$config['elasticsearch_version'] = '8.11';
 $config['elasticsearch'] = [
   'es-occurrences' => [
     'index' => 'occurrence_brc1_index',
