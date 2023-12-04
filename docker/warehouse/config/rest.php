@@ -127,6 +127,7 @@ $config['clients'] = [
         // Project for Elastic integration.
         'id' => '{{ Project Occ }}',
         'sharing' => 'reporting',
+        'website_id' => 1,
         // All reports, with restricted report access.
         'resource_options' => [
           'reports' => [
@@ -140,6 +141,7 @@ $config['clients'] = [
         // Project for tracking deletions for Elastic integration.
         'id' => '{{ Project OccDel }}',
         'sharing' => 'reporting',
+        'website_id' => 1,
         'resource_options' => [
           'reports' => [
             'authorise' => [
@@ -152,6 +154,7 @@ $config['clients'] = [
         // Project for Elastic integration with samples.
         'id' => '{{ Project Smp }}',
         'sharing' => 'reporting',
+        'website_id' => 1,
         // All reports, with restricted report access.
         'resource_options' => [
           'reports' => [
@@ -165,6 +168,7 @@ $config['clients'] = [
         // Project for Elastic integration with samples.
         'id' => '{{ Project SmpDel }}',
         'sharing' => 'reporting',
+        'website_id' => 1,
         // All reports, with restricted report access.
         'resource_options' => [
           'reports' => [
