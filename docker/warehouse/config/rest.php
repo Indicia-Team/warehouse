@@ -90,7 +90,7 @@ $config['elasticsearch'] = [
     'allowed' => [
       'get' => [
         '/^_search/' => 'GET requests to the search API (/_search?...)',
-        '/^_mapping\/doc/' => 'GET requests to the mappings API (/_mapping/doc?...)',
+        '/^_mapping/' => 'GET requests to the mappings API (/_mapping?...)',
       ],
       'post' => [
         '/^_search/' => 'POST requests to the search API (/_search?...)',
@@ -105,7 +105,7 @@ $config['elasticsearch'] = [
     'allowed' => [
       'get' => [
         '/^_search/' => 'GET requests to the search API (/_search?...)',
-        '/^_mapping\/doc/' => 'GET requests to the mappings API (/_mapping/doc?...)',
+        '/^_mapping/' => 'GET requests to the mappings API (/_mapping?...)',
       ],
       'post' => [
         '/^_search/' => 'POST requests to the search API (/_search?...)',
