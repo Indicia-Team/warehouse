@@ -2475,6 +2475,7 @@ class Rest_Controller extends Controller {
       }
       catch (JWT\SignatureInvalidException $e) {
         kohana::log('debug', 'Token decode failed');
+        kohana::log('debug', $e->getMessage());
         RestObjects::$apiResponse->fail('Unauthorized', 401);
       }
       catch (JWT\ExpiredException $e) {
