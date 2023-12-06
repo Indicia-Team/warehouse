@@ -186,7 +186,6 @@ class rest_crud {
    *   Field list from configuration for entity or join.
    * @param string $alias
    *   Table alias to use.
-   *
    */
   private static function getFieldDefsForOneTable(array $fields, $alias) {
     foreach ($fields as $fieldDef) {
@@ -222,11 +221,20 @@ class rest_crud {
       // Apply query string parameters.
       foreach ($_GET as $param => $value) {
         if (isset(self::$fieldDefs[$param])) {
-          if (in_array(self::$fieldDefs[$param]['type'], ['string', 'date', 'time', 'json', 'boolean'])) {
+          if (in_array(self::$fieldDefs[$param]['type'], [
+            'string',
+            'date',
+            'time',
+            'json',
+            'boolean',
+          ])) {
             RestObjects::$db->connect();
             $value = pg_escape_literal(RestObjects::$db->getLink(), $value);
           }
-          elseif (in_array(self::$fieldDefs[$param]['type'], ['integer', 'float'])) {
+          elseif (in_array(self::$fieldDefs[$param]['type'], [
+            'integer',
+            'float',
+          ])) {
             if (!is_numeric($value)) {
               RestObjects::$apiResponse->fail('Bad Request', 400, "Invalid filter on numeric field $param");
             }
@@ -571,6 +579,8 @@ SQL;
    *   Model name.
    * @param array $postObj
    *   Posted submission to convert.
+   * @param int $websiteId
+   *   Website ID.
    *
    * @return array
    *   Converted submission.
@@ -667,8 +677,8 @@ SQL;
     if (isset($headers['If-Match'])) {
       $table = inflector::plural($entity);
       // A precondition based on ETag which must be met.
-      $ETag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=$id")->current()->xmin;
-      if ($headers['If-Match'] !== $ETag) {
+      $eTag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=$id")->current()->xmin;
+      if ($headers['If-Match'] !== $eTag) {
         RestObjects::$apiResponse->fail('Precondition Failed', 412, 'If-Match condition not met. Record may have been updated by another user.');
       }
     }
@@ -704,7 +714,11 @@ SQL;
       }
       if (substr($field, -10) === 'date_start') {
         $prefix = substr($field, 0, strlen($field) - 10);
-        $values["{$prefix}date"] = vague_date::vague_date_to_string([$value, $values["{$prefix}date_end"], $values["{$prefix}date_type"]]);
+        $values["{$prefix}date"] = vague_date::vague_date_to_string([
+          $value,
+          $values["{$prefix}date_end"],
+          $values["{$prefix}date_type"],
+        ]);
       }
     }
     return $values;
@@ -725,7 +739,11 @@ SQL;
     $table = inflector::plural($entity);
     $href = url::base() . "index.php/services/rest/$table/$responseMetadata[id]";
     $r = [
-      'values' => self::getValuesForResponse($responseMetadata, ['id', 'created_on', 'updated_on']),
+      'values' => self::getValuesForResponse($responseMetadata, [
+        'id',
+        'created_on',
+        'updated_on',
+      ]),
       'href' => $href,
     ];
     // Recursively process sub-model info.
@@ -764,8 +782,8 @@ SQL;
     if ($id) {
       $table = inflector::plural($entity);
       // ETag to provide version check on updates.
-      $ETag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=$id")->current()->xmin;
-      header("ETag: $ETag");
+      $eTag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=$id")->current()->xmin;
+      header("ETag: $eTag");
       // Include href and basic record metadata.
       $responseMetadata = $obj->getSubmissionResponseMetadata();
       return self::getResponseMetadata($responseMetadata);
