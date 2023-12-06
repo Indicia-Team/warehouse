@@ -97,7 +97,8 @@ services:
                 condition: service_started
 
     # The Geoserver container
-    # Accessible on http://localhost:8090
+    # Accessible on http://localhost:8090/geoserver
+    # Default user:password is admin:geoserver
     geoserver:
         image: docker.osgeo.org/geoserver:2.23.2
         volumes:
