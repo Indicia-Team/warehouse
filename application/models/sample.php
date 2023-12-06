@@ -203,7 +203,7 @@ class Sample_Model extends ORM_Tree {
         // Even though our location_id is empty, still mark it as unvalidated
         // so it gets copied over.
         $this->unvalidatedFields[] = 'location_id';
-        if (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='') {
+        if (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system'] !== '') {
           $system = $orig_values['entered_sref_system'];
           $array->add_rules('entered_sref', "sref[$system]");
           $array->add_rules('entered_sref_system', 'sref_system');
@@ -250,10 +250,43 @@ class Sample_Model extends ORM_Tree {
    */
   protected function preSubmit() {
     $this->preSubmitFillInVagueDate();
+    $this->preSubmitInheritFromParent();
     $this->preSubmitFillInGeom();
     $this->preSubmitFillInLicence();
     $this->preSubmitTidySref();
     return parent::presubmit();
+  }
+
+  /**
+   * If a child sample, may need to inherit some properties.
+   *
+   * E.g. can submit a child sample without a survey ID and collect from the
+   * parent.
+   */
+  protected function preSubmitInheritFromParent() {
+    if (!empty($this->submission['fields']['parent_id']) && !empty($this->submission['fields']['parent_id']['value'])) {
+      $data = [];
+      foreach ($this->submission['fields'] as $key => $value) {
+        if (isset($value['value'])) {
+          $data[$key] = $value['value'];
+        }
+      }
+      $parent = ORM::factory('sample', $data['parent_id']);
+      if (empty($data['survey_id'])) {
+        $this->submission['fields']['survey_id'] = ['value' => $parent->survey_id];
+      }
+      if (empty($data['entered_sref_system'])) {
+        $this->submission['fields']['entered_sref_system'] = ['value' => $parent->entered_sref_system];
+      }
+      if (empty($data['licence_id'])) {
+        $this->submission['fields']['licence_id'] = ['value' => $parent->licence_id];
+      }
+      if (empty($data['date_type']) && empty($data['date'])) {
+        $this->submission['fields']['date_start'] = ['value' => $parent->date_start];
+        $this->submission['fields']['date_end'] = ['value' => $parent->date_end];
+        $this->submission['fields']['date_type'] = ['value' => $parent->date_type];
+      }
+    }
   }
 
   /**
