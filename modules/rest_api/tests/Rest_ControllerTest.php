@@ -1133,6 +1133,42 @@ KEY;
   }
 
   /**
+   * Test posting a parent/child sample where the child inherits date etc.
+   */
+  public function testJwtSamplePostParentWithPartialChild() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref_system' => 4326,
+        'entered_sref' => '51.2, 1.1',
+        'date' => '01/08/2020',
+      ],
+      'samples' => [
+        [
+          'values' => [
+            'entered_sref' => '51.1, 1.11',
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data,
+    );
+    $this->assertEquals(201, $response['httpCode'], 'Submitting a partial sample child failed.');
+    $parent = ORM::factory('sample', $response['response']['values']['id']);
+    $this->assertEquals(1, count($parent->children), 'Submitting a parent sample with partial child sample did not result in 1 child being saved.');
+    $child = $parent->children[0];
+    $this->assertEquals(1, $child->survey_id, "Partial child sample did not inherit parent's survey_id.");
+    $this->assertEquals('2020-08-01', $child->date_start, "Partial child sample did not inherit parent's date_start.");
+    $this->assertEquals('2020-08-01', $child->date_end, "Partial child sample did not inherit parent's date_end.");
+    $this->assertEquals('D', $child->date_type, "Partial child sample did not inherit parent's date_type.");
+  }
+
+  /**
    * Test submission of a single attribute value.
    */
   public function testJwtSamplePostAttr() {
