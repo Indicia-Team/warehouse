@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -19,6 +19,8 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+defined('SYSPATH') or die('No direct script access.');
+
 /**
  * Base class for the models which represent a name.
  *
@@ -29,10 +31,23 @@ class Base_Name_Model extends ORM_Tree {
   // Set this in the subclass to the field holding the list id.
   protected $list_id_field;
 
+  /**
+   * Parse a list of names from the warehouse UI.
+   *
+   * Parses either common names or synonyms from the warehouse UI form into a
+   * list of tokens.
+   *
+   * @param string $value
+   *   Submitted value.
+   * @param string $parser
+   *   Name of the function to process each tokenised line.
+   *
+   * @return array
+   *   Array of tokenised names.
+   */
   protected function parseRelatedNames($value, $parser) {
-    $arrLine = explode("\n", trim($value));
+    $arrLine = explode("\n", trim($value ?? ''));
     $arrNames = [];
-
     foreach ($arrLine as $line) {
       if (trim($line) == '') {
         break;
