@@ -29,14 +29,18 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @var string
  */
+<<<<<<< HEAD
 $config['version'] = '8.24.0';
+=======
+$config['version'] = '8.23.29';
+>>>>>>> hotfix-apptaxa
 
 /**
  * Version release date.
  *
  * @var string
  */
-$config['release_date'] = '2023-12-08';
+$config['release_date'] = '2023-12-10';
 
 /**
  * Link to the code repository downloads page.
