@@ -33,7 +33,7 @@
           description="Comma separated list of taxa taxon list attribute IDs to include as columns in the report" />
   </params>
   <columns>
-    <column name="id" sql="cts.id" datatype="integer" />
+    <column name="id" sql="cts.taxa_taxon_list_id" datatype="integer" />
     <column name="taxon" sql="replace(cts.original, '[unassigned] ', '')" datatype="text" />
     <column name="authority" sql="cts.authority" datatype="text" />
     <column name="language_iso" sql="cts.language_iso" datatype="text" />
