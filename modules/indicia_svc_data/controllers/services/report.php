@@ -73,41 +73,12 @@ class Report_Controller extends Data_Service_Base_Controller {
   */
   public function requestReport() {
     try {
-      $tm = microtime(true);
+      $tm = microtime(TRUE);
       $this->setup();
       $this->entity = 'record';
+      // Handle request needs to be after headers and BOM as streamable formats
+      // output straight to buffer.
       $this->handle_request();
-      $mode = $this->get_output_mode();
-      switch ($mode) {
-        case 'json':
-        case 'csv':
-        case 'tsv':
-        case 'xml':
-        case 'gpx':
-        case 'kml':
-          $extension = $mode;
-          break;
-
-        case 'dwca':
-          $extension = 'zip';
-          break;
-
-        default:
-          $extension = 'txt';
-      }
-      if (array_key_exists('filename', $_REQUEST)) {
-        $downloadfilename = $_REQUEST['filename'];
-      }
-      else {
-        $downloadfilename = 'download';
-      }
-      header("Content-Disposition: attachment; filename=\"$downloadfilename.$extension\"");
-      if ($mode === 'csv') {
-        // Prepend a byte order marker, so Excel recognises the CSV file as UTF8.
-        if (!empty($this->response)) {
-          echo chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF'));
-        }
-      }
       $this->send_response();
       if (class_exists('request_logging')) {
         $subtypes = [];
@@ -177,7 +148,9 @@ class Report_Controller extends Data_Service_Base_Controller {
       $params = $this->getRawGET();
     }
     try {
-      $data = $this->reportEngine->requestReport($rep, $src, 'xml', $params);
+      // Either load full data array, or just database result to iterate
+      // through which uses less memory, depending on format.
+      $data = $this->reportEngine->requestReport($rep, $src, 'xml', $params, !in_array($this->get_output_mode(), self::STREAMABLE_FORMATS));
     }
     catch (Exception $e) {
       // Store the query for debug ease in DwC-a mode.

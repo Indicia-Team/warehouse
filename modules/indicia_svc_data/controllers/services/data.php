@@ -1202,7 +1202,10 @@ class Data_Controller extends Data_Service_Base_Controller {
         return $r;
       }
       else {
-        $r = $this->db->get()->result_array(FALSE);
+        $dbResult = $this->db->get();
+        // Either load full data array, or just database result to iterate
+        // through which uses less memory, depending on format.
+        $r = in_array($this->get_output_mode(), self::STREAMABLE_FORMATS) ? $dbResult->result() : $dbResult->result_array(FALSE);
         kohana::log('debug', "Query ran for service call:\n" . $this->db->last_query());
         // If we got no record but asked for a specific one, check if this was
         // a permissions issue?
