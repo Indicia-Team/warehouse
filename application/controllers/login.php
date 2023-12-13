@@ -49,6 +49,7 @@ class Login_Controller extends Indicia_Controller {
         $user->__set('forgotten_password_key', NULL);
         $user->save();
         $url = arr::remove('requested_page', $_SESSION);
+        $url = $url ?? '';
         // Ensure that the session is being saved to the Cookie properly.
         $this->session->write_close();
         if (!cookie::get('kohanasession')) {
