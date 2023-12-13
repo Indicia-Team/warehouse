@@ -196,13 +196,7 @@ TXT;
         break;
 
       default:
-        // Code to load from a view.
-        if (file_exists('views', "services/data/$entity/$mode")) {
-          $this->response = $this->view_encode($records, View::factory("services/data/$entity/$mode"));
-        }
-        else {
-          throw new EntityAccessError("$this->entity data cannot be read using mode $mode.", 1002);
-        }
+        throw new EntityAccessError("$this->entity data cannot be read using mode $mode.", 1002);
     }
   }
 
@@ -552,19 +546,6 @@ META;
     }
     $output .= $newline;
     return $output;
-  }
-
-  /**
-  * Get the results of the query using the supplied view to render each row.
-  */
-  protected function view_encode($array, $view)
-  {
-    $output = '';
-    foreach ($array as $row)
-    {
-      $view->row= $row;
-      $output .= $view->render();
-    }
   }
 
   /**
