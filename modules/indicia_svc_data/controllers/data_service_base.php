@@ -473,17 +473,17 @@ META;
               'type' => 'string',
               'null' => TRUE,
             ];
-            // Hide the component fields. Don't hide if autodef === false as
-            // this is an explicitly added report column.
-            if ($this->view_columns[$prefix . 'date_start']['autodef'] ?? NULL !== FALSE) {
-              $this->view_columns[$prefix . 'date_start']['visible'] = 'false';
-            }
-            if ($this->view_columns[$prefix . 'date_end']['autodef'] ?? NULL !== FALSE) {
-              $this->view_columns[$prefix . 'date_end']['visible'] = 'false';
-            }
-            if ($this->view_columns[$prefix . 'date_type']['autodef'] ?? NULL !== FALSE) {
-              $this->view_columns[$prefix . 'date_type']['visible'] = 'false';
-            }
+          }
+          // Hide the component fields. Don't hide if autodef === false as
+          // this is an explicitly added report column.
+          if ($this->view_columns[$prefix . 'date_start']['autodef'] ?? NULL !== FALSE) {
+            $this->view_columns[$prefix . 'date_start']['visible'] = 'false';
+          }
+          if ($this->view_columns[$prefix . 'date_end']['autodef'] ?? NULL !== FALSE) {
+            $this->view_columns[$prefix . 'date_end']['visible'] = 'false';
+          }
+          if ($this->view_columns[$prefix . 'date_type']['autodef'] ?? NULL !== FALSE) {
+            $this->view_columns[$prefix . 'date_type']['visible'] = 'false';
           }
         }
       }
