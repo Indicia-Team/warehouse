@@ -86,7 +86,7 @@ class Occurrence_Model extends ORM {
    * Indicates database trigger on table which accesses a sequence.
    *
    * Set to true as set_occurrence_to_training_from_sample_trigger was
-   * added. 
+   * added.
    *
    * @var bool
    */
@@ -220,34 +220,6 @@ class Occurrence_Model extends ORM {
   }
 
   /**
-   * Retrieve date of last determination.
-   *
-   * @return string
-   *   Date as string.
-   */
-  private function getWhenRecordLastDetermined() {
-    if (empty($this->id)) {
-      // Use now as default for new records - should not really happen.
-      return date("Ymd H:i:s");
-    }
-    else {
-      $rows = $this->db
-        ->select('max(updated_on) as last_update')
-        ->from('determinations')
-        ->where([
-          'occurrence_id' => $this->id,
-          'deleted' => 'f',
-        ])->get()->result_array();
-    }
-    if (count($rows) > 0 && !empty($rows[0]->last_update)) {
-      return $rows[0]->last_update;
-    }
-    else {
-      return $this->created_on;
-    }
-  }
-
-  /**
    * Handle cases where an existing record is redetermined.
    *
    * This includes logging of the change to the determinations table and
@@ -291,20 +263,6 @@ class Occurrence_Model extends ORM {
       $this->db->query($sql);
       $array->last_verification_check_date = NULL;
     }
-  }
-
-  /**
-   * Return the user ID associated with a person ID.
-   *
-   * @param int $personId
-   *   Primary key of a person (people.id).
-   *
-   * @return int
-   *   User ID.
-   */
-  private function userIdFromPersonId($personId) {
-    $r = $this->db->select('id')->from('users')->where('person_id', $personId)->get()->current();
-    return $r->id;
   }
 
   /**
@@ -360,81 +318,6 @@ class Occurrence_Model extends ORM {
       }
     }
     return $userId;
-  }
-
-  /**
-   * Calculates the value to populate in determinations.person_name.
-   *
-   * @return string
-   *   Name to store for previous determination.
-   */
-  private function getPreviousDeterminerName() {
-    $oldValues = $this->as_array();
-    $determinerName = '';
-    // Work through a list of possible places to find a determiner name in
-    // priority order.
-    // Occurrences.determiner_id.
-    if (!empty($oldValues['determiner_id'])) {
-      return $this->getPersonNameFromPersonId($oldValues['determiner_id']);
-    }
-    // Attribute values det_*_name.
-    $attrValues = $this->db
-      ->select('v.text_value', 'a.system_function')
-      ->from('occurrence_attribute_values as v')
-      ->join('occurrence_attributes as a', 'a.id', 'v.occurrence_attribute_id')
-      ->where([
-        'v.occurrence_id' => $oldValues['id'],
-      ])
-      ->like('a.system_function', 'det_%')
-      ->get();
-    $detData = [];
-    foreach ($attrValues as $attrValue) {
-      $detData[$attrValue['system_function']] = $attrValue['text_value'];
-    }
-    if (!empty($detData['det_full_name'])) {
-      return $detData['det_full_name'];
-    }
-    if (!empty($detData['det_surname']) && !empty($detData['det_first_name'])) {
-      return $detData['det_surname'] . ', ' . $detData['det_first_name'];
-    }
-    if (!empty($detData['det_surname'])) {
-      return $detData['det_surname'];
-    }
-    // Cached recorders - this gets the value from multiple possible sources so
-    // simplifies the code required here.
-    $recorders = $this->db
-      ->select('recorders')
-      ->from('cache_samples_nonfunctional')
-      ->where('id', $oldValues['sample_id'])
-      ->get()
-      ->current();
-    if (!empty($recorders) && !empty($recorders->recorders)) {
-      return $recorders->recorders;
-    }
-    // If after working through all the rules we still haven't found a person
-    // name, then set to 'Unknown'.
-    if (empty($determinerName)) {
-      $determinerName = 'Unknown';
-    }
-    return $determinerName;
-  }
-
-  /**
-   * Retrieves the name of a person from their person_id.
-   *
-   * @param int $personId
-   *   Primary key of the person (people.id).
-   *
-   * @return string
-   *   Formatted name.
-   */
-  private function getPersonNameFromPersonId($personId) {
-    $p = $this->db
-      ->select('first_name', 'surname')
-      ->from('people')
-      ->where('id', $personId)
-      ->get()->current();
-    return "$p->surname, $p->first_name";
   }
 
   /**
