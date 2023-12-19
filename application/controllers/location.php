@@ -497,12 +497,12 @@ class Location_Controller extends Gridview_Base_Controller {
    */
   private function getDbaseRecordFieldValue(Record $record, $name) {
     $value = $record->forceGetString($name);
-    $encoding = mb_detect_encoding($value, ['UTF-8', 'ISO-8859-1'], TRUE);
+    $encoding = mb_detect_encoding($value ?? '', ['UTF-8', 'ISO-8859-1'], TRUE);
     if ($encoding === 'ISO-8859-1') {
       // Convert from Latin1 to UTF8.
       $value = utf8_encode($value);
     }
-    return trim($value);
+    return trim($value ?? '');
   }
 
   function loadData($type, $data) {
