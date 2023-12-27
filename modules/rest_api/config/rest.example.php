@@ -164,6 +164,7 @@ $config['elasticsearch'] = [
       'post' => [
         '/^_search/' => 'POST requests to the search API (/_search?...)',
         '/^doc\/.*\/_update/' => 'POSTed document updates',
+        '/^_update_by_query/' => 'POSTed multi-document updates',
       ],
     ],
   ],
