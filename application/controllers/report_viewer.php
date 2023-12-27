@@ -22,14 +22,12 @@
 /**
  * Controller providing access to the list of reports and report running.
  */
-class Report_viewer_Controller extends Indicia_Controller
-{
+class Report_viewer_Controller extends Indicia_Controller {
 
   private $repServ;
 
-  public function __construct()
-  {
-    $this->pageTitle = 'Reports';
+  public function __construct() {
+    $this->pagetitle = 'Report browser';
     parent::__construct();
     // As we're local, we just call the class report with suppress set to true, which will prevent
     // it from writing to the screen.
@@ -37,18 +35,19 @@ class Report_viewer_Controller extends Indicia_Controller
   }
 
   /**
-  * <p> Index page - basically exists to let one pick a report to display. This can be in a number
-  * of ways - firstly it lists the reports installed on the indicia Core. Secondly it should allow
-  * the user to specify a remote report by url. Thirdly it should allow the user to provide their
-  * own report. </p>
+  * <p> Index page.
+  *
+  * Basically exists to let one pick a report to display. This can be in a
+  * number of ways - firstly it lists the reports installed on the indicia
+  * Core. Secondly it should allow the user to specify a remote report by url.
+  * Thirdly it should allow the user to provide their own report.
   */
-  public function index()
-  {
+  public function index() {
     $view = new View('report/index');
 
-    $this->template->title = "Report Browser";
+    $this->template->title = $this->pagetitle;
     $this->template->content = $view;
-    $this->page_breadcrumbs[] = $this->template->title;
+    $this->page_breadcrumbs[] = $this->pagetitle;
   }
 
   public function load() {
