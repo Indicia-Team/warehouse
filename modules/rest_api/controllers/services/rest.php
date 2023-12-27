@@ -2334,6 +2334,7 @@ class Rest_Controller extends Controller {
     }
     if (!$this->authenticated) {
       // Either the authentication wrong, or using HTTP instead of HTTPS.
+      kohana::log('debug', "Elasticsearch request to $this->elasticProxy did not meet criteria for any valid authentication method");
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
     }
   }
@@ -2662,9 +2663,11 @@ class Rest_Controller extends Controller {
   private function authenticateUsingDirectClient() {
     $config = Kohana::config('rest.clients');
     $authHeader = $this->getAuthHeader();
+    kohana::log('debug', "authHeader: $authHeader");
     if ($authHeader && substr_count($authHeader, ':') === 3) {
       [$u, $clientSystemId, $h, $secret] = explode(':', $authHeader);
       if ($u !== 'USER' || $h !== 'SECRET') {
+        kohana::log('debug', "Not user secret");
         return;
       }
     }
@@ -3376,10 +3379,12 @@ SQL;
 SELECT count(*) FROM $table WHERE deleted=false AND id=$id
 SQL;
       $check = RestObjects::$db->query($sql)->current();
+      kohana::log('debug', "Tried to update or delete $table, $id");
+      kohana::log('debug', "Check SQL: $sql");
       if ($check->count === '0') {
-        RestObjects::$apiResponse->fail('Not Found', 404, 'Attempt to DELETE missing or already deleted record.');
+        RestObjects::$apiResponse->fail('Not Found', 404, 'Attempt to update or delete a missing or already deleted record.');
       }
-      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Attempt to PUT or DELETE record from another website.');
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Attempt to update or delete a record from another website.');
     }
   }
 
