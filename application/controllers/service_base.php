@@ -335,12 +335,16 @@ class Service_Base_Controller extends Controller {
       $view->code = $e->getCode();
       $view->render(TRUE);
     }
+    elseif ($mode === 'csv' || $mode === 'tsv') {
+      echo "status: $statusCode\n";
+      echo "$message\n";
+    }
     else {
       header("Content-Type: application/json");
-      $response = array(
+      $response = [
         'error' => $message,
         'code' => $e->getCode(),
-      );
+      ];
       if ($transaction_id) {
         $response['transaction_id'] = $transaction_id;
       }

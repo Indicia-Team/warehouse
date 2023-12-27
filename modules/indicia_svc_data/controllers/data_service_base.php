@@ -25,6 +25,15 @@
 class Data_Service_Base_Controller extends Service_Base_Controller {
 
   /**
+   * Streamable formats which are output one row at a time into the buffer.
+   *
+   * This ensures low memory usage during large CSV downloads.
+   *
+   * @var array
+   */
+  protected const STREAMABLE_FORMATS = ['csv', 'tsv'];
+
+  /**
    * More details on a failure, e.g. SQL if a query fails.
    *
    * @var string
@@ -37,6 +46,14 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
    * @var string
    */
   protected $entity;
+
+  /**
+   * ORM object for the entity being accessed, created on demand.
+   *
+   * @var ORM
+   */
+  protected $model;
+
 
   /**
    * List of columns being displayed.
@@ -72,6 +89,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     kohana::log('debug', print_r($_REQUEST, TRUE));
     $this->authenticate('read');
     $mode = $this->get_output_mode();
+    $this->setHeaders($mode);
     // Read_data will return an assoc array containing records and/or parameterRequest.
     try {
       $records = $this->read_data();
@@ -118,13 +136,13 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         break;
 
       case 'csv':
+        // Headers must be sent before any streamed data.
         $this->response = $this->csv_encode($records);
-        $this->content_type = 'Content-Type: text/comma-separated-values';
         break;
 
       case 'tsv':
+        // Headers already done for CSV/TSV streaming.
         $this->response = $this->tsv_encode($records);
-        $this->content_type = 'Content-Type: text/tab-separated-values';
         break;
 
       case 'nbn':
@@ -159,7 +177,7 @@ $this->failedRequestDetail
 TXT;
         }
         else {
-          $content = $this->csv_encode($records);
+          $content = $this->csv_encode($records, TRUE);
         }
         $zip = new ZipArchive();
         $filename = DOCROOT . 'extract/' . uniqid('dwca-download-') . '.zip';
@@ -186,13 +204,59 @@ TXT;
         break;
 
       default:
-        // Code to load from a view.
-        if (file_exists('views', "services/data/$entity/$mode")) {
-          $this->response = $this->view_encode($records, View::factory("services/data/$entity/$mode"));
-        }
-        else {
-          throw new EntityAccessError("$this->entity data cannot be read using mode $mode.", 1002);
-        }
+        throw new EntityAccessError("$this->entity data cannot be read using mode $mode.", 1002);
+    }
+  }
+
+  /**
+   * Set response headers.
+   *
+   * Includes:
+   *
+   * * Content disposition set to ensure downloads.
+   * * Default filename for downloads.
+   * * CSV Byte Order Marker if required.
+   *
+   * @param string $mode
+   *   Output format.
+   */
+  private function setHeaders($mode) {
+    switch ($mode) {
+      case 'json':
+      case 'csv':
+      case 'tsv':
+      case 'xml':
+      case 'gpx':
+      case 'kml':
+        $extension = $mode;
+        break;
+
+      case 'dwca':
+        $extension = 'zip';
+        break;
+
+      default:
+        $extension = 'txt';
+    }
+    $downloadfilename = $_REQUEST['filename'] ?? 'download';
+    header("Content-Disposition: attachment; filename=\"$downloadfilename.$extension\"");
+    // For streamed formats, send the header before the data. Other formats
+    // done later by service_base as the content type may change if there's an
+    // error.
+    switch ($mode) {
+      case 'csv':
+        header('Content-Type: text/comma-separated-values');
+        break;
+
+      case 'tsv':
+        header('Content-Type: text/tab-separated-values');
+    }
+    if ($mode === 'csv') {
+      // Prepend a byte order marker, so Excel recognises the CSV file as
+      // UTF8.
+      if (!empty($this->response)) {
+        echo chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF'));
+      }
     }
   }
 
@@ -284,59 +348,80 @@ META;
   /**
    * Encode the results of a query array as a csv string.
    */
-  protected function csv_encode($array) {
-    return $this->do_encode($array, 'csv');
+  protected function csv_encode($array, $return = FALSE) {
+    return $this->doEncode($array, 'csv', $return);
   }
 
   /**
    * Encode the results of a query array as a tsv (tab separated value) string.
    */
   protected function tsv_encode($array) {
-    return $this->do_encode($array, 'tsv');
+    return $this->doEncode($array, 'tsv');
   }
 
   /**
    * Encode the results of a query array as an NBN exchange format string
    */
   protected function nbn_encode($array) {
-    return $this->do_encode($array, 'nbn');
+    return $this->doEncode($array, 'nbn');
   }
 
   /**
-   * Encode an array using the supplied type of encoding.
+   * Encode an array using the supplied encoding format.
+   *
+   * The result is either returned, or for streamable text formats (csv and
+   * tsv) the result is sent to the output buffer.
+   *
+   * @return string
+   *   Will be empty for streamable formats.
    */
-  protected function do_encode($array, $type) {
-    $fn = "get_$type";
-    // Get the column titles in the first row
-    if (!is_array($array) || !isset($array['records']) || !is_array($array['records']) || count($array['records']) == 0)
+  private function doEncode($array, $format, $return = NULL) {
+    $fn = "get_$format";
+    if ($return === NULL) {
+      $return = !in_array($format, self::STREAMABLE_FORMATS);
+    }
+    // Get the column titles in the first row.
+    if (!is_array($array) || !isset($array['records']) || !is_iterable($array['records']) || count($array['records']) === 0) {
       return '';
-    $headers = array_keys($array['records'][0]);
-    if (isset($this->view_columns)){
-      $newheaders = array();
-      foreach ($headers as $header) {
-        if (isset($this->view_columns[$header])) {
-          if (isset($this->view_columns[$header]['display'])) {
-            $newheader = $this->view_columns[$header]['display'];
+    }
+    $headersDone = FALSE;
+    $rowsDone = 0;
+    foreach ($array['records'] as $row) {
+      // Tolerate a PG result row or an associative array.
+      $row = (array) $row;
+      if (!$headersDone) {
+        $vagueDateCols = $this->findVagueDateCols();
+      }
+      // The ReportEngine doesn't do vague date processing for streamable
+      // formats, so it needs to be done here, before the headers so the
+      // column title is output.
+      if (!$return) {
+        $this->addVagueDates($row, $vagueDateCols);
+      }
+      if (!$headersDone) {
+        $headersDone = TRUE;
+        $headers = array_keys($row);
+        if (isset($this->view_columns)) {
+          $newheaders = [];
+          foreach ($headers as $header) {
+            if (isset($this->view_columns[$header]) && (!isset($this->view_columns[$header]['visible']) || $this->view_columns[$header]['visible'] !== 'false')) {
+              $newheaders[] = $this->view_columns[$header]['display'] ?? $header;
+            }
           }
-          else {
-            $newheader = $header;
-          }
-          if (!isset($this->view_columns[$header]['visible']) || $this->view_columns[$header]['visible'] !== 'false') {
-            $newheaders[] = $newheader;
-          }
+          $headers = $newheaders;
+        }
+        if ($return) {
+          $result = $this->$fn($headers);
         }
         else {
-          $newheaders[] = $header;
+          echo $this->$fn($headers);
         }
       }
-      $headers = $newheaders;
-    }
-    $result = $this->$fn($headers);
-    foreach ($array['records'] as $row) {
+
       if (isset($this->view_columns)) {
-        $newrow = array();
+        $newrow = [];
         foreach ($row as $key => $value) {
-          if (isset($this->view_columns[$key])){
+          if (isset($this->view_columns[$key])) {
             if (!isset($this->view_columns[$key]['visible']) || $this->view_columns[$key]['visible'] !== 'false') {
               $newrow[] = $value;
             }
@@ -347,9 +432,83 @@ META;
         }
         $row = $newrow;
       }
-      $result .= $this->$fn(array_values($row));
+      $rowsDone++;
+      if ($return) {
+        $result .= $this->$fn(array_values($row));
+      }
+      else {
+        echo $this->$fn(array_values($row));
+        // Output the buffer every 1000 records.
+        if ($rowsDone % 1000 === 0) {
+          ob_flush();
+        }
+      }
     }
-    return $result;
+    return $result ?? '';
+  }
+
+  /**
+   * Search the view columns for vague date column sets.
+   *
+   * Identifies sets of columns called *date_start, *date_end, *date_type.
+   * For each, returns the *date field name in an array (the other field names
+   * can be calculated).
+   */
+  private function findVagueDateCols() {
+    $columnNames = array_keys($this->view_columns);
+    $dateTypeFields = preg_grep('/date_type$/', $columnNames);
+    $r = [];
+    if ($dateTypeFields) {
+      foreach ($dateTypeFields as $dateTypeField) {
+        $prefix = substr($dateTypeField, 0, strlen($dateTypeField) - 9);
+        $hasDateOutputFields = array_search($prefix . 'date', $columnNames);
+        $hasComponentFields = array_search($prefix . 'date_start', $columnNames)
+          && array_search($prefix . 'date_end', $columnNames)
+          && array_search($dateTypeField, $columnNames);
+        if ($hasComponentFields) {
+          $r[] = $prefix . 'date';
+          if (!$hasDateOutputFields) {
+            // Add a vague date output field.
+            $this->view_columns[$prefix . 'date'] = [
+              'type' => 'string',
+              'null' => TRUE,
+            ];
+          }
+          // Hide the component fields. Don't hide if autodef === false as
+          // this is an explicitly added report column.
+          if ($this->view_columns[$prefix . 'date_start']['autodef'] ?? NULL !== FALSE) {
+            $this->view_columns[$prefix . 'date_start']['visible'] = 'false';
+          }
+          if ($this->view_columns[$prefix . 'date_end']['autodef'] ?? NULL !== FALSE) {
+            $this->view_columns[$prefix . 'date_end']['visible'] = 'false';
+          }
+          if ($this->view_columns[$prefix . 'date_type']['autodef'] ?? NULL !== FALSE) {
+            $this->view_columns[$prefix . 'date_type']['visible'] = 'false';
+          }
+        }
+      }
+    }
+    return $r;
+  }
+
+  /**
+   * Adds vague date string values to data with component date values.
+   *
+   * @param array $row
+   *   Row date, where the date field values will be set.
+   * @param array $vagueDateCols
+   *   The name of the date output fields to be populated.
+   */
+  private function addVagueDates(array &$row, array $vagueDateCols) {
+    foreach ($vagueDateCols as $dateFieldName) {
+      if (!empty($row[$dateFieldName . '_type'])) {
+        $row[$dateFieldName] = vague_date::vague_date_to_string([
+          $row[$dateFieldName . '_start'],
+          $row[$dateFieldName . '_end'],
+          $row[$dateFieldName . '_type'],
+        ]);
+      }
+    }
   }
 
   /**
@@ -358,7 +517,7 @@ META;
    * This is instead of PHP's fputcsv because that function only writes
    * straight to a file, whereas we need a string.
    */
-  function get_csv($data, $delimiter = ',', $enclose = '"') {
+  private function get_csv($data, $delimiter = ',', $enclose = '"') {
     $newline = "\r\n";
     $output = '';
     foreach ($data as $idx => $cell) {
@@ -404,7 +563,7 @@ META;
     $output = '';
     foreach ($data as $cell) {
       // NBN file format does not allow new lines or tabs in any cells. So replace with spaces.
-      $cell = str_replace(array("\n", "\r", "\t"), array(' ', ' ', '  '), $cell);
+      $cell = str_replace(["\n", "\r", "\t"], [' ', ' ', '  '], $cell);
       if ($output == '') {
         $output = $cell;
       }
@@ -417,104 +576,85 @@ META;
   }
 
   /**
-  * Get the results of the query using the supplied view to render each row.
-  */
-  protected function view_encode($array, $view)
-  {
-    $output = '';
-    foreach ($array as $row)
-    {
-      $view->row= $row;
-      $output .= $view->render();
-    }
-  }
-
-  /**
   * Encodes an array as xml. Uses $this->entity to decide the name of the root element.
   * Recurses into the array where array values are themselves arrays. Also inserts
   * xlink paths to any foreign keys, and gets the caption of the foreign entity.
   */
-  protected function xml_encode($array, $xsl, $indent=false, $recursion=0)
-  {
+  protected function xml_encode($array, $xsl, $indent = FALSE, $recursion = 0) {
     // Keep an array to track any elements that must be skipped. For example if an array contains
     // {person_id=>1, person=>James Brown} then the xml output for the id is <person id="1">James Brown</person>.
     // There is no need to output the person separately so it gets flagged in this array for skipping.
-    $to_skip=array();
-    if (!$recursion)
-    {
+    $to_skip = array();
+    if (!$recursion) {
       // if we are outputting a specific record, root is singular
-      if ($this->uri->total_arguments())
-      {
+      if ($this->uri->total_arguments()) {
         $root = $this->entity;
         // We don't need to repeat the element for each record, as there is only 1.
         $array = $array[0];
       }
-      else
-      {
+      else {
         $root = inflector::plural($this->entity);
       }
       $data = '<?xml version="1.0"?>';
-      if ($xsl)
+      if ($xsl) {
         $data .= '<?xml-stylesheet type="text/xsl" href="'.$xsl.'"?>';
-      $data .= ($indent?"\r\n":'').
-      "<$root xmlns:xlink=\"http://www.w3.org/1999/xlink\">".
-      ($indent?"\r\n":'');
+      }
+      $data .= ($indent?"\r\n":'') .
+        "<$root xmlns:xlink=\"http://www.w3.org/1999/xlink\">" .
+        ($indent ? "\r\n" : '');
     }
-    else
-    {
+    else {
       $data = '';
     }
 
-    foreach ($array as $element => $value)
-    {
-      if (!in_array($element, $to_skip))
-      {
-        if ($value)
-        {
-          if (is_numeric($element))
-          {
+    foreach ($array as $element => $value) {
+      if (!in_array($element, $to_skip)) {
+        if ($value) {
+          if (is_numeric($element)) {
             $element = $this->entity;
           }
           // Check if we can provide links to the related models. $this->entity is set to 'record' for reports, where
           // this cannot be done.
-          if ((substr($element, -3)=='_id') && (array_key_exists(substr($element, 0, -3), $array)) &&
+          if ((substr($element, -3) == '_id') && (array_key_exists(substr($element, 0, -3), $array)) &&
               (isset($this->entity) && $this->entity !== 'record')) {
-            // create the model on demand, because it can tell us about relationships between things, but we don't want the overhead
-            // of creation when not required.
-            if (!isset($this->model))
-              $this->model=ORM::factory($this->entity);
+            // Create the model on demand, because it can tell us about
+            // relationships between things, but we don't want the overhead
+            // creation when not required.
+            if (!isset($this->model)) {
+              $this->model = ORM::factory($this->entity);
+            }
             $element = substr($element, 0, -3);
-            // This is a foreign key described by another field, so create an xlink path
-            if (array_key_exists($element, $this->model->belongs_to))
-            {
-              // Belongs_to specifies a fk table that does not match the attribute name
-              $fk_entity=$this->model->belongs_to[$element];
+            // This is a foreign key described by another field, so create an
+            // xlink path.
+            if (array_key_exists($element, $this->model->belongs_to)) {
+              // Belongs_to specifies a fk table that does not match the attribute name.
+              $fk_entity = $this->model->belongs_to[$element];
             }
-            elseif ($element=='parent')
-            {
-              $fk_entity=$this->entity;
-            } else {
-              // Belongs_to specifies a fk table that matches the attribute name
-              $fk_entity=$element;
+            elseif ($element === 'parent') {
+              $fk_entity = $this->entity;
             }
-            $data .= ($indent?str_repeat("\t", $recursion):'');
-            $data .= "<$element id=\"$value\" xlink:href=\"".url::base(TRUE)."services/data/$fk_entity/$value\">";
+            else {
+              // Belongs_to specifies a fk table that matches the attribute
+              // name.
+              $fk_entity = $element;
+            }
+            $data .= ($indent ? str_repeat("\t", $recursion) : '');
+            $data .= "<$element id=\"$value\" xlink:href=\"" . url::base(TRUE) . "services/data/$fk_entity/$value\">";
             $data .= $array[$element];
-            // We output the associated caption element already, so add it to the list to skip
-            $to_skip[count($to_skip)-1]=$element;
+            // We output the associated caption element already, so add it to
+            // the list to skip.
+            $to_skip[count($to_skip) - 1] = $element;
           }
-          else
-          {
-            $data .= ($indent?str_repeat("\t", $recursion):'').'<'.$element.'>';
+          else {
+            $data .= ($indent ? str_repeat("\t", $recursion) : '') . '<' . $element . '>';
             if (is_array($value)) {
-              $data .= ($indent?"\r\n":'').$this->xml_encode($value, NULL, $indent, ($recursion + 1)).($indent?str_repeat("\t", $recursion):'');
+              $data .= ($indent ? "\r\n" : '') . $this->xml_encode($value, NULL, $indent, ($recursion + 1)) . ($indent ? str_repeat("\t", $recursion) : '');
             }
-            else
-            {
+            else {
               $data .= htmlspecialchars($value);
             }
           }
-          $data .= '</'.$element.'>'.($indent?"\r\n":'');
+          $data .= '</' . $element . '>' . ($indent ? "\r\n" : '');
         }
       }
     }
