@@ -91,7 +91,7 @@ $config['authentication_methods'] = [
       'elasticsearch' => ['es'],
     ],
   ],
-  'jwtUser' => [
+  'jwtClient' => [
     // TRUE to allow CORS from any domain, or provide an array of domain regexes.
     // OPTIONS requests always return CORS header unless this is FALSE which
     // completely disables the headers (assuming CORS is not allowed, or is
@@ -99,6 +99,27 @@ $config['authentication_methods'] = [
     'allow_cors' => TRUE,
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
+      'reports' => [],
+      // Grant access to Elasticsearch but in this case, apply website and user
+      // ID filters. Limit to own data can be bypassed by providing a token
+      // without a http://indicia.org.uk/user:id claim only if the
+      // allow_anonymous option is set to TRUE.
+      // Best practice is to set both limit options to TRUE, then in the
+      // Indicia settings enable the option to allow users to access all data
+      // if appropriate for the website.
+      'elasticsearch' => [
+        'es' => [],
+      ],
+    ],
+  'jwtUser' => [
+    // TRUE to allow CORS from any domain, or provide an array of domain regexes.
+    // OPTIONS requests always return CORS header unless this is FALSE which
+    // completely disables the headers (assuming CORS is not allowed, or is
+    // handled at the web-server level).
+    'allow_cors' => TRUE,
+    'resource_options' => [
+      // Grants access to featured reports for own data. Client configs can
+      // override this.
       'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
       // Grant access to Elasticsearch but in this case, apply website and user
       // ID filters. Limit to own data can be bypassed by providing a token
