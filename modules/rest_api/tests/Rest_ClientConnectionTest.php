@@ -112,16 +112,18 @@ KEY;
   public function testCreateClientAndConnection() {
     $clientData = [
       'rest_api_client:title' => 'Test client',
+      'rest_api_client:website_id' => 1,
       'rest_api_client:description' => 'Test description',
       'rest_api_client:username' => 'testconnection',
       'rest_api_client:secret' => 'mysecret',
       'rest_api_client:public_key' => self::$publicKey,
     ];
     $s = submission_builder::build_submission($clientData, ['model' => 'rest_api_client']);
-    $r = data_entry_helper::forward_post_to('rest_api_client', $s, self::$auth['write_tokens']);
-    $this->assertFalse(isset($response['error']), 'testCreateClientAndConnection returned error saving a client.');
+    $r = data_entry_helper::forward_post_to('rest_api_client', $s, self::$auth['write_tokens'] + ['secret2' => 'mysecret']);
+    $this->assertTrue(isset($r['success']), 'Submitting a rest_api_client did not return success response');
+
     $clientId = $r['success'];
-    $saved = $this->db->query('SELECT * FROM rest_api_clients WHERE id=' . $clientId)->current();
+    $saved = self::$db->query('SELECT * FROM rest_api_clients WHERE id=' . $clientId)->current();
     $this->assertNotEquals($saved->secret, $clientData['rest_api_client:secret'], 'Saved secret has not been hashed.');
     $this->assertTrue(password_verify($clientData['rest_api_client:secret'], $saved->secret), 'Saved password hash does not verify against the supplied secret');
     $connectionData = [
@@ -133,9 +135,7 @@ KEY;
     ];
     $s = submission_builder::build_submission($connectionData, ['model' => 'rest_api_client_connection']);
     $r = data_entry_helper::forward_post_to('rest_api_client_connection', $s, self::$auth['write_tokens']);
-    $this->assertFalse(isset($response['error']), 'testCreateClientAndConnection returned error saving a connection.');
+    $this->assertTrue(isset($r['success']), 'Submitting a rest_api_client_connection did not return success response');
   }
-
-
 
 }
