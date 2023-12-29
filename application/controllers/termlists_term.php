@@ -92,13 +92,17 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       'termlists_term:termlist_id' => $termlist_id
     );
     $this->upload_csv_form->returnPage = $termlist_id;
-    // Apply permissions. If core admin, or a private website-owned termlist, then its editable.
+    // Apply permissions. If core admin, or a private website-owned termlist,
+    // then its editable.
     // @todo: Could possibly allow editing of a termlist if public but only used by 1 site
     $this->view->readonly = !$this->termlist_authorised($termlist_id);
   }
 
   /**
-   * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a term list
+   * Define non-standard behaviour for the breadcrumbs.
+   *
+   * Edit form is accessed via a termlist so breadcrumb should point back to
+   * the termlist.
    */
   protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('termlist', 'Term Lists');
