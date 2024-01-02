@@ -500,7 +500,7 @@ class Location_Controller extends Gridview_Base_Controller {
     $encoding = mb_detect_encoding($value ?? '', ['UTF-8', 'ISO-8859-1'], TRUE);
     if ($encoding === 'ISO-8859-1') {
       // Convert from Latin1 to UTF8.
-      $value = utf8_encode($value);
+      $value = mb_convert_encoding($value, 'UTF-8', 'ISO-8859-1');
     }
     return trim($value ?? '');
   }

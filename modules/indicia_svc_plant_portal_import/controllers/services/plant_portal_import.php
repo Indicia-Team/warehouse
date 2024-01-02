@@ -452,7 +452,12 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
               if ($attr != '<Please select>' && $data[$index] !== '') {
                 // Add the data to the record save array. Utf8 encode if file
                 // does not have UTF8 BOM.
-                $saveArray[$attr] = $metadata['isUtf8'] ? $data[$index] : utf8_encode($data[$index]);
+                if ($metadata['isUtf8']) {
+                  $saveArray[$attr] = $data[$index];
+                }
+                else {
+                  $saveArray[$attr] = mb_convert_encoding($data[$index], 'UTF-8', 'ISO-8859-1');
+                }
               }
             }
             else {
