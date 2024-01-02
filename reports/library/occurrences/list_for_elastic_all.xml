@@ -205,8 +205,8 @@
     <column name="privacy_precision" sql="snf.privacy_precision" datatype="integer" />
     <column name="sensitive" sql="o.sensitive::text" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
-    <!-- Flag sensitivity_blur = B for blurred version of a sensitive or private record. -->
-    <column name="sensitivity_blur" sql="CASE WHEN o.sensitive OR s.private THEN 'B' ELSE null END" datatype="text" />
+    <!-- Flag sensitivity_blur = B for blurred version of a sensitive, private or confidential record. -->
+    <column name="sensitivity_blur" sql="CASE WHEN o.sensitive OR s.private OR o.confidential THEN 'B' ELSE null END" datatype="text" />
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
     <column name="sample_attrs_json" sql="snf.attrs_json" datatype="text" />

@@ -15,7 +15,7 @@
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
-    AND (o.sensitive=true OR o.private=true)
+    AND (o.sensitive=true OR o.private=true or o.confidential=true)
     #filters#
     #order_by#
     LIMIT #limit#;
@@ -215,7 +215,7 @@
     <column name="privacy_precision" sql="snf.privacy_precision" datatype="integer" />
     <column name="sensitive" sql="o.sensitive::text" datatype="text" />
     <column name="sensitivity_precision" sql="onf.sensitivity_precision" datatype="integer" />
-    <!-- Flag sensitivity_blur = F for full precision version of a sensitive or private record. -->
+    <!-- Flag sensitivity_blur = F for full precision version of a sensitive, private or confidential record. -->
     <column name="sensitivity_blur" sql="'F'" datatype="text" />
     <column name="confidential" sql="o.confidential::text" datatype="boolean" />
     <column name="release_status" sql="o.release_status" datatype="text" />
