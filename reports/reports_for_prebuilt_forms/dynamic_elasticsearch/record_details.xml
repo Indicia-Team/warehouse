@@ -156,6 +156,15 @@
   LEFT JOIN users u ON u.id=o.created_by_id AND u.deleted=false AND u.id&lt;&gt;1
   LEFT JOIN people p ON p.id=u.person_id AND p.deleted=false
 
+  UNION
+
+  SELECT 5 as group_weight, null::integer as id, 2 as weight, 'Output geom' as attribute_type, 'output_geom' as system_function,
+    'geom'::bpchar as data_type, 'Output geometry' as caption,
+    null as value,
+    st_astext(st_transform(public_geom, 4326)) as raw_value
+  FROM cache_occurrences_functional o
+  WHERE o.id=#occurrence_id#
+
   ORDER BY group_weight, attribute_type, weight, caption
   </query>
   <params>

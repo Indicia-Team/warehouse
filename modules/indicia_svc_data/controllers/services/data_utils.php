@@ -373,7 +373,7 @@ SQL;
           $this->user_id,
           $_POST['occurrence:taxa_taxon_list_id'],
         );
-        $this->redeterminationDbProcessing($db, $ids, $this->user_id);
+        $this->redeterminationDbProcessing($db, $ids, $this->user_id, $_POST['occurrence:determiner_id'] ?? NULL);
         // Give the workflow module a chance to rewind or update the values
         // before updating.
         data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
@@ -426,11 +426,18 @@ SQL;
    *   Database connection.
    * @param array $occurrenceIds
    *   CSV List of occurrences to check.
+   * @param int $userId
+   *   Current user's ID.
+   * @param int $redetPersonId
+   *   Person ID being allocation as the redeterminer in the data. If set to -1
+   *   then the redeterminer is not updated.
    */
-  private function redeterminationDbProcessing(Database $db, array $occurrenceIds, $userId) {
+  private function redeterminationDbProcessing(Database $db, array $occurrenceIds, $userId, $redetPersonId) {
+    // Stringify null for the SQL.
+    $redetPersonId = $redetPersonId ?? 'null';
     $idCsv = implode(',', $occurrenceIds);
     $logDeterminations = kohana::config('indicia.auto_log_determinations') === TRUE ? 'true' : 'false';
-    $sql = "SELECT f_handle_determination(ARRAY[$idCsv], $userId, null, $logDeterminations, true);";
+    $sql = "SELECT f_handle_determination(ARRAY[$idCsv], $userId, $redetPersonId, $logDeterminations, true);";
     $db->query($sql);
   }
 
