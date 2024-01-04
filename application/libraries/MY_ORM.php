@@ -2343,21 +2343,18 @@ SQL;
     $cacheId = "attrInfo.2_{$attrType}_{$attrId}";
     $this->cache = Cache::instance();
     $attr = $this->cache->get($cacheId);
-    if ($attr === NULL) {
+    if (!is_object($attr)) {
       $attr = $this->db
         ->select('caption', 'data_type', 'multi_value', 'termlist_id', 'validation_rules', 'allow_ranges')
         ->from($attrType . '_attributes')
         ->where(['id' => $attrId])
-        ->get()->result_array();
-      if (count($attr) === 0) {
+        ->get()->current();
+      if (!is_object($attr)) {
         throw new Exception("Invalid $attrType attribute ID $attrId");
       }
-      $this->cache->set($cacheId, $attr[0]);
-      return $attr[0];
+      $this->cache->set($cacheId, $attr);
     }
-    else {
-      return $attr;
-    }
+    return $attr;
   }
 
   /**
