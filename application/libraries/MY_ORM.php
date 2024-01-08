@@ -2469,16 +2469,15 @@ SQL;
         // let the model map the lookup against a view if necessary
         $lookupAgainst = isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkTable;
         // Generate a foreign key instance
-        $submission['fkFields'][$field] = array
-        (
+        $submission['fkFields'][$field] = [
           // Foreign key id field is table_id
           'fkIdField' => "$fieldName"."_id",
           'fkTable' => $lookupAgainst,
           'fkSearchField' => $fkModel->search_field,
-          'fkSearchValue' => trim($value['value']),
+          'fkSearchValue' => trim($value['value'] ?? ''),
           'readableTableName' => ucfirst(preg_replace('/[\s_]+/', ' ', $fkTable)),
           'fkExcludeDeletedRecords' => ($lookupAgainst === $fkTable),
-        );
+        ];
         $struct = $submissionModel->get_submission_structure();
         // if the save array defines a filter against the lookup table then also store that.
         // 2 formats: field level or table level : "fkFilter:[fieldname|tablename]:[column]=[value]
