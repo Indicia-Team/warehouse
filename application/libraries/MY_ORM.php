@@ -1799,7 +1799,10 @@ SQL;
   public function getSubmittableFields($fk = FALSE, array $identifiers = [], $attrTypeFilter = NULL, $use_associations = FALSE) {
     $this->identifiers = $identifiers;
     $fields = $this->getPrefixedColumnsArray($fk);
-    $fields = array_merge($fields, $this->additional_csv_fields);
+    $additionals = array_filter($this->additional_csv_fields, function($k) use ($fk) {
+      return $fk || !preg_match('/^(fk_|.+:fk_)/', $k);
+    }, ARRAY_FILTER_USE_KEY);
+    $fields = array_merge($fields, $additionals);
     ksort($fields);
     if ($this->has_attributes) {
       $result = $this->getAttributes(FALSE, $attrTypeFilter);
@@ -1812,7 +1815,6 @@ SQL;
           $fieldname = $this->attrs_field_prefix . ':' . $row->id;
         }
         $fields[$fieldname] = $row->caption;
-
       }
     }
     $struct = $this->get_submission_structure();
@@ -1852,7 +1854,7 @@ SQL;
    * @param array $identifiers
    *   Website ID, survey ID and/or taxon list ID that define the context of
    *   the list of fields, used to determine the custom attributes to include.
-   * @param array $use_associations
+   * @param bool $use_associations
    *   TRUE if occurrence associations data included.
    *
    * @return array

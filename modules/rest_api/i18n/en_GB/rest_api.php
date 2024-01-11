@@ -425,12 +425,18 @@ POST /index.php/services/rest/occurrence-attributes
   ]
 }
 </code></pre>
+
+The user must have editor permissions for the authorised client website.
 TXT;
 $lang['resources']['PUT occurrence-attributes/{id}'] = <<<TXT
 Updates a single occurrence custom attribute. Lookups can update the termlist content by passing a "terms" element in
-the same way as a POST.
+the same way as a POST. The user must have edit rights to the authorised client website.
 TXT;
-$lang['resources']['DELETE occurrence-attributes/{id}'] = 'Deletes a single occurrence custom attribute.';
+$lang['resources']['DELETE occurrence-attributes/{id}'] = <<<TXT
+Deletes a single occurrence custom attribute. User must have editor permissions to the website the
+attribute is associated with and the attribute must have no values already stored for it in the
+database.
+TXT;
 $lang['resources']['occurrence-media'] = "A list of a user's occurrence media.";
 $lang['resources']['GET occurrence-media'] = <<<TXT
 Retrieve list of a user's occurrence media. In addition to the database fields, the response values
@@ -564,12 +570,18 @@ POST /index.php/services/rest/sample-attributes
   ]
 }
 </code></pre>
+
+The user must have editor permissions for the authorised client website.
 TXT;
 $lang['resources']['PUT sample-attributes/{id}'] = <<<TXT
 Updates a single sample custom attribute. Lookups can update the termlist content by passing a "terms" element in
-the same way as a POST.
+the same way as a POST. User must have editor permissions to the website the survey belongs to.
 TXT;
-$lang['resources']['DELETE sample-attributes/{id}'] = 'Deletes a single sample custom attribute.';
+$lang['resources']['DELETE sample-attributes/{id}'] = <<<TXT
+Deletes a single sample custom attribute. User must have editor permissions to the website the
+attribute is associated with and the attribute must have no values already stored for it in the
+database.
+TXT;
 $lang['resources']['sample-media'] = <<<TXT
 Retrieve list of a user's sample media. In addition to the database fields, the response values
 include the following: <ul>
@@ -719,9 +731,16 @@ TXT;
 $lang['resources']['surveys'] = 'A list of metadata about available survey datasets.';
 $lang['resources']['GET surveys'] = 'Retrieves a list of metadata about available survey datasets.';
 $lang['resources']['GET surveys/{id}'] = 'Retrieves the metadata for a single survey dataset.';
-$lang['resources']['POST surveys'] = 'Creates a survey dataset.';
-$lang['resources']['PUT surveys/{id}'] = 'Updates the metadata for a survey dataset.';
-$lang['resources']['DELETE surveys/{id}'] = 'Deletes a survey dataset.';
+$lang['resources']['POST surveys'] = <<<TXT
+Creates a survey dataset. The user must have editor permissions for the authorised client website.
+TXT;
+$lang['resources']['PUT surveys/{id}'] = <<<TXT
+Updates the metadata for a survey dataset. User must have editor permissions to the website the
+survey belongs to.
+TXT;
+$lang['resources']['DELETE surveys/{id}'] = <<<TXT
+Deletes a survey dataset. User must have editor permissions to the website the survey belongs to.
+TXT;
 $lang['resources']['taxa'] = 'Provides search for taxonomy data.';
 $lang['resources']['GET taxa/search'] = <<<TXT
 Search resource for taxa. Perform full text searches against the taxonomy information held in the

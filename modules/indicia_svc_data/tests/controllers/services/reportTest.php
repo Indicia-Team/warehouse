@@ -273,6 +273,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     ['user_id' => 2],
     ['my_records' => 1],
     ['created_by_id' => 1],
+    ['recorder_name' => 'foo bar'],
     ['group_id' => 1],
     ['implicit_group_id' => 2],
     ['website_list' => '1,2'],
@@ -286,7 +287,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     ['taxon_meaning_list' => '10000,10001'],
     ['identification_difficulty' => 3],
     ['identification_difficulty' => 3, 'identification_difficulty_op' => '<='],
-    ['taxa_taxon_list_attribute_ids' => '1,2', 'taxa_taxon_list_attribute_termlist_term_ids' => '3,4']
+    ['taxa_taxon_list_attribute_ids' => '1,2', 'taxa_taxon_list_attribute_termlist_term_ids' => '3,4'],
   ];
 
   public function getDataSet() {

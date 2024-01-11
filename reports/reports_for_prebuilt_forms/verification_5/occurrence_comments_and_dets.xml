@@ -39,8 +39,10 @@
       -- if there are any determinations, we need the current view of the record
       select distinct
         'current name' as type,
-        d.updated_on,
-        'Record was determined as ' || ttl.taxon || case when ttl.preferred_taxon=ttl.taxon then '' else ' (' || ttl.preferred_taxon || ')' end || '.' as comment,
+        -- Early legacy determinations did not set the updated on to the date of the next determination.
+        case when d.updated_on=d.created_on then null else d.updated_on end,
+        'Record''s current determination given as ' || ttl.taxon || case when ttl.preferred_taxon=ttl.taxon then '' else ' (' || ttl.preferred_taxon || ')' end || '.'
+          || case when d.updated_on=d.created_on then ' Date uncertain - old data.' else '' end as comment,
         null as correspondence_data,
         null as reference,
         null::character as record_status,

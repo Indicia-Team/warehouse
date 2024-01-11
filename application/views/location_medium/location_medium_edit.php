@@ -61,14 +61,14 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       echo data_entry_helper::text_input([
         'label' => 'Path or URL',
         'fieldname' => 'location_medium:path',
-        'default' => html::initial_value($values, 'location_medium:path'),
+        'default' => $values['location_medium:path'] ?? NULL,
       ]);
     }
 
     echo data_entry_helper::text_input([
       'label' => 'Caption',
       'fieldname' => 'location_medium:caption',
-      'default' => html::initial_value($values, 'location_medium:caption'),
+      'default' => $values['location_medium:caption'] ?? NULL,
     ]);
     echo data_entry_helper::select(array(
       'label' => 'Licence',

@@ -33,14 +33,14 @@ $id = html::initial_value($values, 'language:id');
     echo data_entry_helper::text_input([
       'label' => 'ISO language code',
       'fieldname' => 'language:iso',
-      'default' => html::initial_value($values, 'language:iso'),
+      'default' => $values['language:iso'] ?? NULL,
       'helpText' => 'The ISO standard code for this language.',
       'validation' => ['required'],
     ]);
     echo data_entry_helper::text_input([
       'label' => 'Language name',
       'fieldname' => 'language:language',
-      'default' => html::initial_value($values, 'language:language'),
+      'default' => $values['language:language'] ?? NULL,
       'helpText' => 'The display name for this language.',
       'validation' => ['required'],
     ]);

@@ -1099,6 +1099,10 @@ KEY;
     $this->assertArrayHasKey('id', $response['response']['duplicate_of']);
     $this->assertArrayHasKey('href', $response['response']['duplicate_of']);
     $this->assertEquals($id, $response['response']['duplicate_of']['id']);
+    $db = new Database();
+    $smpCount = $db->query("select count(*) from samples where external_key='123'")
+      ->current()->count;
+    $this->assertEquals(1, $smpCount, 'Inserting duplicate sample external key succeeded when it should have failed.');
     // PUT with same external key should be OK.
     $response = $this->callService(
       "samples/$id",
@@ -2926,19 +2930,19 @@ SQL;
       case 'hmacUser':
         $user = self::$userId;
         $website = self::$websiteId;
-        $hmac = hash_hmac("sha1", $url, self::$userPassword, $raw_output = FALSE);
+        $hmac = hash_hmac('sha1', $url, self::$userPassword);
         $authString = "USER_ID:$user:WEBSITE_ID:$website:HMAC:$hmac";
         break;
 
       case 'hmacClient':
         $user = self::$clientUserId;
-        $hmac = hash_hmac("sha1", $url, self::$config['shared_secret'], $raw_output = FALSE);
+        $hmac = hash_hmac('sha1', $url, self::$config['shared_secret']);
         $authString = "USER:$user:HMAC:$hmac";
         break;
 
       case 'hmacWebsite':
         $user = self::$websiteId;
-        $hmac = hash_hmac("sha1", $url, self::$websitePassword, $raw_output = FALSE);
+        $hmac = hash_hmac('sha1', $url, self::$websitePassword);
         $authString = "WEBSITE_ID:$user:HMAC:$hmac";
         break;
 

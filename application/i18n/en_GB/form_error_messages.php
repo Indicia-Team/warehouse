@@ -118,6 +118,9 @@ $lang = [
   'language_id' => [
     'required' => 'The language is required.',
   ],
+  'licence_id' => [
+    'integer' => 'The licence ID must be a valid integer.',
+  ],
   'location_name' => [
     'required' => 'The location name is required.',
   ],
