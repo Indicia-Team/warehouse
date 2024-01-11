@@ -1,4 +1,5 @@
 # Version 8.24.0
+*2024-01-11*
 
 * Slight improvement to the algorithm for sorting taxa in taxon search results.
   Taxa between the ranks of species aggregate, species and species hybrid are
@@ -6,6 +7,19 @@
   2 new configuration values that can be specified to define the range of taxon
   ranks that are given precedence, `preferred_taxon_rank_from` and
   `preferred_taxon_rank_to`.
+* Updates to standard reporting parameters for occurrences to support new features in the client
+  filter builder tool. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1493.
+* The quality standard reporting parameter now allows multi-select, to support enhancements to the
+  user interface of the report filter builder.
+* New database field for tagging which licences are broadly open vs closed.
+* Add summary occurrences module to the unit testing done on Travis CI.
+* REST API permissions updated to meet needs of iform_layout_builder module. When using JwtUser
+  authentication, survey and associated attribute data can be overwritten by a user other than
+  the original creator if the user has editor permissions to the relevant website.
+* Bug fix in the dates returned by the determinations and comments reports for verification. Fixes
+  determination dates < 2018.
+* Bugfixes to handling of non-standard UTF8 characters in the warehouse UI forms.
+* Bugfixes for PHP 8.2.
 
 # Version 8.23.0
 *2023-09-20*
