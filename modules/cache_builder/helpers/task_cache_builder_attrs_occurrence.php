@@ -119,7 +119,7 @@ FROM (
           av.date_start_value::text ||
           CASE WHEN av.date_end_value > av.date_start_value THEN ' - '::text || av.date_end_value::text ELSE '' END
         ELSE NULL::text
-      END ORDER BY tlt.sort_order, t.term
+      END ORDER BY tlt.sort_order
     ) as v
   FROM work_queue q
   LEFT JOIN occurrence_attribute_values av ON av.occurrence_id=q.record_id AND av.deleted=false
