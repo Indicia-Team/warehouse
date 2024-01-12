@@ -1137,6 +1137,21 @@ class report_standard_params_occurrences {
             end",
         ],
       ],
+      'coordinate_precision' => [
+        'datatype' => 'integer',
+        'display' => 'Coordinate precision',
+        'description' => 'Filter on the coordinate precision of the record',
+        'wheres' => [
+          [
+            'sql' => "
+              WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
+                  get_sref_precision(onf.output_sref, onf.output_sref_system, null)
+              ELSE
+                COALESCE(snf.attr_sref_precision, 50)
+              END #coordinate_precision_op# #coordinate_precision#",
+          ],
+        ],
+      ]
     ];
   }
 
@@ -1351,6 +1366,7 @@ class report_standard_params_occurrences {
       'indexed_location_list_op' => 'in',
       'identification_difficulty_op' => '=',
       'quality_op' => 'in',
+      'coordinate_precision_op' => '<=',
       'date_year_op_context' => '=',
       'input_date_year_op_context' => '=',
       'edited_date_year_op_context' => '=',
@@ -1364,6 +1380,7 @@ class report_standard_params_occurrences {
       'indexed_location_list_op_context' => 'in',
       'identification_difficulty_op_context' => '=',
       'quality_op_context' => 'in',
+      'coordinate_precision_op_context' => '<=',
       'release_status' => 'R',
       'confidential' => 'f',
     ];

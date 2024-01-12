@@ -48,6 +48,8 @@ class XMLReportReader_Core implements ReportReader {
   private $blockedSharingTasksField = 'blocked_sharing_tasks';
   private $createdByField;
   private $colsToInclude = [];
+  private $tableIndex;
+  private $nextTableIndex;
 
   public $surveys_id_field;
   public $samples_id_field;
