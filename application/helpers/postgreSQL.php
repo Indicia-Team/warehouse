@@ -670,8 +670,13 @@ SQL;
     foreach ($params as $param) {
       if (!empty($options[$param])) {
         if ($param === 'scratchpad_list_id') {
+          // Allow any name for the taxa on the list. Other filters can still
+          // override this.
           $filters[] = 'cts.taxa_taxon_list_id in ' .
-            '(select entry_id from scratchpad_list_entries where scratchpad_list_id=' . $options[$param] . ')';
+            '(select cttl2.id from scratchpad_list_entries sle
+            join cache_taxa_taxon_lists cttl1 on cttl1.id=sle.entry_id
+            join cache_taxa_taxon_lists cttl2 on cttl2.preferred_taxa_taxon_list_id=cttl1.preferred_taxa_taxon_list_id
+            where scratchpad_list_id=' . $options[$param] . ')';
         }
         elseif ($options[$param] === 'null') {
           $filters[] = "cts.$param is null";
