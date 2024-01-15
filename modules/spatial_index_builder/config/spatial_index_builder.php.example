@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,28 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
- * @subpackage Spatial index builder
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	https://github.com/indicia-team/warehouse/
  */
 
-// List the location type terms that area available for indexing against. Typically these will need to be those
-// which are frequently reported against especially where the boundaries are large and/or complex.
-$config['location_types']=array(
+// List the location type terms that area available for indexing against.
+// Typically these will need to be those which are frequently reported against
+// especially where the boundaries are large and/or complex.
+$config['location_types'] = [
   'Vice County',
   'Local wildlife site'
-);
+];
 
 // Of the indexed types, which are layers which have a parent ID that points to
 // another higher level layer that should also be indexed?
-$config['hierarchical_location_types']=array(
+$config['hierarchical_location_types'] = [
   'Vice County',
-);
+];
 
-// If any of the indexed location types only need indexing for certain surveys then that can be configured here.
-// Omit this configuration if not required.
-$config['survey_restrictions']=array(
-  'Local wildlife site' => array(25, 26, 27) // only build an index for surveys 25, 26 and 27 for local wildlife sites
-);
+// If any of the indexed location types only need indexing for certain surveys
+// then that can be configured here. Omit this configuration if not required.
+$config['survey_restrictions'] = [
+  // Only build an index for surveys 25, 26 and 27 for local wildlife sites.
+  'Local wildlife site' => [25, 26, 27],
+];

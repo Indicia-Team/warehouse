@@ -17,21 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Modules
- * @subpackage Workflow
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/
  */
 
- /**
-  * List of workflow groups, each with a code and a list of website IDs that collaborate with this group.
-  */
+/**
+ * List of workflow group.
+ *
+ * Each has a code and a list of website IDs that collaborate with this group.
+ */
 $config['groups'] = [
   'NNSIP' => [
     // This is the ID of the website that administers this group of workflow rules.
-    "owner_website_id" => 2,
+    'owner_website_id' => 2,
     // These are the IDs of websites which the workflow rules will be applied to.
-    "member_website_ids" => [2, 3, 4],
+    'member_website_ids' => [2, 3, 4],
   ]
 ];
