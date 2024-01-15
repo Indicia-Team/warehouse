@@ -148,10 +148,9 @@ class Location_Controller extends Gridview_Base_Controller {
    * Adds the upload csv form to the view (which should then insert it at the bottom of the grid).
    */
   protected function add_upload_shp_form() {
-    $this->upload_shp_form = new View('templates/upload_shp');
-    $this->upload_shp_form->staticFields = NULL;
-    $this->upload_shp_form->controllerpath = $this->controllerpath;
-    $this->view->upload_shp_form = $this->upload_shp_form;
+    $this->view->upload_shp_form = new View('templates/upload_shp');
+    $this->view->upload_shp_form->staticFields = NULL;
+    $this->view->upload_shp_form->controllerpath = $this->controllerpath;
   }
 
   /**
@@ -501,7 +500,7 @@ class Location_Controller extends Gridview_Base_Controller {
     $encoding = mb_detect_encoding($value ?? '', ['UTF-8', 'ISO-8859-1'], TRUE);
     if ($encoding === 'ISO-8859-1') {
       // Convert from Latin1 to UTF8.
-      $value = utf8_encode($value);
+      $value = mb_convert_encoding($value, 'UTF-8', 'ISO-8859-1');
     }
     return trim($value ?? '');
   }

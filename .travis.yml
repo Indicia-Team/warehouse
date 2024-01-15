@@ -14,7 +14,7 @@ services:
 php:
   # Test oldest and newest maintained versions.
   - '8.1'
-  # - '8.2' Temporarily stopped to save credits.
+  - '8.2'
 
 env:
   # Test oldest and newest maintained versions.
@@ -65,6 +65,8 @@ install:
   - chmod +x .travis/postgres_setup.sh
 
 before_script:
+  - psql --version
+  - pg_lsclusters
   # Create database
   - psql -d postgres -c 'create database indicia;' -U ${PGUSER} -p ${PGPORT}
   # Add extension for PostGIS

@@ -1799,7 +1799,10 @@ SQL;
   public function getSubmittableFields($fk = FALSE, array $identifiers = [], $attrTypeFilter = NULL, $use_associations = FALSE) {
     $this->identifiers = $identifiers;
     $fields = $this->getPrefixedColumnsArray($fk);
-    $fields = array_merge($fields, $this->additional_csv_fields);
+    $additionals = array_filter($this->additional_csv_fields, function($k) use ($fk) {
+      return $fk || !preg_match('/^(fk_|.+:fk_)/', $k);
+    }, ARRAY_FILTER_USE_KEY);
+    $fields = array_merge($fields, $additionals);
     ksort($fields);
     if ($this->has_attributes) {
       $result = $this->getAttributes(FALSE, $attrTypeFilter);
@@ -1812,7 +1815,6 @@ SQL;
           $fieldname = $this->attrs_field_prefix . ':' . $row->id;
         }
         $fields[$fieldname] = $row->caption;
-
       }
     }
     $struct = $this->get_submission_structure();
@@ -1852,7 +1854,7 @@ SQL;
    * @param array $identifiers
    *   Website ID, survey ID and/or taxon list ID that define the context of
    *   the list of fields, used to determine the custom attributes to include.
-   * @param array $use_associations
+   * @param bool $use_associations
    *   TRUE if occurrence associations data included.
    *
    * @return array
@@ -2341,21 +2343,18 @@ SQL;
     $cacheId = "attrInfo.2_{$attrType}_{$attrId}";
     $this->cache = Cache::instance();
     $attr = $this->cache->get($cacheId);
-    if ($attr === NULL) {
+    if (!is_object($attr)) {
       $attr = $this->db
         ->select('caption', 'data_type', 'multi_value', 'termlist_id', 'validation_rules', 'allow_ranges')
         ->from($attrType . '_attributes')
         ->where(['id' => $attrId])
-        ->get()->result_array();
-      if (count($attr) === 0) {
+        ->get()->current();
+      if (!is_object($attr)) {
         throw new Exception("Invalid $attrType attribute ID $attrId");
       }
-      $this->cache->set($cacheId, $attr[0]);
-      return $attr[0];
+      $this->cache->set($cacheId, $attr);
     }
-    else {
-      return $attr;
-    }
+    return $attr;
   }
 
   /**
@@ -2472,16 +2471,15 @@ SQL;
         // let the model map the lookup against a view if necessary
         $lookupAgainst = isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkTable;
         // Generate a foreign key instance
-        $submission['fkFields'][$field] = array
-        (
+        $submission['fkFields'][$field] = [
           // Foreign key id field is table_id
           'fkIdField' => "$fieldName"."_id",
           'fkTable' => $lookupAgainst,
           'fkSearchField' => $fkModel->search_field,
-          'fkSearchValue' => trim($value['value']),
+          'fkSearchValue' => trim($value['value'] ?? ''),
           'readableTableName' => ucfirst(preg_replace('/[\s_]+/', ' ', $fkTable)),
           'fkExcludeDeletedRecords' => ($lookupAgainst === $fkTable),
-        );
+        ];
         $struct = $submissionModel->get_submission_structure();
         // if the save array defines a filter against the lookup table then also store that.
         // 2 formats: field level or table level : "fkFilter:[fieldname|tablename]:[column]=[value]

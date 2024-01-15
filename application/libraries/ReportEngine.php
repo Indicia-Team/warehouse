@@ -1124,11 +1124,11 @@ SQL;
           }
           else {
             // Sanitise.
-            if ($paramDefs[$name]['datatype'] === 'text' || $paramDefs[$name]['datatype'] === 'string') {
+            if (in_array($paramDefs[$name]['datatype'], ['text', 'string'])) {
               // Ensure value is escaped for apostrophes.
               $value = $this->reportDb->escape_str($value);
             }
-            elseif ($paramDefs[$name]['datatype'] === 'text[]' || $paramDefs[$name]['datatype'] === 'string[]') {
+            elseif (in_array($paramDefs[$name]['datatype'], ['text[]', 'string[]'])) {
               // Array check on text parameter values.
               if (strlen($value)) {
                 $arr = str_getcsv($value, ",", "'");
@@ -1182,7 +1182,6 @@ SQL;
                   $qry
                 );
                 $output = $this->reportDb->query($prequery)->result_array(FALSE);
-                kohana::log('debug', 'prequery: ' . $prequery);
                 $pqValue = count($output) > 0 ? implode(',', $output[0]) : NULL;
                 if (empty($pqValue)) {
                   // Create a dummy value so as to not cause a syntax error.
@@ -2144,40 +2143,67 @@ SQL;
 
   /**
    * Add any where clause filters defined by a used parameter to the query.
-   *
-   * @todo Consider caching of the preprocess output.
    */
-  private function addParamWheres($query, $paramName, $paramDef, $value) {
-    foreach ($paramDef['wheres'] as $whereDef) {
-      if (empty($whereDef['param_op'])) {
-        if (
-            // Parameter filter applied if value matches the filter's
-            // specified value.
-            (!empty($whereDef['operator']) && (($whereDef['operator'] === 'equal' && $whereDef['value'] === $value)
-            // Parameter filter applied if value doesn't match the filter's
-            // specified value.
-            || ($whereDef['operator'] === 'notequal' && $whereDef['value'] !== $value)))
-            // Operator not provided, so default is to join if param not empty
-            // (NULL string passed for empty integers).
-            || (empty($whereDef['operator']) && !empty($value) && $value !== "NULL")) {
-          // Join SQL can contain the parameter value as well.
-          $query = str_replace('#filters#', "AND $whereDef[sql]\n#filters#", $query);
+  private function addParamWheres($query, $paramName, $paramDef, $values) {
+    // Multi-select parameter values need to be exploded into a list.
+    $valueList = empty($paramDef['multiselect']) ? [$values] : str_getcsv($values, ",", "'");
+    // Work out the operation being used.
+    if (isset($paramDef['param_op'])) {
+      // Handle params that have where clauses linked to different operations.
+      // If the parameter name is <name>_context, them the op param is
+      // <name>_op_context so we need to do some splicing.
+      $paramOpName = preg_match('/_context$/', $paramName)
+            ? preg_replace('/_context$/', '_op_context', $paramName)
+            : "{$paramName}_op";
+      if (empty($this->providedParams[$paramOpName])) {
+        throw new Exception("Parameter $paramName needs a parameter $paramOpName to determine the operation.");
+      }
+      $operation = $this->providedParams[$paramOpName];
+      if ($paramDef['param_op'] === 'inOrNotIn') {
+        if (!in_array($operation, ['in', 'not in'])) {
+          throw new Exception("Invalid value for report parameter $paramOpName: $operation");
         }
       }
       else {
-        // Handle params that have where clauses linked to different ops.
-        // If the parameter name is <name>_context, them the op param is
-        // <name>_op_context so we need to do some splicing.
-        $paramOpName = preg_match('/_context$/', $paramName)
-          ? preg_replace('/_context$/', '_op_context', $paramName)
-          : "{$paramName}_op";
-        if (!empty($this->providedParams[$paramOpName])
-            && $this->providedParams[$paramOpName] === $whereDef['param_op']
-            && $value !== '') {
-          // Wheres can be specified separarely per operation (IN, NOT IN etc).
-          $query = str_replace('#filters#', "AND $whereDef[sql]\n#filters#", $query);
+        throw new Exception("Invalid param_op value for report parameter $paramName: $paramDef[param_op]");
+      }
+    }
+    $filterClauses = [];
+    // Step through the supplied list of parameter values (normally only 1).
+    foreach ($valueList as $value) {
+      foreach ($paramDef['wheres'] as $whereDef) {
+        $includeWhere = FALSE;
+        if (!isset($whereDef['value']) || $whereDef['value'] === '') {
+          // If value not qualified in the where definition, any value except
+          // empty triggers the inclusion.
+          $includeWhere = $value !== '' && $value !== "NULL";
+        }
+        else {
+          // Value qualified in the definition, so it must match or not match,
+          // depending on the operator in the definition.
+          if (empty($whereDef['operator']) || $whereDef['operator'] === 'equal') {
+            $includeWhere = $whereDef['value'] === $value;
+          }
+          elseif (!empty($whereDef['operator']) && $whereDef['operator'] === 'notequal') {
+            $includeWhere = $whereDef['value'] !== $value;
+          }
+        }
+        if ($includeWhere) {
+          $filterClauses[] = "($whereDef[sql])";
         }
       }
+    }
+    if (count($filterClauses) > 0) {
+      $filterSql = implode(' OR ', $filterClauses);
+      if (count($filterClauses) > 1 || (isset($operation) && $operation === 'not in')) {
+        // Multiselect with multiple ticked, so OR list wrapped in brackets.
+        $filterSql = "($filterSql)";
+      }
+      if (isset($operation) && $operation === 'not in') {
+        // Operation indicates we want the inverse.
+        $filterSql = "NOT $filterSql";
+      }
+      $query = str_replace('#filters#', "AND $filterSql\n#filters#", $query);
     }
     return $query;
   }

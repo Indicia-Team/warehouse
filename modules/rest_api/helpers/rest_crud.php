@@ -389,7 +389,7 @@ SQL;
       $recordKey = $attr->record_id;
       unset($attr->record_id);
       $attrKey = self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id";
-      $val = array_key_exists('verbose', $_GET) ? $attr : $attr->value;
+      $val = array_key_exists('verbose', $_GET) ? (array) $attr : $attr->value;
 
       if (!isset($attrs[$recordKey])) {
         $attrs[$recordKey] = [];
@@ -405,7 +405,6 @@ SQL;
         $attrs[$recordKey][$attrKey] = $val;
       }
     }
-
     return $attrs;
   }
 
@@ -418,8 +417,13 @@ SQL;
    *   Record ID to update.
    * @param array $data
    *   Submitted data, including values.
+   * @param bool $userCheck
+   *   Should a check be done that the record was created by the current user?
+   *   Defaults to true, but may be set to false if the calling code has
+   *   checked the user has permission to modify the record (e.g. if has site
+   *   editor rights).
    */
-  public static function update($entity, $id, array $data) {
+  public static function update($entity, $id, array $data, $userCheck = TRUE) {
     self::loadEntityConfig($entity);
     $values = $data['values'];
     // ID is optional, but must match URL segment.
@@ -433,8 +437,8 @@ SQL;
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
       self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values), $data);
     }
-    if ($obj->created_by_id != RestObjects::$clientUserId) {
-      RestObjects::$apiResponse->fail('Not Found', 404, 'Attempt to update record belonging to different user.');
+    if ($userCheck && $obj->created_by_id != RestObjects::$clientUserId) {
+      RestObjects::$apiResponse->fail('Not Found', 404, $entity . ' Attempt to update record belonging to different user.');
     }
     // Keep existing values unless replaced by PUT data.
     $data['values'] = array_merge(

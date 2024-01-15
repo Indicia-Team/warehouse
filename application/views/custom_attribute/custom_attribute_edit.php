@@ -49,7 +49,7 @@ $enabled = ($disabled_input === 'YES') ? 'disabled="disabled"' : '';
     echo data_entry_helper::text_input([
       'fieldname' => "$model->object_name:caption",
       'label' => 'Caption',
-      'default' => html::initial_value($values, "$model->object_name:caption"),
+      'default' => $values["$model->object_name:caption"] ?? NULL,
       'validation' => ['required'],
       'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
     ]);
@@ -74,7 +74,7 @@ TXT;
       echo data_entry_helper::text_input([
         'fieldname' => "$model->object_name:unit",
         'label' => 'Unit',
-        'default' => html::initial_value($values, "$model->object_name:unit"),
+        'default' => $values["$model->object_name:unit"] ?? NULL,
         'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
         'helpText' => 'Specify the unit or unit abbreviation where appropriage (e.g. mm).',
       ]);
@@ -88,7 +88,7 @@ TXT;
       echo data_entry_helper::text_input([
         'fieldname' => "$model->object_name:term_name",
         'label' => 'Term name',
-        'default' => html::initial_value($values, "$model->object_name:term_name"),
+        'default' => $values["$model->object_name:term_name"] ?? NULL,
         'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
         'helpText' => $helpText,
       ]);
@@ -101,7 +101,7 @@ TXT;
       echo data_entry_helper::text_input([
         'fieldname' => "$model->object_name:term_identifier",
         'label' => 'Term identifier',
-        'default' => html::initial_value($values, "$model->object_name:term_identifier"),
+        'default' => $values["$model->object_name:term_identifier"] ?? NULL,
         'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
         'helpText' => $helpText,
       ]);
@@ -301,7 +301,7 @@ HTML;
       'fieldname' => 'valid_numeric',
       'label' => 'Numeric characters only',
       'default' => $model->valid_numeric,
-      'helpText' => 'Enforce that any value provided consists of numeric 
+      'helpText' => 'Enforce that any value provided consists of numeric
       characters (0-9 and the locale-specific decimal point) only, with negative
       values allowed.',
     ]);
@@ -345,8 +345,8 @@ HTML;
       'fieldname' => 'valid_decimal',
       'label' => 'Formatted decimal',
       'default' => $model->valid_decimal,
-      'helpText' => 'Validate a non-negative decimal format against the 
-      provided pattern, e.g. 2 (2 digits after the decimal point) or 2,2 
+      'helpText' => 'Validate a non-negative decimal format against the
+      provided pattern, e.g. 2 (2 digits after the decimal point) or 2,2
       (2 digits before and 2 digits after the decimal point).',
     ]);
     $val = html::specialchars($model->valid_dec_format);

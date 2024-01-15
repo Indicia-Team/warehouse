@@ -544,7 +544,7 @@ ROW;
           // Recurse into plain array data.
           $this->outputArrayAsHtml($value, $options);
         }
-        else {
+        elseif ($value !== NULL) {
           // A simple value to output. If it contains an internal link then
           // process it to hide user/secret data.
           if (preg_match('/^http(s)?:\/\//', $value)) {
@@ -613,7 +613,7 @@ ROW;
         $value = isset($row[$column]) ? $row[$column] : 'not available';
         if (is_array($value)) {
           // Might have nested data to output, e.g. for a foreign key.
-          $this->outputArrayAsHtml($value, array());
+          $this->outputArrayAsHtml($value);
         }
         else {
           echo $value;

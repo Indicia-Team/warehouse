@@ -446,7 +446,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $filecontent = fread($resource, 1000000);
     // If no BOM, not unicode, so convert for safety. See Warehouse issue 22.
     if (strpos($filecontent, "\xEF\xBB\xBF") !== 0) {
-      $filecontent = utf8_encode($filecontent);
+      $filecontent = mb_convert_encoding($filecontent, 'UTF-8', 'ISO-8859-1');
     }
     $settings = data_cleaner::parseTestFile($filecontent);
     $this->readRuleContent($settings, $cacheArr['files'][$totaldone]['path'], $cacheArr['files'][$totaldone]['source_url']);

@@ -134,7 +134,7 @@ DESC;
 The scheduled tasks process has not been called recently. This means that many background
 processes required for the operation of Indicia are not being run, for example species and term lookup
 services may return empty results.
-See <a href=@http://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/scheduled-tasks.html">
+See <a href="http://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/scheduled-tasks.html">
 the scheduled tasks documentation</a>.
 DESC;
     }
@@ -142,7 +142,7 @@ DESC;
       $description = <<<DESC
 Some scheduled tasks appear to be not running correctly as their timestamp indicates the
 last successful run was more than a day ago.
-See <a href=@http://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/scheduled-tasks.html">
+See <a href="http://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/scheduled-tasks.html">
 the scheduled tasks documentation</a>.
 DESC;
     }

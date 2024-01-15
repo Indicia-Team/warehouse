@@ -28,7 +28,6 @@ class Person_Controller extends Gridview_Base_Controller {
     parent::__construct('person');
     $this->pagetitle = "People";
     $this->model = new Person_Model();
-    $this->flag_warning = null;
 
     // use a report to load the users list so the parameters can be more complex
     $this->gridReport = 'library/people/people_list';

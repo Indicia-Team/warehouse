@@ -50,6 +50,7 @@ class Licence_Model extends ORM {
       'url_readable',
       'url_legal',
       'version',
+      'open',
     ];
     return parent::validate($array, $save);
   }

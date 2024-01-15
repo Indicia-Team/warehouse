@@ -115,8 +115,6 @@ class report_standard_params_samples {
         'description' => 'Comma separated list of location IDs',
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
               "and st_intersects(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom) " .
               "and (st_geometrytype(s.geom)='ST_Point' or not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom))",
@@ -127,14 +125,10 @@ class report_standard_params_samples {
         'datatype' => 'integer[]',
         'display' => 'Location IDs (indexed)',
         'description' => 'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
+        'param_op' => 'inOrNotIn',
         'wheres' => [
           [
-            'param_op' => 'in',
-            'sql' => "s.location_ids && ARRAY[#indexed_location_list#]",
-          ],
-          [
-            'param_op' => 'not in',
-            'sql' => "(NOT (s.location_ids && ARRAY[#indexed_location_list#]) OR s.location_ids IS NULL)",
+            'sql' => "s.location_ids IS NOT NULL AND s.location_ids && ARRAY[#indexed_location_list#]",
           ],
         ],
       ],
@@ -145,8 +139,6 @@ class report_standard_params_samples {
           'of these types will be included.',
         'joins' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => 'join locations ltype on s.location_ids @> ARRAY[ltype.id] ' .
               'and ltype.location_type_id in (#indexed_location_type_list#) and ltype.deleted=false',
           ],
@@ -236,8 +228,6 @@ class report_standard_params_samples {
           'affected in any way, not just when it is edited. E.g. an update to spatial indexing will update the tracking.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' =>
             "s.tracking >= #tracking_from#",
           ],
@@ -251,8 +241,6 @@ class report_standard_params_samples {
           'affected in any way, not just when it is edited. E.g. an update to spatial indexing will update the tracking.',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' =>
             "s.tracking <= #tracking_from#",
           ],
@@ -311,8 +299,6 @@ class report_standard_params_samples {
         'display' => 'Recorder name contains',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
             'sql' => "sj_smp_snf.recorders ~* regexp_replace('#recorder_name#', '[^a-zA-Z0-9]+', '|')",
           ],
         ],

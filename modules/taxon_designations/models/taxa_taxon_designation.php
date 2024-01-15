@@ -23,8 +23,6 @@ defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the taxa_taxon_designations table.
- *
- * @link http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxa_taxon_designation_Model extends ORM {
 
