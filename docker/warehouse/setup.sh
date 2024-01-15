@@ -23,7 +23,7 @@ if [ $location = "http://localhost:8080/index.php/setup_check" ]; then
     echo "...Setting the password for user 'admin' to 'password'."
     curl --config warehouse/setup/03_set_admin_password
     echo "...Upgrading the indicia schema to the most recent version."
-    curl --config warehouse/setup/database_upgrade   
+    curl --config warehouse/setup/database_upgrade
 
     # Now the indicia schema exists we can set permissions for it.
     echo "...Setting permissions on the indicia schema."
@@ -212,3 +212,6 @@ ____EOF
     fi # End of enable scheduled_tasks.
   fi # End of initialise indicia schema.
 fi # End of setup.
+echo
+echo "Warehouse setup complete."
+echo

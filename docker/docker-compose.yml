@@ -75,7 +75,7 @@ services:
             WAREHOUSE_API_PROJECT_OCC_DEL: ${WAREHOUSE_API_PROJECT_OCC_DEL}
             WAREHOUSE_API_PROJECT_SMP: ${WAREHOUSE_API_PROJECT_SMP}
             WAREHOUSE_API_PROJECT_SMP_DEL: ${WAREHOUSE_API_PROJECT_SMP_DEL}
-            ELASTIC_URL: ${ELASTIC_URL}
+            ELASTIC_PROXY_URL: ${ELASTIC_PROXY_URL}
         # Share the warehouse code between host and container
         volumes:
             - ..:/var/www/html/
@@ -122,20 +122,27 @@ services:
             discovery.type: single-node
             # Disable requirement for TLS encryption on interfaces so no
             # certificates needed and no user authentication.
-            xpack.security.enabled: 'false'
-#            xpack.security.http.ssl.enabled: 'false'
-#            xpack.security.transport.ssl.enabled: 'false'
+            xpack.security.enabled: 'true'
+            xpack.security.transport.ssl.enabled: 'false'
+            xpack.security.http.ssl.enabled: 'false'
             # Limit Java heap size.
             # ES_JAVA_OPTS: "-Xms256m -Xmx256m"
             xpack.monitoring.collection.enabled: 'true'
+
+            # Pass through settings from .env file.
+            LOGSTASH_USER: ${LOGSTASH_USER}
+            LOGSTASH_PASSWORD: ${LOGSTASH_PASSWORD}
+            PROXY_USER: ${PROXY_USER}
+            PROXY_PASSWORD: ${PROXY_PASSWORD}
+
         volumes:
             # Persist indexes in a named volume.
             - elastic:/usr/share/elasticsearch/data
         ports: 
             - "9200:9200"
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:9200"]
-#            test: ["CMD", "curl", "-f", "--user", "elastic:password", "http://localhost:9200"]
+            # test: ["CMD", "curl", "-f", "http://localhost:9200"]
+            test: ["CMD", "curl", "-f", "--user", "elastic:password", "http://localhost:9200"]
             interval: 1m
             timeout: 5s
             retries: 3
@@ -179,10 +186,10 @@ services:
             # WITH SECURITY
             # By disabling monitorin of Logstash by xpack I am side-stepping
             # a difficulty with authentication.
-            #XPACK_MONITORING_ENABLED: 'false'
+            XPACK_MONITORING_ENABLED: 'false'
             # WITHOUT SECURITY
-            XPACK_MONITORING_ENABLED: 'true'
-            XPACK_MONITORING_ELASTICSEARCH_HOSTS: ${ELASTIC_URL}
+            # XPACK_MONITORING_ENABLED: 'true'
+            # XPACK_MONITORING_ELASTICSEARCH_HOSTS: ${ELASTIC_URL}
            # Limiting Java heap size. 4g to 8g recommended.
             LS_JAVA_OPTS: "-Xms2g -Xmx2g"
         depends_on:

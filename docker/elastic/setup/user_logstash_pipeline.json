@@ -1,5 +1,0 @@
-{
-  "password": "password",
-  "roles": [ "logstash_writer"],
-  "full_name": "Logstash User for Indicia pipelines"
-}

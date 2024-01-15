@@ -5,6 +5,9 @@ set -e
 # Set the project name which determines the network and container names.
 export COMPOSE_PROJECT_NAME=indicia
 
+# Make .env variables available to scripts
+source .env
+
 # Ensure dependencies of warehouse code have been installed on host.
 if [ ! $(which composer) ]; then
   # Install composer locally if not present.

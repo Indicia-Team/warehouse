@@ -21,7 +21,7 @@ if [ ! -f "$file" ]; then
     -e "s|{{ Project OccDel }}|${WAREHOUSE_API_PROJECT_OCC_DEL}|" \
     -e "s|{{ Project Smp }}|${WAREHOUSE_API_PROJECT_SMP}|" \
     -e "s|{{ Project SmpDel }}|${WAREHOUSE_API_PROJECT_SMP_DEL}|" \
-    -e "s|{{ Elasticsearch address }}|${ELASTIC_URL}|" \
+    -e "s|{{ Elasticsearch address }}|${ELASTIC_PROXY_URL}|" \
     $file
   chown $UID:$GID $file
 fi
