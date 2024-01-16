@@ -122,12 +122,16 @@ services:
             discovery.type: single-node
             # Disable requirement for TLS encryption on interfaces so no
             # certificates needed and no user authentication.
-            xpack.security.enabled: 'true'
-            xpack.security.transport.ssl.enabled: 'false'
-            xpack.security.http.ssl.enabled: 'false'
+            xpack.security.enabled: true
+            xpack.security.transport.ssl.enabled: true
+            xpack.security.transport.ssl.verification_mode: certificate
+            xpack.security.transport.ssl.client_authentication: required
+            xpack.security.transport.ssl.keystore.path: elastic-certificates.p12
+            xpack.security.transport.ssl.truststore.path: elastic-certificates.p12
+            xpack.security.http.ssl.enabled: false
             # Limit Java heap size.
             # ES_JAVA_OPTS: "-Xms256m -Xmx256m"
-            xpack.monitoring.collection.enabled: 'true'
+            xpack.monitoring.collection.enabled: true
 
             # Pass through settings from .env file.
             LOGSTASH_USER: ${LOGSTASH_USER}
@@ -137,7 +141,9 @@ services:
 
         volumes:
             # Persist indexes in a named volume.
-            - elastic:/usr/share/elasticsearch/data
+            - elastic_data:/usr/share/elasticsearch/data
+            # Persist config in a named volume.
+            - elastic_config:/usr/share/elasticsearch/config
         ports: 
             - "9200:9200"
         healthcheck:
@@ -202,7 +208,8 @@ volumes:
     postgres:
     pgadmin:
     geoserver:
-    elastic:
+    elastic_data:
+    elastic_config:
     crontab:
 
 networks:

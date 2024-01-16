@@ -85,6 +85,34 @@ if [ $response = 404 ]; then
     --data @elastic/setup/sample_brc1_v1.json \
     --output outputfile
 
+  echo "Creating Certificate Authority."
+  # Saving to the config folder as that is persisted in a docker volume
+  docker exec -w /usr/share/elasticsearch indicia-elastic-1 \
+    ./bin/elasticsearch-certutil ca \
+    --out ./config/elastic-stack-ca.p12 \
+    --pass password \
+    --silent
+
+  echo "Creating certificates."
+  docker exec -w /usr/share/elasticsearch indicia-elastic-1 \
+    ./bin/elasticsearch-certutil cert \
+      --ca ./config/elastic-stack-ca.p12 \
+      --ca-pass password \
+      --out ./config/elastic-certificates.p12 \
+      --pass password \
+      --silent
+
+  echo "Storing passwords."
+  docker exec -w /usr/share/elasticsearch indicia-elastic-1 sh -c \
+    "echo password | ./bin/elasticsearch-keystore add -f \
+      --stdin xpack.security.transport.ssl.keystore.secure_password"
+  docker exec -w /usr/share/elasticsearch indicia-elastic-1 sh -c \
+    "echo password | ./bin/elasticsearch-keystore add -f \
+      --stdin xpack.security.transport.ssl.truststore.secure_password"
+
+  echo "Restarting Elasticsearch to apply changes to keystore."
+  docker restart indicia-elastic-1
+
   echo "ElasticSearch set up complete."
 else
   echo "ElasticSearch already set up (response code $response)."
