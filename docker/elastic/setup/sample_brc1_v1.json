@@ -357,7 +357,7 @@
           },
           "created_on" : {
             "type" : "date",
-            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS[S]||yyyy-MM-dd"
           },
           "group" : {
             "properties" : {
@@ -423,14 +423,14 @@
           },
           "updated_on" : {
             "type" : "date",
-            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS[S]||yyyy-MM-dd"
           },
           "verification_status" : {
             "type" : "keyword"
           },
           "verified_on" : {
             "type" : "date",
-            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS[S]||yyyy-MM-dd"
           },
           "verifier" : {
             "properties" : {

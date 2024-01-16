@@ -32,15 +32,6 @@
           }
         }
       },
-      "data_cleaner_info" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
       "date" : {
         "type" : "text",
         "fields" : {
@@ -312,7 +303,7 @@
           },
           "verified_on" : {
             "type" : "date",
-            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS[S]||yyyy-MM-dd"
           },
           "verifier" : {
             "properties" : {
@@ -329,42 +320,6 @@
                 }
               }
             }
-          }
-        }
-      },
-      "indexed_location_ids" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "input_form" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "input_sref" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "input_sref_system" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
           }
         }
       },
@@ -526,33 +481,6 @@
           }
         }
       },
-      "map_sq_10km_geom" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "map_sq_1km_geom" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "map_sq_2km_geom" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
       "metadata" : {
         "properties" : {
           "confidential" : {
@@ -563,7 +491,7 @@
           },
           "created_on" : {
             "type" : "date",
-            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS[S]||yyyy-MM-dd"
           },
           "group" : {
             "properties" : {
@@ -653,7 +581,7 @@
           },
           "updated_on" : {
             "type" : "date",
-            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSSS||yyyy-MM-dd"
+            "format" : "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd HH:mm:ss.SSS[S]||yyyy-MM-dd"
           },
           "website" : {
             "properties" : {
@@ -834,61 +762,7 @@
           }
         }
       },
-      "occurrence_external_key" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "parent_sample_attrs_json" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "recorded_location_code" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "recorded_parent_location_code" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "sample_external_key" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
       "tags" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "taxa_taxon_list_id" : {
         "type" : "text",
         "fields" : {
           "keyword" : {
@@ -1115,24 +989,6 @@
                 "ignore_above" : 256
               }
             }
-          }
-        }
-      },
-      "taxon_meaning_id" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
-          }
-        }
-      },
-      "tracking" : {
-        "type" : "text",
-        "fields" : {
-          "keyword" : {
-            "type" : "keyword",
-            "ignore_above" : 256
           }
         }
       },
