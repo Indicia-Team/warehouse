@@ -2109,7 +2109,7 @@ SQL;
    */
   private function includeParamComponent(array $componentDef, $paramValue) {
     $include = FALSE;
-    if (!isset($componentDef['value']) || $componentDef['value'] === '') {
+    if (!isset($componentDef['value'])) {
       // If value not qualified in the where definition, any value except
       // empty triggers the inclusion.
       $include = $paramValue !== '' && $paramValue !== "NULL";
