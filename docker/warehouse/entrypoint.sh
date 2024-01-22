@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Exit script on error.
+set -e
+
 # Copy config files in to place after the container is running
 # and the source code has been mounted to var/www/html.
 # Do not overwrite existing files which the user may have customised.
@@ -25,6 +28,9 @@ if [ ! -f "$file" ]; then
     $file
   chown $UID:$GID $file
 fi
+
+# Ensure Elasticsearch CA certificate is registered
+update-ca-certificates
 
 # Start syslog
 rsyslogd

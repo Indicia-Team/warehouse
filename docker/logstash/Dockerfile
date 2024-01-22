@@ -50,6 +50,8 @@ RUN file=${SUPPORT_FILES_PATH}/logstash-config/occurrences-http-indicia \
     -e "s|{{ Logstash password }}|${LOGSTASH_PASSWORD}|" \
     -e "s|# user =>|user =>|" \
     -e "s|# password =>|password =>|" \
+    -e "s|{{ Certificate file }}|/usr/share/logstash/config/certs/ca.crt|" \
+    -e "s|# cacert =>|cacert =>|" \
     $file.conf
 
 # Create occurrences-http-indicia-deletions.conf from its template.
@@ -66,6 +68,8 @@ RUN file=${SUPPORT_FILES_PATH}/logstash-config/occurrences-http-indicia-deletion
     -e "s|{{ Logstash password }}|${LOGSTASH_PASSWORD}|" \
     -e "s|# user =>|user =>|" \
     -e "s|# password =>|password =>|" \
+    -e "s|{{ Certificate file }}|/usr/share/logstash/config/certs/ca.crt|" \
+    -e "s|# cacert =>|cacert =>|" \
     $file.conf
 
 # Create samples-http-indicia.conf from its template.
@@ -82,6 +86,8 @@ RUN file=${SUPPORT_FILES_PATH}/logstash-config/samples-http-indicia \
     -e "s|{{ Logstash password }}|${LOGSTASH_PASSWORD}|" \
     -e "s|# user =>|user =>|" \
     -e "s|# password =>|password =>|" \
+    -e "s|{{ Certificate file }}|/usr/share/logstash/config/certs/ca.crt|" \
+    -e "s|# cacert =>|cacert =>|" \
     $file.conf
 
 # Create samples-http-indicia-deletions.conf from its template.
@@ -98,6 +104,8 @@ RUN file=${SUPPORT_FILES_PATH}/logstash-config/samples-http-indicia-deletions \
     -e "s|{{ Logstash password }}|${LOGSTASH_PASSWORD}|" \
     -e "s|# user =>|user =>|" \
     -e "s|# password =>|password =>|" \
+    -e "s|{{ Certificate file }}|/usr/share/logstash/config/certs/ca.crt|" \
+    -e "s|# cacert =>|cacert =>|" \
     $file.conf
 
 # Create pipelines.yml from 

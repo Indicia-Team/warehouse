@@ -76,12 +76,14 @@ services:
             WAREHOUSE_API_PROJECT_SMP: ${WAREHOUSE_API_PROJECT_SMP}
             WAREHOUSE_API_PROJECT_SMP_DEL: ${WAREHOUSE_API_PROJECT_SMP_DEL}
             ELASTIC_PROXY_URL: ${ELASTIC_PROXY_URL}
-        # Share the warehouse code between host and container
         volumes:
+            # Share the warehouse code between host and container
             - ..:/var/www/html/
             - crontab:/var/spool/cron/crontabs
-        # Apache is configured to run on port 8080 in warehouse/setup.sh  
+            # Share CA certificate provided by Elasticsearch.
+            - elastic_certs:/usr/local/share/ca-certificates
         ports: 
+            # Apache is configured to run on port 8080 in warehouse/setup.sh  
             - "8080:8080"
         healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080"]
@@ -95,6 +97,8 @@ services:
                 condition: service_healthy
             mailhog:
                 condition: service_started
+            elastic:
+                condition: service_healthy
 
     # The Geoserver container
     # Accessible on http://localhost:8090/geoserver
@@ -110,9 +114,20 @@ services:
             postgres:
                 condition: service_healthy
 
+    # A temporary container to force correct permissions on elastic_certs volume
+    # See https://github.com/docker/compose/issues/3270
+    volume-init:
+        image: alpine:3
+        volumes:
+            - elastic_certs:/tmp/share
+        command: chown 1000:0 /tmp/share
+
     # The ElasticSearch container
     elastic:
-        image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
+        build: 
+            context: ./elastic
+            args:
+                ELASTIC_VERSION: ${ELASTIC_VERSION}
         environment:
             # The password for the 'elastic' user.
             ELASTIC_PASSWORD: password
@@ -120,18 +135,20 @@ services:
             # areas vm.max_map_count is too low error. Also prevents any attempt
             # to join other clusters.
             discovery.type: single-node
-            # Disable requirement for TLS encryption on interfaces so no
-            # certificates needed and no user authentication.
+            # Enable user authentication.
             xpack.security.enabled: true
+            # Enable encryption of the transport protocol.
             xpack.security.transport.ssl.enabled: true
             xpack.security.transport.ssl.verification_mode: certificate
             xpack.security.transport.ssl.client_authentication: required
-            xpack.security.transport.ssl.keystore.path: elastic-certificates.p12
-            xpack.security.transport.ssl.truststore.path: elastic-certificates.p12
-            xpack.security.http.ssl.enabled: false
-            # Limit Java heap size.
+            xpack.security.transport.ssl.keystore.path: certs/transport.p12
+            xpack.security.transport.ssl.truststore.path: certs/transport.p12
+            # Enable encryption of the http protocol.
+            xpack.security.http.ssl.enabled: true
+            xpack.security.http.ssl.keystore.path: certs/http.p12
+            # Limit Java heap size by uncommenting the following if your host
+            # has little memory.
             # ES_JAVA_OPTS: "-Xms256m -Xmx256m"
-            xpack.monitoring.collection.enabled: true
 
             # Pass through settings from .env file.
             LOGSTASH_USER: ${LOGSTASH_USER}
@@ -142,18 +159,20 @@ services:
         volumes:
             # Persist indexes in a named volume.
             - elastic_data:/usr/share/elasticsearch/data
-            # Persist config in a named volume.
-            - elastic_config:/usr/share/elasticsearch/config
+            # Share certificates in a named volume.
+            - elastic_certs:/usr/share/elasticsearch/config/share
         ports: 
             - "9200:9200"
         healthcheck:
-            # test: ["CMD", "curl", "-f", "http://localhost:9200"]
-            test: ["CMD", "curl", "-f", "--user", "elastic:password", "http://localhost:9200"]
+            test: ["CMD", "curl", "-f", "--user", "elastic:password", "--cacert", "/usr/share/elasticsearch/config/certs/ca.crt", "https://localhost:9200"]
             interval: 1m
             timeout: 5s
             retries: 3
             start_period: 5m
             start_interval: 5s
+        depends_on:
+            volume-init:
+                condition: service_completed_successfully
 
     # The Kibana container
     kibana:
@@ -163,6 +182,13 @@ services:
             ELASTICSEARCH_HOSTS: ${ELASTIC_URL}
             ELASTICSEARCH_USERNAME: kibana_system
             ELASTICSEARCH_PASSWORD: password
+            ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: /usr/share/kibana/config/certs/ca.crt
+            SERVER_SSL_ENABLED: true
+            SERVER_SSL_CERTIFICATE: /usr/share/kibana/config/certs/indicia-kibana-1.crt
+            SERVER_SSL_KEY: /usr/share/kibana/config/certs/indicia-kibana-1.key
+        volumes:
+            # Share CA certificate provided by Elasticsearch.
+            - elastic_certs:/usr/share/kibana/config/certs
         ports: 
             - "5601:5601"
         depends_on:
@@ -198,6 +224,9 @@ services:
             # XPACK_MONITORING_ELASTICSEARCH_HOSTS: ${ELASTIC_URL}
            # Limiting Java heap size. 4g to 8g recommended.
             LS_JAVA_OPTS: "-Xms2g -Xmx2g"
+        volumes:
+            # Share CA certificate provided by Elasticsearch.
+            - elastic_certs:/usr/share/logstash/config/certs
         depends_on:
             elastic:
                 condition: service_healthy
@@ -209,7 +238,7 @@ volumes:
     pgadmin:
     geoserver:
     elastic_data:
-    elastic_config:
+    elastic_certs:
     crontab:
 
 networks:

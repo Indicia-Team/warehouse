@@ -62,4 +62,4 @@ RUN sed -i 's/<VirtualHost *:80>/<VirtualHost *:8080>/' /etc/apache2/sites-enabl
 
 # When a warehouse container is started, we need to execute a startup script.
 # (The working directory is /var/www/html)
-ENTRYPOINT [ "/bin/sh", "docker/warehouse/startup.sh"]
+ENTRYPOINT [ "/bin/sh", "docker/warehouse/entrypoint.sh"]

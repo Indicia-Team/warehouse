@@ -52,11 +52,11 @@ docker compose build --pull \
 # This is performed in the background.
 docker compose up -d
 
-# Run warehouse setup.
-source warehouse/setup.sh
-
 # Run elasticsearch setup.
 source elastic/setup.sh
+
+# Run warehouse setup.
+source warehouse/setup.sh
 
 # Clean up.
 rm -f cookiefile
