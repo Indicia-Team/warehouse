@@ -2112,7 +2112,7 @@ SQL;
     if (!isset($componentDef['value'])) {
       // If value not qualified in the where definition, any value except
       // empty triggers the inclusion.
-      $include = $paramValue !== '' && $paramValue !== "NULL";
+      $include = $paramValue !== '' && $paramValue !== "NULL" && $paramValue !== "0";
     }
     else {
       // Value qualified in the definition, so it must match or not match,
