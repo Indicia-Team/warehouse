@@ -625,7 +625,7 @@ class report_standard_params_occurrences {
         'description' => 'Exclude sensitive records?',
         'wheres' => [
           [
-            'sql' => "o.sensitive=false",
+            'sql' => "o.sensitive<>true",
           ],
         ],
       ],
