@@ -366,7 +366,7 @@ class ReportEngine {
         $metadata = XMLReportReader::loadMetadata($this->report);
         if ($this->isReportRestricted($report, $metadata)) {
           // Abort as restricted report.
-          throw new Exception('Attempt to access unauthorised report');
+          throw new Exception('Attempt to access unauthorised report', 404);
         }
         $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
         break;
@@ -1007,7 +1007,7 @@ SQL;
       }
     }
     if ($this->report === NULL) {
-      throw new exception("Unable to find report $request.");
+      throw new exception("Unable to find report $request.", 404);
     }
   }
 
