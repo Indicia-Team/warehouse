@@ -85,9 +85,11 @@ $config['authentication_methods'] = [
       // to TRUE to limit to data accessible to this website. Set
       // limit_to_own_data to TRUE to restrict to the user's own data. Each
       // endpoint needs to be added to the 'elasticsearch' configuration entry
-      // to define how it maps to Elasticsearch. If using directClient
-      // authentication, also configure the clients which can access each index
-      // in the clients config entry.
+      // to define how it maps to Elasticsearch. If allowing directClient
+      // authentication, either configure the clients which can access each
+      // index in the clients config entry in /modules/rest_api/config/rest.php,
+      // or in the rest_api_clients and rest_api_client_connections tables
+      // using the warehouse UI.
       'elasticsearch' => ['es'],
     ],
   ],
@@ -100,17 +102,22 @@ $config['authentication_methods'] = [
     'resource_options' => [
       // Grants full access to all reports. Client configs can override this.
       'reports' => [],
-      // Grant access to Elasticsearch but in this case, apply website and user
-      // ID filters. Limit to own data can be bypassed by providing a token
-      // without a http://indicia.org.uk/user:id claim only if the
-      // allow_anonymous option is set to TRUE.
-      // Best practice is to set both limit options to TRUE, then in the
-      // Indicia settings enable the option to allow users to access all data
-      // if appropriate for the website.
+      // Grant access to elasticsearch via the listed endpoints. Either a
+      // simple array of endpoint names, or a associative array keyed by name
+      // containing config in the values. Set config option limit_to_website
+      // to TRUE to limit to data accessible to this website. Set
+      // limit_to_own_data to TRUE to restrict to the user's own data. Each
+      // endpoint needs to be added to the 'elasticsearch' configuration entry
+      // to define how it maps to Elasticsearch. If allowing jwtClient
+      // authentication, either configure the clients which can access each
+      // index in the clients config entry in /modules/rest_api/config/rest.php,
+      // or in the rest_api_clients and rest_api_client_connections tables
+      // using the warehouse UI.
       'elasticsearch' => [
         'es' => [],
       ],
     ],
+  ],
   'jwtUser' => [
     // TRUE to allow CORS from any domain, or provide an array of domain regexes.
     // OPTIONS requests always return CORS header unless this is FALSE which
