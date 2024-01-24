@@ -2096,15 +2096,44 @@ SQL;
   }
 
   /**
+   * Determines if a param component should be included in the report SQL.
+   *
+   * Params can have sub-components (joins or where clauses) which have a value
+   * and test operator to determine if they should be included in the report
+   * SQL query or not.
+   *
+   * @param array $componentDef
+   *   Definition of the join or where clause read from the report XML file.
+   * @param mixed $paramValue
+   *   Supplied parameter value (if any).
+   */
+  private function includeParamComponent(array $componentDef, $paramValue) {
+    $include = FALSE;
+    if (!isset($componentDef['value'])) {
+      // If value not qualified in the where definition, any value except
+      // empty triggers the inclusion.
+      $include = $paramValue !== '' && $paramValue !== "NULL" && $paramValue !== "0";
+    }
+    else {
+      // Value qualified in the definition, so it must match or not match,
+      // depending on the operator in the definition.
+      if (empty($componentDef['operator']) || $componentDef['operator'] === 'equal') {
+        $include = $componentDef['value'] === $paramValue;
+      }
+      elseif (!empty($componentDef['operator']) && $componentDef['operator'] === 'notequal') {
+        $include = $componentDef['value'] !== $paramValue;
+      }
+    }
+    return $include;
+  }
+
+  /**
    * Add any joins defined by a used parameter to the query.
    */
   private function addParamJoins($query, $paramDef, $value) {
     $joins = [];
     foreach ($paramDef['joins'] as $joinDef) {
-      if ((!empty($joinDef['operator']) && (($joinDef['operator'] === 'equal' && $joinDef['value'] === $value) ||
-          ($joinDef['operator'] === 'notequal' && $joinDef['value'] !== $value)))
-          // Operator not provided, so default is to join if param not empty (NULL string passed for empty integers).
-          || (empty($joinDef['operator']) && !empty($value) && $value !== "NULL")) {
+      if ($this->includeParamComponent($joinDef, $value)) {
         if (!empty($joinDef['sql'])) {
           $joins[] = $joinDef['sql'];
         }
@@ -2172,23 +2201,7 @@ SQL;
     // Step through the supplied list of parameter values (normally only 1).
     foreach ($valueList as $value) {
       foreach ($paramDef['wheres'] as $whereDef) {
-        $includeWhere = FALSE;
-        if (!isset($whereDef['value']) || $whereDef['value'] === '') {
-          // If value not qualified in the where definition, any value except
-          // empty triggers the inclusion.
-          $includeWhere = $value !== '' && $value !== "NULL";
-        }
-        else {
-          // Value qualified in the definition, so it must match or not match,
-          // depending on the operator in the definition.
-          if (empty($whereDef['operator']) || $whereDef['operator'] === 'equal') {
-            $includeWhere = $whereDef['value'] === $value;
-          }
-          elseif (!empty($whereDef['operator']) && $whereDef['operator'] === 'notequal') {
-            $includeWhere = $whereDef['value'] !== $value;
-          }
-        }
-        if ($includeWhere) {
+        if ($this->includeParamComponent($whereDef, $value)) {
           $filterClauses[] = "($whereDef[sql])";
         }
       }
