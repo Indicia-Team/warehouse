@@ -22,28 +22,28 @@
 /**
  * Controller providing CRUD access to the list of REST API clients defined in the database.
  */
-class Rest_api_client_Controller extends Gridview_Base_Controller
-{
+class Rest_api_client_Controller extends Gridview_Base_Controller {
+
   /**
-   * Constructor
+   * Constructor.
    */
-  public function __construct()
-  {
+  public function __construct() {
     parent::__construct('rest_api_client');
 
-    $this->columns = array(
-        'id' => 'ID',
-        'title' => '',
-        'description' => '',
-        'website_title'  => 'Website'
-    );
+    $this->columns = [
+      'id' => 'ID',
+      'title' => '',
+      'username' => '',
+      'description' => '',
+      'website_title'  => 'Website',
+    ];
 
     $this->pagetitle = "REST API clients";
     $this->set_website_access('admin');
   }
 
   /**
-   * If trying to edit an existing website record, ensure the user has rights to this website.
+   * When editing a website record ensure the user has rights to this website.
    */
   public function record_authorised($id) {
     if (is_null($id)) {
@@ -58,7 +58,7 @@ class Rest_api_client_Controller extends Gridview_Base_Controller
   }
 
   /**
-   * Core admin or website admins can see the list of websites
+   * Core admin or website admins can see the list of websites.
    */
   public function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
@@ -77,22 +77,23 @@ class Rest_api_client_Controller extends Gridview_Base_Controller
     ];
   }
 
-  /*protected function getModelValues() {
-    $r = parent::getModelValues();
-    $r['secret2'] = $r['rest_api_client:secret'];
-    return $r;
-  }*/
-
+  /**
+   * Load websites required by edit view.
+   *
+   * @param array $values
+   *   Data values being loaded into the edit form.
+   */
   protected function prepareOtherViewData(array $values) {
     $websites = ORM::factory('website');
-    if (!empty($values['rest_api_client:website_id']))
+    if (!empty($values['rest_api_client:website_id'])) {
       // Can't change website for existing REST API client.
       $websites = $websites->where('id', $values['rest_api_client:website_id']);
+    }
     elseif (!$this->auth->logged_in('CoreAdmin') && $this->auth_filter['field'] === 'website_id') {
-      $websites = $websites->in('id',$this->auth_filter['values']);
+      $websites = $websites->in('id', $this->auth_filter['values']);
     }
     $arr = [];
-    foreach ($websites->where('deleted','false')->orderby('title','asc')->find_all() as $website) {
+    foreach ($websites->where('deleted', 'false')->orderby('title', 'asc')->find_all() as $website) {
       $arr[$website->id] = $website->title;
     }
 

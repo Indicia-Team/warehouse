@@ -39,6 +39,15 @@ $id = html::initial_value($values, 'rest_api_client_connection:id');
       'fieldname' => 'rest_api_client_connection:title',
       'default' => html::initial_value($values, 'rest_api_client_connection:title'),
       'validation' => ['required'],
+      'description' => 'Title of the connection, for admin use only.',
+    ]);
+
+    echo data_entry_helper::text_input([
+      'label' => 'Proj ID',
+      'fieldname' => 'rest_api_client_connection:proj_id',
+      'default' => html::initial_value($values, 'rest_api_client_connection:proj_id'),
+      'validation' => ['required'],
+      'description' => 'Identifier of the connection, passed in API requests.',
     ]);
 
     echo data_entry_helper::textarea([
@@ -76,29 +85,11 @@ $id = html::initial_value($values, 'rest_api_client_connection:id');
         'blankText' => '-Select to enable Elasticsearch access-',
       ]);
 
-      echo data_entry_helper::select([
-        'label' => 'Elasticsearch sensitive record handling',
-        'fieldname' => 'rest_api_client_connection:es_sensitivity_blur',
-        'default' => html::initial_value($values, 'rest_api_client_connection:es_sensitivity_blur') ?? 'B',
-        'helpText' => "For Elasticsearch requests, return the blurred or full-precision copy of the record.",
-        'lookupValues' => [
-          'B' => 'blurred',
-          'F' => 'full-precision',
-        ],
-      ]);
-
       ?>
       </div>
     </div>
 
     <?php
-
-    echo data_entry_helper::textarea([
-      'label' => 'Elasticsearch filter',
-      'fieldname' => 'rest_api_client_connection:es_bool_query',
-      'default' => html::initial_value($values, 'rest_api_client_connection:es_bool_query'),
-      'helpText' => 'JSON object for Elasticsearch Boolean query, containing filtering which will be added to all requests for data from Elasticsearch. The top level property names must match those available for an Elasticsearch boolean query, e.g. must, must_not or should.',
-    ]);
 
     echo data_entry_helper::checkbox([
       'label' => 'Allow reports',
@@ -154,6 +145,13 @@ $id = html::initial_value($values, 'rest_api_client_connection:id');
       'fieldname' => 'rest_api_client_connection:allow_unreleased',
       'default' => html::initial_value($values, 'rest_api_client_connection:allow_unreleased'),
       'helpText' => 'Tick to include unreleased records in those available to this connection. Will only affect reports if they support standard filters.',
+    ]);
+
+    echo data_entry_helper::checkbox([
+      'label' => 'Full precision sensitive records',
+      'fieldname' => 'rest_api_client_connection:full_precision_sensitive_records',
+      'default' => html::initial_value($values, 'rest_api_client_connection:full_precision_sensitive_records'),
+      'helpText' => 'Tick to show PostgreSQL and Elasticsearch data for sensitive records at full precision. If unticked sensitive records will be blurred. Note that this does not affect access to occurrences and samples resources directly via the data resources.',
     ]);
 
     ?>

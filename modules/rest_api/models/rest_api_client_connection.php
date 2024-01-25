@@ -33,13 +33,14 @@ class Rest_api_client_connection_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
+    $id = $array->id ?? '';
+    $array->add_rules('proj_id', 'required', "unique[rest_api_client_connections,proj_id,$id,rest_api_client_id=$array->rest_api_client_id]");
     $array->add_rules('rest_api_client_id', 'required', 'integer');
     $array->add_rules('sharing', 'chars[R,V,D,M,P]');
-    $array->add_rules('es_sensitivity_blur', 'required', 'chars[B,F]');
+    $array->add_rules('filter_id', 'integer');
     $this->unvalidatedFields = [
       'description',
       'es_endpoint',
-      'es_bool_query',
       'allow_reports',
       'limit_to_reports',
       'allow_data_resources',
@@ -48,6 +49,7 @@ class Rest_api_client_connection_Model extends ORM {
       'allow_confidential',
       'allow_sensitive',
       'allow_unreleased',
+      'full_precision_sensitive_records',
     ];
     return parent::validate($array, $save);
   }
@@ -60,10 +62,12 @@ class Rest_api_client_connection_Model extends ORM {
   protected function preSubmit() {
     if (isset($this->submission['fields']['limit_to_reports'])) {
       if (!empty($this->submission['fields']['limit_to_reports']['value'])) {
-        $reportsList = str_replace("\r\n", "\n", $this->submission['fields']['limit_to_reports']['value']);
-        $reportsList = str_replace("\r", "\n", $reportsList);
-        $reportsList = explode("\n", trim($reportsList));
-        $this->submission['fields']['limit_to_reports'] = ['value' => $reportsList];
+        if (!is_array($this->submission['fields']['limit_to_reports']['value'])) {
+          $reportsList = str_replace("\r\n", "\n", $this->submission['fields']['limit_to_reports']['value']);
+          $reportsList = str_replace("\r", "\n", $reportsList);
+          $reportsList = explode("\n", trim($reportsList));
+          $this->submission['fields']['limit_to_reports'] = ['value' => $reportsList];
+        }
       }
       else {
         // Specified but empty, so null it out.

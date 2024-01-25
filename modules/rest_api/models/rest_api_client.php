@@ -35,7 +35,8 @@ class Rest_api_client_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
-    $array->add_rules('username', 'required');
+    $id = $array->id ?? '';
+    $array->add_rules('username', 'required', "unique[rest_api_clients,username,$id]");
     $array->add_rules('website_id', 'required', 'integer');
     $array->add_rules('secret', 'length[7,30]', 'matches_post[secret2]');
     $this->unvalidatedFields = [

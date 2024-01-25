@@ -22,19 +22,20 @@
 /**
  * Controller providing CRUD access to the list of REST API client connections.
  */
-class Rest_api_client_connection_Controller extends Gridview_Base_Controller
-{
+class Rest_api_client_connection_Controller extends Gridview_Base_Controller {
+
   /**
    * Constructor.
    */
   public function __construct() {
     parent::__construct('rest_api_client_connection');
 
-    $this->columns = array(
-        'id' => 'ID',
-        'title' => '',
-        'description' => '',
-    );
+    $this->columns = [
+      'id' => 'ID',
+      'title' => '',
+      'proj_id' => 'Project ID',
+      'description' => '',
+    ];
 
     $this->pagetitle = "REST API client connections";
     $this->set_website_access('admin');
@@ -47,7 +48,7 @@ class Rest_api_client_connection_Controller extends Gridview_Base_Controller
     parent::index();
     // Pass the client into the view, so the add button can pass through to the
     // create form.
-    if ($this->uri->total_arguments()>0) {
+    if ($this->uri->total_arguments() > 0) {
       $this->view->rest_api_client_id = $this->uri->argument(1);
     }
   }
@@ -74,7 +75,7 @@ class Rest_api_client_connection_Controller extends Gridview_Base_Controller
   }
 
   /**
-   * Core admin or website admins can see the list of websites
+   * Core admin or website admins can see the list of websites.
    */
   public function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
