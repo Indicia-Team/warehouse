@@ -100,8 +100,14 @@ $config['authentication_methods'] = [
     // handled at the web-server level).
     'allow_cors' => TRUE,
     'resource_options' => [
-      // Grants full access to all reports. Client configs can override this.
-      'reports' => [],
+      'reports' => [
+        'authorise' => [
+          // In this example, restricted reports are authorised, other
+          // non-restricted reports are still available.
+          'library/occurrences/list_for_elastic_all.xml',
+          'library/occurrences/list_for_elastic_sensitve_all.xml',
+        ],
+      ],
       // Grant access to elasticsearch via the listed endpoints. Either a
       // simple array of endpoint names, or a associative array keyed by name
       // containing config in the values. Set config option limit_to_website
