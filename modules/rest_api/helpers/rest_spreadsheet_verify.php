@@ -419,7 +419,7 @@ class rest_spreadsheet_verify {
         $updates = data_utils::getOccurrenceTableVerificationUpdateValues($db, $metadata['user_id'], $status, $subStatus, 'H');
         // Check for any workflow updates. Any workflow records will need an
         // individual update.
-        data_utils::applyWorkflowToOccurrenceUpdates($db, RestObjects::$clientWebsiteId, $metadata['user_id'], [$id], $updates);
+        data_utils::applyWorkflowToOccurrenceVerificationUpdates($db, RestObjects::$clientWebsiteId, $metadata['user_id'], [$id], $updates);
       }
 
       if (empty(trim($comment))) {
