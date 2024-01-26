@@ -227,7 +227,7 @@ SQL;
     // Try to update 2nd occurrence in fixture which is confidential.
     $r = $this->callService('occurrences/2', ['proj_id' => 'testreportconnection'], [
       'values' => ['Comment' => 'Attempt to update confidential record'],
-    ], [], NULL, 'PUT');
+    ], [], 'PUT');
     $this->assertEquals(404, $r['httpCode'], "Attempt to overwrite confidential record didn't return 404 Not found.");
     // Now set allow_confidential.
     self::$db->query("update rest_api_client_connections set allow_confidential=true where proj_id='testreportconnection'");
@@ -236,7 +236,7 @@ SQL;
     // Try update again as should now be allowed.
     $r = $this->callService('occurrences/2', ['proj_id' => 'testreportconnection'], [
       'values' => ['Comment' => 'Attempt to update confidential record'],
-    ], [], NULL, 'PUT');
+    ], [], 'PUT');
     $this->assertEquals(200, $r['httpCode'], "Attempt to overwrite confidential record when allowed didn't return 200 OK.");
     // Test allow_sensitive (initially on)
     self::$db->query('update occurrences set sensitivity_precision=1000 where id=1');
@@ -245,7 +245,7 @@ SQL;
     $this->assertEquals(2, count($r['response']), "$this->authMethod request including sensitive did not return sensitive records");
     $r = $this->callService('occurrences/1', ['proj_id' => 'testreportconnection'], [
       'values' => ['Comment' => 'Attempt to update sensitive record'],
-    ], [], NULL, 'PUT');
+    ], [], 'PUT');
     $this->assertEquals(200, $r['httpCode'], "Attempt to overwrite sensitive record when allowed didn't return 200 OK.");
     // Turn off allow_sensitive.
     self::$db->query("update rest_api_client_connections set allow_sensitive=false where proj_id='testreportconnection'");
@@ -253,7 +253,7 @@ SQL;
     $this->assertEquals(1, count($r['response']), "$this->authMethod request excluding sensitive did return sensitive records");
     $r = $this->callService('occurrences/1', ['proj_id' => 'testreportconnection'], [
       'values' => ['Comment' => 'Attempt to update sensitive record'],
-    ], [], NULL, 'PUT');
+    ], [], 'PUT');
     $this->assertEquals(404, $r['httpCode'], "Attempt to overwrite sensitive record didn't return 404 Not found.");
     // Test allow_unreleased.
     self::$db->query("update occurrences set sensitivity_precision=null, release_status='U' where id=1");
@@ -262,7 +262,7 @@ SQL;
     $this->assertEquals(1, count($r['response']), "$this->authMethod request excluding unreleased did return unreleased records");
     $r = $this->callService('occurrences/1', ['proj_id' => 'testreportconnection'], [
       'values' => ['Comment' => 'Attempt to update unreleased record'],
-    ], [], NULL, 'PUT');
+    ], [], 'PUT');
     $this->assertEquals(404, $r['httpCode'], "Attempt to overwrite unreleased record when disallowed didn't return 404 Not Found.");
     // Turn on allow_unreleased.
     self::$db->query("update rest_api_client_connections set allow_unreleased=true where proj_id='testreportconnection'");
@@ -270,7 +270,7 @@ SQL;
     $this->assertEquals(2, count($r['response']), "$this->authMethod request including unreleased did not return unreleased records");
     $r = $this->callService('occurrences/1', ['proj_id' => 'testreportconnection'], [
       'values' => ['Comment' => 'Attempt to update unreleased record'],
-    ], [], NULL, 'PUT');
+    ], [], 'PUT');
     $this->assertEquals(200, $r['httpCode'], "Attempt to overwrite unreleased record when allowed didn't return 200 OK.");
 
     // Reset.
