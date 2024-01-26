@@ -164,7 +164,9 @@ class workflow {
   }
 
   /**
-   * Retrieves workflow events applicable to a particular list of records for a given set of event types.
+   * Retrieves workflow events applicable to a particular list of records.
+   *
+   * For a given set of event types. Applies during verification only.
    *
    * @param object $db
    *   Database connection.
@@ -266,12 +268,12 @@ class workflow {
       // oldRecord and rewoundRecord are the same.
       if ($oldRecord->as_array() != $rewoundValues) {
         $qry = self::buildEventQueryForKey($db, $groupCodes, $entity, $oldRecord, $rewoundRecord, $keyDef);
-        self::applyEventsQueryToRecord($qry, $entity, $rewoundValues, $newRecord, $state);
+        self::applyEventsQueryToRecord($db, $qry, $entity, $rewoundValues, $newRecord, $state);
         kohana::log('error', 'EventsQuery oldToRewound: ' . $db->last_query());
       }
       // Second state change, rewoundRecord to newRecord.
       $qry = self::buildEventQueryForKey($db, $groupCodes, $entity, $rewoundRecord, $newRecord, $keyDef);
-      self::applyEventsQueryToRecord($qry, $entity, $rewoundValues, $newRecord, $state);
+      self::applyEventsQueryToRecord($db, $qry, $entity, $rewoundValues, $newRecord, $state);
     }
     return $state;
   }
@@ -392,6 +394,8 @@ class workflow {
    * workflow_events table to the contents of a record that is about to be
    * saved.
    *
+   * @param object $db
+   *   Database connection.
    * @param object $qry
    *   Query object set up to retrieve the events to apply.
    * @param string $entity
@@ -405,11 +409,27 @@ class workflow {
    *   State data to pass through to the post-process hook, containing undo
    *   data.
    */
-  private static function applyEventsQueryToRecord($qry, $entity, array $oldValues, &$newRecord, array &$state) {
+  private static function applyEventsQueryToRecord($db, $qry, $entity, array $oldValues, &$newRecord, array &$state) {
     $events = $qry->get();
     foreach ($events as $event) {
-      kohana::log('debug', 'Processing event: ' . var_export($event, TRUE));
-      $needsFilterCheck = !empty($event->attrs_filter_term) || !empty($event->location_ids_filter);
+      // If a location filter, then check it now.
+      if ($entity === 'occurrence' && !empty($event->location_ids_filter)) {
+        $sampleId = $newRecord->sample_id;
+        $locationIds = trim($event->location_ids_filter, '{}');
+        $sql = <<<SQL
+          SELECT l.id
+          FROM samples s
+          JOIN locations l ON ARRAY[l.id] && ARRAY[$locationIds] AND st_intersects(s.geom, l.boundary_geom)
+          WHERE s.id=$sampleId;
+SQL;
+        $hit = $db->query($sql)->current();
+        if (!$hit) {
+          continue;
+        }
+      }
+      // Attrs may not have attached to the record yet, so recheck workflow
+      // rules using work queue later.
+      $needsFilterCheck = !empty($event->attrs_filter_term);
       $valuesToApply = self::processEvent(
         $event,
         $needsFilterCheck,
