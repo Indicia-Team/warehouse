@@ -174,7 +174,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         $updates = data_utils::getOccurrenceTableVerificationUpdateValues($db, $this->user_id, 'V', $substatus, 'H');
         // Check for any workflow updates. Any workflow records will need an
         // individual update.
-        data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, array_keys($ids), $updates);
+        data_utils::applyWorkflowToOccurrenceVerificationUpdates($db, $this->website_id, $this->user_id, array_keys($ids), $updates);
       }
       echo count($ids);
       if (class_exists('request_logging')) {
@@ -267,7 +267,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         );
         // Give the workflow module a chance to rewind or update the values
         // before updating.
-        data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
+        data_utils::applyWorkflowToOccurrenceVerificationUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
         foreach ($ids as $id) {
           if (!empty($_POST['occurrence_comment:comment'])) {
             $action = $_POST['occurrence:record_status'] . (empty($_POST['occurrence:record_substatus']) ? '' : $_POST['occurrence:record_substatus']);
@@ -376,7 +376,7 @@ SQL;
         $this->redeterminationDbProcessing($db, $ids, $this->user_id, $_POST['occurrence:determiner_id'] ?? NULL);
         // Give the workflow module a chance to rewind or update the values
         // before updating.
-        data_utils::applyWorkflowToOccurrenceUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
+        data_utils::applyWorkflowToOccurrenceVerificationUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
         $q = new WorkQueue();
         foreach ($ids as $id) {
           $q->enqueue($db, [
