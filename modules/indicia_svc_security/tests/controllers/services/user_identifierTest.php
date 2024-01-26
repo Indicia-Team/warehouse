@@ -359,7 +359,8 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     // Cleanup.
     $pid1 = $this->db->query("select person_id from users where id=$uid1")->current()->person_id;
     $pid2 = $this->db->query("select person_id from users where id=$uid1")->current()->person_id;
-    $this->db->query('delete from occurrences where website_id in (1, 2)');
+    // Skip the first 3 occurrences added by the core fixture.
+    $this->db->query('delete from occurrences where website_id in (1, 2) AND id > 3');
     $this->db->query("delete from user_identifiers where user_id in ($uid1, $uid2)");
     $this->db->query("delete from users_websites where user_id in ($uid1, $uid2)");
     // Delete 1 at a time to avoid integrity violations.
