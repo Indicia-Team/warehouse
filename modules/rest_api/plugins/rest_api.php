@@ -30,7 +30,6 @@ function rest_api_scheduled_task() {
   rest_utils::purgeOldFiles('upload-queue/', 3600 * 24);
 }
 
-
 /**
  * Create a menu item for the list of REST API clients.
  */
