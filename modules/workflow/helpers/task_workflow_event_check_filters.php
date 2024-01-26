@@ -28,12 +28,10 @@ defined('SYSPATH') or die('No direct script access.');
  * Queue worker to apply filters which limit the scope of a workflow event.
  *
  * Workflow events can have limited scope, e.g. to a particular custom
- * attribute value or geographic region. The event's record changes must be
- * applied at the time the record is saved, but this is too early for the
- * filter criteria to be checked. So a work queue entry is created to undo the
- * event's outcome if the filter is not met.
- *
- * @todo ensure this runs after spatial indexing.
+ * attribute value. The event's record changes must be applied at the time the
+ * record is saved, but this is too early for the filter criteria to be
+ * checked. So a work queue entry is created to undo the event's outcome if the
+ * filter is not met.
  */
 class task_workflow_event_check_filters {
 
@@ -54,8 +52,6 @@ SELECT q.record_id
 FROM work_queue q
 JOIN occurrences o ON o.id=q.record_id
 JOIN workflow_events e on e.id::text=q.params->>'workflow_events.id'
-LEFT JOIN samples s ON s.id=o.sample_id AND e.location_ids_filter is not null
-LEFT JOIN locations l ON l.id = ANY(e.location_ids_filter) AND st_intersects(l.boundary_geom, s.geom)
 LEFT JOIN (occurrence_attribute_values v
   JOIN cache_termlists_terms t on t.id=v.int_value
   JOIN occurrence_attributes a ON a.id=v.occurrence_attribute_id
@@ -65,8 +61,7 @@ LEFT JOIN (occurrence_attribute_values v
   AND lower(a.term_name)=lower(e.attrs_filter_term)
 WHERE q.entity='occurrence' AND q.task='task_workflow_event_check_filters' AND claimed_by='$procId'
 -- Need to either fail on the locations filter, or attribute values filter.
-AND ((e.location_ids_filter IS NOT NULL AND l.id IS NULL)
-OR (e.attrs_filter_term IS NOT NULL AND v.id IS NULL));
+AND e.attrs_filter_term IS NOT NULL AND v.id IS NULL;
 SQL;
     $tasks = $db->query($qry);
     $occurrenceIds = [];
