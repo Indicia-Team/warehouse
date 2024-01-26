@@ -85,10 +85,43 @@ $config['authentication_methods'] = [
       // to TRUE to limit to data accessible to this website. Set
       // limit_to_own_data to TRUE to restrict to the user's own data. Each
       // endpoint needs to be added to the 'elasticsearch' configuration entry
-      // to define how it maps to Elasticsearch. If using directClient
-      // authentication, also configure the clients which can access each index
-      // in the clients config entry.
+      // to define how it maps to Elasticsearch. If allowing directClient
+      // authentication, either configure the clients which can access each
+      // index in the clients config entry in /modules/rest_api/config/rest.php,
+      // or in the rest_api_clients and rest_api_client_connections tables
+      // using the warehouse UI.
       'elasticsearch' => ['es'],
+    ],
+  ],
+  'jwtClient' => [
+    // TRUE to allow CORS from any domain, or provide an array of domain regexes.
+    // OPTIONS requests always return CORS header unless this is FALSE which
+    // completely disables the headers (assuming CORS is not allowed, or is
+    // handled at the web-server level).
+    'allow_cors' => TRUE,
+    'resource_options' => [
+      'reports' => [
+        'authorise' => [
+          // In this example, restricted reports are authorised, other
+          // non-restricted reports are still available.
+          'library/occurrences/list_for_elastic_all.xml',
+          'library/occurrences/list_for_elastic_sensitve_all.xml',
+        ],
+      ],
+      // Grant access to elasticsearch via the listed endpoints. Either a
+      // simple array of endpoint names, or a associative array keyed by name
+      // containing config in the values. Set config option limit_to_website
+      // to TRUE to limit to data accessible to this website. Set
+      // limit_to_own_data to TRUE to restrict to the user's own data. Each
+      // endpoint needs to be added to the 'elasticsearch' configuration entry
+      // to define how it maps to Elasticsearch. If allowing jwtClient
+      // authentication, either configure the clients which can access each
+      // index in the clients config entry in /modules/rest_api/config/rest.php,
+      // or in the rest_api_clients and rest_api_client_connections tables
+      // using the warehouse UI.
+      'elasticsearch' => [
+        'es' => [],
+      ],
     ],
   ],
   'jwtUser' => [
@@ -98,7 +131,8 @@ $config['authentication_methods'] = [
     // handled at the web-server level).
     'allow_cors' => TRUE,
     'resource_options' => [
-      // Grants full access to all reports. Client configs can override this.
+      // Grants access to featured reports for own data. Client configs can
+      // override this.
       'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
       // Grant access to Elasticsearch but in this case, apply website and user
       // ID filters. Limit to own data can be bypassed by providing a token
@@ -141,6 +175,10 @@ $config['elasticsearch'] = [
   'es' => [
     // Set open = TRUE if this end-point is available without authentication.
     'open' => FALSE,
+    // Can be set to FALSE if this is a pre-filtered alias so proxy filtering
+    // (website ID, blur etc) does not need to be applied. Default TRUE if not
+    // specified.
+    'apply_filters' => TRUE,
     // Optional type, either occurrence or sample. Default is occurrence if not
     // specified.
     'type' => 'occurrence',
@@ -192,14 +230,9 @@ $config['clients'] = [
         'id_prefix' => 'iBRC',
         'dataset_id_attr_id' => 22,
         'blur' => 'F',
-        // Define an Elasticsearch query for the observations available to this
+        // Define a filter for the observations available to this
         // project.
-        'es_bool_query' => [
-          'must' => [
-            ['term' => ['taxon.class.keyword' => 'Aves']],
-            ['term' => ['metadata.website.id' => 2]],
-          ],
-        ],
+        'filter_id' => 123,
         // Define a filter for the annotations data. This should match the
         // location that the other server's observations are synced to using
         // the rest_api_sync module.

@@ -20,26 +20,51 @@
  */
 
 /**
- * Model class for the Filters table.
+ * Model class for the rest_api_clients table.
  */
-class Filter_Model extends ORM {
-  public $search_field='title';
+class Rest_api_client_Model extends ORM {
 
-  protected $belongs_to = array(
-    'website',
+  protected $belongs_to = [
+    'website' => 'website',
     'created_by' => 'user',
-    'updated_by' => 'user'
-  );
+    'updated_by' => 'user',
+  ];
+
+  protected $has_many = ['rest_api_client_connections'];
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
-    $array->add_rules('definition', 'required');
-    $array->add_rules('sharing', 'required', 'chars[R,V,D,M,P]');
-    $array->add_rules('website_id', 'integer');
-    $this->unvalidatedFields = array('description', 'public', 'defines_permissions');
+    $id = $array->id ?? '';
+    $array->add_rules('username', 'required', "unique[rest_api_clients,username,$id]");
+    $array->add_rules('website_id', 'required', 'integer');
+    $array->add_rules('secret', 'length[7,30]', 'matches_post[secret2]');
+    $this->unvalidatedFields = [
+      'description',
+      'public_key',
+    ];
     return parent::validate($array, $save);
+  }
+
+  /**
+   * Hashes the saved secrets using a one-way algorithm.
+   *
+   * @param string $key
+   *   Field name.
+   * @param mixed $value
+   *   Value being set.
+   */
+  public function __set($key, $value) {
+    if ($key === 'secret') {
+      if (empty($value) && !empty($this->id)) {
+        // Don't overwrite secret with empty value if not changing secret.
+        return;
+      }
+      else {
+        $value = password_hash($value, PASSWORD_DEFAULT);
+      }
+    }
+    parent::__set($key, $value);
   }
 
 }
