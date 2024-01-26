@@ -49,6 +49,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
             'entered_sref' => 'SU01',
             'entered_sref_system' => 'OSGB',
             'comment' => 'Sample for unit testing',
+            'geom' => '010300002031BF0D00010000000500000022CB05253C320BC1A8DBCE0C0A2F59411C20FAF43E320BC1C753950B8D3E59411E41523BB84209C15FFE7F4B893E59419FC6B2CFA94309C17135A151062F594122CB05253C320BC1A8DBCE0C0A2F5941',
             'created_on' => '2016-07-22:16:00:00',
             'created_by_id' => 1,
             'updated_on' => '2016-07-22:16:00:00',
