@@ -84,11 +84,11 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'path' => 'library/occurrences/filterable_explore_list_mapping',
       'tests' => array(
         array(
-          'params' => ['website_id' => 1],
+          'params' => ['website_list' => 1],
           'result' => 1 // single grid square in test data
         ),
         array(
-          'params' => array('date_from' => '2017-04-01', 'website_id' => 1),
+          'params' => array('date_from' => '2017-04-01', 'website_list' => 1),
           'result' => 0 // the sample is older than the above date
         )
       )
@@ -101,11 +101,11 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
           'result' => 'parameterRequest'
         ),
         array(
-          'params' => array('sq_size' => '10000', 'website_id' => 1),
+          'params' => array('sq_size' => '10000', 'website_list' => 1),
           'result' => 1 // single grid square in test data
         ),
         array(
-          'params' => array('sq_size' => '10000', 'date_from' => '2017-04-01', 'website_id' => 1),
+          'params' => array('sq_size' => '10000', 'date_from' => '2017-04-01', 'website_list' => 1),
           'result' => 0 // the sample is older than the above date
         )
       )
@@ -114,7 +114,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'path' => 'library/occurrences/filterable_occurrences_download',
       'tests' => array(
         array(
-          'params' => ['website_id' => 1],
+          'params' => ['website_list' => 1],
           'result' => 1,
           'valueChecks' => array(
             array(
@@ -130,7 +130,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'path' => 'library/occurrences/filterable_occurrences_download_without_locality',
       'tests' => array(
         array(
-          'params' => ['website_id' => 1],
+          'params' => ['website_list' => 1],
           'result' => 1,
           'valueChecks' => array(
             array(
@@ -146,7 +146,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'path' => 'library/surveys/filterable_surveys_verification_breakdown',
       'tests' => array(
         array(
-          'params' => [],
+          'params' => ['website_list' => 1],
           'result' => 1,
           'valueChecks' => array(
             array(
@@ -162,7 +162,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'path' => 'library/surveys/surveys_list',
       'tests' => [
         [
-          'params' => [],
+          'params' => ['website_ids' => 1],
           'result' => 2,
           'valueChecks' => [
             [
@@ -190,7 +190,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
           ],
         ],
       ],
-    ],,
+    ],
     [
       'path' => 'library/taxa/search',
       'tests' => [
