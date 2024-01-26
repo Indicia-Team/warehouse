@@ -3270,7 +3270,8 @@ SQL;
   public function occurrenceMediaPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('occurrence_medium', $id, $putArray);
+    $userFilter = $this->needToFilterToUser() ? ['created_by_id' => RestObjects::$clientUserId] : [];
+    $r = rest_crud::update('occurrence_medium', $id, $putArray, $userFilter);
     echo json_encode($r);
   }
 
@@ -3316,6 +3317,9 @@ SQL;
 
   /**
    * Ensure resource options honoured when updating an occurrence.
+   *
+   * @return array
+   *   Field check key value pairs.
    */
   private function getFieldChecksForOccurrencesPut() {
     $fieldChecks = [
@@ -3497,7 +3501,8 @@ SQL;
   public function locationsPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('location', $id, $putArray);
+    $userFilter = $this->needToFilterToUser() ? ['created_by_id' => RestObjects::$clientUserId] : [];
+    $r = rest_crud::update('location', $id, $putArray, $userFilter);
     echo json_encode($r);
   }
 
@@ -3554,7 +3559,8 @@ SQL;
   public function sampleMediaPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('sample_medium', $id, $putArray);
+    $userFilter = $this->needToFilterToUser() ? ['created_by_id' => RestObjects::$clientUserId] : [];
+    $r = rest_crud::update('sample_medium', $id, $putArray, $userFilter);
     echo json_encode($r);
   }
 
@@ -3629,7 +3635,8 @@ SQL;
   public function samplesPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('sample', $id, $putArray);
+    $userFilter = $this->needToFilterToUser() ? ['created_by_id' => RestObjects::$clientUserId] : [];
+    $r = rest_crud::update('sample', $id, $putArray, $userFilter);
     echo json_encode($r);
   }
 
@@ -3758,7 +3765,7 @@ SQL;
     $this->assertRecordFromCurrentWebsite('surveys', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('survey', $id, $putArray, FALSE);
+    $r = rest_crud::update('survey', $id, $putArray, []);
     echo json_encode($r);
   }
 
@@ -3887,7 +3894,7 @@ SQL;
         && $putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
       $this->updateAttributeTermlist($putArray);
     }
-    $r = rest_crud::update('sample_attribute', $id, $putArray, FALSE);
+    $r = rest_crud::update('sample_attribute', $id, $putArray, []);
     echo json_encode($r);
   }
 
@@ -4048,7 +4055,7 @@ SQL;
       ])
       ->get()->current();
     if ($existing) {
-      $r = rest_crud::update('sample_attributes_website', $existing->id, $postArray, FALSE);
+      $r = rest_crud::update('sample_attributes_website', $existing->id, $postArray, []);
       echo json_encode($r);
     }
     else {
@@ -4067,7 +4074,7 @@ SQL;
     $this->assertRecordFromCurrentWebsite('sample_attributes_websites', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('sample_attributes_website', $id, $putArray, FALSE);
+    $r = rest_crud::update('sample_attributes_website', $id, $putArray, []);
     echo json_encode($r);
   }
 
@@ -4137,7 +4144,7 @@ SQL;
         && $putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
       $this->updateAttributeTermlist($putArray);
     }
-    $r = rest_crud::update('occurrence_attribute', $id, $putArray, FALSE);
+    $r = rest_crud::update('occurrence_attribute', $id, $putArray, []);
     echo json_encode($r);
   }
 
@@ -4199,7 +4206,7 @@ SQL;
       ])
       ->get()->current();
     if ($existing) {
-      $r = rest_crud::update('occurrence_attributes_website', $existing->id, $postArray, FALSE);
+      $r = rest_crud::update('occurrence_attributes_website', $existing->id, $postArray, []);
       echo json_encode($r);
     }
     else {
@@ -4218,7 +4225,7 @@ SQL;
     $this->assertRecordFromCurrentWebsite('occurrence_attributes_websites', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('occurrence_attributes_website', $id, $putArray, FALSE);
+    $r = rest_crud::update('occurrence_attributes_website', $id, $putArray, []);
     echo json_encode($r);
   }
 
