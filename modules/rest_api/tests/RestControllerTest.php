@@ -167,7 +167,7 @@ class RestControllerTest extends BaseRestClientTest {
       ],
       [], 'PUT'
     );
-    $this->assertTrue($response['httpCode'] === 404);
+    $this->assertTrue($response['httpCode'] === 400);
     // POST samples should be rejected (website flag to allow anon
     // submissions is off).
     $response = $this->callService(

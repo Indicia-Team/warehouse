@@ -422,6 +422,9 @@ SQL;
    *   allowing the update.
    */
   public static function update($entity, $id, array $data, array $fieldChecks) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:created_by_id" => 'Cannot PUT without user authentication.']));
+    }
     self::loadEntityConfig($entity);
     $values = $data['values'];
     // ID is optional, but must match URL segment.
@@ -465,6 +468,9 @@ SQL;
    *   created_by_id=current user.
    */
   public static function delete($entity, $id, array $preconditions = []) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:created_by_id" => 'Cannot PUT without user authentication.']));
+    }
     $obj = ORM::factory($entity, $id);
     $proceed = TRUE;
     // Must exist and match preconditions (e.g. belong to user).
