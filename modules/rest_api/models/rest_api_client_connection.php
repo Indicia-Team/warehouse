@@ -45,7 +45,6 @@ class Rest_api_client_connection_Model extends ORM {
       'limit_to_reports',
       'allow_data_resources',
       'limit_to_data_resources',
-      'read_only',
       'allow_confidential',
       'allow_sensitive',
       'allow_unreleased',

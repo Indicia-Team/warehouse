@@ -53,7 +53,6 @@ CREATE TABLE rest_api_client_connections
     limit_to_reports character varying[],
     allow_data_resources boolean,
     limit_to_data_resources character varying[],
-    read_only boolean NOT NULL,
     allow_confidential boolean NOT NULL DEFAULT false,
     allow_sensitive boolean NOT NULL DEFAULT true,
     allow_unreleased boolean NOT NULL DEFAULT false,
@@ -92,7 +91,6 @@ COMMENT ON COLUMN rest_api_client_connections.limit_to_reports IS 'If allow_repo
 COMMENT ON COLUMN rest_api_client_connections.allow_data_resources IS 'Set to true if access to data resource endpoints via the REST API is allowed.';
 COMMENT ON COLUMN rest_api_client_connections.limit_to_data_resources IS 'If allow_data=true and limit_to_data_resources is empty, then unlimited access to data end-points is allowed.
   If this contains a list of data resources (e.g. occurrences, locations, samples) then only listed resources are allowed.';
-COMMENT ON COLUMN rest_api_client_connections.read_only IS 'Set to false to allow data updates via the data resource endpoints.';
 COMMENT ON COLUMN rest_api_client_connections.allow_confidential IS 'Set to true to allow confidential records to be included in responses.';
 COMMENT ON COLUMN rest_api_client_connections.allow_sensitive IS 'Set to true to allow sensitive records to be included in responses.';
 COMMENT ON COLUMN rest_api_client_connections.allow_unreleased IS 'Set to true to allow unreleased records to be included in responses.';
