@@ -83,6 +83,7 @@ KEY;
 
   protected $authMethod = 'hmacClient';
   protected static $clientUserId;
+  protected static $clientSecret = 'mysecret';
   protected static $config;
   protected static $db;
   // Access tokens.
@@ -141,7 +142,7 @@ KEY;
 
       case 'directClient':
         $user = self::$clientUserId;
-        $password = self::$websitePassword;
+        $password = self::$clientSecret;
         $authString = "USER:$user:SECRET:$password";
         break;
 

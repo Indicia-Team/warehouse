@@ -22,8 +22,11 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-echo $grid;
 ?>
+<p class="alert alert-info">Create REST API clients to allow controlled read-only access to data. See  the
+  <a href="https://indicia-docs.readthedocs.io/en/stable/developing/rest-web-services/authentication.html">REST API authentication documentation</a>
+  for more information.</p>
+<?php echo $grid; ?>
 <form action="<?php echo url::site() . 'rest_api_client/create'; ?>">
   <?php if ($this->auth->logged_in('CoreAdmin')) : ?>
     <input type="submit" value="New client" class="btn btn-primary" />

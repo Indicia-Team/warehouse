@@ -2098,6 +2098,7 @@ SQL;
       404, $response['httpCode'],
       "Request for another user's sample does not return 404."
     );
+    // Authenticate as the original user.
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     // Try to GET the sample.
     $response = $this->callService("samples/$sampleId");
@@ -2122,8 +2123,8 @@ SQL;
       404, $response['httpCode'],
       "Request for another user's sample does not return 404 with user scope."
     );
-    // Same for reporting scope - as using JwtUser, it will widen the scope to
-    // other websites but not other users.
+    // Same for reporting scope - as using JwtUser with limit_to_own_data=true,
+    // it will widen the scope to other websites but not other users.
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120, 'reporting');
     // Try to GET the sample.
     $response = $this->callService("samples/$sampleId");

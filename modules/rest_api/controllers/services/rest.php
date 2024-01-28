@@ -874,8 +874,11 @@ class Rest_Controller extends Controller {
           && isset($this->authConfig['resource_options'][$this->resourceName])) {
         $this->resourceOptions = $this->authConfig['resource_options'][$this->resourceName];
       }
-      if (!isset($this->resourceOptions)) {
-        $this->resourceOptions = [];
+      // If a user auth method, default resource option is limit_to_own_data.
+      if (!isset($this->resourceOptions) && isset(RestObjects::$authMethod)) {
+        $this->resourceOptions = [
+          'limit_to_own_data' => substr(RestObjects::$authMethod, -4) === 'User',
+        ];
       }
       // Caching can be enabled via a query string parameter if not already
       // forced by the authorisation config.

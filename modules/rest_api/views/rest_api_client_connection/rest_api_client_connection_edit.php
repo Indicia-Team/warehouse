@@ -120,13 +120,6 @@ $id = html::initial_value($values, 'rest_api_client_connection:id');
     ]);
 
     echo data_entry_helper::checkbox([
-      'label' => 'Read only',
-      'fieldname' => 'rest_api_client_connection:read_only',
-      'default' => html::initial_value($values, 'rest_api_client_connection:read_only'),
-      'helpText' => 'Tick to prevent data inserts, updates or deletes against the data resource endpoints when using this connection.',
-    ]);
-
-    echo data_entry_helper::checkbox([
       'label' => 'Allow confidential records',
       'fieldname' => 'rest_api_client_connection:allow_confidential',
       'default' => html::initial_value($values, 'rest_api_client_connection:allow_confidential'),

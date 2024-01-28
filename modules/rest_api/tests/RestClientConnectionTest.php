@@ -122,7 +122,6 @@ SQL;
       'rest_api_client_connection:rest_api_client_id' => $clientId,
       'rest_api_client_connection:sharing' => 'R',
       'rest_api_client_connection:full_precision_sensitive_records' => 'f',
-      'rest_api_client_connection:read_only' => 'f',
       'rest_api_client_connection:allow_reports' => 't',
       'rest_api_client_connection:limit_to_reports' => [
         'library/occurrences/filterable_explore_list.xml',
@@ -223,55 +222,39 @@ SQL;
     $r = $this->callService('occurrences', ['proj_id' => 'testreportconnection']);
     $this->assertEquals(200, $r['httpCode'], "$this->authMethod resource request with correct secret and resource failed");
     $this->assertEquals(1, count($r['response']), "$this->authMethod resource request did not return expected records");
-    // Test allow_confidential (initially off).
-    // Try to update 2nd occurrence in fixture which is confidential.
+    // Try to update or post should fail.
     $r = $this->callService('occurrences/2', ['proj_id' => 'testreportconnection'], [
-      'values' => ['Comment' => 'Attempt to update confidential record'],
+      'values' => ['Comment' => 'Attempt to update record'],
     ], [], 'PUT');
-    $this->assertEquals(404, $r['httpCode'], "Attempt to overwrite confidential record didn't return 404 Not found.");
+    $this->assertEquals(405, $r['httpCode'], "Attempt to update record without user authentication didn't return 405 Method Not Allowed.");
+    $r = $this->callService('samples', ['proj_id' => 'testreportconnection'], [
+      'values' => ['website_id' => 1, 'survey_id' => 1, 'Date' => '27/01/2024', 'entered_sref' => 'SU01', 'entered_sref_system' => 'ODGB'],
+    ], [], 'POST');
+    $this->assertEquals(405, $r['httpCode'], "Attempt to post record without user authentication didn't return 405 Method Not Allowed.");
+    // Test allow_confidential (initially off).
     // Now set allow_confidential.
     self::$db->query("update rest_api_client_connections set allow_confidential=true where proj_id='testreportconnection'");
     $r = $this->callService('occurrences', ['proj_id' => 'testreportconnection']);
     $this->assertEquals(2, count($r['response']), "$this->authMethod request including confidential did not return expected records");
-    // Try update again as should now be allowed.
-    $r = $this->callService('occurrences/2', ['proj_id' => 'testreportconnection'], [
-      'values' => ['Comment' => 'Attempt to update confidential record'],
-    ], [], 'PUT');
     $this->assertEquals(200, $r['httpCode'], "Attempt to overwrite confidential record when allowed didn't return 200 OK.");
     // Test allow_sensitive (initially on)
     self::$db->query('update occurrences set sensitivity_precision=1000 where id=1');
     self::$db->query('update cache_occurrences_functional set sensitive=true where id=1');
     $r = $this->callService('occurrences', ['proj_id' => 'testreportconnection']);
     $this->assertEquals(2, count($r['response']), "$this->authMethod request including sensitive did not return sensitive records");
-    $r = $this->callService('occurrences/1', ['proj_id' => 'testreportconnection'], [
-      'values' => ['Comment' => 'Attempt to update sensitive record'],
-    ], [], 'PUT');
-    $this->assertEquals(200, $r['httpCode'], "Attempt to overwrite sensitive record when allowed didn't return 200 OK.");
     // Turn off allow_sensitive.
     self::$db->query("update rest_api_client_connections set allow_sensitive=false where proj_id='testreportconnection'");
     $r = $this->callService('occurrences', ['proj_id' => 'testreportconnection']);
     $this->assertEquals(1, count($r['response']), "$this->authMethod request excluding sensitive did return sensitive records");
-    $r = $this->callService('occurrences/1', ['proj_id' => 'testreportconnection'], [
-      'values' => ['Comment' => 'Attempt to update sensitive record'],
-    ], [], 'PUT');
-    $this->assertEquals(404, $r['httpCode'], "Attempt to overwrite sensitive record didn't return 404 Not found.");
     // Test allow_unreleased.
     self::$db->query("update occurrences set sensitivity_precision=null, release_status='U' where id=1");
     self::$db->query("update cache_occurrences_functional set sensitive=false, release_status='U' where id=1");
     $r = $this->callService('occurrences', ['proj_id' => 'testreportconnection']);
     $this->assertEquals(1, count($r['response']), "$this->authMethod request excluding unreleased did return unreleased records");
-    $r = $this->callService('occurrences/1', ['proj_id' => 'testreportconnection'], [
-      'values' => ['Comment' => 'Attempt to update unreleased record'],
-    ], [], 'PUT');
-    $this->assertEquals(404, $r['httpCode'], "Attempt to overwrite unreleased record when disallowed didn't return 404 Not Found.");
     // Turn on allow_unreleased.
     self::$db->query("update rest_api_client_connections set allow_unreleased=true where proj_id='testreportconnection'");
     $r = $this->callService('occurrences', ['proj_id' => 'testreportconnection']);
     $this->assertEquals(2, count($r['response']), "$this->authMethod request including unreleased did not return unreleased records");
-    $r = $this->callService('occurrences/1', ['proj_id' => 'testreportconnection'], [
-      'values' => ['Comment' => 'Attempt to update unreleased record'],
-    ], [], 'PUT');
-    $this->assertEquals(200, $r['httpCode'], "Attempt to overwrite unreleased record when allowed didn't return 200 OK.");
 
     // Reset.
     self::$db->query($this->resetQuery);
@@ -284,10 +267,10 @@ SQL;
     Kohana::log('debug', "Running unit test, RestClientConnectionTest::connectDirectClientReportsTest");
     $this->authMethod = 'directClient';
     self::$clientUserId = 'createtestuser';
-    self::$websitePassword = 'wrong';
+    self::$clientSecret = 'wrong';
     $r = $this->callService('reports/library/occurrences/filterable_explore_list.xml', ['proj_id' => 'testreportconnection']);
     $this->assertEquals(401, $r['httpCode'], 'directClient request with wrong secret did not return 401 unauthorised.');
-    self::$websitePassword = 'mysecret';
+    self::$clientSecret = 'mysecret';
     $this->doSomeReportPermissionTests();
   }
 
@@ -315,10 +298,10 @@ SQL;
     Kohana::log('debug', "Running unit test, RestClientConnectionTest::connectDirectClientDataResourcesTest");
     $this->authMethod = 'directClient';
     self::$clientUserId = 'createtestuser';
-    self::$websitePassword = 'wrong';
+    self::$clientSecret = 'wrong';
     $r = $this->callService('occurrences', ['proj_id' => 'testreportconnection']);
     $this->assertEquals(401, $r['httpCode'], 'directClient request with wrong password did not return 401 Unauthorised.');
-    self::$websitePassword = 'mysecret';
+    self::$clientSecret = 'mysecret';
     $r = $this->callService('occurrences', ['proj_id' => 'testreportconnection']);
     $this->assertEquals(200, $r['httpCode'], 'directClient request with correct password did not return 200 OK.');
     $this->doSomeDataResourcesPermissionTests();
@@ -398,7 +381,7 @@ SQL;
     Kohana::log('debug', "Running unit test, RestClientConnectionTest::connectDirectClientEsTest");
     $this->authMethod = 'directClient';
     self::$clientUserId = 'createtestuser';
-    self::$websitePassword = 'mysecret';
+    self::$clientSecret = 'mysecret';
     $r = $this->callService('es', ['proj_id' => 'testreportconnection', 'debug' => 'true']);
     $this->assertEquals(400, $r['httpCode'], 'Invalid ES request should return 400 Bad Request');
     $r = $this->callService('es/_search', ['proj_id' => 'testreportconnection', 'debug' => 'true']);

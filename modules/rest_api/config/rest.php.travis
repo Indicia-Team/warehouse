@@ -41,7 +41,7 @@ $config['authentication_methods'] = [
     'allow_http' => TRUE,
     'allow_cors' => TRUE,
     'resource_options' => [
-      'reports' => ['featured' => true],
+      'reports' => ['featured' => true, 'limit_to_own_data' => TRUE],
       'entities' => [
         'samples',
         'occurrences',
@@ -108,11 +108,10 @@ $config['dataset_name_attr_id'] = 99;
 
 // The following configuration is a temporary definition of the projects available for
 // each website.
-// @todo Move this configuration into a database table.
 $config['clients'] = [
   // keyed by client system ID
   'BTO' => [
-    'shared_secret' => 'password',
+    'shared_secret' => 'mysecret',
     'projects' => [
       // list of available projects keyed by project ID
       'BRC1' => [
