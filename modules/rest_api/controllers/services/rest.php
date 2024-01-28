@@ -2671,6 +2671,9 @@ class Rest_Controller extends Controller {
       $r = $this->getRestConnectionFromDb($clientSystemId, $_REQUEST['proj_id']);
       // Validate the JWT.
       $this->checkDecodeJwt($this->getBearerAuthToken(TRUE), $r->public_key);
+      if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'])) {
+        RestObjects::$apiResponse->fail('Method Not Allowed', 405, 'Connection is read only.');
+      }
       $this->applyConnectionSettingsFromRestConnectionInDb($r);
       $this->authenticated = TRUE;
     }
@@ -2894,6 +2897,9 @@ class Rest_Controller extends Controller {
     if (!password_verify($secret, $r->secret)) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
+    if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'])) {
+      RestObjects::$apiResponse->fail('Method Not Allowed', 405, 'Connection is read only.');
+    }
     $this->applyConnectionSettingsFromRestConnectionInDb($r);
     $this->authenticated = TRUE;
   }
@@ -2923,7 +2929,6 @@ SELECT c.website_id,
   cc.limit_to_reports,
   cc.allow_data_resources,
   cc.limit_to_data_resources,
-  cc.read_only,
   cc.sharing,
   cc.allow_confidential,
   cc.allow_sensitive,
@@ -2981,9 +2986,6 @@ SQL;
       if ($r->limit_to_data_resources) {
         // Convert from pg array format.
         $this->limitToDataResources = explode(',', strtolower(trim($r->limit_to_data_resources, '{}')));
-      }
-      if ($r->read_only === 't' && in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'])) {
-        RestObjects::$apiResponse->fail('Method Not Allowed', 405, 'Connection is read only.');
       }
     }
     $this->projects = [
