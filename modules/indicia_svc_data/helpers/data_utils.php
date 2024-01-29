@@ -92,7 +92,7 @@ class data_utils {
    *   the occurrences table and related cache tables. Keyed by table name,
    *   each entry contains an associative array of field/value pairs.
    */
-  public static function applyWorkflowToOccurrenceUpdates($db, $websiteId, $userId, array $idList, array $updates) {
+  public static function applyWorkflowToOccurrenceVerificationUpdates($db, $websiteId, $userId, array $idList, array $updates) {
     $rewinds = [];
     $workflowEvents = [];
     if (in_array(MODPATH . 'workflow', Kohana::config('config.modules'))
