@@ -107,7 +107,9 @@ class Rest_api_client_connection_Controller extends Gridview_Base_Controller {
     if (!empty($r['rest_api_client_connection:limit_to_data_resources'])) {
       $r['rest_api_client_connection:limit_to_data_resources'] = str_replace(',', "\r\n", trim($r['rest_api_client_connection:limit_to_data_resources'], '{}'));
     }
-    $r['client_title'] = 'TEST!!!';
+    if ($this->model->filter_id) {
+      $r['filter:title'] = $this->model->filter->title;
+    }
     return $r;
   }
 

@@ -24,6 +24,7 @@
 
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'rest_api_client_connection:id');
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify the details of a REST API client.</p>
 <form id="entry_form" action="<?php echo url::site() . 'rest_api_client_connection/save'; ?>" method="post">
@@ -74,6 +75,19 @@ $id = html::initial_value($values, 'rest_api_client_connection:id');
           'R' => 'Reporting',
           'V' => 'Verification',
         ],
+      ]);
+
+      echo data_entry_helper::autocomplete([
+        'label' => 'Filter',
+        'fieldname' => 'rest_api_client_connection:filter_id',
+        'default' => html::initial_value($values, 'rest_api_client_connection:filter_id'),
+        'defaultCaption' => html::initial_value($values, 'filter:title'),
+        'helpText' => 'Select a filter which limits the records available for reporting and Elasticsearch requests using this connection.',
+        'table' => 'filter',
+        'captionField' => 'title',
+        'valueField' => 'id',
+        'extraParams' => $readAuth + ['created_by_id' => $_SESSION['auth_user']->id],
+        'afterControl' => '<label>Limit to my filters: <input type="checkbox" id="filters-limit-user" checked /></label>',
       ]);
 
       echo data_entry_helper::select([

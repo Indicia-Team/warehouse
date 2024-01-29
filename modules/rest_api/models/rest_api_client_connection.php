@@ -30,6 +30,10 @@ class Rest_api_client_connection_Model extends ORM {
     'updated_by' => 'user',
   ];
 
+  protected $has_one = [
+    'filter' => 'filter',
+  ];
+
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');

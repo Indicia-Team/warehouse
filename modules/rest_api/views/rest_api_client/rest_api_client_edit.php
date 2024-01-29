@@ -115,7 +115,7 @@ $id = html::initial_value($values, 'rest_api_client:id');
       ]);
     }
     else {
-      echo '<p class="alert alert-info">The jwyClient authentication method is currently disabled in the modules/rest_api/config/rest.php configuration file. Enable it then set a public key here to allow jwtClient authentication.</p>';
+      echo '<p class="alert alert-info">The jwtClient authentication method is currently disabled in the modules/rest_api/config/rest.php configuration file. Enable it then set a public key here to allow jwtClient authentication.</p>';
       echo data_entry_helper::textarea([
         'label' => 'Public key',
         'fieldname' => 'foo',
