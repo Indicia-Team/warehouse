@@ -2635,7 +2635,7 @@ SQL;
     $correctClientUserId = self::$clientUserId;
     $correctWebsiteId = self::$websiteId;
     $correctUserId = self::$userId;
-    $correctClientSecret = self::$config['shared_secret'];
+    $correctClientSecret = self::$clientSecret;
     $correctWebsitePassword = self::$websitePassword;
     $correctUserPassword = self::$userPassword;
 
@@ -2643,7 +2643,7 @@ SQL;
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;
     self::$userId = $correctUserId;
-    self::$config['shared_secret'] = '---';
+    self::$clientSecret = '---';
     self::$websitePassword = '---';
     self::$userPassword = '---';
 
@@ -2658,7 +2658,7 @@ SQL;
       "Incorrect secret or password passed to /$resource but data still returned. " .
       var_export($response, TRUE)
     );
-    self::$config['shared_secret'] = $correctClientSecret;
+    self::$clientSecret = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
 
@@ -2666,7 +2666,7 @@ SQL;
     self::$clientUserId = '---';
     self::$websiteId = '---';
     self::$userId = '---';
-    self::$config['shared_secret'] = $correctClientSecret;
+    self::$clientSecret = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
     $response = $this->callService($resource, $query, TRUE);
@@ -2685,7 +2685,7 @@ SQL;
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;
     self::$userId = $correctUserId;
-    self::$config['shared_secret'] = $correctClientSecret;
+    self::$clientSecret = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
     $response = $this->callService($resource, $query);

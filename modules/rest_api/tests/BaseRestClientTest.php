@@ -123,7 +123,7 @@ KEY;
 
       case 'hmacClient':
         $user = self::$clientUserId;
-        $hmac = hash_hmac('sha1', $url, self::$config['shared_secret']);
+        $hmac = hash_hmac('sha1', $url, self::$clientSecret);
         $authString = "USER:$user:HMAC:$hmac";
         break;
 

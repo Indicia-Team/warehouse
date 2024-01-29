@@ -2893,7 +2893,8 @@ class Rest_Controller extends Controller {
    */
   private function authenticateUsingDirectClientInDb($clientSystemId, $secret) {
     if (empty($_REQUEST['proj_id'])) {
-      RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter.');
+      // Can't authenticate without proj_id.
+      return;
     }
     $r = $this->getRestConnectionFromDb($clientSystemId, $_REQUEST['proj_id']);
     // Stored password is hashed, so check the hash.
