@@ -22,7 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
- defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Helper class to provide info on server status.
@@ -79,7 +79,8 @@ class serverStatus {
    * @param object $db
    *   Kohana database object.
    * @param array $messages
-   *   List of tips, which will be amended if any tips identified by this function.
+   *   List of tips, which will be amended if any tips identified by this
+   *   function.
    */
   private static function checkScheduledTasksHasBeenSetup($db, array &$messages) {
     $query = $db
@@ -95,10 +96,10 @@ as indexing to be perfomed. See
 <a href="http://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/scheduled-tasks.html"> the scheduled
 tasks documentation</a>.
 DESC;
-      $messages[] = array(
+      $messages[] = [
         'title' => 'Scheduled tasks',
         'description' => $description,
-      );
+      ];
     }
   }
 
@@ -108,14 +109,15 @@ DESC;
    * @param object $db
    *   Kohana database object.
    * @param array $messages
-   *   List of tips, which will be amended if any tips identified by this function.
+   *   List of tips, which will be amended if any tips identified by this
+   *   function.
    */
   private static function checkScheduledTasks($db, array &$messages) {
     $query = $db
-      ->select(array(
+      ->select([
         "sum(case when last_scheduled_task_check > now()-'1 day'::interval then 1 else 0 end) as new",
         "sum(case when last_scheduled_task_check <= now()-'1 day'::interval then 1 else 0 end) as old",
-      ))
+      ])
       ->from('system')
       ->where('last_scheduled_task_check is not null')
       ->get()->current();
@@ -147,11 +149,11 @@ the scheduled tasks documentation</a>.
 DESC;
     }
     if (!empty($description)) {
-      $messages[] = array(
+      $messages[] = [
         'title' => 'Scheduled tasks',
         'description' => $description,
         'severity' => 'warning',
-      );
+      ];
     }
   }
 
@@ -188,53 +190,53 @@ SQL;
         switch ($statRow->stat) {
           case 'p1':
             if ($statRow->count > $maxP1) {
-              $messages[] = array(
+              $messages[] = [
                 'title' => kohana::lang('general_errors.workQueueTooFull', 1),
                 'description' =>
                   kohana::lang('general_errors.workQueueTooFullDescription', $maxP1, 1) . ' ' .
                   kohana::lang('general_errors.workQueueTooFullExplain'),
-              );
+              ];
             }
             break;
 
           case 'p1late':
             if ($statRow->count > $maxP1Late) {
-              $messages[] = array(
+              $messages[] = [
                 'title' => kohana::lang('general_errors.workQueueSlow', 1),
                 'description' => kohana::lang('general_errors.workQueueTooFullExplain'),
-              );
+              ];
             }
             break;
 
           case 'p2':
             if ($statRow->count > $maxP2) {
-              $messages[] = array(
+              $messages[] = [
                 'title' => kohana::lang('general_errors.workQueueTooFull', 2),
                 'description' =>
                   kohana::lang('general_errors.workQueueTooFullDescription', $maxP2, 2) . ' ' .
                   kohana::lang('general_errors.workQueueTooFullExplain'),
-              );
+              ];
             }
             break;
 
           case 'p3':
             if ($statRow->count > $maxP3) {
-              $messages[] = array(
+              $messages[] = [
                 'title' => kohana::lang('general_errors.workQueueTooFull', 3),
                 'description' =>
                   kohana::lang('general_errors.workQueueTooFullDescription', $maxP3, 3) . ' ' .
                   kohana::lang('general_errors.workQueueTooFullExplain'),
-              );
+              ];
             }
             break;
 
           case 'errors':
             if ($statRow->count > $maxErrors) {
-              $messages[] = array(
+              $messages[] = [
                 'title' => kohana::lang('general_errors.workQueueErrors'),
                 'description' => kohana::lang('general_errors.workQueueErrorsDescription'),
                 'severity' => 'danger',
-              );
+              ];
             }
             break;
         }
@@ -257,7 +259,8 @@ SQL;
    * @param array|null $authFilter
    *   User's website access filter, if not core admin.
    * @param array $messages
-   *   List of tips, which will be amended if any tips identified by this function.
+   *   List of tips, which will be amended if any tips identified by this
+   *   function.
    */
   private static function checkWebsite($db, $authFilter, array &$messages) {
     if (!empty($authFilter) && $authFilter['field'] === 'website_id') {
@@ -270,13 +273,13 @@ SQL;
       ->where('id<>1')
       ->get()->current();
     if ($query->count == 0) {
-      $messages[] = array(
+      $messages[] = [
         'title' => 'Website registration',
         'description' => 'Before submitting records to this warehouse you need to register a website or app that ' .
           'the records will come from. See ' .
           '<a href="http://indicia-docs.readthedocs.io/en/latest/site-building/warehouse/websites.html">the website ' .
           'registration documentation</a>.'
-      );
+      ];
     }
   }
 
@@ -288,7 +291,8 @@ SQL;
    * @param array|null $authFilter
    *   User's website access filter, if not core admin.
    * @param array $messages
-   *   List of tips, which will be amended if any tips identified by this function.
+   *   List of tips, which will be amended if any tips identified by this
+   *   function.
    */
   private static function checkSurvey($db, $authFilter, array &$messages) {
     $db
@@ -300,13 +304,13 @@ SQL;
     }
     $query = $db->get()->current();
     if ($query->count == 0) {
-      $messages[] = array(
+      $messages[] = [
         'title' => 'Survey dataset registration',
         'description' => 'Before submitting records to this warehouse you need to register a survey dataset to add ' .
           'the records to. See ' .
           '<a href="http://indicia-docs.readthedocs.io/en/latest/site-building/warehouse/surveys.html">the survey ' .
-          'dataset registration documentation</a>.'
-      );
+          'dataset registration documentation</a>.',
+      ];
     }
   }
 
@@ -318,7 +322,8 @@ SQL;
    * @param array|null $authFilter
    *   User's website access filter, if not core admin.
    * @param array $messages
-   *   List of tips, which will be amended if any tips identified by this function.
+   *   List of tips, which will be amended if any tips identified by this
+   *   function.
    */
   private static function checkTaxonList($db, $authFilter, array &$messages) {
     $websites = [NULL];
@@ -336,10 +341,10 @@ Before submitting records to this warehouse you need to create a species list to
 <a href="http://indicia-docs.readthedocs.io/en/latest/site-building/warehouse/taxon-lists.html">the documentation for
 setting up a species list.</a>.
 TXT;
-      $messages[] = array(
+      $messages[] = [
         'title' => 'Species list creation',
         'description' => $description,
-      );
+      ];
     }
   }
 
@@ -349,7 +354,8 @@ TXT;
    * @param array|null $authFilter
    *   User's website access filter, if not core admin.
    * @param array $messages
-   *   List of tips, which will be amended if any tips identified by this function.
+   *   List of tips, which will be amended if any tips identified by this
+   *   function.
    */
   private static function checkMasterTaxonList($authFilter, array &$messages) {
     $masterTaxonListId = warehouse::getMasterTaxonListId();
@@ -377,10 +383,10 @@ other lists. To update the configuration:
 The scheduled tasks running on the warehouse will gradually populate the cache data for occurrence taxon paths in
 batches.
 TXT;
-      $messages[] = array(
+      $messages[] = [
         'title' => 'Master species checklist',
         'description' => $description,
-      );
+      ];
     }
   }
 

@@ -29,9 +29,27 @@ $config['authentication_methods'] = [
   'hmacClient'  => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
   'hmacWebsite' => ['allow_http', 'resource_options' => ['reports' => []]],
   'directUser' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
-  'directClient' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
+  'directClient' => [
+    'allow_http',
+    'resource_options' => [
+      'reports' => ['featured' => true],
+      'elasticsearch' => ['es'],
+    ],
+  ],
   'directWebsite' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
   'jwtUser' => [
+    'allow_http' => TRUE,
+    'allow_cors' => TRUE,
+    'resource_options' => [
+      'reports' => ['featured' => true, 'limit_to_own_data' => TRUE],
+      'entities' => [
+        'samples',
+        'occurrences',
+        'locations',
+      ],
+    ],
+  ],
+  'jwtClient' => [
     'allow_http' => TRUE,
     'allow_cors' => TRUE,
     'resource_options' => [
@@ -41,12 +59,46 @@ $config['authentication_methods'] = [
         'occurrences',
         'locations',
       ],
+      'elasticsearch' => ['es'],
     ],
   ],
 ];
 
 $config['allow_auth_tokens_in_url'] = FALSE;
 
+$config['elasticsearch'] = [
+  // Name of the end-point, e.g. /index.php/services/rest/es.
+  'es' => [
+    // Set open = TRUE if this end-point is available without authentication.
+    'open' => FALSE,
+    // Optional type, either occurrence or sample. Default is occurrence if not
+    // specified.
+    'type' => 'occurrence',
+    // Name of the elasticsearch index or alias this end-point points to.
+    'index' => 'occurrence',
+    // URL of the Elasticsearch index.
+    'url' => 'http://my.elastic.url:9200',
+    // If specified, limit the access to the following operations. List of
+    // HTTP request types (e.g. get, post, put, delete) each containing a
+    // list of regular expressions for allowed requests, along with the
+    // description of what that allows.
+    // So, this example allows the following call:
+    // http://mywarehouse.com/index.php/services/rest/es/_search?q=taxon.name:quercus
+    // which proxies to
+    // http://my.elastic.url:9200/occurrence/_search?q=taxon.name:quercus
+    'allowed' => [
+      'get' => [
+        '/^_search/' => 'GET requests to the search API (/_search?...)',
+        '/^_mapping/' => 'GET requests to the mappings API (/_mapping?...)',
+      ],
+      'post' => [
+        '/^_search/' => 'POST requests to the search API (/_search?...)',
+        '/^doc\/.*\/_update/' => 'POSTed document updates',
+        '/^_update_by_query/' => 'POSTed multi-document updates',
+      ],
+    ],
+  ],
+];
 
 /**
  * Which sample attribute will we use to store the dataset name for records which came from
@@ -56,11 +108,10 @@ $config['dataset_name_attr_id'] = 99;
 
 // The following configuration is a temporary definition of the projects available for
 // each website.
-// @todo Move this configuration into a database table.
 $config['clients'] = [
   // keyed by client system ID
   'BTO' => [
-    'shared_secret' => 'password',
+    'shared_secret' => 'mysecret',
     'projects' => [
       // list of available projects keyed by project ID
       'BRC1' => [

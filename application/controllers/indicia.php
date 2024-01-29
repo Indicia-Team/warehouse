@@ -372,11 +372,12 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-   * Retrieve default values for an edit form.
+   * Retrieve default values for a create form.
    *
-   * Constructs an array of the default values required when loading a new
-   * edit form. Each entry is of the form "model:field => value". Loads both
-   * the defaults from this controller's main model, and any supermodels it has.
+   * Constructs an array of the default values required when loading a form for
+   * creating a new record. Each entry is of the form "model:field => value".
+   * Loads both the defaults from this controller's main model, and any
+   * supermodels it has.
    *
    * @return array
    *   List of default values keyed by fieldname.

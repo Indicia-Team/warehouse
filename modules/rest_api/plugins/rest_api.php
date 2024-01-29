@@ -29,3 +29,20 @@ function rest_api_scheduled_task() {
   // Anything older than 1 day can be purged.
   rest_utils::purgeOldFiles('upload-queue/', 3600 * 24);
 }
+
+/**
+ * Create a menu item for the list of REST API clients.
+ */
+function rest_api_alter_menu($menu, $auth) {
+  if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin')) {
+    $menu['Admin']['REST API clients'] = 'rest_api_client';
+  }
+  return $menu;
+}
+
+function rest_api_extend_data_services() {
+  return [
+    'rest_api_clients' => [],
+    'rest_api_client_connections' => [],
+  ];
+}

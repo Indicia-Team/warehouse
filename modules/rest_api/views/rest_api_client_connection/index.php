@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Warehouse version configuration.
+ * View template for the list of websites.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -22,25 +22,10 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-defined('SYSPATH') or die('No direct script access.');
-
-/**
- * The application files' version number.
- *
- * @var string
- */
-$config['version'] = '8.25.0';
-
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2024-01-26';
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+echo $grid;
+?>
+<form action="<?php echo url::site() . "rest_api_client_connection/create/$rest_api_client_id"; ?>">
+  <?php if ($this->auth->logged_in('CoreAdmin')) : ?>
+    <input type="submit" value="New client connection" class="btn btn-primary" />
+  <?php endif; ?>
+</form>
