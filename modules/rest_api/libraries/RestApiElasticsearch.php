@@ -2278,7 +2278,7 @@ SQL;
     }
     $actualUrl = $this->getEsActualUrl($url);
     $session = curl_init($actualUrl);
-    if (!empty($postData) && $postData !== '[]') {
+    if (!empty($postData) && $postData !== '{}') {
       curl_setopt($session, CURLOPT_POST, 1);
       curl_setopt($session, CURLOPT_POSTFIELDS, $postData);
     }
