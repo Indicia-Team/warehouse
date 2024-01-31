@@ -1884,7 +1884,13 @@ SQL;
     if ($this->has_attributes) {
       $result = $this->getAttributes(TRUE);
       foreach ($result as $row) {
-        $fields[] = "$this->attrs_field_prefix:$row->id";
+        if ($row->data_type == 'L' && $fk) {
+          // Lookup lists store a foreign key.
+          $fields[] = "$this->attrs_field_prefix:fk_$row->id";
+        }
+        else {
+          $fields[] = "$this->attrs_field_prefix:$row->id";
+        }
       }
     }
 
