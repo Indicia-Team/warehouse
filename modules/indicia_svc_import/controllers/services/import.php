@@ -555,14 +555,12 @@ class Import_Controller extends Service_Base_Controller {
       if (isset($model->specialImportFieldProcessingDefn)) {
         foreach ($model->specialImportFieldProcessingDefn as $column => $defn) {
           $columns = [];
-          $index = 0;
           foreach ($metadata['mappings'] as $col => $attr) {
             if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col != 'AllowLookup') {
               if (in_array($attr, $defn['columns'])) {
                 $columns[$attr] = TRUE;
               }
             }
-            $index++;
           }
           // The genus, specific name and qualifier are all merge fields.
           // However the qualifier is not mandatory, so if a qualifier is not specified, we effectively tell the system it has been specified
