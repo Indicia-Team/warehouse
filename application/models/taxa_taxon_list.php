@@ -55,14 +55,15 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     'taxon:taxon:qualifier' => 'Qualifier (builds binomial name)',
   ];
 
-  public $specialImportFieldProcessingDefn = [
-    'taxon:taxon' => [
+  public $compoundImportFieldProcessingDefn = [
+    'taxon genus + species + qualifier' => [
       'template' => '%s %s %s',
       'columns' => [
         'taxon:taxon:genus',
         'taxon:taxon:specific',
         'taxon:taxon:qualifier',
       ],
+      'destination' => 'taxon:taxon',
     ],
   ];
 
