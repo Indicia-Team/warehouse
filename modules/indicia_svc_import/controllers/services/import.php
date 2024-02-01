@@ -445,7 +445,6 @@ class Import_Controller extends Service_Base_Controller {
     if ($previous) {
       $metadata = array_merge($previous, $metadata);
     }
-    $this->auto_render = FALSE;
     $mappingFile = str_ireplace(['.csv', '.xlsx', '.xls'], '-metadata.txt', $_GET['uploaded_csv']);
     $mappingHandle = fopen(DOCROOT . "import/$mappingFile", "w");
     fwrite($mappingHandle, json_encode($metadata));
@@ -549,11 +548,11 @@ class Import_Controller extends Service_Base_Controller {
       $count = 0;
       $this->submissionStruct = $model->get_submission_structure();
 
-      // Check if the conditions for special field processing are met - all the
+      // Check if the conditions for compound field processing are met - all the
       // columns are in the mapping.
-      $specialFieldProcessing = [];
-      if (isset($model->specialImportFieldProcessingDefn)) {
-        foreach ($model->specialImportFieldProcessingDefn as $column => $defn) {
+      $compoundFieldProcessing = [];
+      if (isset($model->compoundImportFieldProcessingDefn)) {
+        foreach ($model->compoundImportFieldProcessingDefn as $defn) {
           $columns = [];
           foreach ($metadata['mappings'] as $col => $attr) {
             if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col != 'AllowLookup') {
@@ -569,7 +568,7 @@ class Import_Controller extends Service_Base_Controller {
             $columns['taxon:taxon:qualifier'] = TRUE;
           }
           if (count($defn['columns']) === count(array_keys($columns))) {
-            $specialFieldProcessing[$column] = TRUE;
+            $compoundFieldProcessing[] = $defn;
           }
         }
       }
@@ -648,16 +647,19 @@ class Import_Controller extends Service_Base_Controller {
         if ((array_key_exists('taxon:taxon:genus', $saveArray) || array_key_exists('taxon:taxon:specific', $saveArray)) &&  !array_key_exists('taxon:taxon:qualifier', $saveArray)) {
           $saveArray['taxon:taxon:qualifier'] = '';
         }
-        foreach (array_keys($specialFieldProcessing) as $col) {
-          if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
-            $saveArray[$col] = vsprintf(
-              $model->specialImportFieldProcessingDefn[$col]['template'],
+        kohana::log('debug', 'save: ' . var_export($saveArray, TRUE));
+        kohana::log('debug', 'compoundFieldProcessing: ' . var_export($compoundFieldProcessing, TRUE));
+        foreach ($compoundFieldProcessing as $def) {
+          // If destination field not already populated.
+          if (!isset($saveArray[$def['destination']]) || $saveArray[$def['destination']] == '') {
+            $saveArray[$def['destination']] = vsprintf(
+              $def['template'],
               array_map(function ($column) use ($saveArray) {
                 return $saveArray[$column];
               },
-              $model->specialImportFieldProcessingDefn[$col]['columns'])
+              $def['columns'])
             );
-            foreach ($model->specialImportFieldProcessingDefn[$col]['columns'] as $column) {
+            foreach ($def['columns'] as $column) {
               unset($saveArray[$column]);
             }
           }
@@ -1000,9 +1002,6 @@ class Import_Controller extends Service_Base_Controller {
       $this->internalCacheUploadMetadata($metadata);
       $this->cacheStoredMeanings($storedMeanings);
 
-      // An AJAX upload request will just receive the number of records
-      // uploaded and progress.
-      $this->auto_render = FALSE;
       if (!empty($allowCommitToDB) && $allowCommitToDB) {
         $cache->set(basename($importTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
       }
