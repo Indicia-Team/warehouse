@@ -736,12 +736,17 @@ SQL;
       $parentEntityColumns = $this->findEntityColumns($config['parentEntity'], $config);
       $childEntityColumns = $this->findEntityColumns($config['entity'], $config);
       $parentEntityDataRows = $this->fetchParentEntityData($db, $parentEntityColumns, $config);
+
+      // Check for compound field handling which require presence of a set of
+      // fields (e.g. build date from day, month, year).
+      $parentEntityCompoundFields = $this->getCompoundFieldsToProcessForEntity($config['parentEntity'], $parentEntityColumns);
+      $childEntityCompoundFields = $this->getCompoundFieldsToProcessForEntity($config['entity'], $childEntityColumns);
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
         // @todo Updating existing data.
         // @todo tracking of records that are done in the import table so can restart.
         $parent = ORM::factory($config['parentEntity']);
         $submission = [];
-        $this->copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityColumns, $config, $submission);
+        $this->copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityColumns, $config, $submission, $parentEntityCompoundFields);
         $this->applyGlobalValues($config, $config['parentEntity'], $parent->attrs_field_prefix ?? NULL, $submission);
         $identifiers = [
           'website_id' => $config['global-values']['website_id'],
@@ -780,7 +785,7 @@ SQL;
               'sample_id' => $parent->id,
             ];
             $this->applyGlobalValues($config, $config['entity'], $child->attrs_field_prefix ?? NULL, $submission);
-            $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityColumns, $config, $submission);
+            $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityColumns, $config, $submission, $childEntityCompoundFields);
             if ($config['entitySupportsImportGuid']) {
               $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
@@ -842,6 +847,42 @@ SQL;
         'msg' => $e->getMessage(),
       ]);
     }
+  }
+
+  /**
+   * Check for model compound fields which need to be applied.
+   *
+   * E.g. a sample date field is a compound field which can be constructed from
+   * day, month and year values in an import. If the day, month and year are
+   * mapped then capture the information about the compound field so it can be
+   * used later.
+   *
+   * @param string $entity
+   *   Database entity name.
+   * @param array $mappedColumns
+   *   List of mapped column information.
+   *
+   * @return array
+   *   List of compound field definitions keyed by the field name.
+   */
+  private function getCompoundFieldsToProcessForEntity($entity, $mappedColumns) {
+    $compoundFields = [];
+    $model = ORM::factory($entity);
+    if (isset($model->compoundImportFieldProcessingDefn)) {
+      foreach ($model->compoundImportFieldProcessingDefn as $def) {
+        $foundMappedColumns = [];
+        foreach ($mappedColumns as $mappedCol) {
+          if (in_array($mappedCol['warehouseField'], $def['columns'])) {
+            $foundMappedColumns[$mappedCol['warehouseField']] = TRUE;
+          }
+        }
+        if (count($foundMappedColumns) === count($def['columns'])) {
+          // Include this compound field as it's required columns are all mapped.
+          $compoundFields[] = $def;
+        }
+      }
+    }
+    return $compoundFields;
   }
 
   /**
@@ -1239,7 +1280,12 @@ SQL;
    * @param array $submission
    *   Submission data array that will be updated with the copied values.
    */
-  private function copyFieldsFromRowToSubmission($dataRow, array $columns, array $config, array &$submission) {
+  private function copyFieldsFromRowToSubmission($dataRow, array $columns, array $config, array &$submission, array $compoundFields) {
+    $skipColumns = [];
+    $skippedValues = [];
+    foreach ($compoundFields as $def) {
+      $skipColumns = $skipColumns + $def['columns'];
+    }
     foreach ($columns as $info) {
       $srcFieldName = $info['tempDbField'];
       $destFieldName = $info['warehouseField'];
@@ -1253,6 +1299,10 @@ SQL;
             substr($destFieldParts[1], 3) .
             // Append _id if not a custom attribute lookup.
             (preg_match('/^[a-z]{3}Attr$/', $destFieldParts[0]) ? '' : '_id');
+      }
+      if (in_array($info['warehouseField'], $skipColumns)) {
+        $skippedValues[$info['warehouseField']] = $dataRow->$srcFieldName;
+        continue;
       }
       if (empty($dataRow->$srcFieldName)) {
         if (empty($config['global-values'][$destFieldName])) {
@@ -1274,6 +1324,15 @@ SQL;
       else {
         $submission[$destFieldName] = $dataRow->$srcFieldName;
       }
+    }
+    foreach ($compoundFields as $def) {
+      $submission[$def['destination']] = vsprintf(
+        $def['template'],
+        array_map(function ($column) use ($skippedValues) {
+          return $skippedValues[$column];
+        },
+        $def['columns'])
+      );
     }
   }
 
