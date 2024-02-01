@@ -1,10 +1,8 @@
 # This image contains Debian's Apache httpd in conjunction with PHP8.1.
 # https://hub.docker.com/_/php
 FROM php:8.1-apache
-# Use PHP development configuration file
+# Use PHP development configuration file as a basis
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
-# Increase size of files which can be uploaded.
-RUN sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 20M/' "$PHP_INI_DIR/php.ini"
 
 # Add a tool to assist with installing PHP extensions.
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
@@ -27,6 +25,8 @@ ENV XDEBUG_CONFIG=client_host=172.17.0.1
 # page, you'll need to insert a line of code containting "xdebug_break();" if
 # you want to break at that second level. 
 COPY config/xdebug.ini "$PHP_INI_DIR/conf.d/indicia-xdebug.ini"
+# Override PHP limits in this file.
+COPY config/php.ini "$PHP_INI_DIR/conf.d/indicia-php.ini"
 
 # Install a postgres client for the pg_isready command.
 RUN apt-get update

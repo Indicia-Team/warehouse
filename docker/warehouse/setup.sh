@@ -10,8 +10,10 @@ location=$(curl \
   http://localhost:8080)
 
 if [ $location = "http://localhost:8080/index.php/setup_check" ]; then
-  # Database initialisation has not been performed yet.
   echo
+  echo "Starting Warehouse setup"
+  echo
+  # Database initialisation has not been performed yet.
   prompt="Do you want the indicia database schema initialised (Y/n)?"
   read -rs -n 1 -p "$prompt" 
   if [ "$REPLY" = "Y" ] || [ "$REPLY" = "y" ] || [ -z "$REPLY" ]; then
@@ -211,7 +213,12 @@ ____EOF
       fi # End of enable data_cleaner.
     fi # End of enable scheduled_tasks.
   fi # End of initialise indicia schema.
+
+  # Increase file upload size.
+  sed -i "s/\$config\['maxUploadSize'\] = '1M';/\$config['maxUploadSize'] = '32M';/" "../application/config/indicia.php"
+  echo
+  echo "Warehouse setup complete."
+else
+  echo "Warehouse setup already complete."
 fi # End of setup.
-echo
-echo "Warehouse setup complete."
 echo
