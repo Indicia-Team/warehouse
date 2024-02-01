@@ -372,11 +372,11 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       }
       $this->submissionStruct = $model->get_submission_structure();
 
-      // Check if the conditions for special field processing are met - all the
+      // Check if the conditions for compound field processing are met - all the
       // columns are in the mapping.
-      $specialFieldProcessing = array();
-      if (isset($model->specialImportFieldProcessingDefn)) {
-        foreach ($model->specialImportFieldProcessingDefn as $column => $defn) {
+      $compoundFieldProcessing = array();
+      if (isset($model->compoundImportFieldProcessingDefn)) {
+        foreach ($model->compoundImportFieldProcessingDefn as $defn) {
           $columns = array();
           $index = 0;
           foreach ($metadata['mappings'] as $col => $attr) {
@@ -394,7 +394,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
             $columns['taxon:taxon:qualifier'] = TRUE;
           }
           if (count($defn['columns']) === count(array_keys($columns))) {
-            $specialFieldProcessing[$column] = TRUE;
+            $compoundFieldProcessing[] = $defn;
           }
         }
       }
@@ -473,16 +473,16 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
         if ((array_key_exists('taxon:taxon:genus',$saveArray) || array_key_exists('taxon:taxon:specific',$saveArray)) &&  !array_key_exists('taxon:taxon:qualifier',$saveArray)) {
           $saveArray['taxon:taxon:qualifier'] = '';
         }
-        foreach (array_keys($specialFieldProcessing) as $col) {
-          if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
-            $saveArray[$col] = vsprintf(
-              $model->specialImportFieldProcessingDefn[$col]['template'],
+        foreach ($compoundFieldProcessing as $def) {
+          if (!isset($saveArray[$def['template']]) || $saveArray[$def['template']] == '') {
+            $saveArray[$def['template']] = vsprintf(
+              $def['template'],
               array_map(function ($column) use ($saveArray) {
                 return $saveArray[$column];
               },
-              $model->specialImportFieldProcessingDefn[$col]['columns'])
+              $def['columns'])
             );
-            foreach ($model->specialImportFieldProcessingDefn[$col]['columns'] as $column) {
+            foreach ($def['columns'] as $column) {
               unset($saveArray[$column]);
             }
           }

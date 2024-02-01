@@ -80,10 +80,11 @@ class Sample_Model extends ORM_Tree {
    * During an import it is possible to merge different columns in a CSV row to
    * make a database field.
    */
-  public $specialImportFieldProcessingDefn = [
-    'sample:date' => [
+  public $compoundImportFieldProcessingDefn = [
+    'sample day + month + year' => [
       'template' => '%04d-%02d-%02d',
       'columns' => ['sample:date:year', 'sample:date:month', 'sample:date:day'],
+      'destination' => 'sample:date',
     ],
   ];
 
