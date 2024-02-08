@@ -226,6 +226,9 @@ class ImportTools {
    *   Import config information.
    * @param int $limit
    *   Maximum number of rows to load.
+   *
+   * @return array
+   *   Row data.
    */
   public function openSpreadsheet($fileName, array &$config, $limit = 100000) {
     $reader = $this->getReader($fileName);
