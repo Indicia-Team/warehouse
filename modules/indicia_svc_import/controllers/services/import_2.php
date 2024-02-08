@@ -1136,7 +1136,8 @@ SQL;
   private function saveErrorsToRows($db, $rowData, array $keyFields, array $errors, array $config) {
     $whereList = [];
     foreach ($keyFields as $field) {
-      $whereList[] = "$field='{$rowData->$field}'";
+      $value = pg_escape_literal($db->getLink(), $rowData->$field);
+      $whereList[] = "$field=$value";
     }
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
