@@ -1136,7 +1136,8 @@ SQL;
   private function saveErrorsToRows($db, $rowData, array $keyFields, array $errors, array $config) {
     $whereList = [];
     foreach ($keyFields as $field) {
-      $whereList[] = "$field='{$rowData->$field}'";
+      $value = pg_escape_literal($db->getLink(), $rowData->$field);
+      $whereList[] = "$field=$value";
     }
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
@@ -1868,17 +1869,26 @@ SQL;
   private function loadNextRecordsBatch($fileName, array &$config) {
     $importTools = new ImportTools();
     $file = $importTools->openSpreadsheet($fileName, $config, BATCH_ROW_LIMIT);
-    $rowPos = 0;
+    $rowPosInBatch = 0;
     $count = 0;
     $rows = [];
     $db = new Database();
-    while (($rowPos < BATCH_ROW_LIMIT) && ($data = $this->getNextRow($file, $rowPos + $config['rowsRead'] + 1, $config))) {
+    $foundDataInBatch = FALSE;
+    while (($rowPosInBatch < BATCH_ROW_LIMIT)) {
+      // Work out current row pos (+ 1 to skip header).
+      $rowPosInFile = $rowPosInBatch + $config['rowsRead'] + 1;
+      if ($rowPosInFile > $config['totalRows']) {
+        // All rows done.
+        break;
+      }
+      $data = $file[$rowPosInFile] ?? [];
       // Nulls need to be empty strings for trim() to work.
       $data = array_map(function ($value) {
         return $value ?? '';
       }, $data);
       // Skip empty rows.
       if (!empty(implode('', $data))) {
+        $foundDataInBatch = TRUE;
         // Trim and escape the data, then pad to correct number of columns.
         $data = array_map(function ($s) use ($db) {
           return pg_escape_literal($db->getLink(), $s);
@@ -1897,10 +1907,10 @@ SQL;
         // Skipping empty row so correct the total expected.
         $config['totalRows']--;
       }
-      $rowPos++;
+      $rowPosInBatch++;
     }
     $config['rowsLoaded'] = $config['rowsLoaded'] + $count;
-    $config['rowsRead'] = $config['rowsRead'] + $rowPos;
+    $config['rowsRead'] = $config['rowsRead'] + $rowPosInBatch;
     if (count($rows)) {
       $fieldNames = $this->getColumnTempDbFieldMappings($config['columns']);
       // Enclose field names in "" in case reserved word.
@@ -1918,6 +1928,11 @@ SQL;
     }
     if ($config['totalRows'] === 0) {
       throw new exception('The import file does not contain any data to import.');
+    }
+    // An entire empty batch causes us to give up. Most likely the user saved a
+    // spreadsheet with multiple empty rows at the bottom.
+    if (!$foundDataInBatch) {
+      $config['totalRows'] = $config['rowsLoaded'];
     }
     $config['progress'] = $config['rowsLoaded'] * 100 / $config['totalRows'];
     if ($config['rowsLoaded'] >= $config['totalRows']) {
@@ -2072,23 +2087,6 @@ SQL;
       ];
     }
     return $colsAndFieldInfo;
-  }
-
-  /**
-   * Reads the next row from the data file.
-   *
-   * @param resource $file
-   *   Data array (PHPSpreadsheet).
-   * @param int $row
-   *   Row to fetch (PHPSpreadsheet).
-   * @param array $config
-   *   Config including file size info.
-   *
-   * @return array
-   *   Data array.
-   */
-  private function getNextRow($file, $row, array $config) {
-    return ($row <= $config['totalRows']) ? $file[$row] : FALSE;
   }
 
 }
