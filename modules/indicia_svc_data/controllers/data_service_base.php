@@ -31,7 +31,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
    *
    * @var array
    */
-  protected const STREAMABLE_FORMATS = ['csv', 'tsv'];
+  protected const STREAMABLE_FORMATS = ['csv', 'tsv', 'kml'];
 
   /**
    * More details on a failure, e.g. SQL if a query fails.
@@ -157,7 +157,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
 
       case 'kml':
         // Keyhole Markup Language.
-        $this->response = $this->kml_encode($records, TRUE);
+        $this->kml_encode($records);
         $this->content_type = 'Content-Type: application/vnd.google-earth.kml+xml';
         break;
 
@@ -308,7 +308,7 @@ META;
     $wantCount = isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1';
     $wantParameters = (isset($_REQUEST['wantParameters']) && $_REQUEST['wantParameters'] === '1')
       || ($wantRecords && !isset($data['records']));
-    $array = array();
+    $array = [];
     if ($wantRecords && isset($data['records'])) {
       $array['records'] = &$data['records'];
     }
@@ -584,7 +584,7 @@ META;
     // Keep an array to track any elements that must be skipped. For example if an array contains
     // {person_id=>1, person=>James Brown} then the xml output for the id is <person id="1">James Brown</person>.
     // There is no need to output the person separately so it gets flagged in this array for skipping.
-    $to_skip = array();
+    $to_skip = [];
     if (!$recursion) {
       // if we are outputting a specific record, root is singular
       if ($this->uri->total_arguments()) {
@@ -667,126 +667,135 @@ META;
 
   /**
    * Encodes an array as kml - fixed format XML style.
+   *
+   * Output is streamed rather than returned.
    * Uses $this->entity to decide the name of the root element.
    * Recurses into the array where array values are themselves arrays. Also inserts
    * xlink paths to any foreign keys, and gets the caption of the foreign entity.
    */
-  protected function kml_encode($array, $indent=false)
-  {
+  protected function kml_encode($array) {
     // if we are outputting a specific record, root is singular
-    if ($this->uri->total_arguments())
-    {
+    if ($this->uri->total_arguments()) {
       $root = $this->entity;
       // We don't need to repeat the element for each record, as there is only 1.
       $array = $array[0];
     }
-    else
-    {
+    else {
       $root = inflector::plural($this->entity);
     }
-    $data = '<?xml version="1.0"?>'.($indent ? "\r\n" : '').
-            '<kml xmlns="http://www.opengis.net/kml/2.2">'.($indent ? "\r\n\t" : '').
-            '<Document xmlns:atom="http://purl.org/atom/ns#">'.($indent ? "\r\n\t\t" : '').
-            '<name>'.$root.'</name>'.($indent ? "\r\n\t\t" : '').
-            '<Style id="s_ylw-pushpin_h1">'.($indent ? "\r\n\t\t\t" : '').
-            '<IconStyle>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<scale>1.3</scale>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<Icon>'.($indent ? "\r\n\t\t\t\t\t\t" : '').
-            '<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>'.($indent ? "\r\n\t\t\t\t" : '').
-            '</Icon>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>'.($indent ? "\r\n\t\t\t" : '').
-            '</IconStyle>'.($indent ? "\r\n\t\t\t" : '').
-            '<LineStyle>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<color>ffff7700</color>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<width>4</width>'.($indent ? "\r\n\t\t\t" : '').
-            '</LineStyle>'.($indent ? "\r\n\t\t\t" : '').
-            '<PolyStyle>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<color>19ff7755</color>'.($indent ? "\r\n\t\t\t" : '').
-            '</PolyStyle>'.($indent ? "\r\n\t\t" : '').
-            '</Style>'.($indent ? "\r\n\t\t" : '').
-            '<Style id="s_ylw-pushpin">'.($indent ? "\r\n\t\t\t" : '').
-            '<IconStyle>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<scale>1.1</scale>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<Icon>'.($indent ? "\r\n\t\t\t\t\t\t" : '').
-            '<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>'.($indent ? "\r\n\t\t\t\t" : '').
-            '</Icon>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>'.($indent ? "\r\n\t\t\t" : '').
-            '</IconStyle>'.($indent ? "\r\n\t\t\t" : '').
-            '<LineStyle>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<color>ffff0000</color>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<width>3</width>'.($indent ? "\r\n\t\t\t" : '').
-            '</LineStyle>'.($indent ? "\r\n\t\t\t" : '').
-            '<PolyStyle>'.($indent ? "\r\n\t\t\t\t" : '').
-            '<color>19ff0055</color>'.($indent ? "\r\n\t\t\t" : '').
-            '</PolyStyle>'.($indent ? "\r\n\t\t" : '').
-            '</Style>'.($indent ? "\r\n\t\t" : '').
-            '<StyleMap id="m_ylw-pushpin">'.($indent ? "\r\n\t\t\t" : '').
-		        '<Pair>'.($indent ? "\r\n\t\t\t\t" : '').
-			      '<key>normal</key>'.($indent ? "\r\n\t\t\t\t" : '').
-			      '<styleUrl>#s_ylw-pushpin</styleUrl>'.($indent ? "\r\n\t\t\t" : '').
-		        '</Pair>'.($indent ? "\r\n\t\t\t" : '').
-		        '<Pair>'.($indent ? "\r\n\t\t\t\t" : '').
-			      '<key>highlight</key>'.($indent ? "\r\n\t\t\t\t" : '').
-			      '<styleUrl>#s_ylw-pushpin_hl</styleUrl>'.($indent ? "\r\n\t\t\t" : '').
-		        '</Pair>'.($indent ? "\r\n\t\t" : '').
-	          '</StyleMap>'.($indent ? "\r\n" : '');
-    $recordNum = 1;
-    foreach ($array["records"] as $record)
-    {
-      $data .= $this->kml_encode_array($recordNum, $root, $record, $indent, 2);
-      $recordNum++;
-    }
+    echo <<<XML
+<?xml version="1.0"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document xmlns:atom="http://purl.org/atom/ns#">
+    <name>$root</name>
+    <Style id="s_ylw-pushpin_h1">
+      <IconStyle>
+        <scale>1.3</scale>
+        <Icon>
+          <href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+        </Icon>
+        <hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+      </IconStyle>
+      <LineStyle>
+        <color>ffff7700</color>
+        <width>4</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>19ff7755</color>
+      </PolyStyle>
+    </Style>
+    <Style id="s_ylw-pushpin">
+      <IconStyle>
+        <scale>1.1</scale>
+        <Icon>
+          <href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+        </Icon>
+        <hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+      </IconStyle>
+      <LineStyle>
+        <color>ffff0000</color>
+        <width>3</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>19ff0055</color>
+      </PolyStyle>
+    </Style>
+    <StyleMap id="m_ylw-pushpin">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#s_ylw-pushpin</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#s_ylw-pushpin_hl</styleUrl>
+      </Pair>
+    </StyleMap>
 
-    $data .= ($indent?"\t":'').'</Document>'.($indent?"\r\n":'')."</kml>";
-    return $data;
+XML;
+    $recordNum = 1;
+    $vagueDateCols = [];
+    if (count($array['records']) > 0) {
+      $vagueDateCols = preg_grep('/date_type$/', array_keys((array) $array['records'][0]));
+      array_walk($vagueDateCols, function(&$v) {
+        $v = substr($v, 0, strlen($v) - 5);
+      });
+      foreach ($array['records'] as $record) {
+        $recordArray = (array) $record;
+        if (!empty($vagueDateCols)) {
+          $this->addVagueDates($recordArray, $vagueDateCols);
+        }
+        echo $this->kml_encode_array($recordNum, $root, $recordArray, 2) . "\r\n";
+        $recordNum++;
+      }
+    }
+    echo "  </Document>\n</kml>";
   }
 
   /**
    * Encodes an array element as kml - fixed format XML style.
    */
-  protected function kml_encode_array($recordNum, $root, $array, $indent, $recursion)
-  {
+  protected function kml_encode_array($recordNum, $root, array $array, $recursion) {
   	// Keep an array to track any elements that must be skipped - i.e. geometries, names, dates.
-  	$to_skip=array();
-    $data = ($indent?str_repeat("\t", $recursion):'').'<Placemark>'.($indent ? "\r\n" : '');
+  	$to_skip = [];
+    $data = str_repeat("\t", $recursion) . "<Placemark>\r\n";
     // identify name
-    $name = $root.'.'.(array_key_exists('id',$array) ? $array['id'] : $recordNum); // default if no name field in record
+    $name = $root . '.' . (array_key_exists('id', $array) ? $array['id'] : $recordNum); // default if no name field in record
     if (!empty($array['name'])) {
       $name = $array['name'];
       $to_skip[]='name';
-    } elseif (!empty($array['location_name'])) {
+    }
+    elseif (!empty($array['location_name'])) {
       $name = $array['location_name'];
       $to_skip[]='location_name';
     }
-    $data .= ($indent?str_repeat("\t", 1+$recursion):'').'<name>'.htmlspecialchars($name).'</name>'.($indent ? "\r\n" : '');
+    $data .= str_repeat("\t", 1 + $recursion) . '<name>' . htmlspecialchars($name) . "</name>\r\n";
     // identify date
-    if(array_key_exists('date',$array)){
-      $data .= ($indent?str_repeat("\t", 1+$recursion):'').
-               '<TimeStamp>'.($indent ? "\r\n".str_repeat("\t", 2+$recursion) : '').
-               '<when>'. htmlspecialchars($array['date']).'</when>'.($indent ? "\r\n".str_repeat("\t", 1+$recursion) : '').
-               '</TimeStamp>'.($indent ? "\r\n".str_repeat("\t", 1+$recursion) : '').
-               '<styleUrl>#m_ylw-pushpin</styleUrl>'.($indent ? "\r\n" : '');
-//      $to_skip[]='date';
+    if(array_key_exists('date', $array)){
+      $data .= str_repeat("\t", 1 + $recursion) .
+               '<TimeStamp>' . str_repeat("\t", 2+$recursion) .
+               '<when>' . htmlspecialchars($array['date']) . '</when>' . str_repeat("\t", 1 + $recursion) .
+               '</TimeStamp>' . str_repeat("\t", 1 + $recursion) .
+               "<styleUrl>#m_ylw-pushpin</styleUrl>\r\n";
     }
-    // identify geometry
+    // Identify geometry.
     // The geometry in KML must be long/lat decimal degrees (WGS84, EPSG:4326).
     // We assume that the geometry provided to us is in this format:
     // this currently precludes the use of direct table data download by kml as the views for these do a straight
     // st_astext, which displays the internal Postgis system used. Without explicit data of which system the data is being
     // delivered in, it is impossible to automatically convert to EPSG:4326.
-    $geoms = array();
+    $geoms = [];
     $numGeoms = (array_key_exists('geom',$array) ? 1 : 0);
     foreach ($array as $element => $value)
       if (substr($element, -5)=='_geom') $numGeoms++;
     if(array_key_exists('geom',$array)){
-      if(($extractGeom = $this->wkt_to_kml($array['geom'],$indent,($numGeoms>1 ? 2 : 1)+$recursion)) !== false){
+      if(($extractGeom = $this->wkt_to_kml($array['geom'], ($numGeoms>1 ? 2 : 1) + $recursion)) !== false){
         $geoms[] = $extractGeom;
         $to_skip[] = 'geom';
       }
     }
     foreach ($array as $element => $value){
       if (substr($element, -5)=='_geom') {
-        if(($extractGeom = $this->wkt_to_kml($value,$indent,($numGeoms>1 ? 2 : 1)+$recursion)) !== false){
+        if(($extractGeom = $this->wkt_to_kml($value, ($numGeoms>1 ? 2 : 1) + $recursion)) !== false){
           $to_skip[] = $element;
           $geoms[] = $extractGeom;
         }
@@ -796,13 +805,13 @@ META;
     if($numGeoms==1 && count($geoms)==1) {
       $data .= $geoms[0];
     }  else if(count($geoms)>0) {
-      $data .= ($indent ? str_repeat("\t", 1+$recursion) : '').'<MultiGeometry>'.($indent ? "\r\n" : '').
+      $data .= str_repeat("\t", 1 + $recursion) . "<MultiGeometry>\r\n" .
                implode('',$geoms).
-               ($indent ? str_repeat("\t", 1+$recursion) : '').'</MultiGeometry>'.($indent ? "\r\n" : '');
+               str_repeat("\t", 1 + $recursion) . "</MultiGeometry>\r\n";
     }
     // Now deal with extra fields. These are displayed as a table in GoogleEarth
-    $data .= ($indent?str_repeat("\t", 1+$recursion):'').'<ExtendedData>'.($indent ? "\r\n" : '');
-    $root = url::base().'upload/';
+    $data .= str_repeat("\t", 1 + $recursion) . "<ExtendedData>\r\n";
+    $root = url::base() . 'upload/';
     foreach ($array as $element => $value)
     {
       if (!in_array($element, $to_skip))
@@ -811,16 +820,16 @@ META;
         {
           // convert images to html
           if ($element==='images')
-            $value='<img width="300" src="'.$root.str_replace(',', '"/><img width="300" src="'.$root, $value).'"/>';
-          $data .= ($indent?str_repeat("\t", 2+$recursion):'').
-                   '<Data name="'.$element.'">'.($indent ? "\r\n".str_repeat("\t", 3+$recursion) : '').
-                   '<value>'. htmlspecialchars($value).'</value>'.($indent ? "\r\n".str_repeat("\t", 2+$recursion) : '').
-                   '</Data>'.($indent ? "\r\n" : '');
+            $value='<img width="300" src="' . $root . str_replace(',', '"/><img width="300" src="' . $root, $value) . '"/>';
+          $data .= str_repeat("\t", 2+$recursion) .
+                   "<Data name=\"$element\">\r\n" . str_repeat("\t", 3 + $recursion).
+                   '<value>'. htmlspecialchars($value) . "</value>\r\n" . str_repeat("\t", 2+$recursion) .
+                   '</Data>';
         }
       }
     }
-    $data .= ($indent?str_repeat("\t", 1+$recursion):'').'</ExtendedData>'.($indent ? "\r\n" : '');
-    $data .= ($indent?str_repeat("\t", $recursion):'').'</Placemark>'.($indent ? "\r\n" : '');
+    $data .= str_repeat("\t", 1 + $recursion) . "</ExtendedData>\r\n";
+    $data .= str_repeat("\t", $recursion) . "</Placemark>\r\n";
     return $data;
   }
 
@@ -829,84 +838,84 @@ META;
    * Assummed to be EPSG:4326.
    * Recursive.
    */
-  protected function wkt_to_kml($geom, $indent, $recursion){
+  protected function wkt_to_kml($geom, $recursion){
     $geom = trim($geom);
     if(preg_match("/^POINT\((.*)\)$/i", $geom, $matches)){
-      return ($indent ? str_repeat("\t", $recursion) : '').'<Point>'.
-             ($indent ? "\r\n".str_repeat("\t", 1+$recursion) : '').'<coordinates>'.
-             htmlspecialchars(preg_replace('/ /',',',$matches[1],1)).',0</coordinates>'.
-             ($indent ? "\r\n".str_repeat("\t", $recursion) : '').'</Point>'.($indent ? "\r\n" : '');
+      return str_repeat("\t", $recursion) . '<Point>' .
+             "\r\n" . str_repeat("\t", 1 + $recursion) . '<coordinates>' .
+             htmlspecialchars(preg_replace('/ /', ',', $matches[1], 1)) . ',0</coordinates>' .
+             "\r\n" . str_repeat("\t", $recursion) . "</Point>\r\n";
     }
     if(preg_match("/^MULTIPOINT\((.*)\)$/i", $geom, $matches)){
       $coords = explode(',',$matches[1]); // separate into pairs
-      $data = ($indent ? str_repeat("\t", $recursion) : '').'<MultiGeometry>'.($indent ? "\r\n" : '');
+      $data = str_repeat("\t", $recursion) . '<MultiGeometry>'."\r\n";
       foreach($coords as $coord){
-        $data .= ($indent ? str_repeat("\t", 1+$recursion) : '').'<Point>'.
-                 ($indent ? "\r\n".str_repeat("\t", 2+$recursion) : '').'<coordinates>'.
-                 htmlspecialchars(preg_replace('/ /',',',$matches[1],1)).',0</coordinates>'.
-                 ($indent ? "\r\n".str_repeat("\t", 1+$recursion) : '').'</Point>'.($indent ? "\r\n" : '');
+        $data .= str_repeat("\t", 1 + $recursion) . '<Point>'.
+                 "\r\n".str_repeat("\t", 2+$recursion) . '<coordinates>'.
+                 htmlspecialchars(preg_replace('/ /',',',$matches[1],1)). ',0</coordinates>'.
+                 "\r\n".str_repeat("\t", 1 + $recursion) . '</Point>'."\r\n";
       }
-      $data .= ($indent?str_repeat("\t", $recursion):'').'</MultiGeometry>'.($indent ? "\r\n" : '');
+      $data .= str_repeat("\t", $recursion) . '</MultiGeometry>'."\r\n";
       return $data;
     }
     if(preg_match("/^LINESTRING\((.*)\)$/i", $geom, $matches)){
-      return $this->kml_line($matches[1], $indent, $recursion, "LineString");
+      return $this->kml_line($matches[1], $recursion, "LineString");
     }
     if(preg_match("/^MULTILINESTRING\((.*)\)$/i", $geom, $matches)){
       preg_match_all("/\(([^\)]*)\)/", trim($matches[1]), $lines);
-      $data = ($indent?str_repeat("\t", $recursion):'').'<MultiGeometry>'.($indent ? "\r\n" : '');
+      $data = str_repeat("\t", $recursion) . '<MultiGeometry>'."\r\n";
       for($ri=0; $ri<count($lines[1]); $ri++){
-        $data .= $this->kml_line($lines[1][$ri], $indent, 1+$recursion, "LineString");
+        $data .= $this->kml_line($lines[1][$ri], 1 + $recursion, "LineString");
       }
-      $data .= ($indent?str_repeat("\t", $recursion):'').'</MultiGeometry>'.($indent ? "\r\n" : '');
+      $data .= str_repeat("\t", $recursion) . '</MultiGeometry>'."\r\n";
       return $data;
     }
     if(preg_match("/^POLYGON\((.*)\)$/i", $geom, $matches)){
       preg_match_all("/\((.*)\)/", trim($matches[1]), $rings);
       // outer (first) ring
-      $data = ($indent?str_repeat("\t", $recursion):'').'<Polygon>'.
-              ($indent ? "\r\n".str_repeat("\t", 1+$recursion) : '').'<outerBoundaryIs>'.($indent ? "\r\n" : '').
-              $this->kml_line($rings[1][0], $indent, 2+$recursion, "LinearRing").
-              ($indent ? str_repeat("\t", 1+$recursion) : '').'</outerBoundaryIs>'.($indent ? "\r\n" : '');
+      $data = str_repeat("\t", $recursion) . '<Polygon>'.
+              "\r\n".str_repeat("\t", 1 + $recursion) . '<outerBoundaryIs>'."\r\n" .
+              $this->kml_line($rings[1][0],2+$recursion, "LinearRing").
+              str_repeat("\t", 1 + $recursion) . '</outerBoundaryIs>'."\r\n";
       // optional inner rings
       if(count($rings[1])>1){
         for($ri=1; $ri<count($rings[1]); $ri++){
-          $data .= ($indent?str_repeat("\t", 1+$recursion):'').'<innerBoundaryIs>'.($indent ? "\r\n" : '').
-                  $this->kml_line($rings[1][$ri], $indent, 2+$recursion, "LinearRing").
-                  ($indent ? str_repeat("\t", 1+$recursion) : '').'</innerBoundaryIs>'.($indent ? "\r\n" : '');
+          $data .= str_repeat("\t", 1 + $recursion) . '<innerBoundaryIs>'."\r\n" .
+                  $this->kml_line($rings[1][$ri], 2+$recursion, "LinearRing").
+                  str_repeat("\t", 1 + $recursion) . '</innerBoundaryIs>'."\r\n";
         }
       }
-      $data .= ($indent?str_repeat("\t", $recursion):'').'</Polygon>'.($indent ? "\r\n" : '');
+      $data .= str_repeat("\t", $recursion) . '</Polygon>'."\r\n";
       return $data;
     }
     if(preg_match("/^MULTIPOLYGON\((.*)\)$/i", $geom, $matches)){
       // each polygon starts and ends with double brackets.
       preg_match_all("/\((\((?:[^\)]|\),)*\))\)/", trim($matches[1]), $polygons);
-      $data = ($indent?str_repeat("\t", $recursion):'').'<MultiGeometry>'.($indent ? "\r\n" : '');
+      $data = str_repeat("\t", $recursion) . '<MultiGeometry>'."\r\n";
       foreach($polygons[1] as $polygon){
         // each ring surrounded by brackets.
         preg_match_all("/\((.*)\)/", trim($polygon), $rings);
     	// outer (first) ring
-    	$data .= ($indent?str_repeat("\t", 1+$recursion):'').'<Polygon>'.
-    			($indent ? "\r\n".str_repeat("\t", 2+$recursion) : '').'<outerBoundaryIs>'.($indent ? "\r\n" : '').
-    			$this->kml_line($rings[1][0], $indent, 3+$recursion, "LinearRing").
-    			($indent ? str_repeat("\t", 2+$recursion) : '').'</outerBoundaryIs>'.($indent ? "\r\n" : '');
+    	$data .= str_repeat("\t", 1 + $recursion) . '<Polygon>'.
+    			"\r\n".str_repeat("\t", 2+$recursion) . '<outerBoundaryIs>'."\r\n" .
+    			$this->kml_line($rings[1][0], 3+$recursion, "LinearRing").
+    			str_repeat("\t", 2+$recursion) . '</outerBoundaryIs>'."\r\n";
     	// optional inner rings
     	if(count($rings[1])>1){
     		for($ri=1; $ri<count($rings[1]); $ri++){
-    			$data .= ($indent?str_repeat("\t", 2+$recursion):'').'<innerBoundaryIs>'.($indent ? "\r\n" : '').
-    			$this->kml_line($rings[1][$ri], $indent, 3+$recursion, "LinearRing").
-    			($indent ? str_repeat("\t", 2+$recursion) : '').'</innerBoundaryIs>'.($indent ? "\r\n" : '');
+    			$data .= str_repeat("\t", 2+$recursion) . '<innerBoundaryIs>'."\r\n" .
+    			$this->kml_line($rings[1][$ri], 3+$recursion, "LinearRing").
+    			str_repeat("\t", 2+$recursion) . '</innerBoundaryIs>'."\r\n";
     		}
     	}
-    	$data .= ($indent?str_repeat("\t", 1+$recursion):'').'</Polygon>'.($indent ? "\r\n" : '');
+    	$data .= str_repeat("\t", 1 + $recursion) . '</Polygon>'."\r\n";
       }
-      $data .= ($indent?str_repeat("\t", $recursion):'').'</MultiGeometry>'.($indent ? "\r\n" : '');
+      $data .= str_repeat("\t", $recursion) . '</MultiGeometry>'."\r\n";
       return $data;
     }
     if(preg_match("/^GEOMETRYCOLLECTION\((.*)\)$/i", $geom, $matches)){
-      $geoms = array();
-      $sub = array();
+      $geoms = [];
+      $sub = [];
       if(preg_match_all("/((?<!MULTI)POINT\([^\)]*\))/", trim($matches[1]), $points)) {
         $sub = $points[1];
       }
@@ -927,29 +936,29 @@ META;
       }
       if(count($sub)>0) {
         foreach($sub as $geometry) {
-          if(($extractGeom = $this->wkt_to_kml($geometry,$indent,1+$recursion)) !== false){
+          if(($extractGeom = $this->wkt_to_kml($geometry, 1 + $recursion)) !== false){
             $geoms[] = $extractGeom;
           } else return false;
         }
       } else return false;
-      return ($indent ? str_repeat("\t", $recursion) : '').'<MultiGeometry>'.($indent ? "\r\n" : '').
+      return str_repeat("\t", $recursion) . '<MultiGeometry>'."\r\n" .
              implode('',$geoms).
-             ($indent ? str_repeat("\t", $recursion) : '').'</MultiGeometry>'.($indent ? "\r\n" : '');
+             str_repeat("\t", $recursion) . '</MultiGeometry>'."\r\n";
     }
     return false;
   }
 
-  protected function kml_line($ring, $indent, $recursion, $type){
+  protected function kml_line($ring, $recursion, $type){
     $coords = explode(',',$ring);
-    $data = ($indent ? str_repeat("\t", $recursion) : '').
-            '<'.$type.'>'.($indent ? "\r\n".str_repeat("\t", 1+$recursion) : '').
-            '<coordinates>'.($indent ? "\r\n" : '');
+    $data = str_repeat("\t", $recursion) .
+            '<'.$type. '>'."\r\n".str_repeat("\t", 1 + $recursion) .
+            '<coordinates>'."\r\n";
     foreach($coords as $coord){
-      $data .= ($indent ? str_repeat("\t", 2+$recursion) : '').htmlspecialchars(preg_replace('/ /',',',$coord,1)).',0'.($indent ? "\r\n" : '');
+      $data .= str_repeat("\t", 2+$recursion) .htmlspecialchars(preg_replace('/ /',',',$coord,1)). ',0'."\r\n";
     }
-    $data .= ($indent?str_repeat("\t", 1+$recursion):'').
-             '</coordinates>'.($indent ? "\r\n".str_repeat("\t", $recursion) : '').
-             '</'.$type.'>'.($indent ? "\r\n" : '');
+    $data .= str_repeat("\t", 1 + $recursion) .
+             '</coordinates>'."\r\n".str_repeat("\t", $recursion) .
+             '</'.$type. '>'."\r\n";
     return $data;
   }
 
@@ -1011,7 +1020,7 @@ META;
       if (substr($element, -5)=='_geom')
         $to_skip[] = $element;
     $desc = '';
-    $elements = array();
+    $elements = [];
     foreach ($array as $element => $value){
       if (!in_array($element, $to_skip))
         if ($value && !is_array($value))
@@ -1020,7 +1029,7 @@ META;
     $desc = count($elements)>0 ? '<desc><![CDATA['.implode("\r\n",$elements).']]></desc>' : '';
 
     // identify geometry. The geometry in GPX must be long/lat decimal degrees (WGS84, EPSG:4326). See comments in KML.
-    $geoms = array();
+    $geoms = [];
     if(array_key_exists('geom',$array))
       if(($extractGeom = $this->wkt_to_gpx($name,$desc,$array['geom'],$indent,$recursion)) !== false)
         $geoms[] = $extractGeom;
@@ -1079,8 +1088,8 @@ META;
       return $data;
     }
     if(preg_match("/^GEOMETRYCOLLECTION\((.*)\)$/i", $geom, $matches)){
-      $geoms = array();
-  		$sub = array();
+      $geoms = [];
+  		$sub = [];
   		if(preg_match_all("/((?<!MULTI)POINT\([^\)]*\))/", trim($matches[1]), $points)) {
   			$sub = $points[1];
   		}
@@ -1099,14 +1108,16 @@ META;
   		if(preg_match_all("/(MULTIPOLYGON\(\(\((?:[^\)]|\),|\)\),)*\)\)\))/", trim($matches[1]), $multipolygons)) {
   			$sub = array_merge($sub,$multipolygons[1]);
   		}
-  		if(count($sub)>0) {
-  			foreach($sub as $geometry) {
-  				if(($extractGeom = $this->wkt_to_gpx($name,$desc,$geometry,$indent,1+$recursion)) !== false){
+  		if (count($sub) > 0) {
+  			foreach ($sub as $geometry) {
+  				if (($extractGeom = $this->wkt_to_gpx($name, $desc, $geometry, $indent, 1 + $recursion)) !== FALSE) {
   					$geoms[] = $extractGeom;
   				};
   			}
   		}
-  		if(count($geoms)>0) return $data.implode('',$geoms);
+  		if(count($geoms) > 0) {
+        return $data . implode('', $geoms);
+      }
   		return '';
   	}
   	return false;
@@ -1116,10 +1127,10 @@ META;
     $coords = explode(',',$ring);
     $numCoords = count($coords);
     $data = ($indent ? str_repeat("\t", $recursion) : '').'<rte>'.($indent ? "\r\n" : '');
-    $data .= ($indent ? str_repeat("\t", 1+$recursion) : '').'<name>'.htmlspecialchars($name).'</name>'.$desc.($indent ? "\r\n" : '');
+    $data .= ($indent ? str_repeat("\t", 1 + $recursion) : '').'<name>'.htmlspecialchars($name).'</name>'.$desc.($indent ? "\r\n" : '');
     foreach($coords as $i => $coord){
       $latlong = explode(' ', $coord);
-      $data .=  ($indent ? str_repeat("\t", 1+$recursion) : '').'<rtept lat="'.$latlong[1].'" lon="'.$latlong[0].'"><name>'.($closed && $i == $numCoords-1 ? "" : htmlspecialchars($name)." (".(1+$i).")").'</name></rtept>'.($indent ? "\r\n" : '');
+      $data .=  ($indent ? str_repeat("\t", 1 + $recursion) : '').'<rtept lat="'.$latlong[1].'" lon="'.$latlong[0].'"><name>'.($closed && $i == $numCoords-1 ? "" : htmlspecialchars($name)." (".(1+$i).")").'</name></rtept>'.($indent ? "\r\n" : '');
   	}
     $data .= ($indent ? str_repeat("\t", $recursion) : '').'</rte>'.($indent ? "\r\n" : '');
   	return $data;
