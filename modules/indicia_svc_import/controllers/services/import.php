@@ -647,8 +647,6 @@ class Import_Controller extends Service_Base_Controller {
         if ((array_key_exists('taxon:taxon:genus', $saveArray) || array_key_exists('taxon:taxon:specific', $saveArray)) &&  !array_key_exists('taxon:taxon:qualifier', $saveArray)) {
           $saveArray['taxon:taxon:qualifier'] = '';
         }
-        kohana::log('debug', 'save: ' . var_export($saveArray, TRUE));
-        kohana::log('debug', 'compoundFieldProcessing: ' . var_export($compoundFieldProcessing, TRUE));
         foreach ($compoundFieldProcessing as $def) {
           // If destination field not already populated.
           if (!isset($saveArray[$def['destination']]) || $saveArray[$def['destination']] == '') {
