@@ -3,6 +3,8 @@
 
 * Adds a staging URLS option to website configuration, allowing additional websites used for
   development and testing to connect to the REST API.
+* Fixes a bug causing the index_groups_locations table to be populated with a full list of
+  locations that intersect a group's area of interest rather than just indexed ones.
 
 # Version 8.24.0
 *2024-01-11*
