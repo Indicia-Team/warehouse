@@ -66,7 +66,7 @@ class Indicia_Controller extends Template_Controller {
    *
    * @var array
    */
-  protected mixed $auth_filter;
+  protected $auth_filter;
 
   /**
    * Name of the main template view file.
