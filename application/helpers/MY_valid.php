@@ -281,6 +281,27 @@ SQL;
   }
 
   /**
+   * Validates that a value is a list of URLs, one per line.
+   *
+   * @param string $value
+   *   Value to validate.
+   *
+   * @return bool
+   *   True if a list of correctly formatted URLs.
+   */
+  public static function url_list($value) {
+    $value = str_replace("\r\n", "\n", $value);
+    $value = str_replace("\r", "\n", $value);
+    $urls = explode("\n", $value);
+    foreach ($urls as $url) {
+      if (!self::url(trim($url))) {
+        return FALSE;
+      }
+    }
+    return TRUE;
+  }
+
+  /**
    * Checks if a string is a proper decimal format with allowance for ranges.
    *
    * The format array can be used to specify a decimal length, or a number
