@@ -1,3 +1,9 @@
+# Version 8.25.0
+*2024-02-15*
+
+* Adds a staging URLS option to website configuration, allowing additional websites used for
+  development and testing to connect to the REST API.
+
 # Version 8.24.0
 *2024-01-11*
 
