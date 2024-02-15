@@ -224,6 +224,9 @@ $lang = [
     'url' => 'This must be a valid URL including the http:// prefix.',
     'default' => 'Invalid Input.',
   ],
+  'staging_urls' => [
+    'url_list' => 'The list of URLs supplied is not valid.',
+  ],
   'username' => [
     'required' => 'The username cannot be blank.',
     'length' => 'The username must be between 7 and 30 letters in length.',
