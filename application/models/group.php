@@ -91,28 +91,27 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
    */
   private function processIndexGroupsLocations() {
     $filter = json_decode($this->filter->definition, TRUE);
-    $exist = $this->db->select('id', 'location_id')
+    $existingIndexedLocations = $this->db->select('id', 'location_id')
       ->from('index_groups_locations')
       ->where('group_id', $this->id)
       ->get();
-    $location_ids = [];
-    // Backwards compatibility checks.
-    if (!empty($filter['indexed_location_id']) && empty($filter['indexed_location_list'])) {
-      $filter['indexed_location_list'] = $filter['location_id'];
-    }
-    if (!empty($filter['location_id']) && empty($filter['location_list'])) {
-      $filter['location_list'] = $filter['location_id'];
-    }
+    // Does the filter have any location_ids, indexed or otherwise? Allow for legacy filters.
+    $filterLocationIds = [];
     if (!empty($filter['indexed_location_list'])) {
-      // Got an indexed location as the filter boundary definition, so we can
-      // use that as it is.
-      $location_ids = explode(',', $filter['indexed_location_list']);
+      $filterLocationIds[] = $filter['indexed_location_list'];
     }
-    elseif (!empty($filter['location_list']) || !empty($filter['searchArea'])) {
-      // Got either an unindexed location, or a freehand boundary, so need to
-      // intersect to find the indexed locations.
-      // Without a configuration for the indexed location type layers we can't
-      // go any further.
+    if (!empty($filter['indexed_location_id'])) {
+      $filterLocationIds[] = $filter['indexed_location_id'];
+    }
+    if (!empty($filter['location_list'])) {
+      $filterLocationIds[] = $filter['location_list'];
+    }
+    if (!empty($filter['location_id'])) {
+      $filterLocationIds[] = $filter['location_id'];
+    }
+    $updatedIndexedLocations = [];
+    // Location IDs or searchArea can be used to find indexed locations.
+    if (!empty($filterLocationIds) || !empty($filter['searchArea'])) {
       $config = kohana::config_load('spatial_index_builder', FALSE);
       if (array_key_exists('location_types', $config)) {
         $locationTypeNames = "'" . implode("','", $config['location_types']) . "'";
@@ -124,68 +123,45 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
           $locationTypeIds[] = $type->id;
         }
         $types = implode($locationTypeIds);
-        if (!empty($filter['location_list'])) {
-          $sql = <<<SQL
-SELECT l.id FROM locations l
-JOIN locations search ON (
-    st_intersects(search.boundary_geom, l.boundary_geom)
-    AND NOT st_touches(search.boundary_geom, l.boundary_geom)
-  OR (
-    search.boundary_geom IS NULL
-    AND st_intersects(search.centroid_geom, l.boundary_geom)
-    AND NOT st_touches(search.centroid_geom, l.boundary_geom)
-  )
-  OR (
-    l.boundary_geom IS NULL
-    AND st_intersects(search.boundary_geom, l.centroid_geom)
-    AND NOT st_touches(search.boundary_geom, l.centroid_geom)
-  )
-  OR (
-    l.boundary_geom IS NULL AND search.boundary_geom IS NULL
-    AND st_intersects(search.centroid_geom, l.centroid_geom)
-    AND NOT st_touches(search.centroid_geom, l.centroid_geom)
-  )
-)
-WHERE search.id IN ($filter[location_list])
-AND l.location_type_id in ($types);
+        if (!empty($filterLocationIds)) {
+          $filterLocationIdsCsv = implode(',', $filterLocationIds);
+          $qry = <<<SQL
+            SELECT l.id
+            FROM locations l
+            JOIN locations search ON
+                st_intersects(search.boundary_geom, l.boundary_geom)
+                AND NOT st_touches(search.boundary_geom, l.boundary_geom)
+            WHERE search.id IN ($filterLocationIdsCsv)
+            AND l.location_type_id in ($types);
 SQL;
-          $rows = $this->db->query($sql)->result();
         }
         else {
           $srid = kohana::config('sref_notations.internal_srid');
-          // Note that splitting WHERE clause to combine hits on boundary or
-          // centroid (if no boundary) is much faster than a single coalesce
-          // filter, since it allows geom indexes to be used.
-          $sql = <<<SQL
-SELECT DISTINCT l.id
-FROM locations l
-WHERE (
-  st_intersects(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
-  AND NOT st_touches(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
-) OR (
-  l.boundary_geom IS NULL
-  AND st_intersects(st_geomfromtext('$filter[searchArea]', $srid), l.centroid_geom)
-  AND NOT st_touches(st_geomfromtext('$filter[searchArea]', $srid), l.centroid_geom)
-)
-AND l.location_type_id in ($types);
+          $qry = <<<SQL
+            SELECT l.id
+            FROM locations l
+            WHERE st_intersects(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
+          AND NOT st_touches(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
+            AND l.location_type_id in ($types);
 SQL;
-          $rows = $this->db->query($sql)->result();
         }
-        foreach ($rows as $row) {
-          $location_ids[] = $row->id;
-        }
+      }
+      $rows = $this->db->query($qry)->result();
+      kohana::log('debug', $qry);
+      foreach ($rows as $row) {
+        $updatedIndexedLocations[] = $row->id;
       }
     }
     $foundExistingLocationIds = [];
     // Go through the existing index entries for this group. Remove any that
     // are not needed now.
-    foreach ($exist as $record) {
-      if (in_array($record->location_id, $location_ids)) {
+    foreach ($existingIndexedLocations as $record) {
+      if (in_array($record->location_id, $updatedIndexedLocations)) {
         // Got a correct one already. Remove the location ID from the list we
         // want to add later.
-        $key = array_search($record->location_id, $location_ids);
+        $key = array_search($record->location_id, $updatedIndexedLocations);
         if ($key !== FALSE) {
-          unset($location_ids[$key]);
+          unset($updatedIndexedLocations[$key]);
         }
         if (in_array($record->location_id, $foundExistingLocationIds)) {
           // This one must exist twice in the index so clean it up.
@@ -201,10 +177,10 @@ SQL;
       }
     }
     // Any remaining in our list now need to be added.
-    foreach ($location_ids as $location_id) {
+    foreach ($updatedIndexedLocations as $locationId) {
       $this->db->insert('index_groups_locations', [
         'group_id' => $this->id,
-        'location_id' => $location_id,
+        'location_id' => $locationId,
       ]);
     }
   }
