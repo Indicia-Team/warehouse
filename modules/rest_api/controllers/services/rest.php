@@ -2390,6 +2390,16 @@ class Rest_Controller extends Controller {
         ->from('websites')
         ->where('url', $url)
         ->get()->current();
+      if (!$website) {
+        // Main URL check failed, so check any staging URLs.
+        $urlEscaped = pg_escape_literal($db->getLink(), $url);
+        $qry = <<<SQL
+          SELECT id, public_key
+          FROM websites
+          WHERE staging_urls && ARRAY[$urlEscaped::varchar]
+SQL;
+        $website = $db->query($qry)->current();
+      }
       $cache->set($cacheKey, $website);
     }
     return $website;
@@ -2450,7 +2460,7 @@ class Rest_Controller extends Controller {
    */
   private function authenticateUsingJwtUser() {
     require_once 'vendor/autoload.php';
-    $suppliedToken = $this->getBearerAuthToken(TRUE);
+    $suppliedToken = $this->getBearerAuthToken();
     if ($suppliedToken && substr_count($suppliedToken, '.') === 2) {
       [$jwtHeader, $jwtPayload, $jwtSignature] = explode('.', $suppliedToken);
       $payload = $this->base64urlDecode($jwtPayload);
