@@ -147,7 +147,6 @@ SQL;
         }
       }
       $rows = $this->db->query($qry)->result();
-      kohana::log('debug', $qry);
       foreach ($rows as $row) {
         $updatedIndexedLocations[] = $row->id;
       }
