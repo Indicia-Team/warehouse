@@ -1,0 +1,27 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" }
+  ],
+  "joins": [
+    {
+      "sql": "JOIN groups t2 on t2.id=t1.group_id AND t2.deleted=false",
+      "fields": [
+        { "sql": "t2.id", "name": "group_id", "type": "integer" },
+        { "sql": "t2.title", "name": "group_title", "type": "string" }
+      ]
+    },
+    {
+      "sql": "JOIN locations t3 on t3.id=t1.group_id AND t3.deleted=false",
+      "fields": [
+        { "sql": "t3.id", "name": "location_id", "type": "integer" },
+        { "sql": "t3.name", "name": "location_name", "type": "string" },
+        { "sql": "t3.code", "name": "location_code", "type": "string" },
+        { "sql": "st_astext(coalesce(t3.boundary_geom, t2.centroid_geom))", "name": "location_boundary_geom", "type": "geom" },
+        { "sql": "st_y(st_transform(st_centroid(coalesce(t3.boundary_geom, t3.centroid_geom)), 4326))", "name": "location_lat", "type": "float" },
+        { "sql": "st_x(st_transform(st_centroid(coalesce(t3.boundary_geom, t3.centroid_geom)), 4326))", "name": "location_lon", "type": "float" }
+      ]
+    }
+  ]
+}

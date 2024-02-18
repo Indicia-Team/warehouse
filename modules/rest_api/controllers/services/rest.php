@@ -379,6 +379,28 @@ class Rest_Controller extends Controller {
         'custom-verification-rulesets/clear-flags' => [],
       ],
     ],
+    'groups' => [
+      'GET' => [
+        'groups' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+            'all_available' => [
+              'datatype' => 'boolean',
+            ],
+          ],
+        ],
+        'groups/{id}' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
+        'groups/{id}/locations' => [],
+      ],
+    ],
     'media-queue' => [
       'POST' => [
         'media-queue' => [],
@@ -3116,6 +3138,48 @@ SQL;
     }
     // Delete as long as created by this user.
     rest_crud::delete('occurrence', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
+  /**
+   * API endpoint to GET a list of groups.
+   *
+   * Either returns a user's list of groups they are a member of, or all
+   * available if an all_available parameter is provided.
+   */
+  public function groupsGet() {
+    $filters = ['t1.website_id=' . RestObjects::$clientWebsiteId];
+    if (!empty($_GET['all_available']) && in_array($_GET['all_available'], ['t', 'true'])) {
+      // Public or by request groups included.
+      $filters[] = "t1.joining_method IN ('P', 'R')";
+    }
+    else {
+      $filters[] = 't1.id IN (SELECT id FROM groups_users gu WHERE gu.id=t1.id)';
+    }
+    $extraFilter = 'AND ' . implode(' AND ', $filters);
+    rest_crud::readList('group', $extraFilter, FALSE);
+  }
+
+  public function groupsGetId($id) {
+    // Can only fetch a group you are a member of, or if it is publicly
+    // visible.
+    $filters = [
+      't1.website_id=' . RestObjects::$clientWebsiteId,
+      "(t1.joining_method IN ('P', 'R') OR t1.id IN (SELECT id FROM groups_users gu WHERE gu.id=t1.id))",
+    ];
+    $extraFilter = 'AND ' . implode(' AND ', $filters);
+    rest_crud::read('group', $id, $extraFilter);
+  }
+
+  public function groupsGetIdLocations($id) {
+    // Can only fetch locations for a group you are a member of, or if it is
+    // publicly visible.
+    $filters = [
+      "t2.id=$id",
+      't2.website_id=' . RestObjects::$clientWebsiteId,
+      "(t2.joining_method IN ('P', 'R') OR t12id IN (SELECT id FROM groups_users gu WHERE gu.id=t1.id))",
+    ];
+    $extraFilter = 'AND ' . implode(' AND ', $filters);
+    rest_crud::readList('groups_location', $extraFilter, FALSE);
   }
 
   /**
