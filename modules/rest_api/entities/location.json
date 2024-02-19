@@ -21,7 +21,7 @@
   ],
   "joins": [
     {
-      "sql": "LEFT JOIN locations_websites t2 ON t2.location_id=t1.id",
+      "sql": "LEFT JOIN locations_websites t2 ON t2.location_id=t1.id AND t2.deleted=false",
       "fields": []
     }
   ],
