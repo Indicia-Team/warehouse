@@ -83,8 +83,8 @@ class Website_Model extends ORM {
       $value = str_replace("\r", "\n", $value);
       $value = explode("\n", trim($value));
       array_walk($value, 'trim');
-      parent::__set($key, $value);
     }
+    parent::__set($key, $value);
   }
 
   /**
