@@ -509,14 +509,13 @@ SQL;
    *   Record ID to update.
    * @param array $data
    *   Submitted data, including values.
-   * @param array $fieldChecks
-   *   Key value pairs of field value checks that should be done before
-   *   allowing the update.
+   * @param bool $userCheck
+   *   Should a check be done that the record was created by the current user?
+   *   Defaults to true, but may be set to false if the calling code has
+   *   checked the user has permission to modify the record (e.g. if has site
+   *   editor rights).
    */
-  public static function update($entity, $id, array $data, array $fieldChecks) {
-    if (empty(RestObjects::$clientUserId)) {
-      RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:created_by_id" => 'Cannot PUT without user authentication.']));
-    }
+  public static function update($entity, $id, array $data, $userCheck = TRUE) {
     self::loadEntityConfig($entity);
     $values = $data['values'];
     // ID is optional, but must match URL segment.
@@ -530,15 +529,8 @@ SQL;
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
       self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values), $data);
     }
-    foreach ($fieldChecks as $key => $value) {
-      if ($obj->{$key} !== $value) {
-        if ($key === 'created_by_id') {
-          RestObjects::$apiResponse->fail('Not Found', 404, $entity . ' Attempt to update record belonging to different user.');
-        }
-        else {
-          RestObjects::$apiResponse->fail('Not Found', 404, "$entity $key not " . var_export($value, TRUE));
-        }
-      }
+    if ($userCheck && $obj->created_by_id != RestObjects::$clientUserId) {
+      RestObjects::$apiResponse->fail('Not Found', 404, $entity . ' Attempt to update record belonging to different user.');
     }
     // Keep existing values unless replaced by PUT data.
     $data['values'] = array_merge(
@@ -560,9 +552,6 @@ SQL;
    *   created_by_id=current user.
    */
   public static function delete($entity, $id, array $preconditions = []) {
-    if (empty(RestObjects::$clientUserId)) {
-      RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:created_by_id" => 'Cannot PUT without user authentication.']));
-    }
     $obj = ORM::factory($entity, $id);
     $proceed = TRUE;
     // Must exist and match preconditions (e.g. belong to user).
