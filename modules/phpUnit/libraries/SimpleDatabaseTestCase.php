@@ -48,9 +48,11 @@ class SimpleDatabaseTestCase extends TestCase {
     // Set up fixture.
     foreach ($fixture as $table => $records) {
       foreach ($records as $record) {
+        kohana::log('debug', 'Inserting ' . $table . ' with ' . var_export($record, TRUE));
         if (!pg_insert(self::$conn, 'indicia.' . $table, $record)) {
           throw new Exception("Failed inserting $record into $table");
         }
+        kohana::log('debug', 'Insert done for ' . $table);
       }
     }
 
