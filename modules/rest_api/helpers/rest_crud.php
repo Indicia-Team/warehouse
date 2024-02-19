@@ -299,6 +299,7 @@ SQL;
     $rows = RestObjects::$db->query($qry);
     kohana::log('debug', 'REST GET query: ' . $qry);
 
+    $attrs = [];
     $verboseAdditions = [];
     // If requested (and there are some rows), get attribute values.
     if (array_key_exists('verbose', $_GET) && $rows->count() > 0) {
@@ -307,7 +308,7 @@ SQL;
         $ids[] = $row->id;
       }
       if (!empty(self::$entityConfig[$entity]->attributes)) {
-        $verboseAdditions = self::readAttributes($entity, $ids);
+        $attrs = self::readAttributes($entity, $ids);
       }
       else {
         $verboseAdditions = self::getVerboseModeExtraInfo($entity, $ids);
@@ -317,8 +318,13 @@ SQL;
     $r = [];
     foreach ($rows as $row) {
       unset($row->xmin);
-      if (array_key_exists($row->id, $verboseAdditions)) {
-        $row = array_merge((array) $row, $verboseAdditions[$row->id]);
+      if (array_key_exists('verbose', $_GET)) {
+        if (array_key_exists($row->id, $attrs)) {
+          $row = array_merge((array) $row, $verboseAdditions[$row->id]);
+        }
+        if (array_key_exists($row->id, $verboseAdditions)) {
+          $row = array_merge((array) $row, $verboseAdditions[$row->id]);
+        }
       }
       $r[] = ['values' => self::getValuesForResponse($row)];
     }
@@ -347,13 +353,15 @@ SQL;
       // Transaction ID that last updated row is returned as ETag header.
       header("ETag: $row[xmin]");
       unset($row['xmin']);
+      if (!empty(self::$entityConfig[$entity]->attributes)) {
+        // ReadAttributes automatically handles verbose mode to expand attr.
+        $attrs = self::readAttributes($entity, [$id]);
+        if (array_key_exists($id, $attrs)) {
+          $row = array_merge((array) $row, $attrs[$id]);
+        }
+      }
       if (isset($_GET['verbose'])) {
-        if (!empty(self::$entityConfig[$entity]->attributes)) {
-          $verboseAdditions = self::readAttributes($entity, [$id]);
-        }
-        else {
-          $verboseAdditions = self::getVerboseModeExtraInfo($entity, [$id]);
-        }
+        $verboseAdditions = self::getVerboseModeExtraInfo($entity, [$id]);
         if (array_key_exists($id, $verboseAdditions)) {
           $row = array_merge((array) $row, $verboseAdditions[$id]);
         }
@@ -501,13 +509,14 @@ SQL;
    *   Record ID to update.
    * @param array $data
    *   Submitted data, including values.
-   * @param bool $userCheck
-   *   Should a check be done that the record was created by the current user?
-   *   Defaults to true, but may be set to false if the calling code has
-   *   checked the user has permission to modify the record (e.g. if has site
-   *   editor rights).
+   * @param array $fieldChecks
+   *   Key value pairs of field value checks that should be done before
+   *   allowing the update.
    */
-  public static function update($entity, $id, array $data, $userCheck = TRUE) {
+  public static function update($entity, $id, array $data, array $fieldChecks) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:created_by_id" => 'Cannot PUT without user authentication.']));
+    }
     self::loadEntityConfig($entity);
     $values = $data['values'];
     // ID is optional, but must match URL segment.
@@ -521,8 +530,15 @@ SQL;
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
       self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values), $data);
     }
-    if ($userCheck && $obj->created_by_id != RestObjects::$clientUserId) {
-      RestObjects::$apiResponse->fail('Not Found', 404, $entity . ' Attempt to update record belonging to different user.');
+    foreach ($fieldChecks as $key => $value) {
+      if ($obj->{$key} !== $value) {
+        if ($key === 'created_by_id') {
+          RestObjects::$apiResponse->fail('Not Found', 404, $entity . ' Attempt to update record belonging to different user.');
+        }
+        else {
+          RestObjects::$apiResponse->fail('Not Found', 404, "$entity $key not " . var_export($value, TRUE));
+        }
+      }
     }
     // Keep existing values unless replaced by PUT data.
     $data['values'] = array_merge(
@@ -544,6 +560,9 @@ SQL;
    *   created_by_id=current user.
    */
   public static function delete($entity, $id, array $preconditions = []) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:created_by_id" => 'Cannot PUT without user authentication.']));
+    }
     $obj = ORM::factory($entity, $id);
     $proceed = TRUE;
     // Must exist and match preconditions (e.g. belong to user).
