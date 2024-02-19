@@ -788,6 +788,8 @@ class Scheduled_Tasks_Controller extends Controller {
       // Allow the list of scheduled plugins we are running to be controlled
       // from the URL parameters.
       if (in_array('all_modules', $scheduledPlugins) || in_array($plugin, $scheduledPlugins)) {
+        kohana::log('debug', "Processing scheduled task $plugin");
+        kohana::log_save();
         require_once MODPATH . "$plugin/plugins/$plugin.php";
         $this->loadPluginMetadata($plugin);
         $this->loadOccurrencesDelta($timestamp, $maxTime);
@@ -796,10 +798,18 @@ class Scheduled_Tasks_Controller extends Controller {
         if (!$this->pluginMetadata['requires_occurrences_delta']
             || $this->occdeltaCount > 0
             || $this->pluginMetadata['always_run']) {
+          kohana::log('debug', "Running scheduled task $plugin");
+          kohana::log_save();
           echo "<h2>Running $plugin</h2>";
           echo "<p>Last run at $timestamp</p>";
           $tm = microtime(TRUE);
-          call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $maxTime);
+          try {
+            call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $maxTime);
+          }
+          catch (Exception $e) {
+            error_logger::log_error("Error in scheduled task $plugin", $e);
+            throw $e;
+          }
           // Log plugins which take more than 5 seconds.
           $took = microtime(TRUE) - $tm;
           if ($took > 5) {
@@ -808,9 +818,13 @@ class Scheduled_Tasks_Controller extends Controller {
           if (class_exists('request_logging')) {
             request_logging::log('a', 'scheduled_tasks', NULL, $plugin, NULL, NULL, $tm, $this->db);
           }
+          kohana::log('debug', "Finished scheduled task $plugin");
+          kohana::log_save();
         }
         else {
           echo "<strong>Skipping $plugin as nothing to do</strong> - last run at $timestamp <br/>";
+          kohana::log('debug', "Skipped scheduled task $plugin as nothing to do.");
+          kohana::log_save();
         }
         // Mark the time of the last scheduled task check so we can get the
         // correct list of updates next time.
