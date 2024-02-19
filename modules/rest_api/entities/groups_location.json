@@ -18,7 +18,15 @@
         { "sql": "t3.id", "name": "location_id", "type": "integer" },
         { "sql": "t3.name", "name": "location_name", "type": "string" },
         { "sql": "t3.code", "name": "location_code", "type": "string" },
-        { "sql": "st_astext(coalesce(t3.boundary_geom, t2.centroid_geom))", "name": "location_boundary_geom", "type": "geom" },
+        { "sql": "t3.centroid_sref", "name": "location_centroid_sref", "type": "string" },
+        { "sql": "t3.centroid_sref_system", "name": "location_centroid_sref_system", "type": "string" },
+        { "sql": "t3.created_on", "name": "location_created_on", "type": "date" },
+        { "sql": "t3.created_by_id", "name": "location_created_by_id", "type": "integer" },
+        { "sql": "t3.updated_on", "name": "location_updated_on", "type": "date" },
+        { "sql": "t3.updated_by_id", "name": "location_updated_by_id", "type": "integer" },
+        { "sql": "t3.comment", "name": "location_comment", "type": "string" },
+        { "sql": "t3.external_key", "name": "location_external_key", "type": "string" },
+        { "sql": "st_astext(coalesce(t3.boundary_geom, t3.centroid_geom))", "name": "location_boundary_geom", "type": "geom" },
         { "sql": "st_y(st_transform(st_centroid(coalesce(t3.boundary_geom, t3.centroid_geom)), 4326))", "name": "location_lat", "type": "float" },
         { "sql": "st_x(st_transform(st_centroid(coalesce(t3.boundary_geom, t3.centroid_geom)), 4326))", "name": "location_lon", "type": "float" }
       ]

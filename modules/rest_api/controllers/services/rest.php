@@ -386,8 +386,9 @@ class Rest_Controller extends Controller {
             'verbose' => [
               'datatype' => 'integer',
             ],
-            'all_available' => [
-              'datatype' => 'boolean',
+            'view' => [
+              'datatype' => 'text',
+              'options' => ['member', 'joinable', 'all_available'],
             ],
           ],
         ],
@@ -3141,42 +3142,66 @@ SQL;
   }
 
   /**
-   * API endpoint to GET a list of groups.
+   * Covert groups GET view parameter to a filter.
    *
-   * Either returns a user's list of groups they are a member of, or all
-   * available if an all_available parameter is provided.
+   * @param string $view
+   *   View parameter, one of member, joinable or all_available.
+   *
+   * @return string
+   *   SQL filter.
    */
-  public function groupsGet() {
-    $filters = ['t1.website_id=' . RestObjects::$clientWebsiteId];
-    if (!empty($_GET['all_available']) && in_array($_GET['all_available'], ['t', 'true'])) {
-      // Public or by request groups included.
+  private function getGroupsViewParameterFilter($view) {
+    $filters = [];
+    if (in_array($view, ['member', 'all_available'])) {
+      $filters[] = 't1.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=' . RestObjects::$clientUserId . ' AND gu.deleted=false)';
+    }
+    if ($view == 'all_available') {
       $filters[] = "t1.joining_method IN ('P', 'R')";
     }
-    else {
-      $filters[] = 't1.id IN (SELECT id FROM groups_users gu WHERE gu.id=t1.id)';
+    if ($view === 'joinable') {
+      $filters[] = "t1.joining_method IN ('P', 'R') AND t1.id NOT IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=" . RestObjects::$clientUserId . ' AND gu.deleted=false)';
     }
-    $extraFilter = 'AND ' . implode(' AND ', $filters);
-    rest_crud::readList('group', $extraFilter, FALSE);
+    return 'AND t1.website_id=' . RestObjects::$clientWebsiteId . ' AND (' . implode(' OR ', $filters) . ')';
   }
 
+  /**
+   * API endpoint to GET a list of groups.
+   *
+   * Set the view parameter to control the list returned from the following
+   * options:
+   * * member - those the current user is a member of (default).
+   * * joinable - those the current user is not a member of but can join.
+   * * all_available - those the user is either a member of or can join.
+   */
+  public function groupsGet() {
+    $view = $_GET['view'] ?? 'member';
+    rest_crud::readList('group', $this->getGroupsViewParameterFilter($view), FALSE);
+  }
+
+  /**
+   * API endpoint to GET a group by ID.
+   *
+   * @param int
+   *   Group ID.
+   */
   public function groupsGetId($id) {
-    // Can only fetch a group you are a member of, or if it is publicly
-    // visible.
-    $filters = [
-      't1.website_id=' . RestObjects::$clientWebsiteId,
-      "(t1.joining_method IN ('P', 'R') OR t1.id IN (SELECT id FROM groups_users gu WHERE gu.id=t1.id))",
-    ];
-    $extraFilter = 'AND ' . implode(' AND ', $filters);
-    rest_crud::read('group', $id, $extraFilter);
+    // Can fetch any group you are a member of, or if it is publicly visible.
+    rest_crud::read('group', $id, $this->getGroupsViewParameterFilter('all_available'));
   }
 
+  /**
+   * API endpoint to retrieve the list of recording sites for a group.
+   *
+   * @param int $id
+   *   Group ID.
+   */
   public function groupsGetIdLocations($id) {
     // Can only fetch locations for a group you are a member of, or if it is
     // publicly visible.
     $filters = [
       "t2.id=$id",
       't2.website_id=' . RestObjects::$clientWebsiteId,
-      "(t2.joining_method IN ('P', 'R') OR t12id IN (SELECT id FROM groups_users gu WHERE gu.id=t1.id))",
+      "(t2.joining_method IN ('P', 'R') OR t2.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=" . RestObjects::$clientUserId . ' AND gu.deleted=false))',
     ];
     $extraFilter = 'AND ' . implode(' AND ', $filters);
     rest_crud::readList('groups_location', $extraFilter, FALSE);

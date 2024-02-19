@@ -41,10 +41,11 @@ class rest_crud {
    */
   private static $fieldDefs;
 
-  private $verboseExtraInfoQueries = [
-    'groups' => [
+  private static $verboseExtraInfoQueries = [
+    'group' => [
       'pages' => <<<SQL
-        SELECT g.id, gp.caption, gp.path FROM group_pages gp
+        SELECT gp.group_id as id, gp.caption, gp.path
+        FROM group_pages gp
         LEFT JOIN groups_users gu ON gu.group_id=gp.group_id
           AND gu.deleted=false
           AND gu.pending=false
@@ -296,6 +297,7 @@ SQL;
     self::loadEntityConfig($entity);
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $rows = RestObjects::$db->query($qry);
+    kohana::log('debug', 'REST GET query: ' . $qry);
 
     $verboseAdditions = [];
     // If requested (and there are some rows), get attribute values.
@@ -304,7 +306,7 @@ SQL;
       foreach ($rows as $row) {
         $ids[] = $row->id;
       }
-      if (!empty(self::$entityConfig[$entity]['attributes'])) {
+      if (!empty(self::$entityConfig[$entity]->attributes)) {
         $verboseAdditions = self::readAttributes($entity, $ids);
       }
       else {
@@ -340,6 +342,7 @@ SQL;
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $qry .= "AND t1.id = $id";
     $row = RestObjects::$db->query($qry)->result(FALSE)->current();
+    kohana::log('debug', 'REST GET ID query: ' . $qry);
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
       header("ETag: $row[xmin]");
@@ -470,19 +473,20 @@ SQL;
           '{{ user_id }}',
         ], [
           $idList,
-          RestObjects::$clientUserId
+          RestObjects::$clientUserId,
         ],
         $qry);
-      $extraData = RestObjects::$db->query($qry)->result_array(TRUE);
-      foreach($extraData as $dataItem) {
-        if (!isset($r[$dataItem['id']])) {
-          $r[$dataItem['id']] = [];
-        }
-        if (!isset($r[$dataItem['id']][$container])) {
-          $r[$dataItem['id']][$container] = [];
-        }
+      $extraData = RestObjects::$db->query($qry)->result_array(FALSE);
+      foreach ($extraData as $dataItem) {
+        $thisItemId = $dataItem['id'];
         unset($dataItem['id']);
-        $r[$dataItem['id']][$container][] = $dataItem;
+        if (!isset($r[$thisItemId])) {
+          $r[$thisItemId] = [];
+        }
+        if (!isset($r[$thisItemId][$container])) {
+          $r[$thisItemId][$container] = [];
+        }
+        $r[$thisItemId][$container][] = $dataItem;
       }
     }
     return $r;
