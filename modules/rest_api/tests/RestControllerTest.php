@@ -2580,6 +2580,78 @@ SQL;
     );
   }
 
+  /**
+   * Test REST GET for the list of groups.
+   */
+  public function testGroups_get() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService("groups", []);
+    $this->assertResponseOk($response, 'groups');
+    // Not a member, so default response empty.
+    $this->assertEquals(0, count($response['response']), 'Fetching groups when not a member should return 0.');
+    $response = $this->callService("groups", ['view' => 'all_available']);
+    $this->assertEquals(1, count($response['response']), 'Fetching all_available groups when not a member should return 1 public group.');
+    $this->assertEquals('public group 1', $response['response'][0]['values']['title'], 'Wrong group returned');
+    $response = $this->callService("groups", ['view' => 'joinable']);
+    $this->assertEquals(1, count($response['response']), 'Fetching joinable groups when not a member should return 1.');
+    // Make user a member of group 1 (public).
+    $db = new Database();
+    $db->query("insert into groups_users(group_id, user_id, created_by_id, created_on, updated_by_id, updated_on) values (1, 1, 1, now(), 1, now())");
+    $response = $this->callService("groups", []);
+    // Should now return 1 group in default request.
+    $this->assertEquals(1, count($response['response']), 'Fetching groups when a member should return 1.');
+    // No pages as didn't ask for verbose.
+    $this->assertArrayNotHasKey('pages', $response['response'][0]['values'], 'Request for groups without verbose should not have returned pages');
+    $response = $this->callService("groups", ['verbose' => '1']);
+    // Pages as did ask for verbose.
+    $this->assertArrayHasKey('pages', $response['response'][0]['values'], 'Request for groups with verbose shoul have returned pages');
+    // Add to the private group.
+    $db->query("insert into groups_users(group_id, user_id, created_by_id, created_on, updated_by_id, updated_on) values (2, 1, 1, now(), 1, now())");
+    $response = $this->callService("groups", []);
+    // Should now return 2 groups in default request.
+    $this->assertEquals(2, count($response['response']), 'Fetching groups when a member of both should return 2.');
+    // Plus 2 in the all_available request.
+    $response = $this->callService("groups", ['view' => 'all_available']);
+    $this->assertEquals(2, count($response['response']), 'Fetching all_available groups when a member of both should return 2.');
+    // Plus 0 in the joinable request.
+    $response = $this->callService("groups", ['view' => 'joinable']);
+    $this->assertEquals(0, count($response['response']), 'Fetching joinable groups when a member of both should return 0.');
+    // Check invalid view value.
+    $response = $this->callService("groups", ['view' => 'foo']);
+    $this->assertTrue($response['httpCode'] === 400);
+  }
+
+  /**
+   * Test REST GET for the a single group.
+   */
+  public function testGroups_getId() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService("groups/2", []);
+    $this->assertTrue($response['httpCode'] === 404);
+    $response = $this->callService("groups/1", []);
+    $this->assertResponseOk($response, 'groups');
+    $this->assertArrayNotHasKey('pages', $response['response']['values'], 'Request for groups without verbose should not have returned pages');
+    $this->assertEquals('public group 1', $response['response']['values']['title'], 'Wrong group returned');
+    $response = $this->callService("groups/1", ['verbose' => '1']);
+    $this->assertResponseOk($response, 'groups');
+    $this->assertArrayHasKey('pages', $response['response']['values'], 'Request for verbose groups should have returned pages');
+    $this->assertEquals(1, count($response['response']['values']['pages']), 'Verbose groups request should have returned 1 page');
+    $this->assertEquals('record/list', $response['response']['values']['pages'][0]['path'], 'Verbose groups request returned incorrect page data');
+  }
+
+  /**
+   * Test REST GET for the a single group's locations.
+   */
+  public function testGroups_getLocations() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService("groups/1/locations", []);
+    $this->assertEquals(1, count($response['response']), 'Group 1 should have 1 location');
+    $this->assertEquals(1, $response['response'][0]['values']['location_id'], 'Location ID 1 should be linked to group 1.');
+  }
+
   public function testAcceptHeader() {
     Kohana::log('debug', "Running unit test, RestControllerTest::testAcceptHeader");
     $projDef = self::$config['projects']['BRC1'];

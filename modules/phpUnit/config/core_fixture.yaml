@@ -1165,3 +1165,40 @@ index_websites_website_agreements:
     provide_for_editing: "f"
     receive_for_editing: "f"
 
+groups:
+  -
+    title: "public group 1"
+    website_id: 1
+    group_type_id: 6
+    joining_method: "P"
+    created_on: "2016-07-22:16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22:16:00:00"
+    updated_by_id: 1
+  -
+    title: "private group 1"
+    website_id: 1
+    group_type_id: 6
+    joining_method: "A"
+    created_on: "2016-07-22:16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22:16:00:00"
+    updated_by_id: 1
+
+groups_locations:
+  -
+    group_id: 1
+    location_id: 1
+    created_on: "2016-07-22:16:00:00"
+    created_by_id: 1
+
+group_pages:
+  -
+    group_id: 1
+    caption: "Enter a list of records"
+    path: "record/list"
+    administrator: null
+    created_on: "2016-07-22:16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22:16:00:00"
+    updated_by_id: 1

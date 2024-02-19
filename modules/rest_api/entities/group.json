@@ -1,0 +1,25 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "title", "type": "string" },
+    { "sql": "description", "type": "string" },
+    { "sql": "joining_method", "type": "string" },
+    { "sql": "website_id", "type": "integer" },
+    { "sql": "group_type_id", "type": "integer" },
+    { "sql": "from_date", "type": "date" },
+    { "sql": "to_date", "type": "date" },
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" }
+  ],
+  "joins": [
+    {
+      "sql": "JOIN cache_termlists_terms t2 on t2.id=t1.group_type_id",
+      "fields": [
+        { "sql": "t2.term", "name": "group_type", "type": "string" }
+      ]
+    }
+  ],
+  "forceValuesOnCreate": {
+    "website_id": "{website_id}"
+  }
+}

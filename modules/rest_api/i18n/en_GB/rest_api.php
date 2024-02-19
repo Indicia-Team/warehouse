@@ -741,6 +741,12 @@ TXT;
 $lang['resources']['DELETE surveys/{id}'] = <<<TXT
 Deletes a survey dataset. User must have editor permissions to the website the survey belongs to.
 TXT;
+
+$lang['resources']['groups'] = 'Recording groups resource endpoint (sometimes called activities or projects).';
+$lang['resources']['GET groups'] = 'A list of recording groups. Default behaviour is to return groups the current user is a member of.';
+$lang['resources']['GET groups/{id}'] = 'Retrieves the information for a single recording group. The user must either be a member of the group, or the group must be public or membership by request.';
+$lang['resources']['GET groups/{id}/locations'] = 'Retrieves the locations that have been linked to a group, e.g. a project\'s list of recording sites.';
+
 $lang['resources']['taxa'] = 'Provides search for taxonomy data.';
 $lang['resources']['GET taxa/search'] = <<<TXT
 Search resource for taxa. Perform full text searches against the taxonomy information held in the
@@ -792,6 +798,20 @@ that project's records.
 TXT;
 
 // Lang strings for URL parameters for each end-point.
+$lang['GET groups'] = [];
+$lang['GET groups']['view'] = <<<TXT
+Optionally pass one of the following in the view parameter to control the list of groups returned:
+member - default, returns a list of groups the current user is a member of; joinable - returns a
+list of groups the user is not a member of but are available to join (public or join by request);
+all_available - returns all groups the user can see, including those they are a member of and those
+which are joinable.
+TXT;
+$lang['GET groups']['verbose'] = <<<TXT
+Add &verbose to the URL to request a more verbose response which includes the pages (forms and/or
+reports) that are associated with the group and which the user has permissions to view.
+TXT;
+$lang['GET groups/{id}']['verbose'] = $lang['GET groups']['verbose'];
+
 $lang['GET occurrences'] = [];
 $lang['GET occurrences']['verbose'] = <<<TXT
 Add &verbose to the URL to retrieve attribute values as an array with additional information
@@ -818,6 +838,7 @@ following example response (shortened):
 </code></pre>
 TXT;
 $lang['GET occurrences/{id}']['verbose'] = $lang['GET occurrences']['verbose'];
+
 $lang['GET samples'] = [];
 $lang['GET samples']['verbose'] = <<<TXT
 Add &verbose to the URL to retrieve attribute values as an array with additional information
@@ -844,6 +865,7 @@ following example response (shortened):
 </code></pre>
 TXT;
 $lang['GET samples/{id}']['verbose'] = $lang['GET samples']['verbose'];
+
 $lang['GET surveys'] = [];
 $lang['GET surveys']['verbose'] = <<<TXT
 Add &verbose to the URL to retrieve attribute values as an array with additional information
