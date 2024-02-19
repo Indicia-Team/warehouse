@@ -299,6 +299,7 @@ SQL;
     $rows = RestObjects::$db->query($qry);
     kohana::log('debug', 'REST GET query: ' . $qry);
 
+    $attrs = [];
     $verboseAdditions = [];
     // If requested (and there are some rows), get attribute values.
     if (array_key_exists('verbose', $_GET) && $rows->count() > 0) {
@@ -307,7 +308,7 @@ SQL;
         $ids[] = $row->id;
       }
       if (!empty(self::$entityConfig[$entity]->attributes)) {
-        $verboseAdditions = self::readAttributes($entity, $ids);
+        $attrs = self::readAttributes($entity, $ids);
       }
       else {
         $verboseAdditions = self::getVerboseModeExtraInfo($entity, $ids);
@@ -317,8 +318,13 @@ SQL;
     $r = [];
     foreach ($rows as $row) {
       unset($row->xmin);
-      if (array_key_exists($row->id, $verboseAdditions)) {
-        $row = array_merge((array) $row, $verboseAdditions[$row->id]);
+      if (array_key_exists('verbose', $_GET)) {
+        if (array_key_exists($row->id, $attrs)) {
+          $row = array_merge((array) $row, $verboseAdditions[$row->id]);
+        }
+        if (array_key_exists($row->id, $verboseAdditions)) {
+          $row = array_merge((array) $row, $verboseAdditions[$row->id]);
+        }
       }
       $r[] = ['values' => self::getValuesForResponse($row)];
     }
@@ -347,13 +353,15 @@ SQL;
       // Transaction ID that last updated row is returned as ETag header.
       header("ETag: $row[xmin]");
       unset($row['xmin']);
+      if (!empty(self::$entityConfig[$entity]->attributes)) {
+        // ReadAttributes automatically handles verbose mode to expand attr.
+        $attrs = self::readAttributes($entity, [$id]);
+        if (array_key_exists($id, $attrs)) {
+          $row = array_merge((array) $row, $attrs[$id]);
+        }
+      }
       if (isset($_GET['verbose'])) {
-        if (!empty(self::$entityConfig[$entity]->attributes)) {
-          $verboseAdditions = self::readAttributes($entity, [$id]);
-        }
-        else {
-          $verboseAdditions = self::getVerboseModeExtraInfo($entity, [$id]);
-        }
+        $verboseAdditions = self::getVerboseModeExtraInfo($entity, [$id]);
         if (array_key_exists($id, $verboseAdditions)) {
           $row = array_merge((array) $row, $verboseAdditions[$id]);
         }
