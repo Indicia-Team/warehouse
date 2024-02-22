@@ -49,6 +49,7 @@ class Website_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required', 'length[1,100]');
     $array->add_rules('url', 'required', 'length[1,500]', 'url');
+    $array->add_rules('staging_urls', 'url_list');
     // NOTE password is stored unencrypted.
     // The repeat password held in password2 does not get through preSubmit
     // during the submit process and is not present in the validation object at
@@ -66,6 +67,43 @@ class Website_Model extends ORM {
     ];
 
     return parent::validate($array, $save);
+  }
+
+  /**
+   * Set staging URLs converts from text area to array.
+   *
+   * @param string $key
+   *   Column name
+   * @param mixed $value
+   *   Value to set.
+   */
+  public function __set($key, $value) {
+    if ($key === 'staging_urls' && is_string($value)) {
+      $value = str_replace("\r\n", "\n", $value);
+      $value = str_replace("\r", "\n", $value);
+      $value = explode("\n", trim($value));
+      array_walk($value, 'trim');
+    }
+    parent::__set($key, $value);
+  }
+
+  /**
+   * Retrieve staging URLs converts from array to text area.
+   *
+   * @param string $column
+   *   Column name.
+   *
+   * @return mixed
+   *   Column value.
+   */
+  public function __get($column) {
+    if ($column === 'staging_urls') {
+      kohana::log('debug', 'Getting staging_urls');
+      kohana::log('debug', var_export(parent::__get($column), TRUE));
+      $value = trim(parent::__get($column) ?? '', '{}');
+      return str_replace(',', "\n", $value);
+    }
+    return parent::__get($column);
   }
 
   /**

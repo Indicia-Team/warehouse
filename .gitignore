@@ -5,3 +5,4 @@
 desktop.ini
 .phpunit.result.cache
 vendor/*
+.htaccess

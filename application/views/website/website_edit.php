@@ -74,6 +74,13 @@ Warehouse instance.</p>
       'helpText' => 'Paste the public key from a private/public key pair here to enable JWT API authentication.',
     ]);
 
+    echo data_entry_helper::textarea([
+      'label' => 'Staging URLs',
+      'fieldname' => 'website:staging_urls',
+      'default' => html::initial_value($values, 'website:staging_urls'),
+      'helpText' => 'If you need to enable access to the REST API authentication for this website from multiple staging URLs (e.g. the test or development staging environment) then specify the URLs here, one per line.',
+    ]);
+
     echo data_entry_helper::checkbox([
       'label' => 'Allow anonymous JWT tokens to POST new records',
       'fieldname' => 'website:allow_anon_jwt_post',

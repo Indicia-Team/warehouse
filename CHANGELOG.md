@@ -1,3 +1,19 @@
+# Version 8.26.0
+*2024-02-19*
+
+* Adds REST API support for groups (recording groups, sometimes called activities or projects).
+  Includes the ability to retrieve the linked pages (reports and recording forms) as well as the
+  list of recording sites for groups. More information at /index.php/services/rest on the warehouse
+  installation.
+
+# Version 8.25.0
+*2024-02-15*
+
+* Adds a staging URLS option to website configuration, allowing additional websites used for
+  development and testing to connect to the REST API.
+* Fixes a bug causing the index_groups_locations table to be populated with a full list of
+  locations that intersect a group's area of interest rather than just indexed ones.
+
 # Version 8.24.0
 *2024-01-11*
 

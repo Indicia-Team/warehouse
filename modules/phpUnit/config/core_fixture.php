@@ -159,7 +159,7 @@ $core_fixture = [
   "cache_taxa_taxon_lists" => [
     [
       "id" => 1,
-      "preferred" => true,
+      "preferred" => TRUE,
       "taxon_list_id" => 1,
       "taxon_list_title" => "Test taxa taxon list",
       "website_id" => 1,
@@ -182,7 +182,7 @@ $core_fixture = [
     ],
     [
       "id" => 2,
-      "preferred" => true,
+      "preferred" => TRUE,
       "taxon_list_id" => 1,
       "taxon_list_title" => "Test taxa taxon list 2",
       "website_id" => 1,
@@ -541,7 +541,7 @@ $core_fixture = [
       "sort_order" => 1,
     ],
     [
-      // Classifiers
+      // Classifiers.
       "termlist_id" => 7,
       // Unknown.
       "term_id" => 8,
@@ -956,6 +956,48 @@ $core_fixture = [
       "location_attribute_id" => 2,
       // Test term.
       "int_value" => 1,
+      "created_on" => "2016-07-22 16:00:00",
+      "created_by_id" => 1,
+      "updated_on" => "2016-07-22 16:00:00",
+      "updated_by_id" => 1,
+    ],
+  ],
+  "groups" => [
+    [
+      "title" => "public group 1",
+      "website_id" => 1,
+      "group_type_id" => 6,
+      "joining_method" => "P",
+      "created_on" => "2016-07-22 16:00:00",
+      "created_by_id" => 1,
+      "updated_on" => "2016-07-22 16:00:00",
+      "updated_by_id" => 1,
+    ],
+    [
+      "title" => "private group 1",
+      "website_id" => 1,
+      "group_type_id" => 6,
+      "joining_method" => "A",
+      "created_on" => "2016-07-22 16:00:00",
+      "created_by_id" => 1,
+      "updated_on" => "2016-07-22 16:00:00",
+      "updated_by_id" => 1,
+    ],
+  ],
+  "groups_locations" => [
+    [
+      "group_id" => 1,
+      "location_id" => 1,
+      "created_on" => "2016-07-22 16:00:00",
+      "created_by_id" => 1,
+    ],
+  ],
+  "group_pages" => [
+    [
+      "group_id" => 1,
+      "caption" => "Enter a list of records",
+      "path" => "record/list",
+      "administrator" => NULL,
       "created_on" => "2016-07-22 16:00:00",
       "created_by_id" => 1,
       "updated_on" => "2016-07-22 16:00:00",

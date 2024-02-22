@@ -6,9 +6,9 @@ websites:
   -
     title: "Test website"
     description: "Website for unit testing"
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     url: "http://www.indicia.org.uk"
     password: "password"
@@ -19,9 +19,9 @@ users_websites:
     user_id: 1
     website_id: 1
     site_role_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
 
@@ -30,17 +30,17 @@ surveys:
     title: "Test survey"
     description: "Survey for unit testing"
     website_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     title: "Test survey 2"
     description: "Additional survey for unit testing"
     website_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
 taxon_meanings:
@@ -55,9 +55,9 @@ taxon_meanings:
 taxon_groups:
   -
     title: "Test taxon group"
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
 taxon_ranks:
@@ -66,18 +66,18 @@ taxon_ranks:
     short_name: "Genus"
     italicise_taxon: "false"
     sort_order: 290
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     rank: "Species"
     short_name: "Species"
     italicise_taxon: "true"
     sort_order: 300
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
 taxon_lists:
@@ -85,9 +85,9 @@ taxon_lists:
     title: "Test taxon list"
     description: "Taxon list for unit testing"
     website_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
 
@@ -98,9 +98,9 @@ taxa:
     language_id: 2
     external_key: "TESTKEY"
     taxon_rank_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     taxon: "Test taxon 2"
@@ -108,9 +108,9 @@ taxa:
     language_id: 2
     external_key: "TESTKEY2"
     taxon_rank_id: 2
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
 
@@ -118,22 +118,22 @@ taxa_taxon_lists:
   -
     taxon_list_id: 1
     taxon_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
     taxon_meaning_id: 10000
     taxonomic_sort_order: 1
     preferred: "true"
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     taxon_list_id: 1
     taxon_id: 2
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
     taxon_meaning_id: 10001
     taxonomic_sort_order: 1
     preferred: "true"
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
 
@@ -158,8 +158,8 @@ cache_taxa_taxon_lists:
     taxon_meaning_id: 10000
     taxon_group_id: 1
     taxon_group: "Test taxon group"
-    cache_created_on: 2016-07-22:16:00:00
-    cache_updated_on: 2016-07-22:16:00:00
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
   -
     id: 2
     preferred: true
@@ -180,8 +180,8 @@ cache_taxa_taxon_lists:
     taxon_meaning_id: 10001
     taxon_group_id: 1
     taxon_group: "Test taxon group"
-    cache_created_on: 2016-07-22:16:00:00
-    cache_updated_on: 2016-07-22:16:00:00
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
 
 cache_taxon_searchterms:
   -
@@ -288,57 +288,57 @@ termlists:
     title: "Test term list"
     description: "Term list list for unit testing"
     website_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     external_key: "TESTKEY"
   -
     title: "Location types"
     description: "Term list for location types"
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     external_key: "indicia:location_types"
   -
     title: "Sample methods"
     description: "Term list for sample methods"
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     external_key: "indicia:sample_methods"
   -
     title: "User identifier types"
     description: "Term list for user identifier types"
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     external_key: "indicia:user_identifier_types"
   -
     title: "Group types"
     description: "Term list for group types"
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     external_key: "indicia:group_types"
   -
     title: "Media types"
     description: "Term list for media types"
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     external_key: "indicia:media_types"
   -
     title: "Media classifiers"
     description: "List of media/image classification services used to identify photos."
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     external_key: "indicia:classifiers"
 
@@ -347,67 +347,67 @@ terms:
   -
     term: "Test term"
     language_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     term: "Test location type"
     language_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     term: "Test sample method"
     language_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     term: "email"
     language_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     term: "twitter"
     language_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     term: "Test group type"
     language_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     term: "Image:Local"
     language_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     term: "Unknown"
     language_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
 termlists_terms:
   -
     termlist_id: 1                          #Test term list
     term_id: 1                              #Test term
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     meaning_id: 10000
     preferred: "true"
@@ -415,9 +415,9 @@ termlists_terms:
   -
     termlist_id: 2                          #Location types
     term_id: 2                              #Test location type
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     meaning_id: 10001
     preferred: "true"
@@ -425,9 +425,9 @@ termlists_terms:
   -
     termlist_id: 3                          #Sample methods
     term_id: 3                              #Test sample method
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     meaning_id: 10002
     preferred: "true"
@@ -435,9 +435,9 @@ termlists_terms:
   -
     termlist_id: 4                          #User identifier types
     term_id: 4                              #email
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     meaning_id: 10003
     preferred: "true"
@@ -445,9 +445,9 @@ termlists_terms:
   -
     termlist_id: 4                          #User identifier types
     term_id: 5                              #twitter
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     meaning_id: 10004
     preferred: "true"
@@ -455,9 +455,9 @@ termlists_terms:
   -
     termlist_id: 5                          #Group types
     term_id: 6                              #Test group type
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     meaning_id: 10005
     preferred: "true"
@@ -465,9 +465,9 @@ termlists_terms:
   -
     termlist_id: 6                          #Media types
     term_id: 7                              #Image:Local
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     meaning_id: 10006
     preferred: "true"
@@ -475,9 +475,9 @@ termlists_terms:
   -
     termlist_id: 7                          #Classifiers
     term_id: 8                              #Unknown
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     meaning_id: 10007
     preferred: "true"
@@ -500,8 +500,8 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10000
-    cache_created_on: 2016-07-22:16:00:00
-    cache_updated_on: 2016-07-22:16:00:00
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
   -
     id: 2
     preferred: "true"
@@ -517,8 +517,8 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10001
-    cache_created_on: 2016-07-22:16:00:00
-    cache_updated_on: 2016-07-22:16:00:00
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
   -
     id: 3
     preferred: "true"
@@ -534,8 +534,8 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10002
-    cache_created_on: 2016-07-22:16:00:00
-    cache_updated_on: 2016-07-22:16:00:00
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
   -
     id: 4
     preferred: "true"
@@ -551,8 +551,8 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10003
-    cache_created_on: 2016-07-22:16:00:00
-    cache_updated_on: 2016-07-22:16:00:00
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
   -
     id: 5
     preferred: "true"
@@ -568,8 +568,8 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10004
-    cache_created_on: 2016-07-22:16:00:00
-    cache_updated_on: 2016-07-22:16:00:00
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
   -
     id: 6
     preferred: "true"
@@ -585,8 +585,8 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10005
-    cache_created_on: 2016-07-22:16:00:00
-    cache_updated_on: 2016-07-22:16:00:00
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
   -
     id: 7
     preferred: "true"
@@ -602,8 +602,8 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10006
-    cache_created_on: 2016-07-22:16:00:00
-    cache_updated_on: 2016-07-22:16:00:00
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
   -
     id: 8
     preferred: "true"
@@ -619,8 +619,8 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10007
-    cache_created_on: 2016-07-22:16:00:00
-    cache_updated_on: 2016-07-22:16:00:00
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
 
 
 samples:
@@ -632,9 +632,9 @@ samples:
     entered_sref: "SU01"
     entered_sref_system: "OSGB"
     comment: "Sample for unit testing with a \" double quote"
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     recorder_names: "PHPUnit"
     record_status: "C"
@@ -647,9 +647,9 @@ samples:
     entered_sref: "SU01"
     entered_sref_system: "OSGB"
     comment: "Sample for unit testing with a \nline break"
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     recorder_names: "PHPUnit"
     record_status: "C"
@@ -664,9 +664,9 @@ map_squares:
 occurrences:
   -
     sample_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     website_id: 1
     comment: "Occurrence for unit testing"
@@ -676,9 +676,9 @@ occurrences:
     confidential: "f"
   -
     sample_id: 1
-    created_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: 2016-07-22:16:00:00
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     website_id: 1
     comment: "Confidential occurrence for unit testing"
@@ -696,8 +696,8 @@ cache_occurrences_functional:
     date_start: "2016-07-22"
     date_end: "2016-07-22"
     date_type: "D"
-    created_on: 2016-07-22:16:00:00
-    updated_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
+    updated_on: "2016-07-22 16:00:00"
     created_by_id: 1
     taxa_taxon_list_id: 1
     preferred_taxa_taxon_list_id: 1
@@ -720,8 +720,8 @@ cache_occurrences_functional:
     date_start: "2016-07-22"
     date_end: "2016-07-22"
     date_type: "D"
-    created_on: 2016-07-22:16:00:00
-    updated_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
+    updated_on: "2016-07-22 16:00:00"
     created_by_id: 1
     taxa_taxon_list_id: 1
     preferred_taxa_taxon_list_id: 1
@@ -751,8 +751,8 @@ cache_samples_functional:
     date_start: "2016-07-22"
     date_end: "2016-07-22"
     date_type: "D"
-    created_on: 2016-07-22:16:00:00
-    updated_on: 2016-07-22:16:00:00
+    created_on: "2016-07-22 16:00:00"
+    updated_on: "2016-07-22 16:00:00"
     created_by_id: 1
     record_status: "C"
     map_sq_1km_id: 1
@@ -772,9 +772,9 @@ sample_attributes:
   -
     caption: "Altitude"
     data_type: "I"
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: "2016-07-22:16:00:00"
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     public: "false"
 
@@ -782,7 +782,7 @@ sample_attributes_websites:
   -
     website_id: 1
     sample_attribute_id: 1
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
     restrict_to_survey_id: 1
 
@@ -792,16 +792,16 @@ occurrence_attributes:
     data_type: "T"
     public: "false"
     system_function: "det_full_name"
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: "2016-07-22:16:00:00"
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
 occurrence_attributes_websites:
   -
     website_id: 1
     occurrence_attribute_id: 1
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
     restrict_to_survey_id: 1
 
@@ -811,9 +811,9 @@ locations:
     centroid_sref: "SU01"
     centroid_sref_system: "OSGB"
     location_type_id: "2"
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: "2016-07-22:16:00:00"
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     public: "true"
 
@@ -823,27 +823,27 @@ location_attributes:
     caption: "Test text"
     data_type: "T"
     public: "false"
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: "2016-07-22:16:00:00"
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     caption: "Test lookup"
     data_type: "L"
     termlist_id: 1
     public: "false"
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: "2016-07-22:16:00:00"
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
   -
     caption: "Test integer"
     data_type: "I"
     termlist_id: 1
     public: "false"
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: "2016-07-22:16:00:00"
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
 
@@ -851,17 +851,17 @@ location_attributes_websites:
   -
     website_id: 1                           #Test website
     location_attribute_id: 1                #Test text
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
   -
     website_id: 1                           #Test website
     location_attribute_id: 2                #Test lookup
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
   -
     website_id: 1                           #Test website
     location_attribute_id: 3                #Test integer
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
 
 
@@ -870,7 +870,46 @@ location_attribute_values:
     location_id: 1                          #Test location
     location_attribute_id: 2                #Test lookup
     int_value: 1                            #Test term
-    created_on: "2016-07-22:16:00:00"
+    created_on: "2016-07-22 16:00:00"
     created_by_id: 1
-    updated_on: "2016-07-22:16:00:00"
+    updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
+
+groups:
+  -
+    title: "public group 1"
+    website_id: 1
+    group_type_id: 6
+    joining_method: "P"
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+  -
+    title: "private group 1"
+    website_id: 1
+    group_type_id: 6
+    joining_method: "A"
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+
+groups_locations:
+  -
+    group_id: 1
+    location_id: 1
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+
+group_pages:
+  -
+    group_id: 1
+    caption: "Enter a list of records"
+    path: "record/list"
+    administrator: null
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+

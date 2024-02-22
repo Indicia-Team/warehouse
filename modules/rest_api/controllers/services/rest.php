@@ -379,6 +379,29 @@ class Rest_Controller extends Controller {
         'custom-verification-rulesets/clear-flags' => [],
       ],
     ],
+    'groups' => [
+      'GET' => [
+        'groups' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+            'view' => [
+              'datatype' => 'text',
+              'options' => ['member', 'joinable', 'all_available'],
+            ],
+          ],
+        ],
+        'groups/{id}' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
+        'groups/{id}/locations' => [],
+      ],
+    ],
     'media-queue' => [
       'POST' => [
         'media-queue' => [],
@@ -2390,6 +2413,16 @@ class Rest_Controller extends Controller {
         ->from('websites')
         ->where('url', $url)
         ->get()->current();
+      if (!$website) {
+        // Main URL check failed, so check any staging URLs.
+        $urlEscaped = pg_escape_literal($db->getLink(), $url);
+        $qry = <<<SQL
+          SELECT id, public_key
+          FROM websites
+          WHERE staging_urls && ARRAY[$urlEscaped::varchar]
+SQL;
+        $website = $db->query($qry)->current();
+      }
       $cache->set($cacheKey, $website);
     }
     return $website;
@@ -2450,7 +2483,7 @@ class Rest_Controller extends Controller {
    */
   private function authenticateUsingJwtUser() {
     require_once 'vendor/autoload.php';
-    $suppliedToken = $this->getBearerAuthToken(TRUE);
+    $suppliedToken = $this->getBearerAuthToken();
     if ($suppliedToken && substr_count($suppliedToken, '.') === 2) {
       [$jwtHeader, $jwtPayload, $jwtSignature] = explode('.', $suppliedToken);
       $payload = $this->base64urlDecode($jwtPayload);
@@ -3106,6 +3139,72 @@ class Rest_Controller extends Controller {
     }
     // Delete as long as created by this user.
     rest_crud::delete('occurrence', $id, ['created_by_id' => RestObjects::$clientUserId]);
+  }
+
+  /**
+   * Covert groups GET view parameter to a filter.
+   *
+   * @param string $view
+   *   View parameter, one of member, joinable or all_available.
+   *
+   * @return string
+   *   SQL filter.
+   */
+  private function getGroupsViewParameterFilter($view) {
+    $filters = [];
+    if (in_array($view, ['member', 'all_available'])) {
+      $filters[] = 't1.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=' . RestObjects::$clientUserId . ' AND gu.deleted=false)';
+    }
+    if ($view == 'all_available') {
+      $filters[] = "t1.joining_method IN ('P', 'R')";
+    }
+    if ($view === 'joinable') {
+      $filters[] = "t1.joining_method IN ('P', 'R') AND t1.id NOT IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=" . RestObjects::$clientUserId . ' AND gu.deleted=false)';
+    }
+    return 'AND t1.website_id=' . RestObjects::$clientWebsiteId . ' AND (' . implode(' OR ', $filters) . ')';
+  }
+
+  /**
+   * API endpoint to GET a list of groups.
+   *
+   * Set the view parameter to control the list returned from the following
+   * options:
+   * * member - those the current user is a member of (default).
+   * * joinable - those the current user is not a member of but can join.
+   * * all_available - those the user is either a member of or can join.
+   */
+  public function groupsGet() {
+    $view = $_GET['view'] ?? 'member';
+    rest_crud::readList('group', $this->getGroupsViewParameterFilter($view), FALSE);
+  }
+
+  /**
+   * API endpoint to GET a group by ID.
+   *
+   * @param int
+   *   Group ID.
+   */
+  public function groupsGetId($id) {
+    // Can fetch any group you are a member of, or if it is publicly visible.
+    rest_crud::read('group', $id, $this->getGroupsViewParameterFilter('all_available'));
+  }
+
+  /**
+   * API endpoint to retrieve the list of recording sites for a group.
+   *
+   * @param int $id
+   *   Group ID.
+   */
+  public function groupsGetIdLocations($id) {
+    // Can only fetch locations for a group you are a member of, or if it is
+    // publicly visible.
+    $filters = [
+      "t2.id=$id",
+      't2.website_id=' . RestObjects::$clientWebsiteId,
+      "(t2.joining_method IN ('P', 'R') OR t2.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=" . RestObjects::$clientUserId . ' AND gu.deleted=false))',
+    ];
+    $extraFilter = 'AND ' . implode(' AND ', $filters);
+    rest_crud::readList('groups_location', $extraFilter, FALSE);
   }
 
   /**

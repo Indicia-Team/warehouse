@@ -41,6 +41,30 @@ class rest_crud {
    */
   private static $fieldDefs;
 
+  private static $verboseExtraInfoQueries = [
+    'group' => [
+      'pages' => <<<SQL
+        SELECT gp.group_id as id, gp.caption, gp.path
+        FROM group_pages gp
+        LEFT JOIN groups_users gu ON gu.group_id=gp.group_id
+          AND gu.deleted=false
+          AND gu.pending=false
+          AND gu.user_id={{ user_id }}
+        WHERE gp.group_id IN ({{ ids }})
+        AND (
+          gp.administrator IS NULL
+          OR (gp.administrator=false AND gu.id IS NOT NULL)
+          OR gp.administrator=true AND gu.administrator=true
+        )
+        AND (
+          gp.access_level IS NULL
+          OR gu.administrator=true
+          OR COALESCE(gu.access_level, 0)>=COALESCE(gp.access_level, 0)
+        )
+SQL,
+    ]
+  ];
+
   /**
    * Create (POST) operation.
    *
@@ -212,7 +236,6 @@ class rest_crud {
    */
   private static function getReadSql($entity, $extraFilter, $userFilter) {
     $table = inflector::plural($entity);
-    self::loadEntityConfig($entity);
     self::loadFieldDefs($entity);
     $fields = self::getSqlFields($entity);
     $joins = self::getSqlJoins($entity);
@@ -271,24 +294,37 @@ SQL;
    * @todo Add test case
    */
   public static function readList($entity, $extraFilter = '', $userFilter = TRUE) {
+    self::loadEntityConfig($entity);
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $rows = RestObjects::$db->query($qry);
+    kohana::log('debug', 'REST GET query: ' . $qry);
 
     $attrs = [];
+    $verboseAdditions = [];
     // If requested (and there are some rows), get attribute values.
     if (array_key_exists('verbose', $_GET) && $rows->count() > 0) {
       $ids = [];
       foreach ($rows as $row) {
         $ids[] = $row->id;
       }
-      $attrs = self::readAttributes($entity, $ids);
+      if (!empty(self::$entityConfig[$entity]->attributes)) {
+        $attrs = self::readAttributes($entity, $ids);
+      }
+      else {
+        $verboseAdditions = self::getVerboseModeExtraInfo($entity, $ids);
+      }
     }
 
     $r = [];
     foreach ($rows as $row) {
       unset($row->xmin);
-      if (array_key_exists($row->id, $attrs)) {
-        $row = array_merge((array) $row, $attrs[$row->id]);
+      if (array_key_exists('verbose', $_GET)) {
+        if (array_key_exists($row->id, $attrs)) {
+          $row = array_merge((array) $row, $verboseAdditions[$row->id]);
+        }
+        if (array_key_exists($row->id, $verboseAdditions)) {
+          $row = array_merge((array) $row, $verboseAdditions[$row->id]);
+        }
       }
       $r[] = ['values' => self::getValuesForResponse($row)];
     }
@@ -308,17 +344,26 @@ SQL;
    *   Should a filter on created_by_id be applied? Default TRUE.
    */
   public static function read($entity, $id, $extraFilter = '', $userFilter = TRUE) {
+    self::loadEntityConfig($entity);
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $qry .= "AND t1.id = $id";
     $row = RestObjects::$db->query($qry)->result(FALSE)->current();
+    kohana::log('debug', 'REST GET ID query: ' . $qry);
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
       header("ETag: $row[xmin]");
       unset($row['xmin']);
       if (!empty(self::$entityConfig[$entity]->attributes)) {
+        // ReadAttributes automatically handles verbose mode to expand attr.
         $attrs = self::readAttributes($entity, [$id]);
         if (array_key_exists($id, $attrs)) {
           $row = array_merge((array) $row, $attrs[$id]);
+        }
+      }
+      if (isset($_GET['verbose'])) {
+        $verboseAdditions = self::getVerboseModeExtraInfo($entity, [$id]);
+        if (array_key_exists($id, $verboseAdditions)) {
+          $row = array_merge((array) $row, $verboseAdditions[$id]);
         }
       }
       RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
@@ -406,6 +451,53 @@ SQL;
       }
     }
     return $attrs;
+  }
+
+  /**
+   * Read extra information for verbose mode for records.
+   *
+   * E.g. retrieves pages for a list of groups.
+   *
+   * @param string $entity
+   *   Entity name (singular).
+   * @param int[] $ids
+   *   Array of record IDs to obtain data for.
+   *
+   * @return array
+   *   List of extra data for records, First dimension is record id. Second
+   *   dimension is the container name for the list of information being added
+   *   to the record.
+   */
+  private static function getVerboseModeExtraInfo($entity, array $ids) {
+    if (!isset(self::$verboseExtraInfoQueries[$entity])) {
+      // Nothing to do.
+      return [];
+    }
+    $idList = implode(',', $ids);
+    $r = [];
+    foreach (self::$verboseExtraInfoQueries[$entity] as $container => $qry) {
+      $qry = str_replace([
+          '{{ ids }}',
+          '{{ user_id }}',
+        ], [
+          $idList,
+          RestObjects::$clientUserId,
+        ],
+        $qry);
+      $extraData = RestObjects::$db->query($qry)->result_array(FALSE);
+      foreach ($extraData as $dataItem) {
+        $thisItemId = $dataItem['id'];
+        unset($dataItem['id']);
+        if (!isset($r[$thisItemId])) {
+          $r[$thisItemId] = [];
+        }
+        if (!isset($r[$thisItemId][$container])) {
+          $r[$thisItemId][$container] = [];
+        }
+        $r[$thisItemId][$container][] = $dataItem;
+      }
+    }
+    return $r;
   }
 
   /**
