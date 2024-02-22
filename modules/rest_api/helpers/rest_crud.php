@@ -301,29 +301,30 @@ SQL;
 
     $attrs = [];
     $verboseAdditions = [];
-    // If requested (and there are some rows), get attribute values.
+    // Get attribute values.
+    $ids = [];
+    foreach ($rows as $row) {
+      $ids[] = $row->id;
+    }
+    if (!empty(self::$entityConfig[$entity]->attributes)) {
+      // ReadAttributes automatically handles verbose mode to expand attr.
+      $attrs = self::readAttributes($entity, $ids);
+    }
+    // If requested (and there are some rows), check for verbose additions.
     if (array_key_exists('verbose', $_GET) && $rows->count() > 0) {
-      $ids = [];
-      foreach ($rows as $row) {
-        $ids[] = $row->id;
-      }
-      if (!empty(self::$entityConfig[$entity]->attributes)) {
-        $attrs = self::readAttributes($entity, $ids);
-      }
-      else {
-        $verboseAdditions = self::getVerboseModeExtraInfo($entity, $ids);
-      }
+      $verboseAdditions = self::getVerboseModeExtraInfo($entity, $ids);
     }
 
     $r = [];
     foreach ($rows as $row) {
       unset($row->xmin);
+      $id = $row->id;
+      if (array_key_exists($id, $attrs)) {
+        $row = array_merge((array) $row, $attrs[$id]);
+      }
       if (array_key_exists('verbose', $_GET)) {
-        if (array_key_exists($row->id, $attrs)) {
-          $row = array_merge((array) $row, $verboseAdditions[$row->id]);
-        }
-        if (array_key_exists($row->id, $verboseAdditions)) {
-          $row = array_merge((array) $row, $verboseAdditions[$row->id]);
+        if (array_key_exists($id, $verboseAdditions)) {
+          $row = array_merge((array) $row, $verboseAdditions[$id]);
         }
       }
       $r[] = ['values' => self::getValuesForResponse($row)];
