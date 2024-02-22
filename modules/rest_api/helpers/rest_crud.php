@@ -299,34 +299,38 @@ SQL;
     $rows = RestObjects::$db->query($qry);
     kohana::log('debug', 'REST GET query: ' . $qry);
 
-    $attrs = [];
-    $verboseAdditions = [];
-    // If requested (and there are some rows), get attribute values.
-    if (array_key_exists('verbose', $_GET) && $rows->count() > 0) {
+    $r = [];
+    if ($rows->count() > 0) {
+      // Get attribute values.
+      $attrs = [];
+      $verboseAdditions = [];
       $ids = [];
       foreach ($rows as $row) {
         $ids[] = $row->id;
       }
       if (!empty(self::$entityConfig[$entity]->attributes)) {
+        // ReadAttributes automatically handles verbose mode to expand attr.
         $attrs = self::readAttributes($entity, $ids);
       }
-      else {
+      // If requested, check for verbose additions.
+      if (array_key_exists('verbose', $_GET)) {
         $verboseAdditions = self::getVerboseModeExtraInfo($entity, $ids);
       }
-    }
+      // Add extra info to each row.
+      foreach ($rows as $row) {
+        unset($row->xmin);
+        $id = $row->id;
+        if (array_key_exists($id, $attrs)) {
+          $row = array_merge((array) $row, $attrs[$id]);
+        }
+        if (array_key_exists('verbose', $_GET)) {
+          if (array_key_exists($id, $verboseAdditions)) {
+            $row = array_merge((array) $row, $verboseAdditions[$id]);
+          }
+        }
 
-    $r = [];
-    foreach ($rows as $row) {
-      unset($row->xmin);
-      if (array_key_exists('verbose', $_GET)) {
-        if (array_key_exists($row->id, $attrs)) {
-          $row = array_merge((array) $row, $verboseAdditions[$row->id]);
-        }
-        if (array_key_exists($row->id, $verboseAdditions)) {
-          $row = array_merge((array) $row, $verboseAdditions[$row->id]);
-        }
+        $r[] = ['values' => self::getValuesForResponse($row)];
       }
-      $r[] = ['values' => self::getValuesForResponse($row)];
     }
     RestObjects::$apiResponse->succeed($r);
   }
