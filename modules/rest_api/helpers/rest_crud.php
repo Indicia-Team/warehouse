@@ -299,35 +299,38 @@ SQL;
     $rows = RestObjects::$db->query($qry);
     kohana::log('debug', 'REST GET query: ' . $qry);
 
-    $attrs = [];
-    $verboseAdditions = [];
-    // Get attribute values.
-    $ids = [];
-    foreach ($rows as $row) {
-      $ids[] = $row->id;
-    }
-    if (!empty(self::$entityConfig[$entity]->attributes)) {
-      // ReadAttributes automatically handles verbose mode to expand attr.
-      $attrs = self::readAttributes($entity, $ids);
-    }
-    // If requested (and there are some rows), check for verbose additions.
-    if (array_key_exists('verbose', $_GET) && $rows->count() > 0) {
-      $verboseAdditions = self::getVerboseModeExtraInfo($entity, $ids);
-    }
-
     $r = [];
-    foreach ($rows as $row) {
-      unset($row->xmin);
-      $id = $row->id;
-      if (array_key_exists($id, $attrs)) {
-        $row = array_merge((array) $row, $attrs[$id]);
+    if ($rows->count() > 0) {
+      // Get attribute values.
+      $attrs = [];
+      $verboseAdditions = [];
+      $ids = [];
+      foreach ($rows as $row) {
+        $ids[] = $row->id;
       }
+      if (!empty(self::$entityConfig[$entity]->attributes)) {
+        // ReadAttributes automatically handles verbose mode to expand attr.
+        $attrs = self::readAttributes($entity, $ids);
+      }
+      // If requested, check for verbose additions.
       if (array_key_exists('verbose', $_GET)) {
-        if (array_key_exists($id, $verboseAdditions)) {
-          $row = array_merge((array) $row, $verboseAdditions[$id]);
-        }
+        $verboseAdditions = self::getVerboseModeExtraInfo($entity, $ids);
       }
-      $r[] = ['values' => self::getValuesForResponse($row)];
+      // Add extra info to each row.
+      foreach ($rows as $row) {
+        unset($row->xmin);
+        $id = $row->id;
+        if (array_key_exists($id, $attrs)) {
+          $row = array_merge((array) $row, $attrs[$id]);
+        }
+        if (array_key_exists('verbose', $_GET)) {
+          if (array_key_exists($id, $verboseAdditions)) {
+            $row = array_merge((array) $row, $verboseAdditions[$id]);
+          }
+        }
+
+        $r[] = ['values' => self::getValuesForResponse($row)];
+      }
     }
     RestObjects::$apiResponse->succeed($r);
   }
