@@ -28,12 +28,15 @@ up of the indicia schema. E.g. on Ubuntu you can
 
 ### Starting
 If you clone this repo, `cd docker` and execute `./compose.sh` it will start
-5 docker containers offering these services.
+8 docker containers offering these services.
 1. A postgres database with postgis installed.
 1. pgAdmin for administering the database.
 1. A mock mail server.
 1. A webserver running the warehouse code.
 1. GeoServer for sharing spatial data in OGC standard format.
+1. Elasticsearch for storing an index of warehouse data.
+1. Kohana for exploring and managing Elasticsearch
+1. Logstash for populating Elasticsearch with warehouse data.
 On first run, it offers to initialise the indicia database schema.
 If you choose this option you will later login in as user `admin` having
 password `password`.
@@ -48,10 +51,17 @@ Once running you can browse the warehouse at http://localhost:8080.
 You can examine the database with pgAdmin at http://localhost:8070.
 Any mail sent by the warehouse can be viewed at http://localhost:8025.
 GeoServer can be configured at http://localhost:8090/geoserver.
+The Elasticsearch API is accessible at https://localhost:9200.
+Kohana is accessed by browsing https://localhost:5601.
 
 #### PgAdmin
-To connect pgAdmin to the database, configure the connection with
- - Host name: The docker container name e.g. indicia_postgres_1
+To log in , the default credentials are
+ - Email: pgadmin@example.com
+ - Password: password
+
+To connect pgAdmin to the database, add a new server and configure the
+connection with
+ - Host name: The docker container name e.g. indicia-postgres-1
  - Port: 5432
  - Username: postgres
  - Password: password
@@ -62,7 +72,13 @@ To list the container names and ports you can execute the command
 To log in, the default credentials are:
  - Username: admin
  - Password: geoserver
- 
+
+#### Elasticsearch and Kohana
+Note that security is enabled so use https. To log in the default credentials
+are
+ - Username: elastic
+ - Password: password
+
 ### Unit testing
 There is a separate Docker configuration for unit testing which can be
 run up by `cd docker` then `./phpunit.sh`. This replicates the unit

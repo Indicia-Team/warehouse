@@ -14,53 +14,49 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Config
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
-$config['default'] = array
-(
-    'benchmark'     => TRUE,
-    'persistent'    => FALSE,
-    'connection'    => array
-    (
-        'type'     => 'pgsql',
-        'user'     => 'indicia_user',
-        'pass'     => 'indicia_user_pass',
-        'host'     => 'postgres',
-        'port'     => 5432,
-        'socket'   => FALSE,
-        'database' => 'indicia'
-    ),
-    'character_set' => 'utf8',
-    'table_prefix'  => '',
-    'schema'        => 'indicia',
-    'object'        => TRUE,
-    'cache'         => FALSE,
-    'escape'        => TRUE
-);
+$config['default'] = [
+  'benchmark'     => TRUE,
+  'persistent'    => FALSE,
+  'connection'    => [
+    'type'     => 'pgsql',
+    'user'     => 'indicia_user',
+    'pass'     => 'indicia_user_pass',
+    'host'     => 'postgres',
+    'port'     => 5432,
+    'socket'   => FALSE,
+    'database' => 'indicia',
+  ],
+  'character_set' => 'utf8',
+  'table_prefix'  => '',
+  'schema'        => 'indicia',
+  'object'        => TRUE,
+  'cache'         => FALSE,
+  'escape'        => TRUE
+];
 
-$config['report'] = array
-(
-    'benchmark'     => TRUE,
-    'persistent'    => FALSE,
-    'connection'    => array
-    (
-        'type'     => 'pgsql',
-        'user'     => 'indicia_report_user',
-        'pass'     => 'indicia_report_user_pass',
-        'host'     => 'postgres',
-        'port'     => 5432,
-        'socket'   => FALSE,
-        'database' => 'indicia'
-    ),
-    'character_set' => 'utf8',
-    'table_prefix'  => '',
-    'schema'        => 'indicia',
-    'object'        => TRUE,
-    'cache'         => FALSE,
-    'escape'        => TRUE
-);
+$config['report'] = [
+  'benchmark'     => TRUE,
+  'persistent'    => FALSE,
+  'connection'    => [
+    'type'     => 'pgsql',
+    'user'     => 'indicia_report_user',
+    'pass'     => 'indicia_report_user_pass',
+    'host'     => 'postgres',
+    'port'     => 5432,
+    'socket'   => FALSE,
+    'database' => 'indicia',
+  ],
+  'character_set' => 'utf8',
+  'table_prefix'  => '',
+  'schema'        => 'indicia',
+  'object'        => TRUE,
+  'cache'         => FALSE,
+  'escape'        => TRUE,
+];

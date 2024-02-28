@@ -1,0 +1,9 @@
+{
+  "cluster": ["monitor"], 
+  "indices": [
+    {
+      "names": [ "*_brc1_*" ], 
+      "privileges": ["read"]  
+    }
+  ]
+}
