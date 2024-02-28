@@ -1,3 +1,12 @@
+# Version 8.27.0
+
+* Adds Elastic Stack containers to the Docker development system. Security 
+  features have been enabled by way of a demonstration though these are not
+  needed in a dev environment. 
+    - Elasticsearch indexes are configured for samples and occurrences.
+    - Logstash pipelines are configured to populate the indexes.
+    - Kibana can be used to explore the indexes.
+
 # Version 8.26.0
 *2024-02-19*
 
