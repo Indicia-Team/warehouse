@@ -11,6 +11,9 @@
     #joins#
     WHERE sle.scratchpad_list_id=#scratchpad_list_id#
   </query>
+  <order_bys>
+    <order_by>cttlany.taxonomic_sort_order, cttlany.taxon</order_by>
+  </order_bys>
   <params>
     <param name="scratchpad_list_id" display="Scratchpad list ID" description="ID of the scratchpad list to load"
            datatype="integer" />
