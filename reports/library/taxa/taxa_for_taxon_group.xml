@@ -8,7 +8,7 @@
     WHERE cttl.taxon_group_id=#taxon_group_id#
   </query>
   <order_bys>
-    <order_by>cttl.taxon</order_by>
+    <order_by>cttl.taxonomic_sort_order, cttl.taxon</order_by>
   </order_bys>
   <params>
     <param name="taxon_group_id" display="Taxon group ID" description="ID of the taxon group to load"
@@ -36,8 +36,9 @@
     <column name="preferred_authority" display="Accepted name authority" sql="cttl.preferred_authority" datatype="text" />
     <column name="taxon_group_id" display="Taxon group ID" sql="cttl.taxon_group_id" datatype="integer" />
     <column name="taxon_group" display="Taxon group" sql="cttl.taxon_group" datatype="text" />
-    <column name="search_code" display="Accepted name" sql="cttl.search_code" datatype="text"  />
-    <column name="external_key" display="Accepted name" sql="cttl.external_key" datatype="text"  />
-    <column name="organism_key" display="Accepted name" sql="cttl.organism_key" datatype="text"  />
+    <column name="search_code" display="Name key" sql="cttl.search_code" datatype="text"  />
+    <column name="external_key" display="Accepted name key" sql="cttl.external_key" datatype="text"  />
+    <column name="organism_key" display="Organism key" sql="cttl.organism_key" datatype="text"  />
+    <column name="taxonomic_sort_order" display="Sort order" sql="cttl.taxonomic_sort_order" datatype="integer"  />
   </columns>
 </report>
