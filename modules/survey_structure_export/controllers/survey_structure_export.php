@@ -558,7 +558,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     // attribute meets our needs.
     $where = '';
     foreach ($fieldsToMatch as $field => $fieldsql) {
-      $value = pg_escape_string($this->db->getLink(), $importAttrDef[$field]);
+      $value = pg_escape_string($this->db->getLink(), $importAttrDef[$field] ?? '');
       if ($importAttrDef[$field] === '' || $importAttrDef[$field] === NULL) {
         $where .= "and coalesce($fieldsql, '') = '$value' ";
       }
@@ -616,12 +616,12 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     // List standard fields and values to set.
     $array = [
       'caption' => $attrDef['caption'],
-      'caption_i18n' => str_replace('**', "\n", $attrDef['a_caption_i18n']),
+      'caption_i18n' => str_replace('**', "\n", $attrDef['a_caption_i18n'] ?? ''),
       'unit' => $attrDef['unit'],
       'term_name' => $attrDef['term_name'],
       'term_identifier' => $attrDef['term_identifier'],
       'description' => $attrDef['description'],
-      'description_i18n' => str_replace('**', "\n", $attrDef['a_description_i18n']),
+      'description_i18n' => str_replace('**', "\n", $attrDef['a_description_i18n'] ?? ''),
       'system_function' => $attrDef['system_function'],
       'data_type' => $attrDef['data_type'],
       'multi_value' => $attrDef['multi_value'],
