@@ -774,7 +774,7 @@ SQL;
             $config['rowsProcessed'] += count($childEntityDataRows);
           }
           $keyFields = $this->getDestFieldsForColumns($parentEntityColumns);
-          $this->saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $parent->getAllErrors(), $config);
+          $this->saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $errors, $config);
         }
         // If sample saved OK, or we are just prechecking, process the matching
         // occurrences.

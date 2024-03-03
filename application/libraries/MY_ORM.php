@@ -1027,7 +1027,13 @@ class ORM extends ORM_Core {
           $attrValidationObj = new Validation($attrArray);
           $attrObj->validate($attrValidationObj);
           if (count($attrValidationObj->errors())) {
-            $errors[$field] = implode(';', array_values($attrValidationObj->errors()));
+            $fieldErrors = [];
+            // Allow translation of error types, also to map to readable
+            // English.
+            foreach ($attrValidationObj->errors() as $error) {
+              $fieldErrors[] = kohana::lang("attribute_validation.$error");
+            }
+            $errors[$field] = implode(';', $fieldErrors);
           }
         }
       }
