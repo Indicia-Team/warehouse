@@ -19,6 +19,12 @@
       "fields": [
         { "sql": "t2.term", "name": "media_type", "type": "string" }
       ]
+    },
+    {
+      "sql": "JOIN occurrences t3 ON t3.id=t1.occurrence_id AND t3.deleted=false",
+      "fields": [
+        { "sql": "t3.website_id", "name": "website_id", "type": "integer" }
+      ]
     }
   ]
 }

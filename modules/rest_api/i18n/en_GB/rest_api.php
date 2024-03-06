@@ -284,14 +284,17 @@ POST /index.php/services/rest/custom-verification-rulesets/clear-flags
 }
 </code></pre>
 TXT;
-$lang['resources']['locations'] = 'A list of a user\'s saved sites and other locations.';
-$lang['resources']['GET locations'] = 'Retrieves a list of a user\'s saved sites and other locations.';
-$lang['resources']['GET locations/{id}'] = 'Retrieves the user\'s saved site or other location identified by {id}.';
-$lang['resources']['POST locations'] = <<<TXT
-<p>Creates a saved site or other type of location.</p>
+$lang['resources']['locations'] = 'Provides access to persistent saved sites and other public locations, either created by the user or flagged as public.';
+$lang['resources']['GET locations'] = 'Retrieves a list of a user\'s saved sites and other public locations.';
+$lang['resources']['GET locations/{id}'] = <<<TXT
+Retrieves details of a single location. Users are allowed to access public locations or locations
+they created; users with site editor or admin rights to the authenticated website are allowed to
+access details of any location belonging to the website.
+TXT;
+$locationsPostExample = <<<TXT
 <p>Example:</p>
 <pre><code>
-POST /index.php/services/rest/locations
+POST {{ url }}
 {
 "values": {
   "name": "Test location 2",
@@ -304,8 +307,11 @@ POST /index.php/services/rest/locations
 <p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
 unique within the system that supplied it, add a suitable prefix to make it unique.</p>
 TXT;
-$lang['resources']['PUT locations/{id}'] = <<<TXT
-<p>Updates the user's saved site or other type of location identified by {id}.</p>
+$lang['resources']['POST locations'] = '<p>Creates a saved site or other type of location.</p>' . str_replace('{{ url }}', '/index.php/services/rest/locations', $locationsPostExample);
+$lang['resources']['PUT locations/{id}'] = <<<HTML
+<p>Updates the details of a location identified by {id}. Users are allowed to update locations they
+created; users with site editor or admin rights to the authenticated website are allowed to update
+details of any location belonging to the website.</p>
 <p>Example:</p>
 <pre><code>
 POST /index.php/services/rest/locations/2
@@ -317,8 +323,31 @@ POST /index.php/services/rest/locations/2
 
 <p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
 unique within the system that supplied it, add a suitable prefix to make it unique.</p>
+HTML;
+$lang['resources']['DELETE locations/{id}'] = <<<TXT
+Deletes a location identified by {id}. Users are allowed to delete locations they created; users
+with site editor or admin rights to the authenticated website are allowed to delete details of any
+location belonging to the website.
 TXT;
-$lang['resources']['DELETE locations/{id}'] = 'Deletes the user\'s saved site or other location identified by {id}.';
+
+$lang['resources']['GET location-media'] = <<<TXT
+Retrieve list of a user's location media. In addition to the database fields, the response values
+include the following: <ul>
+  <li>media_type - the term describing the type of media, e.g. 'Image:Local'.</li>
+</ul>
+TXT;
+$lang['resources']['GET location-media/{id}'] = <<<TXT
+Retrieve details of a location media item. Users are allowed to access details of media they
+created; users with site editor or admin rights to the authenticated website are allowed to access
+details of any media belonging to the website.
+TXT;
+$lang['resources']['POST location-media'] = "Create a single location media belonging to the user, for an existing sample.";
+$lang['resources']['PUT location-media/{id}'] = <<<TXT
+Updates a single location media record either created by the user, or any location media record
+belonging to the website if the user has site editor or admin access to the website.
+TXT;
+$lang['resources']['DELETE location-media/{id}'] = "Deletes a single location media belonging to the user.";
+
 $lang['resources']['media-queue'] = <<<TXT
 Endpoint which allows media files such as record photos to be cached on the server prior to submitting the associated
 records. This allows files to be sent to the server during data entry, reducing the time a user has to wait for image
@@ -437,17 +466,28 @@ Deletes a single occurrence custom attribute. User must have editor permissions 
 attribute is associated with and the attribute must have no values already stored for it in the
 database.
 TXT;
-$lang['resources']['occurrence-media'] = "A list of a user's occurrence media.";
+$lang['resources']['occurrence-media'] = "Provides access to photos and other media attached to occurrences.";
 $lang['resources']['GET occurrence-media'] = <<<TXT
 Retrieve list of a user's occurrence media. In addition to the database fields, the response values
 include the following: <ul>
   <li>media_type - the term describing the type of media, e.g. 'Image:Local'.</li>
 </ul>
 TXT;
-$lang['resources']['POST occurrence-media'] = "Create a single occurrence media belonging to the user, for an existing occurrence.";
-$lang['resources']['PUT occurrence-media'] = "Updates a single occurrence media belonging to the user.";
-$lang['resources']['DELETE occurrence-media'] = "Deletes a single occurrence media belonging to the user.";
-$lang['resources']['occurrences'] = "A list of a user's occurrences.";
+$lang['resources']['GET occurrence-media/{id}'] = <<<TXT
+Retrieve details of an occurrence media item. Users are allowed to access details of media
+they created; users with site editor or admin rights to the authenticated website are allowed to
+access details of any media belonging to the website.
+TXT;
+$lang['resources']['POST occurrence-media'] = "Create a single occurrence media record belonging to the user, for an existing occurrence.";
+$lang['resources']['PUT occurrence-media/{id}'] = <<<TXT
+Updates a single occurrence media record either belonging to the user, or any occurrence media
+record belonging to the website if the user has site editor or admin access to the website.
+TXT;
+$lang['resources']['DELETE occurrence-media/{id}'] = <<<TXT
+Deletes a single occurrence media either belonging to the user, or any occurrence media record
+belonging to the website if the user has site editor or admin access to the website.
+TXT;
+$lang['resources']['occurrences'] = "Provides access to the list of occurrences linked to the authenticated website.";
 $lang['resources']['GET occurrences'] = <<<TXT
 Retrieve a list of occurrences owned by the logged in user. In addition to the database fields, the response values
 include the following: <ul>
@@ -460,8 +500,10 @@ include the following: <ul>
 </ul>
 TXT;
 $lang['resources']['GET occurrences/{id}'] = <<<TXT
-Retrieve the fields for a single occurrence. In addition to the database fields, the response values include the
-following: <ul>
+Retrieve the fields for a single occurrence. Users are allowed to access details of occurrences
+they created; users with site editor or admin rights to the authenticated website are allowed to
+access details of any occurrence belonging to the website. In addition to the database fields, the
+response values include the following: <ul>
   <li>taxa_taxon_list_id - recorded taxon's key</li>
   <li>taxon - recorded taxon name</li>
   <li>preferred_taxon - accepted name for the taxon</li>
@@ -476,69 +518,68 @@ $lang['resources']['POST occurrences'] = <<<HTML
 which itself can contain nested results, suggestions and links to media. This is illustrated in the
 following example:</p>
 <pre><code>
-POST /index.php/services/rest/samples
+POST /index.php/services/rest/occurrences
 {
   "values": {
-    "survey_id": 1,
-    "entered_sref": "SU1234",
-    "entered_sref_system": "OSGB",
-    "date": "01/08/2020"
+    "taxa_taxon_list_id": 2,
+    "machine_involvement": 3
   },
-  "occurrences": [
+  "media": [
     {
       "values": {
-        "taxa_taxon_list_id": 2,
-        "machine_involvement": 3
-      },
-      "media": [
-        {
-          "values": {
-            "queued": "18/60/23/abcdefg.jpg",
-            "caption": "Occurrence image"
-          }
-        }
-      ],
-      "classification_event": {
-        "values": {
-          "created_by_id": 123
-        },
-        "classification_results": [
-          {
-            "values": {
-              "classifier_id": 2,
-              "classifier_version": "1.0"
-            },
-            "classification_suggestions": [
-              {
-                "values": {
-                  "taxon_name_given": "A suggested name",
-                  "taxa_taxon_list_id": 1,
-                  "probability": 0.9
-                }
-              },
-              {
-                "values": {
-                  "taxon_name_given": "An alternative name",
-                  "taxa_taxon_list_id": 2,
-                  "probability": 0.4
-                }
-              }
-            ],
-            "metaFields": {
-              "mediaPaths": ["abcdefg.jpg"]
-            }
-          }
-        ]
+        "queued": "18/60/23/abcdefg.jpg",
+        "caption": "Occurrence image"
       }
     }
-  ]
+  ],
+  "classification_event": {
+    "values": {
+      "created_by_id": 123
+    },
+    "classification_results": [
+      {
+        "values": {
+          "classifier_id": 2,
+          "classifier_version": "1.0"
+        },
+        "classification_suggestions": [
+          {
+            "values": {
+              "taxon_name_given": "A suggested name",
+              "taxa_taxon_list_id": 1,
+              "probability": 0.9
+            }
+          },
+          {
+            "values": {
+              "taxon_name_given": "An alternative name",
+              "taxa_taxon_list_id": 2,
+              "probability": 0.4
+            }
+          }
+        ],
+        "metaFields": {
+          "mediaPaths": ["abcdefg.jpg"]
+        }
+      }
+    ]
+  }
 }
 </code></pre>
 
 <p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
 unique within the system that supplied it, add a suitable prefix to make it unique.</p>
 HTML;
-$lang['resources']['PUT occurrences/{id}'] = 'Updates a single occurrence belonging to the user.';
+$lang['resources']['POST occurrences/list'] = <<<TXT
+Allows posting of a list of occurrences to create multiple in one request. Identical to the POST
+occurrences endpoint but the request body should be an array containing the list of occurrences
+to create. The response will similarly have an outer array wrapping the response for each sample in
+the same order.
+TXT;
+$lang['resources']['PUT occurrences/{id}'] = <<<TXT
+Updates a single occurrence record either created by the user, or any occurrence record belonging
+to the website if the user has site editor or admin access to the website.
+TXT;
 $lang['resources']['DELETE occurrences/{id}'] = 'Deletes a single occurrence belonging to the user.';
 $lang['resources']['reports'] = <<<TXT
 Provides access to data generated by predefined report queries and metadata about the reports.
@@ -583,15 +624,25 @@ attribute is associated with and the attribute must have no values already store
 database.
 TXT;
 $lang['resources']['sample-media'] = <<<TXT
+Provides access to photos and other media associated with samples.
+TXT;
+$lang['resources']['GET sample-media'] = <<<TXT
 Retrieve list of a user's sample media. In addition to the database fields, the response values
 include the following: <ul>
   <li>media_type - the term describing the type of media, e.g. 'Image:Local'.</li>
 </ul>
 TXT;
-$lang['resources']['GET sample-media'] = "Retrieve list of a user's sample media.";
+$lang['resources']['GET sample-media/{id}'] = <<<TXT
+Retrieve details of a sample media item. Users are allowed to access details of media they
+created; users with site editor or admin rights to the authenticated website are allowed to access
+details of any media belonging to the website.
+TXT;
 $lang['resources']['POST sample-media'] = "Create a single sample media belonging to the user, for an existing sample.";
-$lang['resources']['PUT sample-media'] = "Updates a single sample media belonging to the user.";
-$lang['resources']['DELETE sample-media'] = "Deletes a single sample media belonging to the user.";
+$lang['resources']['PUT sample-media/{id}'] = <<<TXT
+Updates a single sample media record either created by the user, or any sample media record
+belonging to the website if the user has site editor or admin access to the website.
+TXT;
+$lang['resources']['DELETE sample-media/{id}'] = "Deletes a single sample media record belonging to the user.";
 $lang['resources']['samples'] = 'A list of the user\'s samples data, each of which can contain any number of occurrences.';
 $lang['resources']['GET samples'] = <<<TXT
 Retrieve a list of the user's samples data. In addition to the database fields, the response values
@@ -601,10 +652,11 @@ include the following: <ul>
 </ul>
 TXT;
 $lang['resources']['GET samples/{id}'] = <<<TXT
-Read the data for a single sample. If using jwtUser or directUser authentication then the sample
-must be created by the authenticated user or 404 Not Found will be returned. Response contains a
-values entry with a list of key/value pairs including custom attributes. In addition to the
-database fields, the response values include the following: <ul>
+Read the data for a single sample. Users are allowed to access details of samples they created;
+users with site editor or admin rights to the authenticated website are allowed to access details
+of any sample belonging to the website. Response contains a values entry with a list of key/value
+pairs including custom attributes. In addition to the database fields, the response values
+include the following: <ul>
   <li>date - formatted date or vague date string.</li>
   <li>survey_title - title of the survey it belongs to.</li>
 </ul>
@@ -713,14 +765,15 @@ the request body should be an array containing the list of samples to create. Th
 outer array wrapping the response for each sample in the same order.
 TXT;
 $lang['resources']['PUT samples/{id}'] = <<<TXT
-Update an existing sample by replacing the provided values.
+<p>Updates a single sample record either created by the user, or any occurrence record belonging to
+the website if the user has site editor or admin access to the website.</p>
 
 <p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
 unique within the system that supplied it, add a suitable prefix to make it unique.</p>
 TXT;
 $lang['resources']['DELETE samples/{id}'] = <<<TXT
-Delete a single sample.  If using jwtUser or directUser authentication then the sample must be
-created by the authenticated user or 404 Not Found will be returned. Example:
+Deletes a single sample record either created by the user, or any occurrence record belonging to
+the website if the user has site editor or admin access to the website. Example:
 <pre><code>
 DELETE /index.php/services/rest/samples/3
 
@@ -746,6 +799,8 @@ $lang['resources']['groups'] = 'Recording groups resource endpoint (sometimes ca
 $lang['resources']['GET groups'] = 'A list of recording groups. Default behaviour is to return groups the current user is a member of.';
 $lang['resources']['GET groups/{id}'] = 'Retrieves the information for a single recording group. The user must either be a member of the group, or the group must be public or membership by request.';
 $lang['resources']['GET groups/{id}/locations'] = 'Retrieves the locations that have been linked to a group, e.g. a project\'s list of recording sites.';
+$lang['resources']['POST groups/{id}/locations'] = '<p>Saves a recording location to the group. The payload format is the same as when POSTing a standalone location.</p>' .
+  str_replace('{{ url }}', '/index.php/services/rest/groups/5/locations', $locationsPostExample);
 
 $lang['resources']['taxa'] = 'Provides search for taxonomy data.';
 $lang['resources']['GET taxa/search'] = <<<TXT

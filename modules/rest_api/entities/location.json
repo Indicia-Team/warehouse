@@ -34,6 +34,12 @@
       "values": {
         "website_id": "{website_id}"
       }
+    },
+    "groups_locations": {
+      "fk": "location_id",
+      "values": {
+        "group_id": "{group_id}"
+      }
     }
   },
   "attributes": true,

@@ -505,6 +505,57 @@ SQL;
   }
 
   /**
+   * Check if an update or delete should proceed.
+   *
+   * @param ORM $obj
+   *   ORM database object to check.
+   * @param array $preconditions
+   *   List of key value pairs that should be checked on the ORM object. If any
+   *   fail then the result is false.
+   *
+   * @return bool
+   *   True if the operation can proceed.
+   */
+  private static function updateDeleteProceedCheck($obj, $preconditions) {
+    $proceed = $obj->id && $obj->deleted === 'f';
+    if ($proceed) {
+      foreach ($preconditions as $field => $value) {
+        if (strpos($field, '.') === FALSE) {
+          // Simple field/value pair to check.
+          $proceed = $proceed && $obj->$field == $value;
+        }
+        else {
+          // Field is nested inside a related table.
+          $tokens = explode('.', $field);
+          $relatedTableField = array_pop($tokens);
+          $thisObj = $obj;
+          if (preg_match('/^[a-z_]+\[\]$/', $tokens[0])) {
+            // Table token is {table}[], indicating a many to many, so we can
+            // search all related data for this join for the value.
+            $manyToManyEntity = $tokens[0];
+            $foundMatch = FALSE;
+            foreach ($thisObj->$manyToManyEntity[0] as $related) {
+              if ($related->$relatedTableField == $value) {
+                $foundMatch = TRUE;
+                break;
+              }
+            }
+            $proceed = $proceed && $foundMatch;
+          }
+          else {
+            // Follow chain of tables down to the field.
+            foreach($tokens as $entity) {
+              $thisObj = $thisObj->$entity;
+            }
+            $proceed = $proceed && $thisObj->$relatedTableField == $value;
+          }
+        }
+      }
+    }
+    return $proceed;
+  }
+
+  /**
    * Update (PUT) operation.
    *
    * @param string $entity
@@ -513,13 +564,11 @@ SQL;
    *   Record ID to update.
    * @param array $data
    *   Submitted data, including values.
-   * @param bool $userCheck
-   *   Should a check be done that the record was created by the current user?
-   *   Defaults to true, but may be set to false if the calling code has
-   *   checked the user has permission to modify the record (e.g. if has site
-   *   editor rights).
+   * @param array $preconditions
+   *   List of fields & values to check before allowing the deletion, e.g.
+   *   created_by_id=current user.
    */
-  public static function update($entity, $id, array $data, $userCheck = TRUE) {
+  public static function update($entity, $id, array $data, array $preconditions = []) {
     self::loadEntityConfig($entity);
     $values = $data['values'];
     // ID is optional, but must match URL segment.
@@ -533,8 +582,9 @@ SQL;
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
       self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values), $data);
     }
-    if ($userCheck && $obj->created_by_id != RestObjects::$clientUserId) {
-      RestObjects::$apiResponse->fail('Not Found', 404, $entity . ' Attempt to update record belonging to different user.');
+    $proceed = self::updateDeleteProceedCheck($obj, $preconditions);
+    if (!$proceed) {
+      RestObjects::$apiResponse->fail('Not Found', 404);
     }
     // Keep existing values unless replaced by PUT data.
     $data['values'] = array_merge(
@@ -557,25 +607,14 @@ SQL;
    */
   public static function delete($entity, $id, array $preconditions = []) {
     $obj = ORM::factory($entity, $id);
-    $proceed = TRUE;
-    // Must exist and match preconditions (e.g. belong to user).
-    if (!$obj->id || $obj->deleted === 't') {
-      $proceed = FALSE;
+    $proceed = self::updateDeleteProceedCheck($obj, $preconditions);
+    if (!$proceed) {
+      RestObjects::$apiResponse->fail('Not Found', 404);
     }
-    if ($proceed) {
-      foreach ($preconditions as $field => $value) {
-        $proceed = $proceed && $obj->$field == $value;
-      }
-    }
-    if ($proceed) {
-      $obj->deleted = 't';
-      $obj->set_metadata();
-      $obj->save();
-      http_response_code(204);
-    }
-    else {
-      RestObjects::$apiResponse->fail('Not found', 404);
-    }
+    $obj->deleted = 't';
+    $obj->set_metadata();
+    $obj->save();
+    http_response_code(204);
   }
 
   /**

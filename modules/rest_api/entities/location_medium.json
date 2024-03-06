@@ -11,5 +11,19 @@
     { "sql": "created_by_id", "type": "integer" },
     { "sql": "updated_on", "type": "date" },
     { "sql": "updated_by_id", "type": "integer" }
+  ],
+  "joins": [
+    {
+      "sql": "JOIN cache_termlists_terms t2 on t2.id=t1.media_type_id",
+      "fields": [
+        { "sql": "t2.term", "name": "media_type", "type": "string" }
+      ]
+    },
+    {
+      "sql": "JOIN locations_websites t3 on t3.id=t1.location_id AND t3.deleted=false",
+      "fields": [
+        { "sql": "t3.website_id", "name": "website_id", "type": "integer" }
+      ]
+    }
   ]
 }
