@@ -774,7 +774,7 @@ SQL;
             $config['rowsProcessed'] += count($childEntityDataRows);
           }
           $keyFields = $this->getDestFieldsForColumns($parentEntityColumns);
-          $this->saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $parent->getAllErrors(), $config);
+          $this->saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $errors, $config);
         }
         // If sample saved OK, or we are just prechecking, process the matching
         // occurrences.
@@ -1136,7 +1136,7 @@ SQL;
   private function saveErrorsToRows($db, $rowData, array $keyFields, array $errors, array $config) {
     $whereList = [];
     foreach ($keyFields as $field) {
-      $value = pg_escape_literal($db->getLink(), $rowData->$field);
+      $value = pg_escape_literal($db->getLink(), $rowData->$field ?? '');
       $whereList[] = "$field=$value";
     }
     $wheres = implode(' AND ', $whereList);

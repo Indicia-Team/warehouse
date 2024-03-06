@@ -1,0 +1,44 @@
+<report
+    title="List of taxa for a taxon group"
+    description="Lists details for all taxa in a taxon group. Designed for the iform_layout_builder.">
+  <query taxa_taxon_lists_id_field="cttl.preferred_taxa_taxon_list_id">
+    SELECT DISTINCT #columns#
+    FROM cache_taxa_taxon_lists cttl
+    #joins#
+    WHERE cttl.taxon_group_id=#taxon_group_id#
+  </query>
+  <order_bys>
+    <order_by>cttl.taxonomic_sort_order, cttl.taxon</order_by>
+  </order_bys>
+  <params>
+    <param name="taxon_group_id" display="Taxon group ID" description="ID of the taxon group to load"
+           datatype="integer" />
+    <param name="taxon_list_ids" display="Taxon list ID" description="Limit the output to taxa in this list" default="" datatype="integer[]">
+      <where>cttl.taxon_list_id in (#taxon_list_ids#)</where>
+    </param>
+    <param name="language_codes" display="Language codes" description="Limit the output to names in these languages" default="" datatype="text[]">
+      <where>cttl.language_iso in (#language_codes#)</where>
+    </param>
+    <param name="preferred" display="preferred" description="Set to true to limit to preferred name entries." default="" datatype="boolean" >
+      <where>cttl.preferred=true</where>
+    </param>
+    <param name="taxattrs" display="Taxon attribute list" datatype="taxattrs" default=""
+           description="Comma separated list of taxa taxon list attribute IDs to include as columns in the report" />
+  </params>
+  <columns>
+    <column name="taxa_taxon_list_id" display="Taxa taxon list ID" sql="cttl.id" datatype="integer" in_count="true" />
+    <column name="taxon" display="Taxon" sql="cttl.taxon" datatype="text" />
+    <column name="language_code" display="Language code" sql="cttl.language_iso" datatype="text"  />
+    <column name="authority" display="Authority" sql="cttl.authority" datatype="text" />
+    <column name="default_common_name" display="Common name" sql="cttl.default_common_name" datatype="text" />
+    <column name="prefered_taxa_taxon_list_id" display="Preferred_taxa taxon list ID" sql="cttl.preferred_taxa_taxon_list_id" datatype="integer" />
+    <column name="preferred_taxon" display="Accepted name" sql="cttl.preferred_taxon" datatype="text" />
+    <column name="preferred_authority" display="Accepted name authority" sql="cttl.preferred_authority" datatype="text" />
+    <column name="taxon_group_id" display="Taxon group ID" sql="cttl.taxon_group_id" datatype="integer" />
+    <column name="taxon_group" display="Taxon group" sql="cttl.taxon_group" datatype="text" />
+    <column name="search_code" display="Name key" sql="cttl.search_code" datatype="text"  />
+    <column name="external_key" display="Accepted name key" sql="cttl.external_key" datatype="text"  />
+    <column name="organism_key" display="Organism key" sql="cttl.organism_key" datatype="text"  />
+    <column name="taxonomic_sort_order" display="Sort order" sql="cttl.taxonomic_sort_order" datatype="integer"  />
+  </columns>
+</report>

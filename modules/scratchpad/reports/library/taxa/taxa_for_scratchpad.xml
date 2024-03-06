@@ -11,6 +11,9 @@
     #joins#
     WHERE sle.scratchpad_list_id=#scratchpad_list_id#
   </query>
+  <order_bys>
+    <order_by>cttlany.taxonomic_sort_order, cttlany.taxon</order_by>
+  </order_bys>
   <params>
     <param name="scratchpad_list_id" display="Scratchpad list ID" description="ID of the scratchpad list to load"
            datatype="integer" />
@@ -37,8 +40,9 @@
     <column name="preferred_authority" display="Accepted name authority" sql="cttlany.preferred_authority" datatype="text" />
     <column name="taxon_group_id" display="Taxon group ID" sql="cttlany.taxon_group_id" datatype="integer" />
     <column name="taxon_group" display="Taxon group" sql="cttlany.taxon_group" datatype="text" />
-    <column name="search_code" display="Accepted name" sql="cttlany.search_code" datatype="text"  />
-    <column name="external_key" display="Accepted name" sql="cttlany.external_key" datatype="text"  />
-    <column name="organism_key" display="Accepted name" sql="cttlany.organism_key" datatype="text"  />
+    <column name="search_code" display="Name key" sql="cttlany.search_code" datatype="text"  />
+    <column name="external_key" display="Accepted name key" sql="cttlany.external_key" datatype="text"  />
+    <column name="organism_key" display="Organism key" sql="cttlany.organism_key" datatype="text"  />
+    <column name="taxonomic_sort_order" display="Sort order" sql="cttlany.taxonomic_sort_order" datatype="integer"  />
   </columns>
 </report>
