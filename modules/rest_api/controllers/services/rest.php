@@ -2353,8 +2353,8 @@ class Rest_Controller extends Controller {
           // Double checking required for Elasticsearch proxy.
           if ($this->elasticProxy) {
             if (empty($cfg['resource_options']['elasticsearch'])) {
-              kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
-              RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+              kohana::log('debug', "Elasticsearch not enabled for $method authentication");
+              RestObjects::$apiResponse->fail('Forbidden', 403, "Elasticsearch not enabled for $method authentication");
             }
             if (in_array($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
               // Simple array of ES endpoints with no config.
@@ -2366,12 +2366,12 @@ class Rest_Controller extends Controller {
             }
             else {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
-              RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+              RestObjects::$apiResponse->fail('Forbidden', 403, "Elasticsearch request to $this->elasticProxy not enabled for $method authentication");
             }
             if (!empty($this->clientConfig) && (empty($this->clientConfig['elasticsearch']) ||
                 !in_array($this->elasticProxy, $this->clientConfig['elasticsearch']))) {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for client");
-              RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+              RestObjects::$apiResponse->fail('Forbidden', 403, "Elasticsearch request to $this->elasticProxy not enabled for client");
             }
           }
           kohana::log('debug', "authenticated via $method");
@@ -2382,7 +2382,7 @@ class Rest_Controller extends Controller {
     }
     if (!$this->authenticated) {
       // Either the authentication wrong, or using HTTP instead of HTTPS.
-      kohana::log('debug', "Elasticsearch request to $this->elasticProxy did not meet criteria for any valid authentication method");
+      kohana::log('debug', "REST API request did not meet criteria for any valid authentication method");
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
     }
   }
@@ -2484,7 +2484,7 @@ SQL;
     }
     if (!$websiteUser) {
       kohana::log('debug', 'rest_api: Unauthorised - user has no role in website.');
-      RestObjects::$apiResponse->fail('Unauthorized', 401);
+      RestObjects::$apiResponse->fail('Forbidden', 403);
     }
     RestObjects::$clientUserWebsiteRole = $websiteUser->site_role_id;
   }
@@ -3332,13 +3332,13 @@ SQL;
     if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
       // Normal users can access public locations, or their own locations in
       // the current website.
-      $filter = '(t1.public=true OR (t2.website_id=' . RestObjects::$clientWebsiteId .
+      $filter = 'AND (t1.public=true OR (t2.website_id=' . RestObjects::$clientWebsiteId .
         ' AND t1.created_by_id=' . RestObjects::$clientUserId . ')';
     }
     else {
       // Site editor or admin users can access public locations, or any
       // location in the current website.
-      $filter = '(t1.public=true OR t2.website_id=' . RestObjects::$clientWebsiteId . ')';
+      $filter = 'AND (t1.public=true OR t2.website_id=' . RestObjects::$clientWebsiteId . ')';
     }
     // Call read() with userFilter = FALSE as public locations may be
     // created by another user.
@@ -3424,7 +3424,9 @@ SQL;
   public function locationMediaPost() {
     $post = file_get_contents('php://input');
     $item = json_decode($post, TRUE);
-    $r = rest_crud::create('location_medium', $item);
+    // Create only allowed on this website.
+    $preconditions = ['location.websites[].id' => RestObjects::$clientWebsiteId];
+    $r = rest_crud::create('location_medium', $item, $preconditions);
     echo json_encode($r);
     http_response_code(201);
     header("Location: $r[href]");
@@ -3668,7 +3670,7 @@ SQL;
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user not found.');
     }
     if (empty($user->site_role_id) && empty($user->core_role_id)) {
-      RestObjects::$apiResponse->fail('Unauthorized', 401, 'User does not have required level of access to this website.');
+      RestObjects::$apiResponse->fail('Forbidden', 403, 'User does not have required level of access to this website.');
     }
   }
 
@@ -3702,7 +3704,7 @@ SQL;
       if ($check->count === '0') {
         RestObjects::$apiResponse->fail('Not Found', 404, 'Attempt to update or delete a missing or already deleted record.');
       }
-      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Attempt to update or delete a record from another website.');
+      RestObjects::$apiResponse->fail('Forbidden', 403, 'Attempt to update or delete a record from another website.');
     }
   }
 
