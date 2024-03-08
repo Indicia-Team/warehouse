@@ -72,8 +72,12 @@ SQL,
    *   Entity name (singular).
    * @param array $data
    *   Submitted data, including values.
+   * @param array $preconditions
+   *   List of fields & values to check before allowing the insert, normally
+   *   applying to related data objects. E.g. cannot add an image to a location
+   *   from another website.
    */
-  public static function create($entity, array $data) {
+  public static function create($entity, array $data, array $preconditions = []) {
     self::loadEntityConfig($entity);
     if (empty($data['values'])) {
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Values not submitted when attempting to POST.']));
@@ -91,6 +95,18 @@ SQL,
     $obj = ORM::factory($entity);
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
       self::checkDuplicateFields($entity, $values, $data);
+    }
+    if (!empty($preconditions)) {
+      // Copy data to the object.
+      foreach ($data['values'] as $key => $value) {
+        if (in_array($key, array_keys($obj->table_columns))) {
+          $obj->$key = $value;
+        }
+      }
+      $proceed = self::crudProceedCheck($obj, $preconditions, TRUE);
+      if (!$proceed) {
+        RestObjects::$apiResponse->fail('Forbidden', 403);
+      }
     }
     return self::submit($entity, $obj, $data);
   }
@@ -352,7 +368,6 @@ SQL;
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $qry .= "AND t1.id = $id";
     $row = RestObjects::$db->query($qry)->result(FALSE)->current();
-    kohana::log('debug', 'REST GET ID query: ' . $qry);
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
       header("ETag: $row[xmin]");
@@ -373,6 +388,16 @@ SQL;
       RestObjects::$apiResponse->succeed(array_merge(self::getExtraData($entity, $row), ['values' => self::getValuesForResponse($row)]));
     }
     else {
+      if ($userFilter) {
+        // Repeat without user filter to determine if this is forbidden or not
+        // found.
+        $qry = self::getReadSql($entity, $extraFilter, FALSE);
+        $qry .= "AND t1.id = $id";
+        $row = RestObjects::$db->query($qry)->result(FALSE)->current();
+        if ($row) {
+          RestObjects::$apiResponse->fail('Forbidden', 403, 'Resource belongs to a different user account.');
+        }
+      }
       RestObjects::$apiResponse->fail('Not found', 404);
     }
   }
@@ -505,6 +530,61 @@ SQL;
   }
 
   /**
+   * Check if a create, update or delete should proceed.
+   *
+   * @param ORM $obj
+   *   ORM database object to check.
+   * @param array $preconditions
+   *   List of key value pairs that should be checked on the ORM object. If any
+   *   fail then the result is false.
+   *
+   * @return bool
+   *   True if the operation can proceed.
+   */
+  private static function crudProceedCheck($obj, $preconditions, $create = FALSE) {
+    $proceed = ($create || !empty($obj->id)) && $obj->deleted !== 't';
+    if ($proceed) {
+      foreach ($preconditions as $field => $value) {
+        if (strpos($field, '.') === FALSE) {
+          // Simple field/value pair to check.
+          $proceed = $proceed && $obj->$field == $value;
+        }
+        else {
+          // Field is nested inside a related table.
+          $tokens = explode('.', $field);
+          $relatedTableField = array_pop($tokens);
+          $thisObj = $obj;
+          // Follow chain of tables down to the field.
+          foreach ($tokens as $relatedEntity) {
+            if (preg_match('/^[a-z_]+\[\]$/', $relatedEntity)) {
+              // Got a one to many or many to many entity, so search list of
+              // relations.
+              $relatedEntity = rtrim($relatedEntity, '[]');
+              $foundMatch = FALSE;
+              foreach ($thisObj->$relatedEntity as $relatedRow) {
+                if ($relatedRow->$relatedTableField == $value) {
+                  $thisObj = $relatedRow;
+                  $foundMatch = TRUE;
+                  break;
+                }
+              }
+              if (!$foundMatch) {
+                // Couldn't find any related item with a matching ID.
+                return FALSE;
+              }
+            }
+            else {
+              $thisObj = $thisObj->$relatedEntity;
+            }
+          }
+          $proceed = $proceed && $thisObj->$relatedTableField == $value;
+        }
+      }
+    }
+    return $proceed;
+  }
+
+  /**
    * Update (PUT) operation.
    *
    * @param string $entity
@@ -513,13 +593,11 @@ SQL;
    *   Record ID to update.
    * @param array $data
    *   Submitted data, including values.
-   * @param bool $userCheck
-   *   Should a check be done that the record was created by the current user?
-   *   Defaults to true, but may be set to false if the calling code has
-   *   checked the user has permission to modify the record (e.g. if has site
-   *   editor rights).
+   * @param array $preconditions
+   *   List of fields & values to check before allowing the deletion, e.g.
+   *   created_by_id=current user.
    */
-  public static function update($entity, $id, array $data, $userCheck = TRUE) {
+  public static function update($entity, $id, array $data, array $preconditions = []) {
     self::loadEntityConfig($entity);
     $values = $data['values'];
     // ID is optional, but must match URL segment.
@@ -529,12 +607,16 @@ SQL;
       }
     }
     $obj = ORM::factory($entity, $id);
+    if (empty($obj->id)) {
+      RestObjects::$apiResponse->fail('Not found', 404);
+    }
     self::checkETags($entity, $id);
     if (isset(self::$entityConfig[$entity]->duplicateCheckFields)) {
       self::checkDuplicateFields($entity, array_merge($obj->as_array(), $values), $data);
     }
-    if ($userCheck && $obj->created_by_id != RestObjects::$clientUserId) {
-      RestObjects::$apiResponse->fail('Not Found', 404, $entity . ' Attempt to update record belonging to different user.');
+    $proceed = self::crudProceedCheck($obj, $preconditions);
+    if (!$proceed) {
+      self::checkForbiddenOrNotFound($obj, $preconditions);
     }
     // Keep existing values unless replaced by PUT data.
     $data['values'] = array_merge(
@@ -557,25 +639,38 @@ SQL;
    */
   public static function delete($entity, $id, array $preconditions = []) {
     $obj = ORM::factory($entity, $id);
-    $proceed = TRUE;
-    // Must exist and match preconditions (e.g. belong to user).
-    if (!$obj->id || $obj->deleted === 't') {
-      $proceed = FALSE;
+    $proceed = self::crudProceedCheck($obj, $preconditions);
+    if (!$proceed) {
+      self::checkForbiddenOrNotFound($obj, $preconditions);
     }
-    if ($proceed) {
-      foreach ($preconditions as $field => $value) {
-        $proceed = $proceed && $obj->$field == $value;
+    $obj->deleted = 't';
+    $obj->set_metadata();
+    $obj->save();
+    http_response_code(204);
+  }
+
+  /**
+   * Throws 403 forbidden or 404 not found.
+   *
+   * Depends on if record can't be found due to user filter, or just not
+   * findable.
+   *
+   * @param ORM $obj
+   *   ORM object.
+   * @param array $preconditions
+   *   List of preconditions.
+   */
+  private static function checkForbiddenOrNotFound($obj, array $preconditions) {
+    // Check if the operation can proceed without a user filter, in which case
+    // we can return 403 forbdden.
+    if (isset($preconditions['created_by_id'])) {
+      unset($preconditions['created_by_id']);
+      $proceed = self::crudProceedCheck($obj, $preconditions);
+      if ($proceed) {
+        RestObjects::$apiResponse->fail('Forbidden', 403);
       }
     }
-    if ($proceed) {
-      $obj->deleted = 't';
-      $obj->set_metadata();
-      $obj->save();
-      http_response_code(204);
-    }
-    else {
-      RestObjects::$apiResponse->fail('Not found', 404);
-    }
+    RestObjects::$apiResponse->fail('Not Found', 404);
   }
 
   /**
@@ -728,7 +823,6 @@ SQL;
    *   Submitted data.
    */
   private static function checkDuplicateFields($entity, array $values, array $data) {
-    kohana::log('debug', "Doing duplicate check for $entity");
     $table = inflector::plural($entity);
     $filters = [];
     $joins = [];
@@ -865,7 +959,7 @@ SQL;
   }
 
   /**
-   * Function to save a submission into a sample model.
+   * Function to save a submission.
    *
    * The API response is echoed and appropriate http status set.
    *
@@ -879,6 +973,15 @@ SQL;
   private static function submit($entity, $obj, array $postObj) {
     $obj->submission = rest_crud::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
     $id = $obj->submit();
+    if (!$id) {
+      foreach ($obj->getAllErrors() as $msg) {
+        kohana::log('debug', "Message: $msg");
+        if ($msg === 'You cannot add the record as it would create a duplicate.') {
+          RestObjects::$apiResponse->fail('Conflict', 409, $msg);
+        }
+      }
+      RestObjects::$apiResponse->fail('Bad Request', 400, $obj->getAllErrors());
+    }
     if ($id) {
       $table = inflector::plural($entity);
       // ETag to provide version check on updates.

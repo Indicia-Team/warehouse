@@ -891,6 +891,14 @@ $core_fixture = [
       "public" => "true",
     ],
   ],
+  "locations_websites" => [
+    "location_id" => 1,
+    "website_id" => 1,
+    "created_on" => "2016-07-22 16:00:00",
+    "created_by_id" => 1,
+    "updated_on" => "2016-07-22 16:00:00",
+    "updated_by_id" => 1,
+  ],
   "location_attributes" => [
     [
       "caption" => "Test text",

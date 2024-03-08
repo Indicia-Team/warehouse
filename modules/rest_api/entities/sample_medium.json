@@ -18,6 +18,16 @@
       "fields": [
         { "sql": "t2.term", "name": "media_type", "type": "string" }
       ]
+    },
+    {
+      "sql": "JOIN samples t3 on t3.id=t1.sample_id AND t3.deleted=false",
+      "fields": []
+    },
+    {
+      "sql": "JOIN surveys t4 on t4.id=t3.survey_id AND t4.deleted=false",
+      "fields": [
+        { "sql": "t4.website_id", "name": "website_id", "type": "integer" }
+      ]
     }
   ]
 }

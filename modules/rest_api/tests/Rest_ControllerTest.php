@@ -147,7 +147,6 @@ KEY;
       ['password' => '18d025c6c8809e34371e2ec7d84215bd3eb6031dcd804006f4'],
       ['id' => 1]
     );
-
     return $compositeDs;
   }
 
@@ -164,6 +163,13 @@ KEY;
   protected function setUp(): void {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
+    // Remove created users from previous run if using PHP unit locally, so
+    // they don't accumulate. Users and people can't be added by fixture due to
+    // circular foreign key constraints on user 1, so this isn't automatic when
+    // the fixture is built.
+    $db = new Database();
+    $db->query('DELETE FROM users WHERE id>3');
+    $db->query('DELETE FROM people WHERE id>3');
     // Make sure public key stored.
     $db = new Database();
     $db->update(
@@ -171,10 +177,6 @@ KEY;
       ['public_key' => self::$publicKey],
       ['id' => 1]
     );
-  }
-
-  protected function tearDown(): void {
-
   }
 
   /**
@@ -244,27 +246,27 @@ KEY;
     // Make a valid call - should be authorised.
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
-    $this->assertTrue($response['httpCode'] === 200);
+    $this->assertEquals(200, $response['httpCode']);
     // Make a bogus call - should be unauthorised.
     self::$jwt = base64_encode('abcdefg1234.123456789.zyx');
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
-    $this->assertTrue($response['httpCode'] === 401);
+    $this->assertEquals(401, $response['httpCode']);
     // Make a valid call with wrong iss - should be unauthorised.
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.ukx', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
-    $this->assertTrue($response['httpCode'] === 401);
+    $this->assertEquals(401, $response['httpCode']);
     // Make an expired call - should be unauthorised.
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() - 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
-    $this->assertTrue($response['httpCode'] === 401);
-    // Make a valid call with wrong user - should be unauthorised.
+    $this->assertEquals(401, $response['httpCode']);
+    // Make a valid call with wrong user - should be forbidden.
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 2, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
-    $this->assertTrue($response['httpCode'] === 401);
+    $this->assertEquals(403, $response['httpCode']);
     // Make an call with wrong key.
     self::$jwt = $this->getJwt(self::$wrongPrivateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
-    $this->assertTrue($response['httpCode'] === 401);
+    $this->assertEquals(401, $response['httpCode']);
   }
 
   /**
@@ -450,6 +452,7 @@ KEY;
         "Stored info in $table does not match value for $field"
       );
     }
+    return $id;
   }
 
   /**
@@ -461,6 +464,9 @@ KEY;
    *   Example values to POST then GET to check.
    * @param string $scope
    *   Optional JWT token scope claim.
+   *
+   * @return $id
+   *   ID of the returned row.
    */
   private function getTest($table, $exampleData, $scope = NULL) {
     $this->authMethod = 'jwtUser';
@@ -492,6 +498,7 @@ KEY;
         "Stored info in $table does not match value for $field"
       );
     }
+    return $id;
   }
 
   /**
@@ -692,17 +699,30 @@ KEY;
   }
 
   /**
+   * Create additional user for testing auth.
+   *
+   * @param Database $db
+   *   Database connection object.
+   */
+  private function createExtraUser($db) {
+    $tm = microtime(TRUE);
+    $db->query("insert into people(first_name, surname, created_on, created_by_id, updated_on, updated_by_id) " .
+      "values ('test', 'extrauser', now(), 1, now(), 1)");
+    $db->query("insert into users (username, person_id,  created_on, created_by_id, updated_on, updated_by_id) " .
+    "values ('test_extrauser$tm', (select max(id) from people), now(), 1, now(), 1)");
+    return [
+      'user_id' => $db->query('select max(id) from users')->current()->max,
+      'person_id' => $db->query('select max(id) from users')->current()->max,
+    ];
+  }
+
+  /**
    * A test of samples POST with user checks.
    */
   public function testJwtSamplePostUserAuth() {
     $db = new Database();
     // Create a different user to post with.
-    $db->query("insert into people(first_name, surname, created_on, created_by_id, updated_on, updated_by_id) " .
-      "values ('test', 'extrauser', now(), 1, now(), 1)");
-    $tm = microtime(TRUE);
-    $db->query("insert into users (username, person_id,  created_on, created_by_id, updated_on, updated_by_id) " .
-    "values ('test_extrauser$tm', (select max(id) from people), now(), 1, now(), 1)");
-    $userId = $db->query('select max(id) from users')->current()->max;
+    $userId = $this->createExtraUser($db)['user_id'];
     $this->authMethod = 'jwtUser';
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
     // Post a sample should fail until we give website access.
@@ -719,7 +739,7 @@ KEY;
         ],
       ]
     );
-    $this->assertEquals(401, $response['httpCode']);
+    $this->assertEquals(403, $response['httpCode']);
     // Grant website access.
     $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
       " VALUES ($userId, 1, 3, 1, now(), 1, now())");
@@ -746,11 +766,14 @@ KEY;
       $userId, $response['response']['values']['created_by_id'],
       'Created_by_id not set correctly for sample'
     );
-    // Re-authenticate as user 1.
-    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Set up a normal user to test against.
+    $userInfo = $this->createExtraUser($db);
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      "VALUES ($userInfo[user_id], 1, 3, 1, now(), 1, now())");
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userInfo['user_id'], time() + 120);
     // They shouldn't have access.
     $response = $this->callService("samples/$id");
-    $this->assertEquals(404, $response['httpCode']);
+    $this->assertEquals(403, $response['httpCode']);
   }
 
   /**
@@ -758,8 +781,13 @@ KEY;
    */
   public function testJwtSamplePostMoreTests() {
     $isoDateRegex = '/\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z)/';
+    $db = new Database();
+    $userInfo = $this->createExtraUser($db);
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      "VALUES ($userInfo[user_id], 1, 3, 1, now(), 1, now())");
     $this->authMethod = 'jwtUser';
-    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Using user 2 so not admin.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userInfo['user_id'], time() + 120);
     $data = [
       'survey_id' => 1,
       'entered_sref' => 'SU1234',
@@ -863,11 +891,11 @@ KEY;
     $this->assertEquals('SU121341', $response['response']['values']['entered_sref']);
     // Existing values not removed.
     $this->assertEquals('A sample comment test', $response['response']['values']['comment']);
-    // Update sample's user ID and try to fetch - ensure not found.
+    // Update sample's user ID and try to fetch - ensure forbidden.
     $db = new Database();
-    $db->query('update samples set created_by_id=2 where id=' . $response['response']['values']['id']);
+    $db->query('update samples set created_by_id=1 where id=' . $response['response']['values']['id']);
     $response = $this->callService('samples/' . $response['response']['values']['id']);
-    $this->assertEquals(404, $response['httpCode']);
+    $this->assertEquals(403, $response['httpCode']);
     // PUT update should also fail.
     $data = [
       'entered_sref' => 'SU121342',
@@ -879,7 +907,7 @@ KEY;
       [],
       'PUT'
     );
-    $this->assertEquals(404, $response['httpCode']);
+    $this->assertEquals(403, $response['httpCode']);
     // Do a test for missing sample.
     $response = $this->callService('samples/99999');
     $this->assertEquals(404, $response['httpCode']);
@@ -920,16 +948,13 @@ KEY;
     $db = new Database();
 
     // Set up a user to test against.
-    $personId = $db->query('INSERT INTO people (first_name, surname, email_address, created_by_id, created_on, updated_by_id, updated_on) ' .
-      " VALUES ('usertodelete', 'Test', 'user" . microtime(TRUE) . "@example.com', 1, now(), 1, now())")->insert_id();
-    $userId = $db->query('INSERT INTO users (person_id, username, created_by_id, created_on, updated_by_id, updated_on) ' .
-      " VALUES ($personId, 'user" . microtime(TRUE) . "', 1, now(), 1, now())")->insert_id();
+    $userInfo = $this->createExtraUser($db);
     $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
-      "VALUES ($userId, 1, 3, 1, now(), 1, now())");
+      "VALUES ($userInfo[user_id], 1, 3, 1, now(), 1, now())");
 
     $this->authMethod = 'jwtUser';
     $db = new Database();
-    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userInfo['user_id'], time() + 120);
     // Check we can post a record with our created user.
     $data = [
       'values' => [
@@ -958,7 +983,7 @@ KEY;
     $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
 
     // Call the delete user service.
-    $response = user_identifier::delete_user($userId, 1);
+    $response = user_identifier::delete_user($userInfo['user_id'], 1);
 
     // Test that the user account can no longer post data.
     $response = $this->callService(
@@ -966,8 +991,8 @@ KEY;
       FALSE,
       $data
     );
-    // Should be unauthorised.
-    $this->assertEquals(401, $response['httpCode']);
+    // Should be forbidden.
+    $this->assertEquals(403, $response['httpCode']);
 
     // Process the queue so anonymisation is done.
     $db->query("UPDATE work_queue SET priority=1 WHERE task='task_indicia_svc_security_delete_user_account'");
@@ -978,7 +1003,7 @@ KEY;
     $anonUserId = $db->query("SELECT id FROM users WHERE username='anonymous'")->current()->id;
 
     // No occurrences should remain linked to this user.
-    $occs = $db->query("SELECT count(*) as occ_count FROM occurrences WHERE created_by_id=$userId OR updated_by_id=$userId")->current();
+    $occs = $db->query("SELECT count(*) as occ_count FROM occurrences WHERE created_by_id=$userInfo[user_id] OR updated_by_id=$userInfo[user_id]")->current();
     $this->assertEquals(0, $occs->occ_count, 'Anonymised user ID still points to some occurrence data.');
 
     // Test occurrence now points to anonymous user.
@@ -992,12 +1017,12 @@ KEY;
     // Test existing sample now has a recorder name and points to anonymous
     // user.
     $sample = $db->query("SELECT recorder_names, created_by_id, updated_by_id FROM samples WHERE id=$sampleId")->current();
-    $this->assertEquals('Test, usertodelete', $sample->recorder_names);
+    $this->assertEquals('extrauser, test', $sample->recorder_names);
     $this->assertEquals($anonUserId, $sample->created_by_id, 'Anonymised sample created_by_id is incorrect');
     $this->assertEquals($anonUserId, $sample->updated_by_id, 'Anonymised sample updated_by_id is incorrect');
 
     // Test person email address is anonymised.
-    $person = $db->query("SELECT email_address FROM people WHERE id=$personId")->current();
+    $person = $db->query("SELECT email_address FROM people WHERE id=$userInfo[person_id]")->current();
     $this->assertEquals(1, preg_match('/@anonymous\.anonymous$/', $person->email_address), 'Person email address not anonymised correctly');
 
   }
@@ -1226,6 +1251,56 @@ KEY;
     $this->assertEquals(150, $attrVal['value']);
   }
 
+  private function doSiteRoleBasedPermissionsGetCheck($table, $id) {
+    $db = new Database();
+    $userId = $this->createExtraUser($db)['user_id'];
+    $userIdAdmin = $this->createExtraUser($db)['user_id'];
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    $response = $this->callService("$table/$id");
+    // Added user has no access to website.
+    $this->assertEquals(403, $response['httpCode'], "Access to $table should be forbidden if user not linked to website.");
+    // Grant access, but not to other people's data.
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userId, 1, 3, 1, now(), 1, now())");
+    // Admin user can have admin rights to website.
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userIdAdmin, 1, 1, 1, now(), 1, now())");
+    $response = $this->callService("$table/$id");
+    // UserId has access to website but only their own data.
+    $this->assertEquals(403, $response['httpCode'], "Access to $table should be forbidden if user does not own record.");
+    // Switch to admin.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userIdAdmin, time() + 120);
+    $response = $this->callService("$table/$id");
+    // User 2 has admin access to website.
+    $this->assertEquals(200, $response['httpCode'], "Access to $table should be allowed if user is site admin.");
+  }
+
+  /**
+   * A basic test of /sample_media/id GET.
+   */
+  public function testJwtSampleMediaGet() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $id = $this->getTest('sample_media', [
+      'path' => 'xyz.jpg',
+      'sample_id' => $sampleId,
+      // The following won't actually be posted, but should be in the response.
+      'media_type' => 'Image:Local',
+    ]);
+    $this->doSiteRoleBasedPermissionsGetCheck('sample_media', $id);
+  }
+
+  /**
+   * A basic test of /sample_media GET.
+   */
+  public function testJwtSampleMediaGetList() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $this->getListTest('sample_media', [
+      'path' => 'a123.jpg',
+      'sample_id' => $sampleId,
+    ]);
+  }
+
   /**
    * Test /sample_media POST in isolation.
    */
@@ -1242,36 +1317,13 @@ KEY;
    */
   public function testJwtSampleMediaPut() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
-    $this->putTest('sample_media', [
+    $id = $this->putTest('sample_media', [
       'path' => 'abc.jpg',
       'sample_id' => $sampleId,
     ], [
       'path' => 'cde.jpg',
     ]);
-  }
-
-  /**
-   * A basic test of /sample_media/id GET.
-   */
-  public function testJwtSampleMediaGet() {
-    $sampleId = $this->postSampleToAddOccurrencesTo();
-    $this->getTest('sample_media', [
-      'path' => 'xyz.jpg',
-      'sample_id' => $sampleId,
-      // The following won't actually be posted, but should be in the response.
-      'media_type' => 'Image:Local',
-    ]);
-  }
-
-  /**
-   * A basic test of /sample_media GET.
-   */
-  public function testJwtSampleMediaGetList() {
-    $sampleId = $this->postSampleToAddOccurrencesTo();
-    $this->getListTest('sample_media', [
-      'path' => 'a123.jpg',
-      'sample_id' => $sampleId,
-    ]);
+    $this->doSiteRoleBasedPermissionsPutCheck('sample_media', $id, ['path' => 'test.jpg']);
   }
 
   /**
@@ -1279,10 +1331,12 @@ KEY;
    */
   public function testJwtSampleMediaDelete() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
-    $this->deleteTest('sample_media', [
+    $exampleSampleMedia = [
       'path' => 'b123.jpg',
       'sample_id' => $sampleId,
-    ]);
+    ];
+    $this->deleteTest('sample_media', $exampleSampleMedia);
+    $this->doSiteRoleBasedPermissionsDeleteCheck('sample_media', $exampleSampleMedia);
   }
 
   /**
@@ -1611,28 +1665,18 @@ SQL;
     $this->assertEquals($checkData->occurrence_medium_id, $checkData->crom_om_id, 'REST Classification submission mediaPaths linking incorrect.');
   }
 
-  public function testJwtSamplePut() {
-    $this->putTest('samples', [
-      'survey_id' => 1,
-      'entered_sref' => 'SU1234',
-      'entered_sref_system' => 'OSGB',
-      'date' => '01/08/2020',
-    ], [
-      'entered_sref' => 'SU123456',
-    ]);
-  }
-
   /**
    * A basic test of /samples/id GET.
    */
   public function testJwtSampleGet() {
-    $this->getTest('samples',  [
+    $id = $this->getTest('samples',  [
       'survey_id' => 1,
       'entered_sref' => 'SU1234',
       'entered_sref_system' => 'OSGB',
       'date' => '01/08/2020',
       'comment' => 'A sample to delete',
     ]);
+    $this->doSiteRoleBasedPermissionsGetCheck('samples', $id);
   }
 
   /**
@@ -1648,17 +1692,31 @@ SQL;
     ]);
   }
 
+  public function testJwtSamplePut() {
+    $id = $this->putTest('samples', [
+      'survey_id' => 1,
+      'entered_sref' => 'SU1234',
+      'entered_sref_system' => 'OSGB',
+      'date' => '01/08/2020',
+    ], [
+      'entered_sref' => 'SU123456',
+    ]);
+    $this->doSiteRoleBasedPermissionsPutCheck('samples', $id, ['comment' => 'updated comment']);
+  }
+
   /**
    * Testing delete of a sample.
    */
   public function testJwtSampleDelete() {
-    $this->deleteTest('samples', [
+    $exampleSample = [
       'survey_id' => 1,
       'entered_sref' => 'SU1234',
       'entered_sref_system' => 'OSGB',
       'date' => '01/08/2020',
       'comment' => 'A sample to delete',
-    ]);
+    ];
+    $this->deleteTest('samples', $exampleSample);
+    $this->doSiteRoleBasedPermissionsDeleteCheck('samples', $exampleSample);
   }
 
   /**
@@ -1700,16 +1758,15 @@ SQL;
    * Test /locations PUT behaviour.
    */
   public function testJwtLocationPut() {
-    $this->putTest('locations', [
+    $id = $this->putTest('locations', [
       'name' => 'Location test',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
     ], [
       'name' => 'Location test updated',
     ]);
+    $this->doSiteRoleBasedPermissionsPutCheck('locations', $id, ['comment' => 'updated comment']);
   }
-
-
 
   public function testJwtLocationDuplicateCheck() {
     $this->authMethod = 'jwtUser';
@@ -1750,11 +1807,12 @@ SQL;
    * A basic test of /locations/id GET.
    */
   public function testJwtLocationGet() {
-    $this->getTest('locations', [
+    $id = $this->getTest('locations', [
       'name' => 'Location GET test',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
     ]);
+    $this->doSiteRoleBasedPermissionsGetCheck('samples', $id);
   }
 
   /**
@@ -1772,11 +1830,13 @@ SQL;
    * Test DELETE for a location.
    */
   public function testJwtLocationDelete() {
-    $this->deleteTest('locations', [
+    $exampleLocation = [
       'name' => 'Location GET test',
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
-    ]);
+    ];
+    $this->deleteTest('locations', $exampleLocation);
+    $this->doSiteRoleBasedPermissionsDeleteCheck('locations', $exampleLocation);
   }
 
   /**
@@ -1795,6 +1855,64 @@ SQL;
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
     ]);
+  }
+
+  /**
+   * Test for GET /location_media/{id}.
+   */
+  public function testJwtLocationMediaGet() {
+    $id = $this->getTest('location_media', [
+      'path' => 'xyz.jpg',
+      'location_id' => 1,
+      // The following won't actually be posted, but should be in the response.
+      'media_type' => 'Image:Local',
+    ]);
+    $this->doSiteRoleBasedPermissionsGetCheck('location_media', $id);
+  }
+
+  /**
+   * A basic test of GET /location_media.
+   */
+  public function testJwtLocationMediaGetList() {
+    $this->getListTest('location_media', [
+      'path' => 'a123.jpg',
+      'location_id' => 1,
+    ]);
+  }
+
+  /**
+   * Test POST /location_media in isolation.
+   */
+  public function testJwtLocationMediaPost() {
+    $this->postTest('location_media', [
+      'path' => 'abc.jpg',
+      'location_id' => 1,
+    ], 'path');
+  }
+
+  /**
+   * Test /location_media PUT in isolation.
+   */
+  public function testJwtLocationMediaPut() {
+    $id = $this->putTest('location_media', [
+      'path' => 'abc.jpg',
+      'location_id' => 1,
+    ], [
+      'path' => 'cde.jpg',
+    ]);
+    $this->doSiteRoleBasedPermissionsPutCheck('location_media', $id, ['path' => 'test.jpg']);
+  }
+
+  /**
+   * Test DELETE for an location_media.
+   */
+  public function testJwtLocationMediaDelete() {
+    $exampleLocationMedia = [
+      'path' => 'b123.jpg',
+      'location_id' => 1,
+    ];
+    $this->deleteTest('location_media', $exampleLocationMedia);
+    $this->doSiteRoleBasedPermissionsDeleteCheck('location_media', $exampleLocationMedia);
   }
 
   public function testJwtSurveyPost() {
@@ -1902,7 +2020,7 @@ SQL;
       ['values' => $data],
       [], 'PUT'
     );
-    $this->assertEquals(401, $response['httpCode']);
+    $this->assertEquals(403, $response['httpCode']);
   }
 
   /**
@@ -2055,6 +2173,31 @@ SQL;
   }
 
   /**
+   * A basic test of /occurrence_media/id GET.
+   */
+  public function testJwtOccurrenceMediaGet() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $id = $this->getTest('occurrence_media', [
+      'path' => 'xyz.jpg',
+      'occurrence_id' => $occurrenceId,
+      // The following won't actually be posted, but should be in the response.
+      'media_type' => 'Image:Local',
+    ]);
+    $this->doSiteRoleBasedPermissionsGetCheck('occurrence_media', $id);
+  }
+
+  /**
+   * A basic test of /occurrence_media GET.
+   */
+  public function testJwtOccurrenceMediaGetList() {
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $this->getListTest('occurrence_media', [
+      'path' => 'a123.jpg',
+      'occurrence_id' => $occurrenceId,
+    ]);
+  }
+
+  /**
    * Test /sample_media POST in isolation.
    */
   public function testJwtOccurrenceMediaPost() {
@@ -2070,36 +2213,13 @@ SQL;
    */
   public function testJwtOccurrenceMediaPut() {
     $occurrenceId = $this->postOccurrenceToAddStuffTo();
-    $this->putTest('occurrence_media', [
+    $id = $this->putTest('occurrence_media', [
       'path' => 'abc.jpg',
       'occurrence_id' => $occurrenceId,
     ], [
       'path' => 'cde.jpg',
     ]);
-  }
-
-  /**
-   * A basic test of /occurrence_media/id GET.
-   */
-  public function testJwtOccurrenceMediaGet() {
-    $occurrenceId = $this->postOccurrenceToAddStuffTo();
-    $this->getTest('occurrence_media', [
-      'path' => 'xyz.jpg',
-      'occurrence_id' => $occurrenceId,
-      // The following won't actually be posted, but should be in the response.
-      'media_type' => 'Image:Local',
-    ]);
-  }
-
-  /**
-   * A basic test of /occurrence_media GET.
-   */
-  public function testJwtOccurrenceMediaGetList() {
-    $occurrenceId = $this->postOccurrenceToAddStuffTo();
-    $this->getListTest('occurrence_media', [
-      'path' => 'a123.jpg',
-      'occurrence_id' => $occurrenceId,
-    ]);
+    $this->doSiteRoleBasedPermissionsPutCheck('occurrence_media', $id, ['path' => 'test.jpg']);
   }
 
   /**
@@ -2108,6 +2228,10 @@ SQL;
   public function testJwtOccurrenceMediaDelete() {
     $occurrenceId = $this->postOccurrenceToAddStuffTo();
     $this->deleteTest('occurrence_media', [
+      'path' => 'b123.jpg',
+      'occurrence_id' => $occurrenceId,
+    ]);
+    $this->doSiteRoleBasedPermissionsDeleteCheck('occurrence_media', [
       'path' => 'b123.jpg',
       'occurrence_id' => $occurrenceId,
     ]);
@@ -2178,16 +2302,67 @@ SQL;
   }
 
   /**
+   * Check that site admin in users_websites works for PUT.
+   *
+   * @param string $table
+   *   Table to test.
+   * @param int $id
+   *   ID of record to attempt to update.
+   * @param array $values
+   *   Values to attempt to PUT.
+   */
+  private function doSiteRoleBasedPermissionsPutCheck($table, $id, array $values) {
+    // Add user to test PUT permissions.
+    $db = new Database();
+    $userId = $this->createExtraUser($db)['user_id'];
+    $userIdAdmin = $this->createExtraUser($db)['user_id'];
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    // Put to overwrite record - fails.
+    $response = $this->callService(
+      "$table/$id",
+      FALSE,
+      ['values' => $values],
+      [], 'PUT'
+    );
+    $this->assertEquals(403, $response['httpCode'], "Access to PUT $table should be forbidden if user not linked to website.");
+    // Grant access, but not to other people's data.
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userId, 1, 3, 1, now(), 1, now())");
+    // Put to overwrite record - fails.
+    $response = $this->callService(
+      "$table/$id",
+      FALSE,
+      ['values' => $values],
+      [], 'PUT'
+    );
+    $this->assertEquals(403, $response['httpCode'], "Access to PUT $table should be forbidden if user does not own record.");
+    // Update to site admin.
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userIdAdmin, 1, 1, 1, now(), 1, now())");
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userIdAdmin, time() + 120);
+    $response = $this->callService(
+      "$table/$id",
+      FALSE,
+      ['values' => $values],
+      [], 'PUT'
+    );
+    // User 2 has admin access to website.
+    $this->assertEquals(200, $response['httpCode'], "Access to PUT $table should be allowed if user is site admin.");
+  }
+
+  /**
    * Test /occurrences PUT in isolation.
    */
   public function testJwtOccurrencePut() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
-    $this->putTest('occurrences', [
+    $id = $this->putTest('occurrences', [
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
     ], [
       'taxa_taxon_list_id' => 2,
     ]);
+    $this->doSiteRoleBasedPermissionsPutCheck('occurrences', $id, ['comment' => 'updated comment']);
   }
 
   /**
@@ -2195,10 +2370,11 @@ SQL;
    */
   public function testJwtOccurrenceGet() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
-    $this->getTest('occurrences', [
+    $id = $this->getTest('occurrences', [
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
     ]);
+    $this->doSiteRoleBasedPermissionsGetCheck('occurrences', $id);
   }
 
   /**
@@ -2209,12 +2385,7 @@ SQL;
     $sampleId = $this->postSampleToAddOccurrencesTo();
     $db = new Database();
     // Create a different user to query with with.
-    $db->query("insert into people(first_name, surname, created_on, created_by_id, updated_on, updated_by_id) " .
-      "values ('test', 'extrauser', now(), 1, now(), 1)");
-    $tm = microtime(TRUE);
-    $db->query("insert into users (username, person_id,  created_on, created_by_id, updated_on, updated_by_id) " .
-    "values ('test_extrauser$tm', (select max(id) from people), now(), 1, now(), 1)");
-    $userId = $db->query('select max(id) from users')->current()->max;
+    $userId = $this->createExtraUser($db)['user_id'];
     // Grant website access.
     $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
       " VALUES ($userId, 1, 3, 1, now(), 1, now())");
@@ -2224,8 +2395,8 @@ SQL;
     // Try to GET the sample.
     $response = $this->callService("samples/$sampleId");
     $this->assertEquals(
-      404, $response['httpCode'],
-      "Request for another user's sample does not return 404."
+      403, $response['httpCode'],
+      "Request for another user's sample does not return 403."
     );
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     // Try to GET the sample.
@@ -2234,13 +2405,13 @@ SQL;
       200, $response['httpCode'],
       "Request for a user's sample does not return 200."
     );
-    // Authenticated scope should default to user's own records, so expect 404
+    // Authenticated scope should default to user's own records, so expect 403
     // if requesting for the created user.
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120, 'authenticated');
     // Try to GET the sample.
     $response = $this->callService("samples/$sampleId");
     $this->assertEquals(
-      404, $response['httpCode'],
+      403, $response['httpCode'],
       "Request for another user's sample does not return 404 with authenticated scope."
     );
     // Same for user scope.
@@ -2248,7 +2419,7 @@ SQL;
     // Try to GET the sample.
     $response = $this->callService("samples/$sampleId");
     $this->assertEquals(
-      404, $response['httpCode'],
+      403, $response['httpCode'],
       "Request for another user's sample does not return 404 with user scope."
     );
     // Same for reporting scope - as using JwtUser, it will widen the scope to
@@ -2257,8 +2428,8 @@ SQL;
     // Try to GET the sample.
     $response = $this->callService("samples/$sampleId");
     $this->assertEquals(
-      404, $response['httpCode'],
-      "Request for another user's sample does not return 404 with reporting scope."
+      403, $response['httpCode'],
+      "Request for another user's sample does not return 403 with reporting scope."
     );
   }
 
@@ -2275,14 +2446,59 @@ SQL;
   }
 
   /**
+   * Check that site admin in users_websites works for DELETE.
+   *
+   * @param string $table
+   *   Table to test.
+   * @param int $id
+   *   ID of record to attempt to update.
+   * @param array $values
+   *   Values to attempt to PUT.
+   */
+  private function doSiteRoleBasedPermissionsDeleteCheck($table, array $values) {
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Add a record to test deletes against.
+    $data = ['values' => $values];
+    $response = $this->callService(
+      $table,
+      FALSE,
+      $data
+    );
+    $id = $response['response']['values']['id'];
+    // Add user to test PUT permissions.
+    $db = new Database();
+    $userId = $this->createExtraUser($db)['user_id'];
+    $userIdAdmin = $this->createExtraUser($db)['user_id'];
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    // Delete record - fails.
+    $response = $this->callService("$table/$id", FALSE, [], [], 'DELETE');
+    $this->assertEquals(403, $response['httpCode'], "Access to DELETE $table should be forbidden if user not linked to website.");
+    // Grant access, but not to other people's data.
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userId, 1, 3, 1, now(), 1, now())");
+    // Also make an admin user with full rights to website data.
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userIdAdmin, 1, 1, 1, now(), 1, now())");
+    // Delete record - fails.
+    $response = $this->callService("$table/$id", FALSE, [], [], 'DELETE');
+    $this->assertEquals(403, $response['httpCode'], "Access to PUT $table should be forbidden if user does not own record.");
+    // Update to site admin.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userIdAdmin, time() + 120);
+    $response = $this->callService("$table/$id", FALSE, [], [], 'DELETE');
+    $this->assertEquals(204, $response['httpCode'], "Access to PUT $table should be allowed if user is site admin.");
+  }
+
+  /**
    * Test DELETE for an occurrence.
    */
   public function testJwtOccurrenceDelete() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
-    $this->deleteTest('occurrences', [
+    $exampleOccurrence = [
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
-    ]);
+    ];
+    $this->deleteTest('occurrences', $exampleOccurrence);
+    $this->doSiteRoleBasedPermissionsDeleteCheck('occurrences', $exampleOccurrence);
   }
 
   /**
@@ -2780,6 +2996,96 @@ SQL;
     $this->assertEquals(1, $response['response'][0]['values']['location_id'], 'Location ID 1 should be linked to group 1.');
   }
 
+  public function testGroups_postLocation() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $values = [
+      'name' => 'Test location',
+      'centroid_sref' => 'ST1234',
+      'centroid_sref_system' => 'OSGB',
+    ];
+    $response = $this->callService("groups/1/locations", [], ['values' => $values]);
+    $this->assertEquals(403, $response['httpCode'], 'Posting a group location when not a member did not return 403 Forbidden');
+
+    // Make a new user a member of group 1.
+    $db = new Database();
+    $userId = $this->createExtraUser($db)['user_id'];
+    // Make a group member and a user of the website.
+    $db->query("insert into groups_users(group_id, user_id, created_by_id, created_on, updated_by_id, updated_on) values (1, $userId, 1, now(), 1, now())");
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userId, 1, 3, 1, now(), 1, now())");
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    $response = $this->callService("groups/1/locations", [], ['values' => $values]);
+    $this->assertEquals(201, $response['httpCode'], 'Posting a group location did not return a success response');
+
+    $response = $this->callService("groups/1/locations", []);
+    $this->assertEquals(2, count($response['response']), 'Group 1 should have 2 locations after adding one.');
+    // POST a location to test adding separately.
+    $response = $this->callService("locations", [], ['values' => $values]);
+    $newLocationId = $response['response']['values']['id'];
+    $values = [
+      'id' => $newLocationId,
+    ];
+    $response = $this->callService("groups/1/locations", [], ['values' => $values]);
+    $this->assertEquals(201, $response['httpCode'], 'Posting a group an existing location did not return a success response');
+    $response = $this->callService("groups/1/locations", [], ['values' => $values]);
+    $this->assertEquals(409, $response['httpCode'], 'Posting a group an existing location twice did not return a conflict');
+    $this->assertEquals(3, count($response['response']), 'Group 1 should have 3 locations after adding two.');
+  }
+
+  public function testGroups_getPostDeleteUser() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Get initial count.
+    $response = $this->callService("groups/1/users");
+    $initialGroupUserCount = count($response['response']);
+    $db = new Database();
+    $userId2 = $this->createExtraUser($db)['user_id'];
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      "VALUES ($userId2, 1, 3, 1, now(), 1, now())");
+    $values = [
+      'id' => 1,
+    ];
+    $response = $this->callService("groups/1/users", [], ['values' => $values]);
+    $this->assertEquals(201, $response['httpCode'], 'User could not join public group');
+    $response = $this->callService("groups/1/users");
+    $this->assertEquals($initialGroupUserCount + 1, count($response['response']), 'User was not self-added to group');
+    $response = $this->callService("groups/2/users", [], ['values' => $values]);
+    $this->assertEquals(403, $response['httpCode'], 'User joining private group should be forbidden');
+    $values = [
+      'id' => $userId2,
+    ];
+    $response = $this->callService("groups/1/users", [], ['values' => $values]);
+    $this->assertEquals(403, $response['httpCode'], 'User should not be able to add another user to group');
+    $db->query('UPDATE groups_users SET administrator=true WHERE user_id=1 AND group_id=1');
+    $response = $this->callService("groups/1/users", [], ['values' => $values]);
+    $this->assertEquals(201, $response['httpCode'], 'Admin user should be able to add other members to group');
+    $response = $this->callService("groups/1/users");
+    $this->assertEquals($initialGroupUserCount + 2, count($response['response']), 'User was not added to group by admin');
+    // Auth as 2nd user as they aren't admin.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId2, time() + 120);
+    $response = $this->callService("groups/1/users");
+    $this->assertEquals(1, count($response['response']), 'Non admin user should only see self in group');
+    $this->assertEquals($userId2, $response['response'][0]['values']['user_id'], 'Non admin user seeing incorrect user details in group');
+    $response = $this->callService("groups/1/users/1", FALSE, [], [], 'DELETE');
+    $this->assertEquals(403, $response['httpCode'], 'Non admin user should not be able to remove other users');
+    $response = $this->callService("groups/1/users/$userId2", FALSE, [], [], 'DELETE');
+    $this->assertEquals(204, $response['httpCode'], 'Non admin user should be able to remove self from group');
+    $response = $this->callService("groups/1/users");
+    $this->assertEquals(0, count($response['response']), 'User was not deleted from group by self');
+    // Add user 2 back.
+    $response = $this->callService("groups/1/users", [], ['values' => $values]);
+    $this->assertEquals(201, $response['httpCode']);
+    // Auth back as admin user.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService("groups/1/users/999", FALSE, [], [], 'DELETE');
+    $this->assertEquals(404, $response['httpCode'], 'DELETE invalid group user ID should return 404');
+    $response = $this->callService("groups/1/users/$userId2", FALSE, [], [], 'DELETE');
+    $this->assertEquals(204, $response['httpCode'], 'DELETE returned incorrect response');
+    $response = $this->callService("groups/1/users");
+    $this->assertEquals($initialGroupUserCount + 1, count($response['response']), 'User was not deleted from group by admin');
+  }
+
   public function testAcceptHeader() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAcceptHeader");
     $projDef = self::$config['projects']['BRC1'];
@@ -2847,7 +3153,7 @@ SQL;
     self::$websitePassword = '---';
     self::$userPassword = '---';
 
-    $response = $this->callService($resource, $query, TRUE);
+    $response = $this->callService($resource, $query);
     $this->assertEquals(
       401, $response['httpCode'],
       "Incorrect secret or password passed to /$resource but request " .
@@ -2855,8 +3161,7 @@ SQL;
     );
     $this->assertEquals(
       'Unauthorized', $response['response']['status'],
-      "Incorrect secret or password passed to /$resource but data still returned. " .
-      var_export($response, TRUE)
+      "Incorrect secret or password passed to /$resource but data still returned. " . var_export($response, TRUE)
     );
     self::$config['shared_secret'] = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
@@ -2869,7 +3174,7 @@ SQL;
     self::$config['shared_secret'] = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
-    $response = $this->callService($resource, $query, TRUE);
+    $response = $this->callService($resource, $query);
     $this->assertEquals(
       401, $response['httpCode'],
       "Incorrect userId passed to /$resource but request authorised. Http " .
@@ -2877,8 +3182,7 @@ SQL;
     );
     $this->assertEquals(
       'Unauthorized', $response['response']['status'],
-      "Incorrect userId passed to /$resource but data still returned. " .
-      var_export($response, TRUE)
+      "Incorrect userId passed to /$resource but data still returned. " . var_export($response, TRUE)
     );
 
     // Now test with everything correct.
@@ -3140,13 +3444,13 @@ SQL;
    *
    * @param $method
    * @param mixed|FALSE $query
-   * @param string $postData
+   * @param array $postData
    * @param $additionalRequestHeader
    * @param $customMethod
    * @param $files
    * @return array
    */
-  private function callService($method, $query = FALSE, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL, $files = FALSE) {
+  private function callService($method, $query = FALSE, array $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL, $files = FALSE) {
     $url = url::base(true) . "services/rest/$method";
     if ($query) {
       $url .= '?' . http_build_query($query);

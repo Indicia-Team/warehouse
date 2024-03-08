@@ -98,6 +98,13 @@ class RestObjects {
   public static $clientUserId;
 
   /**
+   * When using JwtUser auth, the user's role ID in the website.
+   *
+   * @var int
+   */
+  public static $clientUserWebsiteRole;
+
+  /**
    * Name of the warehouse module handling the request.
    *
    * Might not be rest_api if the REST services extended by a modules's plugin
@@ -400,6 +407,14 @@ class Rest_Controller extends Controller {
           ],
         ],
         'groups/{id}/locations' => [],
+        'groups/{id}/users' => [],
+      ],
+      'POST' => [
+        'groups/{id}/locations' => [],
+        'groups/{id}/users' => [],
+      ],
+      'DELETE' => [
+        'groups/{id}/users/{id}' => [],
       ],
     ],
     'media-queue' => [
@@ -432,6 +447,21 @@ class Rest_Controller extends Controller {
       ],
       'DELETE' => [
         'locations/{id}' => [],
+      ],
+    ],
+    'location-media' => [
+      'GET' => [
+        'location-media' => [],
+        'location-media/{id}' => [],
+      ],
+      'POST' => [
+        'location-media' => [],
+      ],
+      'PUT' => [
+        'location-media/{id}' => [],
+      ],
+      'DELETE' => [
+        'location-media/{id}' => [],
       ],
     ],
     'occurrence-attributes' => [
@@ -2328,8 +2358,8 @@ class Rest_Controller extends Controller {
           // Double checking required for Elasticsearch proxy.
           if ($this->elasticProxy) {
             if (empty($cfg['resource_options']['elasticsearch'])) {
-              kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
-              RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+              kohana::log('debug', "Elasticsearch not enabled for $method authentication");
+              RestObjects::$apiResponse->fail('Forbidden', 403, "Elasticsearch not enabled for $method authentication");
             }
             if (in_array($this->elasticProxy, $cfg['resource_options']['elasticsearch'])) {
               // Simple array of ES endpoints with no config.
@@ -2341,12 +2371,12 @@ class Rest_Controller extends Controller {
             }
             else {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for $method");
-              RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+              RestObjects::$apiResponse->fail('Forbidden', 403, "Elasticsearch request to $this->elasticProxy not enabled for $method authentication");
             }
             if (!empty($this->clientConfig) && (empty($this->clientConfig['elasticsearch']) ||
                 !in_array($this->elasticProxy, $this->clientConfig['elasticsearch']))) {
               kohana::log('debug', "Elasticsearch request to $this->elasticProxy not enabled for client");
-              RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
+              RestObjects::$apiResponse->fail('Forbidden', 403, "Elasticsearch request to $this->elasticProxy not enabled for client");
             }
           }
           kohana::log('debug', "authenticated via $method");
@@ -2357,7 +2387,7 @@ class Rest_Controller extends Controller {
     }
     if (!$this->authenticated) {
       // Either the authentication wrong, or using HTTP instead of HTTPS.
-      kohana::log('debug', "Elasticsearch request to $this->elasticProxy did not meet criteria for any valid authentication method");
+      kohana::log('debug', "REST API request did not meet criteria for any valid authentication method");
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
     }
   }
@@ -2459,8 +2489,9 @@ SQL;
     }
     if (!$websiteUser) {
       kohana::log('debug', 'rest_api: Unauthorised - user has no role in website.');
-      RestObjects::$apiResponse->fail('Unauthorized', 401);
+      RestObjects::$apiResponse->fail('Forbidden', 403);
     }
+    RestObjects::$clientUserWebsiteRole = $websiteUser->site_role_id;
   }
 
   /**
@@ -2670,7 +2701,7 @@ SQL;
     if (!preg_match('/^\d+$/', $userId) || !preg_match('/^\d+$/', $websiteId)) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
     }
-    $users = RestObjects::$db->select('password')
+    $users = RestObjects::$db->select('password, site_role_id')
       ->from('users')
       ->join('users_websites', 'users_websites.user_id', 'users.id')
       ->where(['users.id' => $userId, 'users_websites.website_id' => $websiteId])
@@ -2682,6 +2713,7 @@ SQL;
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
       RestObjects::$clientWebsiteId = $websiteId;
       RestObjects::$clientUserId = $userId;
+      RestObjects::$clientUserWebsiteRole = $users['0']['site_role_id'];
       RestObjects::$scope = $scope ?? 'userWithinWebsite';
       $this->authenticated = TRUE;
     }
@@ -3001,7 +3033,14 @@ SQL;
    *   Occurrence media ID.
    */
   public function occurrenceMediaGetId($id) {
-    rest_crud::read('occurrence_medium', $id);
+    rest_crud::read(
+      'occurrence_medium',
+      $id,
+      'AND t3.website_id=' . RestObjects::$clientWebsiteId,
+      // If user website site role known, allow access if admin or site editor,
+      // else must belong to user.
+      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2
+    );
   }
 
   /**
@@ -3024,7 +3063,13 @@ SQL;
   public function occurrenceMediaPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('occurrence_medium', $id, $putArray);
+    // Update only allowed on this website.
+    $preconditions = ['occurrence.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    $r = rest_crud::update('occurrence_medium', $id, $putArray, $preconditions);
     echo json_encode($r);
   }
 
@@ -3042,8 +3087,14 @@ SQL;
     if (empty(RestObjects::$clientUserId)) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
     }
+    // Update only allowed on this website.
+    $preconditions = ['occurrence.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
     // Delete as long as created by this user.
-    rest_crud::delete('occurrence_medium', $id, ['created_by_id' => RestObjects::$clientUserId]);
+    rest_crud::delete('occurrence_medium', $id, $preconditions);
   }
 
   /**
@@ -3060,7 +3111,13 @@ SQL;
    *   Occurrence ID.
    */
   public function occurrencesGetId($id) {
-    rest_crud::read('occurrence', $id, 'AND t1.website_id=' . RestObjects::$clientWebsiteId);
+    rest_crud::read(
+      'occurrence',
+      $id,
+      'AND t1.website_id=' . RestObjects::$clientWebsiteId,
+      // If user website site role known, allow access if admin or site editor,
+      // else must belong to user.
+      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2);
   }
 
   /**
@@ -3115,13 +3172,26 @@ SQL;
   /**
    * API end-point to PUT to an existing occurrence to update.
    *
+   * @todo Website ID precondition could respect editing sharing mode.
+   *
    * @param int $id
    *   Occurrence ID.
    */
   public function occurrencesPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('occurrence', $id, $putArray);
+    // Update only allowed on this website.
+    $preconditions = ['website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    $r = rest_crud::update(
+      'occurrence',
+      $id,
+      $putArray,
+      $preconditions
+    );
     echo json_encode($r);
   }
 
@@ -3130,6 +3200,8 @@ SQL;
    *
    * Will only be deleted if the occurrence was created by the current user.
    *
+   * @todo Website ID precondition could respect editing sharing mode.
+   *
    * @param int $id
    *   Occurrence ID to delete.
    */
@@ -3137,8 +3209,13 @@ SQL;
     if (empty(RestObjects::$clientUserId)) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
     }
-    // Delete as long as created by this user.
-    rest_crud::delete('occurrence', $id, ['created_by_id' => RestObjects::$clientUserId]);
+    // Delete only allowed on this website.
+    $preconditions = ['website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    rest_crud::delete('occurrence', $id, $preconditions);
   }
 
   /**
@@ -3208,6 +3285,163 @@ SQL;
   }
 
   /**
+   * API endpoint to post a location which will be linked to a group.
+   *
+   * @param int $id
+   *   Group ID.
+   */
+  public function groupsPostIdLocations($id) {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    $existingUser = RestObjects::$db->query("SELECT id FROM groups_users WHERE group_id=$id AND deleted=false AND pending=false AND user_id=" . RestObjects::$clientUserId)->current();
+    if (!$existingUser) {
+      RestObjects::$apiResponse->fail('Forbidden', 403, 'Cannot post locations into a group you are not a member of.');
+    }
+    if (isset($item['values']) && !empty($item['values']['id'])) {
+      // Payload contains an existing location ID, so just join it to the group.
+      $joinItem = [
+        'values' => [
+          'group_id' => $id,
+          'location_id' => $item['values']['id'],
+        ],
+      ];
+      $r = rest_crud::create('groups_location', $joinItem);
+    }
+    else {
+      // Add sub-model for the linked group.
+      $item['groups_locations'] = [
+        ['values' => ['group_id' => $id]],
+      ];
+      $r = rest_crud::create('location', $item);
+    }
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API endpoint to retrieve the list of member users for a group.
+   *
+   * @param int $id
+   *   Group ID.
+   */
+  public function groupsGetIdUsers($id) {
+    // Can only fetch users for a group you are an admin of, or the list is
+    // limited to just yourself.
+    $filters = [
+      "t2.id=$id",
+      't2.website_id=' . RestObjects::$clientWebsiteId,
+      "(t2.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=" . RestObjects::$clientUserId . ' AND gu.deleted=false AND gu.administrator=true) OR t1.user_id=' . RestObjects::$clientUserId . ')',
+    ];
+    $extraFilter = 'AND ' . implode(' AND ', $filters);
+    rest_crud::readList('groups_user', $extraFilter, FALSE);
+  }
+
+  /**
+   * API endpoint to post users into a group.
+   *
+   * @param int $id
+   *   Group ID.
+   */
+  public function groupsPostIdUsers($id) {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    if (!isset($item['values']['id']) || !preg_match('/^\d+$/', $item['values']['id'])) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Invalid or missing user ID');
+    }
+    $addingUserId = $item['values']['id'];
+    $authUserId = RestObjects::$clientUserId;
+    $qry = <<<SQL
+SELECT gu1.user_id as existing_user_id, gu2.administrator as auth_user_is_admin, g.created_by_id, g.joining_method
+FROM groups g
+LEFT JOIN groups_users gu1 ON gu1.group_id=g.id AND gu1.deleted=false AND gu1.pending=false AND gu1.user_id=$addingUserId
+LEFT JOIN groups_users gu2 ON gu2.group_id=g.id AND gu2.deleted=false AND gu2.pending=false AND gu2.user_id=$authUserId
+WHERE g.id=$id AND g.deleted=false
+SQL;
+    $groupUserInfo = RestObjects::$db->query($qry)->current();
+    kohana::log('debug', 'guInfo: ' . var_export($groupUserInfo, TRUE));
+    if ($groupUserInfo->existing_user_id) {
+      // Existing user. Can't re-add themselves.
+      if ($addingUserId == $authUserId) {
+        RestObjects::$apiResponse->fail('Conflict', 409, 'You are already a user of this group.');
+      }
+      // Only admin can add others.
+      if ($groupUserInfo->auth_user_is_admin === 'f') {
+        RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add other users to a group you are not admin of');
+      }
+      // Default administrator=false but allow override.
+      $defaults = [
+        'administrator' => 'f',
+        // If joining is by request, default pending=true but allow override.
+        'pending' => $groupUserInfo->joining_method === 'R' ? 't' : 'f',
+      ];
+      $item['values'] = array_merge($defaults, $item['values']);
+    }
+    elseif ($groupUserInfo->auth_user_is_admin === 't') {
+      // Group admin can add other users without restriction.
+    }
+    else {
+      // New user can only add themself.
+      if ($item['values']['id'] != RestObjects::$clientUserId) {
+        RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add other users to a group you are not a member of');
+      }
+      $requestToAddAdminUser = isset($item['values']['administrator']) && $item['values']['administrator'] !== 'f';
+      // Cannot add self as admin, unless also the group creator.
+      if ($requestToAddAdminUser && $groupUserInfo->created_by_id != RestObjects::$clientUserId) {
+        RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add yourself as an admin user to a group.');
+      }
+      // If not admin, then group must be public or by request.
+      if (!$requestToAddAdminUser && in_array($groupUserInfo->joining_method, ['I', 'A'])) {
+        RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add yourself as to an invite only or admin managed (private) group.');
+      }
+      if (!$requestToAddAdminUser && $groupUserInfo->joining_method === 'I') {
+        $item['values']['pending'] = 't';
+      }
+    }
+    if (isset($item['values']) && !empty($item['values']['id'])) {
+      // Payload contains an existing location ID, so just join it to the group.
+      $joinItem = [
+        'values' => [
+          'group_id' => $id,
+          'user_id' => $item['values']['id'],
+          'pending' => $item['values']['pending'] ?? 'f',
+          'administrator' => $item['values']['administrator'] ?? 'f',
+        ],
+      ];
+      $r = rest_crud::create('groups_user', $joinItem);
+      echo json_encode($r);
+      http_response_code(201);
+      header("Location: $r[href]");
+    }
+  }
+
+  /**
+   * API endpoint to delete users from a group.
+   *
+   * @param int $id
+   *   Group ID.
+   */
+  public function groupsDeleteIdUsersId($id) {
+    $userId = $this->uri->last_segment();
+    // User ID must be same as logged in user, or logged in user must be group
+    // admin.
+    if ($userId != RestObjects::$clientUserId) {
+      $authUserId = RestObjects::$clientUserId;
+      $authUserIsAdmin = RestObjects::$db->query("SELECT id FROM groups_users WHERE group_id=$id AND user_id=$authUserId AND deleted=false AND administrator=true")->current();
+      if (!$authUserIsAdmin) {
+        RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add users to a group you do not administer.');
+      }
+    }
+    // Select the record.
+    $guId = RestObjects::$db->query("SELECT id FROM groups_users WHERE group_id=$id AND user_id=$userId AND deleted=false")->current();
+    if (!$guId) {
+      RestObjects::$apiResponse->fail('Not found', 404, 'User is not a member of the group.');
+    }
+    kohana::log('debug', "Deleting user $userId (groups_user_id $guId->id)");
+    rest_crud::delete('groups_user', $guId->id);
+  }
+
+  /**
    * End-point to GET a list of locations.
    *
    * Returns locations for user of website plus public locations.
@@ -3236,14 +3470,20 @@ SQL;
    *   ID of the location.
    */
   public function locationsGetId($id) {
-    $websiteFilter = 't2.website_id=' . RestObjects::$clientWebsiteId;
-    $userFilter = 't1.created_by_id=' . RestObjects::$clientUserId;
-    $webUserFilter = "($websiteFilter AND $userFilter)";
-    $publicFilter = 't1.public=true';
-    $extraFilter = "AND ($webUserFilter OR $publicFilter)";
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      // Normal users can access public locations, or their own locations in
+      // the current website.
+      $filter = 'AND (t1.public=true OR (t2.website_id=' . RestObjects::$clientWebsiteId .
+        ' AND t1.created_by_id=' . RestObjects::$clientUserId . ')';
+    }
+    else {
+      // Site editor or admin users can access public locations, or any
+      // location in the current website.
+      $filter = 'AND (t1.public=true OR t2.website_id=' . RestObjects::$clientWebsiteId . ')';
+    }
     // Call read() with userFilter = FALSE as public locations may be
     // created by another user.
-    rest_crud::read('location', $id, $extraFilter, FALSE);
+    rest_crud::read('location', $id, $filter, FALSE);
   }
 
   /**
@@ -3264,7 +3504,13 @@ SQL;
   public function locationsPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('location', $id, $putArray);
+    // Update only allowed on this website.
+    $preconditions = ['websites[].id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    $r = rest_crud::update('location', $id, $putArray, $preconditions);
     echo json_encode($r);
   }
 
@@ -3280,8 +3526,89 @@ SQL;
     if (empty(RestObjects::$clientUserId)) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
     }
+    // Delete only allowed on this website.
+    $preconditions = ['websites[].id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    rest_crud::delete('location', $id, $preconditions);
+  }
+
+  /**
+   * End-point to GET an list of sample_media.
+   */
+  public function locationMediaGet() {
+    rest_crud::readList('location_medium');
+  }
+
+  /**
+   * End-point to GET a location_media by ID.
+   *
+   * @param int $id
+   *   location media ID.
+   */
+  public function locationMediaGetId($id) {
+    rest_crud::read(
+      'location_medium',
+      $id,
+      'AND t3.website_id=' . RestObjects::$clientWebsiteId,
+      // If user website site role known, allow access if admin or site editor,
+      // else must belong to user.
+      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2
+    );
+  }
+
+  /**
+   * API end-point to POST a location_media to create.
+   */
+  public function locationMediaPost() {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    // Create only allowed on this website.
+    $preconditions = ['location.websites[].id' => RestObjects::$clientWebsiteId];
+    $r = rest_crud::create('location_medium', $item, $preconditions);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to PUT to an existing location_medium to update.
+   */
+  public function locationMediaPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    // Update only allowed on this website.
+    $preconditions = ['location.websites[].id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    $r = rest_crud::update('location_medium', $id, $putArray, $preconditions);
+    echo json_encode($r);
+  }
+
+  /**
+   * API end-point to DELETE a location_medium.
+   *
+   * Will only be deleted if the location_medium was created by the current user.
+   *
+   * @param int $id
+   *   location medium ID to delete.
+   */
+  public function locationMediaDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Update only allowed on this website.
+    $preconditions = ['location.websites[].id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
     // Delete as long as created by this user.
-    rest_crud::delete('location', $id, ['created_by_id' => RestObjects::$clientUserId]);
+    rest_crud::delete('location_medium', $id, $preconditions);
   }
 
   /**
@@ -3298,7 +3625,14 @@ SQL;
    *   Sample media ID.
    */
   public function sampleMediaGetId($id) {
-    rest_crud::read('sample_medium', $id);
+    rest_crud::read(
+      'sample_medium',
+      $id,
+      'AND t4.website_id=' . RestObjects::$clientWebsiteId,
+      // If user website site role known, allow access if admin or site editor,
+      // else must belong to user.
+      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2
+    );
   }
 
   /**
@@ -3321,7 +3655,13 @@ SQL;
   public function sampleMediaPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('sample_medium', $id, $putArray);
+    // Update only allowed on this website.
+    $preconditions = ['sample.survey.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    $r = rest_crud::update('sample_medium', $id, $putArray, $preconditions);
     echo json_encode($r);
   }
 
@@ -3339,8 +3679,13 @@ SQL;
     if (empty(RestObjects::$clientUserId)) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
     }
+    $preconditions = ['sample.survey.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
     // Delete as long as created by this user.
-    rest_crud::delete('sample_medium', $id, ['created_by_id' => RestObjects::$clientUserId]);
+    rest_crud::delete('sample_medium', $id, $preconditions);
   }
 
   /**
@@ -3359,7 +3704,14 @@ SQL;
    *   Sample ID.
    */
   public function samplesGetId($id) {
-    rest_crud::read('sample', $id, 'AND t2.website_id=' . RestObjects::$clientWebsiteId);
+    rest_crud::read(
+      'sample',
+      $id,
+      'AND t2.website_id=' . RestObjects::$clientWebsiteId,
+      // If user website site role known, allow access if admin or site editor,
+      // else must belong to user.
+      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2
+    );
   }
 
   /**
@@ -3396,7 +3748,18 @@ SQL;
   public function samplesPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('sample', $id, $putArray);
+    // Update only allowed on this website.
+    $preconditions = ['survey.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    $r = rest_crud::update(
+      'sample',
+      $id,
+      $putArray,
+      $preconditions
+    );
     echo json_encode($r);
   }
 
@@ -3407,15 +3770,18 @@ SQL;
    *
    * @param int $id
    *   Sample ID to delete.
-   *
-   * @todo Safety check it's from the correct website.
    */
   public function samplesDeleteId($id) {
     if (empty(RestObjects::$clientUserId)) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
     }
-    // Delete as long as created by this user.
-    rest_crud::delete('sample', $id, ['created_by_id' => RestObjects::$clientUserId]);
+    // Delete only allowed on this website.
+    $preconditions = ['survey.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    rest_crud::delete('sample', $id, $preconditions);
   }
 
   /**
@@ -3445,7 +3811,7 @@ SQL;
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user not found.');
     }
     if (empty($user->site_role_id) && empty($user->core_role_id)) {
-      RestObjects::$apiResponse->fail('Unauthorized', 401, 'User does not have required level of access to this website.');
+      RestObjects::$apiResponse->fail('Forbidden', 403, 'User does not have required level of access to this website.');
     }
   }
 
@@ -3479,7 +3845,7 @@ SQL;
       if ($check->count === '0') {
         RestObjects::$apiResponse->fail('Not Found', 404, 'Attempt to update or delete a missing or already deleted record.');
       }
-      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Attempt to update or delete a record from another website.');
+      RestObjects::$apiResponse->fail('Forbidden', 403, 'Attempt to update or delete a record from another website.');
     }
   }
 
@@ -3525,7 +3891,7 @@ SQL;
     $this->assertRecordFromCurrentWebsite('surveys', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('survey', $id, $putArray, FALSE);
+    $r = rest_crud::update('survey', $id, $putArray);
     echo json_encode($r);
   }
 
@@ -3654,7 +4020,7 @@ SQL;
         && $putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
       $this->updateAttributeTermlist($putArray);
     }
-    $r = rest_crud::update('sample_attribute', $id, $putArray, FALSE);
+    $r = rest_crud::update('sample_attribute', $id, $putArray);
     echo json_encode($r);
   }
 
@@ -3815,7 +4181,7 @@ SQL;
       ])
       ->get()->current();
     if ($existing) {
-      $r = rest_crud::update('sample_attributes_website', $existing->id, $postArray, FALSE);
+      $r = rest_crud::update('sample_attributes_website', $existing->id, $postArray);
       echo json_encode($r);
     }
     else {
@@ -3834,7 +4200,7 @@ SQL;
     $this->assertRecordFromCurrentWebsite('sample_attributes_websites', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('sample_attributes_website', $id, $putArray, FALSE);
+    $r = rest_crud::update('sample_attributes_website', $id, $putArray);
     echo json_encode($r);
   }
 
@@ -3904,7 +4270,7 @@ SQL;
         && $putArray['values']['data_type'] === 'L' && !empty($putArray['terms'])) {
       $this->updateAttributeTermlist($putArray);
     }
-    $r = rest_crud::update('occurrence_attribute', $id, $putArray, FALSE);
+    $r = rest_crud::update('occurrence_attribute', $id, $putArray);
     echo json_encode($r);
   }
 
@@ -3966,7 +4332,7 @@ SQL;
       ])
       ->get()->current();
     if ($existing) {
-      $r = rest_crud::update('occurrence_attributes_website', $existing->id, $postArray, FALSE);
+      $r = rest_crud::update('occurrence_attributes_website', $existing->id, $postArray);
       echo json_encode($r);
     }
     else {
