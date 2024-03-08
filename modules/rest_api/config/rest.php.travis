@@ -41,7 +41,7 @@ $config['authentication_methods'] = [
     'allow_http' => TRUE,
     'allow_cors' => TRUE,
     'resource_options' => [
-      'reports' => ['featured' => true, 'limit_to_own_data' => TRUE],
+      'reports' => ['featured' => true],
       'entities' => [
         'samples',
         'occurrences',
