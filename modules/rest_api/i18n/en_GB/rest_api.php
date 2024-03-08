@@ -798,9 +798,60 @@ TXT;
 $lang['resources']['groups'] = 'Recording groups resource endpoint (sometimes called activities or projects).';
 $lang['resources']['GET groups'] = 'A list of recording groups. Default behaviour is to return groups the current user is a member of.';
 $lang['resources']['GET groups/{id}'] = 'Retrieves the information for a single recording group. The user must either be a member of the group, or the group must be public or membership by request.';
-$lang['resources']['GET groups/{id}/locations'] = 'Retrieves the locations that have been linked to a group, e.g. a project\'s list of recording sites.';
-$lang['resources']['POST groups/{id}/locations'] = '<p>Saves a recording location to the group. The payload format is the same as when POSTing a standalone location.</p>' .
-  str_replace('{{ url }}', '/index.php/services/rest/groups/5/locations', $locationsPostExample);
+$lang['resources']['GET groups/{id}/locations'] = <<<TXT
+Retrieves the locations that have been linked to a group, e.g. a project's list of recording
+sites. Note that the `id` value in the response is the ID of the join record between locations and
+groups, refer to the `location_id` value for the locations's ID.
+TXT;
+$postExample = str_replace('{{ url }}', '/index.php/services/rest/groups/5/locations', $locationsPostExample);
+$lang['resources']['POST groups/{id}/locations'] = <<<HTML
+<p>Saves a new recording location to the group. The payload format is the same as when POSTing a
+  standalone location.</p>
+$postExample
+<p>Alternatively an existing location may be posted into the group by supplying a single 'id' value
+  for the location ID in the list of values.</p>
+<p>Users must be members of the group before using this end-point.</p>
+HTML;
+$lang['resources']['GET groups/{id}/users'] = <<<TXT
+Retrieves the list of users that are members of a group. Unless the requesting user is admin of the
+group, the members included in the response will be limited to the current user. Note that the `id`
+value in the response is the ID of the join record between users and groups, refer to the `user_id`
+value for the user's ID.
+TXT;
+$lang['resources']['POST groups/{id}/users'] = <<<TXT
+<p>Adds the user to the list of members for the group. A group admin can add any users, other users
+can only add themselves (400 Bad Request will be returned if they attempt to add another user).
+Non-admin users can only add themselves to public groups; requests to join by-request groups will
+result in the user being flagged as pending and requests to join other group types will be denied.
+<p>Provide the following values in the submission:</p>
+<ul>
+  <li>id - user ID (required).</li>
+  <li>pending - optionally set to 't' or 'f' if the authenticated user is group admin and is adding
+    another user. Will default to 't' if the group joining method is by request, otherwise 'f'.
+    When adding themselves to a public or by-request group, normal users cannot control this flag.
+    </li>
+  <li>administrator - optionally set to 't' or 'f' if the authenticated user is group admin and is
+    adding another user. Defaults to 'f'. When adding themselves to a public or by-request group,
+    normal users cannot control this flag.</li>
+</ul>
+
+<p>Example submission:</p>
+<pre><code>
+POST /index.php/services/rest/groups/3/users
+{
+  "values": {
+    "id": 5,
+    "pending": "f",
+    "admin": "f",
+  }
+}
+</code></pre>
+TXT;
+$lang['resources']['DELETE groups/{id}/users/{id}'] = <<<TXT
+Removes the user ID from the list of members for the group. A group admin can remove any users,
+other users can only remove themselves (400 Bad Request will be returned if they attempt to remove
+another user).
+TXT;
 
 $lang['resources']['taxa'] = 'Provides search for taxonomy data.';
 $lang['resources']['GET taxa/search'] = <<<TXT

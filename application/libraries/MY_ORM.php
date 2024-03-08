@@ -488,10 +488,10 @@ class ORM extends ORM_Core {
       }
     }
     catch (Exception $e) {
-      kohana::log('error', 'Error: ' . $e->getMessage());
+      error_logger::log_error('Validation or save exception', $e);
       if (strpos($e->getMessage(), '_unique') !== FALSE) {
         // Duplicate key violation.
-        $this->errors = array('general' => 'You cannot add the record as it would create a duplicate.');
+        $this->errors = ['general' => 'You cannot add the record as it would create a duplicate.'];
         $this->uniqueKeyViolation = TRUE;
         return FALSE;
       }

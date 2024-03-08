@@ -407,10 +407,15 @@ class Rest_Controller extends Controller {
           ],
         ],
         'groups/{id}/locations' => [],
+        'groups/{id}/users' => [],
       ],
       'POST' => [
         'groups/{id}/locations' => [],
-      ]
+        'groups/{id}/users' => [],
+      ],
+      'DELETE' => [
+        'groups/{id}/users/{id}' => [],
+      ],
     ],
     'media-queue' => [
       'POST' => [
@@ -3288,16 +3293,152 @@ SQL;
   public function groupsPostIdLocations($id) {
     $post = file_get_contents('php://input');
     $item = json_decode($post, TRUE);
-    // Add sub-model for the linked group.
-    $item['groups_locations'] = [
-      'values' => [
-        'group_id' => $id,
-      ],
-    ];
-    $r = rest_crud::create('location', $item);
+    $existingUser = RestObjects::$db->query("SELECT id FROM groups_users WHERE group_id=$id AND deleted=false AND pending=false AND user_id=" . RestObjects::$clientUserId)->current();
+    if (!$existingUser) {
+      RestObjects::$apiResponse->fail('Forbidden', 403, 'Cannot post locations into a group you are not a member of.');
+    }
+    if (isset($item['values']) && !empty($item['values']['id'])) {
+      // Payload contains an existing location ID, so just join it to the group.
+      $joinItem = [
+        'values' => [
+          'group_id' => $id,
+          'location_id' => $item['values']['id'],
+        ],
+      ];
+      $r = rest_crud::create('groups_location', $joinItem);
+    }
+    else {
+      // Add sub-model for the linked group.
+      $item['groups_locations'] = [
+        ['values' => ['group_id' => $id]],
+      ];
+      $r = rest_crud::create('location', $item);
+    }
     echo json_encode($r);
     http_response_code(201);
     header("Location: $r[href]");
+  }
+
+  /**
+   * API endpoint to retrieve the list of member users for a group.
+   *
+   * @param int $id
+   *   Group ID.
+   */
+  public function groupsGetIdUsers($id) {
+    // Can only fetch users for a group you are an admin of, or the list is
+    // limited to just yourself.
+    $filters = [
+      "t2.id=$id",
+      't2.website_id=' . RestObjects::$clientWebsiteId,
+      "(t2.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=" . RestObjects::$clientUserId . ' AND gu.deleted=false AND gu.administrator=true) OR t1.user_id=' . RestObjects::$clientUserId . ')',
+    ];
+    $extraFilter = 'AND ' . implode(' AND ', $filters);
+    rest_crud::readList('groups_user', $extraFilter, FALSE);
+  }
+
+  /**
+   * API endpoint to post users into a group.
+   *
+   * @param int $id
+   *   Group ID.
+   */
+  public function groupsPostIdUsers($id) {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    if (!isset($item['values']['id']) || !preg_match('/^\d+$/', $item['values']['id'])) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Invalid or missing user ID');
+    }
+    $addingUserId = $item['values']['id'];
+    $authUserId = RestObjects::$clientUserId;
+    $qry = <<<SQL
+SELECT gu1.user_id as existing_user_id, gu2.administrator as auth_user_is_admin, g.created_by_id, g.joining_method
+FROM groups g
+LEFT JOIN groups_users gu1 ON gu1.group_id=g.id AND gu1.deleted=false AND gu1.pending=false AND gu1.user_id=$addingUserId
+LEFT JOIN groups_users gu2 ON gu2.group_id=g.id AND gu2.deleted=false AND gu2.pending=false AND gu2.user_id=$authUserId
+WHERE g.id=$id AND g.deleted=false
+SQL;
+    $groupUserInfo = RestObjects::$db->query($qry)->current();
+    kohana::log('debug', 'guInfo: ' . var_export($groupUserInfo, TRUE));
+    if ($groupUserInfo->existing_user_id) {
+      // Existing user. Can't re-add themselves.
+      if ($addingUserId == $authUserId) {
+        RestObjects::$apiResponse->fail('Conflict', 409, 'You are already a user of this group.');
+      }
+      // Only admin can add others.
+      if ($groupUserInfo->auth_user_is_admin === 'f') {
+        RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add other users to a group you are not admin of');
+      }
+      // Default administrator=false but allow override.
+      $defaults = [
+        'administrator' => 'f',
+        // If joining is by request, default pending=true but allow override.
+        'pending' => $groupUserInfo->joining_method === 'R' ? 't' : 'f',
+      ];
+      $item['values'] = array_merge($defaults, $item['values']);
+    }
+    elseif ($groupUserInfo->auth_user_is_admin === 't') {
+      // Group admin can add other users without restriction.
+    }
+    else {
+      // New user can only add themself.
+      if ($item['values']['id'] != RestObjects::$clientUserId) {
+        RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add other users to a group you are not a member of');
+      }
+      $requestToAddAdminUser = isset($item['values']['administrator']) && $item['values']['administrator'] !== 'f';
+      // Cannot add self as admin, unless also the group creator.
+      if ($requestToAddAdminUser && $groupUserInfo->created_by_id != RestObjects::$clientUserId) {
+        RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add yourself as an admin user to a group.');
+      }
+      // If not admin, then group must be public or by request.
+      if (!$requestToAddAdminUser && in_array($groupUserInfo->joining_method, ['I', 'A'])) {
+        RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add yourself as to an invite only or admin managed (private) group.');
+      }
+      if (!$requestToAddAdminUser && $groupUserInfo->joining_method === 'I') {
+        $item['values']['pending'] = 't';
+      }
+    }
+    if (isset($item['values']) && !empty($item['values']['id'])) {
+      // Payload contains an existing location ID, so just join it to the group.
+      $joinItem = [
+        'values' => [
+          'group_id' => $id,
+          'user_id' => $item['values']['id'],
+          'pending' => $item['values']['pending'] ?? 'f',
+          'administrator' => $item['values']['administrator'] ?? 'f',
+        ],
+      ];
+      $r = rest_crud::create('groups_user', $joinItem);
+      echo json_encode($r);
+      http_response_code(201);
+      header("Location: $r[href]");
+    }
+  }
+
+  /**
+   * API endpoint to delete users from a group.
+   *
+   * @param int $id
+   *   Group ID.
+   */
+  public function groupsDeleteIdUsersId($id) {
+    $userId = $this->uri->last_segment();
+    // User ID must be same as logged in user, or logged in user must be group
+    // admin.
+    if ($userId != RestObjects::$clientUserId) {
+      $authUserId = RestObjects::$clientUserId;
+      $authUserIsAdmin = RestObjects::$db->query("SELECT id FROM groups_users WHERE group_id=$id AND user_id=$authUserId AND deleted=false AND administrator=true")->current();
+      if (!$authUserIsAdmin) {
+        RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add users to a group you do not administer.');
+      }
+    }
+    // Select the record.
+    $guId = RestObjects::$db->query("SELECT id FROM groups_users WHERE group_id=$id AND user_id=$userId AND deleted=false")->current();
+    if (!$guId) {
+      RestObjects::$apiResponse->fail('Not found', 404, 'User is not a member of the group.');
+    }
+    kohana::log('debug', "Deleting user $userId (groups_user_id $guId->id)");
+    rest_crud::delete('groups_user', $guId->id);
   }
 
   /**

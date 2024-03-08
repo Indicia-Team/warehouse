@@ -959,7 +959,7 @@ SQL;
   }
 
   /**
-   * Function to save a submission into a sample model.
+   * Function to save a submission.
    *
    * The API response is echoed and appropriate http status set.
    *
@@ -973,6 +973,15 @@ SQL;
   private static function submit($entity, $obj, array $postObj) {
     $obj->submission = rest_crud::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
     $id = $obj->submit();
+    if (!$id) {
+      foreach ($obj->getAllErrors() as $msg) {
+        kohana::log('debug', "Message: $msg");
+        if ($msg === 'You cannot add the record as it would create a duplicate.') {
+          RestObjects::$apiResponse->fail('Conflict', 409, $msg);
+        }
+      }
+      RestObjects::$apiResponse->fail('Bad Request', 400, $obj->getAllErrors());
+    }
     if ($id) {
       $table = inflector::plural($entity);
       // ETag to provide version check on updates.
