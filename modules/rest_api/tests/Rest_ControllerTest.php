@@ -1243,7 +1243,6 @@ KEY;
     $this->assertEquals(150, $response['response']['values']['smpAttr:1']);
     // Redo the call, this time in verbose mode for attribute details.
     $response = $this->callService("samples/$id?verbose");
-    var_export($response);
     $this->assertArrayHasKey('smpAttr:1', $response['response']['values']);
     $attrVal = $response['response']['values']['smpAttr:1'];
     $this->assertArrayHasKey('attribute_id', $attrVal);
@@ -3005,10 +3004,86 @@ SQL;
       'centroid_sref' => 'ST1234',
       'centroid_sref_system' => 'OSGB',
     ];
-    $response = $this->callService("groups/1/locations", [], $values, [], 'POST');
+    $response = $this->callService("groups/1/locations", [], ['values' => $values]);
+    $this->assertEquals(403, $response['httpCode'], 'Posting a group location when not a member did not return 403 Forbidden');
+
+    // Make a new user a member of group 1.
+    $db = new Database();
+    $userId = $this->createExtraUser($db)['user_id'];
+    // Make a group member and a user of the website.
+    $db->query("insert into groups_users(group_id, user_id, created_by_id, created_on, updated_by_id, updated_on) values (1, $userId, 1, now(), 1, now())");
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      " VALUES ($userId, 1, 3, 1, now(), 1, now())");
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120);
+    $response = $this->callService("groups/1/locations", [], ['values' => $values]);
     $this->assertEquals(201, $response['httpCode'], 'Posting a group location did not return a success response');
+
     $response = $this->callService("groups/1/locations", []);
-    $this->assertEquals(1, count($response['response']), 'Group 1 should have 2 locations after adding one.');
+    $this->assertEquals(2, count($response['response']), 'Group 1 should have 2 locations after adding one.');
+    // POST a location to test adding separately.
+    $response = $this->callService("locations", [], ['values' => $values]);
+    $newLocationId = $response['response']['values']['id'];
+    $values = [
+      'id' => $newLocationId,
+    ];
+    $response = $this->callService("groups/1/locations", [], ['values' => $values]);
+    $this->assertEquals(201, $response['httpCode'], 'Posting a group an existing location did not return a success response');
+    $response = $this->callService("groups/1/locations", [], ['values' => $values]);
+    $this->assertEquals(409, $response['httpCode'], 'Posting a group an existing location twice did not return a conflict');
+    $this->assertEquals(3, count($response['response']), 'Group 1 should have 3 locations after adding two.');
+  }
+
+  public function testGroups_getPostDeleteUser() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Get initial count.
+    $response = $this->callService("groups/1/users");
+    $initialGroupUserCount = count($response['response']);
+    $db = new Database();
+    $userId2 = $this->createExtraUser($db)['user_id'];
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
+      "VALUES ($userId2, 1, 3, 1, now(), 1, now())");
+    $values = [
+      'id' => 1,
+    ];
+    $response = $this->callService("groups/1/users", [], ['values' => $values]);
+    $this->assertEquals(201, $response['httpCode'], 'User could not join public group');
+    $response = $this->callService("groups/1/users");
+    $this->assertEquals($initialGroupUserCount + 1, count($response['response']), 'User was not self-added to group');
+    $response = $this->callService("groups/2/users", [], ['values' => $values]);
+    $this->assertEquals(403, $response['httpCode'], 'User joining private group should be forbidden');
+    $values = [
+      'id' => $userId2,
+    ];
+    $response = $this->callService("groups/1/users", [], ['values' => $values]);
+    $this->assertEquals(403, $response['httpCode'], 'User should not be able to add another user to group');
+    $db->query('UPDATE groups_users SET administrator=true WHERE user_id=1 AND group_id=1');
+    $response = $this->callService("groups/1/users", [], ['values' => $values]);
+    $this->assertEquals(201, $response['httpCode'], 'Admin user should be able to add other members to group');
+    $response = $this->callService("groups/1/users");
+    $this->assertEquals($initialGroupUserCount + 2, count($response['response']), 'User was not added to group by admin');
+    // Auth as 2nd user as they aren't admin.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId2, time() + 120);
+    $response = $this->callService("groups/1/users");
+    $this->assertEquals(1, count($response['response']), 'Non admin user should only see self in group');
+    $this->assertEquals($userId2, $response['response'][0]['values']['user_id'], 'Non admin user seeing incorrect user details in group');
+    $response = $this->callService("groups/1/users/1", FALSE, [], [], 'DELETE');
+    $this->assertEquals(403, $response['httpCode'], 'Non admin user should not be able to remove other users');
+    $response = $this->callService("groups/1/users/$userId2", FALSE, [], [], 'DELETE');
+    $this->assertEquals(204, $response['httpCode'], 'Non admin user should be able to remove self from group');
+    $response = $this->callService("groups/1/users");
+    $this->assertEquals(0, count($response['response']), 'User was not deleted from group by self');
+    // Add user 2 back.
+    $response = $this->callService("groups/1/users", [], ['values' => $values]);
+    $this->assertEquals(201, $response['httpCode']);
+    // Auth back as admin user.
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService("groups/1/users/999", FALSE, [], [], 'DELETE');
+    $this->assertEquals(404, $response['httpCode'], 'DELETE invalid group user ID should return 404');
+    $response = $this->callService("groups/1/users/$userId2", FALSE, [], [], 'DELETE');
+    $this->assertEquals(204, $response['httpCode'], 'DELETE returned incorrect response');
+    $response = $this->callService("groups/1/users");
+    $this->assertEquals($initialGroupUserCount + 1, count($response['response']), 'User was not deleted from group by admin');
   }
 
   public function testAcceptHeader() {
@@ -3078,7 +3153,7 @@ SQL;
     self::$websitePassword = '---';
     self::$userPassword = '---';
 
-    $response = $this->callService($resource, $query, TRUE);
+    $response = $this->callService($resource, $query);
     $this->assertEquals(
       401, $response['httpCode'],
       "Incorrect secret or password passed to /$resource but request " .
@@ -3099,7 +3174,7 @@ SQL;
     self::$config['shared_secret'] = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
-    $response = $this->callService($resource, $query, TRUE);
+    $response = $this->callService($resource, $query);
     $this->assertEquals(
       401, $response['httpCode'],
       "Incorrect userId passed to /$resource but request authorised. Http " .
