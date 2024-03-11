@@ -23,6 +23,17 @@ $core_fixture = [
       "password" => "password",
       "verification_checks_enabled" => 'true',
     ],
+    [
+      "title" => "Other website",
+      "description" => "Website for unit testing sharing modes",
+      "created_on" => "2016-07-22 16:00:00",
+      "created_by_id" => 1,
+      "updated_on" => "2016-07-22 16:00:00",
+      "updated_by_id" => 1,
+      "url" => "http:,//www.indicia2.org.uk",
+      "password" => "password",
+      "verification_checks_enabled" => 'true',
+    ],
   ],
   "users_websites" => [
     [
