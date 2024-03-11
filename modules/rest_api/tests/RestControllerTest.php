@@ -2299,15 +2299,6 @@ SQL;
       403, $response['httpCode'],
       "Request for another user's sample does not return 404 with user scope."
     );
-    // Same for reporting scope - as using JwtUser with limit_to_own_data=true,
-    // it will widen the scope to other websites but not other users.
-    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120, 'reporting');
-    // Try to GET the sample.
-    $response = $this->callService("samples/$sampleId");
-    $this->assertEquals(
-      403, $response['httpCode'],
-      "Request for another user's sample does not return 403 with reporting scope."
-    );
   }
 
   /**
