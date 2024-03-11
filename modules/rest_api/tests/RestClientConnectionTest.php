@@ -147,7 +147,7 @@ SQL;
   private function doSomeReportPermissionTests() {
     // Test rest_api_client_connections.limit_to_reports.
     $r = $this->callService('reports/library/months/filterable_species_counts.xml', ['proj_id' => 'testreportconnection']);
-    $this->assertEquals(401, $r['httpCode'], "$this->authMethod request with unauthorised report did not return 401 unauthorised.");
+    $this->assertEquals(403, $r['httpCode'], "$this->authMethod request with unauthorised report did not return 403 Forbidden.");
     // Test that proj_id is checked.
     $r = $this->callService('reports/library/occurrences/filterable_explore_list.xml', ['proj_id' => 'wrongconnection']);
     $this->assertEquals(401, $r['httpCode'], "$this->authMethod request with incorrect proj_id succeeded");
@@ -214,7 +214,7 @@ SQL;
   private function doSomeDataResourcesPermissionTests() {
     // Test rest_api_client_connections.limit_to_data_resources.
     $r = $this->callService('locations', ['proj_id' => 'testreportconnection']);
-    $this->assertEquals(401, $r['httpCode'], "$this->authMethod resource request for disallowed data resource did not return 401 unauthorised.");
+    $this->assertEquals(403, $r['httpCode'], "$this->authMethod resource request for disallowed data resource did not return 403 Forbidden.");
     // Test that proj_id is checked.
     $r = $this->callService('occurrences', ['proj_id' => 'wrongconnection']);
     $this->assertEquals(401, $r['httpCode'], "$this->authMethod resource request with incorrect proj_id succeeded");
