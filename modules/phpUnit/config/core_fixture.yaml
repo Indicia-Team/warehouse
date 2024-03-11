@@ -14,6 +14,24 @@ websites:
     password: "password"
     verification_checks_enabled: "true"
 
+index_websites_website_agreements:
+  -
+    from_website_id: 1
+    to_website_id: 1
+    provide_for_reporting: "t"
+    receive_for_reporting: "t"
+    provide_for_peer_review: "t"
+    receive_for_peer_review: "t"
+    provide_for_verification: "t"
+    receive_for_verification: "t"
+    provide_for_data_flow: "t"
+    receive_for_data_flow: "t"
+    provide_for_moderation: "t"
+    receive_for_moderation: "t"
+    provide_for_editing: "t"
+    receive_for_editing: "t"
+
+
 users_websites:
   -
     user_id: 1
