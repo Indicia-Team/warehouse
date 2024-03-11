@@ -962,7 +962,7 @@ class Rest_Controller extends Controller {
           }
           if (!empty($this->limitToDataResources)) {
             if (!in_array(strtolower($this->resourceName), $this->limitToDataResources)) {
-              RestObjects::$apiResponse->fail('Unauthorized', 401, "Unauthorised data resource $this->resourceName requested - limited to " . implode(', ', $this->limitToDataResources));
+              RestObjects::$apiResponse->fail('Forbidden', 403, "Unauthorised data resource $this->resourceName requested - limited to " . implode(', ', $this->limitToDataResources));
             }
           }
           $this->request = $this->method === 'GET' ? $_GET : $_POST;
