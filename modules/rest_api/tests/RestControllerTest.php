@@ -588,7 +588,7 @@ class RestControllerTest extends BaseRestClientTest {
     "values ('test_extrauser$tm', (select max(id) from people), now(), 1, now(), 1)");
     return [
       'user_id' => $db->query('select max(id) from users')->current()->max,
-      'person_id' => $db->query('select max(id) from users')->current()->max,
+      'person_id' => $db->query('select max(id) from people')->current()->max,
     ];
   }
 
