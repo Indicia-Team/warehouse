@@ -15,6 +15,7 @@
     { "sql": "system_function", "type": "string" },
     { "sql": "term_name", "type": "string" },
     { "sql": "term_identifier", "type": "string" },
+    { "sql": "multi_value", "type": "boolean" },
     { "sql": "allow_ranges", "type": "boolean" },
     { "sql": "unit", "type": "string" },
     { "sql": "image_path", "type": "string" }
