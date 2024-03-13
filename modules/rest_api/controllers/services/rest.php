@@ -922,10 +922,14 @@ class Rest_Controller extends Controller {
       }
       $this->authenticate();
       $this->applyCorsHeader();
-      if (!isset($this->resourceOptions)
-          && isset($this->authConfig['resource_options'])
-          && isset($this->authConfig['resource_options'][$this->resourceName])) {
-        $this->resourceOptions = $this->authConfig['resource_options'][$this->resourceName];
+      if (!isset($this->resourceOptions) && isset($this->authConfig['resource_options'])) {
+        // Resource options may be at the top level of the config (e.g. reports).
+        if (isset($this->authConfig['resource_options'][$this->resourceName])) {
+          $this->resourceOptions = $this->authConfig['resource_options'][$this->resourceName];
+        }
+        elseif ($this->elasticProxy && isset($this->authConfig['resource_options']['elasticsearch'])) {
+          $this->resourceOptions = $this->authConfig['resource_options']['elasticsearch'][$this->resourceName] ?? [];
+        }
       }
       // Caching can be enabled via a query string parameter if not already
       // forced by the authorisation config.
