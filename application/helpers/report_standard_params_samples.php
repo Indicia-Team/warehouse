@@ -80,6 +80,13 @@ class report_standard_params_samples {
         'description' => 'Include or exclude the list of locations',
         'lookup_values' => 'in:Include,not in:Exclude',
       ],
+      'quality' => [
+        'datatype' => 'lookup',
+        'default' => 'in',
+        'display' => 'Quality filter mode',
+        'description' => 'Include or exclude the list of quality codes',
+        'lookup_values' => 'in:Include,not in:Exclude',
+      ],
       'smp_id' => [
         'datatype' => 'lookup',
         'default' => '',
@@ -310,20 +317,67 @@ class report_standard_params_samples {
           ],
         ],
       ],
-      'quality' => array('datatype' => 'lookup', 'display' => 'Quality',
-        'description' => 'Minimum quality of records to include',
+      'quality' => [
+        'datatype' => 'lookup',
+        'display' => 'Quality',
+        'multiselect' => TRUE,
+        'param_op' => 'inOrNotIn',
+        'description' => 'Sample quality filter',
         'lookup_values' => 'V:Accepted records only,P:Not reviewed,!D:Exclude queried or not accepted records,' .
           '!R:Exclude not accepted records,R:Not accepted records only,DR:Queried or not accepted records,all:All records',
-        'wheres' => array(
-          array('value' => 'V', 'operator' => 'equal', 'sql' => "s.record_status='V'"),
-          array('value' => 'P', 'operator' => 'equal', 'sql' => "s.record_status = 'C'"),
-          array('value' => '!D', 'operator' => 'equal', 'sql' => "s.record_status not in ('R','D')"),
-          array('value' => '!R', 'operator' => 'equal', 'sql' => "s.record_status<>'R'"),
-          array('value' => 'R', 'operator' => 'equal', 'sql' => "s.record_status='R'"),
-          array('value' => 'DR', 'operator' => 'equal', 'sql' => "s.record_status in ('R','D')"),
+        'wheres' => [
+          // Query has been answered.
+          [
+            'value' => 'A',
+            'operator' => 'equal',
+            'sql' => "s.query='A'",
+          ],
+          // Queried (or legacy Dubious).
+          [
+            'value' => 'D',
+            'operator' => 'equal',
+            'sql' => "(s.record_status='D' or s.query='Q')",
+          ],
+          // Pending.
+          [
+            'value' => 'P',
+            'operator' => 'equal',
+            'sql' => "s.record_status='C' and (s.query<>'Q' or s.query is null)",
+          ],
+          // Not accepted.
+          [
+            'value' => 'R',
+            'operator' => 'equal',
+            'sql' => "s.record_status='R'",
+          ],
+          // Accepted.
+          [
+            'value' => 'V',
+            'operator' => 'equal',
+            'sql' => "s.record_status='V'",
+          ],
+          // The following parameters are legacy to support old filters.
+          // Plausible or accepted.
+          [
+            'value' => '-3',
+            'operator' => 'equal',
+            'sql' => "(s.record_status='V' or s.record_substatus<=3)",
+          ],
+          // Not queried or dubious.
+          [
+            'value' => '!D',
+            'operator' => 'equal',
+            'sql' => "s.record_status<>'D' and (s.query<>'Q' or s.query is null)",
+          ],
+          // Not rejected.
+          [
+            'value' => '!R',
+            'operator' => 'equal',
+            'sql' => "s.record_status<>'R'",
+          ],
           // The all filter does not need any SQL
-        )
-      ),
+        ],
+      ],
       'has_photos' => [
         'datatype' => 'boolean',
         'display' => 'Photos',
@@ -422,18 +476,20 @@ class report_standard_params_samples {
    * @return array
    */
   public static function getDefaultParameterValues() {
-    return array(
+    return [
+      'quality_op' => 'in',
       'smp_id_op' => '=',
       'website_list_op' => 'in',
       'survey_list_op' => 'in',
       'input_form_list_op' => 'in',
       'location_list_op' => 'in',
       'indexed_location_list_op' => 'in',
+      'quality_op_context' => 'in',
       'website_list_op_context' => 'in',
       'survey_list_op_context' => 'in',
       'input_form_list_op_context' => 'in',
       'location_list_op_context' => 'in',
-      'indexed_location_list_op_context' => 'in'
-    );
+      'indexed_location_list_op_context' => 'in',
+    ];
   }
 }
