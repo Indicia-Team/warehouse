@@ -48,32 +48,60 @@ class report_standard_params_samples {
   }
 
   /**
-   * @return array List of parameters that have an associated operation parameter. E.g. along
-   * with the smp_id parameter you can supply smp_id='>=' to define the operation
+   * Gets parameter details related to operations on other parameter values.
+   *
+   * List of parameters that have an associated operation parameter. E.g. along
+   * with the occ_id parameter you can supply occ_id_op='>=' to define the operation
    * to be applied in the filter.
+   *
    * @return array
+   *   List of operation parameters with configuration.
    */
   public static function getOperationParameters() {
-    return array(
-      'smp_id' => array('datatype' => 'lookup', 'default' => '', 'display' => 'ID operation',
-        'description' => 'Sample ID lookup operation', 'lookup_values' => '=:is,>=:is at least,<=:is at most'
-      ),
-      'website_list' => array('datatype' => 'lookup', 'default' => 'in', 'display' => 'Website IDs mode',
-        'description' => 'Include or exclude the list of websites', 'lookup_values' => 'in:Include,not in:Exclude'
-      ),
-      'survey_list' => array('datatype' => 'lookup', 'default' => 'in', 'display' => 'Survey IDs mode',
-        'description' => 'Include or exclude the list of surveys', 'lookup_values' => 'in:Include,not in:Exclude'
-      ),
-      'input_form_list' => array('datatype' => 'lookup', 'default' => 'in', 'display' => 'Input forms mode',
-        'description' => 'Include or exclude the list of input forms', 'lookup_values' => 'in:Include,not in:Exclude'
-      ),
-      'location_list' => array('datatype' => 'lookup', 'default' => 'in', 'display' => 'Location IDs mode',
-        'description' => 'Include or exclude the list of locations', 'lookup_values' => 'in:Include,not in:Exclude'
-      ),
-      'indexed_location_list' => array('datatype' => 'lookup', 'default' => 'in', 'display' => 'Indexed location IDs mode',
-        'description' => 'Include or exclude the list of indexed locations', 'lookup_values' => 'in:Include,not in:Exclude'
-      )
-    );
+    return [
+      'indexed_location_list' => [
+        'datatype' => 'lookup',
+        'default' => 'in',
+        'display' => 'Indexed location IDs mode',
+        'description' => 'Include or exclude the list of indexed locations',
+        'lookup_values' => 'in:Include,not in:Exclude',
+      ],
+      'input_form_list' => [
+        'datatype' => 'lookup',
+        'default' => 'in',
+        'display' => 'Input forms mode',
+        'description' => 'Include or exclude the list of input forms',
+        'lookup_values' => 'in:Include,not in:Exclude',
+      ],
+      'location_list' => [
+        'datatype' => 'lookup',
+        'default' => 'in',
+        'display' => 'Location IDs mode',
+        'description' => 'Include or exclude the list of locations',
+        'lookup_values' => 'in:Include,not in:Exclude',
+      ],
+      'smp_id' => [
+        'datatype' => 'lookup',
+        'default' => '',
+        'display' => 'ID operation',
+        'description' => 'Sample ID lookup operation',
+        'lookup_values' => '=:is,>=:is at least,<=:is at most',
+      ],
+      'survey_list' => [
+        'datatype' => 'lookup',
+        'default' => 'in',
+        'display' => 'Survey IDs mode',
+        'description' => 'Include or exclude the list of surveys',
+        'lookup_values' => 'in:Include,not in:Exclude'
+      ],
+      'website_list' => [
+        'datatype' => 'lookup',
+        'default' => 'in',
+        'display' => 'Website IDs mode',
+        'description' => 'Include or exclude the list of websites',
+        'lookup_values' => 'in:Include,not in:Exclude'
+      ],
+    ];
   }
 
   /**
