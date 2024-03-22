@@ -2227,8 +2227,6 @@ class Rest_Controller extends Controller {
       ['limit' => REST_API_DEFAULT_PAGE_SIZE],
       $params
     );
-    // Specified reports are allowed even if unrestricted.
-    $this->reportEngine->setAuthorisedReports($this->limitToReports);
     // Get the output, setting the option to load a pg result object rather
     // than populated array unless we are going to cache the result in which
     // case we need it all.
