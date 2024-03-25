@@ -949,7 +949,8 @@ SET website_id=su.website_id,
   media_count=(SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
   external_key=s.external_key,
   sensitive=(SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
-  private=s.privacy_precision IS NOT NULL
+  private=s.privacy_precision IS NOT NULL,
+  hide_sample_as_private=(s.privacy_precision IS NOT NULL AND s.privacy_precision=0)
 FROM samples s
 #join_needs_update#
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -1170,7 +1171,7 @@ INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
             group_id, record_status, training, query, parent_sample_id, media_count, external_key,
-            sensitive, private)
+            sensitive, private, hide_sample_as_private)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE
     WHEN s.privacy_precision IS NOT NULL OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL THEN NULL
@@ -1188,7 +1189,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
   (SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
   s.external_key,
   (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
-  s.privacy_precision IS NOT NULL
+  s.privacy_precision IS NOT NULL, s.privacy_precision IS NOT NULL AND s.privacy_precision=0
 FROM samples s
 #join_needs_update#
 LEFT JOIN cache_samples_functional cs on cs.id=s.id
@@ -1677,6 +1678,7 @@ SET sample_id=o.sample_id,
   end,
   sensitive=o.sensitivity_precision is not null,
   private=s.privacy_precision is not null,
+  hide_sample_as_private=(s.privacy_precision IS NOT NULL AND s.privacy_precision=0),
   release_status=o.release_status,
   marine_flag=cttl.marine_flag,
   freshwater_flag=cttl.freshwater_flag,
@@ -1914,7 +1916,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             created_by_id, group_id, taxa_taxon_list_id, preferred_taxa_taxon_list_id,
             taxon_meaning_id, taxa_taxon_list_external_key, family_taxa_taxon_list_id,
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
-            certainty, query, sensitive, private, release_status,
+            certainty, query, sensitive, private, hide_sample_as_private, release_status,
             marine_flag, freshwater_flag, terrestrial_flag, non_native_flag, data_cleaner_result,
             training, zero_abundance, licence_id, import_guid, confidential, external_key,
             taxon_path, blocked_sharing_tasks, parent_sample_id, verification_checks_enabled,
@@ -1940,7 +1942,7 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         else 'U'
     end,
     null,
-    o.sensitivity_precision is not null, s.privacy_precision is not null, o.release_status,
+    o.sensitivity_precision is not null, s.privacy_precision is not null, s.privacy_precision IS NOT NULL AND s.privacy_precision=0, o.release_status,
     cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag, null,
     o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key,
     ctp.path,

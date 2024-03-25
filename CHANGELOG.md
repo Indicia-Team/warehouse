@@ -1,8 +1,16 @@
+# Version 9.0.0
+
+See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade process.
+
+* Setting `samples.privacy_precision` to 0 is now treated as a special value which causes the
+  sample to be hidden in default report behaviour. See https://github.com/BiologicalRecordsCentre/ABLE/issues/468.
+  There is a new field in the cache tables, `hide_sample_as_private`, to support this.
+
 # Version 8.27.0
 
-* Adds Elastic Stack containers to the Docker development system. Security 
+* Adds Elastic Stack containers to the Docker development system. Security
   features have been enabled by way of a demonstration though these are not
-  needed in a dev environment. 
+  needed in a dev environment.
     - Elasticsearch indexes are configured for samples and occurrences.
     - Logstash pipelines are configured to populate the indexes.
     - Kibana can be used to explore the indexes.

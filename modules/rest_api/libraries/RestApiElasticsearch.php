@@ -446,6 +446,11 @@ class RestApiElasticsearch {
       $queryStringParts = [];
       if (empty($this->resourceOptions['allow_confidential']) || $this->resourceOptions['allow_confidential'] !== TRUE) {
         $queryStringParts[] = 'metadata.confidential:false';
+        // Only user who owns record or verifier can see private samples,
+        // unless confidential access allowed.
+        if (substr(RestObjects::$scope, 0, 4) !== 'user' && RestObjects::$scope !== 'verification') {
+          $filters[] = ['term' => ['metadata.hide_sample_as_private' => false]];
+        }
       }
       if (empty($this->resourceOptions['allow_unreleased']) || $this->resourceOptions['allow_unreleased'] !== TRUE) {
         $queryStringParts[] = 'metadata.release_status:R';

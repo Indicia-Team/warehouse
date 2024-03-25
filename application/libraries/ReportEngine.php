@@ -1271,6 +1271,14 @@ SQL;
           ['snf.public_entered_sref', 'o.public_geom'],
           $query);
       }
+      // Also if the privacy_precision is 0 then hide_sample_as_private gets
+      // set, so hide these as well.
+      if ($this->reportReader->loadStandardParamsSet === 'samples') {
+        $query = str_replace('#filters#', "AND s.hide_sample_as_private<>true\n#filters#", $query);
+      }
+      elseif ($this->reportReader->loadStandardParamsSet === 'occurrences') {
+        $query = str_replace('#filters#', "AND o.hide_sample_as_private<>true\n#filters#", $query);
+      }
     }
     $having = empty($this->having) ? '' : "\nHAVING " . implode(' AND ', $this->having);
     // Remove the markers left in the query to show where to insert joins,
