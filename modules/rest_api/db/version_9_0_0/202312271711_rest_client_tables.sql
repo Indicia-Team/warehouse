@@ -1,4 +1,4 @@
-CREATE TABLE rest_api_clients
+CREATE TABLE IF NOT EXISTS rest_api_clients
 (
     id serial NOT NULL,
     title character varying NOT NULL,
@@ -40,7 +40,7 @@ COMMENT ON COLUMN rest_api_clients.updated_on IS 'Date this record was last upda
 COMMENT ON COLUMN rest_api_clients.updated_by_id IS 'Foreign key to the users table (last updater).';
 COMMENT ON COLUMN rest_api_clients.deleted IS 'Has this record been deleted?';
 
-CREATE TABLE rest_api_client_connections
+CREATE TABLE IF NOT EXISTS rest_api_client_connections
 (
     id serial NOT NULL,
     title character varying NOT NULL,
