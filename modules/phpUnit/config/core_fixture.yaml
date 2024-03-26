@@ -13,23 +13,16 @@ websites:
     url: "http://www.indicia.org.uk"
     password: "password"
     verification_checks_enabled: "true"
-
-index_websites_website_agreements:
   -
-    from_website_id: 1
-    to_website_id: 1
-    provide_for_reporting: "t"
-    receive_for_reporting: "t"
-    provide_for_peer_review: "t"
-    receive_for_peer_review: "t"
-    provide_for_verification: "t"
-    receive_for_verification: "t"
-    provide_for_data_flow: "t"
-    receive_for_data_flow: "t"
-    provide_for_moderation: "t"
-    receive_for_moderation: "t"
-    provide_for_editing: "t"
-    receive_for_editing: "t"
+    title: "Other website"
+    description: "Website for unit testing sharing modes"
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+    url: "http://www.indicia2.org.uk"
+    password: "password"
+    verification_checks_enabled: "true"
 
 
 users_websites:
@@ -56,6 +49,14 @@ surveys:
     title: "Test survey 2"
     description: "Additional survey for unit testing"
     website_id: 1
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+  -
+    title: "Test survey 3"
+    description: "Additional survey for unit testing sharing modes"
+    website_id: 2
     created_on: "2016-07-22 16:00:00"
     created_by_id: 1
     updated_on: "2016-07-22 16:00:00"
@@ -650,13 +651,13 @@ samples:
     entered_sref: "SU01"
     entered_sref_system: "OSGB"
     comment: "Sample for unit testing with a \" double quote"
+    geom: "010300002031BF0D00010000000500000022CB05253C320BC1A8DBCE0C0A2F59411C20FAF43E320BC1C753950B8D3E59411E41523BB84209C15FFE7F4B893E59419FC6B2CFA94309C17135A151062F594122CB05253C320BC1A8DBCE0C0A2F5941"
     created_on: "2016-07-22 16:00:00"
     created_by_id: 1
     updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     recorder_names: "PHPUnit"
     record_status: "C"
-
   -
     survey_id: 1
     date_start: "2016-07-22"
@@ -665,6 +666,22 @@ samples:
     entered_sref: "SU01"
     entered_sref_system: "OSGB"
     comment: "Sample for unit testing with a \nline break"
+    geom: "010300002031BF0D00010000000500000022CB05253C320BC1A8DBCE0C0A2F59411C20FAF43E320BC1C753950B8D3E59411E41523BB84209C15FFE7F4B893E59419FC6B2CFA94309C17135A151062F594122CB05253C320BC1A8DBCE0C0A2F5941"
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+    recorder_names: "PHPUnit"
+    record_status: "C"
+  -
+    survey_id: 3
+    date_start: "2016-07-22"
+    date_end: "2016-07-22"
+    date_type: "D"
+    entered_sref: "SU01"
+    entered_sref_system: "OSGB"
+    comment: "Sample for unit testing sharing"
+    geom: "010300002031BF0D00010000000500000022CB05253C320BC1A8DBCE0C0A2F59411C20FAF43E320BC1C753950B8D3E59411E41523BB84209C15FFE7F4B893E59419FC6B2CFA94309C17135A151062F594122CB05253C320BC1A8DBCE0C0A2F5941"
     created_on: "2016-07-22 16:00:00"
     created_by_id: 1
     updated_on: "2016-07-22 16:00:00"
@@ -704,6 +721,28 @@ occurrences:
     record_status: "C"
     release_status: "R"
     confidential: "t"
+  -
+    sample_id: 3
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+    website_id: 2
+    comment: "Website ID 2 occurrence for unit testing"
+    taxa_taxon_list_id: 1
+    record_status: "C"
+    release_status: "R"
+    confidential: "f"
+
+occurrence_comments:
+  -
+    comment: "Occurrence comment for unit testing"
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+    occurrence_id: 1
+
 
 cache_occurrences_functional:
   -
@@ -725,6 +764,7 @@ cache_occurrences_functional:
     record_status: "C"
     release_status: "R"
     zero_abundance: "f"
+    sensitive: "f"
     confidential: "f"
     map_sq_1km_id: 1
     map_sq_2km_id: 1
@@ -749,17 +789,50 @@ cache_occurrences_functional:
     record_status: "C"
     release_status: "R"
     zero_abundance: "f"
+    sensitive: "f"
     confidential: "t"
     map_sq_1km_id: 1
     map_sq_2km_id: 1
     map_sq_10km_id: 1
     verification_checks_enabled: "true"
+  -
+    id: 3
+    sample_id: 3
+    website_id: 2
+    survey_id: 3
+    date_start: "2016-07-22"
+    date_end: "2016-07-22"
+    date_type: "D"
+    created_on: "2016-07-22 16:00:00"
+    updated_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    taxa_taxon_list_id: 1
+    preferred_taxa_taxon_list_id: 1
+    taxon_meaning_id: 10000
+    taxa_taxon_list_external_key: "TESTKEY"
+    taxon_group_id: 1
+    record_status: "C"
+    release_status: "R"
+    zero_abundance: "f"
+    sensitive: "f"
+    confidential: "f"
+    map_sq_1km_id: 1
+    map_sq_2km_id: 1
+    map_sq_10km_id: 1
+    verification_checks_enabled: "true"
+
 
 cache_occurrences_nonfunctional:
   -
     id: 1
+    comment: "Occurrence for unit testing"
   -
     id: 2
+    comment: "Confidential occurrence for unit testing"
+  -
+    id: 3
+    comment: "Occurrence in other website"
+
 
 cache_samples_functional:
   -
@@ -776,6 +849,35 @@ cache_samples_functional:
     map_sq_1km_id: 1
     map_sq_2km_id: 1
     map_sq_10km_id: 1
+  -
+    id: 2
+    website_id: 1
+    survey_id: 1
+    date_start: "2016-07-22"
+    date_end: "2016-07-22"
+    date_type: "D"
+    created_on: "2016-07-22 16:00:00"
+    updated_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    record_status: "C"
+    map_sq_1km_id: 1
+    map_sq_2km_id: 1
+    map_sq_10km_id: 1
+  -
+    id: 3
+    website_id: 2
+    survey_id: 3
+    date_start: "2016-07-22"
+    date_end: "2016-07-22"
+    date_type: "D"
+    created_on: "2016-07-22 16:00:00"
+    updated_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    record_status: "C"
+    map_sq_1km_id: 1
+    map_sq_2km_id: 1
+    map_sq_10km_id: 1
+
 
 cache_samples_nonfunctional:
   -
@@ -785,6 +887,24 @@ cache_samples_nonfunctional:
     public_entered_sref: "SU01"
     entered_sref_system: "OSGB"
     recorders: "PHPUnit"
+    comment: "Sample for unit testing with a \" double quote"
+  -
+    id: 2
+    website_title: "Test website"
+    survey_title: "Test survey"
+    public_entered_sref: "SU01"
+    entered_sref_system: "OSGB"
+    recorders: "PHPUnit"
+    comment: "Sample for unit testing with a \nline break"
+  -
+    id: 3
+    website_title: "Other website"
+    survey_title: "Test survey 3"
+    public_entered_sref: "SU01"
+    entered_sref_system: "OSGB"
+    recorders: "PHPUnit"
+    comment: "Sample for unit testing sharing"
+
 
 sample_attributes:
   -
@@ -901,6 +1021,159 @@ location_attribute_values:
     updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
+
+filters:
+  -
+    title: "Test filter"
+    description: "Filter for unit testing"
+    definition: '{"quality":"!R"}'
+    defines_permissions: "f"
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+  -
+    title: "Test user permission filter"
+    description: "Filter for unit testing"
+    definition: '{"quality":"!R","occ_id":2}'
+    defines_permissions: "t"
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+
+
+filters_users:
+  -
+    filter_id: 2
+    user_id: 1
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+
+
+website_agreements:
+  -
+    title: "Test website agreement"
+    public: "t"
+    provide_for_reporting: "O"
+    receive_for_reporting: "O"
+    provide_for_peer_review: "O"
+    receive_for_peer_review: "O"
+    provide_for_verification: "O"
+    receive_for_verification: "O"
+    provide_for_data_flow: "O"
+    receive_for_data_flow: "O"
+    provide_for_moderation: "O"
+    receive_for_moderation: "O"
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+
+
+websites_website_agreements:
+  -
+    website_id: 1
+    website_agreement_id: 1
+    provide_for_reporting:  "f"
+    receive_for_reporting:  "f"
+    provide_for_peer_review: "f"
+    receive_for_peer_review: "f"
+    provide_for_verification:  "f"
+    receive_for_verification: "f"
+    provide_for_data_flow: "f"
+    receive_for_data_flow:  "f"
+    provide_for_moderation: "f"
+    receive_for_moderation: "f"
+    provide_for_editing: "f"
+    receive_for_editing: "f"
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+  -
+    website_id: 2
+    website_agreement_id: 1
+    provide_for_reporting:  "t"
+    receive_for_reporting:  "f"
+    provide_for_peer_review: "f"
+    receive_for_peer_review: "f"
+    provide_for_verification: "f"
+    receive_for_verification:  "f"
+    provide_for_data_flow:  "f"
+    receive_for_data_flow: "f"
+    provide_for_moderation: "f"
+    receive_for_moderation: "f"
+    provide_for_editing: "f"
+    receive_for_editing: "f"
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+
+index_websites_website_agreements:
+  -
+    from_website_id: 1
+    to_website_id: 1
+    provide_for_reporting: "t"
+    receive_for_reporting: "t"
+    provide_for_peer_review: "t"
+    receive_for_peer_review: "t"
+    provide_for_verification: "t"
+    receive_for_verification: "t"
+    provide_for_data_flow: "t"
+    receive_for_data_flow: "t"
+    provide_for_moderation: "t"
+    receive_for_moderation: "t"
+    provide_for_editing: "t"
+    receive_for_editing: "t"
+  -
+    from_website_id: 2
+    to_website_id: 2
+    provide_for_reporting: "t"
+    receive_for_reporting: "t"
+    provide_for_peer_review: "t"
+    receive_for_peer_review: "t"
+    provide_for_verification: "t"
+    receive_for_verification: "t"
+    provide_for_data_flow: "t"
+    receive_for_data_flow: "t"
+    provide_for_moderation: "t"
+    receive_for_moderation: "t"
+    provide_for_editing: "t"
+    receive_for_editing: "t"
+  -
+    from_website_id: 1
+    to_website_id: 2
+    provide_for_reporting:  "f"
+    receive_for_reporting:  "t"
+    provide_for_peer_review: "f"
+    receive_for_peer_review: "f"
+    provide_for_verification:  "f"
+    receive_for_verification: "f"
+    provide_for_data_flow: "f"
+    receive_for_data_flow:  "f"
+    provide_for_moderation: "f"
+    receive_for_moderation: "f"
+    provide_for_editing: "f"
+    receive_for_editing: "f"
+  -
+    from_website_id: 2
+    to_website_id: 1
+    provide_for_reporting:  "t"
+    receive_for_reporting:  "f"
+    provide_for_peer_review: "f"
+    receive_for_peer_review: "f"
+    provide_for_verification: "f"
+    receive_for_verification:  "f"
+    provide_for_data_flow:  "f"
+    receive_for_data_flow: "f"
+    provide_for_moderation: "f"
+    receive_for_moderation: "f"
+    provide_for_editing: "f"
+    receive_for_editing: "f"
+
+
 groups:
   -
     title: "public group 1"
@@ -921,12 +1194,14 @@ groups:
     updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
 
+
 groups_locations:
   -
     group_id: 1
     location_id: 1
     created_on: "2016-07-22 16:00:00"
     created_by_id: 1
+
 
 group_pages:
   -
@@ -938,4 +1213,3 @@ group_pages:
     created_by_id: 1
     updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
-

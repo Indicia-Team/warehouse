@@ -149,7 +149,7 @@ Add the following to the URL: <em>?website_id=[website ID]&secret=[password]</em
 <em>&scope=[scope name]</em> to override the default scope of the request, plus <em>&user_id=[user's warehouse ID]</em>
 where the scope requires a user for it's definition.
 HTML;
-$lang['jwtUser'] = 'Use a Java Web Token (JWT) to authenticate as a user.';
+$lang['jwtUser'] = 'Use a JSON Web Token (JWT) to authenticate as a user.';
 $lang['jwtUserHelp'] = <<<HTML
 To use JWT to authenticate, you need to:<ul>
   <li>Generate a public/private key pair and store the public key in the Warehouse website settings.</li>

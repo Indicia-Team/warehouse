@@ -47,6 +47,17 @@ class RestApiElasticsearch {
   private $elasticProxy;
 
   /**
+   * Resource filtering options.
+   *
+   * Options applied to the resource (e.g. from the configuration for a
+   * client proj_id, either in config or in the rest_api_client_connections
+   * table).
+   *
+   * @var array
+   */
+  private $resourceOptions;
+
+  /**
    * For ES paged downloads, holds the mode (scroll or composite).
    *
    * @var string
@@ -289,9 +300,17 @@ class RestApiElasticsearch {
 
   /**
    * Constructor.
+   *
+   * @param string $elasticProxy
+   *   Name of the Elastic proxy being used from the REST config file.
+   * @param array $resourceOptions
+   *   Options applied to the resource (e.g. from the configuration for a
+   *   client proj_id, either in config or in the rest_api_client_connections
+   *   table).
    */
-  public function __construct($elasticProxy) {
+  public function __construct($elasticProxy, array $resourceOptions = []) {
     $this->elasticProxy = $elasticProxy;
+    $this->resourceOptions = $resourceOptions;
   }
 
   /**
@@ -378,8 +397,12 @@ class RestApiElasticsearch {
    */
   private function applyEsPermissionsQuery(&$postObj) {
     $filters = [];
+    $esConfig = kohana::config('rest.elasticsearch');
+    $thisProxyCfg = $esConfig[$this->elasticProxy];
+    // Capture boolean filter defined by a filter_id.
+    $filterDefBool = [];
     // Apply limit to current user if appropriate.
-    if (!empty(RestObjects::$esConfig['limit_to_own_data']) || RestObjects::$scope === 'user'  || RestObjects::$scope === 'userWithinWebsite') {
+    if (!empty(RestObjects::$esConfig['limit_to_own_data']) || RestObjects::$scope === 'user' || RestObjects::$scope === 'userWithinWebsite') {
       if (empty(RestObjects::$clientUserId) && empty(RestObjects::$esConfig['allow_anonymous'])) {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'No user_id available for my records report.');
       }
@@ -400,7 +423,7 @@ class RestApiElasticsearch {
       ];
     }
     // Apply limit to websites identified by scope if appropriate.
-    if (substr(RestObjects::$authMethod, -6, 6) !== 'Client' && substr(RestObjects::$scope, 0, 4) !== 'user') {
+    if (substr(RestObjects::$scope, 0, 4) !== 'user' && (!isset($thisProxyCfg['apply_filters']) || $thisProxyCfg['apply_filters'] === TRUE)) {
       if (!RestObjects::$clientWebsiteId) {
         RestObjects::$apiResponse->fail('Internal server error', 500, 'No website_id available for website limited report.');
       }
@@ -410,11 +433,42 @@ class RestApiElasticsearch {
         ],
       ];
     }
-    if (substr(RestObjects::$authMethod, -6, 6) !== 'Client') {
-      // Only verification or user's own records get full precision, but not if
-      // downloading currently.
-      $blur = ($this->pagingMode !== 'scroll' && (RestObjects::$scope === 'verification' || substr(RestObjects::$scope, 0, 4) === 'user')) ? 'F' : 'B';
-      $filters[] = ['query_string' => ['query' => "metadata.confidential:false AND metadata.release_status:R AND ((metadata.sensitivity_blur:$blur) OR (!metadata.sensitivity_blur:*))"]];
+    if (!isset($thisProxyCfg['apply_filters']) || $thisProxyCfg['apply_filters'] === TRUE) {
+      if (isset($this->resourceOptions['full_precision_sensitive_records'])) {
+        // Precision explicitly set by a connection's options in the DB.
+        $blur = $this->resourceOptions['full_precision_sensitive_records'] === TRUE ? 'F' : 'B';
+      }
+      else {
+        // Otherwise, only verification or user's own records get full
+        // precision, but not if downloading currently.
+        $blur = ($this->pagingMode !== 'scroll' && (RestObjects::$scope === 'verification' || substr(RestObjects::$scope, 0, 4) === 'user')) ? 'F' : 'B';
+      }
+      $queryStringParts = [];
+      if (empty($this->resourceOptions['allow_confidential']) || $this->resourceOptions['allow_confidential'] !== TRUE) {
+        $queryStringParts[] = 'metadata.confidential:false';
+        // Only user who owns record or verifier can see private samples,
+        // unless confidential access allowed.
+        if (substr(RestObjects::$scope, 0, 4) !== 'user' && RestObjects::$scope !== 'verification') {
+          $filters[] = ['term' => ['metadata.hide_sample_as_private' => false]];
+        }
+      }
+      if (empty($this->resourceOptions['allow_unreleased']) || $this->resourceOptions['allow_unreleased'] !== TRUE) {
+        $queryStringParts[] = 'metadata.release_status:R';
+      }
+      if (isset($this->resourceOptions['allow_sensitive']) && $this->resourceOptions['allow_sensitive'] === FALSE) {
+        $queryStringParts[] = 'metadata.sensitive:false';
+      }
+      $queryStringParts[] = "((metadata.sensitivity_blur:$blur) OR (!metadata.sensitivity_blur:*))";
+      $filters[] = ['query_string' => ['query' => implode(' AND ', $queryStringParts)]];
+      if (!empty($this->resourceOptions['filter_id'])) {
+        require_once 'client_helpers/ElasticsearchProxyHelper.php';
+        require_once 'client_helpers/helper_base.php';
+        $filterData = RestObjects::$db->query('select definition from filters where id=' . $this->resourceOptions['filter_id'] . ' and deleted=false')->current();
+        if (!$filterData) {
+          RestObjects::$apiResponse->fail('Internal Server Error', 500, 'Missing filter ID in connection configuration.');
+        }
+        ElasticsearchProxyHelper::applyFilterDef([], json_decode($filterData->definition, TRUE), $filterDefBool);
+      }
     }
     if (count($filters) > 0) {
       if (!isset($postObj->query)) {
@@ -427,6 +481,12 @@ class RestApiElasticsearch {
         $postObj->query->bool->must = [];
       }
       $postObj->query->bool->must = array_merge($postObj->query->bool->must, $filters);
+    }
+    if (!empty($filterDefBool['must'])) {
+      $postObj->query->bool->must = array_merge($postObj->query->bool->must, $filterDefBool['must']);
+    }
+    if (!empty($filterDefBool['must_not'])) {
+      $postObj->query->bool->must = $filterDefBool['must_not'];
     }
   }
 
@@ -2216,9 +2276,14 @@ SQL;
       }
       $postData = $this->getEsPostData($requestBody, $format, $file, preg_match('/\/_search/', $url));
     }
+    // If request is in debug mode, then return query (for Unit testing).
+    if (!empty($_GET['debug']) && $_GET['debug'] === 'true') {
+      echo json_encode($postData);
+      return;
+    }
     $actualUrl = $this->getEsActualUrl($url);
     $session = curl_init($actualUrl);
-    if (!empty($postData) && $postData !== '[]') {
+    if (!empty($postData) && $postData !== '{}') {
       curl_setopt($session, CURLOPT_POST, 1);
       curl_setopt($session, CURLOPT_POSTFIELDS, $postData);
     }

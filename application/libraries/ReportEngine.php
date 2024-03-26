@@ -366,7 +366,7 @@ class ReportEngine {
         $metadata = XMLReportReader::loadMetadata($this->report);
         if ($this->isReportRestricted($report, $metadata)) {
           // Abort as restricted report.
-          throw new Exception('Attempt to access unauthorised report');
+          throw new Exception('Attempt to access unauthorised report', 404);
         }
         $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
         break;
@@ -1007,7 +1007,7 @@ SQL;
       }
     }
     if ($this->report === NULL) {
-      throw new exception("Unable to find report $request.");
+      throw new exception("Unable to find report $request.", 404);
     }
   }
 
@@ -1270,6 +1270,14 @@ SQL;
           ['#sample_sref_field#', '#sample_geom_field#'],
           ['snf.public_entered_sref', 'o.public_geom'],
           $query);
+      }
+      // Also if the privacy_precision is 0 then hide_sample_as_private gets
+      // set, so hide these as well.
+      if ($this->reportReader->loadStandardParamsSet === 'samples') {
+        $query = str_replace('#filters#', "AND s.hide_sample_as_private<>true\n#filters#", $query);
+      }
+      elseif ($this->reportReader->loadStandardParamsSet === 'occurrences') {
+        $query = str_replace('#filters#', "AND o.hide_sample_as_private<>true\n#filters#", $query);
       }
     }
     $having = empty($this->having) ? '' : "\nHAVING " . implode(' AND ', $this->having);

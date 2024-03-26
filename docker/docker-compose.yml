@@ -1,6 +1,8 @@
 services:
     # The postgres database container.
     postgres:
+        # The postgres container is built by us so that we can include
+        # the setup script for database initialisation.
         build: ./postgres
         environment:
             # The password for the postgres user (not indicia user)
@@ -12,6 +14,28 @@ services:
             - .:/var/docker
         ports:
             - "5432:5432"
+        command: 
+            # Enable logging to the volume.
+            # (/var/lib/docker/volumes/indicia_postgres on a linux host)
+            - "-c"
+            - "log_destination=stderr"
+            - "-c"
+            - "logging_collector=on"
+            - "-c"
+            - "log_directory=log"
+            - "-c"
+            - "log_filename=postgresql-%Y-%m-%d_%H%M%S.log"
+            - "-c"
+            - "log_rotation_age=1d"
+            - "-c"
+            - "log_statement=all"
+        healthcheck:
+            test: ["CMD", "pg_isready", "-h", "postgres"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 2m
+            start_interval: 5s
 
     # A container running pgAdmin to help us examine the database.
     # Accessible on http://localhost:8070
@@ -28,6 +52,9 @@ services:
             - pgadmin:/var/lib/pgadmin
         ports: 
             - "8070:80"
+        depends_on:
+            postgres:
+                condition: service_healthy
 
     # A fake mail server which allows the warehouse to send emails.
     # Received mail can be viewed at http://localhost:8025
@@ -40,24 +67,179 @@ services:
     # Accessible on http://localhost:8080
     warehouse:
         build: ./warehouse
-        # Share the warehouse code between host and container
+        environment:
+            # Pass through settings for REST API.
+            WAREHOUSE_API_USER: ${WAREHOUSE_API_USER}
+            WAREHOUSE_API_SECRET: ${WAREHOUSE_API_SECRET}
+            WAREHOUSE_API_PROJECT_OCC: ${WAREHOUSE_API_PROJECT_OCC}
+            WAREHOUSE_API_PROJECT_OCC_DEL: ${WAREHOUSE_API_PROJECT_OCC_DEL}
+            WAREHOUSE_API_PROJECT_SMP: ${WAREHOUSE_API_PROJECT_SMP}
+            WAREHOUSE_API_PROJECT_SMP_DEL: ${WAREHOUSE_API_PROJECT_SMP_DEL}
+            ELASTIC_PROXY_URL: ${ELASTIC_PROXY_URL}
         volumes:
+            # Share the warehouse code between host and container
             - ..:/var/www/html/
-        # Apache is configured to run on port 8080 in warehouse/setup.sh  
+            - crontab:/var/spool/cron/crontabs
+            # Share CA certificate provided by Elasticsearch.
+            - elastic_certs:/usr/local/share/ca-certificates
         ports: 
+            # Apache is configured to run on port 8080 in warehouse/setup.sh  
             - "8080:8080"
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8080"]
+            interval: 20s
+            timeout: 10s
+            retries: 3
+            start_period: 2m
+            start_interval: 5s
+        depends_on:
+            postgres:
+                condition: service_healthy
+            mailhog:
+                condition: service_started
+            elastic:
+                condition: service_healthy
 
     # The Geoserver container
-    # Accessible on http://localhost:8090
+    # Accessible on http://localhost:8090/geoserver
+    # Default user:password is admin:geoserver
     geoserver:
         image: docker.osgeo.org/geoserver:2.23.2
         volumes:
             # Persist configuration in a named volume.
             - geoserver:/opt/geoserver_data
         ports:
-            - "8090:8080"         
+            - "8090:8080"
+        depends_on:
+            postgres:
+                condition: service_healthy
+
+    # A temporary container to force correct permissions on elastic_certs volume
+    # See https://github.com/docker/compose/issues/3270
+    volume-init:
+        image: alpine:3
+        volumes:
+            - elastic_certs:/tmp/share
+        command: chown 1000:0 /tmp/share
+
+    # The ElasticSearch container
+    elastic:
+        build: 
+            context: ./elastic
+            args:
+                ELASTIC_VERSION: ${ELASTIC_VERSION}
+        environment:
+            # The password for the 'elastic' user.
+            ELASTIC_PASSWORD: password
+            # single-node disables bootstrap checks avoiding max virtual memory
+            # areas vm.max_map_count is too low error. Also prevents any attempt
+            # to join other clusters.
+            discovery.type: single-node
+            # Enable user authentication.
+            xpack.security.enabled: true
+            # Enable encryption of the transport protocol.
+            xpack.security.transport.ssl.enabled: true
+            xpack.security.transport.ssl.verification_mode: certificate
+            xpack.security.transport.ssl.client_authentication: required
+            xpack.security.transport.ssl.keystore.path: certs/transport.p12
+            xpack.security.transport.ssl.truststore.path: certs/transport.p12
+            # Enable encryption of the http protocol.
+            xpack.security.http.ssl.enabled: true
+            xpack.security.http.ssl.keystore.path: certs/http.p12
+            # Limit Java heap size by uncommenting the following if your host
+            # has little memory.
+            # ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+
+            # Pass through settings from .env file.
+            LOGSTASH_USER: ${LOGSTASH_USER}
+            LOGSTASH_PASSWORD: ${LOGSTASH_PASSWORD}
+            PROXY_USER: ${PROXY_USER}
+            PROXY_PASSWORD: ${PROXY_PASSWORD}
+
+        volumes:
+            # Persist indexes in a named volume.
+            - elastic_data:/usr/share/elasticsearch/data
+            # Share certificates in a named volume.
+            - elastic_certs:/usr/share/elasticsearch/config/share
+        ports: 
+            - "9200:9200"
+        healthcheck:
+            test: ["CMD", "curl", "-f", "--user", "elastic:password", "--cacert", "/usr/share/elasticsearch/config/certs/ca.crt", "https://localhost:9200"]
+            interval: 1m
+            timeout: 5s
+            retries: 3
+            start_period: 5m
+            start_interval: 5s
+        depends_on:
+            volume-init:
+                condition: service_completed_successfully
+
+    # The Kibana container
+    kibana:
+        image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
+        environment:
+            # The url of the ElasticSearch server.
+            ELASTICSEARCH_HOSTS: ${ELASTIC_URL}
+            ELASTICSEARCH_USERNAME: kibana_system
+            ELASTICSEARCH_PASSWORD: password
+            ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: /usr/share/kibana/config/certs/ca.crt
+            SERVER_SSL_ENABLED: true
+            SERVER_SSL_CERTIFICATE: /usr/share/kibana/config/certs/indicia-kibana-1.crt
+            SERVER_SSL_KEY: /usr/share/kibana/config/certs/indicia-kibana-1.key
+        volumes:
+            # Share CA certificate provided by Elasticsearch.
+            - elastic_certs:/usr/share/kibana/config/certs
+        ports: 
+            - "5601:5601"
+        depends_on:
+            elastic:
+                condition: service_healthy
+
+    # The Logstash container
+    logstash:
+        build: 
+            context: ./logstash
+            args:
+                ELASTIC_VERSION: ${ELASTIC_VERSION}
+                WAREHOUSE_URL: ${WAREHOUSE_URL}
+                WAREHOUSE_API_USER: ${WAREHOUSE_API_USER}
+                WAREHOUSE_API_SECRET: ${WAREHOUSE_API_SECRET}
+                WAREHOUSE_API_PROJECT_OCC: ${WAREHOUSE_API_PROJECT_OCC}
+                WAREHOUSE_API_PROJECT_OCC_DEL: ${WAREHOUSE_API_PROJECT_OCC_DEL}
+                WAREHOUSE_API_PROJECT_SMP: ${WAREHOUSE_API_PROJECT_SMP}
+                WAREHOUSE_API_PROJECT_SMP_DEL: ${WAREHOUSE_API_PROJECT_SMP_DEL}
+                ELASTIC_URL: ${ELASTIC_URL}
+                WAREHOUSE_UNIQUE_NAME: ${WAREHOUSE_UNIQUE_NAME}
+                LOGSTASH_USER: ${LOGSTASH_USER}
+                LOGSTASH_PASSWORD: ${LOGSTASH_PASSWORD}
+        environment:
+            BUILDKIT_PROGRESS: ${BUILDKIT_PROGRESS}
+            
+            # WITH SECURITY
+            # By disabling monitorin of Logstash by xpack I am side-stepping
+            # a difficulty with authentication.
+            XPACK_MONITORING_ENABLED: 'false'
+            # WITHOUT SECURITY
+            # XPACK_MONITORING_ENABLED: 'true'
+            # XPACK_MONITORING_ELASTICSEARCH_HOSTS: ${ELASTIC_URL}
+           # Limiting Java heap size. 4g to 8g recommended.
+            LS_JAVA_OPTS: "-Xms2g -Xmx2g"
+        volumes:
+            # Share CA certificate provided by Elasticsearch.
+            - elastic_certs:/usr/share/logstash/config/certs
+        depends_on:
+            elastic:
+                condition: service_healthy
+            warehouse:
+                condition: service_healthy
 
 volumes:
     postgres:
     pgadmin:
     geoserver:
+    elastic_data:
+    elastic_certs:
+    crontab:
+
+networks:
+    default:

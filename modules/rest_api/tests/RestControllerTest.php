@@ -1,143 +1,30 @@
 <?php
 
-use PHPUnit\DbUnit\DataSet\CompositeDataSet as DbUDataSetCompositeDataSet;
-use PHPUnit\DbUnit\DataSet\YamlDataSet as DbUDataSetYamlDataSet;
-
 /**
  * Unit test class for the REST api controller.
  *
  * @todo Test sharing mode on project filters is respected.
- *
  */
-class Rest_ControllerTest extends Indicia_DatabaseTestCase {
+class RestControllerTest extends BaseRestClientTest {
 
-  private static $privateKey = <<<KEY
------BEGIN RSA PRIVATE KEY-----
-MIICXAIBAAKBgQC8kGa1pSjbSYZVebtTRBLxBz5H4i2p/llLCrEeQhta5kaQu/Rn
-vuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t0tyazyZ8JXw+KgXTxldMPEL9
-5+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4ehde/zUxo6UvS7UrBQIDAQAB
-AoGAb/MXV46XxCFRxNuB8LyAtmLDgi/xRnTAlMHjSACddwkyKem8//8eZtw9fzxz
-bWZ/1/doQOuHBGYZU8aDzzj59FZ78dyzNFoF91hbvZKkg+6wGyd/LrGVEB+Xre0J
-Nil0GReM2AHDNZUYRv+HYJPIOrB0CRczLQsgFJ8K6aAD6F0CQQDzbpjYdx10qgK1
-cP59UHiHjPZYC0loEsk7s+hUmT3QHerAQJMZWC11Qrn2N+ybwwNblDKv+s5qgMQ5
-5tNoQ9IfAkEAxkyffU6ythpg/H0Ixe1I2rd0GbF05biIzO/i77Det3n4YsJVlDck
-ZkcvY3SK2iRIL4c9yY6hlIhs+K9wXTtGWwJBAO9Dskl48mO7woPR9uD22jDpNSwe
-k90OMepTjzSvlhjbfuPN1IdhqvSJTDychRwn1kIJ7LQZgQ8fVz9OCFZ/6qMCQGOb
-qaGwHmUK6xzpUbbacnYrIM6nLSkXgOAwv7XXCojvY614ILTK3iXiLBOxPu5Eu13k
-eUz9sHyD6vkgZzjtxXECQAkp4Xerf5TGfQXGXhxIX52yH+N2LtujCdkQZjXAsGdm
-B2zNzvrlgRmgBrklMTrMYgm1NPcW+bRLGcwgW2PTvNM=
------END RSA PRIVATE KEY-----
-KEY;
-
-  private static $wrongPrivateKey = <<<KEY
------BEGIN RSA PRIVATE KEY-----
-MIIEpQIBAAKCAQEAsTlOczkGR9lSFJLQvXS8pdU8bVM0nnGbEch8j0Nw04hR3n6t
-QF2nDkBofhYGTc5mSDhY+XGDuVE8mqG1DbeMlIL8BOR3V7oNZlrew8BhI2Cr8MDE
-SI/Z2Ry+oJLjbrmEdMl0AOwOTnl8V6+cpKIo4OtsZBMMhsPPb0Hj1DKiLjt9uxUo
-Qmi+fpNVjodS3ETpGcrGnH/gj98kScau5ahDAeeb0+zRN6ih3SQQPiKU45P8YqzL
-2OGnjV1u5f1N30hvJhUeVJjC7RDKLe+JTC1g5599Jt0nlosD6liKJidWgzVj1GT6
-QgNoOgMyEUaYy+tRv4st8C5c3+11GVh3az3hDQIDAQABAoIBAC3gXMt89oBA5HuI
-6doxTuhKw8K1KEjftbmrwXrAhYNspWzINAcWdzk8ORBymR0pEdceJwIjfWrKebq5
-o4myewSyx5Roo/AkrHVTjpjzwvGKg9flvqnd+xG13C7q907hXUVyJMJcWPO9hQ+Z
-2R3REG3w43UgbTyxkZAGaXizxsHanAUPJA2NKnyAyeR3nPlxIo94d/bXV57Jlgzd
-DHCFDde60UWIjBs2rOrZsHbfJcS2y0/d0NjzdFZ/qHHFEe3T7NrUkr5p3fSLYnyQ
-LTaT5LkAtnHRZYU+0iTW4tRFfBPv3BbVjinFtX68odShO0oeESnuR0/rPPS4gD/3
-9S6+CyECgYEA5UXwF+1vqoalZtagPcNjYaDziKyxQvLTxRUoINX6muBzKR14+Ai7
-cwhdLFn3c9tKa/siqx4cv0g7zQ60sFFi0krURdiHjc0ryB2qEp16FWr7VfL2ocRY
-VhDMsCDGKDYpsCbaob1dZHKrAGVseiqo4mw8T53xv4YLj8jevq2rIcUCgYEAxeIX
-ZAKQUsrtXkJMrQ0zIqHay+2N18h0ddlDf3nQLU1fIEV2UD8D/zMUXz4gCxvdlJbn
-oQ65ik5WFeQOmW+wbPb/RXqnlnp1fkjJvrXOXJH4xT8KCgtK/4V65UaUCypTJvBo
-ubzFDPYyWuhzvGeQwyJ8UMZrrpG9AF0KzwSJnqkCgYEAmwbxU5yO9wVYbfMOIvUt
-C+SjB3WN3rEHFKo7mghWDcda1yBAnaZ56UxshALJWaOb7OvBA2e3FHgpR3x8HQTL
-B1rlsdy5u95RjlzQlQm6dSUDkZhZwARdnsR5Q1bF5obJJX0ANIEw1yzaB8iM0wZp
-b8Cz/znTLyfaRX0TcGdJ4ekCgYEAk7HLiY7MT688ebT8a9FFUF0D5F97Fgp8uhUe
-Zv/xXE66aGjQBNbz0b87PlctLX1v5d64JaLK4yrS3+Xm66jMQpgcMax5dzwRg98q
-DRi/XKJqzjXd9V82a/8hmg0SpD7D73VShQcbADClpuqGr6GRD8Qmi1d9ub73FVVc
-ouUdHnkCgYEAr8XI6BO45s2WGwRR7rQu9gD6yiiMKU0yxh5SiCfw4t7ozHAC9qn+
-jC+OwtS/Q73xTjlggYovtXy/mXj7w5PW0QlTbpAWbRlSgHlLef/RKI7mBbOe3poK
-zuU4nn90WJxLocAJYXoU37xhvUXI1sYU2SSu2E4ANrngT3ZuoktXgCc=
------END RSA PRIVATE KEY-----
-KEY;
-
-  private static $publicKey = <<<KEY
------BEGIN PUBLIC KEY-----
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC8kGa1pSjbSYZVebtTRBLxBz5H
-4i2p/llLCrEeQhta5kaQu/RnvuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t
-0tyazyZ8JXw+KgXTxldMPEL95+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4
-ehde/zUxo6UvS7UrBQIDAQAB
------END PUBLIC KEY-----
-KEY;
-
-  private static $clientUserId;
-  private static $config;
-  private static $websiteId = 1;
-  private static $websitePassword = 'password';
-  private static $userId = 1;
-  private static $userPassword = 'password';
-  // In the fixture, the 2nd filter is the one we linked to a user.
+  /**
+   * In the fixture, the 2nd filter is the one we linked to a user.
+   *
+   * @var int
+   */
   private static $userFilterId = 2;
 
-  private $authMethod = 'hmacClient';
+  /**
+   * Setup before tests are run.
+   */
+  public static function setUpBeforeClass(): void {
+    // Grab the clients registered on this system.
+    $clientUserIds = array_keys(Kohana::config('rest.clients'));
+    $clientConfigs = array_values(Kohana::config('rest.clients'));
 
-  private $additionalRequestHeader = [];
-
-  // Access tokens.
-  private static $jwt;
-
-  public function getDataSet() {
-    $ds1 = new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
-
-    /* Create a filter for the test project defined in config/rest.php.travis.
-     * Create an occurrence comment for annotation testing.
-     */
-    $ds2 = new Indicia_ArrayDataSet(
-      [
-        'filters' => [
-          [
-            'title' => 'Test filter',
-            'description' => 'Filter for unit testing',
-            'definition' => '{"quality":"!R"}',
-            'defines_permissions' => 'f',
-            'created_on' => '2016-07-22 16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22 16:00:00',
-            'updated_by_id' => 1,
-          ],
-          [
-            'title' => 'Test user permission filter',
-            'description' => 'Filter for unit testing',
-            'definition' => '{"quality":"!R","occurrence_id":2}',
-            'defines_permissions' => 't',
-            'created_on' => '2016-07-22 16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22 16:00:00',
-            'updated_by_id' => 1,
-          ],
-        ],
-        'filters_users' => [
-          [
-            'filter_id' => 2,
-            'user_id' => 1,
-            'created_on' => '2016-07-22 16:00:00',
-            'created_by_id' => 1,
-          ],
-        ],
-        'occurrence_comments' => [
-          [
-            'comment' => 'Occurrence comment for unit testing',
-            'created_on' => '2016-07-22 16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22 16:00:00',
-            'updated_by_id' => 1,
-            'occurrence_id' => 1,
-          ],
-        ],
-      ]
-    );
-
-    $compositeDs = new DbUDataSetCompositeDataSet();
-    $compositeDs->addDataSet($ds1);
-    $compositeDs->addDataSet($ds2);
+    // Just test the first client.
+    self::$clientUserId = $clientUserIds[0];
+    self::$config = $clientConfigs[0];
 
     // Dependencies prevent us adding a user with known password, so we'll
     // update the existing one with the hash for 'password'.
@@ -147,17 +34,6 @@ KEY;
       ['password' => '18d025c6c8809e34371e2ec7d84215bd3eb6031dcd804006f4'],
       ['id' => 1]
     );
-    return $compositeDs;
-  }
-
-  public static function setUpBeforeClass(): void {
-    // Grab the clients registered on this system.
-    $clientUserIds = array_keys(Kohana::config('rest.clients'));
-    $clientConfigs = array_values(Kohana::config('rest.clients'));
-
-    // Just test the first client.
-    self::$clientUserId = $clientUserIds[0];
-    self::$config = $clientConfigs[0];
   }
 
   protected function setUp(): void {
@@ -298,7 +174,7 @@ KEY;
       ],
       [], 'PUT'
     );
-    $this->assertTrue($response['httpCode'] === 404);
+    $this->assertTrue($response['httpCode'] === 400);
     // POST samples should be rejected (website flag to allow anon
     // submissions is off).
     $response = $this->callService(
@@ -2398,6 +2274,7 @@ SQL;
       403, $response['httpCode'],
       "Request for another user's sample does not return 403."
     );
+    // Authenticate as the original user.
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     // Try to GET the sample.
     $response = $this->callService("samples/$sampleId");
@@ -2421,15 +2298,6 @@ SQL;
     $this->assertEquals(
       403, $response['httpCode'],
       "Request for another user's sample does not return 404 with user scope."
-    );
-    // Same for reporting scope - as using JwtUser, it will widen the scope to
-    // other websites but not other users.
-    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', $userId, time() + 120, 'reporting');
-    // Try to GET the sample.
-    $response = $this->callService("samples/$sampleId");
-    $this->assertEquals(
-      403, $response['httpCode'],
-      "Request for another user's sample does not return 403 with reporting scope."
     );
   }
 
@@ -2571,7 +2439,7 @@ SQL;
   }
 
   public function testProjects_authentication() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_clientAuthentication");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testProjects_clientAuthentication");
 
     $this->authMethod = 'hmacClient';
     $this->checkResourceAuthentication('projects');
@@ -2611,7 +2479,7 @@ SQL;
   }
 
   public function testProjects_get() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_get");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testProjects_get");
 
     $response = $this->callService('projects');
     $this->assertResponseOk($response, '/projects');
@@ -2640,7 +2508,7 @@ SQL;
   }
 
   public function testProjects_get_id() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_get_id");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testProjects_get_id");
 
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("projects/$projDef[id]");
@@ -2664,7 +2532,7 @@ SQL;
   }
 
   public function testTaxon_observations_authentication() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_clientAuthentication");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testProjects_clientAuthentication");
     $proj_id = self::$config['projects'][array_keys(self::$config['projects'])[0]]['id'];
     $queryWithProj = ['proj_id' => $proj_id, 'edited_date_from' => '2015-01-01'];
     $query = ['edited_date_from' => '2015-01-01'];
@@ -2687,7 +2555,7 @@ SQL;
   }
 
   public function testTaxon_observations_get_incorrect_params() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxon_observations_get_incorrect_params");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testTaxon_observations_get_incorrect_params");
     $response = $this->callService("taxon-observations");
     $this->assertEquals(400, $response['httpCode'],
         'Requesting taxon observations without params should be a bad request');
@@ -2710,7 +2578,7 @@ SQL;
    * @todo Test the /taxon-observations/id endpoint
    */
   public function testTaxon_observations_get() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxon_observations_get");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testTaxon_observations_get");
 
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("taxon-observations", [
@@ -2741,7 +2609,7 @@ SQL;
    * @todo Test the annotations/id endpoint
    */
   public function testAnnotations_get() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAnnotations_get");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testAnnotations_get");
 
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService(
@@ -2763,7 +2631,7 @@ SQL;
   }
 
   public function testTaxaSearch_get() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxaSearch_get");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testTaxaSearch_get");
 
     $response = $this->callService('taxa/search');
     $this->assertEquals(400, $response['httpCode'],
@@ -2824,7 +2692,7 @@ SQL;
    * Test for accessing the reports hierarchy.
    */
   public function testReportsHierarchy_get() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportsHierarchy_get");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testReportsHierarchy_get");
 
     $projDef = self::$config['projects']['BRC1'];
     $response = $this->callService("reports", ['proj_id' => $projDef['id']]);
@@ -2866,7 +2734,7 @@ SQL;
   }
 
   public function testReportParams_get() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportParams_get");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testReportParams_get");
 
     // First grab a list of reports so we can use the links to get the correct
     // params URL.
@@ -2885,7 +2753,7 @@ SQL;
   }
 
   public function testReportColumns_get() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportColumns_get");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testReportColumns_get");
 
     // First grab a list of reports so we can use the links to get the correct
     // columns URL.
@@ -2904,7 +2772,7 @@ SQL;
   }
 
   public function testReportOutput_get() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportOutput_get");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testReportOutput_get");
 
     // First grab a list of reports so we can use the links to get the correct
     // columns URL.
@@ -3087,7 +2955,7 @@ SQL;
   }
 
   public function testAcceptHeader() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAcceptHeader");
+    Kohana::log('debug', "Running unit test, RestControllerTest::testAcceptHeader");
     $projDef = self::$config['projects']['BRC1'];
     $response = $this->callService(
       "reports/library/occurrences",
@@ -3141,7 +3009,7 @@ SQL;
     $correctClientUserId = self::$clientUserId;
     $correctWebsiteId = self::$websiteId;
     $correctUserId = self::$userId;
-    $correctClientSecret = self::$config['shared_secret'];
+    $correctClientSecret = self::$clientSecret;
     $correctWebsitePassword = self::$websitePassword;
     $correctUserPassword = self::$userPassword;
 
@@ -3149,7 +3017,7 @@ SQL;
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;
     self::$userId = $correctUserId;
-    self::$config['shared_secret'] = '---';
+    self::$clientSecret = '---';
     self::$websitePassword = '---';
     self::$userPassword = '---';
 
@@ -3163,7 +3031,7 @@ SQL;
       'Unauthorized', $response['response']['status'],
       "Incorrect secret or password passed to /$resource but data still returned. " . var_export($response, TRUE)
     );
-    self::$config['shared_secret'] = $correctClientSecret;
+    self::$clientSecret = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
 
@@ -3171,7 +3039,7 @@ SQL;
     self::$clientUserId = '---';
     self::$websiteId = '---';
     self::$userId = '---';
-    self::$config['shared_secret'] = $correctClientSecret;
+    self::$clientSecret = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
     $response = $this->callService($resource, $query);
@@ -3189,7 +3057,7 @@ SQL;
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;
     self::$userId = $correctUserId;
-    self::$config['shared_secret'] = $correctClientSecret;
+    self::$clientSecret = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
     $response = $this->callService($resource, $query);
@@ -3291,171 +3159,6 @@ SQL;
     $this->assertArrayHasKey($reportFile, $response);
     $this->assertArrayHasKey('type', $response[$reportFile]);
     $this->assertEquals('report', $response[$reportFile]['type']);
-  }
-
-  /**
-   * Sets the http header before a request. This includes the Authorization
-   * string and can also include additional header data when required.
-   *
-   * @param $session
-   * @param $url
-   * @param additionalRequestHeader
-   */
-  private function setRequestHeader($session, $url, $additionalRequestHeader = []) {
-    switch ($this->authMethod) {
-      case 'hmacUser':
-        $user = self::$userId;
-        $website = self::$websiteId;
-        $hmac = hash_hmac('sha1', $url, self::$userPassword);
-        $authString = "USER_ID:$user:WEBSITE_ID:$website:HMAC:$hmac";
-        break;
-
-      case 'hmacClient':
-        $user = self::$clientUserId;
-        $hmac = hash_hmac('sha1', $url, self::$config['shared_secret']);
-        $authString = "USER:$user:HMAC:$hmac";
-        break;
-
-      case 'hmacWebsite':
-        $user = self::$websiteId;
-        $hmac = hash_hmac('sha1', $url, self::$websitePassword);
-        $authString = "WEBSITE_ID:$user:HMAC:$hmac";
-        break;
-
-      case 'directUser':
-        $user = self::$userId;
-        $website = self::$websiteId;
-        $password = self::$userPassword;
-        $authString = "USER_ID:$user:WEBSITE_ID:$website:SECRET:$password";
-        break;
-
-      case 'directClient':
-        $user = self::$clientUserId;
-        $password = self::$websitePassword;
-        $authString = "USER:$user:SECRET:$password";
-        break;
-
-      case 'directWebsite':
-        $user = self::$websiteId;
-        $password = self::$websitePassword;
-        $authString = "WEBSITE_ID:$user:SECRET:$password";
-        break;
-
-      case 'jwtUser':
-        $authString = "Bearer " . self::$jwt;
-        break;
-
-      case 'none':
-        break;
-
-      default:
-        $this->fail("$this->authMethod auth method not implemented");
-        break;
-    }
-    if (isset($authString)) {
-      $additionalRequestHeader[] = "Authorization: $authString";
-    }
-    if (count($additionalRequestHeader) > 0) {
-      curl_setopt($session, CURLOPT_HTTPHEADER, $additionalRequestHeader);
-    }
-  }
-
-  /**
-   * Parse a response header string to a key/value associative array.
-   *
-   * @param string $string
-   *   Headers as a string.
-   *
-   * @return array
-   *   Headers as key/value pairs.
-   */
-  private function parseHeaders($string) {
-    $rows = explode("\n", trim($string));
-    // Skip response code at the top.
-    array_shift($rows);
-    $array = [];
-    foreach ($rows as $row) {
-      list($key, $value) = explode(': ', $row, 2);
-      $array[$key] = trim($value);
-    }
-    return $array;
-  }
-
-  /**
-   * Set up a CURL session.
-   */
-  private function initCurl($url, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL, $files = FALSE) {
-    $session = curl_init($url);
-    curl_setopt($session, CURLOPT_HEADER, TRUE);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
-    if ($customMethod) {
-      curl_setopt($session, CURLOPT_CUSTOMREQUEST, $customMethod);
-    }
-    if ($postData) {
-      if (is_array($postData) && !$files) {
-        $postData = json_encode($postData);
-        $additionalRequestHeader[] = 'Content-Type: application/json';
-        $additionalRequestHeader[] = 'Content-Length: ' . strlen($postData);
-      }
-      curl_setopt ($session, CURLOPT_POST, TRUE);
-      curl_setopt ($session, CURLOPT_POSTFIELDS, $postData);
-    }
-    $this->setRequestHeader($session, $url, $additionalRequestHeader);
-    return $session;
-  }
-
-  /**
-   * Perform a CURL request and get response data.
-   */
-  private function getCurlResponse($session, $additionalRequestHeader = []) {
-    // Do the POST.
-    $response = curl_exec($session);
-    $headerSize = curl_getinfo($session, CURLINFO_HEADER_SIZE);
-    $header = substr($response, 0, $headerSize);
-    $body = substr($response, $headerSize);
-    // Auto decode the JSON, unless the test is checking the Accept request
-    // header in which case format could be something else.
-    if (!empty($body) && (empty($additionalRequestHeader) || strpos(implode(',', $additionalRequestHeader), 'Accept:') === FALSE)) {
-      $decoded = json_decode($body, TRUE);
-      $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response);
-      $body = $decoded;
-    }
-    $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
-    $curlErrno = curl_errno($session);
-    $message = curl_error($session);
-    return [
-      'errorMessage' => $message ? $message : 'curl ok',
-      'curlErrno' => $curlErrno,
-      'httpCode' => $httpCode,
-      'response' => $body,
-      'headers' => $header,
-    ];
-  }
-
-  private function callUrl($url, $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL, $files = FALSE) {
-    $session = $this->initCurl($url, $postData, $additionalRequestHeader, $customMethod, $files);
-    $response = $this->getCurlResponse($session, $additionalRequestHeader);
-    curl_close($session);
-    return $response;
-  }
-
-  /**
-   * A generic method to call the REST Api's web services.
-   *
-   * @param $method
-   * @param mixed|FALSE $query
-   * @param array $postData
-   * @param $additionalRequestHeader
-   * @param $customMethod
-   * @param $files
-   * @return array
-   */
-  private function callService($method, $query = FALSE, array $postData = NULL, $additionalRequestHeader = [], $customMethod = NULL, $files = FALSE) {
-    $url = url::base(true) . "services/rest/$method";
-    if ($query) {
-      $url .= '?' . http_build_query($query);
-    }
-    return $this->callUrl($url, $postData, $additionalRequestHeader, $customMethod, $files);
   }
 
 }

@@ -102,7 +102,8 @@ class Valid extends valid_Core {
    * @param string $column_value
    *   Column value to test.
    * @param array $args
-   *   Table name, table column, ID of current record.
+   *   Table name, table column, ID of current record. Optionally an extra
+   *   SQL filter in the last parameter.
    *
    * @return bool
    *   TRUE if valid.
@@ -111,12 +112,17 @@ class Valid extends valid_Core {
     $db = new Database();
     $idFilter = empty($args[2]) ? '' : "AND id<>$args[2]";
     $value = pg_escape_literal($db->getLink(), $column_value);
+    $extraFilters = '';
+    if (count($args) > 3) {
+      $extraFilters = 'AND ' . $args[3];
+    }
     $qry = <<<SQL
 SELECT 1 AS hit
 FROM $args[0]
 WHERE deleted=false
 AND LOWER($args[1]) = LOWER($value)
 $idFilter
+$extraFilters
 LIMIT 1
 SQL;
     $found = $db->query($qry)->count();

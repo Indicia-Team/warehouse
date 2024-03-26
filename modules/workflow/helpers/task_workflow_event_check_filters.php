@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Queue worker to update cache_occurrences_nonfunctional.attrs_json.
+ * Queue worker to apply filters which limit the scope of a workflow event.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *

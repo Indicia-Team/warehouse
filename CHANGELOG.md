@@ -1,3 +1,33 @@
+# Version 9.0.0
+*2024-03-26*
+
+See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade process.
+
+* Setting `samples.privacy_precision` to 0 is now treated as a special value which causes the
+  sample to be hidden in default report behaviour. See https://github.com/BiologicalRecordsCentre/ABLE/issues/468.
+  There is a new field in the cache tables, `hide_sample_as_private`, to support this.
+* New features in the REST API for authorisation:
+  * New user interface in the warehouse under Admin -> REST API Clients, which allows new clients
+    for the REST API to be added without having to edit the config files. Clients are stored in the
+    database and define the keys required for JWT authentication. Clients contain one or more
+    available connections for that connection which define the set of records and actions which are
+    authorised for use by that connection. Using the config files to define clients is still
+    supported but is deprecated so may be dropped in a future version.
+  * Configuration for a project or connection in the REST API list of clients can specify a filter
+    ID in order to define the accessible records. This applies to connections configured in the
+    warehouse UI and stored in the database as well as projects configured in the config files.
+  * Ability to use a JWT token to authenticate as a client register in the warehouse UI.
+* Some fixes to the HTTP status response from the REST API, for example returning 401 Forbidden
+  rather than 404 Unauthorized when the user account is authorised but access to the requested
+  resource or operation is denied.
+* Add a Record Status control to the Edit Sample form on the warehouse.
+* Adds Elastic Stack containers to the Docker development system. Security
+  features have been enabled by way of a demonstration though these are not
+  needed in a dev environment.
+    - Elasticsearch indexes are configured for samples and occurrences.
+    - Logstash pipelines are configured to populate the indexes.
+    - Kibana can be used to explore the indexes.
+
 # Version 8.26.0
 *2024-02-19*
 

@@ -922,7 +922,14 @@ SET website_id=su.website_id,
     WHEN s.privacy_precision IS NOT NULL OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL THEN NULL
     ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name)
   END,
-  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(s.privacy_precision, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
+  public_geom=reduce_precision(
+    coalesce(s.geom, l.centroid_geom),
+    false,
+    greatest(
+      case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
+      (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id)
+    )
+  ),
   date_start=s.date_start,
   date_end=s.date_end,
   date_type=s.date_type,
@@ -942,7 +949,8 @@ SET website_id=su.website_id,
   media_count=(SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
   external_key=s.external_key,
   sensitive=(SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
-  private=s.privacy_precision IS NOT NULL
+  private=s.privacy_precision IS NOT NULL,
+  hide_sample_as_private=(s.privacy_precision IS NOT NULL AND s.privacy_precision=0)
 FROM samples s
 #join_needs_update#
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -977,7 +985,7 @@ SET website_title=w.title,
         greatest(
           round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
           (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
-          s.privacy_precision,
+          case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
           -- work out best square size to reflect a lat long's true precision
           case
             when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
@@ -988,7 +996,14 @@ SET website_title=w.title,
           else 10
           end,
           10 -- default minimum square size
-        ), reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+        ), reduce_precision(
+          coalesce(s.geom, l.centroid_geom),
+          (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+          greatest(
+            (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+            case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+          )
+        )
       )
    else
     case
@@ -1012,7 +1027,7 @@ SET website_title=w.title,
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
       (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
-      s.privacy_precision,
+      case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
       -- work out best square size to reflect a lat long's true precision
       case
         when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
@@ -1023,10 +1038,24 @@ SET website_title=w.title,
         else 10
       end,
       10 -- default minimum square size
-    ), reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+    ), reduce_precision(
+      coalesce(s.geom, l.centroid_geom),
+      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      greatest(
+        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+      )
+    )
   ),
   output_sref_system=get_output_system(
-    reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+    reduce_precision(
+      coalesce(s.geom, l.centroid_geom),
+      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      greatest(
+        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+      )
+    )
   ),
   entered_sref_system=case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
   recorders = s.recorder_names,
@@ -1142,13 +1171,13 @@ INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
             group_id, record_status, training, query, parent_sample_id, media_count, external_key,
-            sensitive, private)
+            sensitive, private, hide_sample_as_private)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE
     WHEN s.privacy_precision IS NOT NULL OR (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL THEN NULL
     ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name)
   END,
-  reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(s.privacy_precision, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
+  reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(case s.privacy_precision when 0 then 10000 else s.privacy_precision end, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
   coalesce(s.group_id, sp.group_id), s.record_status, s.training,
   case
@@ -1160,7 +1189,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
   (SELECT COUNT(sm.*) FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false),
   s.external_key,
   (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id) IS NOT NULL,
-  s.privacy_precision IS NOT NULL
+  s.privacy_precision IS NOT NULL, s.privacy_precision IS NOT NULL AND s.privacy_precision=0
 FROM samples s
 #join_needs_update#
 LEFT JOIN cache_samples_functional cs on cs.id=s.id
@@ -1197,7 +1226,7 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
         greatest(
           round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
           (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
-          s.privacy_precision,
+          case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
           -- work out best square size to reflect a lat long's true precision
           case
             when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
@@ -1208,7 +1237,14 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
             else 10
           end,
           10 -- default minimum square size
-        ), reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+        ), reduce_precision(
+          coalesce(s.geom, l.centroid_geom),
+          (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+          greatest(
+            (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+            case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+          )
+        )
       )
    else
     case
@@ -1239,7 +1275,7 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
       (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
-      s.privacy_precision,
+      case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
       -- work out best square size to reflect a lat long's true precision
       case
         when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
@@ -1250,10 +1286,24 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
         else 10
       end,
       10 -- default minimum square size
-    ), reduce_precision(coalesce(s.geom, l.centroid_geom), (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+    ), reduce_precision(
+      coalesce(s.geom, l.centroid_geom),
+      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      greatest(
+        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+      )
+    )
   ),
   get_output_system(
-    reduce_precision(coalesce(s.geom, l.centroid_geom),(SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id), greatest((SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id), s.privacy_precision))
+    reduce_precision(
+      coalesce(s.geom, l.centroid_geom),
+      (SELECT bool_or(confidential) FROM occurrences WHERE sample_id=s.id),
+      greatest(
+        (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id),
+        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+      )
+    )
   ),
   pv.surname || ', ' || pv.first_name
 FROM samples s
@@ -1591,7 +1641,14 @@ SET sample_id=o.sample_id,
     WHEN o.confidential=true OR o.sensitivity_precision IS NOT NULL OR s.privacy_precision IS NOT NULL THEN NULL
     ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name)
   END,
-  public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision)),
+  public_geom=reduce_precision(
+    coalesce(s.geom, l.centroid_geom),
+    o.confidential,
+    greatest(
+      o.sensitivity_precision,
+      case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+    )
+  ),
   date_start=s.date_start,
   date_end=s.date_end,
   date_type=s.date_type,
@@ -1621,6 +1678,7 @@ SET sample_id=o.sample_id,
   end,
   sensitive=o.sensitivity_precision is not null,
   private=s.privacy_precision is not null,
+  hide_sample_as_private=(s.privacy_precision IS NOT NULL AND s.privacy_precision=0),
   release_status=o.release_status,
   marine_flag=cttl.marine_flag,
   freshwater_flag=cttl.freshwater_flag,
@@ -1685,7 +1743,7 @@ SET comment=o.comment,
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
       o.sensitivity_precision,
-      s.privacy_precision,
+      case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
       -- work out best square size to reflect a lat long's true precision
       case
         when coalesce(spv.int_value, spv.float_value)>=50001 then 1000000
@@ -1696,10 +1754,24 @@ SET comment=o.comment,
         else 10
       end,
       10 -- default minimum square size
-    ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
+    ), reduce_precision(
+      coalesce(s.geom, l.centroid_geom),
+      o.confidential,
+      greatest(
+        o.sensitivity_precision,
+        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+      )
+    )
   ),
   output_sref_system=get_output_system(
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
+    reduce_precision(
+      coalesce(s.geom, l.centroid_geom),
+      o.confidential,
+      greatest(
+        o.sensitivity_precision,
+        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+      )
+    )
   ),
   verifier=pv.surname || ', ' || pv.first_name,
   licence_code=li.code,
@@ -1844,7 +1916,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             created_by_id, group_id, taxa_taxon_list_id, preferred_taxa_taxon_list_id,
             taxon_meaning_id, taxa_taxon_list_external_key, family_taxa_taxon_list_id,
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
-            certainty, query, sensitive, private, release_status,
+            certainty, query, sensitive, private, hide_sample_as_private, release_status,
             marine_flag, freshwater_flag, terrestrial_flag, non_native_flag, data_cleaner_result,
             training, zero_abundance, licence_id, import_guid, confidential, external_key,
             taxon_path, blocked_sharing_tasks, parent_sample_id, verification_checks_enabled,
@@ -1852,7 +1924,14 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision)) as public_geom,
+    reduce_precision(
+      coalesce(s.geom, l.centroid_geom),
+      o.confidential,
+      greatest(
+        o.sensitivity_precision,
+        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+      )
+    ) as public_geom,
     s.date_start, s.date_end, s.date_type, o.created_on, o.updated_on, o.verified_on,
     o.created_by_id, coalesce(s.group_id, sp.group_id), o.taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id,
     cttl.taxon_meaning_id, cttl.external_key, cttl.family_taxa_taxon_list_id,
@@ -1863,7 +1942,7 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         else 'U'
     end,
     null,
-    o.sensitivity_precision is not null, s.privacy_precision is not null, o.release_status,
+    o.sensitivity_precision is not null, s.privacy_precision is not null, s.privacy_precision IS NOT NULL AND s.privacy_precision=0, o.release_status,
     cttl.marine_flag, cttl.freshwater_flag, cttl.terrestrial_flag, cttl.non_native_flag, null,
     o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key,
     ctp.path,
@@ -1925,7 +2004,7 @@ SELECT o.id,
     greatest(
       round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
       o.sensitivity_precision,
-      s.privacy_precision,
+      case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
       -- work out best square size to reflect a lat long's true precision
       case
         when coalesce(spv.int_value, spv.float_value)>=50001 then 1000000
@@ -1936,10 +2015,24 @@ SELECT o.id,
         else 10
       end,
       10 -- default minimum square size
-    ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
+    ), reduce_precision(
+      coalesce(s.geom, l.centroid_geom),
+      o.confidential,
+      greatest(
+        o.sensitivity_precision,
+        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+      )
+    )
   ),
   get_output_system(
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision))
+    reduce_precision(
+      coalesce(s.geom, l.centroid_geom),
+      o.confidential,
+      greatest(
+        o.sensitivity_precision,
+        case s.privacy_precision when 0 then 10000 else s.privacy_precision end
+      )
+    )
   ),
   pv.surname || ', ' || pv.first_name,
   li.code

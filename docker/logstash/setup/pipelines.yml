@@ -1,0 +1,17 @@
+# This file is where you define your pipelines. You can define multiple.
+# For more information on multiple pipelines, see the documentation:
+#   https://www.elastic.co/guide/en/logstash/current/multiple-pipelines.html
+
+
+- pipeline.id: indicia_records
+  path.config: "{{ Working folder path }}/logstash-config/occurrences-http-indicia.conf"
+
+- pipeline.id: indicia_records_deletions
+  path.config: "{{ Working folder path }}/logstash-config/occurrences-http-indicia-deletions.conf"
+  pipeline.workers: 1
+
+- pipeline.id: indicia_samples
+  path.config: "{{ Working folder path }}/logstash-config/samples-http-indicia.conf"
+
+- pipeline.id: indicia_samples_deletions
+  path.config: "{{ Working folder path }}/logstash-config/samples-http-indicia-deletions.conf"

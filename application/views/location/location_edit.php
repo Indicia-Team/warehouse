@@ -116,6 +116,7 @@ This page allows you to specify the details of a location.
             'defaultSystem' => html::initial_value($values, 'location:centroid_sref_system'),
             'validation' => 'required',
             'disabled' => $disabled,
+            'blankText' => '- Please select -',
           ]);
           echo data_entry_helper::text_input([
             'label' => 'Location code',

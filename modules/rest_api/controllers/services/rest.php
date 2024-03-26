@@ -91,6 +91,20 @@ class RestObjects {
   public static $clientWebsiteId;
 
   /**
+   * Public key for the website the client is authenticated as.
+   *
+   * @var int
+   */
+  public static $clientWebsitePublicKey;
+
+  /**
+   * Public key for the website the client is authenticated as.
+   *
+   * @var array
+   */
+  public static array $jwtPayloadValues;
+
+  /**
    * User ID the client is authenticated as.
    *
    * @var int
@@ -170,6 +184,20 @@ class Rest_Controller extends Controller {
   private $reportEngine;
 
   /**
+   * If limited, then the list of reports allowed for the connection.
+   *
+   * @var array
+   */
+  private $limitToReports = [];
+
+  /**
+   * If limited, then the list of data resources allowed for the connection.
+   *
+   * @var array
+   */
+  private $limitToDataResources = [];
+
+  /**
    * Set sensible defaults for the authentication methods available.
    *
    * @var array
@@ -200,7 +228,7 @@ class Rest_Controller extends Controller {
     'jwtUser' => [
       'resource_options' => [
         // Grants full access to all reports. Client configs can override this.
-        'reports' => ['featured' => TRUE, 'limit_to_own_data' => TRUE],
+        'reports' => ['featured' => TRUE],
       ],
     ],
   ];
@@ -894,13 +922,14 @@ class Rest_Controller extends Controller {
       }
       $this->authenticate();
       $this->applyCorsHeader();
-      if (!isset($this->resourceOptions)
-          && isset($this->authConfig['resource_options'])
-          && isset($this->authConfig['resource_options'][$this->resourceName])) {
-        $this->resourceOptions = $this->authConfig['resource_options'][$this->resourceName];
-      }
-      if (!isset($this->resourceOptions)) {
-        $this->resourceOptions = [];
+      if (!isset($this->resourceOptions) && isset($this->authConfig['resource_options'])) {
+        // Resource options may be at the top level of the config (e.g. reports).
+        if (isset($this->authConfig['resource_options'][$this->resourceName])) {
+          $this->resourceOptions = $this->authConfig['resource_options'][$this->resourceName];
+        }
+        elseif ($this->elasticProxy && isset($this->authConfig['resource_options']['elasticsearch'])) {
+          $this->resourceOptions = $this->authConfig['resource_options']['elasticsearch'][$this->resourceName] ?? [];
+        }
       }
       // Caching can be enabled via a query string parameter if not already
       // forced by the authorisation config.
@@ -909,7 +938,7 @@ class Rest_Controller extends Controller {
       }
       $this->method = $_SERVER['REQUEST_METHOD'];
       if ($this->elasticProxy) {
-        $es = new RestApiElasticsearch($this->elasticProxy);
+        $es = new RestApiElasticsearch($this->elasticProxy, $this->resourceOptions);
         $es->checkResourceAllowed();
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource.
@@ -917,7 +946,7 @@ class Rest_Controller extends Controller {
         }
         else {
           $postRaw = file_get_contents('php://input');
-          $postObj = empty($postRaw) ? [] : json_decode($postRaw);
+          $postObj = empty($postRaw) ? (object) [] : json_decode($postRaw);
           $format = (isset($_GET['format']) && $_GET['format'] === 'csv') ? 'csv' : 'json';
           $es->elasticRequest($postObj, $format);
         }
@@ -934,6 +963,11 @@ class Rest_Controller extends Controller {
         else {
           if (!array_key_exists($this->method, $resourceConfig)) {
             RestObjects::$apiResponse->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
+          }
+          if (!empty($this->limitToDataResources)) {
+            if (!in_array(strtolower($this->resourceName), $this->limitToDataResources)) {
+              RestObjects::$apiResponse->fail('Forbidden', 403, "Unauthorised data resource $this->resourceName requested - limited to " . implode(', ', $this->limitToDataResources));
+            }
           }
           $this->request = $this->method === 'GET' ? $_GET : $_POST;
           $this->checkVersion($arguments);
@@ -955,13 +989,13 @@ class Rest_Controller extends Controller {
                 'taxa',
                 'custom_verification_rulesets',
               ])) {
-            if (empty($this->request['proj_id'])) {
+            if (empty($_REQUEST['proj_id'])) {
               // Should not have got this far - just in case.
-              RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
+              RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter.');
             }
             else {
-              $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
-              $projectId = $this->request['proj_id'];
+              $this->checkAllowedResource($_REQUEST['proj_id'], $this->resourceName);
+              $projectId = $_REQUEST['proj_id'];
             }
           }
           $this->validateParameters($pathConfig);
@@ -1599,6 +1633,22 @@ class Rest_Controller extends Controller {
     }
     try {
       $reportFile = $this->getReportFileNameFromSegments($segments);
+      if (!empty($this->limitToReports)) {
+        if (!in_array(strtolower("$reportFile.xml"), $this->limitToReports)) {
+          RestObjects::$apiResponse->fail('Forbidden', 403, 'Report requested is not allowed');
+        }
+        if (!empty($this->resourceOptions['featured']) || !empty($this->resourceOptions['summary'])) {
+          // Need to load the report file XML to determine if featured or
+          // summary due to limits in auth method config.
+          $metadata = XMLReportReader::loadMetadata("$reportFile");
+          if (!empty($this->resourceOptions['featured']) && empty($metadata['featured'])) {
+            RestObjects::$apiResponse->fail('Unauthorized', 403, 'Report requested is not allowed');
+          }
+          if (!empty($this->resourceOptions['summary']) && empty($metadata['summary'])) {
+            RestObjects::$apiResponse->fail('Unauthorized', 403, 'Report requested is not allowed');
+          }
+        }
+      }
       $report = $this->loadReport($reportFile, $_GET);
       if (isset($report['content']['records'])) {
         if ($this->getAutofeedMode()) {
@@ -1980,9 +2030,14 @@ class Rest_Controller extends Controller {
     // array.
     if (!isset($this->reportEngine)) {
       $this->reportEngine = new ReportEngine([RestObjects::$clientWebsiteId]);
-      // Resource configuration can provide a list of restricted reports that
-      // are allowed for this client.
-      if (isset($this->resourceOptions['authorise'])) {
+      if (!empty($this->limitToReports)) {
+        // Connection details on table rest_api_client_connections can set a
+        // limited list of reports.
+        $this->reportEngine->setAuthorisedReports($this->limitToReports);
+      }
+      elseif (isset($this->resourceOptions['authorise'])) {
+        // Resource configuration in config/rest.php can provide a list of
+        // restricted reports that are allowed for this client.
         $this->reportEngine->setAuthorisedReports($this->resourceOptions['authorise']);
       }
     }
@@ -2079,6 +2134,28 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Is a filter on user's own data required?
+   *
+   * @return bool
+   *   True if a filter on created_by_id required.
+   */
+  private function needToFilterToUser() {
+    return !empty($this->resourceOptions['limit_to_own_data'])
+      || RestObjects::$scope === 'userWithinWebsite'
+      || RestObjects::$scope === 'user';
+  }
+
+  /**
+   * Is a filter on website required?
+   *
+   * @return bool
+   *   True if a filter on website_id required.
+   */
+  private function needToFilterToWebsite() {
+    return RestObjects::$scope === 'userWithinWebsite';
+  }
+
+  /**
    * Loads the data for a report from the database, without using caching.
    *
    * @param string $report
@@ -2092,9 +2169,14 @@ class Rest_Controller extends Controller {
   private function loadReportFromDb($report, array $params) {
     $this->loadReportEngine();
     $filter = [];
-    // @todo Apply permissions for user or website & write tests
-    // load the filter associated with the project ID
-    if (isset(RestObjects::$clientSystemId)) {
+    // @todo Apply permissions for user or website & write tests.
+    if (!empty($this->resourceOptions['filter_id'])) {
+      // Limit records to a filter specified in rest_api_client_connections
+      // table.
+      $filter = $this->loadFilter($this->resourceOptions['filter_id']);
+    }
+    elseif (isset(RestObjects::$clientSystemId)) {
+      // Load the filter associated with the project ID.
       $filter = $this->loadFilterForProject($this->request['proj_id']);
     }
     elseif (isset(RestObjects::$clientUserId)) {
@@ -2105,17 +2187,12 @@ class Rest_Controller extends Controller {
         $filter = $this->getPermissionsFilterDefinition();
       }
       elseif (!empty($this->resourceOptions['limit_to_own_data']) || RestObjects::$scope === 'userWithinWebsite') {
-        // Default filter - the user's records for this website only.
-        $filter = [
-          'website_list' => RestObjects::$clientWebsiteId,
-          'created_by_id' => RestObjects::$clientUserId,
-        ];
-      }
-      elseif (RestObjects::$scope === 'user') {
-        // Default filter - the user's records for this website only.
-        $filter = [
-          'created_by_id' => RestObjects::$clientUserId,
-        ];
+        if ($this->needToFilterToUser()) {
+          $filter['created_by_id'] = RestObjects::$clientUserId;
+        }
+        if ($this->needToFilterToWebsite()) {
+          $filter['website_list'] = RestObjects::$clientWebsiteId;
+        }
       }
     }
     else {
@@ -2125,6 +2202,16 @@ class Rest_Controller extends Controller {
       $filter = [
         'website_list' => RestObjects::$clientWebsiteId,
       ];
+    }
+    // Apply limits defined in rest_api_client_connections table.
+    if (isset($this->resourceOptions['allow_confidential'])) {
+      $filter['confidential'] = $this->resourceOptions['allow_confidential'] ? 'all' : 'f';
+    }
+    if (isset($this->resourceOptions['allow_sensitive']) && !$this->resourceOptions['allow_sensitive']) {
+      $filter['exclude_sensitive'] = TRUE;
+    }
+    if (isset($this->resourceOptions['allow_unreleased']) && $this->resourceOptions['allow_unreleased']) {
+      $filter['release_status'] = 'A';
     }
     // The project's filter acts as a context for the report, meaning it
     // defines the limit of all the records that are available for this project.
@@ -2144,13 +2231,14 @@ class Rest_Controller extends Controller {
     // than populated array unless we are going to cache the result in which
     // case we need it all.
     try {
+      kohana::log('debug', 'Params: ' . var_export($params, TRUE));
       $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml',
         $params, !empty($this->resourceOptions['cached']));
     }
     catch (Exception $e) {
-      $code = (substr($e->getMessage(), 0, 21) === 'Unable to find report') ? 404 : 500;
+      $code = $e->getCode();
       $status = ($code === 404) ? 'Not Found' : 'Internal Server Error';
-      RestObjects::$apiResponse->fail($status, $code, $e->getMessage());
+      RestObjects::$apiResponse->fail($status, $code === 0 ? 500 : $code, $e->getMessage());
     }
     // Include count query results if not already known from a previous
     // request.
@@ -2175,6 +2263,26 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Load the filter definition for a filter ID.
+   *
+   * @param int $id
+   *   Filter ID.
+   *
+   * @return array
+   *   Filter definition.
+   */
+  private function loadFilter($id) {
+    $filters = RestObjects::$db->select('definition')
+      ->from('filters')
+      ->where(['id' => $id, 'deleted' => 'f'])
+      ->get()->result_array();
+    if (count($filters) !== 1) {
+      RestObjects::$apiResponse->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
+    }
+    return json_decode($filters[0]->definition, TRUE);
+  }
+
+  /**
    * Returns the filter definition associated with a given project ID.
    *
    * @param string $id
@@ -2189,14 +2297,7 @@ class Rest_Controller extends Controller {
     }
     if (isset($this->projects[$id]['filter_id'])) {
       $filterId = $this->projects[$id]['filter_id'];
-      $filters = RestObjects::$db->select('definition')
-        ->from('filters')
-        ->where(['id' => $filterId, 'deleted' => 'f'])
-        ->get()->result_array();
-      if (count($filters) !== 1) {
-        RestObjects::$apiResponse->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
-      }
-      return json_decode($filters[0]->definition, TRUE);
+      return $this->loadFilter($filterId);
     }
     else {
       return [];
@@ -2508,11 +2609,50 @@ SQL;
   }
 
   /**
-   * Attempts to authenticate as a user using a JWT access token.
+   * Checks a JWT token decodes against a public key.
    *
-   * @todo Allow claims for full precision data.
+   * Exceptions thrown if not.
+   *
+   * @param string $token
+   *   JWT token.
+   * @param string $publicKey
+   *   Key to check against.
    */
-  private function authenticateUsingJwtUser() {
+  private function checkDecodeJwt($token, $publicKey) {
+    // Allow for minor clock sync problems.
+    JWT\JWT::$leeway = 60;
+    try {
+      JWT\JWT::decode($token, $publicKey, ['RS256']);
+    }
+    catch (JWT\SignatureInvalidException $e) {
+      kohana::log('debug', 'Token decode failed');
+      kohana::log('debug', $e->getMessage());
+      RestObjects::$apiResponse->fail('Unauthorized', 401);
+    }
+    catch (JWT\ExpiredException $e) {
+      kohana::log('debug', 'Token expired');
+      RestObjects::$apiResponse->fail('Unauthorized', 401);
+    }
+    catch (ErrorException $e) {
+      if (substr($e->getMessage(), 0, 16) === 'openssl_verify()') {
+        kohana::log('debug', 'Public key format incorrect.');
+        RestObjects::$apiResponse->fail('Internal Server Error', 500);
+      }
+      // Fallback.
+      throw $e;
+    }
+  }
+
+  /**
+   * Extracts the website and payload from a JWT in request header.
+   *
+   * @return bool
+   *   True if successful
+   */
+  private function decodeJwtPayload() {
+    if (isset(RestObjects::$jwtPayloadValues)) {
+      return TRUE;
+    }
     require_once 'vendor/autoload.php';
     $suppliedToken = $this->getBearerAuthToken();
     if ($suppliedToken && substr_count($suppliedToken, '.') === 2) {
@@ -2521,60 +2661,53 @@ SQL;
       if (!$payload) {
         RestObjects::$apiResponse->fail('Bad request', 400);
       }
-      $payloadValues = json_decode($payload, TRUE);
-      if (!$payloadValues) {
+      RestObjects::$jwtPayloadValues = json_decode($payload, TRUE);
+      if (!RestObjects::$jwtPayloadValues) {
         RestObjects::$apiResponse->fail('Bad request', 400);
       }
-      if (empty($payloadValues['iss'])) {
+      if (empty(RestObjects::$jwtPayloadValues['iss'])) {
         RestObjects::$apiResponse->fail('Bad request', 400);
       }
-      $website = $this->getWebsiteByUrl($payloadValues['iss']);
-      if (!$website || empty($website->public_key)) {
-        kohana::log('debug', 'Website not found or has no public key: ' . $payloadValues['iss']);
+      $website = $this->getWebsiteByUrl(RestObjects::$jwtPayloadValues['iss']);
+      if (!$website) {
+        kohana::log('debug', 'Website not found: ' . RestObjects::$jwtPayloadValues['iss']);
         RestObjects::$apiResponse->fail('Unauthorized', 401);
       }
-      // Allow for minor clock sync problems.
-      JWT\JWT::$leeway = 60;
-      try {
-        $decoded = JWT\JWT::decode($suppliedToken, $website->public_key, ['RS256']);
-      }
-      catch (JWT\SignatureInvalidException $e) {
-        kohana::log('debug', 'Token decode failed');
-        kohana::log('debug', $e->getMessage());
-        RestObjects::$apiResponse->fail('Unauthorized', 401);
-      }
-      catch (JWT\ExpiredException $e) {
-        kohana::log('debug', 'Token expired');
-        RestObjects::$apiResponse->fail('Unauthorized', 401);
-      }
-      catch (ErrorException $e) {
-        if (substr($e->getMessage(), 0, 16) === 'openssl_verify()') {
-          kohana::log('debug', 'Public key format incorrect.');
-          RestObjects::$apiResponse->fail('Internal Server Error', 500);
-        }
-        // Fallback.
-        throw $e;
-      }
-      if (isset($payloadValues['email_verified']) && !$payloadValues['email_verified']) {
+      RestObjects::$clientWebsitePublicKey = $website->public_key;
+      if (isset(RestObjects::$jwtPayloadValues['email_verified']) && !RestObjects::$jwtPayloadValues['email_verified']) {
         kohana::log('debug', 'Payload email unverified');
         RestObjects::$apiResponse->fail('Unauthorized', 401);
       }
-      if (isset($payloadValues['http://indicia.org.uk/user:id'])) {
-        $this->checkWebsiteUser($website->id, $payloadValues['http://indicia.org.uk/user:id']);
-        RestObjects::$clientUserId = $payloadValues['http://indicia.org.uk/user:id'];
-        // If authenticated as a user, change default scope.
-        RestObjects::$scope = 'userWithinWebsite';
-      }
       RestObjects::$clientWebsiteId = $website->id;
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Attempts to authenticate as a user using a JWT access token.
+   */
+  private function authenticateUsingJwtUser() {
+    if ($this->decodeJwtPayload() && !isset(RestObjects::$jwtPayloadValues['http://indicia.org.uk/client:username'])
+        && !empty(RestObjects::$clientWebsitePublicKey)) {
+      // Need a valid website public key.
+      $this->checkDecodeJwt($this->getBearerAuthToken(TRUE), RestObjects::$clientWebsitePublicKey);
+      if (isset(RestObjects::$jwtPayloadValues['http://indicia.org.uk/user:id'])) {
+        $this->checkWebsiteUser(RestObjects::$clientWebsiteId, RestObjects::$jwtPayloadValues['http://indicia.org.uk/user:id']);
+        RestObjects::$clientUserId = RestObjects::$jwtPayloadValues['http://indicia.org.uk/user:id'];
+        // If authenticated as a user, change default scope. Note that an admin
+        // user of the website can access other records.
+        RestObjects::$scope = RestObjects::$clientUserWebsiteRole == 3 || $this->resourceName === 'reports' ? 'userWithinWebsite' : 'website';
+      }
       // Allow URL parameter to override default reporting scope as long as
       // this scope has been claimed by the token. We allow scope as a standard
       // claim or custom claim and as an array or space separated string for
       // wider compatibility with auth servers.
-      if (isset($payloadValues['http://indicia.org.uk/scope']) && !isset($payloadValues['scope'])) {
-        $payloadValues['scope'] = $payloadValues['http://indicia.org.uk/scope'];
+      if (isset(RestObjects::$jwtPayloadValues['http://indicia.org.uk/scope']) && !isset(RestObjects::$jwtPayloadValues['scope'])) {
+        RestObjects::$jwtPayloadValues['scope'] = RestObjects::$jwtPayloadValues['http://indicia.org.uk/scope'];
       }
-      if (!empty($payloadValues['scope'])) {
-        $allowedScopes = is_array($payloadValues['scope']) ? $payloadValues['scope'] : explode(' ', $payloadValues['scope']);
+      if (!empty(RestObjects::$jwtPayloadValues['scope'])) {
+        $allowedScopes = is_array(RestObjects::$jwtPayloadValues['scope']) ? RestObjects::$jwtPayloadValues['scope'] : explode(' ', RestObjects::$jwtPayloadValues['scope']);
         if (!empty($_GET['scope'])) {
           if (!in_array($_GET['scope'], $allowedScopes)) {
             RestObjects::$apiResponse->fail('Forbidden', 403, 'Attempt to access disallowed scope');
@@ -2588,6 +2721,25 @@ SQL;
           RestObjects::$scope = in_array($allowedScopes[0], ALLOWED_SCOPES) ? $allowedScopes[0] : 'userWithinWebsite';
         }
       }
+      $this->authenticated = TRUE;
+    }
+  }
+
+  /**
+   * Attempts to authenticate as a user using a JWT access token.
+   *
+   * @todo Allow claims for full precision data.
+   */
+  private function authenticateUsingJwtClient() {
+    if ($this->decodeJwtPayload() && isset(RestObjects::$jwtPayloadValues['http://indicia.org.uk/client:username']) && !empty($_REQUEST['proj_id'])) {
+      $clientSystemId = RestObjects::$jwtPayloadValues['http://indicia.org.uk/client:username'];
+      $r = $this->getRestConnectionFromDb($clientSystemId, $_REQUEST['proj_id']);
+      // Validate the JWT.
+      $this->checkDecodeJwt($this->getBearerAuthToken(TRUE), $r->public_key);
+      if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'])) {
+        RestObjects::$apiResponse->fail('Method Not Allowed', 405, 'Connection is read only.');
+      }
+      $this->applyConnectionSettingsFromRestConnectionInDb($r);
       $this->authenticated = TRUE;
     }
   }
@@ -2714,7 +2866,7 @@ SQL;
       RestObjects::$clientWebsiteId = $websiteId;
       RestObjects::$clientUserId = $userId;
       RestObjects::$clientUserWebsiteRole = $users['0']['site_role_id'];
-      RestObjects::$scope = $scope ?? 'userWithinWebsite';
+      RestObjects::$scope = $scope ?? (RestObjects::$clientUserWebsiteRole == 3 ? 'userWithinWebsite' : 'website');
       $this->authenticated = TRUE;
     }
     else {
@@ -2742,9 +2894,26 @@ SQL;
     else {
       return;
     }
-    if (!array_key_exists($clientSystemId, $config)) {
-      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Invalid client system ID');
+    // Configuration allowed either in config file or database. Will eventually
+    // move to DB only.
+    if (array_key_exists($clientSystemId, $config)) {
+      $this->authenticateUsingDirectClientInConfigFile($clientSystemId, $secret);
     }
+    else {
+      $this->authenticateUsingDirectClientInDb($clientSystemId, $secret);
+    }
+  }
+
+  /**
+   * Authenticate using a client and project specified in the rest config file.
+   *
+   * @param string $clientSystemId
+   *   Name of client given in the config file.
+   * @param string $secret
+   *   Provided secret to check.
+   */
+  private function authenticateUsingDirectClientInConfigFile($clientSystemId, $secret) {
+    $config = Kohana::config('rest.clients');
     if ($secret !== $config[$clientSystemId]['shared_secret']) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
@@ -2756,11 +2925,11 @@ SQL;
     // proj_id if using client system based authorisation.
     if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
         (empty($_REQUEST['proj_id']))) {
-      RestObjects::$apiResponse->fail('Bad request', 400, 'Project ID missing.');
+      RestObjects::$apiResponse->fail('Bad request', 400, 'Missing proj_id parameter.');
     }
     if (!empty($_REQUEST['proj_id'])) {
       if (empty($this->projects[$_REQUEST['proj_id']])) {
-        RestObjects::$apiResponse->fail('Bad request', 400, 'Project ID invalid.');
+        RestObjects::$apiResponse->fail('Bad request', 400, 'Invalid proj_id parameter.');
       }
       $projectConfig = $this->projects[$_REQUEST['proj_id']];
       RestObjects::$clientWebsiteId = $projectConfig['website_id'];
@@ -2775,6 +2944,120 @@ SQL;
       RestObjects::$scope = $projectConfig['sharing'];
     }
     $this->authenticated = TRUE;
+  }
+
+  /**
+   * Authenticate using a client and project specified in the database.
+   *
+   * @param string $clientSystemId
+   *   Name of client given in the config file.
+   * @param string $secret
+   *   Provided secret to check.
+   */
+  private function authenticateUsingDirectClientInDb($clientSystemId, $secret) {
+    if (empty($_REQUEST['proj_id'])) {
+      // Can't authenticate without proj_id.
+      return;
+    }
+    $r = $this->getRestConnectionFromDb($clientSystemId, $_REQUEST['proj_id']);
+    // Stored password is hashed, so check the hash.
+    if (!password_verify($secret, $r->secret)) {
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
+    }
+    if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'])) {
+      RestObjects::$apiResponse->fail('Method Not Allowed', 405, 'Connection is read only.');
+    }
+    $this->applyConnectionSettingsFromRestConnectionInDb($r);
+    $this->authenticated = TRUE;
+  }
+
+  /**
+   * Load details of a REST connection from the DB.
+   *
+   * @param string $clientSystemId
+   *   Client name.
+   * @param string $projId
+   *   Proj_id parameter.
+   *
+   * @return object
+   *   Object containing properties for details of the connection and it's
+   *   privileges.
+   */
+  private function getRestConnectionFromDb($clientSystemId, $projId) {
+    $projIdParam = pg_escape_literal(RestObjects::$db->getLink(), $projId);
+    $usernameParam = pg_escape_literal(RestObjects::$db->getLink(), $clientSystemId);
+    $sql = <<<SQL
+SELECT c.website_id,
+  c.username,
+  c.secret,
+  c.public_key,
+  cc.proj_id,
+  cc.allow_reports,
+  cc.limit_to_reports,
+  cc.allow_data_resources,
+  cc.limit_to_data_resources,
+  cc.sharing,
+  cc.allow_confidential,
+  cc.allow_sensitive,
+  cc.allow_unreleased,
+  cc.full_precision_sensitive_records,
+  cc.filter_id
+FROM rest_api_clients c
+JOIN rest_api_client_connections cc ON cc.rest_api_client_id=c.id AND cc.deleted=false
+  AND cc.proj_id=$projIdParam
+WHERE c.deleted=false
+AND c.username=$usernameParam
+SQL;
+    $r = RestObjects::$db->query($sql)->current();
+    if (!$r) {
+      // No matching authentication in db.
+      RestObjects::$apiResponse->fail('Unauthorized', 401, 'Invalid client system ID');
+    }
+    return $r;
+  }
+
+  /**
+   * Handle the connection options loaded from the database.
+   *
+   * @param object $r
+   *   Connection data loaded from database.
+   */
+  private function applyConnectionSettingsFromRestConnectionInDb($r) {
+    RestObjects::$clientWebsiteId = $r->website_id;
+    RestObjects::$clientSystemId = $r->username;
+    // Setup $this->resourceOptions to define what is allowed.
+    $this->resourceOptions = [
+      'allow_confidential' => $r->allow_confidential === 't',
+      'allow_sensitive' => $r->allow_sensitive === 't',
+      'allow_unreleased' => $r->allow_unreleased === 't',
+      'full_precision_sensitive_records' => $r->full_precision_sensitive_records === 't',
+      'filter_id' => $r->filter_id,
+    ];
+    // Map connection sharing to scope.
+    RestObjects::$scope = warehouse::sharingCodeToTerm($r->sharing);
+    if ($this->resourceName === 'reports') {
+      // Reports API requested.
+      if ($r->allow_reports === 'f') {
+        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Access to reports unauthorised');
+      }
+      if ($r->limit_to_reports) {
+        // Convert from pg array format.
+        $this->limitToReports = explode(',', strtolower(trim($r->limit_to_reports, '{}')));
+      }
+    }
+    elseif (!$this->elasticProxy) {
+      // Not reports and not Elastic, so a data resource.
+      if ($r->allow_data_resources === 'f') {
+        RestObjects::$apiResponse->fail('Unauthorized', 401, 'Access to data resources unauthorised');
+      }
+      if ($r->limit_to_data_resources) {
+        // Convert from pg array format.
+        $this->limitToDataResources = explode(',', strtolower(trim($r->limit_to_data_resources, '{}')));
+      }
+    }
+    $this->projects = [
+      $r->proj_id => [],
+    ];
   }
 
   /**
@@ -3023,7 +3306,7 @@ SQL;
    * End-point to GET an list of occurrence_media.
    */
   public function occurrenceMediaGet() {
-    rest_crud::readList('occurrence_medium');
+    rest_crud::readList('occurrence_medium', 'AND t3.website_id=' . RestObjects::$clientWebsiteId, $this->needToFilterToUser());
   }
 
   /**
@@ -3037,10 +3320,7 @@ SQL;
       'occurrence_medium',
       $id,
       'AND t3.website_id=' . RestObjects::$clientWebsiteId,
-      // If user website site role known, allow access if admin or site editor,
-      // else must belong to user.
-      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2
-    );
+      $this->needToFilterToUser());
   }
 
   /**
@@ -3066,7 +3346,7 @@ SQL;
     // Update only allowed on this website.
     $preconditions = ['occurrence.website_id' => RestObjects::$clientWebsiteId];
     // Also limit to user's own data unless site admin or editor.
-    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+    if ($this->needToFilterToUser()) {
       $preconditions['created_by_id'] = RestObjects::$clientUserId;
     }
     $r = rest_crud::update('occurrence_medium', $id, $putArray, $preconditions);
@@ -3098,10 +3378,60 @@ SQL;
   }
 
   /**
+   * Apply filters to query when accessing occurrences.
+   */
+  private function getExtraFiltersForOccurrences() {
+    $extraFilters = [
+      't1.website_id=' . RestObjects::$clientWebsiteId,
+    ];
+    // Read disallowed on confidential unless specifically allowed.
+    if (empty($this->resourceOptions['allow_confidential'])) {
+      $extraFilters[] = 't1.confidential=false';
+    }
+    // Read allowed on sensitive unless specifically blocked.
+    if (isset($this->resourceOptions['allow_sensitive']) && $this->resourceOptions['allow_sensitive'] === FALSE) {
+      $extraFilters[] = 't1.sensitivity_precision IS NULL';
+    }
+    // Read allowed on unreleased unless specifically blocked.
+    if (isset($this->resourceOptions['allow_unreleased']) && $this->resourceOptions['allow_unreleased'] === FALSE) {
+      $extraFilters[] = "t1.release_status='R'";
+    }
+    return 'AND ' . implode(' AND ', $extraFilters);
+  }
+
+  /**
+   * Ensure resource options honoured when updating an occurrence.
+   *
+   * @return array
+   *   Field check key value pairs.
+   */
+  private function getFieldChecksForOccurrencesPut() {
+    $fieldChecks = [
+      'website_id' => (int) RestObjects::$clientWebsiteId,
+    ];
+    // Update disallowed on confidential unless specifically allowed.
+    if (empty($this->resourceOptions['allow_confidential'])) {
+      $fieldChecks['confidential'] = 'f';
+    }
+    // Update allowed on sensitive unless specifically blocked.
+    if (isset($this->resourceOptions['allow_sensitive']) && $this->resourceOptions['allow_sensitive'] === FALSE) {
+      $fieldChecks['sensitivity_precision'] = NULL;
+    }
+    // Update allowed on unreleased unless specifically blocked.
+    if (isset($this->resourceOptions['allow_unreleased']) && $this->resourceOptions['allow_unreleased'] === FALSE) {
+      $fieldChecks['release_status'] = 'R';
+    }
+    if ($this->needToFilterToUser()) {
+      $fieldChecks['created_by_id'] = (int) RestObjects::$clientUserId;
+    }
+    return $fieldChecks;
+  }
+
+  /**
    * End-point to GET an list of occurrences.
    */
   public function occurrencesGet() {
-    rest_crud::readList('occurrence', 'AND t1.website_id=' . RestObjects::$clientWebsiteId);
+    rest_crud::readList('occurrence', $this->getExtraFiltersForOccurrences(), $this->needToFilterToUser());
   }
 
   /**
@@ -3111,13 +3441,7 @@ SQL;
    *   Occurrence ID.
    */
   public function occurrencesGetId($id) {
-    rest_crud::read(
-      'occurrence',
-      $id,
-      'AND t1.website_id=' . RestObjects::$clientWebsiteId,
-      // If user website site role known, allow access if admin or site editor,
-      // else must belong to user.
-      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2);
+    rest_crud::read('occurrence', $id, $this->getExtraFiltersForOccurrences(), $this->needToFilterToUser());
   }
 
   /**
@@ -3180,18 +3504,7 @@ SQL;
   public function occurrencesPutId($id) {
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    // Update only allowed on this website.
-    $preconditions = ['website_id' => RestObjects::$clientWebsiteId];
-    // Also limit to user's own data unless site admin or editor.
-    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
-      $preconditions['created_by_id'] = RestObjects::$clientUserId;
-    }
-    $r = rest_crud::update(
-      'occurrence',
-      $id,
-      $putArray,
-      $preconditions
-    );
+    $r = rest_crud::update('occurrence', $id, $putArray, $this->getFieldChecksForOccurrencesPut());
     echo json_encode($r);
   }
 
@@ -3450,10 +3763,16 @@ SQL;
    * ?public=false to only get locations for user of website.
    */
   public function locationsGet() {
-    // Make a filter for locations for this website and user.
+    // Make a filter for locations for this website and user (if available).
     $websiteFilter = 't2.website_id=' . RestObjects::$clientWebsiteId;
-    $userFilter = 't1.created_by_id=' . RestObjects::$clientUserId;
-    $webUserFilter = "($websiteFilter AND $userFilter)";
+    if ($this->needToFilterToUser()) {
+      $userFilter = 't1.created_by_id=' . RestObjects::$clientUserId;
+      $webUserFilter = "($websiteFilter AND $userFilter)";
+    }
+    else {
+      // Not user limited, so allow website's locations.
+      $webUserFilter = $websiteFilter;
+    }
     // Make a filter for public locations available to all users and websites.
     $publicFilter = 't1.public=true';
     // Allow both types of location.
@@ -3507,7 +3826,7 @@ SQL;
     // Update only allowed on this website.
     $preconditions = ['websites[].id' => RestObjects::$clientWebsiteId];
     // Also limit to user's own data unless site admin or editor.
-    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+    if ($this->needToFilterToUser()) {
       $preconditions['created_by_id'] = RestObjects::$clientUserId;
     }
     $r = rest_crud::update('location', $id, $putArray, $preconditions);
@@ -3615,7 +3934,7 @@ SQL;
    * End-point to GET an list of sample_media.
    */
   public function sampleMediaGet() {
-    rest_crud::readList('sample_medium');
+    rest_crud::readList('sample_medium', '', $this->needToFilterToUser());
   }
 
   /**
@@ -3631,7 +3950,7 @@ SQL;
       'AND t4.website_id=' . RestObjects::$clientWebsiteId,
       // If user website site role known, allow access if admin or site editor,
       // else must belong to user.
-      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2
+      $this->needToFilterToUser()
     );
   }
 
@@ -3658,7 +3977,7 @@ SQL;
     // Update only allowed on this website.
     $preconditions = ['sample.survey.website_id' => RestObjects::$clientWebsiteId];
     // Also limit to user's own data unless site admin or editor.
-    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+    if ($this->needToFilterToUser()) {
       $preconditions['created_by_id'] = RestObjects::$clientUserId;
     }
     $r = rest_crud::update('sample_medium', $id, $putArray, $preconditions);
@@ -3694,7 +4013,7 @@ SQL;
   public function samplesGet() {
     // @todo Website filters on this request and similar may need to respect
     // JWT scope.
-    rest_crud::readList('sample', 'AND t2.website_id=' . RestObjects::$clientWebsiteId);
+    rest_crud::readList('sample', 'AND t2.website_id=' . RestObjects::$clientWebsiteId, $this->needToFilterToUser());
   }
 
   /**
@@ -3704,14 +4023,7 @@ SQL;
    *   Sample ID.
    */
   public function samplesGetId($id) {
-    rest_crud::read(
-      'sample',
-      $id,
-      'AND t2.website_id=' . RestObjects::$clientWebsiteId,
-      // If user website site role known, allow access if admin or site editor,
-      // else must belong to user.
-      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2
-    );
+    rest_crud::read('sample', $id, 'AND t2.website_id=' . RestObjects::$clientWebsiteId, $this->needToFilterToUser());
   }
 
   /**
@@ -3751,7 +4063,7 @@ SQL;
     // Update only allowed on this website.
     $preconditions = ['survey.website_id' => RestObjects::$clientWebsiteId];
     // Also limit to user's own data unless site admin or editor.
-    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+    if ($this->needToFilterToUser()) {
       $preconditions['created_by_id'] = RestObjects::$clientUserId;
     }
     $r = rest_crud::update(
@@ -4351,7 +4663,7 @@ SQL;
     $this->assertRecordFromCurrentWebsite('occurrence_attributes_websites', $id);
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
-    $r = rest_crud::update('occurrence_attributes_website', $id, $putArray, FALSE);
+    $r = rest_crud::update('occurrence_attributes_website', $id, $putArray, []);
     echo json_encode($r);
   }
 

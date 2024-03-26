@@ -128,6 +128,19 @@ $site = url::site();
       'default' => html::initial_value($values, 'sample:external_key'),
     ]);
     echo data_entry_helper::select([
+      'label' => 'Record status',
+      'fieldname' => 'sample:record_status',
+      'lookupValues' => [
+        'V' => 'Accepted',
+        'C' => 'Pending review',
+        'R' => 'Not accepted',
+        'D' => 'Dubious',
+        'T' => 'Test',
+        'I' => 'Incomplete',
+      ],
+      'default' => html::initial_value($values, 'sample:record_status'),
+    ]);
+    echo data_entry_helper::select([
       'label' => 'Licence',
       'helpText' => 'Licence which applies to all records and media held within this sample.',
       'fieldname' => 'sample:licence_id',
