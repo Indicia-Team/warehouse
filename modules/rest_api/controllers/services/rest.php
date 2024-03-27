@@ -938,7 +938,7 @@ class Rest_Controller extends Controller {
       }
       $this->method = $_SERVER['REQUEST_METHOD'];
       if ($this->elasticProxy) {
-        $es = new RestApiElasticsearch($this->elasticProxy, $this->resourceOptions);
+        $es = new RestApiElasticsearch($this->elasticProxy, $this->resourceOptions ?? []);
         $es->checkResourceAllowed();
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource.
