@@ -88,5 +88,16 @@ rename operation for `privacy_precision`:
 Now save the config file and repeat for any other pipeline configuration files that you have set
 up. Finally, restart the Logstash process or service as appropriate.
 
+## REST API config for Elasticsearch
+
+If you have created aliases in Elasticsearch for customised filtered access to the Elasticsearch
+data for specific clients, then edit the `modules/rest_api/config/rest.php` file. In the
+`$config['elasticsearch]` section, for each alias that you have specified which has a built-in
+filter (e.g. a terms filter limiting to a list of websites), then you must add the following to the
+configuration under the `index` entry:
+```php
+  'apply_filters' => FALSE,
+```
+
 One the above steps have been completed, it is safe to update your warehouse code then visit the
 home page in order to follow the link to upgrade the database.
