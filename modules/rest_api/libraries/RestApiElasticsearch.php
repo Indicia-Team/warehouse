@@ -449,7 +449,7 @@ class RestApiElasticsearch {
         // Only user who owns record or verifier can see private samples,
         // unless confidential access allowed.
         if (substr(RestObjects::$scope, 0, 4) !== 'user' && RestObjects::$scope !== 'verification') {
-          $filters[] = ['term' => ['metadata.hide_sample_as_private' => false]];
+          $queryStringParts[] = 'NOT metadata.hide_sample_as_private:true';
         }
       }
       if (empty($this->resourceOptions['allow_unreleased']) || $this->resourceOptions['allow_unreleased'] !== TRUE) {
