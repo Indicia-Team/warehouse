@@ -122,7 +122,7 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
         foreach ($locationTypeRows as $type) {
           $locationTypeIds[] = $type->id;
         }
-        $types = implode($locationTypeIds);
+        $types = implode(',', $locationTypeIds);
         if (!empty($filterLocationIds)) {
           $filterLocationIdsCsv = implode(',', $filterLocationIds);
           $qry = <<<SQL
