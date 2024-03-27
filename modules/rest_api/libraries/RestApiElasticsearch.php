@@ -20,7 +20,7 @@
  */
 
 // Max load from ES, keep fairly low to avoid PHP memory overload.
-define('MAX_ES_SCROLL_SIZE', 5000);
+define('MAX_ES_SCROLL_SIZE', 2000);
 define('SCROLL_TIMEOUT', '5m');
 
 /**
