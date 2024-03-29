@@ -6,6 +6,10 @@
   `group_location_types` setting to be added to the Spatial Index Builder module's config to
   control exactly which group types to index - for example it may be appropriate to only index
   against countries and counties.
+* Adds an `indexed_location_ids` field to the `/services/rest/groups` end-point so that REST API
+  clients can discover the list of locations indexed against a group. This field is filterable
+  to allow discovering the groups whose boundaries intersect a location.
+* The `/services/rest/groups` end-point is now sorted by group title.
 
 # Version 9.0.0
 *2024-03-26*
