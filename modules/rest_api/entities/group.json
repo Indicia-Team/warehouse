@@ -9,7 +9,17 @@
     { "sql": "from_date", "type": "date" },
     { "sql": "to_date", "type": "date" },
     { "sql": "created_on", "type": "date" },
-    { "sql": "created_by_id", "type": "integer" }
+    { "sql": "created_by_id", "type": "integer" },
+    {
+      "name": "indexed_location_ids",
+      "sql": "(SELECT array_agg(location_id ORDER BY location_id) FROM index_groups_locations WHERE group_id=t1.id)",
+      "type": "integer",
+      "array": true,
+      "filter_sql": "EXISTS(SELECT id FROM index_groups_locations WHERE group_id=t1.id AND location_id={value})"
+    }
+  ],
+  "sort": [
+    "t1.title ASC"
   ],
   "joins": [
     {

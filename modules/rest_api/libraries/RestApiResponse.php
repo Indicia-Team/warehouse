@@ -873,7 +873,9 @@ ROW;
   }
 
   /**
-   * Applies any preprocessing to the row of data about to be output. Includes:
+   * Applies any preprocessing to the row of data about to be output.
+   *
+   * Includes:
    * * Application of vague date processing
    * * Removal of empty values
    * * Attaching hrefs to data to point back to self
