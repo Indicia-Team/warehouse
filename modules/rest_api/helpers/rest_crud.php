@@ -281,7 +281,12 @@ SQL,
           else {
             RestObjects::$apiResponse->fail('Internal Server Error', 400, "Unsupported field type for $param");
           }
-          $extraFilter .= "\nAND " . self::$fieldDefs[$param]['sql'] . "=$value";
+          if (isset(self::$fieldDefs[$param]['filter_sql'])) {
+            $extraFilter .= "\nAND " . str_replace('{value}', $value, self::$fieldDefs[$param]['filter_sql']);
+          }
+          else {
+            $extraFilter .= "\nAND " . self::$fieldDefs[$param]['sql'] . "=$value";
+          }
         }
       }
     }
@@ -312,9 +317,10 @@ SQL;
   public static function readList($entity, $extraFilter = '', $userFilter = TRUE) {
     self::loadEntityConfig($entity);
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
+    if (!empty(self::$entityConfig[$entity]->sort)) {
+      $qry .= 'ORDER BY ' . implode(', ', self::$entityConfig[$entity]->sort);
+    }
     $rows = RestObjects::$db->query($qry);
-    kohana::log('debug', 'REST GET query: ' . $qry);
-
     $r = [];
     if ($rows->count() > 0) {
       // Get attribute values.
@@ -365,8 +371,8 @@ SQL;
    */
   public static function read($entity, $id, $extraFilter = '', $userFilter = TRUE) {
     self::loadEntityConfig($entity);
+    $extraFilter .= empty($extraFilter) ? "AND t1.id = $id" : "$extraFilter\nAND t1.id = $id";
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
-    $qry .= "AND t1.id = $id";
     $row = RestObjects::$db->query($qry)->result(FALSE)->current();
     if ($row) {
       // Transaction ID that last updated row is returned as ETag header.
@@ -908,7 +914,7 @@ SQL;
           // Date values need reformatting.
           $value = date('c', strtotime($value));
         }
-        if (!empty(self::$fieldDefs[$field]['array']) && preg_match('/^\[.+\]$/', $value)) {
+        if (!empty(self::$fieldDefs[$field]['array']) && preg_match('/^\[.+\]$/', $value ?? '')) {
           $value = json_decode($value);
         }
       }

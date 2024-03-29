@@ -26,6 +26,14 @@ $config['location_types'] = [
   'Local wildlife site'
 ];
 
+// Optionally specify a list of location types that will be used when indexing
+// recording groups for ease of searching. For example you might want to do
+// this only at a county level. If not specified then the `location_types`
+// config specified above is used.
+$config['group_location_types'] = [
+  'Vice County',
+];
+
 // Of the indexed types, which are layers which have a parent ID that points to
 // another higher level layer that should also be indexed?
 $config['hierarchical_location_types'] = [
