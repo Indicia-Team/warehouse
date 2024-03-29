@@ -113,8 +113,11 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
     // Location IDs or searchArea can be used to find indexed locations.
     if (!empty($filterLocationIds) || !empty($filter['searchArea'])) {
       $config = kohana::config_load('spatial_index_builder', FALSE);
-      if (array_key_exists('location_types', $config)) {
-        $locationTypeNames = "'" . implode("','", $config['location_types']) . "'";
+      // Either use the location types specific to group indexing, or the
+      // generic list of types.
+      $locationTypes = $config['group_location_types'] ?? $config['location_types'] ?? [];
+      if (!empty($locationTypes)) {
+        $locationTypeNames = "'" . implode("','", $locationTypes) . "'";
         $locationTypeRows = $this->db->query(
           "select id from cache_termlists_terms where termlist_title='Location types' and term in ($locationTypeNames)"
           )->result();
@@ -145,10 +148,10 @@ SQL;
             AND l.location_type_id in ($types);
 SQL;
         }
-      }
-      $rows = $this->db->query($qry)->result();
-      foreach ($rows as $row) {
-        $updatedIndexedLocations[] = $row->id;
+        $rows = $this->db->query($qry)->result();
+        foreach ($rows as $row) {
+          $updatedIndexedLocations[] = $row->id;
+        }
       }
     }
     $foundExistingLocationIds = [];
