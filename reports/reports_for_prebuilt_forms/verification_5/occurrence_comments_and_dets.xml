@@ -20,9 +20,9 @@
       and oc.occurrence_id=#occurrence_id#
       union
       select
-        'determination' as type,
+        case d.created_on when o.created_on then 'recordEntered' else 'redetermination' end as type,
         d.created_on,
-        'Record was determined as ' || ttl.taxon || case when ttl.preferred_taxon=ttl.taxon then '' else ' (' || ttl.preferred_taxon || ')' end || '.' as comment,
+        case d.created_on when o.created_on then 'Record was originally entered as ' else 'Record was determined as ' end || ttl.taxon || case when ttl.preferred_taxon=ttl.taxon then '' else ' (' || ttl.preferred_taxon || ')' end || '.' as comment,
         null as correspondence_data,
         null as reference,
         null::character as record_status,
@@ -30,6 +30,7 @@
         false as query,
         coalesce(d.person_name, p.surname || coalesce(', ' || p.first_name, '')) as person_name
       from determinations d
+      join occurrences o on o.id=d.occurrence_id and o.deleted=false
       join users u on u.id=d.created_by_id and u.deleted=false
       join people p on p.id=u.person_id and p.deleted=false
       join cache_taxa_taxon_lists ttl on ttl.id=d.taxa_taxon_list_id
@@ -38,10 +39,10 @@
       union
       -- if there are any determinations, we need the current view of the record
       select distinct
-        'current name' as type,
+        'redetermination' as type,
         -- Early legacy determinations did not set the updated on to the date of the next determination.
         case when d.updated_on=d.created_on then null else d.updated_on end,
-        'Record''s current determination given as ' || ttl.taxon || case when ttl.preferred_taxon=ttl.taxon then '' else ' (' || ttl.preferred_taxon || ')' end || '.'
+        'Record was redetermined as ' || ttl.taxon || case when ttl.preferred_taxon=ttl.taxon then '' else ' (' || ttl.preferred_taxon || ')' end || ' [current determination].'
           || case when d.updated_on=d.created_on then ' Date uncertain - old data.' else '' end as comment,
         null as correspondence_data,
         null as reference,
@@ -52,10 +53,11 @@
       from occurrences o
       join cache_taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id
       join determinations d on d.occurrence_id=o.id and d.deleted=false
-      join users u on u.id=o.updated_by_id and u.deleted=false
+      join users u on u.id=d.updated_by_id and u.deleted=false
       join people p on p.id=u.person_id and p.deleted=false
       where o.deleted=false
       and o.id=#occurrence_id#
+      and d.id=(select max(id) from determinations where occurrence_id=#occurrence_id# and deleted=false)
       order by updated_on desc
   </query>
   <params>
