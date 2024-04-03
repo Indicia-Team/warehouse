@@ -797,7 +797,14 @@ TXT;
 
 $lang['resources']['groups'] = 'Recording groups resource endpoint (sometimes called activities or projects).';
 $lang['resources']['GET groups'] = 'A list of recording groups. Default behaviour is to return groups the current user is a member of.';
-$lang['resources']['GET groups/{id}'] = 'Retrieves the information for a single recording group. The user must either be a member of the group, or the group must be public or membership by request.';
+$lang['resources']['GET groups/{id}'] = <<<HTML
+<p>Retrieves the information for a single recording group. The user must either be a member of the
+group, or the group must be public or membership by request.</p>
+<p>Note, if a group has a boundary associated with its filter (either freehand or a saved location)
+then the IDs of indexed locations which intersect that boundary are saved in the value
+`indexed_location_ids` which is returned as part of the group's record. This is different to the
+list of recording locations returned by <code>GET groups/{id}/locations</code>.</p>
+HTML;
 $lang['resources']['GET groups/{id}/locations'] = <<<TXT
 Retrieves the locations that have been linked to a group, e.g. a project's list of recording
 sites. Note that the `id` value in the response is the ID of the join record between locations and
