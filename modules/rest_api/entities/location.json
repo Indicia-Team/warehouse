@@ -1,6 +1,7 @@
 {
   "fields": [
     { "sql": "id", "type": "integer" },
+    { "sql": "name", "type": "string" },
     { "sql": "code", "type": "string" },
     { "sql": "parent_id", "type": "integer" },
     { "sql": "centroid_sref", "type": "string" },
