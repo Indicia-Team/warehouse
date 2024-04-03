@@ -3789,16 +3789,27 @@ SQL;
    *   ID of the location.
    */
   public function locationsGetId($id) {
+    $clientWebsiteId = RestObjects::$clientWebsiteId;
+    $clientUserId = RestObjects::$clientUserId;
     if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
       // Normal users can access public locations, or their own locations in
       // the current website.
-      $filter = 'AND (t1.public=true OR (t2.website_id=' . RestObjects::$clientWebsiteId .
-        ' AND t1.created_by_id=' . RestObjects::$clientUserId . ')';
+      $filter = <<<SQL
+        AND (t1.public=true
+          OR (t2.website_id=$clientWebsiteId AND t1.created_by_id=$clientUserId)
+          OR (t2.website_id=$clientWebsiteId AND t1.id IN (
+            SELECT gl.location_id
+            FROM groups_locations gl
+            JOIN groups_users gu ON gu.group_id=gl.group_id AND gu.user_id=$clientUserId AND gu.deleted=false AND gu.pending=false
+            WHERE gl.deleted=false
+          ))
+        )
+SQL;
     }
     else {
       // Site editor or admin users can access public locations, or any
       // location in the current website.
-      $filter = 'AND (t1.public=true OR t2.website_id=' . RestObjects::$clientWebsiteId . ')';
+      $filter = "AND (t1.public=true OR t2.website_id=$clientWebsiteId)";
     }
     // Call read() with userFilter = FALSE as public locations may be
     // created by another user.
