@@ -50,24 +50,11 @@ class rest_api_sync_remote_inaturalist {
   public static function syncServer($serverId, array $server) {
     // Count of pages done in this run.
     $pageCount = 0;
-    // If last run still going, not on first page.
-    $firstPage = !variable::get("rest_api_sync_{$serverId}_next_run");
-    if ($firstPage) {
-      // Track when we started this run, so the next run can pick up all
-      // changes.
-      $timestampAtStart = date('c');
-      variable::set("rest_api_sync_{$serverId}_next_run", $timestampAtStart);
-    }
     do {
       $syncStatus = self::syncPage($serverId, $server);
       $pageCount++;
       ob_flush();
     } while ($syncStatus['moreToDo'] && $pageCount < INAT_MAX_PAGES);
-    if (!$syncStatus['moreToDo']) {
-      variable::set("rest_api_sync_{$serverId}_last_run", variable::get("rest_api_sync_{$serverId}_next_run"));
-      variable::delete("rest_api_sync_{$serverId}_next_run");
-      variable::delete("rest_api_sync_{$serverId}_last_id");
-    }
   }
 
   /**
@@ -88,18 +75,15 @@ class rest_api_sync_remote_inaturalist {
   public static function syncPage($serverId, array $server) {
     $db = Database::instance();
     api_persist::initDwcAttributes($db, $server['survey_id']);
-    $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
-    $fromId = variable::get("rest_api_sync_{$serverId}_last_id", 0, FALSE);
-    $lastId = $fromId;
+    $fromDateTime = variable::get("rest_api_sync_{$serverId}_next_run", '1600-01-01T00:00:00+00:00', FALSE);
     $data = rest_api_sync_utils::getDataFromRestUrl(
       "$server[url]/observations?" . http_build_query(array_merge(
         $server['parameters'],
         [
           'updated_since' => $fromDateTime,
           'per_page' => INAT_PAGE_SIZE,
-          'id_above' => $fromId,
           'order' => 'asc',
-          'order_by' => 'id',
+          'order_by' => 'updated_at',
         ]
       )),
       $serverId
@@ -180,6 +164,7 @@ class rest_api_sync_remote_inaturalist {
         if ($is_new !== NULL) {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
+        // Flag record as imported if it were previously skipped.
         $db->query("UPDATE rest_api_sync_skipped_records SET current=false " .
           "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
       }
@@ -213,9 +198,9 @@ VALUES (
 QRY;
         $db->query($sql);
       };
-      $lastId = $iNatRecord['id'];
+      $lastUpdatedAt = $iNatRecord['updated_at'];
     }
-    variable::set("rest_api_sync_{$serverId}_last_id", $lastId);
+    variable::set("rest_api_sync_{$serverId}_next_run", $lastUpdatedAt);
     rest_api_sync_utils::log(
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
