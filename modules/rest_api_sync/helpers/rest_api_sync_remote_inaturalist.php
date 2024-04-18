@@ -48,13 +48,40 @@ class rest_api_sync_remote_inaturalist {
    *   Server configuration.
    */
   public static function syncServer($serverId, array $server) {
+    $timestampAtStart = date('c');
+    // Initial population or delta of recent changes?
+    $mode = variable::get("rest_api_sync_{$serverId}_mode", 'initialPopulate');
+    if ($mode === 'initialPopulate' && !variable::get("rest_api_sync_{$serverId}_next_run")) {
+      // Starting a new full population, so remember when we started to ensure
+      // we don't miss any changes when we switch to delta mode.
+      variable::set("rest_api_sync_{$serverId}_next_run", $timestampAtStart);
+    }
+    if ($mode === 'delta') {
+      // Doing recent changes.
+      // Start from ID 0, but will be filtered to all changes since last run.
+      variable::set("rest_api_sync_{$serverId}_last_id", 0);
+    }
     // Count of pages done in this run.
     $pageCount = 0;
+    // Note that when importing the delta of recent changes, we have to do
+    // everything since the last run, as there is no way to do batches based on
+    // updated date reliably in the iNat API.
     do {
       $syncStatus = self::syncPage($serverId, $server);
       $pageCount++;
       ob_flush();
-    } while ($syncStatus['moreToDo'] && $pageCount < INAT_MAX_PAGES);
+    } while ($syncStatus['moreToDo'] && ($pageCount < INAT_MAX_PAGES || $mode === 'delta'));
+    if ($mode === 'initialPopulate' && !$syncStatus['moreToDo']) {
+      // Initial population done, so switch to delta mode.
+      $mode = 'delta';
+      variable::set("rest_api_sync_{$serverId}_mode", $mode);
+    }
+    if ($mode === 'delta') {
+      // Next run will start from timestamp we started processing.
+      variable::set("rest_api_sync_{$serverId}_next_run", $timestampAtStart);
+      // Cleanup.
+      variable::delete("rest_api_sync_{$serverId}_last_id");
+    }
   }
 
   /**
@@ -75,16 +102,28 @@ class rest_api_sync_remote_inaturalist {
   public static function syncPage($serverId, array $server) {
     $db = Database::instance();
     api_persist::initDwcAttributes($db, $server['survey_id']);
-    $fromDateTime = variable::get("rest_api_sync_{$serverId}_next_run", '1600-01-01T00:00:00+00:00', FALSE);
+    // FromID will be zero for first page in batch, but tracks the highest
+    // record ID we got to as we page through.
+    $fromId = variable::get("rest_api_sync_{$serverId}_last_id", 0, FALSE);
+    $lastId = $fromId;
+    // Initial population or delta of recent changes?
+    $mode = variable::get("rest_api_sync_{$serverId}_mode", 'initialPopulate');
+    $parameters = [
+      'per_page' => INAT_PAGE_SIZE,
+      // Paging done by ID.
+      'id_above' => $fromId,
+      'order' => 'asc',
+      'order_by' => 'id',
+    ];
+    if ($mode === 'delta') {
+      // Filter to recently updated records.
+      $fromDateTime = variable::get("rest_api_sync_{$serverId}_next_run", '1600-01-01T00:00:00+00:00', FALSE);
+      $parameters['updated_since'] = $fromDateTime;
+    }
     $data = rest_api_sync_utils::getDataFromRestUrl(
       "$server[url]/observations?" . http_build_query(array_merge(
         $server['parameters'],
-        [
-          'updated_since' => $fromDateTime,
-          'per_page' => INAT_PAGE_SIZE,
-          'order' => 'asc',
-          'order_by' => 'updated_at',
-        ]
+        $parameters
       )),
       $serverId
     );
@@ -164,7 +203,6 @@ class rest_api_sync_remote_inaturalist {
         if ($is_new !== NULL) {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
-        // Flag record as imported if it were previously skipped.
         $db->query("UPDATE rest_api_sync_skipped_records SET current=false " .
           "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
       }
@@ -198,9 +236,9 @@ VALUES (
 QRY;
         $db->query($sql);
       };
-      $lastUpdatedAt = $iNatRecord['updated_at'];
+      $lastId = $iNatRecord['id'];
     }
-    variable::set("rest_api_sync_{$serverId}_next_run", $lastUpdatedAt);
+    variable::set("rest_api_sync_{$serverId}_last_id", $lastId);
     rest_api_sync_utils::log(
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
