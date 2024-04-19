@@ -1006,6 +1006,11 @@ class ORM extends ORM_Core {
     $validationObj = new Validation($vArray);
     $this->validate($validationObj);
     $errors = $validationObj->errors();
+    // Ensure fieldname prefixed with entity.
+    $errors = array_combine(
+      array_map(fn($k) => "$this->object_name:$k", array_keys($errors)),
+      $errors
+    );
     if ($this->has_attributes) {
       // @todo The getAttributes call should use a type filter e.g. to filter on sample_method_id.
       $requiredAttributes = $this->getAttributes(TRUE);
