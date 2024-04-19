@@ -1141,19 +1141,26 @@ SQL;
     }
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
-    foreach ($errors as $field => $error) {
+    foreach ($errors as $fieldName => $error) {
+      list($entity, $field) = explode(':', $fieldName);
+      $errorI18n = kohana::lang("form_error_messages.$field.$error");
+      $errorStr = $errorI18n === "form_error_messages.$field.$error" ? $error : $errorI18n;
       // A date error might be reported against a vague date component
       // field, but can map back to the calculated date field if separate
       // date fields not being used.
       $field = preg_replace('/date_(start|end|type)$/', 'date', $field);
       try {
-        $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', $field);
-        $errorsList[$columnInfo['columnLabel']] = $error;
+        $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', "$entity:$field");
+        $errorsList[$columnInfo['columnLabel']] = $errorStr;
       }
       catch (NotFoundException $e) {
         // Shouldn't happen, but means we need better logic from mapping from
         // the errored field to the mapped field name.
-        $errorsList['unknown column'] = $error;
+        // If geom field causes error, no need to notify if the entered sref
+        // has an error.
+        if ($field !== 'geom' || !isset($errors['sample:entered_sref'])) {
+          $errorsList[$field] = $errorStr;
+        }
       }
     }
     $errorsJson = pg_escape_literal($db->getLink(), json_encode($errorsList));
