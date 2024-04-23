@@ -162,11 +162,11 @@ SQL;
     $freshwater = $operation->freshwater === TRUE ? 'true' : ($operation->freshwater === FALSE ? 'false' : '');
     $non_native = $operation->non_native === TRUE ? 'true' : ($operation->non_native === FALSE ? 'false' : '');
     $redundant = $operation->redundant === TRUE ? 'true' : ($operation->redundant === FALSE ? 'false' : '');
-    $taxonName = pg_escape_literal($operation->taxon_name);
-    $authority = pg_escape_literal($operation->authority);
-    $attribute = pg_escape_literal($operation->attribute);
-    $parentName = pg_escape_literal($operation->parent_name);
-    $synonym = pg_escape_literal($operation->synonym);
+    $taxonName = pg_escape_literal($this->db->getLink(), $operation->taxon_name ?? '');
+    $authority = pg_escape_literal($this->db->getLink(), $operation->authority ?? '');
+    $attribute = pg_escape_literal($this->db->getLink(), $operation->attribute ?? '');
+    $parentName = pg_escape_literal($this->db->getLink(), $operation->parent_name ?? '');
+    $synonym = pg_escape_literal($this->db->getLink(), $operation->synonym ?? '');
     $sql = <<<SQL
 SELECT sequence
 FROM uksi_operations
@@ -915,7 +915,7 @@ SQL;
    */
   private function getCurrentTaxa(&$operation) {
     if (empty($operation->current_organism_key) && !empty($operation->current_name)) {
-      $currentName = pg_escape_literal($operation->current_name);
+      $currentName = pg_escape_literal($this->db->getLink(), $operation->current_name);
       $qry = <<<SQL
 SELECT organism_key
 FROM uksi_operations
@@ -1016,7 +1016,7 @@ SQL;
       // Parent identified by name which must refer to the last added taxa with
       // the given name. So use the new taxon operation to find the parent's
       // organism key.
-      $parentName = pg_escape_literal($operation->parent_name);
+      $parentName = pg_escape_literal($this->db->getLink(), $operation->parent_name);
       $qry = <<<SQL
 SELECT organism_key
 FROM uksi_operations
