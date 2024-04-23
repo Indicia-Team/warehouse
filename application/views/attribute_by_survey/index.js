@@ -144,6 +144,9 @@ function makeControlsDragDroppable() {
 }
 
 $(document).ready(function documentReady() {
+
+  var blockCount = 0;
+
   /**
   * if the user clicks save for layout changes, then the structure must be posted back to the server for saving.
   */
@@ -183,14 +186,15 @@ $(document).ready(function documentReady() {
     } else if (!block.match(/^[a-zA-Z0-9 ]+$/)) {
       alert('The block name should consist of letters, numbers and spaces only.');
     } else {
+      blockCount++;
       $('#top-blocks').append(
-        '<li id="new-block-' + block.replace(/ /g, '_') + '" style="border-color: red" class="draggable-block panel panel-primary">' +
+        '<li id="new-block-' + blockCount + '" style="border-color: red" class="draggable-block panel panel-primary">' +
         '<div class="clearfix">' +
         '<span class="handle">&nbsp;</span>' +
         '<span class="caption">' + block + ' *</span>' +
         '<a href="" class="block-rename btn btn-default btn-xs">Rename</a>' +
         '</div>' +
-        '<ul id="child-blocks-new-block-' + block.replace(' ', '_') + '" class="block-list"><li class="block-drop"></li></ul>' +
+        '<ul id="child-blocks-new-block-' + blockCount + '" class="block-list"><li class="block-drop"></li></ul>' +
         '<ul class="control-list">' +
         '<li class="control-drop"></li></ul></li>' +
         '<li class="block-drop"></li>\n'

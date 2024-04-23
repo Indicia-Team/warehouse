@@ -71,8 +71,8 @@ class user_identifier {
    *   sharing tasks are: reporting, peer_review, verification, data_flow,
    *   moderation, editing. They will then be stored against the user account.
    *
-   * @return JSON
-   *   JSON object containing the following properties:
+   * @return array
+   *   Array containing the following properties:
    *   * userId - If a single user account has been identified then returns the
    *     Indicia user ID for the existing or newly created account. Otherwise
    *     not returned.
