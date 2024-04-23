@@ -51,15 +51,22 @@ class rest_api_sync_remote_inaturalist {
     $timestampAtStart = date('c');
     // Initial population or delta of recent changes?
     $mode = variable::get("rest_api_sync_{$serverId}_mode", 'initialPopulate');
+    if (!variable::get("rest_api_sync_{$serverId}_last_id")) {
+      // Starting a batch, so work from first ID to last. Will later filter by
+      // updated date if in delta mode.
+      variable::set("rest_api_sync_{$serverId}_last_id", 0);
+    }
     if ($mode === 'initialPopulate' && !variable::get("rest_api_sync_{$serverId}_next_run")) {
       // Starting a new full population, so remember when we started to ensure
       // we don't miss any changes when we switch to delta mode.
       variable::set("rest_api_sync_{$serverId}_next_run", $timestampAtStart);
     }
-    if ($mode === 'delta') {
-      // Doing recent changes.
-      // Start from ID 0, but will be filtered to all changes since last run.
-      variable::set("rest_api_sync_{$serverId}_last_id", 0);
+    if ($mode === 'delta' && !variable::get("rest_api_sync_{$serverId}_last_run")) {
+      // Starting a batch in delta mode, so pick up from when the last batch
+      // started.
+      variable::set("rest_api_sync_{$serverId}_last_run", variable::get("rest_api_sync_{$serverId}_next_run"));
+      // Save when this batch started for the next run.
+      variable::set("rest_api_sync_{$serverId}_next_run", $timestampAtStart);
     }
     // Count of pages done in this run.
     $pageCount = 0;
@@ -73,15 +80,11 @@ class rest_api_sync_remote_inaturalist {
     } while ($syncStatus['moreToDo'] && ($pageCount < INAT_MAX_PAGES || $mode === 'delta'));
     if ($mode === 'initialPopulate' && !$syncStatus['moreToDo']) {
       // Initial population done, so switch to delta mode.
-      $mode = 'delta';
-      variable::set("rest_api_sync_{$serverId}_mode", $mode);
+      variable::set("rest_api_sync_{$serverId}_mode", 'delta');
     }
-    if ($mode === 'delta') {
-      // Next run will start from timestamp we started processing.
-      variable::set("rest_api_sync_{$serverId}_next_run", $timestampAtStart);
-      // Cleanup.
-      variable::delete("rest_api_sync_{$serverId}_last_id");
-    }
+    // Batch finished successfully so cleanup.
+    variable::delete("rest_api_sync_{$serverId}_last_id");
+    variable::delete("rest_api_sync_{$serverId}_last_run");
   }
 
   /**
@@ -117,7 +120,7 @@ class rest_api_sync_remote_inaturalist {
     ];
     if ($mode === 'delta') {
       // Filter to recently updated records.
-      $fromDateTime = variable::get("rest_api_sync_{$serverId}_next_run", '1600-01-01T00:00:00+00:00', FALSE);
+      $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
       $parameters['updated_since'] = $fromDateTime;
     }
     $data = rest_api_sync_utils::getDataFromRestUrl(
@@ -243,10 +246,11 @@ QRY;
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
+    $recordsToGo = $data['total_results'] - count($data['results']);
     $r = [
       'moreToDo' => count($data['results']) === INAT_PAGE_SIZE,
-      'pagesToGo' => ceil($data['total_results'] / INAT_PAGE_SIZE),
-      'recordsToGo' => $data['total_results'],
+      'pagesToGo' => ceil($recordsToGo / INAT_PAGE_SIZE),
+      'recordsToGo' => $recordsToGo,
     ];
     return $r;
   }
