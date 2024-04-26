@@ -1,0 +1,18 @@
+<report
+    title="External taxon keys for a scratchpad - without hierarchy"
+    description="Lists external keys for all taxa identified by a scratchpad list. Excludes hierarchical children.
+      For use when converting a scratchpad to keys to filter against Elasticsearch higher taxon IDs.">
+  <query>
+    SELECT DISTINCT #columns#
+    FROM scratchpad_list_entries sle
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=sle.entry_id
+    WHERE sle.scratchpad_list_id=#scratchpad_list_id#
+  </query>
+  <params>
+    <param name="scratchpad_list_id" display="Scratchpad list ID" description="ID of the scratchpad list to load"
+           datatype="integer" />
+  </params>
+  <columns>
+    <column name="external_key" display="External key" sql="cttl.external_key" in_count="true" />
+  </columns>
+</report>

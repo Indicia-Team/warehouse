@@ -132,11 +132,9 @@ SQL;
       self::$db = new Database();
     }
     $query = <<<SQL
-      SELECT DISTINCT cttlany.external_key
+      SELECT DISTINCT cttl.external_key
       FROM scratchpad_list_entries sle
       JOIN cache_taxa_taxon_lists cttl ON cttl.id=sle.entry_id
-      JOIN cache_taxon_paths ctp ON ctp.path @> ARRAY[cttl.taxon_meaning_id]
-      JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
       WHERE sle.scratchpad_list_id=$id
 SQL;
     return self::$db->query($query)->result_array(FALSE);

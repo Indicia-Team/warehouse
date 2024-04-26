@@ -7,7 +7,6 @@
     FROM scratchpad_list_entries sle
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=sle.entry_id
     JOIN cache_taxon_paths ctp ON ctp.path @&gt; ARRAY[cttl.taxon_meaning_id]
-    JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
     WHERE sle.scratchpad_list_id=#scratchpad_list_id#
   </query>
   <params>
@@ -15,6 +14,6 @@
            datatype="integer" />
   </params>
   <columns>
-    <column name="external_key" display="External key" sql="cttlany.external_key" in_count="true" />
+    <column name="external_key" display="External key" sql="ctp.external_key" in_count="true" />
   </columns>
 </report>
