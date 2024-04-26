@@ -278,7 +278,7 @@ SQL;
    */
   public function processAmendName($operation) {
     $this->checkOperationRequiredFields('Amend name', $operation, ['synonym']);
-    $names = $this->getTaxaForKey($operation->synonym, 'search_code');
+    $names = $this->getTaxaForKeys(['search_code' => $operation->synonym]);
     foreach ($names as $nameInfo) {
       $tx = ORM::factory('taxon', $nameInfo->taxon_id);
       if (!empty($operation->taxon_name)) {
@@ -313,7 +313,7 @@ SQL;
    */
   public function processAmendTaxon($operation) {
     $this->checkOperationRequiredFields('Amend metadata', $operation, ['current_organism_key']);
-    $namesToUpdate = $this->getTaxaForKey($operation->current_organism_key, 'organism_key');
+    $namesToUpdate = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
     if (count($namesToUpdate) === 0) {
       $this->operationErrors[] = 'Organism key not found';
     }
@@ -378,7 +378,7 @@ SQL;
    */
   public function processDeprecateName($operation) {
     $this->checkOperationRequiredFields('Deprecate name', $operation, ['synonym']);
-    $namesToUpdate = $this->getTaxaForKey($operation->synonym, 'search_code');
+    $namesToUpdate = $this->getTaxaForKeys(['search_code' => $operation->synonym]);
     // Should be only one name for TVK, but just in case do a loop.
     foreach ($namesToUpdate as $nameInfo) {
       // Update name_deprecated flag in taxon.
@@ -405,7 +405,7 @@ SQL;
    */
   public function processRemoveDeprecation($operation) {
     $this->checkOperationRequiredFields('Remove deprecation', $operation, ['synonym']);
-    $namesToUpdate = $this->getTaxaForKey($operation->synonym, 'search_code');
+    $namesToUpdate = $this->getTaxaForKeys(['search_code' => $operation->synonym]);
     // Should be only one name for TVK, but just in case do a loop.
     foreach ($namesToUpdate as $nameInfo) {
       // Update name_deprecated flag in taxon.
@@ -425,8 +425,6 @@ SQL;
   /**
    * Extracts a junion synonym to create a new taxon.
    *
-   * Note, this operation does not check current organism key.
-   *
    * @param object $operation
    *   Operation details.
    */
@@ -434,8 +432,12 @@ SQL;
     $this->checkOperationRequiredFields('Extract name', $operation, [
       'synonym',
       'organism_key',
+      'current_organism_key',
     ]);
-    $namesToUpdate = $this->getTaxaForKey($operation->synonym, 'search_code');
+    $namesToUpdate = $this->getTaxaForKeys([
+      'search_code' => $operation->synonym,
+      'organism_key' => $operation->current_organism_key,
+    ]);
     // Check names found.
     if (count($namesToUpdate) === 0) {
       $this->operationErrors[] = 'Name with taxon version key given in Synonym for Extract Name operation not found.';
@@ -494,8 +496,8 @@ SQL;
       'current_organism_key',
       'synonym',
     ]);
-    $namesToKeep = $this->getTaxaForKey($operation->current_organism_key, 'organism_key');
-    $allNamesToMerge = $this->getTaxaForKey($operation->synonym, 'organism_key');
+    $namesToKeep = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
+    $allNamesToMerge = $this->getTaxaForKeys(['organism_key' => $operation->synonym]);
     if (count($allNamesToMerge) === 0) {
       $this->operationErrors[] = 'Synonym (organism key) not found';
     }
@@ -521,8 +523,8 @@ SQL;
       'current_organism_key',
       'synonym',
     ]);
-    $namesToKeep = $this->getTaxaForKey($operation->current_organism_key, 'organism_key');
-    $allNamesToMerge = $this->getTaxaForKey($operation->synonym, 'search_code');
+    $namesToKeep = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
+    $allNamesToMerge = $this->getTaxaForKeys(['search_code' => $operation->synonym]);
     if (count($allNamesToMerge) === 0) {
       $this->operationErrors[] = 'Synonym (taxon version key) not found';
     }
@@ -627,12 +629,12 @@ SQL;
     // Need to get names by TVK and Organism Key, because the name being
     // promoted might be for a different organism (which I think is incorrect
     // according to the spec, but it happens).
-    $nameToPromote = $this->getTaxaForKey($operation->synonym, 'search_code');
-    $namesForOrganismKey = $this->getTaxaForKey($operation->current_organism_key, 'organism_key');
+    $nameToPromote = $this->getTaxaForKeys(['search_code' => $operation->synonym]);
+    $namesForOrganismKey = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
     foreach ($nameToPromote as $promotedNameInfo) {
       $this->setNameInfoForPromoteName($operation, $promotedNameInfo, TRUE, $parentId);
       $promotedName = $promotedNameInfo->taxon;
-      $namesForOrganismKey = $this->getTaxaForKey($promotedNameInfo->organism_key, 'organism_key');
+      $namesForOrganismKey = $this->getTaxaForKeys(['organism_key' => $promotedNameInfo->organism_key]);
       foreach ($namesForOrganismKey as $nameInfo) {
         // Don't redo the promoted name.
         if ($nameInfo->id !== $promotedNameInfo->id) {
@@ -664,7 +666,7 @@ SQL;
       'taxon_group_key',
     ]);
     // Find other taxa with same organism key.
-    $allExistingNames = $this->getTaxaForKey($operation->current_organism_key, 'organism_key');
+    $allExistingNames = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
     // Fail if none found.
     if (count($allExistingNames) === 0) {
       $this->operationErrors[] = "Organism key $operation->current_organism_key not found for rename taxon operation";
@@ -936,35 +938,37 @@ SQL;
 
     }
     if (!empty($operation->current_organism_key)) {
-      return $this->getTaxaForKey($operation->current_organism_key, 'organism_key');
+      return $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
     }
     return [];
   }
 
   /**
-   * Retrieves some info about taxon names linked to an key.
+   * Retrieves some info about taxon names linked to certain key/value pairs.
    *
-   * @param string $key
-   *   Key to fetch names for.
-   * @param string $keyField
-   *   Field to search for key in, e.g. organism_key or search_code.
+   * @param array $search
+   *   Associative array of keys and values to search against the taxon table,
+   *   e.g. external_key, organism_key or search_code.
    *
    * @return object
    *   Query result which can be iterated, with accepted names first.
    */
-  private function getTaxaForKey($key, $keyField) {
+  private function getTaxaForKeys(array $search) {
+    $where = [
+      'ttl.taxon_list_id' => $this->getTaxonListId(),
+      'ttl.deleted' => 'f',
+      't.deleted' => 'f',
+    ];
+    foreach ($search as $key => $value) {
+      $where["t.$key"] = $value;
+    }
     return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, ttl.parent_id, ttl.allow_data_entry, ' .
         't.taxon, t.authority, t.attribute, t.search_code, t.external_key, t.organism_key, t.taxon_rank_id, ' .
         't.taxon_group_id, t.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag, ' .
         't.organism_deprecated, t.name_deprecated')
       ->from('taxa_taxon_lists AS ttl')
       ->join('taxa as t', 't.id', 'ttl.taxon_id')
-      ->where([
-        'ttl.taxon_list_id' => $this->getTaxonListId(),
-        "t.$keyField" => $key,
-        'ttl.deleted' => 'f',
-        't.deleted' => 'f',
-      ])
+      ->where($where)
       ->orderby('preferred', 'DESC')
       ->get();
   }
@@ -978,7 +982,7 @@ SQL;
    *   Key to check.
    */
   private function assertOrganismKeyIsNew($operationName, $organismKey) {
-    $existing = $this->getTaxaForKey($organismKey, 'organism_key');
+    $existing = $this->getTaxaForKeys(['organism_key' => $organismKey]);
     if (count($existing) > 0) {
       $this->operationErrors[] = "$operationName operation has provided an organism_key which is not new";
     }
