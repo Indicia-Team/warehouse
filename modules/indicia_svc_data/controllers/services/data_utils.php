@@ -992,10 +992,114 @@ SQL;
         'occurrences' => $countStats->occurrence_count,
         'samples' => $countStats->sample_count,
       ]
-      ];
+    ];
     echo json_encode($response);
     if (class_exists('request_logging')) {
       request_logging::log('a', 'data', NULL, 'bulk_move', $this->website_id, $this->auth_user_id, $tm, $db);
+    }
+  }
+
+  /**
+   * Ensure that values provided for a bulk update are valid.
+   *
+   * @param object $updates
+   *   Decoded update values.
+   */
+  private function validateBulkEditUpdateValues($updates) {
+    if (!empty($updates->date)) {
+      // Date format check.
+      if (!preg_match('/^\d{4}-\d{2}\d{2}$/', $updates->date)) {
+        $this->fail('Bad request', 400, 'Date format incorrect, should be yyyy-mm-dd');
+      }
+      // Date in future check.
+      if (strtotime($updates->date) > time()) {
+        $this->fail('Bad request', 400, 'Date cannot be in the future.');
+      }
+    }
+    if (!empty($updates->sref)) {
+      // Validate spatial reference.
+      if (empty($updates->sref_system)) {
+        $this->fail('Bad request', 400, 'Bulk update of a spatial reference (sref) requires a system.');
+      }
+      if (!spatial_ref::is_valid($updates->sref, $updates->sref_system)) {
+        $this->fail('Bad request', 400, 'Spatial reference supplied for bulk update is not recognised.');
+      }
+    }
+  }
+
+  /**
+   * Controller action for the bulk edit endpoint.
+   */
+  public function bulk_edit() {
+    header('Content-Type: application/json');
+    $tm = microtime(TRUE);
+    $this->authenticate('write');
+    $updates = json_decode($_POST['updates']);
+    $occurrenceIds = $_POST['occurrence:ids'];
+    if (!preg_match('/^\d+(,\d+)*$/')) {
+      $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
+    }
+    $db = new Database();
+    $countStats = ['occurrences' => 0, 'samples' => 0];
+    $this->validateBulkEditUpdateValues($updates);
+    $sampleFieldUpdates = [];
+    if (!empty($updates->date)) {
+      $sampleFieldUpdates[] = "date_start='$updates->date'";
+      $sampleFieldUpdates[] = "date_end='$updates->date'";
+      $sampleFieldUpdates[] = "date_type='D'";
+    }
+    if (!empty($updates->location_name)) {
+      $locationName = pg_escape_literal($db->getLink(), $updates->location_name);
+      $sampleFieldUpdates[] = "location_name=$locationName";
+    }
+    if (!empty($updates->sref)) {
+      $sref = spatial_ref::sref_format_tidy($updates->sref, $updates->sref_system);
+      $sampleFieldUpdates[] = "entered_sref=$sref";
+      $sampleFieldUpdates[] = "entered_sref_system=$updates->sref_system";
+      $geom = "st_geomfromtext('" . spatial_ref::sref_to_internal_wkt($updates->sref, $updates->sref_system) . "', 900913)";
+      $sampleFieldUpdates[] = "geom=$geom";
+    }
+    if (!empty($sampleFieldUpdates)) {
+      $sampleFieldUpdateSql = implode(',', $sampleFieldUpdates);
+      $qry = <<<SQL
+        UPDATE samples
+        SET $sampleFieldUpdateSql,
+          updated_on=now(),
+          updated_by_id=$this->user_id
+        WHERE id in (SELECT distinct sample_id FROM occurrences WHERE id IN ($occurrenceIds))
+        AND created_by_id=$this->user_id;
+
+        INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+        SELECT DISTINCT 'task_cache_builder_update', 'sample', o.sample_id, 50, 2, now()
+        FROM occurrences o
+        LEFT JOIN work_queue q ON q.record_id=o.sample_id AND q.task='task_cache_builder_update' AND q.entity='sample'
+        WHERE o.id IN ($occurrenceIds)
+        AND o.deleted=false
+        AND q.id IS NULL;
+
+        SELECT COUNT(*) as count FROM samples WHERE id in (SELECT distinct sample_id FROM occurrences WHERE id IN ($occurrenceIds)) AND deleted=false;
+SQL;
+      $countStats['samples'] = $db->query($qry)->current()->count;
+    }
+    if (!empty($updates->recorder_name)) {
+      // Recorder name a little different as it might be a custom attribute.
+      // @todo Update existing custom attribute.
+      // @todo Insert new if custom attribute valid for the sample's survey.
+      // @todo For remaining, set sample.recorder_names.
+    }
+
+    $response = [
+      'code' => 200,
+      'status' => 'OK',
+      'action' => 'records edited',
+      'affected' => [
+        'occurrences' => $countStats['occurrences'],
+        'samples' => $countStats['samples'],
+      ]
+    ];
+    echo json_encode($response);
+    if (class_exists('request_logging')) {
+      request_logging::log('a', 'data', NULL, 'bulk_edit', $this->website_id, $this->auth_user_id, $tm, $db);
     }
   }
 
