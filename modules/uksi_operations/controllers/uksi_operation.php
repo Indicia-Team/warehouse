@@ -521,8 +521,12 @@ SQL;
   public function processMoveName($operation) {
     $this->checkOperationRequiredFields('Move name', $operation, [
       'current_organism_key',
-      'synonym',
     ]);
+    // If synonym not present then operation is skipped, according to info from
+    // C. Raper 30/04/2024.
+    if (empty($operation->synonym)) {
+      return;
+    }
     $namesToKeep = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
     $allNamesToMerge = $this->getTaxaForKeys(['search_code' => $operation->synonym]);
     if (count($allNamesToMerge) === 0) {
