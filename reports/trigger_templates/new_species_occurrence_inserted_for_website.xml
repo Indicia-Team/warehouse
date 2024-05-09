@@ -1,19 +1,22 @@
 <report
-    title="Occurrence added of species in list"
-    description="Alert on addition of a record of a species in a given list. Simple query for performance so does not perform a hierarchical taxon query or work across taxon lists.">
+    title="Occurrence added of a new species for the website"
+    description="Alert on addition of a record of a species not previously recorded on a website.">
   <query>
     select #columns#
     from cache_occurrences_functional o
     join cache_samples_nonfunctional snf on snf.id=o.sample_id
-    join cache_taxa_taxon_lists cttl on cttl.taxon_meaning_id=o.taxon_meaning_id
-    join scratchpad_list_entries sle on sle.entry_id=cttl.id and sle.scratchpad_list_id=#scratchpad_list_id#
-    join scratchpad_lists sl on sl.id=#scratchpad_list_id# and sl.deleted=false
+    join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
     join index_websites_website_agreements iwwa on iwwa.from_website_id=o.website_id and iwwa.to_website_id=#website_id# and iwwa.provide_for_#sharing#=true
+    -- not recorded before.
+    left join (cache_occurrences_functional ocheck
+      join index_websites_website_agreements iwwacheck on iwwacheck.from_website_id=ocheck.website_id and iwwacheck.to_website_id=#website_id# and iwwacheck.provide_for_#sharing#=true
+    ) on ocheck.taxa_taxon_list_external_key=o.taxa_taxon_list_external_key and ocheck.id&lt;o.id
     left join determinations d on d.occurrence_id=o.id and d.deleted=false
       and d.updated_on&gt;'#date#'
     where o.updated_on&gt;'#date#'
     -- new record, or just redetermined.
     and (o.created_on&gt;'#date#' or d.id is not null)
+    and ocheck.id is null
     and o.confidential=false
     and o.training=false
   </query>
@@ -21,14 +24,13 @@
     <order_by>o.updated_on ASC</order_by>
   </order_bys>
   <params>
-    <param name="scratchpad_list_id" display="Scratchpad list ID" datatype="integer" />
     <param name="date" display="Date" description="Date/time of last check" datatype="datetime" />
     <param name="website_id" display="Website ID" description="ID of website to load occurrences for" datatype="integer" />
     <param name="sharing" display="Sharing mode" description="Mode for including records from other websites" datatype='lookup'
       lookup_values='data_flow:Data flow,peer_review:Peer review,moderation:Moderation,reporting:Reporting,verification:Verification'/>
   </params>
   <columns>
-    <column name="message" display="Message" sql="'Record added of a species in the ' || sl.title || ' list.'" datatype="text" />
+    <column name="message" display="Message" sql="'First record of this species for the website.'" datatype="text" />
     <column name="id" display="ID" sql="o.id" />
     <column name="taxon" display="" sql="cttl.preferred_taxon" datatype="text" />
     <column name="common_name" display="Common name" sql="cttl.default_common_name" datatype="text" />
