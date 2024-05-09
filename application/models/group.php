@@ -62,7 +62,7 @@ class Group_Model extends ORM {
     ];
     // Has the private records flag changed?
     $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) &&
-        $this->submission['fields']['private_records'] !== $this->private_records;
+        ($this->submission['fields']['private_records']['value'] === '1' || $this->submission['fields']['private_records']['value'] === 't') !== ($this->private_records === 't');
     return parent::validate($array, $save);
   }
 
