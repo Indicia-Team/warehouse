@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Groups discovery" description="Finds groups a user may like to join based on geographic and taxonomic overlap. Requires group_discovery custom cache table.">
+  <query website_filter_field="">
+    drop table if exists oindex;
+    create temporary table oindex as
+      select id, taxon_group_id, location_ids from cache_occurrences_functional where created_by_id=#currentUser# and training=false order by id desc limit 1000;
+    create index oindex_taxon_groups on oindex(taxon_group_id);
+    create index oindex_location_ids on oindex using gin(location_ids);
+
+    drop table if exists score_group_activity_and_geo_overlap;
+    select
+      igd.group_id,
+      -- factor number of recent records for the group, multiplied by ratio of group's indexed locations that the user has recorded at.
+      igd.group_recent_records *
+      (
+        select count(distinct val)
+        from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
+      ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision as score,
+      row_number() over (order by igd.group_recent_records *
+      (
+        select count(distinct val)
+        from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
+      ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision desc nulls last) as score_group_activity_and_geo_overlap
+    into temporary score_group_activity_and_geo_overlap
+    from custom_cache_tables.index_group_discovery igd
+    left join groups_users gu on gu.group_id=igd.group_id and gu.deleted=false and gu.user_id=#currentUser#
+    left join oindex olocation4 on olocation4.location_ids &amp;&amp; igd.group_indexed_location_ids
+    where gu.id is null
+    and igd.website_id in (#website_ids#)
+    group by igd.group_id, igd.group_recent_records, igd.group_indexed_location_ids_count
+    order by 2 desc nulls last;
+
+    drop table if exists score_user_activity_within_geo_overlap;
+    select
+      igd.group_id ,
+      -- factor number of records the user has recorded in areas similar to the group multiplied by ratio of group's indexed locations that the user has recorded at.
+      count(olocation4.*) * (
+        select count(distinct val)
+        from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
+      ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision,
+      row_number() over (order by count(olocation4.*) * (
+        select count(distinct val)
+        from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
+      ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision desc nulls last) as score_user_activity_within_geo_overlap
+    into temporary score_user_activity_within_geo_overlap
+    from custom_cache_tables.index_group_discovery igd
+    left join groups_users gu on gu.group_id=igd.group_id and gu.deleted=false and gu.user_id=#currentUser#
+    left join oindex olocation4 on olocation4.location_ids &amp;&amp; igd.group_indexed_location_ids
+    where gu.id is null
+    and igd.website_id in (#website_ids#)
+    group by igd.group_id, igd.group_indexed_location_ids_count
+    order by 2 desc nulls last;
+
+    drop table if exists score_user_activity_within_taxonomic_overlap;
+    select
+      igd.group_id ,
+      -- factor number of records the user has recorded which taxonomically overlap the group.
+      count(otax.*) as taxa,
+      row_number() over (order by count(otax.*) desc)
+        -- relegate if the group is taxonomically filtered at all but the user is not recording in this group's taxonomy.
+        + case when array_length(igd.group_indexed_taxon_group_ids, 1)&gt;0 and count(otax.*)=0 then 500 else 0 end
+        as score_user_activity_within_taxonomic_overlap
+    into temporary score_user_activity_within_taxonomic_overlap
+    from custom_cache_tables.index_group_discovery igd
+    left join groups_users gu on gu.group_id=igd.group_id and gu.deleted=false and gu.user_id=#currentUser#
+    left join oindex otax on otax.taxon_group_id=any(igd.group_indexed_taxon_group_ids)
+    where gu.id is null
+    and igd.website_id in (#website_ids#)
+    group by igd.group_id, igd.group_indexed_taxon_group_ids
+    order by 2 desc;
+
+    select #columns#
+    from groups g
+	  left join score_group_activity_and_geo_overlap s1 on s1.group_id=g.id
+    left join score_user_activity_within_geo_overlap s2 on s2.group_id=g.id
+    left join score_user_activity_within_taxonomic_overlap s3 on s3.group_id=g.id
+    left join custom_cache_tables.index_group_discovery idg on idg.group_id=g.id
+    left join groups_users gu ON gu.group_id=g.id and gu.deleted=false and gu.pending=false and gu.user_id=#currentUser#
+    left join groups_users guc ON guc.group_id=g.id and guc.deleted=false and guc.pending=false
+    left join group_pages gp ON gp.group_id=g.id and gp.deleted=false and gp.administrator=false and gp.access_level is null
+    left join group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
+	  where g.deleted=false
+    -- Not already a member.
+    and gu.id is null
+  </query>
+  <order_bys>
+    <order_by>1 asc nulls last</order_by>
+  </order_bys>
+  <params>
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text" emptyvalue="0" />
+  </params>
+  <columns>
+    <column name="score" sql="s1.score_group_activity_and_geo_overlap + s2.score_user_activity_within_geo_overlap + s3.score_user_activity_within_taxonomic_overlap
+      /* relegate inactive groups */
+      + case idg.group_recent_records when 0 then 500 else 0 end" datatype="float" />
+    <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
+    <column name="logo_path" display="Logo" sql="g.logo_path" img="true" visible="false" />
+    <column name="group_type_id" visible="false" sql="g.group_type_id" datatype="integer" />
+    <column name="joining_method_raw" visible="false" sql="g.joining_method" datatype="text" />
+    <column name="title" display="Name" sql="g.title" datatype="text" />
+    <column name="description" display="Description" sql="g.description" datatype="text" />
+    <column name="administrator" display="Admin" sql="false" datatype="boolean" visible="false" />
+    <!-- following is required to meet group by requirements -->
+    <column name="administrator_raw" display="Admin" sql="false" datatype="boolean" visible="false" />
+    <column name="pending" display="Pending" sql="false" datatype="boolean" visible="false" />
+    <column name="member" display="Member" sql="false" datatype="boolean" visible="false" />
+    <column name="nonmember" display="Non-member" sql="true" datatype="boolean" visible="false" />
+    <column name="canrequestorjoin" display="Can request membership or join" datatype="boolean" visible="false"
+            sql="true" />
+    <column name="private_records" display="Records released" sql="not g.private_records" datatype="boolean" />
+    <column name="role" display="My role" sql="case when true then 'Non-member' end" datatype="text" />
+    <column name="joining_method" display="Can anyone join?" sql="case g.joining_method when 'P' then 'Yes' when 'R' then 'By request only' when 'I' then 'By invite only' end" datatype="text" />
+    <column name="members" display="Members" aggregate="true"
+            sql="count(DISTINCT guc.user_id)" />
+    <column name="pages" display="Links" sql="array_to_string(array_agg(distinct '&lt;a class=&quot;button ' || lower(regexp_replace(gp.path, '[^a-zA-Z0-9]', '-')) || '&quot; href=&quot;{rootFolder}' || gp.path || '{sep}group_id=' || g.id || '&amp;implicit=' || coalesce(g.implicit_record_inclusion::char, '') || '&quot;&gt;' || gp.caption || '&lt;/a&gt;'), ' ')"
+            aggregate="true" template="{pages}"/>
+    <column name="page_classes" visible="false" sql="array_to_string(array_agg(distinct lower(regexp_replace(gpall.path, '[^a-zA-Z0-9]', '-'))), ' ')"
+            aggregate="true"/>
+  </columns>
+</report>
