@@ -1,14 +1,15 @@
 -- Drop restriction on length of authority column on taxa table.
 -- Requires dropping and re-creating several dependent views.
 
--- Drop depenedent views.
+-- Drop dependent views.
 DROP VIEW IF EXISTS gv_taxa_taxon_lists;
 DROP VIEW IF EXISTS list_taxa_taxon_lists;
 DROP VIEW IF EXISTS detail_taxa_taxon_lists;
+DROP VIEW IF EXISTS lookup_taxa_taxon_lists;
 
 -- Alter the authority field type on
 -- taxon table.
-ALTER TABLE taxa 
+ALTER TABLE taxa
   ALTER COLUMN authority TYPE VARCHAR;
 
 -- Re-create view gv_taxa_taxon_lists.
@@ -37,12 +38,6 @@ CREATE VIEW gv_taxa_taxon_lists
      JOIN languages l ON t.language_id = l.id AND l.deleted = false
      JOIN taxon_groups tg ON t.taxon_group_id = tg.id AND tg.deleted = false
   WHERE tt.deleted = false;
-
-ALTER TABLE gv_taxa_taxon_lists
-    OWNER TO indicia_user;
-
-GRANT SELECT ON TABLE gv_taxa_taxon_lists TO indicia_report_user;
-GRANT ALL ON TABLE gv_taxa_taxon_lists TO indicia_user;
 
 -- Re-create view list_taxa_taxon_lists.
 CREATE VIEW list_taxa_taxon_lists
@@ -74,12 +69,6 @@ CREATE VIEW list_taxa_taxon_lists
      LEFT JOIN taxa tc ON tc.id = ttl.common_taxon_id AND tc.deleted = false
   WHERE ttl.deleted = false
   ORDER BY ttl.taxonomic_sort_order, t.taxon;
-
-ALTER TABLE list_taxa_taxon_lists
-    OWNER TO indicia_user;
-
-GRANT SELECT ON TABLE list_taxa_taxon_lists TO indicia_report_user;
-GRANT ALL ON TABLE list_taxa_taxon_lists TO indicia_user;
 
 -- Re-create view detail_taxa_taxon_lists.
 CREATE VIEW detail_taxa_taxon_lists
@@ -125,8 +114,15 @@ CREATE VIEW detail_taxa_taxon_lists
      LEFT JOIN taxon_images ti ON ti.taxon_meaning_id = ttl.taxon_meaning_id AND ti.deleted = false
   WHERE ttl.deleted = false;
 
-ALTER TABLE detail_taxa_taxon_lists
-    OWNER TO indicia_user;
-
-GRANT SELECT ON TABLE detail_taxa_taxon_lists TO indicia_report_user;
-GRANT ALL ON TABLE detail_taxa_taxon_lists TO indicia_user;
+CREATE OR REPLACE VIEW lookup_taxa_taxon_lists AS
+  SELECT ttl.id,
+      ttl.taxon_meaning_id,
+      ttl.taxon_list_id,
+      t.taxon || COALESCE(' ' || t.attribute, '') as taxon,
+      t.authority,
+      t.external_key,
+      t.search_code
+    FROM taxa_taxon_lists ttl
+    JOIN taxa t on t.id=ttl.taxon_id AND t.deleted=false
+    WHERE ttl.deleted=false
+    ORDER BY ttl.allow_data_entry DESC, ttl.preferred DESC;
