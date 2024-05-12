@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * Prepares a table that assists in discovery of groups/activities.
+ *
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
+ */
+
+function get_discover_groups_metadata() {
+  return array(
+    'frequency' => '1 day',
+    'autodrop' => FALSE,
+  );
+}
+
+function get_discover_groups_query() {
+  return <<<'QRY'
+    drop table if exists custom_cache_tables.index_group_discovery_build;
+
+    create table  as
+    select g.id as group_id,
+      g.website_id,
+      -- NUTS 3
+      array_agg(distinct gl.location_id) filter (where gl.location_type_id=18062) as group_indexed_location_ids,
+      count(distinct case gl.location_type_id when 14587 then gl.location_id else null end) as group_indexed_location_ids_count,
+      -- Taxon groups
+      array_agg(distinct gtg.taxon_group_id) as group_indexed_taxon_group_ids,
+      count(distinct gtg.taxon_group_id) as group_indexed_taxon_group_ids_count,
+      -- Recent records.
+      count(o.*) as group_recent_records
+    into custom_cache_tables.index_group_discovery_build
+    from groups g
+    join filters f on f.id=g.filter_id and f.deleted=false
+    left join index_groups_locations gl on gl.group_id=g.id
+    left join index_groups_taxon_groups gtg on gtg.group_id=g.id
+    left join cache_occurrences_functional o on o.group_id=g.id and o.created_on>now() - '1 year'::interval and o.updated_on>now() - '1 year'::interval
+    where g.deleted=false
+    -- Only publicly discoverable groups.
+    and g.joining_method in ('P', 'R')
+    group by g.id, g.website_id, f.definition;
+
+    -- Tidy nulls from arrays.
+    update custom_cache_tables.index_group_discovery_build set group_indexed_taxon_group_ids='{}' where group_indexed_taxon_group_ids=array[null]::integer[];
+
+    drop table index_group_discovery;
+    alter table custom_cache_tables.index_group_discovery_build rename to index_group_discovery;
+QRY;
+}
