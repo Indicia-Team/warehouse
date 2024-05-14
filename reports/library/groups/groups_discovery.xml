@@ -16,11 +16,14 @@
         select count(distinct val)
         from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
       ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision as score,
-      row_number() over (order by igd.group_recent_records *
-      (
-        select count(distinct val)
-        from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
-      ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision desc nulls last) as score_group_activity_and_geo_overlap
+      case igd.group_indexed_location_ids_count
+        when 0 then null
+        else row_number() over (order by igd.group_recent_records *
+          (
+            select count(distinct val)
+            from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
+          ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision desc nulls last)
+      end as score_group_activity_and_geo_overlap
     into temporary score_group_activity_and_geo_overlap
     from custom_cache_tables.index_group_discovery igd
     left join groups_users gu on gu.group_id=igd.group_id and gu.deleted=false and gu.user_id=#currentUser#
@@ -29,6 +32,12 @@
     and igd.website_id in (#website_ids#)
     group by igd.group_id, igd.group_recent_records, igd.group_indexed_location_ids_count
     order by 2 desc nulls last;
+
+    update score_group_activity_and_geo_overlap
+    set score_group_activity_and_geo_overlap = (select max(coalesce(score_group_activity_and_geo_overlap, 0))+1 from score_group_activity_and_geo_overlap)
+    where score_group_activity_and_geo_overlap is null;
+
+    -- TODO Does the above work? Does it need to sort into 2 levels like the 3rd query? Also what about the second?
 
     drop table if exists score_user_activity_within_geo_overlap;
     select
@@ -53,21 +62,29 @@
 
     drop table if exists score_user_activity_within_taxonomic_overlap;
     select
-      igd.group_id ,
+      igd.group_id,
+	  igd.group_indexed_taxon_group_ids_count,
       -- factor number of records the user has recorded which taxonomically overlap the group.
       count(otax.*) as taxa,
-      row_number() over (order by count(otax.*) desc)
-        -- relegate if the group is taxonomically filtered at all but the user is not recording in this group's taxonomy.
-        + case when array_length(igd.group_indexed_taxon_group_ids, 1)&gt;0 and count(otax.*)=0 then 500 else 0 end
-        as score_user_activity_within_taxonomic_overlap
+      case when count(otax.*)&gt;0 then row_number() over (order by count(otax.*) desc) else null end as score_user_activity_within_taxonomic_overlap
     into temporary score_user_activity_within_taxonomic_overlap
     from custom_cache_tables.index_group_discovery igd
-    left join groups_users gu on gu.group_id=igd.group_id and gu.deleted=false and gu.user_id=#currentUser#
+    left join groups_users gu on gu.group_id=igd.group_id and gu.deleted=false and gu.user_id=4
     left join oindex otax on otax.taxon_group_id=any(igd.group_indexed_taxon_group_ids)
     where gu.id is null
-    and igd.website_id in (#website_ids#)
-    group by igd.group_id, igd.group_indexed_taxon_group_ids
+    and igd.website_id in (2)
+    group by igd.group_id, igd.group_indexed_taxon_group_ids_count, igd.group_indexed_taxon_group_ids
     order by 2 desc;
+
+    -- If no taxa filter in the group, then these groups go next.
+    update score_user_activity_within_taxonomic_overlap
+    set score_user_activity_within_taxonomic_overlap = (select max(coalesce(score_user_activity_within_taxonomic_overlap, 0))+1 from score_user_activity_within_taxonomic_overlap)
+    where group_indexed_taxon_group_ids_count=0 and taxa=0;
+
+    -- Finally, groups that have a taxon filter, but the user's records don't overlap are lowest priority.
+    update score_user_activity_within_taxonomic_overlap
+    set score_user_activity_within_taxonomic_overlap = (select max(coalesce(score_user_activity_within_taxonomic_overlap, 0))+1 from score_user_activity_within_taxonomic_overlap)
+    where group_indexed_taxon_group_ids_count>0 and taxa=0;
 
     select #columns#
     from groups g

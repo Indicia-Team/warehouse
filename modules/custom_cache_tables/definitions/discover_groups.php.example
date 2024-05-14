@@ -32,12 +32,11 @@ function get_discover_groups_query() {
   return <<<'QRY'
     drop table if exists custom_cache_tables.index_group_discovery_build;
 
-    create table  as
     select g.id as group_id,
       g.website_id,
       -- NUTS 3
-      array_agg(distinct gl.location_id) filter (where gl.location_type_id=18062) as group_indexed_location_ids,
-      count(distinct case gl.location_type_id when 14587 then gl.location_id else null end) as group_indexed_location_ids_count,
+      array_agg(distinct gl.location_id) filter (where gl.location_type_id=(select id from cache_termlists_terms where termlist_title='Location types' and term='NUTS Level 3')) as group_indexed_location_ids,
+      count(distinct case gl.location_type_id when (select id from cache_termlists_terms where termlist_title='Location types' and term='NUTS Level 3') then gl.location_id else null end) as group_indexed_location_ids_count,
       -- Taxon groups
       array_agg(distinct gtg.taxon_group_id) as group_indexed_taxon_group_ids,
       count(distinct gtg.taxon_group_id) as group_indexed_taxon_group_ids_count,
@@ -57,7 +56,9 @@ function get_discover_groups_query() {
     -- Tidy nulls from arrays.
     update custom_cache_tables.index_group_discovery_build set group_indexed_taxon_group_ids='{}' where group_indexed_taxon_group_ids=array[null]::integer[];
 
-    drop table index_group_discovery;
+    grant select on  custom_cache_tables.index_group_discovery_build to indicia_report_user;
+
+    drop table if exists custom_cache_tables.index_group_discovery;
     alter table custom_cache_tables.index_group_discovery_build rename to index_group_discovery;
 QRY;
 }
