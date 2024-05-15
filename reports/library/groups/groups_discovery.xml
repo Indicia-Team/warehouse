@@ -1,115 +1,166 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Groups discovery" description="Finds groups a user may like to join based on geographic and taxonomic overlap. Requires group_discovery custom cache table.">
   <query website_filter_field="">
+    /*
+     General principles:
+     * Collect various metadata together about groups that are available to
+       join and a recorder's recent records.
+     * Convert these data to a series of scores, where score=1 means most
+       likely to be of interest to the recorder, and 0 is least likely.
+     * Scores included are:
+       * user_records_match_locations_score - based on number of user's
+         records which share an indexed location with the group's filter
+         boundary.
+       * group_locations_covered_by_user_records_score - based on proportion
+         of the total area of the group's filter boundary which is also
+         covered by some of the user's records, using an indexed location
+         layer to work this out.
+       * user_records_match_taxonomy_score - based on number
+         of user's records which share taxon group with the group's filter.
+       * group_taxon_groups_covered_by_user_records_score - based on
+         proportion of the total list of taxon groups in group's filter which
+         are also covered by some of the user's records.
+       * recent_records_score - based on number of recent records added to
+         the group, compared with the maximum added to any group.
+     * Return available groups sorted by total score.
+    */
+
     drop table if exists oindex;
+
+    -- Grab a snapshot of the user's recent records for analysis.
     create temporary table oindex as
-      select id, taxon_group_id, location_ids from cache_occurrences_functional where created_by_id=#currentUser# and training=false order by id desc limit 1000;
+      select o.id, o.taxon_group_id, array_agg(distinct l.id) as location_ids
+      from cache_occurrences_functional o
+      join locations l on l.id=any(o.location_ids) and l.location_type_id=#location_type_id# and l.deleted=false
+      where o.created_by_id=#currentUser#
+        and o.training=false
+        and o.updated_on&gt;now()-'6 months'::interval
+          group by o.id
+      limit 1000;
+
     create index oindex_taxon_groups on oindex(taxon_group_id);
     create index oindex_location_ids on oindex using gin(location_ids);
 
-    drop table if exists score_group_activity_and_geo_overlap;
+    -- Build a table that scores groups based on geographic and taxonomic
+    -- overlap with user's records and overall activity level.
+    drop table if exists group_scores_for_user;
+
+    -- First, find the order of group priority based on various criteria. If
+    -- the criterion is not available, set to null so we can push to the end of
+    -- the list later.
     select
       igd.group_id,
-      -- factor number of recent records for the group, multiplied by ratio of group's indexed locations that the user has recorded at.
-      igd.group_recent_records *
-      (
-        select count(distinct val)
-        from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
-      ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision as score,
-      case igd.group_indexed_location_ids_count
-        when 0 then null
-        else row_number() over (order by igd.group_recent_records *
-          (
-            select count(distinct val)
-            from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
-          ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision desc nulls last)
-      end as score_group_activity_and_geo_overlap
-    into temporary score_group_activity_and_geo_overlap
+
+      -- Scoring based on recent records for group vs the max for any group.
+      igd.group_recent_records::double precision / greatest(1, (select max(group_recent_records) from custom_cache_tables.index_group_discovery)) as recent_records_score,
+
+      -- Scores that we will fill in subsequently as more performant.
+      null::double precision as user_records_match_locations_score,
+      null::double precision as user_records_match_taxonomy_score,
+
+      -- Now fetch other data that can be used to calculate additional scores
+      -- in subsequent queries.
+
+      -- User's records that match group geographically.
+      count(distinct oloc.id) as records_matching_any_locations_count,
+      -- Total indexed locations for the group filter.
+      igd.group_indexed_location_ids_count,
+      -- We'll need the actual list of location IDs for the groups filter as
+      -- well, but filling it in afterwards avoids slowing this query down due
+      -- to a group by on an array.
+      array[]::integer[] as group_indexed_location_ids,
+
+      -- User's records that match group taxonomically.
+      count(otax.*) as records_matching_any_taxonomy_count,
+      -- Total taxon groups for the group filter.
+      igd.group_indexed_taxon_group_ids_count,
+      -- We'll need the actual list of taxon group IDs for the groups filter as
+      -- well, but filling it in afterwards avoids slowing this query down due
+      -- to a group by on an array.
+      array[]::integer[] as group_indexed_taxon_group_ids
+
+    into temporary group_scores_for_user
     from custom_cache_tables.index_group_discovery igd
     left join groups_users gu on gu.group_id=igd.group_id and gu.deleted=false and gu.user_id=#currentUser#
-    left join oindex olocation4 on olocation4.location_ids &amp;&amp; igd.group_indexed_location_ids
-    where gu.id is null
-    and igd.website_id in (#website_ids#)
-    group by igd.group_id, igd.group_recent_records, igd.group_indexed_location_ids_count
-    order by 2 desc nulls last;
-
-    update score_group_activity_and_geo_overlap
-    set score_group_activity_and_geo_overlap = (select max(coalesce(score_group_activity_and_geo_overlap, 0))+1 from score_group_activity_and_geo_overlap)
-    where score_group_activity_and_geo_overlap is null;
-
-    -- TODO Does the above work? Does it need to sort into 2 levels like the 3rd query? Also what about the second?
-
-    drop table if exists score_user_activity_within_geo_overlap;
-    select
-      igd.group_id ,
-      -- factor number of records the user has recorded in areas similar to the group multiplied by ratio of group's indexed locations that the user has recorded at.
-      count(olocation4.*) * (
-        select count(distinct val)
-        from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
-      ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision,
-      row_number() over (order by count(olocation4.*) * (
-        select count(distinct val)
-        from unnest(string_to_array(string_agg(array_to_string(array(select unnest(olocation4.location_ids) intersect select unnest(igd.group_indexed_location_ids)), ','), ','), ',')) as val
-      ) / nullif(igd.group_indexed_location_ids_count, 0)::double precision desc nulls last) as score_user_activity_within_geo_overlap
-    into temporary score_user_activity_within_geo_overlap
-    from custom_cache_tables.index_group_discovery igd
-    left join groups_users gu on gu.group_id=igd.group_id and gu.deleted=false and gu.user_id=#currentUser#
-    left join oindex olocation4 on olocation4.location_ids &amp;&amp; igd.group_indexed_location_ids
-    where gu.id is null
-    and igd.website_id in (#website_ids#)
-    group by igd.group_id, igd.group_indexed_location_ids_count
-    order by 2 desc nulls last;
-
-    drop table if exists score_user_activity_within_taxonomic_overlap;
-    select
-      igd.group_id,
-	  igd.group_indexed_taxon_group_ids_count,
-      -- factor number of records the user has recorded which taxonomically overlap the group.
-      count(otax.*) as taxa,
-      case when count(otax.*)&gt;0 then row_number() over (order by count(otax.*) desc) else null end as score_user_activity_within_taxonomic_overlap
-    into temporary score_user_activity_within_taxonomic_overlap
-    from custom_cache_tables.index_group_discovery igd
-    left join groups_users gu on gu.group_id=igd.group_id and gu.deleted=false and gu.user_id=4
+    left join oindex oloc on oloc.location_ids &amp;&amp; igd.group_indexed_location_ids
     left join oindex otax on otax.taxon_group_id=any(igd.group_indexed_taxon_group_ids)
     where gu.id is null
-    and igd.website_id in (2)
-    group by igd.group_id, igd.group_indexed_taxon_group_ids_count, igd.group_indexed_taxon_group_ids
-    order by 2 desc;
+    and igd.website_id in (#website_ids#)
+    group by igd.group_id, igd.group_recent_records, igd.group_indexed_location_ids_count, igd.group_indexed_taxon_group_ids_count;
 
-    -- If no taxa filter in the group, then these groups go next.
-    update score_user_activity_within_taxonomic_overlap
-    set score_user_activity_within_taxonomic_overlap = (select max(coalesce(score_user_activity_within_taxonomic_overlap, 0))+1 from score_user_activity_within_taxonomic_overlap)
-    where group_indexed_taxon_group_ids_count=0 and taxa=0;
+    -- Fill in the arrays, as more performant than doing them in query above.
+    update group_scores_for_user gsu
+    set group_indexed_location_ids=igd.group_indexed_location_ids,
+      group_indexed_taxon_group_ids=igd.group_indexed_taxon_group_ids
+    from custom_cache_tables.index_group_discovery igd
+    where igd.group_id=gsu.group_id;
 
-    -- Finally, groups that have a taxon filter, but the user's records don't overlap are lowest priority.
-    update score_user_activity_within_taxonomic_overlap
-    set score_user_activity_within_taxonomic_overlap = (select max(coalesce(score_user_activity_within_taxonomic_overlap, 0))+1 from score_user_activity_within_taxonomic_overlap)
-    where group_indexed_taxon_group_ids_count>0 and taxa=0;
+    -- Find all the location IDS for the records that intersect a group by
+    -- indexed location.
+    drop table if exists all_location_ids_for_records_assocated_with_group;
+    select gsu.group_id, array_agg(distinct elem order by elem desc) as location_ids
+      into temporary all_location_ids_for_records_assocated_with_group
+      from group_scores_for_user gsu
+      join oindex oloc on oloc.location_ids &amp;&amp; gsu.group_indexed_location_ids
+      cross join unnest(oloc.location_ids) as elem
+      group by gsu.group_id;
 
+    -- Now find the ratio of the intersecting location IDs to the total indexed
+    -- location IDs for the group. This is a rough measure of the proportion of
+    -- the total geographic area of the group that is covered by the recorder's
+    -- recent records.
+    drop table if exists group_locations_covered_by_user_records_scores;
+    select gsu.group_id,
+      array_length(array_agg(array(select unnest(gsu.group_indexed_location_ids) intersect select unnest(l.location_ids))), 2)::double precision
+        / nullif(gsu.group_indexed_location_ids_count, 0) as group_locations_covered_by_user_records_score
+      into temporary group_locations_covered_by_user_records_scores
+      from group_scores_for_user gsu
+      join all_location_ids_for_records_assocated_with_group l on l.group_id=gsu.group_id
+      group by gsu.group_id, gsu.group_indexed_location_ids_count;
+
+    -- As above, but for taxon group coverage rather than location.
+    drop table if exists group_taxon_groups_covered_by_user_records_scores;
+    select gsu.group_id,
+      array_length(array_agg(distinct otg.taxon_group_id), 1)::double precision
+      / nullif(gsu.group_indexed_taxon_group_ids_count, 0) as group_taxon_groups_covered_by_user_records_score
+    into temporary group_taxon_groups_covered_by_user_records_scores
+    from group_scores_for_user gsu
+    join oindex otg on otg.taxon_group_id=any(gsu.group_indexed_taxon_group_ids)
+	  group by gsu.group_id, gsu.group_indexed_taxon_group_ids_count;
+
+    -- Convert the counts into a ratio score.
+    update group_scores_for_user gsu
+    set user_records_match_locations_score=coalesce(records_matching_any_locations_count::double precision / nullif((select max(records_matching_any_locations_count) from group_scores_for_user), 0), 0),
+      user_records_match_taxonomy_score=coalesce(records_matching_any_taxonomy_count / nullif((select max(records_matching_any_taxonomy_count) from group_scores_for_user), 0), 0);
+
+    -- Finally, output group data, sorted by total score.
     select #columns#
     from groups g
-	  left join score_group_activity_and_geo_overlap s1 on s1.group_id=g.id
-    left join score_user_activity_within_geo_overlap s2 on s2.group_id=g.id
-    left join score_user_activity_within_taxonomic_overlap s3 on s3.group_id=g.id
-    left join custom_cache_tables.index_group_discovery idg on idg.group_id=g.id
+    join group_scores_for_user s on s.group_id=g.id
+    left join group_locations_covered_by_user_records_scores ls on ls.group_id=g.id
+    left join group_taxon_groups_covered_by_user_records_scores tgs on tgs.group_id=g.id
+    join custom_cache_tables.index_group_discovery igd on igd.group_id=g.id
     left join groups_users gu ON gu.group_id=g.id and gu.deleted=false and gu.pending=false and gu.user_id=#currentUser#
     left join groups_users guc ON guc.group_id=g.id and guc.deleted=false and guc.pending=false
     left join group_pages gp ON gp.group_id=g.id and gp.deleted=false and gp.administrator=false and gp.access_level is null
     left join group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
-	  where g.deleted=false
+    where g.deleted=false
     -- Not already a member.
     and gu.id is null
   </query>
   <order_bys>
-    <order_by>1 asc nulls last</order_by>
+    <order_by>1 desc</order_by>
   </order_bys>
   <params>
     <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text" emptyvalue="0" />
+    <param name="location_type_id" display="Location type ID used for analysis" description="An indexed location type ID. Should be the same as used to set up custom_cache_tables.index_groups_locations." datatype="integer" />
   </params>
   <columns>
-    <column name="score" sql="s1.score_group_activity_and_geo_overlap + s2.score_user_activity_within_geo_overlap + s3.score_user_activity_within_taxonomic_overlap
-      /* relegate inactive groups */
-      + case idg.group_recent_records when 0 then 500 else 0 end" datatype="float" />
+    <column name="score" sql="s.user_records_match_locations_score
+      + coalesce(ls.group_locations_covered_by_user_records_score, 0)
+      + s.user_records_match_taxonomy_score
+      + coalesce(tgs.group_taxon_groups_covered_by_user_records_score, 0)
+      + s.recent_records_score" datatype="float" visible="false" />
     <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
     <column name="logo_path" display="Logo" sql="g.logo_path" img="true" visible="false" />
     <column name="group_type_id" visible="false" sql="g.group_type_id" datatype="integer" />

@@ -21,6 +21,21 @@
  * @link http://code.google.com/p/indicia/
  */
 
+/**
+ * To build a table that facilites building reports which help users to find
+ * groups (e.g. activities or projects) that have similar geographic or
+ * taxonomic coverage as their own records:
+ * 1. Copy this file and rename to `discover_groups.php`.
+ * 2. Identify a location type that is handled by the `spatial_index_builder`
+ *    module that you would like to use for geographic comparison. Should be
+ *    small enough so that a polygon is not larger than the area you would like
+ *    to suggest recorders travel to for their group activities.
+ * 3. Ensure that the `custom_cache_tables` warehouse module is enabled.
+ */
+
+/**
+ * Get metadata about running the process that builds the table.
+ */
 function get_discover_groups_metadata() {
   return array(
     'frequency' => '1 day',
@@ -28,19 +43,22 @@ function get_discover_groups_metadata() {
   );
 }
 
+/**
+ * Returns the query used to generate the index_group_discovery table.
+ */
 function get_discover_groups_query() {
   return <<<'QRY'
     drop table if exists custom_cache_tables.index_group_discovery_build;
 
     select g.id as group_id,
       g.website_id,
-      -- NUTS 3
+      -- Indexed locations for finding geographic overlap with user's records.
       array_agg(distinct gl.location_id) filter (where gl.location_type_id=(select id from cache_termlists_terms where termlist_title='Location types' and term='NUTS Level 3')) as group_indexed_location_ids,
       count(distinct case gl.location_type_id when (select id from cache_termlists_terms where termlist_title='Location types' and term='NUTS Level 3') then gl.location_id else null end) as group_indexed_location_ids_count,
-      -- Taxon groups
+      -- Taxon groups for finding taxonomic overlap with user's records.
       array_agg(distinct gtg.taxon_group_id) as group_indexed_taxon_group_ids,
       count(distinct gtg.taxon_group_id) as group_indexed_taxon_group_ids_count,
-      -- Recent records.
+      -- Recent records for promoting active groups.
       count(o.*) as group_recent_records
     into custom_cache_tables.index_group_discovery_build
     from groups g
@@ -56,7 +74,7 @@ function get_discover_groups_query() {
     -- Tidy nulls from arrays.
     update custom_cache_tables.index_group_discovery_build set group_indexed_taxon_group_ids='{}' where group_indexed_taxon_group_ids=array[null]::integer[];
 
-    grant select on  custom_cache_tables.index_group_discovery_build to indicia_report_user;
+    grant select on custom_cache_tables.index_group_discovery_build to indicia_report_user;
 
     drop table if exists custom_cache_tables.index_group_discovery;
     alter table custom_cache_tables.index_group_discovery_build rename to index_group_discovery;
