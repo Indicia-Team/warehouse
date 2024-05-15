@@ -170,7 +170,7 @@ SQL;
     $sql = <<<SQL
 SELECT sequence
 FROM uksi_operations
-WHERE operation='$operation->operation'
+WHERE LOWER(operation)=LOWER('$operation->operation')
 AND COALESCE(organism_key, '')=COALESCE('$operation->organism_key', '')
 AND COALESCE(taxon_version_key, '')=COALESCE('$operation->taxon_version_key', '')
 AND COALESCE(rank, '')=COALESCE('$operation->rank', '')
@@ -521,8 +521,12 @@ SQL;
   public function processMoveName($operation) {
     $this->checkOperationRequiredFields('Move name', $operation, [
       'current_organism_key',
-      'synonym',
     ]);
+    // If synonym not present then operation is skipped, according to info from
+    // C. Raper 30/04/2024.
+    if (empty($operation->synonym)) {
+      return;
+    }
     $namesToKeep = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
     $allNamesToMerge = $this->getTaxaForKeys(['search_code' => $operation->synonym]);
     if (count($allNamesToMerge) === 0) {
@@ -923,7 +927,7 @@ SELECT organism_key
 FROM uksi_operations
 WHERE sequence < $operation->sequence
 AND taxon_name=$currentName
-AND operation='New taxon'
+AND LOWER(operation)='new taxon'
 AND batch_processed_on='$operation->batch_processed_on'
 ORDER BY sequence DESC
 LIMIT 1

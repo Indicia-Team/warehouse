@@ -81,7 +81,7 @@ function getOrganismKeyControl($fieldName, $label, $helpText, $values) {
     echo data_entry_helper::select([
       'label' => 'Operation',
       'fieldname' => 'uksi_operation:operation',
-      'default' => html::initial_value($values, 'uksi_operation:operation'),
+      'default' => ucfirst(strtolower(html::initial_value($values, 'uksi_operation:operation'))),
       'lookupValues' => [
         'Add synonym' => 'Add synonym',
         'Amend metadata' => 'Amend metadata (deprecated - use Amend taxon instead)',
