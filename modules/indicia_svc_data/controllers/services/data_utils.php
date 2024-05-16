@@ -1029,7 +1029,7 @@ SQL;
   private function validateBulkEditUpdateValues($updates) {
     if (!empty($updates->date)) {
       // Date format check.
-      if (!preg_match('/^\d{4}-\d{2}\d{2}$/', $updates->date)) {
+      if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $updates->date)) {
         $this->fail('Bad request', 400, 'Date format incorrect, should be yyyy-mm-dd');
         return FALSE;
       }
@@ -1055,6 +1055,10 @@ SQL;
 
   /**
    * Controller action for the bulk edit endpoint.
+   *
+   * @todo Website restrictions
+   * @todo restrictToOwnData -
+   * @todo restrictToOwnData if not set, then ensure current user has site admin rights
    */
   public function bulk_edit() {
     header('Content-Type: application/json');
