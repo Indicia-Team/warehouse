@@ -105,7 +105,6 @@ SQL;
       and sys.name='cache_builder';
 SQL;
     $minSampleId = $db->query($query)->current()->check_from_sample_id;
-    $minSampleId = 0;
 
     // The most likely cause of a cache builder block is the failure of some
     // samples to spatially index. So scan for any in the recent data (using
