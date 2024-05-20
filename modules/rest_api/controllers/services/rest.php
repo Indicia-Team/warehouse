@@ -1624,7 +1624,7 @@ class Rest_Controller extends Controller {
     if ($this->getAutofeedMode()) {
       // Check the semaphore to ensure we don't run the same autofeed query
       // twice at one time. Could happen if a query runs slowly.
-      if (variable::get("rest-autofeed-$_GET[proj_id]-running") === TRUE) {
+      if (variable::get("rest-autofeed-$_GET[proj_id]-running", FALSE, FALSE) === TRUE) {
         RestObjects::$apiResponse->fail('Service still processing prior request for feed.', 503, "Service unavailable");
         throw new RestApiAbort("Autofeed for $_GET[proj_id] already running");
       }
