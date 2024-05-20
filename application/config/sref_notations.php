@@ -34,6 +34,7 @@ $config['sref_notations'] = [
   '31370' => 'Belgian Lambert 72',
   '3109' => 'ETRS89 / Jersey Transverse Mercator',
   '23030' => 'ED50 / UTM zone 30N',
+  '32730' => 'WGS 84 / UTM zone 30S',
   '29902' => 'TM65 / Irish Grid',
   '3006' => 'SWEREF99 TM / Swedish Transverse Mercator',
   '3021' => 'RT90 2.5 gon v / Swedish Grid',
