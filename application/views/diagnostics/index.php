@@ -35,6 +35,18 @@ $readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana:
 $restApiEnabled = in_array(MODPATH . 'rest_api', kohana::config('config.modules'));
 ?>
 <div class="row">
+  <div class="col-md-12">
+    <h3>Maintenance tools</h3>
+    <button class="btn btn-primary" type="button" id="run-maintenance">Run background process maintenance</button>
+    <div id="maintenance-output" style="display: none" class="panel panel-info">
+      <div class="panel-heading">Maintenance output</div>
+      <div class="panel-body"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+<div class="row">
 
 <div class="col-md-6">
 <h3>Scheduled task summary</h3>
@@ -42,6 +54,7 @@ $restApiEnabled = in_array(MODPATH . 'rest_api', kohana::config('config.modules'
 data up to.</div>
 <?php
 echo report_helper::report_grid([
+  'id' => 'scheduled_tasks_report',
   'readAuth' => $readAuth,
   'dataSource' => 'library/system/scheduled_task_summary',
 ]);
@@ -53,6 +66,7 @@ echo report_helper::report_grid([
 <div class="alert alert-info">Summary of current entries in the Work Queue.</div>
 <?php
 echo report_helper::report_grid([
+  'id' => 'work_queue_report',
   'readAuth' => $readAuth,
   'dataSource' => 'library/work_queue/summary'
 ]);
@@ -67,6 +81,7 @@ echo report_helper::report_grid([
   e.g. into Elasticsearch. Note that not all these feeds may be currently enabled.</div>
   <?php
   echo report_helper::report_grid([
+    'id' => 'autofeed_delay_report',
     'readAuth' => $readAuth,
     'dataSource' => 'rest_api/autofeed_delays',
   ]);
@@ -78,6 +93,7 @@ echo report_helper::report_grid([
   <div class="alert alert-info">The following are most resource intensive API requests of the last 2000.</div>
   <?php
   echo report_helper::report_grid([
+    'id' => 'request_log_culprits_report',
     'readAuth' => $readAuth,
     'dataSource' => 'library/request_log_entries/main_culprits',
     'itemsPerPage' => 5,
