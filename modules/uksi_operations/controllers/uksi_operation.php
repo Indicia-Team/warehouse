@@ -440,7 +440,17 @@ SQL;
     ]);
     // Check names found.
     if (count($namesToUpdate) === 0) {
-      $this->operationErrors[] = 'Name with taxon version key given in Synonym for Extract Name operation not found.';
+      // If not found when checking both TVK and org key, we can try a search
+      // on just TVK as the org key is sometimes incorrect.
+      $namesToUpdate = $this->getTaxaForKeys([
+        'search_code' => $operation->synonym,
+      ]);
+      if (count($namesToUpdate) === 0) {
+        $this->operationErrors[] = 'Name with taxon version key given in Synonym for Extract Name operation not found.';
+      }
+      elseif (count($namesToUpdate) > 1) {
+        $this->operationErrors[] = 'Multiple names found when searching for a unique name using the taxon version key given in Synonym for Extract Name operation.';
+      }
     }
     foreach ($namesToUpdate as $nameInfo) {
       if ($nameInfo->preferred === 't') {
