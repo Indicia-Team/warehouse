@@ -313,12 +313,14 @@ SQL;
    */
   public function processAmendTaxon($operation) {
     $this->checkOperationRequiredFields('Amend metadata', $operation, ['current_organism_key']);
-    $namesToUpdate = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
-    if (count($namesToUpdate) === 0) {
-      $this->operationErrors[] = 'Organism key not found';
-    }
     if (count($this->operationErrors) > 0) {
       return 'Error';
+    }
+    $namesToUpdate = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
+    if (count($namesToUpdate) === 0) {
+      // If organism not present then assumed to be deleted so operation is
+      // skipped, according to info from C. Raper 13/05/2024.
+      return 'Operation skipped as organism key not found';
     }
     $parentChanging = !empty($operation->parent_name) || !empty($operation->parent_organism_key);
     $redundantChanging = $operation->redundant !== NULL;
@@ -535,7 +537,7 @@ SQL;
     // If synonym not present then operation is skipped, according to info from
     // C. Raper 30/04/2024.
     if (empty($operation->synonym)) {
-      return;
+      return 'Operation skipped as not found';
     }
     $namesToKeep = $this->getTaxaForKeys(['organism_key' => $operation->current_organism_key]);
     $allNamesToMerge = $this->getTaxaForKeys(['search_code' => $operation->synonym]);
