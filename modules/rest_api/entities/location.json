@@ -17,8 +17,7 @@
     { "sql": "location_type_id", "type": "integer" },
     { "sql": "public", "type": "boolean" },
     { "sql": "st_y(st_transform(st_centroid(t1.centroid_geom), 4326))", "name": "lat", "type": "float" },
-    { "sql": "st_x(st_transform(st_centroid(t1.centroid_geom), 4326))", "name": "lon", "type": "float" },
-    { "sql": "name", "type": "string" }
+    { "sql": "st_x(st_transform(st_centroid(t1.centroid_geom), 4326))", "name": "lon", "type": "float" }
   ],
   "joins": [
     {
