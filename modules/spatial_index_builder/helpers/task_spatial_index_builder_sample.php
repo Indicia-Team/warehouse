@@ -54,7 +54,7 @@ class task_spatial_index_builder_sample {
    */
   public static function process($db, $taskType, $procId) {
     $locationTypeFilters = spatial_index_builder::getLocationTypeFilters($db);
-    $locationTypeTreeFilters = spatial_index_builder::getLocationTypeTreeFilters($db);
+    $linkedLocationAttrIds = spatial_index_builder::getLinkedLocationAttrIds($db);
     $qry = <<<SQL
 DROP TABLE IF EXISTS smplist;
 DROP TABLE IF EXISTS changed_samples;
@@ -64,23 +64,34 @@ WHERE claimed_by='$procId'
 AND entity='sample'
 AND task='task_spatial_index_builder_sample';
 
-WITH RECURSIVE ltree AS (
-  SELECT l.id, l.location_type_id, l.parent_id, s.id as sample_id
+WITH ltree AS (
+  -- Find locations where the user has selected a specific location on the
+  -- input form (e.g. a Vice County).
+  SELECT DISTINCT s.id as sample_id, l.id
   FROM smplist sl
-  JOIN cache_samples_functional s ON s.id=sl.record_id
-    LEFT JOIN locations l ON st_intersects(l.boundary_geom, s.public_geom)
-    AND (st_geometrytype(s.public_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.public_geom))
+  JOIN cache_samples_functional s on s.id=sl.record_id
+  JOIN sample_attribute_values v on v.sample_id=s.id AND v.deleted=false AND v.sample_attribute_id IN ($linkedLocationAttrIds)
+  JOIN locations l on l.id=v.int_value
+  AND l.deleted=false
+  AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
+  $locationTypeFilters[surveyFilters]
+  UNION ALL
+  -- Add locations which are from an indexed layer and which spatially
+  -- intersect the sample, unless the user has made a choice for that location
+  -- type as per above.
+  SELECT s.id as sample_id, l.id
+  FROM smplist sl
+  JOIN cache_samples_functional s on s.id=sl.record_id
+  LEFT JOIN locations l on l.boundary_geom && s.public_geom AND st_intersects(l.boundary_geom, s.public_geom)
+    AND (st_geometrytype(s.public_geom)='ST_Point' or not st_touches(l.boundary_geom, s.public_geom))
     AND l.deleted=false
     AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
     $locationTypeFilters[surveyFilters]
-    /* type filters, e.g. and (l.location_type_id<>#id or s.survey_id in (#surveys)) */
-  UNION ALL
-  SELECT l.id, ltree.location_type_id, l.parent_id, ltree.sample_id
-  FROM locations l
-  JOIN ltree ON ltree.parent_id = l.id
-  AND ltree.location_type_id IN ($locationTypeTreeFilters)
+  LEFT JOIN sample_attribute_values v on v.sample_id=s.id AND v.deleted=false AND v.sample_attribute_id IN ($linkedLocationAttrIds)
+  LEFT JOIN locations lfixed on lfixed.id=v.int_value AND lfixed.deleted=false
+	WHERE coalesce(l.location_type_id,-1)<>COALESCE(lfixed.location_type_id,-2)
 )
-SELECT sample_id, array_agg(distinct id) as location_ids
+SELECT sample_id, array_agg(DISTINCT id) as location_ids
 INTO TEMPORARY changed_samples
 FROM ltree
 GROUP BY sample_id;

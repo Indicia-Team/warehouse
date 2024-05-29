@@ -51,10 +51,13 @@ class task_spatial_index_builder_location {
    *   Unique identifier of this work queue processing run. Allows filtering
    *   against the work_queue table's claimed_by field to determine which
    *   tasks to perform.
+   *
+   * @todo Dynamic sample attribute IDs (both for samples and locations).
    */
   public static function process($db, $taskType, $procId) {
     $locationTypeFilters = spatial_index_builder::getLocationTypeFilters($db);
-    $locationTypeTreeFilters = spatial_index_builder::getLocationTypeTreeFilters($db);
+    $linkedLocationAttrIds = spatial_index_builder::getLinkedLocationAttrIds($db);
+
     $qry = <<<SQL
 DROP TABLE IF EXISTS loclist;
 DROP TABLE IF EXISTS changed_location_hits;
@@ -72,22 +75,27 @@ WHERE w.claimed_by='$procId'
 AND w.entity='location'
 AND w.task='task_spatial_index_builder_location';
 
-WITH RECURSIVE ltree AS (
-  SELECT l.id, l.location_type_id, l.parent_id, s.id as sample_id
+WITH ltree AS (
+  SELECT l.id, l.location_type_id, v.sample_id as sample_id
   FROM loclist ll
   JOIN locations l
     ON l.id=ll.record_id
     AND l.deleted=false
-  AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
+  JOIN sample_attribute_values v ON v.int_value=l.id AND v.sample_attribute_id IN ($linkedLocationAttrIds) AND v.deleted=false
+  UNION ALL
+  SELECT l.id, l.location_type_id, s.id as sample_id
+  FROM loclist ll
+  JOIN locations l
+    ON l.id=ll.record_id
+    AND l.deleted=false
+    AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
   JOIN cache_samples_functional s
     ON st_intersects(l.boundary_geom, s.public_geom)
     AND (st_geometrytype(s.public_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.public_geom))
     $locationTypeFilters[surveyFilters]
-  UNION ALL
-  SELECT l.id, ltree.location_type_id, l.parent_id, ltree.sample_id
-  FROM locations l
-  JOIN ltree ON ltree.parent_id = l.id
-  AND ltree.location_type_id IN ($locationTypeTreeFilters)
+  LEFT JOIN sample_attribute_values v ON v.sample_id=s.id AND v.deleted=false AND v.sample_attribute_id IN ($linkedLocationAttrIds)
+  LEFT JOIN locations lfixed on lfixed.id=v.int_value AND lfixed.deleted=false
+  WHERE COALESCE(l.location_type_id,-1)<>COALESCE(lfixed.location_type_id,-2)
 )
 SELECT sample_id, array_agg(distinct id) as location_ids
 INTO TEMPORARY changed_location_hits

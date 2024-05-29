@@ -1,3 +1,12 @@
+# Version 9.2.0
+*2024-05-28*
+
+* Fixes use of sample attributes of type 'linked_location_id' in order to specify which location
+  to index against a sample (https://github.com/Indicia-Team/warehouse/issues/518).
+* Removed `hierarchical_location_types` config option from the spatial_index_builder module as not
+  being used and made the code more complex. It is possible to list all hierarchical layers
+  directly in the `location_types` option to achieve the same outcome.
+
 # Version 9.1.0
 *2024-03-29*
 
