@@ -89,7 +89,7 @@ WITH ltree AS (
     $locationTypeFilters[surveyFilters]
   LEFT JOIN sample_attribute_values v on v.sample_id=s.id AND v.deleted=false AND v.sample_attribute_id IN ($linkedLocationAttrIds)
   LEFT JOIN locations lfixed on lfixed.id=v.int_value AND lfixed.deleted=false
-	WHERE COALESCE(l.location_type_id,-1)<>COALESCE(lfixed.location_type_id,-2)
+	WHERE coalesce(l.location_type_id,-1)<>COALESCE(lfixed.location_type_id,-2)
 )
 SELECT sample_id, array_agg(DISTINCT id) as location_ids
 INTO TEMPORARY changed_samples
@@ -130,7 +130,6 @@ AND q.entity='occurrence'
 AND q.task='task_spatial_index_builder_occurrence';
 SQL;
     $db->query($qry);
-    kohana::log('debug', $qry);
   }
 
 }
