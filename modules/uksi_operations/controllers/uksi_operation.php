@@ -214,7 +214,7 @@ SQL;
       $this->operationErrors[] = 'Add synonym operation requires a value for current_organism_key or current_name';
     }
     // Find other taxa with same organism key.
-    $allExistingNames = $this->getCurrentTaxa($operation, FALSE);
+    $allExistingNames = $this->getCurrentTaxa($operation);
     // Fail if none found.
     if (count($allExistingNames) === 0) {
       $this->operationErrors[] = "Organism key $operation->current_organism_key not found for add synonym operation";
@@ -226,7 +226,8 @@ SQL;
     foreach ($allExistingNames as $name) {
       if ($name->taxon === $fields['taxon:taxon']
           && $name->authority === $fields['taxon:authority']
-          && $name->attribute === $fields['taxon:attribute']) {
+          && $name->attribute === $fields['taxon:attribute']
+          && $name->search_code === $fields['taxon:search_code']) {
         return "Synonym $operation->taxon_name already exists.";
       }
     }
@@ -443,9 +444,11 @@ SQL;
     // Check names found.
     if (count($namesToUpdate) === 0) {
       // If not found when checking both TVK and org key, we can try a search
-      // on just TVK as the org key is sometimes incorrect.
+      // on just TVK within the current names as the org key is sometimes
+      // incorrect.
       $namesToUpdate = $this->getTaxaForKeys([
         'search_code' => $operation->synonym,
+        'ttl.allow_data_entry' => 't',
       ]);
       if (count($namesToUpdate) === 0) {
         $this->operationErrors[] = 'Name with taxon version key given in Synonym for Extract Name operation not found.';
@@ -964,7 +967,8 @@ SQL;
    *
    * @param array $search
    *   Associative array of keys and values to search against the taxon table,
-   *   e.g. external_key, organism_key or search_code.
+   *   e.g. external_key, organism_key or search_code. Can also filter against
+   *   taxa_taxon_lists fields if key is prefixed "ttl.".
    *
    * @return object
    *   Query result which can be iterated, with accepted names first.
@@ -976,7 +980,8 @@ SQL;
       't.deleted' => 'f',
     ];
     foreach ($search as $key => $value) {
-      $where["t.$key"] = $value;
+      // Table alias defaults to t.
+      $where[strpos($key, '.') === FALSE ? "t.$key" : $key] = $value;
     }
     return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, ttl.parent_id, ttl.allow_data_entry, ' .
         't.taxon, t.authority, t.attribute, t.search_code, t.external_key, t.organism_key, t.taxon_rank_id, ' .
