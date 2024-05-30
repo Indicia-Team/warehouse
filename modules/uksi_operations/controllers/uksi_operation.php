@@ -214,7 +214,7 @@ SQL;
       $this->operationErrors[] = 'Add synonym operation requires a value for current_organism_key or current_name';
     }
     // Find other taxa with same organism key.
-    $allExistingNames = $this->getCurrentTaxa($operation, FALSE);
+    $allExistingNames = $this->getCurrentTaxa($operation);
     // Fail if none found.
     if (count($allExistingNames) === 0) {
       $this->operationErrors[] = "Organism key $operation->current_organism_key not found for add synonym operation";
@@ -226,7 +226,8 @@ SQL;
     foreach ($allExistingNames as $name) {
       if ($name->taxon === $fields['taxon:taxon']
           && $name->authority === $fields['taxon:authority']
-          && $name->attribute === $fields['taxon:attribute']) {
+          && $name->attribute === $fields['taxon:attribute']
+          && $name->search_code === $fields['taxon:search_code']) {
         return "Synonym $operation->taxon_name already exists.";
       }
     }
