@@ -150,7 +150,7 @@ SQL;
       where v2.name || '-running'=v1.name
       and v1.name like 'rest-autofeed-%running'
       and (
-        nullif((v2.value::json->0->>'last_tracking_id')::integer, 0) < (select max(tracking) - 100000 from cache_occurrences_functional)
+        nullif((v2.value::json->0->>'last_tracking_id')::integer, 0) < (select max(tracking) - 20000 from cache_occurrences_functional)
           or (v2.value::json->0->>'last_tracking_date')::timestamp < now() - '2 hours'::interval
       );
 SQL;
