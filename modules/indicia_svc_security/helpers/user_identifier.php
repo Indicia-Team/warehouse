@@ -669,6 +669,7 @@ QRY
    * to an array of user IDs that the merge applies to.
    */
   private static function resolveMultipleUsers($identifiers, $existingUsers, $userPersonObj) {
+    $users = array_keys($existingUsers);
     if (isset($_REQUEST['force'])) {
       if ($_REQUEST['force'] === 'split') {
         $uid = self::findBestFit($identifiers, $existingUsers, $userPersonObj);
@@ -678,14 +679,13 @@ QRY
         $uid = self::findBestFit($identifiers, $existingUsers, $userPersonObj);
         // Merge the users into 1. A $_REQUEST['users_to_merge'] array can be
         // used to limit which are merged.
-        self::mergeUsers($uid, $existingUsers, $userPersonObj);
+        self::mergeUsers($uid, $users, $userPersonObj->db);
         return ['userId' => $uid];
       }
     }
     else {
       // We need to propose that there are several possible existing users
       // which match the supplied identifiers to the client website.
-      $users = array_keys($existingUsers);
       $userPersonObj->db->select('users_websites.user_id, users_websites.website_id, websites.title')
         ->from('websites')
         ->join('users_websites', 'users_websites.website_id', 'websites.id')
@@ -785,19 +785,49 @@ QRY
    *
    * If a request is received with the force parameter set to merge, this means
    * we can merge the detected users into one.
+   *
+   * @param int $uid
+   *   User ID to keep.
+   * @param array $existingUsers
+   *   List of existing users to merge and delete.
+   * @param Database $db
+   *   Database connection.
    */
-  private static function mergeUsers($uid, $existingUsers, $userPersonObj) {
-    foreach ($existingUsers as $userIdToMerge => $websites) {
+  private static function mergeUsers($uid, $existingUsers, $db) {
+    foreach ($existingUsers as $userIdToMerge) {
       if ($userIdToMerge != $uid && (!isset($_REQUEST['users_to_merge']) || in_array($userIdToMerge, $_REQUEST['users_to_merge']))) {
-        // Own the occurrences.
-        $userPersonObj->db->update('occurrences', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
-        $userPersonObj->db->update('occurrences', ['updated_by_id' => $uid], ['updated_by_id' => $userIdToMerge]);
-        $userPersonObj->db->update('samples', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
-        $userPersonObj->db->update('samples', ['updated_by_id' => $uid], ['updated_by_id' => $userIdToMerge]);
+        // Change ownership of occurrences, samples and locations.
+        $db->update('occurrences', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
+        $db->update('occurrences', ['updated_by_id' => $uid], ['updated_by_id' => $userIdToMerge]);
+        $db->update('samples', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
+        $db->update('samples', ['updated_by_id' => $uid], ['updated_by_id' => $userIdToMerge]);
+        $db->update('locations', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
+        $db->update('locations', ['updated_by_id' => $uid], ['updated_by_id' => $userIdToMerge]);
         if (in_array(MODPATH . 'cache_builder', Kohana::config('config.modules'))) {
-          $userPersonObj->db->update('cache_occurrences_functional', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
-          $userPersonObj->db->update('cache_samples_functional', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
+          $db->update('cache_occurrences_functional', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
+          $db->update('cache_samples_functional', ['created_by_id' => $uid], ['created_by_id' => $userIdToMerge]);
         }
+        // Also must keep person data values.
+        $query = <<<SQL
+          UPDATE person_attribute_values v
+          SET person_id=unew.person_id
+          FROM users uold, users unew
+          WHERE uold.id=$userIdToMerge
+          AND unew.id=$uid
+          AND v.person_id=uold.person_id
+          AND unew.deleted=false
+          AND v.deleted=false;
+SQL;
+        $db->query($query);
+        // Plus any linked group users (activities).
+        $query = <<<SQL
+          UPDATE groups_users gu
+          SET user_id=$uid
+          WHERE gu.user_id=$userIdToMerge
+          AND deleted=false
+          AND NOT EXISTS(SELECT * FROM groups_users gue WHERE gue.group_id=gu.group_id AND gue.user_id=$uid AND gue.deleted=false);
+SQL;
+        $db->query($query);
         // Delete the old user.
         $uidsToDelete[] = $userIdToMerge;
         kohana::log('debug', "User merge operation resulted in deletion of user $userIdToMerge plus the related person");
@@ -805,20 +835,20 @@ QRY
     }
 
     // Use the User Ids list to find a list of people to delete.
-    $psnIds = $userPersonObj->db->select('person_id')->from('users')->in('id', $uidsToDelete)->get()->result_array();
+    $psnIds = $db->select('person_id')->from('users')->in('id', $uidsToDelete)->get()->result_array();
     $pidsToDelete = [];
     foreach ($psnIds as $psnId) {
       $pidsToDelete[] = $psnId->person_id;
     }
     // Do the actual deletions.
-    $userPersonObj->db->from('users')
+    $db->from('users')
       ->set([
         'deleted' => 't',
         'updated_on' => date("Ymd H:i:s"),
         'updated_by_id' => $uid,
       ])
       ->in('id', $uidsToDelete)->update();
-    $userPersonObj->db->from('people')
+    $db->from('people')
       ->set([
         'deleted' => 't',
         'updated_on' => date("Ymd H:i:s"),
