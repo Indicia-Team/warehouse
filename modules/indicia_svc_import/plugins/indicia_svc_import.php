@@ -50,3 +50,23 @@ SQL;
   // Purge files older than 1 day.
   warehouse::purgeOldFiles('import/', 60 * 60 * 24);
 }
+
+/**
+ * Declare optional plugins which extend the import functionality.
+ *
+ * Plugins need to be enabled in the import_2 prebuilt form configuration.
+ *
+ * @param string $entity
+ *   Entity being imported, e.g. occurrence.
+ *
+ * @return array
+ *   List of plugins, keyed by plugin name with the value being a description.
+ */
+function indicia_svc_import_import_plugins($entity) {
+  if ($entity === 'occurrence') {
+    return [
+      'OccurrenceLinkedLocationCodeField' => 'A plugin which allows a linked location ID sample attribute to be populated from a location code, e.g. Vice County number. Requires the sample attribute ID and location type ID as parameters.',
+    ];
+  }
+  return [];
+}
