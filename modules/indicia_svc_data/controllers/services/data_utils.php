@@ -746,8 +746,12 @@ SQL;
    *   Response code, e.g. 401.
    * @param string $text
    *   Text to include in response.
+   * @param string $errorCode
+   *   An error code that defines the specific problem so that the client may resolve it.
+   * @param array $errorData
+   *   Any extra data that can be used by the client in problem resolution.
    */
-  private function fail($status, $code, $text) {
+  private function fail($status, $code, $text, $errorCode = NULL, array $errorData = NULL) {
     $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.0';
     header($protocol . ' ' . $code . ' ' . $status);
     $response = [
@@ -755,6 +759,12 @@ SQL;
       'status' => $status,
       'message' => $text,
     ];
+    if ($errorCode) {
+      $response['errorCode'] = $errorCode;
+    }
+    if ($errorData) {
+      $response['errorData'] = $errorData;
+    }
     kohana::log('alert', 'Data utils fail called: ' . $text);
     echo json_encode($response);
   }
@@ -785,6 +795,56 @@ SQL;
       LIMIT 1;
 SQL;
    return $db->query($qry)->current();
+  }
+
+  /**
+   * Splits samples to separate occurrences from those not in the list.
+   *
+   * Before a bulk edit, if occurrences belong to samples containing other
+   * occurrences that are not in the list, split the samples so the other
+   * occurrences aren't affected.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $occurrenceIdList
+   *   CSV format string of occurrence IDs to process.
+   */
+  private static function splitSamplesFromOtherOccurrences($db, $occurrenceIdList) {
+    // First find a list of sample IDs that need to be duplicated.
+    $qry = <<<SQL
+      SELECT DISTINCT o2.sample_id AS old_sample_id, nextval('samples_id_seq'::regclass) as new_sample_id
+      INTO TEMPORARY samples_to_clone
+      FROM occurrences o
+      JOIN occurrences o2 ON o2.sample_id=o.sample_id AND o2.deleted=false
+      WHERE o.id IN ($occurrenceIdList)
+      AND o2.id NOT IN ($occurrenceIdList)
+      AND o.deleted=false;
+
+      INSERT INTO samples(id, survey_id, location_id, date_start, date_end, date_type, entered_sref, entered_sref_system,
+        location_name, created_on, created_by_id, updated_on, updated_by_id, comment, external_key, sample_method_id, deleted,
+        geom, recorder_names, parent_id, input_form, group_id, privacy_precision, record_status, verified_by_id, verified_on,
+        licence_id, training)
+      SELECT stc.new_sample_id, s.survey_id, s.location_id, s.date_start, s.date_end, s.date_type, s.entered_sref, s.entered_sref_system,
+        s.location_name, now(), s.created_by_id, now(), s.updated_by_id, s.comment, s.external_key, s.sample_method_id, s.deleted,
+        s.geom, s.recorder_names, s.parent_id, s.input_form, s.group_id, s.privacy_precision, s.record_status, s.verified_by_id, s.verified_on,
+        s.licence_id, s.training
+      FROM samples_to_clone stc
+      JOIN samples s ON s.id=stc.old_sample_id;
+
+      INSERT INTO sample_attribute_values(sample_id, sample_attribute_id, text_value, float_value, int_value, date_start_value,
+        date_end_value, date_type_value, created_on, created_by_id, updated_on, updated_by_id, deleted, source_id, upper_value)
+      SELECT stc.new_sample_id, v.sample_attribute_id, v.text_value, v.float_value, v.int_value, v.date_start_value,
+        v.date_end_value, v.date_type_value, now(), v.created_by_id, now(), v.updated_by_id, v.deleted, v.source_id, v.upper_value
+      FROM samples_to_clone stc
+      JOIN sample_attribute_values v ON v.sample_id=stc.old_sample_id;
+
+      UPDATE occurrences o
+      SET sample_id=stc.new_sample_id
+      FROM samples_to_clone stc
+      WHERE o.sample_id=stc.old_sample_id
+      AND o.id in ($occurrenceIdList);
+SQL;
+    $db->query($qry);
   }
 
   /**
@@ -1066,6 +1126,7 @@ SQL;
     $this->authenticate('write');
     $updates = json_decode($_POST['updates']);
     $occurrenceIds = $_POST['occurrence:ids'];
+    $options = json_decode($_POST['options'] ?? '{}');
     if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
       $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
     }
@@ -1073,13 +1134,26 @@ SQL;
       return;
     }
     $db = new Database();
-    // @todo Rather than block edits for records within larger samples, they
-    // should be split into separate samples allowing the edit to proceed.
+    // @todo think through behaviour in parent/child sample data.
+    // @todo ensure the import is divided into chunks along sample boundaries or this doesn't work.
     $results = $this->checkAffectedSamplesDontContainOtherOccurrences($db, $occurrenceIds);
     if ($results) {
-      $this->fail('Bad Request', 400, 'Cannot edit occurrences if other occurrences within the same sample are not being edited. ' .
-        "For example, sample $results->sample_id for occurrence $results->included_id also contains occurrence $results->excluded_id which is not in the list of records to edit.");
-      return FALSE;
+      if (!empty($options->allowSampleSplits)) {
+        // @todo Rather than block edits for records within larger samples, they
+        // should be split into separate samples allowing the edit to proceed.
+        $this->splitSamplesFromOtherOccurrences($db, $occurrenceIds);
+      }
+      else {
+        $message = 'Samples require splitting';
+        //'The list of occurrences being edited belong to samples which contain other occurrences which are not being edited. ' .
+        //  "For example, sample $results->sample_id for occurrence $results->included_id also contains occurrence $results->excluded_id which is not in the list of records to edit.";
+        $this->fail('Conflict', 409, $message, 'SAMPLES_CONTAIN_OTHER_OCCURRENCES', [
+          'sample_id' => $results->sample_id,
+          'included_occurrence_id' => $results->included_id,
+          'excluded_occurrence_id' => $results->excluded_id,
+        ]);
+        return FALSE;
+      }
     }
     $sampleIds = $db->query("SELECT string_agg(distinct sample_id::text, ',') FROM occurrences WHERE id IN ($occurrenceIds) AND deleted=false")->current()->string_agg;
     if (!$this->checkSamplesAllBelongToUser($db, $sampleIds)) {
