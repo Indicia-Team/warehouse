@@ -1135,12 +1135,9 @@ SQL;
     }
     $db = new Database();
     // @todo think through behaviour in parent/child sample data.
-    // @todo ensure the import is divided into chunks along sample boundaries or this doesn't work.
     $results = $this->checkAffectedSamplesDontContainOtherOccurrences($db, $occurrenceIds);
     if ($results) {
       if (!empty($options->allowSampleSplits)) {
-        // @todo Rather than block edits for records within larger samples, they
-        // should be split into separate samples allowing the edit to proceed.
         $this->splitSamplesFromOtherOccurrences($db, $occurrenceIds);
       }
       else {
