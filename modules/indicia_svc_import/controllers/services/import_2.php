@@ -50,6 +50,44 @@ class NotFoundException extends Exception {}
 class Import_2_Controller extends Service_Base_Controller {
 
   /**
+   * Fetches the list of available import plugins.
+   *
+   * Public controller function so can be called from form config on the
+   * client.
+   *
+   * @param string $entity
+   *   Import entity, e.g. occurrence or sample.
+   *
+   * @return array
+   *   A JSON object where the properties are plugin names and descriptions are
+   *   in the values.
+   */
+  function get_plugins() {
+    header("Content-Type: application/json");
+    $this->authenticate('read');
+    // Currently only supports occurrence, but other entities may be added in
+    // future.
+    if (empty($_GET['entity']) || $_GET['entity'] !== 'occurrence') {
+      http_response_code(400);
+      echo json_encode([
+        'error' => 'Invalid or missing entity parameter.',
+        'status' => 'Bad Request',
+      ]);
+    }
+    $plugins = [];
+    foreach (Kohana::config('config.modules') as $path) {
+      $plugin = basename($path);
+      if (file_exists("$path/plugins/$plugin.php")) {
+        require_once "$path/plugins/$plugin.php";
+        if (function_exists($plugin . '_import_plugins')) {
+          $plugins = array_merge($plugins, call_user_func($plugin . '_import_plugins', $_GET['entity']));
+        }
+      }
+    }
+    echo json_encode($plugins);
+  }
+
+  /**
    * Import globalvalues form service end-point.
    *
    * Controller function that provides a web service
@@ -90,6 +128,17 @@ class Import_2_Controller extends Service_Base_Controller {
   public function get_fields($entity) {
     header("Content-Type: application/json");
     $this->authenticate('read');
+    // Newer versions of client send the data file, allowing import plugins to
+    // be accessed from config.
+    $plugins = [];
+    if (!empty($_POST['data-file'])) {
+      $config = $this->getConfig($_POST['data-file']);
+      $plugins = $config['plugins'];
+    }
+    else {
+      // Pre 9.3 client does not handle plugins anyway.
+      $plugins = [];
+    }
     switch ($entity) {
       case 'sample':
       case 'occurrence':
@@ -118,7 +167,8 @@ class Import_2_Controller extends Service_Base_Controller {
     }
     $useAssociations = !empty($_GET['use_associations']) && $_GET['use_associations'] === 'true';
     $fields = $model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $useAssociations);
-    if (!empty($_GET['required']) && $_GET['required'] === 'true') {
+    $wantRequired = !empty($_GET['required']) && $_GET['required'] === 'true';
+    if ($wantRequired) {
       $requiredFields = $model->getRequiredFields(TRUE, $identifiers, $useAssociations);
       // Use the calculated date field for vague date, rather than individual
       // fields.
@@ -128,6 +178,12 @@ class Import_2_Controller extends Service_Base_Controller {
       $fields = array_intersect_key($fields, array_combine($requiredFields, $requiredFields));
     }
     $this->provideFriendlyFieldCaptions($fields);
+    // Allow import plugins to modify the list of available fields.
+    foreach ($plugins as $plugin => $params) {
+      if (method_exists("importPlugin$plugin", 'alterAvailableDbFields')) {
+        call_user_func_array("importPlugin$plugin::alterAvailableDbFields", [$params, $wantRequired, &$fields]);
+      }
+    }
     echo json_encode($fields);
   }
 
@@ -215,6 +271,7 @@ class Import_2_Controller extends Service_Base_Controller {
         $config['importTemplateTitle'] = $template->title;
       }
     }
+    $config['plugins'] = json_decode($_POST['plugins'] ?? '{}', TRUE);
     $this->saveConfig($fileName, $config);
     echo json_encode([
       'status' => 'ok',
@@ -392,6 +449,15 @@ SQL;
         // No column label, as form value not a field mapping.
       }
     }
+    // Now we know the mappings, we can disable any plugins that depend on a
+    // field that is not selected.
+    foreach ($config['plugins'] as $plugin => $params) {
+      if (method_exists("importPlugin$plugin", 'isApplicable')) {
+        if (!call_user_func_array("importPlugin$plugin::isApplicable", [$params, $config])) {
+          unset($config['plugins'][$plugin]);
+        }
+      }
+    }
     $this->saveConfig($fileName, $config);
     echo json_encode([
       'status' => 'ok',
@@ -447,16 +513,34 @@ SQL;
         ];
       }
     }
+    // Allow plugins to extend the list of preprocessing steps.
+    foreach ($config['plugins'] as $plugin => $params) {
+      if (method_exists("importPlugin$plugin", 'alterPreprocessSteps')) {
+        call_user_func_array("importPlugin$plugin::alterPreprocessSteps", [$params, $config, &$steps]);
+      }
+    }
     if ($stepIndex >= count($steps)) {
       echo json_encode([
         'status' => 'done',
       ]);
     }
     else {
+      if (count($steps[$stepIndex]) === 4) {
+        // Step added by a plugin.
+        $stepOutput = call_user_func_array(
+          [$steps[$stepIndex][2], $steps[$stepIndex][0]],
+          [$steps[$stepIndex][3], &$config]);
+        // Config can be changed by plugin preprocessing.
+        $this->saveConfig($fileName, $config);
+      }
+      else {
+        // Step is one of the core list.
+        $stepOutput = call_user_func([$this, $steps[$stepIndex][0]], $fileName, $config);
+      }
       $r = array_merge([
         'step' => $steps[$stepIndex][0],
         'description' => $steps[$stepIndex][1],
-      ], call_user_func([$this, $steps[$stepIndex][0]], $fileName, $config));
+      ], $stepOutput);
       if ($stepIndex < count($steps) - 1) {
         // Another step to do...
         $r['nextStep'] = $steps[$stepIndex + 1][0];
