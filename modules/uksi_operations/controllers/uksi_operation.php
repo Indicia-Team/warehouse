@@ -1032,14 +1032,16 @@ SQL;
    *
    * @param object $operation
    *   Operation details.
-   * @param bool $limitToAllowDataEntry
-   *   Set to TRUE to exclude redundant names (allow_data_entry=false) from the
-   *   search for parents.
+   * @param bool $preferAllowDataEntry
+   *   Set to TRUE to allow selection of a non-redundant parent
+   *   (allow_data_entry=true) even if there are other redundant possible
+   *   parents, as long as there is only 1 non-redundant found. A redundant
+   *   parent could still be returned if there are none that are not redundant.
    *
    * @return int
    *   Taxa_taxon_lists.id.
    */
-  private function getParentTtlId($operation, $limitToAllowDataEntry = FALSE) {
+  private function getParentTtlId($operation, $preferAllowDataEntry = FALSE) {
     if (!empty($operation->parent_name) && empty($operation->parent_organism_key)) {
       // Parent identified by name which must refer to the last added taxa with
       // the given name. So use the new taxon operation to find the parent's
@@ -1063,26 +1065,31 @@ SQL;
       }
     }
     if (!empty($operation->parent_organism_key)) {
-      $filter = [
-        'ttl.taxon_list_id' => $this->getTaxonListId(),
-        't.organism_key' => $operation->parent_organism_key,
-        'ttl.preferred' => 't',
-        'ttl.deleted' => 'f',
-        't.deleted' => 'f',
-      ];
-      if ($limitToAllowDataEntry) {
-        $filter['ttl.allow_data_entry'] = 't';
-      }
-      $parent = $this->db->select('ttl.id')
+      $parent = $this->db->select('ttl.id, ttl.allow_data_entry')
         ->from('taxa_taxon_lists AS ttl')
         ->join('taxa as t', 't.id', 'ttl.taxon_id')
-        ->where($filter)
+        ->where([
+          'ttl.taxon_list_id' => $this->getTaxonListId(),
+          't.organism_key' => $operation->parent_organism_key,
+          'ttl.preferred' => 't',
+          'ttl.deleted' => 'f',
+          't.deleted' => 'f',
+        ])
         ->where('t.search_code IS NOT NULL')
-        ->get();
+        ->orderby('allow_data_entry', 'DESC')
+        ->limit(2)
+        ->get()->result_array(TRUE);
       if (count($parent) === 1) {
-        return $parent->current()->id;
+        return $parent[0]->id;
       }
       if (count($parent) > 1) {
+        if ($preferAllowDataEntry) {
+          // Check if only 1 has allow_data_entry=true, if so it can be
+          // returned.
+          if ($parent[0]->allow_data_entry === 't' && $parent[1]->allow_data_entry === 'f') {
+            return $parent[0]->id;
+          }
+        }
         $this->operationErrors[] = "Identified multiple possible parents.";
       }
       elseif (count($parent) === 0) {
