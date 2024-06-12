@@ -330,7 +330,7 @@ SQL;
     if ($parentChanging || $redundantChanging) {
       if ($parentChanging) {
         // If parent changing, lookup the parent.
-        $parentId = $this->getParentTtlId($operation);
+        $parentId = $this->getParentTtlId($operation, TRUE);
       }
       // Apply parent and redundancy to existing taxa_taxon_lists.
       foreach ($namesToUpdate as $nameInfo) {
@@ -1032,11 +1032,14 @@ SQL;
    *
    * @param object $operation
    *   Operation details.
+   * @param bool $limitToAllowDataEntry
+   *   Set to TRUE to exclude redundant names (allow_data_entry=false) from the
+   *   search for parents.
    *
    * @return int
    *   Taxa_taxon_lists.id.
    */
-  private function getParentTtlId($operation) {
+  private function getParentTtlId($operation, $limitToAllowDataEntry = FALSE) {
     if (!empty($operation->parent_name) && empty($operation->parent_organism_key)) {
       // Parent identified by name which must refer to the last added taxa with
       // the given name. So use the new taxon operation to find the parent's
@@ -1060,16 +1063,20 @@ SQL;
       }
     }
     if (!empty($operation->parent_organism_key)) {
+      $filter = [
+        'ttl.taxon_list_id' => $this->getTaxonListId(),
+        't.organism_key' => $operation->parent_organism_key,
+        'ttl.preferred' => 't',
+        'ttl.deleted' => 'f',
+        't.deleted' => 'f',
+      ];
+      if ($limitToAllowDataEntry) {
+        $filter['ttl.allow_data_entry'] = 't';
+      }
       $parent = $this->db->select('ttl.id')
         ->from('taxa_taxon_lists AS ttl')
         ->join('taxa as t', 't.id', 'ttl.taxon_id')
-        ->where([
-          'ttl.taxon_list_id' => $this->getTaxonListId(),
-          't.organism_key' => $operation->parent_organism_key,
-          'ttl.preferred' => 't',
-          'ttl.deleted' => 'f',
-          't.deleted' => 'f',
-        ])
+        ->where($filter)
         ->where('t.search_code IS NOT NULL')
         ->get();
       if (count($parent) === 1) {
