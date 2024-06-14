@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Groups discovery" description="Finds groups a user may like to join based on geographic and taxonomic overlap. Requires group_discovery custom cache table.">
+  <query website_filter_field="">
+    create temporary table active_groups as
+      select g.id, g.title,
+        count(o.id) + count(distinct case when o.created_on>now() - '2 days'::interval then o.id else null end) as activity_level,
+        null::double precision as activity_score
+      from groups g
+      left join groups_users gu ON gu.group_id=g.id and gu.deleted=false and gu.pending=false and gu.user_id=#currentUser#
+      join cache_occurrences_functional o on o.group_id=g.id and o.updated_on>now() - '2 days'::interval
+      where g.deleted=false
+      and (g.to_date is null or g.to_date &gt; now() - '1 day'::interval)
+      and (g.from_date is null or g.from_date &lt; now() + '5 days'::interval)
+      -- Not already a member.
+      and gu.id is null
+      group by g.id, g.title
+      order by 3 desc
+      limit 30;
+
+    update active_groups set activity_score = activity_level::double precision / (select max(activity_level) from active_groups);
+
+    create temporary table recent_groups as
+      select g.id, g.title,
+        (30 - extract('day' from now() - g.created_on)) / 30 as recentness_score
+      from groups g
+      left join groups_users gu ON gu.group_id=g.id and gu.deleted=false and gu.pending=false and gu.user_id=#currentUser#
+      where g.deleted=false
+      and (g.to_date is null or g.to_date &gt; now() - '1 day'::interval)
+      and (g.from_date is null or g.from_date &lt; now() + '5 days'::interval)
+      -- Limit to last 30 days.
+      and g.created_on > now() - '30 days'::interval
+      -- Not already a member.
+      and gu.id is null
+      order by 3 desc
+      limit 30;
+
+    select #columns#
+    from groups g
+    left join active_groups ag on ag.id=g.id
+    left join recent_groups rg on rg.id=g.id
+    left join groups_users guc ON guc.group_id=g.id and guc.deleted=false and guc.pending=false
+    left join group_pages gp ON gp.group_id=g.id and gp.deleted=false and gp.administrator=false and gp.access_level is null
+    left join group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
+    where g.deleted=false
+  </query>
+  <order_bys>
+    <order_by>1 desc</order_by>
+  </order_bys>
+  <params>
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text" emptyvalue="0" />
+  </params>
+  <columns>
+    <column name="score" sql="coalesce(ag.activity_score, 0) + coalesce(rg.recentness_score, 0)" datatype="float" visible="false" />
+    <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
+    <column name="logo_path" display="Logo" sql="g.logo_path" img="true" visible="false" />
+    <column name="group_type_id" visible="false" sql="g.group_type_id" datatype="integer" />
+    <column name="joining_method_raw" visible="false" sql="g.joining_method" datatype="text" />
+    <column name="title" display="Name" sql="g.title" datatype="text" />
+    <column name="description" display="Description" sql="g.description" datatype="text" />
+    <column name="administrator" display="Admin" sql="false" datatype="boolean" visible="false" />
+    <!-- following is required to meet group by requirements -->
+    <column name="administrator_raw" display="Admin" sql="false" datatype="boolean" visible="false" />
+    <column name="pending" display="Pending" sql="false" datatype="boolean" visible="false" />
+    <column name="member" display="Member" sql="false" datatype="boolean" visible="false" />
+    <column name="nonmember" display="Non-member" sql="true" datatype="boolean" visible="false" />
+    <column name="canrequestorjoin" display="Can request membership or join" datatype="boolean" visible="false"
+            sql="true" />
+    <column name="private_records" display="Records released" sql="not g.private_records" datatype="boolean" />
+    <column name="role" display="My role" sql="case when true then 'Non-member' end" datatype="text" />
+    <column name="joining_method" display="Can anyone join?" sql="case g.joining_method when 'P' then 'Yes' when 'R' then 'By request only' when 'I' then 'By invite only' end" datatype="text" />
+    <column name="members" display="Members" aggregate="true"
+            sql="count(DISTINCT guc.user_id)" />
+    <column name="pages" display="Links" sql="array_to_string(array_agg(distinct '&lt;a class=&quot;button ' || lower(regexp_replace(gp.path, '[^a-zA-Z0-9]', '-')) || '&quot; href=&quot;{rootFolder}' || gp.path || '{sep}group_id=' || g.id || '&amp;implicit=' || coalesce(g.implicit_record_inclusion::char, '') || '&quot;&gt;' || gp.caption || '&lt;/a&gt;'), ' ')"
+            aggregate="true" template="{pages}"/>
+    <column name="page_classes" visible="false" sql="array_to_string(array_agg(distinct lower(regexp_replace(gpall.path, '[^a-zA-Z0-9]', '-'))), ' ')"
+            aggregate="true"/>
+    <column name="created_on" display="Created on" sql="g.created_on" datatype="date" />
+  </columns>
+</report>
