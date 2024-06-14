@@ -145,6 +145,8 @@
     left join group_pages gp ON gp.group_id=g.id and gp.deleted=false and gp.administrator=false and gp.access_level is null
     left join group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
     where g.deleted=false
+    and (g.to_date is null or g.to_date &gt; now() - '1 day'::interval)
+    and (g.from_date is null or g.from_date &lt; now() + '5 days'::interval)
     -- Not already a member.
     and gu.id is null
   </query>
@@ -184,5 +186,6 @@
             aggregate="true" template="{pages}"/>
     <column name="page_classes" visible="false" sql="array_to_string(array_agg(distinct lower(regexp_replace(gpall.path, '[^a-zA-Z0-9]', '-'))), ' ')"
             aggregate="true"/>
+    <column name="created_on" display="Created on" sql="g.created_on" datatype="date" />
   </columns>
 </report>
