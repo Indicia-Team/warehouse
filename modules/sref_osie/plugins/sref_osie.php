@@ -27,7 +27,7 @@
 function sref_osie_sref_systems() {
   return array('osie' => array(
     'title' => 'Irish Grid (TM75)',
-    'srid' => 29901,
+    'srid' => 29903,
     'treat_srid_as_x_y_metres' => true
   ));
 }

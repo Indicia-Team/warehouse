@@ -1,3 +1,29 @@
+# Version 9.2.0
+*2024-06-17*
+
+* Adds support for plugins for the v2 importer - see
+  https://indicia-docs.readthedocs.io/en/latest/developing/warehouse/plugins.html#import-plugins-hook.
+* Adds an optional custom import plugin that adds an import field for importing into sample
+  attribute values where the system function is `linked_location_id`, but using a code for the
+  location in the `locations` table rather than the database primary key (id). This can be used
+  to specify the location using a Vice County code or similar.
+* Reports and cache table definitions to support the new Group Discovery prebuilt form on the
+  client-side. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1681.
+* Also for Group Discovery, the `index_groups_locations` table now allows each location type to be
+  selected separately.
+* Web-services updated to support the new Bulk Editor functionality on the client. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1673 and
+  https://indicia-docs.readthedocs.io/en/latest/site-building/iform/helpers/elasticsearch-report-helper.html#elasticsearchreporthelper-bulkeditor.
+* Fixes use of sample attributes of type 'linked_location_id' in order to specify which location
+  to index against a sample (https://github.com/Indicia-Team/warehouse/issues/518).
+* The spatial indexer now uses a location selected by the recorder in a sample attribute of type
+  `linked_location_id` to resolve records which overlap a boundary to the correct location.
+* Removed `hierarchical_location_types` config option from the spatial_index_builder module as not
+  being used and made the code more complex. It is possible to list all hierarchical layers
+  directly in the `location_types` option to achieve the same outcome.
+* Fix Irish Grid ref SRID from 29901 to 29903.
+* Some PHP 8.2 compatibility fixes and other minor bugfixes.
+
 # Version 9.1.0
 *2024-03-29*
 

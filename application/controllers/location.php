@@ -35,6 +35,22 @@ use XBase\Record;
  */
 class Location_Controller extends Gridview_Base_Controller {
 
+  private $SHPFile;
+
+  private $SHPData;
+
+  private $recordNumber;
+
+  private $recordLength;
+
+  private $recordStart;
+
+  private $shapeType;
+
+  private $firstPoint;
+
+  private $wkt;
+
   public function __construct() {
     parent::__construct('location');
     $this->columns = array(

@@ -62,7 +62,7 @@ class Group_Model extends ORM {
     ];
     // Has the private records flag changed?
     $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) &&
-        $this->submission['fields']['private_records'] !== $this->private_records;
+        ($this->submission['fields']['private_records']['value'] === '1' || $this->submission['fields']['private_records']['value'] === 't') !== ($this->private_records === 't');
     return parent::validate($array, $save);
   }
 
@@ -141,7 +141,7 @@ SQL;
         else {
           $srid = kohana::config('sref_notations.internal_srid');
           $qry = <<<SQL
-            SELECT l.id
+            SELECT l.id, l.location_type_id
             FROM locations l
             WHERE st_intersects(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
           AND NOT st_touches(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
@@ -150,7 +150,7 @@ SQL;
         }
         $rows = $this->db->query($qry)->result();
         foreach ($rows as $row) {
-          $updatedIndexedLocations[] = $row->id;
+          $updatedIndexedLocations[$row->id] = $row->location_type_id;
         }
       }
     }
@@ -158,13 +158,10 @@ SQL;
     // Go through the existing index entries for this group. Remove any that
     // are not needed now.
     foreach ($existingIndexedLocations as $record) {
-      if (in_array($record->location_id, $updatedIndexedLocations)) {
+      if (isset($updatedIndexedLocations[$record->location_id])) {
         // Got a correct one already. Remove the location ID from the list we
         // want to add later.
-        $key = array_search($record->location_id, $updatedIndexedLocations);
-        if ($key !== FALSE) {
-          unset($updatedIndexedLocations[$key]);
-        }
+        unset($updatedIndexedLocations[$record->location_id]);
         if (in_array($record->location_id, $foundExistingLocationIds)) {
           // This one must exist twice in the index so clean it up.
           $this->db->delete('index_groups_locations', ['id' => $record->id]);
@@ -179,10 +176,11 @@ SQL;
       }
     }
     // Any remaining in our list now need to be added.
-    foreach ($updatedIndexedLocations as $locationId) {
+    foreach ($updatedIndexedLocations as $locationId => $locationTypeId) {
       $this->db->insert('index_groups_locations', [
         'group_id' => $this->id,
         'location_id' => $locationId,
+        'location_type_id' => $locationTypeId,
       ]);
     }
   }

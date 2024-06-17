@@ -1555,7 +1555,9 @@ class Data_Controller extends Data_Service_Base_Controller {
         $mode = $this->get_input_mode();
         switch ($mode) {
           case 'json':
-            $s = json_decode($_POST['submission'], TRUE);
+            // Use parse_str rather than $_POST as copes with encoding in JSON.
+            parse_str(file_get_contents('php://input'), $data);
+            $s = json_decode($data['submission'], TRUE);
         }
         $response = $this->submit($s);
         // Return a success message plus the id of the topmost record, e.g. the

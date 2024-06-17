@@ -746,8 +746,12 @@ SQL;
    *   Response code, e.g. 401.
    * @param string $text
    *   Text to include in response.
+   * @param string $errorCode
+   *   An error code that defines the specific problem so that the client may resolve it.
+   * @param array $errorData
+   *   Any extra data that can be used by the client in problem resolution.
    */
-  private function fail($status, $code, $text) {
+  private function fail($status, $code, $text, $errorCode = NULL, array $errorData = NULL) {
     $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.0';
     header($protocol . ' ' . $code . ' ' . $status);
     $response = [
@@ -755,8 +759,92 @@ SQL;
       'status' => $status,
       'message' => $text,
     ];
+    if ($errorCode) {
+      $response['errorCode'] = $errorCode;
+    }
+    if ($errorData) {
+      $response['errorData'] = $errorData;
+    }
     kohana::log('alert', 'Data utils fail called: ' . $text);
     echo json_encode($response);
+  }
+
+  /**
+   * Check affected samples.
+   *
+   * Ensures that occurrence lists for edit/move don't affect other occurrences
+   * in the samples which shouldn't be affected.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $occurrenceIdList
+   *   CSV format string of occurrence IDs to check.
+   *
+   * @return object
+   *   Database row of an example sample that shouldn't be affected. If result
+   *   is empty then safe to proceed.
+   */
+  private static function checkAffectedSamplesDontContainOtherOccurrences($db, $occurrenceIdList) {
+    $qry = <<<SQL
+      SELECT o2.id as excluded_id, o.id as included_id, o2.sample_id
+      FROM occurrences o
+      JOIN occurrences o2 ON o2.sample_id=o.sample_id AND o2.deleted=false
+      WHERE o.id IN ($occurrenceIdList)
+      AND o2.id NOT IN ($occurrenceIdList)
+      AND o.deleted=false
+      LIMIT 1;
+SQL;
+   return $db->query($qry)->current();
+  }
+
+  /**
+   * Splits samples to separate occurrences from those not in the list.
+   *
+   * Before a bulk edit, if occurrences belong to samples containing other
+   * occurrences that are not in the list, split the samples so the other
+   * occurrences aren't affected.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $occurrenceIdList
+   *   CSV format string of occurrence IDs to process.
+   */
+  private static function splitSamplesFromOtherOccurrences($db, $occurrenceIdList) {
+    // First find a list of sample IDs that need to be duplicated.
+    $qry = <<<SQL
+      SELECT DISTINCT o2.sample_id AS old_sample_id, nextval('samples_id_seq'::regclass) as new_sample_id
+      INTO TEMPORARY samples_to_clone
+      FROM occurrences o
+      JOIN occurrences o2 ON o2.sample_id=o.sample_id AND o2.deleted=false
+      WHERE o.id IN ($occurrenceIdList)
+      AND o2.id NOT IN ($occurrenceIdList)
+      AND o.deleted=false;
+
+      INSERT INTO samples(id, survey_id, location_id, date_start, date_end, date_type, entered_sref, entered_sref_system,
+        location_name, created_on, created_by_id, updated_on, updated_by_id, comment, external_key, sample_method_id, deleted,
+        geom, recorder_names, parent_id, input_form, group_id, privacy_precision, record_status, verified_by_id, verified_on,
+        licence_id, training)
+      SELECT stc.new_sample_id, s.survey_id, s.location_id, s.date_start, s.date_end, s.date_type, s.entered_sref, s.entered_sref_system,
+        s.location_name, now(), s.created_by_id, now(), s.updated_by_id, s.comment, s.external_key, s.sample_method_id, s.deleted,
+        s.geom, s.recorder_names, s.parent_id, s.input_form, s.group_id, s.privacy_precision, s.record_status, s.verified_by_id, s.verified_on,
+        s.licence_id, s.training
+      FROM samples_to_clone stc
+      JOIN samples s ON s.id=stc.old_sample_id;
+
+      INSERT INTO sample_attribute_values(sample_id, sample_attribute_id, text_value, float_value, int_value, date_start_value,
+        date_end_value, date_type_value, created_on, created_by_id, updated_on, updated_by_id, deleted, source_id, upper_value)
+      SELECT stc.new_sample_id, v.sample_attribute_id, v.text_value, v.float_value, v.int_value, v.date_start_value,
+        v.date_end_value, v.date_type_value, now(), v.created_by_id, now(), v.updated_by_id, v.deleted, v.source_id, v.upper_value
+      FROM samples_to_clone stc
+      JOIN sample_attribute_values v ON v.sample_id=stc.old_sample_id;
+
+      UPDATE occurrences o
+      SET sample_id=stc.new_sample_id
+      FROM samples_to_clone stc
+      WHERE o.sample_id=stc.old_sample_id
+      AND o.id in ($occurrenceIdList);
+SQL;
+    $db->query($qry);
   }
 
   /**
@@ -843,17 +931,7 @@ SQL;
       $this->fail('Bad Request', 400, 'Attempt to move occurrences that were input by other users is disallowed.');
       return FALSE;
     }
-    // Check affected samples don't contain records not in the move request.
-    $qry = <<<SQL
-SELECT o2.id as excluded_id, o.id as included_id, o2.sample_id
-FROM occurrences o
-JOIN occurrences o2 ON o2.sample_id=o.sample_id AND o2.deleted=false
-WHERE o.id IN ($occurrenceIdList)
-AND o2.id NOT IN ($occurrenceIdList)
-AND o.deleted=false
-LIMIT 1;
-SQL;
-    $results = $db->query($qry)->current();
+    $results = $this->checkAffectedSamplesDontContainOtherOccurrences($db, $occurrenceIdList);
     if ($results) {
       $this->fail('Bad Request', 400, 'Cannot move occurrences if other occurrences within the same sample are not being moved. ' .
         "For example, sample $results->sample_id for occurrence $results->included_id also contains occurrence $results->excluded_id which is not in the list of records to move.");
@@ -992,11 +1070,227 @@ SQL;
         'occurrences' => $countStats->occurrence_count,
         'samples' => $countStats->sample_count,
       ]
-      ];
+    ];
     echo json_encode($response);
     if (class_exists('request_logging')) {
       request_logging::log('a', 'data', NULL, 'bulk_move', $this->website_id, $this->auth_user_id, $tm, $db);
     }
+  }
+
+  /**
+   * Ensure that values provided for a bulk update are valid.
+   *
+   * @param object $updates
+   *   Decoded update values.
+   *
+   * @param bool
+   *   False if any rule fails, in which case an error response is sent.
+   */
+  private function validateBulkEditUpdateValues($updates) {
+    if (!empty($updates->date)) {
+      // Date format check.
+      if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $updates->date)) {
+        $this->fail('Bad request', 400, 'Date format incorrect, should be yyyy-mm-dd');
+        return FALSE;
+      }
+      // Date in future check.
+      if (strtotime($updates->date) > time()) {
+        $this->fail('Bad request', 400, 'Date cannot be in the future.');
+        return FALSE;
+      }
+    }
+    if (!empty($updates->sref)) {
+      // Validate spatial reference.
+      if (empty($updates->sref_system)) {
+        $this->fail('Bad request', 400, 'Bulk update of a spatial reference (sref) requires a system.');
+        return FALSE;
+      }
+      if (!spatial_ref::is_valid($updates->sref, $updates->sref_system)) {
+        $this->fail('Bad request', 400, 'Spatial reference supplied for bulk update is not recognised.');
+        return FALSE;
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   * Controller action for the bulk edit endpoint.
+   *
+   * @todo Website restrictions
+   * @todo restrictToOwnData -
+   * @todo restrictToOwnData if not set, then ensure current user has site admin rights
+   */
+  public function bulk_edit() {
+    header('Content-Type: application/json');
+    $tm = microtime(TRUE);
+    $this->authenticate('write');
+    $updates = json_decode($_POST['updates']);
+    $occurrenceIds = $_POST['occurrence:ids'];
+    $options = json_decode($_POST['options'] ?? '{}');
+    if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
+      $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
+    }
+    if (!$this->validateBulkEditUpdateValues($updates)) {
+      return;
+    }
+    $db = new Database();
+    // @todo think through behaviour in parent/child sample data.
+    $results = $this->checkAffectedSamplesDontContainOtherOccurrences($db, $occurrenceIds);
+    if ($results) {
+      if (!empty($options->allowSampleSplits)) {
+        $this->splitSamplesFromOtherOccurrences($db, $occurrenceIds);
+      }
+      else {
+        $message = 'Samples require splitting';
+        //'The list of occurrences being edited belong to samples which contain other occurrences which are not being edited. ' .
+        //  "For example, sample $results->sample_id for occurrence $results->included_id also contains occurrence $results->excluded_id which is not in the list of records to edit.";
+        $this->fail('Conflict', 409, $message, 'SAMPLES_CONTAIN_OTHER_OCCURRENCES', [
+          'sample_id' => $results->sample_id,
+          'included_occurrence_id' => $results->included_id,
+          'excluded_occurrence_id' => $results->excluded_id,
+        ]);
+        return FALSE;
+      }
+    }
+    $sampleIds = $db->query("SELECT string_agg(distinct sample_id::text, ',') FROM occurrences WHERE id IN ($occurrenceIds) AND deleted=false")->current()->string_agg;
+    if (!$this->checkSamplesAllBelongToUser($db, $sampleIds)) {
+      $this->fail('Unauthorized', 404, 'You cannot edit samples belonging to other users.');
+      return FALSE;
+    }
+    $sampleFieldUpdates = [];
+    if (!empty($updates->date)) {
+      $sampleFieldUpdates[] = "date_start='$updates->date'";
+      $sampleFieldUpdates[] = "date_end='$updates->date'";
+      $sampleFieldUpdates[] = "date_type='D'";
+    }
+    if (!empty($updates->location_name)) {
+      $locationName = pg_escape_literal($db->getLink(), $updates->location_name);
+      $sampleFieldUpdates[] = "location_name=$locationName";
+    }
+    if (!empty($updates->sref)) {
+      $sref = spatial_ref::sref_format_tidy($updates->sref, $updates->sref_system);
+      $sampleFieldUpdates[] = "entered_sref=$sref";
+      $sampleFieldUpdates[] = "entered_sref_system=$updates->sref_system";
+      $geom = "st_geomfromtext('" . spatial_ref::sref_to_internal_wkt($updates->sref, $updates->sref_system) . "', 900913)";
+      $sampleFieldUpdates[] = "geom=$geom";
+    }
+    if (!empty($sampleFieldUpdates)) {
+      $sampleFieldUpdateSql = implode(',', $sampleFieldUpdates);
+      $qry = <<<SQL
+        UPDATE samples
+        SET $sampleFieldUpdateSql,
+          updated_on=now(),
+          updated_by_id=$this->user_id
+        WHERE id in ($sampleIds)
+        AND created_by_id=$this->user_id;
+SQL;
+      $db->query($qry);
+    }
+    if (!empty($updates->recorder_name)) {
+      // Recorder name a little different as it might be a custom attribute.
+      $this->bulkEditRecorderNames($db, $sampleIds, $updates->recorder_name);
+    }
+    // Update the cache_* data using the work queue.
+    $qry = <<<SQL
+      INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+      SELECT DISTINCT 'task_cache_builder_update', 'occurrence', o.id, 50, 2, now()
+      FROM occurrences o
+      LEFT JOIN work_queue q ON q.record_id=o.id AND q.task='task_cache_builder_update' AND q.entity='occurrence'
+      WHERE o.id IN ($occurrenceIds)
+      AND o.deleted=false
+      AND q.id IS NULL;
+
+      INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+      SELECT DISTINCT 'task_cache_builder_update', 'sample', s.id, 50, 2, now()
+      FROM samples s
+      LEFT JOIN work_queue q ON q.record_id=s.id AND q.task='task_cache_builder_update' AND q.entity='sample'
+      WHERE s.id IN ($sampleIds)
+      AND s.deleted=false
+      AND q.id IS NULL;
+SQL;
+    $db->query($qry);
+    $response = [
+      'code' => 200,
+      'status' => 'OK',
+      'action' => 'records edited',
+      'affected' => [
+        'samples' => count(explode(',', $sampleIds)),
+        'occurrences' => count(explode(',', $occurrenceIds)),
+      ],
+    ];
+    echo json_encode($response);
+    if (class_exists('request_logging')) {
+      request_logging::log('a', 'data', NULL, 'bulk_edit', $this->website_id, $this->auth_user_id, $tm, $db);
+    }
+  }
+
+  /**
+   * Confirms that a list of sample IDs are all created by the current user.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $sampleIds
+   *   CSV format list of sample IDs.
+   *
+   * @return bool
+   *   True if all samples in the list belong to the current user.
+   */
+  private function checkSamplesAllBelongToUser($db, $sampleIds) {
+    $qry = "SELECT count(*) FROM samples WHERE id in ($sampleIds) AND deleted=false AND created_by_id<>$this->user_id";
+    return $db->query($qry)->current()->count === '0';
+  }
+
+  /**
+   * Handle the bulk edit of recorder names
+   *
+   * Complex due to optional custom attributes vs samples.recorder_names field.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $sampleIds
+   *   CSV format list of sample IDs.
+   * @param string $recorderName
+   *   Recorder name to set.
+   */
+  private function bulkEditRecorderNames($db, $sampleIds, $recorderName) {
+    $qry = <<<SQL
+-- Update existing custom attributes values.
+UPDATE sample_attribute_values v
+SET text_value='$recorderName', updated_on=now(), updated_by_id=$this->user_id
+FROM sample_attributes a
+WHERE a.id=v.sample_attribute_id
+AND a.deleted=false
+AND a.system_function='full_name'
+AND v.deleted=false
+AND v.sample_id in ($sampleIds);
+
+-- Insert new custom attribute values if linked to the samples survey and an
+-- attribute value not already present.
+INSERT INTO sample_attribute_values(sample_id, sample_attribute_id, text_value, created_on, created_by_id, updated_on, updated_by_id)
+SELECT s.id, a.id, '$recorderName', now(), $this->user_id, now(), $this->user_id
+FROM samples s
+LEFT JOIN (sample_attribute_values vexist
+  JOIN sample_attributes aexist ON aexist.deleted=false AND aexist.system_function='full_name' AND aexist.id=vexist.sample_attribute_id
+) ON vexist.sample_id=s.id AND vexist.deleted=false
+JOIN sample_attributes_websites aw ON aw.restrict_to_survey_id=s.survey_id
+JOIN sample_attributes a ON a.id=aw.sample_attribute_id AND a.deleted=false AND a.system_function='full_name'
+WHERE s.id IN ($sampleIds)
+AND vexist.id IS NULL;
+
+-- For any samples that don't have an appropriate attribute in their survey,
+-- set the recorder_names field.
+UPDATE samples s
+SET recorder_names='$recorderName'
+FROM samples s2
+LEFT JOIN (sample_attribute_values vexist
+  JOIN sample_attributes aexist ON aexist.deleted=false AND aexist.system_function='full_name' AND aexist.id=vexist.sample_attribute_id
+) ON vexist.sample_id=s2.id AND vexist.deleted=false
+WHERE s2.id=s.id
+AND vexist.id IS NULL
+AND s2.id in ($sampleIds)
+AND s2.deleted=false;
+SQL;
+    $db->query($qry);
   }
 
 }

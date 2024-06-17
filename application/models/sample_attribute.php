@@ -43,7 +43,13 @@ class Sample_Attribute_Model extends ATTR_ORM {
   protected $has_and_belongs_to_many = array('websites');
 
   public function validate(Validation $array, $save = FALSE) {
-    $this->unvalidatedFields = array('applies_to_location');
+    $this->unvalidatedFields = ['applies_to_location'];
+    // If changing a linked location ID attribute, clear related cache entries.
+    if (isset($this->submission['fields']['system_function']) &&
+        (($this->submission['fields']['system_function']['value'] === 'linked_location_id') !== ($this->system_function === 'linked_location_id'))) {
+      $cache = Cache::instance();
+      $cache->delete('spatial-index-linked-location-attr-ids');
+    }
     return parent::validate($array, $save);
   }
 

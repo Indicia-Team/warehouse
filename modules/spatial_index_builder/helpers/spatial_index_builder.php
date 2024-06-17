@@ -47,7 +47,6 @@ class spatial_index_builder {
     $filters = $cache->get('spatial-index-location-type-filter-info');
     if (!$filters) {
       $config = kohana::config_load('spatial_index_builder');
-      $surveyRestriction = '';
       if (!array_key_exists('location_types', $config)) {
         throw new Exception('Spatial index builder configuration location_types missing');
       }
@@ -79,44 +78,32 @@ class spatial_index_builder {
   }
 
   /**
-   * Retrieve a list of location types to be treated as hiearchical.
+   * Retrieve a list of attribute IDs for linked locations.
    *
-   * A utility function used by the work queue task helpers. Returns the
-   * list of location type IDs where the locations in this layer have
-   * parent_ids that point to another layer which contains locations that
-   * should also be indexed. For example, a Counties layer could be
-   * included in this list if the location parent_ids point to locations in a
-   * Countries layer. The Countries would then be included in the indexing data
-   * without ever needing to be spatially queried.
+   * Sample attributes with a system function of linked_location_id can be used
+   * to allow recorders to pick an indexed location to use when a record
+   * straddles a boundary.
    *
    * @param object $db
    *   Database connection object.
    *
    * @return string
-   *   Comma separated list of IDs. If none, then returns '0' so can still be
-   *   inserted into an SQL IN (...) filter.
+   *   CSV list of attribute IDs ready for SQL in(...) clause.
    */
-  public static function getLocationTypeTreeFilters($db) {
+  public static function getLinkedLocationAttrIds($db) {
     $cache = Cache::instance();
-    $locationTypeIds = $cache->get('spatial-index-hierarchical-location-types');
-    if (!$locationTypeIds) {
-      $config = kohana::config_load('spatial_index_builder');
-      if (!array_key_exists('hierarchical_location_types', $config) || count($config['hierarchical_location_types']) === 0) {
-        // This effectively cancels the hierarchical querying.
-        return '0';
-      }
-      $typeTerms = "'" . implode("','", $config['hierarchical_location_types']) . "'";
-      $sql = <<<SQL
-SELECT string_agg(id::text, ', ') as ids
-FROM cache_termlists_terms
-WHERE preferred_term IN ($typeTerms)
-AND termlist_title ilike 'location types';
+    $attrIds = $cache->get('spatial-index-linked-location-attr-ids');
+    if (!$attrIds) {
+      $qry = <<<SQL
+      SELECT string_agg(id::text, ', ') as attrs
+      FROM sample_attributes
+      WHERE system_function='linked_location_id';
 SQL;
-      $idQuery = $db->query($sql)->current();
-      $locationTypeIds = empty($idQuery->ids) ? '0' : $idQuery->ids;
-      $cache->set('spatial-index-hierarchical-location-types', $locationTypeIds);
+      // Use 0 as fallback so SQL still works later.
+      $attrIds = $db->query($qry)->current()->attrs ?? '0';
+      $cache->set('spatial-index-linked-location-attr-ids', $attrIds);
     }
-    return $locationTypeIds;
+    return $attrIds;
   }
 
 }

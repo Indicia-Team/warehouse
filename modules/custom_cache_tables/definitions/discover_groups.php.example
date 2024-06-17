@@ -1,0 +1,82 @@
+<?php
+
+/**
+ * @file
+ * Prepares a table that assists in discovery of groups/activities.
+ *
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
+ */
+
+/**
+ * To build a table that facilites building reports which help users to find
+ * groups (e.g. activities or projects) that have similar geographic or
+ * taxonomic coverage as their own records:
+ * 1. Copy this file and rename to `discover_groups.php`.
+ * 2. Identify a location type that is handled by the `spatial_index_builder`
+ *    module that you would like to use for geographic comparison. Should be
+ *    small enough so that a polygon is not larger than the area you would like
+ *    to suggest recorders travel to for their group activities.
+ * 3. Ensure that the `custom_cache_tables` warehouse module is enabled.
+ */
+
+/**
+ * Get metadata about running the process that builds the table.
+ */
+function get_discover_groups_metadata() {
+  return array(
+    'frequency' => '1 day',
+    'autodrop' => FALSE,
+  );
+}
+
+/**
+ * Returns the query used to generate the index_group_discovery table.
+ */
+function get_discover_groups_query() {
+  return <<<'QRY'
+    drop table if exists custom_cache_tables.index_group_discovery_build;
+
+    select g.id as group_id,
+      g.website_id,
+      -- Indexed locations for finding geographic overlap with user's records.
+      array_agg(distinct gl.location_id) filter (where gl.location_type_id=(select id from cache_termlists_terms where termlist_title='Location types' and term='NUTS Level 3')) as group_indexed_location_ids,
+      count(distinct case gl.location_type_id when (select id from cache_termlists_terms where termlist_title='Location types' and term='NUTS Level 3') then gl.location_id else null end) as group_indexed_location_ids_count,
+      -- Taxon groups for finding taxonomic overlap with user's records.
+      array_agg(distinct gtg.taxon_group_id) as group_indexed_taxon_group_ids,
+      count(distinct gtg.taxon_group_id) as group_indexed_taxon_group_ids_count,
+      -- Recent records for promoting active groups.
+      count(o.*) as group_recent_records
+    into custom_cache_tables.index_group_discovery_build
+    from groups g
+    join filters f on f.id=g.filter_id and f.deleted=false
+    left join index_groups_locations gl on gl.group_id=g.id
+    left join index_groups_taxon_groups gtg on gtg.group_id=g.id
+    left join cache_occurrences_functional o on o.group_id=g.id and o.created_on>now() - '1 year'::interval and o.updated_on>now() - '1 year'::interval
+    where g.deleted=false
+    -- Only publicly discoverable groups.
+    and g.joining_method in ('P', 'R')
+    group by g.id, g.website_id, f.definition;
+
+    -- Tidy nulls from arrays.
+    update custom_cache_tables.index_group_discovery_build set group_indexed_taxon_group_ids='{}' where group_indexed_taxon_group_ids=array[null]::integer[];
+
+    grant select on custom_cache_tables.index_group_discovery_build to indicia_report_user;
+
+    drop table if exists custom_cache_tables.index_group_discovery;
+    alter table custom_cache_tables.index_group_discovery_build rename to index_group_discovery;
+QRY;
+}
