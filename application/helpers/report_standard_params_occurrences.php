@@ -1383,6 +1383,7 @@ class report_standard_params_occurrences {
       'coordinate_precision_op_context' => '<=',
       'release_status' => 'R',
       'confidential' => 'f',
+      'user_id' => 0,
     ];
   }
 
