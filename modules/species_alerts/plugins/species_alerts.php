@@ -86,12 +86,9 @@ FROM delta
 JOIN species_alerts sa ON
   (sa.location_id IS NULL OR delta.location_ids @> ARRAY[sa.location_id])
   AND (sa.survey_id IS NULL OR delta.survey_id = sa.survey_id)
-  AND
-    (sa.taxon_meaning_id = delta.taxon_meaning_id
-    OR
-    sa.external_key = delta.taxa_taxon_list_external_key
-    OR
-    ARRAY[sa.taxon_list_id] && delta.taxon_list_ids)
+  AND (sa.taxon_meaning_id IS NULL OR sa.taxon_meaning_id = delta.taxon_meaning_id)
+  AND (sa.external_key IS NULL OR sa.external_key = delta.taxa_taxon_list_external_key)
+  AND (sa.taxon_list_id IS NULL OR ARRAY[sa.taxon_list_id] && delta.taxon_list_ids)
   AND
     ((sa.alert_on_entry='t' AND delta.record_status='C')
     OR
