@@ -86,12 +86,9 @@ FROM delta
 JOIN species_alerts sa ON
   (sa.location_id IS NULL OR delta.location_ids @> ARRAY[sa.location_id])
   AND (sa.survey_id IS NULL OR delta.survey_id = sa.survey_id)
-  AND
-    (sa.taxon_meaning_id = delta.taxon_meaning_id
-    OR
-    sa.external_key = delta.taxa_taxon_list_external_key
-    OR
-    ARRAY[sa.taxon_list_id] && delta.taxon_list_ids)
+  AND (sa.taxon_meaning_id IS NULL OR sa.taxon_meaning_id = delta.taxon_meaning_id)
+  AND (sa.external_key IS NULL OR sa.external_key = delta.taxa_taxon_list_external_key)
+  AND (sa.taxon_list_id IS NULL OR ARRAY[sa.taxon_list_id] && delta.taxon_list_ids)
   AND
     ((sa.alert_on_entry='t' AND delta.record_status='C')
     OR
@@ -124,8 +121,8 @@ WHERE (
 );
 SQL;
 
-  $newOccDataForSpeciesAlert = $db->query($qry)->result_array(FALSE);
-  if (!empty($newOccDataForSpeciesAlert)) {
+  $newOccDataForSpeciesAlert = $db->query($qry)->result();
+  if ($newOccDataForSpeciesAlert->count() > 0) {
     species_alerts_create_notifications($newOccDataForSpeciesAlert);
   }
   else {
@@ -139,19 +136,19 @@ SQL;
  * Create a notification for each new/verified occurrence that matches an item
  * in the species_alerts table.
  *
- * @param array $newOccDataForSpeciesAlert
+ * @param Pgsql_Result $newOccDataForSpeciesAlert
  *   List of occurrence information to notify for.
  */
-function species_alerts_create_notifications(array $newOccDataForSpeciesAlert) {
+function species_alerts_create_notifications($newOccDataForSpeciesAlert) {
   $notificationCounter = 0;
   // For any new occurrence record which has a matching species alert record,
   // we need to generate a notification for the user.
   foreach ($newOccDataForSpeciesAlert as $speciesAlertOccurrenceData) {
-    if ($speciesAlertOccurrenceData['notify_entry'] === 't') {
+    if ($speciesAlertOccurrenceData->notify_entry === 't') {
       species_alerts_create_notification($speciesAlertOccurrenceData, 'entered');
       $notificationCounter++;
     }
-    if ($speciesAlertOccurrenceData['notify_verify'] === 't') {
+    if ($speciesAlertOccurrenceData->notify_verify === 't') {
       species_alerts_create_notification($speciesAlertOccurrenceData, 'verified');
       $notificationCounter++;
     }
@@ -171,12 +168,12 @@ function species_alerts_create_notifications(array $newOccDataForSpeciesAlert) {
  * Creates a single notification.
  */
 function species_alerts_create_notification($speciesAlertOccurrenceData, $action) {
-  $sref = $speciesAlertOccurrenceData['entered_sref'];
+  $sref = $speciesAlertOccurrenceData->entered_sref;
   if (empty($sref)) {
     $sref = '*sensitive*';
   }
-  $commentText = "A record of $speciesAlertOccurrenceData[taxon] at $sref on " .
-    date("Y\/m\/d", strtotime($speciesAlertOccurrenceData['created_on'])) . " has been $action.<br\/>";
+  $commentText = "A record of $speciesAlertOccurrenceData->taxon at $sref on " .
+    date("Y\/m\/d", strtotime($speciesAlertOccurrenceData->created_on)) . " has been $action.<br\/>";
   try {
     $from = kohana::config('species_alerts.from');
   }
@@ -187,21 +184,21 @@ function species_alerts_create_notification($speciesAlertOccurrenceData, $action
   $notificationObj->source = 'species alerts';
   $notificationObj->acknowledged = 'false';
   $notificationObj->triggered_on = date("Ymd H:i:s");
-  $notificationObj->user_id = $speciesAlertOccurrenceData['alerted_user_id'];
+  $notificationObj->user_id = $speciesAlertOccurrenceData->alerted_user_id;
   $notificationObj->source_type = 'S';
-  $notificationObj->linked_id = $speciesAlertOccurrenceData['occurrence_id'];
+  $notificationObj->linked_id = $speciesAlertOccurrenceData->occurrence_id;
   $notificationObj->data =
     json_encode(
       [
         'username' => $from,
-        'occurrence_id' => $speciesAlertOccurrenceData['occurrence_id'],
+        'occurrence_id' => $speciesAlertOccurrenceData->occurrence_id,
         'comment' => $commentText,
-        'taxon' => $speciesAlertOccurrenceData['taxon'],
-        'date' => date("Y\/m\/d", strtotime($speciesAlertOccurrenceData['created_on'])),
-        'entered_sref' => $speciesAlertOccurrenceData['entered_sref'],
+        'taxon' => $speciesAlertOccurrenceData->taxon,
+        'date' => date("Y\/m\/d", strtotime($speciesAlertOccurrenceData->created_on)),
+        'entered_sref' => $speciesAlertOccurrenceData->entered_sref,
         'auto_generated' => 't',
-        'record_status' => $speciesAlertOccurrenceData['record_status'],
-        'updated on' => date("Y-m-d H:i:s", strtotime($speciesAlertOccurrenceData['updated_on'])),
+        'record_status' => $speciesAlertOccurrenceData->record_status,
+        'updated on' => date("Y-m-d H:i:s", strtotime($speciesAlertOccurrenceData->updated_on)),
       ]
     );
   $notificationObj->save();

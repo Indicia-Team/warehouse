@@ -6,3 +6,5 @@ insert into work_queue(task, entity, record_id, cost_estimate, priority, created
   from samples s
   join sample_attribute_values v on v.sample_id=s.id and v.deleted=false
   join sample_attributes a on a.id=v.sample_attribute_id and a.deleted=false and a.system_function='linked_location_id'
+  left join work_queue wq on wq.task='task_spatial_index_builder_sample' and wq.record_id=s.id
+  where wq.id is null;
