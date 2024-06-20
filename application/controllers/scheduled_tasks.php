@@ -147,8 +147,10 @@ class Scheduled_Tasks_Controller extends Controller {
     // defines the trigger.
     foreach ($result as $trigger) {
       $params = json_decode($trigger->params_json, TRUE);
-      $params['date'] = $this->lastRunDate;
       $reportEngine = new ReportEngine();
+      // Get parameter for last run specific to this trigger.
+      $params['date'] = variable::get("trigger_last_run-$trigger->id", $this->lastRunDate);
+      $currentTime = time();
       try {
         $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
       }
@@ -238,6 +240,8 @@ class Scheduled_Tasks_Controller extends Controller {
           $digestMode
         );
       }
+      // Remember when this specific trigger last ran.
+      variable::set("trigger_last_run-$trigger->id", date('c', $currentTime));
     }
   }
 
@@ -567,6 +571,9 @@ class Scheduled_Tasks_Controller extends Controller {
     // some species.
     $modules = kohana::config('config.modules');
     $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
+    // Get parameter for last run specific to record owner notifications.
+    $lastRunDate = variable::get('record-owner-notifications', $this->lastRunDate);
+    $currentTime = time();
     // Get a list of the records which contributors want to get a summary back
     // for.
     $emailsRequired = $this->db
@@ -581,7 +588,7 @@ class Scheduled_Tasks_Controller extends Controller {
       ->where([
         'sa1.caption' => 'Email me a copy of the record',
         'sa2.caption' => 'Email',
-        'samples.created_on>=' => $this->lastRunDate,
+        'samples.created_on>=' => $lastRunDate,
       ])
       ->where('sav1.int_value<>0')
       ->get();
@@ -679,6 +686,7 @@ class Scheduled_Tasks_Controller extends Controller {
         }
       }
     }
+    variable::set('record-owner-notifications', date('c', $currentTime));
   }
 
   /**
