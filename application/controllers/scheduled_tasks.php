@@ -571,6 +571,9 @@ class Scheduled_Tasks_Controller extends Controller {
     // some species.
     $modules = kohana::config('config.modules');
     $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
+    // Get parameter for last run specific to record owner notifications.
+    $lastRunDate = variable::get('record-owner-notifications', $this->lastRunDate);
+    $currentTime = time();
     // Get a list of the records which contributors want to get a summary back
     // for.
     $emailsRequired = $this->db
@@ -585,7 +588,7 @@ class Scheduled_Tasks_Controller extends Controller {
       ->where([
         'sa1.caption' => 'Email me a copy of the record',
         'sa2.caption' => 'Email',
-        'samples.created_on>=' => $this->lastRunDate,
+        'samples.created_on>=' => $lastRunDate,
       ])
       ->where('sav1.int_value<>0')
       ->get();
@@ -683,6 +686,7 @@ class Scheduled_Tasks_Controller extends Controller {
         }
       }
     }
+    variable::set('record-owner-notifications', date('c', $currentTime));
   }
 
   /**
