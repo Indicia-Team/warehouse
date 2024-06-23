@@ -129,7 +129,7 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
         if (!empty($filterLocationIds)) {
           $filterLocationIdsCsv = implode(',', $filterLocationIds);
           $qry = <<<SQL
-            SELECT l.id
+            SELECT l.id, l.location_type_id
             FROM locations l
             JOIN locations search ON
                 st_intersects(search.boundary_geom, l.boundary_geom)
