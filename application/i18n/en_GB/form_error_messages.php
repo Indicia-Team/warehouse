@@ -75,7 +75,7 @@ $lang = [
     'default' => 'Invalid input.',
   ],
   'centroid_sref_system' => [
-    'required' => 'The centorid spatial reference system must be supplied.',
+    'required' => 'The centroid spatial reference system must be supplied.',
     'default' => 'Invalid input.',
   ],
   'external_key' => [
