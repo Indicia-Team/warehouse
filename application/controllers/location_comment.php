@@ -65,6 +65,9 @@ class location_comment_Controller extends Gridview_Base_Controller {
    *
    * After saving a comment you are returned to the location entry which has
    * the comment.
+   *
+   * @return string
+   *   Page path to return to.
    */
   protected function get_return_page() {
     if (array_key_exists('location_comment:location_id', $_POST)) {
