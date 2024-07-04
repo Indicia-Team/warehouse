@@ -195,7 +195,7 @@ SQL;
   }
   else {
     // Get address to send emails from.
-    $email_config = array();
+    $email_config = [];
     // Try and get from configuration file if possible.
     try {
       $email_config['address'] = kohana::config('notification_emails.email_sender_address');
@@ -217,7 +217,7 @@ SQL;
     // user was for the previous notification. When this user id then changes,
     // we know we need to start building an new email to a new user.
     $previousUserId = 0;
-    $notificationIds = array();
+    $notificationIds = [];
     $emailContent = start_building_new_email($notificationsToSendEmailsFor[0]);
     $currentType = '';
     $sourceTypes = notification_emails::getNotificationTypes();
@@ -249,7 +249,7 @@ SQL;
         // Used to mark the notifications in an email if an email send is
         // successful, once email send attempt has been made we can reset the
         // list ready for the next email.
-        $notificationIds = array();
+        $notificationIds = [];
         $emailSentCounter++;
         // As we just sent out a an email, we can start building a new one.
         $emailContent = start_building_new_email($notificationToSendEmailsFor);
@@ -370,7 +370,7 @@ function notification_emails_hyperlink_id($id, $websiteId) {
     // Handle config file not present.
   }
   catch (Exception $e) {
-    $recordDetailsPages = array();
+    $recordDetailsPages = [];
   }
   foreach ($recordDetailsPages as $page) {
     $found = $page['website_id'] == $websiteId;
