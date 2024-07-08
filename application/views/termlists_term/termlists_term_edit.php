@@ -56,7 +56,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'label' => 'Code',
       'fieldname' => 'term:code',
       'default' => html::initial_value($values, 'term:code'),
-      'helpText' => 'A code or other reference number associatd with the term.',
+      'helpText' => 'A code or other reference number associated with the term.',
     ]);
     echo data_entry_helper::textarea([
       'label' => 'Description',
