@@ -788,7 +788,7 @@ SQL;
    * @return string
    *   Formatted lat long.
    */
-  private static function formatLatLong($lat, $long) {
+  public static function formatLatLong($lat, $long) {
     $ns = $lat >= 0 ? 'N' : 'S';
     $ew = $long >= 0 ? 'E' : 'W';
     // Variant of abs() function using preg_replace avoids changing float to
