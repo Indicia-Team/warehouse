@@ -1506,7 +1506,7 @@ SQL;
     if (array_key_exists('subModels', $this->submission)) {
       // Iterate through the subModel array, linking them to this model.
       foreach ($this->submission['subModels'] as $key => $a) {
-        Kohana::log("debug", "Submitting submodel " . $a['model']['id'] . ".");
+                Kohana::log("debug", "Submitting submodel " . $a['model']['id'] . ".");
         // Establish the right model.
         $modelName = $a['model']['id'];
         // Alias old images tables to new media tables.
@@ -1549,8 +1549,8 @@ SQL;
         if (!$result) {
           $fieldPrefix = (array_key_exists('field_prefix', $a['model'])) ? $a['model']['field_prefix'] . ':' : '';
           // Remember this model so that its errors can be reported.
-          foreach ($m->errors as $key => $value) {
-            $this->errors[$fieldPrefix . $key] = $value;
+          foreach ($m->errors as $field => $value) {
+            $this->errors[$fieldPrefix . $field] = $value;
           }
           $r = FALSE;
         }
