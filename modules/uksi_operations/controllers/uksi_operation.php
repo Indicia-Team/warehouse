@@ -287,7 +287,11 @@ SQL;
         $tx->taxon = $operation->taxon_name;
       }
       if (!empty($operation->attribute)) {
-        $tx->attribute = $operation->attribute;
+        if ($operation->attribute === 'NONE') {
+          $tx->attribute = NULL;
+        } else {
+          $tx->attribute = $operation->attribute;
+        }
       }
       if (!empty($operation->authority)) {
         $tx->authority = $operation->authority;
