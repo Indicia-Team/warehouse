@@ -746,7 +746,6 @@ SQL;
           'fkId' => $subModelCfg->fk,
           'model' => self::convertNewToOldSubmission(inflector::singular($subModelTable), $obj, $websiteId),
         ];
-        kohana::log('debug', 'Submission updated sub: ' . var_export($s, TRUE));
       }
     }
   }

@@ -250,6 +250,11 @@ class Sample_Model extends ORM_Tree {
    *   filled in.
    */
   protected function preSubmit() {
+    if (class_exists('cache_builder') && isset($this->submission['subModels']) && count($this->submission['subModels']) >= 100) {
+      // If processing a large sample/subsample submission, then delay cache
+      // table updates to improve performance.
+      cache_builder::$delayCacheUpdates = TRUE;
+    }
     $this->preSubmitFillInVagueDate();
     $this->preSubmitInheritFromParent();
     $this->preSubmitFillInGeom();
