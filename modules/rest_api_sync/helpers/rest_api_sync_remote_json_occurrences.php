@@ -255,8 +255,6 @@ SQL;
       if ($numericId <= 290186151) {
         return FALSE;
       }
-      kohana::log('debug', "Record $numericId: " . var_export($record, TRUE));
-      kohana::log('debug', 'Observation: ' . var_export($observation, TRUE)); kohana::log_save();
       if (empty($observation['coordinateUncertaintyInMeters']) || $observation['coordinateUncertaintyInMeters'] > 500) {
         // No coordinate uncertainty supplied, or it is > 500, so the
         // coordinate is a site centroid. Therefore we can use a 1km square
@@ -292,7 +290,6 @@ SQL;
         // Given accurracy used for comparison with site grid ref.
         $accuracyOfProposal = $proposedLocationAccuracy;
       }
-      kohana::log('debug', "Proposed grid ref $proposedInputGridRef $proposedInputSystem"); kohana::log_save();
       // If there is a site grid ref which has greater precision than the
       // proposed input grid ref, use the site grid ref.
       if (!empty($record['dynamicProperties']) && !empty($record['dynamicProperties']['siteGridRef'])
@@ -335,38 +332,7 @@ SQL;
         }
         $observation['occurrenceRemarks'] .= $proposedComment;
       }
-      kohana::log('debug', 'Final Observation: ' . var_export($observation, TRUE)); kohana::log_save();
     }
-    else {
-      kohana::log('debug', 'Not Odonata');
-    }
-
-    /*if ($isOdonataCheck) {
-      kohana::log('debug', 'Observation: ' . var_export($observation, TRUE)); kohana::log_save();
-      // @todo Check following is correct, as we may be preferring lat/long + coordinate uncertainty.
-      if (!empty($observation['gridReference']) &&
-        (($observation['projection'] = 'OSGB' && strlen($observation['gridReference']) < 6) ||
-        ($observation['projection'] = 'OSGI' && strlen($observation['gridReference']) < 5))) {
-        // Exclude if grid reference over 1km.
-        return FALSE;
-      }
-      if (empty($observation['coordinateUncertaintyInMeters']) && empty($observation['gridReference'])) {
-        // Exclude point data with unknown precision.
-        return FALSE;
-      }
-      // Skip records already provided to BTO.
-      $numericId = (integer) str_replace(['BTO', 'OBS'], '', $observation['id']);
-      if ($numericId <= 290186151) {
-        return FALSE;
-      }
-
-      if (!empty($observation['coordinateUncertaintyInMeters']) && $observation['coordinateUncertaintyInMeters'] > 1000) {
-        if (!empty($observation['occurrenceRemarks'])) {
-          $observation['occurrenceRemarks'] .= "\n";
-        }
-        $observation['occurrenceRemarks'] .= "BTO Coordinate Uncertainty: $observation[coordinateUncertaintyInMeters]m!";
-      }
-    }*/
 
     return TRUE;
   }
