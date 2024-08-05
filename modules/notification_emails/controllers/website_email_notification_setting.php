@@ -28,7 +28,7 @@ class Website_email_notification_setting_Controller extends Indicia_Controller {
    * Controller action for the email settings edit form.
    */
   public function index() {
-    $this->view = new View('website_email_notification_setting/edit');
+    $view = new View('website_email_notification_setting/edit');
     $website_id = $this->uri->last_segment();
     $data = [];
     $rows = $this->db->select('notification_source_type, notification_frequency')
@@ -40,9 +40,9 @@ class Website_email_notification_setting_Controller extends Indicia_Controller {
     foreach ($rows as $row) {
       $data[$row->notification_source_type] = $row->notification_frequency;
     }
-    $this->view->website_id = $website_id;
-    $this->view->data = $data;
-    $this->template->content = $this->view;
+    $view->website_id = $website_id;
+    $view->data = $data;
+    $this->template->content = $view;
   }
 
   public function save() {

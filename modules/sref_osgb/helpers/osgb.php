@@ -83,7 +83,6 @@ class osgb {
       $north = strlen($sref) > 2 ? substr($sref, 2 + $coordLen) : 0;
       // If < 10 figure the easting and northing need to be multiplied up to the power of 10.
       $sq_size = pow(10, 5 - $coordLen);
-      kohana::log('debug', "$sref " . var_export($east, TRUE) . ' ' . var_export($sq_size, TRUE));
       $east = $east * $sq_size;
       $north = $north * $sq_size;
     }

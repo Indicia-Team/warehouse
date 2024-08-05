@@ -38,10 +38,15 @@
     from groups g
     left join active_groups ag on ag.id=g.id
     left join recent_groups rg on rg.id=g.id
+    left join groups_users gu ON gu.group_id=g.id and gu.deleted=false and gu.pending=false and gu.user_id=#currentUser#
     left join groups_users guc ON guc.group_id=g.id and guc.deleted=false and guc.pending=false
     left join group_pages gp ON gp.group_id=g.id and gp.deleted=false and gp.administrator=false and gp.access_level is null
     left join group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
     where g.deleted=false
+    and (g.to_date is null or g.to_date &gt; now() - '1 day'::interval)
+    and (g.from_date is null or g.from_date &lt; now() + '5 days'::interval)
+    -- Not already a member.
+    and gu.id is null
   </query>
   <order_bys>
     <order_by>1 desc</order_by>

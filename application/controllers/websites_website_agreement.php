@@ -123,7 +123,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
       $websiteId = $this->uri->argument(1);
     }
     $websiteTitle = ORM::Factory('website', $websiteId)->title;
-  	$this->page_breadcrumbs[] = html::anchor('website/edit/'.$websiteId.'?tab=Agreements', $websiteTitle);
+  	$this->page_breadcrumbs[] = html::anchor('website/edit/'.$websiteId.'?tab=data_sharing', $websiteTitle);
 	  $this->page_breadcrumbs[] = $this->model->caption();
   }
 
@@ -140,10 +140,10 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
           return 'websites_website_agreement/create/'.$_POST['websites_website_agreement:website_id'];
       }
       // or just return to the website page
-      return "website/edit/".$_POST['websites_website_agreement:website_id']."?tab=Agreements";
+      return "website/edit/".$_POST['websites_website_agreement:website_id']."?tab=data_sharing";
     } elseif (array_key_exists('websites_website_agreement:website_id', $_GET))
       // after uploading records, the website id is in the URL get parameters
-      return "website/edit/".$_GET['websites_website_agreement:website_id']."?tab=Agreements";
+      return "website/edit/".$_GET['websites_website_agreement:website_id']."?tab=data_sharing";
     else
       // last resort if we don't know the list, just show the whole lot of agreements
       return $this->model->object_name;
