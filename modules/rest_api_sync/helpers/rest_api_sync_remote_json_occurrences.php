@@ -151,8 +151,8 @@ class rest_api_sync_remote_json_occurrences {
         if (!empty($server['customHandlers'])) {
           foreach ($server['customHandlers'] as $handler) {
             if (self::$handler($db, $server, $record, $observation) === FALSE) {
-              // Go to next record.
-              continue;
+              // Go to next record (2 = skip parent level of foreach).
+              continue 2;
             }
           }
         }
@@ -248,32 +248,115 @@ WHERE t.organism_key='$observation[organismKey]'
 AND t.deleted=false
 SQL;
     $isOdonataCheck = $db->query($sql)->current()->count > 0;
+
     if ($isOdonataCheck) {
-      // @todo Check following is correct, as we may be preferring lat/long + coordinate uncertainty.
-      if (!empty($observation['gridReference']) &&
-        (($observation['projection'] = 'OSGB' && strlen($observation['gridReference']) < 6) ||
-        ($observation['projection'] = 'OSGI' && strlen($observation['gridReference']) < 5))) {
-        // Exclude if grid reference over 1km.
-        return FALSE;
-      }
-      if (empty($observation['coordinateUncertaintyInMeters']) && empty($observation['gridReference'])) {
-        // Exclude point data with unknown precision.
-        return FALSE;
-      }
       // Skip records already provided to BTO.
       $numericId = (integer) str_replace(['BTO', 'OBS'], '', $observation['id']);
       if ($numericId <= 290186151) {
         return FALSE;
       }
-
-      if (!empty($observation['coordinateUncertaintyInMeters']) && $observation['coordinateUncertaintyInMeters'] > 1000) {
+      if (empty($observation['coordinateUncertaintyInMeters']) || $observation['coordinateUncertaintyInMeters'] > 500) {
+        // No coordinate uncertainty supplied, or it is > 500, so the
+        // coordinate is a site centroid. Therefore we can use a 1km square
+        // covering the point.
+        $info = self::getLocationSridAndWkt($db, $observation);
+        // Create a 1km square that contains the point.
+        if ($info->srid == 27700) {
+          $proposedInputGridRef = osgb::wkt_to_sref($info->wkt, 4);
+          $proposedInputSystem = 'OSGB';
+        }
+        elseif ($info->srid == 29903) {
+          $proposedInputGridRef = osie::wkt_to_sref($info->wkt, 4);
+          $proposedInputSystem = 'OSI';
+        }
+        $proposedLocationAccuracy = NULL;
+        $proposedBtoOriginalCoord = api_persist::formatLatLong($observation['north'], $observation['east']);
+        $proposedBtoCoordinateUncertainty = empty($observation['coordinateUncertaintyInMeters']) ? 'unknown' : $observation['coordinateUncertaintyInMeters'];
+        $proposedComment = 'Grid reference set to a 1km square covering the provided point.';
+        // 1km square accurracy for comparison with site grid ref.
+        $accuracyOfProposal = 500;
+      }
+      else {
+        // There is a coordinate uncertainty and it is <= 500 (i.e. 1km or
+        // better). In this instance we just set the input grid ref to the
+        // supplied point, allowing the standard processes to calculate the
+        // output grid ref as it will be 1km or better anyway.
+        $proposedInputGridRef = api_persist::formatLatLong($observation['north'], $observation['east']);
+        $proposedInputSystem = 'WGS84';
+        $proposedLocationAccuracy = $observation['coordinateUncertaintyInMeters'];
+        $proposedBtoOriginalCoord = NULL;
+        $proposedBtoCoordinateUncertainty = NULL;
+        $proposedComment = NULL;
+        // Given accurracy used for comparison with site grid ref.
+        $accuracyOfProposal = $proposedLocationAccuracy;
+      }
+      // If there is a site grid ref which has greater precision than the
+      // proposed input grid ref, use the site grid ref.
+      if (!empty($record['dynamicProperties']) && !empty($record['dynamicProperties']['siteGridRef'])
+          && preg_match('/^(?P<bigsquare>[A-Z][A-Z]?)(?P<square>\d*)(?P<suffix>[A-Z]?)$/', $record['dynamicProperties']['siteGridRef'], $gridRefParts)) {
+        $coordLen = strlen($gridRefParts['square']) / 2;
+        $sqSize = pow(10, 5 - $coordLen);
+        if ($coordLen === 1 && strlen($gridRefParts['dinty']) === 1) {
+          $sqSize /= 5;
+        }
+        $siteGridRefPrecision = $sqSize / 2;
+        if ($siteGridRefPrecision < $accuracyOfProposal) {
+          kohana::log('debug', 'Replacing with siteGridRef for better accuracy');
+          $proposedInputGridRef = $record['dynamicProperties']['siteGridRef'];
+          $proposedInputSystem = preg_match('/^[A-Z][A-Z]/', $proposedInputGridRef) ? 'OSGB' : 'OSI';
+          $proposedLocationAccuracy = NULL;
+          $proposedBtoOriginalCoord = api_persist::formatLatLong($observation['north'], $observation['east']);
+          $proposedBtoCoordinateUncertainty = $observation['coordinateUncertaintyInMeters'];
+          $proposedComment = 'BTO site grid reference used.';
+        }
+      }
+      // Set the values into the record to save.
+      if ($proposedInputSystem === 'WGS84') {
+        unset($observation['gridReference']);
+      }
+      else {
+        $observation['gridReference'] = $proposedInputGridRef;
+      }
+      $observation['projection'] = $proposedInputSystem;
+      $observation['coordinateUncertaintyInMeters'] = $proposedLocationAccuracy;
+      $observation['smpAttrs'] = [];
+      if (!empty($server['btoCoordinateUncertaintyAttrId']) && !empty($proposedBtoCoordinateUncertainty)) {
+        $observation['smpAttrs'][$server['btoCoordinateUncertaintyAttrId']] = $proposedBtoCoordinateUncertainty;
+      }
+      if (!empty($server['btoOriginalCoordinateAttrId']) && !empty($proposedBtoOriginalCoord)) {
+        $observation['smpAttrs'][$server['btoOriginalCoordinateAttrId']] = $proposedBtoOriginalCoord;
+      }
+      if (!empty($proposedComment)) {
         if (!empty($observation['occurrenceRemarks'])) {
           $observation['occurrenceRemarks'] .= "\n";
         }
-        $observation['occurrenceRemarks'] .= "BTO Coordinate Uncertainty: $observation[coordinateUncertaintyInMeters]m!";
+        $observation['occurrenceRemarks'] .= $proposedComment;
       }
     }
+
     return TRUE;
+  }
+
+  /**
+   * Retrieve location info for a BTO observation.
+   *
+   * @param object $db
+   *   Connection.
+   * @param array $observation
+   *   BTO observation data.
+   *
+   * @return object
+   *   Object containing the preferred SRID for the observation's locality and
+   *   also the WKT of the observation point in Web Mercator.
+   */
+  private static function getLocationSridAndWkt($db, array $observation) {
+    $query = <<<SQL
+      SELECT get_output_srid(st_transform(st_geomfromtext('POINT($observation[east] $observation[north])', 4326), 900913)) as srid,
+          st_astext(st_transform(st_geomfromtext('POINT($observation[east] $observation[north])', 4326),
+            get_output_srid(st_transform(st_geomfromtext('POINT($observation[east] $observation[north])', 4326), 900913))
+          )) as wkt
+SQL;
+    return $db->query($query)->current();
   }
 
   /**
