@@ -58,5 +58,6 @@
             aggregate="true" template="{pages}"/>
     <column name="page_classes" visible="false" sql="array_to_string(array_agg(distinct lower(regexp_replace(gpall.path, '[^a-zA-Z0-9]', '-'))), ' ')"
             aggregate="true"/>
+    <column name="post_blog_permission" sql="g.post_blog_permission" datatype="text" />
   </columns>
 </report>

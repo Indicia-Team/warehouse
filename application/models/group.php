@@ -46,6 +46,7 @@ class Group_Model extends ORM {
     $array->add_rules('group_type_id', 'required');
     $array->add_rules('website_id', 'required');
     $array->add_rules('code', 'length[1,20]');
+    $array->add_rules('post_blog_permission', 'regex[/^(A|M)$/]');
     $this->unvalidatedFields = [
       'code',
       'description',
