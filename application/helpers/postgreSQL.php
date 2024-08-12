@@ -591,6 +591,7 @@ SQL;
     self::integerListOption($options, 'exclude_preferred_taxa_taxon_list_id');
     self::stringListOption($db, $options, 'preferred_taxon');
     self::stringListOption($db, $options, 'external_key');
+    self::stringListOption($db, $options, 'search_code');
     self::stringListOption($db, $options, 'organism_key');
     self::integerListOption($options, 'parent_id');
     self::stringListOption($db, $options, 'language');
@@ -665,7 +666,7 @@ SQL;
     $params = [
       'taxon_list_id', 'scratchpad_list_id', 'taxon_group_id', 'taxon_group', 'taxon_meaning_id',
       'taxa_taxon_list_id', 'preferred_taxa_taxon_list_id', 'exclude_taxon_meaning_id', 'exclude_taxa_taxon_list_id',
-      'exclude_preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'organism_key', 'parent_id',
+      'exclude_preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'search_code', 'organism_key', 'parent_id',
     ];
     foreach ($params as $param) {
       if (!empty($options[$param])) {
@@ -901,6 +902,7 @@ SQL;
   cts.preferred_taxa_taxon_list_id,
   cts.taxon_meaning_id,
   cts.external_key,
+  cts.search_code,
   cts.organism_key,
   cts.taxon_group_id,
   cts.parent_id,
@@ -1032,7 +1034,10 @@ SQL;
    *     limit the search to (e.g. limit to a list of species names). Exact
    *     matches required.
    *   * external_key - External key or array of external keys to limit the
-   *     search to (e.g. limit to a list of TVKs).
+   *     search to (e.g. limit to a list of taxa having the same accepted name
+   *     TVK).
+   *   * search_code - Search code or array of search codes to limit the
+   *     search to (e.g. limit to a list of taxa having the exact TVKs).
    *   * organism_key - External key or array of organism keys to limit the
    *     search to (e.g. limit to a list of UKSI keys).
    *   * parent_id - ID of a taxa_taxon_list record limit the search to

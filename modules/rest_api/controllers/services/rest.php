@@ -747,6 +747,9 @@ class Rest_Controller extends Controller {
             'external_key' => [
               'datatype' => 'text[]',
             ],
+            'search_code' => [
+              'datatype' => 'text[]',
+            ],
             'parent_id' => [
               'datatype' => 'integer[]',
             ],
@@ -1450,6 +1453,7 @@ class Rest_Controller extends Controller {
       'preferred_taxa_taxon_list_id' => ['caption' => 'Preferred taxa taxon list ID'],
       'taxon_meaning_id' => ['caption' => 'Taxon meaning ID'],
       'external_key' => ['caption' => 'External Key'],
+      'search_code' => ['caption' => 'Search Code'],
       'taxon_group_id' => ['caption' => 'Taxon group ID'],
       'parent_id' => ['caption' => 'Parent taxa taxon list ID'],
       'identification_difficulty' => ['caption' => 'Ident. difficulty'],
