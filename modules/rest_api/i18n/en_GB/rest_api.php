@@ -1118,7 +1118,10 @@ Preferred taxon name or array of preferred names to limit the search to (e.g. li
 species names). Exact matches required.
 TXT;
 $lang['GET taxa/search']['external_key'] = <<<TXT
-External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).
+External key or array of external keys to limit the search to (e.g. limit to a list of taxa having the same accepted name TVK).
+TXT;
+$lang['GET taxa/search']['search_code'] = <<<TXT
+Search code or array of search codes to limit the search to (e.g. limit to a list of taxa having the exact TVKs).
 TXT;
 $lang['GET taxa/search']['parent_id'] = <<<TXT
 ID of a taxa_taxon_list record limit the search to children of, e.g. a species when searching the
