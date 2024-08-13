@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Modules
- * @subpackage UTM Grid References
- * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link  https://github.com/indicia-team/warehouse/
  */
@@ -35,8 +33,7 @@ class utm_grid {
   *
   * @param $sref string Spatial reference to validate
   */
-  public static function is_valid($sref)
-  {
+  public static function is_valid($sref) {
     // ignore any spaces in the grid ref
     $sref = str_replace(' ','',$sref);
     $sq100 = strtoupper(substr($sref, 0, 2));
@@ -48,8 +45,9 @@ class utm_grid {
     // 2 cases - either remaining chars must be all numeric and an even number, up to 10 digits
     // OR for DINTY Tetrads, 2 numbers followed by a letter (Excluding O, including I)
     if ((!preg_match('/^[0-9]*$/', $eastnorth) || strlen($eastnorth) % 2 != 0 || strlen($eastnorth)>10) AND
-                    (!preg_match('/^[0-9][0-9][A-NP-Z]$/', $eastnorth)))
+                    (!preg_match('/^[0-9][0-9][A-NP-Z]$/', $eastnorth))) {
       return FALSE;
+    }
     return TRUE;
   }
 
@@ -60,8 +58,7 @@ class utm_grid {
   * @param string $sref The grid reference
   * @return string String containing the well known text.
   */
-  public static function sref_to_wkt($sref)
-  {
+  public static function sref_to_wkt($sref) {
     // ignore any spaces in the grid ref
     $sref = str_replace(' ','',$sref);
     if (!self::is_valid($sref))
@@ -77,7 +74,8 @@ class utm_grid {
       $sq_size = 2000;
       $east = $east * 10000 + floor(($sq_code_letter_ord - 65) / 5) * 2000;
       $north = $north * 10000 + (($sq_code_letter_ord - 65) % 5) * 2000;
-    } else {
+    }
+    else {
       // Normal Numeric Format
       $coordLen = (strlen($sref)-2)/2;
       // extract the easting and northing
@@ -94,7 +92,7 @@ class utm_grid {
     $northEdge=$southEdge+$sq_size;
     return "POLYGON(($westEdge $southEdge,$westEdge $northEdge,".
              "$eastEdge $northEdge,$eastEdge $southEdge,$westEdge $southEdge))";
-}
+  }
 
   /**
   * Converts a WKT to a grid square in the UTM grid
@@ -106,8 +104,7 @@ class utm_grid {
   * size of the polygon. To return a grid reference in tetrad form, set this to 3.
   * @return string String containing OSI grid reference.
   */
-  public static function wkt_to_sref($wkt, $precision=null)
-  {
+  public static function wkt_to_sref($wkt, $precision = NULL) {
     if (substr($wkt, 0, 7) == 'POLYGON')
             $points = substr($wkt, 9, -2);
     elseif (substr($wkt, 0, 5) == 'POINT') {
@@ -167,17 +164,18 @@ class utm_grid {
    * @param string $sref Spatial reference string to parse
    * @return array Array containing (x, y)
    */
-  protected static function get_100k_square($sref)
-  {
+  protected static function get_100k_square($sref) {
     $east = 100000;
     $char1ord = ord(substr($sref, 0, 1));
-    $east += ($char1ord - ord('S'))  * 100000;
+    $east += ($char1ord - ord('S')) * 100000;
 
     $char2 = substr($sref, 1, 1);
-    if ($char2 == 'U')
+    if ($char2 == 'U') {
       $north = 5300000;
-    elseif ($char2 == 'V')
+    }
+    elseif ($char2 == 'V') {
       $north = 5400000;
+    }
     else {
       $char2ord = ord($char2);
       $north = 5500000 + (($char2ord - ord('A')) * 100000);
