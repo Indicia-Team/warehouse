@@ -94,29 +94,35 @@ class utm_grid {
              "$eastEdge $northEdge,$eastEdge $southEdge,$westEdge $southEdge))";
   }
 
-  /**
-  * Converts a WKT to a grid square in the UTM grid
-  * reference notation. Only accepts POINT & POLYGON WKT at the moment.
+ /**
+  * Converts a WKT to a grid square in the UTM grid ref notation.
   *
-  * @param string $wkt The well known text
-  * @param integer $precision The number of digits to include in the return value.
-  * For a polygon, omit the parameter and the precision is inferred from the
-  * size of the polygon. To return a grid reference in tetrad form, set this to 3.
-  * @return string String containing OSI grid reference.
+  * @param string $wkt
+  *   The well known text for the input geometry.
+  * @param int $precision
+  *   The number of digits to include in the return value. For a polygon, omit
+  *   the parameter and the precision is inferred from the size of the polygon.
+  *   To return a grid reference in tetrad form, set this to 3.
+  *
+  * @return string
+  *   String containing OSI grid reference.
   */
   public static function wkt_to_sref($wkt, $precision = NULL) {
-    if (substr($wkt, 0, 7) == 'POLYGON')
-            $points = substr($wkt, 9, -2);
+    if (substr($wkt, 0, 7) === 'POLYGON') {
+      $points = substr($wkt, 9, -2);
+    }
     elseif (substr($wkt, 0, 5) == 'POINT') {
       $points = substr($wkt, 6, -1);
-      if ($precision===null)
+      if ($precision === NULL) {
         throw new Exception('wkt_to_sref translation for POINTs requires an accuracy.');
+      }
     }
-    else
+    else {
       throw new Exception('wkt_to_sref translation only works for POINT or POLYGON wkt.');
-    $points = explode(',',$points);
+    }
+    $points = explode(',', $points);
     // use the first point to do the conversion
-    $point = explode(' ',$points[0]);
+    $point = explode(' ', $points[0]);
     $easting = $point[0];
     $northing = $point[1];
     if ($easting < 100000 || $easting > 900000 || $northing < 5300000 || $northing > 6200000)
@@ -124,24 +130,29 @@ class utm_grid {
     if ($precision===null) {
       // find the distance in metres from point 2 to point 1 (assuming a square is passed).
       // This is the accuracy of the polygon.
-      $point_2 = explode(' ',$points[1]);
-      $accuracy = abs(($point_2[0]-$point[0]) + ($point_2[1]-$point[1]));
+      $point_2 = explode(' ', $points[1]);
+      $accuracy = abs(($point_2[0] - $point[0]) + ($point_2[1] - $point[1]));
       $precision = 12 - strlen($accuracy)*2;
-    } else if ($precision==3) {
+    }
+    elseif ($precision==3) {
       // DINTY TETRADS
       // no action as all fixed.
-    } else
-      $accuracy = pow(10, (10-$precision)/2);
+    }
+    else {
+      $accuracy = pow(10, (10 - $precision) / 2);
+    }
 
     $hundredKmE = floor($easting / 100000);
     $hundredKmN = floor($northing / 100000);
     $index = ord('S') + $hundredKmE - 1;
     $firstLetter = chr($index);
 
-    if ($hundredKmN < 55)
+    if ($hundredKmN < 55) {
       $index = ord('U') + $hundredKmN - 53;
-    else
+    }
+    else {
       $index = ord('A') + $hundredKmN - 55;
+    }
     $secondLetter = chr($index);
 
     if ($precision == 3) {
@@ -151,12 +162,12 @@ class utm_grid {
       $n = floor(($northing - (100000 * $hundredKmN)) / 10000);
       $letter = 65 + floor(($northing - (100000 * $hundredKmN) - ($n * 10000)) / 2000) + 5 * floor(($easting - (100000 * $hundredKmE) - ($e * 10000)) / 2000);
       if ($letter >= 79) $letter++; // Adjust for no O
-      return $firstLetter.$secondLetter.$e.$n.chr($letter);
+      return $firstLetter . $secondLetter . $e . $n . chr($letter);
     }
     $e = floor(($easting - (100000 * $hundredKmE)) / $accuracy);
     $n = floor(($northing - (100000 * $hundredKmN)) / $accuracy);
     return $firstLetter.$secondLetter.str_pad($e, $precision/2, '0', STR_PAD_LEFT).str_pad($n, $precision/2, '0', STR_PAD_LEFT);
-}
+  }
 
   /** Retrieve the easting and northing of the sw corner of a
    * 100km square, indicated by the first two characters of the grid ref.
