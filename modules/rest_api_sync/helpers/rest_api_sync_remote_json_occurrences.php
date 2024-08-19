@@ -269,6 +269,10 @@ SQL;
           $proposedInputGridRef = osie::wkt_to_sref($info->wkt, 4);
           $proposedInputSystem = 'OSI';
         }
+        elseif ($info->srid == 23030) {
+          $proposedInputGridRef = utm30ed50::wkt_to_sref($info->wkt, 4);
+          $proposedInputSystem = 'utm30ed50';
+        }
         $proposedLocationAccuracy = NULL;
         $proposedBtoOriginalCoord = api_persist::formatLatLong($observation['north'], $observation['east']);
         $proposedBtoCoordinateUncertainty = empty($observation['coordinateUncertaintyInMeters']) ? 'unknown' : $observation['coordinateUncertaintyInMeters'];
