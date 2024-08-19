@@ -1,3 +1,9 @@
+# Version 9.3.0
+*2024-08-19*
+
+* Adds `search_code` to parameters of Rest endpoint, `services/rest/taxa/search`
+  and includes it in the response.
+
 # Version 9.2.0
 *2024-06-17*
 
