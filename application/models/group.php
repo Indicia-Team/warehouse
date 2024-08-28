@@ -60,6 +60,8 @@ class Group_Model extends ORM {
       'view_full_precision',
       'logo_path',
       'licence_id',
+      'is_container',
+      'is_contained',
     ];
     // Has the private records flag changed?
     $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) &&
