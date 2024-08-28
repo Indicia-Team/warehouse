@@ -1,4 +1,4 @@
-CREATE VIEW list_groups AS
+CREATE OR REPLACE VIEW list_groups AS
  SELECT g.id,
     g.title,
     g.code,
@@ -20,8 +20,7 @@ CREATE VIEW list_groups AS
    FROM groups g
   WHERE g.deleted = false;
 
-DROP VIEW detail_groups;
-CREATE VIEW detail_groups AS
+CREATE OR REPLACE VIEW detail_groups AS
  SELECT g.id,
     g.title,
     g.code,
