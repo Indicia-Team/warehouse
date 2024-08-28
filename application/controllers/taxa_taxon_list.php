@@ -31,9 +31,9 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller {
     $this->columns = [
       'taxon' => '',
       'authority' => '',
-      'taxon_group' => 'Taxon Group',
+      'taxon_group' => 'Taxon group',
       'language' => '',
-      'taxonomic_sort_order' => 'Sort Order',
+      'taxonomic_sort_order' => 'Sort order',
     ];
     $this->pagetitle = "Species";
   }
