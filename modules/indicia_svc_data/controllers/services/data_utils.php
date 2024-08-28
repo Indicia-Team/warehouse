@@ -473,7 +473,7 @@ SQL;
         '{{ common name }}' => $occ->default_common_name ?? $occ->preferred_taxon ?? $occ->taxon,
         '{{ preferred name }}' => $occ->preferred_taxon ?? $occ->taxon,
         '{{ taxon full name }}' => $this->getTaxonNameLabel($occ),
-        '{{ rank }}' => lcfirst($occ->taxon_rank),
+        '{{ rank }}' => empty($occ->taxon_rank) ? 'unknown rank' : lcfirst($occ->taxon_rank),
         '{{ action }}' => warehouse::recordStatusCodeToTerm($action),
         '{{ location name }}' => $occ->location_name ?? 'unknown',
       ];
@@ -490,7 +490,7 @@ SQL;
         $replacements['{{ new common name }}'] = $taxonDetails->default_common_name ?? $taxonDetails->preferred_taxon ?? $taxonDetails->taxon;
         $replacements['{{ new preferred name }}'] = $taxonDetails->preferred_taxon ?? $taxonDetails->taxon;
         $replacements['{{ new taxon full name }}'] = $this->getTaxonNameLabel($taxonDetails);
-        $replacements['{{ new rank }}'] = lcfirst($taxonDetails->taxon_rank);
+        $replacements['{{ new rank }}'] = empty($taxonDetails->taxon_rank) ? 'unknown rank' : lcfirst($taxonDetails->taxon_rank);
       }
       return strtr($comment, $replacements);
     }
