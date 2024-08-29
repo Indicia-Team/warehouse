@@ -73,9 +73,6 @@ CREATE TABLE IF NOT EXISTS rest_api_client_connections
    CONSTRAINT chk_rest_api_client_connection_sharing_options CHECK ((sharing = ANY (ARRAY['R'::bpchar, 'P'::bpchar, 'V'::bpchar, 'D'::bpchar, 'M'::bpchar])))
 );
 
-COMMENT ON TABLE rest_api_client_connections
-    IS 'Configugration for a single connection method to the REST API by a client. A client may be allowed to use multiple connections for different purposes.
-      Includes privileges and filtering to define the capabilities when using this connection.';
 COMMENT ON COLUMN rest_api_client_connections.id IS 'Primary key for the table.';
 COMMENT ON COLUMN rest_api_client_connections.title IS 'Title of the REST API connection, for admin purposes only.';
 COMMENT ON COLUMN rest_api_client_connections.proj_id IS 'Name of the connection as passed to the API with requests.';
