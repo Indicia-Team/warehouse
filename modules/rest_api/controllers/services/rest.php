@@ -2968,7 +2968,13 @@ SQL;
     if (!password_verify($secret, $r->secret)) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
-    if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'])) {
+    // This type of connection is read only as we don't have a user ID.
+    // @todo A default user ID could be an option in the connection metadata.
+    $blockedMethods = ['PUT', 'DELETE'];
+    if (!$this->elasticProxy) {
+      $blockedMethods[] = 'POST';
+    }
+    if (in_array($_SERVER['REQUEST_METHOD'], $blockedMethods)) {
       RestObjects::$apiResponse->fail('Method Not Allowed', 405, 'Connection is read only.');
     }
     $this->applyConnectionSettingsFromRestConnectionInDb($r);
