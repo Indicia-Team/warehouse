@@ -33,6 +33,7 @@ class Rest_api_client_connection_Controller extends Gridview_Base_Controller {
     $this->columns = [
       'id' => 'ID',
       'title' => '',
+      'username' => '',
       'proj_id' => 'Project ID',
       'description' => '',
     ];
@@ -45,10 +46,14 @@ class Rest_api_client_connection_Controller extends Gridview_Base_Controller {
    * Index action method.
    */
   public function index() {
-    parent::index();
-    // Pass the client into the view, so the add button can pass through to the
-    // create form.
     if ($this->uri->total_arguments() > 0) {
+      // Apply the filter to only show connections for this client.
+      $this->base_filter['rest_api_client_id'] = $this->uri->argument(1);
+    }
+    parent::index();
+    if ($this->uri->total_arguments() > 0) {
+      // Pass the client into the view, so the add button can pass through to the
+      // create form.
       $this->view->rest_api_client_id = $this->uri->argument(1);
     }
   }

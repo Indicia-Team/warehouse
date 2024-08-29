@@ -489,7 +489,7 @@ class RestApiElasticsearch {
       $postObj->query->bool->must = array_merge($postObj->query->bool->must, $filterDefBool['must']);
     }
     if (!empty($filterDefBool['must_not'])) {
-      $postObj->query->bool->must = $filterDefBool['must_not'];
+      $postObj->query->bool->must_not = $filterDefBool['must_not'];
     }
   }
 
@@ -2335,6 +2335,7 @@ SQL;
     $response = curl_exec($session);
     $headers = curl_getinfo($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
+    kohana::log('error', 'Query: ' . $postData);
     if ($httpCode !== 200) {
       $error = curl_error($session);
       kohana::log('error', 'ES proxy request failed: ' . $error . ': ' . json_encode($error));
