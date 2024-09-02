@@ -158,7 +158,6 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       case 'kml':
         // Keyhole Markup Language.
         $this->kml_encode($records);
-        $this->content_type = 'Content-Type: application/vnd.google-earth.kml+xml';
         break;
 
       case 'dwca':
@@ -250,6 +249,10 @@ TXT;
 
       case 'tsv':
         header('Content-Type: text/tab-separated-values');
+        break;
+
+      case 'kml':
+        header('Content-Type: application/vnd.google-earth.kml+xml');
     }
     if ($mode === 'csv') {
       // Prepend a byte order marker, so Excel recognises the CSV file as
@@ -746,6 +749,10 @@ XML;
         }
         echo $this->kml_encode_array($recordNum, $root, $recordArray, 2) . "\r\n";
         $recordNum++;
+        // Output the buffer every 100 records.
+        if ($recordNum % 100 === 0) {
+          ob_flush();
+        }
       }
     }
     echo "  </Document>\n</kml>";
