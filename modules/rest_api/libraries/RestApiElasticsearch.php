@@ -2335,7 +2335,6 @@ SQL;
     $response = curl_exec($session);
     $headers = curl_getinfo($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
-    kohana::log('error', 'Query: ' . $postData);
     if ($httpCode !== 200) {
       $error = curl_error($session);
       kohana::log('error', 'ES proxy request failed: ' . $error . ': ' . json_encode($error));
