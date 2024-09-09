@@ -1,6 +1,6 @@
-# This image contains Debian's Apache httpd in conjunction with PHP8.1.
+# This image contains Debian's Apache httpd in conjunction with PHP.
 # https://hub.docker.com/_/php
-FROM php:8.1-apache
+FROM php:8.2-apache
 # Use PHP development configuration file as a basis
 RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
