@@ -1159,18 +1159,19 @@ SQL;
     $sampleFieldUpdates = $this->getSampleFieldUpdates($updates);
     $sampleFieldUpdateSql = empty($sampleFieldUpdates) ? '' : implode(',', $sampleFieldUpdates) . ', ';
     $sampleFieldChangedCheckSql = 'NOT (s.' . implode(' AND s.', $sampleFieldUpdates) . ')';
+    $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : "OR snf.recorders<>'$updates->recorder_name";
     $langRecheck = pg_escape_literal($db->getLink(), kohana::lang('misc.recheck_verification'));
     $qry = <<<SQL
-      INSERT INTO TEMPORARY changing_samples
       SELECT s.id
+      INTO TEMPORARY changing_samples
       FROM samples s
       JOIN cache_samples_nonfunctional snf ON snf.id=s.id
       WHERE ($sampleFieldChangedCheckSql
-      OR snf.recorders<>'$updates->recorder_name')
+      $recorderNameFieldChangedCheckSql)
       AND s.deleted=false
       AND s.id IN ($sampleIds)
       -- Ensure only bulk update own samples.
-      AND created_by_id=$this->user_id;
+      AND s.created_by_id=$this->user_id;
 
       UPDATE samples s
       SET $sampleFieldUpdateSql
@@ -1184,7 +1185,7 @@ SQL;
 
       -- Also reset verification status on changed occurrences.
       INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)
-      SELECT id, $langRecheck, 't', now(), $this->user_id, now(), $this->user_id
+      SELECT o.id, $langRecheck, 't', now(), $this->user_id, now(), $this->user_id
       FROM changing_samples cs
       JOIN occurrences o ON o.sample_id=cs.id
       AND o.deleted=false
