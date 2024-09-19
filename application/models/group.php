@@ -47,6 +47,7 @@ class Group_Model extends ORM {
     $array->add_rules('website_id', 'required');
     $array->add_rules('code', 'length[1,20]');
     $array->add_rules('post_blog_permission', 'regex[/^(A|M)$/]');
+    $array->add_rules('contained_by_group_id', 'integer');
     $this->unvalidatedFields = [
       'code',
       'description',
@@ -60,8 +61,7 @@ class Group_Model extends ORM {
       'view_full_precision',
       'logo_path',
       'licence_id',
-      'is_container',
-      'is_contained',
+      'container',
     ];
     // Has the private records flag changed?
     $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) &&

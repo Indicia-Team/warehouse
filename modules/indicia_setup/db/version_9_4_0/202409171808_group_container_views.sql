@@ -15,8 +15,8 @@ CREATE OR REPLACE VIEW list_groups AS
     g.licence_id,
     g.view_full_precision,
     g.post_blog_permission,
-    g.is_container,
-    g.is_contained
+    g.container,
+    g.contained_by_group_id
    FROM groups g
   WHERE g.deleted = false;
 
@@ -47,8 +47,8 @@ CREATE OR REPLACE VIEW detail_groups AS
     l.code AS licence_code,
     g.view_full_precision,
     g.post_blog_permission,
-    g.is_container,
-    g.is_contained
+    g.container,
+    g.contained_by_group_id
    FROM groups g
      LEFT JOIN filters f ON f.id = g.filter_id AND f.deleted = false
      LEFT JOIN licences l ON l.id = g.licence_id AND l.deleted = false
