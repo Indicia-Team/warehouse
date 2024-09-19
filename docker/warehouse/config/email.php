@@ -42,7 +42,7 @@ $config['driver'] = 'smtp';
  * @param array   smtp: hostname, (username), (password), (port), (auth), (encryption)
  */
 $config['options'] = [
-  'hostname' => 'mailhog',
+  'hostname' => 'mailpit',
   'username' => '',
   'password' => '',
   'port' => '1025',

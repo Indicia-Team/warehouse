@@ -58,8 +58,8 @@ services:
 
     # A fake mail server which allows the warehouse to send emails.
     # Received mail can be viewed at http://localhost:8025
-    mailhog:
-        image: mailhog/mailhog 
+    mailpit:
+        image: axllent/mailpit 
         ports:
             - "8025:8025"
 
@@ -95,7 +95,7 @@ services:
         depends_on:
             postgres:
                 condition: service_healthy
-            mailhog:
+            mailpit:
                 condition: service_started
             elastic:
                 condition: service_healthy
