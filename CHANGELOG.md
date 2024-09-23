@@ -1,3 +1,28 @@
+# Version 9.4.0
+*2024-09-23*
+
+* Adds features to trigger reports that allow them to directly send emails, e.g. for replying to
+  partially complete reports of Asian Hornets.
+* Adds fields to the `groups` entity (for iRecord Activities) for the following:
+  * Controlling if blogs are enabled and, if so, whether any member can post a blog or only admins.
+    See https://github.com/BiologicalRecordsCentre/iRecord/issues/1703.
+  * Defining if a group is a container for other groups, e.g. a project divided by years. See
+    https://github.com/BiologicalRecordsCentre/iRecord/issues/1678.
+  * Defining if a group is contained by another group.
+* Update the `library/groups/find_group_by_url` report to include information about container and
+  contained groups. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1678.
+* Bugfixes for the new bulk edit tool. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1673.
+* Updated download field formats to support sensitive record download requirements. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1714 and the columns documentation at
+  https://indicia-docs.readthedocs.io/en/latest/site-building/iform/helpers/elasticsearch-report-helper.html#elasticsearchreporthelper-datagrid.
+* Bugfix for the handling of the current common name when AddSynonym operations are processed by
+  the UKSI History processor. See https://github.com/Indicia-Team/warehouse/pull/522.
+* Update the `library/groups/group_list` report to include a full text search parameter and also so
+  that setting the parameter `userFilterMode=joinable` excludes groups you are already a member of.
+* In Elasticsearch, sensitive or private records have their site names replaced by '!' to
+  distinguish them from records where there is no site name given. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
+
 # Version 9.3.0
 *2024-08-19*
 
