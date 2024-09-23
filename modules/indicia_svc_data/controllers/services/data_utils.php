@@ -1156,10 +1156,10 @@ SQL;
       $this->fail('Unauthorized', 404, 'You cannot edit samples belonging to other users.');
       return FALSE;
     }
-    $sampleFieldUpdates = $this->getSampleFieldUpdates($updates);
+    $sampleFieldUpdates = $this->getSampleFieldUpdates($db, $updates);
     $sampleFieldUpdateSql = empty($sampleFieldUpdates) ? '' : implode(',', $sampleFieldUpdates) . ', ';
-    $sampleFieldChangedCheckSql = 'NOT (s.' . implode(' AND s.', $sampleFieldUpdates) . ')';
-    $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : "OR snf.recorders<>'$updates->recorder_name";
+    $sampleFieldChangedCheckSql = empty($sampleFieldUpdates) ? 'false' : 'NOT (s.' . implode(' AND s.', $sampleFieldUpdates) . ')';
+    $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : "OR snf.recorders<>'$updates->recorder_name'";
     $langRecheck = pg_escape_literal($db->getLink(), kohana::lang('misc.recheck_verification'));
     $qry = <<<SQL
       SELECT s.id
@@ -1246,13 +1246,15 @@ SQL;
   /**
    * Retrieve a list of field=value updates to apply to the sample table.
    *
+   * @param object $db
+   *   Database connection.
    * @param object $updates
    *   Object containing the values to update.
    *
    * @return string[]
    *   List of field=value pairs, suitable for use in an SQL statement.
    */
-  private function getSampleFieldUpdates($updates) {
+  private function getSampleFieldUpdates($db, $updates) {
     $sampleFieldUpdates = [];
     if (!empty($updates->date)) {
       $sampleFieldUpdates[] = "date_start='$updates->date'::date";
@@ -1264,11 +1266,11 @@ SQL;
       $sampleFieldUpdates[] = "location_name=$locationName";
     }
     if (!empty($updates->sref)) {
-      $sref = spatial_ref::sref_format_tidy($updates->sref, $updates->sref_system);
+      $sref = pg_escape_literal($db->getLink(), spatial_ref::sref_format_tidy($updates->sref, $updates->sref_system));
       $sampleFieldUpdates[] = "entered_sref=$sref";
-      $sampleFieldUpdates[] = "entered_sref_system=$updates->sref_system";
-      $geom = "st_geomfromtext('" . spatial_ref::sref_to_internal_wkt($updates->sref, $updates->sref_system) . "', 900913)";
-      $sampleFieldUpdates[] = "geom=$geom";
+      $system = pg_escape_literal($db->getLink(), $updates->sref_system);
+      $sampleFieldUpdates[] = "entered_sref_system=$system";
+      $sampleFieldUpdates[] = "geom=st_geomfromtext('" . spatial_ref::sref_to_internal_wkt($updates->sref, $updates->sref_system) . "', 900913)";
     }
     return $sampleFieldUpdates;
   }
