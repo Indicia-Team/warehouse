@@ -95,7 +95,8 @@ class RestApiElasticsearch {
         'field' => 'location.coordinate_uncertainty_in_meters',
       ],
       ['caption' => 'Lat/Long', 'field' => 'location.point'],
-      ['caption' => 'Location name', 'field' => 'location.verbatim_locality'],
+      ['caption' => 'Location name', 'field' => '#sitename:obscureifsensitive#'],
+      ['caption' => 'Sensitive location', 'field' => '#sitename:showifsensitive#'],
       ['caption' => 'Higher geography', 'field' => '#higher_geography::name#'],
       [
         'caption' => 'Vice County',
@@ -156,7 +157,8 @@ class RestApiElasticsearch {
       ['caption' => 'Order', 'field' => 'taxon.order'],
       ['caption' => 'Family', 'field' => 'taxon.family'],
       ['caption' => 'TaxonVersionKey', 'field' => 'taxon.accepted_taxon_id'],
-      ['caption' => 'Site name', 'field' => 'location.verbatim_locality'],
+      ['caption' => 'Site name', 'field' => '#sitename:obscureifsensitive#'],
+      ['caption' => 'Sensitive site', 'field' => '#sitename:showifsensitive#'],
       ['caption' => 'Original map ref', 'field' => 'location.input_sref'],
       ['caption' => 'Latitude', 'field' => '#lat:decimal#'],
       ['caption' => 'Longitude', 'field' => '#lon:decimal#'],
@@ -234,6 +236,7 @@ class RestApiElasticsearch {
     "mapmate" => [
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Site', 'field' => '#sitename:mapmate#'],
+      ['caption' => 'Sensitive site', 'field' => '#sitename:showifsensitive#'],
       ['caption' => 'Gridref', 'field' => 'location.output_sref'],
       [
         'caption' => 'VC',
@@ -440,8 +443,8 @@ class RestApiElasticsearch {
       }
       else {
         // Otherwise, only verification or user's own records get full
-        // precision, but not if downloading currently.
-        $blur = ($this->pagingMode !== 'scroll' && (RestObjects::$scope === 'verification' || substr(RestObjects::$scope, 0, 4) === 'user')) ? 'F' : 'B';
+        // precision.
+        $blur = (RestObjects::$scope === 'verification' || substr(RestObjects::$scope, 0, 4) === 'user') ? 'F' : 'B';
       }
       $queryStringParts = [];
       if (empty($this->resourceOptions['allow_confidential']) || $this->resourceOptions['allow_confidential'] !== TRUE) {
@@ -1107,10 +1110,10 @@ class RestApiElasticsearch {
     $info = [];
     if (!empty($doc['location']['verbatim_locality'])) {
       $info[] = $doc['location']['verbatim_locality'];
-      if (!empty($doc['location']['higher_geography'])) {
-        foreach ($doc['location']['higher_geography'] as $loc) {
-          $info[] = "$loc[type]: $loc[name]";
-        }
+    }
+    if (!empty($doc['location']['higher_geography'])) {
+      foreach ($doc['location']['higher_geography'] as $loc) {
+        $info[] = "$loc[type]: $loc[name]";
       }
     }
     return implode('; ', $info);
@@ -1421,7 +1424,19 @@ class RestApiElasticsearch {
   /**
    * Special field handler for ES sitename.
    *
-   * Return location.verbatim_locality formatted as specified.
+   * Return location.verbatim_locality formatted as specified. The parameter
+   * supplied dictates the format - select one of the following:
+   * * obscureifsensitive - for sensitive records with a site name, replace the
+   *   name with a placeholder indicating that it's witheld, for non-sensitive
+   *   records the entire site name is returned.
+   * * showifsensitive - only show the name for sensitive records.
+   * * mapmate - for sensitive records with a site name, replace the name with
+   *   a placeholder indicating that it's witheld, for non-sensitive records
+   *   return the first 62 characters of the site name, or 'unnamed site' if no
+   *   name given.
+   * If the parameter is not supplied then the site name is always shown if the
+   * user has permission to see sensitive records unblurred or the record is
+   * not sensitive.
    *
    * @param array $doc
    *   Elasticsearch document.
@@ -1432,18 +1447,38 @@ class RestApiElasticsearch {
    *   Formatted string
    */
   private function esGetSpecialFieldSitename(array $doc, array $params) {
-    if (count($params) !== 1) {
-      return 'Incorrect params for sitename field';
-    }
+    $format = !empty($params) ? $params[0] : '';
     $value = $this->getRawEsFieldValue($doc, 'location.verbatim_locality');
-    if ($params[0] === 'mapmate') {
-      if ($value === '') {
-        $value = 'unnamed site';
-      }
-      // Truncation to 62 characters required for MapMate.
-      $value = substr($value, 0, 62);
+    $shouldBlur = $doc['metadata']['sensitive'] === 'true' || $doc['metadata']['private'] === 'true';
+    switch ($format) {
+      case 'obscureifsensitive':
+        if ($shouldBlur && !empty($value)) {
+          return '[' . kohana::lang('es_fields.sensitiveLocation'). ']';
+        }
+        // Full site name.
+        return $value;
+
+      case 'showifsensitive':
+        if ($shouldBlur && $value !== '!') {
+          return $value;
+        }
+        return '';
+
+      case 'mapmate':
+        if ($shouldBlur && !empty($value)) {
+          return '[' . kohana::lang('es_fields.sensitiveLocation'). ']';
+        }
+        // Truncation to 62 characters required for MapMate.
+        if (empty($value)) {
+          return 'unnamed site';
+        }
+        // Truncation to 62 characters required for MapMate, skipping the site
+        // witheld ! character.
+        return $value === '!' ? '' : substr($value, 0, 62);
+
+      default:
+        return $value === '!' ? '' : $value;
     }
-    return $value;
   }
 
   /**
@@ -2071,8 +2106,10 @@ class RestApiElasticsearch {
           $fields[] = 'event.recorded_by';
           $fields[] = 'identification.identified_by';
         }
-        elseif (preg_match('/^#sitename(.*)#$/', $field)) {
+        elseif (preg_match('/^#sitename(:.*)?#$/', $field)) {
           $fields[] = 'location.verbatim_locality';
+          $fields[] = 'metadata.sensitive';
+          $fields[] = 'metadata.private';
         }
         elseif (preg_match('/^#template(.*)#$/', $field)) {
           // Find fields embedded in the template and add them.

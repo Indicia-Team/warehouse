@@ -68,7 +68,7 @@ warehouse::loadHelpers(['data_entry_helper']);
     ),
   ));
   ?>
-  <input type="submit" value="Go" />
+  <input type="submit" value="Go" class="btn btn-primary"/>
 </form>
 <?php
 if (isset($_POST['file'])) {

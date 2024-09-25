@@ -26,6 +26,9 @@
  */
 class Forgotten_Password_Controller extends Indicia_Controller {
 
+  /**
+   * Set up the main controller page.
+   */
   public function index() {
 
     if ($this->auth->logged_in()) {
@@ -59,10 +62,25 @@ class Forgotten_Password_Controller extends Indicia_Controller {
     }
   }
 
+  /**
+   * Return true if the user can login to the warehouse.
+   *
+   * User's only have login rughts if they have site editor role or higher, or
+   * core admin.
+   *
+   * @param ORM $user
+   *   User object.
+   *
+   * @return bool
+   *   True if the user is allowed to login.
+   */
   public function check_can_login($user) {
-    if (is_null($user->core_role_id) && ORM::factory('users_website')
-      ->where('user_id', $user->id)->where('site_role_id IS NOT ', NULL)->find_all() === 0) {
-      $this->template->content->error_message = $_POST['UserID'] . ' does not have permission to log on to this website';
+    if (is_null($user->core_role_id)
+        && ORM::factory('users_website')
+        ->where('user_id', $user->id)
+        ->where('site_role_id IS NOT ', NULL)
+        ->find_all() === 0) {
+      $this->template->content->error_message = "$_POST[UserID] does not have permission to log on to this website";
       return FALSE;
     }
     return TRUE;

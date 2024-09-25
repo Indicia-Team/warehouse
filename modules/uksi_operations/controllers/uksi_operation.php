@@ -235,6 +235,7 @@ SQL;
     // Copy over details from the preferred taxon to define a synonym.
     $fields['taxa_taxon_list:taxon_meaning_id'] = $allExistingNames->current()->taxon_meaning_id;
     $fields['taxa_taxon_list:parent_id'] = $allExistingNames->current()->parent_id;
+    $fields['taxa_taxon_list:common_taxon_id'] = $allExistingNames->current()->common_taxon_id;
     $fields['taxon:taxon_rank_id'] = $allExistingNames->current()->taxon_rank_id;
     $fields['taxon:taxon_group_id'] = $allExistingNames->current()->taxon_group_id;
     $fields['taxon:marine_flag'] = $allExistingNames->current()->marine_flag;
@@ -286,7 +287,11 @@ SQL;
         $tx->taxon = $operation->taxon_name;
       }
       if (!empty($operation->attribute)) {
-        $tx->attribute = $operation->attribute;
+        if ($operation->attribute === 'NONE') {
+          $tx->attribute = NULL;
+        } else {
+          $tx->attribute = $operation->attribute;
+        }
       }
       if (!empty($operation->authority)) {
         $tx->authority = $operation->authority;
@@ -705,6 +710,7 @@ SQL;
     }
     $fields['taxon:organism_key'] = $operation->current_organism_key;
     $fields['taxa_taxon_list:taxon_meaning_id'] = $previousPreferredName->taxon_meaning_id;
+    $fields['taxa_taxon_list:common_taxon_id'] = $previousPreferredName->common_taxon_id;
     if (empty($fields['taxa_taxon_list:parent_id'])) {
       // If parent not specified in operation, keep the original.
       $fields['taxa_taxon_list:parent_id'] = $previousPreferredName->parent_id;
@@ -983,7 +989,7 @@ SQL;
       // Table alias defaults to t.
       $where[strpos($key, '.') === FALSE ? "t.$key" : $key] = $value;
     }
-    return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, ttl.parent_id, ttl.allow_data_entry, ' .
+    return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, ttl.parent_id, ttl.allow_data_entry, ttl.common_taxon_id, ' .
         't.taxon, t.authority, t.attribute, t.search_code, t.external_key, t.organism_key, t.taxon_rank_id, ' .
         't.taxon_group_id, t.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag, ' .
         't.organism_deprecated, t.name_deprecated')

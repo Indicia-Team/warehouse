@@ -1,0 +1,27 @@
+<report
+    title="Record thanks email"
+    description="Minimal demo of a trigger which can send a thank you message to the recorders of all records.">
+  <query>
+    select #columns#
+    from cache_occurrences_functional o
+    join users u on u.id=o.created_by_id and u.deleted=false
+    join people p on p.id=u.person_id and p.deleted=false
+    where o.updated_on&gt;'#date#'
+    and o.created_on&gt;'#date#'
+    and o.training=false
+  </query>
+  <order_bys>
+    <order_by>o.updated_on ASC</order_by>
+  </order_bys>
+  <params>
+    <param name="date" display="Date" description="Date/time of last check" datatype="datetime" />
+    <param name="website_id" display="Website ID" description="ID of website to load occurrences for" datatype="integer" />
+  </params>
+  <columns>
+    <column name="website_id" sql="o.website_id" datatype="integer" />
+    <column name="email_to" sql="p.email_address" datatype="text" />
+    <column name="email_name" sql="coalesce(coalesce(p.first_name, p.initials) || ' ', '') || p.surname" datatype="text" />
+    <column name="email_subject" sql="'Thank you for the record'" datatype="text" />
+    <column name="email_body" sql="'Record ID ' || o.id::text || ' has been received. Many thanks!'" datatype="text" />
+  </columns>
+</report>

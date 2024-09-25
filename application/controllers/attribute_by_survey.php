@@ -20,7 +20,7 @@
  */
 
 /**
- * Controller providing the ability to configure the list of attributes joined to a survey.
+ * Controller for relationship between custom attributes and surveys.
  */
 class Attribute_By_Survey_Controller extends Indicia_Controller {
   private $_survey = NULL;
@@ -83,8 +83,10 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
   }
 
   /**
-   * Handle the layout_update action, which uses $_POST data to find a list of commands
-   * for re-ordering the controls.
+   * Handle the layout_update action.
+   *
+   * Which uses $_POST data to find a list of commands for re-ordering the
+   * controls.
    */
   public function layout_update() {
     // Get the survey id from the segments in the URI.
@@ -223,8 +225,13 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
   }
 
   /**
-   * Setup the values to be loaded into the edit view. For this class, we need to explode the
-   * items out of the validation_rules field, which our base class can do.
+   * Setup the values to be loaded into the edit view.
+   *
+   * For this class, we need to explode the items out of the validation_rules
+   * field, which our base class can do.
+   *
+   * @return array
+   *   Key value pairs of data for the edit view.
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
@@ -308,8 +315,12 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
     return $otherData;
   }
 
+  /**
+   * Override save handler to format validation rules correctly.
+   */
   public function save() {
-    // Build the validation_rules field from the set of controls that are associated with it.
+    // Build the validation_rules field from the set of controls that are
+    // associated with it.
     $rules = [];
     $ruleNames = ([
       'required',
@@ -340,12 +351,20 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
     parent::save();
   }
 
+  /**
+   * Determine the page to return to after saving.
+   *
+   * @return string
+   *   Path to the page to return to.
+   */
   protected function get_return_page() {
-    $surveyPostKey = $this->type.'_attributes_website:restrict_to_survey_id';
+    $surveyPostKey = $this->type . '_attributes_website:restrict_to_survey_id';
     if (isset($_POST[$surveyPostKey])) {
-      return 'attribute_by_survey/'.$_POST[$surveyPostKey].'?type='.$this->type;
-    } else {
-      // If $_POST data not available, then just return to the survey list. Shouldn't really happen.
+      return 'attribute_by_survey/' . $_POST[$surveyPostKey] . '?type=' . $this->type;
+    }
+    else {
+      // If $_POST data not available, then just return to the survey list.
+      // Shouldn't really happen.
       return 'survey';
     }
   }
@@ -356,7 +375,8 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
   protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('survey', 'Survey datasets');
     $survey = ORM::Factory('survey', $this->model->restrict_to_survey_id);
-    $this->page_breadcrumbs[] = html::anchor('/attribute_by_survey/'.$this->model->restrict_to_survey_id.'?type='.$this->type, 'Attributes for '.$survey->title);
+    $this->page_breadcrumbs[] = html::anchor(
+      "/attribute_by_survey/$survey->id?type=$this->type", "Attributes for $survey->title");
     $this->page_breadcrumbs[] = $this->model->caption();
   }
 
@@ -371,8 +391,10 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
         $this->_website_id = $survey->website_id;
       }
       return in_array($this->_website_id, $this->auth_filter['values']);
-    } else
+    }
+    else {
       return true;
+    }
   }
 
   /**
@@ -384,6 +406,5 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
     }
     return $this->_survey;
   }
-
 
 }

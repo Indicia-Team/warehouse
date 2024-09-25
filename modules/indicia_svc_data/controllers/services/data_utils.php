@@ -1134,7 +1134,6 @@ SQL;
       return;
     }
     $db = new Database();
-    // @todo think through behaviour in parent/child sample data.
     $results = $this->checkAffectedSamplesDontContainOtherOccurrences($db, $occurrenceIds);
     if ($results) {
       if (!empty($options->allowSampleSplits)) {
@@ -1157,39 +1156,59 @@ SQL;
       $this->fail('Unauthorized', 404, 'You cannot edit samples belonging to other users.');
       return FALSE;
     }
-    $sampleFieldUpdates = [];
-    if (!empty($updates->date)) {
-      $sampleFieldUpdates[] = "date_start='$updates->date'";
-      $sampleFieldUpdates[] = "date_end='$updates->date'";
-      $sampleFieldUpdates[] = "date_type='D'";
-    }
-    if (!empty($updates->location_name)) {
-      $locationName = pg_escape_literal($db->getLink(), $updates->location_name);
-      $sampleFieldUpdates[] = "location_name=$locationName";
-    }
-    if (!empty($updates->sref)) {
-      $sref = spatial_ref::sref_format_tidy($updates->sref, $updates->sref_system);
-      $sampleFieldUpdates[] = "entered_sref=$sref";
-      $sampleFieldUpdates[] = "entered_sref_system=$updates->sref_system";
-      $geom = "st_geomfromtext('" . spatial_ref::sref_to_internal_wkt($updates->sref, $updates->sref_system) . "', 900913)";
-      $sampleFieldUpdates[] = "geom=$geom";
-    }
-    if (!empty($sampleFieldUpdates)) {
-      $sampleFieldUpdateSql = implode(',', $sampleFieldUpdates);
-      $qry = <<<SQL
-        UPDATE samples
-        SET $sampleFieldUpdateSql,
-          updated_on=now(),
-          updated_by_id=$this->user_id
-        WHERE id in ($sampleIds)
-        AND created_by_id=$this->user_id;
+    $sampleFieldUpdates = $this->getSampleFieldUpdates($db, $updates);
+    $sampleFieldUpdateSql = empty($sampleFieldUpdates) ? '' : implode(',', $sampleFieldUpdates) . ', ';
+    $sampleFieldChangedCheckSql = empty($sampleFieldUpdates) ? 'false' : 'NOT (s.' . implode(' AND s.', $sampleFieldUpdates) . ')';
+    $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : "OR snf.recorders<>'$updates->recorder_name'";
+    $langRecheck = pg_escape_literal($db->getLink(), kohana::lang('misc.recheck_verification'));
+    $qry = <<<SQL
+      SELECT s.id
+      INTO TEMPORARY changing_samples
+      FROM samples s
+      JOIN cache_samples_nonfunctional snf ON snf.id=s.id
+      WHERE ($sampleFieldChangedCheckSql
+      $recorderNameFieldChangedCheckSql)
+      AND s.deleted=false
+      AND s.id IN ($sampleIds)
+      -- Ensure only bulk update own samples.
+      AND s.created_by_id=$this->user_id;
+
+      UPDATE samples s
+      SET $sampleFieldUpdateSql
+        updated_on=now(),
+        updated_by_id=$this->user_id,
+        record_status='C',
+        verified_by_id=null,
+        verified_on=null
+      FROM changing_samples cs
+      WHERE cs.id=s.id;
+
+      -- Also reset verification status on changed occurrences.
+      INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)
+      SELECT o.id, $langRecheck, 't', now(), $this->user_id, now(), $this->user_id
+      FROM changing_samples cs
+      JOIN occurrences o ON o.sample_id=cs.id
+      AND o.deleted=false
+      AND (o.record_status<>'C' OR o.record_substatus IS NOT NULL);
+
+      UPDATE occurrences o
+      SET updated_on=now(),
+        updated_by_id=$this->user_id,
+        record_status='C',
+        record_substatus=null,
+        verified_by_id=null,
+        verified_on=null
+      FROM changing_samples cs
+      WHERE cs.id=o.sample_id
+      AND o.deleted=false;
+
 SQL;
-      $db->query($qry);
-    }
+    $db->query($qry);
     if (!empty($updates->recorder_name)) {
       // Recorder name a little different as it might be a custom attribute.
       $this->bulkEditRecorderNames($db, $sampleIds, $updates->recorder_name);
     }
+
     // Update the cache_* data using the work queue.
     $qry = <<<SQL
       INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
@@ -1225,6 +1244,38 @@ SQL;
   }
 
   /**
+   * Retrieve a list of field=value updates to apply to the sample table.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param object $updates
+   *   Object containing the values to update.
+   *
+   * @return string[]
+   *   List of field=value pairs, suitable for use in an SQL statement.
+   */
+  private function getSampleFieldUpdates($db, $updates) {
+    $sampleFieldUpdates = [];
+    if (!empty($updates->date)) {
+      $sampleFieldUpdates[] = "date_start='$updates->date'::date";
+      $sampleFieldUpdates[] = "date_end='$updates->date'::date";
+      $sampleFieldUpdates[] = "date_type='D'";
+    }
+    if (!empty($updates->location_name)) {
+      $locationName = pg_escape_literal($db->getLink(), $updates->location_name);
+      $sampleFieldUpdates[] = "location_name=$locationName";
+    }
+    if (!empty($updates->sref)) {
+      $sref = pg_escape_literal($db->getLink(), spatial_ref::sref_format_tidy($updates->sref, $updates->sref_system));
+      $sampleFieldUpdates[] = "entered_sref=$sref";
+      $system = pg_escape_literal($db->getLink(), $updates->sref_system);
+      $sampleFieldUpdates[] = "entered_sref_system=$system";
+      $sampleFieldUpdates[] = "geom=st_geomfromtext('" . spatial_ref::sref_to_internal_wkt($updates->sref, $updates->sref_system) . "', 900913)";
+    }
+    return $sampleFieldUpdates;
+  }
+
+  /**
    * Confirms that a list of sample IDs are all created by the current user.
    *
    * @param object $db
@@ -1241,7 +1292,7 @@ SQL;
   }
 
   /**
-   * Handle the bulk edit of recorder names
+   * Handle the bulk edit of recorder names.
    *
    * Complex due to optional custom attributes vs samples.recorder_names field.
    *

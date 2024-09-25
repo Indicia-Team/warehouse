@@ -149,7 +149,7 @@ class Scheduled_Tasks_Controller extends Controller {
       $params = json_decode($trigger->params_json, TRUE);
       $reportEngine = new ReportEngine();
       // Get parameter for last run specific to this trigger.
-      $params['date'] = variable::get("trigger_last_run-$trigger->id", $this->lastRunDate);
+      $params['date'] = variable::get("trigger_last_run-$trigger->id", $this->lastRunDate, FALSE);
       $currentTime = time();
       try {
         $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
@@ -238,6 +238,13 @@ class Scheduled_Tasks_Controller extends Controller {
             'data' => $parsedData['websiteRecordData'],
           ],
           $digestMode
+        );
+        $this->doTriggerImmediateEmails(
+          $trigger->name,
+          [
+            'headings' => $parsedData['headingData'],
+            'data' => $parsedData['websiteRecordData'],
+          ]
         );
       }
       // Remember when this specific trigger last ran.
@@ -351,6 +358,101 @@ class Scheduled_Tasks_Controller extends Controller {
         'user_id' => str_replace('user:', '', $user),
         'digest_mode' => $digestMode,
       ]);
+    }
+  }
+
+  /**
+   * Send emails for trigger reports that directly define an email to send.
+   *
+   * These emails can be sent directly, bypassing the notifications system and
+   * therefore can be sent to anyone not just registered users. E.g. a thank
+   * you email to anonymous recorders.
+   *
+   * @param string $triggerName
+   *   Name of the trigger which fired.
+   * @param array $data
+   *   Info regarding the trigger report columns and associated retrieved data.
+   */
+  private function doTriggerImmediateEmails($triggerName, array $data) {
+    if (count($data['data']) === 0 || !in_array('email_to', $data['headings'])) {
+      return;
+    }
+    $emailConfig = Kohana::config('email');
+    if (!isset($emailConfig['address'])) {
+      self::msg('Email address not provided in email configuration', 'error');
+      return;
+    }
+    $colIndexes = [];
+    $sysCols = ['email_to', 'email_subject', 'email_body', 'email_name'];
+    foreach ($sysCols as $col) {
+      if (($colIdx = array_search($col, $data['headings'])) !== FALSE) {
+        $colIndexes[$col] = $colIdx;
+      }
+    }
+    $defaultSubject = empty(kohana::config('email.notification_subject'))
+      ? kohana::lang('misc.notification_subject')
+      : kohana::config('email.notification_subject');
+    $emails = [];
+    foreach ($data['data'] as $records) {
+      foreach ($records as $record) {
+        if (!empty($record[$colIndexes['email_to']])) {
+          $to = $record[$colIndexes['email_to']];
+          $name = empty($colIndexes['email_name']) || empty($record[$colIndexes['email_name']])
+            ? $to
+            : $record[$colIndexes['email_name']];
+          if (!isset($emails["$to $name"])) {
+            $emails["$to $name"] = [];
+          }
+
+          $subject = empty($colIndexes['email_subject']) || empty($record[$colIndexes['email_subject']])
+            ? $defaultSubject
+            : $record[$colIndexes['email_subject']];
+          if (empty($colIndexes['email_body']) || empty($record[$colIndexes['email_body']])) {
+            // Email body not provided, so construct it from the other columns.
+            $body = '';
+            foreach ($data['headings'] as $idx => $colTitle) {
+              // Skip the functional email columns.
+              if (!in_array($colTitle, $sysCols)) {
+                $body[] = '<h2>' . htmlspecialchars($colTitle) . '</h2>';
+                $body[] = '<p>' . htmlspecialchars($record[$idx]) . '</p>';
+              }
+            }
+          }
+          else {
+            $body = $record[$colIndexes['email_body']];
+          }
+          // Aggregate emails per email address, so we don't send multiple.
+          $emails["$to $name"][] = [
+            'to' => $to,
+            'name' => $name,
+            'subject' => $subject,
+            'body' => $body,
+          ];
+        }
+      }
+    }
+    $swift = email::connect();
+    // Now send the emails as a digest so each recipient only gets one email.
+    foreach ($emails as $infoList) {
+      // If a single email for this recipient we can use the subject, otherwise
+      // we use a generic subject and put each email subject in as a subtitle.
+      $subject = count($infoList) === 1 ? $infoList[0]['subject'] : $defaultSubject;
+      $emailContent = '';
+      foreach ($infoList as $infoItem) {
+        if (count($infoList) > 1) {
+          $emailContent .= '<h1>' . htmlspecialchars($infoItem['subject']) . '</h1>';
+        }
+        $emailContent .= '<div>' . $infoItem['body'] . '</div>';
+      }
+      $message = new Swift_Message(
+        $subject,
+        "<html>$emailContent</html>",
+        'text/html'
+      );
+      $recipients = new Swift_RecipientList();
+      $recipients->addTo($infoList[0]['to'], $infoList[0]['name']);
+      // Send the email.
+      $swift->send($message, $recipients, $emailConfig['address']);
     }
   }
 

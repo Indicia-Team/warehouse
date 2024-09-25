@@ -24,7 +24,7 @@
            datatype="lookup" default="member"
            lookup_values='all:All groups,joinable:Groups they can join or request,allvisible:Groups they can join or request or are already a member of,pending:Groups they are pending approval to join,member:Groups they are a member of,admin:Groups they administer,create:Groups they created,create_admin:Groups they created or administer'>
       <wheres>
-        <where value="joinable" operator="equal">g.joining_method not in ('A','I')</where>
+        <where value="joinable" operator="equal">g.joining_method not in ('A','I') AND gu.id IS NULL</where>
         <where value="allvisible" operator="equal">(g.joining_method not in ('A','I') OR gu.id IS NOT NULL OR '#CMSAdminPerm#' = '1')</where>
         <where value="pending" operator="equal">gu.id is not null AND gu.pending=true</where>
         <where value="member" operator="equal">gu.id is not null AND gu.pending=false</where>
@@ -69,6 +69,9 @@
            datatype="text" default="" />
     <param name="search_text" display="Search for" default="">
       <where>(g.title ilike '%#search_text#%' or g.description ilike '%#search_text#%')</where>
+    </param>
+    <param name="search_fulltext" display="Search for (fulltext)" default="">
+      <where>websearch_to_tsquery('english', '#search_fulltext#') @@ to_tsvector('english', coalesce(g.title, '') || ' ' || coalesce(g.description, ''))</where>
     </param>
   </params>
   <columns>

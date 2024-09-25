@@ -35,13 +35,13 @@ class Notification_Model extends ORM {
     // fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('source', 'required');
-    $array->add_rules('source_type', 'required');
+    $array->add_rules('source_type', 'required', 'regex[/^(T|V|C|Q|A|S|VT|M|PT|GU|FE)$/]');
+    $array->add_rules('digest_mode', 'regex[/^[NDWI]$/]');
     $array->add_rules('data', 'required');
     $array->add_rules('acknowledged', 'required');
     $array->add_rules('user_id', 'required');
     $array->add_rules('triggered_on', 'required');
     $this->unvalidatedFields = [
-      'digest_mode',
       'cc',
       'linked_id',
     ];
