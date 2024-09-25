@@ -19,6 +19,10 @@
   the UKSI History processor. See https://github.com/Indicia-Team/warehouse/pull/522.
 * Update the `library/groups/group_list` report to include a full text search parameter and also so
   that setting the parameter `userFilterMode=joinable` excludes groups you are already a member of.
+* The Elasticsearch special field handler for "sitename" now supports additional options -
+  `obscureifsensitive` - shows a warning message instead of the site name if sensitive and
+  `showifsensitive` - displays the full site name for sensitive records (only if the user has
+  access to full precision sensitive data).
 * In Elasticsearch, sensitive or private records have their site names replaced by '!' to
   distinguish them from records where there is no site name given. See
   https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
