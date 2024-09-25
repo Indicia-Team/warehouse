@@ -196,14 +196,10 @@ class Import_2_Controller extends Service_Base_Controller {
    * The uploaded file should be in a field called media_upload.
    */
   public function upload_file() {
-    kohana::log('debug', 'In services upload_file');
     header("Content-Type: application/json");
-    kohana::log('debug', 'Header set');
     $this->authenticate('write');
-    kohana::log('debug', 'Authenticated');
     try {
       $importTools = new ImportTools();
-      kohana::log('debug', 'Calling import tools');
       $uploadedFile = $importTools->uploadFile();
       echo json_encode([
         'status' => 'ok',
