@@ -39,14 +39,14 @@ class FirstRowReadFilter implements IReadFilter {
   /**
    * Enable reading of row 1 only.
    *
-   * @param int $column
-   *   Column number - ignored.
+   * @param int $columnAddress
+   *   Column letter - ignored.
    * @param int $row
    *   Row number.
    * @param string $worksheetName
    *   Worksheet name - ignored.
    */
-  public function readCell($column, $row, $worksheetName = '') {
+  public function readCell(string $columnAddress, int $row, string $worksheetName = ''): bool {
     return $row == 1;
   }
 
@@ -82,14 +82,14 @@ class RangeReadFilter implements IReadFilter {
   /**
    * Enable reading of only the rows that are in range.
    *
-   * @param int $column
-   *   Column number - ignored.
+   * @param int $columnAddress
+   *   Column letter - ignored.
    * @param int $row
    *   Row number.
    * @param string $worksheetName
    *   Worksheet name - ignored.
    */
-  public function readCell($column, $row, $worksheetName = '') {
+  public function readCell(string $columnAddress, int $row, string $worksheetName = ''): bool {
     return $row >= $this->offset && $row < $this->offset + $this->limit;
   }
 
