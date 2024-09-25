@@ -199,8 +199,6 @@ class Import_2_Controller extends Service_Base_Controller {
     header("Content-Type: application/json");
     $this->authenticate('write');
     try {
-      // Ensure we have write permissions.
-      $this->authenticate();
       $importTools = new ImportTools();
       $uploadedFile = $importTools->uploadFile();
       echo json_encode([
