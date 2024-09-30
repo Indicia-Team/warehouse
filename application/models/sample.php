@@ -170,6 +170,7 @@ class Sample_Model extends ORM_Tree {
       'group_id',
       'privacy_precision',
       'record_status',
+      'import_guid',
       'verified_by_id',
       'verified_on',
       'licence_id',

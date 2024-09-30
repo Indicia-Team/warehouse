@@ -1,0 +1,38 @@
+<report
+    title="List of imports which are reversible"
+    description="At time of writing, used for the reversible imports drop-down in importer 2."
+>
+  <query>
+    SELECT #columns#
+    FROM imports i
+    WHERE i.created_by_id = #currentUser#
+      AND i.reversible = true
+      /* Website ID might be NULL if reversing from the Warehouse UI */
+      AND (#website_id# = -1 OR i.website_id = #website_id#)
+      AND i.deleted = false
+      /* Due to difficulties accurately determining when a record is an update and other situations;
+         what we do in other reports is we look at the X most recent created_bys within the 
+         relevant import_guid to determine insertions. To do this accurately, we need to make
+         sure the imported data import_guids haven't been removed by further import updates. Only allow reversals 
+         where the number of insertions + updated matches the number of import_guids in the database
+         (can ignore deleted flag for this check). */
+      AND i.inserted + i.updated in
+        (select count(o.id)
+        FROM occurrences o
+        WHERE 
+          o.import_guid = i.import_guid
+    )
+  </query>
+  <order_bys>
+    <order_by>i.created_on desc</order_by>
+  </order_bys>
+  <params>
+    <param name="currentUser" display="User ID" datatype="integer" />
+    <param name="website_id" display="Website ID" datatype="integer" default="-1" />
+  </params>
+  <columns>
+    <column name="id" sql="i.id" in_count="true" visible="false" datatype="integer" />
+    <column name="import_guid" sql="i.import_guid" visible="false" datatype="text" />
+    <column name="import_date_time" sql="TO_CHAR(i.created_on, 'DD/MM/YYYY HH24:MI')" datatype="text" />
+  </columns>
+</report>

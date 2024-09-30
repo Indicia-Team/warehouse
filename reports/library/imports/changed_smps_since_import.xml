@@ -1,0 +1,38 @@
+<report
+    title="Changed samples since import"
+    description="List of samples/occurrences that have changed since import was done."
+>
+  <query>
+    SELECT distinct #columns#
+    FROM imports i 
+    JOIN occurrences o on o.import_guid = i.import_guid
+      AND o.id in
+      (
+        select id
+        FROM occurrences o2
+        WHERE 
+        o2.import_guid = '#import_guid#'
+        ORDER BY o2.id DESC
+        LIMIT i.inserted
+      )
+    /* LEFT JOIN onto samples as samples not in same import_guid can be changed
+       and it is still ok to reverse the occurrence */
+    LEFT JOIN samples s
+      ON s.id = o.sample_id
+      AND s.import_guid = '#import_guid#'
+    WHERE 
+      i.import_guid = '#import_guid#'
+      AND 
+      (
+        o.updated_on != o.created_on
+        OR
+        s.updated_on != s.created_on
+      )
+  </query>
+  <params>
+    <param name="import_guid" display="Import GUID" datatype="text" />
+  </params>
+  <columns>
+    <column name="id" sql="s.id" datatype="integer" />
+  </columns>
+</report>
