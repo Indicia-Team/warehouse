@@ -12,3 +12,6 @@ ALTER TABLE imports
 ADD COLUMN reversible
 BOOLEAN default TRUE;
 COMMENT ON COLUMN samples.import_guid IS 'FALSE if reverse is not permitted (such as if import has already been reversed).';
+
+UPDATE imports
+SET reversible=TRUE;
