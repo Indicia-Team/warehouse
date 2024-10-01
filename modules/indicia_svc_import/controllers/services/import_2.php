@@ -648,7 +648,7 @@ SQL;
     $occurrencesSQL = <<<SQL
     UPDATE occurrences o1
     SET deleted=true,
-    updated_on=date_trunc('second', CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    updated_on=now(),
     updated_by_id=$warehouseUserId
     FROM occurrences o2
     JOIN imports i on i.import_guid = o2.import_guid
@@ -761,7 +761,7 @@ SQL;
     $samplesSQL = <<<SQL
       UPDATE samples s1
       SET deleted=true, 
-      updated_on=date_trunc('second', CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+      updated_on=now(),
       updated_by_id=$warehouseUserId
       FROM samples as s2
       LEFT JOIN occurrences o 
@@ -852,7 +852,7 @@ SQL;
     isn't shown to the user as reversible in the future. */
     $cleanupSql = <<<SQL
     insert into work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-    select 'task_cache_builder_attrs_sample', 'sample', id, 100, 2, date_trunc('second', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+    select 'task_cache_builder_update', 'sample', id, 100, 2, now()
     from samples 
     where import_guid = '$guidToReverse'
     AND ID NOT IN
@@ -861,7 +861,7 @@ SQL;
     WHERE entity = 'sample');
     
     insert into indicia.work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-    select 'task_cache_builder_attrs_occurrence', 'occurrence', id, 100, 2, date_trunc('second', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+    select 'task_cache_builder_update', 'occurrence', id, 100, 2, now()
     from occurrences 
     where import_guid = '$guidToReverse'
     AND ID NOT IN
