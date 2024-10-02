@@ -34,7 +34,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ImportDate;
  */
 class FirstRowReadFilter implements IReadFilter {
 
-  public function readCell($column, $row, $worksheetName = '') {
+  public function readCell($columnAddress, $row, $worksheetName = ''): bool {
     return $row == 1;
   }
 
@@ -67,7 +67,7 @@ class RangeReadFilter implements IReadFilter {
   /**
    * Limit range of rows.
    */
-  public function readCell($column, $row, $worksheetName = '') {
+  public function readCell($columnAddress, $row, $worksheetName = ''): bool {
     return $row >= $this->offset && $row < $this->offset + $this->limit;
   }
 
