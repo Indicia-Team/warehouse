@@ -11,7 +11,7 @@
     JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
       AND cttlany.id in (#taxa_taxon_list_id#)
     JOIN cache_taxa_taxon_lists cttlattrlink ON cttlattrlink.taxon_meaning_id=tr.restrict_to_taxon_meaning_id
-      AND cttlattrlink.preferred=true AND cttlattrlink.taxon_list_id=#master_checklist_id#
+      AND cttlattrlink.preferred=true
     LEFT JOIN occurrence_attribute_values av ON av.occurrence_attribute_id=a.id AND av.deleted=false
       AND av.occurrence_id in (#occurrence_id#)
     LEFT JOIN cache_termlists_terms t ON t.id=av.int_value AND a.data_type='L'
@@ -37,7 +37,6 @@
     <param name="survey_id" display="Survey ID" datatype="integer">
       <where>aw.restrict_to_survey_id=#survey_id#</where>
     </param>
-    <param name="master_checklist_id" display="Taxon list ID of the master checklist" datatype="integer" />
     <param name="taxa_taxon_list_id" display="Taxa taxon list ID or IDs" datatype="integer[]" />
     <param name="stage_termlists_term_ids" display="Life stage termlists term IDs" datatype="integer[]" default="">
       <join>LEFT JOIN cache_termlists_terms stage on stage.meaning_id=tr.restrict_to_stage_term_meaning_id</join>>
