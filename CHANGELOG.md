@@ -1,5 +1,21 @@
-# Version 9.4.0
+# Changelog
+
+Notable changes to the Indicia warehouse are documented here.
+
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## Version 9.4.2
+*2024-10-08*
+
+### Changes
+
+* Upgrade phpoffice/phpspreadsheet dependency to 3.3.
+* Upgrade firebase/php-jwt dependency to 6.10.
+
+## Version 9.4.0
 *2024-09-23*
+
+### Changes
 
 * Adds features to trigger reports that allow them to directly send emails, e.g. for replying to
   partially complete reports of Asian Hornets.
@@ -11,12 +27,9 @@
   * Defining if a group is contained by another group.
 * Update the `library/groups/find_group_by_url` report to include information about container and
   contained groups. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1678.
-* Bugfixes for the new bulk edit tool. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1673.
 * Updated download field formats to support sensitive record download requirements. See
   https://github.com/BiologicalRecordsCentre/iRecord/issues/1714 and the columns documentation at
   https://indicia-docs.readthedocs.io/en/latest/site-building/iform/helpers/elasticsearch-report-helper.html#elasticsearchreporthelper-datagrid.
-* Bugfix for the handling of the current common name when AddSynonym operations are processed by
-  the UKSI History processor. See https://github.com/Indicia-Team/warehouse/pull/522.
 * Update the `library/groups/group_list` report to include a full text search parameter and also so
   that setting the parameter `userFilterMode=joinable` excludes groups you are already a member of.
 * The Elasticsearch special field handler for "sitename" now supports additional options -
@@ -27,13 +40,19 @@
   distinguish them from records where there is no site name given. See
   https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
 
-# Version 9.3.0
+### Bugfixes
+
+* Bugfixes for the new bulk edit tool. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1673.
+* Bugfix for the handling of the current common name when AddSynonym operations are processed by
+  the UKSI History processor. See https://github.com/Indicia-Team/warehouse/pull/522.
+
+## Version 9.3.0
 *2024-08-19*
 
 * Adds `search_code` to parameters of Rest endpoint, `services/rest/taxa/search`
   and includes it in the response.
 
-# Version 9.2.0
+## Version 9.2.0
 *2024-06-17*
 
 * Adds support for plugins for the v2 importer - see
@@ -59,7 +78,7 @@
 * Fix Irish Grid ref SRID from 29901 to 29903.
 * Some PHP 8.2 compatibility fixes and other minor bugfixes.
 
-# Version 9.1.0
+## Version 9.1.0
 *2024-03-29*
 
 * Groups (e.g. activities or projects) can be indexed against locations, making it easier to
@@ -72,7 +91,7 @@
   to allow discovering the groups whose boundaries intersect a location.
 * The `/services/rest/groups` end-point is now sorted by group title.
 
-# Version 9.0.0
+## Version 9.0.0
 *2024-03-26*
 
 See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade process.
@@ -102,7 +121,7 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
     - Logstash pipelines are configured to populate the indexes.
     - Kibana can be used to explore the indexes.
 
-# Version 8.26.0
+## Version 8.26.0
 *2024-02-19*
 
 * Adds REST API support for groups (recording groups, sometimes called activities or projects).
@@ -110,7 +129,7 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
   list of recording sites for groups. More information at /index.php/services/rest on the warehouse
   installation.
 
-# Version 8.25.0
+## Version 8.25.0
 *2024-02-15*
 
 * Adds a staging URLS option to website configuration, allowing additional websites used for
@@ -118,7 +137,7 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
 * Fixes a bug causing the index_groups_locations table to be populated with a full list of
   locations that intersect a group's area of interest rather than just indexed ones.
 
-# Version 8.24.0
+## Version 8.24.0
 *2024-01-11*
 
 * Slight improvement to the algorithm for sorting taxa in taxon search results.
@@ -141,7 +160,7 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
 * Bugfixes to handling of non-standard UTF8 characters in the warehouse UI forms.
 * Bugfixes for PHP 8.2.
 
-# Version 8.23.0
+## Version 8.23.0
 *2023-09-20*
 
 * Fixes for PHP 8.1 & 8.2 (8.2 requires further testing).
@@ -170,18 +189,18 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
 * Modify reports used for verification comments to clarify difference between determinations and
   comments.
 
-# Version 8.22.0
+## Version 8.22.0
 *2023-08-03*
 
 * Adds a special field handler for Elasticsearch data that supports a coalesce function, returning
   the value of the first field that has a non-empty value, selected from a list of provided fields.
 
-# Version 8.21.0
+## Version 8.21.0
 *2023-06-28*
 
 * Allow termlists_term_attribute_value submissions from websites.
 
-# Version 8.20.0
+## Version 8.20.0
 *2023-06-16*
 
 * New image organiser warehouse module for restructuring the upload folder into sub-folders based
@@ -189,13 +208,13 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
 * Queued images added via the REST API are now automatically placed in the new sub-folder image
   structure.
 
-# Version 8.19.0
+## Version 8.19.0
 *2023-05-04*
 
 * New process checker warehouse module to ensure that records missing spatial indexing get
   picked up.
 
-# Version 8.18.0
+## Version 8.18.0
 *2023-04-27*
 
 * New module for automatic verification rule checks for phenology of records by biogeographic
@@ -206,14 +225,14 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
   https://github.com/BiologicalRecordsCentre/iRecord/issues/1445/.
 * Fixes for PHP 8.2 (experimental).
 
-# Version 8.17.0
+## Version 8.17.0
 *2023-03-30*
 
 * Adds organism_key to the cache_taxa_taxon_lists and cache_taxon_searchterms tables to provide
   a more reliable option for filtering species lists when taxonomy is dynamic. See
   https://github.com/BiologicalRecordsCentre/NPMS/issues/268.
 
-# Version 8.16.0
+## Version 8.16.0
 *2023-03-17*
 
 * Changed menu item "Admin -> Website agreements" to "Admin -> Website data sharing agreements".
@@ -234,12 +253,12 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
 * The verification API now supports applying a verification decision to all records within a parent
   sample of the same taxon in one step. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1274.
 
-# Version 8.15.0
+## Version 8.15.0
 *2023-01-24*
 
 * Adds import_guid field to list of fields extracted to Elasticsearch for an occurrrence document.
 
-# Version 8.14.0
+## Version 8.14.0
 *2023-01-20*
 
 * Permissions changes relating to the ability to use the importer to import records into a
@@ -249,7 +268,7 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
   See https://github.com/BiologicalRecordsCentre/iRecord/issues/674.
 * Improves search performance for taxon groups in the filter builder tool.
 
-# Version 8.13.0
+## Version 8.13.0
 *2023-01-13*
 
 * Improved support for PHP 8.1, though it is not yet fully tested.
@@ -279,14 +298,14 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
   file names being generated.
 * Changed detail_occurrences view to allow verifier information to be displayed on species grid.
 
-# Version 8.12.0
+## Version 8.12.0
 *2022-10-25*
 
 * Moves the taxon search form into the core warehouse code.
 * Enhances the taxon search form to allow search by taxon name and external key (TVK) as well as
   organism key.
 
-# Version 8.11.0
+## Version 8.11.0
 *2022-10-24*
 
 * Adds `taxon_rank` field to the `cache_taxon_searchterms` table, allowing taxon search controls to
@@ -295,20 +314,20 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
   to the client when there are duplicate possible taxon name matches. This allows the client to
   display a user interface for the user to choose the correct taxon to match.
 
-# Version 8.10.0
+## Version 8.10.0
 *2022-10-19*
 
 * Adds new fields for term code and description of terms in lookup lists.
 * Implements changes required for PHP 8.1 but not yet fully tested.
 
-# Version 8.9.0
+## Version 8.9.0
 *2022-10-03*
 
 * Adds missing Comments tab to UI for locations.
 * Database & API changes to add a reply_to_id so that comments can refer to the comment they reply
   to.
 
-# Version 8.8.0
+## Version 8.8.0
 *2022-09-22*
 
 * Adds a location_comments table.
@@ -316,26 +335,26 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
   review data.
 * Updates the occurrences edit form sensitivity control so that all precision levels are supported.
 
-# Version 8.7.0
+## Version 8.7.0
 *2022-09-11*
 
 * Adds reports which support the record, sample and location details pages to allow a single
   attribute value to be output in a block (rather than a data list of all attribute values).
 
-# Version 8.6.0
+## Version 8.6.0
 *2022-09-09"
 
 * Support for new output_formatting option in reports for details pages (occurrences, samples,
   locations) with auto-formatting of hyperlinks for text attribute data.
 * Improvements to the REST API's auto-generated documentation.
 
-# Version 8.5.0
+## Version 8.5.0
 *2022-09-09*
 
 * Adds a new standard filter parameter for filtering occurrences by sample ID (smp_id).
 * Adds reports required to support a new recording_system_links Drupal module.
 
-# Version 8.4.0
+## Version 8.4.0
 *2022-08-10*
 
 * Change to authorisation so that user ID in authorisation token takes precedence over user ID in
@@ -345,19 +364,19 @@ See the [Version 9 upgrade notes](UPGRADE-v9.md) for notes on the upgrade proces
   set to web root.
 * Support for configuration templates for the v2 importer.
 * Adds website_id to the data captured in the imports table (v2 importer).
-# Version 8.3.0
+## Version 8.3.0
 *2022-07-13*
 
 Scheduled tasks called from the command-line can now have the `tasks` parameter set from the
 command-line. Previously this parameter was only available when called from a browser URL via a
 query parameter.
 
-# Version 8.2.0
+## Version 8.2.0
 *2022-06-29*
 
 * Supports anonymisation of data for deleted user accounts.
 
-# Version 8.1.0
+## Version 8.1.0
 *2022-05-17*
 
 * Adds range of record IDs to the report which lists a user's imports.
@@ -366,13 +385,13 @@ query parameter.
 * Removes an unused field groups.published.
 * Docker image includes correct URL for GBIF backbone taxonomy.
 * Fix to verbose responses in REST API, with support for attributes across multiple records.
-# Version 8.0.0
+## Version 8.0.0
 *2022-04-29*
 
 * Support for authenticating on the REST API using anonymous JWT tokens for posting anonymous
   records.
 
-# Version 7.2.0
+## Version 7.2.0
 *2022-04-28*
 
 * ORM extension plugins can now declare table entities that are accessed directly using the
@@ -384,12 +403,12 @@ query parameter.
   of image classification.
 * Project specific reports removed.
 
-# Version 7.1.0
+## Version 7.1.0
 *2022-03-10*
 
 * Add an alternative user_id parameter to the user_users_websites_list report, as user_id fires
   some code automatically that we don't always want fired.
-# Version 7.0.0
+## Version 7.0.0
 *2021-03-08*
 
 * The data model includes tables that allow capturing of information on the results of using
@@ -410,7 +429,7 @@ query parameter.
 * Fixes a missing samples check in the cache builder code.
 * Improves escaping of text values displayed in custom attribute fields.
 
-# Version 6.12.0
+## Version 6.12.0
 *2021-12-02*
 
 * Import of sample and media file licences by licence code field supported.
@@ -421,23 +440,23 @@ query parameter.
   (~) where even less precise references are being displayed.
 
 
-# Version 6.11.0
+## Version 6.11.0
 *2021-11-23*
 
 * Minor feature release to support hierarchical termlist usage in complex_attr_grid control.
 * Support for multi-value attribute editing on the warehouse.
 
-# Version 6.10.0
+## Version 6.10.0
 *2021-11-08*
 
 * Minor feature release to add reports required for AJAX loading of species checklists.
 
-# Version 6.9.0
+## Version 6.9.0
 *2021-10-15*
 
 * Configurable precision for latitude and longitude fields extracted from Elasticsearch.
 
-# Version 6.8.0
+## Version 6.8.0
 *2021-10-11*
 
 * Bugfixes.
@@ -445,28 +464,28 @@ query parameter.
   the needs of the recording scheme.
 * Update taxon associations module tests to new PHPUnit version.
 
-# Version 6.7.0
+## Version 6.7.0
 *2021-09-30*
 
 * Allow Users to be searched using an autocomplete when linking users to a location.
 
-# Version 6.6.0
+## Version 6.6.0
 *2021-09-28*
 
 * Added language_iso column to the taxon_list report. This is needed when using this report
   to drive a species_autocomplete, it does not work without this information.
-# Version 6.5.0
+## Version 6.5.0
 *2021-09-25*
 
 * Adds cache_occurrences_functional.private field to reflect site privacy status.
 * Updates the extraction to Elasticsearch to include additional privacy metadata.
 
-# Version 6.4.0
+## Version 6.4.0
 *2021-09-24*
 
 * Occurrence Elasticsearch extraction updated to include sample (event) media.
 
-# Version 6.3.0
+## Version 6.3.0
 *2021-09-21*
 
 * Support for Elasticsearch indexes which contain samples as documents (including empty samples).
@@ -503,13 +522,13 @@ query parameter.
   sync-annotations API format.
 * Bug fixes.
 
-## Deprecation notice
+### Deprecation notice
 
 * The previously provided taxon-observations and annotations end-points in the REST API (which were
   based on the defunct NBN Gateway Exchange Format) are now deprecated and may be removed in a
   future version.
 
-# Version 6.2.0
+## Version 6.2.0
 *2021-08-02*
 
 * Support for life stages in period-within-year verification rules
@@ -520,13 +539,13 @@ query parameter.
 * Updates to unit test harness.
 * Allow dependencies to be maintained with Composer.
 
-# Version 6.1.0
+## Version 6.1.0
 *2021-07-27*
 
 * Reporting updates to support the sample details page when showing parent/child samples, e.g.
   transect walks.
 
-# Version 6.0.0
+## Version 6.0.0
 *2021-05-14*
 
 * Addition of a script for Docker support (work in progress).
@@ -555,12 +574,12 @@ query parameter.
   the configured master list (e.g. UKSI).
 * Mime type support for *.zc (Zerocrossing) files.
 
-# Version 5.1.0
+## Version 5.1.0
 *2021-03-22*
 
 * Adds reports to support a new sample_details prebuilt form.
 
-# Version 5.0.0
+## Version 5.0.0
 *2021-02-28*
 
 * Dropped support for oAuth2 password authentication as no longer recommended in the oAuth 2.0
@@ -574,7 +593,7 @@ query parameter.
   request.
 * Adds occurrence custom attribute system functions for behaviour and reproductive_condition.
 
-# Version 4.12.0
+## Version 4.12.0
 *2021-02-12*
 
 * Submitting a location record now supports the following metadata field values:
@@ -591,7 +610,7 @@ query parameter.
   automatic application of appropriate website sharing permissions. This reduces the need to
   create multiple Elasticsearch aliases to control website sharing.
 
-# Version 4.11.0
+## Version 4.11.0
 *2021-01-19*
 
 * New UKSI operations warehouse module which accepts a log of taxonomic updates in the same format
@@ -607,7 +626,7 @@ query parameter.
 * Improvements to Elasticsearch download column templates, e.g. for better MapMate export support.
 * Option to skip overwrite of verified records in the Rest API sync module (e.g. for iNaturalist
   synchronisation), see https://github.com/BiologicalRecordsCentre/iRecord/issues/972.
-# Version 4.10.0
+## Version 4.10.0
 *2020-12-17*
 
 * New uksi_operations module allows update logs for UKSI to be directly imported, with support for
@@ -624,7 +643,7 @@ query parameter.
 * Elasticsearch downloads now support automatic inclusion of custom attributes for a survey.
 * Fix for importing anonymous records into Recorder 6 using Indicia2Recorder.
 
-# Version 4.5.0
+## Version 4.5.0
 *2020-09-16*
 
 * Bugfix for saving an occurrence via the warehouse UI.
@@ -634,7 +653,7 @@ query parameter.
 * Several bugfixes relating to RESTful API behaviour.
 * Support for creating DINTY tetrad references from server-side database code (e.g. in reports).
 
-# Version 4.4.0
+## Version 4.4.0
 *2020-08-21*
 
 * The training flag can now be applied to samples, not just occurrences.
@@ -652,7 +671,7 @@ query parameter.
   then a matching file will be copied from the media queue if it exists and linked to the
   submission.
 
-# Version 4.3.0
+## Version 4.3.0
 
 * Adds `taxon_id` and `search_code` to cache_taxa_taxon_lists.
 * Performance improvements by removing joins that are no longer necessary.
@@ -660,7 +679,7 @@ query parameter.
 * Fixes validation of float attribute values so that negative numbers with zero
   at end of numbers after decimal point are not rejected.
 
-# Version 4.2.0
+## Version 4.2.0
 *2020-08-03*
 
 * Attributes display additional info for termlists in lookup to help disambiguate similar names.
@@ -668,7 +687,7 @@ query parameter.
 * Support for a new easy-download format in Elasticsearch downloads.
 * Summariser module integration with work queue.
 
-# Version 4.1.0
+## Version 4.1.0
 *2020-06-22*
 
 *Important info for Elasticsearch users*
@@ -716,7 +735,7 @@ POST /<index name>/_update_by_query
 * Adds location and parent location codes to the Elasticsearch extraction reports.
 * Adds parent sample attributes to the Elasticsearch extraction reports.
 
-# Version 4.0.0
+## Version 4.0.0
 *2020-05-20*
 
 Major version update due to breaking changes in the Elasticsearch REST API:
@@ -728,7 +747,7 @@ Major version update due to breaking changes in the Elasticsearch REST API:
 
 * PHP minimum version supported now 5.6.
 
-# Version 3.4.0
+## Version 3.4.0
 *2020-05-04*
 
 * Ability to import into the `locations` table whilst referencing the
@@ -739,7 +758,7 @@ Major version update due to breaking changes in the Elasticsearch REST API:
   `entered_sref` and `entered_sref_system` fields are not required in the
   import data as they can be extracted from the location.
 
-# Version 3.3.0
+## Version 3.3.0
 *2020-04-16*
 
 * Reduced likelihood that emails sent by scheduled tasks are detected as spam:
@@ -763,13 +782,13 @@ Major version update due to breaking changes in the Elasticsearch REST API:
 * Fixes to CSV formatting when extracting CSV data from Elasticsearch.
 * Bug fixes for upgrades from very old warehouse installations.
 
-# Version 3.2.0
+## Version 3.2.0
 *2020-03-29*
 
 * Report `reports/library/locations/locations_list_from_search_location.xml`
   allows multiple location_type_ids to be selected.
 
-# Version 3.1.0
+## Version 3.1.0
 *2020-01-15*
 
 * Support for Swedish reference systems, EPSG:3006 and EPSG:3021.
@@ -782,7 +801,7 @@ Major version update due to breaking changes in the Elasticsearch REST API:
 * Changes to Elasticsearch record details report to support alterations to the layout of
   this control.
 
-# Version 3.0.0
+## Version 3.0.0
 *2019-12-03*
 
 Note that the major version increment reflects the fact that the following
@@ -814,7 +833,7 @@ those which use the experimental Elasticsearch client code.
   performance impact.
 * Installation guide updated for recent PostgreSQL/PostGIS versions.
 
-# Version 2.37.0
+## Version 2.37.0
 *2019-11-07*
 
 * Fixes a bug when saving a new survey.
@@ -822,7 +841,7 @@ those which use the experimental Elasticsearch client code.
 * Support for attribute values in Elasticsearch data downloads.
 * Minor updates to UKBMS downloads.
 
-# Version 2.36.0
+## Version 2.36.0
 *2019-10-25*
 
 * UI added so that survey datasets will be able to define the taxonomic branches which
@@ -831,7 +850,7 @@ those which use the experimental Elasticsearch client code.
 * Elasticsearch extractions include basic taxonomic info even for taxa who are not on one of the
   officially configured lists.
 
-# Version 2.35.0
+## Version 2.35.0
 *2019-10-03*
 
 * Improved memory consumption when requesting large amounts of data from Data
@@ -840,7 +859,7 @@ those which use the experimental Elasticsearch client code.
   the event of an error such as a query timeout. See
   https://github.com/BiologicalRecordsCentre/iRecord/issues/477.
 
-# Version 2.34.0
+## Version 2.34.0
 *2019-10-01*
 
 * Identification difficulty flags now always raised for benefit of verifiers,
@@ -850,7 +869,7 @@ those which use the experimental Elasticsearch client code.
 * Removed inadvertant required flag on person title field in edit form.
 * Tweaks to UKBMS summary builder calculation optimisations.
 
-# Version 2.33.0
+## Version 2.33.0
 *2019-09-30*
 
 * Higher geography Elasticsearch download fixed.
@@ -859,32 +878,32 @@ those which use the experimental Elasticsearch client code.
 * Fixes relating to Elasticsearch scroll mode (pagination) not applying column
   settings.
 
-# Version 2.32.0
+## Version 2.32.0
 *2019-09-03*
 
 * Support for loading dynamic attributes for multiple occurrences in one go (required for species checklist). See
   https://github.com/BiologicalRecordsCentre/iRecord/issues/637.
 * Fixes a bug in the Swift mailer class loader which was being too eager on some setups, causing file not found errors.
 
-# Version 2.31.0
+## Version 2.31.0
 *2019-08-29*
 
 * Refactor of the Summary Builder module to use the work_queue for greater efficiency.
 
-# Version 2.30.0
+## Version 2.30.0
 *2019-08-28*
 
 * REST API Elasticsearch CSV downloads now support flexible download column templates.
 * When importing against existing taxa, can now match against "Species list and taxon search code".
 
-# Version 2.29.0
+## Version 2.29.0
 *2019-08-04*
 
 * Taxon search API now allows exclusion of taxa or taxon names via options exclude_taxon_meaning_id,
   exclude_taxa_taxon_list_id and exclude_preferred_taxa_taxon_list_id.
 * Taxon search API now supports option commonNames=defaults, meaning that non-default common names will be excluded.
 
-# Version 2.28.0
+## Version 2.28.0
 *2019-07-01*
 
 * Set option `do_not_send` to false in `application/config/email.php` to prevent server from attempting to send
@@ -907,32 +926,32 @@ those which use the experimental Elasticsearch client code.
   the last submission to provide defaults for the next submission (e.g. to obtain a default for habitat and altitude)
   (https://github.com/BiologicalRecordsCentre/iRecord/issues/321).
 
-# Version 2.27.0
+## Version 2.27.0
 *2019-05-29*
 
 * Elasticsearch extraction reports include map squares data and verification decision source.
 * Correct CC licence codes (e.g. CC-BY-AT becomes CC BY-AT).
 
-# Version 2.26.0
+## Version 2.26.0
 *2019-05-13*
 
 * Adds sensitivity precision control to occurrence edit form.
 * Data services views for custom attributes include the unit field in the response.
 * Spatial services buffer function allows the projection code and number of segments to be passed as parameters.
 
-# Version 2.25.0
+## Version 2.25.0
 *2019-05-03*
 
 * Fixes re-use of previous location related sample data from a site when adding a new sample so that more than one
   value can be copied over.
 * Fixes an error when auto_log_determinations is off and a record is redetermined.
 
-# Version 2.22.0
+## Version 2.22.0
 *2019-04-22*
 
 * Updates views for taxon designation data to support new tools for editing taxon designations.
 
-# Version 2.21.0
+## Version 2.21.0
 *2019-04-17*
 
 * Updates the fields available when doing CSV download from Elasticsearch.
@@ -942,7 +961,7 @@ those which use the experimental Elasticsearch client code.
 * A report providing a hierarchical view of a termlist, used for editing trait
   data in the Pantheon system.
 
-# Version 2.20.0
+## Version 2.20.0
 *2019-04-15*
 
 * Data services submission format now allows fkField to override the name of the key linked to a foreign key when
@@ -953,20 +972,20 @@ those which use the experimental Elasticsearch client code.
   in a given projection, ideal for use on Leaflet maps.
 * New report, `reports/library/taxa/taxon_list.xml`, provides a simple list of taxon names and associated data.
 
-# Version 2.19.0
+## Version 2.19.0
 *2019-04-08*
 
 * Adds support for categorisation of scratchpad lists via new scratchpad_type_id field
   and associated termlist.
 
-# Version 2.18.0
+## Version 2.18.0
 *2019-04-04*
 
 * Request_logging module can now capture additional types of events to track performance
   of save events, imports, verification and taxon searches. See the provided example
   config file under modules/request_logging/config.
 
-# Version 2.17.0
+## Version 2.17.0
 *2019-04-03*
 
 * Fixes required to run on PHP 7.3 (not yet fully tested).
@@ -980,13 +999,13 @@ those which use the experimental Elasticsearch client code.
 * New report for scratchpad list species external keys - can be used to drive sensitive
   record suggestions on a client entry form.
 
-# Version 2.16.0
+## Version 2.16.0
 *2019-03-20*
 
 * Changes required to allow tracked correspondance to appear on client where appropriate.
 * ES searches which contain {} are no longer broken by converting to [].
 
-# Version 2.15.0
+## Version 2.15.0
 *2019-03-19*
 
 * email.notification_subject and email.notification_intro can both be
@@ -998,7 +1017,7 @@ those which use the experimental Elasticsearch client code.
 * Record data for verification uses recorder email rather than inputter email
   where available, so record queries go to the correct location.
 
-# Version 2.14.0
+## Version 2.14.0
 
 * Spatial index builder supports automatic inclusion of location parents in the index,
   improving performance in the background tasks where layers are hierarchical since only
@@ -1006,31 +1025,31 @@ those which use the experimental Elasticsearch client code.
 * Autofeed reports in the REST API support tracking updates by a date field where the
   cache_occurrences_functional.tracking field is not available.
 
-# Version 2.13.0
+## Version 2.13.0
 *2019-03-09*
 
 * Filters list report loaded onto report pages - improved performance.
 * New list_verify web service for verifying against a list of IDs.
 
-# Version 2.12.0
+## Version 2.12.0
 *2019-03-07*
 
 * Fixes importing of constituent date fields into occurrences (#318).
 * Installation process fixed in some environments (#317).
 * Elasticsearch proxy in REST API and scrolling support for large downloads.
 
-# Version 2.11.0
+## Version 2.11.0
 *2019-02-26*
 
 * CSV files generated for download using the REST API and the Elasticsearch scroll API
   are now zipped.
 
-# Version 2.10.0
+## Version 2.10.0
 *2019-02-22*
 
 * Adds support for importing locations using TM65 Irish Grid projection.
 
-# Version 2.9.0
+## Version 2.9.0
 *2019-02-22*
 
 * Adds a download folder to warehouse for temporary generated download files.
@@ -1040,13 +1059,13 @@ those which use the experimental Elasticsearch client code.
 * Improvements to Elasticsearch document format.
 * Updates to reports for Splash.
 
-# Version 2.8.0
+## Version 2.8.0
 *2019-02-15*
 
 * Elasticsearch output reports now include custom attributes data.
 * Fixes a syntax error in spatial indexing SQL statements.
 
-# Version 2.7.0
+## Version 2.7.0
 *2019-02-13*
 
 * Saving a record slightly faster, because ap square updates are done in a single update
@@ -1068,7 +1087,7 @@ those which use the experimental Elasticsearch client code.
 * Fixes a problem in the update kit with a missing class file
   (https://github.com/Indicia-Team/warehouse/issues/315)
 
-# Version 2.6.0
+## Version 2.6.0
 *2019-02-07*
 
 * New indexed_location_type_list standard parameter for reports. Allows
@@ -1079,14 +1098,14 @@ those which use the experimental Elasticsearch client code.
   location_ids field in the cache. This makes it easier to pass changes through
   to feeds such as Elasticsearch.
 
-# Version 2.5.0
+## Version 2.5.0
 *2019-02-05*
 
-## Database schema changes
+### Database schema changes
 
 * Terms.term field is now unlimited length.
 
-## Other changes
+### Other changes
 
 * Fixes a bug saving attribute values that contain ranges.
 * Fixes a bug where an existing deleted attribute value prevented others from
@@ -1103,7 +1122,7 @@ those which use the experimental Elasticsearch client code.
 * Elasticsearch population reports updated (better performance and document
   structure, restricted access where appropriate).
 
-# Version 2.4.0
+## Version 2.4.0
 *2019-01-21*
 
 * Support for proxy requests to an Elasticsearch cluster, with authentication &
@@ -1112,10 +1131,10 @@ those which use the experimental Elasticsearch client code.
   https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/README.md.
 
 
-# Version 2.3.0
+## Version 2.3.0
 *2019-01-09*
 
-## Database schema changes
+### Database schema changes
 
 * Add the following cache fields:
   * cache_occurrences_functional.verification_checks_enabled
@@ -1127,23 +1146,23 @@ those which use the experimental Elasticsearch client code.
   sample is not linked to any indexed locations rather than null, allowing
   records not yet indexed to be identifiable.
 
-# Version 2.2.0
+## Version 2.2.0
 *2018-12-19*
 
 * Enable use of a scratchpad list of species as a standard filter parameter.
 
-# Version 2.1.0
+## Version 2.1.0
 *2018-12-18*
 
 * Enable import of occurrences where the taxon is identified using a known
   taxa_taxon_list_id.
 
-# Version 2.0.0
+## Version 2.0.0
 *2018-12-14*
 
 Please see [upgrading to version 2.0.0](UPGRADE-v2.md).
 
-## Warehouse user interface changes
+### Warehouse user interface changes
 
 * Warehouse client helper and media code libraries updated to use jQuery 3.2.1
   and jQuery UI 1.12.
@@ -1152,13 +1171,13 @@ Please see [upgrading to version 2.0.0](UPGRADE-v2.md).
 * Warehouse home page now has additional help for getting started and diagnosing
   problems.
 
-## Back-end changes
+### Back-end changes
 
 * Support for PostgreSQL version 10.
 * Support for PHP 7.2.
 * Support for prioritised load aware background task scheduling via a work queue module.
 
-## Database schema changes
+### Database schema changes
 
 * Removed the following:
   * index_locations_samples table
@@ -1190,7 +1209,7 @@ Please see [upgrading to version 2.0.0](UPGRADE-v2.md).
   linked to a taxon. They can then be included on a recording form only when entering a
   taxon that is, or is a descendant of, the linked taxon.
 
-## Report updates
+### Report updates
 
 * Updated reports which used the location_id_* fields to output a location for a record
   to now update a list of overlapping locations rather than being limited to a single
