@@ -2626,7 +2626,7 @@ SQL;
     // Allow for minor clock sync problems.
     JWT\JWT::$leeway = 60;
     try {
-      JWT\JWT::decode($token, $publicKey, ['RS256']);
+      JWT\JWT::decode($token, new JWT\Key($publicKey, 'RS256'));
     }
     catch (JWT\SignatureInvalidException $e) {
       kohana::log('debug', 'Token decode failed');
