@@ -4,6 +4,21 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.5.0
+*2024-10-08*
+
+### Changes
+
+* The scheduled tasks process will now skip any attempts to run if there is a previous attempt
+  which is still running that has the same configuration. This prevents multiple processes running
+  simultaneously and competing for resources. See https://github.com/Indicia-Team/warehouse/issues/527.
+
+### Bugfixes
+
+* The page for quick replies to record comments that is linked to by verification query emails is
+  now fixed - previously there was an error causing a blank page. See
+  https://github.com/Indicia-Team/warehouse/issues/526.
+
 ## Version 9.4.2
 *2024-10-08*
 
