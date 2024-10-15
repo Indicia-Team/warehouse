@@ -45,6 +45,8 @@ class Scheduled_Tasks_Controller extends Controller {
    */
   private Database $db;
 
+  private $lock;
+
   /**
    * Main entry point for scheduled tasks.
    *
@@ -57,78 +59,129 @@ class Scheduled_Tasks_Controller extends Controller {
    * then everything is run.
    */
   public function index() {
-    $tm = microtime(TRUE);
-    $this->db = new Database();
-    $system = new System_Model();
-    $allNonPluginTasks = ['notifications', 'work_queue'];
-    // Allow tasks to be specified on command line or URL parameter.
-    global $argv;
-    $args = [];
-    if ($argv) {
-      parse_str(implode('&', array_slice($argv, 1)), $args);
-    }
-    $tasks = $_GET['tasks'] ?? $args['tasks'] ?? NULL;
-    if ($tasks !== NULL) {
-      $requestedTasks = explode(',', $tasks);
-      $scheduledPlugins = array_diff($requestedTasks, $allNonPluginTasks);
-      $nonPluginTasks = array_intersect($allNonPluginTasks, $requestedTasks);
-    }
-    else {
-      $nonPluginTasks = $allNonPluginTasks;
-      $scheduledPlugins = ['all_modules'];
-    }
-    // Grab the time before we start, so there is no chance of a record coming
-    // in while we run that is missed.
-    $currentTime = time();
-    if (in_array('notifications', $nonPluginTasks)) {
-      $this->lastRunDate = $system->getLastScheduledTaskCheck();
-      $this->checkTriggers();
-      $tmtask = microtime(TRUE) - $tm;
-      if ($tmtask > 5) {
-        self::msg("Triggers & notifications scheduled task took $tmtask seconds.", 'alert');
+    $this->lock();
+    try {
+      $tm = microtime(TRUE);
+      $this->db = new Database();
+      $system = new System_Model();
+      $allNonPluginTasks = ['notifications', 'work_queue'];
+      // Allow tasks to be specified on command line or URL parameter.
+      global $argv;
+      $args = [];
+      if ($argv) {
+        parse_str(implode('&', array_slice($argv, 1)), $args);
       }
-      if (class_exists('request_logging')) {
-        request_logging::log('a', 'scheduled_tasks', NULL, 'triggers_notifications', 0, 0, $tm, $this->db);
-      }
-    }
-    if ($scheduledPlugins) {
-      $this->runScheduledPlugins($system, $scheduledPlugins);
-    }
-    if (in_array('notifications', $nonPluginTasks)) {
-      $email_config = Kohana::config('email');
-      if (array_key_exists('do_not_send', $email_config) and $email_config['do_not_send']) {
-        kohana::log('info', "Email configured for do_not_send: ignoring notifications from scheduled tasks");
+      $tasks = $_GET['tasks'] ?? $args['tasks'] ?? NULL;
+      if ($tasks !== NULL) {
+        $requestedTasks = explode(',', $tasks);
+        $scheduledPlugins = array_diff($requestedTasks, $allNonPluginTasks);
+        $nonPluginTasks = array_intersect($allNonPluginTasks, $requestedTasks);
       }
       else {
-        $swift = email::connect();
-        $this->doRecordOwnerNotifications($swift);
-        $this->doNotificationDigestEmailsForTriggers($swift);
+        $nonPluginTasks = $allNonPluginTasks;
+        $scheduledPlugins = ['all_modules'];
       }
-      // The value of the last_scheduled_task_check on the Indicia system entry
-      // is used to mark the last time notifications were handled, so we can
-      // process new notification info next time notifications are handled.
-      $this->db->update('system', ['last_scheduled_task_check' => "'" . date('c', $currentTime) . "'"], ['id' => 1]);
-    }
-    if (in_array('work_queue', $nonPluginTasks)) {
-      $timeAtStart = microtime(TRUE);
-      $queue = new WorkQueue();
-      $queue->process($this->db);
-      $timeTaken = microtime(TRUE) - $timeAtStart;
-      if ($timeTaken > 10) {
-        self::msg("Work queue processing took $timeTaken seconds.", 'alert');
+      // Grab the time before we start, so there is no chance of a record coming
+      // in while we run that is missed.
+      $currentTime = time();
+      if (in_array('notifications', $nonPluginTasks)) {
+        $this->lastRunDate = $system->getLastScheduledTaskCheck();
+        $this->checkTriggers();
+        $tmtask = microtime(TRUE) - $tm;
+        if ($tmtask > 5) {
+          self::msg("Triggers & notifications scheduled task took $tmtask seconds.", 'alert');
+        }
+        if (class_exists('request_logging')) {
+          request_logging::log('a', 'scheduled_tasks', NULL, 'triggers_notifications', 0, 0, $tm, $this->db);
+        }
       }
-      if (class_exists('request_logging')) {
-        request_logging::log('a', 'scheduled_tasks', NULL, 'work_queue', 0, 0, $timeAtStart, $this->db);
+      if ($scheduledPlugins) {
+        $this->runScheduledPlugins($system, $scheduledPlugins);
+      }
+      if (in_array('notifications', $nonPluginTasks)) {
+        $email_config = Kohana::config('email');
+        if (array_key_exists('do_not_send', $email_config) and $email_config['do_not_send']) {
+          kohana::log('info', "Email configured for do_not_send: ignoring notifications from scheduled tasks");
+        }
+        else {
+          $swift = email::connect();
+          $this->doRecordOwnerNotifications($swift);
+          $this->doNotificationDigestEmailsForTriggers($swift);
+        }
+        // The value of the last_scheduled_task_check on the Indicia system entry
+        // is used to mark the last time notifications were handled, so we can
+        // process new notification info next time notifications are handled.
+        $this->db->update('system', ['last_scheduled_task_check' => "'" . date('c', $currentTime) . "'"], ['id' => 1]);
+      }
+      if (in_array('work_queue', $nonPluginTasks)) {
+        $timeAtStart = microtime(TRUE);
+        $queue = new WorkQueue();
+        $queue->process($this->db);
+        $timeTaken = microtime(TRUE) - $timeAtStart;
+        if ($timeTaken > 10) {
+          self::msg("Work queue processing took $timeTaken seconds.", 'alert');
+        }
+        if (class_exists('request_logging')) {
+          request_logging::log('a', 'scheduled_tasks', NULL, 'work_queue', 0, 0, $timeAtStart, $this->db);
+        }
+      }
+      self::msg("Ok!");
+      $tm = microtime(TRUE) - $tm;
+      if ($tm > 30) {
+        self::msg(
+          "Scheduled tasks for " . implode(', ', array_merge($nonPluginTasks, $scheduledPlugins)) . " took $tm seconds.",
+          'alert'
+        );
       }
     }
-    self::msg("Ok!");
-    $tm = microtime(TRUE) - $tm;
-    if ($tm > 30) {
-      self::msg(
-        "Scheduled tasks for " . implode(', ', array_merge($nonPluginTasks, $scheduledPlugins)) . " took $tm seconds.",
-        'alert'
-      );
+    finally {
+      $this->unlock();
     }
+  }
+
+  /**
+   * Build a suitable filename for the lock file.
+   *
+   * Different configurations of the scheduled tasks call (specified by query
+   * string or command line parameters) have their own separate locking, so
+   * you can run work_queue alongside other tasks for example.
+   *
+   * @return string
+   *   A filename which includes a hash of the parameters, so that it is
+   *   unique to this configuration of the scheduled tasks.
+   */
+  private function getLockFilename() {
+    global $argv;
+    if (isset($argv)) {
+      parse_str(implode('&', array_slice($argv, 1)), $params);
+    }
+    else {
+      $params = $_GET;
+    }
+    return DOCROOT . 'application/cache/scheduled-tasks.lock-' . md5(http_build_query($params)) . '.lock';
+  }
+
+  /**
+   * Grab a file lock if possible.
+   *
+   * Will fail if another process is already running the same configuration of
+   * scheduled tasks.
+   */
+  private function lock() {
+    $this->lock = fopen($this->getLockFilename(), 'w+');
+    if (!flock($this->lock, LOCK_EX | LOCK_NB)) {
+      kohana::log('alert', 'Scheduled tasks attempt aborted as already running.');
+      die("\nScheduled tasks attempt aborted as already running.\n");
+    }
+    fwrite($this->lock, 'Got a lock: ' . var_export($_GET, TRUE));
+  }
+
+  /**
+   * Release and clean up the lock file.
+   */
+  private function unlock() {
+    fclose($this->lock);
+    unlink($this->getLockFilename());
   }
 
   /**
