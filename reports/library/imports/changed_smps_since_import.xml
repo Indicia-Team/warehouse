@@ -1,0 +1,48 @@
+<report
+    title="Changed samples since import"
+    description="List of samples that have changed since import was made."
+>
+  <query>
+    SELECT distinct #columns#
+    FROM imports i 
+    JOIN samples s ON
+      s.import_guid = i.import_guid
+      AND s.deleted=false
+    LEFT JOIN occurrences o on
+      o.sample_id = s.id
+      AND o.import_guid = i.import_guid
+      AND o.deleted=false
+      AND o.id in
+      (
+        select id
+        FROM occurrences o2
+        WHERE 
+        o2.import_guid = '#import_guid#'
+        ORDER BY o2.id DESC
+        LIMIT i.inserted
+      )
+    LEFT JOIN occurrences o3 on 
+      o3.sample_id = s.id
+      AND (o3.import_guid != i.import_guid OR o3.import_guid IS NULL)
+      AND o3.deleted = false
+    WHERE 
+      i.import_guid = '#import_guid#'
+      AND 
+      (
+        s.updated_on != s.created_on
+        OR
+        /* Are inserted occurrences changed? */
+        o.updated_on != o.created_on
+        OR
+        /* Any occurrences added to the imported sample which are not part of the import
+           are considered a change */
+        o3.id IS NOT NULL
+      )
+  </query>
+  <params>
+    <param name="import_guid" display="Import GUID" datatype="text" />
+  </params>
+  <columns>
+    <column name="id" sql="s.id" datatype="integer" />
+  </columns>
+</report>

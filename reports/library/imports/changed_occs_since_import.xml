@@ -1,0 +1,37 @@
+<report
+    title="Changed occurrences since import"
+    description="List of occurrences that have changed since import was made."
+>
+  <query>
+    SELECT distinct #columns#
+    FROM imports i 
+    JOIN occurrences o on 
+      o.import_guid = i.import_guid
+      AND o.updated_on != o.created_on
+      AND o.deleted = false
+      /* We can't easily tell difference between inserted occurrences that are updated,
+      and updated occurrences that are updated again.
+      As we are only going to be reversing the former, we need a way of detecting if only these have changed. 
+      We can do this by getting the most recent occurrences for the import limited by the imports
+      table inserted value, this will exclude updated occurrences that are updated a second time.
+      Note that this method would not work if the user did further imports that affected these inserted rows,
+      however we exclude imports like that from the reverser's import select drop-down in another report */
+      AND o.id in
+      (
+        select id
+        FROM occurrences o2
+        WHERE 
+        o2.import_guid = '#import_guid#'
+        ORDER BY o2.id DESC
+        LIMIT i.inserted
+      )
+    WHERE 
+      i.import_guid = '#import_guid#'
+  </query>
+  <params>
+    <param name="import_guid" display="Import GUID" datatype="text" />
+  </params>
+  <columns>
+    <column name="id" sql="o.id" datatype="integer" />
+  </columns>
+</report>
