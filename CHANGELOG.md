@@ -4,6 +4,15 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.6.0
+*2024-10-30*
+
+### Changes
+
+* Adds fields describing the linked location supplied by the recorder when resolving a record that
+  intersects 2 or more higher geography boundaries (e.g. Vice Counties). See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1741.
+
 ## Version 9.5.0
 *2024-10-08*
 

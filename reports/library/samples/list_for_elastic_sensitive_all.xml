@@ -47,7 +47,10 @@
     JOIN samples smp ON smp.id=s.id
     JOIN occurrence_stats os ON os.sample_id=s.id
     JOIN cache_samples_nonfunctional snf ON snf.id=s.id
-    LEFT JOIN locations l ON l.id=smp.location_id AND l.deleted=false;
+    LEFT JOIN locations l ON l.id=smp.location_id AND l.deleted=false
+    -- Recorder supplied higher geography locations
+    LEFT JOIN locations shg ON shg.id=snf.attr_linked_location_id AND shg.deleted=false
+    LEFT JOIN cache_termlists_terms shgt on shgt.id=shg.location_type_id;
 
     UPDATE output_rows o
     SET recorded_parent_location_id = lp.id,
@@ -165,6 +168,10 @@
     <column name="recorded_parent_location_id" sql="null::integer" datatype="integer" />
     <column name="recorded_parent_location_name" sql="null::text" datatype="text" />
     <column name="recorded_parent_location_code" sql="null::text" datatype="text" />
+    <column name="supplied_higher_geography_id" sql="shg.id" datatype="integer" />
+    <column name="supplied_higher_geography_name" sql="shg.name" datatype="text" />
+    <column name="supplied_higher_geography_code" sql="shg.code" datatype="text" />
+    <column name="supplied_higher_geography_type" sql="shgt.term" datatype="text" />
     <column name="indexed_location_ids" sql="array_to_string(s.location_ids, ',')" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
