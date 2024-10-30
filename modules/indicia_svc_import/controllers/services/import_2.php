@@ -549,6 +549,413 @@ SQL;
   }
 
   /**
+   * Allow reversal of imports.
+   *
+   * At time of writing, only supports occurrence imports
+   * (and samples related to the occurrences)
+   */
+  public function importreverse() {
+    $db = new Database();
+    if (!empty($_POST['warehouse_user_id'])) {
+      $warehouseUserId = $_POST['warehouse_user_id'];
+    }
+    else {
+      echo '<p><em>Unable to reverse import, as your user ID was not supplied to the import reverser.<br>
+      Is your user account correctly attached to the Warehouse?</em></p>';
+      return FALSE;
+    }
+    $guidToReverse = $_POST['guid_to_reverse'];
+    if (!empty($_POST['reverse_mode'])) {
+      $reverseMode = $_POST['reverse_mode'];
+    }
+    else {
+      $reverseMode = 'normal';
+    }
+    /* Reverse occurrences first, otherwise the auto cascade from the sample
+    deletions will make it harder to inform the user of which exact occurrence rows
+    have been reversed */
+    $updatedOccurrences = self::reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode);
+    // Also get rows not reversed, so they can be reported to the user.
+    $untouchedOccurrences = self::getUntouchedOccurrences($db, $guidToReverse, $updatedOccurrences);
+    // Same for samples.
+    $updatedSamples = self::reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode);
+    $untouchedSamples = self::getUntouchedSamples($db, $guidToReverse, $updatedSamples);
+
+    $importTableSql = <<<SQL
+    update imports
+    set reversible = false
+    where import_guid = '$guidToReverse';
+    SQL;
+
+    $db->query($importTableSql);
+
+    // Create the files users will download when reversal is complete.
+    if (!empty($updatedOccurrences)) {
+      self::createReversalDetailsFile('occurrence', $updatedOccurrences, $guidToReverse, 'reversed');
+    }
+    if (!empty($untouchedOccurrences)) {
+      self::createReversalDetailsFile('occurrence', $untouchedOccurrences, $guidToReverse, 'untouched');
+    }
+    if (!empty($updatedSamples)) {
+      self::createReversalDetailsFile('sample', $updatedSamples, $guidToReverse, 'reversed');
+    }
+    if (!empty($untouchedSamples)) {
+      self::createReversalDetailsFile('sample', $untouchedSamples, $guidToReverse, 'untouched');
+    }
+    echo '<hr>';
+    if (empty($updatedSamples)) {
+      echo '<p><h3>No samples were reversed.</h3></p>' .
+      '<p><em>This may happen if none of the samples you imported exist in the database anymore.<br>' .
+      'This may also happen if you only selected to reverse unaltered data and ' .
+      'no unaltered samples were found.</em></p>';
+    }
+    if (!empty($updatedSamples)) {
+      echo '<p><h3>Imported samples were reversed.</h3></p>' .
+      '<p>Details of reversed samples are <a href="' . url::base() . 'upload/reversed_import_rows_samples_' . $guidToReverse . '.csv' . '">here</a></p>';
+    }
+    if (!empty($untouchedSamples)) {
+      echo '<p>Details of samples not reversed are <a href="' . url::base() . 'upload/untouched_import_rows_samples_' . $guidToReverse . '.csv' . '">here</a></p>';
+      echo "<small><em>Samples that were removed from the database " .
+      "before today's reversal will not be shown in the untouched samples download file.</em></small><br><br>";
+    }
+    if (empty($updatedOccurrences)) {
+      echo '<p><h3>No occurrences were reversed.</h3></p>' .
+      '<p><em>This may happen if none of the occurrences you imported exist in the database anymore.<br>' .
+      'This may also happen if you only selected to reverse unaltered data and ' .
+      'no unaltered occurrences were found.</em></p>';
+    }
+    if (!empty($updatedOccurrences)) {
+      echo '<p><h3>Imported occurrences were reversed.</h3></p>' .
+      '<p>Details of reversed occurrences are <a href="' . url::base() . 'upload/reversed_import_rows_occurrences_' . $guidToReverse . '.csv' . '">here</a></p>';
+    }
+    if (!empty($untouchedOccurrences)) {
+      echo '<p>Details of occurrences not reversed are <a href="' . url::base() . 'upload/untouched_import_rows_occurrences_' . $guidToReverse . '.csv' . '">here</a></p>';
+      echo "<small><em>Occurrences that were removed from the database " .
+      "before today's reversal will not be shown in the untouched occurrences download file.</em></small><br><br>";
+    }
+    echo '<br><hr>';
+  }
+
+  /**
+   * Reverse occurrences.
+   *
+   * @param object $db
+   *   Database object.
+   * @param string $guidToReverse
+   *   Import unique identifier to reverse.
+   * @param int $warehouseUserId
+   *   Warehouse User ID of the person doing the reversal.
+   * @param string $reverseMode
+   *   Reverse all occurrences or ones that haven't been changed since import.
+   *
+   * @return array
+   *   Rows of reversed occurrences.
+   */
+  private function reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode) {
+    $occurrencesUpdateSQL = <<<SQL
+    UPDATE occurrences o_update
+    SET deleted=true,
+    updated_on=now(),
+    updated_by_id=$warehouseUserId
+    FROM occurrences o\n
+    SQL;
+
+    $cacheOccsFunctionalDeletionSQL = <<<SQL
+    Delete 
+    FROM cache_occurrences_functional
+    WHERE id in (
+    SELECT o.id
+    FROM occurrences o\n
+    SQL;
+
+    $cacheOccsNonFunctionalDeletionSQL = <<<SQL
+    Delete 
+    FROM cache_occurrences_nonfunctional
+    WHERE id in (
+    SELECT o.id
+    FROM occurrences o\n
+    SQL;
+
+    $occurrencesJoinSQL = <<<SQL
+    JOIN imports i on i.import_guid = o.import_guid
+      AND i.import_guid = '$guidToReverse'
+    /* Left Join to samples, as  we don't care if occurrences are attached to a 
+       a sample that isn't part of import and that has been changed. */
+    LEFT JOIN samples s
+      ON s.id = o.sample_id
+      AND s.import_guid = i.import_guid
+      AND s.deleted=false
+    WHERE 
+    o.import_guid = '$guidToReverse'
+    /* We can't easily tell difference between inserted occurrences that are updated,
+    and updated occurrences that are updated again. As we are only going to be reversing the former
+    (even in "reverse regardless of changes" mode), we need a way to only include these. 
+    We can do this by getting the most recent occurrences for the import, limited by the imports
+    table inserted value, this will exclude updated occurrences that are updated a second time.
+    Note that this method would not work if the user did further imports that affected these inserted rows,
+    however we already exclude imports like this from the reverser's import select drop-down */
+    AND o.id in (
+      select id
+      FROM occurrences o2
+      WHERE 
+        o2.import_guid = '$guidToReverse'
+      ORDER BY o2.id DESC
+      LIMIT i.inserted
+    )\n
+    SQL;
+
+    $cacheOccsFunctionalDeletionSQL .= $occurrencesJoinSQL;
+    $cacheOccsNonFunctionalDeletionSQL .= $occurrencesJoinSQL;
+    // The main occurrences SQL is slightly different as doesn't use "in"
+    // clause, so needs a bit of extra SQL.
+    $occurrencesUpdateSQL .= $occurrencesJoinSQL .
+    "AND o.id = o_update.id AND o.deleted=false\n";
+
+    /* Only update occurrences where the created_on date/time is the same
+    and the sample from that same import hasn't been updated either. */
+    if (!empty($reverseMode) && $reverseMode == 'do_not_reverse_updated') {
+      $occurrencesNoChangesSQL = <<<SQL
+      AND (s.id IS NULL OR s.created_on = s.updated_on)
+      AND o.created_on = o.updated_on\n
+      SQL;
+
+      $cacheOccsFunctionalDeletionSQL .= $occurrencesNoChangesSQL;
+      $cacheOccsNonFunctionalDeletionSQL .= $occurrencesNoChangesSQL;
+      $occurrencesUpdateSQL .= $occurrencesNoChangesSQL;
+    }
+    // Return the updated rows (in similar way as a select statement would)
+    // Can't use "RETURNING *" as that includes columns from the joins
+    // and messes up result (e.g the ID comes out wrong as both the occurence
+    // and import tables have it).
+    $occurrencesUpdateSQL .= <<<SQL
+    RETURNING o.id, o.sample_id, o.determiner_id, o.confidential, o.created_on, o.created_by_id,
+    o.website_id, o.external_key, o.comment, o.taxa_taxon_list_id, o.record_status, o.verified_by_id,
+    o.verified_on, o.zero_abundance, o.last_verification_check_date, o.training, o.sensitivity_precision,
+    o.release_status, o.record_substatus, o.record_decision_source, o.import_guid
+    SQL;
+    // These first two statements need a closing bracket,
+    // as they use an "in" clause.
+    $db->query($cacheOccsFunctionalDeletionSQL . ')');
+    $db->query($cacheOccsNonFunctionalDeletionSQL . ')');
+    $updatedOccurrences = $db->query($occurrencesUpdateSQL)->result_array();
+
+    return $updatedOccurrences;
+  }
+
+  /**
+   * Get occurrences which weren't reversed.
+   *
+   * @param object $db
+   *   Database object.
+   * @param string $guidToReverse
+   *   Import unique identifier to reverse.
+   * @param string $updatedOccurrences
+   *   Array of occurrences that have been reversed.
+   *
+   * @return array
+   *   Array of occurrences that have not been reversed.
+   */
+  private function getUntouchedOccurrences($db, $guidToReverse, $updatedOccurrences) {
+    $updatedOccurrenceIds = [];
+    // Get the occurrence ids only, so we can use in_array later.
+    foreach ($updatedOccurrences as $updatedOccurrenceRow) {
+      $updatedOccurrenceIds[] = $updatedOccurrenceRow->id;
+    }
+    // Get all occurrences for the import.
+    $untouchedOccurrencesSQL = <<<SQL
+    SELECT *
+    FROM occurrences o
+    WHERE o.import_guid = '$guidToReverse'
+    AND o.deleted=false\n
+    SQL;
+
+    $untouchedOccsFromAllOccs = $db->query($untouchedOccurrencesSQL)->result_array();
+    // Go through all occurrences for the import.
+    foreach ($untouchedOccsFromAllOccs as $idx => $importOcc) {
+      /* Is the occurrence id one that has been reversed.
+      If it has been reversed, we know that it shouldn't be in the untouched
+      occurrences array */
+      if (in_array($importOcc->id, $updatedOccurrenceIds)) {
+        unset($untouchedOccsFromAllOccs[$idx]);
+      }
+    }
+    return $untouchedOccsFromAllOccs;
+  }
+
+  /**
+   * Reverse samples.
+   *
+   * @param object $db
+   *   Database object.
+   * @param string $guidToReverse
+   *   Import unique identifier to reverse.
+   * @param int $warehouseUserId
+   *   Warehouse User ID of the person doing the reversal.
+   * @param string $reverseMode
+   *   Reverse all samples or ones that haven't been changed since import.
+   *
+   * @return array
+   *   Rows of reversed samples.
+   */
+  private function reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode) {
+    $samplesUpdateSQL = <<<SQL
+    UPDATE samples s_update
+    SET deleted=true, 
+    updated_on=now(),
+    updated_by_id=$warehouseUserId
+    FROM samples as s\n
+    SQL;
+
+    $cacheSmpsFunctionalDeletionSQL = <<<SQL
+    Delete 
+    FROM cache_samples_functional
+    where id in (
+    SELECT s.id
+    FROM samples s\n
+    SQL;
+
+    $cacheSmpsNonFunctionalDeletionSQL = <<<SQL
+    Delete 
+    FROM cache_samples_nonfunctional
+    where id in (
+    SELECT s.id
+    FROM samples s\n
+    SQL;
+
+    $samplesJoinSQL = <<<SQL
+    LEFT JOIN occurrences o 
+      ON o.sample_id = s.id
+      AND o.deleted=false
+    WHERE 
+      s.import_guid = '$guidToReverse'
+      /* Don't delete a sample if still contains occurrences after occurrence processing */
+      AND o.id IS NULL
+      AND s.deleted=false\n
+    SQL;
+
+    $cacheSmpsFunctionalDeletionSQL .= $samplesJoinSQL;
+    $cacheSmpsNonFunctionalDeletionSQL .= $samplesJoinSQL;
+    // The main occurrences SQL is slightly different as doesn't use "in"
+    // clause, so needs a bit of extra SQL.
+    $samplesUpdateSQL .= $samplesJoinSQL .
+    "AND s.id = s_update.id\n";
+
+    if (!empty($reverseMode) && $reverseMode == 'do_not_reverse_updated') {
+      $samplesNoChangesSQL = <<<SQL
+        AND s.created_on = s.updated_on\n
+      SQL;
+
+      $cacheSmpsFunctionalDeletionSQL .= $samplesNoChangesSQL;
+      $cacheSmpsNonFunctionalDeletionSQL .= $samplesNoChangesSQL;
+      $samplesUpdateSQL .= $samplesNoChangesSQL;
+    }
+    // Return the updated rows (in similar way as a select statement would)
+    // Can't use "RETURNING *" as that includes columns from the joins
+    // and messes up result (e.g the ID comes out wrong as both the sample
+    // and import tables have it).
+    $samplesUpdateSQL .= <<<SQL
+    RETURNING s.id, s.survey_id, s.location_id,s.date_start,s.date_end,s.date_type,
+    s.entered_sref, s.entered_sref_system, s.location_name, s.created_on,
+    s.created_by_id, s.comment, s.external_key, s.sample_method_id, s.recorder_names, 
+    s.parent_id, s.input_form, s.group_id, s.privacy_precision, s.record_status,
+    s.verified_by_id, s.verified_on, s.licence_id,s.training, s.import_guid
+    SQL;
+    // These first two statements need a closing bracket,
+    // as they use an "in" clause.
+    $db->query($cacheSmpsFunctionalDeletionSQL . ')');
+    $db->query($cacheSmpsNonFunctionalDeletionSQL . ')');
+    $updatedSamples = $db->query($samplesUpdateSQL)->result_array();
+
+    return $updatedSamples;
+  }
+
+  /**
+   * Get samples which weren't reversed.
+   *
+   * @param object $db
+   *   Database object.
+   * @param string $guidToReverse
+   *   Import unique identifier to reverse.
+   * @param string $updatedSamples
+   *   Array of samples that have been reversed.
+   *
+   * @return array
+   *   Array of samples that have not been reversed.
+   */
+  private function getUntouchedSamples($db, $guidToReverse, $updatedSamples) {
+    $updatedSampleIds = [];
+    // Get ids only so we can use in_array.
+    foreach ($updatedSamples as $updatedSampleRow) {
+      $updatedSampleIds[] = $updatedSampleRow->id;
+    }
+    // Get all samples for the import.
+    $untouchedSamplesSQL = <<<SQL
+    SELECT *
+    FROM samples s
+    WHERE s.import_guid = '$guidToReverse'
+    AND s.deleted=false\n
+    SQL;
+    $untouchedSmpsFromAllSmps = $db->query($untouchedSamplesSQL)->result_array();
+    // Go through all samples for the import.
+    foreach ($untouchedSmpsFromAllSmps as $idx => $importSmp) {
+      /* Is the sample id one that has been reversed.
+      If it has been reversed, we know that it shouldn't be in the untouched
+      samples array */
+      if (in_array($importSmp->id, $updatedSampleIds)) {
+        unset($untouchedSmpsFromAllSmps[$idx]);
+      }
+    }
+    return $untouchedSmpsFromAllSmps;
+  }
+
+  /**
+   * Create a file containing rows related to the reversal.
+   *
+   * @param string $entity
+   *   Include the type of data in the file name.
+   * @param array $rowsToProcess
+   *   Rows to put in the file.
+   * @param string $guidToReverse
+   *   Unique identifier of the import to put in the file name.
+   * @param string $type
+   *   Reversed row, or untouched row. Used in filename.
+   */
+  private function createReversalDetailsFile($entity, array $rowsToProcess, $guidToReverse, $type) {
+    if (!empty($rowsToProcess)) {
+      if ($type === 'reversed') {
+        $fp = fopen($_SERVER['DOCUMENT_ROOT'] . "/upload/reversed_import_rows_" . $entity . "s_$guidToReverse.csv","wb");
+      }
+      else {
+        $fp = fopen($_SERVER['DOCUMENT_ROOT'] . "/upload/untouched_import_rows_" . $entity . "s_$guidToReverse.csv","wb");
+      }
+      // Create header row using the key from first row in array.
+      $headerString = '';
+      foreach ($rowsToProcess[0] as $header => $value) {
+        $headerString = $headerString . $header . ',';
+      }
+      // Get rid of comma which we don't want on end.
+      $headerString = rtrim($headerString, ',');
+      // Make sure new line is at end of header row.
+      $headerString = $headerString . "\r\n";
+      $dataRowsString = '';
+      // Now process the values from each row in the array.
+      for ($idx = 0; $idx < count($rowsToProcess); $idx++) {
+        // For each row, comma separate each value.
+        foreach ($rowsToProcess[$idx] as $value) {
+          $dataRowsString = $dataRowsString . $value . ',';
+        }
+        // Again, get rid of comma off end.
+        $dataRowsString = rtrim($dataRowsString, ',');
+        // Again, make sure new line is at end of data row.
+        $dataRowsString = $dataRowsString . "\r\n";
+      }
+      $completedFile = $headerString . $dataRowsString;
+      fwrite($fp, $completedFile);
+      fclose($fp);
+    }
+  }
+
+  /**
    * Preprocessing to check existing record updates limited to user's records.
    */
   private function checkRecordIdsOwnedByUser($fileName, array $config) {
@@ -884,7 +1291,12 @@ SQL;
               $this->saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
             }
             elseif (!$isPrecheck) {
-              $config['rowsInserted']++;
+              if (!empty($submission['occurrence:id'])) {
+                $config['rowsUpdated']++;
+              }
+              else {
+                $config['rowsInserted']++;
+              }
             }
             $config['rowsProcessed']++;
           }
@@ -1144,6 +1556,7 @@ SQL;
     $import->inserted = $config['rowsInserted'];
     $import->updated = $config['rowsUpdated'];
     $import->errors = $config['errorsCount'];
+    $import->reversible = TRUE;
     $import->mappings = json_encode($config['columns']);
     $import->global_values = json_encode($config['global-values']);
     if ($importInfo && !empty($importInfo->description)) {
