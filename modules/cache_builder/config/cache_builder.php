@@ -940,6 +940,7 @@ SET website_id=su.website_id,
   group_id=coalesce(s.group_id, sp.group_id),
   record_status=s.record_status,
   training=s.training,
+  import_guid=s.import_guid,
   query=case
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
@@ -1170,7 +1171,7 @@ $config['samples']['insert']['functional'] = "
 INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
-            group_id, record_status, training, query, parent_sample_id, media_count, external_key,
+            group_id, record_status, training, import_guid, query, parent_sample_id, media_count, external_key,
             sensitive, private, hide_sample_as_private)
 SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE
@@ -1179,7 +1180,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
   END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, greatest(case s.privacy_precision when 0 then 10000 else s.privacy_precision end, (SELECT max(sensitivity_precision) FROM occurrences WHERE sample_id=s.id))),
   s.date_start, s.date_end, s.date_type, s.created_on, s.updated_on, s.verified_on, s.created_by_id,
-  coalesce(s.group_id, sp.group_id), s.record_status, s.training,
+  coalesce(s.group_id, sp.group_id), s.record_status, s.training, s.import_guid,
   case
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
