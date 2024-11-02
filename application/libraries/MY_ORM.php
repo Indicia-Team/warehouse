@@ -2725,7 +2725,6 @@ SQL;
               $wheres .= " AND (".$table . "." . $fieldTokens[0] . " = ".$saveArray[$superModelIDField . ':id'].")";
           }
           else {
-            $found = FALSE;
             foreach ($saveArray as $saveField => $saveValue) {
               $saveTokens = explode(':', $saveField);
               if (($prefix !== '' && $saveTokens[0] === $this->object_name . $assocSuffix) || ($prefix === '' && $saveTokens[0] !== $this->object_name . $assocSuffix)) {
@@ -2734,7 +2733,6 @@ SQL;
                   }
                   $correctedField = (substr($saveTokens[0], 0, 3) == 'fk_' ? substr($saveTokens[0], 3) . '_id' : $saveTokens[0]);
                   if ($fieldTokens[0] === $correctedField) {
-                      $found = TRUE;
                       if ($saveTokens[0] !== $correctedField) { // saveTokens points to fk_, whilst corrected points to _id
                           // This field is a fk_* field which contains the text caption of a record which we need to lookup.
                           // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
@@ -2787,9 +2785,6 @@ SQL;
                       }
                   }
               }
-            }
-            if (!$found) {
-                return FALSE;
             }
           }
       }
