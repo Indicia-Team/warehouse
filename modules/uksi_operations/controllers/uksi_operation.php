@@ -157,11 +157,14 @@ SQL;
    *   Sequence ID of operation this duplicates, or NULL if not.
    */
   private function operationIsDuplicate($operation) {
-    $marine = $operation->marine === TRUE ? 'true' : ($operation->marine === FALSE ? 'false' : '');
-    $terrestrial = $operation->terrestrial === TRUE ? 'true' : ($operation->terrestrial === FALSE ? 'false' : '');
-    $freshwater = $operation->freshwater === TRUE ? 'true' : ($operation->freshwater === FALSE ? 'false' : '');
-    $non_native = $operation->non_native === TRUE ? 'true' : ($operation->non_native === FALSE ? 'false' : '');
-    $redundant = $operation->redundant === TRUE ? 'true' : ($operation->redundant === FALSE ? 'false' : '');
+    // Array for converting bool shorthand to full version, to make SQL
+    // simpler.
+    $boolMap = ['t' => 'true', 'f' => 'false'];
+    $marine = $boolMap[$operation->marine] ?? '';
+    $terrestrial = $boolMap[$operation->terrestrial] ?? '';
+    $freshwater = $boolMap[$operation->freshwater] ?? '';
+    $non_native = $boolMap[$operation->non_native] ?? '';
+    $redundant = $boolMap[$operation->redundant] ?? '';
     $taxonName = pg_escape_literal($this->db->getLink(), $operation->taxon_name ?? '');
     $authority = pg_escape_literal($this->db->getLink(), $operation->authority ?? '');
     $attribute = pg_escape_literal($this->db->getLink(), $operation->attribute ?? '');
@@ -344,7 +347,7 @@ SQL;
           $ttl->parent_id = $parentId;
         }
         if ($redundantChanging) {
-          $ttl->allow_data_entry = $operation->redundant ? 'f' : 't';
+          $ttl->allow_data_entry = $operation->redundant === 't' ? 'f' : 't';
         }
         $ttl->set_metadata();
         $ttl->save();
