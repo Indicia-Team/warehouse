@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
@@ -127,11 +126,16 @@ class ORM extends ORM_Core {
   private $cache;
 
   /**
-   * Default behaviour on save is to update metadata. If we detect no changes we can skip this.
+   * Should metadata fields be updated?
+   *
+   * Default behaviour on save is to update metadata. If we detect no changes
+   * we can skip this.
    *
    * @var bool
    */
   public $wantToUpdateMetadata = TRUE;
+
+  private $metadataUpdateBubblesToParent = FALSE;
 
   /**
    * When submitting a parent with children, flag that the parent is changing.
@@ -1193,15 +1197,15 @@ SQL;
         if (array_key_exists($column, $vArray) &&
             !is_array($vArray[$column]) && !is_array($value) &&
             (string) $vArray[$column] === (string) $value) {
-          $exactMatches[] = $value;
+          $exactMatches[$column] = $value;
         }
       }
       // Allow for different ways of submitting bool. Don't want to trigger metadata updates if submitting 'on' instead of true
       // for example.
       foreach ($vArray as $key => $value) {
         if (isset($this->$key)
-            && (($this->$key === 't' && ($value === 'on' || $value === 1))
-            ||  ($this->$key === 'f' && ($value === 'off' || $value === 0)))) {
+            && (($this->$key === 't' && ($value === 'on' || $value === 1 || $value === '1'))
+            ||  ($this->$key === 'f' && ($value === 'off' || $value === 0 || $value === '0')))) {
           $exactMatches[$key] = $this->$key;
         }
       }

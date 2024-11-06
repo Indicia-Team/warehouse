@@ -28,10 +28,14 @@
 abstract class Attribute_Value_ORM extends ORM {
 
   /**
-   * Default behaviour on save is to update metadata. If we detect no changes we can skip this.
-   * @var boolean
+   * Should metadata fields be updated?
+   *
+   * Default behaviour on save is to update metadata. If we detect no changes
+   * we can skip this.
+   *
+   * @var bool
    */
-  public $wantToUpdateMetadata = true;
+  public $wantToUpdateMetadata = TRUE;
 
   /**
    * Set up attribute value record validation.
