@@ -184,11 +184,6 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       $triggerFields = [
         'parent_id',
         'taxon_meaning_id',
-        'external_key',
-        'search_code',
-        'organism_key',
-        'taxon_rank_id',
-        'taxon_group_id',
       ];
       foreach ($triggerFields as $triggerField) {
         if (isset($this->submission['fields'][$triggerField]) && isset($this->submission['fields'][$triggerField]['value'])) {
@@ -354,16 +349,39 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         $this->save();
       }
     }
-    // Add work queue tasks if occurrences will need an update.
-    if (!$isInsert && $this->updateAffectsOccurrenceCache) {
-      $addWorkQueueQuery = <<<SQL
-INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-VALUES('task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', $this->id, 100, 3, now())
-ON CONFLICT DO NOTHING;
-SQL;
-      $this->db->query($addWorkQueueQuery);
-    }
+    $this->updateOccurrencesCache($isInsert);
     return $result;
+  }
+
+  /**
+   * Trigger any necessary updates of cache_occurrences_* table data.
+   *
+   * @param bool $isInsert
+   *   TRUE for inserts, false for updates.
+   */
+  private function updateOccurrencesCache($isInsert) {
+    $addWorkQueueQuery = NULL;
+    if (in_array(MODPATH . 'cache_builder', Kohana::config('config.modules'))) {
+      // Preferred name inserts can affect other pre-existing names.
+      // Any update can affect the name, or other pre-existing names if
+      // preferred name being updated.
+      $updateRequired = ($isInsert && $this->preferred === 't') || (!$isInsert && $this->updateAffectsOccurrenceCache);
+      if ($updateRequired) {
+        // Only a preferred name update affects the other names for the taxon.
+        $namesFilter = $this->preferred === 't' ? "taxon_meaning_id=$this->taxon_meaning_id" : "id=$this->id";
+        $addWorkQueueQuery = <<<SQL
+          INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+          SELECT 'task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', id, 100, 3, now()
+          FROM taxa_taxon_lists
+          WHERE $namesFilter
+          -- Ignore other names unless pre-existing
+          AND (id=$this->id OR created_on<'$this->created_on')
+          AND deleted=false
+          ON CONFLICT DO NOTHING;
+        SQL;
+        $this->db->query($addWorkQueueQuery);
+      }
+    }
   }
 
   /**

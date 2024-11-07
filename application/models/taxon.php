@@ -113,8 +113,11 @@ class Taxon_Model extends ORM {
     // a taxonomy refresh.
     if ($this->id) {
       $keyFields = [
+        'taxon',
         'taxon_group_id',
         'external_key',
+        'search_code',
+        'organism_key',
         'taxon_rank_id',
         'marine_flag',
         'freshwater_flag',
@@ -130,6 +133,7 @@ class Taxon_Model extends ORM {
           }
           if ($updatedValueToCompare !== (string) $this->$keyField) {
             $this->updateAffectsOccurrenceCache = TRUE;
+            kohana::log('debug', "Taxon record change detected in $keyField from " . var_export($updatedValueToCompare, TRUE) . ' to ' . var_export((string) $this->$keyField, TRUE));
             break;
           }
         }
@@ -143,11 +147,18 @@ class Taxon_Model extends ORM {
   protected function postSubmit($isInsert) {
     if (!$isInsert && $this->updateAffectsOccurrenceCache) {
       foreach ($this->taxa_taxon_lists as $ttl) {
+        // Only a preferred name update affects the other names for the taxon.
+        $namesFilter = $ttl->preferred === 't' ? "taxon_meaning_id=$ttl->taxon_meaning_id" : "id=$ttl->id";
         $addWorkQueueQuery = <<<SQL
-INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
-VALUES('task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', $ttl->id, 100, 3, now())
-ON CONFLICT DO NOTHING;
-SQL;
+          INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+          SELECT 'task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', id, 100, 3, now()
+          FROM taxa_taxon_lists
+          WHERE $namesFilter
+          -- Ignore other names unless pre-existing
+          AND (id=$ttl->id OR created_on<'$ttl->created_on')
+          AND deleted=false
+          ON CONFLICT DO NOTHING;
+        SQL;
         $this->db->query($addWorkQueueQuery);
       }
     }
