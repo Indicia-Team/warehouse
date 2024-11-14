@@ -40,3 +40,13 @@ $config['survey_restrictions'] = [
   // Only build an index for surveys 25, 26 and 27 for local wildlife sites.
   'Local wildlife site' => [25, 26, 27],
 ];
+
+// The following config causes locations of type recording site added to
+// website ID 1 to be indexed against countries.
+$config['location_indexing'] = [
+  [
+    'location_type' => 'Recording site',
+    'website_id' => 1,
+    'higher_location_type' => 'Country',
+  ]
+];
