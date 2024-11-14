@@ -66,6 +66,12 @@ UPDATE cache_samples_functional u
 SET location_ids=array_remove(u.location_ids, l.record_id)
 FROM loclist l
 WHERE u.location_ids @> ARRAY[l.record_id];
+
+UPDATE locations u
+SET higher_location_ids=array_remove(u.higher_location_ids, l.record_id)
+FROM loclist l
+WHERE u.higher_location_ids @> ARRAY[l.record_id];
+
 SQL;
     $db->query($qry);
   }
