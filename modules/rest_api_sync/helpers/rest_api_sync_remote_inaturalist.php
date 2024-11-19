@@ -24,7 +24,7 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
-define('INAT_PAGE_SIZE', 100);
+define('INAT_PAGE_SIZE', 50);
 define('INAT_MAX_PAGES', 5);
 
 /**
@@ -241,6 +241,8 @@ QRY;
       };
       $lastId = $iNatRecord['id'];
     }
+    // Prevent memory accumulation if log not flushed.
+    kohana::log_save();
     variable::set("rest_api_sync_{$serverId}_last_id", $lastId);
     rest_api_sync_utils::log(
       'info',

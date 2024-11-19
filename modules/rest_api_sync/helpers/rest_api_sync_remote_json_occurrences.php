@@ -248,70 +248,100 @@ WHERE t.organism_key='$observation[organismKey]'
 AND t.deleted=false
 SQL;
     $isOdonataCheck = $db->query($sql)->current()->count > 0;
-
     if ($isOdonataCheck) {
       // Skip records already provided to BTO.
       $numericId = (integer) str_replace(['BTO', 'OBS'], '', $observation['id']);
       if ($numericId <= 290186151) {
         return FALSE;
       }
-      if (empty($observation['coordinateUncertaintyInMeters']) || $observation['coordinateUncertaintyInMeters'] > 500) {
-        // No coordinate uncertainty supplied, or it is > 500, so the
-        // coordinate is a site centroid. Therefore we can use a 1km square
-        // covering the point.
-        $info = self::getLocationSridAndWkt($db, $observation);
-        // Create a 1km square that contains the point.
-        if ($info->srid == 27700) {
-          $proposedInputGridRef = osgb::wkt_to_sref($info->wkt, 4);
-          $proposedInputSystem = 'OSGB';
-        }
-        elseif ($info->srid == 29903) {
-          $proposedInputGridRef = osie::wkt_to_sref($info->wkt, 4);
+      $hasPinpoint = FALSE;
+      if (!empty($record['record-level']['dynamicProperties']) && !empty($record['record-level']['dynamicProperties']['pinpoints'])) {
+        // Pinpoint provided so use the first pinpoint given.
+        $proposedInputGridRef = $record['record-level']['dynamicProperties']['pinpoints'][0]['gridref'];
+        if (preg_match('/^I?[A-Z]\d*[A-NP-Z]?$/', $proposedInputGridRef)) {
           $proposedInputSystem = 'OSI';
+          $proposedInputGridRef = preg_replace('/^I/', '', $proposedInputGridRef);
+          $hasPinpoint = TRUE;
         }
-        elseif ($info->srid == 23030) {
-          $proposedInputGridRef = utm30ed50::wkt_to_sref($info->wkt, 4);
-          $proposedInputSystem = 'utm30ed50';
+        elseif (preg_match('/^[A-Z][A-Z]\d*[A-NP-Z]?$/', $proposedInputGridRef)) {
+          $proposedInputSystem = 'OSGB';
+          $hasPinpoint = TRUE;
         }
-        $proposedLocationAccuracy = NULL;
-        $proposedBtoOriginalCoord = api_persist::formatLatLong($observation['north'], $observation['east']);
-        $proposedBtoCoordinateUncertainty = empty($observation['coordinateUncertaintyInMeters']) ? 'unknown' : $observation['coordinateUncertaintyInMeters'];
-        $proposedComment = 'Grid reference set to a 1km square covering the provided point.';
-        // 1km square accurracy for comparison with site grid ref.
-        $accuracyOfProposal = 500;
-      }
-      else {
-        // There is a coordinate uncertainty and it is <= 500 (i.e. 1km or
-        // better). In this instance we just set the input grid ref to the
-        // supplied point, allowing the standard processes to calculate the
-        // output grid ref as it will be 1km or better anyway.
-        $proposedInputGridRef = api_persist::formatLatLong($observation['north'], $observation['east']);
-        $proposedInputSystem = 'WGS84';
-        $proposedLocationAccuracy = $observation['coordinateUncertaintyInMeters'];
-        $proposedBtoOriginalCoord = NULL;
-        $proposedBtoCoordinateUncertainty = NULL;
-        $proposedComment = NULL;
-        // Given accurracy used for comparison with site grid ref.
-        $accuracyOfProposal = $proposedLocationAccuracy;
-      }
-      // If there is a site grid ref which has greater precision than the
-      // proposed input grid ref, use the site grid ref.
-      if (!empty($record['dynamicProperties']) && !empty($record['dynamicProperties']['siteGridRef'])
-          && preg_match('/^(?P<bigsquare>[A-Z][A-Z]?)(?P<square>\d*)(?P<suffix>[A-Z]?)$/', $record['dynamicProperties']['siteGridRef'], $gridRefParts)) {
-        $coordLen = strlen($gridRefParts['square']) / 2;
-        $sqSize = pow(10, 5 - $coordLen);
-        if ($coordLen === 1 && strlen($gridRefParts['dinty']) === 1) {
-          $sqSize /= 5;
-        }
-        $siteGridRefPrecision = $sqSize / 2;
-        if ($siteGridRefPrecision < $accuracyOfProposal) {
-          kohana::log('debug', 'Replacing with siteGridRef for better accuracy');
-          $proposedInputGridRef = $record['dynamicProperties']['siteGridRef'];
-          $proposedInputSystem = preg_match('/^[A-Z][A-Z]/', $proposedInputGridRef) ? 'OSGB' : 'OSI';
+        if ($hasPinpoint) {
           $proposedLocationAccuracy = NULL;
           $proposedBtoOriginalCoord = api_persist::formatLatLong($observation['north'], $observation['east']);
-          $proposedBtoCoordinateUncertainty = $observation['coordinateUncertaintyInMeters'];
-          $proposedComment = 'BTO site grid reference used.';
+          $proposedBtoCoordinateUncertainty = empty($observation['coordinateUncertaintyInMeters']) ? 'unknown' : $observation['coordinateUncertaintyInMeters'];
+          $proposedComment = 'First pinpoint grid reference used for record location.';
+        }
+      }
+      // If we failed to find a pinpoint, or it wasn't in a recognisable format
+      // then look at the site or record coordinates for the spatial info.
+      if (!$hasPinpoint) {
+        if (empty($observation['coordinateUncertaintyInMeters']) || $observation['coordinateUncertaintyInMeters'] > 500) {
+          // No coordinate uncertainty supplied, or it is > 500, so the
+          // coordinate is a site centroid. Therefore we can use a 1km square
+          // covering the point.
+          $info = self::getLocationSridAndWkt($db, $observation);
+          // Create a 1km square that contains the point.
+          if ($info->srid == 27700) {
+            $proposedInputGridRef = osgb::wkt_to_sref($info->wkt, 4);
+            $proposedInputSystem = 'OSGB';
+          }
+          elseif ($info->srid == 29903) {
+            $proposedInputGridRef = osie::wkt_to_sref($info->wkt, 4);
+            $proposedInputSystem = 'OSI';
+          }
+          elseif ($info->srid == 23030) {
+            $proposedInputGridRef = utm30ed50::wkt_to_sref($info->wkt, 4);
+            $proposedInputSystem = 'utm30ed50';
+          }
+          $proposedLocationAccuracy = NULL;
+          $proposedBtoOriginalCoord = api_persist::formatLatLong($observation['north'], $observation['east']);
+          $proposedBtoCoordinateUncertainty = empty($observation['coordinateUncertaintyInMeters']) ? 'unknown' : $observation['coordinateUncertaintyInMeters'];
+          $proposedComment = 'Grid reference set to a 1km square covering the provided point.';
+          // 1km square accurracy for comparison with site grid ref.
+          $accuracyOfProposal = 500;
+        }
+        else {
+          // There is a coordinate uncertainty and it is <= 500 (i.e. 1km or
+          // better). In this instance we just set the input grid ref to the
+          // supplied point, allowing the standard processes to calculate the
+          // output grid ref as it will be 1km or better anyway.
+          $proposedInputGridRef = api_persist::formatLatLong($observation['north'], $observation['east']);
+          $proposedInputSystem = 'WGS84';
+          $proposedLocationAccuracy = $observation['coordinateUncertaintyInMeters'];
+          $proposedBtoOriginalCoord = NULL;
+          $proposedBtoCoordinateUncertainty = NULL;
+          $proposedComment = NULL;
+          // Given accurracy used for comparison with site grid ref.
+          $accuracyOfProposal = $proposedLocationAccuracy;
+        }
+        // If there is a site grid ref which has greater precision than the
+        // proposed input grid ref, use the site grid ref, unless using a
+        // pinpoint.
+        if (!$hasPinpoint && !empty($record['record-level']['dynamicProperties']) && !empty($record['record-level']['dynamicProperties']['siteGridRef'])
+            && preg_match('/^(?P<bigsquare>[A-Z][A-Z]?)(?P<square>\d*)(?P<suffix>[A-Z]?)$/', $record['record-level']['dynamicProperties']['siteGridRef'], $gridRefParts)) {
+          $coordLen = strlen($gridRefParts['square']) / 2;
+          $sqSize = pow(10, 5 - $coordLen);
+          if ($coordLen === 1 && strlen($gridRefParts['dinty']) === 1) {
+            $sqSize /= 5;
+          }
+          $siteGridRefPrecision = $sqSize / 2;
+          if ($siteGridRefPrecision < $accuracyOfProposal) {
+            kohana::log('debug', 'Replacing with siteGridRef for better accuracy');
+            $proposedInputGridRef = $record['record-level']['dynamicProperties']['siteGridRef'];
+            $proposedInputSystem = preg_match('/^[A-Z][A-Z]/', $proposedInputGridRef) ? 'OSGB' : 'OSI';
+            $proposedLocationAccuracy = NULL;
+            $proposedBtoOriginalCoord = api_persist::formatLatLong($observation['north'], $observation['east']);
+            $proposedBtoCoordinateUncertainty = $observation['coordinateUncertaintyInMeters'];
+            $proposedComment = 'BTO site grid reference used.';
+          }
+        }
+        if ($hasPinpoint) {
+          echo '<pre>';
+          var_export($record); echo "\n";
+          var_export($observation); echo "\n";
+          echo '</pre>';
         }
       }
       // Set the values into the record to save.

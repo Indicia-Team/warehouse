@@ -81,7 +81,7 @@ class rest_api_sync_utils {
     $response = curl_exec($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     $curlErrno = curl_errno($session);
-    // Check fo r an error, or check if the http response was not OK.
+    // Check for an error, or check if the http response was not OK.
     if ($curlErrno || $httpCode != 200) {
       self::log('error', "Rest API Sync error $httpCode calling $url");
       self::log('error', "cUrl POST request failed. Status $httpCode.");
