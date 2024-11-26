@@ -1067,6 +1067,11 @@ class Import_Controller extends Service_Base_Controller {
     $join = "";
     $table = inflector::plural($modelName);
     $fields = json_decode($metadata['mappings']['lookupSelect' . $fieldPrefix]);
+    // Sometimes the mappings are returned as an object which causes array_map to fail.
+    // The simplest and safest solution is to always convert to array if object.
+    if (is_object($fields)) {
+      $fields = (array)$fields;
+    }
     $fields = array_map(
       function ($field) {
         return $field->fieldName;

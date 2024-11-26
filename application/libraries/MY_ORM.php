@@ -2691,6 +2691,7 @@ SQL;
    * where the filter field is not in the main table in a tidy way.
    */
   public function buildWhereFromSaveArray($saveArray, $fields, $wheres, &$join, $assocSuffix = "") {
+    $wheresUpdated = FALSE;
     $struct = $this->get_submission_structure();
     $table = inflector::plural($this->object_name);
     if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
@@ -2711,6 +2712,7 @@ SQL;
           if (!isset($saveArray[$field])) {
               return FALSE;
           }
+          $wheresUpdated = TRUE;
           if ($fieldTokens[0] === 'date') {
               $vd = vague_date::string_to_vague_date($saveArray[$field]);
               $wheres .= " AND (".$table . ".date_start = '".$vd[0]."')";
@@ -2726,6 +2728,7 @@ SQL;
           $superModelIDField = substr($fieldTokens[0], 0, -3); // cut off _id
           $ss = $this->get_submission_structure();
           if (isset($saveArray[$superModelIDField . ':id'])) {
+              $wheresUpdated = TRUE;
               $wheres .= " AND (".$table . "." . $fieldTokens[0] . " = ".$saveArray[$superModelIDField . ':id'].")";
           }
           else {
@@ -2737,6 +2740,7 @@ SQL;
                   }
                   $correctedField = (substr($saveTokens[0], 0, 3) == 'fk_' ? substr($saveTokens[0], 3) . '_id' : $saveTokens[0]);
                   if ($fieldTokens[0] === $correctedField) {
+                      $wheresUpdated = TRUE;
                       if ($saveTokens[0] !== $correctedField) { // saveTokens points to fk_, whilst corrected points to _id
                           // This field is a fk_* field which contains the text caption of a record which we need to lookup.
                           // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
@@ -2789,6 +2793,9 @@ SQL;
                       }
                   }
               }
+            }
+            if (!$wheresUpdated) {
+              return FALSE;
             }
           }
       }
