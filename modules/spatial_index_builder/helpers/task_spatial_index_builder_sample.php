@@ -56,6 +56,16 @@ class task_spatial_index_builder_sample {
     $locationTypeFilters = spatial_index_builder::getLocationTypeFilters($db);
     $linkedLocationAttrIds = spatial_index_builder::getLinkedLocationAttrIds($db);
     $qry = <<<SQL
+-- Delete entries which no longer require processing - normally a result of a
+-- deletion since the queue entry created.
+DELETE FROM work_queue q
+USING samples s
+WHERE s.id=q.record_id
+AND q.claimed_by='$procId'
+AND q.entity='sample'
+AND q.task='task_spatial_index_builder_sample'
+AND s.deleted=true;
+
 DROP TABLE IF EXISTS smplist;
 DROP TABLE IF EXISTS changed_samples;
 SELECT record_id INTO temporary smplist
