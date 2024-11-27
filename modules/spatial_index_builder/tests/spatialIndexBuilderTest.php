@@ -54,13 +54,13 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
       'location:public' => 't',
     ];
     $s = submission_builder::build_submission($array, ['model' => 'location']);
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a location did not return success response');
     $higherLocId1 = $r['success'];
     // Add an identical, but private location.
     $array['location:public'] = 'f';
     $s = submission_builder::build_submission($array, ['model' => 'location']);
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a location did not return success response');
     $higherLocId1Private = $r['success'];
     // Add another adjacent higher location.
@@ -73,7 +73,7 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
       'location:public' => 't',
     ];
     $s = submission_builder::build_submission($array, ['model' => 'location']);
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a location did not return success response');
     $higherLocId2 = $r['success'];
     // Add a location within the first higher location.
@@ -86,13 +86,13 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
       'locations_website:website_id' => 1,
     ];
     $s = submission_builder::build_submission($array, $structureWithWebsite);
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a location did not return success response');
     $lowerLoc1 = $r['success'];
     // Add an identical location, but in website 2 so not indexed.
     $array['locations_website:website_id'] = 2;
     $s = submission_builder::build_submission($array, $structureWithWebsite);
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a location did not return success response');
     $lowerLoc1InWebsite2 = $r['success'];
     // Add a location right on intersection of both higher locations
@@ -105,7 +105,7 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
       'locations_website:website_id' => 1,
     ];
     $s = submission_builder::build_submission($array, $structureWithWebsite);
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a location did not return success response');
     $lowerLoc2 = $r['success'];
     // Add a location outside both.
@@ -118,7 +118,7 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
       'locations_website:website_id' => 1,
     ];
     $s = submission_builder::build_submission($array, $structureWithWebsite);
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a location did not return success response');
     $lowerLoc3 = $r['success'];
     // Run work queue.
@@ -138,7 +138,7 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
       'location:boundary_geom' => 'POLYGON((-528788.38908314 6798902.4619449,-526342.40417835 6768327.6506351,-490875.62305897 6765881.6657303,-494544.60041614 6805017.4242069,-528788.38908314 6798902.4619449))',
     ];
     $s = submission_builder::build_submission($array, ['model' => 'location']);
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Updating to move a location did not return success response');
     // Alter higher location 2 so doesn't intersect location 2 but does
     // intersect location 3.
@@ -148,7 +148,7 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
       'location:boundary_geom' => 'POLYGON((-250665.09573483 6647404.2719048,-250817.96979139 6643735.2945476,-245620.25186872 6642970.9242649,-245314.50375562 6646334.153509,-250665.09573483 6647404.2719048))',
     ];
     $s = submission_builder::build_submission($array, ['model' => 'location']);
-    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Updating to move a location did not return success response');
     // Run work queue.
     $q->process(self::$db);
