@@ -2674,8 +2674,9 @@ SQL;
   }
 
   /**
-   * Build a sql query to fetch an existing record based on the contents of the save array.
-   * Loads a value according to the types defined by the column metadata.
+   * Build a sql query to fetch an existing record.
+   *
+   * Based on the contents of the save array.
    *
    * There are several possiblities:
    * The field list only refers to _id, not fk_
@@ -2695,103 +2696,113 @@ SQL;
     $struct = $this->get_submission_structure();
     $table = inflector::plural($this->object_name);
     if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
-        $join = "JOIN ".inflector::plural($this->object_name) . '_websites w ON (w.website_id = ' . $saveArray['website_id'] .
-            " AND w." .$this->object_name."_id = ".$table.".id) ";
-        $fields = array_diff( $fields, array('website_id') );
-    } else $join = "";
+      $join = 'JOIN ' . inflector::plural($this->object_name) . "_websites w ON (w.website_id = $saveArray[website_id] " .
+          " AND w.{$this->object_name}_id = $table.id) ";
+      $fields = array_diff( $fields, array('website_id') );
+    } else {
+      $join = "";
+    }
     foreach ($fields as $field) {
       $fieldTokens = explode(':',$field);
       $prefix = ($fieldTokens[0] === $this->object_name . $assocSuffix ? $this->object_name . $assocSuffix . ':' : '');
       if ($fieldTokens[0] === $this->object_name . $assocSuffix) {
         array_shift($fieldTokens);
-      } else if (count($fieldTokens) > 1) { // different table specified.
+      }
+      elseif (count($fieldTokens) > 1) { // different table specified.
         continue;
       }
 
       if (substr($fieldTokens[0], -3) !== '_id') {
           if (!isset($saveArray[$field])) {
-              return FALSE;
+            return FALSE;
           }
           $wheresUpdated = TRUE;
           if ($fieldTokens[0] === 'date') {
-              $vd = vague_date::string_to_vague_date($saveArray[$field]);
-              $wheres .= " AND (".$table . ".date_start = '".$vd[0]."')";
-              $wheres .= " AND (".$table . ".date_end = '".$vd[1]."')";
-              $wheres .= " AND (".$table . ".date_type = '".$vd[2]."')";
+            $vd = vague_date::string_to_vague_date($saveArray[$field]);
+            $wheres .= " AND ($table.date_start = '$vd[0]')";
+            $wheres .= " AND ($table.date_end = '$vd[1]')";
+            $wheres .= " AND ($table.date_type = '$vd[2]')";
           }
           else {
-              $wheres .= " AND (".$table . "." . $fieldTokens[0] . " = '".$saveArray[$field]."')";
+            $wheres .= " AND (".$table . "." . $fieldTokens[0] . " = '".$saveArray[$field]."')";
           }
       } else {
-          // There is a possibility that we are looking for for a supermodel id which is represented as an ID
-          // in the supermodel itself. At this point the $correctedField ends in _id.
+          // There is a possibility that we are looking for for a supermodel id
+          // which is represented as an ID in the supermodel itself. At this
+          // point the $correctedField ends in _id.
           $superModelIDField = substr($fieldTokens[0], 0, -3); // cut off _id
-          $ss = $this->get_submission_structure();
           if (isset($saveArray[$superModelIDField . ':id'])) {
-              $wheresUpdated = TRUE;
-              $wheres .= " AND (".$table . "." . $fieldTokens[0] . " = ".$saveArray[$superModelIDField . ':id'].")";
+            $wheresUpdated = TRUE;
+            $wheres .= " AND ($table.$fieldTokens[0] = " . $saveArray[$superModelIDField . ':id'] . ')';
           }
           else {
             foreach ($saveArray as $saveField => $saveValue) {
               $saveTokens = explode(':', $saveField);
               if (($prefix !== '' && $saveTokens[0] === $this->object_name . $assocSuffix) || ($prefix === '' && $saveTokens[0] !== $this->object_name . $assocSuffix)) {
-                  if ($saveTokens[0] === $this->object_name . $assocSuffix) {
-                      array_shift($saveTokens);
-                  }
-                  $correctedField = (substr($saveTokens[0], 0, 3) == 'fk_' ? substr($saveTokens[0], 3) . '_id' : $saveTokens[0]);
-                  if ($fieldTokens[0] === $correctedField) {
-                      $wheresUpdated = TRUE;
-                      if ($saveTokens[0] !== $correctedField) { // saveTokens points to fk_, whilst corrected points to _id
-                          // This field is a fk_* field which contains the text caption of a record which we need to lookup.
-                          // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
-                          // Create model without initialising, so we can just check the lookup variables
-                          // allow the linked lookup field to override the default model search field
-                          // let the model map the lookup against a view if necessary
-                          $fieldName = substr($saveTokens[0],3);
-                          if (array_key_exists($fieldName, $this->belongs_to)) {
-                              $fkTable = $this->belongs_to[$fieldName];
-                          } elseif (array_key_exists($fieldName, $this->has_one)) { // this ignores the ones which are just models in list: the key is used to point to another model
-                              $fkTable = $this->has_one[$fieldName];
-                          } elseif ($fieldName === 'parent'){
-                              $fkTable = $this->object_name;
-                          } else {
-                              $fkTable = $fieldName;
-                          }
-                          $fkModel = ORM::Factory($fkTable, -1);
-                          if (count($saveTokens)>1)
-                            $fkModel->search_field = $saveTokens[1];
-                          $lookupAgainst = isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkTable;
-                          $fkLookup = array(
-                              'fkTable' => $lookupAgainst,
-                              'fkSearchField' => $fkModel->search_field,
-                              'fkSearchValue' => trim($saveValue),
-                              'fkExcludeDeletedRecords' => ($lookupAgainst === $fkTable),
+                if ($saveTokens[0] === $this->object_name . $assocSuffix) {
+                  array_shift($saveTokens);
+                }
+                $correctedField = (substr($saveTokens[0], 0, 3) == 'fk_' ? substr($saveTokens[0], 3) . '_id' : $saveTokens[0]);
+                if ($fieldTokens[0] === $correctedField) {
+                  $wheresUpdated = TRUE;
+                  if ($saveTokens[0] !== $correctedField) {
+                    // saveTokens points to fk_, whilst corrected points to _id
+                    // This field is a fk_* field which contains the text caption of a record which we need to lookup.
+                    // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
+                    // Create model without initialising, so we can just check the lookup variables
+                    // allow the linked lookup field to override the default model search field
+                    // let the model map the lookup against a view if necessary
+                    $fieldName = substr($saveTokens[0],3);
+                    if (array_key_exists($fieldName, $this->belongs_to)) {
+                      $fkTable = $this->belongs_to[$fieldName];
+                    }
+                    elseif (array_key_exists($fieldName, $this->has_one)) {
+                      // This ignores the ones which are just models in list:
+                      // the key is used to point to another model.
+                      $fkTable = $this->has_one[$fieldName];
+                    }
+                    elseif ($fieldName === 'parent'){
+                      $fkTable = $this->object_name;
+                    }
+                    else {
+                      $fkTable = $fieldName;
+                    }
+                    $fkModel = ORM::Factory($fkTable, -1);
+                    if (count($saveTokens)>1)
+                      $fkModel->search_field = $saveTokens[1];
+                    $lookupAgainst = isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkTable;
+                    $fkLookup = [
+                        'fkTable' => $lookupAgainst,
+                        'fkSearchField' => $fkModel->search_field,
+                        'fkSearchValue' => trim($saveValue),
+                        'fkExcludeDeletedRecords' => ($lookupAgainst === $fkTable),
 //                              'fkWebsite' => $saveArray['website_id'],
-                          );
-                          $struct = $fkModel->get_submission_structure();
-                          if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
-                              $fkLookup['fkWebsite'] = $saveArray['website_id'];
-                          }
-                          foreach ($saveArray as $filterfield=>$filtervalue) {
-                              if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
-                                  substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
-                                      // found a filter for this field or fkTable. So extract the field name as the 3rd part
-                                      $arr = explode(':', $filterfield);
-                                      if ($arr[0] === $this->object_name) {
-                                          array_shift($arr);
-                                      }
-                                      $fkLookup['fkSearchFilterField'] = $arr[2];
-                                      $fkLookup['fkSearchFilterValue'] = $filtervalue;
-                                  }
-                          }
-                          $fk = $this->fkLookup($fkLookup);
-                          if ($fk) {
-                              $wheres .= " AND (".$table . "." . $correctedField . " = '".$fk."')";
-                          }
-                      } else {
-                          $wheres .= " AND (".$table . "." . $correctedField . " = '".$saveValue."')";
+                    ];
+                    $struct = $fkModel->get_submission_structure();
+                    if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
+                      $fkLookup['fkWebsite'] = $saveArray['website_id'];
+                    }
+                    foreach ($saveArray as $filterfield=>$filtervalue) {
+                      if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
+                          substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
+                        // Found a filter for this field or fkTable. So extract
+                        // the field name as the 3rd part.
+                        $arr = explode(':', $filterfield);
+                        if ($arr[0] === $this->object_name) {
+                          array_shift($arr);
+                        }
+                        $fkLookup['fkSearchFilterField'] = $arr[2];
+                        $fkLookup['fkSearchFilterValue'] = $filtervalue;
                       }
+                    }
+                    $fk = $this->fkLookup($fkLookup);
+                    if ($fk) {
+                      $wheres .= " AND ($table.$correctedField = '$fk')";
+                    }
+                  } else {
+                    $wheres .= " AND ($table.$correctedField = '$saveValue')";
                   }
+                }
               }
             }
             if (!$wheresUpdated) {
