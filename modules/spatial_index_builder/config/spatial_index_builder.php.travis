@@ -31,3 +31,11 @@ $config['location_types'] = [
 // If any of the indexed location types only need indexing for certain surveys
 // then that can be configured here. Omit this configuration if not required.
 $config['survey_restrictions'] = [];
+
+$config['location_indexing'] = [
+  [
+    'location_type' => 'Test location type',
+    'website_id' => 1,
+    'higher_location_type' => 'Higher location type',
+  ]
+];

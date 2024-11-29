@@ -1,0 +1,44 @@
+<report
+    title="List of imports which are reversible"
+    description="At time of writing, used for the reversible imports drop-down in importer 2."
+>
+  <query>
+    SELECT #columns#
+    FROM imports i
+    WHERE i.created_by_id = #currentUser#
+      AND i.reversible = true
+      /* Website ID might be NULL if reversing from the Warehouse UI */
+      AND (#website_id# = -1 OR i.website_id = #website_id#)
+      AND i.deleted = false
+      /* There are difficulties accurately determining the difference between inserted records that are updated,
+         and updated records that are updated.
+         To overcome this in other areas of code, we make sure the IDs of the (inserted) occurrences
+         we are reversing are in the in the most recent occurrences the have been added for the import_guid.
+         We use the inserted value in the imports table to do this this comparison.
+         To do this accurately, we need to make sure the inserted occurrences haven't been updated by further
+         imports (import_guids have changed).
+         Only allow reversals where the number of insertions + updated still matches the number of rows with the import_guid
+         in the database.*/
+      AND i.inserted + i.updated in
+        (select count(o.id)
+        FROM occurrences o
+        WHERE
+          o.import_guid = i.import_guid
+    )
+  </query>
+  <order_bys>
+    <order_by>i.created_on desc</order_by>
+  </order_bys>
+  <params>
+    <param name="currentUser" display="User ID" datatype="integer" />
+    <param name="website_id" display="Website ID" datatype="integer" default="-1" />
+  </params>
+  <columns>
+    <column name="id" sql="i.id" in_count="true" visible="false" datatype="integer" />
+    <column name="import_guid" sql="i.import_guid" visible="false" datatype="text" />
+    <column name="import_date_time" sql="TO_CHAR(i.created_on, 'DD/MM/YYYY HH24:MI')" datatype="text" />
+    <column name="entity" sql="i.entity" datatype="text" />
+    <column name="inserted" sql="i.inserted" datatype="integer" />
+    <column name="updated" sql="i.updated" datatype="integer" />
+  </columns>
+</report>

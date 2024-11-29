@@ -102,7 +102,6 @@ SQL;
       $helper = $taskType->task;
       $doneCount = 0;
       $errorCount = 0;
-      $this->cleanupTasksForDeletedRecords($taskType);
       // Loop to claim batches of tasks for this task type. Only actually
       // iterate more than once for priority 1 tasks.
       do {
@@ -143,26 +142,6 @@ SQL;
       $errors = $errorCount === 0 ? '' : " with $errorCount batch failure(s).";
       echo "Work queue - $taskType->task ($taskType->entity): $doneCount done$errors<br/>";
     }
-  }
-
-  /**
-   * Deleted records don't need further processing so delete associated tasks.
-   *
-   * @param object $taskType
-   *   Task data read from the database.
-   */
-  private function cleanupTasksForDeletedRecords($taskType) {
-    $table = inflector::plural($taskType->entity);
-    $sql = <<<SQL
-DELETE FROM work_queue q
-USING $table s
-WHERE q.record_id=s.id
-AND s.deleted=true
-AND q.task='$taskType->task'
-AND q.entity='$taskType->entity'
-AND q.error_detail IS NULL;
-SQL;
-    $this->db->query($sql);
   }
 
   /**

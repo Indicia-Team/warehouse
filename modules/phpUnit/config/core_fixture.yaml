@@ -300,6 +300,8 @@ meanings:
     id: 10006
   -
     id: 10007
+  -
+    id: 10008
 
 
 termlists:
@@ -419,6 +421,13 @@ terms:
     created_by_id: 1
     updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
+  -
+    term: "Higher location type"
+    language_id: 1
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
 
 termlists_terms:
   -
@@ -463,7 +472,7 @@ termlists_terms:
     sort_order: 1
   -
     termlist_id: 4                          #User identifier types
-    term_id: 5                              #twitter
+    term_id: 5                               #twitter
     created_on: "2016-07-22 16:00:00"
     created_by_id: 1
     updated_on: "2016-07-22 16:00:00"
@@ -499,6 +508,16 @@ termlists_terms:
     updated_on: "2016-07-22 16:00:00"
     updated_by_id: 1
     meaning_id: 10007
+    preferred: "true"
+    sort_order: 1
+  -
+    termlist_id: 2                          #Location types
+    term_id: 9                              #Higher location type
+    created_on: "2016-07-22 16:00:00"
+    created_by_id: 1
+    updated_on: "2016-07-22 16:00:00"
+    updated_by_id: 1
+    meaning_id: 10008
     preferred: "true"
     sort_order: 1
 
@@ -638,6 +657,23 @@ cache_termlists_terms:
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10007
+    cache_created_on: "2016-07-22 16:00:00"
+    cache_updated_on: "2016-07-22 16:00:00"
+  -
+    id: 9
+    preferred: "true"
+    termlist_id: 2
+    termlist_title: "Location types"
+    website_id:
+    preferred_termlists_term_id: 9
+    sort_order: 1
+    term: "Higher location type"
+    language_iso: "eng"
+    language: "English"
+    preferred_term: "Higher location type"
+    preferred_language_iso: "eng"
+    preferred_language: "English"
+    meaning_id: 10008
     cache_created_on: "2016-07-22 16:00:00"
     cache_updated_on: "2016-07-22 16:00:00"
 

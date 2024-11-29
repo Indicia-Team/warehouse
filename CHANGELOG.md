@@ -5,6 +5,16 @@ Notable changes to the Indicia warehouse are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Version 9.6.0
+*2024-11-14*
+
+### Changes
+
+* Adds a field `locations.higher_location_ids` which can capture an array of parent locations which
+  the location's boundary intersects with. This uses the `spatial_index_builder` module and the
+  layers which will be indexed, and the layers they are indexed against, must be configured in the
+  modules' configuration file (as demonstrated in the example config file).
+
+## Version 9.6.0
 *2024-10-30*
 
 ### Changes

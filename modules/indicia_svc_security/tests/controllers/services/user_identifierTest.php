@@ -120,7 +120,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     // Response should definitely include a user id.
-    $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: ' . $response['output']);
+    $this->assertObjectHasProperty('userId', $output, 'The response from createUser call was invalid: ' . $response['output']);
 
     $uid1 = $output->userId;
     $userIds = [$uid1];
@@ -174,7 +174,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed when sending a random type string.');
     $output = json_decode($response['output']);
     // Response should definitely include a user id.
-    $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: ' . $response['output']);
+    $this->assertObjectHasProperty('userId', $output, 'The response from createUser call was invalid: ' . $response['output']);
     $uid1 = $output->userId;
     // Check the term now exists.
     $qry = $this->db->select('id, term_id')
@@ -279,7 +279,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     // Response should definitely include a positive whole number for the user id.
-    $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: '.$response['output']);
+    $this->assertObjectHasProperty('userId', $output, 'The response from createUser call was invalid: '.$response['output']);
     $uid1 = $output->userId;
     // This user should be a member of website1.
     $this->assertEquals(1, $this->db->select('id')->from('users_websites')->where(array('website_id' => 1, 'user_id' => $uid1))
@@ -293,7 +293,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     // Response should definitely include a user id.
-    $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: '.$response['output']);
+    $this->assertObjectHasProperty('userId', $output, 'The response from createUser call was invalid: '.$response['output']);
     $uid2 = $output->userId;
     // This user should be a member of website2.
     $this->assertEquals(1, $this->db->select('id')->from('users_websites')->where(array('website_id' => 2, 'user_id' => $uid2))
@@ -309,7 +309,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     ), 'u1', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
-    $this->assertObjectHasAttribute('possibleMatches', $output, "Response should include the list of possible users.\n$response[output]");
+    $this->assertObjectHasProperty('possibleMatches', $output, "Response should include the list of possible users.\n$response[output]");
     $this->assertIsArray($output->possibleMatches, "Response should include an array of possible users.\n$response[output]");
     $this->assertCount(2, $output->possibleMatches, '2 possible users should have been found');
 
@@ -385,7 +385,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
       'The request to the user_identifier/get_user_id merge service failed for long username test.');
     $output = json_decode($response['output']);
     // Response should definitely include a user id.
-    $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: ' . $response['output']);
+    $this->assertObjectHasProperty('userId', $output, 'The response from createUser call was invalid: ' . $response['output']);
   }
 
   private function cleanupUsers($userIds) {
