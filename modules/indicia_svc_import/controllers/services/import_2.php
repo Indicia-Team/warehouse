@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
@@ -551,17 +550,20 @@ SQL;
   /**
    * Allow reversal of imports.
    *
-   * At time of writing, only supports occurrence imports
-   * (and samples related to the occurrences)
+   * At time of writing, only supports occurrence imports (and samples related
+   * to the occurrences).
    */
-  public function importreverse() {
+  public function import_reverse() {
     $db = new Database();
     if (!empty($_POST['warehouse_user_id'])) {
       $warehouseUserId = $_POST['warehouse_user_id'];
     }
     else {
-      echo '<p><em>Unable to reverse import, as your user ID was not supplied to the import reverser.<br>
-      Is your user account correctly attached to the Warehouse?</em></p>';
+      http_response_code(400);
+      echo json_encode([
+        'status' => 'Bad Request',
+        'msg' => 'Missing warehouse_user_id parameter.',
+      ]);
       return FALSE;
     }
     $guidToReverse = $_POST['guid_to_reverse'];
@@ -582,9 +584,9 @@ SQL;
     $untouchedSamples = self::getUntouchedSamples($db, $guidToReverse, $updatedSamples);
 
     $importTableSql = <<<SQL
-    update imports
-    set reversible = false
-    where import_guid = '$guidToReverse';
+      update imports
+      set reversible = false
+      where import_guid = '$guidToReverse';
     SQL;
 
     $db->query($importTableSql);
@@ -602,38 +604,35 @@ SQL;
     if (!empty($untouchedSamples)) {
       self::createReversalDetailsFile('sample', $untouchedSamples, $guidToReverse, 'untouched');
     }
-    echo '<hr>';
+    $response = [
+      'status' => 'OK',
+      'samplesOutcome' => empty($updatedSamples) ? 'No samples were reversed.' : 'Imported samples were reversed.',
+      'samplesDetails' => [],
+      'occurrencesOutcome' => empty($updatedOccurrences) ? 'No occurrences were reversed.' : 'Imported occurrences were reversed.',
+      'occurrencesDetails' => [],
+    ];
     if (empty($updatedSamples)) {
-      echo '<p><h3>No samples were reversed.</h3></p>' .
-      '<p><em>This may happen if none of the samples you imported exist in the database anymore.<br>' .
-      'This may also happen if you only selected to reverse unaltered data and ' .
-      'no unaltered samples were found.</em></p>';
+      $response['samplesDetails'][] =
+        'This may happen if none of the samples you imported exist in the database anymore. This may also happen if you only selected to reverse unaltered data and no unaltered samples were found.';
     }
     if (!empty($updatedSamples)) {
-      echo '<p><h3>Imported samples were reversed.</h3></p>' .
-      '<p>Details of reversed samples are <a href="' . url::base() . 'upload/reversed_import_rows_samples_' . $guidToReverse . '.csv' . '">here</a></p>';
+      $response['samplesDetails'][] = 'Details of reversed samples are <a href="' . url::base() . "upload/reversed_import_rows_samples_$guidToReverse.csv\">here</a>.";
     }
     if (!empty($untouchedSamples)) {
-      echo '<p>Details of samples not reversed are <a href="' . url::base() . 'upload/untouched_import_rows_samples_' . $guidToReverse . '.csv' . '">here</a></p>';
-      echo "<small><em>Samples that were removed from the database " .
-      "before today's reversal will not be shown in the untouched samples download file.</em></small><br><br>";
+      $response['samplesDetails'][] = 'Details of samples not reversed are <a href="' . url::base() . "upload/untouched_import_rows_samples_$guidToReverse.csv\">here</a></p>";
+      $response['samplesDetails'][] = "Samples that were removed from the database before today's reversal will not be shown in the untouched samples download file.";
     }
     if (empty($updatedOccurrences)) {
-      echo '<p><h3>No occurrences were reversed.</h3></p>' .
-      '<p><em>This may happen if none of the occurrences you imported exist in the database anymore.<br>' .
-      'This may also happen if you only selected to reverse unaltered data and ' .
-      'no unaltered occurrences were found.</em></p>';
+      $response['occurrencesDetails'][] = 'This may happen if none of the occurrences you imported exist in the database anymore. This may also happen if you only selected to reverse unaltered data and no unaltered occurrences were found.';
     }
     if (!empty($updatedOccurrences)) {
-      echo '<p><h3>Imported occurrences were reversed.</h3></p>' .
-      '<p>Details of reversed occurrences are <a href="' . url::base() . 'upload/reversed_import_rows_occurrences_' . $guidToReverse . '.csv' . '">here</a></p>';
+      $response['occurrencesDetails'][] = 'Details of reversed occurrences are <a href="' . url::base() . "upload/reversed_import_rows_occurrences_$guidToReverse.csv\">here</a></p>";
     }
     if (!empty($untouchedOccurrences)) {
-      echo '<p>Details of occurrences not reversed are <a href="' . url::base() . 'upload/untouched_import_rows_occurrences_' . $guidToReverse . '.csv' . '">here</a></p>';
-      echo "<small><em>Occurrences that were removed from the database " .
-      "before today's reversal will not be shown in the untouched occurrences download file.</em></small><br><br>";
+      $response['samplesDetails'][] = 'Details of occurrences not reversed are <a href="' . url::base() . "upload/untouched_import_rows_occurrences_$guidToReverse.csv\">here</a></p>";
+      $response['occurrencesDetails'][] = "Occurrences that were removed from the database before today's reversal will not be shown in the untouched occurrences download file.";
     }
-    echo '<br><hr>';
+    echo json_encode($response);
   }
 
   /**
@@ -661,7 +660,7 @@ SQL;
     SQL;
 
     $cacheOccsFunctionalDeletionSQL = <<<SQL
-    Delete 
+    Delete
     FROM cache_occurrences_functional
     WHERE id in (
     SELECT o.id
@@ -669,7 +668,7 @@ SQL;
     SQL;
 
     $cacheOccsNonFunctionalDeletionSQL = <<<SQL
-    Delete 
+    Delete
     FROM cache_occurrences_nonfunctional
     WHERE id in (
     SELECT o.id
@@ -679,17 +678,17 @@ SQL;
     $occurrencesJoinSQL = <<<SQL
     JOIN imports i on i.import_guid = o.import_guid
       AND i.import_guid = '$guidToReverse'
-    /* Left Join to samples, as  we don't care if occurrences are attached to a 
+    /* Left Join to samples, as  we don't care if occurrences are attached to a
        a sample that isn't part of import and that has been changed. */
     LEFT JOIN samples s
       ON s.id = o.sample_id
       AND s.import_guid = i.import_guid
       AND s.deleted=false
-    WHERE 
+    WHERE
     o.import_guid = '$guidToReverse'
     /* We can't easily tell difference between inserted occurrences that are updated,
     and updated occurrences that are updated again. As we are only going to be reversing the former
-    (even in "reverse regardless of changes" mode), we need a way to only include these. 
+    (even in "reverse regardless of changes" mode), we need a way to only include these.
     We can do this by getting the most recent occurrences for the import, limited by the imports
     table inserted value, this will exclude updated occurrences that are updated a second time.
     Note that this method would not work if the user did further imports that affected these inserted rows,
@@ -697,7 +696,7 @@ SQL;
     AND o.id in (
       select id
       FROM occurrences o2
-      WHERE 
+      WHERE
         o2.import_guid = '$guidToReverse'
       ORDER BY o2.id DESC
       LIMIT i.inserted
@@ -800,14 +799,14 @@ SQL;
   private function reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode) {
     $samplesUpdateSQL = <<<SQL
     UPDATE samples s_update
-    SET deleted=true, 
+    SET deleted=true,
     updated_on=now(),
     updated_by_id=$warehouseUserId
     FROM samples as s\n
     SQL;
 
     $cacheSmpsFunctionalDeletionSQL = <<<SQL
-    Delete 
+    Delete
     FROM cache_samples_functional
     where id in (
     SELECT s.id
@@ -815,7 +814,7 @@ SQL;
     SQL;
 
     $cacheSmpsNonFunctionalDeletionSQL = <<<SQL
-    Delete 
+    Delete
     FROM cache_samples_nonfunctional
     where id in (
     SELECT s.id
@@ -823,10 +822,10 @@ SQL;
     SQL;
 
     $samplesJoinSQL = <<<SQL
-    LEFT JOIN occurrences o 
+    LEFT JOIN occurrences o
       ON o.sample_id = s.id
       AND o.deleted=false
-    WHERE 
+    WHERE
       s.import_guid = '$guidToReverse'
       /* Don't delete a sample if still contains occurrences after occurrence processing */
       AND o.id IS NULL
@@ -856,7 +855,7 @@ SQL;
     $samplesUpdateSQL .= <<<SQL
     RETURNING s.id, s.survey_id, s.location_id,s.date_start,s.date_end,s.date_type,
     s.entered_sref, s.entered_sref_system, s.location_name, s.created_on,
-    s.created_by_id, s.comment, s.external_key, s.sample_method_id, s.recorder_names, 
+    s.created_by_id, s.comment, s.external_key, s.sample_method_id, s.recorder_names,
     s.parent_id, s.input_form, s.group_id, s.privacy_precision, s.record_status,
     s.verified_by_id, s.verified_on, s.licence_id,s.training, s.import_guid
     SQL;
