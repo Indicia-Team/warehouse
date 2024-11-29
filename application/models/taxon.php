@@ -133,7 +133,6 @@ class Taxon_Model extends ORM {
           }
           if ($updatedValueToCompare !== (string) $this->$keyField) {
             $this->updateAffectsOccurrenceCache = TRUE;
-            kohana::log('debug', "Taxon record change detected in $keyField from " . var_export($updatedValueToCompare, TRUE) . ' to ' . var_export((string) $this->$keyField, TRUE));
             break;
           }
         }
