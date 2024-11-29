@@ -22,7 +22,7 @@
       AND i.inserted + i.updated in
         (select count(o.id)
         FROM occurrences o
-        WHERE 
+        WHERE
           o.import_guid = i.import_guid
     )
   </query>
@@ -37,5 +37,8 @@
     <column name="id" sql="i.id" in_count="true" visible="false" datatype="integer" />
     <column name="import_guid" sql="i.import_guid" visible="false" datatype="text" />
     <column name="import_date_time" sql="TO_CHAR(i.created_on, 'DD/MM/YYYY HH24:MI')" datatype="text" />
+    <column name="entity" sql="i.entity" datatype="text" />
+    <column name="inserted" sql="i.inserted" datatype="integer" />
+    <column name="updated" sql="i.updated" datatype="integer" />
   </columns>
 </report>
