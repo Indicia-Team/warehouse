@@ -4,6 +4,27 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.7.0
+
+### Changes
+
+* Adds a field `locations.higher_location_ids` which can capture an array of parent locations which
+  the location's boundary intersects with. This uses the `spatial_index_builder` module and the
+  layers which will be indexed, and the layers they are indexed against, must be configured in the
+  modules' configuration file (as demonstrated in the example config file).
+
+### Bugfixes
+
+* Fixes to the `work_queue` processes which ensure that deleted records are processed correctly,
+  for example deleted attribute values get correctly removed from cached/Elasticsearch data.
+  See https://github.com/BiologicalRecordsCentre/UKBMS-online/issues/296.
+* Saving any data entity via the warehouse user interface which had checkbox controls would cause
+  metadata to be updated, even if there were no actual changes. This has been fixed.
+* Updating existing records based on just `external_key` or other non-ID fields when importing now
+  fixed.
+* Updating the preferred name of a taxon now correctly updates cached occurrence data
+  automatically.
+
 ## Version 9.6.0
 *2024-11-14*
 
