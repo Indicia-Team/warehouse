@@ -4,7 +4,15 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.7.1
+*2024-12-02*
+
+### Fixes
+
+* Updates PHPSpreadsheet library to version 3.5 which includes bugfixes and security fixes.
+
 ## Version 9.7.0
+*2024-11-29*
 
 ### Changes
 
