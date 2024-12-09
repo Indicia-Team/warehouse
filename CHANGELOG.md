@@ -4,6 +4,13 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.7.2
+*2024-12-09*
+
+### Fixes
+
+* Editing the external key (TVK) of a taxon now correctly updates the occurrences cache data.
+
 ## Version 9.7.1
 *2024-12-02*
 
