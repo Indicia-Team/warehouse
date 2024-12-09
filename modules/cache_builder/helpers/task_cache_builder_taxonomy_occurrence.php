@@ -70,12 +70,13 @@ class task_cache_builder_taxonomy_occurrence {
 UPDATE work_queue q
 SET claimed_by=null, claimed_on=null
 FROM taxa_taxon_lists ttl
+JOIN taxa t ON t.id=ttl.taxon_id
 LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=ttl.id
 WHERE q.claimed_by='$procId'
 AND q.entity='taxa_taxon_list'
 AND q.task='task_cache_builder_taxonomy_occurrence'
 AND q.record_id=ttl.id
-AND (cttl.id IS NULL OR cttl.cache_updated_on<ttl.updated_on)
+AND (cttl.id IS NULL OR cttl.cache_updated_on<GREATEST(ttl.updated_on, t.updated_on))
 SQL;
     $db->query($sql);
 
