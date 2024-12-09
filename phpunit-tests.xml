@@ -6,6 +6,7 @@
   <testsuites>
     <testsuite name="Application tests">
       <directory>./application/tests/helpers</directory>
+      <directory>./application/tests/models</directory>
     </testsuite>
     <testsuite name="Module tests">
       <directory>./modules/attribute_sets/tests</directory>
