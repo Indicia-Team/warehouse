@@ -509,8 +509,8 @@ class Occurrence_Model extends ORM {
         // 'filterIncludesNulls' => TRUE
       ];
       $retVal['occurrence_2:fkFilter:taxa_taxon_list:taxon_list_id'] = [
-        'display' => 'Second species list',
-        'description' => 'Select the species checklist which will be used when attempting to match second species names.',
+        'display' => 'Associated occurrence species list',
+        'description' => 'Select the species checklist which will be used when attempting to match associated occurrence species names.',
         'datatype' => 'lookup',
         'population_call' => 'direct:taxon_list:id:title',
         'linked_to' => 'website_id',
@@ -518,8 +518,8 @@ class Occurrence_Model extends ORM {
         'filterIncludesNulls' => TRUE,
       ];
       $retVal['occurrence_2:record_status'] = [
-        'display' => 'Record status',
-        'description' => 'Select the initial status for second imported species records',
+        'display' => 'Associated occurrence record status',
+        'description' => 'Select the initial status for imported associated occurrences.',
         'datatype' => 'lookup',
         'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
         'default' => 'C',
