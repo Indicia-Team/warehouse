@@ -17,8 +17,8 @@
     <param name="currentUser" display="User ID" datatype="integer">
       <where>i.created_by_id=#currentUser#</where>
     </param>
-    <param name="hide_zeros" display="Hide imports with zero records" datatype="boolean">
-      <where>i.inserted + i.updated &gt; 0</where>
+    <param name="hide_zeros" display="Hide imports with zero records" datatype="checkbox" emptyvalue="0">
+      <where value="1">i.inserted + i.updated &gt; 0</where>
     </param>
   </params>
   <columns>
