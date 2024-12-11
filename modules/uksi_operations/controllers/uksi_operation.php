@@ -620,6 +620,10 @@ SQL;
     $ttl->save();
     $tx = ORM::factory('taxon', $nameInfo->taxon_id);
     $tx->external_key = $operation->synonym;
+    // Organism key shouldn't be altered according to the spec, but if a
+    // promote name is used to move a name then the organism key of the new
+    // preferred name needs to be updated.
+    $tx->organism_key = $operation->current_organism_key;
     $tx->set_metadata();
     $tx->save();
     if ($preferred) {
@@ -661,12 +665,11 @@ SQL;
     foreach ($nameToPromote as $promotedNameInfo) {
       $this->setNameInfoForPromoteName($operation, $promotedNameInfo, TRUE, $parentId);
       $promotedName = $promotedNameInfo->taxon;
-      $namesForOrganismKey = $this->getTaxaForKeys(['organism_key' => $promotedNameInfo->organism_key]);
-      foreach ($namesForOrganismKey as $nameInfo) {
-        // Don't redo the promoted name.
-        if ($nameInfo->id !== $promotedNameInfo->id) {
-          $this->setNameInfoForPromoteName($operation, $nameInfo, FALSE, $parentId);
-        }
+    }
+    foreach ($namesForOrganismKey as $nameInfo) {
+      // Don't redo the promoted name.
+      if ($nameInfo->search_code !== $operation['synonym']) {
+        $this->setNameInfoForPromoteName($operation, $nameInfo, FALSE, $parentId);
       }
     }
 
