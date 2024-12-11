@@ -32,8 +32,8 @@ class summary_builder {
     /**
      * Performs the actual task of table population.
      */
-    
-    
+
+
     /**
      * It is only the presence/absence of a sample that affects the values/estimates, so this is invoked on insert or
      * deletion, not update.
@@ -50,7 +50,7 @@ class summary_builder {
 
         $query = str_replace('#definition_id#', $definitionId, $queries['get_definition']);
         $definitionResult = $db->query($query)->result_array(false);
-        
+
         // This returns all taxa on this sample, merged with all taxa on summary records for this location/year
         // Includes a check that the data for the location/year/user/taxon is either not present or was last updated
         // before the sample record update time: if not then has been run in another batch and is up to date
@@ -63,31 +63,31 @@ class summary_builder {
 
     /** OK **/
     private static function get_changelist_sample(&$db, $sampleId) {
-        $queries = kohana::config('summary_builder');
-        $taxa = [];
+      $queries = kohana::config('summary_builder');
+      $taxa = [];
 
-        $query = str_replace('#sample_id#', $sampleId, $queries['sample_detail_lookup']);
-        $sampleResults = $db->query($query)->result_array(false); // returns survey_id, year, created_by_id, location_id
-        
-        $query = str_replace(array('#website_id#', '#survey_id#', '#sample_id#', '#year#', '#user_id#', '#location_id#'),
-            array($sampleResults[0]['website_id'], $sampleResults[0]['survey_id'], $sampleId ,
-                  $sampleResults[0]['year'], $sampleResults[0]['user_id'],  $sampleResults[0]['location_id']),
-            $queries['sample_occurrence_lookup']);
-        $occurrenceResults = $db->query($query)->result_array(false); // returns taxa_taxon_list_id
-        foreach($occurrenceResults as $row){
-            $taxa[] = $row['taxa_taxon_list_id'];
-        }
-        
-        $query = str_replace(array('#website_id#', '#survey_id#', '#sample_id#', '#year#', '#user_id#', '#location_id#'),
-            array($sampleResults[0]['website_id'], $sampleResults[0]['survey_id'], $sampleId ,
-                $sampleResults[0]['year'], $sampleResults[0]['user_id'],  $sampleResults[0]['location_id']),
-            $queries['sample_existing_taxa']);
-        $existingResults = $db->query($query)->result_array(false);
-        foreach($existingResults as $row){
-            $taxa[] = $row['taxa_taxon_list_id'];
-        }
-        $taxa = array_unique($taxa);
-        return array($sampleResults[0]['year'], $sampleResults[0]['user_id'], $sampleResults[0]['location_id'], $taxa);
+      $query = str_replace('#sample_id#', $sampleId, $queries['sample_detail_lookup']);
+      $sampleResults = $db->query($query)->current(); // returns survey_id, year, created_by_id, location_id
+
+      $query = str_replace(['#website_id#', '#survey_id#', '#sample_id#', '#year#', '#user_id#', '#location_id#'],
+          [$sampleResults->website_id, $sampleResults->survey_id, $sampleId ,
+                  $sampleResults->year, $sampleResults->user_id,  $sampleResults->location_id],
+          $queries['sample_occurrence_lookup']);
+      $occurrenceResults = $db->query($query)->result(); // returns taxa_taxon_list_id
+      foreach($occurrenceResults as $row){
+        $taxa[] = $row->taxa_taxon_list_id;
+      }
+
+      $query = str_replace(['#website_id#', '#survey_id#', '#sample_id#', '#year#', '#user_id#', '#location_id#'],
+          [$sampleResults->website_id, $sampleResults->survey_id, $sampleId ,
+              $sampleResults->year, $sampleResults->user_id,  $sampleResults->location_id],
+          $queries['sample_existing_taxa']);
+      $existingResults = $db->query($query)->result();
+      foreach($existingResults as $row){
+        $taxa[] = $row->taxa_taxon_list_id;
+      }
+      $taxa = array_unique($taxa);
+      return [$sampleResults->year, $sampleResults->user_id, $sampleResults->location_id, $taxa];
     }
 
     /** OK **/
@@ -96,16 +96,16 @@ class summary_builder {
         $queries = kohana::config('summary_builder');
         // this has to be done only once
         self::init_lastval($db);
-        
+
         $query = str_replace('#definition_id#', $definitionId,
             $queries['get_definition']);
         $definitionResult = $db->query($query)->result_array(false);
-        
+
         // This returns just this taxa, following same format as the other methods.
         // Includes a check that the data for the location/year/user/taxon is either not present or was last updated
         // before the sample record update time: if not then has been run in another batch and is up to date
         list($year, $userId, $locationId, $taxa) = self::get_changelist_occurrence_insert_delete($db, $occurrenceId);
-        
+
         if (count($taxa) > 0){
             self::do_summary($db, $definitionResult[0], $year, $userId, $locationId, $taxa);
         }
@@ -116,7 +116,7 @@ class summary_builder {
     private static function get_changelist_occurrence_insert_delete(&$db, $occurrenceId) {
         $queries = kohana::config('summary_builder');
         $taxa = [];
-        
+
         $query = str_replace('#occurrence_id#', $occurrenceId, $queries['occurrence_detail_lookup']);
         $occurrenceResults = $db->query($query)->result_array(false); // returns year, created_by_id, location_id, taxa_taxon_list_id
         if(count($occurrenceResults) === 0)
@@ -124,8 +124,8 @@ class summary_builder {
         return array($occurrenceResults[0]['year'], $occurrenceResults[0]['user_id'],
             $occurrenceResults[0]['location_id'], [$occurrenceResults[0]['taxa_taxon_list_id']]);
     }
-    
-    
+
+
     /** OK **/
     public static function populate_summary_table_for_occurrence_modify(&$db, $occurrenceId, $definitionId) {
         // A modification to an existing taxa may include the changing of the taxa: have to recalculate all taxa
@@ -133,16 +133,16 @@ class summary_builder {
         $queries = kohana::config('summary_builder');
         // this has to be done only once
         self::init_lastval($db);
-        
+
         $query = str_replace('#definition_id#', $definitionId,
             $queries['get_definition']);
         $definitionResult = $db->query($query)->result_array(false);
-        
+
         // This returns this taxon, merged with all taxa on summary records for this location/year
         // Includes a check that the data for the location/year/user/taxon is either not present or was last updated
         // before the sample record update time: if not then has been run in another batch and is up to date
         list($year, $userId, $locationId, $taxa) = self::get_changelist_occurrence_modify($db, $occurrenceId);
-        
+
         if (count($taxa) > 0){
             self::do_summary($db, $definitionResult[0], $year, $userId, $locationId, $taxa);
         }
@@ -152,7 +152,7 @@ class summary_builder {
     private static function get_changelist_occurrence_modify(&$db, $occurrenceId) {
         $queries = kohana::config('summary_builder');
         $taxa = [];
-        
+
         $query = str_replace('#occurrence_id#', $occurrenceId, $queries['sample_detail_lookup_occurrence']);
         $sampleResults = $db->query($query)->result_array(false); // returns survey_id, year, created_by_id, location_id
         if(count($sampleResults) === 0)
@@ -163,7 +163,7 @@ class summary_builder {
         foreach($occurrenceResults as $row){
             $taxa[] = $row['taxa_taxon_list_id'];
         }
-        
+
         $query = str_replace(array('#website_id#', '#survey_id#', '#sample_id#', '#year#', '#user_id#', '#location_id#'),
             array($sampleResults[0]['website_id'], $sampleResults[0]['survey_id'], $sampleResults[0]['sample_id'] ,
                 $sampleResults[0]['year'], $sampleResults[0]['user_id'],  $sampleResults[0]['location_id']),
@@ -175,7 +175,7 @@ class summary_builder {
         $taxa = array_unique($taxa);
         return array($sampleResults[0]['year'], $sampleResults[0]['user_id'], $sampleResults[0]['location_id'], $taxa);
     }
-    
+
 
     public static function populate_summary_table_for_location_delete(&$db, $locationId) {
         $queries = kohana::config('summary_builder');
@@ -292,7 +292,7 @@ class summary_builder {
             summary_builder::do_delete($db, $definition, $year, $taxonId, $locationId, 0);
             summary_builder::do_delete($db, $definition, $year, $taxonId, 0, $userId);
             summary_builder::do_delete($db, $definition, $year, $taxonId, 0, 0);
-            
+
             // This updates the data for the user/taxa/location/year combination.
             $query = str_replace(array('#year#', '#survey_id#', '#taxon_id#', '#location_id#', '#user_id#', '#attr_id#'),
                 array($year, $definition['survey_id'], $taxonId, $locationId, $userId, $definition['occurrence_attribute_id']),
@@ -334,7 +334,7 @@ class summary_builder {
             // This run updates the data for the allusers/taxa/location/year combination.
             // Then ads this all together to find the value for the allusers/taxa/alllocations/year combination
             // In this cycle the year is fixed, the taxa is either one or an array, the location is fixed, the user is fixed.
-            
+
             $query = str_replace(array('#year#', '#survey_id#', '#taxon_id#'),
                         array($year, $definition['survey_id'], $taxonId), $queries['get_YearTaxon_query']);
             $data = array();
@@ -344,7 +344,7 @@ class summary_builder {
         }
         $db->commit();
     }
-    
+
     /** OK **/
     private static function load_data(&$db, &$data, &$periods, &$periodMapping, $query) {
         $present = false;
@@ -364,7 +364,7 @@ class summary_builder {
         }
         return $present;
     }
-    
+
     /** OK **/
     private static function load_summary_data(&$db, &$data, &$periods, &$periodMapping, $query) {
         $results = $db->query($query)->result_array(false);
@@ -389,7 +389,7 @@ class summary_builder {
         }
         return $present;
     }
-    
+
     /** OK **/
     private static function apply_data_combining($definition, &$data) {
         foreach($data as $period=>$detail){
@@ -416,7 +416,7 @@ class summary_builder {
             }
         }
     }
-    
+
     /** OK **/
     private static function apply_estimates(&$db, $definition, &$data) {
         $season_start = $definition['season_limits_array']['start'];
@@ -453,7 +453,7 @@ class summary_builder {
             $data[$lastDataPeriod+1]['hasEstimate'] = true;
         }
     }
-    
+
     /** OK **/
     private static function apply_data_rounding($definition, $val, $special) {
         if($special && $val>0 && $val<1) return 1;
@@ -470,7 +470,7 @@ class summary_builder {
         }
         return $val;
     }
-    
+
     /** OK **/
     private static function do_delete(&$db, $definition, $year, $taxonId, $locationId, $userId) {
         // set up a default delete query if none are specified
@@ -481,7 +481,7 @@ class summary_builder {
             "user_id = ".$userId.";";
         $count = $db->query($query)->count();
     }
-    
+
     /** OK **/
     private static function do_insert(&$db, $definition, $year, $taxonId, $locationId, $userId, &$data, &$periods, $taxon) {
         $summary = array();
@@ -491,13 +491,13 @@ class summary_builder {
                     'period' => $period,
                     'date_start' => $periods[$period]['date_start'],
                     'date_end' => $periods[$period]['date_end'],
-                    'summary' => $details['hasData'] ? $details['summary'] : "NULL", 
+                    'summary' => $details['hasData'] ? $details['summary'] : "NULL",
                     'estimate' => $details['hasEstimate'] ? $details['estimate'] : "NULL",
                     );
             }
         }
         if(!count($summary)) return;
-        
+
         $query = "insert into summary_occurrences (
           website_id,
           survey_id,
@@ -540,8 +540,8 @@ class summary_builder {
 
 //            throw new exception('Configured survey restriction incorrect in spatial index builder');
 
-    
-    
+
+
   /**
    * A utility function used by the work queue task helpers.
    *
