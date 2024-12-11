@@ -52,6 +52,7 @@ class Diagnostics_Controller extends Indicia_Controller {
     $log = [];
 
     $this->repairWorkQueueDeadlocks($db, $log);
+    $this->repairWorkQueueStuckTasks($db, $log);
     $this->repairRecentSamplesWithoutSpatialIndex($db, $log);
     $this->repairStuckLogstashTasks($db, $log);
 
@@ -79,6 +80,30 @@ SQL;
     }
     elseif ($fixed === 1) {
       $log[] =  "One work queue task was reset due to a query deadlock.";
+    }
+  }
+
+  /**
+   * Repairs tasks in the work queue which never completed.
+   *
+   * @param Database $db
+   *   Database connection
+   * @param array $log
+   *   Output message log that can be appended to.
+   */
+  private function repairWorkQueueStuckTasks($db, array &$log) {
+    $query = <<<SQL
+      update work_queue
+      set error_detail=null, claimed_on=null, claimed_by=null
+      where claimed_on<now() - '1 hour'::interval
+      and error_detail is null;
+SQL;
+    $fixed = $db->query($query)->count();
+    if ($fixed > 1) {
+      $log[] =  "$fixed work queue tasks were reset which did not complete on previous attempts";
+    }
+    elseif ($fixed === 1) {
+      $log[] =  "One work queue task was reset which did not complete on previous attempts.";
     }
   }
 
