@@ -4,6 +4,14 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.7.3
+*2024-12-1*
+
+### Fixes
+
+* The background task for populating summary tables for UKBMS annual summaries have been optimised
+  to reduce the chance of out of memory errors when processing lots of changed samples.
+
 ## Version 9.7.2
 *2024-12-09*
 
