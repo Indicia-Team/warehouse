@@ -23,7 +23,7 @@ defined('SYSPATH') or die('No direct script access.');
 
 class task_summary_builder_sample {
 
-  public const BATCH_SIZE = 1000;
+  public const BATCH_SIZE = 100;
 
   /**
    * Work_queue class will automatically expire the completed tasks.
@@ -48,6 +48,7 @@ class task_summary_builder_sample {
    */
   public static function process($db, $taskType, $procId) {
     $queries = kohana::config('summary_builder');
+    self::cleanupUnrelatedTasks($db);
     // This query gets all the samples to be processed that are on a survey which does summarisation
     $query = str_replace(['#procId#', '#task#'], [$procId, 'task_summary_builder_sample'],
         $queries['get_samples_to_process']);
@@ -55,6 +56,29 @@ class task_summary_builder_sample {
     foreach($result as $row){
        summary_builder::populate_summary_table_for_sample($db, $row['sample_id'], $row['definition_id']);
     }
+  }
+
+  /**
+   * Cleanup tasks from unrelated surveys.
+   *
+   * The summary builder is only involved in surveys defined in the
+   * summary_definitions table, but tasks will be generated for all samples.
+   * It's quicker to just throw out any tasks that we don't need so we only end
+   * up processing the relevant ones.
+   *
+   * @param Database $db
+   *   Database connection.
+   */
+  private static function cleanupUnrelatedTasks($db) {
+    $qry = <<<SQL
+      DELETE FROM work_queue q
+      USING cache_samples_functional s
+      LEFT JOIN summariser_definitions sd on sd.survey_id=s.survey_id
+      WHERE s.id=q.record_id
+      AND q.task='task_summary_builder_sample'
+      AND sd.id IS NULL;
+    SQL;
+    $db->query($qry);
   }
 
 }
