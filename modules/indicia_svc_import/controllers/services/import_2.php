@@ -1403,7 +1403,8 @@ SQL;
     $config = $this->getConfig($fileName);
 
     $fields = array_merge(array_values($this->getColumnTempDbFieldMappings($config['columns'])), [
-      '_row_id',
+      // Excel row starts on 2, our _row_id is a db sequence so starts on 1.
+      '_row_id+1',
       'errors',
     ]);
     $fieldSql = implode(', ', $fields);
@@ -1420,7 +1421,28 @@ SQL;
       '[Row no.]',
       '[Errors]',
     ]));
+    // Find any date fields than need mapping back from Excel date integers to
+    // date strings.
+    $dateCols = [];
+    if ($config['isExcel']) {
+      $idx = 0;
+      foreach ($config['columns'] as $colInfo) {
+        if (preg_match('/date(_start|_end)?$/', $colInfo['warehouseField'])) {
+          $dateCols[] = $colInfo['tempDbField'];
+        }
+        $idx++;
+      }
+    }
     foreach ($results as $row) {
+      // Map any date int values back to strings.
+      if ($config['isExcel']) {
+        foreach ($dateCols as $dateCol) {
+          if (preg_match('/^\d+$/', $row[$dateCol])) {
+            $date = ImportDate::excelToDateTimeObject($row[$dateCol]);
+            $row[$dateCol] = $date->format('d/m/Y');
+          }
+        }
+      }
       fputcsv($out, $row);
     }
     fclose($out);
