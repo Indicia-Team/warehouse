@@ -281,6 +281,9 @@ class ORM extends ORM_Core {
         if (substr($key, 0, strlen($this->attrs_field_prefix) + 1) == $this->attrs_field_prefix . ':') {
           unset($values[$key]);
         }
+        if (substr($key, 0, 9) === 'fkFilter:') {
+          unset($values[$key]);
+        }
       }
     }
     parent::load_values($values);
