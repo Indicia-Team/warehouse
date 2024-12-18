@@ -310,11 +310,17 @@ class Sample_Model extends ORM_Tree {
     }
     elseif (array_key_exists('date_type', $this->submission['fields'])) {
       // Force an exception if a bad date structure provided.
-      $dateString = vague_date::vague_date_to_string([
-        $this->submission['fields']['date_start']['value'],
-        $this->submission['fields']['date_end']['value'],
-        $this->submission['fields']['date_type']['value'],
-      ]);
+      try {
+        $dateString = vague_date::vague_date_to_string([
+          $this->submission['fields']['date_start']['value'],
+          $this->submission['fields']['date_end']['value'],
+          $this->submission['fields']['date_type']['value'],
+        ]);
+      }
+      catch (InvalidVagueDateException $e) {
+        $this->errors['date_type'] = $e->getMessage();
+        return;
+      }
     }
     if (isset($dateString)) {
       $vagueDate = vague_date::string_to_vague_date($dateString);

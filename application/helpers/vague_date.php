@@ -21,6 +21,11 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
+/**
+ * Exception class for aborting.
+ */
+class InvalidVagueDateException extends Exception {}
+
 class vague_date {
 
   /**
@@ -989,7 +994,7 @@ class vague_date {
           $inputs[] = $arg;
         }
       }
-      throw new Exception(vsprintf($message, $inputs));
+      throw new InvalidVagueDateException(vsprintf($message, $inputs));
     }
   }
 
