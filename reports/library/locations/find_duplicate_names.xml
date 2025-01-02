@@ -19,7 +19,8 @@
     <param name="name" display="Location name" description="Location name to search for duplicates of." datatype="text" />
     <param name="location_type_id" display="Location type" description="Location_type_id to include in the search for duplicates." datatype="integer" />
     <param name="locattrs" display="Location attribute list" description="Comma separated list of location attribute IDs to include" datatype="locattrs" default=""/>
-    <param name="exclude_location_id" display="Exclude location ID" description="Location ID to exclude in the search for duplicates - set to the current location ID when editing so the current location isn't checked." datatype="integer">
+    <param name="exclude_location_id" display="Exclude location ID" datatype="integer" default=""
+           description="Location ID to exclude in the search for duplicates - set to the current location ID when editing so the current location isn't checked.">
       <where>l.id&lt;&gt;#exclude_location_id#</where>
     </param>
 	</params>
