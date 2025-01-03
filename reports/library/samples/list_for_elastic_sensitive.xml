@@ -57,6 +57,7 @@
     SET recorded_parent_location_id = lp.id,
       recorded_parent_location_name = lp.name,
       recorded_parent_location_code = lp.code,
+      given_parent_locality_name = COALESCE(lp.name, sp.location_name),
       parent_sample_attrs_json=snfp.attrs_json
     FROM samples sp
     JOIN cache_samples_nonfunctional snfp ON snfp.id=sp.id
@@ -163,6 +164,7 @@
             datatype="float"
             term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
     <column name="given_locality_name" sql="s.location_name" datatype="text" />
+    <column name="given_parent_locality_name" sql="null::text" datatype="text" />
     <column name="recorded_location_id" sql="l.id" datatype="integer" />
     <column name="recorded_location_name" sql="l.name" datatype="text" />
     <column name="recorded_location_code" sql="l.code" datatype="text" />

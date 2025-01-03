@@ -36,6 +36,7 @@
     SET recorded_parent_location_id = CASE WHEN o.private='false' AND o.sensitive='false' THEN lp.id ELSE null END,
       recorded_parent_location_name = CASE WHEN o.private='false' AND o.sensitive='false' THEN lp.name ELSE null END,
       recorded_parent_location_code = CASE WHEN o.private='false' AND o.sensitive='false' THEN lp.code ELSE null END,
+      given_parent_locality_name = CASE WHEN o.private='false' AND o.sensitive='false' THEN COALESCE(lp.name, sp.location_name) ELSE null END,
       parent_sample_attrs_json=snfp.attrs_json
     FROM samples sp
     JOIN cache_samples_nonfunctional snfp ON snfp.id=sp.id
@@ -56,7 +57,8 @@
 
     -- Sensitive site name warnings.
     UPDATE output_rows o
-    SET given_locality_name='!'
+    SET given_locality_name='!',
+      given_parent_locality_name = CASE WHEN COALESCE(lp.name, sp.location_name, '')&lt;&gt;'' IS NULL THEN NULL ELSE '!' END
     FROM samples s
     LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
     LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
@@ -161,6 +163,7 @@
             datatype="float"
             term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
     <column name="given_locality_name" sql="o.location_name" datatype="text" />
+    <column name="given_parent_locality_name" sql="null::text" datatype="text" />
     <column name="recorded_location_id" sql="l.id" datatype="integer" />
     <column name="recorded_location_name" sql="l.name" datatype="text" />
     <column name="recorded_location_code" sql="l.code" datatype="text" />
