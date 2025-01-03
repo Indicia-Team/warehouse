@@ -11,6 +11,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 * Adds the verbatim location name given for parent samples to the output sent to Logstash for
   indexing into Elasticsearch.
+* On the Warehouse admin Diagnostics & Maintenance page, the automatic repair tool now detects Work
+  Queue tasks which have started but never completed and resets them.
+* Clarification of the terms used to describe import fields for associated occurrences.
+* Improvements to the report which lists a user's previous imports, see
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1764:
+  * Default sort is recent reports first.
+  * Parameter allowing exclusion of zero row imports.
+  * Allow sorting by using the filter row at the top of each column.
+
+### Bugfixes
+
+* Fixes the handling of errors in imported vague dates which use individual date components - see
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1768.
+* Fixes to the V2 importer - see https://github.com/BiologicalRecordsCentre/iRecord/issues/1736:
+  * Ensures the shown error row is correct in error spreadsheet downloads.
+  * Don't attempt to match missing taxon names - they are now handled as normal validation
+    failures.
+  * Fix potential for shown error count to be incorrect.
+* UKSI incremental updates - fixes errors caused when UKSI promote name operation used to move a
+  name.
 
 ## Version 9.7.3
 *2024-12-1*
