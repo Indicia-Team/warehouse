@@ -4,6 +4,14 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.8.0
+*2025-01-03*
+
+### Changes
+
+* Adds the verbatim location name given for parent samples to the output sent to Logstash for
+  indexing into Elasticsearch.
+
 ## Version 9.7.3
 *2024-12-1*
 
