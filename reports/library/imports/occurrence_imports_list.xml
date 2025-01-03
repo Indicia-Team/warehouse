@@ -18,11 +18,11 @@
     </param>
   </params>
   <columns>
-    <column name="import_guid" sql="import_guid" in_count="true" />
-    <column name="date_time" display="Date/time started" sql="min(o.created_on)" aggregate="true" />
-    <column name="imported_by" display="Imported by" sql="coalesce(p.first_name || ' ', '') || p.surname" />
-    <column name="records" display="# Records" sql="count(o.*)" aggregate="true" />
-    <column name="from_id" sql="min(o.id)" aggregate="true" visible="false" />
-    <column name="to_id" sql="max(o.id)" aggregate="true" visible="false" />
+    <column name="import_guid" sql="import_guid" in_count="true" datatype="text" />
+    <column name="date_time" display="Date/time started" sql="min(o.created_on)" aggregate="true" datatype="date" />
+    <column name="imported_by" display="Imported by" sql="coalesce(p.first_name || ' ', '') || p.surname" datatype="text" />
+    <column name="records" display="# Records" sql="count(o.*)" aggregate="true" datatype="integer" />
+    <column name="from_id" sql="min(o.id)" aggregate="true" visible="false" datatype="integer" />
+    <column name="to_id" sql="max(o.id)" aggregate="true" visible="false" datatype="integer" />
   </columns>
 </report>

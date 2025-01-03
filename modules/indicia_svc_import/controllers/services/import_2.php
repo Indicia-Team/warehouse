@@ -1245,16 +1245,16 @@ SQL;
         }
         $parent->set_submission_data($submission);
         if ($isPrecheck) {
-          $errors = $parent->precheck($identifiers);
+          $parentErrors = $parent->precheck($identifiers);
           // A fake ID to allow check on children.
           $parent->id = 1;
         }
         else {
           $parent->submit();
-          $errors = $parent->getAllErrors();
+          $parentErrors = $parent->getAllErrors();
         }
         $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityColumns, $config, $parentEntityDataRow);
-        if (count($errors) > 0) {
+        if (count($parentErrors) > 0) {
           $config['errorsCount'] += count($childEntityDataRows);
           if (!$isPrecheck) {
             // As we won't individually process the occurrences due to error in
@@ -1262,11 +1262,11 @@ SQL;
             $config['rowsProcessed'] += count($childEntityDataRows);
           }
           $keyFields = $this->getDestFieldsForColumns($parentEntityColumns);
-          $this->saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $errors, $config);
+          $this->saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $parentErrors, $config);
         }
         // If sample saved OK, or we are just prechecking, process the matching
         // occurrences.
-        if (count($errors) === 0 || $isPrecheck) {
+        if (count($parentErrors) === 0 || $isPrecheck) {
           foreach ($childEntityDataRows as $childEntityDataRow) {
             $child = ORM::factory($config['entity']);
             $submission = [
@@ -1286,7 +1286,11 @@ SQL;
               $errors = $child->getAllErrors();
             }
             if (count($errors) > 0) {
-              $config['errorsCount']++;
+              // Register additional error row, but only if not already
+              // registered due to error in parent.
+              if (count($parentErrors) === 0) {
+                $config['errorsCount']++;
+              }
               $this->saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
             }
             elseif (!$isPrecheck) {
@@ -1399,7 +1403,8 @@ SQL;
     $config = $this->getConfig($fileName);
 
     $fields = array_merge(array_values($this->getColumnTempDbFieldMappings($config['columns'])), [
-      '_row_id',
+      // Excel row starts on 2, our _row_id is a db sequence so starts on 1.
+      '_row_id+1',
       'errors',
     ]);
     $fieldSql = implode(', ', $fields);
@@ -1416,7 +1421,28 @@ SQL;
       '[Row no.]',
       '[Errors]',
     ]));
+    // Find any date fields than need mapping back from Excel date integers to
+    // date strings.
+    $dateCols = [];
+    if ($config['isExcel']) {
+      $idx = 0;
+      foreach ($config['columns'] as $colInfo) {
+        if (preg_match('/date(_start|_end)?$/', $colInfo['warehouseField'])) {
+          $dateCols[] = $colInfo['tempDbField'];
+        }
+        $idx++;
+      }
+    }
     foreach ($results as $row) {
+      // Map any date int values back to strings.
+      if ($config['isExcel']) {
+        foreach ($dateCols as $dateCol) {
+          if (preg_match('/^\d+$/', $row[$dateCol])) {
+            $date = ImportDate::excelToDateTimeObject($row[$dateCol]);
+            $row[$dateCol] = $date->format('d/m/Y');
+          }
+        }
+      }
       fputcsv($out, $row);
     }
     fclose($out);
@@ -2117,7 +2143,8 @@ SQL;
     $sql = <<<SQL
 SELECT DISTINCT {$valueToMapColName} as value, {$valueToMapColName}_id_choices::text as choices
 FROM import_temp.$config[tableName]
-WHERE {$valueToMapColName}_id IS NULL;
+WHERE {$valueToMapColName}_id IS NULL
+AND {$valueToMapColName}<>'';
 SQL;
     $rows = $db->query($sql)->result();
     $values = [];

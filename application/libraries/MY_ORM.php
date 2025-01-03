@@ -281,6 +281,9 @@ class ORM extends ORM_Core {
         if (substr($key, 0, strlen($this->attrs_field_prefix) + 1) == $this->attrs_field_prefix . ':') {
           unset($values[$key]);
         }
+        if (substr($key, 0, 9) === 'fkFilter:') {
+          unset($values[$key]);
+        }
       }
     }
     parent::load_values($values);
@@ -1009,7 +1012,8 @@ class ORM extends ORM_Core {
     }
     $validationObj = new Validation($vArray);
     $this->validate($validationObj);
-    $errors = $validationObj->errors();
+    // Errors can be in $this->errors from preSubmit function, so merge them.
+    $errors = array_merge($this->errors, $validationObj->errors());
     // Ensure fieldname prefixed with entity.
     $errors = array_combine(
       array_map(fn($k) => "$this->object_name:$k", array_keys($errors)),

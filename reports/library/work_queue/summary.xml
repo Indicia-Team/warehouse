@@ -10,7 +10,12 @@
   <columns>
     <column name="task" display="Task" sql="w.task" in_count="true" />
     <column name="priority" display="Priority" sql="w.priority::text" in_count="true" />
-    <column name="error_detail" display="Error message" sql="w.error_detail" in_count="true" />
+    <column name="error_detail" display="Error message" in_count="true" sql="
+      case
+        when w.error_detail is not null then w.error_detail
+        when claimed_on&lt;now() - '1 hour'::interval then 'Task did not complete on previous attempt.'
+      end
+    "/>
     <column name="processing" display="Processing" sql="case when w.claimed_by is null then 'No' else 'Yes' end" in_count="true" />
     <column name="max_age" display="Oldest" sql="min(created_on)" aggregate="true" />
     <column name="count" display="Count" sql="count(w.*)" aggregate="true" />
