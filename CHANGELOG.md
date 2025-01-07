@@ -9,6 +9,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Bugfixes
 
+* Fixes an error calling the REST API to access data using peer review or data flow sharing modes.
+
+## Version 9.8.1
+*2025-01-07*
+
+### Bugfixes
+
 * Rewritten the mechanism which ensures that REST API autofeed requests don't run the same feed
   twice in parallel (if the previous request has not yet completed) to ensure that timeouts do not
   leave the process locked indefinitely. This fixes issues where the Logstash feed to Elasticsearch

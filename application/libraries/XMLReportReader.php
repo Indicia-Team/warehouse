@@ -163,16 +163,10 @@ class XMLReportReader_Core implements ReportReader {
    *   Report database connection.
    * @param string $report
    *   Report file path.
-   * @param mixed $websiteIds
-   *   List of websites to include data for or NULL if any.
-   * @param string $sharing
-   *   Set to reporting, verification, moderation, peer_review, data_flow,
-   *   editing or me (=user's data) depending on the type of data from other
-   *   websites to include in this report.
    * @param array $colsToInclude
    *   Optional list of column names to include in the report output.
    */
-  public function __construct($db, $report, $websiteIds, $sharing = 'reporting', array $colsToInclude = []) {
+  public function __construct($db, $report, array $colsToInclude = []) {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try {
       $this->db = $db;
@@ -377,8 +371,7 @@ class XMLReportReader_Core implements ReportReader {
                   $reader->getAttribute('tablename'),
                   $reader->getAttribute('separator'),
                   $reader->getAttribute('where'),
-                  $reader->getAttribute('display'),
-                  $reader->getAttribute('visible')
+                  $reader->getAttribute('display')
                 );
                 break;
               }
@@ -849,16 +842,16 @@ class XMLReportReader_Core implements ReportReader {
   public function describeReport($descLevel) {
     switch ($descLevel) {
       case (ReportReader::REPORT_DESCRIPTION_BRIEF):
-        return array(
+        return [
           'name' => $this->name,
           'title' => $this->getTitle(),
           'row_class' => $this->getRowClass(),
-          'description' => $this->getDescription());
-        break;
+          'description' => $this->getDescription()
+        ];
+
       case (ReportReader::REPORT_DESCRIPTION_FULL):
-        // Everything
-        return array
-        (
+        // Everything.
+        return [
           'name' => $this->name,
           'title' => $this->getTitle(),
           'description' => $this->getDescription(),
@@ -867,20 +860,19 @@ class XMLReportReader_Core implements ReportReader {
           'parameters' => array_diff_key($this->params, $this->defaultParamValues),
           'query' => $this->query,
           'order_by' => $this->order_by
-        );
-        break;
+        ];
+
       case (ReportReader::REPORT_DESCRIPTION_DEFAULT):
       default:
         // At this report level, we include most of the useful stuff.
-        return array
-        (
+        return [
           'name' => $this->name,
           'title' => $this->getTitle(),
           'description' => $this->getDescription(),
           'row_class' => $this->getRowClass(),
           'columns' => $this->columns,
           'parameters' => array_diff_key($this->params, $this->defaultParamValues)
-        );
+        ];
     }
   }
 
@@ -1098,8 +1090,8 @@ TBL;
       $standardParamsHelper = "report_standard_params_{$this->loadStandardParamsSet}";
       $deprecated = $standardParamsHelper::getDeprecatedParameters();
       // For backwards compatibility, convert a few param names...
-      foreach ($deprecated as $param) {
-        $this->convertDeprecatedParam($providedParams, $param);
+      foreach ($deprecated as $paramDef) {
+        $this->convertDeprecatedParam($providedParams, $paramDef);
       }
       // Always include the operation params, as their default might be needed
       // even when no parameter is provided. E.g. the default website_list_op
@@ -1205,17 +1197,17 @@ TBL;
    *
    * @param array $providedParams
    *   The array of provided parameters which will be modified.
-   * @param string $param
+   * @param array $paramPair
    *   The parameter mapping definition. The first array entry is the old param
    *   name, the second is the new one. The third entry is set to TRUE for any
    *   string parameters which should be quoted.
    */
-  private function convertDeprecatedParam(array &$providedParams, $param) {
-    if (count($param) === 2) {
+  private function convertDeprecatedParam(array &$providedParams, array $paramDef) {
+    if (count($paramDef) === 2) {
       // Default to not handle as string.
-      $param[] = FALSE;
+      $paramDef[] = FALSE;
     }
-    list($from, $to, $string) = $param;
+    list($from, $to, $string) = $paramDef;
     $quote = $string ? "'" : '';
     if (!empty($providedParams[$from]) && empty($providedParams[$to])) {
       kohana::log('debug', "Converting provided param $from - $to");
