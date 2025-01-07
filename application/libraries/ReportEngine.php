@@ -362,7 +362,7 @@ class ReportEngine {
       case 'xml':
         // Allow the list of columns to be returned to be passed as a parameter.
         $cols = empty($this->providedParams['columns']) ? [] : explode(',', $this->providedParams['columns']);
-        $this->reportReader = new XMLReportReader($this->reportDb, $this->report, $this->websiteIds, $this->sharingMode, $cols);
+        $this->reportReader = new XMLReportReader($this->reportDb, $this->report, $cols);
         $metadata = XMLReportReader::loadMetadata($this->report);
         if ($this->isReportRestricted($report, $metadata)) {
           // Abort as restricted report.
@@ -429,7 +429,7 @@ class ReportEngine {
    */
   public function requestMetadata($report, $includeUnusedParameters = FALSE) {
     $this->fetchLocalReport($report);
-    $this->reportReader = new XMLReportReader($this->reportDb, $this->report, $this->websiteIds);
+    $this->reportReader = new XMLReportReader($this->reportDb, $this->report);
     $this->providedParams = [];
     if ($includeUnusedParameters) {
       $params = $this->reportReader->getAllParams();
