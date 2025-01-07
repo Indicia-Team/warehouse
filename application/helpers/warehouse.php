@@ -112,6 +112,13 @@ class warehouse {
   ];
 
   /**
+   * Flock file created if this process can only run one at a time.
+   *
+   * @var resource
+   */
+  private static $lock;
+
+  /**
    * Loads any of the client helper libraries.
    *
    * Also ensures that the correct resources are loaded when the libraries are
@@ -286,6 +293,74 @@ class warehouse {
   public static function recordStatusCodeToTerm($code, $default = NULL) {
     $default = $default ?? $code;
     return array_key_exists($code, self::$recordStatusMappings) ? self::$recordStatusMappings[$code] : $default;
+  }
+
+  /**
+   * Find the command-line or query string parameters we are locking for.
+   *
+   * @return array
+   *   Parameters as an associative array.
+   */
+  private static function getLockParameters() {
+    global $argv;
+    if (isset($argv)) {
+      parse_str(implode('&', array_slice($argv, 1)), $params);
+    }
+    else {
+      $params = $_GET;
+    }
+    return $params;
+  }
+
+  /**
+   * Build a suitable filename for the lock file.
+   *
+   * The file name is unique for the type and parameters supplied via the
+   * command-line or query string.
+   *
+   * @param string $type
+   *   Process type name, e.g. scheduled-tasks or rest-autofeed.
+   * @param array $params
+   *   Associative array of parameters to define the unique lock.
+   *
+   * @return string
+   *   A filename which includes a hash of the parameters, so that it is
+   *   unique to this configuration of the scheduled tasks.
+   */
+  private static function getLockFilename($type) {
+    $uid = md5(http_build_query(self::getLockParameters()));
+    return DOCROOT . "application/cache/$type.lock-$uid.lock";
+  }
+
+  /**
+   * Grab a file lock if possible.
+   *
+   * Will fail if another process is already running with the same type and
+   * command-line or query string parameters.
+   *
+   * @param string $type
+   *   Process type name, e.g. scheduled-tasks or rest-autofeed.
+   */
+  public static function lockProcess($type) {
+    self::$lock = fopen(self::getLockFilename($type), 'w+');
+    if (!flock(self::$lock, LOCK_EX | LOCK_NB)) {
+      kohana::log('alert', "Process $type attempt aborted as already running.");
+      echo '<hr>Locked out<hr>';
+      die("\nProcess $type attempt aborted as already running.\n");
+    }
+    fwrite(self::$lock, 'Got a lock: ' . var_export(self::getLockParameters(), TRUE));
+  }
+
+  /**
+   * Release and clean up the lock file.
+   *
+   * @param string $type
+   *   Process type name, e.g. scheduled-tasks or rest-autofeed.
+   */
+  public static function unlockProcess($type) {
+    echo 'unlocking<br/>';
+    fclose(self::$lock);
+    unlink(self::getLockFilename($type));
   }
 
   /**

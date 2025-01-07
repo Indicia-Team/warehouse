@@ -25,7 +25,7 @@
 use Firebase\JWT;
 
 define("REST_API_DEFAULT_PAGE_SIZE", 100);
-define("AUTOFEED_DEFAULT_PAGE_SIZE", 10000);
+define("AUTOFEED_DEFAULT_PAGE_SIZE", 3000);
 const ALLOWED_SCOPES = [
   'reporting',
   'peer_review',
@@ -1626,14 +1626,9 @@ class Rest_Controller extends Controller {
    */
   private function getReportOutput(array $segments) {
     if ($this->getAutofeedMode()) {
-      // Check the semaphore to ensure we don't run the same autofeed query
-      // twice at one time. Could happen if a query runs slowly.
-      if (variable::get("rest-autofeed-$_GET[proj_id]-running", FALSE, FALSE) === TRUE) {
-        RestObjects::$apiResponse->fail('Service still processing prior request for feed.', 503, "Service unavailable");
-        throw new RestApiAbort("Autofeed for $_GET[proj_id] already running");
-      }
-      // Set a semaphore so we know this feed is querying.
-      variable::set("rest-autofeed-$_GET[proj_id]-running", TRUE);
+      // Ensure we don't run the same autofeed query twice at one time, e.g. if
+      // the previous request ran slowly.
+      warehouse::lockProcess('rest-autofeed');
     }
     try {
       $reportFile = $this->getReportFileNameFromSegments($segments);
@@ -1687,8 +1682,8 @@ class Rest_Controller extends Controller {
     }
     finally {
       if ($this->getAutofeedMode()) {
-        // Remove the semaphore as no longer querying.
-        variable::delete("rest-autofeed-$_GET[proj_id]-running");
+        // Unlock the process as no longer querying.
+        warehouse::unlockProcess('rest-autofeed');
       }
     }
   }
