@@ -87,8 +87,8 @@ class warehouse {
   private static $sharingMappings = [
     'R' => 'reporting',
     'V' => 'verification',
-    'P' => 'peer review',
-    'D' => 'data flow',
+    'P' => 'peer_review',
+    'D' => 'data_flow',
     'M' => 'moderation',
     'E' => 'editing',
   ];
