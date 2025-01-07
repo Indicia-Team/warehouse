@@ -32,7 +32,7 @@ interface ReportReader {
   /**
    * Constructs a reader for the specified report.
    */
-  public function __construct($db, $report, $websiteIds);
+  public function __construct($db, $report);
 
   /**
    * Returns the title of the report.
