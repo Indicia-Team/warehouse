@@ -4,6 +4,18 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.8.1
+*2025-01-07*
+
+### Bugfixes
+
+* Rewritten the mechanism which ensures that REST API autofeed requests don't run the same feed
+  twice in parallel (if the previous request has not yet completed) to ensure that timeouts do not
+  leave the process locked indefinitely. This fixes issues where the Logstash feed to Elasticsearch
+  can get blocked after a query timeout.
+* Reduced default autofeed page size from 10000 records to 3000 records, reducing the chances of a
+  timeout.
+
 ## Version 9.8.0
 *2025-01-03*
 

@@ -54,7 +54,6 @@ class Diagnostics_Controller extends Indicia_Controller {
     $this->repairWorkQueueDeadlocks($db, $log);
     $this->repairWorkQueueStuckTasks($db, $log);
     $this->repairRecentSamplesWithoutSpatialIndex($db, $log);
-    $this->repairStuckLogstashTasks($db, $log);
 
     echo json_encode(['status' => 200, 'msg' => 'Maintenance done', 'log' => $log]);
   }
@@ -152,39 +151,6 @@ SQL;
     }
     elseif ($fixed === 1) {
       $log[] =  "One sample was requeued for spatial indexing.";
-    }
-  }
-
-  /**
-   * Restarts stuck logstash tasks.
-   *
-   * Tasks running during a server crash may be left with their running
-   * semaphore set, so never restart.
-   *
-   * @param Database $db
-   *   Database connection
-   * @param array $log
-   *   Output message log that can be appended to.
-   */
-  private function repairStuckLogstashTasks($db, array &$log) {
-    $query = <<<SQL
-      -- Remove stuck running semaphores after a crash.
-      delete
-      from variables v1
-      using variables v2
-      where v2.name || '-running'=v1.name
-      and v1.name like 'rest-autofeed-%running'
-      and (
-        nullif((v2.value::json->0->>'last_tracking_id')::integer, 0) < (select max(tracking) - 20000 from cache_occurrences_functional)
-          or (v2.value::json->0->>'last_tracking_date')::timestamp < now() - '2 hours'::interval
-      );
-SQL;
-    $fixed = $db->query($query)->count();
-    if ($fixed > 1) {
-      $log[] =  "$fixed stuck Logstash tasks were reset.";
-    }
-    elseif ($fixed === 1) {
-      $log[] =  "One stuck Logstash task was reset.";
     }
   }
 

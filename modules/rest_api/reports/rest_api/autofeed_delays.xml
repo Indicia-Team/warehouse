@@ -4,7 +4,6 @@
     select #columns#
     from variables
     where name like 'rest-autofeed%'
-    and name not like '%-running'
   </query>
   <order_bys>
     <order_by>name</order_by>

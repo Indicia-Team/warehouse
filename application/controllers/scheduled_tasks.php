@@ -45,8 +45,6 @@ class Scheduled_Tasks_Controller extends Controller {
    */
   private Database $db;
 
-  private $lock;
-
   /**
    * Main entry point for scheduled tasks.
    *
@@ -59,7 +57,7 @@ class Scheduled_Tasks_Controller extends Controller {
    * then everything is run.
    */
   public function index() {
-    $this->lock();
+    warehouse::lockProcess('scheduled-tasks');
     try {
       $tm = microtime(TRUE);
       $this->db = new Database();
@@ -135,53 +133,8 @@ class Scheduled_Tasks_Controller extends Controller {
       }
     }
     finally {
-      $this->unlock();
+      warehouse::unlockProcess('scheduled-tasks');
     }
-  }
-
-  /**
-   * Build a suitable filename for the lock file.
-   *
-   * Different configurations of the scheduled tasks call (specified by query
-   * string or command line parameters) have their own separate locking, so
-   * you can run work_queue alongside other tasks for example.
-   *
-   * @return string
-   *   A filename which includes a hash of the parameters, so that it is
-   *   unique to this configuration of the scheduled tasks.
-   */
-  private function getLockFilename() {
-    global $argv;
-    if (isset($argv)) {
-      parse_str(implode('&', array_slice($argv, 1)), $params);
-    }
-    else {
-      $params = $_GET;
-    }
-    return DOCROOT . 'application/cache/scheduled-tasks.lock-' . md5(http_build_query($params)) . '.lock';
-  }
-
-  /**
-   * Grab a file lock if possible.
-   *
-   * Will fail if another process is already running the same configuration of
-   * scheduled tasks.
-   */
-  private function lock() {
-    $this->lock = fopen($this->getLockFilename(), 'w+');
-    if (!flock($this->lock, LOCK_EX | LOCK_NB)) {
-      kohana::log('alert', 'Scheduled tasks attempt aborted as already running.');
-      die("\nScheduled tasks attempt aborted as already running.\n");
-    }
-    fwrite($this->lock, 'Got a lock: ' . var_export($_GET, TRUE));
-  }
-
-  /**
-   * Release and clean up the lock file.
-   */
-  private function unlock() {
-    fclose($this->lock);
-    unlink($this->getLockFilename());
   }
 
   /**
