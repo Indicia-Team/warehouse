@@ -202,6 +202,7 @@ class RestApiElasticsearch {
         'field' => 'occurrence.organism_quantity',
       ],
       ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
+      ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
       ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
       ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
@@ -249,6 +250,7 @@ class RestApiElasticsearch {
       ['caption' => 'Method', 'field' => '#method:mapmate#'],
       ['caption' => 'Sex', 'field' => '#sex:mapmate#'],
       ['caption' => 'Stage', 'field' => '#life_stage:mapmate#'],
+      ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
       ['caption' => 'Status', 'field' => '#constant:Not recorded#'],
       [
         'caption' => 'Comment',
