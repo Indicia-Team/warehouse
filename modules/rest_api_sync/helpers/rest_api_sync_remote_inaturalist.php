@@ -258,6 +258,58 @@ QRY;
   }
 
   /**
+   * Ensures that iNat controlled terms are available in Indicia termlists.
+   *
+   * If iNat adds a new controlled term to an attribute, then we need to add a
+   * matching term to our version of the attribute's termlist.
+   *
+   * @param array $server
+   *   Server configuration.
+   */
+  private static function ensureTermsExist(array $server) {
+    if (!empty($server['annotationAttrs'])) {
+      $db = new Database();
+      foreach(self::$controlledTerms as $ctId => $ctInfo) {
+        if (isset($server['annotationAttrs']["controlled_attribute:$ctId"])) {
+          $attrTokens = explode(':', $server['annotationAttrs']["controlled_attribute:$ctId"]);
+          // Fetch the linked attr termlist_id.
+          $attr = $db->query("SELECT termlist_id FROM occurrence_attributes WHERE id=$attrTokens[1]")->current();
+          // If a lookup.
+          if ($attr && $attr->termlist_id) {
+            // Load the existing terms.
+            $sql = <<<SQL
+              SELECT t.term
+              FROM termlists_terms tlt
+              JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
+              WHERE tlt.termlist_id=$attr->termlist_id
+              AND tlt.deleted=false
+            SQL;
+            $termRows = $db->query($sql)->result();
+            $terms = [];
+            foreach ($termRows as $termRow) {
+              $terms[] = $termRow->term;
+            }
+            // Compare the iNat controlled termlist against our copy to see if
+            // any are missing.
+            $missingTerms = array_diff($ctInfo['values'], $terms);
+            // If any don't exist, then add them.
+            foreach ($missingTerms as $missingTerm) {
+              $escapedTerm = pg_escape_literal($db->getLink(), $missingTerm);
+              $newTermIds[] = $db->query("SELECT insert_term($escapedTerm, 'eng', null, $attr->termlist_id, null);")->insert_id();
+              kohana::log('alert', "Added iNaturalist term $missingTerm");
+            }
+          }
+        }
+      }
+      if (count($newTermIds) > 0) {
+        // Terms must be immediately available in cache as will be used to
+        // lookup Id.
+        cache_builder::insert($db, 'termlists_terms', $newTermIds);
+      }
+    }
+  }
+
+  /**
    * Loads the controlled terms information from iNat.
    *
    * @param string $serverId
@@ -287,8 +339,11 @@ QRY;
           'values' => $termLookup,
         ];
       }
+      // Check if the controlled terms exists in our attribute's termlist.
+      // If not, then add it.
       $cache->set('inaturalist-controlled-terms', self::$controlledTerms);
     }
+    self::ensureTermsExist($server);
   }
 
 }

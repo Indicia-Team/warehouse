@@ -2251,9 +2251,9 @@ SQL;
             return FALSE;
           }
           elseif ($creatingTerm) {
-            $escapedTerm = pg_escape_string($this->db->getLink(), $value);
+            $escapedTerm = pg_escape_literal($this->db->getLink(), $value);
             $value = $this->db
-              ->query("select insert_term('$escapedTerm', '$allowTermCreationLang', null, $attrDef->termlist_id, null);")
+              ->query("select insert_term($escapedTerm, '$allowTermCreationLang', null, $attrDef->termlist_id, null);")
               ->insert_id();
           }
         }
