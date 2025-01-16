@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,20 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Notification Emails
- * @subpackage  Config
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	https://github.com/indicia-team/warehouse/
  */
 
-$config['system_name']='System name';
-$config['email_subject']='You have new notifications.';
-$config['how_to_address_username']='Dear';
-$config['top_of_email_body']='You have the following new notifications.';
-$config['email_sender_address']='sender@example.com';
-$config['notifications_page_url']='http://example.com/my-notifications';
-$config['notifications_page_url_text']='Click for notifications';
+$config['system_name'] = 'System name';
+$config['email_subject'] = 'You have new notifications.';
+$config['how_to_address_username'] = 'Dear';
+$config['top_of_email_body'] = 'You have the following new notifications.';
+$config['email_sender_address'] = 'sender@example.com';
+$config['notifications_page_url'] = 'http://example.com/my-notifications';
+$config['notifications_page_url_text'] = 'Click for notifications';
 
 // Same again but for pending check/moderation tasks.
 $config['record_details_page_urls'] = [
