@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
@@ -25,7 +24,7 @@
 defined('SYSPATH') or die('No direct script access.');
 
 define('INAT_PAGE_SIZE', 50);
-define('INAT_MAX_PAGES', 5);
+define('INAT_MAX_PAGES', 1);
 
 /**
  * Helper class for syncing to the RESTful API on iNaturalist.
@@ -40,6 +39,16 @@ class rest_api_sync_remote_inaturalist {
   private static $controlledTerms = [];
 
   /**
+   * ID from the rest_api_sync_skipped_records table.
+   *
+   * Used when attempting to re-import previously skipped records. The highest
+   * ID  of the last loaded page, so the next page can be loaded.
+   *
+   * @var int
+   */
+  private static $lastSkippedRecordId;
+
+  /**
    * Synchronise a set of data loaded from the iNat server.
    *
    * @param string $serverId
@@ -51,6 +60,10 @@ class rest_api_sync_remote_inaturalist {
     $timestampAtStart = date('c');
     // Initial population or delta of recent changes?
     $mode = variable::get("rest_api_sync_{$serverId}_mode", 'initialPopulate');
+    $redoingSkippedRecords = !empty($server['redoSkippedRecords']);
+    if ($redoingSkippedRecords && empty($server['redoServer'])) {
+      throw new exception('The name of the server to redo must be provided in the server settings redoServer property when using the redoSkippedRecords option.');
+    }
     if (!variable::get("rest_api_sync_{$serverId}_last_id")) {
       // Starting a batch, so work from first ID to last. Will later filter by
       // updated date if in delta mode.
@@ -78,8 +91,9 @@ class rest_api_sync_remote_inaturalist {
       $pageCount++;
       ob_flush();
     } while ($syncStatus['moreToDo'] && ($pageCount < INAT_MAX_PAGES || $mode === 'delta'));
-    if ($mode === 'initialPopulate' && !$syncStatus['moreToDo']) {
-      // Initial population done, so switch to delta mode.
+    if ($mode === 'initialPopulate' && !$syncStatus['moreToDo'] && !$redoingSkippedRecords) {
+      // Initial population done, so switch to delta mode (unless redoing
+      // skipped records which never does delta mode).
       variable::set("rest_api_sync_{$serverId}_mode", 'delta');
     }
     // Batch finished successfully so cleanup.
@@ -109,15 +123,34 @@ class rest_api_sync_remote_inaturalist {
     // record ID we got to as we page through.
     $fromId = variable::get("rest_api_sync_{$serverId}_last_id", 0, FALSE);
     $lastId = $fromId;
-    // Initial population or delta of recent changes?
-    $mode = variable::get("rest_api_sync_{$serverId}_mode", 'initialPopulate');
+    $redoingSkippedRecords = !empty($server['redoSkippedRecords']);
+    // Initial population or delta of recent changes? If redoing skipped
+    // records, always remain in initialPopulateMode as it's just a single
+    // trawl through rest_api_sync_skipped_records to see if anything has been
+    // fixed.
+    $mode = $redoingSkippedRecords ? 'initialPopulate' : variable::get("rest_api_sync_{$serverId}_mode", 'initialPopulate');
     $parameters = [
       'per_page' => INAT_PAGE_SIZE,
-      // Paging done by ID.
-      'id_above' => $fromId,
       'order' => 'asc',
       'order_by' => 'id',
     ];
+    if ($redoingSkippedRecords) {
+      // Doing previously skipped records, so use the
+      // rest_api_sync_skipped_records table to specify the batch of IDs.
+      $requestedSkippedRecordIds = self::getNextPageOfSkippedRecords($db, $server, $fromId);
+      if (count($requestedSkippedRecordIds) === 0) {
+        return [
+          'moreToDo' => FALSE,
+          'pagesToGo' => 0,
+          'recordsToGo' => 0,
+        ];
+      }
+      $parameters['id'] = implode(',', $requestedSkippedRecordIds);
+    }
+    else {
+      // Paging done by ID.
+      $parameters['id_above'] = $fromId;
+    }
     if ($mode === 'delta') {
       // Filter to recently updated records.
       $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
@@ -132,8 +165,11 @@ class rest_api_sync_remote_inaturalist {
     );
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $tracker = ['inserts' => 0, 'updates' => 0, 'errors' => 0];
+    $foundIds = [];
     foreach ($data['results'] as $iNatRecord) {
       try {
+        self::clearPreviousErrors($db, $iNatRecord['id'], $serverId, $server);
+        $foundIds[] = $iNatRecord['id'];
         if (empty($iNatRecord['taxon']['name'])) {
           // Skip names with no identification.
           throw new exception("iNat record $iNatRecord[id] skipped as no identification.");
@@ -206,8 +242,6 @@ class rest_api_sync_remote_inaturalist {
         if ($is_new !== NULL) {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
-        $db->query("UPDATE rest_api_sync_skipped_records SET current=false " .
-          "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
       }
       catch (exception $e) {
         rest_api_sync_utils::log(
@@ -243,18 +277,102 @@ QRY;
     }
     // Prevent memory accumulation if log not flushed.
     kohana::log_save();
-    variable::set("rest_api_sync_{$serverId}_last_id", $lastId);
+    if ($redoingSkippedRecords) {
+      $unfoundRecords = implode(',', array_diff($requestedSkippedRecordIds, $foundIds));
+      if (strlen($unfoundRecords) > 0) {
+        $serverName = pg_escape_literal($db->getLink(), $server['redoServer']);
+        $db->query(<<<SQL
+          INSERT INTO rest_api_sync_skipped_records (server_id, source_id, dest_table, error_message, current, created_on, created_by_id)
+          SELECT DISTINCT server_id, source_id, dest_table, 'Record refetch attempted but no longer available.', false, now(), $createdById
+          FROM rest_api_sync_skipped_records
+          WHERE server_id=$serverName AND source_id::integer IN ($unfoundRecords) AND dest_table='occurrences'
+          AND current=true
+          AND source_id::integer IN ($unfoundRecords);
+
+          UPDATE rest_api_sync_skipped_records
+          SET current=false
+          WHERE server_id=$serverName AND source_id::integer IN ($unfoundRecords) AND dest_table='occurrences' AND current=true;
+        SQL);
+      }
+      // Doing skipped records, so pagination is based on our skipped record
+      // table IDs, not iNat's observations.
+      variable::set("rest_api_sync_{$serverId}_last_id", self::$lastSkippedRecordId);
+    }
+    else {
+      variable::set("rest_api_sync_{$serverId}_last_id", $lastId);
+    }
+
     rest_api_sync_utils::log(
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
     $recordsToGo = $data['total_results'] - count($data['results']);
     $r = [
-      'moreToDo' => count($data['results']) === INAT_PAGE_SIZE,
+      'moreToDo' => count($data['results']) === INAT_PAGE_SIZE || $redoingSkippedRecords,
       'pagesToGo' => ceil($recordsToGo / INAT_PAGE_SIZE),
       'recordsToGo' => $recordsToGo,
     ];
     return $r;
+  }
+
+  /**
+   * Load a page of previously skipped iNat records.
+   *
+   * Use the IDs of iNat records that have previously been skipped due to
+   * errors to load a batch of records to re-attempt import of.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param array $server
+   *   Server configuration.
+   * @param int $fromId
+   *   Last ID from the rest_api_sync_skipped_records which has already been
+   *   re-attempted.
+   *
+   * @return array
+   *   List of iNat record IDs to attempt reload of.
+   */
+  private static function getNextPageOfSkippedRecords($db, array $server, int $fromId) {
+    $serverName = pg_escape_literal($db->getLink(), $server['redoServer']);
+    $limit = INAT_PAGE_SIZE;
+    $query = <<<SQL
+      SELECT id, source_id FROM rest_api_sync_skipped_records
+      WHERE server_id=$serverName
+      AND id>$fromId
+      AND current=true
+      ORDER BY id
+      LIMIT $limit;
+    SQL;
+    $rows = $db->query($query)->result();
+    $r = [];
+    foreach ($rows as $idx => $row) {
+      $r[] = $row->source_id;
+      if ($idx === $limit - 1) {
+        self::$lastSkippedRecordId = (integer) $row->id;
+      }
+    }
+    return array_unique($r);
+  }
+
+  /**
+   * Clears prior errors on a given iNat record.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param int $iNatId
+   *   iNat record ID to clear the errors from.
+   * @param mixed $serverId
+   *   ID of the server as given in the config file.
+   * @param array $server
+   *   Server configuration.
+   */
+  private static function clearPreviousErrors($db, int $iNatId, $serverId, array $server) {
+    $serverToClear = pg_escape_literal($db->getLink(), empty($server['redoSkippedRecords']) ? $serverId : $server['redoServer']);
+    // Clear any previous saved errors for this record.
+    $db->query(<<<SQL
+      UPDATE rest_api_sync_skipped_records SET current=false
+      WHERE server_id=$serverToClear AND source_id='$iNatId' AND dest_table='occurrences';
+    SQL);
   }
 
   /**
@@ -269,6 +387,7 @@ QRY;
   private static function ensureTermsExist(array $server) {
     if (!empty($server['annotationAttrs'])) {
       $db = new Database();
+      $newTermIds = [];
       foreach(self::$controlledTerms as $ctId => $ctInfo) {
         if (isset($server['annotationAttrs']["controlled_attribute:$ctId"])) {
           $attrTokens = explode(':', $server['annotationAttrs']["controlled_attribute:$ctId"]);
