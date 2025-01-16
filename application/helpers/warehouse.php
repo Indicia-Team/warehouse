@@ -358,7 +358,6 @@ class warehouse {
    *   Process type name, e.g. scheduled-tasks or rest-autofeed.
    */
   public static function unlockProcess($type) {
-    echo 'unlocking<br/>';
     fclose(self::$lock);
     unlink(self::getLockFilename($type));
   }
