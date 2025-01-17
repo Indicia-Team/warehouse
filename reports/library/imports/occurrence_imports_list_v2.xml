@@ -9,6 +9,7 @@
     JOIN people p ON p.id=u.person_id
     JOIN websites w ON w.id=i.website_id
     WHERE website_id in (#sharing_website_ids#)
+    AND i.training='#training#'
   </query>
   <order_bys>
     <order_by>i.created_on DESC</order_by>
@@ -20,6 +21,7 @@
     <param name="hide_zeros" display="Hide imports with zero records" datatype="checkbox" emptyvalue="0">
       <where value="1">i.inserted + i.updated &gt; 0</where>
     </param>
+    <param name="training" display="Training" datatype="boolean" emptyvalue="f" />
   </params>
   <columns>
     <column name="id" sql="i.id" in_count="true" visible="false" datatype="integer" />
