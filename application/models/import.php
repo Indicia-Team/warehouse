@@ -39,6 +39,7 @@ class Import_Model extends ORM {
 
     $this->unvalidatedFields = [
       'description',
+      'training',
     ];
     return parent::validate($array, $save);
   }

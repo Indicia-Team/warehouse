@@ -1584,9 +1584,15 @@ SQL;
     $import->reversible = TRUE;
     $import->mappings = json_encode($config['columns']);
     $import->global_values = json_encode($config['global-values']);
-    if ($importInfo && !empty($importInfo->description)) {
-      // This will only get specified on initial save.
-      $import->description = $importInfo->description;
+    if ($importInfo) {
+      if (!empty($importInfo->description)) {
+        // This will only get specified on initial save.
+        $import->description = $importInfo->description;
+      }
+      if (!empty($importInfo->training)) {
+        $import->training = 't';
+      }
+
     }
     $import->import_guid = $config['importGuid'];
     $import->save();
