@@ -330,7 +330,7 @@ class Pgsql_Result extends Database_Result {
 
   /**
    * Database connection link.
-   * 
+   *
    * @var PgSql\Connection
    */
   protected $link;
@@ -365,6 +365,7 @@ class Pgsql_Result extends Database_Result {
       }
     }
     else {
+      error_logger::log_trace(debug_backtrace());
       throw new Kohana_Database_Exception('database.error', pg_last_error($link) . ' - ' . $sql);
     }
 
