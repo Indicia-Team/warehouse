@@ -60,18 +60,17 @@ class task_cache_builder_update {
    */
   public static function process($db, $taskType, $procId) {
     $table = inflector::plural($taskType->entity);
+    $needsUpdateTable = pg_escape_identifier($db->getLink(), "needs_update_$table");
     $sql = <<<SQL
-CREATE TEMPORARY TABLE needs_update_$table AS
+CREATE TEMPORARY TABLE $needsUpdateTable AS
 SELECT record_id AS id, COALESCE(params->>'deleted' = 'true', false) AS deleted
 FROM work_queue
-WHERE entity='$taskType->entity' AND claimed_by='$procId'
+WHERE entity=? AND claimed_by=?
 SQL;
-    $db->query($sql);
-    $db->query("ALTER TABLE needs_update_$table ADD CONSTRAINT ix_nu_$table PRIMARY KEY (id)");
-    $sql = <<<SQL
-SELECT DISTINCT id FROM needs_update_$table;
-SQL;
-    $rows = $db->query($sql)->result();
+    $db->query($sql, [$taskType->entity, $procId]);
+    $constraintName = pg_escape_identifier($db->getLink(), "ix_nu_$table");
+    $db->query("ALTER TABLE $needsUpdateTable ADD CONSTRAINT $constraintName PRIMARY KEY (id)");
+    $rows = $db->query("SELECT DISTINCT id FROM $needsUpdateTable")->result();
     cache_builder::makeChangesWithOutput($db, $table, $rows->count());
     $ids = [];
 

@@ -27,6 +27,13 @@
 class Termlist_export_Controller extends Indicia_Controller {
 
   /**
+   * The view object.
+   *
+   * @var mixed
+   */
+  protected $view;
+
+  /**
    * @var array Holds a list of log messages describing the results of an import.
    */
   private $log = [];
@@ -64,16 +71,18 @@ class Termlist_export_Controller extends Indicia_Controller {
   /**
    * @const SQL_FIND_EXISTING_TERM = Query definition to find if a term definition already exists in the termlist.
    */
-  const SQL_FIND_EXISTING_TERM = "SELECT 1
-   FROM termlists_terms tlt
-   JOIN terms t ON t.id = tlt.term_id AND t.deleted = false
-   JOIN languages l ON l.id = t.language_id AND l.deleted = false
-   LEFT JOIN termlists_terms tltp ON tltp.id = tlt.parent_id AND tltp.deleted = false
-   LEFT JOIN terms tp ON tp.id = tltp.term_id AND tp.deleted = false
-   WHERE tlt.deleted = false AND tlt.termlist_id = {termlist_id}
-   AND t.term = '{term}' and l.iso = '{language_iso}'
-   AND coalesce(tlt.sort_order::varchar, '') = '{sort_order}'
-   AND coalesce(tp.term, '') = '{parent}'";
+  const SQL_FIND_EXISTING_TERM = <<<SQL
+    SELECT 1
+    FROM termlists_terms tlt
+    JOIN terms t ON t.id = tlt.term_id AND t.deleted = false
+    JOIN languages l ON l.id = t.language_id AND l.deleted = false
+    LEFT JOIN termlists_terms tltp ON tltp.id = tlt.parent_id AND tltp.deleted = false
+    LEFT JOIN terms tp ON tp.id = tltp.term_id AND tp.deleted = false
+    WHERE tlt.deleted = false AND tlt.termlist_id = ?
+    AND t.term = ? and l.iso = ?
+    AND coalesce(tlt.sort_order::varchar, '') = ?
+    AND coalesce(tp.term, '') = ?
+  SQL;
 
   /**
    * Constructor.
@@ -173,27 +182,26 @@ class Termlist_export_Controller extends Indicia_Controller {
     // Split the terms string into individual terms.
     $terms = explode('**', $importData['terms']);
     $termlist_id = $_POST['termlist_id'];
-    foreach ($terms as $term) {
+    foreach ($terms as $termTokens) {
       // The tokens defining the term are separated by pipes.
-      $term = explode('|', $term);
-      // SQL escaping.
-      $escapedTerm = pg_escape_string($this->db->getLink(), $term[0]);
-      $escapedParent = pg_escape_string($this->db->getLink(), $term[3]);
+      list($term, $lang, $sort, $parent) = explode('|', $termTokens);
       // Does the term already exist in the list?
-      $existing = $this->db->query(str_replace(
-        ['{termlist_id}', '{term}', '{language_iso}', '{sort_order}', '{parent}'],
-        [$_POST['termlist_id'], $escapedTerm, $term[1], $term[2], $escapedParent],
-        self::SQL_FIND_EXISTING_TERM))->result()->count();
-
+      $existing = $this->db->query(self::SQL_FIND_EXISTING_TERM, [
+        $_POST['termlist_id'],
+        $term,
+        $lang,
+        $sort,
+        $parent
+      ])->result()->count();
       if (!$existing) {
         $this->log[] = $this->db->last_query();
         // Sanitise the sort order.
-        $term[2] = empty($term[2]) ? 'null' : $term[2];
-        $this->db->query("select insert_term('$escapedTerm', '$term[1]', $term[2], $termlist_id, null);");
-        $this->log[] = "Added term $term[0]";
+        $sort = empty($sort) ? 'null' : pg_escape_literal($this->db->getLink(), $sort);
+        $this->db->query("select insert_term(?, ?, $sort, ?, null);", [$term, $lang, $termlist_id]);
+        $this->log[] = "Added term $term";
       }
       else {
-        $this->log[] = "Term $term[0] already exists";
+        $this->log[] = "Term $term already exists";
       }
     }
     // Now re-iterate through the terms and set the term parents.
@@ -206,11 +214,11 @@ class Termlist_export_Controller extends Indicia_Controller {
         $escapedParent = pg_escape_string($this->db->getLink(), $term[3]);
         $this->db->query("UPDATE termlists_terms tlt SET parent_id = tltp.id, updated_on = now()
           FROM terms t, termlists_terms tltp
-          JOIN terms tp ON tp.id = tltp.term_id AND tp.deleted = false AND tp.term = '$escapedParent'
+          JOIN terms tp ON tp.id = tltp.term_id AND tp.deleted = false AND tp.term = ?,
           WHERE
-            tlt.termlist_id = $termlist_id AND t.id = tlt.term_id
-            AND t.deleted = false AND t.term = '$escapedTerm'
-            AND tltp.termlist_id = tlt.termlist_id AND tltp.deleted = false"
+            tlt.termlist_id = ? AND t.id = tlt.term_id
+            AND t.deleted = false AND t.term = ?
+            AND tltp.termlist_id = tlt.termlist_id AND tltp.deleted = false", [$escapedParent, $termlist_id, $escapedTerm]
         );
       }
     }
@@ -224,7 +232,8 @@ class Termlist_export_Controller extends Indicia_Controller {
    * arrays of the data from the tables.
    */
   private function getTerms($termlistId) {
-    $r = $this->db->query(str_replace('{where}', "t.termlist_id=$termlistId", self::SQL_FETCH_ALL_TERMS))->result_array(FALSE);
+    $query = str_replace('{where}', "t.termlist_id=" . pg_escape_literal($this->db->getLink(), $termlistId), self::SQL_FETCH_ALL_TERMS);
+    $r = $this->db->query($query)->result_array(FALSE);
     return $r[0];
   }
 

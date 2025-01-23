@@ -106,8 +106,10 @@ class rest_api_sync_remote_json_annotations {
         if ($is_new !== NULL) {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
-        $db->query("UPDATE rest_api_sync_skipped_records SET current=false " .
-          "WHERE server_id='$serverId' AND source_id='$annotation[id]' AND dest_table='occurrence_comments'");
+        $db->query(<<<SQL
+          UPDATE rest_api_sync_skipped_records SET current=false
+          WHERE server_id=? AND source_id=? AND dest_table='occurrence_comments'
+        SQL, [$serverId, $annotation['id']]);
       }
       catch (exception $e) {
         rest_api_sync_utils::log(
@@ -128,16 +130,16 @@ INSERT INTO rest_api_sync_skipped_records (
   created_by_id
 )
 VALUES (
-  '$serverId',
-  '$annotation[id]',
+  ?,
+  ?,
   'occurrence_comments',
-  '$msg',
+  ?,
   true,
   now(),
-  $createdById
+  ?
 )
 QRY;
-        $db->query($sql);
+        $db->query($sql, [$serverId, $annotation['id'], $msg, $createdById]);
       }
     }
     variable::set("rest_api_sync_{$serverId}_next_page", $data['paging']['next']);

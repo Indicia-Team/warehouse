@@ -66,17 +66,19 @@ class Indicia {
     // add schema to the search path
     //
     $_schema = Kohana::config('database.default.schema');
-
-    $query = '';
-    if(!empty($_schema) && kohana::config('indicia.apply_schema') !== FALSE) {
-      $query = "SET search_path TO $_schema, public, pg_catalog;\n";
-    }
-    // Force a read only connection for reporting.
-    if ($uri->segment(1) == 'services' && $uri->segment(2) == 'report') {
-      $query .= "SET default_transaction_read_only TO true;\n";
-    }
-    if (!empty($query)) {
+    $applySchema = !empty($_schema) && kohana::config('indicia.apply_schema') !== FALSE;
+    $runningReport = $uri->segment(1) == 'services' && $uri->segment(2) == 'report';
+    if ($applySchema || $runningReport) {
       $db = Database::instance();
+      $query = '';
+      if ($applySchema) {
+        $_schema = pg_escape_identifier($db->getLink(), $_schema);
+        $query = "SET search_path TO $_schema, public, pg_catalog;\n";
+      }
+      // Force a read only connection for reporting.
+      if ($runningReport) {
+        $query .= "SET default_transaction_read_only TO true;\n";
+      }
       $db->query($query);
     }
   }

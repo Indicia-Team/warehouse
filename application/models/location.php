@@ -126,7 +126,7 @@ class Location_Model extends ORM_Tree {
   public function __set($key, $value) {
     if (substr($key, -5) === '_geom') {
       if ($value) {
-        $srid = kohana::config('sref_notations.internal_srid');
+        $srid = (int) kohana::config('sref_notations.internal_srid');
         $qry = <<<SQL
 SELECT CASE
   WHEN ST_GeometryType(ST_CollectionHomogenize(ST_MakeValid(ST_GeomFromText('$value', $srid)))) = 'ST_GeometryCollection' THEN
@@ -149,7 +149,7 @@ SQL;
     $value = parent::__get($column);
 
     if (substr($column, -5) === '_geom' && !empty($value)) {
-      $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
+      $row = $this->db->query("SELECT ST_asText(?) AS wkt", [$value])->current();
       $value = $row->wkt;
     }
     return $value;
@@ -211,9 +211,12 @@ SQL;
     $incomingGeom = $this->submission['fields']['boundary_geom']['value'];
     $id = $this->submission['fields']['id']['value'];
     $sql = <<<SQL
-SELECT ST_AsText(ST_Union((select ST_MakeValid(boundary_geom) from locations where id=$id), ST_MakeValid(ST_GeomFromText('$incomingGeom', $srid)))) as merged_geom;
-SQL;
-    $merged = $this->db->query($sql)->current();
+      SELECT ST_AsText(ST_Union(
+        (select ST_MakeValid(boundary_geom) from locations where id=?),
+        ST_MakeValid(ST_GeomFromText(?, ?))
+      )) as merged_geom;
+    SQL;
+    $merged = $this->db->query($sql, [$id, $incomingGeom, $srid])->current();
     $this->submission['fields']['boundary_geom']['value'] = $merged->merged_geom;
     kohana::log('debug', "Merged boundary set to $merged->merged_geom");
   }
@@ -294,7 +297,10 @@ SQL;
    * Calculates centroid of a location from a boundary wkt
    */
   public function calcCentroid($boundary, $system = '4326') {
-    $row = $this->db->query("SELECT ST_AsText(ST_Centroid(ST_GeomFromText('$boundary', " . kohana::config('sref_notations.internal_srid') . "))) AS wkt")->current();
+    $row = $this->db->query("SELECT ST_AsText(ST_Centroid(ST_GeomFromText(?, ?))) AS wkt", [
+      $boundary,
+      kohana::config('sref_notations.internal_srid'),
+    ])->current();
     $result = array(
       'wkt' => $row->wkt,
       'sref' => spatial_ref::internal_wkt_to_sref($row->wkt, intval($system)),

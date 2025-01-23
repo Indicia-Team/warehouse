@@ -102,19 +102,20 @@ class Valid extends valid_Core {
    * @param string $column_value
    *   Column value to test.
    * @param array $args
-   *   Table name, table column, ID of current record. Optionally an extra
-   *   SQL filter in the last parameter.
+   *   Table name, table column, ID of current record. Optionally an extra ID
+   *   field name and ID value to limit the duplicate check to in the last 2
+   *   parameters.
    *
    * @return bool
    *   TRUE if valid.
    */
   public static function unique($column_value, array $args) {
     $db = new Database();
-    $idFilter = empty($args[2]) ? '' : "AND id<>$args[2]";
+    $idFilter = empty($args[2]) ? '' : 'AND id<>' . (int) $args[2];
     $value = pg_escape_literal($db->getLink(), $column_value);
     $extraFilters = '';
     if (count($args) > 3) {
-      $extraFilters = 'AND ' . $args[3];
+      $extraFilters = 'AND ' . pg_escape_identifier($args[3]) . '=' . (int) $args[4];
     }
     $qry = <<<SQL
 SELECT 1 AS hit

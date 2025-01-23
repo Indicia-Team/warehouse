@@ -59,7 +59,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           if (preg_match('/^(?P<bracketType>[\[\{])(?P<paramName>[a-zA-Z0-9\-_]+)[\]\}]$/', $param, $matches)) {
             if (preg_match('/^\d+$/', $matches['paramName']) && isset($arguments[$matches['paramName'] - 1])) {
               // Parameter is numeric so grab the value from the URL segment at
-              // the indicated index position.
+              // the indicated index position in the config.
               $param = $arguments[$matches['paramName'] - 1];
             }
             elseif (!empty($_GET[$matches['paramName']])) {
@@ -67,7 +67,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
               $param = $_GET[$matches['paramName']];
             }
             elseif (!empty($post[$matches['paramName']])) {
-              // Other parameters should be in URL query parameters.
+              // Or in the POST data.
               $param = $post[$matches['paramName']];
             }
             else {
@@ -75,7 +75,11 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
             }
             if ($matches['bracketType'] === '{') {
               // Escape string parameters.
-              $param = "'" . pg_escape_string($db->getLink(), $param) . "'";
+              $param = pg_escape_literal($db->getLink(), $param);
+            }
+            elseif ($matches['bracketType'] === '[') {
+              // Square bracket parameters must be ints.
+              $param = (int) $param;
             }
           }
           else {
@@ -85,7 +89,8 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         }
       }
       $params = implode(', ', $action['parameters']);
-      $r = json_encode($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));
+      $proc = pg_escape_identifier($db->getLink(), $action['stored_procedure']);
+      $r = json_encode($db->query("select $proc($params);")->result_array(TRUE));
       // Enable JSONP.
       if (array_key_exists('callback', $_REQUEST)) {
         $r = "$_REQUEST[callback]($r)";
@@ -230,6 +235,9 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       kohana::log('debug', 'Invalid occurrence:ids to list_verify: ' . var_export($_POST, TRUE));
       return;
     }
+    if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
+      $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
+    }
     $this->array_verify(explode(',', $_POST['occurrence:ids']));
   }
 
@@ -315,7 +323,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    * @return array
    *   List of IDs.
    */
-  private function findSameTaxonInParentSample(Database $db, $id) {
+  private function findSameTaxonInParentSample(Database $db, int $id) {
     $sql = <<<SQL
 SELECT string_agg(o2.id::text, ',') as expanded
 FROM cache_occurrences_functional o1
@@ -348,6 +356,9 @@ SQL;
       echo 'occurrence:ids not supplied';
       kohana::log('debug', 'Invalid occurrence:ids to list_redet: ' . var_export($_POST, TRUE));
       return;
+    }
+    if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
+      $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
     }
     $this->array_redet(explode(',', $_POST['occurrence:ids']));
   }
@@ -425,17 +436,18 @@ SQL;
    * @param Database $db
    *   Database connection.
    * @param array $occurrenceIds
-   *   CSV List of occurrences to check.
+   *   List of occurrences IDs to check.
    * @param int $userId
    *   Current user's ID.
    * @param int $redetPersonId
    *   Person ID being allocation as the redeterminer in the data. If set to -1
    *   then the redeterminer is not updated.
    */
-  private function redeterminationDbProcessing(Database $db, array $occurrenceIds, $userId, $redetPersonId) {
+  private function redeterminationDbProcessing(Database $db, array $occurrenceIds, int $userId, int $redetPersonId) {
     // Stringify null for the SQL.
     $redetPersonId = $redetPersonId ?? 'null';
     $idCsv = implode(',', $occurrenceIds);
+    warehouse::validateIntCsvListParam($idCsv);
     $logDeterminations = kohana::config('indicia.auto_log_determinations') === TRUE ? 'true' : 'false';
     $sql = "SELECT f_handle_determination(ARRAY[$idCsv], $userId, $redetPersonId, $logDeterminations, true);";
     $db->query($sql);
@@ -453,7 +465,7 @@ SQL;
    * @param string $action
    *   Action being performed.
    */
-  private function applyVerificationTemplateReplacements($db, $comment, $occurrenceId, $action) {
+  private function applyVerificationTemplateReplacements($db, $comment, int $occurrenceId, $action) {
     if (preg_match('/\{\{ [a-z ]+ \}\}/', $comment)) {
       // Comment contains template tokens, so load the occurrence.
       $sql = <<<SQL
@@ -462,9 +474,9 @@ FROM cache_occurrences_functional o
 JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
 JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-WHERE o.id=$occurrenceId;
+WHERE o.id=?;
 SQL;
-      $occ = $db->query($sql)->current();
+      $occ = $db->query($sql, [$occurrenceId])->current();
       $dateParts = [$occ->date_start, $occ->date_end, $occ->date_type];
       $replacements = [
         '{{ date }}' => vague_date::vague_date_to_string($dateParts),
@@ -481,11 +493,11 @@ SQL;
         // A redet so additional fields required for the new taxon.
         $ttlId = $_POST['occurrence:taxa_taxon_list_id'];
         $sql = <<<SQL
-SELECT taxon, default_common_name, preferred_taxon, taxon_rank
-FROM cache_taxa_taxon_lists
-WHERE id=$ttlId;
-SQL;
-        $taxonDetails = $db->query($sql)->current();
+          SELECT taxon, default_common_name, preferred_taxon, taxon_rank
+          FROM cache_taxa_taxon_lists
+          WHERE id=?;
+        SQL;
+        $taxonDetails = $db->query($sql, [$ttlId])->current();
         $replacements['{{ new taxon }}'] = $taxonDetails->taxon;
         $replacements['{{ new common name }}'] = $taxonDetails->default_common_name ?? $taxonDetails->preferred_taxon ?? $taxonDetails->taxon;
         $replacements['{{ new preferred name }}'] = $taxonDetails->preferred_taxon ?? $taxonDetails->taxon;
@@ -679,37 +691,39 @@ SQL;
         $tm = microtime(TRUE);
         $this->authenticate('write');
         $db = new Database();
+        $userId = (int) $_POST['user_id'];
         $deletionSql = '';
         if (empty($_POST['trial'])) {
           $deletionSql = <<<SQL
-UPDATE occurrences SET deleted=true, updated_on=now(), updated_by_id=$_POST[user_id]
-WHERE id IN (SELECT id FROM to_delete);
+            UPDATE occurrences SET deleted=true, updated_on=now(), updated_by_id=$userId
+            WHERE id IN (SELECT id FROM to_delete);
 
-UPDATE samples SET deleted=true, updated_on=now(), updated_by_id=$_POST[user_id]
-WHERE id IN (SELECT sample_id FROM to_delete);
+            UPDATE samples SET deleted=true, updated_on=now(), updated_by_id=$userId
+            WHERE id IN (SELECT sample_id FROM to_delete);
 
-DELETE FROM cache_occurrences_functional WHERE id IN (SELECT id FROM to_delete);
-DELETE FROM cache_occurrences_nonfunctional WHERE id IN (SELECT id FROM to_delete);
-DELETE FROM cache_samples_functional WHERE id IN (SELECT sample_id FROM to_delete);
-DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT sample_id FROM to_delete);
-SQL;
-      }
-      // The following query picks up occurrences from the import, plus the
-      // associated samples unless the samples now have other occurrences
-      // subsequently added to them.
-      $qry = <<<SQL
-SELECT o.id, CASE WHEN o2.id IS NULL THEN o.sample_id ELSE NULL END AS sample_id
-INTO temporary to_delete
-FROM occurrences o
-LEFT JOIN occurrences o2 ON coalesce(o2.import_guid, '')<>coalesce(o.import_guid, '') AND o2.sample_id=o.sample_id and o2.deleted=false
-WHERE o.import_guid='$_POST[import_guid]' AND o.created_by_id=$_POST[user_id]
-AND o.deleted=false
-and o.website_id=$this->website_id;
+            DELETE FROM cache_occurrences_functional WHERE id IN (SELECT id FROM to_delete);
+            DELETE FROM cache_occurrences_nonfunctional WHERE id IN (SELECT id FROM to_delete);
+            DELETE FROM cache_samples_functional WHERE id IN (SELECT sample_id FROM to_delete);
+            DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT sample_id FROM to_delete);
+          SQL;
+        }
+        // The following query picks up occurrences from the import, plus the
+        // associated samples unless the samples now have other occurrences
+        // subsequently added to them.
+        $importGuid = pg_escape_literal($db->getLink(), $_POST['import_guid']);
+        $qry = <<<SQL
+          SELECT o.id, CASE WHEN o2.id IS NULL THEN o.sample_id ELSE NULL END AS sample_id
+          INTO temporary to_delete
+          FROM occurrences o
+          LEFT JOIN occurrences o2 ON coalesce(o2.import_guid, '')<>coalesce(o.import_guid, '') AND o2.sample_id=o.sample_id and o2.deleted=false
+          WHERE o.import_guid=$importGuid AND o.created_by_id=$userId
+          AND o.deleted=false
+          and o.website_id=$this->website_id;
 
-$deletionSql;
+          $deletionSql;
 
-SELECT COUNT(distinct id) AS occurrences, COUNT(distinct sample_id) AS samples FROM to_delete;
-SQL;
+          SELECT COUNT(distinct id) AS occurrences, COUNT(distinct sample_id) AS samples FROM to_delete;
+        SQL;
         $db->query($qry);
         $count = $db->select('COUNT(distinct id) AS occurrences, COUNT(distinct sample_id) AS samples')
           ->from('to_delete')
@@ -868,7 +882,7 @@ SQL;
       $this->fail('Bad Request', 400, 'There are no occurrences to move.');
       return FALSE;
     }
-    if (!preg_match('/\d+(,\d+)*/', $_POST['occurrence:ids'])) {
+    if (!preg_match('/^\d+(,\d+)*/', $_POST['occurrence:ids'])) {
       $this->fail('Bad Request', 400, 'Incorrect format for occurrence:ids parameter.');
       return FALSE;
     }
@@ -1021,15 +1035,18 @@ SQL;
         return;
       }
       else {
-        $validSrcSurveyIds[] = $mapping->src->survey_id;
-        $impactedWebsiteIds[] = $mapping->src->website_id;
-        $impactedWebsiteIds[] = $mapping->dest->website_id;
-        $websiteMappingSqlSnippets[] = 'WHEN ' . $mapping->src->website_id . ' THEN ' . $mapping->dest->website_id;
-        $surveyMappingSqlSnippets[] = 'WHEN ' . $mapping->src->survey_id . ' THEN ' . $mapping->dest->survey_id;
+        $validSrcSurveyIds[] = (int) $mapping->src->survey_id;
+        $impactedWebsiteIds[] = (int) $mapping->src->website_id;
+        $impactedWebsiteIds[] = (int) $mapping->dest->website_id;
+        $websiteMappingSqlSnippets[] = 'WHEN ' . (int) $mapping->src->website_id . ' THEN ' . (int) $mapping->dest->website_id;
+        $surveyMappingSqlSnippets[] = 'WHEN ' . (int) $mapping->src->survey_id . ' THEN ' . (int) $mapping->dest->survey_id;
       }
     }
     $db = new Database();
     $occurrenceIds = $_POST['occurrence:ids'];
+    if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
+      $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
+    }
     if (!$this->checkWebsitesAuthorisedForMove($db, $impactedWebsiteIds)) {
       return;
     }
@@ -1125,11 +1142,11 @@ SQL;
     $tm = microtime(TRUE);
     $this->authenticate('write');
     $updates = json_decode($_POST['updates']);
-    $occurrenceIds = $_POST['occurrence:ids'];
-    $options = json_decode($_POST['options'] ?? '{}');
     if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
       $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
     }
+    $occurrenceIds = $_POST['occurrence:ids'];
+    $options = json_decode($_POST['options'] ?? '{}');
     if (!$this->validateBulkEditUpdateValues($updates)) {
       return;
     }
@@ -1159,8 +1176,9 @@ SQL;
     $sampleFieldUpdates = $this->getSampleFieldUpdates($db, $updates);
     $sampleFieldUpdateSql = empty($sampleFieldUpdates) ? '' : implode(',', $sampleFieldUpdates) . ', ';
     $sampleFieldChangedCheckSql = empty($sampleFieldUpdates) ? 'false' : 'NOT (s.' . implode(' AND s.', $sampleFieldUpdates) . ')';
-    $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : "OR snf.recorders<>'$updates->recorder_name'";
+    $recorderNameFieldChangedCheckSql = empty($updates->recorder_name) ? '' : 'OR snf.recorders<>' . pg_escape_literal($db->getLink(), $updates->recorder_name);
     $langRecheck = pg_escape_literal($db->getLink(), kohana::lang('misc.recheck_verification'));
+    $userId = (int) $this->user_id;
     $qry = <<<SQL
       SELECT s.id
       INTO TEMPORARY changing_samples
@@ -1171,12 +1189,12 @@ SQL;
       AND s.deleted=false
       AND s.id IN ($sampleIds)
       -- Ensure only bulk update own samples.
-      AND s.created_by_id=$this->user_id;
+      AND s.created_by_id=$userId;
 
       UPDATE samples s
       SET $sampleFieldUpdateSql
         updated_on=now(),
-        updated_by_id=$this->user_id,
+        updated_by_id=$userId,
         record_status='C',
         verified_by_id=null,
         verified_on=null
@@ -1185,7 +1203,7 @@ SQL;
 
       -- Also reset verification status on changed occurrences.
       INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, created_on, created_by_id, updated_on, updated_by_id)
-      SELECT o.id, $langRecheck, 't', now(), $this->user_id, now(), $this->user_id
+      SELECT o.id, $langRecheck, 't', now(), $userId, now(), $userId
       FROM changing_samples cs
       JOIN occurrences o ON o.sample_id=cs.id
       AND o.deleted=false
@@ -1193,7 +1211,7 @@ SQL;
 
       UPDATE occurrences o
       SET updated_on=now(),
-        updated_by_id=$this->user_id,
+        updated_by_id=$userId,
         record_status='C',
         record_substatus=null,
         verified_by_id=null,
@@ -1257,8 +1275,9 @@ SQL;
   private function getSampleFieldUpdates($db, $updates) {
     $sampleFieldUpdates = [];
     if (!empty($updates->date)) {
-      $sampleFieldUpdates[] = "date_start='$updates->date'::date";
-      $sampleFieldUpdates[] = "date_end='$updates->date'::date";
+      $date = pg_escape_literal($db->getLink(), $updates->date);
+      $sampleFieldUpdates[] = "date_start=$date::date";
+      $sampleFieldUpdates[] = "date_end=$date::date";
       $sampleFieldUpdates[] = "date_type='D'";
     }
     if (!empty($updates->location_name)) {
@@ -1270,7 +1289,8 @@ SQL;
       $sampleFieldUpdates[] = "entered_sref=$sref";
       $system = pg_escape_literal($db->getLink(), $updates->sref_system);
       $sampleFieldUpdates[] = "entered_sref_system=$system";
-      $sampleFieldUpdates[] = "geom=st_geomfromtext('" . spatial_ref::sref_to_internal_wkt($updates->sref, $updates->sref_system) . "', 900913)";
+      $geom = pg_escape_literal($db->getLink(), spatial_ref::sref_to_internal_wkt($updates->sref, $updates->sref_system));
+      $sampleFieldUpdates[] = "geom=st_geomfromtext($geom, 900913)";
     }
     return $sampleFieldUpdates;
   }
@@ -1287,8 +1307,8 @@ SQL;
    *   True if all samples in the list belong to the current user.
    */
   private function checkSamplesAllBelongToUser($db, $sampleIds) {
-    $qry = "SELECT count(*) FROM samples WHERE id in ($sampleIds) AND deleted=false AND created_by_id<>$this->user_id";
-    return $db->query($qry)->current()->count === '0';
+    $qry = "SELECT count(*) FROM samples WHERE id in ($sampleIds) AND deleted=false AND created_by_id<>?";
+    return $db->query($qry, [$this->user_id])->current()->count === '0';
   }
 
   /**
@@ -1304,10 +1324,11 @@ SQL;
    *   Recorder name to set.
    */
   private function bulkEditRecorderNames($db, $sampleIds, $recorderName) {
+    $userId = (int) $this->user_id;
     $qry = <<<SQL
 -- Update existing custom attributes values.
 UPDATE sample_attribute_values v
-SET text_value='$recorderName', updated_on=now(), updated_by_id=$this->user_id
+SET text_value='$recorderName', updated_on=now(), updated_by_id=$userId
 FROM sample_attributes a
 WHERE a.id=v.sample_attribute_id
 AND a.deleted=false
@@ -1318,7 +1339,7 @@ AND v.sample_id in ($sampleIds);
 -- Insert new custom attribute values if linked to the samples survey and an
 -- attribute value not already present.
 INSERT INTO sample_attribute_values(sample_id, sample_attribute_id, text_value, created_on, created_by_id, updated_on, updated_by_id)
-SELECT s.id, a.id, '$recorderName', now(), $this->user_id, now(), $this->user_id
+SELECT s.id, a.id, '$recorderName', now(), $userId, now(), $userId
 FROM samples s
 LEFT JOIN (sample_attribute_values vexist
   JOIN sample_attributes aexist ON aexist.deleted=false AND aexist.system_function='full_name' AND aexist.id=vexist.sample_attribute_id

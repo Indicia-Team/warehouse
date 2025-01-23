@@ -179,6 +179,9 @@ class ReportEngine {
    *   connection using the report user configuration.
    */
   public function __construct(array $websiteIds = NULL, $userId = NULL, $db = NULL) {
+    if ($websiteIds) {
+      warehouse::validateIntArray($websiteIds);
+    }
     $this->websiteIds = $websiteIds;
     $this->userId = $userId;
     $this->localReportDir = Kohana::config('indicia.localReportDir');
@@ -538,7 +541,7 @@ class ReportEngine {
    * @return int
    *   Record count. FALSE if count not possible.
    */
-  public function recordCount($limit = 0) {
+  public function recordCount(int $limit = 0) {
     if (isset($_REQUEST['knownCount'])) {
       return $_REQUEST['knownCount'];
     }
@@ -821,32 +824,36 @@ class ReportEngine {
             case 'L':
               // Lookup.
               if (isset($attributeDefn->meaningIdLanguage)) {
-                $termResponse = $this->reportDb->query("select tt.meaning_id as id, t.term from terms t, termlists_terms tt, languages l" .
-                  " where tt.termlist_id =" . $row["termlist_id"] .
-                  " and tt.term_id = t.id " .
-                  " and t.language_id = l.id " .
-                  " and t.deleted=FALSE " .
-                  " and tt.deleted = FALSE " .
-                  " and l.deleted=FALSE " .
-                  ($attributeDefn->meaningIdLanguage === "preferred" ?
-                  " and tt.preferred = true " :
-                  " and l.iso = '" . $attributeDefn->meaningIdLanguage . "'") .
-                  "ORDER by tt.meaning_id;");
+                $languageOrPreferredFilter = $attributeDefn->meaningIdLanguage === "preferred"
+                  ? 'and tt.preferred = true'
+                  : 'and l.iso=' . pg_escape_literal($this->reportDb->getLink(), $attributeDefn->meaningIdLanguage);
+                $sql = <<<SQL
+                  SELECT tt.meaning_id AS id, t.term
+                  FROM terms t, termlists_terms tt, languages l
+                  WHERE tt.termlist_id=?
+                  AND tt.term_id=t.id
+                  AND t.language_id=l.id
+                  AND t.deleted=FALSE
+                  AND tt.deleted = FALSE
+                  AND l.deleted=FALSE
+                  $languageOrPreferredFilter
+                  ORDER by tt.meaning_id;
+                SQL;
               }
               else {
                 $sql = <<<SQL
-select tt.id, t.term
-from terms t, termlists_terms tt
-where tt.termlist_id=$row[termlist_id]
-and tt.term_id = t.id
-and t.deleted=FALSE
-and tt.deleted = FALSE
-ORDER by tt.id;
-SQL;
-                $termResponse = $this->reportDb->query(
-                  $sql
-                );
+                  SELECT tt.id, t.term
+                  FROM terms t, termlists_terms tt
+                  WHERE tt.termlist_id=?
+                  AND tt.term_id = t.id
+                  AND t.deleted=FALSE
+                  AND tt.deleted = FALSE
+                  ORDER by tt.id;
+                SQL;
               }
+              $termResponse = $this->reportDb->query($sql, [
+                $row['termlist_id'],
+              ]);
               $newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
               // Allow follow through so Lookup follows normal format of a singular field.
             default:
@@ -1178,7 +1185,7 @@ SQL;
               foreach ($preprocessors as $token => $qry) {
                 $prequery = str_replace(
                   ["#$name#", '#website_ids#', '#master_list_id#'],
-                  [$value, $websiteFilter, $masterTaxonListId],
+                  [pg_escape_string($this->reportDb->getLink(), $value), $websiteFilter, $masterTaxonListId],
                   $qry
                 );
                 $output = $this->reportDb->query($prequery)->result_array(FALSE);

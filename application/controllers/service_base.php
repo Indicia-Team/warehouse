@@ -217,12 +217,12 @@ class Service_Base_Controller extends Controller {
             $this->website_password = $password;
 
             if ($id > 0) {
-              $this->website_id = $id;
+              $this->website_id = (int) $id;
               if ($this->auth_user_id !== -1) {
-                $this->user_id = $this->auth_user_id;
+                $this->user_id = (int) $this->auth_user_id;
               }
               elseif (!empty($_REQUEST['user_id']) && preg_match('/^\d+$/', $_REQUEST['user_id'])) {
-                $this->user_id = $_REQUEST['user_id'];
+                $this->user_id = (int) $_REQUEST['user_id'];
               }
               $remoteUserId = $this->user_id;
             }

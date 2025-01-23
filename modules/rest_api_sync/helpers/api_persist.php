@@ -327,17 +327,18 @@ class api_persist {
     }
   }
 
-  private static function mapAttrValueToTermId($db, $attrId, $entity, &$value) {
+  private static function mapAttrValueToTermId($db, int $attrId, $entity, &$value) {
     $cacheId = "{$entity}AttrIsLookup-$attrId";
     $cache = Cache::instance();
     $attrInfo = $cache->get($cacheId);
     if ($attrInfo === NULL) {
+      $attrTableEsc = pg_escape_identifier($db->getLink(), "{$entity}_attributes");
       $qry = <<<SQL
 SELECT data_type, termlist_id
-FROM {$entity}_attributes
-WHERE id=$attrId AND deleted=false
+FROM $attrTableEsc
+WHERE id=? AND deleted=false
 SQL;
-      $attrRecord = $db->query($qry)->current();
+      $attrRecord = $db->query($qry, [$attrId])->current();
       $attrInfo = [
         'data_type' => $attrRecord->data_type,
         'termlist_id' => $attrRecord->termlist_id,
@@ -348,16 +349,16 @@ SQL;
     if ($attrInfo['data_type'] === 'L') {
       if (is_array($value)) {
         foreach ($value as &$item) {
-          $qry = "SELECT id FROM cache_termlists_terms t WHERE termlist_id=$attrInfo[termlist_id] AND term='$item'";
-          $termInfo = $db->query($qry)->current();
+          $qry = "SELECT id FROM cache_termlists_terms t WHERE termlist_id=? AND term=?";
+          $termInfo = $db->query($qry, [$attrInfo['termlist_id'], $item])->current();
           if ($termInfo) {
             $item = $termInfo->id;
           }
         }
       }
       else {
-        $qry = "SELECT id FROM cache_termlists_terms t WHERE termlist_id=$attrInfo[termlist_id] AND term='$value'";
-        $termInfo = $db->query($qry)->current();
+        $qry = "SELECT id FROM cache_termlists_terms t WHERE termlist_id=? AND term=?";
+        $termInfo = $db->query($qry, [$attrInfo['termlist_id'], $value])->current();
         if ($termInfo) {
           $value = $termInfo->id;
         }
@@ -491,7 +492,7 @@ SQL;
       $qry = <<<SQL
 SELECT taxon_meaning_id, taxa_taxon_list_id
 FROM cache_taxon_searchterms
-WHERE taxon_list_id=$taxon_list_id
+WHERE taxon_list_id=?
 AND simplified='f'
 $filter
 ORDER BY preferred DESC
@@ -500,20 +501,19 @@ SQL;
     else {
       // Add in the exact match filter for other search methods.
       foreach ($lookup as $key => $value) {
-        $filter .= "AND t.$key='$value'\n";
+        $filter .= 'AND t.' . pg_escape_identifier($db->getLink(), $key) . '=' . pg_escape_literal($db->getLink(), $value) . "\n";
       }
       $qry = <<<SQL
 SELECT ttl.taxon_meaning_id, ttl.id as taxa_taxon_list_id
 FROM taxa_taxon_lists ttl
 JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
-WHERE ttl.taxon_list_id=$taxon_list_id
+WHERE ttl.taxon_list_id=?
 AND ttl.deleted=false
 $filter
 ORDER BY ttl.preferred DESC
 SQL;
     }
-
-    $taxa = $db->query($qry)->result_array(FALSE);
+    $taxa = $db->query($qry, [$taxon_list_id])->result_array(FALSE);
     // Need to know if the search found a single unique taxon concept so count
     // the taxon meanings.
     $uniqueConcepts = [];
@@ -545,18 +545,17 @@ SQL;
    * @return int
    *   Taxa_taxon_list_id of the found record, or NULL if could not identify
    */
-  private static function findMappedTaxon($db, $taxon_list_id, $survey_id, $taxonName) {
-    $taxonName = pg_escape_literal($db->getLink(), $taxonName);
+  private static function findMappedTaxon($db, int $taxon_list_id, int $survey_id, $taxonName) {
     $sql = <<<SQL
 SELECT mapped_taxon_name, mapped_search_code
 FROM rest_api_sync_taxon_mappings
-WHERE mapped_taxon_list_id=$taxon_list_id
-AND other_taxon_name=$taxonName
-AND (restrict_to_survey_id IS NULL OR restrict_to_survey_id=$survey_id)
+WHERE mapped_taxon_list_id=?
+AND other_taxon_name=?
+AND (restrict_to_survey_id IS NULL OR restrict_to_survey_id=?)
 ORDER BY restrict_to_survey_id IS NULL ASC, mapped_search_code IS NULL ASC;
 SQL;
 
-    $results = $db->query($sql)->current();
+    $results = $db->query($sql, [$taxon_list_id, $taxonName, $survey_id])->current();
     if ($results) {
       // Use the mapping details to do a new lookup.
       if (!empty($results->mapped_search_code)) {

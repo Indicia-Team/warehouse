@@ -175,7 +175,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $output = json_decode($response['output']);
     // Response should definitely include a user id.
     $this->assertObjectHasProperty('userId', $output, 'The response from createUser call was invalid: ' . $response['output']);
-    $uid1 = $output->userId;
+    $uid1 = (int) $output->userId;
     // Check the term now exists.
     $qry = $this->db->select('id, term_id')
       ->from('list_termlists_terms')
@@ -183,15 +183,15 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
       ->get()->result_array(FALSE);
     $this->assertEquals(1, count($qry), 'Submitting a random type term did not result in exactly one instance of that term in the termlist. ' . $randomType);
     // Clean up the person created.
-    $this->db->query('delete from user_identifiers where user_id=' . $uid1);
-    $this->db->query('delete from users_websites where user_id=' . $uid1);
+    $this->db->query('delete from user_identifiers where user_id=?', [$uid1]);
+    $this->db->query('delete from users_websites where user_id=?', [$uid1]);
     $user = ORM::factory('user', $uid1);
     $person_id = $user->person_id;
-    $this->db->query('delete from users where id=' . $user->id);
-    $this->db->query('delete from people where id=' . $person_id);
+    $this->db->query('delete from users where id=?', [$user->id]);
+    $this->db->query('delete from people where id=?', [$person_id]);
     // Cleanup the inserted term.
-    $this->db->query('delete from termlists_terms where id=' . $qry[0]['id']);
-    $this->db->query('delete from terms where id=' . $qry[0]['term_id']);
+    $this->db->query('delete from termlists_terms where id=?', [$qry[0]['id']]);
+    $this->db->query('delete from terms where id=?', [$qry[0]['term_id']]);
   }
 
   function testFirstNameInsert() {
@@ -202,7 +202,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     ), 'test', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
-    $uid1 = $output->userId;
+    $uid1 = (int) $output->userId;
     // Load the new person and check firstname.
     $user = ORM::factory('user')->where(array('username' => 'test_autotest'))->find();
     $this->assertNotEquals(0, $user->id, 'A user record was not found in the database');
@@ -210,10 +210,10 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $person = ORM::factory('person', $person_id);
     $this->assertEquals('test', $person->first_name, 'Creating a person with known first name did not insert the correct first name.');
     // Clean up user identifiers, user websites, person and user records.
-    $this->db->query('delete from user_identifiers where user_id=' . $user->id);
-    $this->db->query('delete from users_websites where user_id=' . $user->id);
-    $this->db->query('delete from users where id=' . $user->id);
-    $this->db->query('delete from people where id=' . $person_id);
+    $this->db->query('delete from user_identifiers where user_id=?', [$user->id]);
+    $this->db->query('delete from users_websites where user_id=?', [$user->id]);
+    $this->db->query('delete from users where id=?', [$user->id]);
+    $this->db->query('delete from people where id=?', [$person_id]);
   }
 
   function testGetUserIDUnique() {
@@ -336,8 +336,8 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     // Recall the service, this time forcing a merge of the 2 possible users.
     // We'll allocate an occurrence to each of the 2 users first to ensure
     // that merging picks up the records.
-    $this->db->query("update occurrences set created_by_id=$uid1 where comment='Occurrence for unit testing - user 1'");
-    $this->db->query("update occurrences set created_by_id=$uid2 where comment='Occurrence for unit testing - user 2'");
+    $this->db->query("update occurrences set created_by_id=? where comment='Occurrence for unit testing - user 1'", [$uid1]);
+    $this->db->query("update occurrences set created_by_id=? where comment='Occurrence for unit testing - user 2'", [$uid2]);
     $response = $this->callGetUserIdService($auth2, array(
       array('type' => 'email', 'identifier' => 'tracking2@test.com'),
       array('type' => 'facebook', 'identifier' => 'fbtracking2'),
@@ -357,17 +357,17 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
       ->where(['deleted' => 'f', 'id' => $uid3])
       ->get()->count(), 'Kept user was incorrectly deleted');
     // Cleanup.
-    $pid1 = $this->db->query("select person_id from users where id=$uid1")->current()->person_id;
-    $pid2 = $this->db->query("select person_id from users where id=$uid1")->current()->person_id;
+    $pid1 = $this->db->query("select person_id from users where id=$uid1", [$uid1])->current()->person_id;
+    $pid2 = $this->db->query("select person_id from users where id=$uid2", [$uid2])->current()->person_id;
     // Skip the first 3 occurrences added by the core fixture.
     $this->db->query('delete from occurrences where website_id in (1, 2) AND id > 3');
-    $this->db->query("delete from user_identifiers where user_id in ($uid1, $uid2)");
-    $this->db->query("delete from users_websites where user_id in ($uid1, $uid2)");
+    $this->db->query("delete from user_identifiers where user_id in (?, ?)", [$uid1, $uid2]);
+    $this->db->query("delete from users_websites where user_id in (?, ?)", [$uid1, $uid2]);
     // Delete 1 at a time to avoid integrity violations.
-    $this->db->query("delete from users where id=$uid1");
-    $this->db->query("delete from people where id=$pid1");
-    $this->db->query("delete from users where id=$uid2");
-    $this->db->query("delete from people where id=$pid2");
+    $this->db->query("delete from users where id=?", [$uid1]);
+    $this->db->query("delete from people where id=?", [$pid1]);
+    $this->db->query("delete from users where id=?", [$uid2]);
+    $this->db->query("delete from people where id=?", [$pid2]);
   }
 
   /**
@@ -390,6 +390,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
 
   private function cleanupUsers($userIds) {
     $idList = implode(',', $userIds);
+    warehouse::validateIntCsvListParam($idList);
     $cleanupSql = <<<SQL
 drop table if exists people_ids;
 delete from user_identifiers where user_id in ($idList);

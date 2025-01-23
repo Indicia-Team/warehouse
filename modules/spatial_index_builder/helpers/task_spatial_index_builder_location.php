@@ -249,7 +249,7 @@ SQL;
         SELECT hl.id, l.id
         FROM locations hl
         JOIN work_queue w
-          ON w.claimed_by='$procId'
+          ON w.claimed_by=?
           AND w.entity='location'
           AND w.task='task_spatial_index_builder_location'
           AND w.record_id=hl.id
@@ -262,13 +262,13 @@ SQL;
           AND (st_geometrytype(l.boundary_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, hl.boundary_geom))
         JOIN locations_websites lw
           ON lw.location_id=l.id
-          AND lw.website_id=$config[website_id]
+          AND lw.website_id=?
         WHERE hl.deleted=false
         -- Higher location must be in the same website, or public.
         AND (lw.website_id=hw.website_id OR hl.public=true)
-        AND hl.location_type_id=$higherTypeId;
+        AND hl.location_type_id=?;
       SQL;
-      $db->query($qry);
+      $db->query($qry, [$procId, $config['website_id'], $higherTypeId]);
     }
     // Now, aggregate the higher locations for all changed locations and apply
     // the updated list to the records.
@@ -279,7 +279,7 @@ SQL;
       INTO TEMPORARY location_updates
       FROM work_queue w
       LEFT JOIN contained_locations_higher_locations clhl ON clhl.location_id=w.record_id
-      WHERE w.claimed_by='$procId'
+      WHERE w.claimed_by=?
       AND w.entity='location'
       AND w.task='task_spatial_index_builder_location'
       GROUP BY w.record_id;
@@ -289,33 +289,33 @@ SQL;
       FROM location_updates lu
       WHERE lu.location_id=u.id;
     SQL;
-    $db->query($qry);
+    $db->query($qry, [$procId]);
     // For all the changed locations in the higher type layer, remove the ID
     // from any child locations that are no longer within the higher location.
     $qry = <<<SQL
       UPDATE locations u
       SET higher_location_ids = array_remove(u.higher_location_ids, w.record_id)
       FROM work_queue w
-      WHERE w.claimed_by='$procId'
+      WHERE w.claimed_by=?
       AND w.entity='location'
       AND w.task='task_spatial_index_builder_location'
       AND u.higher_location_ids @> ARRAY[w.record_id]
       AND u.id NOT IN (SELECT location_id FROM higher_locations_contained_locations WHERE higher_location_id=w.record_id);
     SQL;
-    $db->query($qry);
+    $db->query($qry, [$procId]);
     // Finally, for all the changed locations in the higher type layer, add the
     // child location IDs that are missing.
     $qry = <<<SQL
       UPDATE locations u
       SET higher_location_ids = array_append(u.higher_location_ids, w.record_id)
       FROM work_queue w
-      WHERE w.claimed_by='$procId'
+      WHERE w.claimed_by=?
       AND w.entity='location'
       AND w.task='task_spatial_index_builder_location'
       AND NOT (u.higher_location_ids @> ARRAY[w.record_id])
       AND u.id IN (SELECT location_id FROM higher_locations_contained_locations WHERE higher_location_id=w.record_id);
     SQL;
-    $db->query($qry);
+    $db->query($qry, [$procId]);
   }
 
 }

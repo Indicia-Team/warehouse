@@ -207,7 +207,7 @@ class rest_api_sync_remote_inaturalist {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
         $db->query("UPDATE rest_api_sync_skipped_records SET current=false " .
-          "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
+          "WHERE server_id=? AND source_id=? AND dest_table='occurrences'", [$serverId, $iNatRecord['id']]);
       }
       catch (exception $e) {
         rest_api_sync_utils::log(
@@ -215,7 +215,6 @@ class rest_api_sync_remote_inaturalist {
           "Error occurred submitting an occurrence with iNaturalist ID $iNatRecord[id]\n" . $e->getMessage(),
           $tracker
         );
-        $msg = pg_escape_string($db->getLink(), $e->getMessage());
         $createdById = isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
         $sql = <<<QRY
 INSERT INTO rest_api_sync_skipped_records (
@@ -228,16 +227,16 @@ INSERT INTO rest_api_sync_skipped_records (
   created_by_id
 )
 VALUES (
-  '$serverId',
-  '$iNatRecord[id]',
+  ?,
+  ?,
   'occurrences',
-  '$msg',
+  ?,
   true,
   now(),
-  $createdById
+  ?
 )
 QRY;
-        $db->query($sql);
+        $db->query($sql, [$serverId, $iNatRecord['id'], $e->getMessage(), $createdById]);
       };
       $lastId = $iNatRecord['id'];
     }

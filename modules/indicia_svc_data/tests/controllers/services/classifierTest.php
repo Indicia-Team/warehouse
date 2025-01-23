@@ -137,9 +137,9 @@ left join classification_events ce on ce.id=o.classification_event_id and ce.del
 left join classification_results cr on cr.classification_event_id=ce.id and cr.deleted=false
 left join classification_suggestions cs on cs.classification_result_id=cr.id and cs.deleted=false
 left join classification_results_occurrence_media crom on crom.classification_result_id=cr.id
-where s.id=$sampleId;
+where s.id=?;
 SQL;
-    $checkData = self::$db->query($sql)->current();
+    $checkData = self::$db->query($sql, [$sampleId])->current();
     // Some assertions to check the data values.
     $this->assertTrue(!empty($checkData->occurrence_id), 'Classification submission occurrence not created.');
     $this->assertEquals(4, $checkData->machine_involvement, 'Classification submission machine_involvement saved incorrectly.');
@@ -178,9 +178,9 @@ select s.id as sample_id,
 from samples s
 left join occurrences o on o.sample_id=s.id and o.deleted=false
 left join determinations d on d.occurrence_id=o.id and d.deleted=false
-where s.id=$sampleId;
+where s.id=?;
 SQL;
-    $checkPostRedetData = self::$db->query($sql)->current();
+    $checkPostRedetData = self::$db->query($sql, [$sampleId])->current();
     $this->assertEquals($checkData->machine_involvement, $checkPostRedetData->det_machine_involvement, 'Machine_involvement not copied to determination correctly');
     $this->assertEquals($checkData->classification_event_id, $checkPostRedetData->det_classification_event_id, 'Classification_event_id not copied to determination correctly');
     $this->assertEmpty($checkPostRedetData->machine_involvement, 'Occurrence machine_involvement not cleared after redet');
@@ -210,9 +210,9 @@ select s.id as sample_id,
 from samples s
 left join occurrences o on o.sample_id=s.id and o.deleted=false
 left join determinations d on d.occurrence_id=o.id and d.deleted=false
-where s.id=$sampleId;
+where s.id=?;
 SQL;
-    $checkPostRedetData = self::$db->query($sql)->current();
+    $checkPostRedetData = self::$db->query($sql, [$sampleId])->current();
     $this->assertEquals($checkData->machine_involvement, $checkPostRedetData->machine_involvement, 'Machine_involvement not re-saved after determination correctly');
     $this->assertEquals($checkData->classification_event_id, $checkPostRedetData->classification_event_id, 'Classification_event_id not resaved after determination correctly');
   }

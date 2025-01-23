@@ -176,7 +176,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
           ->get()->result_array(FALSE);
         if (count($r) === 0) {
           kohana::log('debug', "Inserting category $designationCategory");
-          $this->db->query("SELECT insert_term('$designationCategory', 'eng', NULL, NULL, 'indicia:taxon_designation_categories');");
+          $this->db->query("SELECT insert_term(?, 'eng', NULL, NULL, 'indicia:taxon_designation_categories');", [$designationCategory]);
           $r = $this->db
             ->select('id')
             ->from('list_termlists_terms')

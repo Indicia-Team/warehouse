@@ -134,11 +134,11 @@ function data_cleaner_period_data_cleaner_rules() {
  *
  * Without this, the query would have to be case insensitive which is slow.
  */
-function data_cleaner_period_data_cleaner_postprocess($id, $db) {
+function data_cleaner_period_data_cleaner_postprocess(int $id, $db) {
   $db->query(
     "update verification_rule_metadata set value=upper(value)
     where key ilike 'Tvk'
     and value<>upper(value)
-    and verification_rule_id = $id"
+    and verification_rule_id = ?", [$id]
   );
 }

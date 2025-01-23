@@ -87,7 +87,7 @@ get_controls(NULL, $controlfilter, $this->db);
 /**
  * Echos the list of controls inside a block level.
  *
- * @param string $block_id
+ * @param int|null $block_id
  *   ID of the block, or NULL for top level.
  * @param array $controlFilter
  *   Filter to apply, e.g. to the correct survey.
@@ -99,14 +99,16 @@ function get_controls($block_id, array $controlFilter, $db) {
   $masterTaxonListId = warehouse::getMasterTaxonListId();
   $id = "controls";
   if ($block_id) {
+    $block_id = (int) $block_id;
     $id .= '-for-block-' . $block_id;
   }
   echo "<ul id=\"$id\" class=\"control-list\">\n";
   $attr = $_GET['type'] . '_attribute';
   $attrIdField = $attr . '_id';
+  $attrIdFieldEsc = pg_escape_identifier($db->getLink(), $attrIdField);
   $selectFields = [
     'aw.id',
-    "aw.$attrIdField",
+    "aw.$attrIdFieldEsc",
     'a.caption',
     'aw.validation_rules as aw_validation_rules',
     'a.validation_rules',
@@ -120,20 +122,22 @@ function get_controls($block_id, array $controlFilter, $db) {
     "aw.deleted='f'",
   ];
   foreach ($controlFilter as $field => $value) {
-    $wheres[] = "$field=$value";
+    $wheres[] = pg_escape_identifier($db->getLink(), $field) . '=' . pg_escape_literal($db->getLink(), $value);
   }
   $groupBys = [];
   if ($_GET['type'] === 'sample' || $_GET['type'] === 'occurrence') {
     if ($masterTaxonListId) {
+      $restrictionsTable = pg_escape_identifier($db->getLink(), "$_GET[type]_attribute_taxon_restrictions");
+      $attributesWebsitesIdField = pg_escape_identifier($db->getLink(), "$_GET[type]_attributes_website_id");
       $selectFields[] = "STRING_AGG(COALESCE(t.taxon || COALESCE(' ' || t.authority, ''), '') || COALESCE(' [' || stage.term || ']', ''), '; ') as restrict_to_taxon";
-      $joins[] = "LEFT JOIN $_GET[type]_attribute_taxon_restrictions AS tr ON tr.$_GET[type]_attributes_website_id=aw.id " .
+      $joins[] = "LEFT JOIN $restrictionsTable AS tr ON tr.$attributesWebsitesIdField=aw.id " .
           'AND tr.deleted=false';
       $joins[] = 'LEFT JOIN cache_taxa_taxon_lists as t ON t.taxon_meaning_id=tr.restrict_to_taxon_meaning_id ' .
           "AND t.preferred=true AND t.taxon_list_id=$masterTaxonListId";
       $joins[] = 'LEFT JOIN cache_termlists_terms as stage ON stage.meaning_id=tr.restrict_to_stage_term_meaning_id ' .
           'AND stage.preferred=true';
       $groupBys = [
-        'aw.id', "aw.$attrIdField", 'a.caption', 'aw.validation_rules', 'a.validation_rules',
+        'aw.id', "aw.$attrIdFieldEsc", 'a.caption', 'aw.validation_rules', 'a.validation_rules',
       ];
     }
     if ($_GET['type'] === 'sample') {
@@ -148,9 +152,10 @@ function get_controls($block_id, array $controlFilter, $db) {
     $selectFields[] = 'type.term as restrict_to_location_type';
     $joins[] = 'LEFT JOIN cache_termlists_terms as type ON type.id=aw.restrict_to_location_type_id';
   }
+  $attributesWebsitesTable = pg_escape_identifier($db->getLink(), "$_GET[type]_attributes_websites");
   $childControls = $db->query(
     'SELECT ' . implode(', ', $selectFields) . "\n" .
-    "FROM $_GET[type]_attributes_websites AS aw\n" .
+    "FROM $attributesWebsitesTable AS aw\n" .
     implode("\n", $joins) . "\n" .
     'WHERE ' . implode("\nAND ", $wheres) . "\n" .
     (empty($groupBys) ? '' : 'GROUP BY ' . implode(', ', $groupBys) . "\n") .

@@ -51,10 +51,9 @@ class task_summary_builder_occurrence_insert_delete {
    */
   public static function process($db, $taskType, $procId) {
       $queries = kohana::config('summary_builder');
-      // This query gets all the occurrences to be processed that are on a survey which does summarisation
-      $query = str_replace(array('#procId#', '#task#'), array($procId, 'task_summary_builder_occurrence_insert_delete'),
-          $queries['get_occurrences_to_process']);
-      $result = $db->query($query)->result_array(false);
+      // This query gets all the occurrences to be processed that are on a
+      // survey which does summarisation.
+      $result = $db->query($queries['get_occurrences_to_process'], [$procId, 'task_summary_builder_occurrence_insert_delete'])->result_array(false);
       foreach($result as $row){
           summary_builder::populate_summary_table_for_occurrence_insert_delete($db, $row['occurrence_id'], $row['definition_id']);
       }

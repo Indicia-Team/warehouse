@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
@@ -87,7 +86,7 @@ SQL,
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:id" => 'Cannot POST with id to update, use PUT instead.']));
     }
     if (empty(RestObjects::$clientUserId)) {
-      $allowAnonPostCheck = RestObjects::$db->query('SELECT allow_anon_jwt_post FROM websites WHERE deleted=false AND id=' . RestObjects::$clientWebsiteId)->current();
+      $allowAnonPostCheck = RestObjects::$db->query('SELECT allow_anon_jwt_post FROM websites WHERE deleted=false AND id=?', [RestObjects::$clientWebsiteId])->current();
       if ($allowAnonPostCheck->allow_anon_jwt_post === 'f') {
         RestObjects::$apiResponse->fail('Bad Request', 400, json_encode(["$entity:created_by_id" => 'Cannot POST without user authentication.']));
       }
@@ -369,7 +368,7 @@ SQL;
    * @param bool $userFilter
    *   Should a filter on created_by_id be applied? Default TRUE.
    */
-  public static function read($entity, $id, $extraFilter = '', $userFilter = TRUE) {
+  public static function read($entity, int $id, $extraFilter = '', $userFilter = TRUE) {
     self::loadEntityConfig($entity);
     $extraFilter = empty($extraFilter) ? "AND t1.id = $id" : "$extraFilter\nAND t1.id = $id";
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
@@ -422,6 +421,9 @@ SQL;
    */
   private static function readAttributes($entity, array $ids) {
     $idList = implode(',', $ids);
+    if (!preg_match('/^[a-z_]+$/', $entity)) {
+      throw new Exception('Invalid entity');
+    }
     $qry = <<<SQL
 SELECT av.{$entity}_id as record_id, a.id as attribute_id, av.id as value_id,
   a.caption, a.data_type, a.multi_value,
@@ -509,6 +511,7 @@ SQL;
       return [];
     }
     $idList = implode(',', $ids);
+    warehouse::validateIntCsvListParam($idList);
     $r = [];
     foreach (self::$verboseExtraInfoQueries[$entity] as $container => $qry) {
       $qry = str_replace([
@@ -516,7 +519,7 @@ SQL;
           '{{ user_id }}',
         ], [
           $idList,
-          RestObjects::$clientUserId,
+          (int) RestObjects::$clientUserId,
         ],
         $qry);
       $extraData = RestObjects::$db->query($qry)->result_array(FALSE);
@@ -835,15 +838,17 @@ SQL;
    */
   private static function checkDuplicateFields($entity, array $values, array $data) {
     $table = inflector::plural($entity);
+    $tableEsc = pg_escape_identifier(RestObjects::$db->getLink(), $table);
     $filters = [];
     $joins = [];
     // If we are updating, then don't match the same record.
     if (!empty($values['id'])) {
-      $filters[] = "id<>$values[id]";
+      $filters[] = 'id<>' . (int) $values['id'];
     }
     foreach (self::$entityConfig[$entity]->duplicateCheckFields as $field) {
       $fieldParts = explode('.', $field);
       $fieldName = array_pop($fieldParts);
+      $fieldNameEsc = pg_escape_identifier(RestObjects::$db->getLink(), $fieldName);
       // Anything left must be a duplicate check on a sub-model field.
       if (count($fieldParts) === 1) {
         $subModelTable = $fieldParts[0];
@@ -859,12 +864,12 @@ SQL;
           // No need for check if some duplicate check values missing.
           return;
         }
-        $value = $values[$field];
-        $filters[] = "$table.$fieldName='$value'";
+        $value = pg_escape_literal(RestObjects::$db->getLink(), $values[$field]);
+        $filters[] = "$tableEsc.$fieldNameEsc=$value";
       }
     }
     $hit = RestObjects::$db
-      ->query("select $table.id from $table" . implode('', $joins) . " where " . implode(' and ', $filters))
+      ->query("select $tableEsc.id from $tableEsc" . implode('', $joins) . " where " . implode(' and ', $filters))
       ->current();
     if ($hit) {
       $href = url::base() . "index.php/services/rest/$table/$hit->id";
@@ -877,12 +882,12 @@ SQL;
     }
   }
 
-  private static function checkETags($entity, $id) {
+  private static function checkETags($entity, int $id) {
     $headers = apache_request_headers();
     if (isset($headers['If-Match'])) {
-      $table = inflector::plural($entity);
+      $table = pg_escape_identifier(RestObjects::$db->getLink(), inflector::plural($entity));
       // A precondition based on ETag which must be met.
-      $eTag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=$id")->current()->xmin;
+      $eTag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=?", [$id])->current()->xmin;
       if ($headers['If-Match'] !== $eTag) {
         RestObjects::$apiResponse->fail('Precondition Failed', 412, 'If-Match condition not met. Record may have been updated by another user.');
       }
@@ -994,9 +999,9 @@ SQL;
       RestObjects::$apiResponse->fail('Bad Request', 400, $obj->getAllErrors());
     }
     if ($id) {
-      $table = inflector::plural($entity);
+      $table = pg_escape_identifier(RestObjects::$db->getLink(), inflector::plural($entity));
       // ETag to provide version check on updates.
-      $eTag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=$id")->current()->xmin;
+      $eTag = RestObjects::$db->query("SELECT xmin FROM $table WHERE id=?", [$id])->current()->xmin;
       header("ETag: $eTag");
       // Include href and basic record metadata.
       $responseMetadata = $obj->getSubmissionResponseMetadata();

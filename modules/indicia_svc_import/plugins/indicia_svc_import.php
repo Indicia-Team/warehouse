@@ -45,7 +45,8 @@ LIMIT 5;
 SQL;
   $tables = $db->query($sql);
   foreach ($tables as $table) {
-    $db->query("DROP TABLE import_temp.$table->table_name");
+    $tableNameEsc = pg_escape_identifier($db->getLink(), $table->table_name);
+    $db->query("DROP TABLE import_temp.$tableNameEsc");
   }
   // Purge files older than 1 day.
   warehouse::purgeOldFiles('import/', 60 * 60 * 24);

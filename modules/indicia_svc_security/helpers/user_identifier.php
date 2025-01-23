@@ -157,26 +157,27 @@ SQL;
         }
         // SQL must look in existing user_identifiers.
         $sql .= <<<SQL
-SELECT DISTINCT u.id as user_id, u.person_id
-FROM users u
-JOIN people p
-  ON p.id=u.person_id
-  AND p.deleted=false
-JOIN user_identifiers AS um
-  ON um.user_id = u.id
-  AND um.deleted=false
-  AND lower(um.identifier)=lower('$ident')
-JOIN cache_termlists_terms t
-  ON t.id=um.type_id
-  AND t.preferred_term='$type'
-WHERE u.deleted=false
-SQL;
+          SELECT DISTINCT u.id as user_id, u.person_id
+          FROM users u
+          JOIN people p
+            ON p.id=u.person_id
+            AND p.deleted=false
+          JOIN user_identifiers AS um
+            ON um.user_id = u.id
+            AND um.deleted=false
+            AND lower(um.identifier)=lower(?)
+          JOIN cache_termlists_terms t
+            ON t.id=um.type_id
+            AND t.preferred_term=?
+          WHERE u.deleted=false
+        SQL;
         if (isset($request['users_to_merge'])) {
           // If limiting to a known set of users...
           $usersToMerge = implode(',', json_decode($request['users_to_merge']));
+          warehouse::validateIntCsvListParam($usersToMerge);
           $sql .= "\nAND u.id IN ($usersToMerge)";
         }
-        $r = $userPersonObj->db->query($sql)->result_array(TRUE);
+        $r = $userPersonObj->db->query($sql, [$ident, $type])->result_array(TRUE);
         foreach ($r as $existingUser) {
           // Create a placeholder for the known user we just found.
           if (!isset($existingUsers[$existingUser->user_id])) {
@@ -242,16 +243,16 @@ SQL;
   /**
    * Create work_queue item to process user deletion.
    *
-   * @param array $userId
+   * @param int $userId
    *   The ID of the user to delete.
    * @param int $websiteId
    *   The Indicia website ID the user is removing their account from.
    */
-  public static function delete_user($userId, $websiteId) {
+  public static function delete_user(int $userId, int $websiteId) {
     $q = new WorkQueue();
     $db = new Database();
     // Removal of privileges should be immediate.
-    $db->query("DELETE FROM users_websites WHERE website_id = $websiteId AND user_id = $userId");
+    $db->query("DELETE FROM users_websites WHERE website_id = ? AND user_id = ?", [$websiteId, $userId]);
     $cache = Cache::instance();
     $cacheKey = "website-user-$websiteId-$userId";
     $cache->delete($cacheKey);
@@ -398,7 +399,9 @@ SQL;
         ->get()->result_array(FALSE);
       if (count($qry) === 0) {
         // Missing term so insert.
-        $userPersonObj->db->query("SELECT insert_term('$term', '$defaultLang', null, 'indicia:user_identifier_types');");
+        $userPersonObj->db->query(
+          "SELECT insert_term(?, ?, null, 'indicia:user_identifier_types');",
+          [$term, $defaultLang]);
       }
     }
     // Check each identifier to see if it already exists for the user.
@@ -443,7 +446,7 @@ SQL;
    * into the person record and update all associated sample attribute values
    * from this website.
    */
-  private static function updateEmailAddress($email, $userPersonObj, $websiteId) {
+  private static function updateEmailAddress($email, $userPersonObj, int $websiteId) {
     // Check if email address has changed.
     $currentValCheck = $userPersonObj->db->select('email_address')
       ->from('people')
@@ -458,20 +461,19 @@ SQL;
       // Update all sample attribute values matching other email addresses for
       // this account and linked to the user ID and website to this email.
       $userPersonObj->db->query(<<<QRY
-update sample_attribute_values sav
-set text_value=p.email_address
-from people p
-join users u on u.person_id=p.id and u.deleted=false
-join user_identifiers ui on ui.user_id=u.id and ui.deleted=false
-join cache_termlists_terms ctt on ctt.id=ui.type_id and ctt.term='email'
-join samples s on s.created_by_id=u.id and s.deleted=false
-join surveys su on su.id=s.survey_id and su.deleted=false and su.website_id=$websiteId
-where p.id={$userPersonObj->person_id}
-and sav.sample_id=s.id
-and lower(sav.text_value)<>lower(p.email_address)
-and lower(sav.text_value)=lower(ui.identifier)
-QRY
-      );
+        update sample_attribute_values sav
+        set text_value=p.email_address
+        from people p
+        join users u on u.person_id=p.id and u.deleted=false
+        join user_identifiers ui on ui.user_id=u.id and ui.deleted=false
+        join cache_termlists_terms ctt on ctt.id=ui.type_id and ctt.term='email'
+        join samples s on s.created_by_id=u.id and s.deleted=false
+        join surveys su on su.id=s.survey_id and su.deleted=false and su.website_id=?
+        where p.id=?
+        and sav.sample_id=s.id
+        and lower(sav.text_value)<>lower(p.email_address)
+        and lower(sav.text_value)=lower(ui.identifier)
+      QRY, [$websiteId, $userPersonObj->person_id]);
     }
   }
 
@@ -793,7 +795,7 @@ QRY
    * @param Database $db
    *   Database connection.
    */
-  private static function mergeUsers($uid, $existingUsers, $db) {
+  private static function mergeUsers(int $uid, array $existingUsers, $db) {
     foreach ($existingUsers as $userIdToMerge) {
       if ($userIdToMerge != $uid && (!isset($_REQUEST['users_to_merge']) || in_array($userIdToMerge, $_REQUEST['users_to_merge']))) {
         // Change ownership of occurrences, samples and locations.
@@ -812,22 +814,22 @@ QRY
           UPDATE person_attribute_values v
           SET person_id=unew.person_id
           FROM users uold, users unew
-          WHERE uold.id=$userIdToMerge
-          AND unew.id=$uid
+          WHERE uold.id=?
+          AND unew.id=?
           AND v.person_id=uold.person_id
           AND unew.deleted=false
           AND v.deleted=false;
 SQL;
-        $db->query($query);
+        $db->query($query, [$userIdToMerge, $uid]);
         // Plus any linked group users (activities).
         $query = <<<SQL
           UPDATE groups_users gu
-          SET user_id=$uid
-          WHERE gu.user_id=$userIdToMerge
+          SET user_id=?
+          WHERE gu.user_id=?
           AND deleted=false
-          AND NOT EXISTS(SELECT * FROM groups_users gue WHERE gue.group_id=gu.group_id AND gue.user_id=$uid AND gue.deleted=false);
+          AND NOT EXISTS(SELECT * FROM groups_users gue WHERE gue.group_id=gu.group_id AND gue.user_id=? AND gue.deleted=false);
 SQL;
-        $db->query($query);
+        $db->query($query, [$uid, $userIdToMerge, $uid]);
         // Delete the old user.
         $uidsToDelete[] = $userIdToMerge;
         kohana::log('debug', "User merge operation resulted in deletion of user $userIdToMerge plus the related person");

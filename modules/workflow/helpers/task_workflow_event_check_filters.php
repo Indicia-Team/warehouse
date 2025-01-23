@@ -59,11 +59,11 @@ LEFT JOIN (occurrence_attribute_values v
   -- case insensitive array check.
   AND lower(t.term)=ANY(lower(e.attrs_filter_values::text)::text[])
   AND lower(a.term_name)=lower(e.attrs_filter_term)
-WHERE q.entity='occurrence' AND q.task='task_workflow_event_check_filters' AND claimed_by='$procId'
+WHERE q.entity='occurrence' AND q.task='task_workflow_event_check_filters' AND claimed_by=?
 -- Need to either fail on the locations filter, or attribute values filter.
 AND e.attrs_filter_term IS NOT NULL AND v.id IS NULL;
 SQL;
-    $tasks = $db->query($qry);
+    $tasks = $db->query($qry, [$procId]);
     $occurrenceIds = [];
     foreach ($tasks as $task) {
       $occurrenceIds[] = $task->record_id;

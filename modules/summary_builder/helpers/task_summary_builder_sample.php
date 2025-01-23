@@ -49,10 +49,9 @@ class task_summary_builder_sample {
   public static function process($db, $taskType, $procId) {
     $queries = kohana::config('summary_builder');
     self::cleanupUnrelatedTasks($db);
-    // This query gets all the samples to be processed that are on a survey which does summarisation
-    $query = str_replace(['#procId#', '#task#'], [$procId, 'task_summary_builder_sample'],
-        $queries['get_samples_to_process']);
-    $result = $db->query($query)->result_array(false);
+    // This query gets all the samples to be processed that are on a survey
+    // which does summarisation.
+    $result = $db->query($queries['get_samples_to_process'], [$procId, 'task_summary_builder_sample'])->result_array(false);
     foreach($result as $row){
        summary_builder::populate_summary_table_for_sample($db, $row['sample_id'], $row['definition_id']);
     }

@@ -1145,12 +1145,13 @@ class ORM extends ORM_Core {
       // Warehouse access with full rights, or authorised on the same website.
       return;
     }
+    $checkField = pg_escape_identifier($this->db->getLink(), "provide_for_$sharingMode");
     $sql = <<<SQL
-SELECT count(*) FROM index_websites_website_agreements
-WHERE to_website_id=$authorisedWebsiteId and from_website_id=$otherWebsiteId
-AND provide_for_$sharingMode=true
-SQL;
-    if ((integer) $this->db->query($sql)->current()->count === 0) {
+      SELECT count(*) FROM index_websites_website_agreements
+      WHERE to_website_id=? and from_website_id=?
+      AND $checkField=true
+    SQL;
+    if ((int) $this->db->query($sql, [$authorisedWebsiteId, $otherWebsiteId])->current()->count === 0) {
       throw new Exception('Access to this website denied.', 2001);
     }
   }
@@ -1243,7 +1244,7 @@ SQL;
       // a trigger containing a sequence, we have to recalculate the ID as the
       // Kohana reliance on lastval() doesn't work.
       if ($isInsert && !empty($this->hasTriggerWithSequence)) {
-        $this->id = $this->db->query("SELECT currval(pg_get_serial_sequence('$this->object_plural','id')) as last_id")->current()->last_id;
+        $this->id = $this->db->query("SELECT currval(pg_get_serial_sequence(?,'id')) as last_id", [$this->object_plural])->current()->last_id;
       }
       Kohana::log("debug", "Record $this->id has validated successfully");
       $return = $this->id;
@@ -2251,9 +2252,12 @@ SQL;
             return FALSE;
           }
           elseif ($creatingTerm) {
-            $escapedTerm = pg_escape_string($this->db->getLink(), $value);
             $value = $this->db
-              ->query("select insert_term('$escapedTerm', '$allowTermCreationLang', null, $attrDef->termlist_id, null);")
+              ->query("select insert_term(?, ?, null, ?, null);". [
+                $value,
+                $allowTermCreationLang,
+                $attrDef->termlist_id,
+              ])
               ->insert_id();
           }
         }
@@ -2700,7 +2704,7 @@ SQL;
     $struct = $this->get_submission_structure();
     $table = inflector::plural($this->object_name);
     if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
-      $join = 'JOIN ' . inflector::plural($this->object_name) . "_websites w ON (w.website_id = $saveArray[website_id] " .
+      $join = 'JOIN ' . inflector::plural($this->object_name) . "_websites w ON (w.website_id=" . (int) $saveArray['website_id'] .
           " AND w.{$this->object_name}_id = $table.id) ";
       $fields = array_diff( $fields, array('website_id') );
     } else {

@@ -27,7 +27,7 @@ $config['actions'] = [
     // Numeric parameters are be extracted from the URL path segments at the
     // given position, either [n] to extract an integer or {1} to extract a
     // string. Text parameters are extracted from the URL query parameters of
-    // the matchin name.
+    // the matching name.
     // In this example, data_utils/process_ecmc_import/5?foo=bar will call
     // select f_process_ecmc_import(6,7,1,'bar',22,146,5);
     'parameters' => array(

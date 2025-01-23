@@ -56,42 +56,44 @@ class task_spatial_index_builder_occurrence {
    *   tasks to perform.
    */
   public static function process($db, $taskType, $procId) {
+    // Delete entries which no longer require processing - normally a result of
+    // a deletion since the queue entry created.
     $qry = <<<SQL
--- Delete entries which no longer require processing - normally a result of a
--- deletion since the queue entry created.
-DELETE FROM work_queue q
-USING occurrences o
-JOIN samples s ON s.id=o.sample_id
-WHERE o.id=q.record_id
-AND q.claimed_by='$procId'
-AND q.entity='occurrence'
-AND q.task='task_spatial_index_builder_occurrence'
-AND (s.deleted=true OR o.deleted=true);
+      DELETE FROM work_queue q
+      USING occurrences o
+      JOIN samples s ON s.id=o.sample_id
+      WHERE o.id=q.record_id
+      AND q.claimed_by=?
+      AND q.entity='occurrence'
+      AND q.task='task_spatial_index_builder_occurrence'
+      AND (s.deleted=true OR o.deleted=true);
+    SQL;
+    $db->query($qry, [$procId]);
+    $qry = <<<SQL
+      DROP TABLE IF EXISTS occlist;
 
-DROP TABLE IF EXISTS occlist;
+      SELECT q.id as work_queue_id, o.id, s.location_ids
+      INTO TEMPORARY occlist
+      FROM work_queue q
+      JOIN cache_occurrences_functional o ON o.id=q.record_id
+      -- s.location_ids will be null if the sample not yet indexed.
+      JOIN cache_samples_functional s ON s.id=o.sample_id AND s.location_ids IS NOT NULL
+      WHERE q.claimed_by=?
+      AND q.entity='occurrence'
+      AND q.task='task_spatial_index_builder_occurrence';
 
-SELECT q.id as work_queue_id, o.id, s.location_ids
-INTO TEMPORARY occlist
-FROM work_queue q
-JOIN cache_occurrences_functional o ON o.id=q.record_id
--- s.location_ids will be null if the sample not yet indexed.
-JOIN cache_samples_functional s ON s.id=o.sample_id AND s.location_ids IS NOT NULL
-WHERE q.claimed_by='$procId'
-AND q.entity='occurrence'
-AND q.task='task_spatial_index_builder_occurrence';
+      UPDATE cache_occurrences_functional o
+      SET location_ids = ol.location_ids
+      FROM occlist ol
+      WHERE ol.id=o.id
+      AND (o.location_ids <> ol.location_ids OR (o.location_ids IS NULL)<>(ol.location_ids IS NULL));
 
-UPDATE cache_occurrences_functional o
-SET location_ids = ol.location_ids
-FROM occlist ol
-WHERE ol.id=o.id
-AND (o.location_ids <> ol.location_ids OR (o.location_ids IS NULL)<>(ol.location_ids IS NULL));
-
--- Delete processed.
-DELETE FROM work_queue q
-USING occlist ol
-WHERE ol.work_queue_id=q.id;
-SQL;
-    $db->query($qry);
+      -- Delete processed.
+      DELETE FROM work_queue q
+      USING occlist ol
+      WHERE ol.work_queue_id=q.id;
+    SQL;
+    $db->query($qry, [$procId]);
   }
 
 }

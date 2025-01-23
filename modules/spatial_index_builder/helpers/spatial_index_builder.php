@@ -50,8 +50,11 @@ class spatial_index_builder {
       if (!array_key_exists('location_types', $config)) {
         throw new Exception('Spatial index builder configuration location_types missing');
       }
+      $locationTypesEsc = array_map(function ($s) use ($db) {
+        return pg_escape_literal($db->getLink(), $s);
+      }, $config['location_types']);
       $idQuery = $db->query("select id, term from cache_termlists_terms where preferred_term in ('" .
-        implode("','", $config['location_types']) . "') and termlist_title ilike 'location types'")
+        implode(',', $locationTypesEsc) . "') and termlist_title ilike 'location types'")
         ->result();
       $allLocationTypeIds = [];
       foreach ($idQuery as $row) {
@@ -61,6 +64,7 @@ class spatial_index_builder {
       if (array_key_exists('survey_restrictions', $config)) {
         foreach ($config['survey_restrictions'] as $type => $surveyIds) {
           $surveys = implode(', ', $surveyIds);
+          warehouse::validateIntCsvListParam($surveys);
           if (!isset($allLocationTypeIds[$type])) {
             throw new exception('Configured survey restriction incorrect in spatial index builder');
           }

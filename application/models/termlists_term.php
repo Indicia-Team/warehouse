@@ -216,10 +216,10 @@ class Termlists_term_Model extends Base_Name_Model {
 SELECT string_agg(t1.id::text, ',') as ids
 FROM termlists_terms t1
 JOIN termlists_terms t2 ON t2.meaning_id=t1.meaning_id
-WHERE t2.id=$this->id AND t1.deleted=false;
+WHERE t2.id=? AND t1.deleted=false;
 SQL;
      return $this->db
-       ->query($sql)
+       ->query($sql, [$this->id])
        ->current()->ids;
   }
 

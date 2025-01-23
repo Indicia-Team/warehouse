@@ -116,8 +116,19 @@ SQL
       $date_start = $vd[0];
       $date_end = $vd[1];
       $date_type = $vd[2];
-      $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_geom, taxa_taxon_list_id, verification_checks_enabled)
-          values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type',  st_geomfromtext('$geom', $srid), $taxa_taxon_list_id, 't');");
+      $db->query(<<<SQL
+        INSERT INTO occdelta (website_id, survey_id, date_start, date_end, date_type, public_geom, taxa_taxon_list_id, verification_checks_enabled)
+        VALUES (?, ?, ?, ?, ?,  st_geomfromtext(?, ?), ?, 't');
+      SQL, [
+        $website_id,
+        $survey_id,
+        $date_start,
+        $date_end,
+        $date_type,
+        $geom,
+        $srid,
+        $taxa_taxon_list_id,
+      ]);
     }
     // patch in some extra details about the taxon required for each cache entry
     $db->query("update occdelta o set taxon_meaning_id=ttl.taxon_meaning_id, taxa_taxon_list_external_key=ttl.external_key ".

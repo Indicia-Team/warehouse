@@ -62,19 +62,19 @@ class task_cache_builder_path_occurrence {
   public static function process($db, $taskType, $procId) {
     $masterListId = warehouse::getMasterTaxonListId();
     $sql = <<<SQL
-UPDATE cache_occurrences_functional o
-SET taxon_path=ctp.path
-FROM work_queue q, cache_taxa_taxon_lists cttl
-LEFT JOIN cache_taxon_paths ctp
-  ON ctp.taxon_meaning_id=cttl.taxon_meaning_id
-  AND ctp.taxon_list_id=$masterListId
-WHERE cttl.external_key=o.taxa_taxon_list_external_key
-AND cttl.taxon_list_id=$masterListId
-AND o.id=q.record_id
-AND q.entity='occurrence'
-AND q.task='task_cache_builder_path_occurrence'
-AND q.claimed_by='$procId';
-SQL;
-    $db->query($sql);
+      UPDATE cache_occurrences_functional o
+      SET taxon_path=ctp.path
+      FROM work_queue q, cache_taxa_taxon_lists cttl
+      LEFT JOIN cache_taxon_paths ctp
+        ON ctp.taxon_meaning_id=cttl.taxon_meaning_id
+        AND ctp.taxon_list_id=$masterListId
+      WHERE cttl.external_key=o.taxa_taxon_list_external_key
+      AND cttl.taxon_list_id=$masterListId
+      AND o.id=q.record_id
+      AND q.entity='occurrence'
+      AND q.task='task_cache_builder_path_occurrence'
+      AND q.claimed_by=?;
+    SQL;
+    $db->query($sql, [$procId]);
   }
 }

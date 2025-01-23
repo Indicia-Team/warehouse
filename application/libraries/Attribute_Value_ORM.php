@@ -202,7 +202,10 @@ abstract class Attribute_Value_ORM extends ORM {
   public function __set($key, $value) {
     if ($key === 'geom_value') {
       if ($value) {
-        $row = $this->db->query("SELECT ST_GeomFromText('$value', ".kohana::config('sref_notations.internal_srid').") AS geom")->current();
+        $row = $this->db->query("SELECT ST_GeomFromText(?, ?) AS geom", [
+          $value,
+          kohana::config('sref_notations.internal_srid'),
+        ])->current();
         $value = $row->geom;
       }
     }
@@ -216,7 +219,7 @@ abstract class Attribute_Value_ORM extends ORM {
     $value = parent::__get($column);
 
     if ($column === 'geom_value' && !empty($value)) {
-      $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
+      $row = $this->db->query("SELECT ST_asText(?) AS wkt", [$value])->current();
       $value = $row->wkt;
     }
     return $value;
@@ -237,10 +240,13 @@ abstract class Attribute_Value_ORM extends ORM {
     if ($this->wantToUpdateMetadata) {
       // Value has changed, so trigger metadata update on parent.
       $parentEntity = str_replace('_attribute_value','',$this->object_name);
-      $parentTable = inflector::plural($parentEntity);
-      $parentTableFk = $parentEntity . '_id';
-      $parentTableId = $this->$parentTableFk;
-      $this->db->query("UPDATE $parentTable SET updated_on='now()', updated_by_id=$this->updated_by_id WHERE id=$parentTableId");
+      $parentTable = pg_escape_identifier($this->db->getLink(), inflector::plural($parentEntity));
+      $parentTableFkField = $parentEntity . '_id';
+      $parentTableId = $this->$parentTableFkField;
+      $this->db->query("UPDATE $parentTable SET updated_on=now(), updated_by_id=? WHERE id=?". [
+        $this->updated_by_id,
+        $parentTableId,
+      ]);
     }
     return parent::postSubmit($isInsert);
   }

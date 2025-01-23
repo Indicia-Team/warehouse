@@ -38,7 +38,7 @@ class Rest_api_client_connection_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
     $id = $array->id ?? '';
-    $array->add_rules('proj_id', 'required', "unique[rest_api_client_connections,proj_id,$id,rest_api_client_id=$array->rest_api_client_id]");
+    $array->add_rules('proj_id', 'required', "unique[rest_api_client_connections,proj_id,$id,rest_api_client_id,$array->rest_api_client_id]");
     $array->add_rules('rest_api_client_id', 'required', 'integer');
     $array->add_rules('sharing', 'chars[R,V,D,M,P]');
     $array->add_rules('filter_id', 'integer');

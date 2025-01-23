@@ -39,6 +39,7 @@ class cache_builder {
    */
   public static function populate_cache_table($db, $table, $last_run_date) {
     $queries = kohana::config("cache_builder.$table");
+    $needsUpdateTable = pg_escape_identifier($db->getLink(), "needs_update_$table");
     try {
       echo "<h3>$table</h3>";
       $count = cache_builder::getChangeList($db, $table, $queries, $last_run_date);
@@ -48,10 +49,10 @@ class cache_builder {
       else {
         echo "<p>No changes</p>";
       }
-      $db->query("drop table needs_update_$table");
+      $db->query("drop table $needsUpdateTable");
     }
     catch (Exception $e) {
-      $db->query("drop table needs_update_$table");
+      $db->query("drop table $needsUpdateTable");
       throw $e;
     }
   }
@@ -117,12 +118,14 @@ HTML;
       cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');
     }
     if (!variable::get("populated-$table")) {
-      $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(FALSE);
+      $tableEsc = pg_escape_identifier($db->getLink(), $table);
+      $cacheTableEsc = pg_escape_identifier($db->getLink(), "cache_$table");
+      $cacheQuery = $db->query("select count(*) from $cacheTableEsc")->result_array(FALSE);
       if (isset($queries['count'])) {
         $totalQuery = $db->query($queries['count'])->result_array(FALSE);
       }
       else {
-        $totalQuery = $db->query("select count(*) from $table where deleted='f'")->result_array(FALSE);
+        $totalQuery = $db->query("select count(*) from $tableEsc where deleted='f'")->result_array(FALSE);
       }
       $percent = round($cacheQuery[0]['count'] * 100 / $totalQuery[0]['count']);
       echo "<p>Initial population of $table progress $percent%.</p>";
@@ -141,10 +144,11 @@ HTML;
    */
   public static function insert($db, $table, array $ids) {
     if (count($ids) > 0) {
-      $idlist = implode(',', $ids);
+      $idList = implode(',', $ids);
+      warehouse::validateIntCsvListParam($idList);
       if (self::$delayCacheUpdates && in_array($table, ['occurrences', 'samples'])) {
-        kohana::log('debug', "Delayed inserts for $table ($idlist)");
-        self::delayChangesViaWorkQueue($db, $table, $idlist);
+        kohana::log('debug', "Delayed inserts for $table ($idList)");
+        self::delayChangesViaWorkQueue($db, $table, $idList);
       }
       else {
         $master_list_id = warehouse::getMasterTaxonListId();
@@ -161,7 +165,7 @@ HTML;
             ['', $master_list_id],
             $query
           );
-          $insertSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
+          $insertSql .= ' and ' . $queries['key_field'] . " in ($idList)";
           $db->query($insertSql);
         }
       }
@@ -183,10 +187,11 @@ HTML;
    */
   public static function update($db, $table, array $ids) {
     if (count($ids) > 0) {
-      $idlist = implode(',', $ids);
+      $idList = implode(',', $ids);
+      warehouse::validateIntCsvListParam($idList);
       if (self::$delayCacheUpdates && in_array($table, ['occurrences', 'samples'])) {
-        kohana::log('debug', "Delayed updates for $table ($idlist)");
-        self::delayChangesViaWorkQueue($db, $table, $idlist);
+        kohana::log('debug', "Delayed updates for $table ($idList)");
+        self::delayChangesViaWorkQueue($db, $table, $idList);
       }
       else {
         $master_list_id = warehouse::getMasterTaxonListId();
@@ -203,7 +208,7 @@ HTML;
             ['', $master_list_id],
             $query
           );
-          $updateSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
+          $updateSql .= ' and ' . $queries['key_field'] . " in ($idList)";
           $db->query($updateSql);
         }
         self::final_queries($db, $table, $ids);
@@ -244,7 +249,7 @@ AND o.survey_id=su.id
 AND o.website_id=su.website_id
 SQL;
             $db->query($sql);
-            $db->query("delete from cache_occurrences_nonfunctional where id in (select id from occurrences where sample_id=$id)");
+            $db->query('delete from cache_occurrences_nonfunctional where id in (select id from occurrences where sample_id=?)', [$id]);
           }
         }
         else {
@@ -267,6 +272,7 @@ SQL;
    */
   public static function updateSampleTrackingForOccurrences($db, array $ids) {
     $idList = implode(',', $ids);
+    warehouse::validateIntCsvListParam($idList);
     $sql = <<<SQL
 UPDATE cache_samples_functional s
 SET website_id=s.website_id
@@ -290,6 +296,7 @@ SQL;
    *   Record IDs to delete from the cache (comma separated string).
    */
   private static function delayChangesViaWorkQueue($db, $table, $idCsv) {
+    warehouse::validateIntCsvListParam($idCsv);
     $entity = inflector::singular($table);
     // Priority 1 work_queue tasks so it precedes things like spatial indexing
     // or attributes population.
@@ -309,10 +316,11 @@ SQL;
     $queries = kohana::config("cache_builder.$table");
     $doneCount = 0;
     if (isset($queries['extra_single_record_updates'])) {
-      $idlist = implode(',', $ids);
+      $idList = implode(',', $ids);
+      warehouse::validateIntCsvListParam($idList);
       if (is_array($queries['extra_single_record_updates'])) {
         foreach ($queries['extra_single_record_updates'] as $key => &$sql) {
-          $result = $db->query(str_replace('#ids#', $idlist, $sql));
+          $result = $db->query(str_replace('#ids#', $idList, $sql));
           $doneCount += $result->count();
           if ($doneCount >= count($ids)) {
             // We've updated all, so can drop out.
@@ -321,7 +329,7 @@ SQL;
         }
       }
       else {
-        $db->query(str_replace('#ids#', $idlist, $queries['extra_single_record_updates']));
+        $db->query(str_replace('#ids#', $idList, $queries['extra_single_record_updates']));
       }
     }
   }
@@ -344,13 +352,14 @@ SQL;
    */
   private static function getChangeList($db, $table, $queries, $last_run_date) {
     $query = str_replace('#date#', $last_run_date, $queries['get_changed_items_query']);
-    $db->query("create temporary table needs_update_$table as $query");
+    $needsUpdateTable = pg_escape_identifier($db->getLink(), "needs_update_$table");
+    $db->query("create temporary table $needsUpdateTable as $query");
     if (!variable::get("populated-$table")) {
       // As well as the changed records, pick up max 5000 previous records,
       // which is important for initial population. 5000 is an arbitrary number
       // to compromise between performance and cache population.
       $query = $queries['get_missing_items_query'] . ' limit 5000';
-      $result = $db->query("insert into needs_update_$table $query");
+      $result = $db->query("insert into $needsUpdateTable $query");
       if ($result->count() === 0) {
         // Flag that we don't need to do any more previously existing records
         // as they are all done.
@@ -359,8 +368,9 @@ SQL;
         echo "<p>Initial population of $table completed</p>";
       }
     }
-    $db->query("ALTER TABLE needs_update_$table ADD CONSTRAINT ix_nu_$table PRIMARY KEY (id)");
-    $r = $db->query("select count(*) as count from needs_update_$table")->result_array(FALSE);
+    $constraintName = pg_escape_identifier($db->getLink(), "ix_nu_$table");
+    $db->query("ALTER TABLE $needsUpdateTable ADD CONSTRAINT $constraintName PRIMARY KEY (id)");
+    $r = $db->query("select count(*) as count from $needsUpdateTable")->result_array(FALSE);
     $row = $r[0];
     return $row['count'];
   }
@@ -379,7 +389,9 @@ SQL;
   private static function do_delete($db, $table, $queries) {
     // Set up a default delete query if none are specified.
     if (!isset($queries['delete_query'])) {
-      $queries['delete_query'] = ["delete from cache_$table where id in (select id from needs_update_$table where deleted=true)"];
+      $needsUpdateTable = pg_escape_identifier($db->getLink(), "needs_update_$table");
+      $cacheTable = pg_escape_identifier($db->getLink(), "cache_$table");
+      $queries['delete_query'] = ["delete from $cacheTable where id in (select id from $needsUpdateTable where deleted=true)"];
     }
     $count = 0;
     foreach ($queries['delete_query'] as $query) {

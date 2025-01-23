@@ -90,23 +90,27 @@ function data_cleaner_cleanout_old_messages(array $rules, $db) {
     if (!in_array($rule['plugin'], $modulesDone)) {
       // Mark delete any previous occurrence comments for this plugin for
       // taxa we are rechecking.
-      $query = "update occurrence_comments oc
+      $query = <<<SQL
+        update occurrence_comments oc
         set deleted=true
         from occdelta o
         where oc.occurrence_id=o.id and o.record_status not in ('I','V','R','D')
-        and oc.generated_by='$rule[plugin]'";
-      $db->query($query);
+        and oc.generated_by=?
+      SQL;
+      $db->query($query, [$rule['plugin']]);
       $modulesDone[] = $rule['plugin'];
     }
   }
   // Cleanup the notifications generated previously for verifications and
   // auto-checks.
-  $query = "delete
+  $query = <<<SQL
+    delete
     from notifications
     using occdelta o
     where source='Verifications and comments' and source_type in ('V','A')
     and linked_id = o.id
-    and o.record_status not in ('I','V','R','D')";
+    and o.record_status not in ('I','V','R','D')
+  SQL;
   $db->query($query);
 }
 
@@ -133,12 +137,13 @@ function data_cleaner_run_rules($rules, $db) {
       $implies_manual_check_required = isset($query['implies_manual_check_required']) && !$query['implies_manual_check_required'] ? 'false' : 'true';
       $errorMsgSuffix = isset($query['errorMsgSuffix']) ? $query['errorMsgSuffix'] : (isset($rule['errorMsgSuffix']) ? $rule['errorMsgSuffix'] : '');
       $subtypeField = empty($query['subtypeField']) ? '' : ", generated_by_subtype";
-      $subtypeValue = empty($query['subtypeField']) ? '' : ", $query[subtypeField]";
+      $subtypeValue = empty($query['subtypeField']) ? '' : ", " . pg_escape_identifier($db->getLink(), $query[subtypeField]);
+      $plugin = pg_escape_literal($db->getLink(), $rule['plugin']);
       $sql = <<<SQL
 insert into occurrence_comments (comment, created_by_id, created_on,
   updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required$subtypeField)
 select distinct $ruleErrorField$errorMsgSuffix,
-  1, now(), 1, now(), co.id, true, '$rule[plugin]', $implies_manual_check_required$subtypeValue
+  1, now(), 1, now(), co.id, true, $plugin, $implies_manual_check_required$subtypeValue
 from occdelta co
 SQL;
       if (isset($query['joins'])) {
@@ -179,10 +184,12 @@ function data_cleaner_update_occurrence_metadata($db, $endtime) {
   // Note we use the information from the point when we started the process,
   // in caseany changes have happened in the meanwhile which might otherwise be
   // missed.
-  $query = "update occurrences o
-set last_verification_check_date='$endtime'
-from occdelta
-where occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')";
+  $query = <<<SQL
+    update occurrences o
+    set last_verification_check_date='$endtime'
+    from occdelta
+    where occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')
+  SQL;
   $db->query($query);
 }
 

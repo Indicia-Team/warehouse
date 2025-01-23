@@ -192,6 +192,6 @@ SQL;
  *
  * Otherwise the query needs to be case insensitive which makes it slow.
  */
-function data_cleaner_period_within_year_data_cleaner_postprocess($id, $db) {
-  $db->query("update verification_rule_metadata set value=upper(value) where key ilike 'Tvk' and value<>upper(value) and verification_rule_id=$id");
+function data_cleaner_period_within_year_data_cleaner_postprocess(int $id, $db) {
+  $db->query("update verification_rule_metadata set value=upper(value) where key ilike 'Tvk' and value<>upper(value) and verification_rule_id=?", [$id]);
 }

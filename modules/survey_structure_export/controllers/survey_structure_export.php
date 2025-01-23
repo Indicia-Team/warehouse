@@ -839,18 +839,19 @@ class Survey_structure_export_Controller extends Indicia_Controller {
     // Survey attributes never have form structure blocks so will
     // have already been turned back.
     $type = ($type === 'sample') ? 'S' : 'O';
+    $surveyId = (int) $_POST['survey_id'];
     $query = "SELECT fsb1.id
         FROM form_structure_blocks fsb1
         LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb1.parent_id
         WHERE fsb1.name = '$attrDef[fsb1_name]'
-        AND fsb1.survey_id = $_POST[survey_id]
+        AND fsb1.survey_id = $surveyId
         AND fsb1.type = '$type'\n";
     if (empty($attrDef['fsb2_name'])) {
       $query .= 'AND fsb2.id is null';
     }
     else {
       $query .= "AND fsb2.name = '$attrDef[fsb2_name]'
-          AND fsb2.survey_id = $_POST[survey_id]
+          AND fsb2.survey_id = $surveyId
           AND fsb2.type = '$type'";
     }
     $matches = $this->db->query($query)->result_array(FALSE);

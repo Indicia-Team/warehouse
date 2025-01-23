@@ -84,11 +84,11 @@ class Occurrence_comment_model extends ORM {
   public function postSubmit($isInsert) {
     if ($isInsert && $this->auto_generated!=='t' and $this->query==='t') {
       $sql = <<<SQL
-update cache_occurrences_functional set query='Q'
-where id={$this->occurrence_id}
-and (query<>'Q' or query IS NULL)
-SQL;
-      $this->db->query($sql);
+        UPDATE cache_occurrences_functional SET query='Q'
+        WHERE id=?
+        AND (query<>'Q' OR query IS NULL)
+      SQL;
+      $this->db->query($sql, [$this->occurrence_id]);
     }
     // Answers don't need to be instant, just queries.
     return TRUE;

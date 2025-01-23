@@ -56,8 +56,8 @@ function auto_verify_metadata() {
  */
 function auto_verify_scheduled_task($last_run_date, $db) {
   $autoVerifyNullIdDiff = kohana::config('auto_verify.auto_accept_occurrences_with_null_id_difficulty', FALSE, FALSE);
-  if (empty($autoVerifyNullIdDiff)) {
-    echo "Unable to automatically verify occurrences when the auto_accept_occurrences_with_null_id_difficulty entry is empty.<br>";
+  if (empty($autoVerifyNullIdDiff) || !in_array($autoVerifyNullIdDiff, ['true', 'false'])) {
+    echo "Unable to automatically verify occurrences when the auto_accept_occurrences_with_null_id_difficulty entry is empty or not true/false.<br>";
     kohana::log('error', 'Unable to automatically verify occurrences when the auto_accept_occurrences_with_null_id_difficulty configuration entry is empty.');
     return FALSE;
   }

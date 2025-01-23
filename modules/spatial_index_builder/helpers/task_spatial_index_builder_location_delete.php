@@ -55,7 +55,7 @@ class task_spatial_index_builder_location_delete {
   public static function process($db, $taskType, $procId) {
     $qry = <<<SQL
 DROP TABLE IF EXISTS loclist;
-SELECT record_id INTO temporary loclist FROM work_queue WHERE claimed_by='$procId' AND entity='location';
+SELECT record_id INTO temporary loclist FROM work_queue WHERE claimed_by=? AND entity='location';
 
 UPDATE cache_occurrences_functional u
 SET location_ids=array_remove(u.location_ids, l.record_id)
@@ -73,6 +73,6 @@ FROM loclist l
 WHERE u.higher_location_ids @> ARRAY[l.record_id];
 
 SQL;
-    $db->query($qry);
+    $db->query($qry, [$procId]);
   }
 }

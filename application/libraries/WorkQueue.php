@@ -242,17 +242,21 @@ SQL;
    */
   private function getTaskTypesToDo(array $maxCostByPriority) {
     $sql = <<<SQL
-SELECT DISTINCT task, entity, min(priority) as priority, min(created_on) as created_on, count(id)
-FROM work_queue
-WHERE ((priority=1 AND cost_estimate<=$maxCostByPriority[1])
-OR (priority=2 AND cost_estimate<=$maxCostByPriority[2])
-OR (priority=3 AND cost_estimate<=$maxCostByPriority[3]))
-AND claimed_by IS NULL
-AND error_detail IS NULL
-GROUP BY task, entity
-ORDER BY min(priority), min(created_on), task, entity
-SQL;
-    return $this->db->query($sql)->result($sql);
+      SELECT DISTINCT task, entity, min(priority) as priority, min(created_on) as created_on, count(id)
+      FROM work_queue
+      WHERE ((priority=1 AND cost_estimate<=?)
+      OR (priority=2 AND cost_estimate<=?)
+      OR (priority=3 AND cost_estimate<=?))
+      AND claimed_by IS NULL
+      AND error_detail IS NULL
+      GROUP BY task, entity
+      ORDER BY min(priority), min(created_on), task, entity
+    SQL;
+    return $this->db->query($sql)->result($sql, [
+      $maxCostByPriority[1],
+      $maxCostByPriority[2],
+      $maxCostByPriority[3],
+    ]);
   }
 
   /**
@@ -272,21 +276,21 @@ SQL;
    * @return int
    *   Number of records claimed.
    */
-  private function claim($taskType, $batchSize, $procId) {
+  private function claim($taskType, int $batchSize, $procId) {
     // Use an atomic query to ensure we only claim tasks where they are not
     // already claimed.
     $sql = <<<SQL
 WITH rows AS (
   UPDATE work_queue
-  SET claimed_by='$procId', claimed_on=now()
+  SET claimed_by=?, claimed_on=now()
   WHERE id IN (
     SELECT id FROM work_queue
     WHERE claimed_by IS NULL
     AND error_detail IS NULL
-    AND task='$taskType->task'
-    AND COALESCE(entity, '')='$taskType->entity'
+    AND task=?
+    AND COALESCE(entity, '')=?
     ORDER BY priority, cost_estimate, id
-    LIMIT $batchSize
+    LIMIT ?
   )
   AND claimed_by IS NULL
   RETURNING 1
@@ -294,7 +298,7 @@ WITH rows AS (
 SELECT count(*) FROM rows;
 SQL;
     // Run query and return count claimed.
-    return $this->db->query($sql)->current()->count;
+    return $this->db->query($sql, [$procId, $taskType->task, $taskType->entity, $batchSize])->current()->count;
   }
 
   /**

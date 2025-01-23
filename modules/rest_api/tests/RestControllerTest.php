@@ -769,7 +769,7 @@ class RestControllerTest extends BaseRestClientTest {
     $this->assertEquals('A sample comment test', $response['response']['values']['comment']);
     // Update sample's user ID and try to fetch - ensure forbidden.
     $db = new Database();
-    $db->query('update samples set created_by_id=1 where id=' . $response['response']['values']['id']);
+    $db->query('update samples set created_by_id=1 where id=?', [$response['response']['values']['id']]);
     $response = $this->callService('samples/' . $response['response']['values']['id']);
     $this->assertEquals(403, $response['httpCode']);
     // PUT update should also fail.
@@ -815,7 +815,7 @@ class RestControllerTest extends BaseRestClientTest {
     );
     $this->assertEquals(201, $response['httpCode']);
     $id = $response['response']['values']['id'];
-    $occCount = $db->query("select count(*) from occurrences where sample_id=$id")
+    $occCount = $db->query("select count(*) from occurrences where sample_id=?", [$id])
       ->current()->count;
     $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
   }
@@ -853,8 +853,8 @@ class RestControllerTest extends BaseRestClientTest {
       $data
     );
     $this->assertEquals(201, $response['httpCode']);
-    $sampleId = $response['response']['values']['id'];
-    $occCount = $db->query("select count(*) from occurrences where sample_id=$sampleId")
+    $sampleId = (int) $response['response']['values']['id'];
+    $occCount = $db->query("select count(*) from occurrences where sample_id=?", [$sampleId])
       ->current()->count;
     $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
 
@@ -883,7 +883,7 @@ class RestControllerTest extends BaseRestClientTest {
     $this->assertEquals(0, $occs->occ_count, 'Anonymised user ID still points to some occurrence data.');
 
     // Test occurrence now points to anonymous user.
-    $occs = $db->query("SELECT created_by_id, updated_by_id FROM occurrences WHERE sample_id=$sampleId");
+    $occs = $db->query("SELECT created_by_id, updated_by_id FROM occurrences WHERE sample_id=", [$sampleId]);
     $this->assertEquals(1, $occs->count());
     foreach ($occs as $occ) {
       $this->assertEquals($anonUserId, $occ->created_by_id, 'Anonymised occurrence created_by_id is incorrect');
@@ -892,13 +892,13 @@ class RestControllerTest extends BaseRestClientTest {
 
     // Test existing sample now has a recorder name and points to anonymous
     // user.
-    $sample = $db->query("SELECT recorder_names, created_by_id, updated_by_id FROM samples WHERE id=$sampleId")->current();
+    $sample = $db->query("SELECT recorder_names, created_by_id, updated_by_id FROM samples WHERE id=?", [$sampleId])->current();
     $this->assertEquals('extrauser, test', $sample->recorder_names);
     $this->assertEquals($anonUserId, $sample->created_by_id, 'Anonymised sample created_by_id is incorrect');
     $this->assertEquals($anonUserId, $sample->updated_by_id, 'Anonymised sample updated_by_id is incorrect');
 
     // Test person email address is anonymised.
-    $person = $db->query("SELECT email_address FROM people WHERE id=$userInfo[person_id]")->current();
+    $person = $db->query("SELECT email_address FROM people WHERE id=", [$userInfo['person_id']])->current();
     $this->assertEquals(1, preg_match('/@anonymous\.anonymous$/', $person->email_address), 'Person email address not anonymised correctly');
 
   }
@@ -959,7 +959,7 @@ class RestControllerTest extends BaseRestClientTest {
         'Response from list post should be a simple list array'
       );
       $id = $item['values']['id'];
-      $occCount = $db->query("select count(*) from occurrences where sample_id=$id")
+      $occCount = $db->query("select count(*) from occurrences where sample_id=?", [$id])
         ->current()->count;
       $this->assertEquals(
         1, $occCount,
@@ -1093,9 +1093,9 @@ class RestControllerTest extends BaseRestClientTest {
     );
     $this->assertEquals(201, $response['httpCode']);
     $db = new Database();
-    $id = $response['response']['values']['id'];
+    $id = (int) $response['response']['values']['id'];
     $storedAltitude = $db
-      ->query("select int_value from sample_attribute_values where sample_id=$id")
+      ->query("select int_value from sample_attribute_values where sample_id=?", [$id])
       ->current()->int_value;
     $this->assertEquals(100, $storedAltitude);
     // Update via PUT should overwrite attribute, not create new, as single value.
@@ -1107,11 +1107,11 @@ class RestControllerTest extends BaseRestClientTest {
       'PUT'
     );
     $attrValCount = $db
-      ->query("select count(*) from sample_attribute_values where sample_id=$id")
+      ->query("select count(*) from sample_attribute_values where sample_id=?", [$id])
       ->current()->count;
     $this->assertEquals(1, $attrValCount);
     $storedAltitude = $db
-      ->query("select int_value from sample_attribute_values where sample_id=$id")
+      ->query("select int_value from sample_attribute_values where sample_id=?", [$id])
       ->current()->int_value;
     $this->assertEquals(150, $storedAltitude);
     // Do a GET to check we can read the stored altitude.
@@ -1306,7 +1306,7 @@ class RestControllerTest extends BaseRestClientTest {
     );
     $this->assertEquals(201, $response['httpCode']);
     $id = $response['response']['values']['id'];
-    $smpMediaCount = $db->query("select count(*) from sample_media where sample_id=$id and path='$uploadedFileName'")
+    $smpMediaCount = $db->query("select count(*) from sample_media where sample_id=? and path=?", [$id, $uploadedFileName])
       ->current()->count;
     $this->assertEquals(
       1, $smpMediaCount,
@@ -1402,8 +1402,8 @@ class RestControllerTest extends BaseRestClientTest {
       $data
     );
     $this->assertEquals(201, $response['httpCode']);
-    $id = $response['response']['values']['id'];
-    $occurrences = $db->query("select id from occurrences where sample_id=$id");
+    $id = (int) $response['response']['values']['id'];
+    $occurrences = $db->query("select id from occurrences where sample_id=?", [$id]);
     $this->assertEquals(
       1, count($occurrences),
       'Posting a sample with occurrence did not create the occurrence'
@@ -1509,7 +1509,7 @@ class RestControllerTest extends BaseRestClientTest {
       $data
     );
     $this->assertEquals(201, $response['httpCode']);
-    $sampleId = $response['response']['values']['id'];
+    $sampleId = (int) $response['response']['values']['id'];
     $sql = <<<SQL
 select s.id as sample_id,
   o.id as occurrence_id,
@@ -1527,9 +1527,9 @@ left join classification_events ce on ce.id=o.classification_event_id and ce.del
 left join classification_results cr on cr.classification_event_id=ce.id and cr.deleted=false
 left join classification_suggestions cs on cs.classification_result_id=cr.id and cs.deleted=false
 left join classification_results_occurrence_media crom on crom.classification_result_id=cr.id
-where s.id=$sampleId;
+where s.id=?;
 SQL;
-    $checkData = $db->query($sql)->current();
+    $checkData = $db->query($sql, [$sampleId])->current();
     $this->assertTrue(!empty($checkData->occurrence_id), 'REST Classification submission occurrence not created.');
     $this->assertEquals(3, $checkData->machine_involvement, 'REST Classification submission machine_involvement saved incorrectly.');
     $this->assertTrue(!empty($checkData->occurrence_medium_id), 'REST Classification submission occurrence_medium not created.');
@@ -1622,7 +1622,7 @@ SQL;
       'centroid_sref_system' => 'OSGB',
     ], 'name');
     $db = new Database();
-    $locationsWebsitesCount = $db->query("select count(*) from locations_websites where location_id=$id")
+    $locationsWebsitesCount = $db->query("select count(*) from locations_websites where location_id=?", [$id])
       ->current()->count;
     $this->assertEquals(
       1, $locationsWebsitesCount,
@@ -1887,9 +1887,9 @@ SQL;
     $sql = <<<SQL
 INSERT INTO websites (title, created_on, created_by_id, updated_on, updated_by_id, url, password)
 VALUES ('additional', now(), 1, now(), 1, 'http://example.com', '1234567');
-UPDATE surveys SET website_id=(select max(id) FROM websites) WHERE id=$id;
+UPDATE surveys SET website_id=(select max(id) FROM websites) WHERE id=?;
 SQL;
-    $db->query($sql);
+    $db->query($sql, [$id]);
     $response = $this->callService(
       "surveys/$id",
       FALSE,
@@ -2422,7 +2422,7 @@ SQL;
   public function testJwtOccurrencePostDeletedSample() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
     $db = new Database();
-    $db->query("update samples set deleted=true where id=$sampleId");
+    $db->query("update samples set deleted=true where id=", [$sampleId]);
     $data = [
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
