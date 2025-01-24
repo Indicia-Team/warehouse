@@ -252,11 +252,11 @@ SQL;
       GROUP BY task, entity
       ORDER BY min(priority), min(created_on), task, entity
     SQL;
-    return $this->db->query($sql)->result($sql, [
-      $maxCostByPriority[1],
-      $maxCostByPriority[2],
-      $maxCostByPriority[3],
-    ]);
+      return $this->db->query($sql, [
+        $maxCostByPriority[1],
+        $maxCostByPriority[2],
+        $maxCostByPriority[3],
+      ])->result();
   }
 
   /**
