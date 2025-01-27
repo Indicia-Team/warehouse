@@ -305,6 +305,7 @@ class Service_Base_Controller extends Controller {
    *   calling code.
    */
   protected function handle_error($e, $transaction_id = NULL) {
+    $message = $e->getMessage();
     if ($e instanceof ValidationError || $e instanceof InvalidArgumentException) {
       $statusCode = 400;
     }
@@ -317,11 +318,13 @@ class Service_Base_Controller extends Controller {
     }
     else {
       $statusCode = 500;
+      error_logger::log_error('Internal Service Error response from data services', $e);
+      $message = 'An internal error occurred. More information is in the warehouse logs (' . date("Y-m-d H:i:s") . ').';
     }
     // Give a chance to localise the message.
-    $message = kohana::lang('general_errors.' . $e->getMessage());
-    if (substr($message, 0, 15) === 'general_errors.') {
-      $message = $e->getMessage();
+    $translated = kohana::lang('general_errors.' . $message);
+    if (substr($message, 0, 15) !== 'general_errors.') {
+      $message = $translated;
     }
     $mode = $this->get_output_mode();
     // Set the HTTP response code only if configured to do so and not JSONP.

@@ -784,7 +784,7 @@ class ORM extends ORM_Core {
       $this->postProcess();
     }
     catch (Exception $e) {
-      $this->errors['general'] = 'An error occurred: ' . $e->getMessage();
+      $this->errors['general'] = 'An error occurred when saving the information. More information is in the warehouse logs (' . date("Y-m-d H:i:s") . ').';
       error_logger::log_error('Exception during submit.', $e);
       $res = NULL;
     }
@@ -1236,7 +1236,7 @@ class ORM extends ORM_Core {
     }
     catch (Exception $e) {
       $v = FALSE;
-      $this->errors['general'] = $e->getMessage();
+      $this->errors['general'] = 'An error occurred whilst validating the information on the warehouse. More information is in the warehouse logs (' . date("Y-m-d H:i:s") . ').';
       error_logger::log_error('Exception during validation', $e);
     }
     if ($v) {
@@ -2253,7 +2253,7 @@ class ORM extends ORM_Core {
           }
           elseif ($creatingTerm) {
             $value = $this->db
-              ->query("select insert_term(?, ?, null, ?, null);". [
+              ->query("select insert_term(?, ?, null, ?, null);", [
                 $value,
                 $allowTermCreationLang,
                 $attrDef->termlist_id,
