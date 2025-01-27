@@ -94,6 +94,7 @@ class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM {
     if (!empty($_POST['has-taxon-restriction-data'])) {
       $restrictions = [];
       $ttlIds = [];
+      $userId = (int) $_SESSION['auth_user']->id;
       // Loop the post data to look for rows in the restrictions species
       // checklist grid.
       foreach ($_POST as $key => $value) {
@@ -109,7 +110,7 @@ class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM {
           // If we have any keys, map the posted term ID to a meaning Id.
           if (!empty($sexStageKeys) && !empty($_POST[array_values($sexStageKeys)[0]])) {
             $meaningId = $this->db
-              ->query('SELECT meaning_id FROM cache_termlists_terms WHERE id=' . $_POST[array_values($sexStageKeys)[0]])
+              ->query('SELECT meaning_id FROM cache_termlists_terms WHERE id=?', [$_POST[array_values($sexStageKeys)[0]]])
               ->current();
             $sexStageVal = $meaningId->meaning_id;
           }
@@ -137,7 +138,7 @@ class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM {
         $tmIdCommaList = implode(',', $tmIdList);
         $qry = <<<SQL
 UPDATE taxa_taxon_list_attribute_taxon_restrictions
-SET deleted=true, updated_on=now(), updated_by_id={$_SESSION['auth_user']->id}
+SET deleted=true, updated_on=now(), updated_by_id=$userId
 WHERE taxon_lists_taxa_taxon_list_attribute_id=$this->id
 
 SQL;
@@ -153,7 +154,7 @@ SQL;
 UPDATE taxa_taxon_list_attribute_taxon_restrictions
   SET restrict_to_stage_term_meaning_id=$restriction[stage_term_meaning_id],
     updated_on=now(),
-    updated_by_id={$_SESSION['auth_user']->id}
+    updated_by_id=$userId
 WHERE taxon_lists_taxa_taxon_list_attribute_id=$this->id
 AND restrict_to_taxon_meaning_id=$restriction[taxon_meaning_id]
 AND deleted=false;
@@ -167,7 +168,7 @@ INSERT INTO taxa_taxon_list_attribute_taxon_restrictions(
   updated_on,
   updated_by_id
 )
-SELECT $this->id, $restriction[taxon_meaning_id], $restriction[stage_term_meaning_id], now(), {$_SESSION['auth_user']->id}, now(), {$_SESSION['auth_user']->id}
+SELECT $this->id, $restriction[taxon_meaning_id], $restriction[stage_term_meaning_id], now(), $userId, now(), $userId
 WHERE NOT EXISTS(
   SELECT 1 FROM taxa_taxon_list_attribute_taxon_restrictions
   WHERE taxon_lists_taxa_taxon_list_attribute_id=$this->id

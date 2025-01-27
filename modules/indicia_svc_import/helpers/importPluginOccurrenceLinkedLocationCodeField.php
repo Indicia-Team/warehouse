@@ -114,11 +114,11 @@ class importPluginOccurrenceLinkedLocationCodeField {
       // check.
       if (isset($column['warehouseField']) && $column['warehouseField'] === "smpAttr:$params[0]") {
         $found = TRUE;
-        $rawTempDbField = $column['tempDbField'];
+        $rawTempDbField = pg_escape_identifier($db->getLink(), $column['tempDbField']);
       }
       // Find the temp db column name for the code field.
       if (isset($column['warehouseField']) && $column['warehouseField'] === "smpAttr:$params[0]:code") {
-        $tempDbField = $column['tempDbField'];
+        $tempDbField = pg_escape_identifier($db->getLink(), $column['tempDbField']);
         $importColumnLabel = $label;
       }
     }
@@ -127,33 +127,34 @@ class importPluginOccurrenceLinkedLocationCodeField {
         'message' => ['No linked location code processing required.'],
       ];
     }
+    $tempTableNameEsc = pg_escape_identifier($db->getLink(), $config['tableName']);
     if (!$found) {
-      $rawTempDbField = "smpattr_$params[0]_location_id";
+      $rawTempDbField = pg_escape_identifier($db->getLink(), "smpattr_$params[0]_location_id");
       $sql = <<<SQL
-        ALTER TABLE import_temp.$config[tableName]
+        ALTER TABLE import_temp.$tempTableNameEsc
         ADD COLUMN IF NOT EXISTS $rawTempDbField integer;
 SQL;
       $db->query($sql);
       // Switch the import field in the config to the new mapped one.
-      $config['columns'][$importColumnLabel]['tempDbField'] = $rawTempDbField;
+      $config['columns'][$importColumnLabel]['tempDbField'] = "smpattr_$params[0]_location_id";
       $config['columns'][$importColumnLabel]['warehouseField'] = "smpAttr:$params[0]";
     }
     $sql = <<<SQL
-      UPDATE import_temp.$config[tableName] u
+      UPDATE import_temp.$tempTableNameEsc u
       SET $rawTempDbField=l.id
       FROM locations l
-      WHERE l.location_type_id=$params[1]
+      WHERE l.location_type_id=?
       AND l.code=u.$tempDbField
       AND l.deleted=false
       AND u.$rawTempDbField IS NULL;
 SQL;
-    $count = $db->query($sql)->count();
+    $count = $db->query($sql, [$params[1]])->count();
     // Now check that all records which should have mapped to a location did.
     $errorsJson = pg_escape_literal($db->getLink(), json_encode([
       $importColumnLabel => 'Location code specified could not be found in the list of available locations.',
     ]));
     $sql = <<<SQL
-UPDATE import_temp.$config[tableName] u
+UPDATE import_temp.$tempTableNameEsc u
 SET errors = COALESCE(u.errors, '{}'::jsonb) || $errorsJson::jsonb
 WHERE $rawTempDbField IS NULL AND $tempDbField IS NOT NULL;
 SQL;

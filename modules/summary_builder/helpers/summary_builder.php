@@ -48,8 +48,7 @@ class summary_builder {
         // this has to be done only once
         self::init_lastval($db);
 
-        $query = str_replace('#definition_id#', $definitionId, $queries['get_definition']);
-        $definitionResult = $db->query($query)->result_array(false);
+        $definitionResult = $db->query($queries['get_definition'], [$definitionId])->result_array(false);
 
         // This returns all taxa on this sample, merged with all taxa on summary records for this location/year
         // Includes a check that the data for the location/year/user/taxon is either not present or was last updated
@@ -66,23 +65,17 @@ class summary_builder {
       $queries = kohana::config('summary_builder');
       $taxa = [];
 
-      $query = str_replace('#sample_id#', $sampleId, $queries['sample_detail_lookup']);
-      $sampleResults = $db->query($query)->current(); // returns survey_id, year, created_by_id, location_id
-
-      $query = str_replace(['#website_id#', '#survey_id#', '#sample_id#', '#year#', '#user_id#', '#location_id#'],
-          [$sampleResults->website_id, $sampleResults->survey_id, $sampleId ,
-                  $sampleResults->year, $sampleResults->user_id,  $sampleResults->location_id],
-          $queries['sample_occurrence_lookup']);
-      $occurrenceResults = $db->query($query)->result(); // returns taxa_taxon_list_id
+      $sampleResults = $db->query($queries['sample_detail_lookup'], [$sampleId])->current(); // returns survey_id, year, created_by_id, location_id
+      $occurrenceResults = $db->query($queries['sample_occurrence_lookup'], [$sampleId])->result(); // returns taxa_taxon_list_id
       foreach($occurrenceResults as $row){
         $taxa[] = $row->taxa_taxon_list_id;
       }
-
-      $query = str_replace(['#website_id#', '#survey_id#', '#sample_id#', '#year#', '#user_id#', '#location_id#'],
-          [$sampleResults->website_id, $sampleResults->survey_id, $sampleId ,
-              $sampleResults->year, $sampleResults->user_id,  $sampleResults->location_id],
-          $queries['sample_existing_taxa']);
-      $existingResults = $db->query($query)->result();
+      $existingResults = $db->query($queries['sample_existing_taxa'], [
+        $sampleResults->website_id,
+        $sampleResults->survey_id,
+        $sampleResults->location_id,
+        $sampleResults->year]
+        )->result();
       foreach($existingResults as $row){
         $taxa[] = $row->taxa_taxon_list_id;
       }
@@ -97,9 +90,7 @@ class summary_builder {
         // this has to be done only once
         self::init_lastval($db);
 
-        $query = str_replace('#definition_id#', $definitionId,
-            $queries['get_definition']);
-        $definitionResult = $db->query($query)->result_array(false);
+        $definitionResult = $db->query($queries['get_definition'], [$definitionId])->result_array(false);
 
         // This returns just this taxa, following same format as the other methods.
         // Includes a check that the data for the location/year/user/taxon is either not present or was last updated
@@ -115,10 +106,8 @@ class summary_builder {
     /** this fills out the data according to a single occurrence insert/delete **/
     private static function get_changelist_occurrence_insert_delete(&$db, $occurrenceId) {
         $queries = kohana::config('summary_builder');
-        $taxa = [];
 
-        $query = str_replace('#occurrence_id#', $occurrenceId, $queries['occurrence_detail_lookup']);
-        $occurrenceResults = $db->query($query)->result_array(false); // returns year, created_by_id, location_id, taxa_taxon_list_id
+        $occurrenceResults = $db->query($queries['occurrence_detail_lookup'], [$occurrenceId])->result_array(false); // returns year, created_by_id, location_id, taxa_taxon_list_id
         if(count($occurrenceResults) === 0)
             return array(0, 0, 0, []);
         return array($occurrenceResults[0]['year'], $occurrenceResults[0]['user_id'],
@@ -134,9 +123,7 @@ class summary_builder {
         // this has to be done only once
         self::init_lastval($db);
 
-        $query = str_replace('#definition_id#', $definitionId,
-            $queries['get_definition']);
-        $definitionResult = $db->query($query)->result_array(false);
+        $definitionResult = $db->query($queries['get_definition'], [$definitionId])->result_array(false);
 
         // This returns this taxon, merged with all taxa on summary records for this location/year
         // Includes a check that the data for the location/year/user/taxon is either not present or was last updated
@@ -153,13 +140,11 @@ class summary_builder {
         $queries = kohana::config('summary_builder');
         $taxa = [];
 
-        $query = str_replace('#occurrence_id#', $occurrenceId, $queries['sample_detail_lookup_occurrence']);
-        $sampleResults = $db->query($query)->result_array(false); // returns survey_id, year, created_by_id, location_id
+        $sampleResults = $db->query($queries['sample_detail_lookup_occurrence'], [$occurrenceId])->result_array(false); // returns survey_id, year, created_by_id, location_id
         if(count($sampleResults) === 0)
             return array(0, 0, 0, []);
 
-        $query = str_replace('#occurrence_id#', $occurrenceId, $queries['occurrence_detail_lookup']);
-        $occurrenceResults = $db->query($query)->result_array(false); // returns taxa_taxon_list_id
+        $occurrenceResults = $db->query($queries['occurrence_detail_lookup'], [$occurrenceId])->result_array(false); // returns taxa_taxon_list_id
         foreach($occurrenceResults as $row){
             $taxa[] = $row['taxa_taxon_list_id'];
         }
@@ -168,7 +153,12 @@ class summary_builder {
             array($sampleResults[0]['website_id'], $sampleResults[0]['survey_id'], $sampleResults[0]['sample_id'] ,
                 $sampleResults[0]['year'], $sampleResults[0]['user_id'],  $sampleResults[0]['location_id']),
             $queries['sample_existing_taxa']);
-        $existingResults = $db->query($query)->result_array(false);
+        $existingResults = $db->query($queries['sample_existing_taxa'], [
+            $sampleResults[0]['website_id'],
+            $sampleResults[0]['survey_id'],
+            $sampleResults[0]['location_id'],
+            $sampleResults[0]['year'],
+        ])->result_array(false);
         foreach($existingResults as $row){
             $taxa[] = $row['taxa_taxon_list_id'];
         }
@@ -182,11 +172,9 @@ class summary_builder {
         // this has to be done only once
         self::init_lastval($db);
 
-        $query = str_replace('#location_id#', $locationId, $queries['location_existing_data']);
-        $existingResults = $db->query($query)->result_array(false);
+        $existingResults = $db->query($queries['location_existing_data'], [$locationId])->result_array(false);
         $definitionResult = $db->query($queries['get_all_definitions'])->result_array(false);
-        $query = str_replace('#location_id#', $locationId, $queries['delete_location_data']);
-        $db->query($query);
+        $db->query($queries['delete_location_data'], [$locationId]);
         foreach($existingResults as $row){
             foreach($definitionResult as $definition) {
                 if($definition['survey_id'] == $row['survey_id']) {
@@ -283,7 +271,7 @@ class summary_builder {
             return;
         }
         foreach($taxa as $taxonId) {
-            $taxon = $db->query("SELECT * FROM cache_taxa_taxon_lists WHERE id = $taxonId")->result_array(false);
+            $taxon = $db->query("SELECT * FROM cache_taxa_taxon_lists WHERE id = ?", [$taxonId])->result_array(false);
             if(count($taxon)!=1) {
                 echo date(DATE_ATOM)." ERROR : Taxon search for id = $taxonId returned wrong number of rows: ".count($taxon)." - expected one row. <br/>";
                 continue;
@@ -294,11 +282,25 @@ class summary_builder {
             summary_builder::do_delete($db, $definition, $year, $taxonId, 0, 0);
 
             // This updates the data for the user/taxa/location/year combination.
-            $query = str_replace(array('#year#', '#survey_id#', '#taxon_id#', '#location_id#', '#user_id#', '#attr_id#'),
-                array($year, $definition['survey_id'], $taxonId, $locationId, $userId, $definition['occurrence_attribute_id']),
-                            $definition['occurrence_attribute_id'] != '' ? $queries['get_YearTaxonLocationUser_Attr_query'] : $queries['get_YearTaxonLocationUser_query']);
+            $definition['occurrence_attribute_id'] != ''
+                ? $queries['get_YearTaxonLocationUser_Attr_query']
+                : $queries['get_YearTaxonLocationUser_query'];
+            $query = str_replace([
+                '#year#',
+                '#survey_id#',
+                '#taxon_id#',
+                '#location_id#',
+                '#user_id#',
+                '#attr_id#',
+            ], [
+                (int) $year,
+                (int) $definition['survey_id'],
+                (int) $taxonId, $locationId,
+                (int) $userId,
+                (int) $definition['occurrence_attribute_id'],
+            ], $queryTemplate);
             $data = array();
-            if(summary_builder::load_data($db, $data, $periods, $periodMapping, $query)) {
+            if (summary_builder::load_data($db, $data, $periods, $periodMapping, $query)) {
                 summary_builder::apply_data_combining($definition, $data);
                 if($definition['calculate_estimates'] != 'f') {
                     summary_builder::apply_estimates($db, $definition, $data);
@@ -307,11 +309,24 @@ class summary_builder {
             }
 
             // This updates the data for the allusers/taxa/location/year combination.
-            $query = str_replace(array('#year#', '#survey_id#', '#taxon_id#', '#location_id#', '#attr_id#'),
-                array($year, $definition['survey_id'], $taxonId, $locationId, $definition['occurrence_attribute_id']),
-                        $definition['occurrence_attribute_id'] != '' ? $queries['get_YearTaxonLocation_Attr_query'] : $queries['get_YearTaxonLocation_query']);
+            $queryTemplate = $definition['occurrence_attribute_id'] != ''
+              ? $queries['get_YearTaxonLocation_Attr_query']
+              : $queries['get_YearTaxonLocation_query'];
+            $query = str_replace([
+                '#year#',
+                '#survey_id#',
+                '#taxon_id#',
+                '#location_id#',
+                '#attr_id#',
+            ], [
+                (int) $year,
+                (int) $definition['survey_id'],
+                (int) $taxonId,
+                (int) $locationId,
+                (int) $definition['occurrence_attribute_id'],
+            ], $queryTemplate);
             $data = array();
-            if(summary_builder::load_data($db, $data, $periods, $periodMapping, $query)) {
+            if (summary_builder::load_data($db, $data, $periods, $periodMapping, $query)) {
                 summary_builder::apply_data_combining($definition, $data);
                 if($definition['calculate_estimates'] != 'f')
                     summary_builder::apply_estimates($db, $definition, $data);
@@ -323,8 +338,17 @@ class summary_builder {
             // This run updates the data for the allusers/taxa/location/year combination.
             // Then ads this all together to find the value for the allusers/taxa/alllocations/year combination
             // In this cycle the year is fixed, the taxa is either one or an array, the location is fixed, the user is fixed.
-            $query = str_replace(array('#year#', '#survey_id#', '#taxon_id#', '#user_id#'),
-                array($year, $definition['survey_id'], $taxonId, $userId), $queries['get_YearTaxonUser_query']);
+            $query = str_replace([
+                '#year#',
+                '#survey_id#',
+                '#taxon_id#',
+                '#user_id#',
+            ], [
+                (int) $year,
+                (int) $definition['survey_id'],
+                (int) $taxonId,
+                (int) $userId,
+            ], $queries['get_YearTaxonUser_query']);
             $data = array();
             if(summary_builder::load_summary_data($db, $data, $periods, $periodMapping, $query)) {
                 summary_builder::do_insert($db, $definition, $year, $taxonId, 0, $userId, $data, $periods, $taxon[0]);
@@ -335,8 +359,15 @@ class summary_builder {
             // Then ads this all together to find the value for the allusers/taxa/alllocations/year combination
             // In this cycle the year is fixed, the taxa is either one or an array, the location is fixed, the user is fixed.
 
-            $query = str_replace(array('#year#', '#survey_id#', '#taxon_id#'),
-                        array($year, $definition['survey_id'], $taxonId), $queries['get_YearTaxon_query']);
+            $query = str_replace([
+                '#year#',
+                '#survey_id#',
+                '#taxon_id#',
+            ], [
+                (int) $year,
+                (int) $definition['survey_id'],
+                (int) $taxonId,
+            ], $queries['get_YearTaxon_query']);
             $data = array();
             if(summary_builder::load_summary_data($db, $data, $periods, $periodMapping, $query)) {
                 summary_builder::do_insert($db, $definition, $year, $taxonId, 0, 0, $data, $periods, $taxon[0]);
@@ -474,12 +505,15 @@ class summary_builder {
     /** OK **/
     private static function do_delete(&$db, $definition, $year, $taxonId, $locationId, $userId) {
         // set up a default delete query if none are specified
-        $query = "delete from summary_occurrences where year = '".$year."' AND ".
-            "survey_id = ".$definition['survey_id']." AND ".
-            "taxa_taxon_list_id = ".$taxonId." AND ".
-            "location_id = ".$locationId." AND ".
-            "user_id = ".$userId.";";
-        $count = $db->query($query)->count();
+        $query = <<<SQL
+            DELETE FROM summary_occurrences
+            WHERE year = ?
+            AND survey_id = ?
+            AND taxa_taxon_list_id = ?
+            AND location_id = ?
+            AND user_id = ?;
+        SQL;
+        $count = $db->query($query, [$year, $definition['survey_id'], $taxonId, $locationId, $userId])->count();
     }
 
     /** OK **/
@@ -517,25 +551,39 @@ class summary_builder {
           created_by_id,
           summary_created_on)
          VALUES (
-          " . $definition['website_id'] . ",
-          " . $definition['survey_id'] . ",
-          " . $year . ",
-          " . $locationId . ",
-          " . $userId . ",
-          '" . $definition['period_type'] . "',
-          " . $taxonId . ",
-          " . $taxon["preferred_taxa_taxon_list_id"] . ",
-          " . ($taxon["taxonomic_sort_order"] ?? "NULL") . ",
-          '" . str_replace("'", "''", ($taxon["taxon"] ?? '')) . "',
-          '" . str_replace("'", "''", ($taxon["preferred_taxon"] ?? '')) . "',
-          '" . str_replace("'", "''", ($taxon["default_common_name"] ?? '')) . "',
-          " . $taxon["taxon_meaning_id"] . ",
-          " . $taxon["taxon_list_id"] . ",
-          '" . json_encode($summary) . "'::json,
-          1,
-          now()
+           ?,
+           ?,
+           ?,
+           ?,
+           ?,
+           ?,
+           ?,
+           ?,
+           " . ((int) $taxon["taxonomic_sort_order"] ?? "NULL") . ",
+           ?,
+           ?,
+           ?,
+           ?,
+           ?,
+           '" . json_encode($summary) . "'::json,
+           1,
+           now()
         );";
-        $db->query($query);
+        $db->query($query, [
+          $definition['website_id'],
+          $definition['survey_id'],
+          $year,
+          $locationId,
+          $userId,
+          $definition['period_type'],
+          $taxonId,
+          $taxon["preferred_taxa_taxon_list_id"],
+          $taxon["taxon"] ?? '',
+          $taxon["preferred_taxon"] ?? '',
+          $taxon["default_common_name"] ?? '',
+          $taxon["taxon_meaning_id"],
+          $taxon["taxon_list_id"],
+        ]);
     }
 
 //            throw new exception('Configured survey restriction incorrect in spatial index builder');

@@ -281,7 +281,7 @@ TXT;
   private static function getRulesetFilters(Database $db, $ruleset) {
     // The outer filter will be restricted to the taxa in the rules within the
     // set.
-    $allTaxaKeys = $db->query("SELECT string_agg(DISTINCT taxon_external_key, ',') as keylist FROM custom_verification_rules WHERE deleted=false AND custom_verification_ruleset_id=$ruleset->id")->current()->keylist;
+    $allTaxaKeys = $db->query("SELECT string_agg(DISTINCT taxon_external_key, ',') as keylist FROM custom_verification_rules WHERE deleted=false AND custom_verification_ruleset_id=?", [$ruleset->id])->current()->keylist;
     if (empty($allTaxaKeys)) {
       throw new exception('No rules in this ruleset');
     }

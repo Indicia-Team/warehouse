@@ -167,8 +167,10 @@ class rest_api_sync_remote_json_occurrences {
         if ($is_new !== NULL) {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
-        $db->query("UPDATE rest_api_sync_skipped_records SET current=false " .
-          "WHERE server_id='$serverId' AND source_id='{$record['occurrence']['occurrenceID']}' AND dest_table='occurrences'");
+        $db->query(<<<SQL
+          UPDATE rest_api_sync_skipped_records SET current=false
+          WHERE server_id=? AND source_id=? AND dest_table='occurrences'
+        SQL, [$serverId, $record['occurrence']['occurrenceID']]);
       }
       catch (exception $e) {
         rest_api_sync_utils::log(
@@ -189,16 +191,16 @@ INSERT INTO rest_api_sync_skipped_records (
   created_by_id
 )
 VALUES (
-  '$serverId',
-  '{$record['occurrence']['occurrenceID']}',
+  ?,
+  ?,
   'occurrences',
-  '$msg',
+  ?,
   true,
   now(),
-  $createdById
+  ?
 )
 QRY;
-        $db->query($sql);
+        $db->query($sql, [$serverId, $record['occurrence']['occurrenceID'], $msg, $createdById]);
       }
     }
     variable::set("rest_api_sync_{$serverId}_next_page", $data['paging']['next']);
@@ -240,14 +242,14 @@ QRY;
     // BTO automatic verifications are ignored.
     $observation['identificationVerificationStatus'] = 'unconfirmed';
     $sql = <<<SQL
-SELECT count(ctp.*)
-FROM taxa t
-JOIN cache_taxa_taxon_lists cttl on cttl.taxon_id=t.id
-JOIN cache_taxon_paths ctp ON ctp.taxon_meaning_id=cttl.taxon_meaning_id AND ctp.path && ARRAY[$server[odonataTaxonMeaningId]]
-WHERE t.organism_key='$observation[organismKey]'
-AND t.deleted=false
-SQL;
-    $isOdonataCheck = $db->query($sql)->current()->count > 0;
+      SELECT count(ctp.*)
+      FROM taxa t
+      JOIN cache_taxa_taxon_lists cttl on cttl.taxon_id=t.id
+      JOIN cache_taxon_paths ctp ON ctp.taxon_meaning_id=cttl.taxon_meaning_id AND ctp.path && ARRAY[?]
+      WHERE t.organism_key=?
+      AND t.deleted=false
+    SQL;
+    $isOdonataCheck = $db->query($sql, [$server['odonataTaxonMeaningId'], $observation['organismKey']])->current()->count > 0;
     if ($isOdonataCheck) {
       // Skip records already provided to BTO.
       $numericId = (integer) str_replace(['BTO', 'OBS'], '', $observation['id']);

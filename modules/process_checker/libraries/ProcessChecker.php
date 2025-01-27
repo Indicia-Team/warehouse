@@ -71,7 +71,7 @@ class ProcessChecker {
       'ignore_recent' => '1 hour',
     ], $processItem);
     $defaultWhereClauses = $this->getDefaultWhereClauses($title, $processItem);
-    $cacheMissing = $this->checkCacheTableRecordsPresent($title, $processItem, $defaultWhereClauses);
+    $cacheMissing = $this->checkCacheTableRecordsPresent($processItem, $defaultWhereClauses);
     // Don't do anything else until the cache entries are populated.
     if (!$cacheMissing) {
       $this->checkCacheTableRecordsDeleted($title, $processItem, $defaultWhereClauses, 'functional');
@@ -146,7 +146,7 @@ class ProcessChecker {
     if ($updatedOnFrom) {
       $tailCheckWheres[] = "t.updated_on>'$updatedOnFrom'";
     }
-    $baseQuery = $this->getBaseQuery($title, $processItem, [], [], $tailCheckWheres);
+    $baseQuery = $this->getBaseQuery($processItem, [], [], $tailCheckWheres);
     $batchLimit = BATCH_LIMIT;
     $qry = <<<SQL
 SELECT t.updated_on as updated_on
@@ -185,8 +185,6 @@ SQL;
    * Returns the FROM, JOIN and WHERE part of a query for selecting the records
    * (samples or occurrences) to be processed.
    *
-   * @param string $title
-   *   Configuration item title used to retrieve the progress variable.
    * @param array $processItem
    *   Configuration entry for the set of records to check processing on.
    * @param array $cacheJoins
@@ -198,22 +196,22 @@ SQL;
    * @param array $whereList
    *   List of any additional where clauses for the query.
    */
-  private function getBaseQuery($title, array $processItem, array $cacheJoins = [], array $joinList = [], array $whereList = []) {
+  private function getBaseQuery(array $processItem, array $cacheJoins = [], array $joinList = [], array $whereList = []) {
     $table = inflector::plural($processItem['entity']);
     if ($table === 'samples') {
       if (!empty($processItem['website_id'])) {
-        $joinList[] = "JOIN surveys srv ON srv.id=t.survey_id AND srv.website_id=$processItem[website_id]";
+        $joinList[] = 'JOIN surveys srv ON srv.id=t.survey_id AND srv.website_id=' . (int) $processItem['website_id'];
       }
       if (!empty($processItem['survey_id'])) {
-        $whereList[] = "t.survey_id=$processItem[survey_id]";
+        $whereList[] = 't.survey_id=' . (int) $processItem['survey_id'];
       }
     }
     if ($table === 'occurrences') {
       if (!empty($processItem['website_id'])) {
-        $whereList[] = "t.website_id=$processItem[website_id]";
+        $whereList[] = 't.website_id=' . (int) $processItem['website_id'];
       }
       if (!empty($processItem['survey_id'])) {
-        $joinList[] = "JOIN samples s ON s.id=t.sample_id AND s.survey_id=$processItem[survey_id]";
+        $joinList[] = 'JOIN samples s ON s.id=t.sample_id AND s.survey_id=' . (int) $processItem['survey_id'];
       }
     }
     if (in_array('functional', $cacheJoins)) {
@@ -251,7 +249,7 @@ SQL;
    * @return bool
    *   True if some cache entries were found to be missing.
    */
-  private function checkCacheTableRecordsPresent($title, array $processItem, array $defaultWheres) {
+  private function checkCacheTableRecordsPresent(array $processItem, array $defaultWheres) {
     if (in_array('cache_presence', $processItem['checks'])) {
       // Add a left join to skip if already queued.
       $joins = ["LEFT JOIN work_queue q ON q.task='task_cache_builder_update' AND q.entity='$processItem[entity]' AND q.record_id=t.id"];
@@ -264,7 +262,6 @@ SQL;
         '(f.id IS NULL OR nf.id IS NULL)',
       ]);
       $baseQuery = $this->getBaseQuery(
-        $title,
         $processItem,
         ['functional', 'nonfunctional'],
         $joins,
@@ -306,12 +303,13 @@ SQL;
         // Record should be deleted.
         't.deleted=true',
       ]);
-      $baseQuery = $this->getBaseQuery($title, $processItem, [$cacheTableType], [], $wheres);
+      $baseQuery = $this->getBaseQuery($processItem, [$cacheTableType], [], $wheres);
       // Now delete any cache entries that are present for records deleted in
       // the raw data.
       $table = inflector::plural($processItem['entity']);
+      $cacheTableNameEsc = pg_escape_identifier($this->db->getLink(), "cache_{$table}_{$cacheTableType}");
       $qry = <<<SQL
-DELETE FROM cache_{$table}_{$cacheTableType}
+DELETE FROM $cacheTableNameEsc
 WHERE id IN (
   SELECT t.id
   $baseQuery
@@ -347,7 +345,7 @@ SQL;
         // Not a deleted record.
         't.deleted=false',
       ]);
-      $baseQuery = $this->getBaseQuery($title, $processItem, ['functional'], $joins, $wheres);
+      $baseQuery = $this->getBaseQuery($processItem, ['functional'], $joins, $wheres);
       $qry = <<<SQL
 INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
 SELECT DISTINCT 'task_spatial_index_builder_$processItem[entity]', '$processItem[entity]', t.id, 100, 3, now()
@@ -389,7 +387,7 @@ SQL;
         // Not a deleted record.
         't.deleted=false',
       ]);
-      $baseQuery = $this->getBaseQuery($title, $processItem, ['nonfunctional'], $joins, $wheres);
+      $baseQuery = $this->getBaseQuery($processItem, ['nonfunctional'], $joins, $wheres);
       $qry = <<<SQL
 INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
 SELECT DISTINCT 'task_cache_builder_attrs_$processItem[entity]', '$processItem[entity]', t.id, 100, 3, now()
@@ -418,7 +416,7 @@ SQL;
       $wheres = array_merge($defaultWheres, [
         't.deleted=false',
       ]);
-      $baseQuery = $this->getBaseQuery($title, $processItem, [], [], $wheres);
+      $baseQuery = $this->getBaseQuery($processItem, [], [], $wheres);
       $qry = <<<SQL
 SELECT DISTINCT t.id, t.updated_on
 $baseQuery
@@ -455,7 +453,7 @@ SQL;
       $wheres = array_merge($defaultWheres, [
         't.deleted=true',
       ]);
-      $baseQuery = $this->getBaseQuery($title, $processItem, [], [], $wheres);
+      $baseQuery = $this->getBaseQuery($processItem, [], [], $wheres);
       $qry = <<<SQL
 SELECT DISTINCT t.id, t.updated_on
 $baseQuery
@@ -551,9 +549,10 @@ JSON;
       $toUpdate = array_map(fn($value): string => trim(str_replace($processItem['esIdPrefix'], '', $value), '"'), $idBatch);
       $updateStr = implode(',', $toUpdate);
       $table = inflector::plural($processItem['entity']);
+      $cacheTableNameEsc = pg_escape_identifier($this->db->getLink(), "cache_{$table}_functional");
       $qry = <<<SQL
-UPDATE cache_{$table}_functional SET website_id=website_id WHERE id IN ($updateStr);
-SQL;
+        UPDATE $cacheTableNameEsc SET website_id=website_id WHERE id IN ($updateStr);
+      SQL;
       $this->db->query($qry);
       kohana::log('alert', 'Process checker: ' . count($toUpdate) . " missing documents were requeued for Elasticsearch for $title: " . json_encode($toUpdate));
     }

@@ -414,7 +414,7 @@ class Sample_Model extends ORM_Tree {
   public function __set($key, $value) {
     if (substr($key, -4) == 'geom') {
       if ($value) {
-        $row = $this->db->query("SELECT ST_MakeValid(ST_GeomFromText('$value', " . kohana::config('sref_notations.internal_srid') . ")) AS geom")->current();
+        $row = $this->db->query("SELECT ST_MakeValid(ST_GeomFromText(?, ?)) AS geom", [$value, kohana::config('sref_notations.internal_srid')])->current();
         $value = $row->geom;
       }
     }
@@ -428,7 +428,7 @@ class Sample_Model extends ORM_Tree {
     $value = parent::__get($column);
 
     if (substr($column, -4) == 'geom' && $value !== NULL) {
-      $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
+      $row = $this->db->query('SELECT ST_asText(?) AS wkt', [$value])->current();
       $value = $row->wkt;
     }
     return $value;

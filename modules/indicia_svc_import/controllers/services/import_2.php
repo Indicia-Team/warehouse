@@ -376,25 +376,27 @@ class Import_2_Controller extends Service_Base_Controller {
       $config = $this->getConfig($fileName);
       $db = new Database();
       $matchesInfo = json_decode($_POST['matches-info'], TRUE);
-      $sourceColName = $matchesInfo['source-field'];
+      $sourceColName = pg_escape_identifier($db->getLink(), $matchesInfo['source-field']);
+      $sourceIdCol = pg_escape_identifier($db->getLink(), $matchesInfo['source-field'] . '_id');
+      $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
       foreach ($matchesInfo['values'] as $value => $termlist_term_id) {
         // Safety check.
         if (!preg_match('/\d+/', $termlist_term_id)) {
           throw new exception('Mapped termlist term ID is not an integer.');
         }
-        $literal = pg_escape_literal($db->getLink(), $value);
         $sql = <<<SQL
-UPDATE import_temp.$config[tableName]
-SET {$sourceColName}_id=$termlist_term_id
-WHERE trim(lower({$sourceColName}))=lower($literal);
-SQL;
-        $db->query($sql);
+          UPDATE import_temp.$dbIdentifiers[tempTableName]
+          SET $sourceIdCol=?
+          WHERE trim(lower($sourceColName))=lower(?);
+        SQL;
+        $db->query($sql, [$termlist_term_id, $value]);
       }
       // Need to check all done.
       $sql = <<<SQL
-SELECT DISTINCT {$sourceColName} AS value FROM import_temp.$config[tableName]
-WHERE {$sourceColName}<>'' AND {$sourceColName}_id IS NULL;
-SQL;
+        SELECT DISTINCT $sourceColName AS value
+        FROM import_temp.$dbIdentifiers[tempTableName]
+        WHERE $sourceColName<>'' AND $sourceIdCol IS NULL;
+      SQL;
       $countCheck = $db->query($sql)->result_array();
       if (count($countCheck) === 0) {
         echo json_encode([
@@ -586,10 +588,10 @@ SQL;
     $importTableSql = <<<SQL
       update imports
       set reversible = false
-      where import_guid = '$guidToReverse';
+      where import_guid = ?;
     SQL;
 
-    $db->query($importTableSql);
+    $db->query($importTableSql, [$guidToReverse]);
 
     // Create the files users will download when reversal is complete.
     if (!empty($updatedOccurrences)) {
@@ -650,34 +652,35 @@ SQL;
    * @return array
    *   Rows of reversed occurrences.
    */
-  private function reverseOccurrences($db, $guidToReverse, $warehouseUserId, $reverseMode) {
+  private function reverseOccurrences($db, $guidToReverse, int $warehouseUserId, $reverseMode) {
+    $guidToReverseEsc = pg_escape_literal($db->getLink(), $guidToReverse);
     $occurrencesUpdateSQL = <<<SQL
-    UPDATE occurrences o_update
-    SET deleted=true,
-    updated_on=now(),
-    updated_by_id=$warehouseUserId
-    FROM occurrences o\n
+      UPDATE occurrences o_update
+      SET deleted=true,
+      updated_on=now(),
+      updated_by_id=$warehouseUserId
+      FROM occurrences o\n
     SQL;
 
     $cacheOccsFunctionalDeletionSQL = <<<SQL
-    Delete
-    FROM cache_occurrences_functional
-    WHERE id in (
-    SELECT o.id
-    FROM occurrences o\n
+      DELETE
+      FROM cache_occurrences_functional
+      WHERE id in (
+      SELECT o.id
+      FROM occurrences o\n
     SQL;
 
     $cacheOccsNonFunctionalDeletionSQL = <<<SQL
-    Delete
-    FROM cache_occurrences_nonfunctional
-    WHERE id in (
-    SELECT o.id
-    FROM occurrences o\n
+      DELETE
+      FROM cache_occurrences_nonfunctional
+      WHERE id in (
+      SELECT o.id
+      FROM occurrences o\n
     SQL;
 
     $occurrencesJoinSQL = <<<SQL
     JOIN imports i on i.import_guid = o.import_guid
-      AND i.import_guid = '$guidToReverse'
+      AND i.import_guid = $guidToReverseEsc
     /* Left Join to samples, as  we don't care if occurrences are attached to a
        a sample that isn't part of import and that has been changed. */
     LEFT JOIN samples s
@@ -685,7 +688,7 @@ SQL;
       AND s.import_guid = i.import_guid
       AND s.deleted=false
     WHERE
-    o.import_guid = '$guidToReverse'
+    o.import_guid = $guidToReverseEsc
     /* We can't easily tell difference between inserted occurrences that are updated,
     and updated occurrences that are updated again. As we are only going to be reversing the former
     (even in "reverse regardless of changes" mode), we need a way to only include these.
@@ -697,7 +700,7 @@ SQL;
       select id
       FROM occurrences o2
       WHERE
-        o2.import_guid = '$guidToReverse'
+        o2.import_guid = $guidToReverseEsc
       ORDER BY o2.id DESC
       LIMIT i.inserted
     )\n
@@ -748,13 +751,13 @@ SQL;
    *   Database object.
    * @param string $guidToReverse
    *   Import unique identifier to reverse.
-   * @param string $updatedOccurrences
+   * @param array $updatedOccurrences
    *   Array of occurrences that have been reversed.
    *
    * @return array
    *   Array of occurrences that have not been reversed.
    */
-  private function getUntouchedOccurrences($db, $guidToReverse, $updatedOccurrences) {
+  private function getUntouchedOccurrences($db, $guidToReverse, array $updatedOccurrences) {
     $updatedOccurrenceIds = [];
     // Get the occurrence ids only, so we can use in_array later.
     foreach ($updatedOccurrences as $updatedOccurrenceRow) {
@@ -762,13 +765,13 @@ SQL;
     }
     // Get all occurrences for the import.
     $untouchedOccurrencesSQL = <<<SQL
-    SELECT *
-    FROM occurrences o
-    WHERE o.import_guid = '$guidToReverse'
-    AND o.deleted=false\n
+      SELECT *
+      FROM occurrences o
+      WHERE o.import_guid = ?
+      AND o.deleted=false
     SQL;
 
-    $untouchedOccsFromAllOccs = $db->query($untouchedOccurrencesSQL)->result_array();
+    $untouchedOccsFromAllOccs = $db->query($untouchedOccurrencesSQL, [$guidToReverse])->result_array();
     // Go through all occurrences for the import.
     foreach ($untouchedOccsFromAllOccs as $idx => $importOcc) {
       /* Is the occurrence id one that has been reversed.
@@ -796,29 +799,30 @@ SQL;
    * @return array
    *   Rows of reversed samples.
    */
-  private function reverseSamples($db, $guidToReverse, $warehouseUserId, $reverseMode) {
+  private function reverseSamples($db, $guidToReverse, int $warehouseUserId, $reverseMode) {
+    $guidToReverseEsc = pg_escape_literal($db->getLink(), $guidToReverse);
     $samplesUpdateSQL = <<<SQL
-    UPDATE samples s_update
-    SET deleted=true,
-    updated_on=now(),
-    updated_by_id=$warehouseUserId
-    FROM samples as s\n
+      UPDATE samples s_update
+      SET deleted=true,
+      updated_on=now(),
+      updated_by_id=$warehouseUserId
+      FROM samples as s\n
     SQL;
 
     $cacheSmpsFunctionalDeletionSQL = <<<SQL
-    Delete
-    FROM cache_samples_functional
-    where id in (
-    SELECT s.id
-    FROM samples s\n
+      DELETE
+      FROM cache_samples_functional
+      where id in (
+      SELECT s.id
+      FROM samples s\n
     SQL;
 
     $cacheSmpsNonFunctionalDeletionSQL = <<<SQL
-    Delete
-    FROM cache_samples_nonfunctional
-    where id in (
-    SELECT s.id
-    FROM samples s\n
+      DELETE
+      FROM cache_samples_nonfunctional
+      where id in (
+      SELECT s.id
+      FROM samples s\n
     SQL;
 
     $samplesJoinSQL = <<<SQL
@@ -826,7 +830,7 @@ SQL;
       ON o.sample_id = s.id
       AND o.deleted=false
     WHERE
-      s.import_guid = '$guidToReverse'
+      s.import_guid = $guidToReverseEsc
       /* Don't delete a sample if still contains occurrences after occurrence processing */
       AND o.id IS NULL
       AND s.deleted=false\n
@@ -875,13 +879,13 @@ SQL;
    *   Database object.
    * @param string $guidToReverse
    *   Import unique identifier to reverse.
-   * @param string $updatedSamples
+   * @param array $updatedSamples
    *   Array of samples that have been reversed.
    *
    * @return array
    *   Array of samples that have not been reversed.
    */
-  private function getUntouchedSamples($db, $guidToReverse, $updatedSamples) {
+  private function getUntouchedSamples($db, $guidToReverse, array $updatedSamples) {
     $updatedSampleIds = [];
     // Get ids only so we can use in_array.
     foreach ($updatedSamples as $updatedSampleRow) {
@@ -889,12 +893,12 @@ SQL;
     }
     // Get all samples for the import.
     $untouchedSamplesSQL = <<<SQL
-    SELECT *
-    FROM samples s
-    WHERE s.import_guid = '$guidToReverse'
-    AND s.deleted=false\n
+      SELECT *
+      FROM samples s
+      WHERE s.import_guid = ?
+      AND s.deleted=false
     SQL;
-    $untouchedSmpsFromAllSmps = $db->query($untouchedSamplesSQL)->result_array();
+    $untouchedSmpsFromAllSmps = $db->query($untouchedSamplesSQL, [$guidToReverse])->result_array();
     // Go through all samples for the import.
     foreach ($untouchedSmpsFromAllSmps as $idx => $importSmp) {
       /* Is the sample id one that has been reversed.
@@ -960,22 +964,23 @@ SQL;
   private function checkRecordIdsOwnedByUser($fileName, array $config) {
     $db = new Database();
     $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', 'occurrence:id');
-    $websiteId = $config['global-values']['website_id'];
+    $websiteId = (int) $config['global-values']['website_id'];
     $errorsJson = pg_escape_literal($db->getLink(), json_encode([
       $columnInfo['columnLabel'] => 'You do not have permission to update this record or the record referred to does not exist.',
     ]));
-    $table = inflector::plural($config['entity']);
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $tempDbField = pg_escape_identifier($db->getLink(), $columnInfo['tempDbField']);
     // @todo For tables other than occurrences, method of accessing website ID differs.
     $sql = <<<SQL
-UPDATE import_temp.$config[tableName] u
+UPDATE import_temp.$dbIdentifiers[tempTableName] u
 SET errors = COALESCE(u.errors, '{}'::jsonb) || $errorsJson::jsonb
-FROM import_temp.$config[tableName] t
-LEFT JOIN $table exist
-  ON exist.id=t.$columnInfo[tempDbField]::integer
+FROM import_temp.$dbIdentifiers[tempTableName] t
+LEFT JOIN $dbIdentifiers[importDestTable] exist
+  ON exist.id=t.$tempDbField::integer
   AND exist.created_by_id=$this->auth_user_id
   AND exist.website_id=$websiteId
 WHERE exist.id IS NULL
-AND t.$columnInfo[tempDbField] ~ '^\d+$'
+AND t.$tempDbField ~ '^\d+$'
 AND t._row_id=u._row_id;
 SQL;
     $updated = $db->query($sql)->count();
@@ -983,10 +988,10 @@ SQL;
       return ['error' => 'The import cannot proceed as you do not have permission to update some of the records or the records referred to do not exist.'];
     }
     $sql = <<<SQL
-SELECT count(DISTINCT $columnInfo[tempDbField]) as distinct_count, count(*) as total_count
-FROM import_temp.$config[tableName]
-WHERE $columnInfo[tempDbField]<>''
-SQL;
+      SELECT count(DISTINCT $tempDbField) as distinct_count, count(*) as total_count
+      FROM import_temp.$dbIdentifiers[tempTableName]
+      WHERE $tempDbField<>''
+    SQL;
     $counts = $db->query($sql)->current();
     if ($counts->distinct_count !== $counts->total_count) {
       return ['error' => 'The import file appears to refer to the same existing record more than once.'];
@@ -995,7 +1000,7 @@ SQL;
       'message' => [
         "{1} existing {2} found",
         $counts->distinct_count,
-        $table,
+        inflector::plural($config['entity']),
       ],
     ];
   }
@@ -1008,21 +1013,23 @@ SQL;
   private function mapExternalKeyToExistingRecords($fileName, array $config) {
     $db = new Database();
     $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', 'occurrence:external_key');
-    $websiteId = $config['global-values']['website_id'];
-    $table = inflector::plural($config['entity']);
-    // @todo For tables other than occurrences, method of accessing website ID differs.
+    $websiteId = (int) $config['global-values']['website_id'];
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $tempDbField = pg_escape_identifier($db->getLink(), $columnInfo['tempDbField']);
+    // @todo For tables other than occurrences, method of accessing website ID
+    // differs.
     $sql = <<<SQL
-ALTER TABLE import_temp.$config[tableName]
-ADD COLUMN IF NOT EXISTS _$config[entity]_id integer;
+      ALTER TABLE import_temp.$dbIdentifiers[tempTableName]
+      ADD COLUMN IF NOT EXISTS $dbIdentifiers[tempDbFkIdField] integer;
 
-UPDATE import_temp.$config[tableName] u
-SET _$config[entity]_id=exist.id
-FROM $table exist
-WHERE exist.external_key::text=u.$columnInfo[tempDbField]
-  AND exist.created_by_id=$this->auth_user_id
-  AND exist.website_id=$websiteId
-  AND exist.deleted=false;
-SQL;
+      UPDATE import_temp.$dbIdentifiers[tempTableName] u
+      SET $dbIdentifiers[tempDbFkIdField]=exist.id
+      FROM $dbIdentifiers[importDestTable] exist
+      WHERE exist.external_key::text=u.$tempDbField
+        AND exist.created_by_id=$this->auth_user_id
+        AND exist.website_id=$websiteId
+        AND exist.deleted=false;
+    SQL;
     $db->query($sql);
     // Remember the mapping we just created.
     $config['systemAddedColumns'][ucfirst($config['entity']) . ' ID'] = [
@@ -1032,10 +1039,10 @@ SQL;
     ];
     $this->saveConfig($fileName, $config);
     $sql = <<<SQL
-SELECT count(DISTINCT _$config[entity]_id) as distinct_count, count(*) as total_count
-FROM import_temp.$config[tableName]
-WHERE _$config[entity]_id IS NOT NULL
-SQL;
+      SELECT count(DISTINCT $dbIdentifiers[tempDbFkIdField]) as distinct_count, count(*) as total_count
+      FROM import_temp.$dbIdentifiers[tempTableName]
+      WHERE $dbIdentifiers[tempDbFkIdField] IS NOT NULL
+    SQL;
     $counts = $db->query($sql)->current();
     if ($counts->distinct_count !== $counts->total_count) {
       return ['error' => 'The import file appears to refer to the same existing record more than once.'];
@@ -1044,7 +1051,7 @@ SQL;
       'message' => [
         "{1} existing {2} found",
         $counts->distinct_count,
-        $table,
+        inflector::plural($config['entity']),
       ],
     ];
   }
@@ -1057,20 +1064,24 @@ SQL;
    */
   private function findOriginalParentEntityIds($fileName, array $config) {
     $db = new Database();
-    $table = inflector::plural($config['entity']);
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
     $sql = <<<SQL
-ALTER TABLE import_temp.$config[tableName]
-ADD COLUMN IF NOT EXISTS _$config[parentEntity]_id integer;
+      ALTER TABLE import_temp.$dbIdentifiers[tempTableName]
+      ADD COLUMN IF NOT EXISTS $dbIdentifiers[tempDbParentFkIdField] integer;
 
-UPDATE import_temp.$config[tableName] u
-SET _$config[parentEntity]_id=exist.$config[parentEntity]_id
-FROM $table exist
-WHERE u.$config[pkFieldInTempTable] ~ '^\d+$'
-AND exist.id=u.$config[pkFieldInTempTable]::integer
-AND exist.deleted=false;
-SQL;
+      UPDATE import_temp.$dbIdentifiers[tempTableName] u
+      SET $dbIdentifiers[tempDbParentFkIdField]=exist.$dbIdentifiers[parentEntityFkIdFieldInDestTable]
+      FROM $dbIdentifiers[importDestTable] exist
+      WHERE u.$dbIdentifiers[pkFieldInTempTable] ~ '^\d+$'
+      AND exist.id=u.$dbIdentifiers[pkFieldInTempTable]::integer
+      AND exist.deleted=false;
+    SQL;
     $db->query($sql);
-    $updated = $db->query("SELECT count(DISTINCT _$config[parentEntity]_id) FROM import_temp.$config[tableName] WHERE _$config[parentEntity]_id IS NOT NULL")->current()->count;
+    $updated = $db->query(<<<SQL
+      SELECT count(DISTINCT $dbIdentifiers[tempDbParentFkIdField])
+      FROM import_temp.$dbIdentifiers[tempTableName]
+      WHERE $dbIdentifiers[tempDbParentFkIdField] IS NOT NULL
+    SQL)->current()->count;
     // Remember the mapping we just created.
     $config['systemAddedColumns'][ucfirst($config['parentEntity']) . ' ID'] = [
       'tempDbField' => "_$config[parentEntity]_id",
@@ -1099,19 +1110,22 @@ SQL;
    */
   private function clearParentEntityIdsIfNotAllChildrenPresent($fileName, array $config) {
     $db = new Database();
-    $table = inflector::plural($config['entity']);
-    $parentTable = inflector::plural($config['parentEntity']);
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
     $sql = <<<SQL
-UPDATE import_temp.$config[tableName] u
-SET _$config[parentEntity]_id=null
-FROM $parentTable parent
-JOIN import_temp.$config[tableName] t ON t._$config[parentEntity]_id=parent.id
-JOIN $table allchildren ON allchildren.$config[parentEntity]_id=parent.id AND allchildren.deleted=false AND allchildren.deleted=false
-LEFT JOIN import_temp.$config[tableName] exist ON exist.$config[pkFieldInTempTable] ~ '^\d+$' AND COALESCE(exist.$config[pkFieldInTempTable], '0')::integer=allchildren.id
-WHERE exist._row_id IS NULL
-AND parent.id=u._$config[parentEntity]_id
-AND parent.deleted=false;
-SQL;
+      UPDATE import_temp.$dbIdentifiers[tempTableName] u
+      SET $dbIdentifiers[tempDbParentFkIdField]=null
+      FROM $dbIdentifiers[importDestParentTable] parent
+      JOIN import_temp.$dbIdentifiers[tempTableName] t ON t.$dbIdentifiers[tempDbParentFkIdField]=parent.id
+      JOIN $dbIdentifiers[importDestTable] allchildren
+        ON allchildren.$dbIdentifiers[parentEntityFkIdFieldInDestTable]=parent.id
+        AND allchildren.deleted=false AND allchildren.deleted=false
+      LEFT JOIN import_temp.$dbIdentifiers[tempTableName] exist
+        ON exist.$dbIdentifiers[pkFieldInTempTable] ~ '^\d+$'
+        AND COALESCE(exist.$dbIdentifiers[pkFieldInTempTable], '0')::integer=allchildren.id
+      WHERE exist._row_id IS NULL
+      AND parent.id=u.$dbIdentifiers[tempDbParentFkIdField]
+      AND parent.deleted=false;
+    SQL;
     $db->query($sql);
     return [];
   }
@@ -1129,20 +1143,21 @@ SQL;
     $parentEntityColumns = $this->findEntityColumns($config['parentEntity'], $config);
     $parentColNames = [];
     foreach ($parentEntityColumns as $info) {
-      $parentColNames[] = $info['tempDbField'];
+      $parentColNames[] = pg_escape_identifier($db->getLink(), $info['tempDbField']);
     }
     $parentColsList = implode(" || '||' || ", $parentColNames);
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
     $sql = <<<SQL
-    SELECT t._$config[parentEntity]_id, COUNT(DISTINCT $parentColsList)
+    SELECT t.$dbIdentifiers[tempDbParentFkIdField], COUNT(DISTINCT $parentColsList)
     INTO TEMPORARY to_clear
-    FROM import_temp.$config[tableName] t
-    GROUP BY t._$config[parentEntity]_id
+    FROM import_temp.$dbIdentifiers[tempTableName] t
+    GROUP BY t.$dbIdentifiers[tempDbParentFkIdField]
     HAVING COUNT(DISTINCT $parentColsList)>1;
 
-    UPDATE import_temp.$config[tableName] u
-    SET _$config[parentEntity]_id=null
+    UPDATE import_temp.$dbIdentifiers[tempTableName] u
+    SET $dbIdentifiers[tempDbParentFkIdField]=null
     FROM to_clear c
-    WHERE c._$config[parentEntity]_id=u._$config[parentEntity]_id;
+    WHERE c.$dbIdentifiers[tempDbParentFkIdField]=u.$dbIdentifiers[tempDbParentFkIdField];
 SQL;
     // @todo Would be nice if these queries reported back the changes they were making.
     $db->query($sql);
@@ -1229,6 +1244,7 @@ SQL;
       // fields (e.g. build date from day, month, year).
       $parentEntityCompoundFields = $this->getCompoundFieldsToProcessForEntity($config['parentEntity'], $parentEntityColumns);
       $childEntityCompoundFields = $this->getCompoundFieldsToProcessForEntity($config['entity'], $childEntityColumns);
+      kohana::log('debug', var_export($parentEntityDataRows, TRUE));
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
         // @todo Updating existing data.
         // @todo tracking of records that are done in the import table so can restart.
@@ -1401,8 +1417,9 @@ SQL;
     header("Content-Disposition: attachment; filename=\"import-errors.csv\"");
     $fileName = $_GET['data-file'];
     $config = $this->getConfig($fileName);
-
-    $fields = array_merge(array_values($this->getColumnTempDbFieldMappings($config['columns'])), [
+    $db = new Database();
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $fields = array_merge(array_values($this->getColumnTempDbFieldMappings($db, $config['columns'])), [
       // Excel row starts on 2, our _row_id is a db sequence so starts on 1.
       '_row_id+1',
       'errors',
@@ -1410,11 +1427,10 @@ SQL;
     $fieldSql = implode(', ', $fields);
     $query = <<<SQL
 SELECT $fieldSql
-FROM import_temp.$config[tableName]
+FROM import_temp.$dbIdentifiers[tempTableName]
 WHERE errors IS NOT NULL
 ORDER BY _row_id;
 SQL;
-    $db = new Database();
     $results = $db->query($query)->result(FALSE);
     $out = fopen('php://output', 'w');
     fputcsv($out, array_merge(array_keys($config['columns']), [
@@ -1515,16 +1531,18 @@ SQL;
    * Converts the columns config to an associative array of column names and
    * temp db table fields.
    *
+   * @param Database $db
+   *   Database connection.
    * @param array $columns
    *   Columns config.
    *
    * @return array
    *   Associative array.
    */
-  private function getColumnTempDbFieldMappings(array $columns) {
+  private function getColumnTempDbFieldMappings($db, array $columns) {
     $r = [];
     foreach ($columns as $columnLabel => $info) {
-      $r[$columnLabel] = $info['tempDbField'];
+      $r[$columnLabel] = pg_escape_identifier($db->getLink(), $info['tempDbField']);
     }
     return $r;
   }
@@ -1656,8 +1674,9 @@ SQL;
   private function saveErrorsToRows($db, $rowData, array $keyFields, array $errors, array $config) {
     $whereList = [];
     foreach ($keyFields as $field) {
+      $fieldEsc = pg_escape_identifier($db->getLink(), $field);
       $value = pg_escape_literal($db->getLink(), $rowData->$field ?? '');
-      $whereList[] = "$field=$value";
+      $whereList[] = "$fieldEsc=$value";
     }
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
@@ -1684,8 +1703,9 @@ SQL;
       }
     }
     $errorsJson = pg_escape_literal($db->getLink(), json_encode($errorsList));
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
     $sql = <<<SQL
-UPDATE import_temp.$config[tableName]
+UPDATE import_temp.$dbIdentifiers[tempTableName]
 SET errors = COALESCE(errors, '{}'::jsonb) || $errorsJson::jsonb
 WHERE $wheres;
 SQL;
@@ -1782,18 +1802,22 @@ SQL;
    */
   private function fetchParentEntityData($db, array $columns, array $config) {
     $fields = $this->getDestFieldsForColumns($columns);
+    $fields = array_map(function ($s) use ($db) {
+      return pg_escape_identifier($db->getLink(), $s);
+    }, $fields);
     $fieldsAsCsv = implode(', ', $fields);
     // Batch row limit div by arbitrary 10 to allow for multiple children per
     // parent.
     $batchRowLimit = BATCH_ROW_LIMIT / 10;
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
     $sql = <<<SQL
 SELECT DISTINCT $fieldsAsCsv
-FROM import_temp.$config[tableName]
+FROM import_temp.$dbIdentifiers[tempTableName]
 ORDER BY $fieldsAsCsv
 LIMIT $batchRowLimit
-OFFSET $config[parentEntityRowsProcessed];
+OFFSET ?;
 SQL;
-    return $db->query($sql)->result();
+    return $db->query($sql, [$config['parentEntityRowsProcessed']])->result();
   }
 
   /**
@@ -1906,18 +1930,20 @@ SQL;
    *   Database result containing child rows.
    */
   private function fetchChildEntityData($db, array $columns, array $config, $parentEntityDataRow) {
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
     $fields = $this->getDestFieldsForColumns($columns);
     // Build a filter to extract rows for this parent entity.
     $wheresList = [];
     foreach ($fields as $field) {
+      $fieldEsc = pg_escape_identifier($db->getLink(), $field);
       $value = pg_escape_literal($db->getLink(), $parentEntityDataRow->$field ?? '');
-      $wheresList[] = "COALESCE($field::text, '')=$value";
+      $wheresList[] = "COALESCE($fieldEsc::text, '')=$value";
     }
     $wheres = implode("\nAND ", $wheresList);
     // Now retrieve the sub-entity rows.
     $sql = <<<SQL
 SELECT *
-FROM import_temp.$config[tableName]
+FROM import_temp.$dbIdentifiers[tempTableName]
 WHERE $wheres
 ORDER BY _row_id;
 SQL;
@@ -1934,6 +1960,7 @@ SQL;
    *   lookup fields.
    */
   private function findNextLookupField($db, array &$config) {
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
     if (!isset($config['lookupFieldsMatched'])) {
       $config['lookupFieldsMatched'] = [];
     }
@@ -1949,9 +1976,10 @@ SQL;
           $info['isFkField'] = TRUE;
           $config['lookupFieldsMatched'][] = $info['warehouseField'];
           // Add an ID field to the data table.
+          $colNameEscaped = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id");
           $sql = <<<SQL
-ALTER TABLE import_temp.$config[tableName]
-ADD COLUMN IF NOT EXISTS $info[tempDbField]_id integer;
+ALTER TABLE import_temp.$dbIdentifiers[tempTableName]
+ADD COLUMN IF NOT EXISTS $colNameEscaped integer;
 SQL;
           $db->query($sql);
           // Query to fill in ID for all obvious matches.
@@ -2002,13 +2030,15 @@ SQL;
    *   we are trying to match values for.
    */
   private function autofillLookupAttrIds($db, array $config, array $info) {
-    $valueToMapColName = $info['tempDbField'];
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $valueToMapColName = pg_escape_identifier($db->getLink(), $info['tempDbField']);
+    $valueToMapIdColName = pg_escape_identifier($db->getLink(), $info['tempDbField'] . '_id');
     $destFieldParts = explode(':', $info['warehouseField']);
     $attrEntity = $this->getEntityFromAttrPrefix($destFieldParts[0]);
-    $attrId = str_replace('fk_', '', $destFieldParts[1]);
+    $attrId = (int) str_replace('fk_', '', $destFieldParts[1]);
     $sql = <<<SQL
-UPDATE import_temp.$config[tableName] i
-SET {$valueToMapColName}_id=t.id
+UPDATE import_temp.$dbIdentifiers[tempTableName] i
+SET $valueToMapIdColName=t.id
 FROM cache_termlists_terms t
 JOIN {$attrEntity}_attributes a ON a.termlist_id=t.termlist_id
 AND a.id=$attrId AND a.deleted=false
@@ -2017,9 +2047,9 @@ SQL;
     $db->query($sql);
     $sql = <<<SQL
 SELECT DISTINCT trim(lower($valueToMapColName)) as value
-FROM import_temp.$config[tableName]
-WHERE {$valueToMapColName}_id IS NULL
-AND {$valueToMapColName} <> ''
+FROM import_temp.$dbIdentifiers[tempTableName]
+WHERE $valueToMapIdColName IS NULL
+AND $valueToMapColName <> ''
 ORDER BY trim(lower($valueToMapColName));
 SQL;
     $values = [];
@@ -2063,7 +2093,10 @@ SQL;
    *   Array containing information about the result.
    */
   private function autofillOccurrenceTaxonIds($db, array $config, array $info) {
-    $valueToMapColName = $info['tempDbField'];
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $valueToMapColName = pg_escape_identifier($db->getLink(), $info['tempDbField']);
+    $valueToMapIdColName = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id");
+    $valueToMapIdChoicesColName = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id_choices");
     $destFieldParts = explode(':', $info['warehouseField']);
     $searchField = $destFieldParts[2] ?? 'taxon';
     // Skip matching using the species name epithet field as we'll combine it
@@ -2076,8 +2109,9 @@ SQL;
     foreach ($config['global-values'] as $fieldDef => $value) {
       if (substr($fieldDef, 0, 36) === 'occurrence:fkFilter:taxa_taxon_list:') {
         $filterField = str_replace('occurrence:fkFilter:taxa_taxon_list:', '', $fieldDef);
+        $fieldEsc = pg_escape_identifier($db->getLink(), $filterField);
         $escaped = pg_escape_literal($db->getLink(), $value);
-        $filtersList[] = "AND cttl.$filterField=$escaped";
+        $filtersList[] = "AND cttl.$fieldEsc=$escaped";
         $filterForTaxonSearchAPI[$filterField] = $value;
       }
     }
@@ -2088,64 +2122,66 @@ SQL;
       // SQL used for matching.
       foreach ($config['columns'] as $colInfo) {
         if ($colInfo['warehouseField'] = 'occurrence:fk_taxa_taxon_list:specific') {
-          $matchingFieldSql = "i.{$valueToMapColName} || ' ' || i.{$colInfo['tempDbField']}";
+          $tempDbField = pg_escape_identifier($db->getLink(), $colInfo['tempDbField']);
+          $matchingFieldSql = "i.{$valueToMapColName} || ' ' || i.$tempDbField";
         }
       }
       // Match against the whole taxon name.
       $searchField = 'taxon';
     }
+    $searchField = pg_escape_identifier($db->getLink(), $searchField);
     // Add a column to capture potential multiple matching taxa.
     $uniq = uniqid(TRUE);
     $sql = <<<SQL
-ALTER TABLE import_temp.$config[tableName]
-ADD COLUMN IF NOT EXISTS {$valueToMapColName}_id_choices json;
+      ALTER TABLE import_temp.$dbIdentifiers[tempTableName]
+      ADD COLUMN IF NOT EXISTS {$valueToMapIdChoicesColName} json;
 
--- Find possible taxon name matches. If a name is not accepted, but has an
--- accepted alternative, it gets skipped.
-SELECT trim(lower($matchingFieldSql)) as taxon,
-  ARRAY_AGG(DISTINCT cttl.id) AS choices,
-  JSON_AGG(DISTINCT jsonb_build_object(
-	  'id', cttl.id,
-    'taxon', cttl.taxon,
-    'authority', cttl.authority,
-    'language_iso', cttl.language_iso,
-    'preferred_taxon', cttl.preferred_taxon,
-    'preferred_authority', cttl.preferred_authority,
-    'preferred_language_iso', cttl.preferred_language_iso,
-    'default_common_name', cttl.default_common_name,
-    'taxon_group', cttl.taxon_group,
-    'taxon_rank', cttl.taxon_rank,
-    'taxon_rank_sort_order', cttl.taxon_rank_sort_order
-  )) AS choice_info
-INTO TEMPORARY species_matches_$uniq
-FROM import_temp.$config[tableName] i
-JOIN cache_taxa_taxon_lists cttl
-  ON trim(lower($matchingFieldSql))=lower(cttl.$searchField) AND cttl.allow_data_entry=true
-  $filters
--- Drop if accepted name exists which also matches.
-LEFT JOIN cache_taxa_taxon_lists cttlaccepted
-  ON trim(lower($matchingFieldSql))=lower(cttlaccepted.$searchField) AND cttlaccepted.id<>cttl.id
-  AND cttlaccepted.allow_data_entry=true AND cttlaccepted.preferred=true
-  AND cttlaccepted.taxon_meaning_id=cttl.taxon_meaning_id
-  AND cttlaccepted.taxon_list_id=cttl.taxon_list_id
-WHERE cttlaccepted.id IS NULL
-GROUP BY $matchingFieldSql;
+      -- Find possible taxon name matches. If a name is not accepted, but has an
+      -- accepted alternative, it gets skipped.
+      SELECT trim(lower($matchingFieldSql)) as taxon,
+        ARRAY_AGG(DISTINCT cttl.id) AS choices,
+        JSON_AGG(DISTINCT jsonb_build_object(
+          'id', cttl.id,
+          'taxon', cttl.taxon,
+          'authority', cttl.authority,
+          'language_iso', cttl.language_iso,
+          'preferred_taxon', cttl.preferred_taxon,
+          'preferred_authority', cttl.preferred_authority,
+          'preferred_language_iso', cttl.preferred_language_iso,
+          'default_common_name', cttl.default_common_name,
+          'taxon_group', cttl.taxon_group,
+          'taxon_rank', cttl.taxon_rank,
+          'taxon_rank_sort_order', cttl.taxon_rank_sort_order
+        )) AS choice_info
+      INTO TEMPORARY species_matches_$uniq
+      FROM import_temp.$config[tableName] i
+      JOIN cache_taxa_taxon_lists cttl
+        ON trim(lower($matchingFieldSql))=lower(cttl.$searchField) AND cttl.allow_data_entry=true
+        $filters
+      -- Drop if accepted name exists which also matches.
+      LEFT JOIN cache_taxa_taxon_lists cttlaccepted
+        ON trim(lower($matchingFieldSql))=lower(cttlaccepted.$searchField) AND cttlaccepted.id<>cttl.id
+        AND cttlaccepted.allow_data_entry=true AND cttlaccepted.preferred=true
+        AND cttlaccepted.taxon_meaning_id=cttl.taxon_meaning_id
+        AND cttlaccepted.taxon_list_id=cttl.taxon_list_id
+      WHERE cttlaccepted.id IS NULL
+      GROUP BY $matchingFieldSql;
 
-UPDATE import_temp.$config[tableName] i
-SET {$valueToMapColName}_id=CASE ARRAY_LENGTH(sm.choices, 1) WHEN 1 THEN ARRAY_TO_STRING(sm.choices, '') ELSE NULL END::integer,
-{$valueToMapColName}_id_choices=sm.choice_info
-FROM species_matches_$uniq sm
-WHERE trim(lower($matchingFieldSql))=sm.taxon;
+      UPDATE import_temp.$config[tableName] i
+      SET {$valueToMapIdColName}=CASE ARRAY_LENGTH(sm.choices, 1) WHEN 1 THEN ARRAY_TO_STRING(sm.choices, '') ELSE NULL END::integer,
+      {$valueToMapIdChoicesColName}=sm.choice_info
+      FROM species_matches_$uniq sm
+      WHERE trim(lower($matchingFieldSql))=sm.taxon;
 
-DROP TABLE species_matches_$uniq;
-SQL;
+      DROP TABLE species_matches_$uniq;
+    SQL;
     $db->query($sql);
     $sql = <<<SQL
-SELECT DISTINCT {$valueToMapColName} as value, {$valueToMapColName}_id_choices::text as choices
-FROM import_temp.$config[tableName]
-WHERE {$valueToMapColName}_id IS NULL
-AND {$valueToMapColName}<>'';
-SQL;
+      SELECT DISTINCT {$valueToMapColName} as value, {$valueToMapIdChoicesColName}::text as choices
+      FROM import_temp.$dbIdentifiers[tempTableName]
+      WHERE {$valueToMapIdColName} IS NULL
+      AND {$valueToMapColName}<>'';
+    SQL;
     $rows = $db->query($sql)->result();
     $values = [];
     foreach ($rows as $row) {
@@ -2172,9 +2208,13 @@ SQL;
    *   Array containing information about the result.
    */
   private function autofillSampleLocationIds($db, array $config, array $info) {
-    $valueToMapColName = $info['tempDbField'];
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $valueToMapColName = pg_escape_identifier($db->getLink(), $info['tempDbField']);
+    $valueToMapIdColName = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id");
+    $valueToMapIdChoicesColName = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id_choices");
     $destFieldParts = explode(':', $info['warehouseField']);
-    $websiteId = $config['global-values']['website_id'];
+    $mappedLocationTableColName = pg_escape_identifier($db->getLink(), $destFieldParts[2]);
+    $websiteId = (int) $config['global-values']['website_id'];
     $matchAll = [
       'l.deleted=false',
       "(lw.website_id=$websiteId OR l.public)",
@@ -2184,8 +2224,9 @@ SQL;
     foreach ($config['global-values'] as $fieldDef => $value) {
       if (substr($fieldDef, 0, 25) === 'sample:fkFilter:location:') {
         $filterField = str_replace('sample:fkFilter:location:', '', $fieldDef);
-        $escaped = pg_escape_literal($db->getLink(), $value);
-        $matchAll[] = "l.$filterField=$escaped";
+        $fieldEsc = pg_escape_identifier($db->getLink(), $filterField);
+        $valueEsc = pg_escape_literal($db->getLink(), $value);
+        $matchAll[] = "l.$fieldEsc=$valueEsc";
         $filterForLocationSearchAPI[$filterField] = $value;
       }
     }
@@ -2196,7 +2237,7 @@ SQL;
       ];
       // Add locations for the recording group if importing into a group.
       if (!empty($config['global-values']['sample:group_id'])) {
-        $groupId = $config['global-values']['sample:group_id'];
+        $groupId = (int) $config['global-values']['sample:group_id'];
         $extraJoins[] = <<<SQL
 LEFT JOIN (groups_locations gl
   JOIN groups g ON g.id=gl.group_id AND g.deleted=false AND g.id=$groupId
@@ -2216,11 +2257,10 @@ SQL;
     // Add a column to capture potential multiple matching taxa.
     $uniq = uniqid(TRUE);
     $sql = <<<SQL
-ALTER TABLE import_temp.$config[tableName]
-ADD COLUMN IF NOT EXISTS {$valueToMapColName}_id_choices json;
+ALTER TABLE import_temp.$dbIdentifiers[tempTableName]
+ADD COLUMN IF NOT EXISTS $valueToMapIdChoicesColName json;
 
--- Find possible taxon name matches. If a name is not accepted, but has an
--- accepted alternative, it gets skipped.
+-- Find possible location name matches.
 SELECT trim(lower(i.{$valueToMapColName})) as locinfo,
   ARRAY_AGG(DISTINCT l.id) AS choices,
   JSON_AGG(DISTINCT jsonb_build_object(
@@ -2233,9 +2273,9 @@ SELECT trim(lower(i.{$valueToMapColName})) as locinfo,
     'parent_name', lp.name
   )) AS choice_info
 INTO TEMPORARY location_matches_$uniq
-FROM import_temp.$config[tableName] i
+FROM import_temp.$dbIdentifiers[tempTableName] i
 JOIN locations l
-  ON trim(lower(i.{$valueToMapColName}))=lower(l.$destFieldParts[2])
+  ON trim(lower(i.{$valueToMapColName}))=lower(l.$mappedLocationTableColName)
 LEFT JOIN locations lp ON lp.id=l.parent_id AND lp.deleted=false
 LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
 LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
@@ -2243,9 +2283,9 @@ $joins
 WHERE $filters
 GROUP BY i.{$valueToMapColName};
 
-UPDATE import_temp.$config[tableName] i
-SET {$valueToMapColName}_id=CASE ARRAY_LENGTH(sm.choices, 1) WHEN 1 THEN ARRAY_TO_STRING(sm.choices, '') ELSE NULL END::integer,
-{$valueToMapColName}_id_choices=sm.choice_info
+UPDATE import_temp.$dbIdentifiers[tempTableName] i
+SET {$valueToMapIdColName}=CASE ARRAY_LENGTH(sm.choices, 1) WHEN 1 THEN ARRAY_TO_STRING(sm.choices, '') ELSE NULL END::integer,
+{$valueToMapIdChoicesColName}=sm.choice_info
 FROM location_matches_$uniq sm
 WHERE trim(lower(i.{$valueToMapColName}))=sm.locinfo;
 
@@ -2255,9 +2295,9 @@ SQL;
     // Now find and return the list of values that still need to be matched to
     // a location by the user.
     $sql = <<<SQL
-SELECT DISTINCT {$valueToMapColName} as value, {$valueToMapColName}_id_choices::text as choices
-FROM import_temp.$config[tableName]
-WHERE {$valueToMapColName}_id IS NULL AND trim($valueToMapColName)<>'';
+SELECT DISTINCT {$valueToMapColName} as value, {$valueToMapIdChoicesColName}::text as choices
+FROM import_temp.$dbIdentifiers[tempTableName]
+WHERE {$valueToMapIdColName} IS NULL AND trim($valueToMapColName)<>'';
 SQL;
     $rows = $db->query($sql)->result();
     $values = [];
@@ -2288,9 +2328,12 @@ SQL;
    *   Array containing information about the result.
    */
   private function autofillOtherFkIds($db, array $config, array $info) {
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
     $destFieldParts = explode(':', $info['warehouseField']);
     $entity = ORM::factory($destFieldParts[0], -1);
     $fieldName = preg_replace('/^fk_/', '', $destFieldParts[1]);
+    $tempDbField = pg_escape_identifier($db->getLink(), $info['tempDbField']);
+    $fkField = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id");
     if (array_key_exists($fieldName, $entity->belongs_to)) {
       $fkEntity = $entity->belongs_to[$fieldName];
     }
@@ -2309,26 +2352,26 @@ SQL;
     // variables.
     $fkModel = ORM::Factory($fkEntity, -1);
     // Let the model map the lookup against a view if necessary.
-    $lookupAgainst = inflector::plural($fkModel->lookup_against ?? "list_$fkEntity");
+    $lookupAgainst = pg_escape_identifier($db->getLink(), inflector::plural($fkModel->lookup_against ?? "list_$fkEntity"));
     // Search field is lookup model default, but if there are 3 tokens in the
     // destination field name then the 3rd token overrides this.
-    $searchField = $destFieldParts[2] ?? $fkModel->search_field;
-    $websiteId = $config['global-values']['website_id'];
+    $searchField = pg_escape_identifier($db->getLink(), $destFieldParts[2] ?? $fkModel->search_field);
+    $websiteId = (int) $config['global-values']['website_id'];
     $sql = <<<SQL
-UPDATE import_temp.$config[tableName] i
-SET {$info['tempDbField']}_id=l.id
-FROM $lookupAgainst l
-WHERE trim(lower(i.$info[tempDbField]))=lower(l.$searchField)
-AND l.website_id=$websiteId;
-SQL;
+      UPDATE import_temp.$dbIdentifiers[tempTableName] i
+      SET $fkField=l.id
+      FROM $lookupAgainst l
+      WHERE trim(lower(i.$tempDbField))=lower(l.$searchField)
+      AND l.website_id=$websiteId;
+    SQL;
     $db->query($sql);
     $sql = <<<SQL
-SELECT DISTINCT trim(lower($info[tempDbField])) as value
-FROM import_temp.$config[tableName]
-WHERE {$info['tempDbField']}_id IS NULL
-AND $info[tempDbField] <> ''
-ORDER BY trim(lower($info[tempDbField]));
-SQL;
+      SELECT DISTINCT trim(lower($tempDbField)) as value
+      FROM import_temp.$dbIdentifiers[tempTableName]
+      WHERE $fkField IS NULL
+      AND $tempDbField <> ''
+      ORDER BY trim(lower($tempDbField));
+    SQL;
     $values = [];
     $rows = $db->query($sql)->result();
     foreach ($rows as $row) {
@@ -2336,10 +2379,10 @@ SQL;
     }
     // Find the available possible options from the fk lookup list.
     $sql = <<<SQL
-SELECT l.id, l.$searchField
-FROM $lookupAgainst l
-ORDER BY l.$searchField
-SQL;
+      SELECT l.id, l.$searchField
+      FROM $lookupAgainst l
+      ORDER BY l.$searchField
+    SQL;
     $matchOptions = [];
     $rows = $db->query($sql)->result();
     foreach ($rows as $row) {
@@ -2367,10 +2410,9 @@ SQL;
     $tableName = 'import_' . date('YmdHi') . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', pathinfo($fileName, PATHINFO_FILENAME));
     $config['tableName'] = $tableName;
     $colsArray = ['_row_id serial'];
-    $dbFieldNames = $this->getColumnTempDbFieldMappings($config['columns']);
+    $dbFieldNames = $this->getColumnTempDbFieldMappings($db, $config['columns']);
     foreach ($dbFieldNames as $fieldName) {
-      // Enclose column names in "" in case reserved word.
-      $colsArray[] = "\"$fieldName\" varchar";
+      $colsArray[] = "$fieldName varchar";
     }
     $colsArray[] = 'errors jsonb';
     $colsList = implode(",\n", $colsArray);
@@ -2440,12 +2482,12 @@ SQL;
     $config['rowsLoaded'] = $config['rowsLoaded'] + $count;
     $config['rowsRead'] = $config['rowsRead'] + $rowPosInBatch;
     if (count($rows)) {
-      $fieldNames = $this->getColumnTempDbFieldMappings($config['columns']);
-      // Enclose field names in "" in case reserved word.
-      $fields = '"' . implode('", "', $fieldNames) . '"';
+      $fieldNames = $this->getColumnTempDbFieldMappings($db, $config['columns']);
+      $fields = implode(', ', $fieldNames);
       $rowsList = implode("\n,", $rows);
+      $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
       $query = <<<SQL
-INSERT INTO import_temp.$config[tableName]($fields)
+INSERT INTO import_temp.$dbIdentifiers[tempTableName]($fields)
 VALUES $rowsList;
 SQL;
       $db->query($query);
@@ -2537,6 +2579,18 @@ SQL;
     }
   }
 
+  private function getEscapedDbIdentifiers($db, array $config) {
+    return [
+      'importDestTable' => pg_escape_identifier($db->getLink(), inflector::plural($config['entity'])),
+      'importDestParentTable' => pg_escape_identifier($db->getLink(), inflector::plural($config['parentEntity'])),
+      'pkFieldInTempTable' => pg_escape_identifier($db->getLink(), $config['pkFieldInTempTable'] ?? ''),
+      'parentEntityFkIdFieldInDestTable' => pg_escape_identifier($db->getLink(), "$config[parentEntity]_id"),
+      'tempDbFkIdField' => pg_escape_identifier($db->getLink(), "_$config[entity]_id"),
+      'tempDbParentFkIdField' => pg_escape_identifier($db->getLink(), "_$config[parentEntity]_id"),
+      'tempTableName' => pg_escape_identifier($db->getLink(), $config['tableName']),
+    ];
+  }
+
   /**
    * Saves config to a JSON file, allowing process info to persist.
    *
@@ -2565,7 +2619,8 @@ SQL;
     $baseName = pathinfo($config['fileName'], PATHINFO_FILENAME);
     unlink(DOCROOT . "import/$baseName.json");
     unlink(DOCROOT . "import/$config[fileName]");
-    $db->query("DROP TABLE IF EXISTS import_temp.$config[tableName]");
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $db->query("DROP TABLE IF EXISTS import_temp.$dbIdentifiers[tempTableName]");
   }
 
   /**

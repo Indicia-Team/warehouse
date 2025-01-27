@@ -53,7 +53,7 @@ class verifier_notifications {
         echo 'There are ' . count($overdueRecords) . ' overdue records.<br/>';
         $occurrenceIds = [];
         foreach ($overdueRecords as $record) {
-          $occurrenceIds[] = $record['occurrence_id'];
+          $occurrenceIds[] = (int) $record['occurrence_id'];
         }
         $occurrenceIdList = implode(', ', $occurrenceIds);
         // Create a temp table.

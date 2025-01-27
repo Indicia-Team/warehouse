@@ -43,6 +43,8 @@ function species_alerts_scheduled_task($lastRunDate, $db, $maxTime) {
   // Get all new occurrences from the database that are either new occurrences
   // or verified and match them with species_alert records and return the
   // matches.
+  $lastRunDateEsc = pg_escape_literal($db->getLink(), $lastRunDate);
+  $maxTimeEsc = pg_escape_literal($db->getLink(), $maxTime);
   $qry = <<<SQL
 DROP TABLE IF EXISTS delta;
 SELECT o.id, o.website_id, snf.public_entered_sref, cttl.taxon, o.location_ids, o.record_status,
@@ -57,7 +59,7 @@ LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=o.taxon_mea
 JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=o.website_id and iwwa.receive_for_reporting=true
 WHERE
 -- Following just to allow index to be used.
-o.updated_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
+o.updated_on between TO_TIMESTAMP($lastRunDateEsc, 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP($maxTimeEsc, 'YYYY-MM-DD HH24:MI:SS')
 AND  o.training='f' AND o.confidential='f'
 GROUP BY o.id, o.website_id, snf.public_entered_sref, cttl.taxon, o.location_ids, o.record_status,
   o.taxa_taxon_list_external_key, o.taxon_meaning_id, o.survey_id, o.verified_on, o.created_on;
@@ -74,13 +76,13 @@ SELECT DISTINCT
   (
     n_create.id IS NULL
     AND sa.alert_on_entry='t'
-    AND delta.created_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
+    AND delta.created_on between TO_TIMESTAMP($lastRunDateEsc, 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP($maxTimeEsc, 'YYYY-MM-DD HH24:MI:SS')
   ) as notify_entry,
   (
     n_verify.id IS NULL
     AND sa.alert_on_verify='t'
     AND delta.record_status='V'
-    AND delta.verified_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
+    AND delta.verified_on between TO_TIMESTAMP($lastRunDateEsc, 'YYYY-MM-DD HH24:MI:SS') - '2 days'::interval AND TO_TIMESTAMP($maxTimeEsc, 'YYYY-MM-DD HH24:MI:SS')
   ) as notify_verify
 FROM delta
 JOIN species_alerts sa ON
@@ -102,21 +104,21 @@ JOIN users u ON
 -- Use left joins to exclude notifications that have already been generated.
 LEFT JOIN notifications n_create ON n_create.user_id=sa.user_id AND n_create.linked_id=delta.id AND n_create.source='species alerts'
   AND n_create.data LIKE '%has been entered%' and n_create.data like '%"taxon":' || replace(to_json(delta.taxon)::text, '/', '\\\\/') || '%'
-  AND n_create.triggered_on>=TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval
+  AND n_create.triggered_on>=TO_TIMESTAMP($lastRunDateEsc, 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval
 LEFT JOIN notifications n_verify ON n_verify.user_id=sa.user_id AND n_verify.linked_id=delta.id AND n_verify.source='species alerts'
   AND n_verify.data LIKE '%has been verified%' and n_verify.data like '%"taxon":' || replace(to_json(delta.taxon)::text, '/', '\\\\/') || '%'
-  AND n_verify.triggered_on>=TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval
+  AND n_verify.triggered_on>=TO_TIMESTAMP($lastRunDateEsc, 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval
 WHERE (
   (
     n_create.id IS NULL
     AND sa.alert_on_entry='t'
-    AND delta.created_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
+    AND delta.created_on between TO_TIMESTAMP($lastRunDateEsc, 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP($maxTimeEsc, 'YYYY-MM-DD HH24:MI:SS')
   )
   OR (
     n_verify.id IS NULL
     AND sa.alert_on_verify='t'
     AND delta.record_status='V'
-    AND delta.verified_on between TO_TIMESTAMP('$lastRunDate', 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP('$maxTime', 'YYYY-MM-DD HH24:MI:SS')
+    AND delta.verified_on between TO_TIMESTAMP($lastRunDateEsc, 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP($maxTimeEsc, 'YYYY-MM-DD HH24:MI:SS')
   )
 );
 SQL;

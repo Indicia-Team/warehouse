@@ -308,7 +308,6 @@ class Location_Controller extends Gridview_Base_Controller {
    * to name.
    */
   public function upload_shp2() {
-    $zipTempFile = $_POST['uploaded_zip'];
     $basefile = $_POST['extracted_basefile'];
     // At this point do I need to extract the zipfile again? will assume at the
     // moment that it is already extracted: TODO make sure the extracted files
@@ -318,8 +317,6 @@ class Location_Controller extends Gridview_Base_Controller {
     $view->create = [];
     $view->errors = [];
     $view->location_id = [];
-    // Create the file pointer, plus one for errors.
-    $count = 0;
     $this->template->title = "Confirm Shapefile upload for $this->pagetitle";
     try {
       if (!file_exists("$basefile.dbf")) {
@@ -366,8 +363,11 @@ class Location_Controller extends Gridview_Base_Controller {
             $this->wkt
           );
           try {
-            $result = $this->db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('$this->wkt', $_POST[srid])," .
-              kohana::config('sref_notations.internal_srid') . ")) AS wkt;")->current();
+            $result = $this->db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText(?, ?), ?)) AS wkt;", [
+              $this->wkt,
+              $_POST['srid'],
+              kohana::config('sref_notations.internal_srid'),
+            ])->current();
           }
           catch (Exception $e) {
             throw new Exception('Failed to transform the geometry - did you choose the correct SRID (projection) for the SHP file?');

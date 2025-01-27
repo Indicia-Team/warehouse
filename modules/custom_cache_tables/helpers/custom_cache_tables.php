@@ -69,7 +69,7 @@ class custom_cache_tables {
         }
         // If the table already exists, delete it.
         if (!empty($lastDoneInfo[$defname]) && (!isset($metadata['autodrop']) || $metadata['autodrop'] === TRUE)) {
-          $db->query("DROP TABLE IF EXISTS custom_cache_tables.$defname");
+          $db->query("DROP TABLE IF EXISTS custom_cache_tables." . pg_escape_identifier($db->getLink(), $defname));
         }
         echo "Building cache table $defname<br/>";
         self::buildTable($db, $defname);

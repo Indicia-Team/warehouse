@@ -64,19 +64,19 @@ class Occurrence_association_Controller extends Gridview_Base_Controller {
    *   Additional information for the view.
    */
   protected function prepareOtherViewData(array $values) {
-    $oaId = $this->uri->argument(1);
+    $oaId = (int) $this->uri->argument(1);
     // Find basic info about the occurrence association.
     $sql = <<<SQL
-SELECT DISTINCT ofrom.id, ofrom.survey_id, ofrom.website_id,
-  cttlfrom.preferred_taxon as from_taxon, cttlto.preferred_taxon as to_taxon
-FROM occurrence_associations oa
-JOIN cache_occurrences_functional ofrom ON ofrom.id=oa.from_occurrence_id
-JOIN cache_taxa_taxon_lists cttlfrom ON cttlfrom.id=ofrom.taxa_taxon_list_id
-JOIN cache_occurrences_functional oto ON oto.id=oa.to_occurrence_id
-JOIN cache_taxa_taxon_lists cttlto ON cttlto.id=oto.taxa_taxon_list_id
-WHERE oa.id=$oaId;
-SQL;
-    $ids = $this->db->query($sql)->current();
+      SELECT DISTINCT ofrom.id, ofrom.survey_id, ofrom.website_id,
+        cttlfrom.preferred_taxon as from_taxon, cttlto.preferred_taxon as to_taxon
+      FROM occurrence_associations oa
+      JOIN cache_occurrences_functional ofrom ON ofrom.id=oa.from_occurrence_id
+      JOIN cache_taxa_taxon_lists cttlfrom ON cttlfrom.id=ofrom.taxa_taxon_list_id
+      JOIN cache_occurrences_functional oto ON oto.id=oa.to_occurrence_id
+      JOIN cache_taxa_taxon_lists cttlto ON cttlto.id=oto.taxa_taxon_list_id
+      WHERE oa.id=?;
+    SQL;
+    $ids = $this->db->query($sql, [$oaId])->current();
     $otherData = [
       'from_taxon' => $ids->from_taxon,
       'to_taxon' => $ids->to_taxon,
@@ -98,9 +98,9 @@ LEFT JOIN cache_termlists_terms ttype ON ttype.id=oa2.association_type_id
 LEFT JOIN cache_termlists_terms tpart ON tpart.id=oa2.part_id
 LEFT JOIN cache_termlists_terms tposition ON tposition.id=oa2.position_id
 LEFT JOIN cache_termlists_terms timpact ON timpact.id=oa2.impact_id
-WHERE o2.website_id=$ids->website_id AND o2.survey_id=$ids->survey_id
+WHERE o2.website_id=? AND o2.survey_id=?
 SQL;
-    $termlists = $this->db->query($sql)->current();
+    $termlists = $this->db->query($sql, [$ids->website_id, $ids->survey_id])->current();
     $termDataToFetch = [
       'association_type_termlist_ids' => 'type_terms',
       'part_termlist_termlist_ids' => 'part_terms',

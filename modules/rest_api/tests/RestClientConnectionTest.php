@@ -110,7 +110,7 @@ SQL;
     $r = data_entry_helper::forward_post_to('rest_api_client', $s, self::$auth['write_tokens'] + ['secret2' => 'mysecret']);
     $this->assertNotTrue(isset($r['success']), 'Submitting a rest_api_client with a duplicate username should not succeed');
     // Secret should be hashed in DB.
-    $saved = self::$db->query('SELECT * FROM rest_api_clients WHERE id=' . $clientId)->current();
+    $saved = self::$db->query('SELECT * FROM rest_api_clients WHERE id=?', [$clientId])->current();
     $this->assertNotEquals($saved->secret, $clientData['rest_api_client:secret'], 'Saved secret has not been hashed.');
     $this->assertTrue(password_verify($clientData['rest_api_client:secret'], $saved->secret), 'Saved password hash does not verify against the supplied secret');
 

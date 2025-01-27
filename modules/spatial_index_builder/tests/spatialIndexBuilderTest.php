@@ -125,12 +125,12 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
     $q = new WorkQueue();
     $q->process(self::$db);
     // Check everything correctly linked.
-    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$higherLocId1")->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
-    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$higherLocId1Private")->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
-    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$higherLocId2")->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
-    $this->assertEquals("{{$higherLocId1}}", self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$lowerLoc1")->current()->higher_location_ids, 'Lower location missing indexing into parent.');
-    $this->assertEquals("{{$higherLocId1},{$higherLocId2}}", self::$db->query("SELECT ARRAY_AGG(x) AS higher_location_ids FROM (SELECT unnest(higher_location_ids) AS x FROM locations WHERE id=$lowerLoc2 ORDER BY x) AS _")->current()->higher_location_ids, 'Lower location missing indexing into 2 intersecting parent.');
-    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$lowerLoc3")->current()->higher_location_ids, 'Incorrect indexing found for an isolated lower location.');
+    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$higherLocId1])->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
+    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$higherLocId1Private])->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
+    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$higherLocId2])->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
+    $this->assertEquals("{{$higherLocId1}}", self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$lowerLoc1])->current()->higher_location_ids, 'Lower location missing indexing into parent.');
+    $this->assertEquals("{{$higherLocId1},{$higherLocId2}}", self::$db->query("SELECT ARRAY_AGG(x) AS higher_location_ids FROM (SELECT unnest(higher_location_ids) AS x FROM locations WHERE id=? ORDER BY x) AS _", [$lowerLoc2])->current()->higher_location_ids, 'Lower location missing indexing into 2 intersecting parent.');
+    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$lowerLoc3])->current()->higher_location_ids, 'Incorrect indexing found for an isolated lower location.');
     // Move lower location 1 away.
     $array = [
       'location:id' => $lowerLoc1,
@@ -153,12 +153,12 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
     // Run work queue.
     $q->process(self::$db);
     // Check everything correctly linked.
-    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$higherLocId1")->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
-    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$higherLocId1Private")->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
-    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$higherLocId2")->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
-    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$lowerLoc1")->current()->higher_location_ids, 'Lower location moved into isolated area incorrectly indexed into higher location.');
-    $this->assertEquals("{{$higherLocId1}}", self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$lowerLoc2")->current()->higher_location_ids, 'Lower location missing indexing into 2 intersecting parent.');
-    $this->assertEquals("{{$higherLocId2}}", self::$db->query("SELECT higher_location_ids FROM locations WHERE id=$lowerLoc3")->current()->higher_location_ids, 'Lower location missing indexing into 2 intersecting parent.');
+    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$higherLocId1])->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
+    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$higherLocId1Private])->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
+    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$higherLocId2])->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
+    $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$lowerLoc1])->current()->higher_location_ids, 'Lower location moved into isolated area incorrectly indexed into higher location.');
+    $this->assertEquals("{{$higherLocId1}}", self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$lowerLoc2])->current()->higher_location_ids, 'Lower location missing indexing into 2 intersecting parent.');
+    $this->assertEquals("{{$higherLocId2}}", self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$lowerLoc3])->current()->higher_location_ids, 'Lower location missing indexing into 2 intersecting parent.');
   }
 
 }

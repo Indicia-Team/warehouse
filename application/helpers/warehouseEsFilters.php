@@ -49,6 +49,7 @@ class warehouseEsFilters {
     if (!isset(self::$db)) {
       self::$db = new Database();
     }
+    warehouse::validateIntCsvListParam($locationIds);
     $query = <<<SQL
       SELECT ST_AsText(ST_Transform(ST_Union(COALESCE(l.boundary_geom, l.centroid_geom)), 4326)) as polygon
       FROM locations l
@@ -77,12 +78,14 @@ SQL;
       self::$db = new Database();
     }
     $masterChecklistId = warehouse::getMasterTaxonListId();
+    $field = pg_escape_identifier(self::$db->getLink(), $filterField);
+    warehouse::validateIntCsvListParam($filterValues);
     $query = <<<SQL
       SELECT DISTINCT cttlout.external_key
       FROM cache_taxa_taxon_lists cttlin
       JOIN cache_taxa_taxon_lists cttlout ON cttlout.search_code=cttlin.external_key AND cttlout.taxon_list_id=$masterChecklistId
       WHERE 1=1
-      AND cttlin.$filterField in ($filterValues);
+      AND cttlin.$field in ($filterValues);
 SQL;
     return self::$db->query($query)->result_array(FALSE);
   }
@@ -100,6 +103,7 @@ SQL;
     if (!isset(self::$db)) {
       self::$db = new Database();
     }
+    warehouse::validateIntCsvListParam($ids);
     return self::$db->query("select term from cache_termlists_terms where id in ($ids)")->result_array(FALSE);
   }
 
@@ -127,7 +131,7 @@ SQL;
    * @return array
    *   Database rows each containing an external key.
    */
-  public static function getExternalKeysForTaxonScratchpad($id) {
+  public static function getExternalKeysForTaxonScratchpad(int $id) {
     if (!isset(self::$db)) {
       self::$db = new Database();
     }
@@ -136,7 +140,7 @@ SQL;
       FROM scratchpad_list_entries sle
       JOIN cache_taxa_taxon_lists cttl ON cttl.id=sle.entry_id
       WHERE sle.scratchpad_list_id=$id
-SQL;
+    SQL;
     return self::$db->query($query)->result_array(FALSE);
   }
 

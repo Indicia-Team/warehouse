@@ -69,7 +69,7 @@ class task_indicia_svc_security_delete_user_account {
       ])
       ->get()->result();
     foreach ($jobs as $job) {
-      self::replaceUserIdWithAnonId($db, $procId, $job->user_id, $job->website_id, $anonymousUserId);
+      self::replaceUserIdWithAnonId($db, $job->user_id, $job->website_id, $anonymousUserId);
       self::sendWebsitesListEmail($db, $job->user_id, $job->website_id);
     }
   }
@@ -81,10 +81,6 @@ class task_indicia_svc_security_delete_user_account {
    * suitable for repointing if the user has no websites left
    * @param object $db
    *   Database connection object.
-   * @param string $procId
-   *   Unique identifier of this work queue processing run. Allows filtering
-   *   against the work_queue table's claimed_by field to determine which
-   *   tasks to perform.
    * @param int $userId
    *   User ID being deleted.
    * @param int $websiteId
@@ -92,7 +88,7 @@ class task_indicia_svc_security_delete_user_account {
    * @param int $anonymousUserId
    *   User ID of the special anonymous user.
    */
-  public static function replaceUserIdWithAnonId($db, $procId, $userId, $websiteId, $anonymousUserId) {
+  private static function replaceUserIdWithAnonId($db, int $userId, int $websiteId, int $anonymousUserId) {
     $sql = <<<SQL
 do $$
 BEGIN

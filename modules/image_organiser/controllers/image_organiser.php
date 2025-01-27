@@ -48,6 +48,9 @@ class Image_organiser_Controller extends Indicia_Controller {
     $this->auto_render = FALSE;
     header('Content-Type: application/javascript');
     $entity = $_POST['type'];
+    if (!preg_match('/^[a-z_]*$/', $entity)) {
+      throw new exception('Invalid type parameter');
+    }
     if ($entity === 'occurrence' && !$this->checkLogstashOk()) {
       echo json_encode([
         'status' => 'Paused',
@@ -55,7 +58,7 @@ class Image_organiser_Controller extends Indicia_Controller {
       ]);
       return;
     }
-    $fromId = variable::get("image_organiser_tracking_$entity", 0, FALSE);
+    $fromId = (int) variable::get("image_organiser_tracking_$entity", 0, FALSE);
     $batchSize = BATCH_SIZE;
     $baseEntityIds = [];
     $entityIdField = $entity === 'taxon' ? 'taxon_meaning_id' : "{$entity}_id";
@@ -147,7 +150,10 @@ SQL;
     // No template as this is for AJAX.
     $this->auto_render = FALSE;
     $entity = $_POST['type'];
-    $fromId = variable::get("image_organiser_tracking_deletes_$entity", 0, FALSE);
+    if (!preg_match('/^[a-z_]*$/', $entity)) {
+      throw new exception('Invalid type parameter');
+    }
+    $fromId = (int) variable::get("image_organiser_tracking_deletes_$entity", 0, FALSE);
     $batchSize = BATCH_SIZE;
     $qry = <<<SQL
 SELECT m.id, m.path, m.created_on, m.updated_on, m.deleted
@@ -206,14 +212,14 @@ SQL;
     $userId = $_SESSION['auth_user']->id;
     // A simple UPSERT - insert if not already in the log.
     $precheck = <<<SQL
-SELECT id FROM image_organiser_problems WHERE problem='$problem' AND media_id=$image->id AND entity='$entity';
+SELECT id FROM image_organiser_problems WHERE problem=? AND media_id=? AND entity=?;
 SQL;
-    if (!$this->db->query($precheck)->current()) {
+    if (!$this->db->query($precheck, [$problem, $image->id, $entity])->current()) {
       $sql = <<<SQL
 INSERT INTO image_organiser_problems (problem, media_id, entity, created_on, created_by_id)
-VALUES ('$problem', $image->id, '$entity', now(), $userId);
+VALUES (?, ?, ?, now(), ?);
 SQL;
-      $this->db->query($sql);
+      $this->db->query($sql, [$problem, $image->id, $entity, $userId]);
     }
   }
 
@@ -301,6 +307,7 @@ SQL;
       return;
     }
     $ids = implode(',', $baseEntityIds);
+    warehouse::validateIntCsvListParam($ids);
     // First update the path info in the cache nonfunctional table.
     $qry = <<<SQL
 UPDATE cache_{$entity}s_nonfunctional nf

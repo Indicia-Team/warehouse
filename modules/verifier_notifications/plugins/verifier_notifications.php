@@ -170,20 +170,26 @@ function acknowledge_stale_notifications($db, array $params) {
     JOIN filters_users AS fu ON (fu.filter_id = f.id)
     JOIN users AS u ON (u.id = fu.user_id)
     JOIN users_websites AS uw ON (uw.user_id = u.id)
-    WHERE f.sharing = '$params[sharingFilter]'
+    WHERE f.sharing = ?
     AND f.defines_permissions = 't'
-    AND uw.website_id = $params[website_id]
+    AND uw.website_id = ?
     AND f.deleted = 'f'
     AND fu.deleted = 'f'
     AND u.deleted = 'f'
     AND n.user_id=fu.user_id
-    AND n.source_type='$params[notificationSourceType]'
-    AND n.source='$params[notificationSource]'
+    AND n.source_type=?
+    AND n.source=?
     AND n.acknowledged=false
     AND n.linked_id is null
-    AND n.triggered_on<='$freshDate'
+    AND n.triggered_on<=?
 SQL;
-  $db->query($sql);
+  $db->query($sql, [
+    $params['sharingFilter'],
+    $params['website_id'],
+    $params['notificationSourceType'],
+    $params['notificationSource'],
+    $freshDate,
+  ]);
 }
 
 /**
