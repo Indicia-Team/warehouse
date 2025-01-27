@@ -63,7 +63,7 @@ class Termlist_export_Controller extends Indicia_Controller {
     FROM cache_termlists_terms t
     LEFT JOIN cache_termlists_terms tp ON tp.id = t.parent_id
     LEFT JOIN cache_termlists_terms ts ON ts.meaning_id = t.meaning_id AND ts.termlist_id = t.termlist_id AND ts.preferred = false
-    WHERE t.preferred = true AND {where}
+    WHERE t.preferred = true AND t.termlist_id=?
     GROUP BY t.term, t.language_iso, t.sort_order, tp.term
     ORDER BY t.sort_order, t.term
   ) AS list";
@@ -231,9 +231,8 @@ class Termlist_export_Controller extends Indicia_Controller {
    * @return array A version of the data which has been changed into structured
    * arrays of the data from the tables.
    */
-  private function getTerms($termlistId) {
-    $query = str_replace('{where}', "t.termlist_id=" . pg_escape_literal($this->db->getLink(), $termlistId), self::SQL_FETCH_ALL_TERMS);
-    $r = $this->db->query($query)->result_array(FALSE);
+  private function getTerms(int $termlistId) {
+    $r = $this->db->query(self::SQL_FETCH_ALL_TERMS, [$termlistId])->result_array(FALSE);
     return $r[0];
   }
 

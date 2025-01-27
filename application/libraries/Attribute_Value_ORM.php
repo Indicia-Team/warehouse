@@ -243,7 +243,7 @@ abstract class Attribute_Value_ORM extends ORM {
       $parentTable = pg_escape_identifier($this->db->getLink(), inflector::plural($parentEntity));
       $parentTableFkField = $parentEntity . '_id';
       $parentTableId = $this->$parentTableFkField;
-      $this->db->query("UPDATE $parentTable SET updated_on=now(), updated_by_id=? WHERE id=?". [
+      $this->db->query("UPDATE $parentTable SET updated_on=now(), updated_by_id=? WHERE id=?", [
         $this->updated_by_id,
         $parentTableId,
       ]);

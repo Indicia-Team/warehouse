@@ -883,7 +883,7 @@ class RestControllerTest extends BaseRestClientTest {
     $this->assertEquals(0, $occs->occ_count, 'Anonymised user ID still points to some occurrence data.');
 
     // Test occurrence now points to anonymous user.
-    $occs = $db->query("SELECT created_by_id, updated_by_id FROM occurrences WHERE sample_id=", [$sampleId]);
+    $occs = $db->query("SELECT created_by_id, updated_by_id FROM occurrences WHERE sample_id=?", [$sampleId]);
     $this->assertEquals(1, $occs->count());
     foreach ($occs as $occ) {
       $this->assertEquals($anonUserId, $occ->created_by_id, 'Anonymised occurrence created_by_id is incorrect');
@@ -898,7 +898,7 @@ class RestControllerTest extends BaseRestClientTest {
     $this->assertEquals($anonUserId, $sample->updated_by_id, 'Anonymised sample updated_by_id is incorrect');
 
     // Test person email address is anonymised.
-    $person = $db->query("SELECT email_address FROM people WHERE id=", [$userInfo['person_id']])->current();
+    $person = $db->query("SELECT email_address FROM people WHERE id=?", [$userInfo['person_id']])->current();
     $this->assertEquals(1, preg_match('/@anonymous\.anonymous$/', $person->email_address), 'Person email address not anonymised correctly');
 
   }
@@ -2422,7 +2422,7 @@ SQL;
   public function testJwtOccurrencePostDeletedSample() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
     $db = new Database();
-    $db->query("update samples set deleted=true where id=", [$sampleId]);
+    $db->query("update samples set deleted=true where id=?", [$sampleId]);
     $data = [
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,

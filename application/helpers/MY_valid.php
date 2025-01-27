@@ -115,7 +115,7 @@ class Valid extends valid_Core {
     $value = pg_escape_literal($db->getLink(), $column_value);
     $extraFilters = '';
     if (count($args) > 3) {
-      $extraFilters = 'AND ' . pg_escape_identifier($args[3]) . '=' . (int) $args[4];
+      $extraFilters = 'AND ' . pg_escape_identifier($db->getLink(), $args[3]) . '=' . (int) $args[4];
     }
     $qry = <<<SQL
 SELECT 1 AS hit
