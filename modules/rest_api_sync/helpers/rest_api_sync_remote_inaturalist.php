@@ -207,7 +207,7 @@ class rest_api_sync_remote_inaturalist {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
         $db->query("UPDATE rest_api_sync_skipped_records SET current=false " .
-          "WHERE server_id=? AND source_id=? AND dest_table='occurrences'", [$serverId, $iNatRecord['id']]);
+          "WHERE server_id=? AND source_id=?::varchar AND dest_table='occurrences'", [$serverId, $iNatRecord['id']]);
       }
       catch (exception $e) {
         rest_api_sync_utils::log(
