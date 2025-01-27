@@ -136,7 +136,7 @@ function data_cleaner_run_rules($rules, $db) {
       $implies_manual_check_required = isset($query['implies_manual_check_required']) && !$query['implies_manual_check_required'] ? 'false' : 'true';
       $errorMsgSuffix = isset($query['errorMsgSuffix']) ? $query['errorMsgSuffix'] : (isset($rule['errorMsgSuffix']) ? $rule['errorMsgSuffix'] : '');
       $subtypeField = empty($query['subtypeField']) ? '' : ", generated_by_subtype";
-      $subtypeValue = empty($query['subtypeField']) ? '' : ", " . pg_escape_identifier($db->getLink(), $query['subtypeField']);
+      $subtypeValue = empty($query['subtypeField']) ? '' : ", $query[subtypeField]";
       $plugin = pg_escape_literal($db->getLink(), $rule['plugin']);
       $sql = <<<SQL
         INSERT INTO occurrence_comments (comment, created_by_id, created_on, updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required$subtypeField)

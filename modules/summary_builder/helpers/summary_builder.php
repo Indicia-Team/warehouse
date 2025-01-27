@@ -282,7 +282,7 @@ class summary_builder {
             summary_builder::do_delete($db, $definition, $year, $taxonId, 0, 0);
 
             // This updates the data for the user/taxa/location/year combination.
-            $definition['occurrence_attribute_id'] != ''
+            $queryTemplate = $definition['occurrence_attribute_id'] != ''
                 ? $queries['get_YearTaxonLocationUser_Attr_query']
                 : $queries['get_YearTaxonLocationUser_query'];
             $query = str_replace([
