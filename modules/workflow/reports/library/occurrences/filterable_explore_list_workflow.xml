@@ -43,7 +43,7 @@
       <where>o.taxa_taxon_list_external_key in (#workflow_group_code#)</where>
     </param>
     <param name="workflow_overdue" display="Overdue records only" default="" datatype="boolean">
-      <where>get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval</where>
+      <where>get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval</where>
     </param>
     <param name="workflow_overdue_notification" display="Workflow overdue notification status" datatype="lookup"
        default="" lookup_values="yes:Notification exists,no:Notification doesn't exist">
