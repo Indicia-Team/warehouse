@@ -127,8 +127,7 @@ function data_cleaner_run_rules($rules, $db) {
       // Rules are able to specify a different field (e.g. from the
       // verification rule data) to provide the error message.
       $errorField = $rule['errorMsgField'];
-    }
-    else {
+    } else {
       $errorField = 'error_message';
     }
     foreach ($rule['queries'] as $query) {
@@ -137,23 +136,21 @@ function data_cleaner_run_rules($rules, $db) {
       $implies_manual_check_required = isset($query['implies_manual_check_required']) && !$query['implies_manual_check_required'] ? 'false' : 'true';
       $errorMsgSuffix = isset($query['errorMsgSuffix']) ? $query['errorMsgSuffix'] : (isset($rule['errorMsgSuffix']) ? $rule['errorMsgSuffix'] : '');
       $subtypeField = empty($query['subtypeField']) ? '' : ", generated_by_subtype";
-      $subtypeValue = empty($query['subtypeField']) ? '' : ", " . pg_escape_identifier($db->getLink(), $query[subtypeField]);
+      $subtypeValue = empty($query['subtypeField']) ? '' : ", " . pg_escape_identifier($db->getLink(), $query['subtypeField']);
       $plugin = pg_escape_literal($db->getLink(), $rule['plugin']);
       $sql = <<<SQL
-insert into occurrence_comments (comment, created_by_id, created_on,
-  updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required$subtypeField)
-select distinct $ruleErrorField$errorMsgSuffix,
-  1, now(), 1, now(), co.id, true, $plugin, $implies_manual_check_required$subtypeValue
-from occdelta co
-SQL;
+        INSERT INTO occurrence_comments (comment, created_by_id, created_on, updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required$subtypeField)
+        SELECT DISTINCT $ruleErrorField$errorMsgSuffix, 1, now(), 1, now(), co.id, true, $plugin, $implies_manual_check_required$subtypeValue
+        from occdelta co
+        SQL;
       if (isset($query['joins'])) {
         $sql .= "\n$query[joins]";
       }
-      $sql .= "\nwhere ";
+      $sql .= "\nWHERE ";
       if (isset($query['where'])) {
-        $sql .= "$query[where] \nand ";
+        $sql .= "$query[where] \nAND ";
       }
-      $sql .= "co.verification_checks_enabled=true\nand co.record_status not in ('I','V','R','D')";
+      $sql .= "co.verification_checks_enabled=true\nAND co.record_status NOT IN ('I','V','R','D')";
       if (isset($query['groupBy'])) {
         $sql .= "\n$query[groupBy]";
       }
@@ -163,11 +160,13 @@ SQL;
         $count += $db->query($sql)->count();
       }
       catch (Exception $e) {
-        echo 'Query failed<br/>' . $e->getMessage() . '<br/><pre style="color: red">' . $db->last_query() . '</pre><br/>';
+        error_logger::log_error('Error in data cleaner query', $e);
+        echo 'Query failed - more information is in the warehouse logs.<br/><pre style="color: red">' . $db->last_query() . '</pre><br/>';
       }
     }
-    if (microtime(TRUE) - $tm > 3) {
-      kohana::log('alert', "Data cleaner rule $rule[testType] took $tm seconds");
+    $elapsedTime = microtime(TRUE) - $tm;
+    if ($elapsedTime > 3) {
+        kohana::log('alert', "Data cleaner rule {$rule['testType']} took $elapsedTime seconds");
     }
   }
 

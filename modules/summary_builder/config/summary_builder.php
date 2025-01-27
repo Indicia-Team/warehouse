@@ -55,11 +55,11 @@ $config['sample_occurrence_lookup'] =
 $config['sample_existing_taxa'] =
 "SELECT so.taxa_taxon_list_id
   FROM summary_occurrences so
-  WHERE so.website_id = #website_id#
-    AND so.survey_id = #survey_id#
+  WHERE so.website_id = ?
+    AND so.survey_id = ?
     AND so.user_id = 0
-    AND so.location_id = #location_id#
-    AND so.year = #year# ;";
+    AND so.location_id = ?
+    AND so.year = ? ;";
 
 // need to process deleted occurrences: can't use cache
 $config['get_occurrences_to_process'] =
