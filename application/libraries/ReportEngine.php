@@ -1170,6 +1170,10 @@ class ReportEngine {
               }
               $value = $date->format('Y-m-d');
             }
+            else {
+              // Datatype not specified, so assume text.
+              $value = pg_escape_string($this->reportDb->getLink(), $value);
+            }
             if (!empty($paramDefs[$name]['preprocess']) && !empty($value) && $value !== 'NULL') {
               // Ensure the original value can be used as well as the processed
               // value.
@@ -1185,7 +1189,8 @@ class ReportEngine {
               foreach ($preprocessors as $token => $qry) {
                 $prequery = str_replace(
                   ["#$name#", '#website_ids#', '#master_list_id#'],
-                  [pg_escape_string($this->reportDb->getLink(), $value), $websiteFilter, $masterTaxonListId],
+                  // $value is already escaped.
+                  [$value, $websiteFilter, $masterTaxonListId],
                   $qry
                 );
                 $output = $this->reportDb->query($prequery)->result_array(FALSE);
