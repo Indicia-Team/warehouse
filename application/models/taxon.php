@@ -173,12 +173,12 @@ class Taxon_Model extends ORM {
       foreach ($this->prefExternalKeyChangedForTaxonMeaningIds as $taxonMeaningId) {
         $updateExtKeyQuery = <<<SQL
 UPDATE taxa t
-SET external_key='$this->external_key', updated_on=now(), updated_by_id=$userId
+SET external_key=?, updated_on=now(), updated_by_id=?
 FROM taxa_taxon_lists ttl
-WHERE ttl.taxon_meaning_id=$taxonMeaningId
+WHERE ttl.taxon_meaning_id=?
 AND t.id=ttl.taxon_id
 SQL;
-        $this->db->query($updateExtKeyQuery);
+        $this->db->query($updateExtKeyQuery, [$this->external_key, $userId, $taxonMeaningId]);
       }
     }
     return TRUE;

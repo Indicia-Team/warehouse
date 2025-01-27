@@ -261,8 +261,8 @@ class Occurrence_Model extends ORM {
       if (empty($this->submission['fields']['classification_event_id'])) {
         $array->classification_event_id = NULL;
       }
-      $sql = "SELECT f_handle_determination(ARRAY[$this->id], $currentUserId, $determinerPersonId, $logDeterminations, $resetClassification);";
-      $this->db->query($sql);
+      $sql = "SELECT f_handle_determination(ARRAY[?], ?, ?, ?, ?);";
+      $this->db->query($sql, [$this->id, $currentUserId, $determinerPersonId, $logDeterminations, $resetClassification]);
       $array->last_verification_check_date = NULL;
     }
   }

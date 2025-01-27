@@ -86,13 +86,15 @@ class task_replace_taxon {
      * * Inserts an explanation comment.
      * * Update occurrences data to point to the replacement taxon.
      */
+    $procId = pg_escape_literal($db->getLink(), $procId);
+    $userId = (int) $userId;
     $sql = <<<SQL
 INSERT INTO work_queue(task, entity, record_id, params, cost_estimate, priority, created_on)
 SELECT 'task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', record_id, null, 100, 2, now()
 FROM work_queue
 WHERE entity='taxa_taxon_list'
 AND task='task_replace_taxon'
-AND claimed_by='$procId';
+AND claimed_by=$procId;
 
 INSERT INTO occurrence_comments(occurrence_id, comment, created_by_id, created_on, updated_by_id, updated_on)
 SELECT o.id, 'The taxon associated with this occurrence (' || told.taxon || ', ID ' || ttlold.id::text || ') ' ||
@@ -106,7 +108,7 @@ JOIN taxa told ON told.id=ttlold.taxon_id
 JOIN cache_taxa_taxon_lists cttlnew ON cttlnew.id=q.record_id
 WHERE q.entity='taxa_taxon_list'
 AND q.task='task_replace_taxon'
-AND q.claimed_by='$procId';
+AND q.claimed_by=$procId;
 
 UPDATE occurrences o
 SET taxa_taxon_list_id=q.record_id
@@ -116,7 +118,7 @@ JOIN work_queue q ON (q.params->>'old_taxa_taxon_list_id')::integer=ttlany.id
 WHERE ttl.id=o.taxa_taxon_list_id
 AND q.entity='taxa_taxon_list'
 AND q.task='task_replace_taxon'
-AND q.claimed_by='$procId';
+AND q.claimed_by=$procId;
 SQL;
     $db->query($sql);
   }

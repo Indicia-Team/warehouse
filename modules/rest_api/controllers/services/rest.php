@@ -88,7 +88,7 @@ class RestObjects {
    *
    * @var int
    */
-  public static $clientWebsiteId;
+  public static int $clientWebsiteId;
 
   /**
    * Public key for the website the client is authenticated as.
@@ -109,14 +109,14 @@ class RestObjects {
    *
    * @var int
    */
-  public static $clientUserId;
+  public static int $clientUserId;
 
   /**
    * When using JwtUser auth, the user's role ID in the website.
    *
    * @var int
    */
-  public static $clientUserWebsiteRole;
+  public static int $clientUserWebsiteRole;
 
   /**
    * Name of the warehouse module handling the request.
@@ -2550,7 +2550,7 @@ class Rest_Controller extends Controller {
           SELECT id, public_key
           FROM websites
           WHERE staging_urls && ARRAY[$urlEscaped::varchar]
-SQL;
+        SQL;
         $website = $db->query($qry)->current();
       }
       $cache->set($cacheKey, $website);
@@ -3311,7 +3311,7 @@ SQL;
    * End-point to GET an list of occurrence_media.
    */
   public function occurrenceMediaGet() {
-    rest_crud::readList('occurrence_medium', 'AND t3.website_id=' . RestObjects::$clientWebsiteId, $this->needToFilterToUser());
+    rest_crud::readList('occurrence_medium', 'AND t3.website_id=' . (int) RestObjects::$clientWebsiteId, $this->needToFilterToUser());
   }
 
   /**
@@ -3460,10 +3460,15 @@ SQL;
     $values['website_id'] = RestObjects::$clientWebsiteId;
     if (!empty($values['sample_id'])) {
       // Sample must be for same user.
-      $sampleCheck = RestObjects::$db->query('select count(*) from samples ' .
-        "where id='" . $values['sample_id'] .
-        "' and deleted=false and created_by_id=" . RestObjects::$clientUserId)
-        ->current()->count;
+      $sampleCheck = RestObjects::$db->query(<<<SQL
+        SELECT count(*)
+        FROM samples
+        WHERE id=?
+        AND deleted=false
+        AND created_by_id=?
+      SQL,
+        [$values['sample_id'], RestObjects::$clientUserId]
+      )->current()->count;
       if ($sampleCheck !== '1') {
         RestObjects::$apiResponse->fail('Bad Request', 400, ['occurrence:sample_id' => 'Attempt to create occurrence in invalid sample.']);
       }
@@ -3579,7 +3584,7 @@ SQL;
    * @param int
    *   Group ID.
    */
-  public function groupsGetId($id) {
+  public function groupsGetId(int $id) {
     // Can fetch any group you are a member of, or if it is publicly visible.
     rest_crud::read('group', $id, $this->getGroupsViewParameterFilter('all_available'));
   }
@@ -3590,7 +3595,7 @@ SQL;
    * @param int $id
    *   Group ID.
    */
-  public function groupsGetIdLocations($id) {
+  public function groupsGetIdLocations(int $id) {
     // Can only fetch locations for a group you are a member of, or if it is
     // publicly visible.
     $filters = [
@@ -3608,10 +3613,10 @@ SQL;
    * @param int $id
    *   Group ID.
    */
-  public function groupsPostIdLocations($id) {
+  public function groupsPostIdLocations(int $id) {
     $post = file_get_contents('php://input');
     $item = json_decode($post, TRUE);
-    $existingUser = RestObjects::$db->query("SELECT id FROM groups_users WHERE group_id=$id AND deleted=false AND pending=false AND user_id=" . RestObjects::$clientUserId)->current();
+    $existingUser = RestObjects::$db->query("SELECT id FROM groups_users WHERE group_id=? AND deleted=false AND pending=false AND user_id=?", [$id, RestObjects::$clientUserId])->current();
     if (!$existingUser) {
       RestObjects::$apiResponse->fail('Forbidden', 403, 'Cannot post locations into a group you are not a member of.');
     }
@@ -3672,11 +3677,11 @@ SQL;
     $qry = <<<SQL
 SELECT gu1.user_id as existing_user_id, gu2.administrator as auth_user_is_admin, g.created_by_id, g.joining_method
 FROM groups g
-LEFT JOIN groups_users gu1 ON gu1.group_id=g.id AND gu1.deleted=false AND gu1.pending=false AND gu1.user_id=$addingUserId
-LEFT JOIN groups_users gu2 ON gu2.group_id=g.id AND gu2.deleted=false AND gu2.pending=false AND gu2.user_id=$authUserId
+LEFT JOIN groups_users gu1 ON gu1.group_id=g.id AND gu1.deleted=false AND gu1.pending=false AND gu1.user_id=?
+LEFT JOIN groups_users gu2 ON gu2.group_id=g.id AND gu2.deleted=false AND gu2.pending=false AND gu2.user_id=?
 WHERE g.id=$id AND g.deleted=false
 SQL;
-    $groupUserInfo = RestObjects::$db->query($qry)->current();
+    $groupUserInfo = RestObjects::$db->query($qry, [$addingUserId, $authUserId])->current();
     kohana::log('debug', 'guInfo: ' . var_export($groupUserInfo, TRUE));
     if ($groupUserInfo->existing_user_id) {
       // Existing user. Can't re-add themselves.
@@ -3745,13 +3750,19 @@ SQL;
     // admin.
     if ($userId != RestObjects::$clientUserId) {
       $authUserId = RestObjects::$clientUserId;
-      $authUserIsAdmin = RestObjects::$db->query("SELECT id FROM groups_users WHERE group_id=$id AND user_id=$authUserId AND deleted=false AND administrator=true")->current();
+      $authUserIsAdmin = RestObjects::$db->query(
+        "SELECT id FROM groups_users WHERE group_id=? AND user_id=? AND deleted=false AND administrator=true",
+        [$id, $authUserId]
+      )->current();
       if (!$authUserIsAdmin) {
         RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add users to a group you do not administer.');
       }
     }
     // Select the record.
-    $guId = RestObjects::$db->query("SELECT id FROM groups_users WHERE group_id=$id AND user_id=$userId AND deleted=false")->current();
+    $guId = RestObjects::$db->query(
+      "SELECT id FROM groups_users WHERE group_id=? AND user_id=? AND deleted=false",
+      [$id, $userId]
+    )->current();
     if (!$guId) {
       RestObjects::$apiResponse->fail('Not found', 404, 'User is not a member of the group.');
     }
@@ -4122,7 +4133,7 @@ SQL;
    * @param int $level
    *   Level required (1 = admin, 2 = editor, 3 = user). Default 2.
    */
-  private function assertUserHasWebsiteAccess($level = 2) {
+  private function assertUserHasWebsiteAccess(int $level = 2) {
     if (empty(RestObjects::$clientUserId)) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown.');
     }
@@ -4131,10 +4142,10 @@ SQL;
     $sql = <<<SQL
 SELECT u.id, u.core_role_id, uw.site_role_id
 FROM users u
-LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=$websiteId and uw.site_role_id<=$level
-WHERE u.id=$userId;
+LEFT JOIN users_websites uw ON uw.user_id=u.id AND uw.website_id=? and uw.site_role_id<=?
+WHERE u.id=?;
 SQL;
-    $user = RestObjects::$db->query($sql)->current();
+    $user = RestObjects::$db->query($sql, [$websiteId, $level, $userId])->current();
     if (!$user) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user not found.');
     }
@@ -4159,17 +4170,17 @@ SQL;
     $websiteId = RestObjects::$clientWebsiteId;
     if (!$sql) {
       $sql = <<<SQL
-SELECT COUNT(*) FROM $table WHERE deleted=false AND id=$id AND website_id=$websiteId;
+SELECT COUNT(*) FROM $table WHERE deleted=false AND id=? AND website_id=?;
 SQL;
     }
-    $check = RestObjects::$db->query($sql)->current();
+    $check = RestObjects::$db->query($sql, [$id, $websiteId])->current();
     if ($check->count === '0') {
       // Determine if record missing or permissions so we can return correct
       // error.
       $sql = <<<SQL
-SELECT count(*) FROM $table WHERE deleted=false AND id=$id
+SELECT count(*) FROM $table WHERE deleted=false AND id=?
 SQL;
-      $check = RestObjects::$db->query($sql)->current();
+      $check = RestObjects::$db->query($sql, [$id])->current();
       if ($check->count === '0') {
         RestObjects::$apiResponse->fail('Not Found', 404, 'Attempt to update or delete a missing or already deleted record.');
       }
@@ -4270,10 +4281,12 @@ SQL;
    */
   private function assertAttributeHasNoValues($table, $id) {
     $entity = inflector::singular($table);
+    $valuesTableEsc = pg_escape_identifier(RestObjects::$db->getLink(), "{$entity}_values");
+    $idFieldEsc = pg_escape_identifier(RestObjects::$db->getLink(), "{$entity}_id");
     $checkSql = <<<SQL
-SELECT id FROM {$entity}_values WHERE {$entity}_id=$id AND deleted=false LIMIT 1;
+SELECT id FROM $valuesTableEsc WHERE $idFieldEsc=? AND deleted=false LIMIT 1;
 SQL;
-    if (RestObjects::$db->query($checkSql)->current()) {
+    if (RestObjects::$db->query($checkSql, [$id])->current()) {
       RestObjects::$apiResponse->fail('Forbidden', 403, 'Attempt to DELETE attribute with values.');
     }
   }
@@ -4285,11 +4298,12 @@ SQL;
    *
    * @todo TEST
    */
-  private function attributeTypeChanging($table, $id, $putArray) {
+  private function attributeTypeChanging($table, int $id, $putArray) {
     if (!empty($putArray['values']['data_type'])) {
+      $tableEsc = pg_escape_identifier(RestObjects::$db->getLink(), $table);
       $newType = $putArray['values']['data_type'];
       $checkSql = <<<SQL
-SELECT id FROM {$table} WHERE id=$id AND data_type<>'$newType';
+SELECT id FROM {$tableEsc} WHERE id=$id AND data_type<>'$newType';
 SQL;
       return !empty(RestObjects::$db->query($checkSql)->current());
     }
@@ -4460,14 +4474,14 @@ SQL;
    * @param int $id
    *   Survey ID to delete.
    */
-  public function sampleAttributesDeleteId($id) {
+  public function sampleAttributesDeleteId(int $id) {
     $this->assertUserHasWebsiteAccess();
     $this->assertAttributeFromCurrentWebsite('sample_attributes', $id);
     $this->assertAttributeHasNoValues('sample_attributes', $id);
     // Delete - no need to check user as admin of website.
     rest_crud::delete('sample_attribute', $id);
     // Also delete links.
-    RestObjects::$db->query("UPDATE sample_attributes_websites SET deleted=TRUE WHERE sample_attribute_id=$id");
+    RestObjects::$db->query("UPDATE sample_attributes_websites SET deleted=TRUE WHERE sample_attribute_id=?", [$id]);
   }
 
   /**
@@ -4611,14 +4625,14 @@ SQL;
    * @param int $id
    *   Survey ID to delete.
    */
-  public function occurrenceAttributesDeleteId($id) {
+  public function occurrenceAttributesDeleteId(int $id) {
     $this->assertUserHasWebsiteAccess();
     $this->assertAttributeFromCurrentWebsite('occurrence_attributes', $id);
     $this->assertAttributeHasNoValues('occurrence_attributes', $id);
     // Delete - no need to check user as admin of website.
     rest_crud::delete('occurrence_attribute', $id);
     // Also delete links.
-    RestObjects::$db->query("UPDATE occurrence_attributes_websites SET deleted=TRUE WHERE occurrence_attribute_id=$id");
+    RestObjects::$db->query("UPDATE occurrence_attributes_websites SET deleted=TRUE WHERE occurrence_attribute_id=?", [$id]);
   }
 
   /**

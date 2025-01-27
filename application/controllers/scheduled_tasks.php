@@ -1010,41 +1010,44 @@ class Scheduled_Tasks_Controller extends Controller {
         $this->db->query('DROP TABLE IF EXISTS occdelta;');
         // This query uses a 2 stage process as it is faster than joining
         // occurrences to cache_occurrences.
-        $query = "
-select distinct o.id
-into temporary occlist
-from occurrences o
-where o.updated_on>'$timestamp' and o.updated_on<='$currentTime'
-union
-select o.id from occurrences o
-join samples s on s.id=o.sample_id and s.deleted=false
-where s.updated_on>'$timestamp' and s.updated_on<='$currentTime'
-union
-select o.id from occurrences o
-join samples s on s.id=o.sample_id and s.deleted=false
-join samples sp on sp.id=s.parent_id and sp.deleted=false
-where sp.updated_on>'$timestamp' and sp.updated_on<='$currentTime'
-order by id;
+        $ts = pg_escape_literal($this->db->getLink(), $timestamp);
+        $ct = pg_escape_literal($this->db->getLink(), $currentTime);
+        $query = <<<SQL
+          select distinct o.id
+          into temporary occlist
+          from occurrences o
+          where o.updated_on>$ts and o.updated_on<=$ct
+          union
+          select o.id from occurrences o
+          join samples s on s.id=o.sample_id and s.deleted=false
+          where s.updated_on>$ts and s.updated_on<=$ct
+          union
+          select o.id from occurrences o
+          join samples s on s.id=o.sample_id and s.deleted=false
+          join samples sp on sp.id=s.parent_id and sp.deleted=false
+          where sp.updated_on>$ts and sp.updated_on<=$ct
+          order by id;
 
-select co.*,
-  case when o.created_on>'$timestamp' then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
-  case
-    when o.created_on>'$timestamp' then o.created_on
-    else greatest(o.updated_on, s.updated_on, sp.updated_on)
-  end as timestamp,
-  lower(coalesce(onf.attr_stage, onf.attr_sex_stage)) as stage
-into temporary occdelta
-from occlist ol
-join occurrences o on o.id=ol.id
-join cache_occurrences_functional co on co.id=o.id
-join cache_occurrences_nonfunctional onf on onf.id=co.id
-join samples s on s.id=o.sample_id and s.deleted=false
-left join samples sp on sp.id=s.parent_id and sp.deleted=false;
+          select co.*,
+            case when o.created_on>$ts then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
+            case
+              when o.created_on>$ts then o.created_on
+              else greatest(o.updated_on, s.updated_on, sp.updated_on)
+            end as timestamp,
+            lower(coalesce(onf.attr_stage, onf.attr_sex_stage)) as stage
+          into temporary occdelta
+          from occlist ol
+          join occurrences o on o.id=ol.id
+          join cache_occurrences_functional co on co.id=o.id
+          join cache_occurrences_nonfunctional onf on onf.id=co.id
+          join samples s on s.id=o.sample_id and s.deleted=false
+          left join samples sp on sp.id=s.parent_id and sp.deleted=false;
 
-create index ix_occdelta_taxa_taxon_list_id on occdelta(taxa_taxon_list_id);
-create index ix_occdelta_taxa_taxon_list_external_key on occdelta(taxa_taxon_list_external_key);
+          create index ix_occdelta_taxa_taxon_list_id on occdelta(taxa_taxon_list_id);
+          create index ix_occdelta_taxa_taxon_list_external_key on occdelta(taxa_taxon_list_external_key);
 
-drop table occlist;";
+          drop table occlist;
+        SQL;
         $this->db->query($query);
         $this->occdeltaStartTimestamp = $timestamp;
         $this->occdeltaEndTimestamp = $currentTime;
@@ -1065,9 +1068,8 @@ drop table occlist;";
     if ($this->occdeltaCount > $max) {
       $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max");
       foreach ($qry as $t) {
-        self::msg("Scheduled tasks are delaying processing of " .
-          $this->db->query("delete from occdelta where timestamp>'$t->timestamp'")->count() .
-          " records as too many to process", 'alert');
+        $delayed = $this->db->query("delete from occdelta where timestamp>?", [$t->timestamp])->count();
+        self::msg("Scheduled tasks are delaying processing of $delayed records as too many to process", 'alert');
         // Remember where we are up to.
         $this->occdeltaEndTimestamp = $t->timestamp;
       }

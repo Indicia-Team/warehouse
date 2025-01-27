@@ -60,6 +60,7 @@ class task_cache_builder_user_privacy {
    *   tasks to perform.
    */
   public static function process($db, $taskType, $procId) {
+    $procIdEsc = pg_escape_literal($db->getLink(), $procId);
     $sql = <<<SQL
 UPDATE cache_occurrences_functional o
   SET blocked_sharing_tasks=
@@ -83,7 +84,7 @@ JOIN work_queue q
   ON q.record_id=u.id
   AND q.task='task_cache_builder_user_privacy'
   AND q.entity='user'
-  AND q.claimed_by='$procId'
+  AND q.claimed_by=$procIdEsc
 WHERE u.id=o.created_by_id;
 
 UPDATE cache_samples_functional s
@@ -108,7 +109,7 @@ JOIN work_queue q
   ON q.record_id=u.id
   AND q.task='task_cache_builder_user_privacy'
   AND q.entity='user'
-  AND q.claimed_by='$procId'
+  AND q.claimed_by=$procIdEsc
 WHERE u.id=s.created_by_id
 
 SQL;

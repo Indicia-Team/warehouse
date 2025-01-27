@@ -9,6 +9,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 * The training flag now gets saved for imports. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1294.
 
+## Version 9.8.3
+*2025-01-27*
+
+### Bugfixes
+
+* Unhandled errors logged rather than returned to the user when submitting records.
+* Query code parameter type checking to improve security.
+
+## Version 9.8.2
+*2025-01-07*
+
+### Bugfixes
+
+* Fixed REST API connections which use peer review or data flow sharing mode.
+
 ## Version 9.8.1
 *2025-01-07*
 

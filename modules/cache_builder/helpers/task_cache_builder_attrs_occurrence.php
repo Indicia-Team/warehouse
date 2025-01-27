@@ -63,8 +63,13 @@ class task_cache_builder_attrs_occurrence {
     // Work out the SQL required to get the i18n for lookup term values.
     $langs = kohana::config('cache_builder_variables.attrs_cache_languages', FALSE, FALSE);
     $langTermSql = '';
+    $procIdEsc = pg_escape_literal($db->getLink(), $procId);
     if ($langs !== NULL) {
       foreach ($langs as $lang) {
+        if (!preg_match('/^[a-z]{3}$/', $lang)) {
+          // Skip incorrectly formatted languages.
+          continue;
+        }
         $langTermSql .= <<<SQL
 
   UNION
@@ -82,7 +87,7 @@ class task_cache_builder_attrs_occurrence {
     JOIN terms ti18n ON ti18n.id=tlti18n.term_id AND ti18n.deleted=false
     JOIN languages l on l.id=ti18n.language_id AND l.deleted=false AND l.iso='$lang'
   ) ON tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
-  WHERE q.entity='occurrence' AND q.task='task_cache_builder_attrs_occurrence' AND claimed_by='$procId'
+  WHERE q.entity='occurrence' AND q.task='task_cache_builder_attrs_occurrence' AND claimed_by=$procIdEsc
   AND a.data_type='L'
   GROUP BY q.record_id, av.occurrence_attribute_id, a.multi_value
 
@@ -127,7 +132,7 @@ FROM (
   LEFT JOIN occurrence_attributes a ON a.id=av.occurrence_attribute_id AND a.deleted=false
   LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND a.data_type='L' AND tlt.deleted=false
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
-  WHERE q.entity='occurrence' AND q.task='task_cache_builder_attrs_occurrence' AND claimed_by='$procId'
+  WHERE q.entity='occurrence' AND q.task='task_cache_builder_attrs_occurrence' AND claimed_by=$procIdEsc
   GROUP BY q.record_id, av.occurrence_attribute_id, a.multi_value
   $langTermSql
 ) AS subquery

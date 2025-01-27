@@ -807,7 +807,7 @@ SQL;
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, $otherUserAuth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
-    $occurrenceId = self::$db->query("select id from occurrences where sample_id=$r[success]")->current()->id;
+    $occurrenceId = self::$db->query('select id from occurrences where sample_id=?', [$r['success']])->current()->id;
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -816,16 +816,16 @@ SQL;
     ];
     $s = submission_builder::build_submission($array, ['model' => 'occurrence']);
     $r = data_entry_helper::forward_post_to('occurrence', $s, $otherUserAuth['write_tokens']);
-    $determinerInfo = self::$db->query("select created_by_id, person_name from determinations where occurrence_id=$occurrenceId")->current();
+    $determinerInfo = self::$db->query('select created_by_id, person_name from determinations where occurrence_id=?', [$occurrenceId])->current();
     $this->assertNotFalse($determinerInfo, 'Determinations record not created after modifying an occurrence taxa_taxon_list_id.');
     $this->assertEquals(self::$extraUserId, $determinerInfo->created_by_id, 'Determination has not picked up correct user ID.');
     $this->assertEquals('Person3, Test3', $determinerInfo->person_name, 'Determination has not picked up correct person name.');
     // Reset.
     $postedUserId = 1;
-    self::$db->query("delete from determinations where occurrence_id=$occurrenceId");
-    self::$db->query('delete from occurrence_attribute_values where created_by_id=' . self::$extraUserId);
-    self::$db->query('delete from occurrences where created_by_id=' . self::$extraUserId);
-    self::$db->query('delete from samples where created_by_id=' . self::$extraUserId);
+    self::$db->query('delete from determinations where occurrence_id=?', [$occurrenceId]);
+    self::$db->query('delete from occurrence_attribute_values where created_by_id=?', [self::$extraUserId]);
+    self::$db->query('delete from occurrences where created_by_id=?', [self::$extraUserId]);
+    self::$db->query('delete from samples where created_by_id=?', [self::$extraUserId]);
   }
 
   public function testCreateOccurrenceComment() {
@@ -990,7 +990,7 @@ SQL;
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $this->assertArrayHasKey('success', $r);
-    $occId = $r['success'];
+    $occId = (int) $r['success'];
     $occ = ORM::factory('occurrence', $occId);
     // Now, we should be able to submit a partial update.
     $array = [
@@ -1010,12 +1010,12 @@ SQL;
     // Run the task.
     $q->process(self::$db);
     $attrs = json_decode(self::$db->query(
-      "select attrs_json from cache_occurrences_nonfunctional where id=$occId"
+      'select attrs_json from cache_occurrences_nonfunctional where id=?', [$occId]
     )->current()->attrs_json, TRUE);
     $this->assertEquals('A value', $attrs[$attr->id]);
     // Now test if an update fired at the individual attribute value causes a
     // work queue task so attrs_json gets updated.
-    $attrVal = self::$db->query("select id from occurrence_attribute_values where occurrence_attribute_id=$attr->id limit 1")->current();
+    $attrVal = self::$db->query("select id from occurrence_attribute_values where occurrence_attribute_id=? limit 1", [$attr->id])->current();
     $array = [
       'website_id' => 1,
       'survey_id' => 1,
@@ -1025,17 +1025,17 @@ SQL;
     $s = submission_builder::build_submission($array, ['model' => 'occurrence_attribute_value']);
     $r = data_entry_helper::forward_post_to('occurrence_attribute_value', $s, self::$auth['write_tokens']);
     $qCount = self::$db->query(
-      "select count(*) from work_queue where task='task_cache_builder_attr_value_occurrence' and record_id=$attrVal->id"
+      "select count(*) from work_queue where task='task_cache_builder_attr_value_occurrence' and record_id=?", [$attrVal->id]
     )->current();
     $this->assertEquals(1, $qCount->count, 'Work queue task not generated for attr value update.');
     // Run the task.
     $q->process(self::$db);
     $attrs = json_decode(self::$db->query(
-      "select attrs_json from cache_occurrences_nonfunctional where id=$occId"
+      'select attrs_json from cache_occurrences_nonfunctional where id=?', [$occId]
     )->current()->attrs_json, TRUE);
     $this->assertEquals('Updated', $attrs[$attr->id]);
     // Clean up.
-    self::$db->query("delete from occurrence_attribute_values where occurrence_attribute_id=$attr->id");
+    self::$db->query('delete from occurrence_attribute_values where occurrence_attribute_id=?', [$attr->id]);
     $aw->delete();
     $attr->delete();
     // Remove the required field from the cache so it doesn't impact other tests.
@@ -1064,16 +1064,14 @@ SQL;
     ];
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
-
-
     $qCheck = self::$db->query(
-      "select map_sq_1km_id, map_sq_2km_id, map_sq_10km_id from cache_occurrences_functional where sample_id=$r[success]",
+      'select map_sq_1km_id, map_sq_2km_id, map_sq_10km_id from cache_occurrences_functional where sample_id=?', [$r['success']]
     )->current();
     $this->assertNotEquals(NULL, $qCheck->map_sq_10km_id, 'Occurrence submission does not fill in map_sq_10km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_2km_id, 'Occurrence submission does not fill in map_sq_2km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_1km_id, 'Occurrence submission does not fill in map_sq_1km_id field');
     $sq1 = self::$db->query("select * from map_squares where id={$qCheck->map_sq_1km_id}")->current();
-    $theSample = self::$db->query("select st_x(st_centroid(public_geom)), st_y(st_centroid(public_geom)) from cache_occurrences_functional where sample_id=$r[success]")->current();
+    $theSample = self::$db->query('select st_x(st_centroid(public_geom)), st_y(st_centroid(public_geom)) from cache_occurrences_functional where sample_id=?', [$r['success']])->current();
     $this->assertEquals(round($theSample->st_x), $sq1->x, '1km square x coordinate wrong');
     $this->assertEquals(round($theSample->st_y), $sq1->y, '1km square y coordinate wrong');
   }
@@ -1111,13 +1109,13 @@ SQL;
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('occurrence', $s, self::$auth['write_tokens']);
     $qCheck = self::$db->query(
-      "select map_sq_1km_id, map_sq_2km_id, map_sq_10km_id from cache_occurrences_functional where id=$r[success]",
+      'select map_sq_1km_id, map_sq_2km_id, map_sq_10km_id from cache_occurrences_functional where id=?', [$r['success']]
     )->current();
     $this->assertNotEquals(NULL, $qCheck->map_sq_10km_id, 'Occurrence submission does not fill in map_sq_10km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_2km_id, 'Occurrence submission does not fill in map_sq_2km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_1km_id, 'Occurrence submission does not fill in map_sq_1km_id field');
     $sq1 = self::$db->query("select * from map_squares where id={$qCheck->map_sq_1km_id}")->current();
-    $theSample = self::$db->query("select st_x(st_centroid(public_geom)), st_y(st_centroid(public_geom)) from cache_occurrences_functional where id=$r[success]")->current();
+    $theSample = self::$db->query('select st_x(st_centroid(public_geom)), st_y(st_centroid(public_geom)) from cache_occurrences_functional where id=?', [$r['success']])->current();
     $this->assertEquals(round($theSample->st_x), $sq1->x, '1km square x coordinate wrong');
     $this->assertEquals(round($theSample->st_y), $sq1->y, '1km square y coordinate wrong');
   }
@@ -1139,13 +1137,13 @@ SQL;
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $qCheck = self::$db->query(
-      "select map_sq_1km_id, map_sq_2km_id, map_sq_10km_id from cache_samples_functional where id=$r[success]",
+      'select map_sq_1km_id, map_sq_2km_id, map_sq_10km_id from cache_samples_functional where id=?', [$r['success']]
     )->current();
     $this->assertNotEquals(NULL, $qCheck->map_sq_10km_id, 'Empty sample does not fill in map_sq_10km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_2km_id, 'Empty sample does not fill in map_sq_2km_id field');
     $this->assertNotEquals(NULL, $qCheck->map_sq_1km_id, 'Empty sample does not fill in map_sq_1km_id field');
     $sq1 = self::$db->query("select * from map_squares where id={$qCheck->map_sq_1km_id}")->current();
-    $theSample = self::$db->query("select st_x(st_centroid(geom)), st_y(st_centroid(geom)) from samples where id=$r[success]")->current();
+    $theSample = self::$db->query('select st_x(st_centroid(geom)), st_y(st_centroid(geom)) from samples where id=?', [$r['success']])->current();
     $this->assertEquals(round($theSample->st_x), $sq1->x, '1km square x coordinate wrong');
     $this->assertEquals(round($theSample->st_y), $sq1->y, '1km square y coordinate wrong');
   }

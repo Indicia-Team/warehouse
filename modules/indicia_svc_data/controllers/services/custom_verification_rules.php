@@ -475,40 +475,43 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
   private function getTaxonExternalKey($db, $row, $spreadsheetRow, $titleIndexes) {
     $taxonId = $this->getValue($row, $titleIndexes, 'taxon id');
     $taxon = $this->getValue($row, $titleIndexes, 'taxon');
+    $taxonListId = (int) $_POST['taxon_list_id'];
     if (!empty($taxonId)) {
       // Search on accepted name keys.
       $query = <<<SQL
         SELECT external_key
         FROM cache_taxa_taxon_lists
-        WHERE taxon_list_id=$_POST[taxon_list_id]
-        AND external_key='$taxonId';
-SQL;
+        WHERE taxon_list_id=?
+        AND external_key=?;
+      SQL;
       // A second search on synonym name keys if the first search fails.
       $altQuery = <<<SQL
-      SELECT external_key
-      FROM cache_taxa_taxon_lists
-      WHERE taxon_list_id=$_POST[taxon_list_id]
-      AND external_key='$taxonId';
-SQL;
+        SELECT external_key
+        FROM cache_taxa_taxon_lists
+        WHERE taxon_list_id=?
+        AND external_key=?;
+      SQL;
+      $params = [$taxonListId, $taxonId];
     }
     elseif (!empty($taxon)) {
       $query = <<<SQL
         SELECT external_key
         FROM cache_taxa_taxon_lists
-        WHERE taxon_list_id=$_POST[taxon_list_id]
-        AND taxon='$taxon' AND preferred=true;
-SQL;
+        WHERE taxon_list_id=?
+        AND taxon=? AND preferred=true;
+      SQL;
       $altQuery = <<<SQL
         SELECT external_key
         FROM cache_taxa_taxon_lists
-        WHERE taxon_list_id=$_POST[taxon_list_id]
-        AND taxon='$taxon' AND preferred=false;
-SQL;
+        WHERE taxon_list_id=?
+        AND taxon=? AND preferred=false;
+      SQL;
+      $params = [$taxonListId, $taxon];
     }
     else {
       throw new ValueError("No taxon identifier for row $spreadsheetRow.");
     }
-    $rows = $db->query($query);
+    $rows = $db->query($query, $params);
     if (count($rows) > 1) {
       throw new ValueError("Failed to find a unique taxon using the information given for row $spreadsheetRow.");
     }
@@ -517,7 +520,7 @@ SQL;
     }
     elseif (count($rows) === 0) {
       // Found nothing, so try the alt query which casts the net wider.
-      $rows = $db->query($altQuery);
+      $rows = $db->query($altQuery, $params);
       if (count($rows) > 1) {
         throw new ValueError("Failed to find a unique taxon using the information given for row $spreadsheetRow.");
       }
@@ -704,11 +707,10 @@ SQL;
             INSERT INTO custom_verification_rules(custom_verification_ruleset_id, taxon_external_key,
               limit_to_stages, limit_to_geography, rule_type, definition, reverse_rule,
               created_by_id, created_on, updated_by_id, updated_on)
-            VALUES ($rulesetId, '$taxonKey',
-              $limitToStages, $limitToGeography, '$ruleType', $definitionAsJson::json, '$reverseRule',
+            VALUES (?, ?, ?, ?, ?, ?::json, ?,
               $this->auth_user_id, now(), $this->auth_user_id, now());
-SQL;
-          $db->query($insertSql);
+          SQL;
+          $db->query($insertSql, [$rulesetId, $taxonKey, $limitToStages, $limitToGeography, $ruleType, $definitionAsJson, $reverseRule]);
         }
       }
       echo json_encode([

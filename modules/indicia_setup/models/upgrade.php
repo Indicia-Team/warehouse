@@ -105,7 +105,7 @@ class Upgrade_Model extends Model {
 
   /**
    * Root directory, used to locate upgrade scripts.
-   * 
+   *
    * @var string
    */
   private $base_dir;
@@ -285,16 +285,20 @@ class Upgrade_Model extends Model {
    *   New version number.
    */
   private function setNewVersion($new_version, $appName) {
-    $sql = "UPDATE system SET version='$new_version' WHERE name='$appName'";
-    // App name may be empty for the Indicia system record due to upgrade sequence - won't be in future.
+    $sql = "UPDATE system SET version=? WHERE name=?";
+    // App name may be empty for the Indicia system record due to upgrade
+    // sequence - won't be in future.
     if ($appName == 'Indicia') {
       $sql .= " OR name=''";
     }
-    $query = $this->db->query($sql);
-    // Because pgsql does not handle UPDATE or INSERT etc, do this manually if a new record is required.
+    $query = $this->db->query($sql, [$new_version, $appName]);
+    // Because pgsql does not handle UPDATE or INSERT etc, do this manually if
+    // a new record is required.
     if ($query->count() === 0) {
-      $this->db->query("INSERT INTO system (version, name, repository, release_date) " .
-          "VALUES('$new_version', '$appName', 'Not specified', now())");
+      $this->db->query(<<<SQL
+        INSERT INTO system (version, name, repository, release_date)
+        VALUES(?, ?, 'Not specified', now())
+      SQL, [$new_version, $appName]);
     }
   }
 

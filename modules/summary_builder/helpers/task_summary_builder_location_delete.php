@@ -49,8 +49,7 @@ class task_summary_builder_location_delete {
   public static function process($db, $taskType, $procId) {
       $queries = kohana::config('summary_builder');
       // This query gets all the locations to be processed
-      $query = str_replace('#procId#', $procId, $queries['get_locations_to_process']);
-      $result = $db->query($query)->result_array(false);
+      $result = $db->query($queries['get_locations_to_process'], [$procId])->result_array(false);
       foreach($result as $row){
           summary_builder::populate_summary_table_for_location_delete($db, $row['location_id']);
       }

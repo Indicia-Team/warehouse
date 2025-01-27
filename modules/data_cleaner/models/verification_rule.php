@@ -192,7 +192,8 @@ class Verification_rule_Model extends ORM {
       $metadata = array_change_key_case($metadata, CASE_LOWER);
       foreach ($fields['Metadata'] as $idx => $field) {
         if (array_key_exists(strtolower($field), $metadata) && trim($metadata[strtolower($field)]) !== '') {
-          $recordsInSubmission[] = "(verification_rule_id='$this->id' and key='$field')";
+          $fieldEsc = pg_escape_literal($this->db->getLink(), $field);
+          $recordsInSubmission[] = "(verification_rule_id='$this->id' and key=$fieldEsc)";
           $vrm = ORM::Factory('verification_rule_metadatum')->where([
             'verification_rule_id' => $this->id,
             'key' => $field,
@@ -359,11 +360,15 @@ class Verification_rule_Model extends ORM {
     // Build a multirow insert as it is faster than doing lots of single
     // inserts.
     $rowList = [];
+    $userId = (int) $_SESSION['auth_user']->id;
     foreach ($rows as $idx => $row) {
       if (array_search($idx, $done) === FALSE) {
-        $rowList[] = "('$row[dataSection]', $row[dataGroup], $this->id,'" . strval($row['key']) . "', " .
-          "'$row[value]', '" . date('Ymd H:i:s') . "', " . $_SESSION['auth_user']->id . ", '" .
-          date('Ymd H:i:s') . "'," . $_SESSION['auth_user']->id . ")";
+        $dataSection = pg_escape_literal($this->db->getLink(), $row['dataSection']);
+        $dataGroup = (int) $row['dataGroup'];
+        $value = pg_escape_literal($this->db->getLink(), $row['value']);
+        $key = pg_escape_literal($this->db->getLink(), strval($row['key']));
+        $now = date('Ymd H:i:s');
+        $rowList[] = "($dataSection, $dataGroup, $this->id, $key, $value, '$now', $userId, '$now', $userId)";
       }
     }
     if ($rowList) {
@@ -412,7 +417,8 @@ class Verification_rule_Model extends ORM {
     require_once MODPATH . "data_cleaner_$rule/plugins/data_cleaner_$rule.php";
     if (function_exists("data_cleaner_{$rule}_cache_sql")) {
       // Delete old cached values.
-      $this->db->query("delete from cache_verification_rules_$rule where verification_rule_id=$this->id");
+      $cacheTable = pg_escape_identifier($db->getLink(), "cache_verification_rules_$rule");
+      $this->db->query("delete from $cacheTable where verification_rule_id=$this->id");
       // Only add back to cache if not deleting.
       // Note, when importing new rules from file, deleted is null.
       if ($this->deleted !== 't') {

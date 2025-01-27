@@ -102,7 +102,7 @@ class Person_Model extends ORM {
     // Ensure 7 characters long.
     $username = str_pad(substr($baseUsername, 0, $maxLen), $minLen, '_');
     // Check for uniqueness.
-    while ($this->db->query("SELECT 1 FROM users WHERE LOWER(username)='$username'")->count() > 0) {
+    while ($this->db->query("SELECT 1 FROM users WHERE LOWER(username)=?", [$username])->count() > 0) {
       $username = str_pad(substr($baseUsername, 0, $maxLen - strlen($inc)), $minLen - strlen($inc), '_') . $inc;
       $inc++;
     }

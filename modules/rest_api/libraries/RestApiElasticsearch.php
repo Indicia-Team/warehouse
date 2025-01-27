@@ -468,7 +468,7 @@ class RestApiElasticsearch {
       if (!empty($this->resourceOptions['filter_id'])) {
         require_once 'client_helpers/ElasticsearchProxyHelper.php';
         require_once 'client_helpers/helper_base.php';
-        $filterData = RestObjects::$db->query('select definition from filters where id=' . $this->resourceOptions['filter_id'] . ' and deleted=false')->current();
+        $filterData = RestObjects::$db->query('select definition from filters where id=? and deleted=false', [$this->resourceOptions['filter_id']])->current();
         if (!$filterData) {
           RestObjects::$apiResponse->fail('Internal Server Error', 500, 'Missing filter ID in connection configuration.');
         }
@@ -2202,13 +2202,13 @@ class RestApiElasticsearch {
    *
    * @param string $type
    *   Either 'sample' or 'occurrence'.
-   * @param string $id
+   * @param int $id
    *   The survey ID.
    *
    * @return array
    *   Array of associative arrays describing each attribute.
    */
-  private function getSurveyAttributes($type, $id) {
+  private function getSurveyAttributes($type, int $id) {
     $cacheId = "survey-attrs-$type-$id";
     $cache = Cache::instance();
     if ($cached = $cache->get($cacheId)) {
@@ -2216,13 +2216,13 @@ class RestApiElasticsearch {
     }
     else {
       $sql = <<<SQL
-SELECT a.caption, a.id
-FROM {$type}_attributes_websites aw
-JOIN {$type}_attributes a on a.id = aw.{$type}_attribute_id
-WHERE restrict_to_survey_id=$id;
-SQL;
+        SELECT a.caption, a.id
+        FROM {$type}_attributes_websites aw
+        JOIN {$type}_attributes a on a.id = aw.{$type}_attribute_id
+        WHERE restrict_to_survey_id=?;
+      SQL;
       $columns = [];
-      $attrs = RestObjects::$db->query($sql)->result_array();
+      $attrs = RestObjects::$db->query($sql, [$id])->result_array();
       foreach ($attrs as $attr) {
         $columns[] = [
           'field' => "#attr_value:$type:$attr->id#",

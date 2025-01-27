@@ -59,46 +59,47 @@ class task_cache_builder_post_move {
    */
   public static function process($db, $taskType, $procId) {
     // Now process taxonomy where the cache update is already done.
+    $procIdEsc = pg_escape_literal($db->getLink(), $procId);
     $sql = <<<SQL
-CREATE TEMPORARY TABLE moving_records AS (
-  SELECT o.id, o.sample_id, s.survey_id, su.title as survey_title, su.website_id, w.title as website_title
-  FROM occurrences o
-  JOIN samples s ON s.id=o.sample_id
-  JOIN surveys su ON su.id=s.survey_id
-  JOIN websites w ON w.id=su.website_id
-  JOIN work_queue q ON q.record_id=o.id
-  WHERE q.entity='occurrence'
-  AND q.task='task_cache_builder_post_move'
-  AND q.claimed_by='$procId'
-);
+      CREATE TEMPORARY TABLE moving_records AS (
+        SELECT o.id, o.sample_id, s.survey_id, su.title as survey_title, su.website_id, w.title as website_title
+        FROM occurrences o
+        JOIN samples s ON s.id=o.sample_id
+        JOIN surveys su ON su.id=s.survey_id
+        JOIN websites w ON w.id=su.website_id
+        JOIN work_queue q ON q.record_id=o.id
+        WHERE q.entity='occurrence'
+        AND q.task='task_cache_builder_post_move'
+        AND q.claimed_by=$procIdEsc
+      );
 
-UPDATE cache_occurrences_functional u
-SET website_id=mr.website_id,
-  survey_id=mr.survey_id
-FROM moving_records mr
-WHERE mr.id=u.id;
+      UPDATE cache_occurrences_functional u
+      SET website_id=mr.website_id,
+        survey_id=mr.survey_id
+      FROM moving_records mr
+      WHERE mr.id=u.id;
 
-UPDATE cache_samples_functional u
-SET website_id=mr.website_id,
-  survey_id=mr.survey_id
-FROM moving_records mr
-WHERE mr.sample_id=u.id;
+      UPDATE cache_samples_functional u
+      SET website_id=mr.website_id,
+        survey_id=mr.survey_id
+      FROM moving_records mr
+      WHERE mr.sample_id=u.id;
 
-UPDATE cache_samples_nonfunctional u
-SET website_title=mr.website_title,
-  survey_title=mr.survey_title
-FROM moving_records mr
-WHERE mr.sample_id=u.id;
+      UPDATE cache_samples_nonfunctional u
+      SET website_title=mr.website_title,
+        survey_title=mr.survey_title
+      FROM moving_records mr
+      WHERE mr.sample_id=u.id;
 
-DELETE FROM work_queue q
-USING moving_records mr
-WHERE q.entity='taxa_taxon_list'
-AND q.task='task_cache_builder_post_move'
-AND q.claimed_by='$procId'
-AND q.record_id=mr.id;
+      DELETE FROM work_queue q
+      USING moving_records mr
+      WHERE q.entity='taxa_taxon_list'
+      AND q.task='task_cache_builder_post_move'
+      AND q.claimed_by=$procIdEsc
+      AND q.record_id=mr.id;
 
-DROP TABLE moving_records;
-SQL;
+      DROP TABLE moving_records;
+    SQL;
     $db->query($sql);
   }
 

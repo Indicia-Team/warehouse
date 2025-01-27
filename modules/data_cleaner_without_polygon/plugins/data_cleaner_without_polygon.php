@@ -105,7 +105,7 @@ SQL;
  *
  * Designed to make an SQL based check easy.
  */
-function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
+function data_cleaner_without_polygon_data_cleaner_postprocess(int $id, $db) {
   $db->query('create temporary table geoms_without_polygon (geom geometry)');
   try {
     $r = $db->select('key, header_name')
@@ -142,9 +142,10 @@ function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
           // from the query. Continue to next foreach iteration.
           continue 2;
       }
-      $srid = kohana::config('sref_notations.internal_srid');
+      $srid = (int) kohana::config('sref_notations.internal_srid');
       try {
-        $wktList[] = "(st_geomfromtext('" . spatial_ref::sref_to_internal_wkt($gridSquare->key, $system) . "', $srid))";
+        $wktEsc = pg_escape_literal($db->getLink(), spatial_ref::sref_to_internal_wkt($gridSquare->key, $system));
+        $wktList[] = "(st_geomfromtext($wktEsc, $srid))";
       }
       catch (Exception $e) {
         kohana::debug('alert', "Did not import grid square $gridSquare->key for rule $id");
@@ -155,8 +156,8 @@ function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
       $db->query("insert into geoms_without_polygon values " . implode(',', $wktList));
     }
     $date = date("Ymd H:i:s");
-    $uid = $_SESSION['auth_user']->id;
-    $db->query("delete from verification_rule_data where verification_rule_id=$id and header_name='geom'");
+    $uid = (int) $_SESSION['auth_user']->id;
+    $db->query("delete from verification_rule_data where verification_rule_id=? and header_name='geom'", [$id]);
     $db->query('insert into verification_rule_data (verification_rule_id, header_name, data_group, key, value, ' .
       'value_geom, created_on, created_by_id, updated_on, updated_by_id) ' .
       "select $id, 'geom', 1, 'geom', '-', st_union(geom), '$date', $uid, '$date', $uid from geoms_without_polygon");

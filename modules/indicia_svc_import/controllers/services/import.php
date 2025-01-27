@@ -1065,7 +1065,9 @@ class Import_Controller extends Service_Base_Controller {
       &$saveArray,
       $setSupermodel = FALSE) {
     $join = "";
+    $db = Database::instance();
     $table = inflector::plural($modelName);
+    $tableEsc = pg_escape_identifier($db->getLink(), $table);
     $fields = json_decode($metadata['mappings']['lookupSelect' . $fieldPrefix]);
     // Sometimes the mappings are returned as an object which causes array_map to fail.
     // The simplest and safest solution is to always convert to array if object.
@@ -1076,12 +1078,12 @@ class Import_Controller extends Service_Base_Controller {
       function ($field) {
         return $field->fieldName;
       }, $fields);
-    $join = self::buildJoin($fieldPrefix, $fields, $table, $saveArray);
-    $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
+    $join = self::buildJoin($db, $fieldPrefix, $fields, $table, $saveArray);
+    $websiteJoin = '';
+    $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $tableEsc . ".deleted = 'f')", $websiteJoin, $assocSuffix);
     if ($wheres !== FALSE) {
-      $db = Database::instance();
       // Have to use a db as this may have a join.
-      $existing = $db->query("SELECT DISTINCT $table.id FROM $table $join WHERE " . $wheres)->result_array(FALSE);
+      $existing = $db->query("SELECT DISTINCT $tableEsc.id FROM $tableEsc $websiteJoin $join WHERE " . $wheres)->result_array(FALSE);
       if (count($existing) > 0) {
         // If an previous record exists, we have to check for existing
         // attributes.
@@ -1126,16 +1128,20 @@ class Import_Controller extends Service_Base_Controller {
    *
    * @todo These are special cases which could be generalised to use ORM to work out the required SQL.
    */
-  public static function buildJoin($fieldPrefix, $fields, $table, $saveArray) {
+  public static function buildJoin($db, $fieldPrefix, $fields, $table, $saveArray) {
     $r = '';
+    $tableEsc = pg_escape_identifier($db->getLink(), $table);
     if (!empty($saveArray['taxon:external_key']) && $table === 'taxa_taxon_lists') {
-      $r = "join taxa t on t.id = $table.taxon_id AND t.external_key='" . $saveArray['taxon:external_key'] . "' AND t.deleted=false";
+      $value = pg_escape_literal($db->getLink(), $saveArray['taxon:external_key']);
+      $r = "join taxa t on t.id = $tableEsc.taxon_id AND t.external_key=$value AND t.deleted=false";
     }
     elseif (!empty($saveArray['taxon:search_code']) && $table === 'taxa_taxon_lists') {
-      $r = "join taxa t on t.id = $table.taxon_id AND t.search_code='" . $saveArray['taxon:search_code'] . "' AND t.deleted=false";
+      $value = pg_escape_literal($db->getLink(), $saveArray['taxon:search_code']);
+      $r = "join taxa t on t.id = $tableEsc.taxon_id AND t.search_code=$value AND t.deleted=false";
     }
     elseif (!empty($saveArray['taxon:taxon']) && $table === 'taxa_taxon_lists') {
-      $r = "join taxa t on t.id = $table.taxon_id AND t.taxon='" . $saveArray['taxon:taxon'] . "' AND t.deleted=false";
+      $value = pg_escape_literal($db->getLink(), $saveArray['taxon:taxon']);
+      $r = "join taxa t on t.id = $tableEsc.taxon_id AND t.taxon=$value AND t.deleted=false";
     }
     return $r;
   }
@@ -1288,16 +1294,22 @@ class Import_Controller extends Service_Base_Controller {
             // and termlist_id have to be provided at this point.
             $db = Database::instance();
             // Have to use a db as this may have a join.
-            $existing = $db->query("SELECT tlt.term_id, tlt.meaning_id " .
-                      "FROM indicia.termlists_terms tlt " .
-                      "JOIN indicia.terms t ON t.id = tlt.term_id AND t.deleted = false " .
-                      "JOIN indicia.termlists tl ON tl.id = tlt.termlist_id AND tl.deleted = false " .
-                      "WHERE tlt.deleted = false " .
-                        "AND t.term='" . $saveArray['term:term'] . "' " .
-                        "AND t.language_id = " . $saveArray['term:language_id'] .
-                        (isset($saveArray['termlists_term:fk_termlist']) ?
-                          " AND tl.title = '" . $saveArray['termlists_term:fk_termlist'] . "'" :
-                          " AND tlt.termlist_id = " . $saveArray['termlists_term:termlist_id']))->result_array(FALSE);
+            $termlistField = isset($saveArray['termlists_term:fk_termlist']) ? 'tl.title' : 'tlt.termlist_id';
+            $termlistValue = isset($saveArray['termlists_term:fk_termlist']) ? $saveArray['termlists_term:fk_termlist'] : $saveArray['termlists_term:termlist_id'];
+            $existing = $db->query(<<<SQL
+              SELECT tlt.term_id, tlt.meaning_id
+              FROM indicia.termlists_terms tlt
+              JOIN indicia.terms t ON t.id = tlt.term_id AND t.deleted = false
+              JOIN indicia.termlists tl ON tl.id = tlt.termlist_id AND tl.deleted = false
+              WHERE tlt.deleted = false
+              AND t.term=?
+              AND t.language_id=?
+              AND $termlistField=?
+            SQL, [
+              $saveArray['term:term'],
+              $saveArray['term:language_id'],
+              $termlistValue,
+            ])->result_array(FALSE);
             if (count($existing) > 0) {
               // If an previous record exists, we have to check for existing
               // attributes.
@@ -1327,38 +1339,43 @@ class Import_Controller extends Service_Base_Controller {
               $fields
             );
             $db = Database::instance();
-            // Have to use a db as this may have a join.
-            $query = "SELECT ttl.taxon_id, ttl.taxon_meaning_id " .
-                  "FROM indicia.taxa_taxon_lists ttl " .
-                  "JOIN indicia.taxa t ON t.id = ttl.taxon_id AND t.deleted = false " .
-                  "JOIN indicia.taxon_lists tl ON tl.id = ttl.taxon_list_id AND tl.deleted = false " .
-                  "WHERE ttl.deleted = false " .
-                  "AND t.language_id = " . $saveArray['taxon:language_id'] .
-                  (isset($saveArray['taxa_taxon_list:fk_taxon_list']) ?
-                      " AND tl.title = '" . $saveArray['taxa_taxon_list:fk_taxon_list'] . "'" :
-                      " AND ttl.taxon_list_id = " . $saveArray['taxa_taxon_list:taxon_list_id']);
             if (in_array('taxon:taxon', $fields) && isset($saveArray['taxon:taxon'])) {
-              $query .= "AND t.taxon='" . $saveArray['taxon:taxon'] . "' ";
-              $existing = $db->query($query)->result_array(FALSE);
+              $taxonField = 't.taxon';
+              $taxonValue = $saveArray['taxon:taxon'];
             }
             elseif (in_array('taxon:external_key', $fields) && isset($saveArray['taxon:external_key'])) {
-              $query .= "AND t.external_key ='" . $saveArray['taxon:external_key'] . "' ";
-              $existing = $db->query($query)->result_array(FALSE);
+              $taxonField = 't.external_key';
+              $taxonValue = $saveArray['taxon:external_key'];
             }
             elseif (in_array('taxon:search_code', $fields) && isset($saveArray['taxon:search_code'])) {
-              $query .= "AND t.search_code ='" . $saveArray['taxon:search_code'] . "' ";
-              $existing = $db->query($query)->result_array(FALSE);
+              $taxonField = 't.search_code';
+              $taxonValue = $saveArray['taxon:search_code'];
             }
-            else {
-              $existing = [];
-            }
-            if (count($existing) > 0) {
-              // If an previous record exists, we have to check for existing
-              // attributes.
-              // Note this only works properly on single value attributes.
-              $saveArray[$modelName . ':id'] = $existing[0]['taxon_id'];
-              $saveArray['taxon_meaning:id'] = $existing[0]['taxon_meaning_id'];
-              // TODO attributes.
+            if (isset($taxonField)) {
+              $taxonListField = isset($saveArray['taxa_taxon_list:fk_taxon_list']) ? 'tl.title' : 'ttl.taxon_list_id';
+              $taxonListValue = isset($saveArray['taxa_taxon_list:fk_taxon_list']) ? $saveArray['taxa_taxon_list:fk_taxon_list'] : $saveArray['taxa_taxon_list:taxon_list_id'];
+              $existing = $db->query(<<<SQL
+                SELECT ttl.taxon_id, ttl.taxon_meaning_id
+                FROM indicia.taxa_taxon_lists ttl
+                JOIN indicia.taxa t ON t.id = ttl.taxon_id AND t.deleted = false
+                JOIN indicia.taxon_lists tl ON tl.id = ttl.taxon_list_id AND tl.deleted = false
+                WHERE ttl.deleted = false
+                AND t.language_id = ?
+                AND $taxonField = ?
+                AND $taxonListField = ?
+              SQL, [
+                $saveArray['taxon:language_id'],
+                $taxonValue,
+                $taxonListValue
+              ])->result_array(FALSE);
+              if (count($existing) > 0) {
+                // If an previous record exists, we have to check for existing
+                // attributes.
+                // Note this only works properly on single value attributes.
+                $saveArray[$modelName . ':id'] = $existing[0]['taxon_id'];
+                $saveArray['taxon_meaning:id'] = $existing[0]['taxon_meaning_id'];
+                // TODO attributes.
+              }
             }
           }
         }

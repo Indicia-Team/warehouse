@@ -65,7 +65,7 @@ class Taxon_association_Controller extends Gridview_Base_Controller {
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $taId = $this->uri->argument(1);
+    $taId = (int) $this->uri->argument(1);
     // Find basic info about the occurrence association.
     $sql = <<<SQL
 SELECT DISTINCT cttlfrom.id, cttlfrom.taxon_list_id,
@@ -73,9 +73,9 @@ SELECT DISTINCT cttlfrom.id, cttlfrom.taxon_list_id,
 FROM taxon_associations ta
 JOIN cache_taxa_taxon_lists cttlfrom ON cttlfrom.taxon_meaning_id=ta.from_taxon_meaning_id
 JOIN cache_taxa_taxon_lists cttlto ON cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
-WHERE ta.id=$taId;
+WHERE ta.id=?;
 SQL;
-    $ids = $this->db->query($sql)->current();
+    $ids = $this->db->query($sql, [$taId])->current();
     $r['from_taxon'] = $ids->from_taxon;
     $r['to_taxon'] = $ids->to_taxon;
     // Store the taxa_taxon_list ID we are viewing the association from, e.g. to use
@@ -95,9 +95,9 @@ LEFT JOIN cache_termlists_terms ttype ON ttype.id=ta.association_type_id
 LEFT JOIN cache_termlists_terms tpart ON tpart.id=ta.part_id
 LEFT JOIN cache_termlists_terms tposition ON tposition.id=ta.position_id
 LEFT JOIN cache_termlists_terms timpact ON timpact.id=ta.impact_id
-WHERE cttl.taxon_list_id=$ids->taxon_list_id;
+WHERE cttl.taxon_list_id=?;
 SQL;
-    $termlists = $this->db->query($sql)->current();
+    $termlists = $this->db->query($sql, [$ids->taxon_list_id])->current();
     $termDataToFetch = [
       'association_type_termlist_ids' => 'type_terms',
       'part_termlist_termlist_ids' => 'part_terms',
@@ -127,11 +127,11 @@ SELECT DISTINCT cttlfrom.id, cttlfrom.taxon, tl.id as taxon_list_id, tl.title as
 FROM taxon_associations ta
 JOIN cache_taxa_taxon_lists cttlfrom ON cttlfrom.taxon_meaning_id=ta.from_taxon_meaning_id
 JOIN taxon_lists tl ON tl.id=cttlfrom.taxon_list_id
-WHERE ta.id=$taId
+WHERE ta.id=?
 ORDER BY cttlfrom.preferred DESC
 LIMIT 1;
 SQL;
-      $info = $this->db->query($sql)->current();
+      $info = $this->db->query($sql, [$taId])->current();
 
       $this->page_breadcrumbs[] = html::anchor("taxon_list/edit/$info->taxon_list_id?tab=associations", $info->taxon_list_title);
       $this->page_breadcrumbs[] = html::anchor("taxa_taxon_list/edit/$info->id?tab=associations", $info->taxon);
@@ -153,11 +153,11 @@ SQL;
 SELECT DISTINCT cttlfrom.id, cttlfrom.preferred
 FROM taxon_associations ta
 JOIN cache_taxa_taxon_lists cttlfrom ON cttlfrom.taxon_meaning_id=ta.from_taxon_meaning_id
-WHERE ta.id={$_POST['taxon_association:id']}
+WHERE ta.id=?
 ORDER BY cttlfrom.preferred DESC
 LIMIT 1;
 SQL;
-    $ids = $this->db->query($sql)->current();
+    $ids = $this->db->query($sql, [$_POST['taxon_association:id']])->current();
     return "taxa_taxon_list/edit/$ids->id?tab=Associations";
   }
 

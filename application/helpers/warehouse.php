@@ -209,7 +209,7 @@ class warehouse {
       $masterTaxonListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
     }
     // If not set, default to zero for safety.
-    return empty($masterTaxonListId) ? 0 : $masterTaxonListId;
+    return empty($masterTaxonListId) ? 0 : (int) $masterTaxonListId;
   }
 
   /**
@@ -345,7 +345,6 @@ class warehouse {
     self::$lock = fopen(self::getLockFilename($type), 'w+');
     if (!flock(self::$lock, LOCK_EX | LOCK_NB)) {
       kohana::log('alert', "Process $type attempt aborted as already running.");
-      echo '<hr>Locked out<hr>';
       die("\nProcess $type attempt aborted as already running.\n");
     }
     fwrite(self::$lock, 'Got a lock: ' . var_export(self::getLockParameters(), TRUE));
@@ -360,6 +359,56 @@ class warehouse {
   public static function unlockProcess($type) {
     fclose(self::$lock);
     unlink(self::getLockFilename($type));
+  }
+
+  /**
+   * Check format of a comma-separated list of integers.
+   *
+   * @param string $list
+   *   Comma-separated list of integers.
+   * @param mixed $msg
+   *   Message to throw as an exception if the format is incorrect.
+   */
+  public static function validateIntCsvListParam($list, $msg = 'Parameter format incorrect') {
+    if (!preg_match('/^\d+(,\d+)*$/', str_replace(' ', '', $list))) {
+      throw new exception($msg);
+    }
+  }
+
+  /**
+   * Validates that all elements in the given array are integers.
+   *
+   * @param array $array
+   *   The array to validate.
+   * @param string $msg
+   *   The exception message to throw if validation fails. Default is 'Array
+   *   format incorrect'.
+   *
+   * @throws Exception If any element in the array is not a valid integer.
+   */
+  public static function validateIntArray(array $array, string $msg = 'Array format incorrect') {
+    foreach ($array as $value) {
+      if (!filter_var($value, FILTER_VALIDATE_INT)) {
+        throw new Exception($msg);
+      }
+    }
+  }
+
+  /**
+   * Convert array of strings to a SQL IN list.
+   *
+   * @param mixed $db
+   *   Database connection object.
+   * @param array $strings
+   *   Array of strings.
+   *
+   * @return string
+   *   Strings escaped and comma-separated, ready for use in SQL In clause.
+   */
+  public static function stringArrayToSqlInList($db, array $strings) {
+    return implode(', ', array_map(function ($s) use ($db) {
+      return pg_escape_literal($db->getLink(), $s);
+    }, $strings));
   }
 
   /**

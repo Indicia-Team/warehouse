@@ -55,13 +55,14 @@ class task_spatial_index_builder_sample {
   public static function process($db, $taskType, $procId) {
     $locationTypeFilters = spatial_index_builder::getLocationTypeFilters($db);
     $linkedLocationAttrIds = spatial_index_builder::getLinkedLocationAttrIds($db);
+    $procIdEsc = pg_escape_literal($db->getLink(), $procId);
     $qry = <<<SQL
 -- Delete entries which no longer require processing - normally a result of a
 -- deletion since the queue entry created.
 DELETE FROM work_queue q
 USING samples s
 WHERE s.id=q.record_id
-AND q.claimed_by='$procId'
+AND q.claimed_by=$procIdEsc
 AND q.entity='sample'
 AND q.task='task_spatial_index_builder_sample'
 AND s.deleted=true;
@@ -70,7 +71,7 @@ DROP TABLE IF EXISTS smplist;
 DROP TABLE IF EXISTS changed_samples;
 SELECT record_id INTO temporary smplist
 FROM work_queue
-WHERE claimed_by='$procId'
+WHERE claimed_by=$procIdEsc
 AND entity='sample'
 AND task='task_spatial_index_builder_sample';
 

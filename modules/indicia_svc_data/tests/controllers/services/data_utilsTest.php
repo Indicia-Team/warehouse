@@ -76,7 +76,7 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
       'Submitting a sample did not return success response'
     );
 
-    $occId = $r['success'];
+    $occId = (int) $r['success'];
     $r = helper_base::http_post(
       helper_base::$base_url . 'index.php/services/data_utils/single_verify',
       array_merge([
@@ -101,13 +101,13 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
     );
     // Now test the cache has been updated.
     $sql = <<<SQL
-SELECT o.record_status, o.record_substatus, o.verified_on, onf.verifier
-FROM cache_occurrences_functional o
-JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
-WHERE o.id=$occId
-SQL;
+      SELECT o.record_status, o.record_substatus, o.verified_on, onf.verifier
+      FROM cache_occurrences_functional o
+      JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
+      WHERE o.id=?
+    SQL;
     $db = new Database();
-    $c = $db->query($sql)->result_array(FALSE);
+    $c = $db->query($sql, [$occId])->result_array(FALSE);
     $this->assertEquals(1, count($c), 'Wrong number of cached occurrences found.');
     $this->assertEquals('V', $c[0]['record_status']);
     $this->assertEquals(NULL, $c[0]['record_substatus']);
@@ -140,7 +140,7 @@ SQL;
       'Submitting a sample did not return success response'
     );
 
-    $occId = $r['success'];
+    $occId = (int) $r['success'];
     // First, do a dry run.
     $r = helper_base::http_post(
       helper_base::$base_url . 'index.php/services/data_utils/bulk_verify',
@@ -191,13 +191,13 @@ SQL;
     );
     // Now test the cache has been updated.
     $sql = <<<SQL
-SELECT o.record_status, o.record_substatus, o.verified_on, onf.verifier
-FROM cache_occurrences_functional o
-JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
-WHERE o.id=$occId
-SQL;
+      SELECT o.record_status, o.record_substatus, o.verified_on, onf.verifier
+      FROM cache_occurrences_functional o
+      JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
+      WHERE o.id=?
+    SQL;
     $db = new Database();
-    $c = $db->query($sql)->result_array(FALSE);
+    $c = $db->query($sql, [$occId])->result_array(FALSE);
     $this->assertEquals(1, count($c), 'Wrong number of cached occurrences found.');
     $this->assertEquals('V', $c[0]['record_status']);
     $this->assertEquals(NULL, $c[0]['record_substatus']);

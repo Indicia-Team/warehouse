@@ -840,8 +840,8 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     $plotSrefs = (isset($_GET['plotSrefs']) ? $_GET['plotSrefs'] : false);
     $plotSrefSystems = (isset($_GET['plotSrefSystems']) ? $_GET['plotSrefSystems'] : false);
     $plotLocationType = (isset($_GET['plotLocationType']) ? $_GET['plotLocationType'] : false);
-    $websiteId = (isset($_GET['websiteId']) ? $_GET['websiteId'] : false);
-    $userId = (isset($_GET['userId']) ? $_GET['userId'] : false);
+    $websiteId = (int) (isset($_GET['websiteId']) ? $_GET['websiteId'] : false);
+    $userId = (int) (isset($_GET['userId']) ? $_GET['userId'] : false);
     $locationAttributeIdThatHoldsPlotGroup = (isset($_GET['attributeIdToHoldPlotGroup']) ? $_GET['attributeIdToHoldPlotGroup'] : false);
     //Date is in batches with several items sent together, these are comma separated so explode them to deal with them
     $explodedPlotNames = explode(',',$plotNames);
@@ -850,61 +850,59 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     //Foreach plot name we need to create create a location record and an associated locations_websites row
     foreach ($explodedPlotNames as $plotIdx=>$plotName) {
       //To DO AVB, don't we want to insert a location type too?
-      $db->query("insert into locations "
-                  ."("
-                    ."name,"
-                    ."centroid_sref,"
-                    ."centroid_sref_system,"
-                    ."location_type_id,"
-                    ."created_on,"
-                    ."created_by_id,"
-                    ."updated_on,"
-                    ."updated_by_id"
-                  .")"
-                ."select"
-                . "'".$plotName."',"
-                . "'".$explodedPlotSrefs[$plotIdx]."',"
-                . "'".$explodedPlotSrefSystems[$plotIdx]."',"
-                . "$plotLocationType"
-                . ",now()"
-                . ",".$userId
-                . ",now()"
-                . ",".$userId
-                . "WHERE
-                     NOT EXISTS (
-                       SELECT id
-                       FROM locations
-                       WHERE
-                       deleted = FALSE AND
-                       name = '".$plotName."' AND
-                       centroid_sref = '".$explodedPlotSrefs[$plotIdx]."' AND
-                       centroid_sref_system = '".$explodedPlotSrefSystems[$plotIdx]."'
-                     );"
-              . "insert into locations_websites"
-              . "("
-                  . "location_id,"
-                  . "website_id,"
-                  . "created_on,"
-                  . "created_by_id,"
-                  . "updated_on,"
-                  . "updated_by_id"
-              . ")"
-              . "select"
-                  . "(select id from locations where name = '".$plotName."' AND deleted=false order by id desc limit 1),"
-                  . "".$websiteId.","
-                  . "now()"
-                  . ",".$userId
-                  . ",now()"
-                  . ",".$userId
-              . "WHERE
-                   NOT EXISTS (
-                     SELECT id
-                     FROM locations_websites
-                     WHERE
-                     location_id = (select id from locations where name = '".$plotName."' AND deleted=false order by id desc limit 1) AND
-                     website_id = ".$websiteId."
-                   );"
-      );
+      $db->query(<<<SQL
+        INSERT INTO locations (
+          name,
+          centroid_sref,
+          centroid_sref_system,
+          location_type_id,
+          created_on,
+          created_by_id,
+          updated_on,
+          updated_by_id
+        )
+        SELECT
+          ?,
+          ?,
+          ?,
+          ?,
+          now(),
+          $userId,
+          now(),
+          $userId
+        WHERE NOT EXISTS (
+          SELECT id
+          FROM locations
+          WHERE
+          deleted = FALSE AND
+          name = ? AND
+          centroid_sref = ? AND
+          centroid_sref_system = ?
+        );
+      SQL, [$plotName, $explodedPlotSrefs[$plotIdx], $explodedPlotSrefSystems[$plotIdx], $plotLocationType, $plotName, $explodedPlotSrefs[$plotIdx], $explodedPlotSrefSystems[$plotIdx]]);
+      $db->query(<<<SQL
+        INSERT INTO locations_websites (
+          location_id,
+          website_id,
+          created_on,
+          created_by_id,
+          updated_on,
+          updated_by_id
+        )
+        SELECT
+          (select id from locations where name = ? AND deleted=false order by id desc limit 1),
+          $websiteId,
+          now(),
+          $userId,
+          now(),
+          $userId
+        WHERE NOT EXISTS (
+          SELECT id
+          FROM locations_websites
+          WHERE location_id = (select id from locations where name = ? AND deleted=false order by id desc limit 1)
+          AND website_id = $websiteId
+        )
+      SQL, [$plotName, $plotName]);
     }
   }
 
@@ -921,7 +919,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     if ($userId!==false && $personattributeIdToHoldPlotGroups!==false) {
       foreach ($explodedGroupNames as $groupName) {
         //Groups are terms, we have built in database function for adding those (and associated termlists_terms etc)
-        $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_plot_groups');")->result();
+        $db->query("select insert_term(?,'eng',null,'indicia:plant_portal_plot_groups');", [$groupName])->result();
         //We must assign the group to a user once it is created
         self::assign_user_to_new_group($db,$groupName,$userId,$personattributeIdToHoldPlotGroups);
       }
@@ -931,17 +929,18 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
   /*
    * After creating the groups, we actually need to assign the group to the user automatically (as they have just imported the group this makes sense to do)
    */
-  private function assign_user_to_new_group($db,$groupName,$userId,$personattributeIdToHoldPlotGroups) {
-    $personId=self::get_person_from_user_id($db,$userId);
+  private function assign_user_to_new_group($db, $groupName, int $userId, int $personattributeIdToHoldPlotGroups) {
+    $personId = (int) self::get_person_from_user_id($db,$userId);
     //To Do AVB - The NOT exists is needed at the moment, however in the future in should only be there as a precaution as
     //duplicate detection should be much earlier, possibly remove entirely if performance becomes an issue
+    $groupNameEsc = pg_escape_literal($db->getLink(), $groupName);
     $db->query("
       insert into person_attribute_values (person_id,person_attribute_id,int_value, created_on, created_by_id, updated_on, updated_by_id)
       select ".$personId.",
       ".$personattributeIdToHoldPlotGroups.",
       (select tt.id
       from termlists_terms tt
-      join terms t on t.id = tt.term_id AND t.term = '".$groupName."' AND t.deleted=false
+      join terms t on t.id = tt.term_id AND t.term = $groupNameEsc AND t.deleted=false
       where tt.deleted=false
       order by tt.id desc
       limit 1),
@@ -960,7 +959,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
           int_value = (
             select tt.id
             from termlists_terms tt
-            join terms t on t.id = tt.term_id AND t.term = '".$groupName."' AND t.deleted=false
+            join terms t on t.id = tt.term_id AND t.term = $groupNameEsc AND t.deleted=false
             where tt.deleted=false
             order by tt.id desc
             limit 1
@@ -1035,20 +1034,20 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
   /*
    * Build a string for inserting the plot location to group attachments
    */
-  private static function create_database_insertion_string($explodedPlotPairsForPlotGroupAttachmentAsIds,$userId,$locationAttributeIdThatHoldsPlotGroup) {
+  private static function create_database_insertion_string($explodedPlotPairsForPlotGroupAttachmentAsIds, int $userId, int $locationAttributeIdThatHoldsPlotGroup) {
     $insertionString='';
     //TO DO AVB, is there an easy way to do this in a single statement? It is complicated by the NOT EXISTS
     //Cycle through each attachement to make
     foreach ($explodedPlotPairsForPlotGroupAttachmentAsIds as $explodedPlotPairForPlotGroupAttachmentAsIds) {
-      $insertionString.='insert into location_attribute_values(location_id,location_attribute_id,int_value,created_on,created_by_id,updated_on,updated_by_id) select ';
-      $insertionString.=$explodedPlotPairForPlotGroupAttachmentAsIds['0'].','.$locationAttributeIdThatHoldsPlotGroup.','.$explodedPlotPairForPlotGroupAttachmentAsIds['1'].','.'now()'.','.$userId.','.'now()'.','.$userId;
+      $insertionString .= 'insert into location_attribute_values(location_id,location_attribute_id,int_value,created_on,created_by_id,updated_on,updated_by_id) select ';
+      $insertionString .= (int) $explodedPlotPairForPlotGroupAttachmentAsIds['0'].','.$locationAttributeIdThatHoldsPlotGroup.','. (int) $explodedPlotPairForPlotGroupAttachmentAsIds['1'].','.'now()'.','.$userId.','.'now()'.','.$userId;
       //Double check the attachment doesn't already exist
       $insertionString.=' WHERE NOT EXISTS ('
               . ' select id from location_attribute_values'
               . ' WHERE deleted = FALSE'
-              . ' AND location_id = '.$explodedPlotPairForPlotGroupAttachmentAsIds['0']
-              . ' AND location_attribute_id = '.$locationAttributeIdThatHoldsPlotGroup
-              . ' AND int_value = '.$explodedPlotPairForPlotGroupAttachmentAsIds['1'].");\n";
+              . ' AND location_id = '. (int) $explodedPlotPairForPlotGroupAttachmentAsIds['0']
+              . ' AND location_attribute_id = '. (int) $locationAttributeIdThatHoldsPlotGroup
+              . ' AND int_value = '. (int) $explodedPlotPairForPlotGroupAttachmentAsIds['1'].");\n";
     }
     return $insertionString;
   }
@@ -1076,8 +1075,8 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     return $explodedPlotPairsForPlotGroupAttachmentAsIds;
   }
 
-  private function get_person_from_user_id($db,$userId) {
-    $returnObj=$db->query("select u.person_id AS id from users u where u.id = ".$userId.";")->current();
+  private function get_person_from_user_id($db, int $userId) {
+    $returnObj=$db->query("select u.person_id AS id from users u where u.id = ?", [$userId])->current();
     if (!empty($returnObj->id))
       $returnVal=$returnObj->id;
     else
@@ -1169,18 +1168,20 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       &$saveArray,
       $setSupermodel = FALSE) {
     $join = "";
+    $db = Database::instance();
     $table = inflector::plural($modelName);
+    $tableEsc = pg_escape_identifier($db->getLink(), $table);
     $fields = json_decode($metadata['mappings']['lookupSelect' . $fieldPrefix]);
     $fields = array_map(
       function ($field) {
         return $field->fieldName;
       }, $fields);
-    $join = self::buildJoin($fieldPrefix,$fields,$table,$saveArray);
-    $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $table . ".deleted = 'f')", $in, $assocSuffix);
+    $join = self::buildJoin($db, $fieldPrefix,$fields,$table,$saveArray);
+    $websiteJoin = '';
+    $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $tableEsc . ".deleted = 'f')", $websiteJoin, $assocSuffix);
     if ($wheres !== FALSE) {
-      $db = Database::instance();
       // Have to use a db as this may have a join.
-      $existing = $db->query("SELECT $table.id FROM $table $join WHERE " . $wheres)->result_array(FALSE);
+      $existing = $db->query("SELECT $tableEsc.id FROM $tableEsc $websiteJoin $join WHERE " . $wheres)->result_array(FALSE);
       if (count($existing) > 0) {
         // If an previous record exists, we have to check for existing
         // attributes.
@@ -1223,13 +1224,20 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
    * Note this function might need improving/generalising for other models, although I did check occurrence/sample import which
    * did not seem to show the same issue.
    */
-  public static function buildJoin($fieldPrefix,$fields,$table,$saveArray) {
+  public static function buildJoin($db, $fieldPrefix, $fields, $table, $saveArray) {
     $r = '';
-    if (!empty($saveArray['taxon:external_key']) && $table=='taxa_taxon_lists') {
-      $r = "join taxa t on t.id = ".$table.".taxon_id AND t.external_key='".$saveArray['taxon:external_key']."' AND t.deleted=false";
+    $tableEsc = pg_escape_identifier($db->getLink(), $table);
+    if (!empty($saveArray['taxon:external_key']) && $table === 'taxa_taxon_lists') {
+      $value = pg_escape_literal($db->getLink(), $saveArray['taxon:external_key']);
+      $r = "join taxa t on t.id = $tableEsc.taxon_id AND t.external_key=$value AND t.deleted=false";
     }
-    elseif (!empty($saveArray['taxon:search_code']) && $table=='taxa_taxon_lists') {
-      $r = "join taxa t on t.id = ".$table.".taxon_id AND t.search_code='".$saveArray['taxon:search_code']."' AND t.deleted=false";
+    elseif (!empty($saveArray['taxon:search_code']) && $table === 'taxa_taxon_lists') {
+      $value = pg_escape_literal($db->getLink(), $saveArray['taxon:search_code']);
+      $r = "join taxa t on t.id = $tableEsc.taxon_id AND t.search_code=$value AND t.deleted=false";
+    }
+    elseif (!empty($saveArray['taxon:taxon']) && $table === 'taxa_taxon_lists') {
+      $value = pg_escape_literal($db->getLink(), $saveArray['taxon:taxon']);
+      $r = "join taxa t on t.id = $tableEsc.taxon_id AND t.taxon=$value AND t.deleted=false";
     }
     return $r;
   }
@@ -1382,16 +1390,18 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
             // and termlist_id have to be provided at this point.
             $db = Database::instance();
             // Have to use a db as this may have a join.
-            $existing = $db->query("SELECT tlt.term_id, tlt.meaning_id " .
-                      "FROM indicia.termlists_terms tlt " .
-                      "JOIN indicia.terms t ON t.id = tlt.term_id AND t.deleted = false " .
-                      "JOIN indicia.termlists tl ON tl.id = tlt.termlist_id AND tl.deleted = false " .
-                      "WHERE tlt.deleted = false " .
-                        "AND t.term='" . $saveArray['term:term'] . "' " .
-                        "AND t.language_id = " . $saveArray['term:language_id'] .
-                        (isset($saveArray['termlists_term:fk_termlist']) ?
-                          " AND tl.title = '" . $saveArray['termlists_term:fk_termlist'] . "'" :
-                          " AND tlt.termlist_id = " . $saveArray['termlists_term:termlist_id']))->result_array(FALSE);
+            $termlistField = isset($saveArray['termlists_term:fk_termlist']) ? 'tl.title' : 'tlt.termlist_id';
+            $termlistValue = isset($saveArray['termlists_term:fk_termlist']) ? $saveArray['termlists_term:fk_termlist'] : $saveArray['termlists_term:termlist_id'];
+            $existing = $db->query(<<<SQL
+              SELECT tlt.term_id, tlt.meaning_id
+              FROM indicia.termlists_terms tlt
+              JOIN indicia.terms t ON t.id = tlt.term_id AND t.deleted = false
+              JOIN indicia.termlists tl ON tl.id = tlt.termlist_id AND tl.deleted = false
+              WHERE tlt.deleted = false
+              AND t.term=?
+              AND t.language_id = ?
+              AND $termlistField = ?
+            SQL, [$saveArray['term:term'], $saveArray['term:language_id'], $termlistValue]);
             if (count($existing) > 0) {
               // If an previous record exists, we have to check for existing
               // attributes.
@@ -1421,38 +1431,43 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
               $fields
             );
             $db = Database::instance();
-            // Have to use a db as this may have a join.
-            $query = "SELECT ttl.taxon_id, ttl.taxon_meaning_id " .
-                  "FROM indicia.taxa_taxon_lists ttl " .
-                  "JOIN indicia.taxa t ON t.id = ttl.taxon_id AND t.deleted = false " .
-                  "JOIN indicia.taxon_lists tl ON tl.id = ttl.taxon_list_id AND tl.deleted = false " .
-                  "WHERE ttl.deleted = false " .
-                  "AND t.language_id = " . $saveArray['taxon:language_id'] .
-                  (isset($saveArray['taxa_taxon_list:fk_taxon_list']) ?
-                      " AND tl.title = '" . $saveArray['taxa_taxon_list:fk_taxon_list'] . "'" :
-                      " AND ttl.taxon_list_id = " . $saveArray['taxa_taxon_list:taxon_list_id']);
             if (in_array('taxon:taxon', $fields) && isset($saveArray['taxon:taxon'])) {
-              $query .= "AND t.taxon='" . $saveArray['taxon:taxon'] . "' ";
-              $existing = $db->query($query)->result_array(FALSE);
+              $taxonField = 't.taxon';
+              $taxonValue = $saveArray['taxon:taxon'];
             }
             elseif (in_array('taxon:external_key', $fields) && isset($saveArray['taxon:external_key'])) {
-              $query .= "AND t.external_key ='" . $saveArray['taxon:external_key'] . "' ";
-              $existing = $db->query($query)->result_array(FALSE);
+              $taxonField = 't.external_key';
+              $taxonValue = $saveArray['taxon:external_key'];
             }
             elseif (in_array('taxon:search_code', $fields) && isset($saveArray['taxon:search_code'])) {
-              $query .= "AND t.search_code ='" . $saveArray['taxon:search_code'] . "' ";
-              $existing = $db->query($query)->result_array(FALSE);
+              $taxonField = 't.search_code';
+              $taxonValue = $saveArray['taxon:search_code'];
             }
-            else {
-              $existing = array();
-            }
-            if (count($existing) > 0) {
-              // If an previous record exists, we have to check for existing
-              // attributes.
-              // Note this only works properly on single value attributes.
-              $saveArray[$modelName . ':id'] = $existing[0]['taxon_id'];
-              $saveArray['taxon_meaning:id'] = $existing[0]['taxon_meaning_id'];
-              // TODO attributes.
+            if (isset($taxonField)) {
+              $taxonListField = isset($saveArray['taxa_taxon_list:fk_taxon_list']) ? 'tl.title' : 'ttl.taxon_list_id';
+              $taxonListValue = isset($saveArray['taxa_taxon_list:fk_taxon_list']) ? $saveArray['taxa_taxon_list:fk_taxon_list'] : $saveArray['taxa_taxon_list:taxon_list_id'];
+              $existing = $db->query(<<<SQL
+                SELECT ttl.taxon_id, ttl.taxon_meaning_id
+                FROM indicia.taxa_taxon_lists ttl
+                JOIN indicia.taxa t ON t.id = ttl.taxon_id AND t.deleted = false
+                JOIN indicia.taxon_lists tl ON tl.id = ttl.taxon_list_id AND tl.deleted = false
+                WHERE ttl.deleted = false
+                AND t.language_id = ?
+                AND $taxonField = ?
+                AND $taxonListField = ?
+              SQL, [
+                $saveArray['taxon:language_id'],
+                $taxonValue,
+                $taxonListValue
+              ])->result_array(FALSE);
+              if (count($existing) > 0) {
+                // If an previous record exists, we have to check for existing
+                // attributes.
+                // Note this only works properly on single value attributes.
+                $saveArray[$modelName . ':id'] = $existing[0]['taxon_id'];
+                $saveArray['taxon_meaning:id'] = $existing[0]['taxon_meaning_id'];
+                // TODO attributes.
+              }
             }
           }
         }

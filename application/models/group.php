@@ -120,17 +120,18 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
       // generic list of types.
       $locationTypes = $config['group_location_types'] ?? $config['location_types'] ?? [];
       if (!empty($locationTypes)) {
-        $locationTypeNames = "'" . implode("','", $locationTypes) . "'";
+        $locationTypeNames = warehouse::stringArrayToSqlInList($this->db, $locationTypes);
         $locationTypeRows = $this->db->query(
           "select id from cache_termlists_terms where termlist_title='Location types' and term in ($locationTypeNames)"
           )->result();
         $locationTypeIds = [];
         foreach ($locationTypeRows as $type) {
-          $locationTypeIds[] = $type->id;
+          $locationTypeIds[] = (int) $type->id;
         }
         $types = implode(',', $locationTypeIds);
         if (!empty($filterLocationIds)) {
           $filterLocationIdsCsv = implode(',', $filterLocationIds);
+          warehouse::validateIntCsvListParam($filterLocationIdsCsv);
           $qry = <<<SQL
             SELECT l.id, l.location_type_id
             FROM locations l
@@ -142,14 +143,15 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
 SQL;
         }
         else {
-          $srid = kohana::config('sref_notations.internal_srid');
+          $srid = (int) kohana::config('sref_notations.internal_srid');
+          $searchArea = pg_escape_literal($this->db->getLink(), $filter['searchArea']);
           $qry = <<<SQL
             SELECT l.id, l.location_type_id
             FROM locations l
-            WHERE st_intersects(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
-          AND NOT st_touches(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
+            WHERE st_intersects(st_geomfromtext($searchArea, $srid), l.boundary_geom)
+            AND NOT st_touches(st_geomfromtext($searchArea, $srid), l.boundary_geom)
             AND l.location_type_id in ($types);
-SQL;
+          SQL;
         }
         $rows = $this->db->query($qry)->result();
         foreach ($rows as $row) {

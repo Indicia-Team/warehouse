@@ -498,7 +498,7 @@ SQL;
    * @return integer
    *   User's warehouse user ID.
    */
-  private static function getUserId() {
+  private static function getUserId(): int {
     if (isset($_SESSION['auth_user'])) {
       $userId = $_SESSION['auth_user']->id;
     }
@@ -512,7 +512,7 @@ SQL;
         $userId = ($defaultUserId ? $defaultUserId : 1);
       }
     }
-    return $userId;
+    return (int) $userId;
   }
 
 }

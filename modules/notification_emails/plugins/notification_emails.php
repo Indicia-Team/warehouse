@@ -496,7 +496,7 @@ function update_last_run_metadata($db, $frequenciesToUpdate) {
   // Cycle through the frequency jobs we are running this time as only these
   // need updating.
   foreach ($frequenciesToUpdate as $frequencyToUpdate) {
-    $updateData = $db->query("
+    $db->query("
       UPDATE user_email_notification_frequency_last_runs
       SET last_run_date=now(),last_max_notification_id=" . $newMaxIdData[0]['new_max_notification_id'] . "
       WHERE notification_frequency='" . $frequencyToUpdate['notification_frequency'] . "'

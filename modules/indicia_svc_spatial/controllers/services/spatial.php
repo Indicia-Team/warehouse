@@ -196,6 +196,8 @@ class Spatial_Controller extends Service_Base_Controller {
         // SQL injection.
         $wkt = pg_escape_literal($db->getLink(), $params['wkt']);
         $buffer = security::checkParam($params['buffer'], 'int');
+        $params['segmentsInQuarterCircle'] = security::checkParam($params['segmentsInQuarterCircle'], 'int');
+        $params['projection'] = security::checkParam($params['projection'], 'int');
         if ($buffer === FALSE) {
           Kohana::log('alert', "Invalid parameter, buffer, with value '{$params['buffer']}' in request to spatial/buffer service.");
           throw new Exception('Invalid request.');
@@ -203,28 +205,28 @@ class Spatial_Controller extends Service_Base_Controller {
         if ($params['projection'] !== 900913 && $params['projection'] !== 3857) {
           // If specifying the projection we have to transform to and fro.
           $qry = <<<SQL
-SELECT st_astext(
-  st_transform(
-    st_buffer(
-      st_transform(st_geomfromtext($wkt, 3857), $params[projection]),
-      $buffer,
-      $params[segmentsInQuarterCircle]
-    ),
-    3857
-  )
-) AS wkt;
-SQL;
+            SELECT st_astext(
+              st_transform(
+                st_buffer(
+                  st_transform(st_geomfromtext($wkt, 3857), $params[projection]),
+                  $buffer,
+                  $params[segmentsInQuarterCircle]
+                ),
+                3857
+              )
+            ) AS wkt;
+          SQL;
         }
         else {
           $qry = <<<SQL
-SELECT st_astext(
-  st_buffer(
-    st_geomfromtext($wkt),
-    $buffer,
-    $params[segmentsInQuarterCircle]
-  )
-) AS wkt;
-SQL;
+            SELECT st_astext(
+              st_buffer(
+                st_geomfromtext($wkt),
+                $buffer,
+                $params[segmentsInQuarterCircle]
+              )
+            ) AS wkt;
+          SQL;
         }
         $result = $db->query($qry)->current();
         $r = $result->wkt;

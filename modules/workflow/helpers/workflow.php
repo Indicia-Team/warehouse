@@ -420,9 +420,9 @@ class workflow {
           SELECT l.id
           FROM samples s
           JOIN locations l ON ARRAY[l.id] && ARRAY[$locationIds] AND st_intersects(s.geom, l.boundary_geom)
-          WHERE s.id=$sampleId;
+          WHERE s.id=?;
 SQL;
-        $hit = $db->query($sql)->current();
+        $hit = $db->query($sql, [$sampleId])->current();
         if (!$hit) {
           continue;
         }

@@ -72,13 +72,13 @@ SET claimed_by=null, claimed_on=null
 FROM taxa_taxon_lists ttl
 JOIN taxa t ON t.id=ttl.taxon_id
 LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.id=ttl.id
-WHERE q.claimed_by='$procId'
+WHERE q.claimed_by=?
 AND q.entity='taxa_taxon_list'
 AND q.task='task_cache_builder_taxonomy_occurrence'
 AND q.record_id=ttl.id
 AND (cttl.id IS NULL OR cttl.cache_updated_on<GREATEST(ttl.updated_on, t.updated_on))
 SQL;
-    $db->query($sql);
+    $db->query($sql, [$procId]);
 
     // Now process taxonomy where the cache update is already done.
     $sql = <<<SQL
@@ -99,14 +99,14 @@ JOIN cache_taxa_taxon_lists cttl ON cttl.taxon_meaning_id=cttlm.taxon_meaning_id
 JOIN occurrences occ ON occ.taxa_taxon_list_id=cttl.id
 LEFT JOIN cache_taxon_paths ctp
   ON ctp.external_key=cttl.external_key
-  AND ctp.taxon_list_id=COALESCE($masterListId, cttl.taxon_list_id)
+  AND ctp.taxon_list_id=COALESCE(?, cttl.taxon_list_id)
 WHERE o.id=occ.id
 AND cttlm.id=q.record_id
 AND q.entity='taxa_taxon_list'
 AND q.task='task_cache_builder_taxonomy_occurrence'
-AND q.claimed_by='$procId';
+AND q.claimed_by=?;
 SQL;
-    $db->query($sql);
+    $db->query($sql, [$masterListId, $procId]);
   }
 
 }

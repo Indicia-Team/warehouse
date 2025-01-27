@@ -435,10 +435,10 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller {
     $sql = <<<SQL
 SELECT 1 FROM occurrences WHERE taxa_taxon_list_id IN (
   SELECT ttl.id FROM taxa_taxon_lists ttl
-  JOIN taxa_taxon_lists ttlany ON ttlany.taxon_meaning_id=ttl.taxon_meaning_id AND ttlany.id=$taxaTaxonListId
+  JOIN taxa_taxon_lists ttlany ON ttlany.taxon_meaning_id=ttl.taxon_meaning_id AND ttlany.id=?
 ) AND deleted=false LIMIT 1;
 SQL;
-    $existsCheck = $this->db->query($sql)->current();
+    $existsCheck = $this->db->query($sql, [$taxaTaxonListId])->current();
     $this->template->content = json_encode([
       'status' => 200,
       'msg' => 'OK',

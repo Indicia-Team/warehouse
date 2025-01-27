@@ -67,16 +67,23 @@ class Scratchpad_list_Model extends ORM {
     if (array_key_exists('metaFields', $this->submission) &&
         array_key_exists('entries', $this->submission['metaFields'])) {
       $entries = explode(';', $this->submission['metaFields']['entries']['value']);
+      $entriesCsv = implode(',', $entries);
+      warehouse::validateIntCsvListParam($entriesCsv);
       if (!$isInsert) {
-        $this->db->query('delete from scratchpad_list_entries where scratchpad_list_id=' . $this->id .
-            ' and entry_id not in (' . implode(',', $entries) . ')');
+        $this->db->query(<<<SQL
+          DELETE FROM scratchpad_list_entries
+          WHERE scratchpad_list_id=$this->id
+          AND entry_id NOT IN ($entriesCsv)
+        SQL);
       }
       foreach ($entries as $entry_id) {
         if ($this->db->query(
-            "select 1 from scratchpad_list_entries where scratchpad_list_id=$this->id and entry_id=$entry_id"
+            "select 1 from scratchpad_list_entries where scratchpad_list_id=? and entry_id=?",
+            [$this->id, $entry_id]
             )->count() === 0) {
           $this->db->query(
-            "insert into scratchpad_list_entries (scratchpad_list_id, entry_id) select $this->id, $entry_id"
+            "insert into scratchpad_list_entries (scratchpad_list_id, entry_id) select ?, ?",
+            [$this->id, $entry_id]
           );
         }
       }
