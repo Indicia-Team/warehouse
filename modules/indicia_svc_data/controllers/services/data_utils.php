@@ -439,11 +439,11 @@ SQL;
    *   List of occurrences IDs to check.
    * @param int $userId
    *   Current user's ID.
-   * @param int $redetPersonId
-   *   Person ID being allocation as the redeterminer in the data. If set to -1
-   *   then the redeterminer is not updated.
+   * @param ?int $redetPersonId
+   *   Person ID being allocated as the redeterminer in the data. If set to -1
+   *   then the redeterminer is not updated. Null means use the current user.
    */
-  private function redeterminationDbProcessing(Database $db, array $occurrenceIds, int $userId, int $redetPersonId) {
+  private function redeterminationDbProcessing(Database $db, array $occurrenceIds, int $userId, ?int $redetPersonId) {
     // Stringify null for the SQL.
     $redetPersonId = $redetPersonId ?? 'null';
     $idCsv = implode(',', $occurrenceIds);
