@@ -83,7 +83,7 @@ class request_logging {
           $post = empty($_POST) ? NULL : $_POST;
         }
       }
-      if ($post) {
+      if ($post !== NULL) {
         if (is_array($post)) {
           self::stripUnloggedParams($post);
         }
