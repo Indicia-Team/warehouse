@@ -72,6 +72,11 @@ if (!function_exists('apache_request_headers')) {
 class RestApiAbort extends Exception {}
 
 /**
+ * Exception class for aborting whilst notifying the client.
+ */
+class RestApiNotifyClient extends RestApiAbort {}
+
+/**
  * Simple object to keep globally useful stuff in.
  */
 class RestObjects {
@@ -3198,7 +3203,10 @@ SQL;
     }
     catch (Exception $e) {
       error_logger::log_error('Exception whilst attempting to run a custom verification ruleset.', $e);
-      if (!$e instanceof RestApiAbort) {
+      if ($e instanceof RestApiNotifyClient) {
+        RestObjects::$apiResponse->fail('Bad Request', 400, $e->getMessage());
+      }
+      elseif (!$e instanceof RestApiAbort) {
         RestObjects::$apiResponse->fail('Internal server error', 500, $e->getMessage());
       }
     }

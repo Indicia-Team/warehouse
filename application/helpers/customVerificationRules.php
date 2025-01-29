@@ -101,7 +101,7 @@ TXT;
 
     $ruleset = $db->select('*')->from('custom_verification_rulesets')->where('id', $rulesetId)->get()->current();
     if (empty($ruleset)) {
-      throw new exception("Ruleset id $rulesetId not found");
+      throw new Exception("Ruleset id $rulesetId not found");
     }
     // Get the filters that limit the set of records this ruleset can be
     // applied to.
@@ -283,7 +283,7 @@ TXT;
     // set.
     $allTaxaKeys = $db->query("SELECT string_agg(DISTINCT taxon_external_key, ',') as keylist FROM custom_verification_rules WHERE deleted=false AND custom_verification_ruleset_id=?", [$ruleset->id])->current()->keylist;
     if (empty($allTaxaKeys)) {
-      throw new exception('No rules in this ruleset');
+      throw new RestApiNotifyClient('There are no rules in this ruleset - nothing to do.');
     }
     $rulesetFilters = [
       ['terms' => ['taxon.accepted_taxon_id' => explode(',', $allTaxaKeys)]],
@@ -341,6 +341,7 @@ TXT;
   private static function getRuleScript($ruleset, $rule) {
     // Message and icon are set in the ruleset but can be overridden by a rule.
     $message = $rule->fail_message ?? $ruleset->fail_message;
+    $message = str_replace(["'", '"'], ["\\\\'", '\\"'], $message);
     $icon = $rule->fail_icon ?? $ruleset->fail_icon;
     $ruleParams = json_decode($rule->definition);
     $checks = [];
@@ -369,16 +370,18 @@ TXT;
         break;
 
       default:
-        throw new exception("Unrecognised rule type $rule->type");
+        throw new Exception("Unrecognised rule type $rule->type");
     }
 
     $testForFail = implode(' || ', $checks);
+    $flagAddCode = "flags.add(failInfo($rule->id, '$icon', '$message'));";
+    if (!empty($testForFail)) {
+      $flagAddCode = "if ($testForFail) { $flagAddCode }";
+    }
     return <<<TXT
           /* Rule ID $rule->id. */
           if ($ruleIsToBeAppliedChecks) {
-            if ($testForFail) {
-              flags.add(failInfo($rule->id, '$icon', '$message'));
-            }
+            $flagAddCode
           }
 TXT;
   }
@@ -389,7 +392,7 @@ TXT;
    * A rule is always limited to a specific taxon, but a rule can also be
    * limited to only certain life stages or by geography.
    *
-   * @param obj $rule
+   * @param object $rule
    *   Rule data from the database.
    *
    * @return array
@@ -475,14 +478,14 @@ TXT;
     }
     if (!empty($geoParams->grid_refs)) {
       if (empty($geoParams->grid_ref_system) || !spatial_ref::is_valid_system($geoParams->grid_ref_system)) {
-        throw new exception('Grid references specified without a valid grid ref system.');
+        throw new Exception('Grid references specified without a valid grid ref system.');
       }
       // A list of checks to determine if record inside this square.
       $inSquareCheckCode = [];
       foreach ($geoParams->grid_refs as $gridRef) {
         $webMercatorWkt = spatial_ref::sref_to_internal_wkt($gridRef, $geoParams->grid_ref_system);
         if (strpos($webMercatorWkt, 'POLYGON((') === FALSE) {
-          throw new exception('Grid reference given is not actually a grid square.');
+          throw new Exception('Grid reference given is not actually a grid square.');
         }
         $latLngWkt = spatial_ref::internal_wkt_to_wkt($webMercatorWkt, 4326);
         $coordString = preg_replace(['/^POLYGON\(\(/', '/\)\)$/'], ['', ''], $latLngWkt);
