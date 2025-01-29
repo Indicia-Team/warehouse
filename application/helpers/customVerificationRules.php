@@ -341,6 +341,7 @@ TXT;
   private static function getRuleScript($ruleset, $rule) {
     // Message and icon are set in the ruleset but can be overridden by a rule.
     $message = $rule->fail_message ?? $ruleset->fail_message;
+    $message = str_replace(["'", '"'], ["\\\\'", '\\"'], $message);
     $icon = $rule->fail_icon ?? $ruleset->fail_icon;
     $ruleParams = json_decode($rule->definition);
     $checks = [];
