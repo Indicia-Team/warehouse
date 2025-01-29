@@ -458,7 +458,7 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
       return 'ARRAY[' . implode(',', $valueArr) . ']';
     }
     else {
-      return 'null';
+      return NULL;
     }
   }
 
@@ -482,14 +482,16 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
         SELECT external_key
         FROM cache_taxa_taxon_lists
         WHERE taxon_list_id=?
-        AND external_key=?;
+        AND external_key=?
+        AND preferred=true
+        AND allow_data_entry=true;
       SQL;
       // A second search on synonym name keys if the first search fails.
       $altQuery = <<<SQL
         SELECT external_key
         FROM cache_taxa_taxon_lists
         WHERE taxon_list_id=?
-        AND external_key=?;
+        AND search_code=?
       SQL;
       $params = [$taxonListId, $taxonId];
     }
@@ -513,7 +515,11 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
     }
     $rows = $db->query($query, $params);
     if (count($rows) > 1) {
-      throw new ValueError("Failed to find a unique taxon using the information given for row $spreadsheetRow.");
+      $reason = empty($taxonId)
+        ? count($rows) . " taxa were found with the same accepted name ($taxon)."
+        : count($rows) . " taxa were found with the same accepted name TVK ($taxonId).";
+      $msg = "Failed to find a unique taxon using the information given for row $spreadsheetRow because $reason";
+      throw new ValueError($msg);
     }
     elseif (count($rows) === 1) {
       return $rows->current()->external_key;
@@ -522,13 +528,17 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
       // Found nothing, so try the alt query which casts the net wider.
       $rows = $db->query($altQuery, $params);
       if (count($rows) > 1) {
+        $reason = empty($taxonId)
+          ? count($rows) . " taxa were found with the same synonym name ($taxon)."
+          : count($rows) . " taxa were found with the same synonym name TVK ($taxonId).";
         throw new ValueError("Failed to find a unique taxon using the information given for row $spreadsheetRow.");
       }
       elseif (count($rows) === 1) {
         return $rows->current()->external_key;
       }
       elseif (count($rows) === 0) {
-        throw new ValueError("Failed to find a taxon using the taxon identifier given for row $spreadsheetRow.");
+        $identifier = empty($taxonId) ? 'taxon name' : 'TVK';
+        throw new ValueError("Failed to find a taxon using the $identifier given for row $spreadsheetRow.");
       }
     }
   }
@@ -669,12 +679,12 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
 
             case 'species recorded':
               // No further checks required.
+              $definition = [];
               break;
 
             default:
               throw new Exception("Missing or invalid rule type.");
           }
-          $definitionAsJson = pg_escape_literal($db->getLink(), json_encode($definition));
           // Reformat the limit to stages value ready for SQL insert query.
           $limitToStages = $this->getValueAsPgArray($db, $row, $titleIndexes, 'limit to stages');
 
@@ -701,16 +711,16 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
           if (!empty($limitToLocationIds)) {
             $limitToGeographyArr['location_ids'] = $limitToLocationIds;
           }
-          // @todo check limit to location ids are validated
-          $limitToGeography = empty($limitToGeographyArr) ? 'null' : pg_escape_literal($db->getLink(), json_encode($limitToGeographyArr)) . '::json';
+          // @todo Check limit to location ids are validated.
+          $limitToGeography = empty($limitToGeographyArr) ? NULL : json_encode($limitToGeographyArr);
           $insertSql = <<<SQL
             INSERT INTO custom_verification_rules(custom_verification_ruleset_id, taxon_external_key,
               limit_to_stages, limit_to_geography, rule_type, definition, reverse_rule,
               created_by_id, created_on, updated_by_id, updated_on)
-            VALUES (?, ?, ?, ?, ?, ?::json, ?,
+            VALUES (?, ?, ?, ?::json, ?, ?::json, ?,
               $this->auth_user_id, now(), $this->auth_user_id, now());
           SQL;
-          $db->query($insertSql, [$rulesetId, $taxonKey, $limitToStages, $limitToGeography, $ruleType, $definitionAsJson, $reverseRule]);
+          $db->query($insertSql, [$rulesetId, $taxonKey, $limitToStages, $limitToGeography, $ruleType, json_encode($definition), $reverseRule]);
         }
       }
       echo json_encode([
