@@ -2352,7 +2352,7 @@ class RestApiElasticsearch {
       if (!empty(RestObjects::$clientWebsiteId)) {
         kohana::log('error', 'ClientWebsiteId: ' . RestObjects::$clientWebsiteId);
       }
-      RestObjects::$apiResponse->fail('Internal server error', 500, json_encode($error));
+      RestObjects::$apiResponse->fail('Internal server error', 500, empty($error) ? NULL : json_encode($error));
     }
     curl_close($session);
     // Will need decoded data for processing CSV.
