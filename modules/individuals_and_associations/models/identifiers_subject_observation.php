@@ -14,19 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Model class for the identifiers_subject_observations table.
- *
- * @package	Groups and individuals module
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Identifiers_subject_observation_Model extends ORM {
 
@@ -37,7 +30,7 @@ class Identifiers_subject_observation_Model extends ORM {
     'updated_by'=>'user',
   );
   protected $has_many = array('identifiers_subject_observation_attribute_values');
-  
+
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   // A public attribute does NOT need to be linked to a website to form part of the submissable data for a identifiers_subject_observation (unlike, say,
@@ -58,20 +51,20 @@ class Identifiers_subject_observation_Model extends ORM {
     );
     return parent::validate($array, $save);
   }
-  
+
   public function caption()
-  { 
+  {
     $species = array();
     $result = $this->db->select('o.taxon')
         ->from('occurrences_subject_observations as oso')
         ->join('list_occurrences as o', array('o.id'=>'oso.occurrence_id'))
         ->where(array('oso.deleted'=>'f', 'oso.subject_observation_id'=>$this->subject_observation_id))
         ->get()->result();
-    foreach($result as $row) 
+    foreach($result as $row)
       $species[] = $row->taxon;
     return 'Identifier '.$this->identifier->coded_value .' for observation of '.implode(',',$species);
   }
-  
+
   // Override preSubmit to add in the verifier (verified_by_id) and verification date (verified_on) if the
   // identifiers subject observation is being set to status=V(erified)
   protected function preSubmit()

@@ -13,11 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Data Cleaner
- * @subpackage Plugins
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -28,21 +25,21 @@ function data_cleaner_species_location_data_cleaner_rules() {
   return array(
     'testType' => 'SpeciesLocation',
     'optional' => array('Metadata'=>array('Tvk','Taxon','TaxonMeaningId','LocationTypeId')),
-    'required' => array('Metadata'=>array('LocationNames','SurveyId')),    
+    'required' => array('Metadata'=>array('LocationNames','SurveyId')),
     'queries' => array(
       array(
-        'joins' => 
+        'joins' =>
             "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
-            "join verification_rule_metadata vrm on (upper(vrm.value)=upper(co.taxa_taxon_list_external_key) and upper(vrm.key)='TVK') 
-            or (upper(vrm.value)=upper(cttl.preferred_taxon) and upper(vrm.key)='TAXON') 
-            or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId') 
-            join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='SpeciesLocation' 
-            join verification_rule_metadata vrml on vrml.verification_rule_id = vr.id and vrml.deleted=false and upper(vrml.key)='LOCATIONNAMES' 
-            left join verification_rule_metadata vrmlt on vrmlt.verification_rule_id = vr.id and vrmlt.deleted=false and upper(vrml.key)='LOCATIONTYPEID' 
-            join samples s on s.id=co.sample_id and s.deleted=false 
-            join locations l on (vrmlt.id is null or l.location_type_id=vrmlt.id) and 
-                st_intersects(l.boundary_geom, s.geom) and l.deleted=false 
-            join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' 
+            "join verification_rule_metadata vrm on (upper(vrm.value)=upper(co.taxa_taxon_list_external_key) and upper(vrm.key)='TVK')
+            or (upper(vrm.value)=upper(cttl.preferred_taxon) and upper(vrm.key)='TAXON')
+            or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId')
+            join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='SpeciesLocation'
+            join verification_rule_metadata vrml on vrml.verification_rule_id = vr.id and vrml.deleted=false and upper(vrml.key)='LOCATIONNAMES'
+            left join verification_rule_metadata vrmlt on vrmlt.verification_rule_id = vr.id and vrmlt.deleted=false and upper(vrml.key)='LOCATIONTYPEID'
+            join samples s on s.id=co.sample_id and s.deleted=false
+            join locations l on (vrmlt.id is null or l.location_type_id=vrmlt.id) and
+                st_intersects(l.boundary_geom, s.geom) and l.deleted=false
+            join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId'
                 and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false",
         'where' =>
             "not array[upper(l.name)] <@ string_to_array(upper(vrml.value), ',')"

@@ -13,18 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link  https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Class to provide webservice functions to support verifying records before they are
- * submitted
- *
- * @author Indicia Team
- * @package Services
- * @subpackage Data Cleaner
+ * submitted.
  */
 class Data_cleaner_Controller extends Service_Base_Controller {
 

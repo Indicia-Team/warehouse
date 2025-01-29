@@ -13,15 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Data Cleaner
- * @subpackage Plugins
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
- * Hook into the data cleaner to declare checks for the test of record time of year. 
+ * Hook into the data cleaner to declare checks for the test of record time of year.
  * @return type array of rules.
  */
 function data_cleaner_designated_taxa_data_cleaner_rules() {
@@ -31,11 +28,11 @@ function data_cleaner_designated_taxa_data_cleaner_rules() {
     // nothing to import
     'queries' => array(
       array(
-        'joins' => 
+        'joins' =>
             "join taxa_taxon_lists ttl on ttl.taxon_meaning_id=co.taxon_meaning_id and ttl.deleted=false ".
             "join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false ".
             "join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false"
-      )            
+      )
     )
   );
 }

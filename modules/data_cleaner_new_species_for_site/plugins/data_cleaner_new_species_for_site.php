@@ -13,15 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Data Cleaner
- * @subpackage Plugins
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
- * Hook into the data cleaner to declare checks for a species which has not previously been recorded and verified at a site. Only 
+ * Hook into the data cleaner to declare checks for a species which has not previously been recorded and verified at a site. Only
  * works for surveys which record against a defined list of locations.
  * @return type array of rules.
  */
@@ -32,18 +29,18 @@ function data_cleaner_new_species_for_site_data_cleaner_rules() {
     'optional' => array('Taxa'=>array('*')),
     'queries' => array(
       array(
-        'joins' => 
+        'joins' =>
             "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
-            "join verification_rule_metadata vrsurvey on vrsurvey.key='SurveyId' 
+            "join verification_rule_metadata vrsurvey on vrsurvey.key='SurveyId'
                 and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false
             join verification_rules vr on vr.id=vrsurvey.verification_rule_id and vr.test_type='NewSpeciesForSite' and vr.deleted=false
             join samples s on s.id=co.sample_id and s.deleted=false
             left join samples sp on sp.id=s.parent_id and sp.deleted=false
-            left join (cache_occurrences coprev 
-              join samples sprev on sprev.deleted=false and sprev.id=coprev.sample_id 
+            left join (cache_occurrences coprev
+              join samples sprev on sprev.deleted=false and sprev.id=coprev.sample_id
               left join samples sprevp on sprevp.id=sprev.parent_id and sprevp.deleted=false
-            ) on coprev.taxon_meaning_id=co.taxon_meaning_id 
-                and coprev.id<>co.id 
+            ) on coprev.taxon_meaning_id=co.taxon_meaning_id
+                and coprev.id<>co.id
                 and coalesce(sprev.location_id, sprevp.location_id)=coalesce(s.location_id, sp.location_id)
                 and coalesce(sprev.location_id, sprevp.location_id) is not null
                 and coprev.record_status='V'

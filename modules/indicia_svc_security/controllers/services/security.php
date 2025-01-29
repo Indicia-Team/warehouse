@@ -13,17 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link  https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Class to allow the client website code to obtain authorisation tokens.
- * @author Indicia Team
- * @package Services
- * @subpackage Security
  */
 class Security_Controller extends Service_Base_Controller {
 
@@ -44,7 +39,7 @@ class Security_Controller extends Service_Base_Controller {
     $nonce = security::create_nonce('read', $_POST['website_id']);
     echo $nonce;
   }
-  
+
   /**
    * Obtain a pair of read and write nonces (authorisation tokens). Uses the posted website_id to store the nonces against.
    * @return string Nonce tokens in a JSON format.

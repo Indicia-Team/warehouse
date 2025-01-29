@@ -14,19 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse/
  * @license http://www.gnu.org/licenses/gpl.html GPL
  */
 
 /**
- * Controller providing CRUD access to the subject_observation attributes.
- *
- * @package Core
- * @subpackage Controllers
- */
+ * Controller providing CRUD access to the subject_observation attributes. */
 class Subject_observation_attribute_Controller extends Attr_Base_Controller {
 
   public function __construct()

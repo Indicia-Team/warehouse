@@ -13,18 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Modules
- * @subpackage MTBQQQ Grid References
- * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link  https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Conversion class for MTBQQQ (German grid system) grid references.
- * @package Modules
- * @subpackage MTBQQQ Grid References
- * @author  Indicia Team
  */
 class mtbqqq extends mtb {
 

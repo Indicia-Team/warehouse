@@ -14,27 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Models
- * @author  Indicia Team
  * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @link   https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Model class for the identifier_attribute_values table.
- *
- * @package  Core
- * @subpackage Models
- * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
 class Identifier_attribute_value_Model extends Attribute_Value_ORM {
   public $search_field='text_value';
-  
+
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'identifier', 'identifier_attribute');
 
   public function validate(Validation $array, $save = FALSE) {
-    self::attribute_validation($array, 'identifier');    
+    self::attribute_validation($array, 'identifier');
     return parent::validate($array, $save);
   }
 }

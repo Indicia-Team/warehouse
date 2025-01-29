@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/warehouse
  */
@@ -23,9 +22,6 @@ defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the Rest_api_sync_skipped_records table.
- *
- * @package Core
- * @subpackage Models
  */
 class Rest_api_sync_skipped_record_Model extends ORM {
 

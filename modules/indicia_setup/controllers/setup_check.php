@@ -14,11 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Setup
- * @subpackage Controllers
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 defined('SYSPATH') or die('No direct script access.');
@@ -26,9 +23,6 @@ defined('SYSPATH') or die('No direct script access.');
 /**
  * Controller class for the setup_check page. Displays results
  * of a system configuration check.
- *
- * @package	Modules
- * @subpackage setup_check
  */
 class Setup_Check_Controller extends Template_Controller {
 
@@ -38,14 +32,14 @@ class Setup_Check_Controller extends Template_Controller {
 
   /**
    * Database connection
-   * 
+   *
    * @var Database;
    */
   private $db;
 
   /**
    * Variables to pass to the view.
-   * 
+   *
    * @var array
    */
   private array $view_var;
@@ -58,35 +52,35 @@ class Setup_Check_Controller extends Template_Controller {
 
   /**
    * Path to file containing sequence schema SQL.
-   * 
+   *
    * @var string
    */
   private $db_file_indicia_sequences;
 
   /**
    * Path to file containing table schema SQL.
-   * 
+   *
    * @var string
    */
   private $db_file_indicia_tables;
 
   /**
    * Path to file containing view schema SQL.
-   * 
+   *
    * @var string
    */
   private $db_file_indicia_views;
 
   /**
    * Path to file containing PostGIS modification SQL.
-   * 
+   *
    * @var string
    */
   private $db_file_postgis_alterations;
 
   /**
    * Path to file containing default data insertion SQL.
-   * 
+   *
    * @var string
    */
   private $db_file_indicia_data;

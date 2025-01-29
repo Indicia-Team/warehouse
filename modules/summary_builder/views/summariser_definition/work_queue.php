@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
@@ -58,7 +57,7 @@ $taskEntriesQueue = $this->db
   ->orderby('created_on')
   ->limit(10)
   ->get()->as_array(true);
-  
+
 
 if (count($taskEntriesQueue) > 0) {
   // @TODO Add ability to reset entries on the queue
