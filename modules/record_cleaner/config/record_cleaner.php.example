@@ -1,9 +1,6 @@
 <?php
 
 /**
- * @file
- * Data cleaner plugin functions.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,24 +18,8 @@
  * @link https://github.com/indicia-team/warehouse/
  */
 
-/**
- * Returns plugin metadata.
- *
- * Identifies that the plugin uses the occdelta table to identify changes.
- *
- * @return array
- *   Metadata.
- */
-function record_cleaner_metadata() {
-  return [
-    'requires_occurrences_delta' => TRUE,
-  ];
-}
-
-/**
- * Hook into the task scheduler to run the rules against new records.
- */
-function record_cleaner_scheduled_task($timestamp, $db, $endtime) {
-  $api = new RecordCleanerApi($db);
-  $api->processRecords($endtime);
-}
+ $config['api'] = [
+  'url' => '<service-url-without-trailing-slash>',
+  'username' => '<username>',
+  'password' => '<password>',
+ ];
