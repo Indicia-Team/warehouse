@@ -22,6 +22,18 @@
  */
 
 /**
+ * Returns plugin metadata, in particular to set the running order.
+ *
+ * @return array
+ *  Metadata.
+ */
+function cache_builder_metadata() {
+  return [
+    'weight' => 1,
+  ];
+}
+
+/**
  * Hook into the task scheduler.
  *
  * This uses the queries defined in the cache_builder.php file to create and

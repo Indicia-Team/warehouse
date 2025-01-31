@@ -32,6 +32,8 @@
 function record_cleaner_metadata() {
   return [
     'requires_occurrences_delta' => TRUE,
+    // Should be run after the cache_builder and data_cleaner plugins.
+    'weight' => 3,
   ];
 }
 

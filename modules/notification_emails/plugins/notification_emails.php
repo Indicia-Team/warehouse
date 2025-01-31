@@ -22,6 +22,20 @@
  */
 
 /**
+ * Metadata for the notification emails plugin.
+ *
+ * @return array
+ *   Metadata.
+ */
+function notification_emails_metadata() {
+  return [
+    // Set to a high weight to ensure that the notification emails plugin runs
+    // last.
+    'weight' => 1001,
+  ];
+}
+
+/**
  * Hook ORM to enable the relationship from users to notification settings.
  */
 function notification_emails_extend_orm() {
