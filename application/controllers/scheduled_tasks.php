@@ -910,6 +910,9 @@ class Scheduled_Tasks_Controller extends Controller {
       if (in_array('all_modules', $scheduledPlugins) || in_array($plugin, $scheduledPlugins)) {
         kohana::log('debug', "Processing scheduled task $plugin");
         kohana::log_save();
+        if (!empty($pluginMetadata['requires_occurrences_delta'])) {
+          $this->loadOccurrencesDeltaIfRequired($pluginMetadata, $maxTime);
+        }
         // Call the plugin, only if there are records to process, or it doesn't
         // care.
         if (!$pluginMetadata['requires_occurrences_delta']
@@ -919,7 +922,6 @@ class Scheduled_Tasks_Controller extends Controller {
           kohana::log_save();
           echo "<h2>Running $plugin</h2>";
           echo "<p>Last run at $pluginMetadata[lastRunTimestamp]</p>";
-          $this->loadOccurrencesDeltaIfRequired($pluginMetadata, $maxTime);
           $tm = microtime(TRUE);
           try {
             call_user_func($plugin . '_scheduled_task', $pluginMetadata['lastRunTimestamp'], $this->db, $maxTime);
