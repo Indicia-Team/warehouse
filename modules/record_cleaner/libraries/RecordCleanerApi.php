@@ -26,7 +26,7 @@ const BATCH_SIZE = 100;
 /*
  * @todo Should output_sref be the blurred or precise version in the submitted records?
  * @todo Correct date format submitted in the records?
- * @todo Check filtering in ES reports - fix distribution check failed
+ * @todo Discard rule violations if there are similar records already verified.
  */
 
 /**
@@ -216,7 +216,7 @@ class RecordCleanerApi {
             FROM cache_occurrences_functional o
             WHERE o.id=?
             AND cttl.taxon_meaning_id=o.taxon_meaning_id
-            AND NOT (? = ANY(cttl.applicable_verification_rule_types));
+            AND (NOT ? = ANY(cttl.applicable_verification_rule_types) OR cttl.applicable_verification_rule_types IS NULL);
           SQL;
           $this->db->query($query, [
             $mappedRuleType,
@@ -254,7 +254,6 @@ class RecordCleanerApi {
             $subType,
             $record->id,
           ]);
-          ob_flush();
           if ((int) $subType < 2) {
             continue;
           }
