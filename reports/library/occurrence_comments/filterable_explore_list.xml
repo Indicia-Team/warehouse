@@ -28,8 +28,8 @@
            description='Input form path to use when no other available' default='' />
     <param name="data_cleaner_filter" display="Data cleaner comments" datatype="boolean" default=""
            description="Limit to data cleaner comments (t) or other (f) comments">
-      <where value="t" operator="equal">oc.generated_by like 'data_cleaner_%'</where>
-      <where value="f" operator="equal">(oc.generated_by not like 'data_cleaner_%' or oc.generated_by is null)</where>
+      <where value="t" operator="equal">(oc.generated_by like 'data_cleaner%' OR oc.generated_by like 'record_cleaner%')</where>
+      <where value="f" operator="equal">((oc.generated_by not like 'data_cleaner%' AND oc.generated_by not like 'record_cleaner%') or oc.generated_by is null)</where>
     </param>
     <param name="created_by_filter" display="My or Others comments" datatype="text" default=""
            description="Optional: Limit to my (mine) or other's (others) comments">
