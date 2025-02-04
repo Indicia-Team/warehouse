@@ -788,25 +788,27 @@ class report_standard_params_occurrences {
           ],
         ],
         'joins' => [
+          // Note need to be tolerant of rule flags from both data_cleaner and
+          // record_cleaner modules.
           [
             'value' => 'identification_difficulty',
             'operator' => 'equal',
-            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autochecks#]%'",
+            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%difficulty]%'",
           ],
           [
             'value' => 'period',
             'operator' => 'equal',
-            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autochecks#]%'",
+            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%period]%'",
           ],
           [
             'value' => 'period_within_year',
             'operator' => 'equal',
-            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autochecks#]%'",
+            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and (onf_rulefail.data_cleaner_info like '%period_within_year]%' or onf_rulefail.data_cleaner_info like '%phenology]%')",
           ],
           [
             'value' => 'without_polygon',
             'operator' => 'equal',
-            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autochecks#]%'",
+            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and (onf_rulefail.data_cleaner_info like '%without_polygon]%' or onf_rulefail.data_cleaner_info like '%tenkm]%')",
           ],
         ],
       ],
@@ -817,7 +819,7 @@ class report_standard_params_occurrences {
         'description' => 'Filter to only include records that have failed this rule.',
         'joins' => [
           [
-            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%[data_cleaner_#autocheck_rule#]%'",
+            'sql' => "join cache_occurrences_nonfunctional onf_rulefail on onf_rulefail.id=o.id and onf_rulefail.data_cleaner_info like '%#autocheck_rule#]%'",
           ],
         ],
       ],
@@ -1151,7 +1153,7 @@ class report_standard_params_occurrences {
               END #coordinate_precision_op# #coordinate_precision#",
           ],
         ],
-      ]
+      ],
     ];
   }
 
