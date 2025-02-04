@@ -24,15 +24,9 @@
 const BATCH_SIZE = 100;
 
 /*
- * @todo Handle Identification difficulty changes as no longer using verification rules locally. E.g. how to store in cache_taxon_searchterms?
- * @todo The cache table update query needs to alter applicable_verification_rule_types to include the rules run by the Record Cleaner.
  * @todo Should output_sref be the blurred or precise version in the submitted records?
  * @todo Correct date format submitted in the records?
- * @todo Check icons generated in PG reports. Are the standard icons even being generated?
- * @todo Check icons generated in ES reports
- * @todo Check filtering in PG reports
- * @todo Check filtering in ES reports
- *
+ * @todo Check filtering in ES reports - fix distribution check failed
  */
 
 /**
@@ -122,8 +116,7 @@ class RecordCleanerApi {
     $pages = ceil(count($ids) / BATCH_SIZE);
     for ($page = 0; $page < $pages; $page++) {
       $start = $page * BATCH_SIZE;
-      $end = min(($page + 1) * BATCH_SIZE, count($ids));
-      $batch = array_slice($ids, $start, $end);
+      $batch = array_slice($ids, $start, 100);
       $this->cleanoutOldMessages($batch);
       $this->processBatch($batch);
       $this->updateOccurrenceMetadata($batch, $endtime);
@@ -160,11 +153,12 @@ class RecordCleanerApi {
   private function processBatch(array $batch) {
     $ids = implode(',', $batch);
     $query = <<<SQL
-      select o.id, o.taxa_taxon_list_external_key as tvk, o.date_start, o.date_end, o.date_type,
-        onf.attr_stage as stage, onf.output_sref, o.date_start
-      from cache_occurrences_functional o
-      join cache_occurrences_nonfunctional onf on onf.id=o.id
-      where o.id in ($ids)
+      SELECT o.id, o.taxa_taxon_list_external_key AS tvk,
+        o.date_start, o.date_end, o.date_type,
+        onf.attr_stage AS stage, onf.output_sref
+      FROM cache_occurrences_functional o
+      JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
+      WHERE o.id IN ($ids)
     SQL;
 
     $records = $this->db->query($query, [$batch])->result();
@@ -178,12 +172,10 @@ class RecordCleanerApi {
           'srid' => 27700,
           'gridref' => $record->output_sref,
         ],
-        'stage' => $record->stage
+        'stage' => $record->stage,
       ];
     }
     $response = $this->curlRequest('/verify', [], json_encode(['records' => $recordsArray]));
-    echo '<pre>'; var_export($response); echo '</pre>';
-    $batchWithRulesRun = [];
     foreach ($response->records as $record) {
       $this->saveRecordResponse($record);
     }
@@ -205,7 +197,6 @@ class RecordCleanerApi {
    * `:<sourceCode>:<ruleType>:<comment>` or `:<sourceCode>:<ruleType>:<subType>:<comment>`
    */
   private function saveRecordResponse($record) {
-    echo "Processing ID $record->id: " . var_export($record->messages, TRUE) . '<br/>';
     foreach ($record->messages as $message) {
       if (preg_match('/:(difficulty|period|phenology|tenkm):/', $message)) {
         $tokens = explode(':', $message);
@@ -213,8 +204,60 @@ class RecordCleanerApi {
         $ruleType = $tokens[2];
         $comment = trim($tokens[count($tokens) - 1]);
         $subType = $ruleType === 'difficulty' ? $tokens[3] : NULL;
-        if ($ruleType === 'difficulty' && (int) $subType < 2) {
-          continue;
+        if ($ruleType !== 'difficulty') {
+          // @todo Explore if we can get a list of taxa with rules from the API,
+          // so we can do a single update of the entire list, rather than based
+          // on individual records.
+          $mappedRuleType = $this->mapRuleType($ruleType);
+          // Update the applicable rules in the taxon cache tables.
+          $query = <<<SQL
+            UPDATE cache_taxa_taxon_lists cttl
+            SET applicable_verification_rule_types = array_append(cttl.applicable_verification_rule_types, ?)
+            FROM cache_occurrences_functional o
+            WHERE o.id=?
+            AND cttl.taxon_meaning_id=o.taxon_meaning_id
+            AND NOT (? = ANY(cttl.applicable_verification_rule_types));
+          SQL;
+          $this->db->query($query, [
+            $mappedRuleType,
+            $record->id,
+            $mappedRuleType,
+          ]);
+          // Update the occurrence's applied rules to reflect the record
+          // cleaner rule combined with the data cleaner rules.
+          $query = <<<SQL
+            UPDATE cache_occurrences_functional o
+            SET applied_verification_rule_types = cttl.applicable_verification_rule_types
+            FROM cache_taxa_taxon_lists cttl
+            WHERE o.id=?
+            AND cttl.preferred_taxa_taxon_list_id=o.preferred_taxa_taxon_list_id;
+          SQL;
+          $this->db->query($query, [
+            $record->id,
+          ]);
+        }
+        else {
+          // Difficulty rules are stored differently.
+          $query = <<<SQL
+            UPDATE cache_taxon_searchterms cts
+            SET identification_difficulty = ?
+            FROM cache_occurrences_functional o
+            WHERE cts.taxon_meaning_id=o.taxon_meaning_id
+            AND o.id=?;
+            UPDATE cache_occurrences_functional
+            SET identification_difficulty = ?
+            WHERE id = ?;
+          SQL;
+          $this->db->query($query, [
+            $subType,
+            $record->id,
+            $subType,
+            $record->id,
+          ]);
+          ob_flush();
+          if ((int) $subType < 2) {
+            continue;
+          }
         }
         $query = <<<SQL
           INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, generated_by, generated_by_subtype, implies_manual_check_required, created_by_id, created_on, updated_by_id, updated_on)
@@ -222,20 +265,41 @@ class RecordCleanerApi {
         SQL;
         $this->db->query($query, [
           $record->id,
-          $comment,
-          "record_cleaner:$ruleType:$sourceCode",
+          "$comment ($sourceCode)",
+          "record_cleaner_$ruleType",
           $subType,
         ]);
       }
     }
   }
 
+  /**
+   * Maps Record Cleaner rule types to Indicia rule types.
+   *
+   * @param string $ruleType
+   *   The rule type from the Record Cleaner.
+   *
+   * @return string
+   *   The corresponding Indicia rule type.
+   */
+  private function mapRuleType($ruleType) {
+    $mapping = [
+      'difficulty' => 'identification_difficulty',
+      'period' => 'period',
+      'phenology' => 'period_within_year',
+      'tenkm' => 'without_polygon',
+    ];
+    return $mapping[$ruleType] ?? $ruleType;
+  }
+
+
+
   private function updateCacheTables(array $batch) {
     $ids = implode(',', $batch);
     $query = <<<SQL
       SELECT o.id,
       CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
-        COALESCE(string_agg(distinct '[' || replace(oc.generated_by, ':', ' ') || ']{' || oc.comment || '}', ' '), 'pass')
+        COALESCE(string_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}', ' '), 'pass')
       END AS data_cleaner_info,
       CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE COUNT(oc.id)=0 END AS data_cleaner_result,
       ocdiff.generated_by_subtype::integer as difficulty
@@ -247,7 +311,7 @@ class RecordCleanerApi {
       LEFT JOIN occurrence_comments ocdiff ON ocdiff.occurrence_id=o.id
         AND ocdiff.implies_manual_check_required=true
         AND ocdiff.deleted=false
-        AND ocdiff.generated_by like 'record_cleaner:difficulty:%'
+        AND ocdiff.generated_by like 'record_cleaner:%:difficulty'
       WHERE o.id in ($ids)
       GROUP BY o.id, o.last_verification_check_date, ocdiff.generated_by_subtype;
 
