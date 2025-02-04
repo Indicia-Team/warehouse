@@ -949,7 +949,7 @@ class Scheduled_Tasks_Controller extends Controller {
         // Mark the time of the last scheduled task check so we can get the
         // correct list of updates next time.
         $timestamp = $pluginMetadata['requires_occurrences_delta'] ? $this->occdeltaEndTimestamp : $maxTime;
-        if (!$this->db->update('system', ['last_scheduled_task_check' => $pluginMetadata['lastRunTimestamp']], ['name' => $plugin])->count()) {
+        if (!$this->db->update('system', ['last_scheduled_task_check' => $timestamp], ['name' => $plugin])->count()) {
           $this->db->insert('system', [
             'version' => '0.1.0',
             'name' => $plugin,
