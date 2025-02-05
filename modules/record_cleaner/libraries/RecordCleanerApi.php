@@ -25,8 +25,8 @@ const BATCH_SIZE = 100;
 
 /*
  * @todo Should output_sref be the blurred or precise version in the submitted records?
- * @todo Correct date format submitted in the records?
  * @todo Discard rule violations if there are similar records already verified.
+ * @todo Do ES identification difficulty rule filters work?
  */
 
 /**
@@ -155,7 +155,8 @@ class RecordCleanerApi {
     $query = <<<SQL
       SELECT o.id, o.taxa_taxon_list_external_key AS tvk,
         o.date_start, o.date_end, o.date_type,
-        onf.attr_stage AS stage, onf.output_sref
+        onf.attr_stage AS stage, onf.output_sref,
+        o.created_on
       FROM cache_occurrences_functional o
       JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
       WHERE o.id IN ($ids)
@@ -167,7 +168,7 @@ class RecordCleanerApi {
       $recordsArray[] = [
         'id' => $record->id,
         'tvk' => $record->tvk,
-        'date' => $record->date_start,
+        'date' =>   $this->getFormattedDate($record),
         'sref' => [
           'srid' => 27700,
           'gridref' => $record->output_sref,
@@ -179,6 +180,35 @@ class RecordCleanerApi {
     foreach ($response->records as $record) {
       $this->saveRecordResponse($record);
     }
+  }
+
+  /**
+   * Formats the date of a record for Record Cleaner.
+   *
+   * If the record's date is exact, it returns the date in 'yyyy-mm-dd' format.
+   * Otherwise, it returns a date range in the format 'start_date - end_date'.
+   * If the end date is not specified, it uses the record's submission date.
+   *
+   * @param object $record
+   *   The record object containing date information.
+   *
+   * @return string
+   *   The formatted date or date range.
+   */
+  private function getFormattedDate($record): string {
+    if ($record->date_type === 'U') {
+      // Date unknown, so use the date range up to the submission date.
+      return date('Y-m-d', strtotime($record->created_on));
+    }
+    if ($record->date_type === 'D' || $record->date_start === $record->date_end) {
+      // Already in yyyy-mm-dd format.
+      return $record->date_start;
+    }
+    // Return a date range, but note that the end date cannot be indeterminate
+    // so use the submission date if not specified.
+    $startDate = $record->date_start ?? '';
+    $endDate = $record->date_end ?? date('Y-m-d', strtotime($record->created_on));
+    return trim("$startDate - $endDate");
   }
 
   /**
