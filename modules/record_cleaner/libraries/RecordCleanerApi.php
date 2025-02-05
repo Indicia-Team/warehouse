@@ -25,8 +25,7 @@ const BATCH_SIZE = 100;
 
 /*
  * @todo Should output_sref be the blurred or precise version in the submitted records?
- * @todo Discard rule violations if there are similar records already verified.
- * @todo Do ES identification difficulty rule filters work?
+ * @todo Check date format in records returned by the API.
  */
 
 /**
@@ -144,7 +143,7 @@ class RecordCleanerApi {
           'data_cleaner_period_within_year',
           'data_cleaner_without_polygon'
         )
-        OR generated_by LIKE 'record_cleaner:%'
+        OR generated_by LIKE 'record_cleaner_%'
       );
     SQL;
     $this->db->query($query);
@@ -156,7 +155,7 @@ class RecordCleanerApi {
       SELECT o.id, o.taxa_taxon_list_external_key AS tvk,
         o.date_start, o.date_end, o.date_type,
         onf.attr_stage AS stage, onf.output_sref,
-        o.created_on
+        o.created_on, o.map_sq_10km_id
       FROM cache_occurrences_functional o
       JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
       WHERE o.id IN ($ids)
@@ -164,6 +163,9 @@ class RecordCleanerApi {
 
     $records = $this->db->query($query, [$batch])->result();
     $recordsArray = [];
+    // We need to know 10km square later when checking for existing verified
+    // records.
+    $tenKmSquareIds = [];
     foreach ($records as $record) {
       $recordsArray[] = [
         'id' => $record->id,
@@ -175,10 +177,11 @@ class RecordCleanerApi {
         ],
         'stage' => $record->stage,
       ];
+      $tenKmSquareIds[$record->id] = $record->map_sq_10km_id;
     }
     $response = $this->curlRequest('/verify', [], json_encode(['records' => $recordsArray]));
     foreach ($response->records as $record) {
-      $this->saveRecordResponse($record);
+      $this->saveRecordResponse($record, $tenKmSquareIds[$record->id]);
     }
   }
 
@@ -214,19 +217,24 @@ class RecordCleanerApi {
   /**
    * Saves verification responses for a record.
    *
-   * This function processes the messages in the provided record array. If a message
-   * matches the pattern `:(difficulty|period|phenology|10km):`, it extracts the relevant
-   * tokens and inserts a comment into the `occurrence_comments` table.
+   * This function processes the messages in the provided record array. If a
+   * message matches the pattern `:(difficulty|period|phenology|10km):`, it
+   * extracts the relevant tokens and inserts a comment into the
+   * `occurrence_comments` table.
    *
-   * @param object $record The record object containing messages and other details.
+   * The function expects the messages to be in a specific format, where the
+   * message contains tokens separated by colons. The expected format is:
+   * `:<sourceCode>:<ruleType>:<comment>` or `:<sourceCode>:<ruleType>:<subType>:<comment>`.
+   *
+   * @param object $record
+   *   The record object containing messages and other details.
    *   - 'id' (int): The ID of the occurrence record.
    *   - 'messages' (array): An array of messages to be processed.
-   *
-   * The function expects the messages to be in a specific format, where the message
-   * contains tokens separated by colons. The expected format is:
-   * `:<sourceCode>:<ruleType>:<comment>` or `:<sourceCode>:<ruleType>:<subType>:<comment>`
+   * @param string $tenKmSqId
+   *   The ID of the 10km square, required when checking for other nearby
+   *   verified records.
    */
-  private function saveRecordResponse($record) {
+  private function saveRecordResponse($record, $tenKmSqId) {
     foreach ($record->messages as $message) {
       if (preg_match('/:(difficulty|period|phenology|tenkm):/', $message)) {
         $tokens = explode(':', $message);
@@ -234,6 +242,10 @@ class RecordCleanerApi {
         $ruleType = $tokens[2];
         $comment = trim($tokens[count($tokens) - 1]);
         $subType = $ruleType === 'difficulty' ? $tokens[3] : NULL;
+        if ($this->shouldDiscardFlagDueToExistingVerifiedRecords($record, $ruleType, $tenKmSqId)) {
+          // Discard this message due to similar verified records.
+          continue;
+        }
         if ($ruleType !== 'difficulty') {
           // @todo Explore if we can get a list of taxa with rules from the API,
           // so we can do a single update of the entire list, rather than based
@@ -253,18 +265,6 @@ class RecordCleanerApi {
             $record->id,
             $mappedRuleType,
           ]);
-          // Update the occurrence's applied rules to reflect the record
-          // cleaner rule combined with the data cleaner rules.
-          $query = <<<SQL
-            UPDATE cache_occurrences_functional o
-            SET applied_verification_rule_types = cttl.applicable_verification_rule_types
-            FROM cache_taxa_taxon_lists cttl
-            WHERE o.id=?
-            AND cttl.preferred_taxa_taxon_list_id=o.preferred_taxa_taxon_list_id;
-          SQL;
-          $this->db->query($query, [
-            $record->id,
-          ]);
         }
         else {
           // Difficulty rules are stored differently.
@@ -274,9 +274,6 @@ class RecordCleanerApi {
             FROM cache_occurrences_functional o
             WHERE cts.taxon_meaning_id=o.taxon_meaning_id
             AND o.id=?;
-            UPDATE cache_occurrences_functional
-            SET identification_difficulty = ?
-            WHERE id = ?;
           SQL;
           $this->db->query($query, [
             $subType,
@@ -303,6 +300,60 @@ class RecordCleanerApi {
   }
 
   /**
+   * Determines whether a flag should be discarded due to the existence of verified records.
+   *
+   * This function checks if there are existing verified records that match certain criteria
+   * based on the rule type provided.
+   *
+   * @param object $record
+   *   The record being evaluated.
+   * @param string $ruleType
+   *   The type of rule being applied. Can be 'phenology', 'tenkm', other rule
+   *   types are not checked.
+   * @param string $tenKmSqId
+   *   The ID of the 10km square, required when checking for other nearby
+   *   verified records.
+   *
+   * @return bool
+   *   Returns TRUE if the flag should be discarded, FALSE otherwise.
+   */
+  private function shouldDiscardFlagDueToExistingVerifiedRecords($record, $ruleType, $tenKmSqId) {
+    $query = <<<SQL
+      SELECT id
+      FROM cache_occurrences_functional o
+      WHERE o.taxa_taxon_list_external_key=?
+      AND o.record_status='V'
+      AND o.map_sq_10km_id=?
+    SQL;
+    $params = [
+      $record->tvk,
+      $tenKmSqId,
+    ];
+    switch ($ruleType) {
+      case 'phenology':
+        // Only check exact dates without a hyphen separating the range.
+        if (preg_match('/^( -|- )$/', $record->date)) {
+          return FALSE;
+        }
+        $query .= <<<SQL
+          AND ABS(EXTRACT(doy from o.date_start) - EXTRACT(doy FROM ?::date)) < 7
+        SQL;
+        // Record Cleaner API currently returns UK format d/m/Y.
+        list($d, $m, $y) = explode('/', $record->date);
+        $params[] = "$y-$m-$d";
+        break;
+
+      case 'tenkm':
+        break;
+
+      default:
+        // Don't do this check for other rule types.
+        return FALSE;
+    }
+    return $this->db->query("$query LIMIT 3", $params)->count() >= 3;
+  }
+
+  /**
    * Maps Record Cleaner rule types to Indicia rule types.
    *
    * @param string $ruleType
@@ -323,8 +374,15 @@ class RecordCleanerApi {
 
 
 
+  /**
+   * Update results into occurrence cache tables.
+   *
+   * @param array $batch
+   *   List of record IDs to update.
+   */
   private function updateCacheTables(array $batch) {
-    $ids = implode(',', $batch);
+    // Ensure IDs are integers to prevent SQL injection.
+    $ids = implode(',', array_map('intval', $batch));
     $query = <<<SQL
       SELECT o.id,
       CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
@@ -340,7 +398,7 @@ class RecordCleanerApi {
       LEFT JOIN occurrence_comments ocdiff ON ocdiff.occurrence_id=o.id
         AND ocdiff.implies_manual_check_required=true
         AND ocdiff.deleted=false
-        AND ocdiff.generated_by like 'record_cleaner:%:difficulty'
+        AND ocdiff.generated_by='record_cleaner_difficulty'
       WHERE o.id in ($ids)
       GROUP BY o.id, o.last_verification_check_date, ocdiff.generated_by_subtype;
 
