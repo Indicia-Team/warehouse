@@ -23,11 +23,6 @@
 
 const BATCH_SIZE = 100;
 
-/*
- * @todo Should output_sref be the blurred or precise version in the submitted records?
- * @todo Check date format in records returned by the API.
- */
-
 class SkipRecordException extends Exception {}
 
 /**
