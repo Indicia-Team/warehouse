@@ -28,6 +28,8 @@ const BATCH_SIZE = 100;
  * @todo Check date format in records returned by the API.
  */
 
+class SkipRecordException extends Exception {}
+
 /**
  * Functionality for the Record Cleaner API interactions.
  */
@@ -149,15 +151,25 @@ class RecordCleanerApi {
     $this->db->query($query);
   }
 
+  /**
+   * Process a batch of records.
+   *
+   * @param array $batch
+   *   Record IDs in the batch to process.
+   */
   private function processBatch(array $batch) {
     $ids = implode(',', $batch);
     $query = <<<SQL
       SELECT o.id, o.taxa_taxon_list_external_key AS tvk,
         o.date_start, o.date_end, o.date_type,
-        onf.attr_stage AS stage, onf.output_sref,
-        o.created_on, o.map_sq_10km_id
+        onf.attr_stage AS stage,
+        s.entered_sref, s.entered_sref_system, o.map_sq_10km_id, COALESCE(snf.attr_sref_precision, 50) as accuracy,
+        st_x(st_transform(st_centroid(s.geom), 4326)) as lon, st_y(st_transform(st_centroid(s.geom), 4326)) as lat,
+        o.created_on
       FROM cache_occurrences_functional o
       JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
+      JOIN samples s on s.id=o.sample_id AND s.deleted=false
+      JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
       WHERE o.id IN ($ids)
     SQL;
 
@@ -167,19 +179,33 @@ class RecordCleanerApi {
     // records.
     $tenKmSquareIds = [];
     foreach ($records as $record) {
-      $recordsArray[] = [
-        'id' => $record->id,
-        'tvk' => $record->tvk,
-        'date' =>   $this->getFormattedDate($record),
-        'sref' => [
-          'srid' => 27700,
-          'gridref' => $record->output_sref,
-        ],
-        'stage' => $record->stage,
-      ];
-      $tenKmSquareIds[$record->id] = $record->map_sq_10km_id;
+      try {
+        $recordsArray[] = [
+          'id' => $record->id,
+          'tvk' => $record->tvk,
+          'date' =>   $this->getFormattedDate($record),
+          'sref' => $this->getFormattedSref($record),
+          'stage' => $record->stage,
+        ];
+        $tenKmSquareIds[$record->id] = $record->map_sq_10km_id;
+      }
+      catch (SkipRecordException $e) {
+        // Aborted for some reason, so add a note.
+        $query = <<<SQL
+          INSERT INTO occurrence_comments (occurrence_id, comment, auto_generated, generated_by, generated_by_subtype, implies_manual_check_required, created_by_id, created_on, updated_by_id, updated_on)
+          VALUES (?, ?, true, 'record_cleaner', null, true, 1, now(), 1, now())
+        SQL;
+        $this->db->query($query, [
+          $record->id,
+          'This record was not checked by Record Cleaner: ' . $e->getMessage(),
+        ]);
+      }
     }
     $response = $this->curlRequest('/verify', [], json_encode(['records' => $recordsArray]));
+    if (!isset($response->records)) {
+      kohana::log('error', 'Unexpected response from Record Cleaner: ' . var_export($response, TRUE));
+      throw new Exception('Unexpected response from Record Cleaner.');
+    }
     foreach ($response->records as $record) {
       $this->saveRecordResponse($record, $tenKmSquareIds[$record->id]);
     }
@@ -215,6 +241,92 @@ class RecordCleanerApi {
   }
 
   /**
+   * Return the required structure to send to the Record Cleaner sref field.
+   *
+   * @param mixed $record
+   *   Record data read from the database.
+   *
+   * @return array
+   *   Sref array structure.
+   */
+  private function getFormattedSref($record): array {
+    $sref = strtoupper(trim($record->entered_sref));
+    switch (strtoupper($record->entered_sref_system)) {
+      case 'osgb':
+      case 'osie':
+      case 'utm30ed50':
+        return [
+          'srid' => $this->gridSystemCodeToSrid($record->entered_sref_system),
+          'gridref' => $record['entered_sref'],
+        ];
+
+      case '23030': // Channel Islands Easting Northing
+      case '27770': // OSGB Easting Northing
+        if (!preg_match('/^(?<x>\d+),\s*(?<y>\d+)$/', $sref, $matches)) {
+          throw new SkipRecordException('Incorrectly formatted coordinates.');
+        }
+        return [
+          'srid' => $record->entered_sref_system,
+          'easting' => $matches['x'],
+          'northing' => $matches['y'],
+          'accuracy' => $this->getFormattedAccuracy($record->accuracy),
+        ];
+
+      default:
+        // Use lat long coords.
+        return [
+          'srid' => '4326',
+          'longitude' => $record->lon,
+          'latitude' => $record->lat,
+          'accuracy' => $this->getFormattedAccuracy($record->accuracy),
+        ];
+    }
+  }
+
+  /**
+   * Converts record coordinate precision to an accuracy from the expected set.
+   *
+   * @param int $accuracy
+   *   The accuracy value to be converted.
+   *
+   * @return int
+   *   The next highest number from the set [10000, 2000, 1000, 100, 10, 1].
+   */
+  private function getFormattedAccuracy($accuracy) {
+    $thresholds = [10000, 2000, 1000, 100, 10, 1];
+    foreach ($thresholds as $threshold) {
+      if ($accuracy <= $threshold) {
+        return $threshold;
+      }
+    }
+    // Default to the highest threshold if none matched.
+    return 10000;
+  }
+
+  /**
+   * Maps grid system code to SRID.
+   *
+   * @param string $gridSystemCode
+   *   The grid system code (e.g., 'osgb', 'osie', 'utm30ed50').
+   *
+   * @return int
+   *   The corresponding SRID.
+   */
+  private function gridSystemCodeToSrid($gridSystemCode) {
+    $mapping = [
+      'osgb' => 27700,
+      'osie' => 29903,
+      'utm30ed50' => 23030,
+    ];
+    if (!isset($mapping[$gridSystemCode])) {
+      throw new SkipRecordException("Unsupported grid system code: $gridSystemCode");
+    }
+    return $mapping[$gridSystemCode];
+  }
+
+
+
+  /**
    * Saves verification responses for a record.
    *
    * This function processes the messages in the provided record array. If a
@@ -236,7 +348,26 @@ class RecordCleanerApi {
    */
   private function saveRecordResponse($record, $tenKmSqId) {
     foreach ($record->messages as $message) {
-      if (preg_match('/:(difficulty|period|phenology|tenkm):/', $message)) {
+      if (preg_match('/^Rules run: (?<rules>.+)/', $message, $matches)) {
+        $ruleList = explode(', ', $matches['rules']);
+        $query = <<<SQL
+          UPDATE cache_taxa_taxon_lists cttl
+          SET applicable_verification_rule_types = array(
+            SELECT DISTINCT unnest(array_append(cttl.applicable_verification_rule_types, ?))
+          )
+          FROM cache_occurrences_functional o
+          WHERE o.id=?
+          AND cttl.taxon_meaning_id=o.taxon_meaning_id
+          AND cttl.preferred=true;
+        SQL;
+        foreach ($ruleList as $rule) {
+          $this->db->query($query, [
+            $rule,
+            $record->id,
+          ]);
+        }
+      }
+      elseif (preg_match('/:(difficulty|period|phenology|tenkm):/', $message)) {
         $tokens = explode(':', $message);
         $sourceCode = $tokens[1];
         $ruleType = $tokens[2];
