@@ -14,18 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Individuals and associations
- * @subpackage Controllers
- * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    http://code.google.com/p/indicia/
+ * @link    https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Controller providing CRUD access for a known subject comment
- *
- * @package  Core
- * @subpackage Controllers
  */
 class Known_subject_comment_Controller extends Gridview_Base_Controller
 {

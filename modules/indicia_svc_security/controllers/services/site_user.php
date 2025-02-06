@@ -13,10 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link  https://github.com/indicia-team/warehouse/
  */
 
 require_once(DOCROOT.'client_helpers/secure_msg.php');
@@ -24,10 +22,6 @@ require_once(DOCROOT.'client_helpers/secure_msg.php');
 /**
  * Class to provide webservice functions to support a centrally administered
  * user authentication and authorisation service for client websites.
- *
- * @author Indicia Team
- * @package Services
- * @subpackage Security
  */
 class Site_User_Controller extends Service_Base_Controller {
 

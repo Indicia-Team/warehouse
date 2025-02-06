@@ -13,11 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Data Cleaner
- * @subpackage Plugins
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -36,7 +33,7 @@ function data_cleaner_ancillary_species_data_cleaner_rules() {
     ),
     'queries' => array(
       array(
-        'joins' => 
+        'joins' =>
             "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
             "join verification_rules vr on vr.test_type='AncillarySpecies' and vr.deleted=false ".
             "left join verification_rule_data vrd on vrd.verification_rule_id=vr.id and vrd.deleted=false ".

@@ -17,10 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
+
+/**
+ * Metadata for the notification emails plugin.
+ *
+ * @return array
+ *   Metadata.
+ */
+function notification_emails_metadata() {
+  return [
+    // Set to a high weight to ensure that the notification emails plugin runs
+    // last.
+    'weight' => 1001,
+  ];
+}
 
 /**
  * Hook ORM to enable the relationship from users to notification settings.

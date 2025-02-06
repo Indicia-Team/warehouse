@@ -14,18 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage GridModels
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Declares a model simply to expose the gv_occurrence view to ORM.
- *
- * @package	Core
- * @subpackage GridModels
  */
 class gv_occurrence_model extends ORM {
 

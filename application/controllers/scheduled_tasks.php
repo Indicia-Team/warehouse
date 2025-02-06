@@ -36,7 +36,16 @@ class Scheduled_Tasks_Controller extends Controller {
   private $occdeltaStartTimestamp = '';
   private $occdeltaEndTimestamp = '';
   private $occdeltaCount = 0;
+
+  /**
+   * Array containing metadata for the currently processing plugin.
+   *
+   * Key/value pairs.
+   *
+   * @var array
+   */
   private $pluginMetadata;
+
 
   /**
    * Database connection.
@@ -857,7 +866,7 @@ class Scheduled_Tasks_Controller extends Controller {
     if ($latestUnprocessed->maxtime !== NULL) {
       $maxTime = $latestUnprocessed->maxtime;
     }
-    $plugins = $this->getScheduledPlugins();
+    $allScheduledPlugins = $this->getScheduledPlugins();
     // Load the plugins and last run date info from the system table. Any not
     // run before will start from the current timepoint. We need this to be
     // sorted, so we can process the list of changed records for each group of
@@ -865,62 +874,57 @@ class Scheduled_Tasks_Controller extends Controller {
     $pluginsFromDb = $this->db
       ->select('name, last_scheduled_task_check')
       ->from('system')
-      ->in('name', $plugins)
-      ->orderby('last_scheduled_task_check', 'ASC')
+      ->in('name', $allScheduledPlugins)
       ->get();
-    $sortedPlugins = [];
+    $pluginList = [];
     foreach ($pluginsFromDb as $plugin) {
-      $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check === NULL
-        ? $maxTime : $plugin->last_scheduled_task_check;
+      $pluginList[$plugin->name] = [
+        'lastRunTimestamp' => $plugin->last_scheduled_task_check
+      ];
     }
-    // Any new plugins not run before should also be included in the list.
-    foreach ($plugins as $plugin) {
-      if (!isset($sortedPlugins[$plugin])) {
-        $sortedPlugins[$plugin] = $maxTime;
+    foreach ($allScheduledPlugins as $plugin) {
+      // Any new plugins not run before should also be included in the list.
+      if (!isset($pluginList[$plugin])) {
+        $pluginList[$plugin] = [
+          'lastRunTimestamp' => $maxTime,
+        ];
       }
+      require_once MODPATH . "$plugin/plugins/$plugin.php";
+      $pluginList[$plugin] = array_merge(
+        $pluginList[$plugin],
+        $this->loadPluginMetadata($plugin)
+      );
     }
-    // Make sure data_cleaner runs before auto_verify module.
-    if (array_key_exists('data_cleaner', $sortedPlugins)) {
-      $sortedPlugins = ['data_cleaner' => $sortedPlugins['data_cleaner']] + $sortedPlugins;
-    }
-    // Make sure the cache_builder and spatial_index_builders run first as some
-    // other modules depend on the cache_occurrences_* tables.
-    if (array_key_exists('spatial_index_builder', $sortedPlugins)) {
-      $sortedPlugins = ['spatial_index_builder' => $sortedPlugins['spatial_index_builder']] + $sortedPlugins;
-    }
-    if (array_key_exists('cache_builder', $sortedPlugins)) {
-      $sortedPlugins = ['cache_builder' => $sortedPlugins['cache_builder']] + $sortedPlugins;
-    }
-    // Make sure the verifier notification emails run last as the emails are
-    // sent out based on the results of other modules such as notifications
-    // generated.
-    if (array_key_exists('verifier_notification_emails', $sortedPlugins)) {
-      $temp = $sortedPlugins['verifier_notification_emails'];
-      unset($sortedPlugins['verifier_notification_emails']);
-      $sortedPlugins['verifier_notification_emails'] = $temp;
-    }
-    // Now go through timestamps in order of time since they were run.
-    foreach ($sortedPlugins as $plugin => $timestamp) {
+    uasort($pluginList, function ($a, $b) {
+      $weightDiff = $a['weight'] - $b['weight'];
+      if ($weightDiff !== 0) {
+        return $weightDiff;
+      }
+      return strtotime($a['lastRunTimestamp']) - strtotime($b['lastRunTimestamp']);
+    });
+    // Now go through plugins to run them.
+    foreach ($pluginList as $plugin => $pluginMetadata) {
+
       // Allow the list of scheduled plugins we are running to be controlled
       // from the URL parameters.
       if (in_array('all_modules', $scheduledPlugins) || in_array($plugin, $scheduledPlugins)) {
         kohana::log('debug', "Processing scheduled task $plugin");
         kohana::log_save();
-        require_once MODPATH . "$plugin/plugins/$plugin.php";
-        $this->loadPluginMetadata($plugin);
-        $this->loadOccurrencesDelta($timestamp, $maxTime);
+        if (!empty($pluginMetadata['requires_occurrences_delta'])) {
+          $this->loadOccurrencesDeltaIfRequired($pluginMetadata, $maxTime);
+        }
         // Call the plugin, only if there are records to process, or it doesn't
         // care.
-        if (!$this->pluginMetadata['requires_occurrences_delta']
+        if (!$pluginMetadata['requires_occurrences_delta']
             || $this->occdeltaCount > 0
-            || $this->pluginMetadata['always_run']) {
+            || $pluginMetadata['always_run']) {
           kohana::log('debug', "Running scheduled task $plugin");
           kohana::log_save();
           echo "<h2>Running $plugin</h2>";
-          echo "<p>Last run at $timestamp</p>";
+          echo "<p>Last run at $pluginMetadata[lastRunTimestamp]</p>";
           $tm = microtime(TRUE);
           try {
-            call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $maxTime);
+            call_user_func($plugin . '_scheduled_task', $pluginMetadata['lastRunTimestamp'], $this->db, $maxTime);
           }
           catch (Exception $e) {
             error_logger::log_error("Error in scheduled task $plugin", $e);
@@ -938,13 +942,13 @@ class Scheduled_Tasks_Controller extends Controller {
           kohana::log_save();
         }
         else {
-          echo "<strong>Skipping $plugin as nothing to do</strong> - last run at $timestamp <br/>";
+          echo "<strong>Skipping $plugin as nothing to do</strong> - last run at $pluginMetadata[lastRunTimestamp]<br/>";
           kohana::log('debug', "Skipped scheduled task $plugin as nothing to do.");
           kohana::log_save();
         }
         // Mark the time of the last scheduled task check so we can get the
         // correct list of updates next time.
-        $timestamp = $this->pluginMetadata['requires_occurrences_delta'] ? $this->occdeltaEndTimestamp : $maxTime;
+        $timestamp = $pluginMetadata['requires_occurrences_delta'] ? $this->occdeltaEndTimestamp : $maxTime;
         if (!$this->db->update('system', ['last_scheduled_task_check' => $timestamp], ['name' => $plugin])->count()) {
           $this->db->insert('system', [
             'version' => '0.1.0',
@@ -993,24 +997,24 @@ class Scheduled_Tasks_Controller extends Controller {
    * If a plugin needs a different occurrences delta table to the one we've got
    * currently prepared, then build it.
    *
-   * @param string $timestamp
-   *   Timestamp to load changes since.
+   * @param array $pluginMetadata
+   *   Metadata for the current plugin.
    * @param string $currentTime
    *   Timepoint of the scheduled task run, so we can be absolutely clear about
    *   not including records added which overlap the scheduled task.
    *
    * @link http://indicia-docs.readthedocs.io/en/latest/developing/warehouse/plugins.html#scheduled-task-hook
    */
-  private function loadOccurrencesDelta($timestamp, $currentTime) {
-    if ($this->pluginMetadata['requires_occurrences_delta']) {
-      if ($this->occdeltaStartTimestamp !== $timestamp) {
+  private function loadOccurrencesDeltaIfRequired(array $pluginMetadata, $currentTime) {
+    if ($pluginMetadata['requires_occurrences_delta']) {
+      if ($this->occdeltaStartTimestamp !== $pluginMetadata['lastRunTimestamp']) {
         // This scheduled plugin wants to know about the changed occurrences,
         // and the current occdelta table does not contain the records since
         // the correct change point.
         $this->db->query('DROP TABLE IF EXISTS occdelta;');
         // This query uses a 2 stage process as it is faster than joining
         // occurrences to cache_occurrences.
-        $ts = pg_escape_literal($this->db->getLink(), $timestamp);
+        $ts = pg_escape_literal($this->db->getLink(), $pluginMetadata['lastRunTimestamp']);
         $ct = pg_escape_literal($this->db->getLink(), $currentTime);
         $query = <<<SQL
           select distinct o.id
@@ -1049,7 +1053,7 @@ class Scheduled_Tasks_Controller extends Controller {
           drop table occlist;
         SQL;
         $this->db->query($query);
-        $this->occdeltaStartTimestamp = $timestamp;
+        $this->occdeltaStartTimestamp = $pluginMetadata['lastRunTimestamp'];
         $this->occdeltaEndTimestamp = $currentTime;
         // If processing more than a few thousand records at a time, things
         // will slow down. So we'll cut off the delta at the second which the
@@ -1082,13 +1086,20 @@ class Scheduled_Tasks_Controller extends Controller {
    *
    * @param string $plugin
    *   Name of the plugin.
+   *
+   * @return array
+   *   Metadata for this plugin.
    */
   private function loadPluginMetadata($plugin) {
-    $this->pluginMetadata = function_exists($plugin . '_metadata') ? call_user_func($plugin . '_metadata') : [];
-    $this->pluginMetadata = array_merge([
+    $pluginMetadata = function_exists($plugin . '_metadata') ? call_user_func($plugin . '_metadata') : [];
+    $pluginMetadata = array_merge([
       'requires_occurrences_delta' => FALSE,
       'always_run' => FALSE,
-    ], $this->pluginMetadata);
+      // Default is to run after other modules that set a higher priority via a
+      // lower weight.
+      'weight' => 1000,
+    ], $pluginMetadata);
+    return $pluginMetadata;
   }
 
   /**

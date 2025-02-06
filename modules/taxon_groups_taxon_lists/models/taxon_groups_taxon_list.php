@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Taxon groups taxon lists
- * @subpackage Models
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	https://github.com/indicia-team/warehouse/
  */
@@ -25,8 +22,7 @@
  * Model class for the taxon_groups_taxon_lists table.
  *
  * @package	Taxon groups taxon lists
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * @link	https://github.com/indicia-team/warehouse/wiki/DataModel
  */
 class Taxon_groups_taxon_list_Model extends ORM {
 

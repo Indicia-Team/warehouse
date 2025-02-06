@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -51,7 +50,8 @@ function data_cleaner_extend_data_services() {
 /**
  * Returns plugin metadata.
  *
- * Identifies that the plugin uses the occdelta table to identify changes.
+ * Identifies that the plugin uses the occdelta table to identify changes. Also
+ * sets the order of running the plugin to after cache_builder.
  *
  * @return array
  *   Metadata.
@@ -59,6 +59,8 @@ function data_cleaner_extend_data_services() {
 function data_cleaner_metadata() {
   return [
     'requires_occurrences_delta' => TRUE,
+    // Should run after the cache_builder plugin.
+    'weight' => 2,
   ];
 }
 

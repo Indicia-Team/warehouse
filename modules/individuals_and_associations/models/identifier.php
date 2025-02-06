@@ -14,19 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Model class for the Identifiers table.
- *
- * @package	Individuals and associations module
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Identifier_Model extends ORM
 {
@@ -46,12 +39,12 @@ class Identifier_Model extends ORM
     'identifier_attribute_values',
     'identifiers_subject_observations',
   );
-    
+
   protected $has_and_belongs_to_many = array(
     'identifier_attributes',
     'subject_observations',
   );
-    
+
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   // A public attribute does NOT need to be linked to a website to form part of the submissable data for a identifier (unlike, say,
@@ -59,7 +52,7 @@ class Identifier_Model extends ORM
   public $include_public_attributes = true;
   protected $attrs_submission_name='idnAttributes';
   protected $attrs_field_prefix='idnAttr';
-  
+
   public function validate(Validation $array, $save = false) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
@@ -67,12 +60,12 @@ class Identifier_Model extends ORM
     $array->add_rules('website_id', 'required', 'digit');
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
-      'issue_authority_id', 
-      'issue_scheme_id', 
-      'issue_date', 
-      'first_use_date', 
-      'last_observed_date', 
-      'final_date', 
+      'issue_authority_id',
+      'issue_scheme_id',
+      'issue_date',
+      'first_use_date',
+      'last_observed_date',
+      'final_date',
       'coded_value',
       'summary',
       'known_subject_id',
@@ -101,27 +94,27 @@ class Identifier_Model extends ORM
   * Before submission, TODO perhaps?
   */
   protected function preSubmit()
-  { 
+  {
     kohana::log('debug', 'In Identifier_Model::preSubmit() $this->submission is '.print_r($this->submission, true));
     return parent::presubmit();
   }
-  
+
   /**
   * After submission, TODO perhaps?
   */
   protected function postSubmit($isInsert)
-  { 
+  {
     kohana::log('debug', 'In Identifier_Model::postSubmit() $this->submission is '.print_r($this->submission, true));
     return parent::postSubmit($isInsert);
   }
 
-  /** 
+  /**
    * Gets the list of custom attributes for this model.
-   * @param boolean $required Optional. Set to true to only return required attributes (requires 
+   * @param boolean $required Optional. Set to true to only return required attributes (requires
    * the website and survey identifier to be set).
    * @param int @typeFilter Specify a location type meaning id or a sample method meaning id to
    * filter the returned attributes to those which apply to the given type or method.
-   * @param boolean @hasSurveyRestriction true if this objects attributes can be restricted to 
+   * @param boolean @hasSurveyRestriction true if this objects attributes can be restricted to
    * survey scope.
    */
   protected function getAttributes($required = false, $typeFilter = null, $hasSurveyRestriction = true) {

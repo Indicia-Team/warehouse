@@ -14,16 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Test class for the data cleaner's verification web service.
- *
- * @package Services
- * @subpackage Data Cleaner
  */
 
 require_once 'client_helpers/data_entry_helper.php';

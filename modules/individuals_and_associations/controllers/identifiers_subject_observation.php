@@ -14,18 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Individuals and associations
- * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse/
  * @license http://www.gnu.org/licenses/gpl.html GPL
  */
 
 /**
  * Controller for the Identifiers_subject_observation tab.
- *
- * @package Individuals and associations
- * @subpackage Controllers
  */
 class Identifiers_subject_observation_Controller extends Gridview_Base_Controller {
 
@@ -37,7 +31,7 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
     parent::__construct('identifiers_subject_observation');
     $this->columns = array(
       'coded_value'=>'',
-      'verified_status'=>''      
+      'verified_status'=>''
     );
     $this->pagetitle = "Identifier Subject Observations";
   }
@@ -46,7 +40,7 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
   {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
-  
+
   /**
   * Override the default index functionality to filter by subject_observation_id.
   */
@@ -62,7 +56,7 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
       $this->view->subject_observation_id=$this->uri->argument(1);
     }
   }
-  
+
   /**
    * Override the default return page behaviour so that after saving an identifier you
    * are returned to the identifiers_subject_observation entry which has the identifier.
@@ -74,7 +68,7 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
       return $this->model->object_name;
     }
   }
-  
+
   /**
    * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a subject observation
    */
@@ -91,14 +85,14 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
     $this->page_breadcrumbs[] = html::anchor('subject_observation/edit/'.$so, $so->caption());
     $this->page_breadcrumbs[] = $this->model->caption();
   }
-  
+
   /**
-   *  Setup the default values to use when loading this controller to create a new image.   
+   *  Setup the default values to use when loading this controller to create a new image.
    */
-  protected function getDefaults() {    
-    $r = parent::getDefaults();    
+  protected function getDefaults() {
+    $r = parent::getDefaults();
     if ($this->uri->method(false)=='create') {
-      // subject_observation_id is passed as first argument in URL when creating. 
+      // subject_observation_id is passed as first argument in URL when creating.
       $r['identifiers_subject_observation:subject_observation_id'] = $this->uri->argument(1);
     }
     if (array_key_exists('identifiers_subject_observation:id', $_POST)) {
@@ -115,7 +109,7 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
     }
     return $r;
   }
-  
+
   /**
    * Retrieves additional values from the model that are required by the edit form.
    * @return array List of additional values required by the form.
@@ -133,11 +127,11 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
         'restrict_to_survey_id'=>array(null, $surveyId),
       // other stuff here
     ));
-    return $r;      
+    return $r;
   }
-  
+
   /**
-   * Adds sample data to the values array. 
+   * Adds sample data to the values array.
    */
   private function addSubjectObservation($values, $id) {
     $subjectObservation = ORM::Factory('subject_observation', $id);
@@ -146,9 +140,9 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
     $values['subject_observation:sample_id'] = $subjectObservation->sample_id;
     return $values;
   }
-  
+
   /**
-   * Adds sample data to the values array. 
+   * Adds sample data to the values array.
    */
   private function addSample($values, $id) {
     $sample = ORM::Factory('sample', $id);
@@ -159,5 +153,5 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
     $values['survey:title'] = $sample->survey->title;
     return $values;
   }
-  
+
 }

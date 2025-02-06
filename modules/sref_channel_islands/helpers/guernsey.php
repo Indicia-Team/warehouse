@@ -13,17 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Modules
- * @subpackage Channel Islands Grid References
- * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link  https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Conversion class for Guernsey grid references EPSG:3108.
- * @package Modules
- * @subpackage Channel Islands Grid References
  * @author  Indicia Team
  */
 class guernsey extends island_grid{

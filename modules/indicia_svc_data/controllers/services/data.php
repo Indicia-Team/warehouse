@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/warehouse
  */
@@ -787,7 +786,7 @@ class Data_Controller extends Data_Service_Base_Controller {
    * only then only read requests are accepted.
    * Plugins can use the extend_data_services hook to declare their models to
    * expose via data services.
-   * @link http://code.google.com/p/indicia/wiki/WarehousePluginArchitecture
+   * @link https://github.com/indicia-team/warehouse/wiki/WarehousePluginArchitecture
    *
    * @param string $name
    *   Called controller function name (entity).

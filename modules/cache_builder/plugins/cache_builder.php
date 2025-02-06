@@ -17,10 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/warehouse
  */
+
+/**
+ * Returns plugin metadata, in particular to set the running order.
+ *
+ * @return array
+ *  Metadata.
+ */
+function cache_builder_metadata() {
+  return [
+    'weight' => 1,
+  ];
+}
 
 /**
  * Hook into the task scheduler.

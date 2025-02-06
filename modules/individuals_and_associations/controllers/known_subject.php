@@ -14,18 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse/
  * @license http://www.gnu.org/licenses/gpl.html GPL
  */
 
 /**
  * Controller for the known_subject page.
- *
- * @package Groups and individuals module
- * @subpackage Controllers
  */
 class Known_subject_Controller extends Gridview_Base_Controller {
 

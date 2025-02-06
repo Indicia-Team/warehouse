@@ -13,9 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	REST Api Sync
- * @subpackage Helpers
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	https://github.com/indicia-team/warehouse/
  */
@@ -42,9 +39,9 @@ class request_logging {
    *   count).
    * @param string $resource
    *   Resource that was accessed if appropriate, e.g. a table or report name.
-   * @param int $website_id
+   * @param int|null $website_id
    *   ID of the client website, or null if not known.
-   * @param int $user_id
+   * @param int|null $user_id
    *   ID of the user making the request, or null if not known.
    * @param float $startTime
    *   Unix timestamp of the request start, i.e. the value of microtime(true).
@@ -89,7 +86,7 @@ class request_logging {
         }
         $post = json_encode($post);
       }
-      $db->insert('request_log_entries', array(
+      $db->insert('request_log_entries', [
         'io' => $io,
         'service' => $service,
         'resource' => $resource,
@@ -102,7 +99,7 @@ class request_logging {
         'duration' => microtime(TRUE) - $startTime,
         'exception_msg' => $exceptionMsg,
         'response_size' => ob_get_length(),
-      ));
+      ]);
       $db->query('COMMIT');
     }
   }

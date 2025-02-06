@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	https://github.com/indicia-team/warehouse/
  */
@@ -24,9 +21,7 @@
 /**
  * Controller providing CRUD access to the summariser_definition list.
  *
- * @package	Core
- * @subpackage Controllers
- */
+ * */
 
 class Summariser_definition_Controller extends Gridview_Base_Controller {
 
@@ -195,18 +190,18 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
 
   /**
    * Controller action that submits a sample for processing by the summary builder.
-   * 
+   *
    * Validates a posted 'sample_id' before inserting an entry for it into the work_queue,
    * then displays the status of the summary builder work queue.
    */
   public function work_queue_reset_sample() {
       require_once MODPATH . 'summary_builder/plugins/summary_builder.php';
-      
+
       $this->template->title = 'Summariser work queue';
       $this->template->content = new View('summariser_definition/work_queue');
       $this->template->content->successMessage = '';
       $this->template->content->errorMessage = '';
-      
+
       if (empty($_POST['sample_id'])) {
           $this->template->content->errorMessage = 'The sample ID must be provided';
           return;
@@ -220,7 +215,7 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
           $this->template->content->errorMessage = 'The sample ID ' . $_POST['sample_id'] . ' is not a valid sample';
           return;
       }
-      
+
       $task = 'task_summary_builder_sample';
       $costEstimate = 50;
       $priority = 3;
