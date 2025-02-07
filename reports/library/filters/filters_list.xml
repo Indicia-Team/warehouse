@@ -43,5 +43,6 @@
     <column name="filters_user_id" visible="false" sql="fu.id" />
     <column name="defines_permissions" visible="false" sql="f.defines_permissions" />
     <column name="person_name" display="Person" sql="p.surname || coalesce(', ' || p.first_name, '')" datatype="text"/>
+    <column name="filter_created" display="Date filter created" sql="f.created_on" datatype="date" />
   </columns>
 </report>
