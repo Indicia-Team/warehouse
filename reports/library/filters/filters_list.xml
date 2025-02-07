@@ -12,7 +12,7 @@
   WHERE (f.website_id in (#website_ids#) or f.website_id is null)
   AND f.deleted=false
   #order_by#
-  </query>  
+  </query>
   <order_bys>
     <order_by>f.title ASC</order_by>
   </order_bys>
@@ -27,22 +27,21 @@
         lookup_values='R:Reporting,P:Peer review,V:Verification,D:Data flow,M:Moderation,E:Editing'>
       <where>f.sharing='#filter_sharing_mode#'</where>
     </param>
-    <param name="defines_permissions" display="Filter type" datatype="lookup" 
+    <param name="defines_permissions" display="Filter type" datatype="lookup"
            lookup_values="f:User filters,t:Filters which define permissions">
       <where>f.defines_permissions='#defines_permissions#'</where>
     </param>
   </params>
   <columns>
-    <column name="id" visible="false" sql="f.id" />
+    <column name="id" display="Filter ID" datatype="integer" sql="f.id" />
     <column name="title" display='Title' datatype="text" sql="f.title" />
     <column name="description" display='Description' datatype="text" sql="f.description" />
     <column name="sharing" datatype="text" display="For task"
         sql="case f.sharing when 'R' then 'Reporting' when 'P' then 'Peer review' when 'V' then 'Verification'
         when 'D' then 'Data flow' when 'M' then 'Moderation' when 'E' then 'Editing' end"/>
-    <column name="definition" visible="false" sql="f.definition" /> 
+    <column name="definition" visible="false" sql="f.definition" />
     <column name="filters_user_id" visible="false" sql="fu.id" />
     <column name="defines_permissions" visible="false" sql="f.defines_permissions" />
     <column name="person_name" display="Person" sql="p.surname || coalesce(', ' || p.first_name, '')" datatype="text"/>
   </columns>
 </report>
-
