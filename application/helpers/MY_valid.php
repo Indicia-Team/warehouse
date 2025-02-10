@@ -82,6 +82,10 @@ class Valid extends valid_Core {
   /**
    * Validates that a date is not in the future.
    *
+   * Note that tomorrow is allowed temporarily, until timezone is added as a
+   * recognised date component, in order to allow submissions of today from
+   * places which are in a timezone ahead of the warehouse.
+   *
    * @param string $date
    *   Date string.
    *
@@ -89,7 +93,12 @@ class Valid extends valid_Core {
    *   True if date today or in past.
    */
   public static function date_in_past($date) {
-    return ($date == NULL || strtotime($date) <= time());
+    if ($date === NULL) {
+      return true;
+    }
+    $dateTimestamp = strtotime($date);
+    $tomorrowTimestamp = strtotime('+1 day', strtotime('today'));
+    return $dateTimestamp <= $tomorrowTimestamp;
   }
 
   /**
