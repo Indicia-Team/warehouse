@@ -985,6 +985,53 @@ class RestApiElasticsearch {
   }
 
   /**
+   * Return a Yes/No value for the field indicating image classifier agreement.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters in field definition.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldIdentificationClassifierAgreement(array $doc, array $params) {
+    $value = $doc['identification']['classifier']['current_determination']['classifier_chosen'] ?? NULL;
+    if ($value === 'true') {
+      return 'Yes';
+    }
+    elseif ($value === 'false') {
+      return 'No';
+    }
+    return '';
+  }
+
+  /**
+   * Return the image classifiers top suggested taxon name.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters in field definition.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldIdentificationClassifierSuggestion(array $doc, array $params) {
+    $suggestions = $doc['identification']['classifier']['suggestions'] ?? [];
+    $topSuggestion = '';
+    $topProbability = 0;
+    foreach ($suggestions as $suggestion) {
+      if ($suggestion['probability_given'] > $topProbability) {
+        $topSuggestion = $suggestion['taxon_name_given'];
+        $topProbability = $suggestion['probability_given'];
+      }
+    }
+    return $topSuggestion;
+  }
+
+
+  /**
    * Special field handler for latitude data.
    *
    * @param array $doc
@@ -2111,6 +2158,12 @@ class RestApiElasticsearch {
           $fields[] = 'location.verbatim_locality';
           $fields[] = 'metadata.sensitive';
           $fields[] = 'metadata.private';
+        }
+        elseif ($field === '#idenfication_classifier_agreement#') {
+          $fields[] = 'identification.classifiers.current_determination.classifier_chosen';
+        }
+        elseif ($field === '#idenfication_classifier_suggestion#') {
+          $fields[] = 'identification.classifiers.suggestions';
         }
         elseif (preg_match('/^#template(.*)#$/', $field)) {
           // Find fields embedded in the template and add them.

@@ -1724,7 +1724,7 @@ WHERE u.id=o.id
 ";
 
 // Fill in classifier agreement.
-$config['occurrences']['update']['functional_classification'] = <<<SQL
+$config['occurrences']['update']['functional_classification_defaults'] = <<<SQL
   -- Set a default of disagreement for all records with classifier info.
   UPDATE cache_occurrences_functional u
   SET classifier_agreement=false
@@ -1732,10 +1732,12 @@ $config['occurrences']['update']['functional_classification'] = <<<SQL
   #join_needs_update#
   JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
   JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
-  WHERE u.id=o.id;
+  WHERE u.id=o.id
+SQL;
 
-  -- For records with classifier info where a suggestion matches the current det,
-  -- set agreement to true if the classifier chose that suggestion as the best match.
+// For records with classifier info where a suggestion matches the current det,
+// set agreement to true if the classifier chose that suggestion as the best match.
+$config['occurrences']['update']['functional_classification'] = <<<SQL
   UPDATE cache_occurrences_functional u
   SET classifier_agreement=COALESCE(cs.classifier_chosen, false)
   FROM occurrences o
@@ -1746,7 +1748,7 @@ $config['occurrences']['update']['functional_classification'] = <<<SQL
     JOIN cache_taxa_taxon_lists cttl on cttl.id=cs.taxa_taxon_list_id
   ) ON cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
   WHERE u.id=o.id
-  AND (cttl.external_key=u.taxa_taxon_list_external_key OR cs.id IS NULL);
+  AND (cttl.external_key=u.taxa_taxon_list_external_key OR cs.id IS NULL)
 SQL;
 
 // Ensure occurrence sensitivity changes apply to parent sample cache data.

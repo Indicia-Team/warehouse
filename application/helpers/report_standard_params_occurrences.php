@@ -823,6 +823,26 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'classifier_agreement' => [
+        'datatype' => 'lookup',
+        'display' => 'Classifier agreement',
+        'description' => "If a classifier was used, flag indicating if the classifier's most likely suggestion matches the current determination.",
+        'lookup_values' => "A:Include all records irrespective of classificaton," .
+          "Y:Only records where the classifier's most likely suggestion matches the current determination," .
+          "N:Only records where the classifier's most likely suggestion does not match the current determination",
+        'wheres' => [
+          [
+            'value' => 'Y',
+            'operator' => 'equal',
+            'sql' => "o.classifier_agreement=true",
+          ],
+          [
+            'value' => 'N',
+            'operator' => 'equal',
+            'sql' => "o.classifier_agreement=false",
+          ],
+        ],
+      ],
       'has_photos' => [
         'datatype' => 'boolean',
         'display' => 'Photo records filter',
