@@ -52,7 +52,17 @@ class User_Identifier_Controller extends Service_Base_Controller {
         request_logging::log('a', 'security', 'get_user_id', 'user',
           $this->website_id, NULL, $tm, NULL, $e->getMessage());
       }
-      $this->handle_error($e);
+      if ($e instanceof Kohana_Database_Exception && strpos($e->getMessage(), 'ix_unique_email_address') !== FALSE) {
+        http_response_code(409);
+        echo json_encode([
+          'code' => 409,
+          'status' => 'Conflict',
+          'message' => 'This email address already exists on another warehouse user account.',
+        ]);
+      }
+      else {
+        $this->handle_error($e);
+      }
     }
   }
 
