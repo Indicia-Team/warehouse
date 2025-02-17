@@ -74,8 +74,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
     try {
       // Don't use $_REQUEST as it can do funny things escaping quotes etc.
       $this->authenticate('write');
-      $userId = $_POST['warehouse_user_id'];
-      $websiteId = $_POST['website_id_for_user_deletion'];
+      $userId = (int) $_POST['warehouse_user_id'];
+      $websiteId = (int) $_POST['website_id_for_user_deletion'];
       // Fail if website ID doesn't match the one in authentication.
       if ($websiteId !== $this->website_id) {
         throw new Exception('Requested website ID does not match the authorised one.');
