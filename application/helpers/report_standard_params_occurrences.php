@@ -829,7 +829,8 @@ class report_standard_params_occurrences {
         'description' => "If a classifier was used, flag indicating if the classifier's most likely suggestion matches the current determination.",
         'lookup_values' => "A:Include all records irrespective of classificaton," .
           "Y:Only records where the classifier's most likely suggestion matches the current determination," .
-          "N:Only records where the classifier's most likely suggestion does not match the current determination",
+          "N:Only records where the classifier's most likely suggestion does not match the current determination," .
+          "C:Any record where a classifier was used",
         'wheres' => [
           [
             'value' => 'Y',
@@ -840,6 +841,11 @@ class report_standard_params_occurrences {
             'value' => 'N',
             'operator' => 'equal',
             'sql' => "o.classifier_agreement=false",
+          ],
+          [
+            'value' => 'C',
+            'operator' => 'equal',
+            'sql' => "o.classifier_agreement IS NOT NULL",
           ],
         ],
       ],
