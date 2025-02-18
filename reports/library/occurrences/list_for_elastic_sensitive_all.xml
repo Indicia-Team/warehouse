@@ -55,6 +55,39 @@
     WHERE sc.id=o.sample_id AND sc.deleted=false
     AND o.recorded_parent_location_id IS NULL;
 
+    UPDATE output_rows o
+    SET classifier_current_det_probability_given=cs.probability_given,
+      classifier_current_det_taxon_name_given=cs.taxon_name_given,
+      classifier_current_det_human_chosen=cs.human_chosen::text,
+      classifier_current_det_classifier_chosen=cs.classifier_chosen::text
+    FROM occurrence_media m
+    JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
+    JOIN classification_suggestions cs on cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
+    JOIN cache_taxa_taxon_lists cttl on cttl.id=cs.taxa_taxon_list_id
+    WHERE m.occurrence_id=o.id AND m.deleted=false
+    AND cttl.external_key=o.accepted_taxon_key;
+
+    UPDATE output_rows o
+    SET classifier_suggestions=(
+      SELECT json_agg(subquery.*)
+      FROM (
+        SELECT cssub.taxon_name_given, cssub.taxa_taxon_list_id, cssub.probability_given,
+          cssub.human_chosen::text, cssub.classifier_chosen::text,
+          tsub.term as classifier, crsub.classifier_version, to_char(cssub.created_on, 'yyyy-mm-dd HH24:MI:SS.MS') as created_on
+        FROM classification_suggestions cssub
+        JOIN classification_results crsub ON crsub.id=cssub.classification_result_id AND crsub.deleted=false
+        JOIN cache_termlists_terms tsub on tsub.id=crsub.classifier_id
+        WHERE cssub.classification_result_id=crom.classification_result_id
+        ORDER BY cssub.probability_given DESC
+      ) AS subquery
+    )::text,
+    classifier_current_det_probability_given=COALESCE(o.classifier_current_det_probability_given, 0),
+    classifier_current_det_classifier_chosen=COALESCE(o.classifier_current_det_classifier_chosen, 'false'),
+    classifier_current_det_human_chosen=COALESCE(o.classifier_current_det_human_chosen, 'false')
+    FROM classification_results_occurrence_media crom
+    JOIN occurrence_media m ON m.id=crom.occurrence_media_id AND m.deleted=false
+    WHERE m.occurrence_id=o.id;
+
     SELECT *
     FROM output_rows o
     #order_by#
@@ -247,5 +280,10 @@
     <column name="taxon_kingdom" sql="cttl.kingdom_taxon" datatype="integer" />
     <column name="taxon_order" sql="cttl.order_taxon" datatype="integer" />
     <column name="taxon_family" sql="cttl.order_taxon" datatype="integer" />
+    <column name="classifier_current_det_probability_given" sql="null::float" datatype="float" />
+    <column name="classifier_current_det_taxon_name_given" sql="null::text" datatype="text" />
+    <column name="classifier_current_det_human_chosen" sql="null::text" datatype="text" />
+    <column name="classifier_current_det_classifier_chosen" sql="null::text" datatype="text" />
+    <column name="classifier_suggestions" sql="null::text" datatype="text" />
   </columns>
 </report>

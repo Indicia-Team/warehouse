@@ -323,7 +323,7 @@ class Service_Base_Controller extends Controller {
     }
     // Give a chance to localise the message.
     $translated = kohana::lang('general_errors.' . $message);
-    if (substr($message, 0, 15) !== 'general_errors.') {
+    if (substr($translated, 0, 15) !== 'general_errors.') {
       $message = $translated;
     }
     $mode = $this->get_output_mode();

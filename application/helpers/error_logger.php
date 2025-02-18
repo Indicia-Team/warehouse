@@ -40,7 +40,7 @@ class error_logger {
    *   The exception object.
    */
   public static function log_error($msg, $e) {
-    kohana::log('error', '#' . $e->getCode() . ': ' . $msg . '. ' . $e->getMessage() . ' at line ' .
+    kohana::log('error', get_class($e) . ' #' . $e->getCode() . ': ' . $msg . '. ' . $e->getMessage() . ' at line ' .
           $e->getLine() . ' in file ' . $e->getFile());
     // Double check the log threshold to avoid unnecessary work.
     if (kohana::config('config.log_threshold') === 4) {
