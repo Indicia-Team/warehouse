@@ -240,8 +240,6 @@ SQL;
       'occurrence_id' => 'Record ID',
       'comment' => 'Message',
       'record_status' => 'Record status',
-      // Column for link to comments page, doesn't need header title.
-      'query' => '',
     );
     $emailHighPriority = FALSE;
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
@@ -295,11 +293,34 @@ SQL;
             if ($field === 'username' && ($record[$field] === 'admin' || $record[$field] === 'system')) {
               $htmlToDisplay = $systemName;
             }
+            elseif ($field === 'comment') {
+              $htmlToDisplay = "<div style=\"padding: 4px; border: solid silver 1px; border-radius: 4px;\">$htmlToDisplay</div>";
+              // Add a reply link if relevant.
+              if (!empty($record['occurrence_id']) && in_array($currentType, ['C', 'V', 'Q'])) {
+                $link = notification_emails_hyperlink_id(
+                  $notificationToSendEmailsFor['user_id'],
+                  $notificationToSendEmailsFor['website_id'],
+                  'click here to add a comment',
+                );
+                // Only use if this converted to a link successfully (i.e. a
+                // record details page available for this website).
+                if ($link !== 'click here to add a comment') {
+                  $htmlToDisplay .= "&#8617 To reply, $link.<br/><br/>";
+                }
+              }
+            }
             elseif ($field === 'record_status') {
               $statusCode = $record['record_status'] .
                 (empty($record['record_substatus']) ? '' : $record['record_substatus']);
               if (isset($recordStatuses[$statusCode])) {
                 $htmlToDisplay = $recordStatuses[$statusCode];
+                if ($record['record_status'] === 'V') {
+                  $htmlToDisplay = '&#10003 ' . $htmlToDisplay;
+                }
+                elseif ($record['record_status'] === 'R') {
+                  $htmlToDisplay = '&#10007 ' . $htmlToDisplay;
+                }
+
               }
             }
             elseif ($field === 'occurrence_id') {
@@ -307,22 +328,6 @@ SQL;
                   $record[$field],
                   $notificationToSendEmailsFor['website_id']
               );
-            }
-            elseif ($field === 'query') {
-              // Only allow commenting on occurrence records which have been
-              // queried.
-              if ($notificationToSendEmailsFor['query'] === 'Q' && !empty($record['occurrence_id'])) {
-                $link = notification_emails_hyperlink_id(
-                  $notificationToSendEmailsFor['user_id'],
-                  $notificationToSendEmailsFor['website_id'],
-                  'Reply to query',
-                );
-                // Only use if this converted to a link successfully (i.e. a
-                // record details page available for this website).
-                if ($link !== 'Reply to query') {
-                  $htmlToDisplay = $link;
-                }
-              }
             }
             if (empty($htmlToDisplay)) {
               $htmlToDisplay = '';
@@ -467,7 +472,7 @@ function start_building_new_email(array $notificationToSendEmailsFor) {
     $topOfEmailBody = $defaultTopOfEmailBody;
   }
 
-  $emailContent .= "<p>$topOfEmailBody.</p>";
+  $emailContent .= "<p>$topOfEmailBody</p>";
   return $emailContent;
 }
 
