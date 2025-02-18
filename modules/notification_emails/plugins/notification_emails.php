@@ -311,16 +311,18 @@ SQL;
             elseif ($field === 'query') {
               // Only allow commenting on occurrence records which have been
               // queried.
-              /*
-              @todo The auth token is not being attached to the links correctly.
-              See https://github.com/BiologicalRecordsCentre/iRecord/issues/1243
               if ($notificationToSendEmailsFor['query'] === 'Q' && !empty($record['occurrence_id'])) {
-                $htmlToDisplay = record_comments_hyperlink_id(
+                $link = notification_emails_hyperlink_id(
                   $notificationToSendEmailsFor['user_id'],
-                  $record['occurrence_id']
+                  $notificationToSendEmailsFor['website_id'],
+                  'Reply to query',
                 );
+                // Only use if this converted to a link successfully (i.e. a
+                // record details page available for this website).
+                if ($link !== 'Reply to query') {
+                  $htmlToDisplay = $link;
+                }
               }
-              */
             }
             if (empty($htmlToDisplay)) {
               $htmlToDisplay = '';
@@ -373,17 +375,22 @@ SQL;
  *   Record ID.
  * @param int $websiteId
  *   Website the record came from.
+ * @param string $caption
+ *   Optional link caption. If not specified the ID is used.
  *
  * @return string
  *   Hyperlink HTML.
  */
-function notification_emails_hyperlink_id($id, $websiteId) {
+function notification_emails_hyperlink_id($id, $websiteId, $caption = NULL) {
   try {
     $recordDetailsPages = kohana::config('notification_emails.record_details_page_urls');
     // Handle config file not present.
   }
   catch (Exception $e) {
     $recordDetailsPages = [];
+  }
+  if (!$caption) {
+    $caption = $id;
   }
   foreach ($recordDetailsPages as $page) {
     $found = $page['website_id'] == $websiteId;
@@ -393,10 +400,10 @@ function notification_emails_hyperlink_id($id, $websiteId) {
     }
     if ($found) {
       $url = str_replace('#id#', $id, $page['url']);
-      return "<a title=\"View details of record $id\" href=\"$url\">$id</a>";
+      return "<a title=\"View details of record $id\" href=\"$url\">$caption</a>";
     }
   }
-  return $id;
+  return $caption;
 }
 
 function notification_emails_get_shared_website_list($websiteId) {
@@ -420,35 +427,6 @@ function notification_emails_get_shared_website_list($websiteId) {
   // when changes are saved.
   $cache->set($cacheId, $ids, $tag);
   return $ids;
-}
-
-/**
- * Creates a hyperlink to the comments page.
- *
- * Only if a suitable link provided in the configuration.
- *
- * @param int $userId
- *   User ID.
- * @param int $occurrenceId
- *   Record occurrence Id.
- *
- * @return string
- *   Hyperlink HTML.
- */
-function record_comments_hyperlink_id($userId, $occurrenceId) {
-  try {
-    $recordCommentsPage = kohana::config('notification_emails.comment_page_url');
-    //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
-    $warehouseUrl = kohana::config('notification_emails.warehouse_url');
-    // Handle config file not present.
-  }
-  catch (Exception $e) {
-    return NULL;
-  }
-  //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
-  $url = "$recordCommentsPage?user_id=$userId&occurrence_id=$occurrenceId&warehouse_url=" .
-    kohana::config('notification_emails.warehouse_url');
-  return "<a title=\"Comment on queried record $occurrenceId\" href=\"$url\">Comment here</a>";
 }
 
 /**
@@ -553,7 +531,6 @@ function send_out_user_email(
   $emailContent .= '<br><a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
     url::base() . '">Click here to control which notifications you receive.</a><br/><br/>';
   $cc = NULL;
-  $swift = email::connect();
   // Use a transaction to allow us to prevent the email sending and marking of
   // notification as done getting out of step.
   $db->begin();
@@ -601,6 +578,10 @@ function send_out_user_email(
       }
       $emailContent .= '<a href="' . $notificationsLinkUrl . '">' . $notificationsLinkText . '</a></br>';
     }
+    echo "<h3>$emailSubject</h3><br/>";
+    echo $emailContent;
+    throw new Exception();
+    $swift = email::connect();
     $message = new Swift_Message($emailSubject, "<html>$emailContent</html>", 'text/html');
     if ($highPriority === TRUE) {
       $message->setPriority(2);
