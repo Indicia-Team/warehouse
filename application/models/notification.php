@@ -35,7 +35,7 @@ class Notification_Model extends ORM {
     // fields before validation.
     $array->pre_filter('trim');
     $array->add_rules('source', 'required');
-    $array->add_rules('source_type', 'required', 'regex[/^(T|V|C|Q|A|S|VT|M|PT|GU|FE)$/]');
+    $array->add_rules('source_type', 'required', 'regex[/^(A|C|GU|M|PT|Q|RD|S|T|V|VT)$/]');
     $array->add_rules('digest_mode', 'regex[/^[NDWI]$/]');
     $array->add_rules('data', 'required');
     $array->add_rules('acknowledged', 'required');
