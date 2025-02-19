@@ -805,6 +805,12 @@ SQL;
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Incorrect submission format');
     }
     foreach ($postObj['values'] as $field => $value) {
+      if ($value === TRUE) {
+        $value = 't';
+      }
+      elseif ($value === FALSE) {
+        $value = 'f';
+      }
       $s['fields'][$field] = ['value' => $value];
     }
     if (isset(self::$entityConfig[$entity]->forceValuesOnCreate)) {

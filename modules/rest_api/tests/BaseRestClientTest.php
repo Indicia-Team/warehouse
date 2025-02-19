@@ -261,7 +261,7 @@ KEY;
    *   REST API resouce.
    * @param mixed|false $query
    *   Additional query string parameters.
-   * @param string $postData
+   * @param string|array $postData
    *   Additional data for POST.
    * @param array $additionalRequestHeader
    *   Additional request headers.

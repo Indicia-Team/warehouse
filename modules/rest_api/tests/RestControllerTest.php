@@ -283,7 +283,12 @@ class RestControllerTest extends BaseRestClientTest {
     $storedObj = $this->callService("$table/$id");
     foreach ($exampleData as $field => $value) {
       $this->assertTrue(isset($storedObj['response']['values'][$field]), "Stored info in $table does not include value for $field");
-      $this->assertEquals($exampleData[$field], $storedObj['response']['values'][$field], "Stored info in $table does not match value for $field");
+      $storedValue = $storedObj['response']['values'][$field];
+      // Tolerate response as 't' or 'f' for TRUE/FALSE.
+      if (($storedValue === 't' && $exampleData[$field] === TRUE) || ($storedValue === 'f' && $exampleData[$field] === FALSE)) {
+        $exampleData[$field] = $storedValue;
+      }
+      $this->assertEquals($exampleData[$field], $storedValue, "Stored info in $table does not match value for $field");
     }
     return $id;
   }
@@ -2169,11 +2174,12 @@ SQL;
   /**
    * Test /occurrences POST in isolation.
    */
-  public function testJwtOccurrencePost() {
+  public function testJwtOccurrencePostTtlId() {
     $sampleId = $this->postSampleToAddOccurrencesTo();
     $this->postTest('occurrences', [
       'taxa_taxon_list_id' => 1,
       'sample_id' => $sampleId,
+      'zero_abundance' => false,
     ], 'taxa_taxon_list_id');
   }
 

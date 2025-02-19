@@ -186,7 +186,7 @@ class Occurrence_Model extends ORM {
     $array->add_rules('sample_id', 'required');
     $array->add_rules('website_id', 'required');
     $array->add_rules('classification_event_id', 'integer');
-    $array->add_rules('machine_involvement', 'integer', 'min[0]', 'max[5]');
+    $array->add_rules('machine_involvement', 'integer', 'minimum[0]', 'maximum[5]');
     $fieldlist = $array->as_array();
     if (!array_key_exists('all_info_in_determinations', $fieldlist) || $fieldlist['all_info_in_determinations'] == 'N') {
       $array->add_rules('taxa_taxon_list_id', 'required');

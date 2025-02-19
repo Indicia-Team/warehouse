@@ -40,7 +40,7 @@ class Determination_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('occurrence_id', 'integer', 'required');
     $array->add_rules('classification_event_id', 'integer');
-    $array->add_rules('machine_involvement', 'integer', 'min[0]', 'max[5]');
+    $array->add_rules('machine_involvement', 'integer', 'minimum[0]', 'maximum[5]');
     // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = [
       'email_address',

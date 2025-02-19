@@ -246,14 +246,14 @@ SQL;
    *
    * @param string $value
    *   Value to validate.
-   * @param int $min
-   *   Minimum value accepted.
+   * @param array $inputs
+   *   Rule inputs including maximum value accepted.
    *
    * @return bool
    *   True if equal to or above the minimum.
    */
-  public static function minimum($value, $min) {
-    return $value >= $min[0];
+  public static function minimum($value, array $inputs) {
+    return $value >= $inputs[0];
   }
 
   /**
@@ -261,14 +261,14 @@ SQL;
    *
    * @param string $value
    *   Value to validate.
-   * @param int $max
-   *   Maximum value accepted.
+   * @param array $inputs
+   *   Rule inputs including maximum value accepted.
    *
    * @return bool
    *   True if equal to or below the minimum.
    */
-  public static function maximum($value, $max) {
-    return $value <= $max[0];
+  public static function maximum($value, array $inputs) {
+    return $value <= $inputs[0];
   }
 
   /**

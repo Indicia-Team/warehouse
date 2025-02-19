@@ -127,6 +127,10 @@ $lang = [
   'location_id' => [
     'required' => 'This record must be linked to a location.',
   ],
+  'machine_involvement' => [
+    'minimum' => 'The machine involvement value must be in a range 0-5.',
+    'maximum' => 'The machine involvement value must be in a range 0-5.',
+  ],
   'name' => [
     'required' => 'The name is required.',
   ],

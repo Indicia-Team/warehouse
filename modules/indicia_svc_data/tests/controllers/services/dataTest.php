@@ -777,6 +777,43 @@ SQL;
   }
 
   /**
+   * Test range of occurrence.machine_involvement values correctly validated.
+   */
+  public function testOccurrenceMachineInvolvement() {
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'occurrence:taxa_taxon_list_id' => 1,
+      'occAttr:1' => 'Test recorder',
+    ];
+    $structure = [
+      'model' => 'sample',
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
+    $array['occurrence:machine_involvement'] = -1;
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $this->assertTrue(isset($r['error']), 'Adding an occurrence with machine involvement=-1 worked');
+    $array['occurrence:machine_involvement'] = 0;
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Adding an occurrence with machine involvement=0 failed');
+    $array['occurrence:machine_involvement'] = 5;
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Adding an occurrence with machine involvement=5 failed');
+    $array['occurrence:machine_involvement'] = 6;
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $this->assertTrue(isset($r['error']), 'Adding an occurrence with machine involvement=6 worked');
+  }
+
+  /**
    * Ensures that a redetermination picks up correct person details.
    *
    * Tests for possibility that user ID and person ID get muddled in the code
