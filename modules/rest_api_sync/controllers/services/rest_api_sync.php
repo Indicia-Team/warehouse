@@ -47,6 +47,7 @@ class Rest_Api_Sync_Controller extends Controller {
       $server = array_merge([
         'serverType' => 'Indicia',
         'allowUpdateWhenVerified' => TRUE,
+        'dontOverwriteExistingRecordVerificationStatus' => FALSE,
       ], $server);
       $helperClass = 'rest_api_sync_remote_' . strtolower($server['serverType']);
       $helperClass::loadControlledTerms($serverId, $server);

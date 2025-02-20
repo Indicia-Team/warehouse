@@ -82,6 +82,7 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     $server = array_merge([
       'serverType' => 'Indicia',
       'allowUpdateWhenVerified' => TRUE,
+      'dontOverwriteExistingRecordVerificationStatus' => FALSE,
     ], $servers[$serverId]);
     $helperClass = 'rest_api_sync_remote_' . strtolower($server['serverType']);
     $helperClass::loadControlledTerms($serverId, $server);

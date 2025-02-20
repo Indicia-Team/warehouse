@@ -90,6 +90,9 @@ class api_persist {
    *   Taxon list used for species name lookups.
    * @param bool $allowUpdateWhenVerified
    *   Should existing verified records be overwritten?
+   * @param bool $dontOverwriteExistingRecordVerificationStatus
+   *   If updating an existing record and this is true, then the record's
+   *   verification status won't be overwritten.
    *
    * @return bool
    *   True if a new record was creates, false if an existing one was updated,
@@ -98,7 +101,7 @@ class api_persist {
    *
    * @throws \exception
    */
-  public static function taxonObservation($db, array $observation, $website_id, $survey_id, $taxon_list_id, $allowUpdateWhenVerified) {
+  public static function taxonObservation($db, array $observation, $website_id, $survey_id, $taxon_list_id, $allowUpdateWhenVerified, $dontOverwriteExistingRecordVerificationStatus) {
     if (!empty($observation['organismKey'])) {
       $lookup = ['organism_key' => $observation['organismKey']];
     }
@@ -122,6 +125,10 @@ class api_persist {
     self::checkMandatoryFields($observation, 'taxon-observation');
     $existing = self::findExistingObservation($db, $observation['id'], $survey_id);
     if (count($existing)) {
+      if ($dontOverwriteExistingRecordVerificationStatus) {
+        unset($values['occurrence:record_status']);
+        unset($values['occurrence:record_substatus']);
+      }
       if ($existing[0]['record_status'] === 'V' && $allowUpdateWhenVerified === FALSE) {
         // Skip overwrite of a verified record.
         return NULL;

@@ -237,7 +237,8 @@ class rest_api_sync_remote_inaturalist {
           $server['website_id'],
           $server['survey_id'],
           $taxon_list_id,
-          $server['allowUpdateWhenVerified']
+          $server['allowUpdateWhenVerified'],
+          $server['dontOverwriteExistingRecordVerificationStatus']
         );
         if ($is_new !== NULL) {
           $tracker[$is_new ? 'inserts' : 'updates']++;
