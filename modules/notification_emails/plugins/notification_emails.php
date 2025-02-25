@@ -583,9 +583,6 @@ function send_out_user_email(
       }
       $emailContent .= '<a href="' . $notificationsLinkUrl . '">' . $notificationsLinkText . '</a></br>';
     }
-    echo "<h3>$emailSubject</h3><br/>";
-    echo $emailContent;
-    throw new Exception();
     $swift = email::connect();
     $message = new Swift_Message($emailSubject, "<html>$emailContent</html>", 'text/html');
     if ($highPriority === TRUE) {
