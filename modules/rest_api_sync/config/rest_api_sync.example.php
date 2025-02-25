@@ -79,33 +79,4 @@ $config['servers'] = [
     ],
     'allowUpdateWhenVerified' => FALSE,
   ],
-  'REDO_INAT' => [
-    'website_id' => 123,
-    'survey_id' => 789,
-    'url' => 'https://api.inaturalist.org/v1',
-    'serverType' => 'iNaturalist',
-    // iNaturalist API request query parameters.
-    'parameters' => [
-      'quality_grade' => 'research',
-      'place_id' => 6857,
-      'license' => 'cc-by,cc-by-nc,cc-by-nd,cc-by-sa,cc-by-nc-nd,cc-by-nc-sa,cc0',
-    ],
-    // iNaturalist annotation field mappings to custom attributes.
-    'annotationAttrs' => [
-      'controlled_attribute:1' => 'occAttr:768',
-      'controlled_attribute:9' => 'occAttr:346',
-    ],
-    // Other iNat observation fields to map to custom attributes.
-    'otherFields' => [
-      'quality_grade' => 'occAttr:123',
-      'project_ids' => 'occAttr:124',
-    ],
-    'allowUpdateWhenVerified' => FALSE,
-    // Set to TRUE to enable attempting to re-import any previously skipped
-    // records.
-    'redoSkippedRecords' => TRUE,
-    // The name of the server to redo must be provided in the server settings
-    // redoServer property when using the redoSkippedRecords option.
-    'redoServer' => 'INAT',
-  ],
 ];
