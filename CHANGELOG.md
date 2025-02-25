@@ -5,9 +5,47 @@ Notable changes to the Indicia warehouse are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Version 9.9.0
-*2025-01-17*
+*2025-02-25*
 
-* The training flag now gets saved for imports. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1294.
+### Bugfixes
+
+* Fix general_errors. being incorrectly prepended to error messages.
+* Saving a custom attribute with incorrectly formatted content in the description or caption
+  internationalisation boxes now shows a validation message against the correct control.
+* Bugfixes to the website edit form relating to the Staging URLs input being empty but showing
+  incorrectly escaped content, preventing any future update.
+* Bugfixes to the import of local custom verification rules. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1787.
+* Fix a bug that prevented accounts from deleting properly.
+
+### Changes
+
+* Improved the way that scheduled tasks decide which order to run, allowing modules to declare
+  a weight to sort them correctly in the list to run.
+* Reply links now included in individual messages in notification emails and they go to the record
+  details page. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1776 and
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1243.
+* Add a new Record Cleaner API module for integration with the new API - see
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1796.
+* Metadata stored for an import now tracks if the import was done in training mode.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1294.
+* Add a column indicating image classifier agreement to the occurrence cache data tables.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1786.
+* Add support for image classifier metadata output to the information sent to Elasticsearch. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1786.
+* Clearer error message returned if attempting to update an email associated with an account but
+  the email is already associated with another account.
+* Add a `Sensitive` field to the Easy Download and MapMate CSV templates for Elasticsearch
+  downloads. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
+* The sync with BTO BirdTrack records can now be configured to not overwrite the record status of
+  previously imported records when receiving an updated record. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
+* Ability to rescan previous failed iNat record imports. E.g. if a taxon mapping is now available,
+  it is possible to rescan the previous failures. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1585 and
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1222.
+* It is no longer possible to create a species alert against a full taxonomic checklist without any
+  additional filters, preventing the possibility of generating huge numbers of notifications.
 
 ## Version 9.8.3
 *2025-01-27*
