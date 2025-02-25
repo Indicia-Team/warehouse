@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link https://github.com/Indicia-Team/warehouse
  */
@@ -715,12 +714,22 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
           $limitToGeography = empty($limitToGeographyArr) ? NULL : json_encode($limitToGeographyArr);
           $insertSql = <<<SQL
             INSERT INTO custom_verification_rules(custom_verification_ruleset_id, taxon_external_key,
-              limit_to_stages, limit_to_geography, rule_type, definition, reverse_rule,
+              fail_icon, fail_message, limit_to_stages, limit_to_geography, rule_type, definition, reverse_rule,
               created_by_id, created_on, updated_by_id, updated_on)
-            VALUES (?, ?, ?, ?::json, ?, ?::json, ?,
+            VALUES (?, ?, ?, ?, ?, ?::json, ?, ?::json, ?,
               $this->auth_user_id, now(), $this->auth_user_id, now());
           SQL;
-          $db->query($insertSql, [$rulesetId, $taxonKey, $limitToStages, $limitToGeography, $ruleType, json_encode($definition), $reverseRule]);
+          $db->query($insertSql, [
+            $rulesetId,
+            $taxonKey,
+            $this->getValue($row, $titleIndexes, 'fail icon'),
+            $this->getValue($row, $titleIndexes, 'fail message'),
+            $limitToStages,
+            $limitToGeography,
+            $ruleType,
+            json_encode($definition),
+            $reverseRule,
+          ]);
         }
       }
       echo json_encode([

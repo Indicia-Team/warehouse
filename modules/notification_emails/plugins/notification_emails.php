@@ -17,10 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
+
+/**
+ * Metadata for the notification emails plugin.
+ *
+ * @return array
+ *   Metadata.
+ */
+function notification_emails_metadata() {
+  return [
+    // Set to a high weight to ensure that the notification emails plugin runs
+    // last.
+    'weight' => 1001,
+  ];
+}
 
 /**
  * Hook ORM to enable the relationship from users to notification settings.
@@ -227,8 +240,6 @@ SQL;
       'occurrence_id' => 'Record ID',
       'comment' => 'Message',
       'record_status' => 'Record status',
-      // Column for link to comments page, doesn't need header title.
-      'query' => '',
     );
     $emailHighPriority = FALSE;
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
@@ -282,11 +293,34 @@ SQL;
             if ($field === 'username' && ($record[$field] === 'admin' || $record[$field] === 'system')) {
               $htmlToDisplay = $systemName;
             }
+            elseif ($field === 'comment') {
+              $htmlToDisplay = "<div style=\"padding: 4px; border: solid silver 1px; border-radius: 4px;\">$htmlToDisplay</div>";
+              // Add a reply link if relevant.
+              if (!empty($record['occurrence_id']) && in_array($currentType, ['C', 'V', 'Q'])) {
+                $link = notification_emails_hyperlink_id(
+                  $notificationToSendEmailsFor['user_id'],
+                  $notificationToSendEmailsFor['website_id'],
+                  'click here to add a comment',
+                );
+                // Only use if this converted to a link successfully (i.e. a
+                // record details page available for this website).
+                if ($link !== 'click here to add a comment') {
+                  $htmlToDisplay .= "&#8617 To reply, $link.<br/><br/>";
+                }
+              }
+            }
             elseif ($field === 'record_status') {
               $statusCode = $record['record_status'] .
                 (empty($record['record_substatus']) ? '' : $record['record_substatus']);
               if (isset($recordStatuses[$statusCode])) {
                 $htmlToDisplay = $recordStatuses[$statusCode];
+                if ($record['record_status'] === 'V') {
+                  $htmlToDisplay = '&#10003 ' . $htmlToDisplay;
+                }
+                elseif ($record['record_status'] === 'R') {
+                  $htmlToDisplay = '&#10007 ' . $htmlToDisplay;
+                }
+
               }
             }
             elseif ($field === 'occurrence_id') {
@@ -294,20 +328,6 @@ SQL;
                   $record[$field],
                   $notificationToSendEmailsFor['website_id']
               );
-            }
-            elseif ($field === 'query') {
-              // Only allow commenting on occurrence records which have been
-              // queried.
-              /*
-              @todo The auth token is not being attached to the links correctly.
-              See https://github.com/BiologicalRecordsCentre/iRecord/issues/1243
-              if ($notificationToSendEmailsFor['query'] === 'Q' && !empty($record['occurrence_id'])) {
-                $htmlToDisplay = record_comments_hyperlink_id(
-                  $notificationToSendEmailsFor['user_id'],
-                  $record['occurrence_id']
-                );
-              }
-              */
             }
             if (empty($htmlToDisplay)) {
               $htmlToDisplay = '';
@@ -360,17 +380,22 @@ SQL;
  *   Record ID.
  * @param int $websiteId
  *   Website the record came from.
+ * @param string $caption
+ *   Optional link caption. If not specified the ID is used.
  *
  * @return string
  *   Hyperlink HTML.
  */
-function notification_emails_hyperlink_id($id, $websiteId) {
+function notification_emails_hyperlink_id($id, $websiteId, $caption = NULL) {
   try {
     $recordDetailsPages = kohana::config('notification_emails.record_details_page_urls');
     // Handle config file not present.
   }
   catch (Exception $e) {
     $recordDetailsPages = [];
+  }
+  if (!$caption) {
+    $caption = $id;
   }
   foreach ($recordDetailsPages as $page) {
     $found = $page['website_id'] == $websiteId;
@@ -380,10 +405,10 @@ function notification_emails_hyperlink_id($id, $websiteId) {
     }
     if ($found) {
       $url = str_replace('#id#', $id, $page['url']);
-      return "<a title=\"View details of record $id\" href=\"$url\">$id</a>";
+      return "<a title=\"View details of record $id\" href=\"$url\">$caption</a>";
     }
   }
-  return $id;
+  return $caption;
 }
 
 function notification_emails_get_shared_website_list($websiteId) {
@@ -407,35 +432,6 @@ function notification_emails_get_shared_website_list($websiteId) {
   // when changes are saved.
   $cache->set($cacheId, $ids, $tag);
   return $ids;
-}
-
-/**
- * Creates a hyperlink to the comments page.
- *
- * Only if a suitable link provided in the configuration.
- *
- * @param int $userId
- *   User ID.
- * @param int $occurrenceId
- *   Record occurrence Id.
- *
- * @return string
- *   Hyperlink HTML.
- */
-function record_comments_hyperlink_id($userId, $occurrenceId) {
-  try {
-    $recordCommentsPage = kohana::config('notification_emails.comment_page_url');
-    //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
-    $warehouseUrl = kohana::config('notification_emails.warehouse_url');
-    // Handle config file not present.
-  }
-  catch (Exception $e) {
-    return NULL;
-  }
-  //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
-  $url = "$recordCommentsPage?user_id=$userId&occurrence_id=$occurrenceId&warehouse_url=" .
-    kohana::config('notification_emails.warehouse_url');
-  return "<a title=\"Comment on queried record $occurrenceId\" href=\"$url\">Comment here</a>";
 }
 
 /**
@@ -476,7 +472,7 @@ function start_building_new_email(array $notificationToSendEmailsFor) {
     $topOfEmailBody = $defaultTopOfEmailBody;
   }
 
-  $emailContent .= "<p>$topOfEmailBody.</p>";
+  $emailContent .= "<p>$topOfEmailBody</p>";
   return $emailContent;
 }
 
@@ -540,7 +536,6 @@ function send_out_user_email(
   $emailContent .= '<br><a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
     url::base() . '">Click here to control which notifications you receive.</a><br/><br/>';
   $cc = NULL;
-  $swift = email::connect();
   // Use a transaction to allow us to prevent the email sending and marking of
   // notification as done getting out of step.
   $db->begin();
@@ -588,6 +583,7 @@ function send_out_user_email(
       }
       $emailContent .= '<a href="' . $notificationsLinkUrl . '">' . $notificationsLinkText . '</a></br>';
     }
+    $swift = email::connect();
     $message = new Swift_Message($emailSubject, "<html>$emailContent</html>", 'text/html');
     if ($highPriority === TRUE) {
       $message->setPriority(2);

@@ -21,10 +21,7 @@
 /**
  * Conversion class for grid references in UTM zone 30U.
  * ie. between latitude 48N and 56N and longitude 6W and 0
- * Created for use with the Channel Islands
- * @package Modules
- * @subpackage
- * @author  Indicia Team
+ * Created for use with the Channel Islands.
  */
 class utm_grid {
 

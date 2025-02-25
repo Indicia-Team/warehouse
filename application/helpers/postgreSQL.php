@@ -85,7 +85,7 @@ join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
 join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on between $lastRunDate and $maxTime
   and oc.auto_generated=true
-  and coalesce(oc.generated_by, '')<>'data_cleaner_identification_difficulty'
+  and coalesce(oc.generated_by, '') not like '%identification_difficulty'
   and oc.record_status is null -- exclude auto-generated
 where co.created_by_id<>1 and co.confidential=false
 and co.training=false
@@ -100,7 +100,7 @@ join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
 join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and  oc.created_on between $lastRunDate and $maxTime
   and oc.auto_generated=true
-  and coalesce(oc.generated_by, '') = 'data_cleaner_identification_difficulty'
+  and coalesce(oc.generated_by, '') like '%identification_difficulty'
   and coalesce(oc.generated_by_subtype, '') not in ('1','2')
   and oc.record_status is null -- exclude auto-generated
 -- left join to allow exclusion of records where user has at least one

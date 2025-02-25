@@ -14,9 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 defined('SYSPATH') or die('No direct script access.');
@@ -53,7 +52,17 @@ class User_Identifier_Controller extends Service_Base_Controller {
         request_logging::log('a', 'security', 'get_user_id', 'user',
           $this->website_id, NULL, $tm, NULL, $e->getMessage());
       }
-      $this->handle_error($e);
+      if ($e instanceof Kohana_Database_Exception && strpos($e->getMessage(), 'ix_unique_email_address') !== FALSE) {
+        http_response_code(409);
+        echo json_encode([
+          'code' => 409,
+          'status' => 'Conflict',
+          'message' => 'This email address already exists on another warehouse user account.',
+        ]);
+      }
+      else {
+        $this->handle_error($e);
+      }
     }
   }
 
@@ -65,8 +74,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
     try {
       // Don't use $_REQUEST as it can do funny things escaping quotes etc.
       $this->authenticate('write');
-      $userId = $_POST['warehouse_user_id'];
-      $websiteId = $_POST['website_id_for_user_deletion'];
+      $userId = (int) $_POST['warehouse_user_id'];
+      $websiteId = (int) $_POST['website_id_for_user_deletion'];
       // Fail if website ID doesn't match the one in authentication.
       if ($websiteId !== $this->website_id) {
         throw new Exception('Requested website ID does not match the authorised one.');

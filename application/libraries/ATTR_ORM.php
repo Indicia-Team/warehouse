@@ -308,6 +308,7 @@ abstract class ATTR_ORM extends Valid_ORM {
           $obj[trim($parts[1])] = trim($parts[0]);
         }
         else {
+          $this->errors[$key] = 'Please use the format <em>text</em>|<em>lang</em> for each line.';
           throw new exception('Invalid format');
         }
       }

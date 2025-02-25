@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
@@ -162,7 +161,8 @@ class rest_api_sync_remote_json_occurrences {
           $server['website_id'],
           $server['survey_id'],
           $taxon_list_id,
-          $server['allowUpdateWhenVerified']
+          $server['allowUpdateWhenVerified'],
+          $server['dontOverwriteExistingRecordVerificationStatus']
         );
         if ($is_new !== NULL) {
           $tracker[$is_new ? 'inserts' : 'updates']++;

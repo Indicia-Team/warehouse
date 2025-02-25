@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/warehouse
  */
@@ -154,7 +153,7 @@ HTML;
         $master_list_id = warehouse::getMasterTaxonListId();
         $queries = kohana::config("cache_builder.$table");
         if (!isset($queries['key_field'])) {
-          throw new exception('Cannot do a specific record insert into cache as the key_field configuration not defined in cache_builder configuration');
+          throw new exception("Cannot do a specific record insert into cache as the key_field configuration not defined in cache_builder configuration for $table");
         }
         if (!is_array($queries['insert'])) {
           $queries['insert'] = [$queries['insert']];

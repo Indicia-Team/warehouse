@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @subpackage Data
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link 	https://github.com/indicia-team/warehouse/
  */
@@ -108,6 +105,11 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     $alertRecordSubmissionObj->website_id=$_GET['website_id'];
     // At least one of this must be supplied to identifiy the taxon
     self::at_least_one_field_required(array('taxon_meaning_id', 'external_key', 'taxon_list_id'));
+    if (!empty($_GET['taxon_list_id'])) {
+      // If a taxon list specified, ensure there is some other limit so the
+      // alert isn't scanning absolutely everything on that list.
+      self::at_least_one_field_required(array('taxon_meaning_id', 'external_key', 'survey_id', 'location_id'));
+    }
     $alertRecordSubmissionObj->taxon_meaning_id = empty($_GET['taxon_meaning_id']) ? NULL : $_GET['taxon_meaning_id'];
     $alertRecordSubmissionObj->external_key = empty($_GET['external_key']) ? NULL : $_GET['external_key'];
     $alertRecordSubmissionObj->taxon_list_id = empty($_GET['taxon_list_id']) ? NULL : $_GET['taxon_list_id'];

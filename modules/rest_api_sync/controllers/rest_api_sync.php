@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
@@ -83,6 +82,7 @@ class Rest_api_sync_Controller extends Indicia_Controller {
     $server = array_merge([
       'serverType' => 'Indicia',
       'allowUpdateWhenVerified' => TRUE,
+      'dontOverwriteExistingRecordVerificationStatus' => FALSE,
     ], $servers[$serverId]);
     $helperClass = 'rest_api_sync_remote_' . strtolower($server['serverType']);
     $helperClass::loadControlledTerms($serverId, $server);

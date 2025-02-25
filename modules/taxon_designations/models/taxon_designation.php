@@ -14,19 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Model class for the taxon_designations table.
- *
- * @package	Core
- * @subpackage Models
- * @link	https://github.com/indicia-team/warehouse/wiki/DataModel
  */
 class Taxon_designation_Model extends ORM {
 

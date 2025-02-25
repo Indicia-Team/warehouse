@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Modules
- * @subpackage Workflow
- * @author     Indicia Team
  * @license    http://www.gnu.org/licenses/gpl.html GPL
  * @link       https://github.com/Indicia-Team/
  */
@@ -32,7 +29,7 @@ class Workflow_undo_Model extends ORM {
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
-    $array->pre_filter('trim'); 
+    $array->pre_filter('trim');
     $array->add_rules('entity', 'required');
     $array->add_rules('entity_id', 'required');
     $array->add_rules('event_type', 'required');

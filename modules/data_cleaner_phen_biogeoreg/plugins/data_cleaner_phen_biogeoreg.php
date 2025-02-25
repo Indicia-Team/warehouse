@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
- * Hook into the data cleaner to declare checks for the test of phenology within biogeographical region. 
+ * Hook into the data cleaner to declare checks for the test of phenology within biogeographical region.
  * @return type array of rules.
  */
 function data_cleaner_phen_biogeoreg_data_cleaner_rules() {
@@ -61,18 +60,18 @@ function data_cleaner_phen_biogeoreg_data_cleaner_rules() {
         JOIN verification_rules vr ON
           vr.id = vrm.verification_rule_id AND
           vr.test_type = 'phenBiogeoreg' AND
-          vr.deleted = false	  
-        JOIN verification_rule_metadata vrmdBgr ON 
-          vrmdBgr.verification_rule_id = vr.id AND 
+          vr.deleted = false
+        JOIN verification_rule_metadata vrmdBgr ON
+          vrmdBgr.verification_rule_id = vr.id AND
           vrmdBgr.key = 'Bgr' AND
           vrmdBgr.deleted = false
-        JOIN verification_rule_data vrdStartDate ON 
-          vrdStartDate.verification_rule_id = vr.id AND 
+        JOIN verification_rule_data vrdStartDate ON
+          vrdStartDate.verification_rule_id = vr.id AND
           vrdStartDate.key = 'StartDate' AND
           vrdStartDate.deleted = false
-        JOIN verification_rule_data vrdEndDate ON 
-          vrdEndDate.verification_rule_id = vr.id AND 
-          vrdEndDate.key = 'EndDate' AND 
+        JOIN verification_rule_data vrdEndDate ON
+          vrdEndDate.verification_rule_id = vr.id AND
+          vrdEndDate.key = 'EndDate' AND
           vrdEndDate.data_group = vrdStartDate.data_group AND
           vrdEndDate.deleted = false
         JOIN locations l ON
@@ -80,14 +79,14 @@ function data_cleaner_phen_biogeoreg_data_cleaner_rules() {
           l.location_type_id = " . kohana::config('data_cleaner_phen_biogeoreg.location_type_id') . " AND
           l.deleted = false AND
           l.id = ANY (co.location_ids)",
-        'groupBy' => 
+        'groupBy' =>
         "GROUP BY co.id, vr.error_message, co.taxa_taxon_list_external_key, co.verification_checks_enabled, co.record_status
-          HAVING 
+          HAVING
             SUM((
-              EXTRACT(DOY FROM co.date_start) >= 
-              EXTRACT(DOY FROM CAST(EXTRACT(year from co.date_start) || vrdStartDate.value as date)) AND	 
-              EXTRACT(DOY FROM co.date_end) <= 
-              EXTRACT(DOY FROM cast(extract(year from co.date_start) || 
+              EXTRACT(DOY FROM co.date_start) >=
+              EXTRACT(DOY FROM CAST(EXTRACT(year from co.date_start) || vrdStartDate.value as date)) AND
+              EXTRACT(DOY FROM co.date_end) <=
+              EXTRACT(DOY FROM cast(extract(year from co.date_start) ||
                 (CASE WHEN MOD(cast(extract(year from co.date_start) as int),4)>0 AND vrdEndDate.value='0229' THEN '0228' ELSE vrdEndDate.value END)
                   as date
                 ))

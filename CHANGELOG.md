@@ -4,6 +4,11 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.9.0
+*2025-01-17*
+
+* The training flag now gets saved for imports. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1294.
+
 ## Version 9.8.3
 *2025-01-27*
 

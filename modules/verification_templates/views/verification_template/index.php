@@ -14,14 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Modules
- * @subpackage Verification_templates
- * @author     Indicia Team
  * @license    http://www.gnu.org/licenses/gpl.html GPL
  * @link       https://github.com/Indicia-Team/
  */
- 
- 
+
+
 echo $grid;
 ?>
 <form action="<?php echo url::site().'verification_template/create'; ?>" method="post">

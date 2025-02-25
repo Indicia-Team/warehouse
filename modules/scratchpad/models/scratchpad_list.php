@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
@@ -23,8 +22,6 @@ defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the scratchpad_list_entries table.
- *
- * @link http://code.google.com/p/indicia/wiki/DataModel
  */
 class Scratchpad_list_Model extends ORM {
 

@@ -14,20 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
  defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Controller providing CRUD access to the subject_observation data.
- *
- * @package	Groups and individuals module
- * @subpackage Controllers
  */
 class Subject_observation_Controller extends Gridview_Base_Controller {
 

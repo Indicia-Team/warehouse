@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/warehouse
  */
@@ -417,7 +416,7 @@ class Verification_rule_Model extends ORM {
     require_once MODPATH . "data_cleaner_$rule/plugins/data_cleaner_$rule.php";
     if (function_exists("data_cleaner_{$rule}_cache_sql")) {
       // Delete old cached values.
-      $cacheTable = pg_escape_identifier($db->getLink(), "cache_verification_rules_$rule");
+      $cacheTable = pg_escape_identifier($this->db->getLink(), "cache_verification_rules_$rule");
       $this->db->query("delete from $cacheTable where verification_rule_id=$this->id");
       // Only add back to cache if not deleting.
       // Note, when importing new rules from file, deleted is null.

@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse/
  */
@@ -202,6 +201,7 @@ class RestApiElasticsearch {
         'field' => 'occurrence.organism_quantity',
       ],
       ['caption' => 'Zero abundance', 'field' => 'occurrence.zero_abundance'],
+      ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
       ['caption' => 'Comment', 'field' => 'occurrence.occurrence_remarks'],
       ['caption' => 'Sample comment', 'field' => 'event.event_remarks'],
       ['caption' => 'Images', 'field' => '#occurrence_media#'],
@@ -249,6 +249,7 @@ class RestApiElasticsearch {
       ['caption' => 'Method', 'field' => '#method:mapmate#'],
       ['caption' => 'Sex', 'field' => '#sex:mapmate#'],
       ['caption' => 'Stage', 'field' => '#life_stage:mapmate#'],
+      ['caption' => 'Sensitive', 'field' => 'metadata.sensitive'],
       ['caption' => 'Status', 'field' => '#constant:Not recorded#'],
       [
         'caption' => 'Comment',
@@ -982,6 +983,53 @@ class RestApiElasticsearch {
       }
     }
   }
+
+  /**
+   * Return a Yes/No value for the field indicating image classifier agreement.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters in field definition.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldIdentificationClassifierAgreement(array $doc, array $params) {
+    $value = $doc['identification']['classifier']['current_determination']['classifier_chosen'] ?? NULL;
+    if ($value === 'true') {
+      return 'Yes';
+    }
+    elseif ($value === 'false') {
+      return 'No';
+    }
+    return '';
+  }
+
+  /**
+   * Return the image classifiers top suggested taxon name.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Provided parameters in field definition.
+   *
+   * @return string
+   *   Formatted string
+   */
+  private function esGetSpecialFieldIdentificationClassifierSuggestion(array $doc, array $params) {
+    $suggestions = $doc['identification']['classifier']['suggestions'] ?? [];
+    $topSuggestion = '';
+    $topProbability = 0;
+    foreach ($suggestions as $suggestion) {
+      if ($suggestion['probability_given'] > $topProbability) {
+        $topSuggestion = $suggestion['taxon_name_given'];
+        $topProbability = $suggestion['probability_given'];
+      }
+    }
+    return $topSuggestion;
+  }
+
 
   /**
    * Special field handler for latitude data.
@@ -2110,6 +2158,12 @@ class RestApiElasticsearch {
           $fields[] = 'location.verbatim_locality';
           $fields[] = 'metadata.sensitive';
           $fields[] = 'metadata.private';
+        }
+        elseif ($field === '#idenfication_classifier_agreement#') {
+          $fields[] = 'identification.classifiers.current_determination.classifier_chosen';
+        }
+        elseif ($field === '#idenfication_classifier_suggestion#') {
+          $fields[] = 'identification.classifiers.suggestions';
         }
         elseif (preg_match('/^#template(.*)#$/', $field)) {
           // Find fields embedded in the template and add them.

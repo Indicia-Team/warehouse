@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/warehouse
  */
@@ -1724,6 +1723,34 @@ LEFT JOIN occurrence_comments dc
 WHERE u.id=o.id
 ";
 
+// Fill in classifier agreement.
+$config['occurrences']['update']['functional_classification_defaults'] = <<<SQL
+  -- Set a default of disagreement for all records with classifier info.
+  UPDATE cache_occurrences_functional u
+  SET classifier_agreement=false
+  FROM occurrences o
+  #join_needs_update#
+  JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
+  JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
+  WHERE u.id=o.id
+SQL;
+
+// For records with classifier info where a suggestion matches the current det,
+// set agreement to true if the classifier chose that suggestion as the best match.
+$config['occurrences']['update']['functional_classification'] = <<<SQL
+  UPDATE cache_occurrences_functional u
+  SET classifier_agreement=COALESCE(cs.classifier_chosen, false)
+  FROM occurrences o
+  #join_needs_update#
+  JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
+  JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
+  LEFT JOIN (classification_suggestions cs
+    JOIN cache_taxa_taxon_lists cttl on cttl.id=cs.taxa_taxon_list_id
+  ) ON cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
+  WHERE u.id=o.id
+  AND (cttl.external_key=u.taxa_taxon_list_external_key OR cs.id IS NULL)
+SQL;
+
 // Ensure occurrence sensitivity changes apply to parent sample cache data.
 $config['occurrences']['update']['functional_sensitive'] = "
 UPDATE cache_samples_functional cs
@@ -1985,15 +2012,18 @@ WHERE o.deleted=false
 AND co.id IS NULL
 ";
 
-$config['occurrences']['insert']['functional_sensitive'] = "
-UPDATE cache_samples_functional cs
-SET location_id=null, location_name=null
-FROM occurrences o
-#join_needs_update#
-WHERE o.sample_id=cs.id
-AND o.deleted=false
-AND o.sensitivity_precision IS NOT NULL
-";
+// Insert can use same query as update to fill in the classifier agreement.
+$config['occurrences']['insert']['functional_classification'] = $config['occurrences']['update']['functional_classification'];
+
+$config['occurrences']['insert']['functional_sensitive'] = <<<SQL
+  UPDATE cache_samples_functional cs
+  SET location_id=null, location_name=null
+  FROM occurrences o
+  #join_needs_update#
+  WHERE o.sample_id=cs.id
+  AND o.deleted=false
+  AND o.sensitivity_precision IS NOT NULL
+SQL;
 
 $config['occurrences']['insert']['nonfunctional'] = "
 INSERT INTO cache_occurrences_nonfunctional(
