@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
@@ -79,12 +78,16 @@ class Website_Model extends ORM {
    */
   public function __set($key, $value) {
     if ($key === 'staging_urls' && is_string($value)) {
-      $value = str_replace("\r\n", "\n", $value);
-      $value = str_replace("\r", "\n", $value);
-      $value = explode("\n", trim($value));
-      array_walk($value, 'trim');
+      $value = str_replace(["\r\n", "\r"], "\n", $value);
+      if (trim($value) === '') {
+        $value = NULL;
+      }
+      else {
+        $value = explode("\n", trim($value));
+        array_walk($value, 'trim');
+      }
     }
-    parent::__set($key, $value);
+    parent::__set($key, $value === '' ? NULL : $value);
   }
 
   /**
@@ -98,9 +101,7 @@ class Website_Model extends ORM {
    */
   public function __get($column) {
     if ($column === 'staging_urls') {
-      kohana::log('debug', 'Getting staging_urls');
-      kohana::log('debug', var_export(parent::__get($column), TRUE));
-      $value = trim(parent::__get($column) ?? '', '{}');
+      $value = trim(parent::__get($column) ?? '', '{}"');
       return str_replace(',', "\n", $value);
     }
     return parent::__get($column);
