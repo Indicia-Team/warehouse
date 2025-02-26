@@ -1054,6 +1054,8 @@ class report_standard_params_occurrences {
             from cache_taxa_taxon_lists
             where taxon_list_id=#master_list_id# and external_key in (#taxa_taxon_list_external_key_list#)",
         ],
+        // Datatype of processed parameter differs.
+        'processed_datatype' => 'integer[]',
       ],
       'taxon_designation_list' => [
         'datatype' => 'integer[]',
@@ -1140,6 +1142,8 @@ class report_standard_params_occurrences {
               else array['restricted'] && array[#licences#]
             end",
         ],
+        // Datatype of processed parameter differs.
+        'processed_datatype' => 'integer[]',
       ],
       'media_licences' => [
         'datatype' => 'string[]',
@@ -1164,6 +1168,8 @@ class report_standard_params_occurrences {
               else array['restricted'] && array[#media_licences#]
             end",
         ],
+        // Datatype of processed parameter differs.
+        'processed_datatype' => 'integer[]',
       ],
       'coordinate_precision' => [
         'datatype' => 'integer',
