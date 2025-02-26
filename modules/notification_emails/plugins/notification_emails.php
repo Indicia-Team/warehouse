@@ -298,7 +298,7 @@ SQL;
               // Add a reply link if relevant.
               if (!empty($record['occurrence_id']) && in_array($currentType, ['C', 'V', 'Q'])) {
                 $link = notification_emails_hyperlink_id(
-                  $notificationToSendEmailsFor['user_id'],
+                  $notificationToSendEmailsFor['linked_id'],
                   $notificationToSendEmailsFor['website_id'],
                   'click here to add a comment',
                 );
