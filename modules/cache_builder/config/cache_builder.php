@@ -1723,6 +1723,7 @@ LEFT JOIN occurrence_comments dc
 WHERE u.id=o.id
 ";
 
+// Fill in taxon_path if it was unable to be populated from the master list.
 $config['occurrences']['update']['functional_taxon_path'] = <<<SQL
   UPDATE cache_occurrences_functional u
   SET taxon_path=ctp.path

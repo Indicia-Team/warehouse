@@ -1,7 +1,10 @@
 -- #slow script#
 
+-- Prevent tracking updates as this update does not affect information sent to
+-- Elasticsearch.
 SET application_name = 'skiptrigger';
 
+-- Fill in taxon_path if it was unable to be populated from the master list.
 UPDATE cache_occurrences_functional u
   SET taxon_path=ctp.path
   FROM cache_taxa_taxon_lists cttl
