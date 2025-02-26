@@ -1706,7 +1706,7 @@ LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
 JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=COALESCE(#master_list_id#, cttl.taxon_list_id)
+LEFT JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
 LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
     JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted=false and oa.system_function='certainty'
@@ -1722,6 +1722,17 @@ LEFT JOIN occurrence_comments dc
     AND dc.deleted=false
 WHERE u.id=o.id
 ";
+
+$config['occurrences']['update']['functional_taxon_path'] = <<<SQL
+  UPDATE cache_occurrences_functional u
+  SET taxon_path=ctp.path
+  FROM occurrences o
+  #join_needs_update#
+  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+  JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=cttl.taxon_list_id
+  WHERE u.id=o.id
+  AND u.taxon_path IS NULL
+SQL;
 
 // Fill in classifier agreement.
 $config['occurrences']['update']['functional_classification_defaults'] = <<<SQL
@@ -2012,7 +2023,9 @@ WHERE o.deleted=false
 AND co.id IS NULL
 ";
 
-// Insert can use same query as update to fill in the classifier agreement.
+// Insert can use same query as update to fill in the classifier agreement and
+// taxon paths.
+$config['occurrences']['insert']['functional_taxon_path'] = $config['occurrences']['update']['functional_taxon_path'];
 $config['occurrences']['insert']['functional_classification'] = $config['occurrences']['update']['functional_classification'];
 
 $config['occurrences']['insert']['functional_sensitive'] = <<<SQL
