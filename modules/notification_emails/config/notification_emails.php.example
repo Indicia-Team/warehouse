@@ -28,7 +28,7 @@ $config['notifications_page_url_text'] = 'Click for notifications';
 
 // Same again but for pending check/moderation tasks.
 $config['record_details_page_urls'] = [
-  ['website_id' => 23, 'url' => 'http://www.brc.ac.uk/irecord/record-details?occurrence_id=#id#']
+  ['website_id' => 23, 'url' => 'http://www.brc.ac.uk/irecord/record-details?occurrence_id=#id#&commenting']
 ];
 
 // Populate the following array with a list of notification types you want to control the output of email text for.
