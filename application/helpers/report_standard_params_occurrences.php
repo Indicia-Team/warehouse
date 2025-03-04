@@ -487,7 +487,7 @@ class report_standard_params_occurrences {
           [
             'value' => 'D',
             'operator' => 'equal',
-            'sql' => "(o.record_status='D' or o.query='Q')",
+            'sql' => "(o.record_status='D' or coalesce(o.query, '')='Q')",
           ],
           // Pending.
           [
