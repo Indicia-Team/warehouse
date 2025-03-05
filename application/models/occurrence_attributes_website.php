@@ -34,11 +34,24 @@ class Occurrence_attributes_website_Model extends Base_Attributes_With_Taxon_Res
     'created_by' => 'user',
   );
 
+  private $autoHandleZeroAbundanceUpdated = FALSE;
+
   public function validate(Validation $array, $save = FALSE) {
+    $arrayData = $array->as_array();
+    if (isset($arrayData['auto_handle_zero_abundance'])) {
+      $currentValue = $this->as_array()['auto_handle_zero_abundance'];
+      $newValue = $arrayData['auto_handle_zero_abundance'];
+      if ($newValue === '1') {
+        $newValue = 't';
+      } elseif ($newValue === '0') {
+        $newValue = 'f';
+      }
+      $this->autoHandleZeroAbundanceUpdated = ($newValue !== $currentValue);
+    }
     // Uses PHP trim() to remove whitespace from beginning and end of all
     // fields before validation.
     $array->pre_filter('trim');
-    $this->unvalidatedFields = array(
+    $this->unvalidatedFields = [
       'occurrence_attribute_id',
       'website_id',
       'restrict_to_survey_id',
@@ -50,7 +63,8 @@ class Occurrence_attributes_website_Model extends Base_Attributes_With_Taxon_Res
       'default_date_end_value',
       'default_date_type_value',
       'control_type_id',
-    );
+      'auto_handle_zero_abundance',
+    ];
     return parent::validate($array, $save);
   }
 
@@ -95,6 +109,9 @@ class Occurrence_attributes_website_Model extends Base_Attributes_With_Taxon_Res
    */
   protected function postSubmit($isInsert) {
     self::postSubmitSaveTaxonRestrictions($isInsert, 'occurrence');
+    if ($this->autoHandleZeroAbundanceUpdated) {
+      Cache::instance()->delete('survey-auto-zero-abundance-' . $this->restrict_to_survey_id);
+    }
     return TRUE;
   }
 
