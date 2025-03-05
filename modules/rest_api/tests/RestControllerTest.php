@@ -886,9 +886,8 @@ class RestControllerTest extends BaseRestClientTest {
     $occCount = $db->query("select count(*) from occurrences where sample_id=? and zero_abundance=true", [$id])
       ->current()->count;
     $this->assertEquals(3, $occCount, 'Incorrect number of zero abundance occurrences created when submitted with a sample.');
-    // Cleanup.
+    // Cleanup so the attribute isn't linked to the survey any more.
     $db->query('DELETE FROM occurrence_attributes_websites WHERE id=(SELECT max(id) FROM occurrence_attributes_websites)');
-    $db->query('DELETE FROM occurrence_attributes WHERE id=(SELECT max(id) FROM occurrence_attributes)');
   }
 
   public function testJwtSamplePostUserDeletionCheck() {
