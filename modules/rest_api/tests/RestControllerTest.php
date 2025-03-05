@@ -828,6 +828,7 @@ class RestControllerTest extends BaseRestClientTest {
   public function testJwtSamplePostWithZeroOccurrence() {
     $this->authMethod = 'jwtUser';
     $db = new Database();
+    Cache::instance()->delete('survey-auto-zero-abundance-1');
     $query = <<<SQL
       INSERT INTO occurrence_attributes (caption, data_type, created_on, created_by_id, updated_on, updated_by_id, system_function)
       VALUES ('abundance', 'T', now(), 1, now(), 1, 'sex_stage_count');
