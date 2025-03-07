@@ -1365,7 +1365,7 @@ class Data_Controller extends Data_Service_Base_Controller {
               $where["$this->viewname.$param"] = $value;
             }
             elseif ($this->view_columns[$param]['type'] === 'bool') {
-              if ($value !== NULL && !preg_match('/^[tf]$/i', trim($value))) {
+              if ($value !== NULL && !preg_match('/^([tf]|true|false)$/i', trim($value))) {
                 throw new ValidationError('Validation error', 2003, 'Invalid format for boolean column filter.');
               }
               $where["$this->viewname.$param"] = $value;
