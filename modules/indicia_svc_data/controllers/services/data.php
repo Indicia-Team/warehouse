@@ -1532,6 +1532,11 @@ class Data_Controller extends Data_Service_Base_Controller {
           elseif (isset($foundfield) && ($cmd === 'where' || $cmd === 'orwhere')) {
             // With just 1 parameter passed through, a where can contain
             // something more complex such as an OR in brackets.
+            // Check for unsafe values.
+            if (preg_match("/'[^'\\\\]*(?:\\.[^'\\\\]*)*'(*SKIP)(?!)|;/", $foundfield)) {
+              kohana::log('alert', "Unsafe query where clause detected: $foundfield");
+              throw new Exception("Unsafe value in where clause");
+            }
             $this->db->$cmd($foundfield);
           }
           break;
