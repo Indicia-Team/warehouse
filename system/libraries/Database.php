@@ -273,39 +273,34 @@ class Database_Core {
 	/**
 	 * Selects the column names for a database query.
 	 *
-	 * @param   string  string or array of column names to select
-	 * @return  Database_Core  This Database object.
+	 * @param string|array
+	 *   String or array of column names to select.
+	 *
+	 * @return Database_Core
+	 *   This Database object.
 	 */
-	public function select($sql = '*')
-	{
-		if (func_num_args() > 1)
-		{
+	public function select($sql = '*') {
+  	if (func_num_args() > 1) {
 			$sql = func_get_args();
 		}
-		elseif (is_string($sql))
-		{
+		elseif (is_string($sql)) {
 			$sql = explode(',', $sql);
 		}
-		else
-		{
+		else {
 			$sql = (array) $sql;
 		}
 
-		foreach ($sql as $val)
-		{
+		foreach ($sql as $val) {
 			if (($val = trim($val)) === '') continue;
 
-			if (strpos($val, '(') === FALSE AND $val !== '*')
-			{
-				if (preg_match('/^DISTINCT\s++(.+)$/i', $val, $matches))
-				{
+			if (strpos($val, '(') === FALSE AND $val !== '*') {
+				if (preg_match('/^DISTINCT\s++(.+)$/i', $val, $matches)) {
 					// Only prepend with table prefix if table name is specified
 					$val = (strpos($matches[1], '.') !== FALSE) ? $this->config['table_prefix'].$matches[1] : $matches[1];
 
 					$this->distinct = TRUE;
 				}
-				else
-				{
+				else {
 					$val = (strpos($val, '.') !== FALSE) ? $this->config['table_prefix'].$val : $val;
 				}
 

@@ -222,6 +222,44 @@ class Occurrence_Model extends ORM {
   }
 
   /**
+   * Before saving the record, check if the zero abundance flag should be set.
+   */
+  protected function preSubmit() {
+    // If the zero abundance field not being submitted, check if there is an
+    // attribute set up for auto-handling of this field value.
+    if (empty($this->submission['fields']['zero_abundance']['value'] ?? NULL)) {
+      $cacheId = 'survey-auto-zero-abundance-' . $this->identifiers['survey_id'];
+      $cache = Cache::instance();
+      $attrs = $cache->get($cacheId);
+      if ($attrs === NULL) {
+        $attrs = $this->db->select([
+          'occurrence_attributes_websites.occurrence_attribute_id',
+          'occurrence_attributes.data_type',
+          'occurrence_attributes.termlist_id',
+        ])
+          ->from('occurrence_attributes_websites')
+          ->join('occurrence_attributes', 'occurrence_attributes.id', 'occurrence_attributes_websites.occurrence_attribute_id')
+          ->where([
+            'occurrence_attributes_websites.restrict_to_survey_id' => (integer) $this->identifiers['survey_id'],
+            'occurrence_attributes_websites.auto_handle_zero_abundance' => 't',
+          ])
+          ->get()->result_array(FALSE);
+        $cache->set($cacheId, $attrs);
+      }
+      // Set zero_abundance flag if one of the abundance attributes found has a
+      // 0 (or similar) value.
+      foreach ($attrs as $attr) {
+        if (isset($this->submission['fields']["occAttr:$attr[occurrence_attribute_id]"])) {
+          $value = $this->submission['fields']["occAttr:$attr[occurrence_attribute_id]"]['value'];
+          if (in_array(strtolower($value), [0, '0', 'absent', 'absence', 'none', 'not present', 'not detected', 'not found', 'zero'])) {
+            $this->submission['fields']['zero_abundance'] = ['value' => 't'];
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Handle cases where an existing record is redetermined.
    *
    * This includes logging of the change to the determinations table and

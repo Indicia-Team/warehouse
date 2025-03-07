@@ -825,6 +825,72 @@ class RestControllerTest extends BaseRestClientTest {
     $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
   }
 
+  public function testJwtSamplePostWithZeroOccurrence() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    Cache::instance()->delete('survey-auto-zero-abundance-1');
+    $query = <<<SQL
+      INSERT INTO occurrence_attributes (caption, data_type, created_on, created_by_id, updated_on, updated_by_id, system_function)
+      VALUES ('abundance', 'T', now(), 1, now(), 1, 'sex_stage_count');
+      INSERT INTO occurrence_attributes_websites (occurrence_attribute_id, website_id, created_on, created_by_id, restrict_to_survey_id, auto_handle_zero_abundance)
+      VALUES ((SELECT max(id) FROM occurrence_attributes), 1, now(), 1, 1, true);
+      SELECT max(id) as attr_id FROM occurrence_attributes;
+    SQL;
+    $attrId = $db->query($query)->current()->attr_id;
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        // Add 3 that are absent in varying ways.
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            "occAttr:$attrId" => 'absent',
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            "occAttr:$attrId" => 0,
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            "occAttr:$attrId" => 'none',
+          ],
+        ],
+        // Add one that's present.
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            "occAttr:$attrId" => 4,
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    $occCount = $db->query("select count(*) from occurrences where sample_id=?", [$id])
+      ->current()->count;
+    $this->assertEquals(4, $occCount, 'Incorrect number of occurrences created when submitted with a sample.');
+    $occCount = $db->query("select count(*) from occurrences where sample_id=? and zero_abundance=true", [$id])
+      ->current()->count;
+    $this->assertEquals(3, $occCount, 'Incorrect number of zero abundance occurrences created when submitted with a sample.');
+    // Cleanup so the attribute isn't linked to the survey any more.
+    $db->query('DELETE FROM occurrence_attributes_websites WHERE id=(SELECT max(id) FROM occurrence_attributes_websites)');
+  }
+
   public function testJwtSamplePostUserDeletionCheck() {
     $db = new Database();
 
