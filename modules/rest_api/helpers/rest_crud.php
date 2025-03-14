@@ -289,15 +289,17 @@ SQL,
         }
       }
     }
-    return <<<SQL
-SELECT t1.xmin, $fields
-FROM $table t1
-$joins
-WHERE t1.deleted=false
-$createdByFilter
-$extraFilter
+    $sql = <<<SQL
+      SELECT t1.xmin, $fields
+      FROM $table t1
+      $joins
+      WHERE t1.deleted=false
+      $createdByFilter
+      $extraFilter
 
-SQL;
+    SQL;
+    $sql = str_replace('{user_id}', RestObjects::$clientUserId, $sql);
+    return $sql;
   }
 
   /**
