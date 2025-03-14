@@ -3593,7 +3593,7 @@ SQL;
    */
   public function groupsGetId(int $id) {
     // Can fetch any group you are a member of, or if it is publicly visible.
-    rest_crud::read('group', $id, $this->getGroupsViewParameterFilter('all_available'));
+    rest_crud::read('group', $id, $this->getGroupsViewParameterFilter('all_available'), FALSE);
   }
 
   /**
