@@ -1365,7 +1365,7 @@ class Data_Controller extends Data_Service_Base_Controller {
               $where["$this->viewname.$param"] = $value;
             }
             elseif ($this->view_columns[$param]['type'] === 'bool') {
-              if ($value !== NULL && !preg_match('/^[tf]$/i', trim($value))) {
+              if ($value !== NULL && !preg_match('/^([tf]|true|false)$/i', trim($value))) {
                 throw new ValidationError('Validation error', 2003, 'Invalid format for boolean column filter.');
               }
               $where["$this->viewname.$param"] = $value;
@@ -1515,7 +1515,7 @@ class Data_Controller extends Data_Service_Base_Controller {
               }
             }
             else {
-              throw new Exception("$cmd clause statement for $key is not of the correct structure. ".print_r($params, TRUE));
+              throw new Exception("$cmd clause statement for $key is not of the correct structure. " . print_r($params, TRUE));
             }
           }
           // If param was supplied in form "cmd = array(field, value)" then
@@ -1532,6 +1532,21 @@ class Data_Controller extends Data_Service_Base_Controller {
           elseif (isset($foundfield) && ($cmd === 'where' || $cmd === 'orwhere')) {
             // With just 1 parameter passed through, a where can contain
             // something more complex such as an OR in brackets.
+            // Check for unsafe values (note value might be an array).
+            if (is_array($foundfield)) {
+              foreach ($foundfield as $field) {
+                if (is_string($field) && preg_match("/'[^'\\\\]*(?:\\.[^'\\\\]*)*'(*SKIP)(?!)|;/", $field)) {
+                  kohana::log('alert', "Unsafe query where clause detected: $field");
+                  throw new Exception("Unsafe value in where clause");
+                }
+              }
+            }
+            else {
+              if (preg_match("/'[^'\\\\]*(?:\\.[^'\\\\]*)*'(*SKIP)(?!)|;/", $foundfield)) {
+                kohana::log('alert', "Unsafe query where clause detected: $foundfield");
+                throw new Exception("Unsafe value in where clause");
+              }
+            }
             $this->db->$cmd($foundfield);
           }
           break;

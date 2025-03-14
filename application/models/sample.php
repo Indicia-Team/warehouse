@@ -282,6 +282,9 @@ class Sample_Model extends ORM_Tree {
       if (empty($data['survey_id'])) {
         $this->submission['fields']['survey_id'] = ['value' => $parent->survey_id];
       }
+      if (empty($data['entered_sref'])) {
+        $this->submission['fields']['entered_sref'] = ['value' => $parent->entered_sref];
+      }
       if (empty($data['entered_sref_system'])) {
         $this->submission['fields']['entered_sref_system'] = ['value' => $parent->entered_sref_system];
       }
