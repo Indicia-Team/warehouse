@@ -3724,7 +3724,7 @@ SQL;
       if (!$requestToAddAdminUser && in_array($groupUserInfo->joining_method, ['I', 'A'])) {
         RestObjects::$apiResponse->fail('Forbidden', 403, 'You cannot add yourself as to an invite only or admin managed (private) group.');
       }
-      if (!$requestToAddAdminUser && $groupUserInfo->joining_method === 'I') {
+      if (!$requestToAddAdminUser && in_array($groupUserInfo->joining_method, ['I', 'R'])) {
         $item['values']['pending'] = 't';
       }
     }
