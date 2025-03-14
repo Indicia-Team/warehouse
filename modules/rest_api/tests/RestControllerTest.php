@@ -2875,10 +2875,11 @@ SQL;
     // Not a member, so default response empty.
     $this->assertEquals(0, count($response['response']), 'Fetching groups when not a member should return 0.');
     $response = $this->callService("groups", ['view' => 'all_available']);
-    $this->assertEquals(1, count($response['response']), 'Fetching all_available groups when not a member should return 1 public group.');
-    $this->assertEquals('public group 1', $response['response'][0]['values']['title'], 'Wrong group returned');
+    $this->assertEquals(2, count($response['response']), 'Fetching all_available groups when not a member should return 2 groups (public + by request).');
+    $this->assertNotEquals('private group 2', $response['response'][0]['values']['title'], 'Wrong group returned');
+    $this->assertNotEquals('private group 2', $response['response'][1]['values']['title'], 'Wrong group returned');
     $response = $this->callService("groups", ['view' => 'joinable']);
-    $this->assertEquals(1, count($response['response']), 'Fetching joinable groups when not a member should return 1.');
+    $this->assertEquals(2, count($response['response']), 'Fetching joinable groups when not a member should return 2.');
     // Make user a member of group 1 (public).
     $db = new Database();
     $db->query("insert into groups_users(group_id, user_id, created_by_id, created_on, updated_by_id, updated_on) values (1, 1, 1, now(), 1, now())");
@@ -2897,10 +2898,10 @@ SQL;
     $this->assertEquals(2, count($response['response']), 'Fetching groups when a member of both should return 2.');
     // Plus 2 in the all_available request.
     $response = $this->callService("groups", ['view' => 'all_available']);
-    $this->assertEquals(2, count($response['response']), 'Fetching all_available groups when a member of both should return 2.');
+    $this->assertEquals(3, count($response['response']), 'Fetching all_available groups when a member of the private group should return 3 (all).');
     // Plus 0 in the joinable request.
     $response = $this->callService("groups", ['view' => 'joinable']);
-    $this->assertEquals(0, count($response['response']), 'Fetching joinable groups when a member of both should return 0.');
+    $this->assertEquals(1, count($response['response']), 'Fetching joinable groups when a member of both should return 1.');
     // Check invalid view value.
     $response = $this->callService("groups", ['view' => 'foo']);
     $this->assertTrue($response['httpCode'] === 400);

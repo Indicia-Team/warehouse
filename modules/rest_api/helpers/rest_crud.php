@@ -298,7 +298,7 @@ SQL,
       $extraFilter
 
     SQL;
-    $sql = str_replace('{user_id}', RestObjects::$clientUserId, $sql);
+    $sql = str_replace('{user_id}', RestObjects::$clientUserId ?? 0, $sql);
     return $sql;
   }
 
