@@ -279,17 +279,17 @@ class Sample_Model extends ORM_Tree {
         }
       }
       $parent = ORM::factory('sample', $data['parent_id']);
-      if (empty($data['survey_id'])) {
-        $this->submission['fields']['survey_id'] = ['value' => $parent->survey_id];
-      }
-      if (empty($data['entered_sref'])) {
-        $this->submission['fields']['entered_sref'] = ['value' => $parent->entered_sref];
-      }
-      if (empty($data['entered_sref_system'])) {
-        $this->submission['fields']['entered_sref_system'] = ['value' => $parent->entered_sref_system];
-      }
-      if (empty($data['licence_id'])) {
-        $this->submission['fields']['licence_id'] = ['value' => $parent->licence_id];
+      $fieldsToCopyDown = [
+        'entered_sref',
+        'entered_sref_system',
+        'licence_id',
+        'privacy_precision',
+        'group_id',
+      ];
+      foreach ($fieldsToCopyDown as $field) {
+        if (empty($data[$field])) {
+          $this->submission['fields'][$field] = ['value' => $parent->$field];
+        }
       }
       if (empty($data['date_type']) && empty($data['date'])) {
         $this->submission['fields']['date_start'] = ['value' => $parent->date_start];
