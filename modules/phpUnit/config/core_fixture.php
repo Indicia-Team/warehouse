@@ -1193,7 +1193,7 @@ $core_fixture = [
       "updated_by_id" => 1,
     ],
     [
-      "title" => "request group 2",
+      "title" => "request group 3",
       "website_id" => 1,
       "group_type_id" => 6,
       "joining_method" => "R",
