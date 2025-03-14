@@ -2950,6 +2950,17 @@ SQL;
     // Add user 2 back.
     $response = $this->callService("groups/1/users", [], ['values' => $values]);
     $this->assertEquals(201, $response['httpCode']);
+    // Add to a by request group - test the added user is pending.
+    $response = $this->callService("groups/3/users", [], ['values' => $values]);
+    $this->assertEquals(201, $response['httpCode']);
+    $response = $this->callService("groups/3/users");
+    $this->assertEquals(1, count($response['response']), 'Non admin user should be able to add themselves to a by request group');
+    $this->assertEquals('t', $response['response'][0]['values']['pending'], 'User added to by request group not set to pending.');
+    // Should be able to confirm this by GETting the group.
+    $response = $this->callService("groups/3");
+    $this->assertEquals('t', $response['response']['values']['user_is_pending'], 'User added to by request group not set to pending.');
+    $this->assertEquals('f', $response['response']['values']['user_is_member'], 'User added to by request group immediately made member.');
+    $this->assertEquals('f', $response['response']['values']['user_is_administrator'], 'User added to by request group incorrectly made admin.');
     // Auth back as admin user.
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $response = $this->callService("groups/1/users/999", FALSE, [], [], 'DELETE');

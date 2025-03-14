@@ -796,7 +796,7 @@ Deletes a survey dataset. User must have editor permissions to the website the s
 TXT;
 
 $lang['resources']['groups'] = 'Recording groups resource endpoint (sometimes called activities or projects).';
-$lang['resources']['GET groups'] = 'A list of recording groups. Default behaviour is to return groups the current user is a member of.';
+$lang['resources']['GET groups'] = 'A list of recording groups including the authorised user membership info. Default behaviour is to return groups the current user is a member of.';
 $lang['resources']['GET groups/{id}'] = <<<HTML
 <p>Retrieves the information for a single recording group. The user must either be a member of the
 group, or the group must be public or membership by request.</p>

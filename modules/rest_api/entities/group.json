@@ -27,6 +27,14 @@
       "fields": [
         { "sql": "t2.term", "name": "group_type", "type": "string" }
       ]
+    },
+    {
+      "sql": "LEFT JOIN groups_users t3 on t3.group_id=t1.id AND t3.deleted=false AND t3.user_id={user_id}",
+      "fields": [
+        { "sql": "NOT t3.pending", "name": "user_is_member", "type": "boolean" },
+        { "sql": "t3.administrator", "name": "user_is_administrator", "type": "boolean" },
+        { "sql": "t3.pending", "name": "user_is_pending", "type": "boolean" }
+      ]
     }
   ],
   "forceValuesOnCreate": {
