@@ -280,6 +280,7 @@ class Sample_Model extends ORM_Tree {
       }
       $parent = ORM::factory('sample', $data['parent_id']);
       $fieldsToCopyDown = [
+        'survey_id',
         'entered_sref',
         'entered_sref_system',
         'licence_id',
