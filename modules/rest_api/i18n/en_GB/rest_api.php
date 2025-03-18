@@ -912,6 +912,11 @@ TXT;
 
 // Lang strings for URL parameters for each end-point.
 $lang['GET groups'] = [];
+$lang['GET groups']['page'] = <<<TXT
+Optionally pass the stored path for a group page to limit to groups that are associated with that
+page. For example 'record/list' to limit to groups that have a page at the alias record/list. Can
+be used to limit to groups associated with an app's data entry page for example.
+TXT;
 $lang['GET groups']['view'] = <<<TXT
 Optionally pass one of the following in the view parameter to control the list of groups returned:
 member - default, returns a list of groups the current user is a member of; joinable - returns a

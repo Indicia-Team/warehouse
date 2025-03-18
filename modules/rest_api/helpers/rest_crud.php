@@ -199,6 +199,14 @@ SQL,
     return implode(', ', $list);
   }
 
+  private static function getFilterDefs($entity) {
+    $list = [];
+    foreach (self::$entityConfig[$entity]->filters ?? [] as $filterDef) {
+      $list[$filterDef->name] = (array) $filterDef;
+    }
+    return $list;
+  }
+
   /**
    * Retrieves the SQL for a list of joins for an entity's SELECT.
    *
@@ -252,6 +260,7 @@ SQL,
   private static function getReadSql($entity, $extraFilter, $userFilter) {
     $table = inflector::plural($entity);
     self::loadFieldDefs($entity);
+    $filterDefs = self::getFilterDefs($entity);
     $fields = self::getSqlFields($entity);
     $joins = self::getSqlJoins($entity);
     $createdByFilter = $userFilter ? 'AND t1.created_by_id=' . RestObjects::$clientUserId : '';
@@ -259,33 +268,10 @@ SQL,
       // Apply query string parameters.
       foreach ($_GET as $param => $value) {
         if (isset(self::$fieldDefs[$param])) {
-          if (in_array(self::$fieldDefs[$param]['type'], [
-            'string',
-            'date',
-            'time',
-            'json',
-            'boolean',
-          ])) {
-            RestObjects::$db->connect();
-            $value = pg_escape_literal(RestObjects::$db->getLink(), $value);
-          }
-          elseif (in_array(self::$fieldDefs[$param]['type'], [
-            'integer',
-            'float',
-          ])) {
-            if (!is_numeric($value)) {
-              RestObjects::$apiResponse->fail('Bad Request', 400, "Invalid filter on numeric field $param");
-            }
-          }
-          else {
-            RestObjects::$apiResponse->fail('Internal Server Error', 400, "Unsupported field type for $param");
-          }
-          if (isset(self::$fieldDefs[$param]['filter_sql'])) {
-            $extraFilter .= "\nAND " . str_replace('{value}', $value, self::$fieldDefs[$param]['filter_sql']);
-          }
-          else {
-            $extraFilter .= "\nAND " . self::$fieldDefs[$param]['sql'] . "=$value";
-          }
+          $extraFilter .= self::addExtraFilter(self::$fieldDefs[$param], $param, $value);
+        }
+        if (isset($filterDefs[$param])) {
+          $extraFilter .= self::addExtraFilter($filterDefs[$param], $param, $value);
         }
       }
     }
@@ -300,6 +286,36 @@ SQL,
     SQL;
     $sql = str_replace('{user_id}', RestObjects::$clientUserId ?? 0, $sql);
     return $sql;
+  }
+
+  private static function addExtraFilter(array $filterDef, $param, $value) {
+    if (in_array($filterDef['type'], [
+      'string',
+      'date',
+      'time',
+      'json',
+      'boolean',
+    ])) {
+      RestObjects::$db->connect();
+      $value = pg_escape_literal(RestObjects::$db->getLink(), $value);
+    }
+    elseif (in_array($filterDef['type'], [
+      'integer',
+      'float',
+    ])) {
+      if (!is_numeric($value)) {
+        RestObjects::$apiResponse->fail('Bad Request', 400, "Invalid filter on numeric field $param");
+      }
+    }
+    else {
+      RestObjects::$apiResponse->fail('Internal Server Error', 400, "Unsupported field type for $param");
+    }
+    if (isset($filterDef['filter_sql'])) {
+      return "\nAND " . str_replace('{value}', $value, $filterDef['filter_sql']);
+    }
+    else {
+      return "\nAND " . $filterDef['sql'] . "=$value";
+    }
   }
 
   /**

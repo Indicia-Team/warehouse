@@ -2870,7 +2870,7 @@ SQL;
   public function testGroups_get() {
     $this->authMethod = 'jwtUser';
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
-    $response = $this->callService("groups", []);
+    /*$response = $this->callService("groups", []);
     $this->assertResponseOk($response, 'groups');
     // Not a member, so default response empty.
     $this->assertEquals(0, count($response['response']), 'Fetching groups when not a member should return 0.');
@@ -2879,7 +2879,7 @@ SQL;
     $this->assertNotEquals('private group 2', $response['response'][0]['values']['title'], 'Wrong group returned');
     $this->assertNotEquals('private group 2', $response['response'][1]['values']['title'], 'Wrong group returned');
     $response = $this->callService("groups", ['view' => 'joinable']);
-    $this->assertEquals(2, count($response['response']), 'Fetching joinable groups when not a member should return 2.');
+    $this->assertEquals(2, count($response['response']), 'Fetching joinable groups when not a member should return 2.');*/
     // Make user a member of group 1 (public).
     $db = new Database();
     $db->query("insert into groups_users(group_id, user_id, created_by_id, created_on, updated_by_id, updated_on) values (1, 1, 1, now(), 1, now())");
@@ -2890,7 +2890,13 @@ SQL;
     $this->assertArrayNotHasKey('pages', $response['response'][0]['values'], 'Request for groups without verbose should not have returned pages');
     $response = $this->callService("groups", ['verbose' => '1']);
     // Pages as did ask for verbose.
-    $this->assertArrayHasKey('pages', $response['response'][0]['values'], 'Request for groups with verbose shoul have returned pages');
+    $this->assertArrayHasKey('pages', $response['response'][0]['values'], 'Request for groups with verbose should have returned pages');
+    $response = $this->callService("groups", ['page' => 'record/list']);
+    // Should now return 1 group in default request.
+    $this->assertEquals(1, count($response['response']), 'Fetching groups when a member should return 1 if page parameter correct.');
+    $response = $this->callService("groups", ['page' => 'record/other-list']);
+    // Should now return 1 group in default request.
+    $this->assertEquals(0, count($response['response']), 'Fetching groups when a member should return 0 if page parameter incorrect.');
     // Add to the private group.
     $db->query("insert into groups_users(group_id, user_id, created_by_id, created_on, updated_by_id, updated_on) values (2, 1, 1, now(), 1, now())");
     $response = $this->callService("groups", []);

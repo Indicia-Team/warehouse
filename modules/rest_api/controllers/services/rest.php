@@ -422,6 +422,9 @@ class Rest_Controller extends Controller {
       'GET' => [
         'groups' => [
           'params' => [
+            'page' => [
+              'datatype' => 'text',
+            ],
             'verbose' => [
               'datatype' => 'integer',
             ],
