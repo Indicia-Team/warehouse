@@ -199,10 +199,22 @@ SQL,
     return implode(', ', $list);
   }
 
-  private static function getFilterDefs($entity) {
+  /**
+   * Fetch filter parameters from entity JSON.
+   *
+   * Entity JSON can define additional filter parameters which aren't
+   * associated with an output field. Fetch those into an array ready for use.
+   *
+   * @param mixed $entity
+   *   Entity name.
+   *
+   * @return array[]
+   *   List of parameter definitions.
+   */
+  private static function getParamDefs($entity) {
     $list = [];
-    foreach (self::$entityConfig[$entity]->filters ?? [] as $filterDef) {
-      $list[$filterDef->name] = (array) $filterDef;
+    foreach (self::$entityConfig[$entity]->params ?? [] as $paramDef) {
+      $list[$paramDef->name] = (array) $paramDef;
     }
     return $list;
   }
@@ -260,7 +272,7 @@ SQL,
   private static function getReadSql($entity, $extraFilter, $userFilter) {
     $table = inflector::plural($entity);
     self::loadFieldDefs($entity);
-    $filterDefs = self::getFilterDefs($entity);
+    $paramDefs = self::getParamDefs($entity);
     $fields = self::getSqlFields($entity);
     $joins = self::getSqlJoins($entity);
     $createdByFilter = $userFilter ? 'AND t1.created_by_id=' . RestObjects::$clientUserId : '';
@@ -270,8 +282,8 @@ SQL,
         if (isset(self::$fieldDefs[$param])) {
           $extraFilter .= self::addExtraFilter(self::$fieldDefs[$param], $param, $value);
         }
-        if (isset($filterDefs[$param])) {
-          $extraFilter .= self::addExtraFilter($filterDefs[$param], $param, $value);
+        if (isset($paramDefs[$param])) {
+          $extraFilter .= self::addExtraFilter($paramDefs[$param], $param, $value);
         }
       }
     }
@@ -288,6 +300,21 @@ SQL,
     return $sql;
   }
 
+  /**
+   * Add additional filter SQL to the query.
+   *
+   * @param array $filterDef
+   *   Definition of a field or standalone filter, with a type and filter_sql
+   *   or sql elements.
+   * @param mixed $param
+   *   Name of the parameter supplied which matches the field or standalone
+   *   filter.
+   * @param mixed $value
+   *   Parameter value.
+   *
+   * @return string
+   *   SQL to add to the query WHERE clause.
+   */
   private static function addExtraFilter(array $filterDef, $param, $value) {
     if (in_array($filterDef['type'], [
       'string',
