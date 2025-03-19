@@ -4,6 +4,37 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.10.0
+*2025-03-19*
+
+### Bugfixes
+
+* Newly installed warehouses now fixed on PHP 8.3+ when running scheduled tasks.
+* Validation of custom attribute data entry form on the warehouse UI improved if a caption over 50
+  characters long is attempted.
+* Bugfix on PostgreSQL standard report parameters with preprocessed parameter values; if a value
+  supplied that was not found by the preprocessing query it resulted in an error.
+* Taxonomic hierarchy (taxon paths) is now calculated for taxa which are not on the master
+  checklist, e.g. UKSI.
+
+### Changes
+
+* REST API changes to GET groups - can request "view=pending" to fetch groups the user is pending
+  membership of. See https://github.com/NERC-CEH/irecord-app/issues/290.
+* REST API changes to GET groups - supply a parameter "page=path" with the path of a group page
+  (such as a recording form) to limit the response to groups which have that page linked to them.
+  This can be used to fetch groups which are enabled for the iRecord App for exanmple. See
+  https://github.com/NERC-CEH/irecord-app/issues/290.
+* New occurrence attribute option "Auto-handle zero abundance flag" which can be set on abundance
+  attributes to automatically flag zero-abundance occurrence server-side when records are set with
+  this attribute's value set to 0, none, absent or similar. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1693.
+* Adds a "commenting" URL parameter to links generated for replying to comments via a record
+  details page, allowing the page to show a message if the user follows the link when not already
+  logged in. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1776.
+
+
+
 ## Version 9.9.0
 *2025-02-25*
 
