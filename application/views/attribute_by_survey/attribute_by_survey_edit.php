@@ -350,6 +350,20 @@ HTML;
         'helpText' => 'If you want this attribute to only apply for samples of a certain method, select the method here.',
       ));
     }
+    elseif ($_GET['type'] === 'occurrence' && $model->occurrence_attribute->system_function === 'sex_stage_count') {
+      // For abundance attributes, the survey can opt-into auto-handling of the
+      // occurrence's zero abundance flag.
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'occurrence_attributes_website:auto_handle_zero_abundance',
+        'label' => 'Auto-handle zero abundance flag',
+        'default' => html::initial_value($values, 'occurrence_attributes_website:auto_handle_zero_abundance'),
+        'helpText' => <<<TXT
+          Tick this box for attributes which encapsulate all the captured information about the abundance of the
+          record, therefore a value of 0, none, absent etc can be assumed to mean a zero abundance record/record
+          of absence.
+        TXT,
+      ]);
+    }
     // Use a species checklist to capture information about taxon restrictions
     // for this attribute.
     if ($_GET['type'] === 'sample' || $_GET['type'] === 'occurrence') {

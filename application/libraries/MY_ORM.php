@@ -1619,7 +1619,7 @@ class ORM extends ORM_Core {
     // Test if this model has an attributes sub-table. Also to have required attributes, we must be posting into a
     // specified survey or website at least.
     if ($this->has_attributes) {
-      $got_values=[];
+      $got_values = [];
       $empties = [];
       if (isset($this->submission['metaFields'][$this->attrs_submission_name]))
       {
@@ -1633,7 +1633,7 @@ class ORM extends ORM_Core {
         // check for location type or sample method which can be used to filter the attributes available
         foreach($this->submission['fields'] as $field => $content)
           // if we have a location type or sample method, we will use it as a filter on the attribute list
-          if ($field=='location_type_id' || $field=='sample_method_id')
+          if ($field === 'location_type_id' || $field === 'sample_method_id')
             $typeFilter = $content['value'];
       } else {
         // New way of submitting attributes embeds attr values direct in the main table submission values.
@@ -1652,7 +1652,7 @@ class ORM extends ORM_Core {
             }
           }
           // if we have a location type or sample method, we will use it as a filter on the attribute list
-          if ($field=='location_type_id' || $field=='sample_method_id')
+          if ($field === 'location_type_id' || $field === 'sample_method_id')
             $typeFilter = $content['value'];
         }
       }
@@ -1676,8 +1676,8 @@ class ORM extends ORM_Core {
           if (empty($this->submission['fields']['id']['value']) || isset($empties[$fieldname])) {
             // map to the exact name of the field if it is available
             if (isset($empties[$fieldname])) $fieldname = $empties[$fieldname];
-            $this->errors[$fieldname]='Please specify a value for the '.$row->caption .'.';
-            kohana::log('debug', 'No value for '.$row->caption . ' in '.print_r($got_values, TRUE));
+            $this->errors[$fieldname] = "Please specify a value for the $row->caption.";
+            kohana::log('debug', 'No value for ' . $row->caption . ' in ' . print_r($got_values, TRUE));
             $r=FALSE;
           }
         }
@@ -2123,12 +2123,12 @@ class ORM extends ORM_Core {
         }
         return $r;
       } else {
-        $this->errors['general']='INTERNAL ERROR: multiple values passed in for '.$this->object_name.' '.$valueId.' '.print_r($value, TRUE);
+        $this->errors['general'] = "INTERNAL ERROR: multiple values passed in for $this->object_name $valueId " . print_r($value, TRUE);
         return FALSE;
       }
     }
     $fk = FALSE;
-    $value=trim($value);
+    $value = trim($value);
     if (substr($attrId, 0, 3) == 'fk_') {
       // value is a term that needs looking up
       $fk = TRUE;
@@ -2142,7 +2142,7 @@ class ORM extends ORM_Core {
       $attrValueModel->clear();
       $attrValueModel->wantToUpdateMetadata = TRUE;
     } else {
-      $attrValueModel=ORM::factory($this->object_name.'_attribute_value');
+      $attrValueModel = ORM::factory($this->object_name . '_attribute_value');
       $this->attrValModels[$this->object_name] = $attrValueModel;
     }
     if (!empty($valueId)) {
@@ -2552,7 +2552,7 @@ class ORM extends ORM_Core {
    * @return array Submission structure array
    */
   public function get_submission_structure() {
-    return array('model'=>$this->object_name);
+    return ['model' => $this->object_name];
   }
 
 

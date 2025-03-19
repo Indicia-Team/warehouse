@@ -62,7 +62,7 @@ abstract class ATTR_ORM extends Valid_ORM {
         'image_path',
       )
     );
-    $array->add_rules('caption', 'required');
+    $array->add_rules('caption', 'required', 'length[1,50]');
     $array->add_rules('data_type', 'required');
     $array->add_rules('source_id', 'integer');
     $array->add_rules('reporting_category_id', 'integer');

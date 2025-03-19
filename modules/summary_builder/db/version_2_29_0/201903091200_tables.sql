@@ -45,7 +45,7 @@ CREATE TABLE summary_occurrences
   created_by_id INTEGER NOT NULL,
   summary_created_on timestamp without time zone NOT NULL
 ) WITH (
-  OIDS --- want oids as no pk.
+  OIDS=FALSE
 );
 CREATE INDEX ix_summary_occurrences_STLU ON summary_occurrences USING btree (survey_id, year, taxa_taxon_list_id, location_id, user_id);
 CREATE INDEX ix_summary_occurrences_STU ON summary_occurrences USING btree (survey_id, taxa_taxon_list_id, user_id);

@@ -1012,9 +1012,11 @@ class Scheduled_Tasks_Controller extends Controller {
         // and the current occdelta table does not contain the records since
         // the correct change point.
         $this->db->query('DROP TABLE IF EXISTS occdelta;');
+        // Set date in far past if empty to avoid error.
+        $lastRunTimestamp = !empty($pluginMetadata['lastRunTimestamp']) ? $pluginMetadata['lastRunTimestamp'] : '2000-01-01 01:00:00';
         // This query uses a 2 stage process as it is faster than joining
         // occurrences to cache_occurrences.
-        $ts = pg_escape_literal($this->db->getLink(), $pluginMetadata['lastRunTimestamp']);
+        $ts = pg_escape_literal($this->db->getLink(), $lastRunTimestamp);
         $ct = pg_escape_literal($this->db->getLink(), $currentTime);
         $query = <<<SQL
           select distinct o.id

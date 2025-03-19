@@ -1196,8 +1196,9 @@ class ReportEngine {
                 $output = $this->reportDb->query($prequery)->result_array(FALSE);
                 $pqValue = count($output) > 0 ? implode(',', $output[0]) : NULL;
                 if (empty($pqValue)) {
+                  $processedDatatype = $paramDefs[$name]['processed_datatype'] ?? $paramDefs[$name]['datatype'] ?? 'string';
                   // Create a dummy value so as to not cause a syntax error.
-                  if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'] ?? '')) {
+                  if (preg_match('/^(integer|float)/', $processedDatatype)) {
                     $pqValue = "-999999";
                   }
                   else {

@@ -825,6 +825,72 @@ class RestControllerTest extends BaseRestClientTest {
     $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
   }
 
+  public function testJwtSamplePostWithZeroOccurrence() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    Cache::instance()->delete('survey-auto-zero-abundance-1');
+    $query = <<<SQL
+      INSERT INTO occurrence_attributes (caption, data_type, created_on, created_by_id, updated_on, updated_by_id, system_function)
+      VALUES ('abundance', 'T', now(), 1, now(), 1, 'sex_stage_count');
+      INSERT INTO occurrence_attributes_websites (occurrence_attribute_id, website_id, created_on, created_by_id, restrict_to_survey_id, auto_handle_zero_abundance)
+      VALUES ((SELECT max(id) FROM occurrence_attributes), 1, now(), 1, 1, true);
+      SELECT max(id) as attr_id FROM occurrence_attributes;
+    SQL;
+    $attrId = $db->query($query)->current()->attr_id;
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        // Add 3 that are absent in varying ways.
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            "occAttr:$attrId" => 'absent',
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            "occAttr:$attrId" => 0,
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            "occAttr:$attrId" => 'none',
+          ],
+        ],
+        // Add one that's present.
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            "occAttr:$attrId" => 4,
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    $occCount = $db->query("select count(*) from occurrences where sample_id=?", [$id])
+      ->current()->count;
+    $this->assertEquals(4, $occCount, 'Incorrect number of occurrences created when submitted with a sample.');
+    $occCount = $db->query("select count(*) from occurrences where sample_id=? and zero_abundance=true", [$id])
+      ->current()->count;
+    $this->assertEquals(3, $occCount, 'Incorrect number of zero abundance occurrences created when submitted with a sample.');
+    // Cleanup so the attribute isn't linked to the survey any more.
+    $db->query('DELETE FROM occurrence_attributes_websites WHERE id=(SELECT max(id) FROM occurrence_attributes_websites)');
+  }
+
   public function testJwtSamplePostUserDeletionCheck() {
     $db = new Database();
 
@@ -2824,18 +2890,33 @@ SQL;
     $this->assertArrayNotHasKey('pages', $response['response'][0]['values'], 'Request for groups without verbose should not have returned pages');
     $response = $this->callService("groups", ['verbose' => '1']);
     // Pages as did ask for verbose.
-    $this->assertArrayHasKey('pages', $response['response'][0]['values'], 'Request for groups with verbose shoul have returned pages');
+    $this->assertArrayHasKey('pages', $response['response'][0]['values'], 'Request for groups with verbose should have returned pages');
+    $response = $this->callService("groups", ['page' => 'record/list']);
+    // Should now return 1 group in default request.
+    $this->assertEquals(1, count($response['response']), 'Fetching groups when a member should return 1 if page parameter correct.');
+    $response = $this->callService("groups", ['page' => 'record/other-list']);
+    // Should now return 1 group in default request.
+    $this->assertEquals(0, count($response['response']), 'Fetching groups when a member should return 0 if page parameter incorrect.');
     // Add to the private group.
     $db->query("insert into groups_users(group_id, user_id, created_by_id, created_on, updated_by_id, updated_on) values (2, 1, 1, now(), 1, now())");
     $response = $this->callService("groups", []);
     // Should now return 2 groups in default request.
-    $this->assertEquals(2, count($response['response']), 'Fetching groups when a member of both should return 2.');
+    $this->assertEquals(2, count($response['response']), 'Fetching groups when a member of both should return 2 groups.');
     // Plus 2 in the all_available request.
     $response = $this->callService("groups", ['view' => 'all_available']);
     $this->assertEquals(3, count($response['response']), 'Fetching all_available groups when a member of the private group should return 3 (all).');
     // Plus 0 in the joinable request.
     $response = $this->callService("groups", ['view' => 'joinable']);
     $this->assertEquals(1, count($response['response']), 'Fetching joinable groups when a member of both should return 1.');
+    // Change membership of private group to pending.
+    $db->query('update groups_users set pending=true where user_id=1 and group_id=2');
+    // Should now return 1 groups in default request.
+    $response = $this->callService("groups", []);
+    $this->assertEquals(1, count($response['response']), 'Fetching groups when a member of one and pending another should return 1 group.');
+    $this->assertEquals(1, $response['response'][0]['values']['id'], 'Incorrect group returned when requesting groups user is a member of');
+    $response = $this->callService("groups", ['view' => 'pending']);
+    $this->assertEquals(1, count($response['response']), 'Fetching pending groups when pending membership of only one should return 1 group.');
+    $this->assertEquals(2, $response['response'][0]['values']['id'], 'Incorrect group returned when requesting groups user is pending membership of');
     // Check invalid view value.
     $response = $this->callService("groups", ['view' => 'foo']);
     $this->assertTrue($response['httpCode'] === 400);

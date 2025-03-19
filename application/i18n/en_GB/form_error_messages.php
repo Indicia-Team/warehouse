@@ -12,6 +12,7 @@ $lang = [
   ],
   'caption' => [
     'required' => 'The caption cannot be blank.',
+    'length' => 'The caption must be a maximum of 50 characters in length.',
   ],
   'centroid_sref' => [
     'required' => 'The spatial reference must be supplied.',

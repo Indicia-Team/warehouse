@@ -18,6 +18,13 @@
       "filter_sql": "EXISTS(SELECT id FROM index_groups_locations WHERE group_id=t1.id AND location_id={value})"
     }
   ],
+  "params": [
+    {
+      "name": "page",
+      "type": "string",
+      "filter_sql": "EXISTS(SELECT id FROM group_pages WHERE group_id=t1.id AND path={value})"
+    }
+  ],
   "sort": [
     "t1.title ASC"
   ],
