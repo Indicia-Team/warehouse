@@ -922,7 +922,8 @@ Optionally pass one of the following in the view parameter to control the list o
 member - default, returns a list of groups the current user is a member of; joinable - returns a
 list of groups the user is not a member of but are available to join (public or join by request);
 all_available - returns all groups the user can see, including those they are a member of and those
-which are joinable.
+which are joinable; pending - return groups the user has requested to join but where they are
+pending approval.
 TXT;
 $lang['GET groups']['verbose'] = <<<TXT
 Add &verbose to the URL to request a more verbose response which includes the pages (forms and/or
