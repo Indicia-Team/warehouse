@@ -430,7 +430,7 @@ class Rest_Controller extends Controller {
             ],
             'view' => [
               'datatype' => 'text',
-              'options' => ['member', 'joinable', 'all_available'],
+              'options' => ['member', 'joinable', 'all_available', 'pending'],
             ],
           ],
         ],
@@ -3555,7 +3555,7 @@ SQL;
    * Covert groups GET view parameter to a filter.
    *
    * @param string $view
-   *   View parameter, one of member, joinable or all_available.
+   *   View parameter, one of member, joinable, all_available, pending.
    *
    * @return string
    *   SQL filter.
@@ -3563,13 +3563,16 @@ SQL;
   private function getGroupsViewParameterFilter($view) {
     $filters = [];
     if (in_array($view, ['member', 'all_available'])) {
-      $filters[] = 't1.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=' . RestObjects::$clientUserId . ' AND gu.deleted=false)';
+      $filters[] = 't1.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=' . RestObjects::$clientUserId . ' AND gu.deleted=false AND gu.pending=false)';
     }
     if ($view == 'all_available') {
       $filters[] = "t1.joining_method IN ('P', 'R')";
     }
-    if ($view === 'joinable') {
+    elseif ($view === 'joinable') {
       $filters[] = "t1.joining_method IN ('P', 'R') AND t1.id NOT IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=" . RestObjects::$clientUserId . ' AND gu.deleted=false)';
+    }
+    elseif ($view === 'pending') {
+      $filters[] = 't1.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=' . RestObjects::$clientUserId . ' AND gu.deleted=false AND gu.pending=true)';
     }
     return 'AND t1.website_id=' . RestObjects::$clientWebsiteId . ' AND (' . implode(' OR ', $filters) . ')';
   }

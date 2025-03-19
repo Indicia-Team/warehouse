@@ -2870,7 +2870,7 @@ SQL;
   public function testGroups_get() {
     $this->authMethod = 'jwtUser';
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
-    /*$response = $this->callService("groups", []);
+    $response = $this->callService("groups", []);
     $this->assertResponseOk($response, 'groups');
     // Not a member, so default response empty.
     $this->assertEquals(0, count($response['response']), 'Fetching groups when not a member should return 0.');
@@ -2879,7 +2879,7 @@ SQL;
     $this->assertNotEquals('private group 2', $response['response'][0]['values']['title'], 'Wrong group returned');
     $this->assertNotEquals('private group 2', $response['response'][1]['values']['title'], 'Wrong group returned');
     $response = $this->callService("groups", ['view' => 'joinable']);
-    $this->assertEquals(2, count($response['response']), 'Fetching joinable groups when not a member should return 2.');*/
+    $this->assertEquals(2, count($response['response']), 'Fetching joinable groups when not a member should return 2.');
     // Make user a member of group 1 (public).
     $db = new Database();
     $db->query("insert into groups_users(group_id, user_id, created_by_id, created_on, updated_by_id, updated_on) values (1, 1, 1, now(), 1, now())");
@@ -2901,13 +2901,22 @@ SQL;
     $db->query("insert into groups_users(group_id, user_id, created_by_id, created_on, updated_by_id, updated_on) values (2, 1, 1, now(), 1, now())");
     $response = $this->callService("groups", []);
     // Should now return 2 groups in default request.
-    $this->assertEquals(2, count($response['response']), 'Fetching groups when a member of both should return 2.');
+    $this->assertEquals(2, count($response['response']), 'Fetching groups when a member of both should return 2 groups.');
     // Plus 2 in the all_available request.
     $response = $this->callService("groups", ['view' => 'all_available']);
     $this->assertEquals(3, count($response['response']), 'Fetching all_available groups when a member of the private group should return 3 (all).');
     // Plus 0 in the joinable request.
     $response = $this->callService("groups", ['view' => 'joinable']);
     $this->assertEquals(1, count($response['response']), 'Fetching joinable groups when a member of both should return 1.');
+    // Change membership of private group to pending.
+    $db->query('update groups_users set pending=true where user_id=1 and group_id=2');
+    // Should now return 1 groups in default request.
+    $response = $this->callService("groups", []);
+    $this->assertEquals(1, count($response['response']), 'Fetching groups when a member of one and pending another should return 1 group.');
+    $this->assertEquals(1, $response['response'][0]['values']['id'], 'Incorrect group returned when requesting groups user is a member of');
+    $response = $this->callService("groups", ['view' => 'pending']);
+    $this->assertEquals(1, count($response['response']), 'Fetching pending groups when pending membership of only one should return 1 group.');
+    $this->assertEquals(2, $response['response'][0]['values']['id'], 'Incorrect group returned when requesting groups user is pending membership of');
     // Check invalid view value.
     $response = $this->callService("groups", ['view' => 'foo']);
     $this->assertTrue($response['httpCode'] === 400);
