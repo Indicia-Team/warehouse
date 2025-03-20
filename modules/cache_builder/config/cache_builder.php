@@ -1030,11 +1030,11 @@ SET website_title=w.title,
       case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
       -- work out best square size to reflect a lat long's true precision
       case
-        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
-        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
-        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
-        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
-        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
+        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
+        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
+        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
+        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
+        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
         else 10
       end,
       10 -- default minimum square size
@@ -1094,6 +1094,7 @@ SET website_title=w.title,
   attr_sref_precision=CASE a_sref_precision.data_type
       WHEN 'I'::bpchar THEN v_sref_precision.int_value::double precision
       WHEN 'F'::bpchar THEN v_sref_precision.float_value
+      WHEN 'L'::bpchar THEN t_sref_precision.sort_order
       ELSE NULL::double precision
   END,
   attr_sample_method=COALESCE(CASE a_sample_method.data_type
@@ -1229,11 +1230,11 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
           case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
           -- work out best square size to reflect a lat long's true precision
           case
-            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
-            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
-            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
-            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
-            when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
+            when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
+            when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
+            when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
+            when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
+            when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
             else 10
           end,
           10 -- default minimum square size
@@ -1269,6 +1270,7 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   CASE a_sref_precision.data_type
     WHEN 'I'::bpchar THEN v_sref_precision.int_value::double precision
     WHEN 'F'::bpchar THEN v_sref_precision.float_value
+    WHEN 'L'::bpchar THEN t_sref_precision.sort_order
     ELSE NULL::double precision
   END,
   get_output_sref(
@@ -1278,11 +1280,11 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
       case s.privacy_precision when 0 then 10000 else s.privacy_precision end,
       -- work out best square size to reflect a lat long's true precision
       case
-        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
-        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
-        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
-        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
-        when coalesce(v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
+        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=50001 then 1000000
+        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=5001 then 100000
+        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value)>=501 then 10000
+        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 51 and 500 then 1000
+        when coalesce(t_sref_precision.sort_order, v_sref_precision.int_value, v_sref_precision.float_value) between 6 and 50 then 100
         else 10
       end,
       10 -- default minimum square size
