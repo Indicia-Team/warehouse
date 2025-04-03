@@ -72,101 +72,123 @@ class task_spatial_index_builder_location {
     $locationTypeFilters = spatial_index_builder::getLocationTypeFilters($db);
     $linkedLocationAttrIds = spatial_index_builder::getLinkedLocationAttrIds($db);
 
+    $surveyFilters = '';
+    if (!empty($locationTypeFilters['surveyFilters'])) {
+      foreach ($locationTypeFilters['surveyFilters'] as $locationTypeId => $surveyIds) {
+        $surveyIds = implode(',', $surveyIds);
+        $surveyFilters .= "AND (s.survey_id IN ($surveyIds) OR l.location_type_id<>$locationTypeId)";
+      }
+    }
+    $locationTypeIds = implode(',', $locationTypeFilters['locationTypeIds']);
+
     $qry = <<<SQL
-DROP TABLE IF EXISTS loclist;
-DROP TABLE IF EXISTS changed_location_hits;
-DROP TABLE IF EXISTS changed_location_hits_occs;
-DROP TABLE IF EXISTS smp_locations_deleted;
-DROP TABLE IF EXISTS occ_locations_deleted;
+      DROP TABLE IF EXISTS loclist;
+      DROP TABLE IF EXISTS changed_location_hits;
+      DROP TABLE IF EXISTS changed_location_hits_occs;
+      DROP TABLE IF EXISTS smp_locations_deleted;
+      DROP TABLE IF EXISTS occ_locations_deleted;
 
--- Prepare temporary tables that make things faster when we update cache
--- tables.
-SELECT DISTINCT w.record_id INTO TEMPORARY loclist
-FROM work_queue w
-JOIN locations l ON l.id = w.record_id
-  AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
-WHERE w.claimed_by='$procId'
-AND w.entity='location'
-AND w.task='task_spatial_index_builder_location';
+      -- Prepare temporary tables that make things faster when we update cache
+      -- tables.
+      SELECT DISTINCT w.record_id INTO TEMPORARY loclist
+      FROM work_queue w
+      JOIN locations l ON l.id = w.record_id
+        AND l.location_type_id IN ($locationTypeIds)
+      WHERE w.claimed_by='$procId'
+      AND w.entity='location'
+      AND w.task='task_spatial_index_builder_location';
 
-WITH ltree AS (
-  SELECT l.id, l.location_type_id, v.sample_id as sample_id
-  FROM loclist ll
-  JOIN locations l
-    ON l.id=ll.record_id
-    AND l.deleted=false
-  JOIN sample_attribute_values v ON v.int_value=l.id AND v.sample_attribute_id IN ($linkedLocationAttrIds) AND v.deleted=false
-  UNION ALL
-  SELECT l.id, l.location_type_id, s.id as sample_id
-  FROM loclist ll
-  JOIN locations l
-    ON l.id=ll.record_id
-    AND l.deleted=false
-    AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
-  JOIN cache_samples_functional s
-    ON st_intersects(l.boundary_geom, s.public_geom)
-    AND (st_geometrytype(s.public_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.public_geom))
-    $locationTypeFilters[surveyFilters]
-  LEFT JOIN sample_attribute_values v ON v.sample_id=s.id AND v.deleted=false AND v.sample_attribute_id IN ($linkedLocationAttrIds)
-  LEFT JOIN locations lfixed on lfixed.id=v.int_value AND lfixed.deleted=false
-  WHERE COALESCE(l.location_type_id,-1)<>COALESCE(lfixed.location_type_id,-2)
-)
-SELECT sample_id, array_agg(distinct id) as location_ids
-INTO TEMPORARY changed_location_hits
-FROM ltree
-GROUP BY sample_id;
+      WITH ltree AS (
+        SELECT l.id, l.location_type_id, s.id as sample_id
+        FROM loclist ll
+        JOIN locations l
+          ON l.id=ll.record_id
+          AND l.deleted=false
+        JOIN samples s ON s.deleted=false AND s.forced_spatial_indexer_location_ids @@ ('$.*[*] == ' || ll.record_id)::jsonpath
+        UNION ALL
+        SELECT l.id, l.location_type_id, v.sample_id as sample_id
+        FROM loclist ll
+        JOIN locations l
+          ON l.id=ll.record_id
+          AND l.deleted=false
+        JOIN sample_attribute_values v ON v.int_value=l.id AND v.sample_attribute_id IN ($linkedLocationAttrIds) AND v.deleted=false
+        JOIN samples smp ON smp.id=v.sample_id
+          AND smp.deleted=false
+          AND smp.forced_spatial_indexer_location_ids IS NULL
+        UNION ALL
+        SELECT l.id, l.location_type_id, s.id as sample_id
+        FROM loclist ll
+        JOIN locations l
+          ON l.id=ll.record_id
+          AND l.deleted=false
+          AND l.location_type_id IN ($locationTypeIds)
+        JOIN cache_samples_functional s
+          ON st_intersects(l.boundary_geom, s.public_geom)
+          AND (st_geometrytype(s.public_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.public_geom))
+          $surveyFilters
+        LEFT JOIN sample_attribute_values v ON v.sample_id=s.id AND v.deleted=false AND v.sample_attribute_id IN ($linkedLocationAttrIds)
+        JOIN samples smp ON smp.id=s.id
+          AND smp.deleted=false
+          AND smp.forced_spatial_indexer_location_ids IS NULL
+        LEFT JOIN locations lfixed on lfixed.id=v.int_value AND lfixed.deleted=false
+        WHERE COALESCE(l.location_type_id,-1)<>COALESCE(lfixed.location_type_id,-2)
+      )
+      SELECT sample_id, array_agg(distinct id) as location_ids
+      INTO TEMPORARY changed_location_hits
+      FROM ltree
+      GROUP BY sample_id;
 
-SELECT s.id, array_remove(s.location_ids, ll.record_id) as location_ids
-INTO TEMPORARY smp_locations_deleted
-FROM cache_samples_functional s
-JOIN loclist ll ON s.location_ids @> ARRAY[ll.record_id]
-LEFT JOIN (changed_location_hits clh
-  JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
-) ON clh.sample_id=s.id
-WHERE clh.sample_id IS NULL;
+      SELECT s.id, array_remove(s.location_ids, ll.record_id) as location_ids
+      INTO TEMPORARY smp_locations_deleted
+      FROM cache_samples_functional s
+      JOIN loclist ll ON s.location_ids @> ARRAY[ll.record_id]
+      LEFT JOIN (changed_location_hits clh
+        JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
+      ) ON clh.sample_id=s.id
+      WHERE clh.sample_id IS NULL;
 
-SELECT o.id, array_remove(o.location_ids, ll.record_id) as location_ids
-INTO TEMPORARY occ_locations_deleted
-FROM cache_occurrences_functional o
-JOIN loclist ll ON o.location_ids @> ARRAY[ll.record_id]
-LEFT JOIN (changed_location_hits clh
-  JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
-) ON clh.sample_id=o.sample_id
-WHERE clh.sample_id IS NULL;
+      SELECT o.id, array_remove(o.location_ids, ll.record_id) as location_ids
+      INTO TEMPORARY occ_locations_deleted
+      FROM cache_occurrences_functional o
+      JOIN loclist ll ON o.location_ids @> ARRAY[ll.record_id]
+      LEFT JOIN (changed_location_hits clh
+        JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
+      ) ON clh.sample_id=o.sample_id
+      WHERE clh.sample_id IS NULL;
 
--- Samples - remove any old hits for locations that have changed.
-UPDATE cache_samples_functional u
-SET location_ids=ld.location_ids
-FROM smp_locations_deleted ld
-WHERE u.id=ld.id;
+      -- Samples - remove any old hits for locations that have changed.
+      UPDATE cache_samples_functional u
+      SET location_ids=ld.location_ids
+      FROM smp_locations_deleted ld
+      WHERE u.id=ld.id;
 
--- Samples - add any missing hits for locations that have changed.
-UPDATE cache_samples_functional u
-  SET location_ids=CASE
-    WHEN u.location_ids IS NULL THEN clh.location_ids
-    ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
-  END
-FROM changed_location_hits clh
-WHERE u.id=clh.sample_id
-AND NOT u.location_ids @> clh.location_ids;
+      -- Samples - add any missing hits for locations that have changed.
+      UPDATE cache_samples_functional u
+        SET location_ids=CASE
+          WHEN u.location_ids IS NULL THEN clh.location_ids
+          ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
+        END
+      FROM changed_location_hits clh
+      WHERE u.id=clh.sample_id
+      AND NOT u.location_ids @> clh.location_ids;
 
--- Occurrences - remove any old hits for locations that have changed.
-UPDATE cache_occurrences_functional u
-SET location_ids=ld.location_ids
-FROM occ_locations_deleted ld
-WHERE u.id=ld.id;
+      -- Occurrences - remove any old hits for locations that have changed.
+      UPDATE cache_occurrences_functional u
+      SET location_ids=ld.location_ids
+      FROM occ_locations_deleted ld
+      WHERE u.id=ld.id;
 
--- Samples - add any missing hits for locations that have changed.
-UPDATE cache_occurrences_functional u
-  SET location_ids=CASE
-    WHEN u.location_ids IS NULL THEN clh.location_ids
-    ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
-  END
-FROM changed_location_hits clh
-WHERE u.sample_id=clh.sample_id
-AND NOT u.location_ids @> clh.location_ids;
+      -- Samples - add any missing hits for locations that have changed.
+      UPDATE cache_occurrences_functional u
+        SET location_ids=CASE
+          WHEN u.location_ids IS NULL THEN clh.location_ids
+          ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
+        END
+      FROM changed_location_hits clh
+      WHERE u.sample_id=clh.sample_id
+      AND NOT u.location_ids @> clh.location_ids;
 
-SQL;
+    SQL;
     $db->query($qry);
   }
 

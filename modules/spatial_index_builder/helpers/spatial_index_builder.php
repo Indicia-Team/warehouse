@@ -38,8 +38,10 @@ class spatial_index_builder {
    * @param object $db
    *   Database connection object.
    *
-   * @return string
-   *   SQL filter clause.
+   * @return array
+   *   Array containing locationTypeIds (array of IDs) and surveyFilters (array
+   *   of location_type_ids as keys and array of survey IDs that apply to the
+   *   type as the values).
    */
   public static function getLocationTypeFilters($db) {
     $cache = Cache::instance();
@@ -72,11 +74,11 @@ class spatial_index_builder {
             throw new exception('Configured survey restriction incorrect in spatial index builder');
           }
           $id = $allLocationTypeIds[$type];
-          $surveyFilters[] = "AND (l.location_type_id<>$id OR s.survey_id IN ($surveys))\n";
+          $surveyFilters[$id] = $surveys;
         }
       }
       $filters = [
-        'allLocationTypeIds' => implode(', ', $allLocationTypeIds),
+        'locationTypeIds' => $allLocationTypeIds,
         'surveyFilters' => implode("\n", $surveyFilters),
       ];
       $cache->set('spatial-index-location-type-filter-info', $filters);
