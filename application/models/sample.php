@@ -175,6 +175,7 @@ class Sample_Model extends ORM_Tree {
       'verified_on',
       'licence_id',
       'training',
+      'forced_spatial_indexer_location_ids',
     ];
     $array->add_rules('survey_id', 'required');
     // When deleting a sample, only need the id and the deleted flag, don't

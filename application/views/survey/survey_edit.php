@@ -49,6 +49,13 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'validation' => 'required',
       'helpText' => 'Provide an optional description of your survey to help when browsing survey datasets on the warehouse',
     ]);
+    echo data_entry_helper::select([
+      'label' => 'Website',
+      'fieldname' => 'survey:website_id',
+      'default' => html::initial_value($values, 'survey:website_id'),
+      'lookupValues' => $other_data['websites'],
+      'helpText' => 'The survey must belong to a website registration',
+    ]);
     ?>
     <fieldset>
       <legend>Enforce required fields</legend>
@@ -113,13 +120,6 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'default' => html::initial_value($values, 'survey:parent_id'),
       'defaultCaption' => html::initial_value($values, 'parent:title'),
       'helpText' => 'Set a parent for your survey to allow grouping of survey datasets in reports',
-    ]);
-    echo data_entry_helper::select([
-      'label' => 'Website',
-      'fieldname' => 'survey:website_id',
-      'default' => html::initial_value($values, 'survey:website_id'),
-      'lookupValues' => $other_data['websites'],
-      'helpText' => 'The survey must belong to a website registration',
     ]);
     // Only show fields, if fields have been found in the database (the auto
     // verify module is installed).
