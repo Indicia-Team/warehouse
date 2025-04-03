@@ -1020,7 +1020,7 @@ class report_standard_params_occurrences {
         'preprocess' => [
           'taxon_meaning_ids_from_ids' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
             from cache_taxa_taxon_lists l
-            join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
+            join cache_taxa_taxon_lists m on (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
             where l.id in (#taxa_taxon_list_list#)",
         ],
       ],
@@ -1036,7 +1036,7 @@ class report_standard_params_occurrences {
         'preprocess' => [
           'taxon_meaning_ids' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
             from cache_taxa_taxon_lists l
-            join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
+            join cache_taxa_taxon_lists m on (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
             where l.taxon_meaning_id in (#taxon_meaning_list#)",
         ],
       ],
@@ -1052,7 +1052,7 @@ class report_standard_params_occurrences {
         'preprocess' => [
           'taxon_meaning_ids_from_keys' => "select string_agg(distinct taxon_meaning_id::text, ',')
             from cache_taxa_taxon_lists
-            where taxon_list_id=#master_list_id# and external_key in (#taxa_taxon_list_external_key_list#)",
+            where external_key in (#taxa_taxon_list_external_key_list#)",
         ],
         // Datatype of processed parameter differs.
         'processed_datatype' => 'integer[]',
@@ -1113,7 +1113,7 @@ class report_standard_params_occurrences {
           'taxon_meaning_ids_from_scratchpad' => "select string_agg(distinct m.taxon_meaning_id::text, ',')
             from scratchpad_list_entries sle
             join cache_taxa_taxon_lists l on l.id=sle.entry_id
-            join cache_taxa_taxon_lists m on m.taxon_list_id=#master_list_id# and (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
+            join cache_taxa_taxon_lists m on (m.taxon_meaning_id=l.taxon_meaning_id or m.external_key=l.external_key)
             where sle.scratchpad_list_id=#taxa_scratchpad_list_id#",
           // Adds a second filter on taxon group ID. This is more likely to
           // successfully use an index when the list of taxon meaning IDs is
