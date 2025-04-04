@@ -348,7 +348,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       AND NOT ST_Intersects(st_buffer(o.public_geom, 2000), l.boundary_geom);
     SQL;
     if ($db->query($qry)->current()->count > 0) {
-      $this->fail('Bad request', 400, 'You are trying to link locations to a location they are not within or close to.');
+      $this->fail('Bad request', 400, 'You are trying to link samples to a location they are not within or close to.');
       return;
     }
     // Find the list of affected samples.
@@ -360,6 +360,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       AND o.id in ($_POST[occurrence_ids]);
     SQL;
     $sampleList = $db->query($qry)->result(TRUE);
+    $sampleIds = [];
     foreach ($sampleList as $sampleRow) {
       // Set the forced location ID only for the specified location type,
       // leaving any forced location IDs for other types intact.
@@ -373,7 +374,17 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         WHERE id = ?;
       SQL;
       $db->query($qry, [json_encode($obj), $sampleRow->sample_id]);
+      $sampleIds[] = $sampleRow->sample_id;
     }
+    $sampleIds = implode(',', $sampleIds);
+    // Now add work queue entries to redo spatial indexing.
+    $qry = <<<SQL
+      INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority)
+      SELECT 'task_spatial_index_builder_sample', 'sample', s.id, 50, 1
+      FROM samples s WHERE id IN ($sampleIds);
+    SQL;
+    $db->query($qry);
+
     echo json_encode([
       'code' => 200,
       'status' => 'OK',
