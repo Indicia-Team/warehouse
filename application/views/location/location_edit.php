@@ -167,7 +167,7 @@ This page allows you to specify the details of a location.
   </div>
   <?php
   // No need to display for public locations unless core admin.
-  if (is_null($id) || $this->auth->logged_in('CoreAdmin') || ($values['location:public'] === 'f')) :
+  if (empty($id) || $this->auth->logged_in('CoreAdmin') || ($values['location:public'] === 'f')) :
   ?>
   <div id="websites">
     <fieldset>
@@ -205,7 +205,7 @@ This page allows you to specify the details of a location.
         foreach ($websites as $website) {
           echo '<li><label for="website_' . $website->id . '" class="wide">' . $website->title . '</label>';
           echo '<input type="checkbox" name="joinsTo:website:' . $website->id . '" ';
-          if (!is_null($id)) {
+          if (!empty($id)) {
             if (array_key_exists('joinsTo:website:' . $website->id, $values)) {
               echo "checked=\"checked\"";
               $linkedWebsites[] = $website->id;
@@ -220,7 +220,7 @@ This page allows you to specify the details of a location.
   <?php endif; ?>
   <?php
   // No need to display for new locations or public locations.
-  if (!is_null($id) && $values['location:public'] === 'f') :
+  if (!empty($id) && $values['location:public'] === 'f') :
   ?>
   <div id="attrs">
     <fieldset>
