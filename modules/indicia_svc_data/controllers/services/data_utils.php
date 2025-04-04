@@ -381,7 +381,11 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     $qry = <<<SQL
       INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority)
       SELECT 'task_spatial_index_builder_sample', 'sample', s.id, 50, 1
-      FROM samples s WHERE id IN ($sampleIds);
+      FROM samples s
+      LEFT JOIN work_queue q ON q.task='task_spatial_index_builder_sample'
+        AND q.entity='sample' AND q.record_id=s.id
+      WHERE s.id IN ($sampleIds)
+      AND q.id IS NULL;
     SQL;
     $db->query($qry);
 
