@@ -237,6 +237,7 @@ class Sample_Model extends ORM_Tree {
       return $val == '' ? NULL : $val;
     };
     $array->post_filter($untrim, 'date_start');
+    $this->clearForcedLinkedLocationIfMoving($array);
 
     return parent::validate($array, $save);
   }
@@ -410,6 +411,32 @@ class Sample_Model extends ORM_Tree {
           $this->submission['fields']['entered_sref']['value'],
           $this->submission['fields']['entered_sref_system']['value']
       );
+    }
+  }
+
+  /**
+   * If moving a sample, clear forced linked location IDs.
+   *
+   * If a sample is being moved to a new geometry, the forced linked location
+   * IDs previously set should be cleared.
+   *
+   * @param Validation $array
+   *   Data being submitted.
+   */
+  private function clearForcedLinkedLocationIfMoving(Validation $array) {
+    if (
+        // Existing record being updated which has
+        // forced_spatial_indexer_location_ids set.
+        !empty($this->id) && !empty($this->forced_spatial_indexer_location_ids)
+        // Forced_spatial_indexer_location_ids is not specified in the submission.
+        && !empty($array['forced_spatial_indexer_location_ids'])
+        // Geometry is in the submission.
+        && isset($array['geom'])
+        // Geometry is changing.
+        && $array['geom'] !== $this->geom
+      ) {
+      // Clearing forced_spatial_indexer_location_ids.
+      $array['forced_spatial_indexer_location_ids'] = NULL;
     }
   }
 
