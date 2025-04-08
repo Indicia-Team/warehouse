@@ -1443,7 +1443,7 @@ SQL;
     if ($config['isExcel']) {
       $idx = 0;
       foreach ($config['columns'] as $colInfo) {
-        if (preg_match('/date(_start|_end)?$/', $colInfo['warehouseField'])) {
+        if (isset($colInfo['warehouseField']) && preg_match('/date(_start|_end)?$/', $colInfo['warehouseField'])) {
           $dateCols[] = $colInfo['tempDbField'];
         }
         $idx++;
@@ -2127,7 +2127,7 @@ SQL;
       // When matching genus, add the species name epithet paired field to the
       // SQL used for matching.
       foreach ($config['columns'] as $colInfo) {
-        if ($colInfo['warehouseField'] = 'occurrence:fk_taxa_taxon_list:specific') {
+        if (isset($colInfo['warehouseField']) && $colInfo['warehouseField'] = 'occurrence:fk_taxa_taxon_list:specific') {
           $tempDbField = pg_escape_identifier($db->getLink(), $colInfo['tempDbField']);
           $matchingFieldSql = "i.{$valueToMapColName} || ' ' || i.$tempDbField";
         }
