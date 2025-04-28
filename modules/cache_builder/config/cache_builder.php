@@ -1095,11 +1095,11 @@ SET website_title=w.title,
   attr_biotope=(
     SELECT STRING_AGG(COALESCE(t.term, v.text_value), '; ')
     FROM sample_attribute_values v
-    JOIN biotope_name_smp_attrs fa on fa.id=v.sample_attribute_id
+    JOIN biotope_smp_attrs fa on fa.id=v.sample_attribute_id
     LEFT JOIN cache_termlists_terms t on fa.data_type='L' and t.id=v.int_value
     WHERE v.sample_id=s.id
     AND v.deleted=false
-    AND v.text_value IS NOT NULL
+    AND COALESCE(v.text_value, t.term) IS NOT NULL
   ),
   attr_sref_precision=CASE a_sref_precision.data_type
       WHEN 'I'::bpchar THEN v_sref_precision.int_value::double precision
@@ -1360,11 +1360,11 @@ SET
   attr_biotope=(
     SELECT STRING_AGG(COALESCE(t.term, v.text_value), '; ')
     FROM sample_attribute_values v
-    JOIN biotope_name_smp_attrs fa on fa.id=v.sample_attribute_id
+    JOIN biotope_smp_attrs fa on fa.id=v.sample_attribute_id
     LEFT JOIN cache_termlists_terms t on fa.data_type='L' and t.id=v.int_value
     WHERE v.sample_id=s.id
     AND v.deleted=false
-    AND v.text_value IS NOT NULL
+    AND COALESCE(v.text_value, t.term) IS NOT NULL
   ),
   attr_sample_method=COALESCE(t_sample_method_id.term, CASE a_sample_method.data_type
       WHEN 'T'::bpchar THEN v_sample_method.text_value
