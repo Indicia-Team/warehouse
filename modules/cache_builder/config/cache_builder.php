@@ -975,6 +975,8 @@ AND (u.location_id IS NOT NULL OR u.location_name IS NOT NULL)
 ";
 
 $config['samples']['update']['nonfunctional'] = "
+WITH full_name_smp_attrs AS (SELECT id FROM sample_attributes WHERE system_function='full_name' AND deleted=false),
+  biotope_smp_attrs AS (SELECT id, data_type FROM sample_attributes WHERE system_function='biotope' AND deleted=false)
 UPDATE cache_samples_nonfunctional
 SET website_title=w.title,
   survey_title=su.title,
@@ -1082,15 +1084,23 @@ SET website_title=w.title,
       WHEN 'T'::bpchar THEN v_last_name.text_value
       ELSE NULL::text
   END,
-  attr_full_name=CASE a_full_name.data_type
-      WHEN 'T'::bpchar THEN v_full_name.text_value
-      ELSE NULL::text
-  END,
-  attr_biotope=CASE a_biotope.data_type
-      WHEN 'T'::bpchar THEN v_biotope.text_value
-      WHEN 'L'::bpchar THEN t_biotope.term
-      ELSE NULL::text
-  END,
+  attr_full_name=(
+    SELECT STRING_AGG(v.text_value, '; ')
+    FROM sample_attribute_values v
+    JOIN full_name_smp_attrs fa on fa.id=v.sample_attribute_id
+    WHERE v.sample_id=s.id
+    AND v.deleted=false
+    AND v.text_value IS NOT NULL
+  ),
+  attr_biotope=(
+    SELECT STRING_AGG(COALESCE(t.term, v.text_value), '; ')
+    FROM sample_attribute_values v
+    JOIN biotope_name_smp_attrs fa on fa.id=v.sample_attribute_id
+    LEFT JOIN cache_termlists_terms t on fa.data_type='L' and t.id=v.int_value
+    WHERE v.sample_id=s.id
+    AND v.deleted=false
+    AND v.text_value IS NOT NULL
+  ),
   attr_sref_precision=CASE a_sref_precision.data_type
       WHEN 'I'::bpchar THEN v_sref_precision.int_value::double precision
       WHEN 'F'::bpchar THEN v_sref_precision.float_value
@@ -1114,32 +1124,19 @@ LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
 LEFT JOIN (sample_attribute_values v_email
   JOIN sample_attributes a_email on a_email.id=v_email.sample_attribute_id and a_email.deleted=false and a_email.system_function='email'
-  LEFT JOIN cache_termlists_terms t_email on a_email.data_type='L' and t_email.id=v_email.int_value
 ) on v_email.sample_id=s.id and v_email.deleted=false
 LEFT JOIN (sample_attribute_values v_cms_user_id
   JOIN sample_attributes a_cms_user_id on a_cms_user_id.id=v_cms_user_id.sample_attribute_id and a_cms_user_id.deleted=false and a_cms_user_id.system_function='cms_user_id'
-  LEFT JOIN cache_termlists_terms t_cms_user_id on a_cms_user_id.data_type='L' and t_cms_user_id.id=v_cms_user_id.int_value
 ) on v_cms_user_id.sample_id=s.id and v_cms_user_id.deleted=false
 LEFT JOIN (sample_attribute_values v_cms_username
   JOIN sample_attributes a_cms_username on a_cms_username.id=v_cms_username.sample_attribute_id and a_cms_username.deleted=false and a_cms_username.system_function='cms_username'
-  LEFT JOIN cache_termlists_terms t_cms_username on a_cms_username.data_type='L' and t_cms_username.id=v_cms_username.int_value
 ) on v_cms_username.sample_id=s.id and v_cms_username.deleted=false
 LEFT JOIN (sample_attribute_values v_first_name
   JOIN sample_attributes a_first_name on a_first_name.id=v_first_name.sample_attribute_id and a_first_name.deleted=false and a_first_name.system_function='first_name'
-  LEFT JOIN cache_termlists_terms t_first_name on a_first_name.data_type='L' and t_first_name.id=v_first_name.int_value
 ) on v_first_name.sample_id=s.id and v_first_name.deleted=false
 LEFT JOIN (sample_attribute_values v_last_name
   JOIN sample_attributes a_last_name on a_last_name.id=v_last_name.sample_attribute_id and a_last_name.deleted=false and a_last_name.system_function='last_name'
-  LEFT JOIN cache_termlists_terms t_last_name on a_last_name.data_type='L' and t_last_name.id=v_last_name.int_value
 ) on v_last_name.sample_id=s.id and v_last_name.deleted=false
-LEFT JOIN (sample_attribute_values v_full_name
-  JOIN sample_attributes a_full_name on a_full_name.id=v_full_name.sample_attribute_id and a_full_name.deleted=false and a_full_name.system_function='full_name'
-  LEFT JOIN cache_termlists_terms t_full_name on a_full_name.data_type='L' and t_full_name.id=v_full_name.int_value
-) on v_full_name.sample_id=s.id and v_full_name.deleted=false
-LEFT JOIN (sample_attribute_values v_biotope
-  JOIN sample_attributes a_biotope on a_biotope.id=v_biotope.sample_attribute_id and a_biotope.deleted=false and a_biotope.system_function='biotope'
-  LEFT JOIN cache_termlists_terms t_biotope on a_biotope.data_type='L' and t_biotope.id=v_biotope.int_value
-) on v_biotope.sample_id=s.id and v_biotope.deleted=false
 LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
@@ -1328,6 +1325,8 @@ AND cs.id IS NULL";
 
 
 $config['samples']['insert']['nonfunctional_attrs'] = "
+WITH full_name_smp_attrs AS (SELECT id FROM sample_attributes WHERE system_function='full_name' AND deleted=false),
+  biotope_smp_attrs AS (SELECT id, data_type FROM sample_attributes WHERE system_function='biotope' AND deleted=false)
 UPDATE cache_samples_nonfunctional
 SET
   attr_email=CASE a_email.data_type
@@ -1350,15 +1349,23 @@ SET
       WHEN 'T'::bpchar THEN v_last_name.text_value
       ELSE NULL::text
   END,
-  attr_full_name=CASE a_full_name.data_type
-      WHEN 'T'::bpchar THEN v_full_name.text_value
-      ELSE NULL::text
-  END,
-  attr_biotope=CASE a_biotope.data_type
-      WHEN 'T'::bpchar THEN v_biotope.text_value
-      WHEN 'L'::bpchar THEN t_biotope.term
-      ELSE NULL::text
-  END,
+  attr_full_name=(
+    SELECT STRING_AGG(v.text_value, '; ')
+    FROM sample_attribute_values v
+    JOIN full_name_smp_attrs fa on fa.id=v.sample_attribute_id
+    WHERE v.sample_id=s.id
+    AND v.deleted=false
+    AND v.text_value IS NOT NULL
+  ),
+  attr_biotope=(
+    SELECT STRING_AGG(COALESCE(t.term, v.text_value), '; ')
+    FROM sample_attribute_values v
+    JOIN biotope_name_smp_attrs fa on fa.id=v.sample_attribute_id
+    LEFT JOIN cache_termlists_terms t on fa.data_type='L' and t.id=v.int_value
+    WHERE v.sample_id=s.id
+    AND v.deleted=false
+    AND v.text_value IS NOT NULL
+  ),
   attr_sample_method=COALESCE(t_sample_method_id.term, CASE a_sample_method.data_type
       WHEN 'T'::bpchar THEN v_sample_method.text_value
       WHEN 'L'::bpchar THEN t_sample_method.term
@@ -1369,32 +1376,19 @@ FROM samples s
 #join_needs_update#
 LEFT JOIN (sample_attribute_values v_email
   JOIN sample_attributes a_email on a_email.id=v_email.sample_attribute_id and a_email.deleted=false and a_email.system_function='email'
-  LEFT JOIN cache_termlists_terms t_email on a_email.data_type='L' and t_email.id=v_email.int_value
 ) on v_email.sample_id=s.id and v_email.deleted=false
 LEFT JOIN (sample_attribute_values v_cms_user_id
   JOIN sample_attributes a_cms_user_id on a_cms_user_id.id=v_cms_user_id.sample_attribute_id and a_cms_user_id.deleted=false and a_cms_user_id.system_function='cms_user_id'
-  LEFT JOIN cache_termlists_terms t_cms_user_id on a_cms_user_id.data_type='L' and t_cms_user_id.id=v_cms_user_id.int_value
 ) on v_cms_user_id.sample_id=s.id and v_cms_user_id.deleted=false
 LEFT JOIN (sample_attribute_values v_cms_username
   JOIN sample_attributes a_cms_username on a_cms_username.id=v_cms_username.sample_attribute_id and a_cms_username.deleted=false and a_cms_username.system_function='cms_username'
-  LEFT JOIN cache_termlists_terms t_cms_username on a_cms_username.data_type='L' and t_cms_username.id=v_cms_username.int_value
 ) on v_cms_username.sample_id=s.id and v_cms_username.deleted=false
 LEFT JOIN (sample_attribute_values v_first_name
   JOIN sample_attributes a_first_name on a_first_name.id=v_first_name.sample_attribute_id and a_first_name.deleted=false and a_first_name.system_function='first_name'
-  LEFT JOIN cache_termlists_terms t_first_name on a_first_name.data_type='L' and t_first_name.id=v_first_name.int_value
 ) on v_first_name.sample_id=s.id and v_first_name.deleted=false
 LEFT JOIN (sample_attribute_values v_last_name
   JOIN sample_attributes a_last_name on a_last_name.id=v_last_name.sample_attribute_id and a_last_name.deleted=false and a_last_name.system_function='last_name'
-  LEFT JOIN cache_termlists_terms t_last_name on a_last_name.data_type='L' and t_last_name.id=v_last_name.int_value
 ) on v_last_name.sample_id=s.id and v_last_name.deleted=false
-LEFT JOIN (sample_attribute_values v_full_name
-  JOIN sample_attributes a_full_name on a_full_name.id=v_full_name.sample_attribute_id and a_full_name.deleted=false and a_full_name.system_function='full_name'
-  LEFT JOIN cache_termlists_terms t_full_name on a_full_name.data_type='L' and t_full_name.id=v_full_name.int_value
-) on v_full_name.sample_id=s.id and v_full_name.deleted=false
-LEFT JOIN (sample_attribute_values v_biotope
-  JOIN sample_attributes a_biotope on a_biotope.id=v_biotope.sample_attribute_id and a_biotope.deleted=false and a_biotope.system_function='biotope'
-  LEFT JOIN cache_termlists_terms t_biotope on a_biotope.data_type='L' and t_biotope.id=v_biotope.int_value
-) on v_biotope.sample_id=s.id and v_biotope.deleted=false
 LEFT JOIN (sample_attribute_values v_sample_method
   JOIN sample_attributes a_sample_method on a_sample_method.id=v_sample_method.sample_attribute_id and a_sample_method.deleted=false and a_sample_method.system_function='sample_method'
   LEFT JOIN cache_termlists_terms t_sample_method on a_sample_method.data_type='L' and t_sample_method.id=v_sample_method.int_value
