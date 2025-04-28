@@ -63,6 +63,11 @@ INTO TEMPORARY occdelta_overdue
 FROM cache_occurrences_functional co
 WHERE co.id IN ($occurrenceIdList)
 AND co.training=false;
+-- Ensure the precise geometry is used for the spatial filter.
+UPDATE occdelta_overdue o
+SET public_ geom=s.geom
+FROM samples s
+WHERE s.id=o.sample_id;
 SQL;
         $db->query($sql);
         // Run all filters against occdelta_overdue and generate notifications
