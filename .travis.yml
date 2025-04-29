@@ -42,6 +42,9 @@ before_install:
   #- phpenv alias "$TRAVIS_PHP_VERSION" --auto
   - phpenv which php
   - phpenv which composer
+  - apt list --installed | grep libicu
+  - sudo apt-get update
+  - sudo apt-get install libicu70
   - php -r "echo phpinfo();"
 
   # Update the package list.
