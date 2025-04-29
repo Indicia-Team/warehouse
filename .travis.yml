@@ -34,7 +34,7 @@ before_install:
   - echo "$TRAVIS_PHP_VERSION"
   - phpenv version
   - mkdir -p "$(phpenv root)/plugins"
-  - git clone git://github.com/madumlao/phpenv-aliases.git "$(phpenv root)/plugins/phpenv-aliases"
+  - git clone https://github.com/madumlao/phpenv-aliases.git "$(phpenv root)/plugins/phpenv-aliases"
   - phpenv alias "$TRAVIS_PHP_VERSION" --auto
   - phpenv which php
   - phpenv which composer
