@@ -13,7 +13,7 @@ services:
 
 php:
   # Test oldest and newest maintained versions.
-  # - '8.1.30'
+  # 8.1 and 8.2 don't work with Noble as of 29/4/25
   - '8.3'
 
 env:
@@ -31,10 +31,6 @@ env:
 
 before_install:
   # Output info for debugging.
-  - echo "$TRAVIS_PHP_VERSION"
-  - phpenv version
-  - phpenv which php
-  - phpenv which composer
   - php -r "echo phpinfo();"
 
   # Update the package list.
