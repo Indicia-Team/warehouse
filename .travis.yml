@@ -14,7 +14,7 @@ services:
 php:
   # Test oldest and newest maintained versions.
   # - '8.1.30'
-  - '8.2'
+  - '8.3'
 
 env:
   # Test oldest and newest maintained versions.
@@ -33,18 +33,8 @@ before_install:
   # Output info for debugging.
   - echo "$TRAVIS_PHP_VERSION"
   - phpenv version
-  #- echo "$(phpenv root)"
-  #- ls -l "$(phpenv root)"
-  #- mkdir -p "$(phpenv root)/plugins"
-  #- ls -l "$(phpenv root)/plugins"
-  #- git clone https://github.com/madumlao/phpenv-aliases.git "$(phpenv root)/plugins/phpenv-aliases"
-  #- ls -l "$(phpenv root)/plugins"
-  #- phpenv alias "$TRAVIS_PHP_VERSION" --auto
   - phpenv which php
   - phpenv which composer
-  - apt list --installed | grep libicu
-  - sudo apt-get update
-  - sudo apt-get install libicu70
   - php -r "echo phpinfo();"
 
   # Update the package list.
