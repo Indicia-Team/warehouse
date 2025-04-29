@@ -1,4 +1,4 @@
-dist: jammy
+dist: noble
 sudo: required
 
 branches:
@@ -18,12 +18,12 @@ php:
 
 env:
   # Test oldest and newest maintained versions.
-  - PGVERSION=14
+  - PGVERSION=16
 
 addons:
   apt:
     packages:
-    - postgresql-14-postgis-3
+    - postgresql-16-postgis-3
 env:
   global:
   - PGPORT=5432
