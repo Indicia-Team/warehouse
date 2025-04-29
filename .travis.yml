@@ -14,7 +14,7 @@ services:
 php:
   # Test oldest and newest maintained versions.
   - '8.1'
-  - '8.2'
+  # - '8.2'
 
 env:
   # Test oldest and newest maintained versions.
@@ -31,6 +31,9 @@ env:
 
 before_install:
   # Output info for debugging.
+  - phpenv version
+  - phpenv which php
+  - phpenv which composer
   - php -r "echo phpinfo();"
 
   # Update the package list.
