@@ -31,7 +31,9 @@ env:
 
 before_install:
   # Output info for debugging.
+  - echo "$TRAVIS_PHP_VERSION"
   - phpenv version
+  - phpenv alias 8.1 --auto
   - phpenv which php
   - phpenv which composer
   - php -r "echo phpinfo();"
