@@ -33,7 +33,9 @@ before_install:
   # Output info for debugging.
   - echo "$TRAVIS_PHP_VERSION"
   - phpenv version
-  - phpenv alias 8.1 --auto
+  - mkdir -p "$(phpenv root)/plugins"
+  - git clone git://github.com/madumlao/phpenv-aliases.git "$(phpenv root)/plugins/phpenv-aliases"
+  - phpenv alias "$TRAVIS_PHP_VERSION" --auto
   - phpenv which php
   - phpenv which composer
   - php -r "echo phpinfo();"
