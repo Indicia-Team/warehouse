@@ -4,7 +4,7 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     SELECT #columns#
-    FROM occdelta o
+    FROM occdelta_precise o
       #agreements_join#
       #joins#
     WHERE 1=1 AND
@@ -15,7 +15,7 @@
     <param name="record_status" datatype="text" emptyvalue="" default="">
       <where>o.record_status='#record_status#'</where>
     </param>
-  </params>  
+  </params>
   <columns>
     <column name='count' display='Count' sql="count(o.id)" datatype="integer" aggregate="true"/>
   </columns>

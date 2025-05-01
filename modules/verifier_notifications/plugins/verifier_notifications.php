@@ -46,6 +46,20 @@ function verifier_notifications_metadata() {
  * notifications to the mentor.
  */
 function verifier_notifications_scheduled_task($last_run_date, $db) {
+  // Create a copy of the occdelta table but with the sample geometry precise.
+  $qry = <<<SQL
+    DROP TABLE IF EXISTS occdelta_precise;
+    CREATE TEMPORARY TABLE occdelta_precise AS
+    SELECT * FROM occdelta;
+    UPDATE occdelta_precise o
+    SET public_geom=s.geom
+    FROM samples s
+    WHERE s.id=o.sample_id;
+
+    CREATE INDEX ix_occdelta_precise_taxa_taxon_list_id on occdelta_precise(taxa_taxon_list_id);
+    CREATE INDEX ix_occdelta_precise_taxa_taxon_list_external_key on occdelta_precise(taxa_taxon_list_external_key);
+    CREATE INDEX ix_occdelta_precise_public_geom on occdelta_precise USING gist(public_geom);
+  SQL;
   $params = [
     'notificationSourceType' => 'PT',
     'notificationSource' => 'pending_record_check_notifications',
@@ -56,7 +70,7 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
     'oneNotificationCreatedMessage' => 'new pending record check notification has been created.',
     'multipleNotificationsCreatedMessage' => 'new pending record check notifications have been created.',
   ];
-  verifier_notifications_process_task_type('moderation', $params, $db, FALSE);
+  verifier_notifications_process_task_type('moderation', $params, $db);
   $params = [
     'notificationSourceType' => 'VT',
     'notificationSource' => 'verifier_notifications',
@@ -67,7 +81,7 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
     'oneNotificationCreatedMessage' => 'new verification notification has been created.',
     'multipleNotificationsCreatedMessage' => 'new verification notifications have been created.',
   ];
-  verifier_notifications_process_task_type('verification', $params, $db, FALSE);
+  verifier_notifications_process_task_type('verification', $params, $db);
   if (verifier_notifications_use_workflow_module()) {
     $config = kohana::config('workflow_groups', FALSE, FALSE);
     if ($config) {
@@ -279,7 +293,7 @@ function loop_through_workflows_and_filters_and_create_notifications($db, $filte
       if (!in_array($filter['user_id'], $alreadyCreatedNotifications)) {
         // Get the report data.
         // Use the filter as the params.
-        $reportOutput = $reportEngine->requestReport("library/occdelta/filterable_occdelta_count.xml", 'local', 'xml', $reportParams);
+        $reportOutput = $reportEngine->requestReport("library/occdelta_precise/filterable_occdelta_count.xml", 'local', 'xml', $reportParams);
       }
       // If applicable records are returned then create notification.
       if (!empty($reportOutput) && $reportOutput['content']['records'][0]['count'] > 0) {
