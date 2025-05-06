@@ -90,8 +90,8 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $params = implode(', ', $action['parameters']);
       // Escape the stored procedure name, note that it may include a schema
       // prefix so need to escape each identifier separately.
-      $proc = implode('.', array_map(function($v) {
-        return pg_escape_identifier($this->db->getLink(), $v);
+      $proc = implode('.', array_map(function($v) use ($db) {
+        return pg_escape_identifier($db->getLink(), $v);
       }, explode('.', $action['stored_procedure'])));
       $r = json_encode($db->query("select $proc($params);")->result_array(TRUE));
       // Enable JSONP.
