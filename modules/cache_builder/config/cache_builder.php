@@ -1350,19 +1350,19 @@ SET
       ELSE NULL::text
   END,
   attr_full_name=(
-    SELECT STRING_AGG(v.text_value, '; ')
+    SELECT STRING_AGG(DISTINCT v.text_value, '; ')
     FROM sample_attribute_values v
     JOIN full_name_smp_attrs fa on fa.id=v.sample_attribute_id
-    WHERE v.sample_id=s.id
+    WHERE v.sample_id in (s.id, s.parent_id)
     AND v.deleted=false
     AND v.text_value IS NOT NULL
   ),
   attr_biotope=(
-    SELECT STRING_AGG(COALESCE(t.term, v.text_value), '; ')
+    SELECT STRING_AGG(DISTINCT COALESCE(t.term, v.text_value), '; ')
     FROM sample_attribute_values v
     JOIN biotope_smp_attrs fa on fa.id=v.sample_attribute_id
     LEFT JOIN cache_termlists_terms t on fa.data_type='L' and t.id=v.int_value
-    WHERE v.sample_id=s.id
+    WHERE v.sample_id in (s.id, s.parent_id)
     AND v.deleted=false
     AND COALESCE(v.text_value, t.term) IS NOT NULL
   ),
