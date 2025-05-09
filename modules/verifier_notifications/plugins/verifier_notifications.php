@@ -60,6 +60,7 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
     CREATE INDEX ix_occdelta_precise_taxa_taxon_list_external_key on occdelta_precise(taxa_taxon_list_external_key);
     CREATE INDEX ix_occdelta_precise_public_geom on occdelta_precise USING gist(public_geom);
   SQL;
+  $db->query($qry);
   $params = [
     'notificationSourceType' => 'PT',
     'notificationSource' => 'pending_record_check_notifications',
