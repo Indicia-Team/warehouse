@@ -37,8 +37,9 @@
 function species_alerts_scheduled_task($lastRunDate, $db, $maxTime) {
   // Additional time allowed for the spatial indexing to catch up. If just
   // based on lastRunDate, we'd miss records that get scanned before spatial
-  // indexing.
-  $extraTimeScanned = '2 days';
+  // indexing. Don't make this too long or it will slow down the scheduled
+  // task.
+  $extraTimeScanned = '12 hours';
   // Get all new occurrences from the database that are either new occurrences
   // or verified and match them with species_alert records and return the
   // matches.
@@ -48,20 +49,20 @@ function species_alerts_scheduled_task($lastRunDate, $db, $maxTime) {
 DROP TABLE IF EXISTS delta;
 SELECT o.id, o.website_id, snf.public_entered_sref, cttl.taxon, o.location_ids, o.record_status,
   o.taxa_taxon_list_external_key, o.taxon_meaning_id, o.survey_id, o.verified_on, o.created_on, o.updated_on,
-  array_agg(cttlall.taxon_list_id) as taxon_list_ids, array_agg(iwwa.from_website_id) as from_website_ids
+  (SELECT array_agg(DISTINCT cttlall.taxon_list_id) as taxon_list_ids FROM cache_taxa_taxon_lists cttlall
+    WHERE cttlall.taxon_meaning_id=o.taxon_meaning_id OR cttlall.external_key=o.taxa_taxon_list_external_key
+  ) as taxon_list_ids,
+  (SELECT array_agg(DISTINCT iwwa.from_website_id) as from_website_ids FROM index_websites_website_agreements iwwa
+    WHERE iwwa.to_website_id=o.website_id AND iwwa.receive_for_reporting=true
+  ) as from_website_ids
 INTO temporary delta
 FROM cache_occurrences_functional o
 JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
 JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=o.taxon_meaning_id
-    OR (cttlall.external_key IS NOT NULL AND o.taxa_taxon_list_external_key IS NOT NULL AND cttlall.external_key=o.taxa_taxon_list_external_key)
-JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=o.website_id and iwwa.receive_for_reporting=true
 WHERE
 -- Following just to allow index to be used.
 o.updated_on between TO_TIMESTAMP($lastRunDateEsc, 'YYYY-MM-DD HH24:MI:SS') - '$extraTimeScanned'::interval AND TO_TIMESTAMP($maxTimeEsc, 'YYYY-MM-DD HH24:MI:SS')
-AND  o.training='f' AND o.confidential='f'
-GROUP BY o.id, o.website_id, snf.public_entered_sref, cttl.taxon, o.location_ids, o.record_status,
-  o.taxa_taxon_list_external_key, o.taxon_meaning_id, o.survey_id, o.verified_on, o.created_on;
+AND  o.training='f' AND o.confidential='f';
 
 SELECT DISTINCT
   delta.id as occurrence_id,
