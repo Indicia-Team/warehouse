@@ -889,6 +889,9 @@ class Scheduled_Tasks_Controller extends Controller {
           'lastRunTimestamp' => $maxTime,
         ];
       }
+      elseif (!isset($pluginList[$plugin]['lastRunTimestamp'])) {
+        $pluginList[$plugin]['lastRunTimestamp'] = $maxTime;
+      }
       require_once MODPATH . "$plugin/plugins/$plugin.php";
       $pluginList[$plugin] = array_merge(
         $pluginList[$plugin],
