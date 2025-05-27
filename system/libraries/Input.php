@@ -278,7 +278,7 @@ class Input_Core {
 		}
 
 		// Do not clean empty strings
-		if (trim($data) === '')
+		if (trim($data ?? '') === '')
 			return $data;
 
 		if ($tool === TRUE)
