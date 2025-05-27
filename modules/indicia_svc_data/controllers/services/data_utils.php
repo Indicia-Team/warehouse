@@ -676,17 +676,13 @@ SQL;
    * * affected - a list of entities with the count of affected records.
    */
   public function bulk_delete_occurrences() {
-    header('Content-Type: application/json');
-    if (empty($_POST['import_guid'])) {
+    if (empty($_REQUEST['import_guid'])) {
       $this->fail('Bad request', 400, 'Missing import_guid parameter');
     }
-    elseif (empty($_POST['user_id'])) {
-      $this->fail('Bad request', 400, 'Missing user_id parameter');
-    }
-    elseif (!preg_match('/^\d+$/', $_POST['import_guid'])) {
+    elseif (!preg_match('/^[\dA-Z\-]+$/', $_REQUEST['import_guid'])) {
       $this->fail('Bad request', 400, 'Incorrect import_guid format');
     }
-    elseif (!preg_match('/^\d+$/', $_POST['user_id'])) {
+    elseif (!preg_match('/^\d+$/', $_REQUEST['user_id'])) {
       $this->fail('Bad request', 400, 'Incorrect user_id format');
     }
     else {
@@ -694,14 +690,13 @@ SQL;
         $tm = microtime(TRUE);
         $this->authenticate('write');
         $db = new Database();
-        $userId = (int) $_POST['user_id'];
         $deletionSql = '';
-        if (empty($_POST['trial'])) {
+        if (empty($_REQUEST['trial'])) {
           $deletionSql = <<<SQL
-            UPDATE occurrences SET deleted=true, updated_on=now(), updated_by_id=$userId
+            UPDATE occurrences SET deleted=true, updated_on=now(), updated_by_id=$this->auth_user_id
             WHERE id IN (SELECT id FROM to_delete);
 
-            UPDATE samples SET deleted=true, updated_on=now(), updated_by_id=$userId
+            UPDATE samples SET deleted=true, updated_on=now(), updated_by_id=$this->auth_user_id
             WHERE id IN (SELECT sample_id FROM to_delete);
 
             DELETE FROM cache_occurrences_functional WHERE id IN (SELECT id FROM to_delete);
@@ -713,13 +708,13 @@ SQL;
         // The following query picks up occurrences from the import, plus the
         // associated samples unless the samples now have other occurrences
         // subsequently added to them.
-        $importGuid = pg_escape_literal($db->getLink(), $_POST['import_guid']);
+        $importGuid = pg_escape_literal($db->getLink(), $_REQUEST['import_guid']);
         $qry = <<<SQL
           SELECT o.id, CASE WHEN o2.id IS NULL THEN o.sample_id ELSE NULL END AS sample_id
           INTO temporary to_delete
           FROM occurrences o
           LEFT JOIN occurrences o2 ON coalesce(o2.import_guid, '')<>coalesce(o.import_guid, '') AND o2.sample_id=o.sample_id and o2.deleted=false
-          WHERE o.import_guid=$importGuid AND o.created_by_id=$userId
+          WHERE o.import_guid=$importGuid AND o.created_by_id=$this->auth_user_id
           AND o.deleted=false
           and o.website_id=$this->website_id;
 
@@ -734,13 +729,22 @@ SQL;
         $response = array(
           'code' => 200,
           'status' => 'OK',
-          'action' => empty($_POST['trial']) ? 'delete' : 'none',
+          'action' => empty($_REQUEST['trial']) ? 'delete' : 'none',
           'affected' => [
             'occurrences' => $count->occurrences,
             'samples' => $count->samples,
           ]
         );
-        echo json_encode($response);
+        $r = json_encode($response);
+        // Allow for a JSONP cross-site request.
+        if (array_key_exists('callback', $_GET)) {
+          $r = $_GET['callback'] . "(" . $r . ")";
+          header('Content-Type: application/javascript');
+        }
+        else {
+          header('Content-Type: application/json');
+        }
+        echo $r;
         if (class_exists('request_logging')) {
           request_logging::log('a', 'data', NULL, 'bulk_delete_occurrences', $this->website_id, $this->user_id, $tm, $db);
         }
