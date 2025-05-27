@@ -664,11 +664,9 @@ SQL;
    *
    * Allows bulk deletion of occurrence data. Currently only supports deletion
    * of entire imports. When calling this service, the following must be
-   * provided in the POST data:
+   * provided in the POST or GET data:
    * * write authentication tokens
    * * import_guid - the GUID of the import to delete
-   * * user_id - ID of the user. Records are only deleted if they belong to the
-   *   user.
    * * trial - optional. Set a value such as 't' to do a trial run.
    *
    * The response is an HTTP response containing the following:
@@ -682,8 +680,8 @@ SQL;
     elseif (!preg_match('/^[\dA-Z\-]+$/', $_REQUEST['import_guid'])) {
       $this->fail('Bad request', 400, 'Incorrect import_guid format');
     }
-    elseif (!preg_match('/^\d+$/', $_REQUEST['user_id'])) {
-      $this->fail('Bad request', 400, 'Incorrect user_id format');
+    elseif (empty($this->auth_user_id)) {
+      $this->fail('Bad request', 400, 'Bulk_delete_occurrences requires a more up-to-date client which provides the user ID in the authentication token.');
     }
     else {
       try {
