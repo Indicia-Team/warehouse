@@ -1219,6 +1219,9 @@ class ORM extends ORM_Core {
       $vArray = array_merge($thisValues, $vArray);
       $this->existing = TRUE;
     }
+    foreach ($vArray as $key => &$value) {
+      $value = security::xss_clean($value);
+    }
     Kohana::log("debug", "About to validate the following array in model $this->object_name");
     Kohana::log("debug", kohana::debug($this->sanitise($vArray)));
     $isInsert = empty($this->id) && (empty($this->submission['fields']['id']) || empty($this->submission['fields']['id']['value']));
@@ -2273,7 +2276,7 @@ class ORM extends ORM_Core {
       if (($dataType == 'I' || $dataType === 'F') && $attrDef->allow_ranges === 't'
           && preg_match('/^(?P<from>-?\d+(\.\d+)?)\s*-\s*(?P<to>-?\d+(\.\d+)?)$/', $value, $match)) {
         $value = $match['from'];
-        $attrValueModel->upper_value = $match['to'];
+        $attrValueModel->upper_value = security::xss_clean($match['to']);
         if ($attrValueModel->upper_value != $match['to']) {
           $this->errors[$fieldId] = "Invalid range $match[from] - $match[to] for attribute ".$attrDef->caption;
           kohana::log('debug', "Could not accept value $match[from] - $match[to] into field $vf for attribute $fieldId.");
@@ -2288,7 +2291,7 @@ class ORM extends ORM_Core {
       else {
         $attrValueModel->upper_value = NULL;
       }
-      $attrValueModel->$vf = $value;
+      $attrValueModel->$vf = $dataType === 'T' ? security::xss_clean($value) : $value;
       // Test that ORM accepted the new value - it will reject if the wrong data type for example.
       // Use a string compare to get a proper test but with type tolerance.
       // A wkt geometry gets translated to a proper geom so this will look different - just check it is not empty.
@@ -2300,7 +2303,9 @@ class ORM extends ORM_Core {
       elseif ($dataType === 'F' && preg_match('/^-?\d+(\.\d+)?$/', $value)
           && abs($attrValueModel->$vf - $value) <= abs(0.00001 * $attrValueModel->$vf)) {
         kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
-      } else {
+      } elseif ($dataType !== 'T') {
+        // For non-text values, raise error if the value was not storable for
+        // that data type.
         $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
         kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
         return FALSE;
