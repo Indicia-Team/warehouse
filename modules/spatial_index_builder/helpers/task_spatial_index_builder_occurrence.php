@@ -93,6 +93,21 @@ class task_spatial_index_builder_occurrence {
       WHERE ol.work_queue_id=q.id;
     SQL;
     $db->query($qry, [$procId]);
+    // Occurrence tasks will be skipped if the parent sample is not indexed.
+    // Add work queue tasks for any samples that have not been done for any
+    // reason. The occurrences should then be picked up next time around.
+    $qry = <<<SQL
+      INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+      SELECT DISTINCT 'task_spatial_index_builder_sample', 'sample', o.sample_id, 2, 30, now()
+      FROM cache_occurrences_functional o
+      JOIN cache_samples_functional s ON s.id=o.sample_id
+        AND s.location_ids IS NULL
+      JOIN work_queue q ON q.record_id=o.id
+        AND q.claimed_by=?
+        AND q.entity='occurrence'
+        AND q.task='task_spatial_index_builder_occurrence';
+    SQL;
+    $db->query($qry, [$procId]);
   }
 
 }

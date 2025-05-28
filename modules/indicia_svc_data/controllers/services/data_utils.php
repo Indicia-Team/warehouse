@@ -311,6 +311,96 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   }
 
   /**
+   * Allows a sample link an indexed location to be forced.
+   *
+   * API Controller method which allows a verifier to assign a record which
+   * straddles 2 boundaries to assign the record to the correct boundary.
+   */
+  public function force_linked_location() {
+    $this->authenticate('write');
+    // Check the parameter formats.
+    if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence_ids'])) {
+      $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
+      return;
+    }
+    if (empty($_POST['location_id']) || !preg_match('/^\d+$/', $_POST['location_id'])) {
+      $this->fail('Bad request', 400, 'Invalid format for location_id parameter.');
+      return;
+    }
+    if (empty($_POST['location_type_id']) || !preg_match('/^\d+$/', $_POST['location_type_id'])) {
+      $this->fail('Bad request', 400, 'Invalid format for location_type_id parameter.');
+      return;
+    }
+    $db = new Database();
+    // Check all the occurrences are in websites that give edit rights.
+    $qry = <<<SQL
+      SELECT COUNT(DISTINCT o.id)
+      FROM occurrences o
+      WHERE o.id in ($_POST[occurrence_ids])
+      AND o.website_id NOT IN (SELECT from_website_id FROM index_websites_website_agreements WHERE provide_for_editing=true AND to_website_id=$this->website_id);
+    SQL;
+    if ($db->query($qry)->current()->count > 0) {
+      $this->fail('Bad request', 400, 'You do not have permission to edit some of the records.');
+      return;
+    }
+    // Check all the occurrences intersect with the location (with a small buffer).
+    $qry = <<<SQL
+      SELECT COUNT(DISTINCT o.id)
+      FROM cache_occurrences_functional o
+      JOIN locations l ON l.id=$_POST[location_id]
+      WHERE o.id in ($_POST[occurrence_ids])
+      AND NOT ST_Intersects(st_buffer(o.public_geom, 2000), l.boundary_geom);
+    SQL;
+    if ($db->query($qry)->current()->count > 0) {
+      $this->fail('Bad request', 400, 'You are trying to link samples to a location they are not within or close to.');
+      return;
+    }
+    // Find the list of affected samples.
+    $qry = <<<SQL
+      SELECT DISTINCT o.sample_id, s.forced_spatial_indexer_location_ids
+      FROM occurrences o
+      JOIN samples s ON s.id=o.sample_id AND s.deleted=false
+      WHERE o.deleted=false
+      AND o.id in ($_POST[occurrence_ids]);
+    SQL;
+    $sampleList = $db->query($qry)->result(TRUE);
+    $sampleIds = [];
+    foreach ($sampleList as $sampleRow) {
+      // Set the forced location ID only for the specified location type,
+      // leaving any forced location IDs for other types intact.
+      $obj = json_decode($sampleRow->forced_spatial_indexer_location_ids ?? '{}', TRUE);
+      $obj[$_POST['location_type_id']] = [(int) $_POST['location_id']];
+      $qry = <<<SQL
+        UPDATE samples
+        SET forced_spatial_indexer_location_ids = ?::jsonb,
+          updated_by_id = $this->user_id,
+          updated_on = NOW()
+        WHERE id = ?;
+      SQL;
+      $db->query($qry, [json_encode($obj), $sampleRow->sample_id]);
+      $sampleIds[] = $sampleRow->sample_id;
+    }
+    $sampleIds = implode(',', $sampleIds);
+    // Now add work queue entries to redo spatial indexing.
+    $qry = <<<SQL
+      INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority)
+      SELECT 'task_spatial_index_builder_sample', 'sample', s.id, 50, 1
+      FROM samples s
+      LEFT JOIN work_queue q ON q.task='task_spatial_index_builder_sample'
+        AND q.entity='sample' AND q.record_id=s.id
+      WHERE s.id IN ($sampleIds)
+      AND q.id IS NULL;
+    SQL;
+    $db->query($qry);
+
+    echo json_encode([
+      'code' => 200,
+      'status' => 'OK',
+      'message' => count($sampleList) . ' samples updated.',
+    ]);
+  }
+
+  /**
    * Expand the list of IDs to include same taxon in the wider sample.
    *
    * If verifying transects or timed counts, there is an option to verify all
@@ -362,6 +452,7 @@ SQL;
     }
     if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
       $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
+      return;
     }
     $this->array_redet(explode(',', $_POST['occurrence:ids']));
   }
@@ -676,9 +767,11 @@ SQL;
   public function bulk_delete_occurrences() {
     if (empty($_REQUEST['import_guid'])) {
       $this->fail('Bad request', 400, 'Missing import_guid parameter');
+      return;
     }
     elseif (!preg_match('/^[\dA-Z\-]+$/', $_REQUEST['import_guid'])) {
       $this->fail('Bad request', 400, 'Incorrect import_guid format');
+      return;
     }
     elseif (empty($this->auth_user_id)) {
       $this->fail('Bad request', 400, 'Bulk_delete_occurrences requires a more up-to-date client which provides the user ID in the authentication token.');
@@ -962,7 +1055,7 @@ SQL;
   /**
    * Ensure edit rights available to all websites impacted by a bulk move.
    */
-  private function checkWebsitesAuthorisedForMove($db, $impactedWebsiteIds) {
+  private function checkWebsitesAuthorisedForEditing($db, array $impactedWebsiteIds) {
     $impactedWebsiteList = implode(',', $impactedWebsiteIds);
     $qry = <<<SQL
 SELECT count(*)
@@ -1052,7 +1145,7 @@ SQL;
     if (!preg_match('/^\d+(,\d+)*$/', $_POST['occurrence:ids'])) {
       $this->fail('Bad request', 400, 'Invalid format for occurrence:ids parameter.');
     }
-    if (!$this->checkWebsitesAuthorisedForMove($db, $impactedWebsiteIds)) {
+    if (!$this->checkWebsitesAuthorisedForEditing($db, $impactedWebsiteIds)) {
       return;
     }
     // Checks the requested list of occurrences are actually OK to move.

@@ -1,4 +1,4 @@
-dist: jammy
+dist: noble
 sudo: required
 
 branches:
@@ -13,17 +13,17 @@ services:
 
 php:
   # Test oldest and newest maintained versions.
-  - '8.1'
-  - '8.2'
+  # 8.1 and 8.2 don't work with Noble as of 29/4/25
+  - '8.3'
 
 env:
   # Test oldest and newest maintained versions.
-  - PGVERSION=14
+  - PGVERSION=16
 
 addons:
   apt:
     packages:
-    - postgresql-14-postgis-3
+    - postgresql-16-postgis-3
 env:
   global:
   - PGPORT=5432

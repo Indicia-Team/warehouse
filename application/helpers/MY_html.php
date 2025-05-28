@@ -78,12 +78,7 @@ HTML;
    *   'taxon:description' would load the $model->taxon->description field.
    */
   public static function initial_value($values, $fieldname) {
-    if (array_key_exists($fieldname, $values)) {
-      return self::specialchars($values[$fieldname]);
-    }
-    else {
-      return NULL;
-    }
+    return $values[$fieldname] ?? '';
   }
 
   /**

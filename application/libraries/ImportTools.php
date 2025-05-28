@@ -140,7 +140,7 @@ class ImportTools {
           kohana::log('error', 'PHP reports file upload error: ' . $this->fileValidationCodeToMessage($file['error']));
         }
       }
-      throw new exception($validatedFiles->errors('form_error_messages'));
+      throw new exception(implode('; ', $validatedFiles->errors('form_error_messages')));
     }
   }
 

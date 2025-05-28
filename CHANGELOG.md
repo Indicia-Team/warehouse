@@ -4,6 +4,37 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.11.0
+*2025-05-28*
+
+This version includes updates to packages managed by Composer so run the following command from the
+warehouse's root folder after installing the files:
+
+```bash
+$ composer update
+```
+
+### Bugfixes
+
+* Fix to editing of terms and other warehouse values which contain HTML special characters so they
+  are not double encoded.
+* Fix scheduled tasks problems that occurred on a brand new install.
+
+
+### Changes
+
+* Add new field `samples.forced_spatial_indexer_location_ids` which can be used to allow verifiers
+  to override the higher geography location assiged to a record (e.g. a vice county). See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/827.
+* PostgreSQL standard filters against taxa no longer expect the taxa to exist on the master taxon
+  list. This allows filtering against taxa on other lists such as EBMS species.
+* Update PHPSpreadsheet library to version 3.9.
+* String data values are cleaned on saving to the database.
+* Updating the title of a group (activity) now automatically propogates to the associated reporting
+  cache data.
+* Changed the position of the website control on the survey edit form to make it more prominent.
+* Docker updated to PostgreSQL 17 and PHP 8.3.
+
 ## Version 9.10.0
 *2025-03-19*
 

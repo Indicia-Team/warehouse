@@ -40,6 +40,8 @@ class Group_Model extends ORM {
    */
   protected $wantToUpdateReleaseStatus = FALSE;
 
+  protected $updatingTitle = FALSE;
+
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
@@ -66,6 +68,9 @@ class Group_Model extends ORM {
     // Has the private records flag changed?
     $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) &&
         ($this->submission['fields']['private_records']['value'] === '1' || $this->submission['fields']['private_records']['value'] === 't') !== ($this->private_records === 't');
+    if (isset($this->submission['fields']['id']) && isset($this->submission['fields']['title']) && $this->submission['fields']['title']['value'] !== $this->title) {
+      $this->updatingTitle = TRUE;
+    }
     return parent::validate($array, $save);
   }
 
@@ -84,6 +89,16 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
     }
     $this->processIndexGroupsLocations();
     $this->processIndexGroupsTaxonGroups();
+    if ($this->updatingTitle) {
+      $wq = new WorkQueue();
+      $wq->enqueue($this->db, [
+        'task' => 'task_group_update_title',
+        'entity' => 'group',
+        'record_id' => $this->id,
+        'cost_estimate' => 100,
+        'priority' => 3,
+      ]);
+    }
     return TRUE;
   }
 

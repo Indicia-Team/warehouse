@@ -879,7 +879,7 @@ class Scheduled_Tasks_Controller extends Controller {
     $pluginList = [];
     foreach ($pluginsFromDb as $plugin) {
       $pluginList[$plugin->name] = [
-        'lastRunTimestamp' => $plugin->last_scheduled_task_check
+        'lastRunTimestamp' => $plugin->last_scheduled_task_check ?? $maxTime
       ];
     }
     foreach ($allScheduledPlugins as $plugin) {
