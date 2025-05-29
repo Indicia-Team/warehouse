@@ -7,8 +7,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## Version 9.11.0
 *2025-05-28*
 
-This version includes updates to packages managed by Composer so run the following command from the
-warehouse's root folder after installing the files:
+This version includes updates to packages managed by Composer which require PHP version 8.2+. To
+update the Composer packages run the following command from the warehouse's root folder after
+installing the files:
 
 ```bash
 $ composer update
