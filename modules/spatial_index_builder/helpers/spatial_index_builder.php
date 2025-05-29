@@ -78,7 +78,7 @@ class spatial_index_builder {
       }
       $filters = [
         'locationTypeIds' => $allLocationTypeIds,
-        'surveyFilters' => implode("\n", $surveyFilters),
+        'surveyFilters' => $surveyFilters,
       ];
       $cache->set('spatial-index-location-type-filter-info', $filters);
     }
