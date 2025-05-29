@@ -68,13 +68,12 @@ class spatial_index_builder {
       $surveyFilters = [];
       if (array_key_exists('survey_restrictions', $config)) {
         foreach ($config['survey_restrictions'] as $type => $surveyIds) {
-          $surveys = implode(', ', $surveyIds);
-          warehouse::validateIntCsvListParam($surveys);
+          warehouse::validateIntArray($surveyIds);
           if (!isset($allLocationTypeIds[$type])) {
             throw new exception('Configured survey restriction incorrect in spatial index builder');
           }
           $id = $allLocationTypeIds[$type];
-          $surveyFilters[$id] = $surveys;
+          $surveyFilters[$id] = $surveyIds;
         }
       }
       $filters = [
