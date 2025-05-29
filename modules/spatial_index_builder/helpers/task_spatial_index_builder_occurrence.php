@@ -105,7 +105,11 @@ class task_spatial_index_builder_occurrence {
       JOIN work_queue q ON q.record_id=o.id
         AND q.claimed_by=?
         AND q.entity='occurrence'
-        AND q.task='task_spatial_index_builder_occurrence';
+        AND q.task='task_spatial_index_builder_occurrence'
+      LEFT JOIN work_queue wqexist ON wqexist.record_id=o.sample_id
+        AND wqexist.entity='sample'
+        AND wqexist.task='task_spatial_index_builder_sample'
+      WHERE wqexist.id IS NULL;
     SQL;
     $db->query($qry, [$procId]);
   }
