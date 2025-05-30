@@ -114,7 +114,7 @@ class user_identifier {
     }
     $userPersonObj = new stdClass();
     $userPersonObj->db = new Database();
-    if (!empty($request['warehouse_user_id'])) {
+    if (!empty($request['warehouse_user_id']) && $request['warehouse_user_id'] > 0) {
       $userId = $request['warehouse_user_id'];
       $qry = $userPersonObj->db->select('person_id')
         ->from('users')
@@ -136,26 +136,8 @@ class user_identifier {
       // Email is a special identifier used to create person.
       $email = NULL;
       foreach ($identifiers as $identifier) {
-        $ident = pg_escape_string($userPersonObj->db->getLink(), $identifier->identifier);
-        $type = pg_escape_string($userPersonObj->db->getLink(), $identifier->type);
-        $sql = '';
-        if ($identifier->type === 'email') {
-          $email = $identifier->identifier;
-          // For emails. do a direct check on person.email_address in addition
-          // to the query on user_identifiers.
-          $sql = <<<SQL
-SELECT DISTINCT u.id as user_id, u.person_id
-FROM users u
-JOIN people p ON p.id=u.person_id AND p.deleted=false
-WHERE u.deleted=false
-AND lower(p.email_address) = lower('$ident')
-UNION
-
-SQL;
-
-        }
         // SQL must look in existing user_identifiers.
-        $sql .= <<<SQL
+        $sql = <<<SQL
           SELECT DISTINCT u.id as user_id, u.person_id
           FROM users u
           JOIN people p
@@ -170,13 +152,31 @@ SQL;
             AND t.preferred_term=?
           WHERE u.deleted=false
         SQL;
+        $params = [
+          $identifier->identifier,
+          $identifier->type
+        ];
         if (isset($request['users_to_merge'])) {
           // If limiting to a known set of users...
           $usersToMerge = implode(',', json_decode($request['users_to_merge']));
           warehouse::validateIntCsvListParam($usersToMerge);
           $sql .= "\nAND u.id IN ($usersToMerge)";
         }
-        $r = $userPersonObj->db->query($sql, [$ident, $type])->result_array(TRUE);
+        if ($identifier->type === 'email') {
+          $email = $identifier->identifier;
+          // For emails. do a direct check on person.email_address in addition
+          // to the query on user_identifiers.
+          $sql .= <<<SQL
+            UNION
+            SELECT DISTINCT u.id as user_id, u.person_id
+            FROM users u
+            JOIN people p ON p.id=u.person_id AND p.deleted=false
+            WHERE u.deleted=false
+            AND lower(p.email_address) = lower(?)
+          SQL;
+          $params[] = $identifier->identifier;
+        }
+        $r = $userPersonObj->db->query($sql, $params)->result_array(TRUE);
         foreach ($r as $existingUser) {
           // Create a placeholder for the known user we just found.
           if (!isset($existingUsers[$existingUser->user_id])) {
