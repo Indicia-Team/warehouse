@@ -10,7 +10,7 @@
         snf.recorders, s.date_start, s.date_end, s.date_type, smp.entered_sref,
         snf.attr_sref_precision, s.location_name, snf.comment, smp.geom, 
         s.public_geom, s.created_by_id, s.website_id, s.created_on, s.updated_on,
-        s.input_form, o.confidential, o.release_status, o.sensitive,
+        s.input_form, o.confidential, o.release_status, o.sensitive, o.id as occurrence_id,
         p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end as inputter
       from samples smp
       join cache_samples_functional s on s.id = smp.id
@@ -19,7 +19,7 @@
       join users u on u.id = s.created_by_id
       join people p on p.id = u.person_id
       where smp.id = #sample_id#
- 
+
       UNION
 
       -- And occurrences on any subsamples too.
@@ -28,7 +28,7 @@
         snf.recorders, s.date_start, s.date_end, s.date_type, smp.entered_sref,
         snf.attr_sref_precision, s.location_name, snf.comment, smp.geom, 
         s.public_geom, s.created_by_id, s.website_id, s.created_on, s.updated_on,
-        s.input_form, o.confidential, o.release_status, o.sensitive,
+        s.input_form, o.confidential, o.release_status, o.sensitive, o.id as occurrence_id,
         p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end as inputter
       from samples smp
       join cache_samples_functional s on s.id = smp.id
@@ -44,19 +44,30 @@
     #agreements_join#
     #joins#
     where #sharing_filter#
+    AND (#allow_unreleased# = 1 OR release_status = 'R' OR occurrence_id IS NULL)
+    AND NOT EXISTS
+    (
+      SELECT s.id
+      FROM samples s
+      LEFT JOIN samples s_child
+        ON s_child.parent_id = s.id
+        AND s_child.deleted=false
+      JOIN occurrences o_conf
+        ON (o_conf.sample_id = s.id OR o_conf.sample_id = s_child.id)
+        AND (o_conf.confidential = true and #allow_confidential# = 0)
+        AND o_conf.deleted=false
+      where s.id = #sample_id#
+      AND s.deleted=false
+    )
   </query>
   <params>
     <param name='sample_id' display='Sample ID' description='ID of the sample to load' datatype='text' />
     <param name="allow_sensitive_full_precision" datatype="boolean" default="0"
            description="Allow viewing of sensitive records at full precision" />
     <param name="allow_confidential" datatype="boolean" default="0"
-           description="Allow viewing of confidential records">
-      <where value="0" operator="equal">confidential=false</where>
-    </param>
+           description="Allow viewing of confidential records" />
     <param name="allow_unreleased" datatype="boolean" default="0"
-           description="Allow viewing of unreleased records">
-      <where value="0" operator="equal">release_status='R'</where>
-    </param>
+          description="Allow viewing of unreleased records" />
   </params>
   <columns>
     <column name="sample_id" sql="s.id" />
