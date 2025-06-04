@@ -116,7 +116,7 @@ if (isset($_POST['file'])) {
         if (skip_row($time, $threshold)) {
           continue;
         }
-        echo '<span class="log-line">' . strip_tags($line) . "</span><br/>\n";
+        echo '<span class="log-line">' . htmlspecialchars($line) . "</span><br/>\n";
       }
     }
   }
