@@ -29,6 +29,9 @@ services:
             - "log_rotation_age=1d"
             - "-c"
             - "log_statement=all"
+            # Set resource limits.
+            - "-c"
+            - "work_mem=64MB"
         healthcheck:
             test: ["CMD", "pg_isready", "-h", "postgres"]
             interval: 30s
@@ -146,9 +149,10 @@ services:
             # Enable encryption of the http protocol.
             xpack.security.http.ssl.enabled: true
             xpack.security.http.ssl.keystore.path: certs/http.p12
-            # Limit Java heap size by uncommenting the following if your host
-            # has little memory.
-            # ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+            # Limit Java heap size otherwise it will consume nearly all the 
+            # memory on your host which can cause Postgres to make excessive
+            # use of temporary files.
+            ES_JAVA_OPTS: "-Xms1024m -Xmx1024m"
 
             # Pass through settings from .env file.
             LOGSTASH_USER: ${LOGSTASH_USER}
