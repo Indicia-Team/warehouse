@@ -689,7 +689,7 @@ SQL;
     $this->assertEquals(2, $row->determiner_id, 'Failed to use posted user_id to update determiner_id');
     $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
     $this->assertEquals('Unknown', $val->text_value);
-    // Make anonymous user change - won't alter the determiner.
+    // Make anonymous user change - will clear the determiner info.
     $postedUserId = 1;
     $array = [
       'website_id' => 1,
@@ -701,9 +701,12 @@ SQL;
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
-    $this->assertEquals(2, $row->determiner_id);
-    $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
-    $this->assertEquals('Unknown', $val->text_value);
+    $this->assertEquals(NULL, $row->determiner_id);
+    $val = self::$db->select('*')->from('occurrence_attribute_values')->where([
+      'occurrence_id' => $id,
+      'deleted' => 'f',
+    ])->get()->current();
+    $this->assertEquals(FALSE, $val);
   }
 
   /**
@@ -1352,4 +1355,3 @@ SQL;
   }
 
 }
-
