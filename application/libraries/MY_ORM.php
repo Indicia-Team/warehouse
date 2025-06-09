@@ -533,7 +533,8 @@ class ORM extends ORM_Core {
       // User ID from a global default.
       $defaultUserId = Kohana::config('indicia.defaultPersonId');
       $userId = ($defaultUserId ? $defaultUserId : 1);
-      // Don't force overwrite of user IDs that already exist in the record.
+      // Don't force overwrite of user IDs that already exist in the record, as
+      // likely to be an internal/system update of the record.
       $force = FALSE;
     }
     // Set up the created and updated metadata for the record.
