@@ -42,6 +42,12 @@ class Rest_Api_Sync_Controller extends Controller {
     if (class_exists('cache_builder')) {
       cache_builder::$delayCacheUpdates = TRUE;
     }
+    // Force the default user ID for record updates, because leaving out the
+    // user ID would prevent updated by ID from being changed, giving the impression
+    // that the wrong user updated the record.
+    global $remoteUserId;
+    $defaultUserId = Kohana::config('indicia.defaultPersonId');
+    $remoteUserId = ($defaultUserId ? $defaultUserId : 1);
     foreach ($servers as $serverId => $server) {
       echo "<h2>$serverId</h2>";
       $server = array_merge([
