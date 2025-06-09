@@ -397,17 +397,23 @@ function notification_emails_hyperlink_id($id, $websiteId, $caption = NULL) {
   if (!$caption) {
     $caption = $id;
   }
+  // First look for record details pages from the website the record came from.
   foreach ($recordDetailsPages as $page) {
-    $found = $page['website_id'] == $websiteId;
-    if (!$found) {
-      $ids = notification_emails_get_shared_website_list($websiteId);
-      $found = in_array($websiteId, $ids);
-    }
-    if ($found) {
+    if ($page['website_id'] == $websiteId) {
       $url = str_replace('#id#', $id, $page['url']);
       return "<a title=\"View details of record $id\" href=\"$url\">$caption</a>";
     }
   }
+  // Record not from any configured record details page's website, but might be
+  // from one that it can display records for.
+  foreach ($recordDetailsPages as $page) {
+    $ids = notification_emails_get_shared_website_list($page['website_id']);
+    if (in_array($websiteId, $ids)) {
+      $url = str_replace('#id#', $id, $page['url']);
+      return "<a title=\"View details of record $id\" href=\"$url\">$caption</a>";
+    }
+  }
+  // If no record details page found, just return the caption as a label.
   return $caption;
 }
 
