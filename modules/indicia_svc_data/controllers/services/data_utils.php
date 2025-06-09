@@ -472,13 +472,14 @@ SQL;
         $tm = microtime(TRUE);
         $db = new Database();
         $this->authenticate('write');
+        $determinerPersonId = $this->getDeterminerPersonId($db, $this->user_id, $_POST['occurrence:determiner_id'] ?? NULL);
         // Field updates for the occurrences table and related cache tables.
         $updates = data_utils::getOccurrenceTableRedetUpdateValues(
-          $db,
-          $this->user_id,
           $_POST['occurrence:taxa_taxon_list_id'],
+          $this->user_id,
+          $determinerPersonId,
         );
-        $this->redeterminationDbProcessing($db, $ids, $this->user_id, $_POST['occurrence:determiner_id'] ?? NULL);
+        $this->redeterminationDbProcessing($db, $ids, $this->user_id, $determinerPersonId);
         // Give the workflow module a chance to rewind or update the values
         // before updating.
         data_utils::applyWorkflowToOccurrenceVerificationUpdates($db, $this->website_id, $this->user_id, $ids, $updates);
@@ -516,6 +517,29 @@ SQL;
         }
       }
     }
+  }
+
+  /**
+   * Fetch the determiner_id to use for a redetermination if not provided.
+   *
+   * @param Database $db
+   *   Connection object.
+   * @param int $userId
+   *   User ID of the current user.
+   * @param ?int $determinerPersonId
+   *   Determiner person ID from the request if provided.
+   *
+   * @return int
+   *  Person ID to use for the determiner.
+   */
+  private function getDeterminerPersonId($db, int $userId, ?int $determinerPersonId = NULL) {
+    if (!$determinerPersonId) {
+      return $db->query(
+        "SELECT person_id FROM users WHERE id = ?",
+        [$userId]
+      )->current()->person_id;
+    }
+    return $determinerPersonId;
   }
 
   /**
