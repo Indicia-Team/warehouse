@@ -53,8 +53,8 @@
       from occurrences o
       join cache_taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id
       join determinations d on d.occurrence_id=o.id and d.deleted=false
-      join users u on u.id=d.updated_by_id and u.deleted=false
-      join people p on p.id=u.person_id and p.deleted=false
+      join users u on u.id=o.updated_by_id and u.deleted=false
+      join people p on p.id=coalesce(o.determiner_id, u.person_id) and p.deleted=false
       where o.deleted=false
       and o.id=#occurrence_id#
       and d.id=(select max(id) from determinations where occurrence_id=#occurrence_id# and deleted=false)
