@@ -55,7 +55,7 @@ class data_utils {
   /**
    * Retrieves the values that must change for each entity after a verification.
    */
-  public static function getOccurrenceTableRedetUpdateValues($db, $userId, $taxaTaxonListId) {
+  public static function getOccurrenceTableRedetUpdateValues($taxaTaxonListId, int $userId, int $determinerPersonId) {
     // Field updates for the occurrences table.
     $r['occurrences'] = [
       'taxa_taxon_list_id' => $taxaTaxonListId,
@@ -67,6 +67,7 @@ class data_utils {
       'verified_on' => NULL,
       'machine_involvement' => NULL,
       'classification_event_id' => NULL,
+      'determiner_id' => $determinerPersonId,
     ];
     // Work queue will update the cache tables.
     return $r;
