@@ -280,9 +280,14 @@ class Occurrence_Model extends ORM {
         // it out.
         $userInfo = $this->db->select('person_id')->from('users')->where('id', $currentUserId)->get()->current();
         $determinerPersonId = $userInfo->person_id;
-        if ($determinerPersonId !== '1') {
+        if ((int) $determinerPersonId !== 1) {
           // Store in the occurrences.determiner_id field.
           $array->determiner_id = $determinerPersonId;
+        }
+        else {
+          // Anonymous user redet is likely to be a record refresh from REST API Sync.
+          // Remove determiner ID as anything previously set is not valid.
+          $array->determiner_id = NULL;
         }
       }
       else {

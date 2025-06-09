@@ -689,7 +689,7 @@ SQL;
     $this->assertEquals(2, $row->determiner_id, 'Failed to use posted user_id to update determiner_id');
     $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
     $this->assertEquals('Unknown', $val->text_value);
-    // Make anonymous user change - won't alter the determiner.
+    // Make anonymous user change - will clear the determiner info.
     $postedUserId = 1;
     $array = [
       'website_id' => 1,
@@ -701,9 +701,137 @@ SQL;
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
     $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
-    $this->assertEquals(2, $row->determiner_id);
-    $val = self::$db->select('*')->from('occurrence_attribute_values')->where('occurrence_id', $id)->get()->current();
-    $this->assertEquals('Unknown', $val->text_value);
+    $this->assertEquals(NULL, $row->determiner_id);
+    $val = self::$db->select('*')->from('occurrence_attribute_values')->where([
+      'occurrence_id' => $id,
+      'deleted' => 'f',
+    ])->get()->current();
+    $this->assertEquals(FALSE, $val);
+  }
+
+  /**
+   * Test records being redetermined from a REST API sync.
+   */
+  public function testRedetOccurrenceFromRestApiSync() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRedetOccurrence");
+    // Post as anonymous user as if this was a REST API sync.
+    global $postedUserId;
+    $postedUserId = 1;
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'sample:recorder_names' => 'Test recorder',
+      'occurrence:taxa_taxon_list_id' => 1,
+    ];
+    $structure = [
+      'model' => 'sample',
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+    $row = self::$db->select('*')->from('occurrences')->where('id', $r['success'])->get()->current();
+    $id = $row->id;
+    // Should not have a determiner_id at this point, or an identified by custom attribute.
+    $identifierAttrValue = self::$db->select('id, text_value')
+      ->from('occurrence_attribute_values')
+      ->where(['occurrence_id' => $id, 'occurrence_attribute_id' => 1, 'deleted' => 'f'])
+      ->get()->current();
+    $this->assertEquals(FALSE, $identifierAttrValue, 'Identifier attribute value should be ommitted for anonymous user submission');
+    $this->assertEquals(NULL, $row->determiner_id, 'Determiner ID should not be set for anonymous user submission');
+    // Now redetermine as a different user.
+    $postedUserId = 2;
+    $otherUserAuth = data_entry_helper::get_read_write_auth(1, 'password');
+    $otherUserAuth['write_tokens']['persist_auth'] = TRUE;
+    $array = [
+      'id' => $id,
+      'website_id' => 1,
+      'sample_id' => $r['success'],
+      'taxa_taxon_list_id' => 2,
+    ];
+    $s = submission_builder::build_submission($array, ['model' => 'occurrence']);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, $otherUserAuth['write_tokens']);
+    // There should be an identified by custom attribute created to reflect the
+    // new determiner.
+    $identifierAttrValue = self::$db->select('id, text_value')
+      ->from('occurrence_attribute_values')
+      ->where(['occurrence_id' => $id, 'occurrence_attribute_id' => 1, 'deleted' => 'f'])
+      ->get()->current();
+    $this->assertEquals('Unknown', $identifierAttrValue->text_value, 'Identifier attribute value should be set to Unknown for new determiner');
+    // Determiner ID should be set to the new user.
+    $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $this->assertEquals(2, $row->determiner_id, 'Determiner ID should be set to the new user');
+    // Now redetermine as anonymous, as if record being overwritten from REST
+    // API sync again.
+    $postedUserId = 1;
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:id' => $row->sample_id,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'sample:recorder_names' => 'Test recorder',
+      'occurrence:id' => $id,
+      'occurrence:taxa_taxon_list_id' => 1,
+    ];
+    $structure = [
+      'model' => 'sample',
+      'subModels' => [
+        'occurrence' => ['fk' => 'sample_id'],
+      ],
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, self::$auth['write_tokens']);
+    // Check the identification custom attribute removed as we no longer know
+    // the identifier.
+    $identifierAttrValue = self::$db->select('id, text_value')
+      ->from('occurrence_attribute_values')
+      ->where(['occurrence_id' => $id, 'occurrence_attribute_id' => 1, 'deleted' => 'f'])
+      ->get()->current();
+    $this->assertEquals(FALSE, $identifierAttrValue, 'Identifier attribute value should be removed for anonymous user redetermination');
+    // Determiner ID should be removed as user anonymous.
+    $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $this->assertEquals(NULL, $row->determiner_id, 'Determiner ID should not be set for anonymous user submission');
+
+    // Now redetermine as a different user as they spot it got overwritten.
+    $postedUserId = 2;
+    $otherUserAuth = data_entry_helper::get_read_write_auth(1, 'password');
+    $otherUserAuth['write_tokens']['persist_auth'] = TRUE;
+    $array = [
+      'id' => $id,
+      'website_id' => 1,
+      'sample_id' => $r['success'],
+      'taxa_taxon_list_id' => 2,
+    ];
+    $s = submission_builder::build_submission($array, ['model' => 'occurrence']);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, $otherUserAuth['write_tokens']);
+    // Check the occurrence has been redetermined by unknown (user 2).
+    $identifierAttrValue = self::$db->select('id, text_value')
+      ->from('occurrence_attribute_values')
+      ->where(['occurrence_id' => $id, 'occurrence_attribute_id' => 1, 'deleted' => 'f'])
+      ->get()->current();
+    $this->assertEquals('Unknown', $identifierAttrValue->text_value, 'Identifier attribute value should be set to Unknown for new determiner');
+    // Determiner ID should be set to the new user.
+    $row = self::$db->select('*')->from('occurrences')->where('id', $id)->get()->current();
+    $this->assertEquals(2, $row->determiner_id, 'Determiner ID should be set to the new user');
+    // Check all the determinations have been created correctly.
+    $determinations = self::$db->query('SELECT id, occurrence_id, person_name, taxa_taxon_list_id, created_by_id FROM determinations WHERE occurrence_id=? ORDER BY id', [$id])->result_array(FALSE);
+    $this->assertEquals(3, count($determinations), '2 determinations should have been created, one for each user');
+    $this->assertEquals(1, $determinations[0]['created_by_id'], 'First determination should be by anonymous user');
+    $this->assertEquals(2, $determinations[1]['created_by_id'], 'Second determination should be by user 2');
+    $this->assertEquals(1, $determinations[2]['created_by_id'], 'Third determination should be by anonymous user');
+    $this->assertEquals('Test recorder', $determinations[0]['person_name'], 'First determination should be for test recorder');
+    $this->assertEquals('Unknown', $determinations[1]['person_name'], 'Second determination should be user unknown');
+    $this->assertEquals('Test recorder', $determinations[2]['person_name'], 'Third determination should be test recorder');
+    $this->assertEquals(1, $determinations[0]['taxa_taxon_list_id'], 'First determination should be for taxon 1');
+    $this->assertEquals(2, $determinations[1]['taxa_taxon_list_id'], 'Second determination should be for taxon 2');
+    $this->assertEquals(1, $determinations[2]['taxa_taxon_list_id'], 'Third determination should be for taxon 1');
   }
 
   public function testSampleTrainingMode() {
@@ -1227,4 +1355,3 @@ SQL;
   }
 
 }
-
