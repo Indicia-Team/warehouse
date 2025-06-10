@@ -2089,6 +2089,16 @@ SQL;
   }
 
   /**
+   * Test /sample_comment POST in isolation.
+   */
+  public function testJwtSampleCommentPost() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $values = $this->getSampleCommentExampleData();
+    $values['sample_id'] = $sampleId;
+    $this->postTest('sample_comments', $values, 'comment');
+  }
+
+  /**
    * Test DELETE for an sample_comment.
    *
    * @todo Need to test that you can DELETE comments belonging to other users for your own records.
@@ -2184,16 +2194,6 @@ SQL;
       'person_name' => 'Foo bar',
     ];
   }
-
-  /**
-   * Test /occurrence_comments PUT behaviour.
-   */
-  public function testJwtOccurrenceCommentPut() {
-    $this->putTest('occurrence_comments', $this->getOccurrenceCommentExampleData(), [
-      'comment' => 'Test occurrence comment updated',
-    ]);
-  }
-
   /**
    * A basic test of /occurrence_comments GET.
    *
@@ -2211,6 +2211,26 @@ SQL;
   public function testJwtOccurrenceCommentGetList() {
     $this->getListTest('occurrence_comments',  $this->getOccurrenceCommentExampleData());
   }
+
+  /**
+   * Test /occurrence_comment POST in isolation.
+   */
+  public function testJwtOccurrenceCommentPost() {
+    $values = $this->getOccurrenceCommentExampleData();
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $values['occurrence_id'] = $occurrenceId;
+    $this->postTest('occurrence_comments', $values, 'comment');
+  }
+
+  /**
+   * Test /occurrence_comments PUT behaviour.
+   */
+  public function testJwtOccurrenceCommentPut() {
+    $this->putTest('occurrence_comments', $this->getOccurrenceCommentExampleData(), [
+      'comment' => 'Test occurrence comment updated',
+    ]);
+  }
+
 
   /**
    * Test DELETE for an occurrence_comment.
