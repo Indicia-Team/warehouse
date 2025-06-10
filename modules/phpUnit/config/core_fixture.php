@@ -1223,4 +1223,22 @@ $core_fixture = [
       "updated_by_id" => 1,
     ],
   ],
+  "notifications" => [
+    [
+      "source" => "Verifications and comments",
+      "source_type" => "Q",
+      "data" => "{\"foo\":\"bar\"}",
+      "user_id" => 1,
+      "linked_id" => 1,
+      "triggered_on" => "2016-07-22 16:00:00",
+    ],
+    [
+      "source" => "Verifications and comments",
+      "source_type" => "Q",
+      "data" => "{\"foo\":\"bar\"}",
+      "user_id" => 2,
+      "linked_id" => 2,
+      "triggered_on" => "2016-07-22 16:00:00",
+    ],
+  ],
 ];
