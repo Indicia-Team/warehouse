@@ -100,7 +100,6 @@ class RestControllerTest extends BaseRestClientTest {
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Make sure there is invalid public key stored.
-    $db = new Database();
     $db->update(
       'websites',
       ['public_key' => 'INVALID!!!'],
@@ -112,7 +111,6 @@ class RestControllerTest extends BaseRestClientTest {
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 500);
     // Store the public key so Indicia can check signed requests.
-    $db = new Database();
     $db->update(
       'websites',
       ['public_key' => self::$publicKey],
@@ -2121,6 +2119,130 @@ SQL;
     $this->eTagsTest('sample_comments', $this->getSampleCommentExampleData());
   }
 
+  /**
+   * A basic test of /notifications GET.
+   */
+  public function testJwtNotificationGet() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService("notifications/1");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertArrayHasKey('values', $response['response']);
+    $this->assertArrayHasKey('id', $response['response']['values']);
+    $this->assertEquals('1', $response['response']['values']['id']);
+    $response = $this->callService("notifications/2");
+    $this->assertEquals(404, $response['httpCode']);
+  }
+
+  /**
+   * A basic test of /notifications GET.
+   */
+  public function testJwtNotificationsGetList() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService("notifications");
+    $this->assertEquals(200, $response['httpCode']);
+    // There are 2 notifications in the fixture, but only one for this user.
+    $this->assertEquals(1, count($response['response']));
+  }
+
+  /**
+   * Test /notification POST in isolation.
+   *
+   * POST is not supported by the REST API, so this test checks for a 405
+   * Method Not Allowed response.
+   */
+  public function testJwtNotificationPost() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Attempt to delete notification. Should return 405 Method Not Allowed.
+    $response = $this->callService("notifications", FALSE, [
+      'user_id' => 1,
+      'source' => 'Test',
+      'source_type' => 'T',
+      'data' => 'test',
+      'linked_id' => 1,
+    ]);
+    $this->assertEquals(405, $response['httpCode']);
+  }
+
+  /**
+   * Test /occurrence_comments PUT behaviour.
+   */
+  public function testJwtNotificationPut() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $db = new Database();
+    // The PUT method is used to acknowledge a notification. Response should be
+    // 200 OK.
+    $response = $this->callService(
+      "notifications/1",
+      FALSE,
+      ['values' => ['acknowledged' => TRUE]],
+      [], 'PUT'
+    );
+    $this->assertEquals(200, $response['httpCode']);
+    $updatedAcknowledged = $db->query('SELECT acknowledged FROM notifications WHERE id=1')->current()->acknowledged;
+    $this->assertEquals('t', $updatedAcknowledged, 'Notification acknowledged status should have changed.');
+    // A GET request should not return the acknowledged entry.
+    $response = $this->callService("notifications");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals(0, count($response['response']));
+    // A GET request should return the acknowledged entry if requested to do so.
+    $response = $this->callService("notifications?acknowledged=true");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals(1, count($response['response']));
+    $response = $this->callService(
+      "notifications/1",
+      FALSE,
+      ['values' => ['acknowledged' => FALSE]],
+      [], 'PUT'
+    );
+    $this->assertEquals(200, $response['httpCode']);
+    $updatedAcknowledged = $db->query('SELECT acknowledged FROM notifications WHERE id=1')->current()->acknowledged;
+    $this->assertEquals('f', $updatedAcknowledged, 'Notification acknowledged status should have changed.');
+    // Attempt to update another user's notification. Should return 404 Not
+    // Found.
+    $response = $this->callService(
+      "notifications/2",
+      FALSE,
+      ['values' => ['acknowledged' => TRUE]],
+      [], 'PUT'
+    );
+    $this->assertEquals(404, $response['httpCode']);
+    // Attempt to update a field that can't be changed. Should return 400 Bad
+    // Request.
+    $response = $this->callService(
+      "notifications/1",
+      FALSE,
+      ['values' => ['user_id' => 1]],
+      [], 'PUT'
+    );
+    $this->assertEquals(400, $response['httpCode']);
+    // Attempt to update a missing notification should return 404 Not Found.
+    $response = $this->callService(
+      "notifications/12345",
+      FALSE,
+      ['values' => ['acknowledged' => FALSE]],
+      [], 'PUT'
+    );
+    $this->assertEquals(404, $response['httpCode']);
+  }
+
+  /**
+   * Test /notification DELETE in isolation.
+   *
+   * DELETE is not supported by the REST API, so this test checks for a 405
+   * Method Not Allowed response.
+   */
+  public function testJwtNotificationDelete() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Attempt to delete notification. Should return 405 Method Not Allowed.
+    $response = $this->callService("notifications/1", FALSE, NULL, [], 'DELETE');
+    $this->assertEquals(405, $response['httpCode']);
+  }
+
   public function testJwtOccurrenceAttributePost() {
     $this->postTest('occurrence_attributes', [
       'caption' => 'Test occurrence attribute',
@@ -2194,6 +2316,7 @@ SQL;
       'person_name' => 'Foo bar',
     ];
   }
+
   /**
    * A basic test of /occurrence_comments GET.
    *

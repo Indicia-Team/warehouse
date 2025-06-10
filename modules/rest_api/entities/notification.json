@@ -1,0 +1,21 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "source", "type": "string" },
+    { "sql": "source_type", "type": "string" },
+    { "sql": "data", "type": "string" },
+    { "sql": "user_id", "type": "integer" },
+    { "sql": "triggered_on", "type": "date" },
+    { "sql": "linked_id", "name": "occurrence_id", "type": "integer" },
+    { "sql": "source_detail", "type": "string" },
+    { "sql": "acknowledged", "type": "boolean" },
+    { "sql": "email_sent", "type": "boolean" }
+  ],
+  "joins": [
+    {
+      "sql": "JOIN occurrences t2 ON t2.id=t1.linked_id AND t2.deleted=false",
+      "fields": []
+    }
+  ],
+  "excludeDeleted": false
+}

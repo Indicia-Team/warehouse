@@ -429,15 +429,75 @@ Note that queued items will be stored for at least 1 day and attempts to submit 
 that have expired will result in an error. Therefore if a pending submission is stored on the client for more than one
 day the media should be re-posted to /media-queue before sending the submission.
 TXT;
+$lang['resources']['notifications'] = <<<TXT
+  Provides access to a user's list of notifications.
+TXT;
+$lang['resources']['GET notifications'] = <<<TXT
+  Retrieves a user's list of notifications. The default behaviour is to include only unacknowledged notifications, set
+  a filter parameter called "acknowledged" to "true" to include acknowledged notifications. Example:
+  <pre><code>
+  GET /index.php/services/rest/notifications
+  </code>
+  Response:
+  <code>
+  [
+    {
+      "values": {
+        "id": "1",
+        "source": "Verifications and comments",
+        "source_type": "V",
+        "data": "{\"username\":\"user_x\",\"occurrence_id\":\"57554\",\"comment\":\"Your record of Fen Raft Spider (&lt;em&gt;Dolomedes plantarius&lt;/em&gt;) at ST9623 on 03\/01\/2024 was examined by an expert.&lt;br/&gt;&lt;em&gt;Accepted as correct&lt;/em&gt;\",\"taxon\":\"Fen Raft Spider (&lt;em&gt;Dolomedes plantarius&lt;/em&gt;)\",\"date\":\"03\/01\/2024\",\"entered_sref\":\"ST9623\",\"auto_generated\":\"f\",\"record_status\":\"V\",\"record_substatus\":\"1\",\"updated_on\":\"2025-02-05 13:31:04.758571\"}",
+        "user_id": "1",
+        "triggered_on": "2016-07-22T15:00:00+00:00",
+        "occurrence_id": "1",
+        "source_detail": null,
+        "acknowledged": "f",
+        "email_sent": "f"
+      }
+    }
+  ]
+  </code>
+  </pre>
+TXT;
+$lang['resources']['GET notifications/{id}'] = <<<TXT
+  Retrieves a single notification by its ID. The notification must be for the current user. Example:
+  <pre><code>
+  GET /index.php/services/rest/notifications/1
+  </code>
+  Response:
+  <code>
+  {
+    "values": {
+      "id": "1",
+      "source": "Verifications and comments",
+      "source_type": "V",
+      "data": "{\"username\":\"user_x\",\"occurrence_id\":\"57554\",\"comment\":\"Your record of Fen Raft Spider (&lt;em&gt;Dolomedes plantarius&lt;/em&gt;) at ST9623 on 03\/01\/2024 was examined by an expert.&lt;br/&gt;&lt;em&gt;Accepted as correct&lt;/em&gt;\",\"taxon\":\"Fen Raft Spider (&lt;em&gt;Dolomedes plantarius&lt;/em&gt;)\",\"date\":\"03\/01\/2024\",\"entered_sref\":\"ST9623\",\"auto_generated\":\"f\",\"record_status\":\"V\",\"record_substatus\":\"1\",\"updated_on\":\"2025-02-05 13:31:04.758571\"}",
+      "user_id": "1",
+      "triggered_on": "2016-07-22T15:00:00+00:00",
+      "occurrence_id": "1",
+      "source_detail": null,
+      "acknowledged": "f",
+      "email_sent": "f"
+    }
+  }
+  </code>
+  </pre>
+  The response can also be HTTP 400 Not Found if the notification does not exist or is not visible to the user (i.e.
+  for another user).
+TXT;
+$lang['resources']['PUT notifications/{id}'] = <<<TXT
+  Updates a single notification identified by its ID. The notification must be for the current user and the only field
+  that can be updated is the "acknowledged" field, which is set to true to acknowledge the notification.
+TXT;
 $lang['resources']['occurrence-attributes'] = <<<TXT
-A list of custom attributes defined to capture information about occurrences.
+  A list of custom attributes defined to capture information about occurrences.
 TXT;
 $lang['resources']['GET occurrence-attributes'] = <<<TXT
-Retrieves a list of custom attributes defined to capture information about occurrences.
+  Retrieves a list of custom attributes defined to capture information about occurrences.
 TXT;
 $lang['resources']['GET occurrence-attributes/{id}'] = <<<TXT
-Retrieves a single custom attribute defined to capture information about occurrences. Lookup attributes include a
-"terms" element in the response containing an ordered array of terms, excluding any that are allow_data_entry=false.
+  Retrieves a single custom attribute defined to capture information about occurrences. Lookup attributes include a
+  "terms" element in the response containing an ordered array of terms, excluding any that are allow_data_entry=false.
 TXT;
 $lang['resources']['POST occurrence-attributes'] = <<<TXT
 Creates a custom attribute defined to capture information about occurrences. If the attribute is a lookup

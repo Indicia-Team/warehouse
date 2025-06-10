@@ -499,6 +499,15 @@ class Rest_Controller extends Controller {
         'location-media/{id}' => [],
       ],
     ],
+    'notifications' => [
+      'GET' => [
+        'notifications' => [],
+        'notifications/{id}' => [],
+      ],
+      'PUT' => [
+        'notifications/{id}' => [],
+      ],
+    ],
     'occurrence-attributes' => [
       'GET' => [
         'occurrence-attributes' => [],
@@ -3351,7 +3360,7 @@ SQL;
    * End-point to GET an list of occurrence_media.
    */
   public function occurrenceMediaGet() {
-    rest_crud::readList('occurrence_medium', 'AND t3.website_id=' . (int) RestObjects::$clientWebsiteId, $this->needToFilterToUser());
+    rest_crud::readList('occurrence_medium', 't3.website_id=' . (int) RestObjects::$clientWebsiteId, $this->needToFilterToUser());
   }
 
   /**
@@ -3364,7 +3373,7 @@ SQL;
     rest_crud::read(
       'occurrence_medium',
       $id,
-      'AND t3.website_id=' . RestObjects::$clientWebsiteId,
+      't3.website_id=' . RestObjects::$clientWebsiteId,
       $this->needToFilterToUser());
   }
 
@@ -3438,7 +3447,7 @@ SQL;
     if (isset($this->resourceOptions['allow_unreleased']) && $this->resourceOptions['allow_unreleased'] === FALSE) {
       $extraFilters[] = "t1.release_status='R'";
     }
-    return 'AND ' . implode(' AND ', $extraFilters);
+    return implode(' AND ', $extraFilters);
   }
 
   /**
@@ -3601,7 +3610,7 @@ SQL;
     elseif ($view === 'pending') {
       $filters[] = 't1.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=' . RestObjects::$clientUserId . ' AND gu.deleted=false AND gu.pending=true)';
     }
-    return 'AND t1.website_id=' . RestObjects::$clientWebsiteId . ' AND (' . implode(' OR ', $filters) . ')';
+    return 't1.website_id=' . RestObjects::$clientWebsiteId . ' AND (' . implode(' OR ', $filters) . ')';
   }
 
   /**
@@ -3643,7 +3652,7 @@ SQL;
       't2.website_id=' . RestObjects::$clientWebsiteId,
       "(t2.joining_method IN ('P', 'R') OR t2.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=" . RestObjects::$clientUserId . ' AND gu.deleted=false))',
     ];
-    $extraFilter = 'AND ' . implode(' AND ', $filters);
+    $extraFilter = implode(' AND ', $filters);
     rest_crud::readList('groups_location', $extraFilter, FALSE);
   }
 
@@ -3696,7 +3705,7 @@ SQL;
       't2.website_id=' . RestObjects::$clientWebsiteId,
       "(t2.id IN (SELECT group_id FROM groups_users gu WHERE gu.user_id=" . RestObjects::$clientUserId . ' AND gu.deleted=false AND gu.administrator=true) OR t1.user_id=' . RestObjects::$clientUserId . ')',
     ];
-    $extraFilter = 'AND ' . implode(' AND ', $filters);
+    $extraFilter = implode(' AND ', $filters);
     rest_crud::readList('groups_user', $extraFilter, FALSE);
   }
 
@@ -3832,7 +3841,7 @@ SQL;
     // Make a filter for public locations available to all users and websites.
     $publicFilter = 't1.public=true';
     // Allow both types of location.
-    $extraFilter = "AND ($webUserFilter OR $publicFilter)";
+    $extraFilter = "($webUserFilter OR $publicFilter)";
     rest_crud::readList('location', $extraFilter, FALSE);
   }
 
@@ -3851,7 +3860,7 @@ SQL;
       // Normal users can access public locations, or their own locations in
       // the current website.
       $filter = <<<SQL
-        AND (t1.public=true
+        (t1.public=true
           OR (t2.website_id=$clientWebsiteId AND t1.created_by_id=$clientUserId)
           OR (t2.website_id=$clientWebsiteId AND t1.id IN (
             SELECT gl.location_id
@@ -3860,12 +3869,12 @@ SQL;
             WHERE gl.deleted=false
           ))
         )
-SQL;
+      SQL;
     }
     else {
       // Site editor or admin users can access public locations, or any
       // location in the current website.
-      $filter = "AND (t1.public=true OR t2.website_id=$clientWebsiteId)";
+      $filter = "(t1.public=true OR t2.website_id=$clientWebsiteId)";
     }
     // Call read() with userFilter = FALSE as public locations may be
     // created by another user.
@@ -3938,7 +3947,7 @@ SQL;
     rest_crud::read(
       'location_medium',
       $id,
-      'AND t3.website_id=' . RestObjects::$clientWebsiteId,
+      't3.website_id=' . RestObjects::$clientWebsiteId,
       // If user website site role known, allow access if admin or site editor,
       // else must belong to user.
       !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2
@@ -3998,10 +4007,70 @@ SQL;
   }
 
   /**
+   * End-point to GET an list of notifications.
+   */
+  public function notificationsGet() {
+    $filters = [
+      't2.website_id=' . RestObjects::$clientWebsiteId,
+      't1.user_id=' . RestObjects::$clientUserId,
+    ];
+    // Add filter on Acknowledged if not in the request parameters.
+    if (empty($_GET['acknowledged'])) {
+      $filters[] = 't1.acknowledged=false';
+    }
+    $filterStr = implode(' AND ', $filters);
+    rest_crud::readList(
+      'notification',
+      $filterStr,
+      FALSE
+    );
+  }
+
+  /**
+   * End-point to GET a notification by ID.
+   *
+   * @param int $id
+   *   Notification ID.
+   */
+  public function notificationsGetId($id) {
+    $filters = [
+      't2.website_id=' . RestObjects::$clientWebsiteId,
+      't1.user_id=' . RestObjects::$clientUserId,
+    ];
+    $filterStr = implode(' AND ', $filters);
+    rest_crud::read(
+      'notification',
+      $id,
+      $filterStr,
+      FALSE
+    );
+  }
+
+  /**
+   * API end-point to PUT to an existing notification to update.
+   *
+   * The only update currently allowed is to set the 'acknowledged' flag.
+   */
+  public function notificationsPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    // Only allowed to update 'acknowledged' flag.
+    $allowedKeys = ['acknowledged'];
+    $extraKeys = array_diff(array_keys($putArray['values']), $allowedKeys);
+    if (!empty($extraKeys)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Only the "acknowledged" field can be updated.');
+    }
+    // Limit to user's own data.
+    $preconditions = ['user_id' => RestObjects::$clientUserId];
+    $r = rest_crud::update('notification', $id, $putArray, $preconditions);
+    echo json_encode($r);
+  }
+
+  /**
    * End-point to GET an list of sample_media.
    */
   public function sampleMediaGet() {
-    rest_crud::readList('sample_medium', '', $this->needToFilterToUser());
+    rest_crud::readList('sample_medium', NULL, $this->needToFilterToUser());
   }
 
   /**
@@ -4014,7 +4083,7 @@ SQL;
     rest_crud::read(
       'sample_medium',
       $id,
-      'AND t4.website_id=' . RestObjects::$clientWebsiteId,
+      't4.website_id=' . RestObjects::$clientWebsiteId,
       // If user website site role known, allow access if admin or site editor,
       // else must belong to user.
       $this->needToFilterToUser()
@@ -4080,7 +4149,7 @@ SQL;
   public function samplesGet() {
     // @todo Website filters on this request and similar may need to respect
     // JWT scope.
-    rest_crud::readList('sample', 'AND t2.website_id=' . RestObjects::$clientWebsiteId, $this->needToFilterToUser());
+    rest_crud::readList('sample', 't2.website_id=' . RestObjects::$clientWebsiteId, $this->needToFilterToUser());
   }
 
   /**
@@ -4090,7 +4159,7 @@ SQL;
    *   Sample ID.
    */
   public function samplesGetId($id) {
-    rest_crud::read('sample', $id, 'AND t2.website_id=' . RestObjects::$clientWebsiteId, $this->needToFilterToUser());
+    rest_crud::read('sample', $id, 't2.website_id=' . RestObjects::$clientWebsiteId, $this->needToFilterToUser());
   }
 
   /**
@@ -4232,7 +4301,7 @@ SQL;
    * End-point to GET a list of available surveys.
    */
   public function surveysGet() {
-    rest_crud::readList('survey', 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+    rest_crud::readList('survey', 't1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**
@@ -4242,7 +4311,7 @@ SQL;
    *   Survey ID.
    */
   public function surveysGetId($id) {
-    rest_crud::read('survey', $id, 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+    rest_crud::read('survey', $id, 't1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**
@@ -4354,7 +4423,7 @@ SQL;
    * End-point to GET a list of available sample attributes.
    */
   public function sampleAttributesGet() {
-    rest_crud::readList('sample_attribute', 'AND t2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+    rest_crud::readList('sample_attribute', 't2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**
@@ -4364,7 +4433,7 @@ SQL;
    *   Sample attribute ID.
    */
   public function sampleAttributesGetId($id) {
-    rest_crud::read('sample_attribute', $id, 'AND t2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+    rest_crud::read('sample_attribute', $id, 't2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**
@@ -4481,7 +4550,7 @@ SQL;
   }
 
   private function getSampleCommentExtraFilter() {
-    return 'AND t3.website_id=' . (int) RestObjects::$clientWebsiteId;
+    return 't3.website_id=' . (int) RestObjects::$clientWebsiteId;
   }
 
   /**
@@ -4606,7 +4675,7 @@ SQL;
    * End-point to GET a list of available sample attributes websites.
    */
   public function sampleAttributesWebsitesGet() {
-    rest_crud::readList('sample_attributes_website', 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+    rest_crud::readList('sample_attributes_website', 't1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**
@@ -4616,7 +4685,7 @@ SQL;
    *   Sample attribute ID.
    */
   public function sampleAttributesWebsitesGetId($id) {
-    rest_crud::read('sample_attributes_website', $id, 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+    rest_crud::read('sample_attributes_website', $id, 't1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**
@@ -4682,7 +4751,7 @@ SQL;
    * End-point to GET a list of available occurrence attributes.
    */
   public function occurrenceAttributesGet() {
-    rest_crud::readList('occurrence_attribute', 'AND t2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+    rest_crud::readList('occurrence_attribute', 't2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**
@@ -4692,7 +4761,7 @@ SQL;
    *   Occurrence attribute ID.
    */
   public function occurrenceAttributesGetId($id) {
-    rest_crud::read('occurrence_attribute', $id, 'AND t2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+    rest_crud::read('occurrence_attribute', $id, 't2.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**
@@ -4757,7 +4826,7 @@ SQL;
    * End-point to GET a list of available occurrence attributes websites.
    */
   public function occurrenceAttributesWebsitesGet() {
-    rest_crud::readList('occurrence_attributes_website', 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+    rest_crud::readList('occurrence_attributes_website', 't1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**
@@ -4767,7 +4836,7 @@ SQL;
    *   Occurrence attribute ID.
    */
   public function occurrenceAttributesWebsitesGetId($id) {
-    rest_crud::read('occurrence_attributes_website', $id, 'AND t1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
+    rest_crud::read('occurrence_attributes_website', $id, 't1.website_id=' . RestObjects::$clientWebsiteId, FALSE);
   }
 
   /**
@@ -4911,7 +4980,7 @@ SQL;
     if (empty($this->resourceOptions['allow_confidential'])) {
       $extraFilters[] = 't1.confidential=false';
     }
-    return 'AND ' . implode(' AND ', $extraFilters);
+    return implode(' AND ', $extraFilters);
   }
 
   /**
