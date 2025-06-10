@@ -529,6 +529,21 @@ class Rest_Controller extends Controller {
         'occurrence-attributes-websites/{id}' => [],
       ],
     ],
+    'occurrence-comments' => [
+      'GET' => [
+        'occurrence-comments' => [],
+        'occurrence-comments/{id}' => [],
+      ],
+      'POST' => [
+        'occurrence-comments' => [],
+      ],
+      'PUT' => [
+        'occurrence-comments/{id}' => [],
+      ],
+      'DELETE' => [
+        'occurrence-comments/{id}' => [],
+      ],
+    ],
     'occurrence-media' => [
       'GET' => [
         'occurrence-media' => [],
@@ -647,6 +662,21 @@ class Rest_Controller extends Controller {
       ],
       'DELETE' => [
         'sample-attributes-websites/{id}' => [],
+      ],
+    ],
+    'sample-comments' => [
+      'GET' => [
+        'sample-comments' => [],
+        'sample-comments/{id}' => [],
+      ],
+      'POST' => [
+        'sample-comments' => [],
+      ],
+      'PUT' => [
+        'sample-comments/{id}' => [],
+      ],
+      'DELETE' => [
+        'sample-comments/{id}' => [],
       ],
     ],
     'sample-media' => [
@@ -3339,7 +3369,7 @@ SQL;
   }
 
   /**
-   * API end-point to POST a occurrence_media to create.
+   * API end-point to POST an occurrence_media item to create.
    */
   public function occurrenceMediaPost() {
     $post = file_get_contents('php://input');
@@ -3352,8 +3382,6 @@ SQL;
 
   /**
    * API end-point to PUT to an existing occurrence_medium to update.
-   *
-   * @todo Safety check it's from the correct website.
    */
   public function occurrenceMediaPutId($id) {
     $put = file_get_contents('php://input');
@@ -3369,14 +3397,13 @@ SQL;
   }
 
   /**
-   * API end-point to DELETE a occurrence_medium.
+   * API end-point to DELETE an occurrence_medium item.
    *
-   * Will only be deleted if the occurrence_medium was created by the current user.
+   * Will only be deleted if the occurrence_medium was created by the current
+   * user.
    *
    * @param int $id
    *   Occurrence medium ID to delete.
-   *
-   * @todo Safety check it's from the correct website.
    */
   public function occurrenceMediaDeleteId($id) {
     if (empty(RestObjects::$clientUserId)) {
@@ -4380,6 +4407,91 @@ SQL;
   }
 
   /**
+   * End-point to GET an list of sample_comments.
+   */
+  public function sampleCommentsGet() {
+    $extraFilterString = $this->getSampleCommentExtraFilter();
+    rest_crud::readList('sample_comment', $extraFilterString, $this->needToFilterToUser());
+  }
+
+  /**
+   * End-point to GET a sample_comment by ID.
+   *
+   * @param int $id
+   *   Sample comment ID.
+   */
+  public function sampleCommentGetId($id) {
+    $extraFilterString = $this->getSampleCommentExtraFilter();
+    rest_crud::read(
+      'sample_comment',
+      $id,
+      $extraFilterString,
+      $this->needToFilterToUser());
+  }
+
+  /**
+   * API end-point to POST an sample_comment to create.
+   */
+  public function sampleCommentsPost() {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    $r = rest_crud::create('sample_comment', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to PUT to an existing sample_comment to update.
+   */
+  public function sampleCommentsPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    // Update only allowed on this website.
+    $preconditions = ['sample.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if ($this->needToFilterToUser()) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    $r = rest_crud::update('sample_comment', $id, $putArray, $preconditions);
+    echo json_encode($r);
+  }
+
+  /**
+   * API end-point to DELETE an sample_comment.
+   *
+   * Will only be deleted if the sample_comment was created by the current
+   * user.
+   *
+   * @param int $id
+   *   Sample comment ID to delete.
+   */
+  public function sampleCommentDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Update only allowed on this website.
+    $preconditions = ['sample.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('sample_comment', $id, $preconditions);
+  }
+
+  private function getSampleCommentExtraFilter() {
+    $extraFilters = [
+      't2.website_id=' . (int) RestObjects::$clientWebsiteId
+    ];
+    // Read disallowed on confidential unless specifically allowed.
+    if (empty($this->resourceOptions['allow_confidential'])) {
+      $extraFilters[] = 't1.confidential=false';
+    }
+    return 'AND ' . implode(' AND ', $extraFilters);
+  }
+
+  /**
    * When creating an attribute, create a termlist if it has terms.
    *
    * @param array $item
@@ -4722,6 +4834,91 @@ SQL;
     $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('occurrence_attributes_websites', $id);
     rest_crud::delete('occurrence_attributes_website', $id);
+  }
+
+  /**
+   * End-point to GET an list of occurrence_comments.
+   */
+  public function occurrenceCommentsGet() {
+    $extraFilterString = $this->getOccurrenceCommentExtraFilter();
+    rest_crud::readList('occurrence_comment', $extraFilterString, $this->needToFilterToUser());
+  }
+
+  /**
+   * End-point to GET a occurrence_comment by ID.
+   *
+   * @param int $id
+   *   Occurrence comment ID.
+   */
+  public function occurrenceCommentGetId($id) {
+    $extraFilterString = $this->getOccurrenceCommentExtraFilter();
+    rest_crud::read(
+      'occurrence_comment',
+      $id,
+      $extraFilterString,
+      $this->needToFilterToUser());
+  }
+
+  /**
+   * API end-point to POST an occurrence_comment to create.
+   */
+  public function occurrenceCommentsPost() {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    $r = rest_crud::create('occurrence_comment', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to PUT to an existing occurrence_comment to update.
+   */
+  public function occurrenceCommentsPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    // Update only allowed on this website.
+    $preconditions = ['occurrence.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if ($this->needToFilterToUser()) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    $r = rest_crud::update('occurrence_comment', $id, $putArray, $preconditions);
+    echo json_encode($r);
+  }
+
+  /**
+   * API end-point to DELETE an occurrence_comment.
+   *
+   * Will only be deleted if the occurrence_comment was created by the current
+   * user.
+   *
+   * @param int $id
+   *   Occurrence comment ID to delete.
+   */
+  public function occurrenceCommentDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Update only allowed on this website.
+    $preconditions = ['occurrence.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    // Delete as long as created by this user.
+    rest_crud::delete('occurrence_comment', $id, $preconditions);
+  }
+
+  private function getOccurrenceCommentExtraFilter() {
+    $extraFilters = [
+      't2.website_id=' . (int) RestObjects::$clientWebsiteId
+    ];
+    // Read disallowed on confidential unless specifically allowed.
+    if (empty($this->resourceOptions['allow_confidential'])) {
+      $extraFilters[] = 't1.confidential=false';
+    }
+    return 'AND ' . implode(' AND ', $extraFilters);
   }
 
   /**

@@ -181,9 +181,11 @@ $lang['resourceOptionInfo'] = 'The %s resource: {{ list }}';
 $lang['resourceOptionInfo-entities'] = 'Access to data entities is limited to: {{ list }}';
 $lang['resourceOptionInfo-entities-"locations"'] = 'locations';
 $lang['resourceOptionInfo-entities-"occurrence_attributes"'] = 'occurrence_attributes';
+$lang['resourceOptionInfo-entities-"occurrence_comments"'] = 'occurrence_comments';
 $lang['resourceOptionInfo-entities-"occurrence_media"'] = 'occurrence_media';
 $lang['resourceOptionInfo-entities-"occurrences"'] = 'occurences';
 $lang['resourceOptionInfo-entities-"sample_attributes"'] = 'sample_attributes';
+$lang['resourceOptionInfo-entities-"sample_comments"'] = 'sample_comments';
 $lang['resourceOptionInfo-entities-"sample_media"'] = 'sample_media';
 $lang['resourceOptionInfo-entities-"samples"'] = 'samples';
 $lang['resourceOptionInfo-entities-"surveys"'] = 'surveys';
@@ -466,6 +468,21 @@ Deletes a single occurrence custom attribute. User must have editor permissions 
 attribute is associated with and the attribute must have no values already stored for it in the
 database.
 TXT;
+$lang['resources']['occurrence-comments'] = <<<TXT
+Provides access to comments attached to occurrences after initial submission.
+TXT;
+$lang['resources']['GET occurrence-comments'] = <<<TXT
+Retrieve list of comments attached to any records belonging to the user.
+TXT;
+$lang['resources']['GET occurrence-comments/{id}'] = <<<TXT
+Retrieve details of a single comment attached to a records belonging to the user.
+TXT;
+$lang['resources']['POST occurrence-comment'] = "Create a single occurrence comment belonging to the user, for an existing occurrence.";
+$lang['resources']['PUT occurrence-comment/{id}'] = <<<TXT
+Updates a single occurrence comment record either created by the user, or any occurrence comment record
+belonging to the website if the user has site editor or admin access to the website.
+TXT;
+$lang['resources']['DELETE occurrence-comment/{id}'] = "Deletes a single occurrence comment record belonging to the user.";
 $lang['resources']['occurrence-media'] = "Provides access to photos and other media attached to occurrences.";
 $lang['resources']['GET occurrence-media'] = <<<TXT
 Retrieve list of a user's occurrence media. In addition to the database fields, the response values
@@ -478,7 +495,7 @@ Retrieve details of an occurrence media item. Users are allowed to access detail
 they created; users with site editor or admin rights to the authenticated website are allowed to
 access details of any media belonging to the website.
 TXT;
-$lang['resources']['POST occurrence-media'] = "Create a single occurrence media record belonging to the user, for an existing occurrence.";
+$lang['resources']['POST occurrence-media'] = "Create a single occurrence media item belonging to the user, for an existing occurrence.";
 $lang['resources']['PUT occurrence-media/{id}'] = <<<TXT
 Updates a single occurrence media record either belonging to the user, or any occurrence media
 record belonging to the website if the user has site editor or admin access to the website.
@@ -623,6 +640,21 @@ Deletes a single sample custom attribute. User must have editor permissions to t
 attribute is associated with and the attribute must have no values already stored for it in the
 database.
 TXT;
+$lang['resources']['sample-comments'] = <<<TXT
+Provides access to comments attached to samples after initial submission.
+TXT;
+$lang['resources']['GET sample-comments'] = <<<TXT
+Retrieve list of comments attached to any records belonging to the user.
+TXT;
+$lang['resources']['GET sample-comments/{id}'] = <<<TXT
+Retrieve details of a single comment attached to a records belonging to the user.
+TXT;
+$lang['resources']['POST sample-comment'] = "Create a single sample comment belonging to the user, for an existing sample.";
+$lang['resources']['PUT sample-comment/{id}'] = <<<TXT
+Updates a single sample comment record either created by the user, or any sample comment record
+belonging to the website if the user has site editor or admin access to the website.
+TXT;
+$lang['resources']['DELETE sample-comment/{id}'] = "Deletes a single sample comment record belonging to the user.";
 $lang['resources']['sample-media'] = <<<TXT
 Provides access to photos and other media associated with samples.
 TXT;
@@ -637,7 +669,7 @@ Retrieve details of a sample media item. Users are allowed to access details of 
 created; users with site editor or admin rights to the authenticated website are allowed to access
 details of any media belonging to the website.
 TXT;
-$lang['resources']['POST sample-media'] = "Create a single sample media belonging to the user, for an existing sample.";
+$lang['resources']['POST sample-media'] = "Create a single sample media item belonging to the user, for an existing sample.";
 $lang['resources']['PUT sample-media/{id}'] = <<<TXT
 Updates a single sample media record either created by the user, or any sample media record
 belonging to the website if the user has site editor or admin access to the website.

@@ -2053,6 +2053,64 @@ SQL;
     ]);
   }
 
+  private function getSampleCommentExampleData() {
+    return [
+      'sample_id' => 1,
+      'comment' => 'A test comment for a sample.',
+      'person_name' => 'Foo bar',
+    ];
+  }
+
+  /**
+   * Test /sample_comments PUT behaviour.
+   */
+  public function sample_comments() {
+    $this->putTest('sample_comments', $this->getSampleCommentExampleData(), [
+      'comment' => 'Test sample comment updated',
+    ]);
+  }
+
+  /**
+   * A basic test of /sample_comments GET.
+   *
+   * @todo Need to test that you can GET comments belonging to other users for your own records.
+   */
+  public function testJwtSampleCommentGet() {
+    $this->getTest('sample_comments', $this->getSampleCommentExampleData());
+  }
+
+  /**
+   * A basic test of /sample_comments GET.
+   *
+   * @todo Need to test that you can GET comments belonging to other users for your own records.
+   */
+  public function testJwtSampleCommentGetList() {
+    $this->getListTest('sample_comments',  $this->getSampleCommentExampleData());
+  }
+
+  /**
+   * Test DELETE for an sample_comment.
+   *
+   * @todo Need to test that you can DELETE comments belonging to other users for your own records.
+   */
+  public function testJwtSampleCommentDelete() {
+    $this->deleteTest('sample_comments', $this->getSampleCommentExampleData());
+  }
+
+  /**
+   * Testing fetching OPTIONS for sample_comments end-point.
+   */
+  public function testJwtSampleCommentOptions() {
+    $this->optionsTest('sample_comments');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtSampleCommentETags() {
+    $this->eTagsTest('sample_comments', $this->getSampleCommentExampleData());
+  }
+
   public function testJwtOccurrenceAttributePost() {
     $this->postTest('occurrence_attributes', [
       'caption' => 'Test occurrence attribute',
@@ -2117,6 +2175,64 @@ SQL;
       'caption' => 'Test occurrence attribute',
       'data_type' => 'T',
     ]);
+  }
+
+  private function getOccurrenceCommentExampleData() {
+    return [
+      'occurrence_id' => 1,
+      'comment' => 'A test comment.',
+      'person_name' => 'Foo bar',
+    ];
+  }
+
+  /**
+   * Test /occurrence_comments PUT behaviour.
+   */
+  public function testJwtOccurrenceCommentPut() {
+    $this->putTest('occurrence_comments', $this->getOccurrenceCommentExampleData(), [
+      'comment' => 'Test occurrence comment updated',
+    ]);
+  }
+
+  /**
+   * A basic test of /occurrence_comments GET.
+   *
+   * @todo Need to test that you can GET comments belonging to other users for your own records.
+   */
+  public function testJwtOccurrenceCommentGet() {
+    $this->getTest('occurrence_comments', $this->getOccurrenceCommentExampleData());
+  }
+
+  /**
+   * A basic test of /occurrence_comments GET.
+   *
+   * @todo Need to test that you can GET comments belonging to other users for your own records.
+   */
+  public function testJwtOccurrenceCommentGetList() {
+    $this->getListTest('occurrence_comments',  $this->getOccurrenceCommentExampleData());
+  }
+
+  /**
+   * Test DELETE for an occurrence_comment.
+   *
+   * @todo Need to test that you can not DELETE comments belonging to other users for your own records.
+   */
+  public function testJwtOccurrenceCommentDelete() {
+    $this->deleteTest('occurrence_comments', $this->getOccurrenceCommentExampleData());
+  }
+
+  /**
+   * Testing fetching OPTIONS for occurrence_comments end-point.
+   */
+  public function testJwtOccurrenceCommentOptions() {
+    $this->optionsTest('occurrence_comments');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtOccurrenceCommentETags() {
+    $this->eTagsTest('occurrence_comments', $this->getOccurrenceCommentExampleData());
   }
 
   /**
