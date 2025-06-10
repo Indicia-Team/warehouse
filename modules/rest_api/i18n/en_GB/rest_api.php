@@ -169,21 +169,23 @@ To use JWT to authenticate, you need to:<ul>
 HTML;
 $lang['jwtUserHelpHeader'] = 'Set the authorisation header to "Bearer <JWT token>"';
 $lang['genericHelpHeader'] = 'Specify an authorisation header with a list of token name/value pairs, using colons as a ' .
-      'separator, for example <em>TOKEN1:value1:TOKEN2:value2</em>.';
+  'separator, for example <em>TOKEN1:value1:TOKEN2:value2</em>.';
 $lang['genericHelpUrl'] = 'Add the tokens to the URL as parameters, using lowercase token names';
 $lang['authMethodsHelpHeader'] = 'Provide the authentication tokens using one of the following methods:';
 $lang['allowAuthTokensInUrl'] = 'Tokens required for authorisation can be passed in the URL as query parameters or in ' .
-        'the Authorization header of the request.';
+  'the Authorization header of the request.';
 $lang['dontAllowAuthTokensInUrl'] = 'Tokens required for authorisation must be passed in the Authorization header of ' .
-        'the request.';
+  'the request.';
 $lang['onlyAllowHttps'] = 'This authentication method requires you to access the web service via https';
 $lang['resourceOptionInfo'] = 'The %s resource: {{ list }}';
 $lang['resourceOptionInfo-entities'] = 'Access to data entities is limited to: {{ list }}';
 $lang['resourceOptionInfo-entities-"locations"'] = 'locations';
 $lang['resourceOptionInfo-entities-"occurrence_attributes"'] = 'occurrence_attributes';
+$lang['resourceOptionInfo-entities-"occurrence_comments"'] = 'occurrence_comments';
 $lang['resourceOptionInfo-entities-"occurrence_media"'] = 'occurrence_media';
 $lang['resourceOptionInfo-entities-"occurrences"'] = 'occurences';
 $lang['resourceOptionInfo-entities-"sample_attributes"'] = 'sample_attributes';
+$lang['resourceOptionInfo-entities-"sample_comments"'] = 'sample_comments';
 $lang['resourceOptionInfo-entities-"sample_media"'] = 'sample_media';
 $lang['resourceOptionInfo-entities-"samples"'] = 'samples';
 $lang['resourceOptionInfo-entities-"surveys"'] = 'surveys';
@@ -197,7 +199,7 @@ $lang['resourceOptionInfo-reports-cached-false'] = 'returns live, uncached data'
 $lang['resourceOptionInfo-reports-limit_to_own_data-true'] = 'is limited to data entered by you';
 $lang['resourceOptionInfo-reports-limit_to_own_data-false'] = 'returns data entered by any user';
 $lang['format_param_help'] = 'Request a response in this format, either html or json (default). You can also set the ' .
-        'response format using the Accept http header, setting it to text/html or application/json as required.';
+  'response format using the Accept http header, setting it to text/html or application/json as required.';
 
 // Help text for each end-point/method combination.
 $lang['resources'] = [];
@@ -466,6 +468,113 @@ Deletes a single occurrence custom attribute. User must have editor permissions 
 attribute is associated with and the attribute must have no values already stored for it in the
 database.
 TXT;
+$lang['resources']['occurrence-comments'] = <<<TXT
+Provides access to comments attached to occurrences after initial submission.
+TXT;
+$lang['resources']['GET occurrence-comments'] = <<<TXT
+Retrieve list of comments attached to any records belonging to the user. In typical usage, specify a parameter
+called occurrence_id to return a list of comments for a single record. Example:
+<code><pre>
+GET /index.php/services/rest/occurrence-comments?occurrence_id=234
+</code>
+Response:
+<code>
+200 OK
+[
+  {
+    "values": {
+      "id": "1",
+      "occurrence_id": "234",
+      "comment": "Occurrence comment for testing",
+      "person_name": null,
+      "auto_generated": "f",
+      "generated_by": null,
+      "implies_manual_check_required": "f",
+      "query": "f",
+      "record_status": null,
+      "record_substatus": null,
+      "external_key": null,
+      "reply_to_id": null,
+      "redet_taxa_taxon_list_id": null,
+      "created_on": "2016-07-22T16:00:00+00:00",
+      "created_by_id": "1",
+      "updated_on": "2016-07-22T16:00:00+00:00",
+      "updated_by_id": "1",
+      "website_id": "1"
+    }
+  },
+  {
+    "values": {
+      "id": "2",
+      "occurrence_id": "234",
+      "comment": "A test comment.",
+      "person_name": "Foo bar",
+      "auto_generated": "f",
+      "generated_by": null,
+      "implies_manual_check_required": "f",
+      "query": "f",
+      "record_status": null,
+      "record_substatus": null,
+      "external_key": null,
+      "reply_to_id": null,
+      "redet_taxa_taxon_list_id": null,
+      "created_on": "2025-06-10T10:35:32+00:00",
+      "created_by_id": "1",
+      "updated_on": "2025-06-10T10:35:32+00:00",
+      "updated_by_id": "1",
+      "website_id": "1"
+    }
+  }
+]
+</code></pre>
+TXT;
+$lang['resources']['GET occurrence-comments/{id}'] = <<<TXT
+Retrieve details of a single comment attached to a records belonging to the user.
+TXT;
+$lang['resources']['POST occurrence-comments'] = <<<TXT
+Create a single occurrence comment belonging to the user, for an existing occurrence. Example:
+<pre><code>
+POST /index.php/services/rest/occurrence-comments
+{
+  "values": {
+    "occurrence_id": 1,
+    "comment": "A test comment for an occurrence."
+  }
+}
+</code>
+Response:
+<code>
+HTTP 201 Created
+{
+  "values": {
+    "id": "123",
+    "created_on": "2025-06-10T10:56:02+00:00",
+    "updated_on": "2025-06-10T10:56:02+00:00"
+  },
+  "href": "http:\/\/warehousetest.test\/index.php\/services\/rest\/occurrence_comments\/123"
+}
+</code>
+</pre>
+TXT;
+$lang['resources']['PUT occurrence-comments/{id}'] = <<<TXT
+Updates a single occurrence comment record either created by the user, or any occurrence comment record
+belonging to the website if the user has site editor or admin access to the website.
+TXT;
+$lang['resources']['DELETE occurrence-comment/{id}'] = <<<TXT
+Deletes a single occurrence comment record belonging to the user. Example:
+<code><pre>
+DELETE /index.php/services/rest/occurrence-comments/123
+
+Response:
+204 No Content
+</pre></code>
+
+Alternative responses:
+<ul>
+  <li>HTTP 404 Not Found response is returned if the comment does not exist .</li>
+  <li>HTTP 403 Forbidden response is returned if the comment does not belong to the user.</li>
+</ul>
+TXT;
 $lang['resources']['occurrence-media'] = "Provides access to photos and other media attached to occurrences.";
 $lang['resources']['GET occurrence-media'] = <<<TXT
 Retrieve list of a user's occurrence media. In addition to the database fields, the response values
@@ -478,7 +587,7 @@ Retrieve details of an occurrence media item. Users are allowed to access detail
 they created; users with site editor or admin rights to the authenticated website are allowed to
 access details of any media belonging to the website.
 TXT;
-$lang['resources']['POST occurrence-media'] = "Create a single occurrence media record belonging to the user, for an existing occurrence.";
+$lang['resources']['POST occurrence-media'] = "Create a single occurrence media item belonging to the user, for an existing occurrence.";
 $lang['resources']['PUT occurrence-media/{id}'] = <<<TXT
 Updates a single occurrence media record either belonging to the user, or any occurrence media
 record belonging to the website if the user has site editor or admin access to the website.
@@ -623,6 +732,87 @@ Deletes a single sample custom attribute. User must have editor permissions to t
 attribute is associated with and the attribute must have no values already stored for it in the
 database.
 TXT;
+$lang['resources']['sample-comments'] = <<<TXT
+Provides access to comments attached to samples after initial submission.
+TXT;
+$lang['resources']['GET sample-comments'] = <<<TXT
+Retrieve list of comments attached to any records belonging to the user. In typical usage, specify a parameter called
+sample_id to retrieve the comments for a single sample. Example:
+<code><pre>
+GET /index.php/services/rest/sample-comments?sample_id=567
+</code>
+Response:
+<code>
+200 OK
+[
+  {
+    "values": {
+      "id": "45",
+      "sample_id": "567",
+      "comment": "A test comment for a sample.",
+      "person_name": "Foo bar",
+      "query": "f",
+      "record_status": null,
+      "external_key": null,
+      "reply_to_id": null,
+      "created_on": "2025-06-10T10:37:47+00:00",
+      "created_by_id": "1",
+      "updated_on": "2025-06-10T10:37:47+00:00",
+      "updated_by_id": "1",
+      "website_id": "1"
+    }
+  }
+]
+</code></pre>
+TXT;
+$lang['resources']['GET sample-comments/{id}'] = <<<TXT
+Retrieve details of a single comment attached to a records belonging to the user.
+TXT;
+$lang['resources']['POST sample-comments'] = <<<TXT
+Create a single sample comment belonging to the user, for an existing sample. Example:
+<pre><code>
+POST /index.php/services/rest/sample-comments
+{
+  "values": {
+    "sample_id": 1,
+    "comment": "A test comment for a sample."
+  }
+}
+</code>
+Response:
+<code>
+HTTP 201 Created
+{
+  "values": {
+    "id": "123",
+    "created_on": "2025-06-10T10:56:02+00:00",
+    "updated_on": "2025-06-10T10:56:02+00:00"
+  },
+  "href": "http:\/\/warehousetest.test\/index.php\/services\/rest\/sample_comments\/123"
+}
+</code>
+</pre>
+
+TXT;
+$lang['resources']['PUT sample-comments/{id}'] = <<<TXT
+Updates a single sample comment record either created by the user, or any sample comment record
+belonging to the website if the user has site editor or admin access to the website.
+TXT;
+$lang['resources']['DELETE sample-comments/{id}'] = <<<TXT
+Deletes a single sample comment record belonging to the user. Example:
+<code><pre>
+DELETE /index.php/services/rest/sample-comments/123
+
+Response:
+204 No Content
+</pre></code>
+
+Alternative responses:
+<ul>
+  <li>HTTP 404 Not Found response is returned if the comment does not exist .</li>
+  <li>HTTP 403 Forbidden response is returned if the comment does not belong to the user.</li>
+</ul>
+TXT;
 $lang['resources']['sample-media'] = <<<TXT
 Provides access to photos and other media associated with samples.
 TXT;
@@ -637,7 +827,7 @@ Retrieve details of a sample media item. Users are allowed to access details of 
 created; users with site editor or admin rights to the authenticated website are allowed to access
 details of any media belonging to the website.
 TXT;
-$lang['resources']['POST sample-media'] = "Create a single sample media belonging to the user, for an existing sample.";
+$lang['resources']['POST sample-media'] = "Create a single sample media item belonging to the user, for an existing sample.";
 $lang['resources']['PUT sample-media/{id}'] = <<<TXT
 Updates a single sample media record either created by the user, or any sample media record
 belonging to the website if the user has site editor or admin access to the website.
