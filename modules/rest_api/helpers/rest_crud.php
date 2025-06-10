@@ -275,7 +275,17 @@ SQL,
     $paramDefs = self::getParamDefs($entity);
     $fields = self::getSqlFields($entity);
     $joins = self::getSqlJoins($entity);
-    $createdByFilter = $userFilter ? 'AND t1.created_by_id=' . RestObjects::$clientUserId : '';
+    $filters = [];
+    if ($extraFilter) {
+      $filters[] = $extraFilter;
+    }
+    if ($userFilter) {
+      $filters[] = 't1.created_by_id=' . RestObjects::$clientUserId;
+    }
+    if (self::$entityConfig[$entity]->excludeDeleted ?? TRUE) {
+      $filters[] = 't1.deleted=false';
+    }
+    $filtersStr = implode(' AND ', $filters);
     if (!empty($_GET)) {
       // Apply query string parameters.
       foreach ($_GET as $param => $value) {
@@ -291,10 +301,7 @@ SQL,
       SELECT t1.xmin, $fields
       FROM $table t1
       $joins
-      WHERE t1.deleted=false
-      $createdByFilter
-      $extraFilter
-
+      WHERE $filtersStr
     SQL;
     $sql = str_replace('{user_id}', RestObjects::$clientUserId ?? 0, $sql);
     return $sql;
@@ -596,7 +603,7 @@ SQL;
    *   True if the operation can proceed.
    */
   private static function crudProceedCheck($obj, $preconditions, $create = FALSE) {
-    $proceed = ($create || !empty($obj->id)) && $obj->deleted !== 't';
+    $proceed = ($create || !empty($obj->id)) && (!isset($obj->deleted) || $obj->deleted !== 't');
     if ($proceed) {
       foreach ($preconditions as $field => $value) {
         if (strpos($field, '.') === FALSE) {
