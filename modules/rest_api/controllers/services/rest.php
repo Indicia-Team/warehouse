@@ -4420,7 +4420,7 @@ SQL;
    * @param int $id
    *   Sample comment ID.
    */
-  public function sampleCommentGetId($id) {
+  public function sampleCommentsGetId($id) {
     $extraFilterString = $this->getSampleCommentExtraFilter();
     rest_crud::read(
       'sample_comment',
@@ -4448,7 +4448,7 @@ SQL;
     $put = file_get_contents('php://input');
     $putArray = json_decode($put, TRUE);
     // Update only allowed on this website.
-    $preconditions = ['sample.website_id' => RestObjects::$clientWebsiteId];
+    $preconditions = ['sample.survey.website_id' => RestObjects::$clientWebsiteId];
     // Also limit to user's own data unless site admin or editor.
     if ($this->needToFilterToUser()) {
       $preconditions['created_by_id'] = RestObjects::$clientUserId;
@@ -4466,12 +4466,12 @@ SQL;
    * @param int $id
    *   Sample comment ID to delete.
    */
-  public function sampleCommentDeleteId($id) {
+  public function sampleCommentsDeleteId($id) {
     if (empty(RestObjects::$clientUserId)) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
     }
     // Update only allowed on this website.
-    $preconditions = ['sample.website_id' => RestObjects::$clientWebsiteId];
+    $preconditions = ['sample.survey.website_id' => RestObjects::$clientWebsiteId];
     // Also limit to user's own data unless site admin or editor.
     if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
       $preconditions['created_by_id'] = RestObjects::$clientUserId;
@@ -4481,14 +4481,7 @@ SQL;
   }
 
   private function getSampleCommentExtraFilter() {
-    $extraFilters = [
-      't2.website_id=' . (int) RestObjects::$clientWebsiteId
-    ];
-    // Read disallowed on confidential unless specifically allowed.
-    if (empty($this->resourceOptions['allow_confidential'])) {
-      $extraFilters[] = 't1.confidential=false';
-    }
-    return 'AND ' . implode(' AND ', $extraFilters);
+    return 'AND t3.website_id=' . (int) RestObjects::$clientWebsiteId;
   }
 
   /**
@@ -4850,7 +4843,7 @@ SQL;
    * @param int $id
    *   Occurrence comment ID.
    */
-  public function occurrenceCommentGetId($id) {
+  public function occurrenceCommentsGetId($id) {
     $extraFilterString = $this->getOccurrenceCommentExtraFilter();
     rest_crud::read(
       'occurrence_comment',
@@ -4896,7 +4889,7 @@ SQL;
    * @param int $id
    *   Occurrence comment ID to delete.
    */
-  public function occurrenceCommentDeleteId($id) {
+  public function occurrenceCommentsDeleteId($id) {
     if (empty(RestObjects::$clientUserId)) {
       RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
     }
