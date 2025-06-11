@@ -285,23 +285,24 @@ SQL,
     if (self::$entityConfig[$entity]->excludeDeleted ?? TRUE) {
       $filters[] = 't1.deleted=false';
     }
-    $filtersStr = implode(' AND ', $filters);
     if (!empty($_GET)) {
       // Apply query string parameters.
       foreach ($_GET as $param => $value) {
         if (isset(self::$fieldDefs[$param])) {
-          $extraFilter .= self::addExtraFilter(self::$fieldDefs[$param], $param, $value);
+          $filters[] = self::getQueryFilter(self::$fieldDefs[$param], $param, $value);
         }
         if (isset($paramDefs[$param])) {
-          $extraFilter .= self::addExtraFilter($paramDefs[$param], $param, $value);
+          $filters[] = self::getQueryFilter($paramDefs[$param], $param, $value);
         }
       }
     }
+    $filtersStr = implode("\nAND ", $filters);
     $sql = <<<SQL
       SELECT t1.xmin, $fields
       FROM $table t1
       $joins
       WHERE $filtersStr
+
     SQL;
     $sql = str_replace('{user_id}', RestObjects::$clientUserId ?? 0, $sql);
     return $sql;
@@ -322,7 +323,7 @@ SQL,
    * @return string
    *   SQL to add to the query WHERE clause.
    */
-  private static function addExtraFilter(array $filterDef, $param, $value) {
+  private static function getQueryFilter(array $filterDef, $param, $value) {
     if (in_array($filterDef['type'], [
       'string',
       'date',
@@ -345,10 +346,10 @@ SQL,
       RestObjects::$apiResponse->fail('Internal Server Error', 400, "Unsupported field type for $param");
     }
     if (isset($filterDef['filter_sql'])) {
-      return "\nAND " . str_replace('{value}', $value, $filterDef['filter_sql']);
+      return str_replace('{value}', $value, $filterDef['filter_sql']);
     }
     else {
-      return "\nAND " . $filterDef['sql'] . "=$value";
+      return $filterDef['sql'] . "=$value";
     }
   }
 
