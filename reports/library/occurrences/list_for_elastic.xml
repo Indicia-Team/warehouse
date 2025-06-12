@@ -102,7 +102,7 @@
 
     UPDATE output_rows o
     SET verifier_comment=oc.comment
-    FROM occurrences_comments oc
+    FROM occurrence_comments oc
     WHERE oc.occurrence_id=o.id
     AND oc.deleted=false
     AND oc.created_on&gt;=o.verified_on
