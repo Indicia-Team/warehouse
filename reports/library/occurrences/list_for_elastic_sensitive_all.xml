@@ -93,10 +93,10 @@
     FROM occurrence_comments oc
     WHERE oc.occurrence_id=o.id
     AND oc.deleted=false
-    AND oc.created_on&gt;=o.verified_on
+    AND oc.created_on&gt;=o.verified_on::timestamp
     AND oc.record_status IS NOT NULL
     AND oc.record_status=o.record_status
-    AND COALESCE(oc.record_substatus, '')=COALESCE(o.record_substatus, '');
+    AND COALESCE(oc.record_substatus, 0)=COALESCE(o.record_substatus, 0);
 
     SELECT *
     FROM output_rows o
