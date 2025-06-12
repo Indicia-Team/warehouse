@@ -90,6 +90,16 @@
     JOIN occurrence_media m ON m.id=crom.occurrence_media_id AND m.deleted=false
     WHERE m.occurrence_id=o.id;
 
+    UPDATE output_rows o
+    SET verifier_comment=oc.comment
+    FROM occurrences_comments oc
+    WHERE oc.occurrence_id=o.id
+    AND oc.deleted=false
+    AND oc.created_on&gt;=o.verified_on
+    AND oc.record_status IS NOT NULL
+    AND oc.record_status=o.record_status
+    AND COALESCE(oc.record_substatus, '')=COALESCE(o.record_substatus, '');
+
     SELECT *
     FROM output_rows o
     #order_by#
@@ -208,6 +218,7 @@
     <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
+    <column name="verifier_comment" sql="null::text" datatype="text" />
     <column name="licence_code" sql="onf.licence_code" datatype="text" />
     <column name="attr_behaviour" sql="onf.attr_behaviour" datatype="text" />
     <column name="attr_reproductive_condition" sql="onf.attr_reproductive_condition" datatype="text" />
