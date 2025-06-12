@@ -4,6 +4,16 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.12.0
+*2025-06-12*
+
+### Changes
+
+* Adds the comment given at the time of a verification decision to the fields output for
+  indexing in Elasticsearch. See https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/docs/occurrences.md
+  for information on the additional mapping required on the `verifier_comment` field.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1873.
+
 ## Version 9.11.0
 *2025-05-28*
 
