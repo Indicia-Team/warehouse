@@ -249,6 +249,9 @@ class data_utils {
       ->join('people as p', 'p.id', 'u.person_id')
       ->where('u.id', $userId)
       ->get()->result_array(FALSE);
+    if (count($qryVerifiers) === 0) {
+      throw new exception("Attempt to verify using an invalid user ID: $userId");
+    }
     return $qryVerifiers[0]['surname'] . ', ' . $qryVerifiers[0]['first_name'];
   }
 
