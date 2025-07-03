@@ -196,7 +196,9 @@
     <column name="input_sref" sql="COALESCE(snf.public_entered_sref, onf.output_sref)" datatype="text" />
     <column name="input_sref_system" sql="CASE WHEN snf.public_entered_sref IS NULL THEN onf.output_sref_system ELSE snf.entered_sref_system END" datatype="text" />
     <column name="output_sref" sql="onf.output_sref" datatype="text" />
+    <column name="output_sref_blurred" sql="onf.output_sref" datatype="text" />
     <column name="output_sref_system" sql="onf.output_sref_system" datatype="text" />
+    <column name="output_sref_system_blurred" sql="onf.output_sref_system" datatype="text" />
     <column name="coordinate_uncertainty_in_meters"
               sql="CASE
       WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN

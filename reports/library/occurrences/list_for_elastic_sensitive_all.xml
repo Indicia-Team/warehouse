@@ -190,9 +190,11 @@
       ),
       coalesce(smp.geom, l.centroid_geom)
     )" datatype="text" />
+    <column name="output_sref_blurred" sql="onf.output_sref" datatype="text" />
     <column name="output_sref_system" sql="get_output_system(
       coalesce(smp.geom, l.centroid_geom)
     )" datatype="text" />
+    <column name="output_sref_system_blurred" sql="onf.output_sref_system" datatype="text" />
     <column name="coordinate_uncertainty_in_meters"
               sql="CASE
       WHEN snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN

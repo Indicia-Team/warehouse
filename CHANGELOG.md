@@ -4,6 +4,31 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.13.0
+*2025-07-02*
+
+### Action required
+
+* If using Elasticsearch, update your Logstash configuration files to ensure that the new `output_sref_blurred` fields
+  are located correctly in the documents as described in the first point under **Changes** below.
+
+### Changes
+
+* Elasticsearch extraction reports now contain additional fields `output_sref_blurred` and `output_sref_system_blurred`
+  which hold the blurred version of any sensitive record's map reference, even if viewing the full precision version of
+  the record. These fields can be used to access a "safe" version of the spatial reference even when viewing a full
+  precision record copy.
+  If using Logstash to populate Elasticsearch, then please ensure that updates to the template for the fields
+  `output_sref_blurred` and `output_sref_system_blurred` in the `mutate` section are applied before upgrading
+  (see https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/logstash-config/occurrences-http-indicia.template
+  and https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/logstash-config/samples-http-indicia.template).
+* The standard download format for Elasticsearch records (easy-download) now blurs the "Output map ref" field for sensitive
+  records but includes a "Sensitive output map ref" field which is only populated for sensitive records if the user has
+  access to the full-precision copy (e.g. a verifier). See https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
+* The simple download format for Elasticsearch records (mapmate) now blurs the "Gridref" field for sensitive
+  records but includes a "Sensitive gridref" field which is only populated for sensitive records if the user has access to
+  the full-precision copy (e.g. a verifier). See https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
+
 ## Version 9.12.0
 *2025-06-12*
 

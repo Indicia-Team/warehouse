@@ -152,8 +152,24 @@
     END" datatype="text" />
     <column name="input_sref" sql="snf.public_entered_sref" datatype="text" />
     <column name="input_sref_system" sql="snf.entered_sref_system" datatype="text" />
-    <column name="output_sref" sql="snf.output_sref" datatype="text" />
-    <column name="output_sref_system" sql="snf.output_sref_system" datatype="text" />
+    <column name="output_sref" sql="get_output_sref(
+      greatest(
+        round(sqrt(st_area(st_transform(smp.geom, sref_system_to_srid(smp.entered_sref_system)))))::integer,
+        case
+          when snf.attr_sref_precision>=501 then 10000
+          when snf.attr_sref_precision between 51 and 500 then 1000
+          when snf.attr_sref_precision between 6 and 50 then 100
+          else 10
+        end,
+        10
+      ),
+      coalesce(smp.geom, l.centroid_geom)
+    )" datatype="text" />
+    <column name="output_sref_blurred" sql="snf.output_sref" datatype="text" />
+    <column name="output_sref_system" sql="get_output_system(
+      coalesce(smp.geom, l.centroid_geom)
+    )" datatype="text" />
+    <column name="output_sref_system_blurred" sql="snf.output_sref_system" datatype="text" />
     <column name="coordinate_uncertainty_in_meters"
               sql="CASE
       WHEN s.sensitive OR s.private OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
