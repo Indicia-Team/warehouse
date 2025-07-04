@@ -4,7 +4,7 @@
     featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
-         standard_params="occurrences" count_field="o.*">
+         count_field="o.*">
   SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
@@ -14,7 +14,10 @@
   #agreements_join#
   #joins#
   WHERE #sharing_filter#
+  AND (o.website_id in (#website_ids#) OR o.created_by_id=1 OR o.blocked_sharing_tasks IS NULL OR NOT o.blocked_sharing_tasks @&gt; ARRAY['R'::character ])
   AND (o.sample_id=#sample_id# or o.parent_sample_id=#sample_id#)
+  AND (#allow_confidential# = 1 OR (o.confidential = false AND o.hide_sample_as_private = false))
+  AND (#allow_unreleased# = 1 OR o.release_status = 'R')
   #idlist#
   </query>
   <order_bys>
@@ -24,6 +27,10 @@
     <param name="occattrs" display="Occurrence attribute list" datatype="occattrs" default=""
            description="Comma separated list of occurrence attribute IDs to include as columns in the report" />
     <param name="sample_id" datatype="integer" />
+    <param name="allow_confidential" datatype="boolean" default="0"
+        description="Allow viewing of confidential records" />
+    <param name="allow_unreleased" datatype="boolean" default="0"
+        description="Allow viewing of unreleased records" />
     <param name="default_input_form" display="Default input form" default=""
            description="Input form path to use when no other available. Can be used to generate the path in report_grid action links." />
     <param name="force_default_input_form" display="Force default input form" default="0"

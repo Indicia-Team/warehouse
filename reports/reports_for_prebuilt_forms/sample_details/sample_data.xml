@@ -10,7 +10,7 @@
         snf.recorders, s.date_start, s.date_end, s.date_type, smp.entered_sref,
         snf.attr_sref_precision, s.location_name, snf.comment, smp.geom, 
         s.public_geom, s.created_by_id, s.website_id, s.created_on, s.updated_on,
-        s.input_form, o.confidential, o.release_status, o.sensitive, o.id as occurrence_id,
+        s.input_form, smp.privacy_precision, o.confidential, o.release_status, o.sensitive, o.id as occurrence_id,
         p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end as inputter
       from samples smp
       join cache_samples_functional s on s.id = smp.id
@@ -28,7 +28,7 @@
         snf.recorders, s.date_start, s.date_end, s.date_type, smp.entered_sref,
         snf.attr_sref_precision, s.location_name, snf.comment, smp.geom, 
         s.public_geom, s.created_by_id, s.website_id, s.created_on, s.updated_on,
-        s.input_form, o.confidential, o.release_status, o.sensitive, o.id as occurrence_id,
+        s.input_form, smp.privacy_precision, o.confidential, o.release_status, o.sensitive, o.id as occurrence_id,
         p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end as inputter
       from samples smp
       join cache_samples_functional s on s.id = smp.id
@@ -44,7 +44,19 @@
     #agreements_join#
     #joins#
     where #sharing_filter#
+    AND (#allow_confidential# = 1 OR s.privacy_precision &gt; 0 OR s.privacy_precision IS NULL)
     AND (#allow_unreleased# = 1 OR release_status = 'R' OR occurrence_id IS NULL)
+    AND NOT EXISTS
+    (
+      SELECT s.id
+      FROM samples s
+      JOIN samples s_child
+        ON s_child.parent_id = s.id
+        AND (#allow_confidential# = 0 AND s_child.privacy_precision = 0 AND s_child.privacy_precision IS NOT NULL)
+        AND s_child.deleted=false
+      where s.id = #sample_id#
+      AND s.deleted=false
+    )
     AND NOT EXISTS
     (
       SELECT s.id

@@ -4,20 +4,29 @@
     featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
-         standard_params="occurrences" count_field="o.*">
+         count_field="o.*">
   SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-  WHERE o.website_id in (#website_ids#)
-  AND (o.sample_id=#sample_id# or o.parent_sample_id=#sample_id#)
-  AND o.zero_abundance=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+    AND (o.website_id in (#website_ids#) OR o.created_by_id=1 OR o.blocked_sharing_tasks IS NULL OR NOT o.blocked_sharing_tasks @&gt; ARRAY['R'::character ])
+    AND (o.sample_id=#sample_id# or o.parent_sample_id=#sample_id#)
+    AND (#allow_confidential# = 1 OR (o.confidential = false AND o.hide_sample_as_private = false))
+    AND (#allow_unreleased# = 1 OR o.release_status = 'R')
+    AND o.zero_abundance=false
   </query>
   <order_bys>
     <order_by>cttl.taxon_group, cttl.preferred_taxon</order_by>
   </order_bys>
   <params>
     <param name="sample_id" datatype="integer" />
+    <param name="allow_confidential" datatype="boolean" default="0"
+        description="Allow viewing of confidential records" />
+    <param name="allow_unreleased" datatype="boolean" default="0"
+        description="Allow viewing of unreleased records" />
   </params>
   <columns>
     <column name="external_key" display="Key" datatype="text" sql="cttl.external_key" />
