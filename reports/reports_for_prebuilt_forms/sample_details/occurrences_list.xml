@@ -12,7 +12,6 @@
   LEFT JOIN index_websites_website_agreements canEdit on canEdit.from_website_id=o.website_id
     and canEdit.to_website_id in (#website_ids#) and canEdit.provide_for_editing=true
   #agreements_join#
-  #joins#
   WHERE #sharing_filter#
   AND (o.website_id in (#website_ids#) OR o.created_by_id=1 OR o.blocked_sharing_tasks IS NULL OR NOT o.blocked_sharing_tasks @&gt; ARRAY['R'::character ])
   AND (o.sample_id=#sample_id# or o.parent_sample_id=#sample_id#)

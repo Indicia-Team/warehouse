@@ -10,7 +10,6 @@
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   #agreements_join#
-  #joins#
   WHERE #sharing_filter#
     AND (o.website_id in (#website_ids#) OR o.created_by_id=1 OR o.blocked_sharing_tasks IS NULL OR NOT o.blocked_sharing_tasks @&gt; ARRAY['R'::character ])
     AND (o.sample_id=#sample_id# or o.parent_sample_id=#sample_id#)
