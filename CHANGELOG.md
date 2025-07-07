@@ -4,6 +4,9 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.12.0
+*2025-07-07*
+
 ### Action required
 
 * If using Elasticsearch, update your Logstash configuration files to ensure that the new
