@@ -9,8 +9,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Action required
 
-* If using Elasticsearch, update your Logstash configuration files to ensure that the new `output_sref_blurred` fields
+* If using Elasticsearch, update your Logstash configuration files to ensure that the new
+  `location.output_sref_blurred`, `location.output_sref_system_blurred` and `identification.verifier_comment` fields
   are located correctly in the documents as described in the first point under **Changes** below.
+* If using Elasticsearch, add a mapping to the index for the `identification.verifier_comment` so that it is a `text`
+  field type.
 
 ### Changes
 
@@ -22,22 +25,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `output_sref_blurred` and `output_sref_system_blurred` in the `mutate` section are applied before upgrading
   (see https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/logstash-config/occurrences-http-indicia.template
   and https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/logstash-config/samples-http-indicia.template).
+* Adds the comment given at the time of a verification decision to the fields output for
+  indexing in Elasticsearch. See https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/docs/occurrences.md
+  for information on the additional mapping required on the `identification.verifier_comment` field.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1873. If using Logstash to populate Elasticsearch, then please
+  ensure that updates to the template for the field `identification.verifier_comment` in the `mutate` section is applied before
+  upgrading (see https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/logstash-config/occurrences-http-indicia.template).
 * The standard download format for Elasticsearch records (easy-download) now blurs the "Output map ref" field for sensitive
   records but includes a "Sensitive output map ref" field which is only populated for sensitive records if the user has
   access to the full-precision copy (e.g. a verifier). See https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
 * The simple download format for Elasticsearch records (mapmate) now blurs the "Gridref" field for sensitive
   records but includes a "Sensitive gridref" field which is only populated for sensitive records if the user has access to
   the full-precision copy (e.g. a verifier). See https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
-
-## Version 9.12.0
-*2025-06-12*
-
-### Changes
-
-* Adds the comment given at the time of a verification decision to the fields output for
-  indexing in Elasticsearch. See https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/docs/occurrences.md
-  for information on the additional mapping required on the `verifier_comment` field.
-  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1873.
 
 ## Version 9.11.0
 *2025-05-28*
