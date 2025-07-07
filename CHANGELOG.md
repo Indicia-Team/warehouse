@@ -4,9 +4,6 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Version 9.13.0
-*2025-07-02*
-
 ### Action required
 
 * If using Elasticsearch, update your Logstash configuration files to ensure that the new
@@ -37,6 +34,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 * The simple download format for Elasticsearch records (mapmate) now blurs the "Gridref" field for sensitive
   records but includes a "Sensitive gridref" field which is only populated for sensitive records if the user has access to
   the full-precision copy (e.g. a verifier). See https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
+* The REST API has been updated to allow a GET for a user's notifications, or PUT to acknowledge a notification.
+* The REST API has been updated to allow GET, POST, PUT and DELETE for occurrence_comments.
+* The REST API has been updated to allow GET, POST, PUT and DELETE for sample_comments.
+* Removes some project specific UKBMS reports.
+
+### Bugfixes
+
+* Warehouse log browser now displays HTML characters correctly.
 
 ## Version 9.11.0
 *2025-05-28*
