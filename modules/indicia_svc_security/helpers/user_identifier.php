@@ -248,21 +248,24 @@ class user_identifier {
    *   The Indicia website ID the user is removing their account from.
    */
   public static function delete_user(int $userId, int $websiteId) {
-    $q = new WorkQueue();
-    $db = new Database();
-    // Removal of privileges should be immediate.
-    $db->query("DELETE FROM users_websites WHERE website_id = ? AND user_id = ?", [$websiteId, $userId]);
-    $cache = Cache::instance();
-    $cacheKey = "website-user-$websiteId-$userId";
-    $cache->delete($cacheKey);
-    $q->enqueue($db, [
-      'task' => 'task_indicia_svc_security_delete_user_account',
-      'entity' => 'user',
-      'record_id' => $userId,
-      'params' => json_encode(['website_id' => $websiteId]),
-      'cost_estimate' => 100,
-      'priority' => 3,
-    ]);
+    // No need to do anything if user ID invalid.
+    if ($userId > 0) {
+      $q = new WorkQueue();
+      $db = new Database();
+      // Removal of privileges should be immediate.
+      $db->query("DELETE FROM users_websites WHERE website_id = ? AND user_id = ?", [$websiteId, $userId]);
+      $cache = Cache::instance();
+      $cacheKey = "website-user-$websiteId-$userId";
+      $cache->delete($cacheKey);
+      $q->enqueue($db, [
+        'task' => 'task_indicia_svc_security_delete_user_account',
+        'entity' => 'user',
+        'record_id' => $userId,
+        'params' => json_encode(['website_id' => $websiteId]),
+        'cost_estimate' => 100,
+        'priority' => 3,
+      ]);
+    }
   }
 
   /**

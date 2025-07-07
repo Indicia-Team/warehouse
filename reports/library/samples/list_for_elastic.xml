@@ -165,7 +165,9 @@
     <column name="input_sref" sql="snf.public_entered_sref" datatype="text" />
     <column name="input_sref_system" sql="snf.entered_sref_system" datatype="text" />
     <column name="output_sref" sql="snf.output_sref" datatype="text" />
+    <column name="output_sref_blurred" sql="snf.output_sref" datatype="text" />
     <column name="output_sref_system" sql="snf.output_sref_system" datatype="text" />
+    <column name="output_sref_system_blurred" sql="snf.output_sref_system" datatype="text" />
     <column name="coordinate_uncertainty_in_meters"
               sql="CASE
       WHEN s.sensitive OR s.private OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN

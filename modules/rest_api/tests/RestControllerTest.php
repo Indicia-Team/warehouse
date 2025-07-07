@@ -100,7 +100,6 @@ class RestControllerTest extends BaseRestClientTest {
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 401);
     // Make sure there is invalid public key stored.
-    $db = new Database();
     $db->update(
       'websites',
       ['public_key' => 'INVALID!!!'],
@@ -112,7 +111,6 @@ class RestControllerTest extends BaseRestClientTest {
     $response = $this->callService('reports/library/months/filterable_species_counts.xml');
     $this->assertTrue($response['httpCode'] === 500);
     // Store the public key so Indicia can check signed requests.
-    $db = new Database();
     $db->update(
       'websites',
       ['public_key' => self::$publicKey],
@@ -2053,6 +2051,198 @@ SQL;
     ]);
   }
 
+  private function getSampleCommentExampleData() {
+    return [
+      'sample_id' => 1,
+      'comment' => 'A test comment for a sample.',
+      'person_name' => 'Foo bar',
+    ];
+  }
+
+  /**
+   * Test /sample_comments PUT behaviour.
+   */
+  public function sample_comments() {
+    $this->putTest('sample_comments', $this->getSampleCommentExampleData(), [
+      'comment' => 'Test sample comment updated',
+    ]);
+  }
+
+  /**
+   * A basic test of /sample_comments GET.
+   *
+   * @todo Need to test that you can GET comments belonging to other users for your own records.
+   */
+  public function testJwtSampleCommentGet() {
+    $this->getTest('sample_comments', $this->getSampleCommentExampleData());
+  }
+
+  /**
+   * A basic test of /sample_comments GET.
+   *
+   * @todo Need to test that you can GET comments belonging to other users for your own records.
+   */
+  public function testJwtSampleCommentGetList() {
+    $this->getListTest('sample_comments',  $this->getSampleCommentExampleData());
+  }
+
+  /**
+   * Test /sample_comment POST in isolation.
+   */
+  public function testJwtSampleCommentPost() {
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $values = $this->getSampleCommentExampleData();
+    $values['sample_id'] = $sampleId;
+    $this->postTest('sample_comments', $values, 'comment');
+  }
+
+  /**
+   * Test DELETE for an sample_comment.
+   *
+   * @todo Need to test that you can DELETE comments belonging to other users for your own records.
+   */
+  public function testJwtSampleCommentDelete() {
+    $this->deleteTest('sample_comments', $this->getSampleCommentExampleData());
+  }
+
+  /**
+   * Testing fetching OPTIONS for sample_comments end-point.
+   */
+  public function testJwtSampleCommentOptions() {
+    $this->optionsTest('sample_comments');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtSampleCommentETags() {
+    $this->eTagsTest('sample_comments', $this->getSampleCommentExampleData());
+  }
+
+  /**
+   * A basic test of /notifications GET.
+   */
+  public function testJwtNotificationGet() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService("notifications/1");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertArrayHasKey('values', $response['response']);
+    $this->assertArrayHasKey('id', $response['response']['values']);
+    $this->assertEquals('1', $response['response']['values']['id']);
+    $response = $this->callService("notifications/2");
+    $this->assertEquals(404, $response['httpCode']);
+  }
+
+  /**
+   * A basic test of /notifications GET.
+   */
+  public function testJwtNotificationsGetList() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $response = $this->callService("notifications");
+    $this->assertEquals(200, $response['httpCode']);
+    // There are 2 notifications in the fixture, but only one for this user.
+    $this->assertEquals(1, count($response['response']));
+  }
+
+  /**
+   * Test /notification POST in isolation.
+   *
+   * POST is not supported by the REST API, so this test checks for a 405
+   * Method Not Allowed response.
+   */
+  public function testJwtNotificationPost() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Attempt to delete notification. Should return 405 Method Not Allowed.
+    $response = $this->callService("notifications", FALSE, [
+      'user_id' => 1,
+      'source' => 'Test',
+      'source_type' => 'T',
+      'data' => 'test',
+      'linked_id' => 1,
+    ]);
+    $this->assertEquals(405, $response['httpCode']);
+  }
+
+  /**
+   * Test /occurrence_comments PUT behaviour.
+   */
+  public function testJwtNotificationPut() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $db = new Database();
+    // The PUT method is used to acknowledge a notification. Response should be
+    // 200 OK.
+    $response = $this->callService(
+      "notifications/1",
+      FALSE,
+      ['values' => ['acknowledged' => TRUE]],
+      [], 'PUT'
+    );
+    $this->assertEquals(200, $response['httpCode']);
+    $updatedAcknowledged = $db->query('SELECT acknowledged FROM notifications WHERE id=1')->current()->acknowledged;
+    $this->assertEquals('t', $updatedAcknowledged, 'Notification acknowledged status should have changed.');
+    // A GET request should not return the acknowledged entry.
+    $response = $this->callService("notifications");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals(0, count($response['response']));
+    // A GET request should return the acknowledged entry if requested to do so.
+    $response = $this->callService("notifications?acknowledged=true");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals(1, count($response['response']));
+    $response = $this->callService(
+      "notifications/1",
+      FALSE,
+      ['values' => ['acknowledged' => FALSE]],
+      [], 'PUT'
+    );
+    $this->assertEquals(200, $response['httpCode']);
+    $updatedAcknowledged = $db->query('SELECT acknowledged FROM notifications WHERE id=1')->current()->acknowledged;
+    $this->assertEquals('f', $updatedAcknowledged, 'Notification acknowledged status should have changed.');
+    // Attempt to update another user's notification. Should return 404 Not
+    // Found.
+    $response = $this->callService(
+      "notifications/2",
+      FALSE,
+      ['values' => ['acknowledged' => TRUE]],
+      [], 'PUT'
+    );
+    $this->assertEquals(404, $response['httpCode']);
+    // Attempt to update a field that can't be changed. Should return 400 Bad
+    // Request.
+    $response = $this->callService(
+      "notifications/1",
+      FALSE,
+      ['values' => ['user_id' => 1]],
+      [], 'PUT'
+    );
+    $this->assertEquals(400, $response['httpCode']);
+    // Attempt to update a missing notification should return 404 Not Found.
+    $response = $this->callService(
+      "notifications/12345",
+      FALSE,
+      ['values' => ['acknowledged' => FALSE]],
+      [], 'PUT'
+    );
+    $this->assertEquals(404, $response['httpCode']);
+  }
+
+  /**
+   * Test /notification DELETE in isolation.
+   *
+   * DELETE is not supported by the REST API, so this test checks for a 405
+   * Method Not Allowed response.
+   */
+  public function testJwtNotificationDelete() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Attempt to delete notification. Should return 405 Method Not Allowed.
+    $response = $this->callService("notifications/1", FALSE, NULL, [], 'DELETE');
+    $this->assertEquals(405, $response['httpCode']);
+  }
+
   public function testJwtOccurrenceAttributePost() {
     $this->postTest('occurrence_attributes', [
       'caption' => 'Test occurrence attribute',
@@ -2117,6 +2307,75 @@ SQL;
       'caption' => 'Test occurrence attribute',
       'data_type' => 'T',
     ]);
+  }
+
+  private function getOccurrenceCommentExampleData() {
+    return [
+      'occurrence_id' => 1,
+      'comment' => 'A test comment.',
+      'person_name' => 'Foo bar',
+    ];
+  }
+
+  /**
+   * A basic test of /occurrence_comments GET.
+   *
+   * @todo Need to test that you can GET comments belonging to other users for your own records.
+   */
+  public function testJwtOccurrenceCommentGet() {
+    $this->getTest('occurrence_comments', $this->getOccurrenceCommentExampleData());
+  }
+
+  /**
+   * A basic test of /occurrence_comments GET.
+   *
+   * @todo Need to test that you can GET comments belonging to other users for your own records.
+   */
+  public function testJwtOccurrenceCommentGetList() {
+    $this->getListTest('occurrence_comments',  $this->getOccurrenceCommentExampleData());
+  }
+
+  /**
+   * Test /occurrence_comment POST in isolation.
+   */
+  public function testJwtOccurrenceCommentPost() {
+    $values = $this->getOccurrenceCommentExampleData();
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $values['occurrence_id'] = $occurrenceId;
+    $this->postTest('occurrence_comments', $values, 'comment');
+  }
+
+  /**
+   * Test /occurrence_comments PUT behaviour.
+   */
+  public function testJwtOccurrenceCommentPut() {
+    $this->putTest('occurrence_comments', $this->getOccurrenceCommentExampleData(), [
+      'comment' => 'Test occurrence comment updated',
+    ]);
+  }
+
+
+  /**
+   * Test DELETE for an occurrence_comment.
+   *
+   * @todo Need to test that you can not DELETE comments belonging to other users for your own records.
+   */
+  public function testJwtOccurrenceCommentDelete() {
+    $this->deleteTest('occurrence_comments', $this->getOccurrenceCommentExampleData());
+  }
+
+  /**
+   * Testing fetching OPTIONS for occurrence_comments end-point.
+   */
+  public function testJwtOccurrenceCommentOptions() {
+    $this->optionsTest('occurrence_comments');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtOccurrenceCommentETags() {
+    $this->eTagsTest('occurrence_comments', $this->getOccurrenceCommentExampleData());
   }
 
   /**

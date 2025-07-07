@@ -31,7 +31,7 @@
  * * linkText - optional, override the default text in the link to the page.
  * * extraParams - additional filter parameters (from the standard parameters
  *   list) to supply to the report which detects records to notify for. In this
- *   example, a website is excluded from the verification page.
+ *   example, a website is excluded from the verification page. Optional.
  */
 $config['verification_urls'] = [
   [

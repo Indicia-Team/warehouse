@@ -1,4 +1,4 @@
-# Get the postgres 13 server with postgis 3.1 installed.
+# Get the postgres 17 server with postgis 3.5 installed.
 # See https://registry.hub.docker.com/r/postgis/postgis/tags
 # for other versions available
 FROM postgis/postgis:17-3.5-alpine

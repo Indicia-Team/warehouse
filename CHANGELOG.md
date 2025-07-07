@@ -4,11 +4,51 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### Action required
+
+* If using Elasticsearch, update your Logstash configuration files to ensure that the new
+  `location.output_sref_blurred`, `location.output_sref_system_blurred` and `identification.verifier_comment` fields
+  are located correctly in the documents as described in the first point under **Changes** below.
+* If using Elasticsearch, add a mapping to the index for the `identification.verifier_comment` so that it is a `text`
+  field type.
+
+### Changes
+
+* Elasticsearch extraction reports now contain additional fields `output_sref_blurred` and `output_sref_system_blurred`
+  which hold the blurred version of any sensitive record's map reference, even if viewing the full precision version of
+  the record. These fields can be used to access a "safe" version of the spatial reference even when viewing a full
+  precision record copy.
+  If using Logstash to populate Elasticsearch, then please ensure that updates to the template for the fields
+  `output_sref_blurred` and `output_sref_system_blurred` in the `mutate` section are applied before upgrading
+  (see https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/logstash-config/occurrences-http-indicia.template
+  and https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/logstash-config/samples-http-indicia.template).
+* Adds the comment given at the time of a verification decision to the fields output for
+  indexing in Elasticsearch. See https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/docs/occurrences.md
+  for information on the additional mapping required on the `identification.verifier_comment` field.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1873. If using Logstash to populate Elasticsearch, then please
+  ensure that updates to the template for the field `identification.verifier_comment` in the `mutate` section is applied before
+  upgrading (see https://github.com/Indicia-Team/support_files/blob/master/Elasticsearch/logstash-config/occurrences-http-indicia.template).
+* The standard download format for Elasticsearch records (easy-download) now blurs the "Output map ref" field for sensitive
+  records but includes a "Sensitive output map ref" field which is only populated for sensitive records if the user has
+  access to the full-precision copy (e.g. a verifier). See https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
+* The simple download format for Elasticsearch records (mapmate) now blurs the "Gridref" field for sensitive
+  records but includes a "Sensitive gridref" field which is only populated for sensitive records if the user has access to
+  the full-precision copy (e.g. a verifier). See https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
+* The REST API has been updated to allow a GET for a user's notifications, or PUT to acknowledge a notification.
+* The REST API has been updated to allow GET, POST, PUT and DELETE for occurrence_comments.
+* The REST API has been updated to allow GET, POST, PUT and DELETE for sample_comments.
+* Removes some project specific UKBMS reports.
+
+### Bugfixes
+
+* Warehouse log browser now displays HTML characters correctly.
+
 ## Version 9.11.0
 *2025-05-28*
 
-This version includes updates to packages managed by Composer so run the following command from the
-warehouse's root folder after installing the files:
+This version includes updates to packages managed by Composer which require PHP version 8.2+. To
+update the Composer packages run the following command from the warehouse's root folder after
+installing the files:
 
 ```bash
 $ composer update

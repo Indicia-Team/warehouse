@@ -1,0 +1,28 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "sample_id", "type": "integer"},
+    { "sql": "comment", "type": "string"},
+    { "sql": "person_name", "type": "string"},
+    { "sql": "query", "type": "string"},
+    { "sql": "record_status", "type": "string"},
+    { "sql": "external_key", "type": ""},
+    { "sql": "reply_to_id", "type": "integer"},
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" },
+    { "sql": "updated_on", "type": "date" },
+    { "sql": "updated_by_id", "type": "integer" }
+  ],
+  "joins": [
+    {
+      "sql": "JOIN samples t2 ON t2.id=t1.sample_id AND t2.deleted=false",
+      "fields": []
+    },
+    {
+      "sql": "JOIN surveys t3 on t3.id=t2.survey_id AND t3.deleted=false",
+      "fields": [
+        { "sql": "t3.website_id", "name": "website_id", "type": "integer" }
+      ]
+    }
+  ]
+}

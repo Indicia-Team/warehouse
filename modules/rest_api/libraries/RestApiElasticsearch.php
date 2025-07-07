@@ -169,11 +169,12 @@ class RestApiElasticsearch {
         'caption' => 'Precision',
         'field' => 'location.coordinate_uncertainty_in_meters',
       ],
-      ['caption' => 'Output map ref', 'field' => 'location.output_sref'],
+      ['caption' => 'Output map ref', 'field' => 'location.output_sref_blurred'],
       [
         'caption' => 'Projection (output)',
-        'field' => '#sref_system:location.output_sref_system:alphanumeric#',
+        'field' => '#sref_system:location.output_sref_system_blurred:alphanumeric#',
       ],
+      ['caption' => 'Sensitive output map ref', 'field' => '#conditional_value:location.output_sref:metadata.sensitivity_blur:=:F#'],
       ['caption' => 'Biotope', 'field' => 'event.habitat'],
       [
         'caption' => 'VC number',
@@ -237,7 +238,8 @@ class RestApiElasticsearch {
       ['caption' => 'Taxon', 'field' => 'taxon.accepted_name'],
       ['caption' => 'Site', 'field' => '#sitename:mapmate#'],
       ['caption' => 'Sensitive site', 'field' => '#sitename:showifsensitive#'],
-      ['caption' => 'Gridref', 'field' => 'location.output_sref'],
+      ['caption' => 'Gridref', 'field' => 'location.output_sref_blurred'],
+      ['caption' => 'Sensitive gridref', 'field' => '#conditional_value:location.output_sref:metadata.sensitivity_blur:=:F#'],
       [
         'caption' => 'VC',
         'field' => '#higher_geography:Vice County:code:mapmate#',
@@ -663,6 +665,36 @@ class RestApiElasticsearch {
       if ($value !== '') {
         return $value;
       }
+    }
+    return '';
+  }
+
+  /**
+   * Special field handler conditionally returns a field's value.
+   *
+   * Returns the value of a field only if the value of another field matches a
+   * specified condition. For example, a full-precision grid reference can be
+   * returned only if metadata.sensitivity_blur is set to 'F'.
+   *
+   * @param array $doc
+   *   Elasticsearch document.
+   * @param array $params
+   *   Parameters defined for the special field.
+   *
+   * @return string
+   *   Field value.
+   */
+  private function esGetSpecialFieldConditionalValue(array $doc, array $params) {
+    if (count($params) !== 4) {
+      return 'Incorrect params for conditional value field';
+    }
+    list($field, $fieldToCheck, $operator, $checkAgainst) = $params;
+    if ($operator !== '=') {
+      return 'Unsupported operator for conditional value field';
+    }
+    $valueToCheck = $this->getRawEsFieldValue($doc, $fieldToCheck);
+    if ($valueToCheck === $checkAgainst) {
+      return $this->getRawEsFieldValue($doc, $field);
     }
     return '';
   }
@@ -2158,6 +2190,16 @@ class RestApiElasticsearch {
           $fields[] = 'location.verbatim_locality';
           $fields[] = 'metadata.sensitive';
           $fields[] = 'metadata.private';
+        }
+        elseif (preg_match('/^#conditional_value:([^#]*)#$/', $field, $matches)) {
+          // $matches[1] contains the parameters, the first 2 of which refer to
+          // fields that we'll need to include.
+          $params = explode(':', $matches[1]);
+          if (count($params) === 4) {
+            list($field, $fieldToCheck) = $params;
+            $fields[] = $field;
+            $fields[] = $fieldToCheck;
+          }
         }
         elseif ($field === '#idenfication_classifier_agreement#') {
           $fields[] = 'identification.classifiers.current_determination.classifier_chosen';
