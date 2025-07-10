@@ -10,13 +10,21 @@
     where s.parent_sample_id=#sample_id#
     and s.website_id in (#website_ids#)
     union
-    select 'occurrence', o.id, st_astext(o.public_geom) as geom
+    select 'occurrence', o.id,
+    CASE WHEN #allow_sensitive_full_precision# = 0 AND #includes_sensitive# = 1
+    THEN '' 
+    ELSE st_astext(o.public_geom) 
+    END as geom
     from cache_occurrences_functional o
     where (o.parent_sample_id=#sample_id# or o.sample_id=#sample_id#)
     and o.website_id in (#website_ids#)
   </query>
   <params>
     <param name='sample_id' display='Sample ID' description='ID of the sample to load' datatype='text' />
+    <param name="allow_sensitive_full_precision" datatype="int" default="0"
+      description="Allow full precision even if sample includes a sensitive occurrence" />
+    <param name="includes_sensitive" datatype="int" default="0"
+      description="Does sample include a sensitive occurrence" />
   </params>
   <columns>
     <column name="type" datatype="text" />
