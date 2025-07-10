@@ -105,7 +105,11 @@
       when #allow_sensitive_full_precision#='1' then st_astext(geom)
       else coalesce(
         /* Show most sensitive polygon */
-        (select st_astext(o.public_geom) from cache_occurrences_nonfunctional onf join cache_occurrences_functional o on o.id = onf.id and o.sample_id = #sample_id# order by onf.sensitivity_precision desc nulls last limit 1),
+        (select st_astext(o.public_geom) 
+         from cache_occurrences_nonfunctional onf
+         join cache_occurrences_functional o on o.id = onf.id 
+         and (o.sample_id = #sample_id# OR o.parent_sample_id = #sample_id#)
+         order by onf.sensitivity_precision desc nulls last limit 1),
         /* If no occurrences, can revert to sample, but using public_geom allows for privacy. */
         st_astext(public_geom)
       )
