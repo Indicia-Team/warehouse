@@ -7,7 +7,7 @@
     from cache_samples_functional s
     /* inner join, as only need location boundary geoms, samples are embedded in occurrences below. */
     join locations l on l.id=s.location_id and l.deleted=false
-    where s.parent_sample_id=#sample_id#
+    where (s.id=#sample_id# OR s.parent_sample_id=#sample_id#)
     and s.website_id in (#website_ids#)
     union
     select 'occurrence', o.id,
