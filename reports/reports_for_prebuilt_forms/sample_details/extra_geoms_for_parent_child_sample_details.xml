@@ -3,7 +3,7 @@
     description="Geometry data summarising a parent/child sample."
 >
   <query website_filter_field="sp.website_id" created_by_field="sp.created_by_id" training_filter_field="">
-    select 'child' as type, s.id, st_astext(l.boundary_geom) as geom
+    select case when s.parent_sample_id IS NOT NULL THEN 'child' ELSE 'parent' END as type, s.id, st_astext(l.boundary_geom) as geom
     from cache_samples_functional s
     /* inner join, as only need location boundary geoms, samples are embedded in occurrences below. */
     join locations l on l.id=s.location_id and l.deleted=false
@@ -11,7 +11,8 @@
     and s.website_id in (#website_ids#)
     union
     select 'occurrence', o.id,
-    CASE WHEN #allow_sensitive_full_precision# = 0 AND #includes_sensitive# = 1
+    CASE WHEN (#allow_sensitive_full_precision# = 0 AND #includes_sensitive# = 1)
+    OR (#allow_unreleased# = 0 AND o.release_status != 'R')
     THEN '' 
     ELSE st_astext(o.public_geom) 
     END as geom
@@ -21,9 +22,11 @@
   </query>
   <params>
     <param name='sample_id' display='Sample ID' description='ID of the sample to load' datatype='text' />
+    <param name="allow_unreleased" datatype="boolean" default="0"
+      description="Allow viewing of unreleased records" />
     <param name="allow_sensitive_full_precision" datatype="int" default="0"
       description="Allow full precision even if sample includes a sensitive occurrence" />
-    <param name="includes_sensitive" datatype="int" default="0"
+    <param name="includes_sensitive" datatype="boolean" default="0"
       description="Does sample include a sensitive occurrence" />
   </params>
   <columns>
