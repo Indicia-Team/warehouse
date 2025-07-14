@@ -4,7 +4,11 @@
     Collect the section geometry, and also the parent transect location geometry"
 >
   <query website_filter_field="o.website_id" created_by_field="o.created_by_id" training_filter_field="o.training">
-    select 'parent' as type, s_parent.id, st_astext(l.boundary_geom) as geom
+    select 'parent' as type, s_parent.id, 
+    CASE WHEN (#allow_sensitive_full_precision# = 0 AND #includes_sensitive# = 1)
+    THEN '' 
+    ELSE st_astext(l.boundary_geom)
+    END as geom
     from cache_samples_functional csf
     JOIN samples s on s.id = csf.id
     JOIN samples s_parent on 
@@ -13,7 +17,11 @@
     where csf.id=#sample_id#
     and csf.website_id in (#website_ids#)
     union
-    select 'child' as type, csf.id, st_astext(l.boundary_geom) as geom
+    select 'child' as type, csf.id, 
+    CASE WHEN (#allow_sensitive_full_precision# = 0 AND #includes_sensitive# = 1)
+    THEN '' 
+    ELSE st_astext(l.boundary_geom) 
+    END as geom
     from cache_samples_functional csf
     join locations l on l.id=csf.location_id and l.deleted=false
     where csf.id=#sample_id#

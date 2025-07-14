@@ -3,7 +3,11 @@
     description="Geometry data summarising a parent/child sample."
 >
   <query website_filter_field="sp.website_id" created_by_field="sp.created_by_id" training_filter_field="">
-    select case when s.parent_sample_id IS NOT NULL THEN 'child' ELSE 'parent' END as type, s.id, st_astext(l.boundary_geom) as geom
+    select case when s.parent_sample_id IS NOT NULL THEN 'child' ELSE 'parent' END as type, s.id,
+    CASE WHEN (#allow_sensitive_full_precision# = 0 AND #includes_sensitive# = 1)
+    THEN '' 
+    ELSE st_astext(l.boundary_geom) 
+    END as geom
     from cache_samples_functional s
     /* inner join, as only need location boundary geoms, samples are embedded in occurrences below. */
     join locations l on l.id=s.location_id and l.deleted=false
