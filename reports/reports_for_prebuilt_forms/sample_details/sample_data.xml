@@ -46,8 +46,7 @@
     where #sharing_filter#
     AND (#allow_confidential# = 1 OR s.privacy_precision &gt; 0 OR s.privacy_precision IS NULL)
     -- Always include sensitive, as these are used to blur map
-    -- so must be returned by report (grid records are returned in different report).
-    -- Confidential is included in NOT EXISTS checks below so does not have same potential problem.
+    -- Note: confidential is included in NOT EXISTS checks below, so does not have same potential problem.
     AND (#allow_unreleased# = 1 OR release_status = 'R' OR occurrence_id IS NULL OR sensitive = true)
     AND NOT EXISTS
     (
