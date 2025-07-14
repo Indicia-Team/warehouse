@@ -45,7 +45,8 @@
     #joins#
     where #sharing_filter#
     AND (#allow_confidential# = 1 OR s.privacy_precision &gt; 0 OR s.privacy_precision IS NULL)
-    AND (#allow_unreleased# = 1 OR release_status = 'R' OR occurrence_id IS NULL)
+    -- Always include sensitive, as these are used to blur map (grid records are returned in different report)
+    AND (#allow_unreleased# = 1 OR release_status = 'R' OR occurrence_id IS NULL OR sensitive = true)
     AND NOT EXISTS
     (
       SELECT s.id
