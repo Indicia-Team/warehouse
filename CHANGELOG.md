@@ -14,6 +14,32 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   are located correctly in the documents as described in the first point under **Changes** below.
 * If using Elasticsearch, add a mapping to the index for the `identification.verifier_comment` so that it is a `text`
   field type.
+* If using Elasticsearch, run the following request in Kibana (replace your_index_name with the name of your index):
+  ```
+  POST your_index_name/_update_by_query?wait_for_completion=false&requests_per_second=500
+  {
+    "script": {
+      "source": "ctx._source.location.output_sref_blurred = ctx._source.location.output_sref",
+      "lang": "painless"
+    },
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "term": {
+              "metadata.sensitive": false
+            }
+          },
+          {
+            "exists": {
+              "field": "location.output_sref"
+            }
+          }
+        ]
+      }
+    }
+  }
+  ```
 
 ### Changes
 
