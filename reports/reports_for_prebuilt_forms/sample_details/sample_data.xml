@@ -45,7 +45,9 @@
     #joins#
     where #sharing_filter#
     AND (#allow_confidential# = 1 OR s.privacy_precision &gt; 0 OR s.privacy_precision IS NULL)
-    AND (#allow_unreleased# = 1 OR release_status = 'R' OR occurrence_id IS NULL)
+    -- Always include sensitive, as these are used to blur map
+    -- Note: confidential is included in NOT EXISTS checks below, so does not have same potential problem.
+    AND (#allow_unreleased# = 1 OR release_status = 'R' OR occurrence_id IS NULL OR sensitive = true)
     AND NOT EXISTS
     (
       SELECT s.id
@@ -105,7 +107,11 @@
       when #allow_sensitive_full_precision#='1' then st_astext(geom)
       else coalesce(
         /* Show most sensitive polygon */
-        (select st_astext(o.public_geom) from cache_occurrences_nonfunctional onf join cache_occurrences_functional o on o.id = onf.id and o.sample_id = #sample_id# order by onf.sensitivity_precision desc nulls last limit 1),
+        (select st_astext(o.public_geom) 
+         from cache_occurrences_nonfunctional onf
+         join cache_occurrences_functional o on o.id = onf.id 
+         and (o.sample_id = #sample_id# OR o.parent_sample_id = #sample_id#)
+         order by onf.sensitivity_precision desc nulls last limit 1),
         /* If no occurrences, can revert to sample, but using public_geom allows for privacy. */
         st_astext(public_geom)
       )
