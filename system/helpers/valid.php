@@ -198,7 +198,7 @@ class valid_Core {
 
 	/**
 	 * Tests if a string is a valid date string.
-	 * 
+	 *
 	 * @param   string   date to check
 	 * @return  boolean
 	 */
@@ -275,7 +275,7 @@ class valid_Core {
 		// Use localeconv to set the decimal_point value: Usually a comma or period.
 		return (bool) preg_match('/^-?[0-9]++$/D', (string) $str);
 	}
-	
+
 	/**
 	 * Checks whether a string is a valid integer (negative numbers allowed, no decimals).
 	 * Based on Numeric.
@@ -287,13 +287,13 @@ class valid_Core {
 	{
 		return (bool) preg_match('/^(2[0-3]|[0,1][0-9]):[0-5][0-9]$/D', (string) $str);
 	}
-	
+
 	/**
 	 * Checks whether a string is a valid number (negative and decimal numbers allowed).
 	 *
 	 * @see Uses locale conversion to allow decimal point to be locale specific.
 	 * @see http://www.php.net/manual/en/function.localeconv.php
-	 * 
+	 *
 	 * @param   string   input string
 	 * @return  boolean
 	 */
@@ -301,7 +301,10 @@ class valid_Core {
 	{
 		// Use localeconv to set the decimal_point value: Usually a comma or period.
 		$locale = localeconv();
-		return (bool) preg_match('/^-?[0-9'.$locale['decimal_point'].']++$/D', (string) $str);
+		// Because we are dealing with formatted strings, need to allow for
+		// scientific E notation for very small or very large numbers.
+		// Modified for Indicia JVB 2025-07-15.
+		return (bool) preg_match('/^-?[0-9'.$locale['decimal_point'].']++(E-?\d+)?$/D', (string) $str);
 	}
 
 	/**
