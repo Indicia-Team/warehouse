@@ -22,11 +22,35 @@ defined('SYSPATH') or die('No direct script access.');
 
 require 'vendor/autoload.php';
 
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Reader\Xls;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ImportDate;
+
+/**
+ * Custom value binder that always treats numnbers as a string.
+ *
+ * This is used to ensure that numbers with decimal points are not converted
+ * to scientific notation.
+ */
+class CustomIndiciaValueBinder extends DefaultValueBinder {
+
+  public function bindValue(Cell $cell, mixed $value): bool {
+    // If numeric then treat as a string.
+    if (preg_match('/\d+(\.\d+)?/', trim($value))) {
+      $cell->setValueExplicit((string)$value, DataType::TYPE_STRING);
+      return true;
+    }
+    else {
+      return parent::bindValue($cell, $value);
+    }
+  }
+
+}
 
 /**
  * PHPSpreadsheet filter for reading the header row.
@@ -1575,6 +1599,7 @@ class Import_Controller extends Service_Base_Controller {
 
   private function openSpreadsheet($fileName, &$metadata, $filepos, $offset, $limit) {
     $ext = $this->getFileExt($fileName);
+    Cell::setValueBinder(new CustomIndiciaValueBinder());
     if ($ext === 'csv') {
       $reader = new Csv();
       $reader->setInputEncoding(Csv::GUESS_ENCODING);
