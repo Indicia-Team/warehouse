@@ -75,6 +75,27 @@ class Group_Model extends ORM {
   }
 
   /**
+   * Override save method to handle group deletion.
+   *
+   * @return ORM
+   *   Object for chaining.
+   */
+  public function save() {
+    if ($this->deleted === 't') {
+      // Create a task to delete the group from the cache.
+      $wq = new WorkQueue();
+      $wq->enqueue($this->db, [
+        'task' => 'task_group_delete',
+        'entity' => 'group',
+        'record_id' => $this->id,
+        'cost_estimate' => 100,
+        'priority' => 3,
+      ]);
+    }
+    return parent::save();
+  }
+
+  /**
    * If changing the private records setting, then must update the group's records release_status.
    */
   public function postSubmit($isInsert) {
