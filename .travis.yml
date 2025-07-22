@@ -12,14 +12,15 @@ services:
   - postgresql
 
 php:
-  # Test oldest and newest maintained versions.
-  # 8.1 and 8.2 don't work with Noble as of 29/4/25
-  - '8.1'
-  - '8.2'
-  # - '8.3'
+  # Consider testing oldest and newest maintained versions.
+  # However testing a single version saves credits.
+  # 8.1 and 8.2 now work with Noble as of 22/7/25 but our dependencies 
+  # require >=8.2.
+  - '8.3'
 
 env:
-  # Test oldest and newest maintained versions.
+  # Consider testing oldest and newest maintained versions.
+  # However testing a single version saves credits.
   - PGVERSION=16
 
 addons:
