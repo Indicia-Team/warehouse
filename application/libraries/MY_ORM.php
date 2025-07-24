@@ -1240,7 +1240,15 @@ class ORM extends ORM_Core {
     }
     catch (Exception $e) {
       $v = FALSE;
-      $this->errors['general'] = 'An error occurred whilst validating the information on the warehouse. More information is in the warehouse logs (' . date("Y-m-d H:i:s") . ').';
+      if (preg_match('/violates unique constraint "unique_([a-z0-9_]+)"/', $e->getMessage(), $matches) !== FALSE) {
+        // If the constraint is called unique_{table}_{field} then we can work out the field name.
+        $fieldname = preg_replace("/^{$this->object_name}_/", '', $matches[1]);
+        $fieldnameReadable = str_replace('_', ' ', $fieldname);
+        $this->errors[$fieldname] = "A record with the same $fieldnameReadable already exists. Please create a unique $fieldnameReadable.";
+      }
+      else {
+        $this->errors['general'] = 'An error occurred whilst validating the information on the warehouse. More information is in the warehouse logs (' . date("Y-m-d H:i:s") . ').';
+      }
       error_logger::log_error('Exception during validation', $e);
     }
     if ($v) {
