@@ -1313,7 +1313,7 @@ class ORM extends ORM_Core {
             // look for a translation of the field name
             $lookingIn = kohana::lang("default.dd:{$this->object_name}:$a");
             if ($lookingIn === "default.dd:$this->object_name:$a") {
-              $fields = $this->getSubmittableFields(FALSE);
+              $fields = $this->getSubmittableFields();
               $lookingIn = empty($fields[$this->object_name . ':' . $a]) ?
                 $b['readableTableName'] . ' ' . ucwords($b['fkSearchField']) :
                 $fields[$this->object_name . ':' . $a];
@@ -1809,6 +1809,10 @@ class ORM extends ORM_Core {
    * samples.
    *
    * @param bool $fk
+   *   If TRUE, then foreign key ID columns are replaced by FK lookups.
+   * @param bool $keepFkIds
+   *   IF TRUE and $fk is TRUE, then the foreign key lookups are provided in
+   *   addition to the foreign key ID fields, not as a replacement for.
    * @param array $identifiers
    *   Website ID, survey ID and/or taxon list ID that define the context of
    *   the list of fields, used to determine the custom attributes to include.
@@ -1820,9 +1824,9 @@ class ORM extends ORM_Core {
    * @return array
    *   The list of submittable field definitions.
    */
-  public function getSubmittableFields($fk = FALSE, array $identifiers = [], $attrTypeFilter = NULL, $use_associations = FALSE) {
+  public function getSubmittableFields($fk = FALSE, $keepFkIds = FALSE, array $identifiers = [], $attrTypeFilter = NULL, $use_associations = FALSE) {
     $this->identifiers = $identifiers;
-    $fields = $this->getPrefixedColumnsArray($fk);
+    $fields = $this->getPrefixedColumnsArray($fk, $keepFkIds);
     $additionals = array_filter($this->additional_csv_fields, function($k) use ($fk) {
       return $fk || !preg_match('/^(fk_|.+:fk_)/', $k);
     }, ARRAY_FILTER_USE_KEY);
@@ -1854,11 +1858,11 @@ class ORM extends ORM_Core {
             $newFields[implode(':', $parts)] = ($caption != '' ? $caption .' (2)' : '');
           }
         }
-        $fields = array_merge($fields, ORM::factory($struct['model'] . '_association')->getSubmittableFields($fk, $identifiers, NULL, FALSE));
+        $fields = array_merge($fields, ORM::factory($struct['model'] . '_association')->getSubmittableFields($fk, $keepFkIds, $identifiers, NULL, FALSE));
         $fields = array_merge($fields, $newFields);
       }
       foreach ($struct['superModels'] as $super => $content) {
-        $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $identifiers, $attrTypeFilter, FALSE));
+        $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $keepFkIds, $identifiers, $attrTypeFilter, FALSE));
       }
     }
     if (array_key_exists('metaFields', $struct)) {
@@ -1939,6 +1943,7 @@ class ORM extends ORM_Core {
         $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($fk, $identifiers, FALSE));
       }
     }
+    kohana::log('debug', 'Required fields for ' . $this->object_name . ': ' . print_r($fields, TRUE));
     return $fields;
   }
 
@@ -1966,10 +1971,19 @@ class ORM extends ORM_Core {
   /**
    * Return the columns array, each column prefixed by the model name then :.
    *
+   * @param bool $fk
+   *   If TRUE, then foreign key ID columns are replaced by FK lookups.
+   * @param bool $keepFkIds
+   *   IF TRUE and $fk is TRUE, then the foreign key lookups are provided in
+   *   addition to the foreign key ID fields, not as a replacement for.
+   * @param bool $skipHiddenFields
+   *   If TRUE, then any hidden fields are skipped and not included in the
+   *   returned array.
+   *
    * @return array
    *   Prefixed columns.
    */
-  protected function getPrefixedColumnsArray($fk = FALSE, $skipHiddenFields = TRUE) {
+  private function getPrefixedColumnsArray($fk = FALSE, $keepFkIds = FALSE, $skipHiddenFields = TRUE) {
     $r = [];
     $prefix = $this->object_name;
     $sub = $this->get_submission_structure();
@@ -1982,6 +1996,10 @@ class ORM extends ORM_Core {
         // contain full data for the supermodel record rather than just a link.
         if (!isset($sub['superModels'][substr($column, 0, -3)])) {
           $r["$prefix:fk_" . substr($column, 0, -3)] = '';
+          if ($keepFkIds) {
+            // If we are keeping the ID field, then add it too.
+            $r["$prefix:$column"] = '';
+          }
         }
       }
       else {
