@@ -280,7 +280,10 @@ SQL,
       $filters[] = $extraFilter;
     }
     if ($userFilter) {
-      $filters[] = 't1.created_by_id=' . RestObjects::$clientUserId;
+      // User filter field can be overridden in entity config, e.g. so a user
+      // can view all comments on their records.
+      $userFilterField = self::$entityConfig[$entity]->userFilterField ?? 't1.created_by_id';
+      $filters[] = "$userFilterField=" . RestObjects::$clientUserId;
     }
     if (self::$entityConfig[$entity]->excludeDeleted ?? TRUE) {
       $filters[] = 't1.deleted=false';

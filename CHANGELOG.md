@@ -4,6 +4,17 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.13.0
+*2025-07-24*
+
+### Changes
+
+* The REST API now allows a user to view all comments for an occurrence or sample they created when limited to their
+  own data, previously they were restricted to comments which they created themselves.
+* The group title field now has a unique constraint and error reporting of uniqueness violations has been improved. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1893.
+
+
 ## Version 9.12.0
 *2025-07-07*
 
