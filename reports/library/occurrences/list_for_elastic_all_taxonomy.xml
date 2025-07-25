@@ -34,7 +34,7 @@
       <where>o.id &gt; #last_id#</where>
     </param>
     <param name="autofeed_tracking_from" display="Autofeed tracking from" datatype="integer" default="" order_by="o.tracking ASC">
-      <where>o.tracking >= #autofeed_tracking_from#</where>
+      <where>o.tracking &gt;= #autofeed_tracking_from#</where>
     </param>
     <param name="limit" datatype="integer" default="10000" />
   </params>
