@@ -743,13 +743,28 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     $attrArray = [];
     // Get the sample attributes.
-    $attrValues = $this->db
-      ->select('o.id, av.caption, av.value')
-      ->from('list_sample_attribute_values as av')
-      ->join('samples as s', 's.id', 'av.sample_id')
-      ->join('occurrences as o', 'o.sample_id', 's.id')
-      ->in('o.id', $recordsToFetch)
-      ->get();
+    $occurrenceIds = implode(',', $recordsToFetch);
+    $attrValues = $this->db->query(<<<SQL
+      SELECT o.id, a.caption, CASE a.data_type
+            WHEN 'T'::bpchar THEN av.text_value
+            WHEN 'L'::bpchar THEN t.term::text
+            WHEN 'I'::bpchar THEN av.int_value::text ||
+            CASE
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
+                ELSE ''::text
+            END
+            WHEN 'B'::bpchar THEN av.int_value::text
+            WHEN 'F'::bpchar THEN av.text_value
+            WHEN 'D'::bpchar THEN av.date_start_value::text
+            WHEN 'V'::bpchar THEN vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
+            ELSE NULL::text
+        END AS value
+      FROM occurrences o
+      JOIN sample_attribute_values av ON av.sample_id=o.sample_id AND av.deleted='f'
+      JOIN sample_attributes a ON a.id=av.sample_attribute_id AND a.deleted='f'
+      LEFT JOIN cache_termlists_terms t ON t.id=av.int_value
+      WHERE o.id IN ($occurrenceIds)
+    SQL)->result();
     foreach ($attrValues as $attrValue) {
       $attrArray[$attrValue->id][$attrValue->caption] = $attrValue->value;
     }
@@ -1075,7 +1090,7 @@ class Scheduled_Tasks_Controller extends Controller {
     $this->occdeltaCount = $this->db->count_records('occdelta');
     $max = 5000;
     if ($this->occdeltaCount > $max) {
-      $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max");
+      $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max")->result();
       foreach ($qry as $t) {
         $delayed = $this->db->query("delete from occdelta where timestamp>?", [$t->timestamp])->count();
         self::msg("Scheduled tasks are delaying processing of $delayed records as too many to process", 'alert');
