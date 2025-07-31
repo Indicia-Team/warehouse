@@ -28,7 +28,6 @@ function notify_pending_groups_users_scheduled_task($last_run_date) {
     $last_run_date=date('Y-m-d', time()-60*60*24*50);
   $db = new Database();
   $notifications = postgreSQL::selectPendingGroupsUsersNotifications($last_run_date, $db);
-  echo "<br/>" . $db->last_query() . '<br/>';
   foreach ($notifications as $notification) {
     $person = $notification->surname . (empty($notification->first_name) ? '' : ', ' . $notification->first_name);
     $comment = "There is a pending request to join $notification->group_title";
