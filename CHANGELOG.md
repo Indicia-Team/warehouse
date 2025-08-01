@@ -4,6 +4,55 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.13.0
+*2025-08-01*
+
+### Action required
+
+* If using Elasticsearch, update your Logstash configuration files to ensure that the new
+  `location.higher_geography_blurred` are processed correctly. Add the sections relating to the
+  indexed_location_ids_blurred field as per the copy on GitHub - see the `mutate`, `translate` and `ruby` blocks
+  starting at this line of the configuration:
+  https://github.com/Indicia-Team/support_files/blob/5fde0f91e75a6cd98fe15be0c0872f5bec25763a/Elasticsearch/logstash-config/occurrences-http-indicia.template#L136.
+* If using Elasticsearch, add a mapping each index for the `location.higher_geography_blurred` nested field. You will
+  typically need to do this once for occurrences and once for the samples index.
+  ```
+  PUT <index name>/_mapping
+  {
+    "properties": {
+      "location.higher_geography_blurred": {
+        "type": "nested",
+        "properties": {
+          "id": { "type": "integer" },
+          "code": { "type": "keyword" }
+        }
+      }
+    }
+  }
+  ```
+
+### Changes
+
+* The REST API now allows a user to view all comments for an occurrence or sample they created when limited to their
+  own data, previously they were restricted to comments which they created themselves.
+* The group title field now has a unique constraint and error reporting of uniqueness violations has been improved. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1893.
+* The feed to Elasticsearch for full-precision copies of sensitive records now includes the higher geography
+  recalculated using the full-precision copy of the record. There is an additional field containing the blurred version
+  of the higher geography. For example, a record in a Vice County with a 100km sensitivity blur will be indexed against
+  all Vice Counties intersecting the blurred version of the map reference for the blurred version of the record. The
+  full-precision copy of the record will now have just the one precise Vice County in the higher geography, with an
+  additional blurred version reflecting all the Vice Counties intersecting the blurred record location. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
+* Significant performance improvement in the code which runs in the background to generate record owner notifications.
+
+### Bugfixes
+
+* Fixes an issue where the spatial reference system needs to be re-selected when editing an existing sample.
+* Fixes the output map reference and map reference system selected for records in the western part of Guernsey so that
+  they use the Channel Islands Grid system.
+* Fix Channel Island Grid recording of a 100km map reference, e.g. "WV".
+
 ## Version 9.12.0
 *2025-07-07*
 
@@ -14,6 +63,32 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   are located correctly in the documents as described in the first point under **Changes** below.
 * If using Elasticsearch, add a mapping to the index for the `identification.verifier_comment` so that it is a `text`
   field type.
+* If using Elasticsearch, run the following request in Kibana (replace your_index_name with the name of your index):
+  ```
+  POST your_index_name/_update_by_query?wait_for_completion=false&requests_per_second=500
+  {
+    "script": {
+      "source": "ctx._source.location.output_sref_blurred = ctx._source.location.output_sref",
+      "lang": "painless"
+    },
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "term": {
+              "metadata.sensitive": false
+            }
+          },
+          {
+            "exists": {
+              "field": "location.output_sref"
+            }
+          }
+        ]
+      }
+    }
+  }
+  ```
 
 ### Changes
 

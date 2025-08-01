@@ -10,6 +10,7 @@
     DROP TABLE IF EXISTS occurrence_stats;
     DROP TABLE IF EXISTS output_rows;
     DROP TABLE IF EXISTS sample_occurrences_list;
+	  DROP TABLE IF EXISTS sample_location_ids;
 
     SELECT s.*
     INTO TEMPORARY filtered_samples
@@ -75,6 +76,21 @@
       WHERE sc.id=o.sample_id AND sc.deleted=false
     AND o.recorded_parent_location_id IS NULL;
 
+    -- Calculate the full-precision version of the indexed location IDs.
+    SELECT s.id, string_agg(l.id::text, ',') AS location_ids
+    INTO TEMPORARY sample_location_ids
+    FROM filtered_samples s
+    JOIN samples smp ON smp.id=s.sample_id AND smp.deleted=false
+    JOIN locations l ON l.id=ANY(s.location_ids) AND l.deleted=false
+      AND st_intersects(l.boundary_geom, smp.geom)
+      AND (st_geometrytype(smp.geom)='ST_Point' or not st_touches(l.boundary_geom, smp.geom))
+    GROUP BY s.sample_id;
+
+    UPDATE output_rows o
+    SET indexed_location_ids = sl.location_ids
+    FROM sample_location_ids sl
+    WHERE o.id=sl.id;
+
     SELECT *
     FROM output_rows s
     #order_by#
@@ -89,7 +105,7 @@
       <where>s.id &gt; #last_id#</where>
     </param>
     <param name="autofeed_tracking_from" display="Autofeed tracking from" datatype="integer" default="" order_by="tracking ASC">
-      <where>s.tracking >= #autofeed_tracking_from#</where>
+      <where>s.tracking &gt;= #autofeed_tracking_from#</where>
     </param>
     <param name="limit" datatype="integer" default="10000" />
   </params>
@@ -151,8 +167,8 @@
       WHEN max_sensitivity_precision > 10000 THEN NULL
       ELSE TRIM(leading 'POINT(' FROM TRIM(trailing ')' FROM st_astext(st_centroid(st_transform(reduce_precision(smp.geom, false, 10000), 4326)))))
     END" datatype="text" />
-    <column name="input_sref" sql="snf.public_entered_sref" datatype="text" />
-    <column name="input_sref_system" sql="snf.entered_sref_system" datatype="text" />
+    <column name="input_sref" sql="smp.entered_sref" datatype="text" />
+    <column name="input_sref_system" sql="smp.entered_sref_system" datatype="text" />
     <column name="output_sref" sql="get_output_sref(
       greatest(
         round(sqrt(st_area(st_transform(smp.geom, sref_system_to_srid(smp.entered_sref_system)))))::integer,
@@ -191,7 +207,8 @@
     <column name="supplied_higher_geography_name" sql="shg.name" datatype="text" />
     <column name="supplied_higher_geography_code" sql="shg.code" datatype="text" />
     <column name="supplied_higher_geography_type" sql="shgt.term" datatype="text" />
-    <column name="indexed_location_ids" sql="array_to_string(s.location_ids, ',')" datatype="text" />
+    <column name="indexed_location_ids_blurred" sql="array_to_string(s.location_ids, ',')" datatype="text" />
+    <column name="indexed_location_ids" sql="null::text" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
     <column name="attr_sample_method" sql="snf.attr_sample_method" datatype="text" />

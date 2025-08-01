@@ -8,6 +8,7 @@
          standard_params="occurrences" count_field="o.*" blocked_sharing_tasks_field="o.blocked_sharing_tasks">
     DROP TABLE IF EXISTS filtered_occurrences;
     DROP TABLE IF EXISTS output_rows;
+	  DROP TABLE IF EXISTS sample_location_ids;
 
     SELECT o.*
     INTO TEMPORARY filtered_occurrences
@@ -100,6 +101,25 @@
     AND oc.record_status=o.record_status
     AND COALESCE(oc.record_substatus, 0)=COALESCE(o.record_substatus, 0);
 
+    -- Calculate the full-precision version of the indexed location IDs.
+    WITH distinct_samples AS (
+      SELECT DISTINCT sample_id, location_ids
+      FROM filtered_occurrences
+    )
+    SELECT s.sample_id, string_agg(DISTINCT l.id::text, ',') AS location_ids
+    INTO TEMPORARY sample_location_ids
+    FROM distinct_samples s
+    JOIN samples smp ON smp.id=s.sample_id AND smp.deleted=false
+    JOIN locations l ON l.id=ANY(s.location_ids) AND l.deleted=false
+      AND st_intersects(l.boundary_geom, smp.geom)
+      AND (st_geometrytype(smp.geom)='ST_Point' or not st_touches(l.boundary_geom, smp.geom))
+    GROUP BY s.sample_id;
+
+    UPDATE output_rows o
+    SET indexed_location_ids = sl.location_ids
+    FROM sample_location_ids sl
+    WHERE o.sample_id=sl.sample_id;
+
     SELECT *
     FROM output_rows o
     #order_by#
@@ -114,7 +134,7 @@
       <where>o.id &gt; #last_id#</where>
     </param>
     <param name="autofeed_tracking_from" display="Autofeed tracking from" datatype="integer" default="" order_by="o.tracking ASC">
-      <where>o.tracking >= #autofeed_tracking_from#</where>
+      <where>o.tracking &gt;= #autofeed_tracking_from#</where>
     </param>
     <param name="limit" datatype="integer" default="10000" />
   </params>
@@ -217,7 +237,8 @@
     <column name="supplied_higher_geography_name" sql="shg.name" datatype="text" />
     <column name="supplied_higher_geography_code" sql="shg.code" datatype="text" />
     <column name="supplied_higher_geography_type" sql="shgt.term" datatype="text" />
-    <column name="indexed_location_ids" sql="array_to_string(o.location_ids, ',')" datatype="text" />
+    <column name="indexed_location_ids_blurred" sql="array_to_string(o.location_ids, ',')" datatype="text" />
+    <column name="indexed_location_ids" sql="null::text" datatype="text" />
     <column name="comment" sql="onf.comment" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
     <column name="verifier_comment" sql="null::text" datatype="text" />

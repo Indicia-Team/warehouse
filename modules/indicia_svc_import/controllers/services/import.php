@@ -173,7 +173,7 @@ class Import_Controller extends Service_Base_Controller {
       $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
     }
     $use_associations = (empty($_GET['use_associations']) ? FALSE : ($_GET['use_associations'] == "true" ? TRUE : FALSE));
-    echo json_encode($model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $use_associations));
+    echo json_encode($model->getSubmittableFields(TRUE, FALSE, $identifiers, $attrTypeFilter, $use_associations));
   }
 
   /**

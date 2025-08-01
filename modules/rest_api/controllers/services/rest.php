@@ -2875,7 +2875,7 @@ class Rest_Controller extends Controller {
     // 6 or 8 colon separated tokens possible in auth header.
     $tokens = explode(':', $authHeader);
     if (in_array(count($tokens), [6, 8])) {
-      if ($tokens[0] !== 'USER_ID' || $tokens[2] !== 'WEBSITE_ID' || $tokens[4] !== 'SECRET' || (count($tokens) === 8 && $tokens[4] !== 'SCOPE')) {
+      if ($tokens[0] !== 'USER_ID' || $tokens[2] !== 'WEBSITE_ID' || $tokens[4] !== 'SECRET' || (count($tokens) === 8 && $tokens[6] !== 'SCOPE')) {
         // Not a valid header for this auth method.
         return;
       }
@@ -2901,7 +2901,14 @@ class Rest_Controller extends Controller {
     $users = RestObjects::$db->select('password, site_role_id')
       ->from('users')
       ->join('users_websites', 'users_websites.user_id', 'users.id')
-      ->where(['users.id' => $userId, 'users_websites.website_id' => $websiteId])
+      ->where([
+        'users.id' => $userId,
+        'users_websites.website_id' => $websiteId,
+        'users.deleted' => 'f',
+        'users_websites.banned' => 'f',
+      ])
+      ->orderby('users_websites.site_role_id', 'ASC')
+      ->limit(1)
       ->get()->result_array(FALSE);
     if (count($users) !== 1) {
       RestObjects::$apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');

@@ -80,7 +80,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       $identifiers['survey_id'] = empty($_GET['survey_id']) ? null : $_GET['survey_id'];
     }
     $use_associations = (empty($_GET['use_associations']) ? false : ($_GET['use_associations'] == "true" ? true : false));
-    echo json_encode($model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $use_associations));
+    echo json_encode($model->getSubmittableFields(TRUE, FALSE, $identifiers, $attrTypeFilter, $use_associations));
   }
 
   /**

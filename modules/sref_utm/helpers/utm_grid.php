@@ -75,13 +75,21 @@ class utm_grid {
     else {
       // Normal Numeric Format
       $coordLen = (strlen($sref)-2)/2;
-      // extract the easting and northing
-      $east  = substr($sref, 2, $coordLen);
-      $north = substr($sref, 2+$coordLen);
-      // if < 10 figure the easting and northing need to be multiplied up to the power of 10
-      $sq_size = pow(10, 5-$coordLen);
-      $east = $east * $sq_size;
-      $north = $north * $sq_size;
+      if ($coordLen > 0) {
+        // extract the easting and northing
+        $east  = substr($sref, 2, $coordLen);
+        $north = substr($sref, 2+$coordLen);
+        // if < 10 figure the easting and northing need to be multiplied up to the power of 10
+        $sq_size = pow(10, 5-$coordLen);
+        $east = $east * $sq_size;
+        $north = $north * $sq_size;
+      }
+      else {
+        // No easting/northing info, so a 100km square.
+        $east = 0;
+        $north = 0;
+        $sq_size = 100000;
+      }
     }
     $westEdge=$east + $sq_100['x'];
     $southEdge=$north + $sq_100['y'];

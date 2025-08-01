@@ -27,6 +27,7 @@ define('BATCH_ROW_LIMIT', 100);
 define('SYSTEM_FIELD_NAMES', [
   '_row_id',
   'errors',
+  'imported',
 ]);
 
 require 'vendor/autoload.php';
@@ -165,7 +166,8 @@ class Import_2_Controller extends Service_Base_Controller {
       $identifiers['taxon_list_id'] = $_GET['taxon_list_id'];
     }
     $useAssociations = !empty($_GET['use_associations']) && $_GET['use_associations'] === 'true';
-    $fields = $model->getSubmittableFields(TRUE, $identifiers, $attrTypeFilter, $useAssociations);
+    $keepFkIds = !empty($_GET['keep_fk_ids']) && $_GET['keep_fk_ids'] === 'true';
+    $fields = $model->getSubmittableFields(TRUE, $keepFkIds, $identifiers, $attrTypeFilter, $useAssociations);
     $wantRequired = !empty($_GET['required']) && $_GET['required'] === 'true';
     if ($wantRequired) {
       $requiredFields = $model->getRequiredFields(TRUE, $identifiers, $useAssociations);
@@ -1244,7 +1246,6 @@ SQL;
       // fields (e.g. build date from day, month, year).
       $parentEntityCompoundFields = $this->getCompoundFieldsToProcessForEntity($config['parentEntity'], $parentEntityColumns);
       $childEntityCompoundFields = $this->getCompoundFieldsToProcessForEntity($config['entity'], $childEntityColumns);
-      kohana::log('debug', var_export($parentEntityDataRows, TRUE));
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
         // @todo Updating existing data.
         // @todo tracking of records that are done in the import table so can restart.
@@ -1266,8 +1267,13 @@ SQL;
           $parent->id = 1;
         }
         else {
-          $parent->submit();
-          $parentErrors = $parent->getAllErrors();
+          try {
+            $parent->submit();
+            $parentErrors = $parent->getAllErrors();
+          } catch (Exception $e) {
+            // If the parent entity fails to save, record the error.
+            $parentErrors['sample:general'] = $e->getMessage();
+          }
         }
         $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityColumns, $config, $parentEntityDataRow);
         if (count($parentErrors) > 0) {
@@ -1298,8 +1304,13 @@ SQL;
               $errors = $child->precheck($identifiers);
             }
             else {
-              $child->submit();
-              $errors = $child->getAllErrors();
+              try {
+                $child->submit();
+                $errors = $child->getAllErrors();
+              } catch (Exception $e) {
+                // If the child entity fails to save, record the error.
+                $errors['occurrence:general'] = $e->getMessage();
+              }
             }
             if (count($errors) > 0) {
               // Register additional error row, but only if not already
@@ -1310,6 +1321,7 @@ SQL;
               $this->saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
             }
             elseif (!$isPrecheck) {
+              $this->setRowToImported($db, $childEntityDataRow->_row_id, $config);
               if (!empty($submission['occurrence:id'])) {
                 $config['rowsUpdated']++;
               }
@@ -1334,7 +1346,10 @@ SQL;
         $this->saveImportRecord($config);
       }
       echo json_encode([
-        'status' => $config['rowsProcessed'] >= $config['totalRows'] ? 'done' : ($isPrecheck ? 'checking' : 'importing'),
+        // Additional check for count of parentDataEntityRows will apply if an
+        // import is restarted by refreshing the browser page, as the
+        // rowsProcessed won't reach the total rows in this case.
+        'status' => $config['rowsProcessed'] >= $config['totalRows'] || count($parentEntityDataRows) === 0 ? 'done' : ($isPrecheck ? 'checking' : 'importing'),
         'progress' => 100 * $config['rowsProcessed'] / $config['totalRows'],
         'rowsProcessed' => $config['rowsProcessed'],
         'totalRows' => $config['totalRows'],
@@ -1424,18 +1439,24 @@ SQL;
       '_row_id+1',
       'errors',
     ]);
+    if (!empty($_GET['include-not-imported'])) {
+      $fields[] = "CASE imported WHEN true THEN 'yes' ELSE 'no' END as imported";
+    }
     $fieldSql = implode(', ', $fields);
+    $includeNotImported = !empty($_GET['include-not-imported']) ? 'OR imported=false' : '';
     $query = <<<SQL
-SELECT $fieldSql
-FROM import_temp.$dbIdentifiers[tempTableName]
-WHERE errors IS NOT NULL
-ORDER BY _row_id;
-SQL;
+      SELECT $fieldSql
+      FROM import_temp.$dbIdentifiers[tempTableName]
+      WHERE errors IS NOT NULL
+      $includeNotImported
+      ORDER BY _row_id;
+    SQL;
     $results = $db->query($query)->result(FALSE);
     $out = fopen('php://output', 'w');
     fputcsv($out, array_merge(array_keys($config['columns']), [
       '[Row no.]',
       '[Errors]',
+      '[Imported]',
     ]));
     // Find any date fields than need mapping back from Excel date integers to
     // date strings.
@@ -1719,6 +1740,26 @@ SQL;
   }
 
   /**
+   * Set the imported flag on a processed row to true in the temp table.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param int $rowId
+   *   Import row's ID.
+   * @param array $config
+   *   Import configuration settings.
+   */
+  private function setRowToImported($db, $rowId, array $config) {
+    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $sql = <<<SQL
+      UPDATE import_temp.$dbIdentifiers[tempTableName]
+      SET imported = true
+      WHERE _row_id = $rowId;
+    SQL;
+    $db->query($sql);
+  }
+
+  /**
    * Finds mapped database import columns that relate to an entity.
    *
    * @param string $entity
@@ -1819,6 +1860,8 @@ SQL;
     $sql = <<<SQL
 SELECT DISTINCT $fieldsAsCsv
 FROM import_temp.$dbIdentifiers[tempTableName]
+WHERE imported=false
+AND errors IS NULL
 ORDER BY $fieldsAsCsv
 LIMIT $batchRowLimit
 OFFSET ?;
@@ -1939,7 +1982,10 @@ SQL;
     $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
     $fields = $this->getDestFieldsForColumns($columns);
     // Build a filter to extract rows for this parent entity.
-    $wheresList = [];
+    $wheresList = [
+      'imported=false',
+      'errors IS NULL',
+    ];
     foreach ($fields as $field) {
       $fieldEsc = pg_escape_identifier($db->getLink(), $field);
       $value = pg_escape_literal($db->getLink(), $parentEntityDataRow->$field ?? '');
@@ -2415,12 +2461,15 @@ SQL;
     $db = new Database();
     $tableName = 'import_' . date('YmdHi') . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', pathinfo($fileName, PATHINFO_FILENAME));
     $config['tableName'] = $tableName;
-    $colsArray = ['_row_id serial'];
+    $colsArray = [
+      '_row_id serial',
+    ];
     $dbFieldNames = $this->getColumnTempDbFieldMappings($db, $config['columns']);
     foreach ($dbFieldNames as $fieldName) {
       $colsArray[] = "$fieldName varchar";
     }
     $colsArray[] = 'errors jsonb';
+    $colsArray[] = 'imported boolean default false';
     $colsList = implode(",\n", $colsArray);
     $qry = <<<SQL
 CREATE TABLE import_temp.$tableName (

@@ -24,5 +24,6 @@
         { "sql": "t3.website_id", "name": "website_id", "type": "integer" }
       ]
     }
-  ]
+  ],
+  "userFilterField": "t2.created_by_id"
 }
