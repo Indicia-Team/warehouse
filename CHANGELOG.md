@@ -5,7 +5,7 @@ Notable changes to the Indicia warehouse are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Version 9.13.0
-*2025-07-24*
+*2025-08-01*
 
 ### Action required
 
