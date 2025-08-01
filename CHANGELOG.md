@@ -44,12 +44,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   full-precision copy of the record will now have just the one precise Vice County in the higher geography, with an
   additional blurred version reflecting all the Vice Counties intersecting the blurred record location. See
   https://github.com/BiologicalRecordsCentre/iRecord/issues/1714.
+* Significant performance improvement in the code which runs in the background to generate record owner notifications.
 
 ### Bugfixes
 
 * Fixes an issue where the spatial reference system needs to be re-selected when editing an existing sample.
 * Fixes the output map reference and map reference system selected for records in the western part of Guernsey so that
   they use the Channel Islands Grid system.
+* Fix Channel Island Grid recording of a 100km map reference, e.g. "WV".
 
 ## Version 9.12.0
 *2025-07-07*
