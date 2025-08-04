@@ -51,7 +51,7 @@ CREATE TRIGGER set_sample_children_training_flag_trigger
   AFTER UPDATE
   ON samples
   FOR EACH ROW
-  EXECUTE PROCEDURE set_sample_children_to_training();
+  EXECUTE PROCEDURE set_sample_children_training_flag();
 
 DROP TRIGGER IF EXISTS set_new_subsample_to_training_from_parent_sample_trigger ON samples;
 
@@ -82,7 +82,7 @@ CREATE TRIGGER set_new_subsample_to_training_from_parent_sample_trigger
   AFTER INSERT
   ON samples
   FOR EACH ROW
-  EXECUTE PROCEDURE set_subsample_to_training_from_sample();
+  EXECUTE PROCEDURE set_new_subsample_to_training_from_parent_sample();
 
 DROP TRIGGER IF EXISTS set_occurrence_to_training_from_sample_trigger ON occurrences;
 
@@ -118,4 +118,4 @@ CREATE TRIGGER set_new_occurrence_to_training_from_its_sample_trigger
   AFTER INSERT
   ON occurrences
   FOR EACH ROW
-  EXECUTE PROCEDURE set_occurrence_to_training_from_sample();
+  EXECUTE PROCEDURE set_new_occurrence_to_training_from_its_sample();
