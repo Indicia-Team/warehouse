@@ -1,4 +1,4 @@
--- #slow script
+-- #slow script#
 
 -- Ensure sensitive records refreshed in Elasticsearch due to additional output_sref_blurred field.
 -- NOTE it might be wise to run this script in batches to not interrupt the normal flow of records to Elasticsearch.
