@@ -1,6 +1,7 @@
 WITH duplicates AS (
-  SELECT website_id, regexp_replace(replace(lower(title), ' ', '-'), '[^a-z0-9-]', '') AS title_url_path
+  SELECT website_id, regexp_replace(replace(lower(title), ' ', '-'), '[^a-z0-9-]', '', 'g') AS title_url_path
   FROM groups
+  WHERE deleted = false
   GROUP BY 1, 2
   HAVING count(*) > 1
 ), ranked_titles AS (
@@ -29,5 +30,4 @@ ADD COLUMN title_slug TEXT GENERATED ALWAYS AS (
   regexp_replace(replace(lower(title), ' ', '-'), '[^a-z0-9-]', '', 'g')
 ) STORED;
 
-ALTER TABLE groups
-  ADD CONSTRAINT unique_group_title UNIQUE (website_id, title_slug);
+CREATE UNIQUE INDEX ix_groups_title_unique ON groups(website_id, title_slug) WHERE deleted=false;
