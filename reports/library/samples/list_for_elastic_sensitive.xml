@@ -80,11 +80,11 @@
     SELECT s.id, string_agg(l.id::text, ',') AS location_ids
     INTO TEMPORARY sample_location_ids
     FROM filtered_samples s
-    JOIN samples smp ON smp.id=s.sample_id AND smp.deleted=false
+    JOIN samples smp ON smp.id=s.id AND smp.deleted=false
     JOIN locations l ON l.id=ANY(s.location_ids) AND l.deleted=false
       AND st_intersects(l.boundary_geom, smp.geom)
       AND (st_geometrytype(smp.geom)='ST_Point' or not st_touches(l.boundary_geom, smp.geom))
-    GROUP BY s.sample_id;
+    GROUP BY s.id;
 
     UPDATE output_rows o
     SET indexed_location_ids = sl.location_ids
