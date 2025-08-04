@@ -709,6 +709,10 @@ class Scheduled_Tasks_Controller extends Controller {
       ])
       ->where('sav1.int_value<>0')
       ->get();
+    if (count($emailsRequired) === 0) {
+      self::msg("No record owner notifications to send");
+      return;
+    }
     // Get a list of the records we need details of, so we can hit the db more
     // efficiently, plus a list of occurrence IDs and associated email
     // addresses.
