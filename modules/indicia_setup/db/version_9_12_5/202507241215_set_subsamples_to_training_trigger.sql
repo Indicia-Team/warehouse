@@ -10,37 +10,34 @@ CREATE OR REPLACE FUNCTION set_sample_children_to_training()
   RETURNS trigger AS
   $BODY$
     BEGIN
-      IF (OLD.training = false AND NEW.training = true) THEN
-
-        UPDATE cache_samples_functional
-        SET training = true, updated_on=now()
-        WHERE id = NEW.id;
-      
+      IF ((OLD.training = false AND NEW.training = true) OR
+          (OLD.training = true AND NEW.training = false)) THEN
+        -- Set any subsample training flags if parent training flag changes
         UPDATE samples
-        SET training = true, updated_on=now()
+        SET training = NEW.training, updated_on=now()
         WHERE parent_id = NEW.id;
-
+        -- Do same thing for cache table. Also update the cache table for the sample being changed.
         UPDATE cache_samples_functional
-        SET training = true, updated_on=now()
-        WHERE parent_sample_id = NEW.id;
-
+        SET training = NEW.training, updated_on=now()
+        WHERE 
+        (id = NEW.id) OR
+        (parent_sample_id = NEW.id);
+        -- Update occurrences for the sample training flag change.
+        -- Also update occurrences for any subsample training flag changes
+        -- as a result of parent sample training flag change.
         UPDATE occurrences
-        SET training = true, updated_on=now()
-        WHERE sample_id = NEW.id;
-
+        SET training = NEW.training, updated_on=now()
+        FROM samples s
+        WHERE sample_id = s.id AND
+        (sample_id = NEW.id OR
+        s.parent_id = NEW.id);
+        -- Exactly the same for cache table
         UPDATE cache_occurrences_functional
-        SET training = true, updated_on=now()
-        WHERE sample_id = NEW.id;
-
-        UPDATE occurrences o
-        SET training = true, updated_on=now()
-        FROM samples s_sub
-        WHERE s_sub.parent_id = NEW.id AND o.sample_id = s_sub.id;
-
-        UPDATE cache_occurrences_functional o
-        SET training = true, updated_on=now()
-        FROM samples s_sub
-        WHERE s_sub.parent_id = NEW.id AND o.sample_id = s_sub.id;
+        SET training = NEW.training, updated_on=now()
+        FROM samples s
+        WHERE sample_id = s.id AND
+        (sample_id = NEW.id OR
+        s.parent_id = NEW.id);
 
       END IF;
       RETURN OLD;
