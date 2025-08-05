@@ -1255,7 +1255,7 @@ SQL;
         $this->applyGlobalValues($config, $config['parentEntity'], $parent->attrs_field_prefix ?? NULL, $submission);
         $identifiers = [
           'website_id' => $config['global-values']['website_id'],
-          'survey_id' => $submission['survey_id'],
+          'survey_id' => $submission['survey_id'] ?? NULL,
         ];
         if ($config['parentEntitySupportsImportGuid']) {
           $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
@@ -1857,16 +1857,16 @@ SQL;
     // parent.
     $batchRowLimit = BATCH_ROW_LIMIT / 10;
     $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    // Because this skips the already imported rows, no need to do OFFSET.
     $sql = <<<SQL
 SELECT DISTINCT $fieldsAsCsv
 FROM import_temp.$dbIdentifiers[tempTableName]
 WHERE imported=false
 AND errors IS NULL
 ORDER BY $fieldsAsCsv
-LIMIT $batchRowLimit
-OFFSET ?;
+LIMIT $batchRowLimit;
 SQL;
-    return $db->query($sql, [$config['parentEntityRowsProcessed']])->result();
+    return $db->query($sql)->result();
   }
 
   /**
