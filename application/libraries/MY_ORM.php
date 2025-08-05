@@ -1951,7 +1951,6 @@ class ORM extends ORM_Core {
         $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($fk, $identifiers, FALSE));
       }
     }
-    kohana::log('debug', 'Required fields for ' . $this->object_name . ': ' . print_r($fields, TRUE));
     return $fields;
   }
 
