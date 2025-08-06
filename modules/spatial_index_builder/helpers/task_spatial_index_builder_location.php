@@ -73,10 +73,16 @@ class task_spatial_index_builder_location {
     $linkedLocationAttrIds = spatial_index_builder::getLinkedLocationAttrIds($db);
 
     $surveyFilters = '';
+    $gridRefSizeFilters = '';
     if (!empty($locationTypeFilters['surveyFilters'])) {
       foreach ($locationTypeFilters['surveyFilters'] as $locationTypeId => $surveyIds) {
         $surveyIds = implode(',', $surveyIds);
         $surveyFilters .= "AND (s.survey_id IN ($surveyIds) OR l.location_type_id<>$locationTypeId)";
+      }
+    }
+    if (isset($locationTypeFilters['maxGridRefAreas'])) {
+      foreach ($locationTypeFilters['maxGridRefAreas'] as $locationTypeId => $gridRefMaxArea) {
+        $gridRefSizeFilters .= "AND (l.location_type_id<>$locationTypeId OR st_area(s.public_geom) <= $gridRefMaxArea)";
       }
     }
     $locationTypeIds = implode(',', $locationTypeFilters['locationTypeIds']);
@@ -126,6 +132,7 @@ class task_spatial_index_builder_location {
           ON st_intersects(l.boundary_geom, s.public_geom)
           AND (st_geometrytype(s.public_geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.public_geom))
           $surveyFilters
+          $gridRefSizeFilters
         LEFT JOIN sample_attribute_values v ON v.sample_id=s.id AND v.deleted=false AND v.sample_attribute_id IN ($linkedLocationAttrIds)
         JOIN samples smp ON smp.id=s.id
           AND smp.deleted=false
@@ -170,7 +177,7 @@ class task_spatial_index_builder_location {
         END
       FROM changed_location_hits clh
       WHERE u.id=clh.sample_id
-      AND NOT u.location_ids @> clh.location_ids;
+      AND (u.location_ids IS NULL OR NOT u.location_ids @> clh.location_ids);
 
       -- Occurrences - remove any old hits for locations that have changed.
       UPDATE cache_occurrences_functional u
@@ -178,7 +185,7 @@ class task_spatial_index_builder_location {
       FROM occ_locations_deleted ld
       WHERE u.id=ld.id;
 
-      -- Samples - add any missing hits for locations that have changed.
+      -- Occurrences - add any missing hits for locations that have changed.
       UPDATE cache_occurrences_functional u
         SET location_ids=CASE
           WHEN u.location_ids IS NULL THEN clh.location_ids
@@ -186,7 +193,7 @@ class task_spatial_index_builder_location {
         END
       FROM changed_location_hits clh
       WHERE u.sample_id=clh.sample_id
-      AND NOT u.location_ids @> clh.location_ids;
+      AND (u.location_ids IS NULL OR NOT u.location_ids @> clh.location_ids);
 
     SQL;
     $db->query($qry);

@@ -87,9 +87,14 @@ class task_spatial_index_builder_sample {
     SQL;
     foreach ($locationTypeFilters['locationTypeIds'] as $locationTypeId) {
       $surveyFilter = '';
+      $gridRefSizeFilter = '';
       if (isset($locationTypeFilters['surveyFilters'][$locationTypeId])) {
         $surveys = implode(',', $locationTypeFilters['surveyFilters'][$locationTypeId]);
         $surveyFilter = "AND sl.survey_id IN ($surveys)";
+      }
+      if (isset($locationTypeFilters['maxGridRefAreas'][$locationTypeId])) {
+        $gridRefMaxArea = $locationTypeFilters['maxGridRefAreas'][$locationTypeId];
+        $gridRefSizeFilter = "AND st_area(s.public_geom) <= $gridRefMaxArea";
       }
       $qry .= <<<SQL
 
@@ -125,6 +130,7 @@ class task_spatial_index_builder_sample {
             AND (st_geometrytype(s.public_geom)='ST_Point' or not st_touches(l.boundary_geom, s.public_geom))
             AND l.deleted=false
             AND l.location_type_id=$locationTypeId
+            $gridRefSizeFilter
           WHERE smp_locs.sample_id IS NULL
           $surveyFilter
           GROUP BY sl.record_id;

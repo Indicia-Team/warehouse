@@ -41,6 +41,15 @@ $config['survey_restrictions'] = [
   'Local wildlife site' => [25, 26, 27],
 ];
 
+// Exclude any very large grid squares from indexing against layers with small
+// polygons. Otherwise the generated list of indexed sites will be huge and not
+// very useful. 10000000000 will exclude 100km grid squares (the area in Web
+// Mercator).
+$config['max_grid_ref_areas'] = [
+  'Local wildlife site' => 10000000000,
+];
+
+
 // The following config causes locations of type recording site added to
 // website ID 1 to be indexed against countries.
 $config['location_indexing'] = [

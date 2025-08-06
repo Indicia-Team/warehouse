@@ -45,7 +45,7 @@ class spatial_index_builder {
    */
   public static function getLocationTypeFilters($db) {
     $cache = Cache::instance();
-    $filters = $cache->get('spatial-index-location-type-filter-info');
+    $filters = $cache->get('spatial-index-location-type-filter-info-v2');
     if (!$filters) {
       $config = kohana::config_load('spatial_index_builder');
       if (!array_key_exists('location_types', $config)) {
@@ -76,11 +76,22 @@ class spatial_index_builder {
           $surveyFilters[$id] = $surveyIds;
         }
       }
+      $maxGridRefAreas = [];
+      if (array_key_exists('max_grid_ref_areas', $config)) {
+        foreach ($config['max_grid_ref_areas'] as $type => $area) {
+          if (!isset($allLocationTypeIds[$type])) {
+            throw new exception('Configured max grid ref area incorrect in spatial index builder');
+          }
+          $id = $allLocationTypeIds[$type];
+          $maxGridRefAreas[$id] = (int) $area;
+        }
+      }
       $filters = [
         'locationTypeIds' => $allLocationTypeIds,
         'surveyFilters' => $surveyFilters,
+        'maxGridRefAreas' => $maxGridRefAreas,
       ];
-      $cache->set('spatial-index-location-type-filter-info', $filters);
+      $cache->set('spatial-index-location-type-filter-info-v2', $filters);
     }
     return $filters;
   }
