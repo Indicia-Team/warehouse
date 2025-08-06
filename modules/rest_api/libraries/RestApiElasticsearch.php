@@ -2432,8 +2432,20 @@ class RestApiElasticsearch {
     $headers = curl_getinfo($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     if ($httpCode !== 200) {
-      $error = curl_error($session);
-      kohana::log('error', 'ES proxy request failed: ' . $error . ': ' . json_encode($error));
+      $responseDecoded = json_decode($response, TRUE);
+      if ($responseDecoded['error']['root_cause'][0]['reason'] ?? NULL) {
+        $error = $responseDecoded['error']['root_cause'][0]['reason'];
+      }
+      else {
+        $error = curl_error($session);
+      }
+      if (substr($error, 0, 21) === 'Failed to parse query') {
+        $httpStatus = ['Bad Request', 400];
+      }
+      else {
+        $httpStatus = ['Internal Server Error', 500];
+      }
+      kohana::log('error', 'ES proxy request failed: ' . $error);
       kohana::log('error', 'URL: ' . $actualUrl);
       kohana::log('error', 'Query: ' . $postData);
       kohana::log('error', 'Response: ' . $response);
@@ -2446,7 +2458,7 @@ class RestApiElasticsearch {
       if (!empty(RestObjects::$clientWebsiteId)) {
         kohana::log('error', 'ClientWebsiteId: ' . RestObjects::$clientWebsiteId);
       }
-      RestObjects::$apiResponse->fail('Internal server error', 500, empty($error) ? NULL : json_encode($error));
+      RestObjects::$apiResponse->fail($httpStatus[0], $httpStatus[1], $error);
     }
     curl_close($session);
     // Will need decoded data for processing CSV.
