@@ -136,18 +136,24 @@ class task_cache_builder_attrs_sample {
         $langTermSql
       ) AS subquery
       GROUP BY sample_id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       UPDATE cache_samples_nonfunctional u
       SET attrs_json=a.attrs
       FROM attrs a
       WHERE a.sample_id=u.id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       -- Force tracking update.
       UPDATE cache_samples_functional u
       SET website_id=u.website_id
       FROM attrs a
       WHERE a.sample_id=u.id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       DELETE FROM work_queue q
       USING attrs a
       WHERE a.sample_id=q.record_id
@@ -155,7 +161,6 @@ class task_cache_builder_attrs_sample {
       AND q.task='task_cache_builder_attrs_sample';
 
       DROP TABLE attrs;
-
     SQL;
     $db->query($sql);
   }

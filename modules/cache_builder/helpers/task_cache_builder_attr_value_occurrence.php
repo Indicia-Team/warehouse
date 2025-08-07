@@ -136,12 +136,16 @@ class task_cache_builder_attr_value_occurrence {
         $langTermSql
       ) AS subquery
       GROUP BY occurrence_id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       UPDATE cache_occurrences_nonfunctional u
       SET attrs_json=a.attrs
       FROM attrs a
       WHERE a.occurrence_id=u.id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       -- Force tracking update.
       UPDATE cache_occurrences_functional u
       SET website_id=u.website_id
@@ -149,7 +153,6 @@ class task_cache_builder_attr_value_occurrence {
       WHERE a.occurrence_id=u.id;
 
       DROP TABLE attrs;
-
     SQL;
     $db->query($sql);
   }

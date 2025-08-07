@@ -136,12 +136,16 @@ class task_cache_builder_attrs_taxa_taxon_list {
         $langTermSql
       ) AS subquery
       GROUP BY taxa_taxon_list_id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       UPDATE cache_taxa_taxon_lists u
       SET attrs_json=a.attrs
       FROM attrs a
       WHERE a.taxa_taxon_list_id=u.id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       DELETE FROM work_queue q
       USING attrs a
       WHERE a.taxa_taxon_list_id=q.record_id
@@ -149,7 +153,6 @@ class task_cache_builder_attrs_taxa_taxon_list {
       AND q.task='task_cache_builder_attrs_taxa_taxon_list';
 
       DROP TABLE attrs;
-
     SQL;
     $db->query($sql);
   }
