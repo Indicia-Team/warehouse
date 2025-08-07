@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Queue worker to update cache_occurrences_functional.taxon_path.
+ * Queue worker to move records to a different survey/website combination.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -71,25 +71,33 @@ class task_cache_builder_post_move {
         AND q.task='task_cache_builder_post_move'
         AND q.claimed_by=$procIdEsc
       );
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       UPDATE cache_occurrences_functional u
       SET website_id=mr.website_id,
         survey_id=mr.survey_id
       FROM moving_records mr
       WHERE mr.id=u.id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       UPDATE cache_samples_functional u
       SET website_id=mr.website_id,
         survey_id=mr.survey_id
       FROM moving_records mr
       WHERE mr.sample_id=u.id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       UPDATE cache_samples_nonfunctional u
       SET website_title=mr.website_title,
         survey_title=mr.survey_title
       FROM moving_records mr
       WHERE mr.sample_id=u.id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       DELETE FROM work_queue q
       USING moving_records mr
       WHERE q.entity='taxa_taxon_list'
