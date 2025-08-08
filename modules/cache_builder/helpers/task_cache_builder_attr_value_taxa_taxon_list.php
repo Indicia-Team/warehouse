@@ -136,7 +136,9 @@ class task_cache_builder_attr_value_taxa_taxon_list {
         $langTermSql
       ) AS subquery
       GROUP BY taxa_taxon_list_id;
-
+    SQL;
+    $db->query($sql);
+    $sql = <<<SQL
       UPDATE cache_taxa_taxon_lists u
       SET attrs_json=a.attrs
       FROM attrs a

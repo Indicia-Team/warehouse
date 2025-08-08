@@ -49,6 +49,7 @@
     JOIN samples smp ON smp.id=s.id
     JOIN occurrence_stats os ON os.sample_id=s.id
     JOIN cache_samples_nonfunctional snf ON snf.id=s.id
+    JOIN cache_samples_sensitive ss ON ss.id=s.id
     LEFT JOIN locations l ON l.id=smp.location_id AND l.deleted=false
     -- Recorder supplied higher geography locations
     LEFT JOIN locations shg ON shg.id=snf.attr_linked_location_id AND shg.deleted=false
@@ -75,21 +76,6 @@
       JOIN locations lp ON lp.id = lc.parent_id AND lp.deleted=false
       WHERE sc.id=o.sample_id AND sc.deleted=false
     AND o.recorded_parent_location_id IS NULL;
-
-    -- Calculate the full-precision version of the indexed location IDs.
-    SELECT s.id, string_agg(l.id::text, ',') AS location_ids
-    INTO TEMPORARY sample_location_ids
-    FROM filtered_samples s
-    JOIN samples smp ON smp.id=s.id AND smp.deleted=false
-    JOIN locations l ON l.id=ANY(s.location_ids) AND l.deleted=false
-      AND st_intersects(l.boundary_geom, smp.geom)
-      AND (st_geometrytype(smp.geom)='ST_Point' or not st_touches(l.boundary_geom, smp.geom))
-    GROUP BY s.id;
-
-    UPDATE output_rows o
-    SET indexed_location_ids = sl.location_ids
-    FROM sample_location_ids sl
-    WHERE o.id=sl.id;
 
     SELECT *
     FROM output_rows s
@@ -208,7 +194,7 @@
     <column name="supplied_higher_geography_code" sql="shg.code" datatype="text" />
     <column name="supplied_higher_geography_type" sql="shgt.term" datatype="text" />
     <column name="indexed_location_ids_blurred" sql="array_to_string(s.location_ids, ',')" datatype="text" />
-    <column name="indexed_location_ids" sql="null::text" datatype="text" />
+    <column name="indexed_location_ids" sql="array_to_string(ss.location_ids, ',')" datatype="text" />
     <column name="sample_comment" sql="snf.comment" datatype="text" />
     <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
     <column name="attr_sample_method" sql="snf.attr_sample_method" datatype="text" />
