@@ -906,9 +906,11 @@ $config['samples']['get_changed_items_query'] = "
     group by id
 ";
 
-$config['samples']['delete_query'] = [
-  "delete from cache_samples_functional where id in (select id from needs_update_samples where deleted=true);
-delete from cache_samples_nonfunctional where id in (select id from needs_update_samples where deleted=true);",
+$config['samples']['delete_query'] = [<<<SQL
+    DELETE FROM cache_samples_functional WHERE id IN (SELECT id FROM needs_update_samples WHERE deleted=true);
+    DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT id FROM needs_update_samples WHERE deleted=true);
+    DELETE FROM cache_samples_sensitive WHERE id IN (SELECT id FROM needs_update_samples WHERE deleted=true);
+  SQL,
 ];
 
 $config['samples']['update']['functional'] = "
@@ -1210,6 +1212,16 @@ FROM samples s
 #join_needs_update#
 JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false AND o.sensitivity_precision IS NOT NULL
 WHERE s.id=cache_samples_functional.id
+";
+
+$config['samples']['insert']['sensitive'] = "
+INSERT INTO cache_samples_sensitive(id)
+SELECT s.id
+FROM samples s
+#join_needs_update#
+LEFT JOIN cache_samples_sensitive cs on cs.id=s.id
+WHERE s.deleted=false
+AND cs.id IS NULL
 ";
 
 $config['samples']['insert']['nonfunctional'] = "
