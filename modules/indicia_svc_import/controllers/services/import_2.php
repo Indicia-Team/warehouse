@@ -27,6 +27,7 @@ define('BATCH_ROW_LIMIT', 100);
 define('SYSTEM_FIELD_NAMES', [
   '_row_id',
   'errors',
+  'checked',
   'imported',
 ]);
 
@@ -1222,14 +1223,14 @@ SQL;
       }
       $config = $this->getConfig($fileName);
       $isPrecheck = !empty($_POST['precheck']);
+      $db = new Database();
       // If request to start again sent, go from beginning.
       if (!empty($_POST['restart'])) {
         $config['rowsProcessed'] = 0;
         $config['parentEntityRowsProcessed'] = 0;
-        $config['errorsCount'] = 0;
         $this->saveConfig($fileName, $config);
       }
-      $db = new Database();
+
       if (!empty($_POST['save-import-record'])) {
         $this->saveImportRecord($config, json_decode($_POST['save-import-record']));
       }
@@ -1240,7 +1241,7 @@ SQL;
       // @todo Handling for entities without parent entity.
       $parentEntityColumns = $this->findEntityColumns($config['parentEntity'], $config);
       $childEntityColumns = $this->findEntityColumns($config['entity'], $config);
-      $parentEntityDataRows = $this->fetchParentEntityData($db, $parentEntityColumns, $config);
+      $parentEntityDataRows = $this->fetchParentEntityData($db, $parentEntityColumns, $isPrecheck, $config);
 
       // Check for compound field handling which require presence of a set of
       // fields (e.g. build date from day, month, year).
@@ -1275,7 +1276,7 @@ SQL;
             $parentErrors['sample:general'] = $e->getMessage();
           }
         }
-        $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityColumns, $config, $parentEntityDataRow);
+        $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityColumns, $isPrecheck, $config, $parentEntityDataRow);
         if (count($parentErrors) > 0) {
           $config['errorsCount'] += count($childEntityDataRows);
           if (!$isPrecheck) {
@@ -1320,13 +1321,15 @@ SQL;
               }
               $this->saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
             }
-            elseif (!$isPrecheck) {
-              $this->setRowToImported($db, $childEntityDataRow->_row_id, $config);
-              if (!empty($submission['occurrence:id'])) {
-                $config['rowsUpdated']++;
-              }
-              else {
-                $config['rowsInserted']++;
+            else {
+              $this->setRowDone($db, $childEntityDataRow->_row_id, $isPrecheck, $config);
+              if (!$isPrecheck) {
+                if (!empty($submission['occurrence:id'])) {
+                  $config['rowsUpdated']++;
+                }
+                else {
+                  $config['rowsInserted']++;
+                }
               }
             }
             $config['rowsProcessed']++;
@@ -1740,20 +1743,23 @@ SQL;
   }
 
   /**
-   * Set the imported flag on a processed row to true in the temp table.
+   * Set the imported or checked flag on a processed row to true in the temp table.
    *
    * @param Database $db
    *   Database connection.
    * @param int $rowId
    *   Import row's ID.
+   * @param bool $isPrecheck
+   *   Whether this is a precheck or an import.
    * @param array $config
    *   Import configuration settings.
    */
-  private function setRowToImported($db, $rowId, array $config) {
+  private function setRowDone($db, $rowId, $isPrecheck, array $config) {
     $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $fieldToUpdate = $isPrecheck ? 'checked' : 'imported';
     $sql = <<<SQL
       UPDATE import_temp.$dbIdentifiers[tempTableName]
-      SET imported = true
+      SET $fieldToUpdate = true
       WHERE _row_id = $rowId;
     SQL;
     $db->query($sql);
@@ -1842,12 +1848,14 @@ SQL;
    *
    * @param object $db
    *   Database connection.
+   * @param bool $isPrecheck
+   *   Whether this is a precheck or an import.
    * @param array $columns
    *   List of column definitions to look for uniqueness in the values of.
    * @param array $config
    *   Import metadata configuration object.
    */
-  private function fetchParentEntityData($db, array $columns, array $config) {
+  private function fetchParentEntityData($db, array $columns, $isPrecheck, array $config) {
     $fields = $this->getDestFieldsForColumns($columns);
     $fields = array_map(function ($s) use ($db) {
       return pg_escape_identifier($db->getLink(), $s);
@@ -1857,11 +1865,12 @@ SQL;
     // parent.
     $batchRowLimit = BATCH_ROW_LIMIT / 10;
     $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $fieldToTrackDoneBy = $isPrecheck ? 'checked' : 'imported';
     // Because this skips the already imported rows, no need to do OFFSET.
     $sql = <<<SQL
 SELECT DISTINCT $fieldsAsCsv
 FROM import_temp.$dbIdentifiers[tempTableName]
-WHERE imported=false
+WHERE $fieldToTrackDoneBy=false
 AND errors IS NULL
 ORDER BY $fieldsAsCsv
 LIMIT $batchRowLimit;
@@ -1970,6 +1979,8 @@ SQL;
    *   Database connection.
    * @param array $columns
    *   List of parent columns that will be filtered to find the child data rows.
+   * @param bool $isPrecheck
+   *   Whether this is a precheck or an import.
    * @param array $config
    *   Import metadata configuration object.
    * @param object $parentEntityDataRow
@@ -1978,12 +1989,13 @@ SQL;
    * @return object
    *   Database result containing child rows.
    */
-  private function fetchChildEntityData($db, array $columns, array $config, $parentEntityDataRow) {
+  private function fetchChildEntityData($db, array $columns, $isPrecheck, array $config, $parentEntityDataRow) {
     $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
     $fields = $this->getDestFieldsForColumns($columns);
     // Build a filter to extract rows for this parent entity.
+    $fieldToTrackDoneBy = $isPrecheck ? 'checked' : 'imported';
     $wheresList = [
-      'imported=false',
+      "$fieldToTrackDoneBy=false",
       'errors IS NULL',
     ];
     foreach ($fields as $field) {
@@ -2469,6 +2481,7 @@ SQL;
       $colsArray[] = "$fieldName varchar";
     }
     $colsArray[] = 'errors jsonb';
+    $colsArray[] = 'checked boolean default false';
     $colsArray[] = 'imported boolean default false';
     $colsList = implode(",\n", $colsArray);
     $qry = <<<SQL
