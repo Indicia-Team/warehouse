@@ -74,6 +74,7 @@ class task_spatial_index_builder_location {
 
     $surveyFilters = '';
     $gridRefSizeFilters = '';
+    $gridRefSizeFiltersSensitive = '';
     if (!empty($locationTypeFilters['surveyFilters'])) {
       foreach ($locationTypeFilters['surveyFilters'] as $locationTypeId => $surveyIds) {
         $surveyIds = implode(',', $surveyIds);
@@ -83,20 +84,25 @@ class task_spatial_index_builder_location {
     if (isset($locationTypeFilters['maxGridRefAreas'])) {
       foreach ($locationTypeFilters['maxGridRefAreas'] as $locationTypeId => $gridRefMaxArea) {
         $gridRefSizeFilters .= "AND (l.location_type_id<>$locationTypeId OR st_area(s.public_geom) <= $gridRefMaxArea)";
+        $gridRefSizeFiltersSensitive .= "AND (l.location_type_id<>$locationTypeId OR st_area(s.geom) <= $gridRefMaxArea)";
       }
     }
     $locationTypeIds = implode(',', $locationTypeFilters['locationTypeIds']);
 
     $qry = <<<SQL
       DROP TABLE IF EXISTS loclist;
+      DROP TABLE IF EXISTS user_decisions;
       DROP TABLE IF EXISTS changed_location_hits;
+      DROP TABLE IF EXISTS changed_location_hits_sensitive;
       DROP TABLE IF EXISTS changed_location_hits_occs;
       DROP TABLE IF EXISTS smp_locations_deleted;
       DROP TABLE IF EXISTS occ_locations_deleted;
+      DROP TABLE IF EXISTS smp_locations_deleted_sensitive;
 
       -- Prepare temporary tables that make things faster when we update cache
       -- tables.
-      SELECT DISTINCT w.record_id INTO TEMPORARY loclist
+      SELECT DISTINCT w.record_id
+      INTO TEMPORARY loclist
       FROM work_queue w
       JOIN locations l ON l.id = w.record_id
         AND l.location_type_id IN ($locationTypeIds)
@@ -104,8 +110,16 @@ class task_spatial_index_builder_location {
       AND w.entity='location'
       AND w.task='task_spatial_index_builder_location';
 
-      WITH ltree AS (
-        SELECT l.id, l.location_type_id, s.id as sample_id
+      CREATE TEMPORARY TABLE user_decisions (
+        id integer,
+        location_type_id integer,
+        sample_id integer
+      );
+
+      -- Build a list of location/sample links where the original recorder or a
+      -- verifier have forced the spatial indexer to use specific locations.
+      INSERT INTO user_decisions
+      SELECT l.id, l.location_type_id, s.id as sample_id
         FROM loclist ll
         JOIN locations l
           ON l.id=ll.record_id
@@ -120,7 +134,11 @@ class task_spatial_index_builder_location {
         JOIN sample_attribute_values v ON v.int_value=l.id AND v.sample_attribute_id IN ($linkedLocationAttrIds) AND v.deleted=false
         JOIN samples smp ON smp.id=v.sample_id
           AND smp.deleted=false
-          AND smp.forced_spatial_indexer_location_ids IS NULL
+          AND smp.forced_spatial_indexer_location_ids IS NULL;
+
+      WITH ltree AS (
+        SELECT id, location_type_id, sample_id
+        FROM user_decisions
         UNION ALL
         SELECT l.id, l.location_type_id, s.id as sample_id
         FROM loclist ll
@@ -145,6 +163,34 @@ class task_spatial_index_builder_location {
       FROM ltree
       GROUP BY sample_id;
 
+      WITH ltree AS (
+        SELECT id, location_type_id, sample_id
+        FROM user_decisions
+        UNION ALL
+        SELECT l.id, l.location_type_id, s.id as sample_id
+        FROM loclist ll
+        JOIN locations l
+          ON l.id=ll.record_id
+          AND l.deleted=false
+          AND l.location_type_id IN ($locationTypeIds)
+        JOIN samples s ON s.id=s.id
+          AND s.deleted=false
+          AND s.forced_spatial_indexer_location_ids IS NULL
+          AND st_intersects(l.boundary_geom, s.geom)
+          AND (st_geometrytype(s.geom)='ST_Point' OR NOT st_touches(l.boundary_geom, s.geom))
+          $surveyFilters
+          $gridRefSizeFiltersSensitive
+        LEFT JOIN sample_attribute_values v ON v.sample_id=s.id AND v.deleted=false AND v.sample_attribute_id IN ($linkedLocationAttrIds)
+        LEFT JOIN locations lfixed on lfixed.id=v.int_value AND lfixed.deleted=false
+        WHERE COALESCE(l.location_type_id,-1)<>COALESCE(lfixed.location_type_id,-2)
+      )
+      SELECT sample_id, array_agg(distinct id) as location_ids
+      INTO TEMPORARY changed_location_hits_sensitive
+      FROM ltree
+      GROUP BY sample_id;
+
+      -- Find samples currently indexed against locations where they no longer
+      -- intersect.
       SELECT s.id, array_remove(s.location_ids, ll.record_id) as location_ids
       INTO TEMPORARY smp_locations_deleted
       FROM cache_samples_functional s
@@ -154,22 +200,14 @@ class task_spatial_index_builder_location {
       ) ON clh.sample_id=s.id
       WHERE clh.sample_id IS NULL;
 
-      SELECT o.id, array_remove(o.location_ids, ll.record_id) as location_ids
-      INTO TEMPORARY occ_locations_deleted
-      FROM cache_occurrences_functional o
-      JOIN loclist ll ON o.location_ids @> ARRAY[ll.record_id]
-      LEFT JOIN (changed_location_hits clh
-        JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
-      ) ON clh.sample_id=o.sample_id
-      WHERE clh.sample_id IS NULL;
-
-      -- Samples - remove any old hits for locations that have changed.
+      -- Remove the locations from the samples which no longer intersect.
       UPDATE cache_samples_functional u
       SET location_ids=ld.location_ids
       FROM smp_locations_deleted ld
       WHERE u.id=ld.id;
 
-      -- Samples - add any missing hits for locations that have changed.
+      -- Add missing hits to samples which are now indexed against locations
+      -- but weren't before.
       UPDATE cache_samples_functional u
         SET location_ids=CASE
           WHEN u.location_ids IS NULL THEN clh.location_ids
@@ -179,13 +217,25 @@ class task_spatial_index_builder_location {
       WHERE u.id=clh.sample_id
       AND (u.location_ids IS NULL OR NOT u.location_ids @> clh.location_ids);
 
-      -- Occurrences - remove any old hits for locations that have changed.
+      -- Find occurrences currently indexed against locations where they no
+      -- longer intersect.
+      SELECT o.id, array_remove(o.location_ids, ll.record_id) as location_ids
+      INTO TEMPORARY occ_locations_deleted
+      FROM cache_occurrences_functional o
+      JOIN loclist ll ON o.location_ids @> ARRAY[ll.record_id]
+      LEFT JOIN (changed_location_hits clh
+        JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
+      ) ON clh.sample_id=o.sample_id
+      WHERE clh.sample_id IS NULL;
+
+      -- Remove the locations from the occurrences which no longer intersect.
       UPDATE cache_occurrences_functional u
       SET location_ids=ld.location_ids
       FROM occ_locations_deleted ld
       WHERE u.id=ld.id;
 
-      -- Occurrences - add any missing hits for locations that have changed.
+      -- Add missing hits to occurrences which are now indexed against
+      -- locations but weren't before.
       UPDATE cache_occurrences_functional u
         SET location_ids=CASE
           WHEN u.location_ids IS NULL THEN clh.location_ids
@@ -193,6 +243,37 @@ class task_spatial_index_builder_location {
         END
       FROM changed_location_hits clh
       WHERE u.sample_id=clh.sample_id
+      AND (u.location_ids IS NULL OR NOT u.location_ids @> clh.location_ids);
+
+      -- Find samples currently indexed against locations where they no longer
+      -- intersect - for the full-precision version for sensitive or private
+      -- data.
+      SELECT s.id, array_remove(s.location_ids, ll.record_id) as location_ids
+      INTO TEMPORARY smp_locations_deleted_sensitive
+      FROM cache_samples_sensitive s
+      JOIN loclist ll ON s.location_ids @> ARRAY[ll.record_id]
+      LEFT JOIN (changed_location_hits_sensitive clh
+        JOIN loclist lhit ON clh.location_ids @> ARRAY[lhit.record_id]
+      ) ON clh.sample_id=s.id
+      WHERE clh.sample_id IS NULL;
+
+      -- Remove the locations from the samples which no longer intersect - for
+      -- the full-precision version for sensitive or private data.
+      UPDATE cache_samples_sensitive u
+      SET location_ids=ld.location_ids
+      FROM smp_locations_deleted_sensitive ld
+      WHERE u.id=ld.id;
+
+      -- Add missing hits to samples which are now indexed against locations
+      -- but weren't before - for the full-precision version for sensitive or
+      -- private data.
+      UPDATE cache_samples_sensitive u
+        SET location_ids=CASE
+          WHEN u.location_ids IS NULL THEN clh.location_ids
+          ELSE ARRAY(select distinct unnest(array_cat(clh.location_ids, u.location_ids)))
+        END
+      FROM changed_location_hits_sensitive clh
+      WHERE u.id=clh.sample_id
       AND (u.location_ids IS NULL OR NOT u.location_ids @> clh.location_ids);
 
     SQL;

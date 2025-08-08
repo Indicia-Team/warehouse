@@ -68,7 +68,9 @@ class task_spatial_index_builder_sample {
 
       DROP TABLE IF EXISTS smplist;
       DROP TABLE IF EXISTS smp_locs;
+      DROP TABLE IF EXISTS smp_locs_sensitive;
       DROP TABLE IF EXISTS changed_samples;
+      DROP TABLE IF EXISTS changed_samples_sensitive;
 
       -- Get the list of samples to process.
       SELECT wq.record_id, s.survey_id
@@ -83,11 +85,14 @@ class task_spatial_index_builder_sample {
       CREATE INDEX ix_smplist_survey_id ON smplist(survey_id);
 
       CREATE TEMPORARY TABLE smp_locs (sample_id int, location_type_id int, location_ids int[]);
+      CREATE TEMPORARY TABLE smp_locs_sensitive (sample_id int, location_type_id int, location_ids int[]);
 
     SQL;
+    $spatialQueries = '';
     foreach ($locationTypeFilters['locationTypeIds'] as $locationTypeId) {
       $surveyFilter = '';
       $gridRefSizeFilter = '';
+      $gridRefSizeFilterSensitive = '';
       if (isset($locationTypeFilters['surveyFilters'][$locationTypeId])) {
         $surveys = implode(',', $locationTypeFilters['surveyFilters'][$locationTypeId]);
         $surveyFilter = "AND sl.survey_id IN ($surveys)";
@@ -95,6 +100,7 @@ class task_spatial_index_builder_sample {
       if (isset($locationTypeFilters['maxGridRefAreas'][$locationTypeId])) {
         $gridRefMaxArea = $locationTypeFilters['maxGridRefAreas'][$locationTypeId];
         $gridRefSizeFilter = "AND st_area(s.public_geom) <= $gridRefMaxArea";
+        $gridRefSizeFilterSensitive = "AND st_area(smp.geom) <= $gridRefMaxArea";
       }
       $qry .= <<<SQL
 
@@ -120,27 +126,58 @@ class task_spatial_index_builder_sample {
           WHERE smp_locs.sample_id IS NULL
           $surveyFilter;
 
+      SQL;
+      // Spatial queries added to the main query after all the other inserts
+      // for all types, so we can clone the contents of smp_locs for a
+      // full-precision version for samples with sensitive or private data.
+      $spatialQueries .= <<<SQL
         -- Append the sample/locations where there isn't a user choice.
         INSERT INTO smp_locs
         SELECT sl.record_id, $locationTypeId, ARRAY_REMOVE(ARRAY_AGG(l.id), NULL)
           FROM smplist sl
-          LEFT JOIN smp_locs ON smp_locs.sample_id=sl.record_id AND smp_locs.location_type_id=$locationTypeId
+          LEFT JOIN smp_locs exist ON exist.sample_id=sl.record_id AND exist.location_type_id=$locationTypeId
           JOIN cache_samples_functional s on s.id=sl.record_id
           LEFT JOIN locations l on l.boundary_geom && s.public_geom AND st_intersects(l.boundary_geom, s.public_geom)
             AND (st_geometrytype(s.public_geom)='ST_Point' or not st_touches(l.boundary_geom, s.public_geom))
             AND l.deleted=false
             AND l.location_type_id=$locationTypeId
             $gridRefSizeFilter
-          WHERE smp_locs.sample_id IS NULL
+          WHERE exist.sample_id IS NULL
+          $surveyFilter
+          GROUP BY sl.record_id;
+
+        INSERT INTO smp_locs_sensitive
+        SELECT sl.record_id, $locationTypeId, ARRAY_REMOVE(ARRAY_AGG(l.id), NULL)
+          FROM smplist sl
+          LEFT JOIN smp_locs_sensitive exist ON exist.sample_id=sl.record_id AND exist.location_type_id=$locationTypeId
+          JOIN cache_samples_functional s on s.id=sl.record_id AND (s.sensitive=true OR s.private=true)
+          JOIN samples smp ON smp.id=sl.record_id AND smp.deleted=false
+          LEFT JOIN locations l on l.boundary_geom && smp.geom AND st_intersects(l.boundary_geom, smp.geom)
+            AND (st_geometrytype(smp.geom)='ST_Point' or not st_touches(l.boundary_geom, smp.geom))
+            AND l.deleted=false
+            AND l.location_type_id=$locationTypeId
+            $gridRefSizeFilterSensitive
+          WHERE exist.sample_id IS NULL
           $surveyFilter
           GROUP BY sl.record_id;
 
       SQL;
     }
     $qry .= <<<SQL
+      -- Clone all the spatial indexing that is dictacted by decisions made by
+      -- the recorder or verifier.
+      INSERT INTO smp_locs_sensitive
+      SELECT sl.*
+      FROM smp_locs sl
+      JOIN cache_samples_functional s ON s.id=sl.sample_id
+      WHERE s.sensitive=true OR s.private=true;
+
+    SQL;
+    $qry .= $spatialQueries;
+    $qry .= <<<SQL
 
       SELECT sample_id, array_remove(array_agg(location_id ORDER BY location_id), NULL) AS location_ids
-      INTO changed_samples
+      INTO TEMPORARY changed_samples
       FROM (
         SELECT sample_id, t.location_id
         FROM smp_locs
@@ -149,6 +186,19 @@ class task_spatial_index_builder_sample {
       GROUP BY sample_id
       ORDER BY sample_id;
 
+      SELECT sample_id, array_remove(array_agg(location_id ORDER BY location_id), NULL) AS location_ids
+      INTO TEMPORARY changed_samples_sensitive
+      FROM (
+        SELECT sample_id, t.location_id
+        FROM smp_locs_sensitive
+        LEFT JOIN lateral unnest(location_ids) AS t(location_id) ON true
+      ) t
+      GROUP BY sample_id
+      ORDER BY sample_id;
+
+    SQL;
+    $db->query($qry);
+    $qry = <<<SQL
       -- Samples - for updated samples, copy over the changes if there are any
       UPDATE cache_samples_functional u
         SET location_ids=cs.location_ids
@@ -158,14 +208,30 @@ class task_spatial_index_builder_sample {
         ((u.location_ids IS NULL)<>(cs.location_ids IS NULL))
         OR u.location_ids <@ cs.location_ids = false OR u.location_ids @> cs.location_ids = false
       );
-
+    SQL;
+    $db->query($qry);
+    $qry = <<<SQL
+      -- Samples - for updated samples, copy over the changes if there are any
+      UPDATE cache_samples_sensitive u
+        SET location_ids=cs.location_ids
+      FROM changed_samples_sensitive cs
+      WHERE cs.sample_id=u.id
+      AND (
+        ((u.location_ids IS NULL)<>(cs.location_ids IS NULL))
+        OR u.location_ids <@ cs.location_ids = false OR u.location_ids @> cs.location_ids = false
+      );
+    SQL;
+    $db->query($qry);
+    $qry = <<<SQL
       UPDATE cache_occurrences_functional o
       SET location_ids = s.location_ids
       FROM cache_samples_functional s
       JOIN changed_samples cs on cs.sample_id=s.id
       WHERE o.sample_id=s.id
       AND (o.location_ids <> s.location_ids OR (o.location_ids IS NULL)<>(s.location_ids IS NULL));
-
+    SQL;
+    $db->query($qry);
+    $qry = <<<SQL
       -- Garbage collection, taking care to only remove samples that got indexed
       -- properly. We can clear do the occurrence tasks for the samples that are
       -- done to save extra work.
