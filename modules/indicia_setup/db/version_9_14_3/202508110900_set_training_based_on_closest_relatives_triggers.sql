@@ -15,12 +15,14 @@ CREATE OR REPLACE FUNCTION set_sample_children_training_flag()
           (OLD.training = true AND NEW.training = false)) THEN
 
         -- Set any subsample training flags if parent training flag changes
-        -- Also update the sample that has actually changed (NEW.id) so then the cache table
-        -- is updated at the same time for all the changed records
-        
+        -- NOTE: In the WHERE clause, I also include the ID of the sample that has
+        -- already changed (id = NEW.id in the code below), as this can then be passed to RETURNING. 
+        -- This ensures that all samples/subsamples involved are updated in the cache table
+        -- at exactly the same time, which helps keep the updated_on fields consistent.
         with updated as (
         UPDATE samples
         SET training = NEW.training, updated_on=now(), updated_by_id = NEW.updated_by_id
+        -- See note above about WHERE clause logic
         WHERE id = NEW.id OR
         parent_id = NEW.id
         RETURNING id, training)
