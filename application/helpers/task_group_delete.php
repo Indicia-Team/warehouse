@@ -58,6 +58,14 @@ class task_group_delete{
     $procIdEsc = pg_escape_literal($db->getLink(), $procId);
     $sql = <<<SQL
 
+UPDATE samples u
+SET group_id=null
+FROM work_queue wq
+WHERE u.group_id=wq.record_id
+  AND wq.task='task_group_delete'
+  AND wq.entity='group'
+  AND wq.claimed_by=$procIdEsc;
+
 UPDATE cache_samples_nonfunctional snf
 SET group_title=null
 FROM work_queue wq
