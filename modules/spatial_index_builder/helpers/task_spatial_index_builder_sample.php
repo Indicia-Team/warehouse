@@ -28,7 +28,7 @@
  */
 class task_spatial_index_builder_sample {
 
-  public const BATCH_SIZE = 5000;
+  public const BATCH_SIZE = 2000;
 
   /**
    * This class will expire the completed tasks itself.
