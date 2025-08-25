@@ -152,11 +152,11 @@ class task_spatial_index_builder_location {
           $surveyFilters
           $gridRefSizeFilters
         LEFT JOIN sample_attribute_values v ON v.sample_id=s.id AND v.deleted=false AND v.sample_attribute_id IN ($linkedLocationAttrIds)
-        JOIN samples smp ON smp.id=s.id
-          AND smp.deleted=false
-          AND smp.forced_spatial_indexer_location_ids IS NULL
         LEFT JOIN locations lfixed on lfixed.id=v.int_value AND lfixed.deleted=false
         WHERE COALESCE(l.location_type_id,-1)<>COALESCE(lfixed.location_type_id,-2)
+        -- More efficient than a join, which causes the query planner to use a
+        -- seq scan on samples.
+        AND (SELECT forced_spatial_indexer_location_ids FROM samples WHERE id=s.id) IS NULL
       )
       SELECT sample_id, array_agg(distinct id) as location_ids
       INTO TEMPORARY changed_location_hits
