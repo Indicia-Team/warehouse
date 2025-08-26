@@ -27,6 +27,9 @@ class Models_Sample_Test extends Indicia_DatabaseTestCase {
     $this->db = new Database();
   }
 
+  /**
+   * Test handling of parent child samples and consistency of training flag.
+   */
   public function testSampleParentChildTraining() {
     $array = [
       'website_id' => 1,
@@ -42,9 +45,9 @@ class Models_Sample_Test extends Indicia_DatabaseTestCase {
     ];
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
-
     $this->assertTrue(isset($r['success']), 'Adding a sample did not return a success response.');
     $parentSampleId = $r['success'];
+    // Clear the training flag to we can check it gets set automatically.
     unset($array['training']);
     $array['parent_id'] = $parentSampleId;
     // Test attaching a child sample.
@@ -53,12 +56,12 @@ class Models_Sample_Test extends Indicia_DatabaseTestCase {
     $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Adding a child sample did not return a success response.');
     $parentIsTraining = $this->db->query("SELECT training FROM samples WHERE id=$parentSampleId")->current()->training === 't';
-    $childSample = $this->db->query("SELECT id, training FROM samples WHERE parent_id=$parentSampleId")->current()->training === 't';
+    $childSample = $this->db->query("SELECT id, training FROM samples WHERE parent_id=$parentSampleId")->current();
     $this->assertTrue($parentIsTraining, 'Parent sample is not marked as training.');
     $this->assertEquals('t', $childSample->training, 'Child sample is not marked as training.');
     // Test attribute attachment, so we can be sure that triggers did not mess with LASTVAL().
-    $parentAltitude = $this->db->query("SELECT int_value FROM sample_attribute_values WHERE sample_id=$parentSampleId AND attribute_id=1")->current()->int_value;
-    $childAltitude = $this->db->query("SELECT int_value FROM sample_attribute_values WHERE sample_id=$childSample->id AND attribute_id=1")->current()->int_value;
+    $parentAltitude = $this->db->query("SELECT int_value FROM sample_attribute_values WHERE sample_id=$parentSampleId AND sample_attribute_id=1")->current()->int_value;
+    $childAltitude = $this->db->query("SELECT int_value FROM sample_attribute_values WHERE sample_id=$childSample->id AND sample_attribute_id=1")->current()->int_value;
     $this->assertEquals(45, $parentAltitude, 'Parent sample attribute not saved correctly.');
     $this->assertEquals(50, $childAltitude, 'Child sample attribute not saved correctly.');
   }
