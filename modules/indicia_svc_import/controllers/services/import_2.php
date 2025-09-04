@@ -390,7 +390,7 @@ class Import_2_Controller extends Service_Base_Controller {
         $sql = <<<SQL
           UPDATE import_temp.$dbIdentifiers[tempTableName]
           SET $sourceIdCol=?
-          WHERE trim(lower($sourceColName))=lower(?);
+          WHERE trim(lower($sourceColName::text))=lower(?);
         SQL;
         $db->query($sql, [$termlist_term_id, $value]);
       }
@@ -420,7 +420,6 @@ class Import_2_Controller extends Service_Base_Controller {
     }
     catch (Exception $e) {
       error_logger::log_error('Error in save_lookup_matches_group', $e);
-      kohana::log('debug', 'Error in save_lookup_matches_group: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'status' => 'error',
@@ -1706,7 +1705,7 @@ SQL;
     foreach ($keyFields as $field) {
       $fieldEsc = pg_escape_identifier($db->getLink(), $field);
       $value = pg_escape_literal($db->getLink(), $rowData->$field ?? '');
-      $whereList[] = "$fieldEsc=$value";
+      $whereList[] = "COALESCE($fieldEsc::text, '')=$value";
     }
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
