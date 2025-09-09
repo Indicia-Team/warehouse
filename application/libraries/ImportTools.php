@@ -115,7 +115,7 @@ class ImportTools {
       'media_upload',
       'upload::valid',
       'upload::required',
-      'upload::type[csv,xls,xlsx]',
+      'upload::type[csv,xls,xlsx,zip]',
       "upload::size[$ups]"
     );
     if (count($validatedFiles) === 0) {
@@ -161,6 +161,18 @@ class ImportTools {
     $res = $zip->open(DOCROOT . 'import/' . $uploadedFile);
     if ($res !== TRUE) {
       throw new exception('The Zip archive could not be opened.');
+    }
+    // Strip any __MACOSX hidden folders that may be present.
+    $needToReopen = FALSE;
+    for ($i = $zip->count() - 1; $i >= 0; $i--) {
+      if (substr($zip->getNameIndex($i), 0, 9) === '__MACOSX/') {
+        $zip->deleteIndex($i);
+        $needToReopen = TRUE;
+      }
+    }
+    if ($needToReopen) {
+      $zip->close();
+      $res = $zip->open(DOCROOT . 'import/' . $uploadedFile);
     }
     if ($zip->count() !== 1) {
       throw new exception('The Zip archive must contain only one file.');
