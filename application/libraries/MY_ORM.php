@@ -1240,7 +1240,7 @@ class ORM extends ORM_Core {
     }
     catch (Exception $e) {
       $v = FALSE;
-      if (preg_match('/violates unique constraint "unique_([a-z0-9_]+)"/', $e->getMessage(), $matches) !== FALSE) {
+      if (preg_match('/violates unique constraint "unique_([a-z0-9_]+)"/', $e->getMessage(), $matches)) {
         // If the constraint is called unique_{table}_{field} then we can work out the field name.
         $fieldname = preg_replace("/^{$this->object_name}_/", '', $matches[1]);
         $fieldnameReadable = str_replace('_', ' ', $fieldname);
