@@ -426,7 +426,7 @@ SQL,
    */
   public static function read($entity, int $id, $extraFilter = '', $userFilter = TRUE) {
     self::loadEntityConfig($entity);
-    $extraFilter = empty($extraFilter) ? "AND t1.id = $id" : "$extraFilter\nAND t1.id = $id";
+    $extraFilter = empty($extraFilter) ? "t1.id = $id" : "$extraFilter\nAND t1.id = $id";
     $qry = self::getReadSql($entity, $extraFilter, $userFilter);
     $row = RestObjects::$db->query($qry)->result(FALSE)->current();
     if ($row) {
