@@ -2588,6 +2588,7 @@ class Rest_Controller extends Controller {
         ->select('id, public_key')
         ->from('websites')
         ->where('url', $url)
+        ->orderby('public_key', 'ASC')
         ->get()->current();
       if (!$website) {
         // Main URL check failed, so check any staging URLs.
@@ -2736,7 +2737,7 @@ class Rest_Controller extends Controller {
     if ($this->decodeJwtPayload() && !isset(RestObjects::$jwtPayloadValues['http://indicia.org.uk/client:username'])
         && !empty(RestObjects::$clientWebsitePublicKey)) {
       // Need a valid website public key.
-      $this->checkDecodeJwt($this->getBearerAuthToken(TRUE), RestObjects::$clientWebsitePublicKey);
+      $this->checkDecodeJwt($this->getBearerAuthToken(), RestObjects::$clientWebsitePublicKey);
       if (isset(RestObjects::$jwtPayloadValues['http://indicia.org.uk/user:id'])) {
         $this->checkWebsiteUser(RestObjects::$clientWebsiteId, RestObjects::$jwtPayloadValues['http://indicia.org.uk/user:id']);
         RestObjects::$clientUserId = RestObjects::$jwtPayloadValues['http://indicia.org.uk/user:id'];
@@ -2780,7 +2781,7 @@ class Rest_Controller extends Controller {
       $clientSystemId = RestObjects::$jwtPayloadValues['http://indicia.org.uk/client:username'];
       $r = $this->getRestConnectionFromDb($clientSystemId, $_REQUEST['proj_id']);
       // Validate the JWT.
-      $this->checkDecodeJwt($this->getBearerAuthToken(TRUE), $r->public_key);
+      $this->checkDecodeJwt($this->getBearerAuthToken(), $r->public_key);
       if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'])) {
         RestObjects::$apiResponse->fail('Method Not Allowed', 405, 'Connection is read only.');
       }

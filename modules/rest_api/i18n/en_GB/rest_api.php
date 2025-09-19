@@ -154,7 +154,11 @@ $lang['jwtUserHelp'] = <<<HTML
 To use JWT to authenticate, you need to:<ul>
   <li>Generate a public/private key pair and store the public key in the Warehouse website settings.</li>
   <li>Provide a JWT token signed with the private key which provides the following claims:<ul>
-    <li>iss - the website URL</li>
+    <li>iss - the website URL. This will be used to lookup the website entry in the warehouse's websites table so
+      ensure that the iss claim and the website URL match exactly and that only one website with a public token is
+      registered on the warehouse for this URL. For development and test environments, the website staging_urls field
+      can be used to store alternative URLs that can be used in the iss claim.
+    </li>
     <li>http://indicia.org.uk/user:id - set to the warehouse ID of the user issuing the request, or skip this claim if
     the token is issued on behalf of the website rather than a specific user.</li>
     <li>scope - Optional scopes available for requests made using this token. Multiple scopes can be specified
