@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
@@ -51,12 +50,15 @@ class error_logger {
   }
 
   /**
-   * Dump a call stack trace into the kohana log.
+   * Return a readable version of a stack trace.
    *
    * @param array $trace
-   *   Response from debug_backtrace() to log.
+   *   Trace from debug_backtrace().
+   *
+   * @return string
+   *   A text representation of the trace.
    */
-  public static function log_trace($trace) {
+  public static function getTraceAsText(array $trace) {
     $output = "Stack trace:\n";
     for ($i = 0; $i < count($trace); $i++) {
       if (array_key_exists('file', $trace[$i])) {
@@ -79,7 +81,17 @@ class error_logger {
       }
       $output .= "\t$file - line $line - $function\n";
     }
-    kohana::log('debug', $output);
+    return $output;
+  }
+
+  /**
+   * Dump a call stack trace into the kohana log.
+   *
+   * @param array $trace
+   *   Response from debug_backtrace() to log.
+   */
+  public static function log_trace($trace) {
+    kohana::log('debug', self::getTraceAsText($trace));
   }
 
 }

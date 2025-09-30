@@ -288,7 +288,7 @@ WITH rows AS (
     WHERE claimed_by IS NULL
     AND error_detail IS NULL
     AND task=?
-    AND COALESCE(entity, '')=?
+    AND COALESCE(entity, '')=COALESCE(?, '')
     ORDER BY priority, cost_estimate, id
     LIMIT ?
   )

@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/warehouse
+ */
+
+/*
+ * List of REST API configured project names which are used for Elasticsearch
+ * feeds and that should be checked for long queues before deciding whether to
+ * proceed with a background import step or wait. Used to ensure that large
+ * imports don't cause feeds to get too far behind.
+ */
+$config['elasticsearch_feeds_to_monitor'] = [
+  'OCCS',
+  'OCCSSENSITIVE',
+];
