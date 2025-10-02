@@ -270,7 +270,12 @@ class Import_2_Controller extends Service_Base_Controller {
         throw new exception("Parameter data-files refers to a missing file $fileName");
       }
     }
-    $config = $this->createConfig($files);
+    try {
+      $config = $this->createConfig($files, ($_POST['enable-background-imports'] ?? 'f') === 't');
+    }
+    catch (RequestAbort) {
+      return;
+    }
     if (!empty($_POST['import_template_id'])) {
       // Merge the template into the config.
       $template = ORM::factory('import_template', $_POST['import_template_id']);
@@ -388,9 +393,6 @@ class Import_2_Controller extends Service_Base_Controller {
       $this->authenticate('write');
       // Support data-file for legacy clients.
       $configId = $_POST['config-id'] ?? $_POST['data-file'];
-      if (!file_exists(DOCROOT . "import/$configId")) {
-        throw new exception('Parameter data-file refers to a missing file');
-      }
       $config = import2ChunkHandler::getConfig($configId);
       $db = new Database();
       $matchesInfo = json_decode($_POST['matches-info'], TRUE);
@@ -1278,7 +1280,7 @@ SQL;
       $isPrecheck = !empty($_POST['precheck']);
       $configId = pathinfo($_POST['config-id'] ?? $_POST['data-file'], PATHINFO_FILENAME);
       $config = import2ChunkHandler::getConfig($configId);
-      if ($isPrecheck && !empty($_POST['restart']) && $config['totalRows'] > import2ChunkHandler::BACKGROUND_PROCESSING_THRESHOLD) {
+      if ($isPrecheck && !empty($_POST['restart']) && $config['processingMode'] === 'background') {
         $q = new WorkQueue();
         $q->enqueue($db, [
           'task' => 'task_import_step',
@@ -2120,11 +2122,14 @@ SQL;
    *
    * @param string $configFile
    *   Configuration file name
+   * @param bool $enableBackgroundImports
+   *   Set to TRUE to enable work queue based background imports for large
+   *   import files.
    *
    * @return array
    *   Config key/value pairs.
    */
-  private function createConfig(array $files) {
+  private function createConfig(array $files, $enableBackgroundImports) {
     kohana::log('debug', 'Creating config for ' . json_encode($files));
     $ext = pathinfo($files[0], PATHINFO_EXTENSION);
 
@@ -2139,7 +2144,24 @@ SQL;
 
     $fileMetadata = [];
     $totalRows = 0;
-    foreach ($files as $file) {
+    foreach ($files as $idx => $file) {
+      // Check the column structure matches if a multi-column import.
+      if ($idx === 0) {
+        $firstFileCols = $importTools->loadColumnTitlesFromFile($file, TRUE);
+      }
+      else {
+        $thisFileCols = $importTools->loadColumnTitlesFromFile($file, TRUE);
+        if ($thisFileCols !== $firstFileCols) {
+          http_response_code(400);
+          echo json_encode([
+            'msg' => 'Multiple files uploaded but the files have differing sets of columns. Import aborted.',
+            'status' => 'Bad Request',
+          ]);
+          kohana::log('debug', 'Aborted due to mismatch');
+          throw new RequestAbort('Multiple files uploaded but the files have differing sets of columns. Only matching sets of import files can be imported in one batch. Import aborted.');
+        }
+      }
+      // Capture the file's total row count.
       $fileRowCount = $importTools->getRowCountForFile($file);
       $fileMetadata[$file] = [
         'rowCount' => $fileRowCount,
@@ -2150,8 +2172,6 @@ SQL;
       ];
       $totalRows += $fileRowCount;
     }
-
-    // @todo Need to check all files match in structure.
 
     // Create a new config object.
     return [
@@ -2177,7 +2197,7 @@ SQL;
       'importGuid' => $this->createGuid(),
       'entitySupportsImportGuid' => $supportsImportGuid,
       'parentEntitySupportsImportGuid' => $parentSupportsImportGuid,
-      'processingMode' => $totalRows > import2ChunkHandler::BACKGROUND_PROCESSING_THRESHOLD ? 'background' : 'immediate',
+      'processingMode' => ($totalRows > import2ChunkHandler::BACKGROUND_PROCESSING_THRESHOLD) && $enableBackgroundImports ? 'background' : 'immediate',
     ];
   }
 

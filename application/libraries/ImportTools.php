@@ -218,6 +218,7 @@ class ImportTools {
       throw new exception('The spreadsheet file is empty');
     }
     $columnTitles = $data[0];
+    // Remove any null columns from the end.
     for ($i = count($columnTitles) - 1; $i >= 0 && $columnTitles[$i] === NULL; $i--) {
       unset($columnTitles[$i]);
     }

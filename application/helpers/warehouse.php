@@ -148,26 +148,28 @@ class warehouse {
    *   Folder path relative to the DOCROOT, without leading or trailing slash.
    * @param int $age
    *   Age in seconds. Files older than this are deleted.
+   * @param array $keep
+   *   Optional list of file names to keep.
    */
-  public static function purgeOldFiles($path, $age) {
+  public static function purgeOldFiles($path, $age, array $keep = []) {
     // First, get an array of files sorted by date.
     $files = [];
     $dir = opendir(DOCROOT . $path);
     // Skip certain file names.
-    $exclude = [
+    $exclude = array_merge($keep, [
       '.',
       '..',
       '.htaccess',
       'web.config',
       '.gitignore',
-    ];
+    ]);
     if ($dir) {
       while ($filename = readdir($dir)) {
         $fullPath = DOCROOT . $path . DIRECTORY_SEPARATOR . $filename;
         if (in_array($filename, $exclude)) {
           continue;
         }
-        elseif (is_dir($fullPath)) {
+        if (is_dir($fullPath)) {
           // Recurse into sub-folders.
           self::purgeOldFiles($path . DIRECTORY_SEPARATOR . $filename, $age);
         }
