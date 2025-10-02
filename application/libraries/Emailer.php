@@ -30,6 +30,13 @@
 class Emailer {
 
   /**
+   * Name of the email helper class, e.g. for Swift or MS Graph connections.
+   *
+   * @var string
+   */
+  private $emailHelper;
+
+  /**
    * List of recipients, each containing an email address and optional name.
    *
    * @var array
@@ -44,18 +51,28 @@ class Emailer {
   private array $cc = [];
 
   /**
-   * Email sent from, array containing email and optional name.
+   * Email sent from address.
    *
-   * @var array
+   * @var string
    */
-  private array $from;
+  private $from = NULL;
 
   /**
-   * Email reply to, array containing email and optional name.
+   * Email sent from name.
    *
-   * @var array
+   * @var string
    */
-  private array $replyTo;
+  private $fromName = NULL;
+
+
+  /**
+   * Constructor - initialise the library we are going to use.
+   */
+  public function __construct() {
+    $emailLibrary = kohana::config('email.library', FALSE, FALSE) ?? 'Swift';
+    $this->emailHelper = "emailer$emailLibrary";
+    $this->emailHelper::init();
+  }
 
   /**
    * Reset any details set for the next email.
@@ -63,8 +80,8 @@ class Emailer {
   public function reset() {
     $this->recipients = [];
     $this->cc = [];
-    $this->from = null;
-    $this->replyTo = null;
+    $this->from = NULL;
+    $this->fromName = NULL;
   }
 
   /**
@@ -82,17 +99,22 @@ class Emailer {
    *   TRUE if the email sent successfully, FALSE otherwise.
    */
   public function send($subject, $message) {
-    if (!$this->from || !$this->replyTo) {
+    if (!$this->from) {
       $config = kohana::config('email');
-      if (!$this->from) {
-        $this->from = [$config['address'], $config['server_name']];
-      }
-      if (!$this->replyTo) {
-        $this->replyTo = [$config['address'], $config['server_name']];
-      }
+      $this->from = $config['address'];
+      $this->fromName = $config['server_name'];
     }
-    // Send email logic here
     kohana::log('debug', "Sending email to " . json_encode($this->recipients) . " with subject $subject and message\n$message");
+    $emailLibrary = kohana::config('email.library', FALSE, FALSE) ?? 'Swift';
+    $emailHelper = "emailer$emailLibrary";
+    $emailHelper::send(
+      $subject,
+      $message,
+      $this->recipients,
+      $this->cc,
+      $this->from,
+      $this->fromName
+    );
     // Now reset the emailer for next time.
     $this->reset();
     return TRUE;
@@ -127,23 +149,14 @@ class Emailer {
    *
    * @param string $email
    *   Set from email address.
-   * @param mixed $name
-   *   Set from name.
+   * @param ?string $name
+   *   Optional name of the email sender.
    */
-  public function setFrom($email, $name = null) {
-    $this->from = [$email, $name];
-  }
-
-  /**
-   * Add an email reply to address.
-   *
-   * @param string $email
-   *   Set reply to email address.
-   * @param mixed $name
-   *   Set reply to name.
-   */
-  public function setReplyTo($email, $name = null) {
-    $this->replyTo = [$email, $name];
+  public function setFrom($email, $name = NULL) {
+    $this->from = $email;
+    if ($name) {
+      $this->fromName = $name;
+    }
   }
 
 }
