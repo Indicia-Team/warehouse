@@ -134,7 +134,8 @@ class Import_2_Controller extends Service_Base_Controller {
     // Data file supported for legacy clients, where data file and config ID
     // would always be the same thing.
     if (!empty($_POST['config-id'] ?? $_POST['data-file'])) {
-      $config = import2ChunkHandler::getConfig($_POST['config-id'] ?? $_POST['data-file']);
+      $configId = $this->getPostedConfigId();
+      $config = import2ChunkHandler::getConfig($configId);
       $plugins = $config['plugins'];
     }
     else {
@@ -291,7 +292,7 @@ class Import_2_Controller extends Service_Base_Controller {
     import2ChunkHandler::saveConfig($configId, $config);
     echo json_encode([
       'status' => 'ok',
-      'configId' => pathinfo($configId, PATHINFO_FILENAME),
+      'configId' => $configId,
     ]);
   }
 
@@ -317,7 +318,7 @@ class Import_2_Controller extends Service_Base_Controller {
       if (!file_exists(DOCROOT . "import/$fileName")) {
         throw new exception('Parameter data-file refers to a missing file');
       }
-      $configId = $_POST['config-id'] ?? $fileName;
+      $configId = $this->getPostedConfigId();
       $config = import2ChunkHandler::getConfig($configId);
       if ($config['state'] === 'nextFile') {
         $config['state'] = 'loadingRecords';
@@ -359,10 +360,10 @@ class Import_2_Controller extends Service_Base_Controller {
     try {
       $this->authenticate('write');
       // Data file supported for legacy clients.
-      $configId = $_POST['config-id'] ?? $_POST['data-file'];
+      $configId = $this->getPostedConfigId();
       $config = import2ChunkHandler::getConfig($configId);
       $db = new Database();
-      $r = $this->findNextLookupField($db, $config, (integer) $_POST['index']);
+      $r = $this->findNextLookupField($db, $config);
       import2ChunkHandler::saveConfig($configId, $config);
       echo json_encode($r);
     }
@@ -392,7 +393,7 @@ class Import_2_Controller extends Service_Base_Controller {
     try {
       $this->authenticate('write');
       // Support data-file for legacy clients.
-      $configId = $_POST['config-id'] ?? $_POST['data-file'];
+      $configId = $this->getPostedConfigId();
       $config = import2ChunkHandler::getConfig($configId);
       $db = new Database();
       $matchesInfo = json_decode($_POST['matches-info'], TRUE);
@@ -455,7 +456,7 @@ class Import_2_Controller extends Service_Base_Controller {
     header("Content-Type: application/json");
     $this->authenticate('write');
     // Support data-file for legacy clients.
-    $configId = $_POST['config-id'] ?? $_POST['data-file'];
+    $configId = $this->getPostedConfigId();
     $config = import2ChunkHandler::getConfig($configId);
     foreach (json_decode($_POST['mappings']) as $key => $value) {
       try {
@@ -494,7 +495,7 @@ class Import_2_Controller extends Service_Base_Controller {
     header("Content-Type: application/json");
     $this->authenticate('write');
     // Data file allowed for legacy clients.
-    $configId = $_POST['config-id'] ?? $_POST['data-file'];
+    $configId = $this->getPostedConfigId();
     $stepIndex = $_POST['index'];
     $config = import2ChunkHandler::getConfig($configId);
     $steps = [];
@@ -1241,7 +1242,7 @@ SQL;
     header("Content-Type: application/json");
     $this->authenticate('write');
     // Using data-file is allowed for legacy code.
-    $configId = $_POST['config-id'] ?? $_POST['data-file'];
+    $configId = $this->getPostedConfigId();
     $config = import2ChunkHandler::getConfig($configId);
     foreach ($_POST as $key => $value) {
       if ($key !== 'data-file' && $key !== 'config-id') {
@@ -1278,7 +1279,7 @@ SQL;
       ORM::$authorisedWebsiteId = $this->website_id;
       $db = new Database();
       $isPrecheck = !empty($_POST['precheck']);
-      $configId = pathinfo($_POST['config-id'] ?? $_POST['data-file'], PATHINFO_FILENAME);
+      $configId = $this->getPostedConfigId();
       $config = import2ChunkHandler::getConfig($configId);
       if ($isPrecheck && !empty($_POST['restart']) && $config['processingMode'] === 'background') {
         $q = new WorkQueue();
@@ -2172,7 +2173,6 @@ SQL;
       ];
       $totalRows += $fileRowCount;
     }
-
     // Create a new config object.
     return [
       'files' => $fileMetadata,
@@ -2248,6 +2248,19 @@ SQL;
       ];
     }
     return $colsAndFieldInfo;
+  }
+
+  /**
+   * Find the config ID from the POST.
+   *
+   * Note that if the client is an older version, it will just send the data
+   * file which cane be used to obtain the config ID.
+   *
+   * @return string
+   *   Config ID.
+   */
+  private function getPostedConfigId() {
+    return pathinfo($_POST['config-id'] ?? $_POST['data-file'], PATHINFO_FILENAME);
   }
 
 }
