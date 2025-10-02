@@ -30,25 +30,30 @@ defined('SYSPATH') or die('No direct script access.');
  * are left which need to be tidied.
  */
 function indicia_svc_import_scheduled_task($timestamp, $db, $endtime) {
+  // Keep tables and files that relate to existing background import work queue
+  // items.
+  $toKeep = _indicia_svc_import_get_stuff_to_keep($db);
   // Query selects tables in the import_temp schema where the date in the
   // name indicates > 1 day old (format is DHH for last 3 digits, hence 100 =
   // 1 day).
   $sql = <<<SQL
-SELECT
-  table_name
-FROM information_schema.tables
-WHERE table_schema= 'import_temp'
-AND to_char(now(), 'YYYYMMDDHH24')::integer - ('0' || substring(regexp_replace(table_name, '[^0-9]', '', 'g') for 10))::integer > 100
-ORDER BY table_name ASC
-LIMIT 5;
-SQL;
+    SELECT
+      table_name
+    FROM information_schema.tables
+    WHERE table_schema= 'import_temp'
+    --AND to_char(now(), 'YYYYMMDDHH24')::integer - ('0' || substring(regexp_replace(table_name, '[^0-9]', '', 'g') for 10))::integer > 100
+    ORDER BY table_name ASC
+    LIMIT 5;
+  SQL;
   $tables = $db->query($sql);
   foreach ($tables as $table) {
-    $tableNameEsc = pg_escape_identifier($db->getLink(), $table->table_name);
-    $db->query("DROP TABLE import_temp.$tableNameEsc");
+    if (!in_array($table->table_name, $toKeep['tables'])) {
+      $tableNameEsc = pg_escape_identifier($db->getLink(), $table->table_name);
+      $db->query("DROP TABLE import_temp.$tableNameEsc");
+    }
   }
   // Purge files older than 1 day.
-  warehouse::purgeOldFiles('import/', 60 * 60 * 24);
+  warehouse::purgeOldFiles('import/', 60/* * 60 * 24*/, $toKeep['files']);
 }
 
 /**
@@ -69,4 +74,39 @@ function indicia_svc_import_import_plugins($entity) {
     ];
   }
   return [];
+}
+
+/**
+ * Find a list of background import files and tables to keep.
+ *
+ * Any existing work queue items for background imports mean that we should
+ * leave the respective import temporary tables, config files and data files in
+ * situ and not purge them.
+ *
+ * @param Database $db
+ *   Database connection.
+ */
+function _indicia_svc_import_get_stuff_to_keep($db) {
+  $r = [
+    'files' => [],
+    'tables' => [],
+  ];
+  $queuedImportConfigIds = $db->query("SELECT params->>'config-id' AS config_id FROM work_queue WHERE task='task_import_step';");
+  foreach ($queuedImportConfigIds as $q) {
+    $configFile = DOCROOT . "import/$q->config_id.json";
+    if (file_exists($configFile)) {
+      $f = fopen($configFile, "r");
+      $config = fgets($f);
+      fclose($f);
+      $config = json_decode($config, TRUE);
+      // Ensure the import database table and config file are preserved.
+      $r['tables'][] = $config['tableName'];
+      $r['files'][] = "$q->config_id.json";
+      // Also preserve the import data files.
+      foreach (array_keys($config['files']) ?? [] as $dataFile) {
+        $r['files'][] = $dataFile;
+      }
+    }
+  }
+  return $r;
 }
