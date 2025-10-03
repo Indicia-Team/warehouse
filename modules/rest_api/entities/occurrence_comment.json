@@ -3,7 +3,6 @@
     { "sql": "id", "type": "integer" },
     { "sql": "occurrence_id", "type": "integer"},
     { "sql": "comment", "type": "string"},
-    { "sql": "person_name", "type": "string"},
     { "sql": "auto_generated", "type": "boolean"},
     { "sql": "generated_by", "type": "string"},
     { "sql": "implies_manual_check_required", "type": "boolean"},
@@ -23,6 +22,16 @@
       "sql": "JOIN occurrences t2 ON t2.id=t1.occurrence_id AND t2.deleted=false",
       "fields": [
         { "sql": "t2.website_id", "name": "website_id", "type": "integer" }
+      ]
+    },
+     {
+      "sql": "JOIN users t3 on t3.id=t1.created_by_id AND t3.deleted=false",
+      "fields": []
+    },
+    {
+      "sql": "JOIN people t4 on t4.id=t3.person_id AND t4.deleted=false",
+      "fields": [
+        { "sql": "COALESCE(t1.person_name, t4.first_name || ' ' || t4.surname)", "name": "person_name", "type": "string" }
       ]
     }
   ],
