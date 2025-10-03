@@ -2346,6 +2346,28 @@ SQL;
   }
 
   /**
+   * A comment without a person name defaults to the person who created it.
+   */
+  public function testJwtOccurrenceCommentGetWithoutPerson() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $values = $this->getOccurrenceCommentExampleData();
+    unset($values['person_name']);
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $values['occurrence_id'] = $occurrenceId;
+    $response = $this->callService(
+      'occurrence_comments',
+      FALSE,
+      ['values' => $values]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    $response = $this->callService("occurrence_comments/$id");
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals('core admin', $response['response']['values']['person_name']);
+  }
+
+  /**
    * Test /occurrence_comments PUT behaviour.
    */
   public function testJwtOccurrenceCommentPut() {

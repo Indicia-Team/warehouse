@@ -3,7 +3,6 @@
     { "sql": "id", "type": "integer" },
     { "sql": "sample_id", "type": "integer"},
     { "sql": "comment", "type": "string"},
-    { "sql": "person_name", "type": "string"},
     { "sql": "query", "type": "string"},
     { "sql": "record_status", "type": "string"},
     { "sql": "external_key", "type": ""},
@@ -22,6 +21,16 @@
       "sql": "JOIN surveys t3 on t3.id=t2.survey_id AND t3.deleted=false",
       "fields": [
         { "sql": "t3.website_id", "name": "website_id", "type": "integer" }
+      ]
+    },
+     {
+      "sql": "JOIN users t4 on t4.id=t1.created_by_id AND t4.deleted=false",
+      "fields": []
+    },
+    {
+      "sql": "JOIN people t5 on t5.id=t4.person_id AND t5.deleted=false",
+      "fields": [
+        { "sql": "COALESCE(t1.person_name, t5.first_name || ' ' || t5.surname)", "name": "person_name", "type": "string" }
       ]
     }
   ],
