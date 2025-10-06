@@ -83,7 +83,8 @@ class emailerMsGraph {
       array $recipientList,
       array $ccList,
       $from,
-      $fromName = NULL
+      $fromName = NULL,
+      $priority = 3
       ) {
     // Add spacer before footer.
     for ($i = 0; $i < $config = Kohana::config('email.msgraph_footer_spacer_rows', FALSE, FALSE) ?? 0; $i++) {
@@ -116,6 +117,9 @@ class emailerMsGraph {
           'emailAddress' => $email,
         ];
       }
+    }
+    if ($priority !== 3) {
+      $mail['message']['importance'] = $priority < 3 ? 'high' : 'low';
     }
     $response = self::$http->post("https://graph.microsoft.com/v1.0/users/$from/sendMail", [
       'headers' => [

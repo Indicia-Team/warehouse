@@ -449,25 +449,21 @@ class Auth_Core {
     $link_code = $this->hash_password($user->username);
     $user->__set('forgotten_password_key', $link_code);
     $user->save();
-    try
-    {
-      $swift = email::connect();
-      $message = new Swift_Message(
+    try {
+      $emailer = new Emailer();
+      $emailer->addRecipient($person->email_address, $person->first_name.' '.$person->surname);
+      $emailer->setFrom($email_config['address']);
+      $siteUrl = url::site();
+      $emailer->send(
         $email_config['forgotten_passwd_title'],
-        View::factory('templates/forgotten_password_email')->set(array(
+        View::factory('templates/forgotten_password_email')->set([
           'server' => $email_config['server_name'],
           'senderName' => 'your',
-          'new_password_link' => '<a href="' . url::site() . 'new_password/email/' . $link_code . '">' .
-            url::site() . 'new_password/email/' . $link_code . '</a>'
-        )),
-        'text/html'
-      );
-      $recipients = new Swift_RecipientList();
-      $recipients->addTo($person->email_address, $person->first_name.' '.$person->surname);
-      $swift->send($message, $recipients, $email_config['address']);
+          'new_password_link' => "<a href=\"{$siteUrl}new_password/email/$link_code\">{$siteUrl}new_password/email/$link_code</a>",
+        ]
+      ));
     }
-    catch (Swift_Exception $e)
-    {
+    catch (Exception $e) {
       kohana::log('error', "Error sending forgotten password: " . $e->getMessage());
       throw new Kohana_User_Exception('swift.general_error', $e->getMessage());
     }

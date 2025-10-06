@@ -61,3 +61,9 @@ $config['msgraph_client_secret'] = '';
 // add to the email body here to keep the body and footer separate.
 $config['msgraph_footer_spacer_rows'] = 2;
 */
+
+/*
+// Uncomment these lines on a development server if you want emails to just get
+// logged.
+$config['library'] = 'DevLogger';
+*/

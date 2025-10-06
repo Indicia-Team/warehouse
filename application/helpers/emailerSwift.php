@@ -52,6 +52,8 @@ class emailerSwift {
    *   The email address that the email should be sent from.
    * @param ?string $fromName
    *   The optional name associated with the from email address.
+   * @param ?int $priority
+   *   Priority from 1 (very high) to 5 (very low). Default 3.
    */
   public function send(
       $subject,
@@ -59,9 +61,13 @@ class emailerSwift {
       array $recipientList,
       array $ccList,
       $from,
-      $fromName = NULL
+      $fromName = NULL,
+      $priority = 3
       ) {
     $message = new Swift_Message($subject, $message, 'text/html');
+    if ($priority !== 3) {
+      $message->setPriority($priority);
+    }
     $swiftRecipients = new Swift_RecipientList();
     foreach ($recipientList as $recipient) {
       $swiftRecipients->addTo($recipient[0], $recipient[1] ?? NULL);

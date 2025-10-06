@@ -57,15 +57,17 @@ class emailerDevLogger {
       array $recipientList,
       array $ccList,
       $from,
-      $fromName = NULL
+      $fromName = NULL,
+      $priority = 3
       ) {
     Kohana::log('debug', 'Email information (emailerDevLogger): ' . var_export([
       'subject' => $subject,
       'message' => $message,
       'recipientList' => $recipientList,
       'cc' => $ccList,
-      'cc' => $from,
-      'cc' => $fromName,
+      'from' => $from,
+      'fromName' => $fromName,
+      'priority' => $priority,
     ]));
   }
 

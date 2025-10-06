@@ -111,9 +111,9 @@ class Scheduled_Tasks_Controller extends Controller {
           kohana::log('info', "Email configured for do_not_send: ignoring notifications from scheduled tasks");
         }
         else {
-          $swift = email::connect();
-          $this->doRecordOwnerNotifications($swift);
-          $this->doNotificationDigestEmailsForTriggers($swift);
+          $emailer = new Emailer();
+          $this->doRecordOwnerNotifications($emailer);
+          $this->doNotificationDigestEmailsForTriggers($emailer);
         }
         // The value of the last_scheduled_task_check on the Indicia system entry
         // is used to mark the last time notifications were handled, so we can
@@ -446,7 +446,7 @@ class Scheduled_Tasks_Controller extends Controller {
         }
       }
     }
-    $swift = email::connect();
+    $emailer = new Emailer();
     // Now send the emails as a digest so each recipient only gets one email.
     foreach ($emails as $infoList) {
       // If a single email for this recipient we can use the subject, otherwise
@@ -459,15 +459,9 @@ class Scheduled_Tasks_Controller extends Controller {
         }
         $emailContent .= '<div>' . $infoItem['body'] . '</div>';
       }
-      $message = new Swift_Message(
-        $subject,
-        "<html>$emailContent</html>",
-        'text/html'
-      );
-      $recipients = new Swift_RecipientList();
-      $recipients->addTo($infoList[0]['to'], $infoList[0]['name']);
-      // Send the email.
-      $swift->send($message, $recipients, $emailConfig['address']);
+      $emailer->addRecipient($infoList[0]['to'], $infoList[0]['name']);
+      $emailer->setFrom($emailConfig['address']);
+      $emailer->send($subject, "<html>$emailContent</html>");
     }
   }
 
@@ -479,7 +473,7 @@ class Scheduled_Tasks_Controller extends Controller {
    * Notifications that specify a digest_mode are always from the warehouse's
    * triggers & notifications section.
    */
-  private function doNotificationDigestEmailsForTriggers($swift) {
+  private function doNotificationDigestEmailsForTriggers(emailer $emailer) {
     self::msg("Checking notifications");
     // First, build a list of the notifications we are going to do.
     $digestTypes = ['I'];
@@ -518,7 +512,7 @@ class Scheduled_Tasks_Controller extends Controller {
       if (($currentUserId != $notification->user_id) || ($currentCc != $notification->cc)) {
         if ($currentUserId) {
           // Send current email data.
-          $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $currentCc);
+          $this->sendEmail($notificationIds, $emailer, $currentUserId, $emailContent, $currentCc);
           $notificationIds = [];
         }
         $currentUserId = $notification->user_id;
@@ -532,11 +526,11 @@ class Scheduled_Tasks_Controller extends Controller {
     // Make sure we send the email to the last person in the list.
     if ($currentUserId !== NULL) {
       // Send current email data.
-      $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $currentCc);
+      $this->sendEmail($notificationIds, $emailer, $currentUserId, $emailContent, $currentCc);
     }
   }
 
-  private function sendEmail($notificationIds, $swift, $userId, $emailContent, $cc) {
+  private function sendEmail($notificationIds, $emailer, $userId, $emailContent, $cc) {
     // Use a transaction to allow us to prevent the email sending and marking
     // of notification as done getting out of step.
     $this->db->begin();
@@ -564,20 +558,13 @@ class Scheduled_Tasks_Controller extends Controller {
       foreach ($userResults as $user) {
         $subject = empty(kohana::config('email.notification_subject')) ?
           kohana::lang('misc.notification_subject') : kohana::config('email.notification_subject');
-        $message = new Swift_Message(
-          sprintf($subject, kohana::config('email.server_name')),
-          "<html>$emailContent</html>",
-          'text/html'
-        );
-        $recipients = new Swift_RecipientList();
-        $name = "$user->first_name $user->surname";
-        $recipients->addTo($user->email_address, $name);
+        $emailer->addRecipient($user->email_address,"$user->first_name $user->surname");
         $cc = isset($cc) ? explode(',', $cc) : [];
         foreach ($cc as $ccEmail) {
-          $recipients->addCc(trim($ccEmail));
+          $emailer->addCc(trim($ccEmail));
         }
         // Send the email.
-        $sent = $swift->send($message, $recipients, $email_config['address']);
+        $sent = $emailer->send(sprintf($subject, kohana::config('email.server_name')), "<html>$emailContent</html>");
         kohana::log('info', "$sent email notification(s) sent to $user->email_address");
       }
     }
@@ -683,7 +670,7 @@ class Scheduled_Tasks_Controller extends Controller {
    * Look for records posted by recorders who have given their email address
    * and want to receive a summary of the record they are posting.
    */
-  private function doRecordOwnerNotifications($swift) {
+  private function doRecordOwnerNotifications(emailer $emailer) {
     // Workflow module can dictate that communications should be logged for
     // some species.
     $modules = kohana::config('config.modules');
@@ -787,16 +774,9 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->addArrayToEmailTable($email->occurrence_id, $occurrenceArray, $emailContent);
       $this->addArrayToEmailTable($email->occurrence_id, $attrArray, $emailContent);
       $emailContent .= "</table>";
-
-      $message = new Swift_Message(
-        kohana::lang('misc.notification_subject', kohana::config('email.server_name')),
-        "<html>$emailContent</html>",
-        'text/html'
-      );
-      $recipients = new Swift_RecipientList();
-      $recipients->addTo($email->email_address);
-      // Send the email.
-      $swift->send($message, $recipients, $email_config['address']);
+      $emailer->addRecipient($email->email_address);
+      $emailer->setFrom($email->email_address);
+      $emailer->send(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), "<html>$emailContent</html>");
     }
     if ($useWorkflowModule) {
       foreach ($occurrences as $occurrence) {

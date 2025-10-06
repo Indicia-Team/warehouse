@@ -662,13 +662,13 @@ SQL;
         ->where('users.id', $accountDeletionUserId)
         ->limit(1)
         ->get()->result_array();
-      $swift = email::connect();
-      $emailSenderAddress = self::setupEmailSenderAddress();
-      $emailSubject = self::setupEmailSubject($websiteRemovalName);
-      $emailBody = self::setupEmailBody($websiteRemovalName, $websiteListUserIsStillMemberOf);
-      $recipients = self::setupEmailRecipients($peopleResults[0]->email_address);
-      $message = new Swift_Message($emailSubject, "<html>$emailBody</html>", 'text/html');
-      $swift->send($message, $recipients, $emailSenderAddress);
+      $emailer = new Emailer();
+      $emailer->setFrom(self::setupEmailSenderAddress());
+      $emailer->addRecipient($peopleResults[0]->email_address);
+      $emailer->send(
+        self::setupEmailSubject($websiteRemovalName),
+        self::setupEmailBody($websiteRemovalName, $websiteListUserIsStillMemberOf)
+      );
       kohana::log('info', 'Website membership email sent to ' . $peopleResults[0]->email_address);
     }
   }

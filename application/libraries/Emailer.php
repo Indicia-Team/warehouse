@@ -64,6 +64,13 @@ class Emailer {
    */
   private $fromName = NULL;
 
+  /**
+   * Priority from 1 (very high) to 5 (very low).
+   *
+   * @var int
+   */
+  private $priority = 3;
+
 
   /**
    * Constructor - initialise the library we are going to use.
@@ -96,28 +103,43 @@ class Emailer {
    *   Email message.
    *
    * @return bool
-   *   TRUE if the email sent successfully, FALSE otherwise.
+   *   The number of recipients who have been sent emails - 0 if an error occurred..
    */
   public function send($subject, $message) {
+    $config = kohana::config('email');
     if (!$this->from) {
-      $config = kohana::config('email');
       $this->from = $config['address'];
       $this->fromName = $config['server_name'];
     }
-    kohana::log('debug', "Sending email to " . json_encode($this->recipients) . " with subject $subject and message\n$message");
-    $emailLibrary = kohana::config('email.library', FALSE, FALSE) ?? 'Swift';
+    if ($config['do_not_send'] ?? FALSE) {
+      // Email disabled on this server, this classes as a success.
+      return TRUE;
+    }
+    $emailLibrary = $config['library'] ?? 'Swift';
     $emailHelper = "emailer$emailLibrary";
-    $emailHelper::send(
-      $subject,
-      $message,
-      $this->recipients,
-      $this->cc,
-      $this->from,
-      $this->fromName
-    );
-    // Now reset the emailer for next time.
-    $this->reset();
-    return TRUE;
+    try {
+      if (empty($this->recipients || empty($this->message))) {
+        throw new Exception('Email incomplete - missing recipient or message');
+      }
+      $emailHelper::send(
+        $subject,
+        $message,
+        $this->recipients,
+        $this->cc,
+        $this->from,
+        $this->fromName,
+        $this->priority
+      );
+    }
+    catch (Exception $e) {
+      error_logger::log_error('Error in email helper', $e);
+      return 0;
+    }
+    finally {
+      // Now reset the emailer for next time.
+      $this->reset();
+    }
+    return count($this->recipients);
   }
 
   /**
@@ -158,5 +180,19 @@ class Emailer {
       $this->fromName = $name;
     }
   }
+
+  /**
+   * Add an email from address.
+   *
+   * @param string $email
+   *   Set from email address.
+   * @param ?string $name
+   *   Optional name of the email sender.
+   */
+  public function setPriority($priority) {
+    $this->priority = $priority;
+  }
+
+
 
 }
