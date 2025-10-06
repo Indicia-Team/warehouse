@@ -70,13 +70,13 @@ class emailerMsGraph {
    * @param array $recipientList
    *   List of email recipients. Each entry is an array holding the email
    *   address and optional recipient name.
-   * @param array $cc
+   * @param array $ccList
    *   List of email copy recipients. Each entry is an array holding the email
    *   address and optional recipient name.
    * @param string $from
    *   The email address that the email should be sent from.
    * @param ?string $fromName
-   *   Th optional name associated with the from email address.
+   *   The optional name associated with the from email address.
    */  public static function send(
       $subject,
       $message,
