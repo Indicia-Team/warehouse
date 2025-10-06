@@ -50,3 +50,20 @@ $config['forgotten_passwd_title'] = '*forgotten_passwd_title*';
 $config['server_name'] = '*server_name*';
 $config['test_result'] = '*test_result*';
 
+/*
+// Uncomment these lines and populate the empty values if using the Microsoft
+// Graph email helper.
+$config['library'] = 'MsGraph';
+$config['msgraph_tenant_id'] = '';
+$config['msgraph_client_id'] = '';
+$config['msgraph_client_secret'] = '';
+// If MS Graph configured with an email footer, you can configure a spacer to
+// add to the email body here to keep the body and footer separate.
+$config['msgraph_footer_spacer_rows'] = 2;
+*/
+
+/*
+// Uncomment these lines on a development server if you want emails to just get
+// logged.
+$config['library'] = 'DevLogger';
+*/

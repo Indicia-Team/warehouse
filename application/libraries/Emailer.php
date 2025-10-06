@@ -30,6 +30,13 @@
 class Emailer {
 
   /**
+   * Name of the email helper class, e.g. for Swift or MS Graph connections.
+   *
+   * @var string
+   */
+  private $emailHelper;
+
+  /**
    * List of recipients, each containing an email address and optional name.
    *
    * @var array
@@ -44,18 +51,35 @@ class Emailer {
   private array $cc = [];
 
   /**
-   * Email sent from, array containing email and optional name.
+   * Email sent from address.
    *
-   * @var array
+   * @var string
    */
-  private array $from;
+  private $from = NULL;
 
   /**
-   * Email reply to, array containing email and optional name.
+   * Email sent from name.
    *
-   * @var array
+   * @var string
    */
-  private array $replyTo;
+  private $fromName = NULL;
+
+  /**
+   * Priority from 1 (very high) to 5 (very low).
+   *
+   * @var int
+   */
+  private $priority = 3;
+
+
+  /**
+   * Constructor - initialise the library we are going to use.
+   */
+  public function __construct() {
+    $emailLibrary = kohana::config('email.library', FALSE, FALSE) ?? 'Swift';
+    $this->emailHelper = "emailer$emailLibrary";
+    $this->emailHelper::init();
+  }
 
   /**
    * Reset any details set for the next email.
@@ -63,8 +87,8 @@ class Emailer {
   public function reset() {
     $this->recipients = [];
     $this->cc = [];
-    $this->from = null;
-    $this->replyTo = null;
+    $this->from = NULL;
+    $this->fromName = NULL;
   }
 
   /**
@@ -79,23 +103,43 @@ class Emailer {
    *   Email message.
    *
    * @return bool
-   *   TRUE if the email sent successfully, FALSE otherwise.
+   *   The number of recipients who have been sent emails - 0 if an error occurred..
    */
   public function send($subject, $message) {
-    if (!$this->from || !$this->replyTo) {
-      $config = kohana::config('email');
-      if (!$this->from) {
-        $this->from = [$config['address'], $config['server_name']];
-      }
-      if (!$this->replyTo) {
-        $this->replyTo = [$config['address'], $config['server_name']];
-      }
+    $config = kohana::config('email');
+    if (!$this->from) {
+      $this->from = $config['address'];
+      $this->fromName = $config['server_name'];
     }
-    // Send email logic here
-    kohana::log('debug', "Sending email to " . json_encode($this->recipients) . " with subject $subject and message\n$message");
-    // Now reset the emailer for next time.
-    $this->reset();
-    return TRUE;
+    if ($config['do_not_send'] ?? FALSE) {
+      // Email disabled on this server, this classes as a success.
+      return TRUE;
+    }
+    $emailLibrary = $config['library'] ?? 'Swift';
+    $emailHelper = "emailer$emailLibrary";
+    try {
+      if (empty($this->recipients || empty($this->message))) {
+        throw new Exception('Email incomplete - missing recipient or message');
+      }
+      $emailHelper::send(
+        $subject,
+        $message,
+        $this->recipients,
+        $this->cc,
+        $this->from,
+        $this->fromName,
+        $this->priority
+      );
+    }
+    catch (Exception $e) {
+      error_logger::log_error('Error in email helper', $e);
+      return 0;
+    }
+    finally {
+      // Now reset the emailer for next time.
+      $this->reset();
+    }
+    return count($this->recipients);
   }
 
   /**
@@ -127,23 +171,28 @@ class Emailer {
    *
    * @param string $email
    *   Set from email address.
-   * @param mixed $name
-   *   Set from name.
+   * @param ?string $name
+   *   Optional name of the email sender.
    */
-  public function setFrom($email, $name = null) {
-    $this->from = [$email, $name];
+  public function setFrom($email, $name = NULL) {
+    $this->from = $email;
+    if ($name) {
+      $this->fromName = $name;
+    }
   }
 
   /**
-   * Add an email reply to address.
+   * Add an email from address.
    *
    * @param string $email
-   *   Set reply to email address.
-   * @param mixed $name
-   *   Set reply to name.
+   *   Set from email address.
+   * @param ?string $name
+   *   Optional name of the email sender.
    */
-  public function setReplyTo($email, $name = null) {
-    $this->replyTo = [$email, $name];
+  public function setPriority($priority) {
+    $this->priority = $priority;
   }
+
+
 
 }
