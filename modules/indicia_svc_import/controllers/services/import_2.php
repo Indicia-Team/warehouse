@@ -211,7 +211,7 @@ class Import_2_Controller extends Service_Base_Controller {
       ]);
     }
     catch (Exception $e) {
-      kohana::log('debug', 'Error in upload_file: ' . $e->getMessage());
+      kohana::log('error', 'Error in upload_file: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'error' => $e->getMessage(),
@@ -244,7 +244,7 @@ class Import_2_Controller extends Service_Base_Controller {
       ]);
     }
     catch (Exception $e) {
-      kohana::log('debug', 'Error in extract_file: ' . $e->getMessage());
+      kohana::log('error', 'Error in extract_file: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'status' => 'error',
@@ -339,7 +339,6 @@ class Import_2_Controller extends Service_Base_Controller {
     }
     catch (Exception $e) {
       error_logger::log_error('Error in load_chunk_to_temp_table', $e);
-      kohana::log('debug', 'Error in load_chunk_to_temp_table: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'status' => 'error',
@@ -369,7 +368,6 @@ class Import_2_Controller extends Service_Base_Controller {
     }
     catch (Exception $e) {
       error_logger::log_error('Error in process_lookup_matching', $e);
-      kohana::log('debug', 'Error in process_lookup_matching: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'status' => 'error',
@@ -2049,7 +2047,6 @@ SQL;
     $rowsDoneInBatch = 0;
     $db = new Database();
 
-    kohana::log('debug', 'loading batch from '.$fileName);
     while (($rowsDoneInBatch < $batchLimit)) {
       if ($config['files'][$fileName]['rowsRead'] >= $config['files'][$fileName]['rowCount']) {
         // All rows done.
@@ -2075,13 +2072,11 @@ SQL;
         if (implode('', $data) <> '') {
           $rows[] = '(' . implode(', ', $data) . ')';
         }
-        kohana::log('debug', 'Found a row (' . implode(', ', $data) . ')');
         $config['rowsLoaded']++;
       }
       else {
         // Skipping empty row so correct the total expected.
         $config['totalRows']--;
-        kohana::log('debug', "Set totalRows to $config[totalRows] as empty row found.");
       }
       $config['files'][$fileName]['rowsRead']++;
       $rowsDoneInBatch++;
@@ -2105,10 +2100,8 @@ SQL;
       throw new exception('The import file does not contain any data to import.');
     }
     $config['progress'] = $config['rowsLoaded'] * 100 / $config['totalRows'];
-    kohana::log('debug', "Progress : $config[progress] based on $config[rowsLoaded] * 100 / $config[totalRows]");
     if ($config['files'][$fileName]['rowsRead'] >= $config['files'][$fileName]['rowCount']) {
       $config['state'] = ($fileName === array_key_last($config['files'])) ? 'loaded' : 'nextFile';
-      kohana::log('debug', "State set to $config[state] for $fileName completed");
     }
   }
 
@@ -2138,7 +2131,6 @@ SQL;
    *   Config key/value pairs.
    */
   private function createConfig(array $files, $enableBackgroundImports) {
-    kohana::log('debug', 'Creating config for ' . json_encode($files));
     $ext = pathinfo($files[0], PATHINFO_EXTENSION);
 
     // @todo Entity should by dynamic.
@@ -2165,7 +2157,7 @@ SQL;
             'msg' => 'Multiple files uploaded but the files have differing sets of columns. Import aborted.',
             'status' => 'Bad Request',
           ]);
-          kohana::log('debug', 'Aborted due to mismatch');
+          kohana::log('alert', 'Aborted due to mismatch in import file column structures');
           throw new RequestAbort('Multiple files uploaded but the files have differing sets of columns. Only matching sets of import files can be imported in one batch. Import aborted.');
         }
       }
