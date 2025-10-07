@@ -659,6 +659,14 @@ class Import_2_Controller extends Service_Base_Controller {
     echo json_encode($response);
   }
 
+  /**
+   * API endpoint that retrieves the status of background imports.
+   *
+   * By default echoes a JSON object containing status information for the
+   * current user's active background imports, but can also return the
+   * information for a specified import by providing a config-id parameter in
+   * the $_POST data.
+   */
   public function background_import_status() {
     header("Content-Type: application/json");
     $this->authenticate('read');
@@ -676,7 +684,6 @@ class Import_2_Controller extends Service_Base_Controller {
       AND $filter
       ORDER BY created_on;
     SQL)->result(TRUE);
-    kohana::log('debug', 'Query: ' . $db->last_query());
     $r = [];
     foreach ($imports as $import) {
       $params = json_decode($import->params, TRUE);
