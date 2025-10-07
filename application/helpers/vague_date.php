@@ -386,7 +386,7 @@ class vague_date {
       }
     }
     if (!$matched) {
-      if (trim($string) === 'U' || trim($string) === Kohana::lang('dates.unknown')) {
+      if (trim($string) === 'U' || strcasecmp(trim($string), Kohana::lang('dates.unknown')) === 0) {
         return [NULL, NULL, 'U'];
       }
       else {

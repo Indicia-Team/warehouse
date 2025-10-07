@@ -86,9 +86,15 @@ class Forgotten_Password_Controller extends Indicia_Controller {
     return TRUE;
   }
 
+  /**
+   * Send the forgotten password from the link in the users index view.
+   *
+   * @param int $id
+   *   User ID.
+   */
   public function send_from_user($id = NULL) {
-    $email_config = Kohana::config('email');
-    if (array_key_exists ('do_not_send' , $email_config) and $email_config['do_not_send']) {
+    $emailConfig = Kohana::config('email');
+    if (array_key_exists ('do_not_send' , $emailConfig) and $emailConfig['do_not_send']) {
       kohana::log('info', "Email configured for do_not_send: ignoring send_from_user");
       return;
     }
@@ -113,20 +119,14 @@ class Forgotten_Password_Controller extends Indicia_Controller {
     $user->__set('forgotten_password_key', $link_code);
     $user->save();
     try {
-      $swift = email::connect();
-      $message = new Swift_Message(
-        $email_config['forgotten_passwd_title'],
-        View::factory('templates/forgotten_password_email')->set(array(
-          'server' => $email_config['server_name'],
-          'senderName' => "an Administrator's",
-          'new_password_link' => '<a href="' . url::site() . "new_password/email/$link_code\">" .
-            url::site() . "new_password/email/$link_code</a>",
-        )),
-        'text/html'
-      );
-      $recipients = new Swift_RecipientList();
-      $recipients->addTo($person->email_address, $person->first_name . ' ' . $person->surname);
-      $swift->send($message, $recipients, $email_config['address']);
+      $emailer = new Emailer();
+      $emailer->addRecipient($person->email_address, $person->first_name . ' ' . $person->surname);
+      $emailer->send($emailConfig['forgotten_passwd_title'], View::factory('templates/forgotten_password_email')->set(array(
+        'server' => $emailConfig['server_name'],
+        'senderName' => "an Administrator's",
+        'new_password_link' => '<a href="' . url::site() . "new_password/email/$link_code\">" .
+          url::site() . "new_password/email/$link_code</a>",
+      )));
     }
     catch (Swift_Exception $e) {
       kohana::log('error', "Error sending forgotten password: " . $e->getMessage());

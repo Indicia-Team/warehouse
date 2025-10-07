@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
@@ -219,6 +218,7 @@ class ImportTools {
       throw new exception('The spreadsheet file is empty');
     }
     $columnTitles = $data[0];
+    // Remove any null columns from the end.
     for ($i = count($columnTitles) - 1; $i >= 0 && $columnTitles[$i] === NULL; $i--) {
       unset($columnTitles[$i]);
     }
@@ -252,16 +252,13 @@ class ImportTools {
     $reader->setLoadSheetsOnly($worksheetData[0]['worksheetName']);
     // Add two to the range start, as it is indexed from one not zero unlike
     // the data array read out and we skip the header row.
-    $reader->setReadFilter(new RangeReadFilter($config['rowsRead'] + 2, $limit));
+    $reader->setReadFilter(new RangeReadFilter($config['files'][$fileName]['rowsRead'] + 2, $limit));
     $file = $reader->load(DOCROOT . "import/$fileName");
     return $file->getActiveSheet()->toArray();
   }
 
   /**
-   * Return number of rows to import in the file.
-   *
-   * For CSV, the file size in bytes which can be compared with filepos to get
-   * progress info. For PHPSpreadsheet files, the worksheet's size.
+   * Return number of rows to import in a single file.
    *
    * @param string $fileName
    *   Name of the import file.
@@ -269,7 +266,7 @@ class ImportTools {
    * @return int
    *   A representation of the file size.
    */
-  public function getTotalRows($fileName) {
+  public function getRowCountForFile($fileName) {
     $reader = $this->getReader($fileName);
     // Minimise data read from spreadsheet - first sheet only.
     $worksheetData = $reader->listWorksheetInfo(DOCROOT . "import/$fileName");
@@ -278,6 +275,26 @@ class ImportTools {
     }
     // Subtract 1 to exclude header.
     return $worksheetData[0]['totalRows'] - 1;
+  }
+
+  /**
+   * Return number of rows to import in the file(s).
+   *
+   * For CSV, the file size in bytes which can be compared with filepos to get
+   * progress info. For PHPSpreadsheet files, the cumulative worksheet's size.
+   *
+   * @param array $files
+   *   List of the import file names.
+   *
+   * @return int
+   *   A representation of the file size.
+   */
+  public function getTotalRows(array $files) {
+    $total = 0;
+    foreach ($files as $fileName) {
+      $total += $this->getRowCountForFile($fileName);
+    }
+    return $total;
   }
 
   /**

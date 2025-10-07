@@ -1,9 +1,6 @@
 <?php
 
 /**
- * @file
- * Warehouse version configuration.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,30 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
-defined('SYSPATH') or die('No direct script access.');
-
-/**
- * The application files' version number.
- *
- * @var string
+/*
+ * List of REST API configured project names which are used for Elasticsearch
+ * feeds and that should be checked for long queues before deciding whether to
+ * proceed with a background import step or wait. Used to ensure that large
+ * imports don't cause feeds to get too far behind.
  */
-$config['version'] = '9.15.0';
-
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2025-10-06';
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+$config['elasticsearch_feeds_to_monitor'] = [
+  'OCCS',
+  'OCCSSENSITIVE',
+];

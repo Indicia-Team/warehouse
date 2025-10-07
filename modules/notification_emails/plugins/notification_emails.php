@@ -541,7 +541,6 @@ function send_out_user_email(
   //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
   $emailContent .= '<br><a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
     url::base() . '">Click here to control which notifications you receive.</a><br/><br/>';
-  $cc = NULL;
   // Use a transaction to allow us to prevent the email sending and marking of
   // notification as done getting out of step.
   $db->begin();
@@ -589,19 +588,18 @@ function send_out_user_email(
       }
       $emailContent .= '<a href="' . $notificationsLinkUrl . '">' . $notificationsLinkText . '</a></br>';
     }
-    $swift = email::connect();
-    $message = new Swift_Message($emailSubject, "<html>$emailContent</html>", 'text/html');
+    $emailer = new Emailer();
+    $emailer->addRecipient($userResults[0]->email_address);
     if ($highPriority === TRUE) {
-      $message->setPriority(2);
+      $emailer->setPriority(2);
     }
-    $recipients = new Swift_RecipientList();
-    $recipients->addTo($userResults[0]->email_address);
+    $emailer->setFrom($emailAddress);
     // Send the email.
     try {
-      $swift->send($message, $recipients, $emailAddress);
+      $emailer->send($emailSubject, "<html>$emailContent</html>");
       kohana::log('info', 'Email notification sent to ' . $userResults[0]->email_address);
     }
-    catch (Swift_ConnectionException $e) {
+    catch (Exception $e) {
       kohana::log('error', 'Failed to send email notification to ' . $userResults[0]->email_address);
       error_logger::log_error('Sending email from notification_emails', $e);
     }

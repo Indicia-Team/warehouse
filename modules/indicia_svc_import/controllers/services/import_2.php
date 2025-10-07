@@ -23,7 +23,6 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
-define('BATCH_ROW_LIMIT', 100);
 define('SYSTEM_FIELD_NAMES', [
   '_row_id',
   'errors',
@@ -132,8 +131,11 @@ class Import_2_Controller extends Service_Base_Controller {
     // Newer versions of client send the data file, allowing import plugins to
     // be accessed from config.
     $plugins = [];
-    if (!empty($_POST['data-file'])) {
-      $config = $this->getConfig($_POST['data-file']);
+    // Data file supported for legacy clients, where data file and config ID
+    // would always be the same thing.
+    if (!empty($_POST['config-id'] ?? $_POST['data-file'])) {
+      $configId = $this->getPostedConfigId();
+      $config = import2ChunkHandler::getConfig($configId);
       $plugins = $config['plugins'];
     }
     else {
@@ -209,7 +211,7 @@ class Import_2_Controller extends Service_Base_Controller {
       ]);
     }
     catch (Exception $e) {
-      kohana::log('debug', 'Error in upload_file: ' . $e->getMessage());
+      kohana::log('error', 'Error in upload_file: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'error' => $e->getMessage(),
@@ -242,7 +244,7 @@ class Import_2_Controller extends Service_Base_Controller {
       ]);
     }
     catch (Exception $e) {
-      kohana::log('debug', 'Error in extract_file: ' . $e->getMessage());
+      kohana::log('error', 'Error in extract_file: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'status' => 'error',
@@ -256,11 +258,25 @@ class Import_2_Controller extends Service_Base_Controller {
    */
   public function init_server_config() {
     header("Content-Type: application/json");
-    $fileName = $_POST['data-file'];
-    if (!file_exists(DOCROOT . "import/$fileName")) {
-      throw new exception('Parameter data-file refers to a missing file');
+    $this->authenticate('write');
+    if (isset($_POST['data-file'])) {
+      // Legacy single file upload.
+      $files = [$_POST['data-file']];
     }
-    $config = $this->getConfig($fileName);
+    else {
+      $files = json_decode($_POST['data-files']);
+    }
+    foreach ($files as $fileName) {
+      if (!file_exists(DOCROOT . "import/$fileName")) {
+        throw new exception("Parameter data-files refers to a missing file $fileName");
+      }
+    }
+    try {
+      $config = $this->createConfig($files, ($_POST['enable-background-imports'] ?? 'f') === 't');
+    }
+    catch (RequestAbort) {
+      return;
+    }
     if (!empty($_POST['import_template_id'])) {
       // Merge the template into the config.
       $template = ORM::factory('import_template', $_POST['import_template_id']);
@@ -272,9 +288,11 @@ class Import_2_Controller extends Service_Base_Controller {
       }
     }
     $config['plugins'] = json_decode($_POST['plugins'] ?? '{}', TRUE);
-    $this->saveConfig($fileName, $config);
+    $configId = pathinfo($files[0], PATHINFO_FILENAME);
+    import2ChunkHandler::saveConfig($configId, $config);
     echo json_encode([
       'status' => 'ok',
+      'configId' => $configId,
     ]);
   }
 
@@ -300,7 +318,11 @@ class Import_2_Controller extends Service_Base_Controller {
       if (!file_exists(DOCROOT . "import/$fileName")) {
         throw new exception('Parameter data-file refers to a missing file');
       }
-      $config = $this->getConfig($fileName);
+      $configId = $this->getPostedConfigId();
+      $config = import2ChunkHandler::getConfig($configId);
+      if ($config['state'] === 'nextFile') {
+        $config['state'] = 'loadingRecords';
+      }
       if ($config['state'] === 'initial') {
         $this->createTempTable($fileName, $config);
         $config['state'] = 'loadingRecords';
@@ -308,7 +330,7 @@ class Import_2_Controller extends Service_Base_Controller {
       elseif ($config['state'] === 'loadingRecords') {
         $this->loadNextRecordsBatch($fileName, $config);
       }
-      $this->saveConfig($fileName, $config);
+      import2ChunkHandler::saveConfig($configId, $config);
       echo json_encode([
         'status' => 'ok',
         'progress' => $config['progress'],
@@ -317,7 +339,6 @@ class Import_2_Controller extends Service_Base_Controller {
     }
     catch (Exception $e) {
       error_logger::log_error('Error in load_chunk_to_temp_table', $e);
-      kohana::log('debug', 'Error in load_chunk_to_temp_table: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'status' => 'error',
@@ -337,19 +358,16 @@ class Import_2_Controller extends Service_Base_Controller {
     header("Content-Type: application/json");
     try {
       $this->authenticate('write');
-      $fileName = $_POST['data-file'];
-      if (!file_exists(DOCROOT . "import/$fileName")) {
-        throw new exception('Parameter data-file refers to a missing file');
-      }
-      $config = $this->getConfig($fileName);
+      // Data file supported for legacy clients.
+      $configId = $this->getPostedConfigId();
+      $config = import2ChunkHandler::getConfig($configId);
       $db = new Database();
-      $r = $this->findNextLookupField($db, $config, (integer) $_POST['index']);
-      $this->saveConfig($fileName, $config);
+      $r = $this->findNextLookupField($db, $config);
+      import2ChunkHandler::saveConfig($configId, $config);
       echo json_encode($r);
     }
     catch (Exception $e) {
       error_logger::log_error('Error in process_lookup_matching', $e);
-      kohana::log('debug', 'Error in process_lookup_matching: ' . $e->getMessage());
       http_response_code(400);
       echo json_encode([
         'status' => 'error',
@@ -372,16 +390,14 @@ class Import_2_Controller extends Service_Base_Controller {
     header("Content-Type: application/json");
     try {
       $this->authenticate('write');
-      $fileName = $_POST['data-file'];
-      if (!file_exists(DOCROOT . "import/$fileName")) {
-        throw new exception('Parameter data-file refers to a missing file');
-      }
-      $config = $this->getConfig($fileName);
+      // Support data-file for legacy clients.
+      $configId = $this->getPostedConfigId();
+      $config = import2ChunkHandler::getConfig($configId);
       $db = new Database();
       $matchesInfo = json_decode($_POST['matches-info'], TRUE);
       $sourceColName = pg_escape_identifier($db->getLink(), $matchesInfo['source-field']);
       $sourceIdCol = pg_escape_identifier($db->getLink(), $matchesInfo['source-field'] . '_id');
-      $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+      $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
       foreach ($matchesInfo['values'] as $value => $termlist_term_id) {
         // Safety check.
         if (!preg_match('/\d+/', $termlist_term_id)) {
@@ -437,8 +453,9 @@ class Import_2_Controller extends Service_Base_Controller {
   public function save_mappings() {
     header("Content-Type: application/json");
     $this->authenticate('write');
-    $fileName = $_POST['data-file'];
-    $config = $this->getConfig($fileName);
+    // Support data-file for legacy clients.
+    $configId = $this->getPostedConfigId();
+    $config = import2ChunkHandler::getConfig($configId);
     foreach (json_decode($_POST['mappings']) as $key => $value) {
       try {
         if (!empty($value)) {
@@ -459,7 +476,7 @@ class Import_2_Controller extends Service_Base_Controller {
         }
       }
     }
-    $this->saveConfig($fileName, $config);
+    import2ChunkHandler::saveConfig($configId, $config);
     echo json_encode([
       'status' => 'ok',
     ]);
@@ -475,9 +492,10 @@ class Import_2_Controller extends Service_Base_Controller {
   public function preprocess() {
     header("Content-Type: application/json");
     $this->authenticate('write');
-    $fileName = $_POST['data-file'];
+    // Data file allowed for legacy clients.
+    $configId = $this->getPostedConfigId();
     $stepIndex = $_POST['index'];
-    $config = $this->getConfig($fileName);
+    $config = import2ChunkHandler::getConfig($configId);
     $steps = [];
     $parentTable = inflector::plural($config['parentEntity']);
     if (isset($config['global-values']['config:allowUpdates']) && $config['global-values']['config:allowUpdates'] === '1') {
@@ -532,11 +550,11 @@ class Import_2_Controller extends Service_Base_Controller {
           [$steps[$stepIndex][2], $steps[$stepIndex][0]],
           [$steps[$stepIndex][3], &$config]);
         // Config can be changed by plugin preprocessing.
-        $this->saveConfig($fileName, $config);
+        import2ChunkHandler::saveConfig($configId, $config);
       }
       else {
         // Step is one of the core list.
-        $stepOutput = call_user_func([$this, $steps[$stepIndex][0]], $fileName, $config);
+        $stepOutput = call_user_func([$this, $steps[$stepIndex][0]], $configId, $config);
       }
       $r = array_merge([
         'step' => $steps[$stepIndex][0],
@@ -637,6 +655,58 @@ class Import_2_Controller extends Service_Base_Controller {
       $response['occurrencesDetails'][] = "Occurrences that were removed from the database before today's reversal will not be shown in the untouched occurrences download file.";
     }
     echo json_encode($response);
+  }
+
+  /**
+   * API endpoint that retrieves the status of background imports.
+   *
+   * By default echoes a JSON object containing status information for the
+   * current user's active background imports, but can also return the
+   * information for a specified import by providing a config-id parameter in
+   * the $_POST data.
+   */
+  public function background_import_status() {
+    header("Content-Type: application/json");
+    $this->authenticate('read');
+    $db = new Database();
+    if (!empty($_POST['config-id'])) {
+      $filter = "params->>'config-id'=" . pg_escape_literal($db->getLink(), $_POST['config-id']);
+    }
+    else {
+      $filter = "params->>'user_id'=" . pg_escape_literal($db->getLink(), $this->auth_user_id);
+    }
+    $imports = $db->query(<<<SQL
+      SELECT params, created_on, claimed_on, error_detail
+      FROM work_queue
+      WHERE task='task_import_step'
+      AND $filter
+      ORDER BY created_on;
+    SQL)->result(TRUE);
+    $r = [];
+    foreach ($imports as $import) {
+      $params = json_decode($import->params, TRUE);
+      $info = [
+        'config-id' => $params['config-id'],
+        'created_on' => $import->created_on,
+        'claimed_on' => $import->claimed_on,
+        'error_detail' => $import->error_detail,
+        'state' => !empty($params['precheck']) ? 'prechecking' : 'importing',
+      ];
+      $config = import2ChunkHandler::getConfig($params['config-id']);
+
+      $info['totalRows'] = $config['totalRows'] ?? 0;
+      $info['rowsInserted'] = $config['rowsInserted'] ?? 0;
+      $info['rowsUpdated'] = $config['rowsUpdated'] ?? 0;
+      if (!empty($params['restart'])) {
+        $config['rowsProcessed'] = 0;
+      }
+      else {
+        $info['rowsProcessed'] = $config['rowsProcessed'] ?? 0;
+      }
+      $info['errorsCount'] = $config['errorsCount'] ?? 0;
+      $r[] = $info;
+    }
+    echo json_encode($r);
   }
 
   /**
@@ -963,14 +1033,14 @@ class Import_2_Controller extends Service_Base_Controller {
   /**
    * Preprocessing to check existing record updates limited to user's records.
    */
-  private function checkRecordIdsOwnedByUser($fileName, array $config) {
+  private function checkRecordIdsOwnedByUser($configId, array $config) {
     $db = new Database();
-    $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', 'occurrence:id');
+    $columnInfo = import2ChunkHandler::getColumnInfoByProperty($config['columns'], 'warehouseField', 'occurrence:id');
     $websiteId = (int) $config['global-values']['website_id'];
     $errorsJson = pg_escape_literal($db->getLink(), json_encode([
       $columnInfo['columnLabel'] => 'You do not have permission to update this record or the record referred to does not exist.',
     ]));
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $tempDbField = pg_escape_identifier($db->getLink(), $columnInfo['tempDbField']);
     // @todo For tables other than occurrences, method of accessing website ID differs.
     $sql = <<<SQL
@@ -1012,11 +1082,11 @@ SQL;
    *
    * Only maps to records from the same website and created by the same user.
    */
-  private function mapExternalKeyToExistingRecords($fileName, array $config) {
+  private function mapExternalKeyToExistingRecords($configId, array $config) {
     $db = new Database();
-    $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', 'occurrence:external_key');
+    $columnInfo = import2ChunkHandler::getColumnInfoByProperty($config['columns'], 'warehouseField', 'occurrence:external_key');
     $websiteId = (int) $config['global-values']['website_id'];
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $tempDbField = pg_escape_identifier($db->getLink(), $columnInfo['tempDbField']);
     // @todo For tables other than occurrences, method of accessing website ID
     // differs.
@@ -1039,7 +1109,7 @@ SQL;
       'warehouseField' => "$config[entity]:id",
       'skipIfEmpty' => TRUE,
     ];
-    $this->saveConfig($fileName, $config);
+    import2ChunkHandler::saveConfig($configId, $config);
     $sql = <<<SQL
       SELECT count(DISTINCT $dbIdentifiers[tempDbFkIdField]) as distinct_count, count(*) as total_count
       FROM import_temp.$dbIdentifiers[tempTableName]
@@ -1064,9 +1134,9 @@ SQL;
    * E.g. when updating existing occurrences, find the previous parent sample
    * IDs for each occurrence.
    */
-  private function findOriginalParentEntityIds($fileName, array $config) {
+  private function findOriginalParentEntityIds($configId, array $config) {
     $db = new Database();
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $sql = <<<SQL
       ALTER TABLE import_temp.$dbIdentifiers[tempTableName]
       ADD COLUMN IF NOT EXISTS $dbIdentifiers[tempDbParentFkIdField] integer;
@@ -1090,7 +1160,7 @@ SQL;
       'warehouseField' => "$config[parentEntity]:id",
       'skipIfEmpty' => TRUE,
     ];
-    $this->saveConfig($fileName, $config);
+    import2ChunkHandler::saveConfig($configId, $config);
     return [
       'message' => [
         "{1} existing {2} found",
@@ -1110,9 +1180,9 @@ SQL;
    * has other records that are not in the import, the existing records will be
    * relocated to a new sample so the other records remain unaffected.
    */
-  private function clearParentEntityIdsIfNotAllChildrenPresent($fileName, array $config) {
+  private function clearParentEntityIdsIfNotAllChildrenPresent($configId, array $config) {
     $db = new Database();
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $sql = <<<SQL
       UPDATE import_temp.$dbIdentifiers[tempTableName] u
       SET $dbIdentifiers[tempDbParentFkIdField]=null
@@ -1140,15 +1210,15 @@ SQL;
    * data, then the parent (sample) ID is cleared so that there is no confusion
    * and new parents get created.
    */
-  private function clearNewParentEntityIdsIfNowMultipleSamples($fileName, array $config) {
+  private function clearNewParentEntityIdsIfNowMultipleSamples($configId, array $config) {
     $db = new Database();
-    $parentEntityColumns = $this->findEntityColumns($config['parentEntity'], $config);
+    $parentEntityColumns = import2ChunkHandler::findEntityColumns($config['parentEntity'], $config);
     $parentColNames = [];
     foreach ($parentEntityColumns as $info) {
       $parentColNames[] = pg_escape_identifier($db->getLink(), $info['tempDbField']);
     }
     $parentColsList = implode(" || '||' || ", $parentColNames);
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $sql = <<<SQL
     SELECT t.$dbIdentifiers[tempDbParentFkIdField], COUNT(DISTINCT $parentColsList)
     INTO TEMPORARY to_clear
@@ -1176,14 +1246,15 @@ SQL;
   public function save_config() {
     header("Content-Type: application/json");
     $this->authenticate('write');
-    $fileName = $_POST['data-file'];
-    $config = $this->getConfig($fileName);
+    // Using data-file is allowed for legacy code.
+    $configId = $this->getPostedConfigId();
+    $config = import2ChunkHandler::getConfig($configId);
     foreach ($_POST as $key => $value) {
-      if ($key !== 'data-file') {
+      if ($key !== 'data-file' && $key !== 'config-id') {
         $config[$key] = json_decode($value);
       }
     }
-    $this->saveConfig($fileName, $config);
+    import2ChunkHandler::saveConfig($configId, $config);
     echo json_encode([
       'status' => 'ok',
     ]);
@@ -1195,8 +1266,9 @@ SQL;
   public function get_config() {
     header("Content-Type: application/json");
     $this->authenticate('read');
-    $fileName = $_GET['data-file'];
-    echo json_encode($this->getConfig($fileName));
+    // Data file allowed for legacy clients.
+    $fileName = $_GET['config-id'] ?? $_GET['data-file'];
+    echo json_encode(import2ChunkHandler::getConfig($fileName));
   }
 
   /**
@@ -1210,168 +1282,51 @@ SQL;
     try {
       $this->authenticate('write');
       ORM::$authorisedWebsiteId = $this->website_id;
+      $db = new Database();
+      $isPrecheck = !empty($_POST['precheck']);
+      $configId = $this->getPostedConfigId();
+      $config = import2ChunkHandler::getConfig($configId);
+      if ($isPrecheck && !empty($_POST['restart']) && $config['processingMode'] === 'background') {
+        $q = new WorkQueue();
+        $q->enqueue($db, [
+          'task' => 'task_import_step',
+          'params' => json_encode([
+            'config-id' => $configId,
+            'precheck' => TRUE,
+            'restart' => TRUE,
+            'website_id' => $this->website_id,
+            'user_id' => $this->auth_user_id,
+          ]),
+          'cost_estimate' => 100,
+          'priority' => 2,
+        ]);
+        echo json_encode([
+          'status' => 'queued',
+          'msg' => 'Import queued for background processing due to the number of records.',
+        ]);
+        return;
+      }
       if ($this->in_warehouse) {
         // Refresh session in case on the same page for a while.
         Session::instance();
       }
-      // Don't process cache tables immediately to improve performance.
-      cache_builder::$delayCacheUpdates = TRUE;
-      $fileName = $_POST['data-file'];
-      if (!file_exists(DOCROOT . "import/$fileName")) {
-        throw new exception('Parameter data-file refers to a missing file');
-      }
-      $config = $this->getConfig($fileName);
-      $isPrecheck = !empty($_POST['precheck']);
-      $db = new Database();
-      // If request to start again sent, go from beginning.
-      if (!empty($_POST['restart'])) {
-        $config['rowsProcessed'] = 0;
-        $config['parentEntityRowsProcessed'] = 0;
-        $this->saveConfig($fileName, $config);
-      }
-
       if (!empty($_POST['save-import-record'])) {
-        $this->saveImportRecord($config, json_decode($_POST['save-import-record']));
+        import2ChunkHandler::saveImportRecord($config, json_decode($_POST['save-import-record']));
       }
       if (!empty($_POST['save-import-template'])) {
         $this->saveImportTemplate($config, json_decode($_POST['save-import-template']));
       }
-      // @todo Correctly set parent entity for other entities.
-      // @todo Handling for entities without parent entity.
-      $parentEntityColumns = $this->findEntityColumns($config['parentEntity'], $config);
-      $childEntityColumns = $this->findEntityColumns($config['entity'], $config);
-      $parentEntityDataRows = $this->fetchParentEntityData($db, $parentEntityColumns, $isPrecheck, $config);
-
-      // Check for compound field handling which require presence of a set of
-      // fields (e.g. build date from day, month, year).
-      $parentEntityCompoundFields = $this->getCompoundFieldsToProcessForEntity($config['parentEntity'], $parentEntityColumns);
-      $childEntityCompoundFields = $this->getCompoundFieldsToProcessForEntity($config['entity'], $childEntityColumns);
-      foreach ($parentEntityDataRows as $parentEntityDataRow) {
-        // @todo Updating existing data.
-        // @todo tracking of records that are done in the import table so can restart.
-        $parent = ORM::factory($config['parentEntity']);
-        $submission = [];
-        $this->copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityColumns, $config, $submission, $parentEntityCompoundFields);
-        $this->applyGlobalValues($config, $config['parentEntity'], $parent->attrs_field_prefix ?? NULL, $submission);
-        $identifiers = [
-          'website_id' => $config['global-values']['website_id'],
-          'survey_id' => $submission['survey_id'] ?? NULL,
-        ];
-        if ($config['parentEntitySupportsImportGuid']) {
-          $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
-        }
-        $parent->set_submission_data($submission);
-        if ($isPrecheck) {
-          $parentErrors = $parent->precheck($identifiers);
-          // A fake ID to allow check on children.
-          $parent->id = 1;
-        }
-        else {
-          try {
-            $parent->submit();
-            $parentErrors = $parent->getAllErrors();
-          } catch (Exception $e) {
-            // If the parent entity fails to save, record the error.
-            $parentErrors['sample:general'] = $e->getMessage();
-          }
-        }
-        $childEntityDataRows = $this->fetchChildEntityData($db, $parentEntityColumns, $isPrecheck, $config, $parentEntityDataRow);
-        if (count($parentErrors) > 0) {
-          $config['errorsCount'] += count($childEntityDataRows);
-          if (!$isPrecheck) {
-            // As we won't individually process the occurrences due to error in
-            // the sample, add them to the count.
-            $config['rowsProcessed'] += count($childEntityDataRows);
-          }
-          $keyFields = $this->getDestFieldsForColumns($parentEntityColumns);
-          $this->saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $parentErrors, $config);
-        }
-        // If sample saved OK, or we are just prechecking, process the matching
-        // occurrences.
-        if (count($parentErrors) === 0 || $isPrecheck) {
-          foreach ($childEntityDataRows as $childEntityDataRow) {
-            $child = ORM::factory($config['entity']);
-            $submission = [
-              'sample_id' => $parent->id,
-            ];
-            $this->applyGlobalValues($config, $config['entity'], $child->attrs_field_prefix ?? NULL, $submission);
-            $this->copyFieldsFromRowToSubmission($childEntityDataRow, $childEntityColumns, $config, $submission, $childEntityCompoundFields);
-            if ($config['entitySupportsImportGuid']) {
-              $submission["$config[entity]:import_guid"] = $config['importGuid'];
-            }
-            $child->set_submission_data($submission);
-            if ($isPrecheck) {
-              $errors = $child->precheck($identifiers);
-            }
-            else {
-              try {
-                $child->submit();
-                $errors = $child->getAllErrors();
-              } catch (Exception $e) {
-                // If the child entity fails to save, record the error.
-                $errors['occurrence:general'] = $e->getMessage();
-              }
-            }
-            if (count($errors) > 0) {
-              // Register additional error row, but only if not already
-              // registered due to error in parent.
-              if (count($parentErrors) === 0) {
-                $config['errorsCount']++;
-              }
-              $this->saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
-            }
-            else {
-              $this->setRowDone($db, $childEntityDataRow->_row_id, $isPrecheck, $config);
-              if (!$isPrecheck) {
-                if (!empty($submission['occurrence:id'])) {
-                  $config['rowsUpdated']++;
-                }
-                else {
-                  $config['rowsInserted']++;
-                }
-              }
-            }
-            $config['rowsProcessed']++;
-          }
-        }
-        $config['parentEntityRowsProcessed']++;
-      }
-
-      $progress = 100 * $config['rowsProcessed'] / $config['totalRows'];
-      if ($progress === 100 && $config['errorsCount'] === 0 && !$isPrecheck) {
-        $this->tidyUpAfterImport($db, $config);
-      }
-      else {
-        $this->saveConfig($fileName, $config);
-      }
-      if (!$isPrecheck) {
-        $this->saveImportRecord($config);
-      }
-      echo json_encode([
-        // Additional check for count of parentDataEntityRows will apply if an
-        // import is restarted by refreshing the browser page, as the
-        // rowsProcessed won't reach the total rows in this case.
-        'status' => $config['rowsProcessed'] >= $config['totalRows'] || count($parentEntityDataRows) === 0 ? 'done' : ($isPrecheck ? 'checking' : 'importing'),
-        'progress' => 100 * $config['rowsProcessed'] / $config['totalRows'],
-        'rowsProcessed' => $config['rowsProcessed'],
-        'totalRows' => $config['totalRows'],
-        'errorsCount' => $config['errorsCount'],
+      $r = import2ChunkHandler::importChunk($db, [
+        // Data file supported for legacy clients.
+        'config-id' => $configId,
+        'precheck' => $isPrecheck,
+        'restart' => !empty($_POST['restart']),
+        'website_id' => $this->website_id,
+        'user_id' => $this->auth_user_id,
       ]);
-    }
-    catch (Exception $e) {
-      if ($e instanceof RequestAbort) {
-        // Abort request implies response already sent.
-        return;
-      }
-      // Save config as it tells us how far we got, making diagnosis and
-      // continuation easier.
-      if (isset($config)) {
-        $this->saveConfig($fileName, $config);
-        $this->saveImportRecord($config);
-      }
-      error_logger::log_error('Error in import_chunk', $e);
-      kohana::log('debug', 'Error in import_chunk: ' . $e->getMessage());
-      http_response_code(400);
+      echo json_encode($r);
+    } catch (Exception $e) {
+      http_response_code(500);
       echo json_encode([
         'status' => 'error',
         'msg' => $e->getMessage(),
@@ -1380,48 +1335,13 @@ SQL;
   }
 
   /**
-   * Check for model compound fields which need to be applied.
-   *
-   * E.g. a sample date field is a compound field which can be constructed from
-   * day, month and year values in an import. If the day, month and year are
-   * mapped then capture the information about the compound field so it can be
-   * used later.
-   *
-   * @param string $entity
-   *   Database entity name.
-   * @param array $mappedColumns
-   *   List of mapped column information.
-   *
-   * @return array
-   *   List of compound field definitions keyed by the field name.
-   */
-  private function getCompoundFieldsToProcessForEntity($entity, $mappedColumns) {
-    $compoundFields = [];
-    $model = ORM::factory($entity);
-    if (isset($model->compoundImportFieldProcessingDefn)) {
-      foreach ($model->compoundImportFieldProcessingDefn as $def) {
-        $foundMappedColumns = [];
-        foreach ($mappedColumns as $mappedCol) {
-          if (in_array($mappedCol['warehouseField'], $def['columns'])) {
-            $foundMappedColumns[$mappedCol['warehouseField']] = TRUE;
-          }
-        }
-        if (count($foundMappedColumns) === count($def['columns'])) {
-          // Include this compound field as it's required columns are all mapped.
-          $compoundFields[] = $def;
-        }
-      }
-    }
-    return $compoundFields;
-  }
-
-  /**
    * Adds end-point for retrieving errors file.
    *
    * Sends CSV content for rows with errors to the output.
    */
   public function get_errors_file() {
-    if (empty($_GET['data-file'])) {
+    // Support data-file for legacy clients.
+    if (empty($_GET['config-id'] ?? $_GET['data-file'])) {
       http_response_code(400);
       echo json_encode([
         'status' => 'error',
@@ -1432,10 +1352,10 @@ SQL;
     header("Content-Description: File Transfer");
     header("Content-Type: text/csv");
     header("Content-Disposition: attachment; filename=\"import-errors.csv\"");
-    $fileName = $_GET['data-file'];
-    $config = $this->getConfig($fileName);
+    $configId = $_GET['config-id'];
+    $config = import2ChunkHandler::getConfig($configId);
     $db = new Database();
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $fields = array_merge(array_values($this->getColumnTempDbFieldMappings($db, $config['columns'])), [
       // Excel row starts on 2, our _row_id is a db sequence so starts on 1.
       '_row_id+1',
@@ -1508,47 +1428,6 @@ SQL;
   }
 
   /**
-   * Finds the column info for a column identified by any property value.
-   *
-   * E.g. find the column info by tempDbField, or warehouseField.
-   *
-   * @param array $columns
-   *   Columns config to search.
-   * @param string $property
-   *   Property name to search in (tempDbField or warehouseField).
-   * @param string $value
-   *   Value to search for.
-   *
-   * @return array
-   *   Column info array.
-   */
-  private function getColumnInfoByProperty(array $columns, $property, $value) {
-    foreach ($columns as $columnLabel => $info) {
-      if (isset($info[$property]) && $info[$property] === $value) {
-        return array_merge($info, ['columnLabel' => $columnLabel]);
-      }
-    }
-    throw new NotFoundException("Property value $property=$value not found");
-  }
-
-  /**
-   * Find the list of destination fields for a list of column definitions.
-   *
-   * @param array $columns
-   *   List of column definitions.
-   *
-   * @return array
-   *   List of destination field names.
-   */
-  private function getDestFieldsForColumns(array $columns) {
-    $fields = [];
-    foreach ($columns as $info) {
-      $fields[] = empty($info['isFkField']) ? $info['tempDbField'] : "$info[tempDbField]_id";
-    }
-    return $fields;
-  }
-
-  /**
    * Retrieves column label to temp DB field mappings.
    *
    * Converts the columns config to an associative array of column names and
@@ -1607,44 +1486,6 @@ SQL;
   }
 
   /**
-   * Saves metadata about the import to the imports table.
-   *
-   * @param array $config
-   *   Import metadata configuration object.
-   * @param object $importInfo
-   *   Additional field values to save (e.g. description).
-   */
-  private function saveImportRecord(array $config, $importInfo = NULL) {
-    $import = ORM::factory('import', ['import_guid' => $config['importGuid']]);
-    $import->set_metadata();
-    $import->entity = $config['entity'];
-    $import->website_id = $config['global-values']['website_id'];
-    $import->inserted = $config['rowsInserted'];
-    $import->updated = $config['rowsUpdated'];
-    $import->errors = $config['errorsCount'];
-    $import->reversible = TRUE;
-    $import->mappings = json_encode($config['columns']);
-    $import->global_values = json_encode($config['global-values']);
-    if ($importInfo) {
-      if (!empty($importInfo->description)) {
-        // This will only get specified on initial save.
-        $import->description = $importInfo->description;
-      }
-      if (!empty($importInfo->training)) {
-        $import->training = 't';
-      }
-
-    }
-    $import->import_guid = $config['importGuid'];
-    $import->save();
-    $errors = $import->getAllErrors();
-    if (count($errors) > 0) {
-      // This should never happen.
-      throw new Exception(json_encode($errors, TRUE));
-    }
-  }
-
-  /**
    * Saves an import configuration template.
    *
    * @param array $config
@@ -1687,137 +1528,6 @@ SQL;
   }
 
   /**
-   * Adds error data to rows identified by a set of key field values.
-   *
-   * @param object $db
-   *   Database connection.
-   * @param object $rowData
-   *   Current import row's data.
-   * @param array $keyFields
-   *   List of field names that should be looked up against.
-   * @param array $errors
-   *   List of errors to attach to the rows.
-   * @param array $config
-   *   Import configuration metadata object.
-   */
-  private function saveErrorsToRows($db, $rowData, array $keyFields, array $errors, array $config) {
-    $whereList = [];
-    foreach ($keyFields as $field) {
-      $fieldEsc = pg_escape_identifier($db->getLink(), $field);
-      $value = pg_escape_literal($db->getLink(), $rowData->$field ?? '');
-      $whereList[] = "COALESCE($fieldEsc::text, '')=$value";
-    }
-    $wheres = implode(' AND ', $whereList);
-    $errorsList = [];
-    foreach ($errors as $fieldName => $error) {
-      list($entity, $field) = explode(':', $fieldName);
-      $errorI18n = kohana::lang("form_error_messages.$field.$error");
-      $errorStr = $errorI18n === "form_error_messages.$field.$error" ? $error : $errorI18n;
-      // A date error might be reported against a vague date component
-      // field, but can map back to the calculated date field if separate
-      // date fields not being used.
-      $field = preg_replace('/date_(start|end|type)$/', 'date', $field);
-      try {
-        $columnInfo = $this->getColumnInfoByProperty($config['columns'], 'warehouseField', "$entity:$field");
-        $errorsList[$columnInfo['columnLabel']] = $errorStr;
-      }
-      catch (NotFoundException $e) {
-        // Shouldn't happen, but means we need better logic from mapping from
-        // the errored field to the mapped field name.
-        // If geom field causes error, no need to notify if the entered sref
-        // has an error.
-        if ($field !== 'geom' || !isset($errors['sample:entered_sref'])) {
-          $errorsList[$field] = $errorStr;
-        }
-      }
-    }
-    $errorsJson = pg_escape_literal($db->getLink(), json_encode($errorsList));
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
-    $sql = <<<SQL
-UPDATE import_temp.$dbIdentifiers[tempTableName]
-SET errors = COALESCE(errors, '{}'::jsonb) || $errorsJson::jsonb
-WHERE $wheres;
-SQL;
-    $db->query($sql);
-  }
-
-  /**
-   * Set the imported or checked flag on a processed row to true in the temp table.
-   *
-   * @param Database $db
-   *   Database connection.
-   * @param int $rowId
-   *   Import row's ID.
-   * @param bool $isPrecheck
-   *   Whether this is a precheck or an import.
-   * @param array $config
-   *   Import configuration settings.
-   */
-  private function setRowDone($db, $rowId, $isPrecheck, array $config) {
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
-    $fieldToUpdate = $isPrecheck ? 'checked' : 'imported';
-    $sql = <<<SQL
-      UPDATE import_temp.$dbIdentifiers[tempTableName]
-      SET $fieldToUpdate = true
-      WHERE _row_id = $rowId;
-    SQL;
-    $db->query($sql);
-  }
-
-  /**
-   * Finds mapped database import columns that relate to an entity.
-   *
-   * @param string $entity
-   *   Entity name, e.g. sample, occurrence.
-   * @param array $config
-   *   Import metadata configuration object.
-   *
-   * @return array
-   *   List of column definitions.
-   */
-  private function findEntityColumns($entity, array $config) {
-    $columns = [];
-    $attrPrefix = $this->getAttrPrefix($entity);
-    $allColumns = array_merge($config['columns'], $config['systemAddedColumns']);
-    foreach ($allColumns as $info) {
-      if (isset($info['warehouseField'])) {
-        $destFieldParts = explode(':', $info['warehouseField']);
-        // If a field targeting the destination entity, or an attribute table
-        // linked to the entity, or a media table linked to the table, then
-        // include the column.
-        if ($destFieldParts[0] === $entity
-            || ($attrPrefix && $destFieldParts[0] === $attrPrefix)
-            || $destFieldParts[0] === inflector::singular($entity) . '_medium') {
-          $columns[] = $info;
-        }
-      }
-    }
-    return $columns;
-  }
-
-  /**
-   * Retreive the prefix for an entity's attribute field names, or null.
-   *
-   * @param string $entity
-   *   Entity name, e.g. occurrence.
-   *
-   * @return string
-   *   Attribute prefix, e.g. smpAttr or occAttr.
-   */
-  private function getAttrPrefix($entity) {
-    $entityPrefixes = [
-      'occurrence' => 'occAttr',
-      'location' => 'locAttr',
-      'sample' => 'smpAttr',
-      'survey' => 'srvAttr',
-      'taxa_taxon_list' => 'ttlAttr',
-      'termlists_term' => 'trmAttr',
-      'person' => 'psnAttr',
-    ];
-    return $entityPrefixes[$entity] ?? NULL;
-  }
-
-  /**
    * Retreive the entity name from an attribute field prefix.
    *
    * @param string $prefix
@@ -1840,180 +1550,6 @@ SQL;
   }
 
   /**
-   * When importing to a parent entity, need distinct data values.
-   *
-   * One row will be created per distinct set of field values, so this returns
-   * a db result with the required rows.
-   *
-   * @param object $db
-   *   Database connection.
-   * @param bool $isPrecheck
-   *   Whether this is a precheck or an import.
-   * @param array $columns
-   *   List of column definitions to look for uniqueness in the values of.
-   * @param array $config
-   *   Import metadata configuration object.
-   */
-  private function fetchParentEntityData($db, array $columns, $isPrecheck, array $config) {
-    $fields = $this->getDestFieldsForColumns($columns);
-    $fields = array_map(function ($s) use ($db) {
-      return pg_escape_identifier($db->getLink(), $s);
-    }, $fields);
-    $fieldsAsCsv = implode(', ', $fields);
-    // Batch row limit div by arbitrary 10 to allow for multiple children per
-    // parent.
-    $batchRowLimit = BATCH_ROW_LIMIT / 10;
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
-    $fieldToTrackDoneBy = $isPrecheck ? 'checked' : 'imported';
-    // Because this skips the already imported rows, no need to do OFFSET.
-    $sql = <<<SQL
-SELECT DISTINCT $fieldsAsCsv
-FROM import_temp.$dbIdentifiers[tempTableName]
-WHERE $fieldToTrackDoneBy=false
-AND errors IS NULL
-ORDER BY $fieldsAsCsv
-LIMIT $batchRowLimit;
-SQL;
-    return $db->query($sql)->result();
-  }
-
-  /**
-   * Copies a set of fields from a data row into a submission array.
-   *
-   * @param object $dataRow
-   *   Data read from the import file.
-   * @param array $columns
-   *   List of column definitions to copy the field value for.
-   * @param array $config
-   *   Import metadata configuration object.
-   * @param array $submission
-   *   Submission data array that will be updated with the copied values.
-   */
-  private function copyFieldsFromRowToSubmission($dataRow, array $columns, array $config, array &$submission, array $compoundFields) {
-    $skipColumns = [];
-    $skippedValues = [];
-    foreach ($compoundFields as $def) {
-      $skipColumns = $skipColumns + $def['columns'];
-    }
-    foreach ($columns as $info) {
-      $srcFieldName = $info['tempDbField'];
-      $destFieldName = $info['warehouseField'];
-      // Fk fields need to alter the fake field name to a real one and use the
-      // mapped source field.
-      if (!empty($info['isFkField'])) {
-        $srcFieldName .= '_id';
-        $destFieldParts = explode(':', $destFieldName);
-        $destFieldName = "$destFieldParts[0]:" .
-            // Fieldname without fk_ prefix.
-            substr($destFieldParts[1], 3) .
-            // Append _id if not a custom attribute lookup.
-            (preg_match('/^[a-z]{3}Attr$/', $destFieldParts[0]) ? '' : '_id');
-      }
-      if (in_array($info['warehouseField'], $skipColumns)) {
-        $skippedValues[$info['warehouseField']] = $dataRow->$srcFieldName;
-        continue;
-      }
-      if (empty($dataRow->$srcFieldName)) {
-        if (empty($config['global-values'][$destFieldName])) {
-          // An empty field shouldn't overwrite a global value.
-          continue;
-        }
-        elseif (!empty($info['skipIfEmpty'])) {
-          // Some fields (e.g. existing record ID mappings) should be skipped
-          // if empty.
-          continue;
-        }
-      }
-      // @todo Look for date fields more intelligently.
-      if ($config['isExcel'] && preg_match('/date(_start|_end)?$/', $destFieldName) && preg_match('/^\d+$/', $dataRow->$srcFieldName)) {
-        // Date fields are integers when read from Excel.
-        $date = ImportDate::excelToDateTimeObject($dataRow->$srcFieldName);
-        $submission[$destFieldName] = $date->format('d/m/Y');
-      }
-      else {
-        $submission[$destFieldName] = $dataRow->$srcFieldName;
-      }
-    }
-    foreach ($compoundFields as $def) {
-      $submission[$def['destination']] = vsprintf(
-        $def['template'],
-        array_map(function ($column) use ($skippedValues) {
-          return $skippedValues[$column];
-        },
-        $def['columns'])
-      );
-    }
-  }
-
-  /**
-   * Applies global values to a submission array.
-   *
-   * These are the values provided by the user that apply to every row in the
-   * import.
-   *
-   * @param array $config
-   *   Import metadata configuration object.
-   * @param string $entity
-   *   Name of the entity to copy over values for.
-   * @param string $attrPrefix
-   *   Attribute fieldname prefix, e.g. smp or occ. Leave empty if not an
-   *   attribute table.
-   * @param array $submission
-   *   Submission data array that will be updated with the global values.
-   */
-  private function applyGlobalValues(array $config, $entity, $attrPrefix, array &$submission) {
-    foreach ($config['global-values'] as $field => $value) {
-      if (in_array($field, ['survey_id', 'website_id'])
-          || substr($field, 0, strlen($entity) + 1) === "$entity:"
-          || ($attrPrefix && substr($field, 0, strlen($attrPrefix) + 1) === "{$attrPrefix}:")) {
-        $submission[$field] = $value;
-      }
-    }
-  }
-
-  /**
-   * For a parent entity record (e.g. sample), find the child data rows.
-   *
-   * @param object $db
-   *   Database connection.
-   * @param array $columns
-   *   List of parent columns that will be filtered to find the child data rows.
-   * @param bool $isPrecheck
-   *   Whether this is a precheck or an import.
-   * @param array $config
-   *   Import metadata configuration object.
-   * @param object $parentEntityDataRow
-   *   Data row holding the parent record values.
-   *
-   * @return object
-   *   Database result containing child rows.
-   */
-  private function fetchChildEntityData($db, array $columns, $isPrecheck, array $config, $parentEntityDataRow) {
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
-    $fields = $this->getDestFieldsForColumns($columns);
-    // Build a filter to extract rows for this parent entity.
-    $fieldToTrackDoneBy = $isPrecheck ? 'checked' : 'imported';
-    $wheresList = [
-      "$fieldToTrackDoneBy=false",
-      'errors IS NULL',
-    ];
-    foreach ($fields as $field) {
-      $fieldEsc = pg_escape_identifier($db->getLink(), $field);
-      $value = pg_escape_literal($db->getLink(), $parentEntityDataRow->$field ?? '');
-      $wheresList[] = "COALESCE($fieldEsc::text, '')=$value";
-    }
-    $wheres = implode("\nAND ", $wheresList);
-    // Now retrieve the sub-entity rows.
-    $sql = <<<SQL
-SELECT *
-FROM import_temp.$dbIdentifiers[tempTableName]
-WHERE $wheres
-ORDER BY _row_id;
-SQL;
-    return $db->query($sql)->result();
-  }
-
-  /**
    * Finds the next mapped field that requires lookup data matching.
    *
    * @param object $db
@@ -2023,7 +1559,7 @@ SQL;
    *   lookup fields.
    */
   private function findNextLookupField($db, array &$config) {
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     if (!isset($config['lookupFieldsMatched'])) {
       $config['lookupFieldsMatched'] = [];
     }
@@ -2093,7 +1629,7 @@ SQL;
    *   we are trying to match values for.
    */
   private function autofillLookupAttrIds($db, array $config, array $info) {
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $valueToMapColName = pg_escape_identifier($db->getLink(), $info['tempDbField']);
     $valueToMapIdColName = pg_escape_identifier($db->getLink(), $info['tempDbField'] . '_id');
     $destFieldParts = explode(':', $info['warehouseField']);
@@ -2156,7 +1692,7 @@ SQL;
    *   Array containing information about the result.
    */
   private function autofillOccurrenceTaxonIds($db, array $config, array $info) {
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $valueToMapColName = pg_escape_identifier($db->getLink(), $info['tempDbField']);
     $valueToMapIdColName = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id");
     $valueToMapIdChoicesColName = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id_choices");
@@ -2271,7 +1807,7 @@ SQL;
    *   Array containing information about the result.
    */
   private function autofillSampleLocationIds($db, array $config, array $info) {
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $valueToMapColName = pg_escape_identifier($db->getLink(), $info['tempDbField']);
     $valueToMapIdColName = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id");
     $valueToMapIdChoicesColName = pg_escape_identifier($db->getLink(), "$info[tempDbField]_id_choices");
@@ -2391,7 +1927,7 @@ SQL;
    *   Array containing information about the result.
    */
   private function autofillOtherFkIds($db, array $config, array $info) {
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $destFieldParts = explode(':', $info['warehouseField']);
     $entity = ORM::factory($destFieldParts[0], -1);
     $fieldName = preg_replace('/^fk_/', '', $destFieldParts[1]);
@@ -2505,27 +2041,25 @@ SQL;
    */
   private function loadNextRecordsBatch($fileName, array &$config) {
     $importTools = new ImportTools();
-    $file = $importTools->openSpreadsheet($fileName, $config, BATCH_ROW_LIMIT);
-    $rowPosInBatch = 0;
-    $count = 0;
+    $batchLimit = 1000;
+    $file = $importTools->openSpreadsheet($fileName, $config, $batchLimit);
     $rows = [];
+    $rowsDoneInBatch = 0;
     $db = new Database();
-    $foundDataInBatch = FALSE;
-    while (($rowPosInBatch < BATCH_ROW_LIMIT)) {
-      // Work out current row pos (+ 1 to skip header).
-      $rowPosInFile = $rowPosInBatch + $config['rowsRead'] + 1;
-      if ($rowPosInFile > $config['totalRows']) {
+
+    while (($rowsDoneInBatch < $batchLimit)) {
+      if ($config['files'][$fileName]['rowsRead'] >= $config['files'][$fileName]['rowCount']) {
         // All rows done.
         break;
       }
-      $data = $file[$rowPosInFile] ?? [];
+      // +1 to skip the header.
+      $data = $file[$config['files'][$fileName]['rowsRead'] + 1] ?? [];
       // Nulls need to be empty strings for trim() to work.
       $data = array_map(function ($value) {
         return $value ?? '';
       }, $data);
       // Skip empty rows.
       if (!empty(implode('', $data))) {
-        $foundDataInBatch = TRUE;
         // Trim and escape the data, then pad to correct number of columns.
         $data = array_map(function ($s) use ($db) {
           return pg_escape_literal($db->getLink(), $s);
@@ -2538,21 +2072,20 @@ SQL;
         if (implode('', $data) <> '') {
           $rows[] = '(' . implode(', ', $data) . ')';
         }
-        $count++;
+        $config['rowsLoaded']++;
       }
       else {
         // Skipping empty row so correct the total expected.
         $config['totalRows']--;
       }
-      $rowPosInBatch++;
+      $config['files'][$fileName]['rowsRead']++;
+      $rowsDoneInBatch++;
     }
-    $config['rowsLoaded'] = $config['rowsLoaded'] + $count;
-    $config['rowsRead'] = $config['rowsRead'] + $rowPosInBatch;
     if (count($rows)) {
       $fieldNames = $this->getColumnTempDbFieldMappings($db, $config['columns']);
       $fields = implode(', ', $fieldNames);
       $rowsList = implode("\n,", $rows);
-      $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
+      $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
       $query = <<<SQL
 INSERT INTO import_temp.$dbIdentifiers[tempTableName]($fields)
 VALUES $rowsList;
@@ -2566,14 +2099,9 @@ SQL;
     if ($config['totalRows'] === 0) {
       throw new exception('The import file does not contain any data to import.');
     }
-    // An entire empty batch causes us to give up. Most likely the user saved a
-    // spreadsheet with multiple empty rows at the bottom.
-    if (!$foundDataInBatch) {
-      $config['totalRows'] = $config['rowsLoaded'];
-    }
     $config['progress'] = $config['rowsLoaded'] * 100 / $config['totalRows'];
-    if ($config['rowsLoaded'] >= $config['totalRows']) {
-      $config['state'] = 'loaded';
+    if ($config['files'][$fileName]['rowsRead'] >= $config['files'][$fileName]['rowCount']) {
+      $config['state'] = ($fileName === array_key_last($config['files'])) ? 'loaded' : 'nextFile';
     }
   }
 
@@ -2593,101 +2121,83 @@ SQL;
    * Describes columns, mappings etc. Initialises a fresh object if the file is
    * not present.
    *
-   * @param string $fileName
-   *   Name of the import file.
+   * @param string $configFile
+   *   Configuration file name
+   * @param bool $enableBackgroundImports
+   *   Set to TRUE to enable work queue based background imports for large
+   *   import files.
    *
    * @return array
    *   Config key/value pairs.
    */
-  private function getConfig($fileName) {
-    $baseName = pathinfo($fileName, PATHINFO_FILENAME);
-    $ext = pathinfo($fileName, PATHINFO_EXTENSION);
-    $configFile = DOCROOT . "import/$baseName.json";
-    if (file_exists($configFile)) {
-      $f = fopen($configFile, "r");
-      $config = fgets($f);
-      fclose($f);
-      return json_decode($config, TRUE);
-    }
-    else {
-      // @todo Entity should by dynamic.
-      $entity = 'occurrence';
-      $model = ORM::Factory($entity);
-      $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
-      $parentEntity = 'sample';
-      $model = ORM::Factory($parentEntity);
-      $parentSupportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
-      $importTools = new ImportTools();
-      // Create a new config object.
-      return [
-        'fileName' => $fileName,
-        'tableName' => '',
-        'isExcel' => in_array($ext, ['xls', 'xlsx']),
-        'entity' => $entity,
-        'parentEntity' => $parentEntity,
-        'columns' => $this->tidyUpColumnsList($importTools->loadColumnTitlesFromFile($fileName, FALSE)),
-        'systemAddedColumns' => [],
-        'state' => 'initial',
-        // Rows loaded into the temp table (excludes blanks).
-        'rowsLoaded' => 0,
+  private function createConfig(array $files, $enableBackgroundImports) {
+    $ext = pathinfo($files[0], PATHINFO_EXTENSION);
+
+    // @todo Entity should by dynamic.
+    $entity = 'occurrence';
+    $model = ORM::Factory($entity);
+    $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
+    $parentEntity = 'sample';
+    $model = ORM::Factory($parentEntity);
+    $parentSupportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
+    $importTools = new ImportTools();
+
+    $fileMetadata = [];
+    $totalRows = 0;
+    foreach ($files as $idx => $file) {
+      // Check the column structure matches if a multi-column import.
+      if ($idx === 0) {
+        $firstFileCols = $importTools->loadColumnTitlesFromFile($file, TRUE);
+      }
+      else {
+        $thisFileCols = $importTools->loadColumnTitlesFromFile($file, TRUE);
+        if ($thisFileCols !== $firstFileCols) {
+          http_response_code(400);
+          echo json_encode([
+            'msg' => 'Multiple files uploaded but the files have differing sets of columns. Import aborted.',
+            'status' => 'Bad Request',
+          ]);
+          kohana::log('alert', 'Aborted due to mismatch in import file column structures');
+          throw new RequestAbort('Multiple files uploaded but the files have differing sets of columns. Only matching sets of import files can be imported in one batch. Import aborted.');
+        }
+      }
+      // Capture the file's total row count.
+      $fileRowCount = $importTools->getRowCountForFile($file);
+      $fileMetadata[$file] = [
+        'rowCount' => $fileRowCount,
+        // Rows loaded into the temp table for this file (excludes blanks).
+        //'rowsLoaded' => 0,
         // Rows read from the import file (includes blanks).
         'rowsRead' => 0,
-        'progress' => 0,
-        'totalRows' => $importTools->getTotalRows($fileName),
-        'rowsInserted' => 0,
-        'rowsUpdated' => 0,
-        'rowsProcessed' => 0,
-        'parentEntityRowsProcessed' => 0,
-        'errorsCount' => 0,
-        'importGuid' => $this->createGuid(),
-        'entitySupportsImportGuid' => $supportsImportGuid,
-        'parentEntitySupportsImportGuid' => $parentSupportsImportGuid,
       ];
+      $totalRows += $fileRowCount;
     }
-  }
-
-  private function getEscapedDbIdentifiers($db, array $config) {
+    // Create a new config object.
     return [
-      'importDestTable' => pg_escape_identifier($db->getLink(), inflector::plural($config['entity'])),
-      'importDestParentTable' => pg_escape_identifier($db->getLink(), inflector::plural($config['parentEntity'])),
-      'pkFieldInTempTable' => pg_escape_identifier($db->getLink(), $config['pkFieldInTempTable'] ?? ''),
-      'parentEntityFkIdFieldInDestTable' => pg_escape_identifier($db->getLink(), "$config[parentEntity]_id"),
-      'tempDbFkIdField' => pg_escape_identifier($db->getLink(), "_$config[entity]_id"),
-      'tempDbParentFkIdField' => pg_escape_identifier($db->getLink(), "_$config[parentEntity]_id"),
-      'tempTableName' => pg_escape_identifier($db->getLink(), $config['tableName']),
+      'files' => $fileMetadata,
+      'tableName' => '',
+      'isExcel' => in_array($ext, ['xls', 'xlsx']),
+      'entity' => $entity,
+      'parentEntity' => $parentEntity,
+      'columns' => $this->tidyUpColumnsList($importTools->loadColumnTitlesFromFile($files[0], FALSE)),
+      'systemAddedColumns' => [],
+      'state' => 'initial',
+      // Rows loaded into the temp table (excludes blanks).
+      'rowsLoaded' => 0,
+      // Rows read from the import file(s) (includes blanks).
+      //'rowsRead' => 0,
+      'progress' => 0,
+      'totalRows' => $totalRows,
+      'rowsInserted' => 0,
+      'rowsUpdated' => 0,
+      'rowsProcessed' => 0,
+      'parentEntityRowsProcessed' => 0,
+      'errorsCount' => 0,
+      'importGuid' => $this->createGuid(),
+      'entitySupportsImportGuid' => $supportsImportGuid,
+      'parentEntitySupportsImportGuid' => $parentSupportsImportGuid,
+      'processingMode' => ($totalRows > import2ChunkHandler::BACKGROUND_PROCESSING_THRESHOLD) && $enableBackgroundImports ? 'background' : 'immediate',
     ];
-  }
-
-  /**
-   * Saves config to a JSON file, allowing process info to persist.
-   *
-   * @param string $fileName
-   *   Name of the import file.
-   * @param array $config
-   *   The data to save.
-   */
-  private function saveConfig($fileName, array $config) {
-    $baseName = pathinfo($fileName, PATHINFO_FILENAME);
-    $configFile = DOCROOT . "import/$baseName.json";
-    $f = fopen($configFile, "w");
-    fwrite($f, json_encode($config));
-    fclose($f);
-  }
-
-  /**
-   * If an import completes successfully, remove the temporary table and files.
-   *
-   * @param object $db
-   *   Database connection.
-   * @param array $config
-   *   Import metadata configuration object.
-   */
-  private function tidyUpAfterImport($db, array $config) {
-    $baseName = pathinfo($config['fileName'], PATHINFO_FILENAME);
-    unlink(DOCROOT . "import/$baseName.json");
-    unlink(DOCROOT . "import/$config[fileName]");
-    $dbIdentifiers = $this->getEscapedDbIdentifiers($db, $config);
-    $db->query("DROP TABLE IF EXISTS import_temp.$dbIdentifiers[tempTableName]");
   }
 
   /**
@@ -2737,6 +2247,19 @@ SQL;
       ];
     }
     return $colsAndFieldInfo;
+  }
+
+  /**
+   * Find the config ID from the POST.
+   *
+   * Note that if the client is an older version, it will just send the data
+   * file which cane be used to obtain the config ID.
+   *
+   * @return string
+   *   Config ID.
+   */
+  private function getPostedConfigId() {
+    return pathinfo($_POST['config-id'] ?? $_POST['data-file'], PATHINFO_FILENAME);
   }
 
 }
