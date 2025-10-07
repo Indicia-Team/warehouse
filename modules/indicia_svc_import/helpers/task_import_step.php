@@ -235,9 +235,8 @@ class task_import_step {
       SQL;
     }
     $busyTaskTypes = $db->query($qry)->result()->count();
-    kohana::log('debug', 'Busy check ' . $db->last_query());
     if ($busyTaskTypes > 0) {
-      kohana::log('debug', 'Aborting import step as there are ' . $busyTaskTypes . ' busy task types.');
+      kohana::log('info', 'Aborting import step as there are ' . $busyTaskTypes . ' busy task types.');
     }
     return $busyTaskTypes > 0;
   }

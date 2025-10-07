@@ -41,7 +41,7 @@ function indicia_svc_import_scheduled_task($timestamp, $db, $endtime) {
       table_name
     FROM information_schema.tables
     WHERE table_schema= 'import_temp'
-    --AND to_char(now(), 'YYYYMMDDHH24')::integer - ('0' || substring(regexp_replace(table_name, '[^0-9]', '', 'g') for 10))::integer > 100
+    AND to_char(now(), 'YYYYMMDDHH24')::integer - ('0' || substring(regexp_replace(table_name, '[^0-9]', '', 'g') for 10))::integer > 100
     ORDER BY table_name ASC
     LIMIT 5;
   SQL;
@@ -53,7 +53,7 @@ function indicia_svc_import_scheduled_task($timestamp, $db, $endtime) {
     }
   }
   // Purge files older than 1 day.
-  warehouse::purgeOldFiles('import/', 60/* * 60 * 24*/, $toKeep['files']);
+  warehouse::purgeOldFiles('import/', 60 * 60 * 24, $toKeep['files']);
 }
 
 /**
