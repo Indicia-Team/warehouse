@@ -77,7 +77,8 @@ class emailerMsGraph {
    *   The email address that the email should be sent from.
    * @param ?string $fromName
    *   The optional name associated with the from email address.
-   */  public static function send(
+   */
+  public static function send(
       $subject,
       $message,
       array $recipientList,

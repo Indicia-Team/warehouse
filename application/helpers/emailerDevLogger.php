@@ -51,7 +51,7 @@ class emailerDevLogger {
    * @param ?string $fromName
    *   The optional name associated with the from email address.
    */
-  public function send(
+  public static function send(
       $subject,
       $message,
       array $recipientList,
