@@ -4,6 +4,34 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# Version 9.15.0
+
+### Changes
+
+* Adds support for alternative architectures for sending emails, including Microsoft Graph.
+  See Warehouse installation notes for further info:
+  https://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/warehouse-installation.html#email-configuration.
+* Adds an email helper that just logs the email details for development.
+* Upgrades to the v2 importer for handling large import files - see
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1921. To use this option enable the
+  "Enable background imports" on the import page's Edit tab. Also allows multiple files with the
+  same structure to be combined into a single import.
+
+## Version 9.14.0
+*2025-08-06*
+
+### Changes
+
+* Adds a new option to the spatial_index_builder module to limit the indexed samples by grid square
+  size, so large impreceise samples are not indexed against small site boundaries. See
+  https://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/modules/spatial-index-builder.html.
+* Invalid Elasticsearch query string searches now provide more information in the error response.
+
+### Bugfixes
+
+* Fixes an issue where large imports would exclude the second half of the records.
+* Bugfix to the detection of unique group titles (activity names).
+
 ## Version 9.13.0
 *2025-08-01*
 
