@@ -55,7 +55,7 @@ class emailerSwift {
    * @param ?int $priority
    *   Priority from 1 (very high) to 5 (very low). Default 3.
    */
-  public function send(
+  public static function send(
       $subject,
       $message,
       array $recipientList,
