@@ -23,6 +23,8 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
+use PhpOffice\PhpSpreadsheet\Shared\Date as ImportDate;
+
 /**
  * Exception class for failure to find columns in a list.
  */
