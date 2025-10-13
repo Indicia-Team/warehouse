@@ -406,7 +406,7 @@ class Import_2_Controller extends Service_Base_Controller {
         $sql = <<<SQL
           UPDATE import_temp.$dbIdentifiers[tempTableName]
           SET $sourceIdCol=?
-          WHERE trim(lower($sourceColName::text))=lower(?);
+          WHERE trim(lower($sourceColName::text))=lower(?::text);
         SQL;
         $db->query($sql, [$termlist_term_id, $value]);
       }
