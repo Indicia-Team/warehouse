@@ -775,7 +775,7 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->addArrayToEmailTable($email->occurrence_id, $attrArray, $emailContent);
       $emailContent .= "</table>";
       $emailer->addRecipient($email->email_address);
-      $emailer->setFrom($email->email_address);
+      $emailer->setFrom($email_config['address']);
       $emailer->send(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), "<html>$emailContent</html>");
     }
     if ($useWorkflowModule) {
