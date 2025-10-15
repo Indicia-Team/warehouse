@@ -101,7 +101,6 @@ class Occurrence_controller extends Gridview_Base_Controller {
       $_POST['occurrence:record_status'] = substr($_POST['occurrence:record_status:combined'], 0, 1);
       $_POST['occurrence:record_substatus'] = substr($_POST['occurrence:record_status:combined'], 1, 1);
     }
-    kohana::log('debug', var_export($_POST, true));
     parent::save();
   }
 
@@ -109,17 +108,22 @@ class Occurrence_controller extends Gridview_Base_Controller {
    * Return a list of the tabs to display for this controller's actions.
    */
   protected function getTabs($name) {
-    return array(
-      array(
+    return [
+      [
         'controller' => 'occurrence_comment',
         'title' => 'Comments',
-        'actions'=>array('edit')
-      ), array(
+        'actions' => ['edit'],
+      ], [
         'controller' => 'occurrence_medium',
         'title' => 'Media Files',
-        'actions'=>array('edit')
-      )
-    );
+        'actions' => ['edit'],
+      ],
+      [
+        'controller' => 'dna_occurrence',
+        'title' => 'DNA',
+        'actions' => ['edit'],
+      ],
+    ];
   }
 
   /**

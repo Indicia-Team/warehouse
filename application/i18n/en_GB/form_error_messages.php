@@ -58,6 +58,9 @@ $lang = [
     'required' => 'The determiner cannot be blank.',
     'default' => 'Invalid input.',
   ],
+  'dna_sequence' => [
+    'required' => 'Please provide a value for the DNA sequence.',
+  ],
   'email_address' => [
     'required' => 'The email address cannot be blank.',
     'email' => 'This must be a valid email address.',
@@ -148,6 +151,9 @@ $lang = [
   'path' => [
     'required' => 'The image file must be supplied.',
   ],
+  'pcr_primer_reference' => [
+    'required' => 'Please provide a value for the PCR primer reference.',
+  ],
   'recorder_names' => [
     'required' => 'The recorder names must be supplied.',
   ],
@@ -167,6 +173,9 @@ $lang = [
   ],
   'system_function' => [
     'length' => 'The stored system functin value must be 30 characters or less. Please check the model declaration of system functions.',
+  ],
+  'target_gene' => [
+    'required' => 'Please provide a value for the target gene.',
   ],
   'taxon' => [
     'required' => 'The taxon name is required.',

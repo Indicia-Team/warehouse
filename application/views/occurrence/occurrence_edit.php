@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
@@ -77,7 +76,7 @@ $(document).ready(function() {
     ?>
   </fieldset>
   <fieldset>
-    <legend>Occurrence Details</legend>
+    <legend>Occurrence details</legend>
     <?php
     print form::hidden('occurrence:id', $id);
     print form::hidden('occurrence:website_id', html::initial_value($values, 'occurrence:website_id'));
