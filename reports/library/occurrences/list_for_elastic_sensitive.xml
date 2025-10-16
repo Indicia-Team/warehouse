@@ -225,6 +225,7 @@
     <column name="sample_comment" sql="snf.comment" datatype="text" />
     <column name="verifier_comment" sql="null::text" datatype="text" />
     <column name="licence_code" sql="onf.licence_code" datatype="text" />
+    <column name="occurrence_dna_derived" sql="o.dna_derived::text" datatype="boolean" />
     <column name="attr_behaviour" sql="onf.attr_behaviour" datatype="text" />
     <column name="attr_reproductive_condition" sql="onf.attr_reproductive_condition" datatype="text" />
     <column name="attr_stage" sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)" datatype="text" />
