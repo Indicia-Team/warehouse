@@ -28,8 +28,10 @@ class Occurrence_Model extends ORM {
   protected $requeuedForVerification = FALSE;
 
   protected $has_many = [
-    'occurrence_attribute_values',
     'determinations',
+    // Has many structure, but unique index prevents more than 1.
+    'dna_occurrences',
+    'occurrence_attribute_values',
     'occurrence_media',
   ];
 

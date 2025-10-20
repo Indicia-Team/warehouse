@@ -597,6 +597,21 @@ class Rest_Controller extends Controller {
         'occurrences/{id}' => [],
       ],
     ],
+    'dna-occurrences' => [
+      'GET' => [
+        'dna-occurrences' => [],
+        'dna-occurrences/{id}' => [],
+      ],
+      'POST' => [
+        'dna-occurrences' => [],
+      ],
+      'PUT' => [
+        'dna-occurrences/{id}' => [],
+      ],
+      'DELETE' => [
+        'dna-occurrences/{id}' => [],
+      ],
+    ],
     'projects' => [
       'GET' => [
         'projects' => ['deprecated' => TRUE],
@@ -1001,7 +1016,7 @@ class Rest_Controller extends Controller {
         }
       }
       else {
-        $resourceConfig = $this->findResourceConfig($this->resourceName);
+        $resourceConfig = $this->findResourceConfig();
         if (!$resourceConfig) {
           RestObjects::$apiResponse->fail('Not Found', 404, "Resource $this->resourceName not known");
         }
@@ -1087,20 +1102,17 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Finds the configuration for a named resource.
+   * Finds the configuration for the current resource.
    *
    * For core entities, the resources are listed in $this->resourceConfig.
    * Resources may also be exposed by warehouse modules implementing the
    * `<module>_extend_rest_api` plugin function in which case the config is
    * provided by the module.
    *
-   * @param string $resourceName
-   *   Resource name to look up in the configuration.
-   *
-   * @return array
-   *   Configuration for this resource.
+   * @return array|bool
+   *   Configuration for this resource or FALSE if not found.
    */
-  private function findResourceConfig($resourceName) {
+  private function findResourceConfig() {
     if (array_key_exists($this->resourceName, $this->resourceConfig)) {
       RestObjects::$handlerModule = 'rest_api';
       return $this->resourceConfig[$this->resourceName];
@@ -4904,6 +4916,111 @@ SQL;
     $this->assertUserHasWebsiteAccess();
     $this->assertRecordFromCurrentWebsite('occurrence_attributes_websites', $id);
     rest_crud::delete('occurrence_attributes_website', $id);
+  }
+
+  /**
+   * End-point to GET an list of dna_occurrences.
+   */
+  public function dnaOccurrencesGet() {
+    $extraFilterString = $this->getDnaOccurrenceExtraFilter();
+    rest_crud::readList('dna_occurrence', $extraFilterString, $this->needToFilterToUser());
+  }
+
+  /**
+   * End-point to GET a dna_occurrence by ID.
+   *
+   * @param int $id
+   *   Occurrence comment ID.
+   */
+  public function dnaOccurrencesGetId($id) {
+    $extraFilterString = $this->getDnaOccurrenceExtraFilter();
+    rest_crud::read(
+      'dna_occurrence',
+      $id,
+      $extraFilterString,
+      $this->needToFilterToUser());
+  }
+
+  /**
+   * API end-point to POST a dna_occurrence to create.
+   */
+  public function dnaOccurrencesPost() {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, associative: TRUE);
+    try {
+      $r = rest_crud::create('dna_occurrence', $item);
+    }
+    catch (Kohana_Database_Exception $e) {
+      kohana::log('debug', 'Message: ' . $e->getMessage());
+      kohana::log('debug', 'Strpos: ' . var_export(strpos($e->getMessage(), 'A record with the same dna occurrences occurrence id already exists.'), TRUE));
+      if (strpos($e->getMessage(), 'A record with the same dna occurrences occurrence id already exists.') !== FALSE) {
+        RestObjects::$apiResponse->fail('Conflict', 409, 'Trying to attach new DNA occurrence data to an occurrence which already has DNA occurrence data.');
+      }
+      else {
+        throw $e;
+      }
+    }
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to PUT to an existing dna_occurrence to update.
+   */
+  public function dnaOccurrencesPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    // Update only allowed on this website.
+    $preconditions = ['occurrence.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if ($this->needToFilterToUser()) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    $r = rest_crud::update('dna_occurrence', $id, $putArray, $preconditions);
+    echo json_encode($r);
+  }
+
+  /**
+   * API end-point to DELETE an occurrence.
+   *
+   * Will only be deleted if the occurrence was created by the current user.
+   *
+   * @todo Website ID precondition could respect editing sharing mode.
+   *
+   * @param int $id
+   *   Occurrence ID to delete.
+   */
+  public function dnaOccurrencesDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete only allowed on this website.
+    $preconditions = ['occurrence.website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    rest_crud::delete('dna_occurrence', $id, $preconditions);
+  }
+
+  /**
+   * Filter DNA occurrence data.
+   *
+   * Adds a website ID filter on the attached occurrence, plus optionally a
+   * confidential occurrence filter.
+   *
+   * @return string
+   */
+  private function getDnaOccurrenceExtraFilter() {
+    $extraFilters = [
+      't2.website_id=' . (int) RestObjects::$clientWebsiteId
+    ];
+    // Read disallowed on confidential unless specifically allowed.
+    if (empty($this->resourceOptions['allow_confidential'])) {
+      $extraFilters[] = 't2.confidential=false';
+    }
+    return implode(' AND ', $extraFilters);
   }
 
   /**
