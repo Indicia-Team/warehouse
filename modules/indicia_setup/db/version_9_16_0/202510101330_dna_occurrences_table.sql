@@ -35,7 +35,7 @@ CREATE TABLE dna_occurrences
       ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS fki_dna_occurrences_occurrence_id
+CREATE UNIQUE INDEX IF NOT EXISTS ix_unique_dna_occurrences_occurrence_id
     ON dna_occurrences USING btree
     (occurrence_id ASC NULLS LAST)
     WHERE deleted=false;
