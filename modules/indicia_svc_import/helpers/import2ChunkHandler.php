@@ -267,7 +267,7 @@ class import2ChunkHandler {
    */
   public static function getConfig($configId) {
     // If call from older import client, the configId is the full file name.
-    $baseName = pathinfo($configId, PATHINFO_FILENAME);
+    $baseName = preg_replace('/(.csv|.xls|.xlsx|.json)$/i', '', $configId);
     $configFile = DOCROOT . "import/$baseName.json";
     if (file_exists($configFile)) {
       $f = fopen($configFile, "r");
@@ -276,7 +276,7 @@ class import2ChunkHandler {
       return json_decode($config, TRUE);
     }
     else {
-      throw new Exception("Config file $configId missing.");
+      throw new Exception("Config file $configFile missing.");
     }
   }
 
