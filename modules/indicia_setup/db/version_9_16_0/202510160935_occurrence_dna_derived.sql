@@ -10,12 +10,12 @@ BEGIN
   IF TG_OP = 'DELETE' THEN
     UPDATE occurrences
        SET dna_derived = FALSE
-     WHERE occurrence_id = OLD.occurrence_id;
+     WHERE id = OLD.occurrence_id;
   ELSE
     -- Update or insert.
     UPDATE occurrences
       SET dna_derived = NOT new.deleted
-    WHERE occurrence_id = NEW.occurrence_id;
+    WHERE id = NEW.occurrence_id;
   END IF;
   RETURN NULL;
 END;
