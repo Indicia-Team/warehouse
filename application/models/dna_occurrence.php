@@ -27,6 +27,16 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class Dna_occurrence_Model extends ORM {
 
+
+  /**
+   * Indicates database trigger on table which accesses a sequence.
+   *
+   * Set to true for trigger function sync_occurrence_dna_derived.
+   *
+   * @var bool
+   */
+  protected $hasTriggerWithSequence = TRUE;
+
   protected $belongs_to = [
     'occurrence' => 'occurrence',
     'created_by' => 'user',
