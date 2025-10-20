@@ -18,7 +18,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-require 'vendor/autoload.php';
+require __DIR__ . '/../../vendor/autoload.php';
 
 use GuzzleHttp\Client;
 
