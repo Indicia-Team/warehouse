@@ -310,8 +310,9 @@ class Service_Base_Controller extends Controller {
       $statusCode = 400;
     }
     elseif (strpos($message, 'imagecreatefrom') !== FALSE) {
+      // Special case for errors during image resizing.
       $statusCode = 400;
-      $message = 'Image processing error: ensure the image is a valid format and not corrupted.';
+      $message = 'Image processing error: ensure the image is a valid format and not corrupted. The image has been saved but thumbnail generation failed.';
       error_logger::log_error('Image processing error in data services', $e);
     }
     elseif ($e instanceof AuthenticationError || $e instanceof AuthorisationError) {
