@@ -67,8 +67,11 @@ class data_utils {
       'verified_on' => NULL,
       'machine_involvement' => NULL,
       'classification_event_id' => NULL,
-      'determiner_id' => $determinerPersonId,
     ];
+    // Don't include determiner ID if -1 as special case indicating not updated.
+    if ((string) $determinerPersonId !== '-1') {
+      $r['occurrences']['determiner_id'] = $determinerPersonId;
+    }
     // Work queue will update the cache tables.
     return $r;
   }
