@@ -2336,6 +2336,9 @@ class ORM extends ORM_Core {
         kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
         return FALSE;
       }
+      else {
+        kohana::log('debug', "Value $value was XSS cleaned to " . (string) $attrValueModel->$vf . " in field $vf for attribute $fieldId.");
+      }
     }
     // Set metadata.
     $exactMatches = array_intersect_assoc($oldValues, $attrValueModel->as_array());
