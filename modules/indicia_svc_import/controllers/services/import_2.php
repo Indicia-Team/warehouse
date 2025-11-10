@@ -171,6 +171,22 @@ class Import_2_Controller extends Service_Base_Controller {
     $useAssociations = !empty($_GET['use_associations']) && $_GET['use_associations'] === 'true';
     $keepFkIds = !empty($_GET['keep_fk_ids']) && $_GET['keep_fk_ids'] === 'true';
     $fields = $model->getSubmittableFields(TRUE, $keepFkIds, $identifiers, $attrTypeFilter, $useAssociations);
+    if ($config['supportDnaDerivedOccurrences'] ?? FALSE && $entity === 'occurrence') {
+      // Fetch DNA fields.
+      $dnaModel = ORM::factory('dna_occurrence');
+      $dnaFields = $dnaModel->getSubmittableFields(TRUE, $keepFkIds);
+      // Splice them into the list after the occurrence: fields.
+      $insertPos = 0;
+      foreach (array_keys($fields) as $fieldName) {
+        if (substr($fieldName, 0, 11) !== 'occurrence:') {
+          break;
+        }
+        $insertPos++;
+      }
+      $fields = array_slice($fields, 0, $insertPos)
+        + $dnaFields
+        + array_slice($fields, $insertPos);
+    }
     $wantRequired = !empty($_GET['required']) && $_GET['required'] === 'true';
     if ($wantRequired) {
       $requiredFields = $model->getRequiredFields(TRUE, $identifiers, $useAssociations);
@@ -272,7 +288,7 @@ class Import_2_Controller extends Service_Base_Controller {
       }
     }
     try {
-      $config = $this->createConfig($files, ($_POST['enable-background-imports'] ?? 'f') === 't');
+      $config = $this->createConfig($files, ($_POST['enable-background-imports'] ?? '0') === '1', ($_POST['support-dna'] ?? '0') === '1');
     }
     catch (RequestAbort) {
       return;
@@ -529,6 +545,12 @@ class Import_2_Controller extends Service_Base_Controller {
         $steps[] = [
           'clearNewParentEntityIdsIfNowMultipleSamples',
           "Checking links to $parentTable - step 2",
+        ];
+      }
+      if ($config['supportDnaDerivedOccurrences'] ?? FALSE && $config['entity'] === 'occurrence') {
+        $steps[] = [
+          'mapDnaDerivedOccurrencesToExistingRecords',
+          'Finding existing DNA derived occurrences',
         ];
       }
     }
@@ -1144,8 +1166,8 @@ SQL;
       UPDATE import_temp.$dbIdentifiers[tempTableName] u
       SET $dbIdentifiers[tempDbParentFkIdField]=exist.$dbIdentifiers[parentEntityFkIdFieldInDestTable]
       FROM $dbIdentifiers[importDestTable] exist
-      WHERE u.$dbIdentifiers[pkFieldInTempTable] ~ '^\d+$'
-      AND exist.id=u.$dbIdentifiers[pkFieldInTempTable]::integer
+      WHERE u.$dbIdentifiers[pkFieldInTempTable] IS NOT NULL
+      AND exist.id=u.$dbIdentifiers[pkFieldInTempTable]
       AND exist.deleted=false;
     SQL;
     $db->query($sql);
@@ -1166,6 +1188,36 @@ SQL;
         "{1} existing {2} found",
         $updated,
         inflector::plural($config['parentEntity']),
+      ],
+    ];
+  }
+
+  /**
+   * Preprocessing to find existing DNA occurrences for each occurrence.
+   */
+  private function mapDnaDerivedOccurrencesToExistingRecords($configId, array $config) {
+    $db = new Database();
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
+    $sql = <<<SQL
+      ALTER TABLE import_temp.$dbIdentifiers[tempTableName]
+      ADD COLUMN IF NOT EXISTS _dna_occurrence_id integer;
+
+      UPDATE import_temp.$dbIdentifiers[tempTableName] u
+      SET _dna_occurrence_id=dnao.id
+      FROM dna_occurrences dnao
+      WHERE dnao.occurrence_id=u._occurrence_id
+      AND dnao.deleted=false;
+    SQL;
+    $db->query($sql);
+    $updated = $db->query(<<<SQL
+      SELECT count(DISTINCT _dna_occurrence_id)
+      FROM import_temp.$dbIdentifiers[tempTableName]
+      WHERE _dna_occurrence_id IS NOT NULL
+    SQL)->current()->count;
+    return [
+      'message' => [
+        "{1} existing DNA occurrences found",
+        $updated,
       ],
     ];
   }
@@ -1192,8 +1244,8 @@ SQL;
         ON allchildren.$dbIdentifiers[parentEntityFkIdFieldInDestTable]=parent.id
         AND allchildren.deleted=false AND allchildren.deleted=false
       LEFT JOIN import_temp.$dbIdentifiers[tempTableName] exist
-        ON exist.$dbIdentifiers[pkFieldInTempTable] ~ '^\d+$'
-        AND COALESCE(exist.$dbIdentifiers[pkFieldInTempTable], '0')::integer=allchildren.id
+        ON exist.$dbIdentifiers[pkFieldInTempTable] IS NOT NULL
+        AND COALESCE(exist.$dbIdentifiers[pkFieldInTempTable], '0')=allchildren.id
       WHERE exist._row_id IS NULL
       AND parent.id=u.$dbIdentifiers[tempDbParentFkIdField]
       AND parent.deleted=false;
@@ -2130,7 +2182,7 @@ SQL;
    * @return array
    *   Config key/value pairs.
    */
-  private function createConfig(array $files, $enableBackgroundImports) {
+  private function createConfig(array $files, $enableBackgroundImports, $supportDnaDerivedOccurrences = TRUE) {
     $ext = pathinfo($files[0], PATHINFO_EXTENSION);
 
     // @todo Entity should by dynamic.
@@ -2179,6 +2231,7 @@ SQL;
       'isExcel' => in_array($ext, ['xls', 'xlsx']),
       'entity' => $entity,
       'parentEntity' => $parentEntity,
+      'supportDnaDerivedOccurrences' => $supportDnaDerivedOccurrences,
       'columns' => $this->tidyUpColumnsList($importTools->loadColumnTitlesFromFile($files[0], FALSE)),
       'systemAddedColumns' => [],
       'state' => 'initial',

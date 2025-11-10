@@ -9,7 +9,7 @@
     { "sql": "query", "type": "string"},
     { "sql": "record_status", "type": "string"},
     { "sql": "record_substatus", "type": "string"},
-    { "sql": "external_key", "type": ""},
+    { "sql": "external_key", "type": "string"},
     { "sql": "reply_to_id", "type": "integer"},
     { "sql": "redet_taxa_taxon_list_id", "type": "integer"},
     { "sql": "created_on", "type": "date" },
