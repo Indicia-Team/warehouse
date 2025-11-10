@@ -69,6 +69,15 @@ class Occurrence_Model extends ORM {
     'occurrence_medium:caption:4' => 'Media Caption 4',
   ];
 
+  /**
+   * Fields that are not shown to the user as importable.
+   *
+   * @var array
+   */
+  protected $hidden_fields = [
+    'dna_derived',
+  ];
+
   // During an import it is possible to merge different columns in a CSV row
   // to make a database field.
   public $compoundImportFieldProcessingDefn = [
