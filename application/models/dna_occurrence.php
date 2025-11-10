@@ -27,7 +27,6 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class Dna_occurrence_Model extends ORM {
 
-
   /**
    * Indicates database trigger on table which accesses a sequence.
    *
