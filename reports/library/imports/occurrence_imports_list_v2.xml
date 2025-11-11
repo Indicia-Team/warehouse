@@ -10,6 +10,7 @@
     JOIN websites w ON w.id=i.website_id
     WHERE website_id in (#sharing_website_ids#)
     AND i.training='#training#'
+    AND i.deleted=false
   </query>
   <order_bys>
     <order_by>i.created_on DESC</order_by>
