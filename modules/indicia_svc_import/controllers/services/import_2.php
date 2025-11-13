@@ -720,7 +720,7 @@ class Import_2_Controller extends Service_Base_Controller {
       $info['rowsInserted'] = $config['rowsInserted'] ?? 0;
       $info['rowsUpdated'] = $config['rowsUpdated'] ?? 0;
       if (!empty($params['restart'])) {
-        $config['rowsProcessed'] = 0;
+        $info['rowsProcessed'] = 0;
       }
       else {
         $info['rowsProcessed'] = $config['rowsProcessed'] ?? 0;
