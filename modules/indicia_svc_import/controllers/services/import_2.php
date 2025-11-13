@@ -288,7 +288,11 @@ class Import_2_Controller extends Service_Base_Controller {
       }
     }
     try {
-      $config = $this->createConfig($files, ($_POST['enable-background-imports'] ?? '0') === '1', ($_POST['support-dna'] ?? '0') === '1');
+      $config = $this->createConfig(
+        $files,
+        ($_POST['enable-background-imports'] ?? 'f') === 't',
+        ($_POST['support-dna'] ?? 'f') === 't'
+      );
     }
     catch (RequestAbort) {
       return;
