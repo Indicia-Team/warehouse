@@ -194,17 +194,31 @@ TXT;
     ?>
   </fieldset>
   <fieldset class="row">
-    <legend>Taxon or name deprecation flags</legend>
-    <div class="col-md-3">
+    <legend>Data entry flags</legend>
+    <div class="col-md-4">
       <?php
       echo data_entry_helper::checkbox([
         'label' => 'Allow data entry',
         'fieldname' => 'taxa_taxon_list:allow_data_entry',
         'default' => html::initial_value($values, 'taxa_taxon_list:allow_data_entry'),
+        'helpText' => 'Untick this to leave the taxon in the database, but block it from searches when adding new records.',
       ]);
       ?>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
+      <?php
+      echo data_entry_helper::checkbox([
+        'label' => 'Manually entered',
+        'fieldname' => 'taxa_taxon_list:manually_entered',
+        'default' => html::initial_value($values, 'taxa_taxon_list:manually_entered'),
+        'helpText' => 'Ticked for taxa that were entered manually as opposed to via automatic synchronisation with external lists.',
+      ]);
+      ?>
+    </div>
+  </fieldset>
+  <fieldset class="row">
+    <legend>Taxon deprecation and naming</legend>
+    <div class="col-md-4">
       <?php
       echo data_entry_helper::checkbox([
         'label' => 'Organism deprecated',
@@ -214,7 +228,7 @@ TXT;
       ]);
       ?>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
       <?php
       echo data_entry_helper::checkbox([
         'label' => 'Name deprecated',
@@ -224,7 +238,7 @@ TXT;
       ]);
       ?>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
       <?php
       echo data_entry_helper::text_input([
         'label' => 'Name form',

@@ -140,6 +140,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'preferred',
       'description',
       'common_taxon_id',
+      'manually_entered',
     ];
     return parent::validate($array, $save);
   }
