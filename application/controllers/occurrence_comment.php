@@ -64,7 +64,7 @@ class Occurrence_comment_Controller extends Gridview_Base_Controller {
 
   /**
    * Override the default return page behaviour so that after saving an image you
-   * are returned to the occurence entry which has the image.
+   * are returned to the occurrence entry which has the image.
    */
   protected function get_return_page() {
     if (array_key_exists('occurrence_comment:occurrence_id', $_POST)) {

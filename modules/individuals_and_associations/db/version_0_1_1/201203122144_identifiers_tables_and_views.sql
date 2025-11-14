@@ -149,7 +149,7 @@ CREATE TABLE identifiers_subject_observations
 (
   id serial NOT NULL,
   identifier_id integer NOT NULL, -- Foreign key to the identifiers table. Identifies the subject_observation that is identified by the subject_observation_id.
-  subject_observation_id integer NOT NULL, -- Foreign key to the subject_observations table. Identifies the occurence that the subject_observation is linked to in order to determine its taxon.
+  subject_observation_id integer NOT NULL, -- Foreign key to the subject_observations table. Identifies the occurrence that the subject_observation is linked to in order to determine its taxon.
   matched boolean NOT NULL DEFAULT false, -- Whether this observation matches a known identifier, true if a match exists.
   verified_status character(1) DEFAULT 'U'::bpchar, -- Status of this identifier observation. M - misread, V - verified, U - unknown.
   verified_by_id integer, -- Foreign key to the users table (verifier).
@@ -180,7 +180,7 @@ WITH (
 -- ALTER TABLE identifiers_subject_observations OWNER TO indicia_user;
 COMMENT ON TABLE identifiers_subject_observations IS 'Join table which links identifiers with subject_observations.';
 COMMENT ON COLUMN identifiers_subject_observations.identifier_id IS 'Foreign key to the identifiers table. Identifies the subject_observation that is identified by the subject_observation_id.';
-COMMENT ON COLUMN identifiers_subject_observations.subject_observation_id IS 'Foreign key to the subject_observations table. Identifies the occurence that the subject_observation is linked to in order to determine its taxon.';
+COMMENT ON COLUMN identifiers_subject_observations.subject_observation_id IS 'Foreign key to the subject_observations table. Identifies the occurrence that the subject_observation is linked to in order to determine its taxon.';
 COMMENT ON COLUMN identifiers_subject_observations.matched IS 'Whether this observation matches a known identifier, true if a match exists.';
 COMMENT ON COLUMN identifiers_subject_observations.verified_status IS 'Status of this identifier observation. M - misread, V - verified, U - unknown.';
 COMMENT ON COLUMN identifiers_subject_observations.verified_by_id IS 'Foreign key to the users table (verifier).';
@@ -216,7 +216,7 @@ CREATE INDEX fki_identifiers_subject_observations_subject_observation
 
 -- DROP VIEW list_identifiers;
 
-CREATE OR REPLACE VIEW list_identifiers AS 
+CREATE OR REPLACE VIEW list_identifiers AS
  SELECT i.id, i.first_use_date, t_t.term AS identifier_type, i.status, i.coded_value, i.summary, i.known_subject_id, substring(ks.description from 1 for 30) as short_description, i.website_id, i.deleted
    FROM identifiers i
    LEFT JOIN known_subjects ks ON i.known_subject_id = ks.id
@@ -231,7 +231,7 @@ CREATE OR REPLACE VIEW list_identifiers AS
 
 -- DROP VIEW detail_identifiers;
 
-CREATE OR REPLACE VIEW detail_identifiers AS 
+CREATE OR REPLACE VIEW detail_identifiers AS
  SELECT i.id, i.issue_authority_id, a_t.term AS issue_authority, i.issue_scheme_id, s_t.term AS issue_scheme, i.issue_date, i.first_use_date,  i.last_observed_date, i.final_date, i.identifier_type_id, t_t.term AS identifier_type, i.status, i.coded_value, i.summary, i.known_subject_id, ks.description, substring(ks.description from 1 for 30) as short_description, i.website_id, w.title AS website, i.created_by_id, c.username AS created_by, i.created_on, i.updated_by_id, u.username AS updated_by, i.updated_on, i.deleted
    FROM identifiers i
    LEFT JOIN known_subjects ks ON i.known_subject_id = ks.id
@@ -252,7 +252,7 @@ CREATE OR REPLACE VIEW detail_identifiers AS
 
 -- DROP VIEW gv_identifiers;
 
-CREATE OR REPLACE VIEW gv_identifiers AS 
+CREATE OR REPLACE VIEW gv_identifiers AS
  SELECT i.id, a_t.term AS issue_authority, s_t.term AS issue_scheme, i.issue_date, i.first_use_date,  i.last_observed_date, i.final_date, t_t.term AS identifier_type, i.status, i.coded_value, i.summary, substring(ks.description from 1 for 30) as short_description, i.website_id, w.title AS website, i.deleted
    FROM identifiers i
    LEFT JOIN known_subjects ks ON i.known_subject_id = ks.id

@@ -825,7 +825,7 @@ class Import_2_Controller extends Service_Base_Controller {
     }
     // Return the updated rows (in similar way as a select statement would)
     // Can't use "RETURNING *" as that includes columns from the joins
-    // and messes up result (e.g the ID comes out wrong as both the occurence
+    // and messes up result (e.g the ID comes out wrong as both the occurrence
     // and import tables have it).
     $occurrencesUpdateSQL .= <<<SQL
     RETURNING o.id, o.sample_id, o.determiner_id, o.confidential, o.created_on, o.created_by_id,
