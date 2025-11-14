@@ -1629,7 +1629,7 @@ $config['occurrences']['get_changed_items_query'] = "
     where oc.auto_generated=false and oc.updated_on>'#date#'
     union
     select dnao.occurrence_id, false
-    from dna_occurences dnao
+    from dna_occurrences dnao
     where dnao.updated_on>'#date#'
     ) as sub
     group by id";
