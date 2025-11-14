@@ -48,10 +48,10 @@ class cache_builder {
       else {
         echo "<p>No changes</p>";
       }
-      $db->query("drop table $needsUpdateTable");
+      $db->query("DROP TABLE IF EXISTS $needsUpdateTable");
     }
     catch (Exception $e) {
-      $db->query("drop table $needsUpdateTable");
+      $db->query("DROP TABLE IF EXISTS $needsUpdateTable");
       throw $e;
     }
   }
