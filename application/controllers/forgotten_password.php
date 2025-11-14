@@ -126,7 +126,7 @@ class Forgotten_Password_Controller extends Indicia_Controller {
         'senderName' => "an Administrator's",
         'new_password_link' => '<a href="' . url::site() . "new_password/email/$link_code\">" .
           url::site() . "new_password/email/$link_code</a>",
-      )));
+      )), 'forgottenPassword', 'requestedByAdmin');
     }
     catch (Swift_Exception $e) {
       kohana::log('error', "Error sending forgotten password: " . $e->getMessage());
