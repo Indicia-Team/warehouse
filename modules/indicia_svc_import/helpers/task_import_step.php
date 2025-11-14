@@ -140,7 +140,8 @@ class task_import_step {
       $emailer->addRecipient($personInfo->email_address, $personInfo->first_name . ' ' . $personInfo->surname);
       $emailer->send(
         'Import complete',
-        "The import you requested has completed successfully.<br><br>Regards<br>Indicia Team"
+        "The import you requested has completed successfully.<br><br>Regards<br>Indicia Team",
+        'importBackgroundProcessing'
       );
     }
     else {
@@ -168,7 +169,8 @@ class task_import_step {
       $emailer->addRecipient($personInfo->email_address, $personInfo->first_name . ' ' . $personInfo->surname);
       $emailer->send(
         'Import failed',
-        "The import you requested has failed due to a system error. Please contact your system administrator to investigate.<br><br>Regards<br>Indicia Team"
+        "The import you requested has failed due to a system error. Please contact your system administrator to investigate.<br><br>Regards<br>Indicia Team",
+        'importBackgroundProcessing',
       );
     }
     else {
@@ -199,7 +201,8 @@ class task_import_step {
       $link = url::site() . 'services/import_2/get_errors_file?config-id=' . $params['config-id'];
       $emailer->send(
         'Import failed validation',
-        "The import you requested has failed validation.<br><a href=\"$link\">Download the rows that had errors</a><br><br>Regards<br>Indicia Team"
+        "The import you requested has failed validation.<br><a href=\"$link\">Download the rows that had errors</a><br><br>Regards<br>Indicia Team",
+        'importBackgroundProcessing'
       );
     }
     else {
