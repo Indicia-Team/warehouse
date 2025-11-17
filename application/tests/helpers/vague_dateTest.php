@@ -308,6 +308,7 @@ class Helper_Vague_Date_Test extends TestCase {
       'Date 06/1992-1996' => ['06/1992-1996'],
       'Date Apr 2019 to Dec 2017' => ['Apr 2019 to Dec 2017'],
       'Date 04/2019 to 12/2017' => ['04/2019 to 12/2017'],
+      'Date 07/0200 to 06/2001' => ['07/0200 to 06/2001'],
     ];
   }
 
