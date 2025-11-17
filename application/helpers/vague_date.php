@@ -368,12 +368,18 @@ class vague_date {
           $startDate = $a;
           $matched = TRUE;
         }
+        else {
+          return FALSE;
+        }
       }
       if ($end) {
         $a = self::parseSingleDate($end, $parseFormats);
         if ($a !== NULL) {
           $endDate = $a;
           $matched = TRUE;
+        }
+        else {
+          return FALSE;
         }
       }
       if ($matched) {
