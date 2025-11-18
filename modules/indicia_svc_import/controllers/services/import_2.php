@@ -2102,7 +2102,7 @@ SQL;
     $rows = [];
     $rowsDoneInBatch = 0;
     $db = new Database();
-
+    $foundDataInBatch = FALSE;
     while (($rowsDoneInBatch < $batchLimit)) {
       if ($config['files'][$fileName]['rowsRead'] >= $config['files'][$fileName]['rowCount']) {
         // All rows done.
@@ -2116,6 +2116,7 @@ SQL;
       }, $data);
       // Skip empty rows.
       if (!empty(implode('', $data))) {
+        $foundDataInBatch = TRUE;
         // Trim and escape the data, then pad to correct number of columns.
         $data = array_map(function ($s) use ($db) {
           return pg_escape_literal($db->getLink(), $s);
@@ -2154,6 +2155,16 @@ SQL;
     }
     if ($config['totalRows'] === 0) {
       throw new exception('The import file does not contain any data to import.');
+    }
+    // An entire empty batch causes us to stop. Most likely the user saved a
+    // spreadsheet with multiple empty rows at the bottom.
+    if (!$foundDataInBatch) {
+      $config['totalRows'] = $config['rowsLoaded'];
+      // If original row count was for mostly empty rows, we may have switched
+      // to background processing unnecessarily so check if we can switch back.
+      if ($config['totalRows'] <= import2ChunkHandler::BACKGROUND_PROCESSING_THRESHOLD && $config['processingMode'] === 'background') {
+        $config['processingMode'] = 'immediate';
+      }
     }
     $config['progress'] = $config['rowsLoaded'] * 100 / $config['totalRows'];
     if ($config['files'][$fileName]['rowsRead'] >= $config['files'][$fileName]['rowCount']) {
