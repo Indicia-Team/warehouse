@@ -136,6 +136,9 @@ SQL;
       $db->query($sql);
       // Switch the import field in the config to the new mapped one.
       $config['columns'][$importColumnLabel]['tempDbField'] = "smpattr_$params[0]_location_id";
+      // Remember the original field though as needed for correct label
+      // generation on client summary page.
+      $config['columns'][$importColumnLabel]['userSelectedWarehouseField'] = $config['columns'][$importColumnLabel]['warehouseField'];
       $config['columns'][$importColumnLabel]['warehouseField'] = "smpAttr:$params[0]";
     }
     $sql = <<<SQL
@@ -155,7 +158,7 @@ SQL;
     $sql = <<<SQL
 UPDATE import_temp.$tempTableNameEsc u
 SET errors = COALESCE(u.errors, '{}'::jsonb) || $errorsJson::jsonb
-WHERE $rawTempDbField IS NULL AND $tempDbField IS NOT NULL;
+WHERE $rawTempDbField IS NULL AND $tempDbField IS NOT NULL AND $tempDbField<>'';
 SQL;
     $updated = $db->query($sql)->count();
     if ($updated > 0) {
