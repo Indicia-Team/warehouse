@@ -1464,6 +1464,75 @@ SQL;
   }
 
   /**
+   * End-point which abandons an errored background import.
+   */
+  public function abandon_background_import() {
+    header("Content-Type: application/json");
+    try {
+      if (empty($_POST['config-id'])) {
+        $this->fail('Missing config-id parameter.', 'Bad Request', 400);
+      }
+      $this->authenticate('write');
+      // Delete the relevant work queue entry.
+      $db = new Database();
+      $existsCheck = $db->query(<<<SQL
+        SELECT params->>'user_id' as user_id
+        FROM work_queue
+        WHERE task='task_import_step' and params->>'config-id' = '{$_POST["config-id"]}'
+      SQL)->current();
+      if (!$existsCheck) {
+        $this->fail('Import config-id not found.', 'Not Found', 404);
+      }
+      elseif ((int) $existsCheck->user_id !== $this->auth_user_id) {
+        $this->fail('Import does not belong to user.', 'Forbidden', 403);
+      }
+      // HTTP 204 for a successful delete.
+      http_response_code(204);
+      echo json_encode([
+        'status' => 'No Content',
+      ]);
+      $db->query(<<<SQL
+        DELETE FROM work_queue
+        WHERE task='task_import_step' and params->>'config-id' = '{$_POST["config-id"]}'
+      SQL);
+    }
+    catch (RequestAbort $e) {
+      // Ignore as abort already handled.
+    }
+    catch (AuthenticationError $e) {
+      $this->fail($e->getMessage(), 'Unauthorised', 401, FALSE);
+    }
+    catch (Exception $e) {
+      $this->fail($e->getMessage(), 'Internal Server Error', 500, FALSE);
+    }
+  }
+
+  /**
+   * Handle a web-service error.
+   *
+   * Echoes a suitable response, sets the HTTP status and aborts.
+   *
+   * @param string $msg
+   *   Message to return.
+   * @param string $status
+   *   Status label, e.g. Unauthorised.
+   * @param string $statusCode
+   *   Status code, e.g. 401.
+   * @param bool $throwAbort
+   *   If true, then a RequestAbort exception is thrown. Default true.
+   */
+  private function fail($msg, $status, $statusCode, $throwAbort = TRUE) {
+    http_response_code($statusCode);
+    echo json_encode([
+      'status' => $status,
+      'msg' => $msg,
+    ]);
+    if ($throwAbort) {
+      throw new RequestAbort();
+    }
+  }
+
+  /**
    * Finds the label used in the import file that's linked to a temp db field.
    *
    * @param array $columns
