@@ -1286,6 +1286,16 @@ SQL;
       $isPrecheck = !empty($_POST['precheck']);
       $configId = $this->getConfigId();
       $config = import2ChunkHandler::getConfig($configId);
+      if ($this->in_warehouse) {
+        // Refresh session in case on the same page for a while.
+        Session::instance();
+      }
+      if (!empty($_POST['save-import-record'])) {
+        import2ChunkHandler::saveImportRecord($config, json_decode($_POST['save-import-record']));
+      }
+      if (!empty($_POST['save-import-template'])) {
+        $this->saveImportTemplate($config, json_decode($_POST['save-import-template']));
+      }
       if ($isPrecheck && !empty($_POST['restart']) && $config['processingMode'] === 'background') {
         $q = new WorkQueue();
         $q->enqueue($db, [
@@ -1305,16 +1315,6 @@ SQL;
           'msg' => 'Import queued for background processing due to the number of records.',
         ]);
         return;
-      }
-      if ($this->in_warehouse) {
-        // Refresh session in case on the same page for a while.
-        Session::instance();
-      }
-      if (!empty($_POST['save-import-record'])) {
-        import2ChunkHandler::saveImportRecord($config, json_decode($_POST['save-import-record']));
-      }
-      if (!empty($_POST['save-import-template'])) {
-        $this->saveImportTemplate($config, json_decode($_POST['save-import-template']));
       }
       $r = import2ChunkHandler::importChunk($db, [
         // Data file supported for legacy clients.

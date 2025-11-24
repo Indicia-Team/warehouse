@@ -68,7 +68,7 @@ class emailerDevLogger {
       'from' => $from,
       'fromName' => $fromName,
       'priority' => $priority,
-    ]));
+    ], TRUE));
   }
 
 }
