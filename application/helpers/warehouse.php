@@ -152,9 +152,14 @@ class warehouse {
    *   Optional list of file names to keep.
    */
   public static function purgeOldFiles($path, $age, array $keep = []) {
+    $base = rtrim(DOCROOT, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $fullDir = $base . trim($path, DIRECTORY_SEPARATOR);
+    if (!is_dir($fullDir)) {
+      return;
+    }
     // First, get an array of files sorted by date.
     $files = [];
-    $dir = opendir(DOCROOT . $path);
+    $dir = opendir($fullDir);
     // Skip certain file names.
     $exclude = array_merge($keep, [
       '.',
@@ -165,20 +170,29 @@ class warehouse {
     ]);
     if ($dir) {
       while ($filename = readdir($dir)) {
-        $fullPath = DOCROOT . $path . DIRECTORY_SEPARATOR . $filename;
+        $fullPath = $fullDir . DIRECTORY_SEPARATOR . $filename;
         if (in_array($filename, $exclude)) {
           continue;
         }
         if (is_dir($fullPath)) {
           // Recurse into sub-folders.
-          self::purgeOldFiles($path . DIRECTORY_SEPARATOR . $filename, $age);
+          self::purgeOldFiles($path . DIRECTORY_SEPARATOR . $filename, $age, $keep);
+          // Check if empty and remove if so.
+          $remaining = array_diff(scandir($fullPath), ['.', '..']);
+          if (empty($remaining)) {
+            @rmdir($fullPath);
+          }
         }
-        $lastModified = filemtime($fullPath);
-        $files[] = [$fullPath, $lastModified];
+        else {
+          // File node change time used for comparison - the time the file was
+          // added to the folder.
+          $fileTimestamp = filectime($fullPath);
+          $files[] = [$fullPath, $fileTimestamp];
+        }
       }
     }
     // Sort the file array by date, oldest first.
-    usort($files, ['warehouse', 'dateCmp']);
+    usort($files, fn($a, $b) => $a[1] <=> $b[1]);
     // Iterate files.
     foreach ($files as $file) {
       // If we have reached a file that is not old enough to expire, don't
