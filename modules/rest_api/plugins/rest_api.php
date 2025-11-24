@@ -26,7 +26,7 @@
  */
 function rest_api_scheduled_task() {
   // Anything older than 1 day can be purged.
-  rest_utils::purgeOldFiles('upload-queue/', 3600 * 24);
+  rest_utils::purgeOldFiles('upload-queue', 3600 * 24);
 }
 
 /**
