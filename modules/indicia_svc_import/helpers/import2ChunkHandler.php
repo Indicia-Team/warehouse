@@ -343,7 +343,7 @@ class import2ChunkHandler {
    */
   private static function getChunkSize($isBackground, $isPrecheck) {
     // Config can override the defaults.
-    $moduleConfig = kohana::config('indicia_svc_import');
+    $moduleConfig = kohana::config('indicia_svc_import', FALSE, FALSE);
     $key = 'chunk_size_' . ($isBackground ? 'background_' : '') . ($isPrecheck ? 'preprocess' : 'import');
     $defaults = [
       'chunk_size_preprocess' => 100,
