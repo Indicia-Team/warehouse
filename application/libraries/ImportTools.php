@@ -188,6 +188,8 @@ class ImportTools {
       throw new exception('Unable to unzip the Zip archive.');
     };
     $zip->close();
+    // No need to keep file any more.
+    @unlink(DOCROOT . 'import/' . $uploadedFile);
     return $fileName;
   }
 

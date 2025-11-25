@@ -786,9 +786,9 @@ SQL;
    */
   private static function tidyUpAfterImport($db, $configId, array $config) {
     foreach(array_keys($config['files']) as $fileName) {
-      unlink(DOCROOT . "import/$fileName");
+      @unlink(DOCROOT . "import/$fileName");
     }
-    unlink(DOCROOT . "import/$configId.json");
+    @unlink(DOCROOT . "import/$configId.json");
 
     $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
     $db->query("DROP TABLE IF EXISTS import_temp.$dbIdentifiers[tempTableName]");
