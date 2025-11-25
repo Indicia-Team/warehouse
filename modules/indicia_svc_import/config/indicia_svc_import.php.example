@@ -28,3 +28,13 @@ $config['elasticsearch_feeds_to_monitor'] = [
   'OCCS',
   'OCCSSENSITIVE',
 ];
+// Override processing chunk size during preprocess phase of import.
+$config['chunk_size_preprocess'] = 100;
+// Override processing chunk size during actual import phase of import.
+$config['chunk_size_import'] = 50;
+// Override processing chunk size during preprocess phase of import if
+// background importing a large file..
+$config['chunk_size_background_preprocess'] = 1000;
+// Override processing chunk size during actual import phase of import if
+// background importing a large file..
+$config['chunk_size_background_import'] = 500;
