@@ -70,10 +70,8 @@ class task_import_step {
     if (empty($params['precheck']) && self::abortTaskIfBusy($db, $procId)) {
       return;
     }
-    // A reasonable batch size for background processing.
-    import2ChunkHandler::$batchRowLimit = 200;
     try {
-      $r = import2ChunkHandler::importChunk($db, $params, TRUE);
+      $r = import2ChunkHandler::importChunk($db, $params);
       // Reset the task so that it gets picked up again for the next chunk.
       unset($params['restart']);
       if ($r['status'] === 'done') {

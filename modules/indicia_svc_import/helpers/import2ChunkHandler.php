@@ -60,26 +60,25 @@ class import2ChunkHandler {
    * @param array $params
    *   Parameters array including if this in validation phase (precheck), or
    *   restarting when validation done.
-   * @param bool $throwExceptions
-   *   Should errors be logged, or thrown.
    *
    * @return array
    *   Array containing summary of processing after this step.
    */
-  public static function importChunk($db, $params, $throwExceptions = FALSE) {
+  public static function importChunk($db, $params) {
     try {
       $configId = $params['config-id'];
       $isPrecheck = !empty($params['precheck']);
       // Don't process cache tables immediately to improve performance.
       cache_builder::$delayCacheUpdates = TRUE;
       $config = self::getConfig($configId);
-
       // If request to start again sent, go from beginning.
       if (!empty($params['restart'])) {
         $config['rowsProcessed'] = 0;
         $config['parentEntityRowsProcessed'] = 0;
         self::saveConfig($configId, $config);
       }
+      $isBackground = $config['processingMode'] === 'background';
+      self::getChunkSize($isBackground, $isPrecheck);
 
       // @todo Correctly set parent entity for other entities.
       // @todo Handling for entities without parent entity.
@@ -236,7 +235,8 @@ class import2ChunkHandler {
       error_logger::log_error('Error in import_chunk', $e);
       kohana::log('debug', 'Error in import_chunk: ' . $e->getMessage());
       http_response_code(400);
-      if ($throwExceptions) {
+      if ($isBackground) {
+        // Error handling differs in background mode.
         throw $e;
       }
       return [
@@ -401,6 +401,27 @@ class import2ChunkHandler {
       // This should never happen.
       throw new Exception(json_encode($errors, TRUE));
     }
+  }
+
+  /**
+   * Sets a suitable chunk size for a batch.
+   *
+   * @param bool $isBackground
+   *   True if background processing a large import.
+   * @param bool $isPrecheck
+   *   True if prechecking.
+   */
+  private static function getChunkSize($isBackground, $isPrecheck) {
+    // Config can override the defaults.
+    $moduleConfig = kohana::config('indicia_svc_import');
+    $key = 'chunk_size_' . ($isBackground ? 'background_' : '') . ($isPrecheck ? 'preprocess' : 'import');
+    $defaults = [
+      'chunk_size_preprocess' => 100,
+      'chunk_size_import' => 50,
+      'chunk_size_background_preprocess' => 1000,
+      'chunk_size_background_import' => 500,
+    ];
+    self::$batchRowLimit = $moduleConfig[$key] ?? $defaults[$key];
   }
 
   /**
