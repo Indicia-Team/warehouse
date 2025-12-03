@@ -490,7 +490,7 @@ class Sample_Model extends ORM_Tree {
           ":" .
           str_replace([',', ':'], ['&#44', '&#56'], $title);
     }
-    $sample_methods = [':Defined in file'];
+    $sample_methods = [];
     $parent_sample_methods = [":No filter"];
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {

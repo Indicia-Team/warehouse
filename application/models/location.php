@@ -329,7 +329,7 @@ SQL;
       $srefs[] = self::getConvertedOptionValue($code, $title);
     }
 
-    $location_types = array(":Defined in file");
+    $location_types = [];
     $parent_location_types = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
