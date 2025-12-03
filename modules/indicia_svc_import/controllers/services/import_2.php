@@ -558,6 +558,14 @@ class Import_2_Controller extends Service_Base_Controller {
         ];
       }
     }
+    foreach ($config['columns'] as $info) {
+      if (isset($info['warehouseField']) && preg_match('/sref_system$/', $info['warehouseField'])) {
+        $steps[] = [
+          'mapSrefSystems',
+          "Finding spatial reference systems",
+        ];
+      }
+    }
     // Allow plugins to extend the list of preprocessing steps.
     foreach ($config['plugins'] as $plugin => $params) {
       if (method_exists("importPlugin$plugin", 'alterPreprocessSteps')) {
@@ -1221,6 +1229,48 @@ SQL;
     return [
       'message' => [
         "{1} existing DNA occurrences found",
+        $updated,
+      ],
+    ];
+  }
+
+  /**
+   * Preprocessing ap spatial reference system titles to internal codes.
+   *
+   * E.g. to map from British National Grid to OSGB.
+   */
+  private function mapSrefSystems($configId, array $config) {
+    $db = new Database();
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
+    $systemMetadataList = spatial_ref::system_metadata();
+    $caseList = [];
+    $labelList = [];
+    foreach ($systemMetadataList as $code => $systemMetadata) {
+      $titleEsc = pg_escape_literal($db->getLink(), $systemMetadata['title']);
+      $codeEsc = strtoupper(pg_escape_literal($db->getLink(), $code));
+      $caseList[] = "WHEN $titleEsc THEN $codeEsc";
+      $labelList[] = $titleEsc;
+    }
+    $cases = implode("\n", $caseList);
+    $labels = implode(",\n", $labelList);
+    $updated = 0;
+    foreach ($config['columns'] as $info) {
+      if (isset($info['warehouseField']) && preg_match('/sref_system$/', $info['warehouseField'])) {
+        $sql = <<<SQL
+          UPDATE import_temp.$dbIdentifiers[tempTableName] u
+          SET $info[tempDbField]=CASE $info[tempDbField]
+            $cases
+            ELSE $info[tempDbField]
+            END
+          WHERE
+            $info[tempDbField] IN ($labels);
+        SQL;
+        $updated += $db->query($sql)->count();
+      }
+    }
+    return [
+      'message' => [
+        "{1} spatial reference systems mapped to internal codes",
         $updated,
       ],
     ];
