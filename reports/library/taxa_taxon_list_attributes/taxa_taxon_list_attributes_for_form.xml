@@ -51,7 +51,7 @@
     <column name="attribute_id" display="ID" sql="a.id" datatype="integer" />
     <column name="taxa_taxon_list_id" display="taxa_taxon_list ID" sql="av.taxa_taxon_list_id" datatype="integer" />
     <column name="caption" display="Caption" sql="a.caption" datatype="text" />
-    <column name="caption_i18n" display="Caption i18n" sql="a.caption_i18n" datatype="text" />
+    <column name="caption_i18n" display="Caption i18n" sql="a.caption_i18n::text" datatype="text" />
     <column name="l1_category" display="Level 1 Category" sql="COALESCE(l1cati18n.term, l1cat.term)" datatype="text" />
     <column name="l1_category_order" sql="l1cat.sort_order" />
     <column name="l2_category_order" sql="l2cat.sort_order" />
