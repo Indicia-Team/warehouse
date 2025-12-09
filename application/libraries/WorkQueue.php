@@ -90,14 +90,25 @@ SQL;
    *
    * @param object $db
    *   Database connection object.
+   * @param bool $force
+   *   If true, process even if the server load is high. Default false. Set to
+   *   true when running from unit tests to ensure tasks are processed.
    */
-  public function process($db) {
+  public function process($db, $force = FALSE) {
     $this->db = $db;
     // Use the current server CPU load to roughly guess the top cost estimate
     // to allow for tasks of each priority.
-    $maxCostByPriority = $this->findMaxCostPriority();
+    if ($force) {
+      $maxCostByPriority = [
+        1 => 100,
+        2 => 100,
+        3 => 100,
+      ];
+    }
+    else {
+      $maxCostByPriority = $this->findMaxCostPriority();
+    }
     $taskTypesToDo = $this->getTaskTypesToDo($maxCostByPriority);
-
     foreach ($taskTypesToDo as $taskType) {
       $helper = $taskType->task;
       $doneCount = 0;

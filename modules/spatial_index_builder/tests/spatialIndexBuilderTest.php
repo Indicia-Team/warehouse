@@ -123,7 +123,7 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
     $lowerLoc3 = $r['success'];
     // Run work queue.
     $q = new WorkQueue();
-    $q->process(self::$db);
+    $q->process(self::$db, TRUE);
     // Check everything correctly linked.
     $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$higherLocId1])->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
     $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$higherLocId1Private])->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
@@ -151,7 +151,7 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
     $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Updating to move a location did not return success response');
     // Run work queue.
-    $q->process(self::$db);
+    $q->process(self::$db, TRUE);
     // Check everything correctly linked.
     $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$higherLocId1])->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
     $this->assertEquals('{}', self::$db->query("SELECT higher_location_ids FROM locations WHERE id=?", [$higherLocId1Private])->current()->higher_location_ids, 'Incorrect indexing found for a higher location.');
