@@ -157,8 +157,8 @@ SQL;
     $load = $this->getServerLoad();
     $maxCostByPriority = [
       1 => max(0, min(100, (integer) (160 - $load))),
-      2 => max(0, min(100, (integer) (145 - $load * 2))),
-      3 => max(0, min(100, (integer) (130 - $load * 3))),
+      2 => max(0, min(100, (integer) (160 - $load * 2))),
+      3 => max(0, min(100, (integer) (160 - $load * 3))),
     ];
     global $argv;
     if (isset($argv)) {
@@ -215,18 +215,29 @@ SQL;
    */
   private function getServerLoad() {
     $load = [];
-    if (strncasecmp(PHP_OS, 'WIN', 3) == 0) {
-      exec('wmic cpu get loadPercentage', $output);
-      foreach ($output as $line) {
-        if ($line && preg_match("/^[0-9]+\$/", $line)) {
-          $load[] = $line;
-        }
-      }
+    switch (PHP_OS_FAMILY) {
+      case 'Windows':
+        $cmd = 'powershell -command "(Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average"';
+        $output = [];
+        @exec($cmd, $output);
+        // This value doesn't need to be adjusted by number of CPUs as it is
+        // already an average.
+        return ((float) ($output[0] ?? 0));
+
+      case 'Darwin':
+        // Fetch CPU count on MacOS.
+        exec('getconf _NPROCESSORS_ONLN', $output);
+        $ncpu = $output[0];
+        break;
+
+      default:
+        // Fetch CPU count - assume Linux.
+        $ncpu = substr_count((string)@file_get_contents('/proc/cpuinfo'),"\nprocessor") + 1;
     }
-    else {
-      $load = sys_getloadavg();
-    }
-    return count($load) ? array_sum($load) / count($load) : 0;
+    $load = sys_getloadavg();
+    // Load over 1, 5 and 15 minutes - take average of 1 and 5 minute load.
+    $loadAvg = ($load[0] + $load[1]) / 2;
+    return ($loadAvg / $ncpu) * 100;
   }
 
   /**
