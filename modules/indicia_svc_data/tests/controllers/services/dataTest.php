@@ -1173,7 +1173,7 @@ SQL;
     $this->assertEquals(1, $occ->taxa_taxon_list_id);
     // Run the work queue task and check attrs_json
     // Run the task.
-    $q->process(self::$db);
+    $q->process(self::$db, TRUE);
     $attrs = json_decode(self::$db->query(
       'select attrs_json from cache_occurrences_nonfunctional where id=?', [$occId]
     )->current()->attrs_json, TRUE);
@@ -1194,7 +1194,7 @@ SQL;
     )->current();
     $this->assertEquals(1, $qCount->count, 'Work queue task not generated for attr value update.');
     // Run the task.
-    $q->process(self::$db);
+    $q->process(self::$db, TRUE);
     $attrs = json_decode(self::$db->query(
       'select attrs_json from cache_occurrences_nonfunctional where id=?', [$occId]
     )->current()->attrs_json, TRUE);

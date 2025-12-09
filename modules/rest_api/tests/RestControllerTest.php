@@ -942,7 +942,7 @@ class RestControllerTest extends BaseRestClientTest {
     // Process the queue so anonymisation is done.
     $db->query("UPDATE work_queue SET priority=1 WHERE task='task_indicia_svc_security_delete_user_account'");
     $queue = new WorkQueue();
-    $queue->process($db);
+    $queue->process($db, TRUE);
 
     // Get the anonymous user ID.
     $anonUserId = $db->query("SELECT id FROM users WHERE username='anonymous'")->current()->id;
