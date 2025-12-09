@@ -2041,7 +2041,8 @@ SQL;
    */
   private function loadNextRecordsBatch($fileName, array &$config) {
     $importTools = new ImportTools();
-    $batchLimit = 1000;
+    // Larger batch size for big imports is more efficient at expensive of progress granularity.
+    $batchLimit = max(min(round($config['totalRows'] / 20), 10000), 500);
     $file = $importTools->openSpreadsheet($fileName, $config, $batchLimit);
     $rows = [];
     $rowsDoneInBatch = 0;
