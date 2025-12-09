@@ -75,7 +75,7 @@ class Models_Taxon_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $wqCount, 'Should be a single work queue task to update the altered taxon key in the occurrences cache.');
     // Run work queue
     $q = new WorkQueue();
-    $q->process($this->db);
+    $q->process($this->db, TRUE);
     // Work queue task should persist as the cache_taxa_taxon_lists data not updated yet.
     $wqCount = $this->db->query("SELECT count(*) FROM work_queue WHERE task='task_cache_builder_taxonomy_occurrence' AND entity='taxa_taxon_list' AND record_id=1")->current()->count;
     $this->assertEquals(1, $wqCount, 'Work queue should not process occurrence taxonomy until taxon cache updates done');
@@ -85,7 +85,7 @@ class Models_Taxon_Test extends Indicia_DatabaseTestCase {
     $taxonKey = $this->db->query("SELECT external_key FROM cache_taxa_taxon_lists WHERE id=1")->current()->external_key;
     $this->assertEquals('TESTKEYUPDATED', $taxonKey);
     // Run work queue.
-    $q->process($this->db);
+    $q->process($this->db, TRUE);
     // Work queue task should be processed.
     $wqCount = $this->db->query("SELECT count(*) FROM work_queue WHERE task='task_cache_builder_taxonomy_occurrence' AND entity='taxa_taxon_list' AND record_id=1")->current()->count;
     $this->assertEquals(0, $wqCount, 'Work queue should process occurrence taxonomy after taxon cache updates done');
