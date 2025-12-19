@@ -109,13 +109,14 @@ class Classification_result_Model extends ORM {
    *   Database connection.
    */
   public static function createMediaJoins($db) {
+    $occurrencesToUpdate = [];
     foreach (self::$mediaJoins as $crId => $joinInfo) {
       // Find the list of missing occurrence_media IDs that correspond to the
       // paths.
       $pathsArray = is_string($joinInfo['pathsJson']) ? json_decode($joinInfo['pathsJson']) : $joinInfo['pathsJson'];
       $paths = warehouse::stringArrayToSqlInList($db, $pathsArray);
       $occurrenceMediaQuery = <<<SQL
-SELECT om.id as occurrence_media_id
+SELECT om.id as occurrence_media_id, om.occurrence_id
 FROM occurrence_media om
 JOIN occurrences o ON o.id=om.occurrence_id AND o.deleted=false
 AND o.classification_event_id=$joinInfo[classification_event_id]
@@ -131,7 +132,36 @@ SQL;
         $m->classification_result_id = $crId;
         $m->set_metadata();
         $m->save();
+        // Keep a distinct list of the affected occurrences.
+        $occurrencesToUpdate[$mediaLink->occurrence_id] = $mediaLink->occurrence_id;
       }
+    }
+    if (count($occurrencesToUpdate) > 0) {
+      // Now that the joins are in place, we can set
+      // cache_occurrences_functional.classifier_agreement.
+      $occurrenceIdsCsv = implode(',', $occurrencesToUpdate);
+      $db->query(<<<SQL
+        UPDATE cache_occurrences_functional u
+        SET classifier_agreement=false
+        FROM occurrences o
+        JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
+        JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
+        WHERE u.id=o.id
+        AND o.id IN ($occurrenceIdsCsv);
+
+        UPDATE cache_occurrences_functional u
+        SET classifier_agreement=COALESCE(cs.classifier_chosen, false)
+        FROM occurrences o
+        JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
+        JOIN classification_results_occurrence_media crom ON crom.occurrence_media_id=m.id
+        LEFT JOIN (classification_suggestions cs
+          JOIN cache_taxa_taxon_lists cttl on cttl.id=cs.taxa_taxon_list_id
+        ) ON cs.classification_result_id=crom.classification_result_id AND cs.deleted=false
+        WHERE u.id=o.id
+        AND (cttl.external_key=u.taxa_taxon_list_external_key OR cs.id IS NULL)
+        AND o.id IN ($occurrenceIdsCsv);
+        SQL
+      );
     }
   }
 
