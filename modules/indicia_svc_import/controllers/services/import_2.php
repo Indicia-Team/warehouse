@@ -370,7 +370,7 @@ class Import_2_Controller extends Service_Base_Controller {
   /**
    * Controller action to find information on lookup fields.
    *
-   * Can be called repratedly until the response msgKey is set to
+   * Can be called repeatedly until the response msgKey is set to
    * findLookupFieldsDone. Returns information on the next found lookup field
    * that has data values that need to be matched.
    */
@@ -497,6 +497,7 @@ class Import_2_Controller extends Service_Base_Controller {
       }
     }
     import2ChunkHandler::saveConfig($configId, $config);
+    $this->addTempDbTableIndexes($configId, $config);
     echo json_encode([
       'status' => 'ok',
     ]);
@@ -741,6 +742,64 @@ class Import_2_Controller extends Service_Base_Controller {
       $r[] = $info;
     }
     echo json_encode($r);
+  }
+
+  /**
+   * Add indexes to the temporary import table for faster lookups later.
+   *
+   * @param string $configId
+   *   Config ID.
+   * @param array $config
+   *   Config array.
+   */
+  private function addTempDbTableIndexes($configId, array $config) {
+    $db = new Database();
+    // Once loaded, add some indexes for easier lookups later.
+    $lookupFieldsForParentEntity = $this->getLookupFieldsForParentEntityIndex($db, $config);
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
+    $sql = <<<SQL
+      CREATE INDEX idx_{$configId}_row_id ON import_temp.$dbIdentifiers[tempTableName] (_row_id);
+      CREATE INDEX idx_{$configId}_findsample ON import_temp.$dbIdentifiers[tempTableName] ($lookupFieldsForParentEntity);
+    SQL;
+    $db->query($sql);
+  }
+
+  /**
+   * Get the index field definitions for looking up against the parent entity.
+   *
+   * During import, multiple queries are run against the import table to
+   * identify records associated with the parent entity (e.g. sample). So we
+   * create indexes on the key fields for the parent entity which are likely to
+   * be always populated. The fields returned are coalesced to match the way
+   * they will be queried.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param array $config
+   *   Import config.
+   *
+   * @return string
+   *   Fields to include in the index.
+   */
+  private function getLookupFieldsForParentEntityIndex($db, array $config) {
+    switch ($config['parentEntity']) {
+      case 'sample':
+        $fields = ['sample:date_start', 'sample:entered_sref'];
+        break;
+
+      default:
+        throw new exception('Unsupported parent entity for import: ' . $config['parentEntity']);
+    }
+    $indexFields = [];
+    foreach ($fields as &$warehouseField) {
+      foreach ($config['columns'] as $info) {
+        if (isset($info['warehouseField']) && isset($info['tempDbField']) && $info['warehouseField'] === $warehouseField) {
+          $indexFields[] = 'COALESCE(' . pg_escape_identifier($db->getLink(), $info['tempDbField']) . ", '')";
+          break;
+        }
+      }
+    }
+    return implode(', ', $indexFields);
   }
 
   /**

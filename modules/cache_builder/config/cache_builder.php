@@ -2042,10 +2042,10 @@ WHERE o.deleted=false
 AND co.id IS NULL
 ";
 
-// Insert can use same query as update to fill in the classifier agreement and
-// taxon paths.
+// Insert can use same query as update to fill in the taxon paths. On insert,
+// classifier_agreement is handled by the classification result model as too
+// early at this point.
 $config['occurrences']['insert']['functional_taxon_path'] = $config['occurrences']['update']['functional_taxon_path'];
-$config['occurrences']['insert']['functional_classification'] = $config['occurrences']['update']['functional_classification'];
 
 $config['occurrences']['insert']['functional_sensitive'] = <<<SQL
   UPDATE cache_samples_functional cs
