@@ -856,8 +856,11 @@ class Scheduled_Tasks_Controller extends Controller {
       ->select("min(created_on) - '1 second'::interval as maxtime")
       ->from('work_queue')
       ->in('task', [
+        // Don't process data which is not spatially indexed, or queued for an
+        // update in cache builder.
         'task_spatial_index_builder_sample',
         'task_spatial_index_builder_occurrence',
+        'task_cache_builder_update'
       ])
       ->where('claimed_by', NULL)
       ->get()->current();
