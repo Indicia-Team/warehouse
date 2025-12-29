@@ -401,7 +401,9 @@ HTML;
 indiciaFns.loadExistingRestrictions($restrictionsJson);
 
 JS;
-          $speciesChecklistOptions['listId'] = $masterListId;
+          if (count($other_data['taxon_restrictions']) > 0) {
+            $speciesChecklistOptions['listId'] = $masterListId;
+          }
           $speciesChecklistOptions['preloadTaxa'] = [];
           foreach ($other_data['taxon_restrictions'] as $restriction) {
             $speciesChecklistOptions['preloadTaxa'][] = $restriction['taxa_taxon_list_id'];
