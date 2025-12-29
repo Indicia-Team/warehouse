@@ -39,6 +39,15 @@ class Emailer {
   private $emailHelper;
 
   /**
+   * Any attachment to add to the email.
+   *
+   * Contains the data for the attachment, the filename and mime type.
+   *
+   * @var array|null
+   */
+  private ?array $attachmentInfo = NULL;
+
+  /**
    * List of recipients, each containing an email address and optional name.
    *
    * @var array
@@ -91,6 +100,7 @@ class Emailer {
     $this->cc = [];
     $this->from = NULL;
     $this->fromName = NULL;
+    $this->attachmentInfo = NULL;
   }
 
   /**
@@ -137,7 +147,8 @@ class Emailer {
         $this->cc,
         $this->from,
         $this->fromName,
-        $this->priority
+        $this->priority,
+        $this->attachmentInfo
       );
       $succeeded = TRUE;
     }
@@ -153,6 +164,42 @@ class Emailer {
       $this->reset();
     }
     return $succeeded ? count($this->recipients) : 0;
+  }
+
+  /**
+   * Stores the output of a query ready to attach as a CSV to the sent email.
+   *
+   * @param string $query
+   *   SQL statement to run to get the data.
+   * @param string $filename
+   *   Name of the file to save the CSV as.
+   * @param Database $db
+   *   Database connection to use.
+   */
+  public function addAttachmentFromQuery($query, $filename, Database $db) {
+    $result = $db->query($query)->result();
+    $data = '';
+
+    // Add header row with column names
+    if (!empty($result)) {
+      $headers = array_map(function($field) {
+        return '"' . str_replace('"', '""', $field) . '"';
+      }, array_keys((array) $result[0]));
+      $data .= implode(',', $headers) . "\n";
+    }
+
+    foreach ($result as $row) {
+      $fields = array_map(function($field) {
+        return '"' . str_replace('"', '""', $field) . '"';
+      }, (array) $row);
+      $data .= implode(',', $fields) . "\n";
+    }
+
+    $this->attachmentInfo = [
+      'filename' => $filename,
+      'mimeType' => 'text/csv',
+      'data' => $data,
+    ];
   }
 
   /**
