@@ -724,8 +724,8 @@ class Import_2_Controller extends Service_Base_Controller {
     $lookupFieldsForParentEntity = $this->getLookupFieldsForParentEntityIndex($db, $config);
     $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
     $sql = <<<SQL
-      CREATE INDEX idx_{$configId}_row_id ON import_temp.$dbIdentifiers[tempTableName] (_row_id);
-      CREATE INDEX idx_{$configId}_findsample ON import_temp.$dbIdentifiers[tempTableName] ($lookupFieldsForParentEntity);
+      CREATE INDEX IF NOT EXISTS idx_{$configId}_row_id ON import_temp.$dbIdentifiers[tempTableName] (_row_id);
+      CREATE INDEX IF NOT EXISTS idx_{$configId}_findsample ON import_temp.$dbIdentifiers[tempTableName] ($lookupFieldsForParentEntity);
     SQL;
     $db->query($sql);
   }
