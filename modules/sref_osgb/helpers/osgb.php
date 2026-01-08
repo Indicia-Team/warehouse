@@ -39,14 +39,18 @@ class osgb {
       return FALSE;
     }
     $eastnorth = substr($sref, 2);
-    // 2 cases - either remaining chars must be all numeric and an equal
-    // number, up to 10 digits OR for DINTY Tetrads, 2 numbers followed by a
-    // letter (Excluding O, including I).
-    if ((!preg_match('/^[0-9]*$/', $eastnorth) || strlen($eastnorth) % 2 != 0 || strlen($eastnorth) > 10) &&
-                    (!preg_match('/^[0-9][0-9][A-NP-Z]$/', $eastnorth))) {
-      return FALSE;
+    // Valid scenarios:
+    // * either remaining chars must be all numeric and an equal number, up to 10 digits
+    // * for DINTY Tetrads, 2 numbers followed by a letter (Excluding O, including I).
+    // * for Quadrants, 2 numbers followed by NE|NW|SE|SW.
+    $validNumeric = preg_match('/^[0-9]*$/', $eastnorth) && (strlen($eastnorth) % 2 == 0) && (strlen($eastnorth) <= 10);
+    $validDinty = preg_match('/^[0-9][0-9][A-NP-Z]$/', $eastnorth);
+    $validQuadrant = preg_match('/^[0-9][0-9](NE|NW|SE|SW)$/', $eastnorth);
+    if ($validNumeric || $validDinty || $validQuadrant) {
+      return TRUE;
     }
-    return TRUE;
+    // If none of those, invalid.
+    return FALSE;
   }
 
   /**
@@ -60,36 +64,105 @@ class osgb {
       throw new InvalidArgumentException("Spatial reference $sref is not a recognisable grid square.", 4001);
     }
     $sq_100 = self::get_100k_square($sref);
-    if (strlen($sref) == 5) {
-      // Assume DINTY Tetrad format 2km squares
-      // extract the easting and northing.
-      $east = substr($sref, 2, 1);
-      $north = substr($sref, 3, 1);
-      $sq_code_letter_ord = ord(substr($sref, 4, 1));
-      if ($sq_code_letter_ord > 79) {
-        // Adjust for no O.
-        $sq_code_letter_ord--;
-      }
-      $sq_size = 2000;
-      $east = $east * 10000 + floor(($sq_code_letter_ord - 65) / 5) * 2000;
-      $north = $north * 10000 + (($sq_code_letter_ord - 65) % 5) * 2000;
+    if (preg_match('/^[0-9][0-9][A-NP-Z]$/', substr($sref, 2))) {
+      $squareDef = self::getDintySquareDef($sref);
+    }
+    elseif (preg_match('/^[0-9][0-9](NE|NW|SE|SW)$/', substr($sref, 2))) {
+      $squareDef = self::getQuadrantSquareDef($sref);
     }
     else {
-      // Normal Numeric Format.
-      $coordLen = (strlen($sref) - 2) / 2;
-      // Extract the easting and northing.
-      $east  = strlen($sref) > 2 ? substr($sref, 2, $coordLen) : 0;
-      $north = strlen($sref) > 2 ? substr($sref, 2 + $coordLen) : 0;
-      // If < 10 figure the easting and northing need to be multiplied up to the power of 10.
-      $sq_size = pow(10, 5 - $coordLen);
-      $east = $east * $sq_size;
-      $north = $north * $sq_size;
+      $squareDef = self::getNumericSquareDef($sref);
     }
-    $westEdge = $east + $sq_100['x'];
-    $southEdge = $north + $sq_100['y'];
-    $eastEdge = $westEdge + $sq_size;
-    $northEdge = $southEdge + $sq_size;
+    $westEdge = $squareDef['east'] + $sq_100['x'];
+    $southEdge = $squareDef['north'] + $sq_100['y'];
+    $eastEdge = $westEdge + $squareDef['sq_size'];
+    $northEdge = $southEdge + $squareDef['sq_size'];
     return "POLYGON(($westEdge $southEdge,$westEdge $northEdge,$eastEdge $northEdge,$eastEdge $southEdge,$westEdge $southEdge))";
+  }
+
+  /**
+   * Extract the East/North/Square size for a DINTY sref.
+   *
+   * @param string $sref
+   *   Map reference.
+   *
+   * @return array
+   *   Array containing 'sq_size', 'east' and 'north'.
+   */
+  private static function getDintySquareDef($sref) {
+    // Extract the easting and northing.
+    $east = substr($sref, 2, 1);
+    $north = substr($sref, 3, 1);
+    $sq_code_letter_ord = ord(substr($sref, 4, 1));
+    if ($sq_code_letter_ord > 79) {
+      // Adjust for no O.
+      $sq_code_letter_ord--;
+    }
+    return [
+      'sq_size' => 2000,
+      'east' => $east * 10000 + floor(($sq_code_letter_ord - 65) / 5) * 2000,
+      'north' => $north * 10000 + (($sq_code_letter_ord - 65) % 5) * 2000,
+    ];
+  }
+
+  /**
+   * Extract the East/North/Square size for a Quadrant sref.
+   *
+   * @param string $sref
+   *   Map reference.
+   *
+   * @return array
+   *   Array containing 'sq_size', 'east' and 'north'.
+   */
+  private static function getQuadrantSquareDef($sref) {
+    // Extract the easting and northing.
+    $east = substr($sref, 2, 1);
+    $north = substr($sref, 3, 1);
+    $east = $east * 10000;
+    $north = $north * 10000;
+    $quadrant = substr($sref, 4, 2);
+    switch ($quadrant) {
+      case 'NW':
+        $north += 5000;
+        break;
+
+      case 'NE':
+        $east += 5000;
+        $north += 5000;
+        break;
+
+      case 'SE':
+        $east += 5000;
+        break;
+    }
+    return [
+      'sq_size' => 5000,
+      'east' => $east,
+      'north' => $north,
+    ];
+  }
+
+  /**
+   * Extract the East/North/Square size for a normal OSGB sref.
+   *
+   * @param string $sref
+   *   Map reference.
+   *
+   * @return array
+   *   Array containing 'sq_size', 'east' and 'north'.
+   */
+  private static function getNumericSquareDef($sref) {
+    $coordLen = (strlen($sref) - 2) / 2;
+    // Extract the easting and northing.
+    $east  = strlen($sref) > 2 ? substr($sref, 2, $coordLen) : 0;
+    $north = strlen($sref) > 2 ? substr($sref, 2 + $coordLen) : 0;
+    // If < 10 figure the easting and northing need to be multiplied up to the power of 10.
+    $sq_size = pow(10, 5 - $coordLen);
+    return [
+      'sq_size' => $sq_size,
+      'east' => $east * $sq_size,
+      'north' => $north * $sq_size,
+    ];
   }
 
   /**
@@ -172,6 +245,7 @@ class osgb {
       }
       return $firstLetter . $secondLetter . str_pad($e, 1, '0', STR_PAD_LEFT) . str_pad($n, 1, '0', STR_PAD_LEFT) . chr($letter);
     }
+    // Note we don't support quadrants in reverse conversion.
     $e = floor(($easting - (100000 * $hundredKmE)) / $accuracy);
     $n = floor(($northing - (100000 * $hundredKmN)) / $accuracy);
     return $firstLetter . $secondLetter . str_pad($e, $precision / 2, '0', STR_PAD_LEFT) . str_pad($n, $precision / 2, '0', STR_PAD_LEFT);
