@@ -460,7 +460,9 @@ class Auth_Core {
           'server' => $email_config['server_name'],
           'senderName' => 'your',
           'new_password_link' => "<a href=\"{$siteUrl}new_password/email/$link_code\">{$siteUrl}new_password/email/$link_code</a>",
-        ]
+        ],
+        'forgottenPassword',
+        'requestedByUser'
       ));
     }
     catch (Exception $e) {

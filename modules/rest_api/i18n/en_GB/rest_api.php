@@ -187,7 +187,7 @@ $lang['resourceOptionInfo-entities-"locations"'] = 'locations';
 $lang['resourceOptionInfo-entities-"occurrence_attributes"'] = 'occurrence_attributes';
 $lang['resourceOptionInfo-entities-"occurrence_comments"'] = 'occurrence_comments';
 $lang['resourceOptionInfo-entities-"occurrence_media"'] = 'occurrence_media';
-$lang['resourceOptionInfo-entities-"occurrences"'] = 'occurences';
+$lang['resourceOptionInfo-entities-"occurrences"'] = 'occurrences';
 $lang['resourceOptionInfo-entities-"sample_attributes"'] = 'sample_attributes';
 $lang['resourceOptionInfo-entities-"sample_comments"'] = 'sample_comments';
 $lang['resourceOptionInfo-entities-"sample_media"'] = 'sample_media';
@@ -532,6 +532,106 @@ Deletes a single occurrence custom attribute. User must have editor permissions 
 attribute is associated with and the attribute must have no values already stored for it in the
 database.
 TXT;
+$lang['resources']['dna-occurrences'] = <<<TXT
+Provides access to DNA data attached to DNA-derived occurrences. When an occurrence is DNA derived, DNA metadata sits
+in a separate record alongside the occurrence record, linked by the occurrence_id field, so this resource is solely
+for the DNA specific elements of a record.
+TXT;
+$lang['resources']['GET dna-occurrences'] = <<<TXT
+Retrieve a list of DNA occurrence data attached to any occurrences belonging to the user. In typical usage, specify a parameter
+called occurrence_id to return DNA metadata a single record. Example:
+<code><pre>
+GET /index.php/services/rest/dna-occurrencess?occurrence_id=234
+</code>
+Response:
+<code>
+200 OK
+[
+  {
+    "values": {
+      "id": "1",
+      "occurrence_id": "234",
+      "associated_sequences": "https://www.ncbi.nlm.nih.gov/nuccore/U34853.1;https://www.ncbi.nlm.nih.gov/nuccore/U53564.2",
+      "dna_sequence": "GTGGGTTTGGAGCACCGCCAAGTCCTTAGAGTTTTAAGCGTTTGTGCTCGTAGTTCTCAGGCGAATACTTTGGTGGGGAGAAGTATTTAGATTTAAGGCCAA",
+      "target_gene": "CO1",
+      "pcr_primer_reference": "https://doi.org/10.1186/1742-9994-10-34",
+      "env_medium": "liquid water [ENVO:00002006]",
+      "env_broad_scale": "terrestrial biome [ENVO:00000446]",
+      "otu_db": "NCBI",
+      "otu_seq_comp_appr": "blast version 2.12.0+",
+      "otu_class_appr": "standard Linux tools",
+      "env_local_scale": "alpine biome",
+      "target_subfragment": "V5",
+      "pcr_primer_name_forward": "Riaz_12S_V5F",
+      "pcr_primer_forward": "TAGAACAGGCTCCTCTAG",
+      "pcr_primer_name_reverse": "Riaz_12S_V5R",
+      "pcr_primer_reverse": "pcr_primer_reverse",
+      "created_on": "2025-10-20T15:38:45+01:00",
+      "created_by_id": "1",
+      "updated_on": "2025-10-20T15:38:45+01:00",
+      "updated_by_id": "1",
+      "website_id": "1"
+    }
+  }
+]
+</code></pre>
+TXT;
+$lang['resources']['GET dna-occurrences/{id}'] = <<<TXT
+Retrieve details of a single DNA ooccurrence record attached to an occurrence belonging to the user.
+TXT;
+$lang['resources']['POST dna-occurrences'] = <<<TXT
+Create a single DNA occurrence record for an existing occurrence.
+
+Note that is is also possible and valid to post DNA occurrence data as a submodel of an occurrence when posting
+occurrence data or occurrence data within a parent sample.
+
+Example:
+<pre><code>
+POST /index.php/services/rest/dna-occurrences
+{
+  "values": {
+    "occurrence_id": 1,
+    "associated_sequences": "https://www.ncbi.nlm.nih.gov/nuccore/U34853.1;https://www.ncbi.nlm.nih.gov/nuccore/U53564.2",
+    "dna_sequence": "GTGGGTTTGGAGCACCGCCAAGTCCTTAGAGTTTTAAGCGTTTGTGCTCGTAGTTCTCAGGCGAATACTTTGGTGGGGAGAAGTATTTAGATTTAAGGCCAA",
+    "target_gene": "CO1",
+    "pcr_primer_reference": "https://doi.org/10.1186/1742-9994-10-34",
+  }
+}
+</code>
+Response:
+<code>
+HTTP 201 Created
+{
+  "values": {
+    "id": "123",
+    "created_on": "2025-06-10T10:56:02+00:00",
+    "updated_on": "2025-06-10T10:56:02+00:00"
+  },
+  "href": "http:\/\/warehousetest.test\/index.php\/services\/rest\/dna_occurrences\/123"
+}
+</code>
+</pre>
+TXT;
+$lang['resources']['PUT dna-occurrences/{id}'] = <<<TXT
+Updates a single DNA occurrence record either created by the user, or any DNA occurrence record
+belonging to the website if the user has site editor or admin access to the website.
+TXT;
+$lang['resources']['DELETE dna-occurrences/{id}'] = <<<TXT
+Deletes a single DNA occurrence record belonging to the user. Example:
+<code><pre>
+DELETE /index.php/services/rest/dna-occurrences/123
+
+Response:
+204 No Content
+</pre></code>
+
+Alternative responses:
+<ul>
+  <li>HTTP 404 Not Found response is returned if the DNA occurrence does not exist .</li>
+  <li>HTTP 403 Forbidden response is returned if the DNA occurrence does not belong to the user.</li>
+</ul>
+TXT;
+
 $lang['resources']['occurrence-comments'] = <<<TXT
 Provides access to comments attached to occurrences after initial submission.
 TXT;
@@ -593,7 +693,7 @@ Response:
 </code></pre>
 TXT;
 $lang['resources']['GET occurrence-comments/{id}'] = <<<TXT
-Retrieve details of a single comment attached to a records belonging to the user.
+Retrieve details of a single comment attached to an occurrence belonging to the user.
 TXT;
 $lang['resources']['POST occurrence-comments'] = <<<TXT
 Create a single occurrence comment belonging to the user, for an existing occurrence. Example:
@@ -624,7 +724,7 @@ $lang['resources']['PUT occurrence-comments/{id}'] = <<<TXT
 Updates a single occurrence comment record either created by the user, or any occurrence comment record
 belonging to the website if the user has site editor or admin access to the website.
 TXT;
-$lang['resources']['DELETE occurrence-comment/{id}'] = <<<TXT
+$lang['resources']['DELETE occurrence-comments/{id}'] = <<<TXT
 Deletes a single occurrence comment record belonging to the user. Example:
 <code><pre>
 DELETE /index.php/services/rest/occurrence-comments/123

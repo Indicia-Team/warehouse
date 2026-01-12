@@ -62,6 +62,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'comment_quick_reply_page_auth',
     'custom_verification_ruleset',
     'determination',
+    'dna_occurrence',
     'filter',
     'filters_user',
     'group',
@@ -166,6 +167,15 @@ class Data_Controller extends Data_Service_Base_Controller {
    */
   public function custom_verification_ruleset() {
     $this->handle_call('custom_verification_ruleset');
+  }
+
+  /**
+   * Provides the /services/data/dna_occurrence service.
+   *
+   * Retrieves details of dna occurrences.
+   */
+  public function dna_occurrence() {
+    $this->handle_call('dna_occurrence');
   }
 
   /**

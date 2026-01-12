@@ -105,9 +105,6 @@ TXT;
       ]),
       'linked_id' => $notification->id,
       'user_id' => $notification->notify_user_id,
-      // Use digest mode the user selected for this notification, or their
-      // default if not specific.
-      'digest_mode' => 'N',
       'source_detail' => $notification->source_detail,
     ];
     $db->insert('notifications', $theNotificationToInsert);

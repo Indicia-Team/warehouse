@@ -1,0 +1,34 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "occurrence_id", "type": "integer" },
+    { "name": "associated_sequences", "sql": "array_to_string(associated_sequences, ';')", "type": "string" },
+    { "sql": "dna_sequence", "type": "string" },
+    { "sql": "target_gene", "type": "string" },
+    { "sql": "pcr_primer_reference", "type": "string" },
+    { "sql": "env_medium", "type": "string" },
+    { "sql": "env_broad_scale","type": "string" },
+    { "sql": "otu_db", "type": "string" },
+    { "sql": "otu_seq_comp_appr", "type": "integer" },
+    { "sql": "otu_class_appr", "type": "string" },
+    { "sql": "env_local_scale", "type": "string" },
+    { "sql": "target_subfragment", "type": "string" },
+    { "sql": "pcr_primer_name_forward","type": "string" },
+    { "sql": "pcr_primer_forward", "type": "string" },
+    { "sql": "pcr_primer_name_reverse", "type": "integer" },
+    { "sql": "pcr_primer_reverse", "type": "string" },
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" },
+    { "sql": "updated_on", "type": "date" },
+    { "sql": "updated_by_id", "type": "integer" }
+  ],
+  "joins": [
+    {
+      "sql": "JOIN occurrences t2 ON t2.id=t1.occurrence_id AND t2.deleted=false",
+      "fields": [
+        { "sql": "t2.website_id", "name": "website_id", "type": "integer" }
+      ]
+    }
+  ],
+  "userFilterField": "t2.created_by_id"
+}

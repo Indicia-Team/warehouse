@@ -114,8 +114,10 @@ class spatial_ref {
                 '[ ]*[-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+$/D', $sref);
       }
     } else {
-      // validate the notation by calling the module which translates it for us
-      self::validateSystemClass($system);
+      // Validate the notation by calling the module which translates it for us
+      if (!self::validateSystemClass($system, FALSE)) {
+        return FALSE;
+      };
       if (method_exists($system, 'is_valid'))
         return (bool) call_user_func("$system::is_valid", $sref);
       else
@@ -124,16 +126,33 @@ class spatial_ref {
   }
 
   /**
-   * Throw an exception if the class name provided for spatial reference translation is not recognisable.
+   * Check if the class name provided for spatial reference translation is recognisable.
+   *
+   * @param string $system
+   *   System class name.
+   * @param bool $exception
+   *   Set to false to return a bool result instead of throwing an exception.
    */
-  private static function validateSystemClass($system) {
-    if ($system == '')
-      throw new Exception("The spatial reference system is not set.");
+  private static function validateSystemClass($system, $exception = TRUE) {
+    $msg = '';
+    if (empty($system)) {
+      $msg = 'The spatial reference system is not set.';
+    }
     // Note, do not use method_exists here as it can cause crashes in FastCGI servers.
     if (!is_callable(array($system, 'is_valid')) ||
         !is_callable(array($system, 'sref_to_wkt')) ||
-        !is_callable(array($system, 'wkt_to_sref')))
-      throw new Exception("The spatial reference system $system is not recognised.");
+        !is_callable(array($system, 'wkt_to_sref'))) {
+      $msg = "The spatial reference system $system is not recognised.";
+    }
+    if ($msg) {
+      if ($exception) {
+        throw new Exception($msg);
+      }
+      else {
+        return FALSE;
+      }
+    }
+    return TRUE;
   }
 
   /**

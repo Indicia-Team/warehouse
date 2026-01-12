@@ -596,7 +596,7 @@ function send_out_user_email(
     $emailer->setFrom($emailAddress);
     // Send the email.
     try {
-      $emailer->send($emailSubject, "<html>$emailContent</html>");
+      $emailer->send($emailSubject, "<html>$emailContent</html>", 'notification_emails');
       kohana::log('info', 'Email notification sent to ' . $userResults[0]->email_address);
     }
     catch (Exception $e) {

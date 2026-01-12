@@ -129,7 +129,7 @@ CREATE TABLE occurrences_subject_observations
 (
   id serial NOT NULL,
   occurrence_id integer NOT NULL, -- Foreign key to the occurrences table. Identifies the subject_observation that is identified by the subject_observation_id.
-  subject_observation_id integer NOT NULL, -- Foreign key to the subject_observations table. Identifies the occurence that the subject_observation is linked to in order to determine its taxon.
+  subject_observation_id integer NOT NULL, -- Foreign key to the subject_observations table. Identifies the occurrence that the subject_observation is linked to in order to determine its taxon.
   created_on timestamp without time zone NOT NULL, -- Date this record was created.
   created_by_id integer NOT NULL, -- Foreign key to the users table (creator).
   deleted boolean NOT NULL DEFAULT false, -- Has this record been deleted?
@@ -150,7 +150,7 @@ WITH (
 -- ALTER TABLE occurrences_subject_observations OWNER TO indicia_user;
 COMMENT ON TABLE occurrences_subject_observations IS 'Join table which identifies the taxa which the known subjects belong to.';
 COMMENT ON COLUMN occurrences_subject_observations.occurrence_id IS 'Foreign key to the occurrences table. Identifies the subject_observation that is identified by the subject_observation_id.';
-COMMENT ON COLUMN occurrences_subject_observations.subject_observation_id IS 'Foreign key to the subject_observations table. Identifies the occurence that the subject_observation is linked to in order to determine its taxon.';
+COMMENT ON COLUMN occurrences_subject_observations.subject_observation_id IS 'Foreign key to the subject_observations table. Identifies the occurrence that the subject_observation is linked to in order to determine its taxon.';
 COMMENT ON COLUMN occurrences_subject_observations.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN occurrences_subject_observations.created_by_id IS 'Foreign key to the users table (creator).';
 COMMENT ON COLUMN occurrences_subject_observations.deleted IS 'Has this record been deleted?';
@@ -180,7 +180,7 @@ CREATE INDEX fki_occurrences_subject_observations_subject_observation
 
 -- DROP VIEW list_subject_observations;
 
-CREATE OR REPLACE VIEW list_subject_observations AS 
+CREATE OR REPLACE VIEW list_subject_observations AS
  SELECT su.title AS survey, l.name AS location, s.date_start, s.date_end, s.date_type, s.entered_sref, s.entered_sref_system, array_to_string(array_agg(t.taxon),', ') AS taxa, so.website_id, so.id, s.recorder_names, so.subject_type_id, s_t.term AS subject_type, so."count", substring(so.comment from 1 for 30) as short_comment, so.sample_id, s.survey_id
    FROM subject_observations so
    JOIN samples s ON so.sample_id = s.id AND s.deleted = false
@@ -201,7 +201,7 @@ CREATE OR REPLACE VIEW list_subject_observations AS
 
 -- DROP VIEW detail_subject_observations;
 
-CREATE OR REPLACE VIEW detail_subject_observations AS 
+CREATE OR REPLACE VIEW detail_subject_observations AS
  SELECT su.title AS survey, l.name AS location, s.date_start, s.date_end, s.date_type, s.entered_sref, s.entered_sref_system, array_to_string(array_agg(t.taxon),', ') AS taxa, so.website_id, so.id, so.parent_id, s.recorder_names, so.subject_type_id, s_t.term AS subject_type, so.known_subject_id, so."count", so.count_qualifier_id, g_t.term AS count_qualifier, so."comment", substring(so.comment from 1 for 30) as short_comment, array_to_string(array_agg(occ.taxa_taxon_list_id),', ') AS taxa_taxon_list_ids, array_to_string(array_agg(ttl.taxon_meaning_id),', ') AS taxon_meaning_ids, s.geom, st_astext(s.geom) AS wkt, s.location_name, s.survey_id, s.location_id, l.code AS location_code, so.sample_id, so.created_by_id, c.username AS created_by, so.created_on, so.updated_by_id, u.username AS updated_by, so.updated_on, so.deleted
    FROM subject_observations so
    JOIN samples s ON so.sample_id = s.id AND s.deleted = false
@@ -226,7 +226,7 @@ CREATE OR REPLACE VIEW detail_subject_observations AS
 
 -- DROP VIEW gv_subject_observations;
 
-CREATE OR REPLACE VIEW gv_subject_observations AS 
+CREATE OR REPLACE VIEW gv_subject_observations AS
  SELECT so.id, w.title AS website, s.title AS survey, so.sample_id, array_to_string(array_agg(t.taxon),', ') AS taxa, sa.date_start, sa.date_end, sa.date_type, sa.entered_sref, sa.entered_sref_system, sa.location_name, l.name, so.subject_type_id, s_t.term AS subject_type, so."count", substring(so.comment from 1 for 30) as short_comment, so.deleted, so.website_id
    FROM subject_observations so
    LEFT JOIN occurrences_subject_observations oso ON so.id = oso.subject_observation_id

@@ -29,7 +29,8 @@
     LEFT JOIN locations l ON l.id=o.location_id AND l.deleted=false AND o.private=false AND o.sensitive=false
     -- Recorder supplied higher geography locations
     LEFT JOIN locations shg ON shg.id=snf.attr_linked_location_id AND shg.deleted=false AND o.private=false AND o.sensitive=false
-    LEFT JOIN cache_termlists_terms shgt on shgt.id=shg.location_type_id;
+    LEFT JOIN cache_termlists_terms shgt on shgt.id=shg.location_type_id
+    LEFT JOIN dna_occurrences dnao ON dnao.occurrence_id=o.id AND dnao.deleted=false;
 
     -- Parent sample data.
     UPDATE output_rows o
@@ -224,6 +225,7 @@
     <column name="sample_comment" sql="snf.comment" datatype="text" />
     <column name="verifier_comment" sql="null::text" datatype="text" />
     <column name="licence_code" sql="onf.licence_code" datatype="text" />
+    <column name="occurrence_dna_derived" sql="o.dna_derived::text" datatype="boolean" />
     <column name="attr_behaviour" sql="onf.attr_behaviour" datatype="text" />
     <column name="attr_reproductive_condition" sql="onf.attr_reproductive_condition" datatype="text" />
     <column name="attr_stage" sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)" datatype="text" />
@@ -302,5 +304,20 @@
     <column name="classifier_current_det_human_chosen" sql="null::text" datatype="text" />
     <column name="classifier_current_det_classifier_chosen" sql="null::text" datatype="text" />
     <column name="classifier_suggestions" sql="null::text" datatype="text" />
+    <column name="dna_associated_sequences" sql="array_to_string(dnao.associated_sequences, ';')" datatype="text" />
+    <column name="dna_sequence" sql="dnao.dna_sequence" datatype="text" />
+    <column name="dna_target_gene" sql="dnao.target_gene" datatype="text" />
+    <column name="dna_pcr_primer_reference" sql="dnao.pcr_primer_reference" datatype="text" />
+    <column name="dna_env_medium" sql="dnao.env_medium" datatype="text" />
+    <column name="dna_env_broad_scale" sql="dnao.env_broad_scale" datatype="text" />
+    <column name="dna_otu_db" sql="dnao.otu_db" datatype="text" />
+    <column name="dna_otu_seq_comp_appr" sql="dnao.otu_seq_comp_appr" datatype="text" />
+    <column name="dna_otu_class_appr" sql="dnao.otu_class_appr" datatype="text" />
+    <column name="dna_env_local_scale" sql="dnao.env_local_scale" datatype="text" />
+    <column name="dna_target_subfragment" sql="dnao.target_subfragment" datatype="text" />
+    <column name="dna_pcr_primer_name_forward" sql="dnao.pcr_primer_name_forward" datatype="text" />
+    <column name="dna_pcr_primer_forward" sql="dnao.pcr_primer_forward" datatype="text" />
+    <column name="dna_pcr_primer_name_reverse" sql="dnao.pcr_primer_name_reverse" datatype="text" />
+    <column name="dna_pcr_primer_reverse" sql="dnao.pcr_primer_reverse" datatype="text" />
   </columns>
 </report>

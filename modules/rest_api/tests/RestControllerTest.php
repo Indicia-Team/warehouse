@@ -2400,6 +2400,162 @@ SQL;
     $this->eTagsTest('occurrence_comments', $this->getOccurrenceCommentExampleData());
   }
 
+  private function getDnaOccurrenceExampleData() {
+    return [
+      'occurrence_id' => 1,
+      'associated_sequences' => 'https://www.ncbi.nlm.nih.gov/nuccore/U34853.1;https://www.ncbi.nlm.nih.gov/nuccore/U53564.2',
+      'dna_sequence' => 'GTGGGTTTGGAGCACCGCCAAGTCCTTAGAGTTTTAAGCGTTTGTGCTCGTAGTTCTCAGGCGAATACTTTGGTGGGGAGAAGTATTTAGATTTAAGGCCAA',
+      'target_gene' => 'CO1',
+      'pcr_primer_reference' => 'https://doi.org/10.1186/1742-9994-10-34',
+      'env_medium' => 'liquid water [ENVO:00002006]',
+      'env_broad_scale' => 'terrestrial biome [ENVO:00000446]',
+      'otu_db' => 'NCBI',
+      'otu_seq_comp_appr' => 'blast version 2.12.0+',
+      'otu_class_appr' => 'standard Linux tools',
+      'env_local_scale' => 'alpine biome',
+      'target_subfragment' => 'V5',
+      'pcr_primer_name_forward' => 'Riaz_12S_V5F',
+      'pcr_primer_forward' => 'TAGAACAGGCTCCTCTAG',
+      'pcr_primer_name_reverse' => 'Riaz_12S_V5R',
+      'pcr_primer_reverse' => 'pcr_primer_reverse',
+    ];
+  }
+
+  /**
+   * A basic test of /dna_occurrences GET.
+   */
+  public function testJwtDnaOccurrenceGet() {
+    $this->getTest('dna_occurrences', $this->getDnaOccurrenceExampleData());
+  }
+
+  /**
+   * A basic test of /dna_occurrences GET.
+   *
+   * @todo Need to test that you can GET comments belonging to other users for your own records.
+   */
+  public function testJwtDnaOccurrenceGetList() {
+    $this->getListTest('dna_occurrences',  $this->getDnaOccurrenceExampleData());
+  }
+
+  /**
+   * Test /dna_occurrences POST in isolation.
+   */
+  public function testJwtDnaOccurrencePost() {
+    $values = $this->getDnaOccurrenceExampleData();
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $values['occurrence_id'] = $occurrenceId;
+    $this->postTest('dna_occurrences', $values, 'dna_sequence');
+  }
+
+  public function testJwtDnaOccurrenceDuplicatePost() {
+    $values = $this->getDnaOccurrenceExampleData();
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $values['occurrence_id'] = $occurrenceId;
+    $this->postTest('dna_occurrences', $values, 'dna_sequence');
+    $response = $this->callService(
+      'dna_occurrences',
+      FALSE,
+      ['values' => $values]
+    );
+    // Check we got a conflict response.
+    $this->assertEquals(409, $response['httpCode']);
+  }
+
+  /**
+   * Test /dna_occurrences POST inside a sample.
+   */
+  public function testJwtDnaOccurrenceInSamplePost() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      // 3 occurrences, 2 with DNA.
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+          ],
+          'dna_occurrences' => [
+            [
+              'values' => $this->getDnaOccurrenceExampleData(),
+            ],
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+          ],
+          'dna_occurrences' => [
+            [
+              'values' => $this->getDnaOccurrenceExampleData(),
+            ],
+          ],
+        ],
+
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $id = $response['response']['values']['id'];
+    $db = new Database();
+    $occCount = $db->query("select count(*) from occurrences where sample_id=?", [$id])
+      ->current()->count;
+    $this->assertEquals(3, $occCount, 'Incorrect number of occurrences created when submitted with a sample.');
+    $occCount = $db->query("select count(*) from occurrences where sample_id=? and dna_derived=true", [$id])
+      ->current()->count;
+    $this->assertEquals(2, $occCount, 'Incorrect number of DNA occurrences created when submitted with a sample.');
+    $occCount = $db->query("select count(distinct dnao.id) from dna_occurrences dnao join occurrences o on o.id=dnao.occurrence_id where o.sample_id=?", [$id])
+      ->current()->count;
+    $this->assertEquals(2, $occCount, 'Incorrect number of DNA occurrences created when submitted with a sample.');
+  }
+
+  /**
+   * Test /dna_occurrences PUT behaviour.
+   */
+  public function testJwtDnaOccurrencePut() {
+    $this->putTest('dna_occurrences', $this->getDnaOccurrenceExampleData(), [
+      'dna_sequence' => 'GATTTAGTTTGGAGCACCGCCAAGTCCTTAGAGTTTTAAGCGTTTGTGCTCGTAGTTCTCAGGCGAATACTTTGGTGGGGAGAAGTATTTAGATTd',
+    ]);
+  }
+
+
+  /**
+   * Test DELETE for a dna_occurrence.
+   *
+   * @todo Need to test that you can not DELETE comments belonging to other users for your own records.
+   */
+  public function testJwtDnaOccurrenceDelete() {
+    $this->deleteTest('dna_occurrences', $this->getDnaOccurrenceExampleData());
+  }
+
+  /**
+   * Testing fetching OPTIONS for dna_occurrence end-point.
+   */
+  public function testJwtDnaOccurrenceOptions() {
+    $this->optionsTest('dna_occurrences');
+  }
+
+  /**
+   * Test behaviour around REST support for ETags.
+   */
+  public function testJwtDnaOccurrenceETags() {
+    $this->eTagsTest('dna_occurrences', $this->getDnaOccurrenceExampleData());
+  }
+
   /**
    * A basic test of /occurrence_media/id GET.
    */

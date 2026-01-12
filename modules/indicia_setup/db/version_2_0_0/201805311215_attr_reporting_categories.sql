@@ -59,7 +59,7 @@ INSERT INTO termlists (title, description, created_on, created_by_id, updated_on
 VALUES ('Sample attribute reporting categories', 'List of categories which sample attributes can be organised into for reporting purposes.',
     now(), 1, now(), 1, 'indicia:attr_reporting_category_sample');
 INSERT INTO termlists (title, description, created_on, created_by_id, updated_on, updated_by_id, external_key)
-VALUES ('Occurrence attribute reporting categories', 'List of categories which occurence attributes can be organised into for reporting purposes.',
+VALUES ('Occurrence attribute reporting categories', 'List of categories which occurrence attributes can be organised into for reporting purposes.',
     now(), 1, now(), 1, 'indicia:attr_reporting_category_occurrence');
 INSERT INTO termlists (title, description, created_on, created_by_id, updated_on, updated_by_id, external_key)
 VALUES ('Location attribute reporting categories', 'List of categories which location attributes can be organised into for reporting purposes.',

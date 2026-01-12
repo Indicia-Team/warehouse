@@ -1627,6 +1627,10 @@ $config['occurrences']['get_changed_items_query'] = "
     select oc.occurrence_id, false
     from occurrence_comments oc
     where oc.auto_generated=false and oc.updated_on>'#date#'
+    union
+    select dnao.occurrence_id, false
+    from dna_occurrences dnao
+    where dnao.updated_on>'#date#'
     ) as sub
     group by id";
 
@@ -1704,7 +1708,8 @@ SET sample_id=o.sample_id,
   parent_sample_id=s.parent_id,
   verification_checks_enabled=w.verification_checks_enabled,
   media_count=(SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false),
-  identification_difficulty=(SELECT cts.identification_difficulty FROM cache_taxon_searchterms cts where cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false)
+  identification_difficulty=(SELECT cts.identification_difficulty FROM cache_taxon_searchterms cts where cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false),
+  dna_derived=dnao.id IS NOT NULL AND dnao.deleted=false
 FROM occurrences o
 #join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
@@ -1728,6 +1733,8 @@ LEFT JOIN occurrence_comments dc
     ON dc.occurrence_id=o.id
     AND dc.implies_manual_check_required=true
     AND dc.deleted=false
+LEFT JOIN dna_occurrences dnao
+    ON dnao.occurrence_id=o.id
 WHERE u.id=o.id
 ";
 
@@ -1968,7 +1975,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             marine_flag, freshwater_flag, terrestrial_flag, non_native_flag, data_cleaner_result,
             training, zero_abundance, licence_id, import_guid, confidential, external_key,
             taxon_path, blocked_sharing_tasks, parent_sample_id, verification_checks_enabled,
-            media_count, identification_difficulty)
+            media_count, identification_difficulty, dna_derived)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -2012,7 +2019,8 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
     s.parent_id,
     w.verification_checks_enabled,
     (SELECT COUNT(om.*) FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false),
-    (SELECT cts.identification_difficulty FROM cache_taxon_searchterms cts where cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false)
+    (SELECT cts.identification_difficulty FROM cache_taxon_searchterms cts where cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false),
+    dnao.id IS NOT NULL
 FROM occurrences o
 #join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
@@ -2028,6 +2036,8 @@ LEFT JOIN (occurrence_attribute_values oav
     JOIN termlists_terms certainty ON certainty.id=oav.int_value
     JOIN occurrence_attributes oa ON oa.id=oav.occurrence_attribute_id and oa.deleted=false and oa.system_function='certainty'
   ) ON oav.occurrence_id=o.id AND oav.deleted=false
+LEFT JOIN dna_occurrences dnao
+    ON dnao.occurrence_id=o.id AND dnao.deleted=false
 WHERE o.deleted=false
 AND co.id IS NULL
 ";

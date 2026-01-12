@@ -667,7 +667,8 @@ SQL;
       $emailer->addRecipient($peopleResults[0]->email_address);
       $emailer->send(
         self::setupEmailSubject($websiteRemovalName),
-        self::setupEmailBody($websiteRemovalName, $websiteListUserIsStillMemberOf)
+        self::setupEmailBody($websiteRemovalName, $websiteListUserIsStillMemberOf),
+        'deleteUserAccount'
       );
       kohana::log('info', 'Website membership email sent to ' . $peopleResults[0]->email_address);
     }

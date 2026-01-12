@@ -1,0 +1,43 @@
+<report
+    title="DNA data for record details"
+    description="Report used to retrieve DNA metadata for a DNA-derived record."
+>
+  <query website_filter_field="o.website_id">
+  select #columns#
+  from cache_occurrences_functional o
+  join dna_occurrences dnao on dnao.occurrence_id=o.id AND dnao.deleted=false
+  #agreements_join#
+  #joins#
+  where o.id=#occurrence_id#
+  and #sharing_filter#
+  </query>
+  <params>
+    <param name="occurrence_id" display="Occurrence ID" description="ID of the occurrence to load" datatype="integer" />
+    <param name="allow_confidential" datatype="boolean" default="0"
+           description="Allow viewing of confidential records">
+      <where value="0" operator="equal">o.confidential=false</where>
+    </param>
+    <param name="allow_unreleased" datatype="boolean" default="0"
+           description="Allow viewing of unreleased records">
+      <where value="0" operator="equal">o.release_status='R'</where>
+    </param>
+  </params>
+  <columns>
+    <column name="occurrence_id" sql="o.id" />
+    <column name="associated_sequences" sql="array_to_json(dnao.associated_sequences)" />
+    <column name="dna_sequence" sql="dnao.dna_sequence" />
+    <column name="target_gene" sql="dnao.target_gene" />
+    <column name="pcr_primer_reference" sql="dnao.pcr_primer_reference" />
+    <column name="env_medium" sql="dnao.env_medium" />
+    <column name="env_broad_scale" sql="dnao.env_broad_scale" />
+    <column name="otu_db" sql="dnao.otu_db" />
+    <column name="otu_seq_comp_appr" sql="dnao.otu_seq_comp_appr" />
+    <column name="otu_class_appr" sql="dnao.otu_class_appr" />
+    <column name="env_local_scale" sql="dnao.env_local_scale" />
+    <column name="target_subfragment" sql="dnao.target_subfragment" />
+    <column name="pcr_primer_name_forward" sql="dnao.pcr_primer_name_forward" />
+    <column name="pcr_primer_forward" sql="dnao.pcr_primer_forward" />
+    <column name="pcr_primer_name_reverse" sql="dnao.pcr_primer_name_reverse" />
+    <column name="pcr_primer_reverse" sql="dnao.pcr_primer_reverse" />
+  </columns>
+</report>

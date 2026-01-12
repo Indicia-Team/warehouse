@@ -849,6 +849,23 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'dna_derived' => [
+        'datatype' => 'boolean',
+        'display' => 'DNA derived occurrences filter',
+        'description' => 'Include or exclude records which are DNA derived.',
+        'wheres' => [
+          [
+            'value' => '1',
+            'operator' => 'equal',
+            'sql' => "o.dna_derived=true",
+          ],
+          [
+            'value' => '0',
+            'operator' => 'equal',
+            'sql' => "o.dna_derived=false",
+          ],
+        ],
+      ],
       'has_photos' => [
         'datatype' => 'boolean',
         'display' => 'Photo records filter',

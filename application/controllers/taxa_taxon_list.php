@@ -132,6 +132,9 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller {
       // After a validation failure, the list id is in the post data.
       $r['taxa_taxon_list:taxon_list_id'] = $_POST['taxa_taxon_list:taxon_list_id'];
     }
+    // Default when entering via the UI is flag as manually entered, so sync
+    // cripts can distinguish from taxa added by automated sync.
+    $r['taxa_taxon_list:manually_entered'] = 't';
     $this->loadAttributes($r,
         array('taxon_list_id' => array($r['taxa_taxon_list:taxon_list_id']))
     );

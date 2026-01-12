@@ -14,10 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the Occurrences table.
@@ -27,8 +28,10 @@ class Occurrence_Model extends ORM {
   protected $requeuedForVerification = FALSE;
 
   protected $has_many = [
-    'occurrence_attribute_values',
     'determinations',
+    // Has many structure, but unique index prevents more than 1.
+    'dna_occurrences',
+    'occurrence_attribute_values',
     'occurrence_media',
   ];
 
@@ -64,6 +67,15 @@ class Occurrence_Model extends ORM {
     'occurrence_medium:caption:3' => 'Media Caption 3',
     'occurrence_medium:path:4' => 'Media Path 4',
     'occurrence_medium:caption:4' => 'Media Caption 4',
+  ];
+
+  /**
+   * Fields that are not shown to the user as importable.
+   *
+   * @var array
+   */
+  protected $hidden_fields = [
+    'dna_derived',
   ];
 
   // During an import it is possible to merge different columns in a CSV row
@@ -443,7 +455,7 @@ class Occurrence_Model extends ORM {
             str_replace([',', ':'], ['&#44', '&#58'], $title);
     }
 
-    $sample_methods = [":Defined in file"];
+    $sample_methods = [];
     $parent_sample_methods = [":No filter"];
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {

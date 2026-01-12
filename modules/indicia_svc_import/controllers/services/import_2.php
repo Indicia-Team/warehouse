@@ -171,6 +171,22 @@ class Import_2_Controller extends Service_Base_Controller {
     $useAssociations = !empty($_GET['use_associations']) && $_GET['use_associations'] === 'true';
     $keepFkIds = !empty($_GET['keep_fk_ids']) && $_GET['keep_fk_ids'] === 'true';
     $fields = $model->getSubmittableFields(TRUE, $keepFkIds, $identifiers, $attrTypeFilter, $useAssociations);
+    if ($config['supportDnaDerivedOccurrences'] ?? FALSE && $entity === 'occurrence') {
+      // Fetch DNA fields.
+      $dnaModel = ORM::factory('dna_occurrence');
+      $dnaFields = $dnaModel->getSubmittableFields(TRUE, $keepFkIds);
+      // Splice them into the list after the occurrence: fields.
+      $insertPos = 0;
+      foreach (array_keys($fields) as $fieldName) {
+        if (substr($fieldName, 0, 11) !== 'occurrence:') {
+          break;
+        }
+        $insertPos++;
+      }
+      $fields = array_slice($fields, 0, $insertPos)
+        + $dnaFields
+        + array_slice($fields, $insertPos);
+    }
     $wantRequired = !empty($_GET['required']) && $_GET['required'] === 'true';
     if ($wantRequired) {
       $requiredFields = $model->getRequiredFields(TRUE, $identifiers, $useAssociations);
@@ -272,7 +288,11 @@ class Import_2_Controller extends Service_Base_Controller {
       }
     }
     try {
-      $config = $this->createConfig($files, ($_POST['enable-background-imports'] ?? 'f') === 't');
+      $config = $this->createConfig(
+        $files,
+        ($_POST['enable-background-imports'] ?? 'f') === 't',
+        ($_POST['support-dna'] ?? 'f') === 't'
+      );
     }
     catch (RequestAbort) {
       return;
@@ -530,6 +550,20 @@ class Import_2_Controller extends Service_Base_Controller {
         $steps[] = [
           'clearNewParentEntityIdsIfNowMultipleSamples',
           "Checking links to $parentTable - step 2",
+        ];
+      }
+      if ($config['supportDnaDerivedOccurrences'] ?? FALSE && $config['entity'] === 'occurrence') {
+        $steps[] = [
+          'mapDnaDerivedOccurrencesToExistingRecords',
+          'Finding existing DNA derived occurrences',
+        ];
+      }
+    }
+    foreach ($config['columns'] as $info) {
+      if (isset($info['warehouseField']) && preg_match('/sref_system$/', $info['warehouseField'])) {
+        $steps[] = [
+          'mapSrefSystems',
+          "Finding spatial reference systems",
         ];
       }
     }
@@ -858,7 +892,7 @@ class Import_2_Controller extends Service_Base_Controller {
     }
     // Return the updated rows (in similar way as a select statement would)
     // Can't use "RETURNING *" as that includes columns from the joins
-    // and messes up result (e.g the ID comes out wrong as both the occurence
+    // and messes up result (e.g the ID comes out wrong as both the occurrence
     // and import tables have it).
     $occurrencesUpdateSQL .= <<<SQL
     RETURNING o.id, o.sample_id, o.determiner_id, o.confidential, o.created_on, o.created_by_id,
@@ -1203,8 +1237,8 @@ SQL;
       UPDATE import_temp.$dbIdentifiers[tempTableName] u
       SET $dbIdentifiers[tempDbParentFkIdField]=exist.$dbIdentifiers[parentEntityFkIdFieldInDestTable]
       FROM $dbIdentifiers[importDestTable] exist
-      WHERE u.$dbIdentifiers[pkFieldInTempTable] ~ '^\d+$'
-      AND exist.id=u.$dbIdentifiers[pkFieldInTempTable]::integer
+      WHERE u.$dbIdentifiers[pkFieldInTempTable] IS NOT NULL
+      AND exist.id=u.$dbIdentifiers[pkFieldInTempTable]
       AND exist.deleted=false;
     SQL;
     $db->query($sql);
@@ -1225,6 +1259,78 @@ SQL;
         "{1} existing {2} found",
         $updated,
         inflector::plural($config['parentEntity']),
+      ],
+    ];
+  }
+
+  /**
+   * Preprocessing to find existing DNA occurrences for each occurrence.
+   */
+  private function mapDnaDerivedOccurrencesToExistingRecords($configId, array $config) {
+    $db = new Database();
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
+    $sql = <<<SQL
+      ALTER TABLE import_temp.$dbIdentifiers[tempTableName]
+      ADD COLUMN IF NOT EXISTS _dna_occurrence_id integer;
+
+      UPDATE import_temp.$dbIdentifiers[tempTableName] u
+      SET _dna_occurrence_id=dnao.id
+      FROM dna_occurrences dnao
+      WHERE dnao.occurrence_id=u._occurrence_id
+      AND dnao.deleted=false;
+    SQL;
+    $db->query($sql);
+    $updated = $db->query(<<<SQL
+      SELECT count(DISTINCT _dna_occurrence_id)
+      FROM import_temp.$dbIdentifiers[tempTableName]
+      WHERE _dna_occurrence_id IS NOT NULL
+    SQL)->current()->count;
+    return [
+      'message' => [
+        "{1} existing DNA occurrences found",
+        $updated,
+      ],
+    ];
+  }
+
+  /**
+   * Preprocessing ap spatial reference system titles to internal codes.
+   *
+   * E.g. to map from British National Grid to OSGB.
+   */
+  private function mapSrefSystems($configId, array $config) {
+    $db = new Database();
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
+    $systemMetadataList = spatial_ref::system_metadata();
+    $caseList = [];
+    $labelList = [];
+    foreach ($systemMetadataList as $code => $systemMetadata) {
+      $titleEsc = pg_escape_literal($db->getLink(), $systemMetadata['title']);
+      $codeEsc = strtoupper(pg_escape_literal($db->getLink(), $code));
+      $caseList[] = "WHEN $titleEsc THEN $codeEsc";
+      $labelList[] = $titleEsc;
+    }
+    $cases = implode("\n", $caseList);
+    $labels = implode(",\n", $labelList);
+    $updated = 0;
+    foreach ($config['columns'] as $info) {
+      if (isset($info['warehouseField']) && preg_match('/sref_system$/', $info['warehouseField'])) {
+        $sql = <<<SQL
+          UPDATE import_temp.$dbIdentifiers[tempTableName] u
+          SET $info[tempDbField]=CASE $info[tempDbField]
+            $cases
+            ELSE $info[tempDbField]
+            END
+          WHERE
+            $info[tempDbField] IN ($labels);
+        SQL;
+        $updated += $db->query($sql)->count();
+      }
+    }
+    return [
+      'message' => [
+        "{1} spatial reference systems mapped to internal codes",
+        $updated,
       ],
     ];
   }
@@ -1251,8 +1357,8 @@ SQL;
         ON allchildren.$dbIdentifiers[parentEntityFkIdFieldInDestTable]=parent.id
         AND allchildren.deleted=false AND allchildren.deleted=false
       LEFT JOIN import_temp.$dbIdentifiers[tempTableName] exist
-        ON exist.$dbIdentifiers[pkFieldInTempTable] ~ '^\d+$'
-        AND COALESCE(exist.$dbIdentifiers[pkFieldInTempTable], '0')::integer=allchildren.id
+        ON exist.$dbIdentifiers[pkFieldInTempTable] IS NOT NULL
+        AND COALESCE(exist.$dbIdentifiers[pkFieldInTempTable], '0')=allchildren.id
       WHERE exist._row_id IS NULL
       AND parent.id=u.$dbIdentifiers[tempDbParentFkIdField]
       AND parent.deleted=false;
@@ -1464,6 +1570,75 @@ SQL;
       fputcsv($out, $row);
     }
     fclose($out);
+  }
+
+  /**
+   * End-point which abandons an errored background import.
+   */
+  public function abandon_background_import() {
+    header("Content-Type: application/json");
+    try {
+      if (empty($_POST['config-id'])) {
+        $this->fail('Missing config-id parameter.', 'Bad Request', 400);
+      }
+      $this->authenticate('write');
+      // Delete the relevant work queue entry.
+      $db = new Database();
+      $existsCheck = $db->query(<<<SQL
+        SELECT params->>'user_id' as user_id
+        FROM work_queue
+        WHERE task='task_import_step' and params->>'config-id' = '{$_POST["config-id"]}'
+      SQL)->current();
+      if (!$existsCheck) {
+        $this->fail('Import config-id not found.', 'Not Found', 404);
+      }
+      elseif ((int) $existsCheck->user_id !== $this->auth_user_id) {
+        $this->fail('Import does not belong to user.', 'Forbidden', 403);
+      }
+      // HTTP 204 for a successful delete.
+      http_response_code(204);
+      echo json_encode([
+        'status' => 'No Content',
+      ]);
+      $db->query(<<<SQL
+        DELETE FROM work_queue
+        WHERE task='task_import_step' and params->>'config-id' = '{$_POST["config-id"]}'
+      SQL);
+    }
+    catch (RequestAbort $e) {
+      // Ignore as abort already handled.
+    }
+    catch (AuthenticationError $e) {
+      $this->fail($e->getMessage(), 'Unauthorised', 401, FALSE);
+    }
+    catch (Exception $e) {
+      $this->fail($e->getMessage(), 'Internal Server Error', 500, FALSE);
+    }
+  }
+
+  /**
+   * Handle a web-service error.
+   *
+   * Echoes a suitable response, sets the HTTP status and aborts.
+   *
+   * @param string $msg
+   *   Message to return.
+   * @param string $status
+   *   Status label, e.g. Unauthorised.
+   * @param string $statusCode
+   *   Status code, e.g. 401.
+   * @param bool $throwAbort
+   *   If true, then a RequestAbort exception is thrown. Default true.
+   */
+  private function fail($msg, $status, $statusCode, $throwAbort = TRUE) {
+    http_response_code($statusCode);
+    echo json_encode([
+      'status' => $status,
+      'msg' => $msg,
+    ]);
+    if ($throwAbort) {
+      throw new RequestAbort();
+    }
   }
 
   /**
@@ -2201,7 +2376,7 @@ SQL;
    * @return array
    *   Config key/value pairs.
    */
-  private function createConfig(array $files, $enableBackgroundImports) {
+  private function createConfig(array $files, $enableBackgroundImports, $supportDnaDerivedOccurrences = TRUE) {
     $ext = pathinfo($files[0], PATHINFO_EXTENSION);
 
     // @todo Entity should by dynamic.
@@ -2250,6 +2425,7 @@ SQL;
       'isExcel' => in_array($ext, ['xls', 'xlsx']),
       'entity' => $entity,
       'parentEntity' => $parentEntity,
+      'supportDnaDerivedOccurrences' => $supportDnaDerivedOccurrences,
       'columns' => $this->tidyUpColumnsList($importTools->loadColumnTitlesFromFile($files[0], FALSE)),
       'systemAddedColumns' => [],
       'state' => 'initial',

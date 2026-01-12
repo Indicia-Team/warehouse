@@ -56,7 +56,7 @@ CREATE OR REPLACE VIEW gv_occurrences AS
 
 --
 -- list_ and gv_ occurrence_attributes need no alterations. No detail_ view.
--- NB these two views have different primary tables (occurence_attributes and
+-- NB these two views have different primary tables (occurrence_attributes and
 -- occurrence_attribute_websites respectively) so may give different results.
 --
 
@@ -260,7 +260,7 @@ FROM ((websites w JOIN users c ON ((c.id = w.created_by_id))) JOIN users u
     ON ((u.id = w.updated_by_id)));
 
 --
--- occurence_comments view: list only
+-- occurrence_comments view: list only
 --
 DROP VIEW list_occurrence_comments;
 

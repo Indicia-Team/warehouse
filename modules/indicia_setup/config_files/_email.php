@@ -50,6 +50,11 @@ $config['forgotten_passwd_title'] = '*forgotten_passwd_title*';
 $config['server_name'] = '*server_name*';
 $config['test_result'] = '*test_result*';
 
+/**
+ * Set to TRUE to enable logging of emails into the email_log_entries table.
+ */
+$config['log_emails'] = FALSE;
+
 /*
 // Uncomment these lines and populate the empty values if using the Microsoft
 // Graph email helper.

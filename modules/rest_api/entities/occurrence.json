@@ -40,6 +40,7 @@
     }
   ],
   "subModels": {
+    "dna_occurrences": { "fk": "occurrence_id" },
     "media": { "fk": "occurrence_id" }
   },
   "superModels": {

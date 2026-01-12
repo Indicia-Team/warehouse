@@ -60,6 +60,8 @@ class task_cache_builder_post_move {
     // Now process taxonomy where the cache update is already done.
     $procIdEsc = pg_escape_literal($db->getLink(), $procId);
     $sql = <<<SQL
+      DROP TABLE IF EXISTS moving_records;
+
       CREATE TEMPORARY TABLE moving_records AS (
         SELECT o.id, o.sample_id, s.survey_id, su.title as survey_title, su.website_id, w.title as website_title
         FROM occurrences o

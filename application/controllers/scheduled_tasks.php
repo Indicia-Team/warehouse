@@ -222,7 +222,9 @@ class Scheduled_Tasks_Controller extends Controller {
               }
             }
           }
-          $digestMode = ($action->param2 === NULL ? $action->default_digest_mode : $action->param2);
+          // Use digest mode the user selected for this notification, or
+          // their default if not specific.
+          $digestMode = $action->param2 ?? $action->default_digest_mode;
           if (count($allowedData) > 0) {
             $this->db->insert('notifications', [
               'source' => $trigger->name,
@@ -232,8 +234,6 @@ class Scheduled_Tasks_Controller extends Controller {
                 'data' => $allowedData,
               ]),
               'user_id' => $action->param1,
-              // Use digest mode the user selected for this notification, or
-              // their default if not specific.
               'digest_mode' => $digestMode,
               'cc' => $action->param3,
             ]);
@@ -251,8 +251,7 @@ class Scheduled_Tasks_Controller extends Controller {
           [
             'headings' => $parsedData['headingData'],
             'data' => $parsedData['websiteRecordData'],
-          ],
-          $digestMode
+          ]
         );
         $this->doTriggerImmediateEmails(
           $trigger->name,
@@ -321,10 +320,8 @@ class Scheduled_Tasks_Controller extends Controller {
    * @param array $data
    *   Info to store in the notification including the record from the trigger
    *   report.
-   * @param string $digestMode
-   *   Digest frequency code.
    */
-  private function doDirectTriggerNotifications($triggerName, array $data, $digestMode) {
+  private function doDirectTriggerNotifications($triggerName, array $data) {
     // This only applies if a notify_user_ids column in report output.
     if (count($data['data']) === 0 || !in_array('notify_user_ids', $data['headings'])) {
       return;
@@ -371,7 +368,9 @@ class Scheduled_Tasks_Controller extends Controller {
           'data' => $userData,
         ]),
         'user_id' => str_replace('user:', '', $user),
-        'digest_mode' => $digestMode,
+        // Users specified in notify_user_ids should be notified as soon as
+        // possible.
+        'digest_mode' => 'IH',
       ]);
     }
   }
@@ -461,7 +460,7 @@ class Scheduled_Tasks_Controller extends Controller {
       }
       $emailer->addRecipient($infoList[0]['to'], $infoList[0]['name']);
       $emailer->setFrom($emailConfig['address']);
-      $emailer->send($subject, "<html>$emailContent</html>");
+      $emailer->send($subject, "<html>$emailContent</html>", 'triggerImmediateEmailTo', $triggerName);
     }
   }
 
@@ -564,7 +563,7 @@ class Scheduled_Tasks_Controller extends Controller {
           $emailer->addCc(trim($ccEmail));
         }
         // Send the email.
-        $sent = $emailer->send(sprintf($subject, kohana::config('email.server_name')), "<html>$emailContent</html>");
+        $sent = $emailer->send(sprintf($subject, kohana::config('email.server_name')), "<html>$emailContent</html>", 'triggerActions');
         kohana::log('info', "$sent email notification(s) sent to $user->email_address");
       }
     }
@@ -776,7 +775,7 @@ class Scheduled_Tasks_Controller extends Controller {
       $emailContent .= "</table>";
       $emailer->addRecipient($email->email_address);
       $emailer->setFrom($email_config['address']);
-      $emailer->send(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), "<html>$emailContent</html>");
+      $emailer->send(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), "<html>$emailContent</html>", 'recordOwnerNotification');
     }
     if ($useWorkflowModule) {
       foreach ($occurrences as $occurrence) {

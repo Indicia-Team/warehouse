@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="List of locations for mapping"
-        description="Basic list of locations designed for mapping.">
+<report title="List of locations for Lo-res mapping"
+        description="Basic list of locations designed for mapping - low resolution for when map zoomed out.">
   <query website_filter_field="lw.website_id">
     SELECT #columns#
     FROM locations l

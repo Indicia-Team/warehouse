@@ -165,7 +165,77 @@
   FROM cache_occurrences_functional o
   WHERE o.id=#occurrence_id#
 
+  UNION
+
+  SELECT 6 as group_weight,
+    null as id,
+    weight,
+    'DNA derived metadata' as attribute_type,
+    null as system_function,
+    'Text'::bpchar as data_type,
+    caption,
+    value,
+    value as raw_value
+  FROM (
+    SELECT
+    UNNEST(ARRAY[
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ]) AS weight,
+    UNNEST(ARRAY[
+    'Associated sequences',
+    'DNA sequence',
+    'Target gene',
+    'PCR primer reference',
+    'Env medium',
+    'Env broad scale',
+    'OTU DB',
+    'OTU sequence comp',
+    'OTU class appr',
+    'Env local scale',
+    'Target subfragment',
+    'PCR primer name forward',
+    'PCR primer forward',
+    'PCR primer name reverse',
+    'PCR primer reverse']) AS caption,
+    UNNEST(ARRAY[
+    array_to_string(dnao.associated_sequences, ';'),
+    dnao.dna_sequence,
+    dnao.target_gene,
+    dnao.pcr_primer_reference,
+    dnao.env_medium,
+    dnao.env_broad_scale,
+    dnao.otu_db,
+    dnao.otu_seq_comp_appr,
+    dnao.otu_class_appr,
+    dnao.env_local_scale,
+    dnao.target_subfragment,
+    dnao.pcr_primer_name_forward,
+    dnao.pcr_primer_forward,
+    dnao.pcr_primer_name_reverse,
+    dnao.pcr_primer_reverse
+    ]) as value
+    FROM dna_occurrences dnao
+    WHERE dnao.occurrence_id=#occurrence_id#
+    AND dnao.deleted=false
+  ) as dna_data
+  WHERE value IS NOT NULL
+
   ORDER BY group_weight, attribute_type, weight, caption
+
   </query>
   <params>
     <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='integer' />

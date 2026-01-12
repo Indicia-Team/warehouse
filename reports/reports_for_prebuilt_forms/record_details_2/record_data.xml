@@ -97,5 +97,6 @@
     <column name='confidential' sql='o.confidential' />
     <column name='release_status' sql='o.release_status' />
     <column name='zero_abundance' sql='o.zero_abundance' />
+    <column name='dna_derived' sql='o.dna_derived' />
   </columns>
 </report>

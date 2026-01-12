@@ -29,6 +29,8 @@
  */
 class Emailer {
 
+  private static $db;
+
   /**
    * Name of the email helper class, e.g. for Swift or MS Graph connections.
    *
@@ -101,12 +103,19 @@ class Emailer {
    *   Email subject.
    * @param string $message
    *   Email message.
+   * @param string $emailType
+   *   System component that caused the email, e.g. notifications.
+   * @param string $emailSubtype
+   *   Optional additional info to identify the source of the email, e.g. the
+   *   notification type.
    *
    * @return bool
    *   The number of recipients who have been sent emails - 0 if an error occurred..
    */
-  public function send($subject, $message) {
+  public function send($subject, $message, $emailType, $emailSubtype = NULL) {
     $config = kohana::config('email');
+    $succeeded = FALSE;
+    $errorMessage = NULL;
     if (!$this->from) {
       $this->from = $config['address'];
       $this->fromName = $config['server_name'];
@@ -130,16 +139,20 @@ class Emailer {
         $this->fromName,
         $this->priority
       );
+      $succeeded = TRUE;
     }
     catch (Exception $e) {
       error_logger::log_error('Error in email helper', $e);
-      return 0;
+      $errorMessage = $e->getMessage();
     }
     finally {
+      if ($config['log_emails'] ?? FALSE) {
+        $this->logEmail($subject, $message, $emailType, $emailSubtype, $errorMessage);
+      }
       // Now reset the emailer for next time.
       $this->reset();
     }
-    return count($this->recipients);
+    return $succeeded ? count($this->recipients) : 0;
   }
 
   /**
@@ -193,6 +206,45 @@ class Emailer {
     $this->priority = $priority;
   }
 
-
+  /**
+   * Log an email to the database.
+   *
+   * Called if email config has 'log_emails' set to TRUE, normally for
+   * debugging purposes.
+   *
+   * @param string $subject
+   *   Email subject.
+   * @param mixed $message
+   *   Email body.
+   * @param string $emailType
+   *   System component that caused the email, e.g. notifications.
+   * @param string $emailSubtype
+   *   Optional additional info to identify the source of the email, e.g. the
+   *   notification type.
+   * @param string $errorMessage
+   *   If the email failed to send and an exception caught, the message from
+   *   the exception.
+   */
+  private function logEmail($subject, $message, $emailType, $emailSubtype = NULL, $errorMessage = NULL) {
+    if (!self::$db) {
+      self::$db = new Database();
+    }
+    try {
+      self::$db->insert('email_log_entries', [
+        'from_email' => $this->from,
+        'from_name' => $this->fromName,
+        'recipients' => json_encode($this->recipients),
+        'cc' => json_encode($this->cc),
+        'subject' => $subject,
+        'body' => $message,
+        'email_type' => $emailType,
+        'email_subtype' => $emailSubtype,
+        'sent_on' => date('Y-m-d H:i:s'),
+      ]);
+    }
+    catch (Exception $e) {
+      error_logger::log_error('Failed to log email', $e);
+    }
+  }
 
 }

@@ -94,12 +94,13 @@ class task_cache_builder_attrs_sample {
       }
     }
     $sql = <<<SQL
+      DROP TABLE IF EXISTS attrs;
 
       SELECT sample_id, ('{' || string_agg(
         to_json(f)::text || ':' ||
         CASE multi_value WHEN true THEN to_json(v)::text ELSE to_json(v[1])::text END
       , ',') || '}')::json AS attrs
-      INTO temporary attrs
+      INTO TEMPORARY attrs
       FROM (
         SELECT q.record_id as sample_id, a.multi_value,
           av.sample_attribute_id::text as f,

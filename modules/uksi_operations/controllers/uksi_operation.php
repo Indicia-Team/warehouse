@@ -579,12 +579,19 @@ SQL;
       'rank',
       'taxon_group_key',
     ]);
-    $this->assertOrganismKeyIsNew('New taxon', $operation->organism_key);
+    $existingManuallyAdded = $this->assertOrganismKeyIsNew('New taxon', $operation->organism_key);
     $fields = $this->getCreateTaxonFields($operation);
     if (count($this->operationErrors) > 0) {
       return 'Error';
     }
-    $taxa_taxon_list = ORM::factory('taxa_taxon_list');
+    if ($existingManuallyAdded) {
+      // Overwrite a manually added new taxon by linking to the IDs.
+      $taxa_taxon_list = ORM::factory('taxa_taxon_list', $existingManuallyAdded->id);
+      $fields['taxon:id'] = $existingManuallyAdded->taxon_id;
+    }
+    else {
+      $taxa_taxon_list = ORM::factory('taxa_taxon_list');
+    }
     $taxa_taxon_list->set_submission_data($fields);
     if (!$taxa_taxon_list->submit()) {
       $this->operationErrors[] = implode("\n", $taxa_taxon_list->getAllErrors());
@@ -921,6 +928,7 @@ SQL;
       'taxa_taxon_list:parent_id' => $parentId,
       'taxa_taxon_list:preferred' => $preferred ? 't' : 'f',
       'taxa_taxon_list:allow_data_entry' => ($operation->redundant === NULL || $operation->redundant === 'f') ? 't' : 'f',
+      'taxa_taxon_lists:manually_entered' => 'f',
       'taxon:taxon' => $operation->taxon_name,
       'taxon:authority' => $operation->authority,
       'taxon:attribute' => $operation->attribute,
@@ -981,7 +989,7 @@ SQL;
    *   e.g. external_key, organism_key or search_code. Can also filter against
    *   taxa_taxon_lists fields if key is prefixed "ttl.".
    *
-   * @return object
+   * @return array
    *   Query result which can be iterated, with accepted names first.
    */
   private function getTaxaForKeys(array $search) {
@@ -997,27 +1005,46 @@ SQL;
     return $this->db->select('ttl.id, ttl.taxon_meaning_id, ttl.taxon_id, ttl.preferred, ttl.parent_id, ttl.allow_data_entry, ttl.common_taxon_id, ' .
         't.taxon, t.authority, t.attribute, t.search_code, t.external_key, t.organism_key, t.taxon_rank_id, ' .
         't.taxon_group_id, t.marine_flag, t.freshwater_flag, t.terrestrial_flag, t.non_native_flag, ' .
-        't.organism_deprecated, t.name_deprecated')
+        't.organism_deprecated, t.name_deprecated, ttl.manually_entered')
       ->from('taxa_taxon_lists AS ttl')
       ->join('taxa as t', 't.id', 'ttl.taxon_id')
       ->where($where)
       ->orderby('preferred', 'DESC')
-      ->get();
+      ->get()->result_array();
   }
 
   /**
    * Generates an error message if provided organism key exists.
    *
+   * Only errors if the existing organism key was from a previous operation.
+   * Manually added taxa (via the warehouse UI) causing the duplicate are
+   * allowed and returned so they can be overwritten.
+   *
    * @param string $operationName
    *   Name of the operation for the error message.
    * @param string $organismKey
    *   Key to check.
+   *
+   * @return object|null
+   *
    */
   private function assertOrganismKeyIsNew($operationName, $organismKey) {
-    $existing = $this->getTaxaForKeys(['organism_key' => $organismKey]);
-    if (count($existing) > 0) {
-      $this->operationErrors[] = "$operationName operation has provided an organism_key which is not new";
+    $existing = $this->getTaxaForKeys([
+      'organism_key' => $organismKey,
+    ]);
+    foreach ($existing as $taxon) {
+      if ($taxon->manually_entered === 'f') {
+        $this->operationErrors[] = "$operationName operation has provided an organism_key which is not new";
+        return;
+      }
     }
+    // If the existing taxon was manually entered, we are allowed to overwrite
+    // it. This allows ad-hoc addition of new taxa without breaking the sync.
+    // So return it to allow the IDs to be used for update.
+    if (count($existing) > 0) {
+      return ((array) $existing)[0];
+    }
+    return NULL;
   }
 
   /**

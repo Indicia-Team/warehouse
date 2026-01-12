@@ -84,6 +84,9 @@ class import2ChunkHandler {
       // @todo Handling for entities without parent entity.
       $parentEntityColumns = self::findEntityColumns($config['parentEntity'], $config);
       $childEntityColumns = self::findEntityColumns($config['entity'], $config);
+      if ($config['supportDnaDerivedOccurrences']) {
+        $dnaEntityColumns = self::findEntityColumns('dna_occurrence', $config);
+      }
       $parentEntityDataRows = self::fetchParentEntityData($db, $parentEntityColumns, $isPrecheck, $config);
 
       // Check for compound field handling which require presence of a set of
@@ -173,6 +176,23 @@ class import2ChunkHandler {
                   $config['rowsInserted']++;
                 }
               }
+              if ($config['supportDnaDerivedOccurrences'] ?? FALSE && $config['entity'] === 'occurrence') {
+                if (!self::importDnaIfValuesProvided(
+                  $db,
+                  $childEntityDataRow,
+                  $dnaEntityColumns,
+                  $child,
+                  $isPrecheck,
+                  $identifiers,
+                  $config
+                )) {
+                  // An error occurred saving the DNA occurrence. Increment the
+                  // overall error count if not already done for this row.
+                  if (count($parentErrors) + count($errors) === 0) {
+                    $config['errorsCount']++;
+                  }
+                };
+              }
             }
             $config['rowsProcessed']++;
           }
@@ -224,6 +244,56 @@ class import2ChunkHandler {
         'msg' => $e->getMessage(),
       ];
     }
+  }
+
+  /**
+   * Handle any DNA derived occurrences linked to this occurrence.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param mixed $childEntityDataRow
+   * @param mixed $dnaEntityColumns
+   * @param mixed $child
+   * @param bool $isPrecheck
+   * @param mixed $identifiers
+   * @param array $config
+   *
+   * @return bool
+   *   FALSE if errors occurred, TRUE if successful or no DNA to save for this
+   *   occurrence.
+   */
+  private static function importDnaIfValuesProvided($db, $childEntityDataRow, $dnaEntityColumns, $child, $isPrecheck, $identifiers, array &$config) {
+    $dnaSubmission = [];
+    self::copyFieldsFromRowToSubmission($childEntityDataRow, $dnaEntityColumns, $config, $dnaSubmission, []);
+    // Skip DNA occurrence if no DNA fields provided.
+    if (!empty($dnaSubmission)) {
+      if (!empty($childEntityDataRow->_dna_occurrence_id)) {
+        // Overwrite an existing DNA occurrence record.
+        $dnaSubmission['id'] = $childEntityDataRow->_dna_occurrence_id;
+      }
+      $dnaSubmission['occurrence_id'] = $child->id;
+      $dnaObject = ORM::factory('dna_occurrence');
+      $dnaObject->set_submission_data($dnaSubmission);
+      if ($isPrecheck) {
+        $errors = $dnaObject->precheck($identifiers);
+      }
+      else {
+        try {
+          $dnaObject->submit();
+          $errors = $dnaObject->getAllErrors();
+        } catch (Exception $e) {
+          // If the child entity fails to save, record the error.
+          $errors['occurrence:general'] = $e->getMessage();
+        }
+      }
+      if (count($errors) > 0) {
+        // Register additional error row, but only if not already
+        // registered due to error in parents.
+        self::saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
+        return FALSE;
+      }
+    }
+    return TRUE;
   }
 
   /**

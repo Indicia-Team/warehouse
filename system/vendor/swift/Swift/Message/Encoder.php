@@ -44,7 +44,7 @@ class Swift_Message_Encoder
     return self::$instance;
   }
   /**
-   * Break a string apart at every occurence of <add@ress> and return an array
+   * Break a string apart at every occurrence of <add@ress> and return an array
    * This method does NOT remove any characters like a preg_split() would do.
    * Elements matching an address start with "a" followed by the numeric index
    * @param string The input string to separate
@@ -64,7 +64,7 @@ class Swift_Message_Encoder
     return $ret;
   }
   /**
-   * Break a string apart at every occurence of <xxxyyy> and return an array
+   * Break a string apart at every occurrence of <xxxyyy> and return an array
    * This method does NOT remove any characters like a preg_split() would do.
    * Elements matching a quoted string start with "a" followed by the numeric index
    * @param string The input string to separate

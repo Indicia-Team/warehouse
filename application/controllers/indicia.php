@@ -542,12 +542,13 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-   * Redirects the browser to the relevant index page which this came from (e.g. after saving an edit).   *
-   * @access private
+   * Redirects the browser to the relevant index page.
+   *
+   * Allow edit pages to define where they return to after save.
    */
   private function redirectToIndex() {
     // What to do next setting needs to be kept between sessions as it persists after the redirect, so
-    // we can repopulate the select on data entry forms with the previuos value.
+    // we can repopulate the select on data entry forms with the previous value.
     if (isset($_POST['what-next'])) {
       $_SESSION['what-next'] = $_POST['what-next'];
     }
@@ -599,8 +600,9 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-   * Override the load view behaviour to display better error information when a view
-   * fails to load.
+   * Override the load view behaviour.
+   *
+   * Display better error information when a view fails to load.
    */
   public function _kohana_load_view($kohana_view_filename, $kohana_input_data) {
     if ($kohana_view_filename == '') {

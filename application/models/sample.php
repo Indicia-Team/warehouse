@@ -15,10 +15,11 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the Samples table.
@@ -489,7 +490,7 @@ class Sample_Model extends ORM_Tree {
           ":" .
           str_replace([',', ':'], ['&#44', '&#56'], $title);
     }
-    $sample_methods = [':Defined in file'];
+    $sample_methods = [];
     $parent_sample_methods = [":No filter"];
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {

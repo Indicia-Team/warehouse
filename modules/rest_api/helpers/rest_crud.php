@@ -250,7 +250,7 @@ SQL,
     foreach ($fields as $fieldDef) {
       // If field SQL is a simple fieldname we can alias it to the table.
       $fieldSql = preg_match('/^[a-z_]+$/', $fieldDef->sql) ? "$alias.$fieldDef->sql" : $fieldDef->sql;
-      $fieldName = empty($fieldDef->name) ? $fieldDef->sql : $fieldDef->name;
+      $fieldName = $fieldDef->name ?? $fieldDef->sql;
       self::$fieldDefs[$fieldName] = array_merge((array) $fieldDef, ['sql' => $fieldSql]);
     }
   }
