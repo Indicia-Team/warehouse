@@ -538,7 +538,12 @@ class RestApiElasticsearch {
         $row[] = "Invalid field $sourceField";
       }
       else {
-        $row[] = $this->getRawEsFieldValue($docSource, $sourceField);
+        $value = $this->getRawEsFieldValue($docSource, $sourceField);
+        // Auto-implode any array data so valid inside a CSV row.
+        if (is_array($value)) {
+          $value = implode(';', $value);
+        }
+        $row[] = $value;
       }
     }
   }

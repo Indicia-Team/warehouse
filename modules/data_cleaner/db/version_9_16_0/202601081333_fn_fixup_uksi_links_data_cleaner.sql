@@ -126,6 +126,31 @@ insert into cache_verification_rules_without_polygon
   select * from cache_verification_rules_without_polygon2;
 drop table cache_verification_rules_without_polygon2;
 
+-- Ensure that cache_taxa_taxon_lists has updated rule information.
+update cache_taxa_taxon_lists cttl
+set applicable_verification_rule_types=array[]::text[];
+
+update cache_taxa_taxon_lists cttl
+set applicable_verification_rule_types=array['period']
+from verification_rule_metadata vrm
+join verification_rules vr
+  on vr.id = vrm.verification_rule_id
+  and vr.test_type = 'Period'
+  and vr.deleted = false
+where vrm.key = 'Tvk'
+  and vrm.value = cttl.external_key
+  and vrm.deleted = false;
+
+update cache_taxa_taxon_lists cttl
+set applicable_verification_rule_types=applicable_verification_rule_types || array['period_within_year']
+from cache_verification_rules_period_within_year pwy
+where pwy.taxa_taxon_list_external_key=cttl.external_key;
+
+update cache_taxa_taxon_lists cttl
+set applicable_verification_rule_types=applicable_verification_rule_types || array['without_polygon']
+from cache_verification_rules_without_polygon wp
+where wp.taxa_taxon_list_external_key=cttl.external_key;
+
 return true;
 
 END;

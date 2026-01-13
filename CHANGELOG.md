@@ -4,7 +4,36 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# Version 9.15.0
+## Version 9.16.0
+*2026-01-12*
+
+* Adds support for DNA-derived occurrence data. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1935:
+  * New dna_occurrences database table and a dna_derived flag in the occurrences table.
+  * Update the UI to show DNA data on a tab when viewing an occurrence.
+  * Update report standard parameter filters to support filtering to show or hide DNA occurrences.
+  * Support for importing DNA-derived occurrence data.
+  * Add support for the dna_occurrence entity to the REST API.
+* Add support for hectad quadrant grid references for OSGB and OSIE references. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1737.
+* Improve error message when corrupt image submitted. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1942.
+* Adds a flag for manually added taxa, so that they can be detected and handled differently by the
+  UKSI sync script. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1953.
+* Improve error handling in the importer when it discovers invalid spatial reference systems in the
+  imported data. See https://github.com/BiologicalRecordsCentre/iRecord/issues/1972.
+* Importer - removed unnecessary defined in file option for some of the global option dropdowns.
+* Fix out of memory errors when editing existing custom attributes to set dynamic taxonn
+  restrictions.
+* Add an option to log emails to a database table for analysis. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1952.
+* Bugfix to the devLogger email handler.
+* Update the function used to fixup data links after a UKSI update to also update
+  `cache_taxa_taxon_lists.applicable_verification_rule_types`.
+  See https://github.com/BiologicalRecordsCentre/iRecord/issues/1982.
+
+## Version 9.15.0
+*2025-10-09*
 
 ### Changes
 

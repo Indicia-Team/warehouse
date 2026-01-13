@@ -167,9 +167,9 @@ SQL;
   private function findMaxCostPriority() {
     $load = $this->getServerLoad();
     $maxCostByPriority = [
-      1 => max(0, min(100, (integer) (160 - $load))),
-      2 => max(0, min(100, (integer) (160 - $load * 2))),
-      3 => max(0, min(100, (integer) (160 - $load * 3))),
+      1 => max(0, min(100, (integer) (190 - $load))),
+      2 => max(0, min(100, (integer) (190 - $load * 1.5))),
+      3 => max(0, min(100, (integer) (190 - $load * 2.5))),
     ];
     global $argv;
     if (isset($argv)) {
