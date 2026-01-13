@@ -4,6 +4,12 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.17.0
+*2026-01-13*
+
+* Adds support for CSV attachments containing data in trigger emails. See the example in
+  `reports/trigger_templates/csv_test.xml`.
+
 ## Version 9.16.0
 *2026-01-12*
 
