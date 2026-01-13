@@ -9,7 +9,8 @@
       'Please find attached the latest demo CSV trigger report.' as email_body,
       null as website_id
     from people p
-    where p.id in (5,27);
+    -- Change IDs to the people you want to send test emails to.
+    where p.id in (0);
   </query>
   <params>
     <param name="date" display="Date" description="Date/time of last check" datatype="datetime" />
