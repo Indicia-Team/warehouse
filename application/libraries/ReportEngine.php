@@ -319,7 +319,8 @@ class ReportEngine {
                                 $reportSource = 'local',
                                 $reportFormat = NULL,
                                 array $params = [],
-                                $resultAsArray = TRUE) {
+                                $resultAsArray = TRUE,
+                                $descriptionLevel = NULL) {
     $this->reportFormat = $reportFormat;
     $this->providedParams = array_merge(
       ['training' => 'false'],
@@ -413,7 +414,7 @@ class ReportEngine {
     }
 
     return [
-      'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
+      'description' => $this->reportReader->describeReport($descriptionLevel ?? ReportReader::REPORT_DESCRIPTION_BRIEF),
       'content' => $this->compileReport($resultAsArray),
     ];
   }

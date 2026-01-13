@@ -29,6 +29,7 @@ class XMLReportReader_Core implements ReportReader {
   private $name;
   private $title;
   private $description;
+  private array $attachment = [];
   private $row_class;
   private $query;
   private $countQuery;
@@ -374,8 +375,16 @@ class XMLReportReader_Core implements ReportReader {
                   $reader->getAttribute('display')
                 );
                 break;
-              }
-              break;
+
+              case 'attachment':
+                $attachment = [];
+                $attachment['filename'] = $reader->getAttribute('filename');
+                $reader->read();
+                $attachment['query'] = $reader->value;
+                $this->attachment = $attachment;
+
+            }
+            break;
 
           case (XMLReader::END_ELEMENT):
             switch ($reader->name) {
@@ -698,6 +707,15 @@ class XMLReportReader_Core implements ReportReader {
   }
 
   /**
+   * Return metadata about attachments for direct email reports.
+   *
+   * @return array
+   */
+  public function getAttachment() {
+    return $this->attachment;
+  }
+
+  /**
    * Returns the query specified.
    */
   public function getQuery() {
@@ -851,7 +869,7 @@ class XMLReportReader_Core implements ReportReader {
 
       case (ReportReader::REPORT_DESCRIPTION_FULL):
         // Everything.
-        return [
+        $r = [
           'name' => $this->name,
           'title' => $this->getTitle(),
           'description' => $this->getDescription(),
@@ -861,6 +879,13 @@ class XMLReportReader_Core implements ReportReader {
           'query' => $this->query,
           'order_by' => $this->order_by
         ];
+        // For direct email triggers, there can be a file attachment query.
+        $attachment = $this->getAttachment();
+        if (!empty($attachment)) {
+          $r['attachment_query'] = $attachment['query'];
+          $r['attachment_filename'] = $attachment['filename'];
+        }
+        return $r;
 
       case (ReportReader::REPORT_DESCRIPTION_DEFAULT):
       default:

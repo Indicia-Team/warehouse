@@ -167,7 +167,14 @@ class Scheduled_Tasks_Controller extends Controller {
       $params['date'] = variable::get("trigger_last_run-$trigger->id", $this->lastRunDate, FALSE);
       $currentTime = time();
       try {
-        $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
+        $data = $reportEngine->requestReport(
+          $trigger->trigger_template_file . '.xml',
+          'local',
+          'xml',
+          $params,
+          TRUE,
+          ReportReader::REPORT_DESCRIPTION_FULL
+        );
       }
       catch (Exception $e) {
         self::msg($trigger->name . ": " . $e, 'error');
@@ -253,12 +260,20 @@ class Scheduled_Tasks_Controller extends Controller {
             'data' => $parsedData['websiteRecordData'],
           ]
         );
+        if ($data['description']['attachment']) {
+          // Apply parameters to query used to build attachment data. This
+          // automatically includes the date parameter.
+          foreach ($params as $key => $value) {
+            $data['description']['attachment']['query'] = str_replace("#$key#", $value, $data['description']['attachment']['query']);
+          }
+        }
         $this->doTriggerImmediateEmails(
           $trigger->name,
           [
             'headings' => $parsedData['headingData'],
             'data' => $parsedData['websiteRecordData'],
-          ]
+          ],
+          $data['description']
         );
       }
       // Remember when this specific trigger last ran.
@@ -386,8 +401,11 @@ class Scheduled_Tasks_Controller extends Controller {
    *   Name of the trigger which fired.
    * @param array $data
    *   Info regarding the trigger report columns and associated retrieved data.
+   * @param array $reportDescription
+   *   Description of the report as returned by the report engine. Includes
+   *   file attachment metadata.
    */
-  private function doTriggerImmediateEmails($triggerName, array $data) {
+  private function doTriggerImmediateEmails($triggerName, array $data, array $reportDescription) {
     if (count($data['data']) === 0 || !in_array('email_to', $data['headings'])) {
       return;
     }
@@ -460,6 +478,14 @@ class Scheduled_Tasks_Controller extends Controller {
       }
       $emailer->addRecipient($infoList[0]['to'], $infoList[0]['name']);
       $emailer->setFrom($emailConfig['address']);
+      // Add any attachment defined in the report description.
+      if (!empty($reportDescription['attachment'])) {
+        $emailer->addAttachmentFromQuery(
+          $reportDescription['attachment']['query'],
+          $reportDescription['attachment']['filename'],
+          $this->db
+        );
+      }
       $emailer->send($subject, "<html>$emailContent</html>", 'triggerImmediateEmailTo', $triggerName);
     }
   }
