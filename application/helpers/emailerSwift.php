@@ -54,6 +54,8 @@ class emailerSwift {
    *   The optional name associated with the from email address.
    * @param ?int $priority
    *   Priority from 1 (very high) to 5 (very low). Default 3.
+   * @param ?array $attachmentInfo
+   *   Attachment to add. Can contain filename, mime type and data keys.
    */
   public static function send(
       $subject,
@@ -62,7 +64,8 @@ class emailerSwift {
       array $ccList,
       $from,
       $fromName = NULL,
-      $priority = 3
+      $priority = 3,
+      ?array $attachmentInfo = NULL
       ) {
     $message = new Swift_Message($subject, $message, 'text/html');
     if ($priority !== 3) {
@@ -76,6 +79,14 @@ class emailerSwift {
       $swiftRecipients->addCc($recipient[0], $recipient[1] ?? NULL);
     }
     $swiftFrom = $fromName ? new Swift_Address($from, $fromName) : new Swift_Address($from);
+    if ($attachmentInfo) {
+      $attachment = new Swift_Message_Attachment(
+        $attachmentInfo['data'],
+        $attachmentInfo['filename'],
+        $attachmentInfo['mimeType']
+      );
+      $message->attach($attachment);
+    }
     self::$swift->send($message, $swiftRecipients, $swiftFrom);
   }
 

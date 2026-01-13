@@ -1,0 +1,32 @@
+<report
+    title="Demo CSV triggers"
+    description="CSV report for testing triggers."
+>
+  <query>
+    select email_address as email_to,
+      first_name || ' ' || surname as email_name,
+      'Demo CSV trigger report' as email_subject,
+      'Please find attached the latest demo CSV trigger report.' as email_body,
+      null as website_id
+    from people p
+    -- Change IDs to the people you want to send test emails to.
+    where p.id in (0);
+  </query>
+  <params>
+    <param name="date" display="Date" description="Date/time of last check" datatype="datetime" />
+  </params>
+  <columns>
+    <column name="website_id" sql="0" />
+    <column name="email_to" />
+    <column name="email_name" />
+    <column name="email_subject" />
+    <column name="email_body" />
+  </columns>
+  <attachment filename="demo_trigger_report.csv">
+    SELECT o.id, o.website_id, cttl.taxon, o.date_start, snf.output_sref
+    FROM cache_occurrences_functional o
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
+    WHERE o.updated_on&gt;'#date#'::date
+  </attachment>
+</report>
