@@ -21,12 +21,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER occurrence_dna_derived_sync
+CREATE TRIGGER occurrence_dna_derived_sync
 AFTER INSERT OR DELETE ON dna_occurrences
 FOR EACH ROW
 EXECUTE FUNCTION sync_occurrence_dna_derived();
 
-CREATE OR REPLACE TRIGGER occurrence_dna_derived_sync_update
+CREATE TRIGGER occurrence_dna_derived_sync_update
 AFTER UPDATE ON dna_occurrences
 FOR EACH ROW
 WHEN (OLD.deleted IS DISTINCT FROM NEW.deleted)
