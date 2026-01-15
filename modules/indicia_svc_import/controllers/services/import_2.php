@@ -497,7 +497,7 @@ class Import_2_Controller extends Service_Base_Controller {
       }
     }
     import2ChunkHandler::saveConfig($configId, $config);
-    $this->addTempDbTableIndexes($configId, $config);
+    $this->addTempDbTableIndexes($config);
     echo json_encode([
       'status' => 'ok',
     ]);
@@ -747,19 +747,19 @@ class Import_2_Controller extends Service_Base_Controller {
   /**
    * Add indexes to the temporary import table for faster lookups later.
    *
-   * @param string $configId
-   *   Config ID.
    * @param array $config
    *   Config array.
    */
-  private function addTempDbTableIndexes($configId, array $config) {
+  private function addTempDbTableIndexes(array $config) {
     $db = new Database();
     // Once loaded, add some indexes for easier lookups later.
     $lookupFieldsForParentEntity = $this->getLookupFieldsForParentEntityIndex($db, $config);
     $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
+    $rowIdIndexName = pg_escape_identifier($db->getLink(), 'idx_' . str_replace('-', '_', $config['importGuid']) . '_row_id');
+    $findSampleIndexName = pg_escape_identifier($db->getLink(), 'idx_' . str_replace('-', '_', $config['importGuid']) . '_findsample');
     $sql = <<<SQL
-      CREATE INDEX IF NOT EXISTS idx_{$configId}_row_id ON import_temp.$dbIdentifiers[tempTableName] (_row_id);
-      CREATE INDEX IF NOT EXISTS idx_{$configId}_findsample ON import_temp.$dbIdentifiers[tempTableName] ($lookupFieldsForParentEntity);
+      CREATE INDEX IF NOT EXISTS $rowIdIndexName ON import_temp.$dbIdentifiers[tempTableName] (_row_id);
+      CREATE INDEX IF NOT EXISTS $findSampleIndexName ON import_temp.$dbIdentifiers[tempTableName] ($lookupFieldsForParentEntity);
     SQL;
     $db->query($sql);
   }

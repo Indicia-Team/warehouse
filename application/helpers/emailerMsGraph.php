@@ -65,7 +65,7 @@ class emailerMsGraph {
    *
    * @param string $subject
    *   Email subject.
-   * @param string $message
+   * @param string $body
    *   Email message body.
    * @param array $recipientList
    *   List of email recipients. Each entry is an array holding the email
@@ -80,7 +80,7 @@ class emailerMsGraph {
    */
   public static function send(
       $subject,
-      $message,
+      $body,
       array $recipientList,
       array $ccList,
       $from,
@@ -89,14 +89,14 @@ class emailerMsGraph {
       ) {
     // Add spacer before footer.
     for ($i = 0; $i < $config = Kohana::config('email.msgraph_footer_spacer_rows', FALSE, FALSE) ?? 0; $i++) {
-      $message .= '<br>';
+      $body .= '<br>';
     }
     $mail = [
       'message' => [
         'subject' => $subject,
         'body' => [
           'contentType' => 'HTML',
-          'content' => $message
+          'content' => $body
         ],
         'toRecipients' => [],
       ],
