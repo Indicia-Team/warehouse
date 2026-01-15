@@ -40,7 +40,7 @@ class emailerSwift {
    *
    * @param string $subject
    *   Email subject.
-   * @param string $message
+   * @param string $body
    *   Email message body.
    * @param array $recipientList
    *   List of email recipients. Each entry is an array holding the email
@@ -59,7 +59,7 @@ class emailerSwift {
    */
   public static function send(
       $subject,
-      $message,
+      $body,
       array $recipientList,
       array $ccList,
       $from,
@@ -67,7 +67,23 @@ class emailerSwift {
       $priority = 3,
       ?array $attachmentInfo = NULL
       ) {
-    $message = new Swift_Message($subject, $message, 'text/html');
+    $message = new Swift_Message($subject);
+    // Create the HTML part explicitly
+    $htmlPart = new Swift_Message_Part(
+      $body,
+      'text/html',
+      '8bit',
+      'utf-8'
+    );
+    $message->attach($htmlPart);
+    // Create the plain text part explicitly
+    $textPart = new Swift_Message_Part(
+      strip_tags($body),
+      'text/plain',
+      '8bit',
+      'utf-8'
+    );
+    $message->attach($textPart);
     if ($priority !== 3) {
       $message->setPriority($priority);
     }
