@@ -260,7 +260,7 @@ class Scheduled_Tasks_Controller extends Controller {
             'data' => $parsedData['websiteRecordData'],
           ]
         );
-        if ($data['description']['attachment']) {
+        if (!empty($data['description']['attachment'])) {
           // Apply parameters to query used to build attachment data. This
           // automatically includes the date parameter.
           foreach ($params as $key => $value) {
@@ -479,7 +479,7 @@ class Scheduled_Tasks_Controller extends Controller {
       $emailer->addRecipient($infoList[0]['to'], $infoList[0]['name']);
       $emailer->setFrom($emailConfig['address']);
       // Add any attachment defined in the report description.
-      if (!empty($reportDescription['attachment'])) {
+      if (!empty($reportDescription['attachment']) && !empty($reportDescription['attachment']['query']) && !empty($reportDescription['attachment']['filename'])) {
         $emailer->addAttachmentFromQuery(
           $reportDescription['attachment']['query'],
           $reportDescription['attachment']['filename'],
