@@ -252,9 +252,12 @@ class ImportTools {
       throw new exception('Spreadsheet contains no worksheets');
     }
     $reader->setLoadSheetsOnly($worksheetData[0]['worksheetName']);
+    // Get number of rows read. Stored in config under files array only for
+    // import types that support multi-file import.
+    $rowsRead = $config['rowsRead'] ?? $config['files'][$fileName]['rowsRead'];
     // Add two to the range start, as it is indexed from one not zero unlike
     // the data array read out and we skip the header row.
-    $reader->setReadFilter(new RangeReadFilter($config['files'][$fileName]['rowsRead'] + 2, $limit));
+    $reader->setReadFilter(new RangeReadFilter($rowsRead + 2, $limit));
     $file = $reader->load(DOCROOT . "import/$fileName");
     return $file->getActiveSheet()->toArray();
   }

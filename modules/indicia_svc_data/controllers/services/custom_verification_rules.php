@@ -712,11 +712,13 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
           }
           // @todo Check limit to location ids are validated.
           $limitToGeography = empty($limitToGeographyArr) ? NULL : json_encode($limitToGeographyArr);
+          // LimitToStages is injection safe anyway, so splice into query
+          // directly to avoid the query param adding quotes as it is a string.
           $insertSql = <<<SQL
             INSERT INTO custom_verification_rules(custom_verification_ruleset_id, taxon_external_key,
               fail_icon, fail_message, limit_to_stages, limit_to_geography, rule_type, definition, reverse_rule,
               created_by_id, created_on, updated_by_id, updated_on)
-            VALUES (?, ?, ?, ?, ?, ?::json, ?, ?::json, ?,
+            VALUES (?, ?, ?, ?, $limitToStages, ?::json, ?, ?::json, ?,
               $this->auth_user_id, now(), $this->auth_user_id, now());
           SQL;
           $db->query($insertSql, [
@@ -724,7 +726,6 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
             $taxonKey,
             $this->getValue($row, $titleIndexes, 'fail icon'),
             $this->getValue($row, $titleIndexes, 'fail message'),
-            $limitToStages,
             $limitToGeography,
             $ruleType,
             json_encode($definition),
