@@ -385,7 +385,7 @@ class Scheduled_Tasks_Controller extends Controller {
         'user_id' => str_replace('user:', '', $user),
         // Users specified in notify_user_ids should be notified as soon as
         // possible.
-        'digest_mode' => 'IH',
+        'digest_mode' => 'I',
       ]);
     }
   }
