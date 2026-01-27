@@ -1570,6 +1570,12 @@ SQL;
       fputcsv($out, $row);
     }
     fclose($out);
+    // We can now remove the background-processing work queue entry if there is one.
+    $db->query(<<<SQL
+      DELETE FROM work_queue
+      WHERE task='task_import_step' and params->>'config-id' = '{$configId}'
+      AND error_detail='Failed validation, awaiting user to download errors file'
+    SQL);
   }
 
   /**

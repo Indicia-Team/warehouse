@@ -108,7 +108,12 @@ class import2ChunkHandler {
         }
         $parent->set_submission_data($submission);
         if ($isPrecheck) {
-          $parentErrors = $parent->precheck($identifiers);
+          try {
+            $parentErrors = $parent->precheck($identifiers);
+          } catch (Exception $e) {
+            // If the parent entity crashes on checking, record the error.
+            $parentErrors['sample:general'] = $e->getMessage();
+          }
           // A fake ID to allow check on children.
           $parent->id = 1;
         }
@@ -147,7 +152,12 @@ class import2ChunkHandler {
             }
             $child->set_submission_data($submission);
             if ($isPrecheck) {
-              $errors = $child->precheck($identifiers);
+              try {
+                $errors = $child->precheck($identifiers);
+              } catch (Exception $e) {
+                // If the child entity fails to precheck, record the error.
+                $errors['occurrence:general'] = $e->getMessage();
+              }
             }
             else {
               try {
