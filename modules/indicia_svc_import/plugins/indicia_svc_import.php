@@ -91,7 +91,11 @@ function _indicia_svc_import_get_stuff_to_keep($db) {
     'files' => [],
     'tables' => [],
   ];
-  $queuedImportConfigIds = $db->query("SELECT params->>'config-id' AS config_id FROM work_queue WHERE task='task_import_step';");
+  $queuedImportConfigIds = $db->query(<<<SQL
+    SELECT params->>'config-id' AS config_id
+    FROM work_queue
+    WHERE task='task_import_step';
+  SQL);
   foreach ($queuedImportConfigIds as $q) {
     $configFile = DOCROOT . "import/$q->config_id.json";
     if (file_exists($configFile)) {
