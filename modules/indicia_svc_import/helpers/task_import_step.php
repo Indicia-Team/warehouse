@@ -52,6 +52,7 @@ class task_import_step {
    *   tasks to perform.
    */
   public static function process($db, $taskType, $procId) {
+    self::cleanupOldImportsWhichFailedValidation($db);
     // Get the task details.
     $task = $db->query("SELECT * FROM work_queue WHERE task = 'task_import_step' AND claimed_by = ? ORDER BY id LIMIT 1", [$procId])->current();
     if (!$task) {
@@ -99,6 +100,25 @@ class task_import_step {
     } catch (Exception $e) {
       self::notifyUserOfCrash($db, $task, $params, $e);
     }
+  }
+
+  /**
+   * Background import cleanup.
+   *
+   * Removes queued imports which failed validation and have been waiting for
+   * the user to download the errors file for over a week. This allows the
+   * associated temporary tables and files to be cleaned up.
+   *
+   * @param Database $db
+   *   Database connection.
+   */
+  private static function cleanupOldImportsWhichFailedValidation($db) {
+    $db->query(<<<SQL
+      DELETE FROM work_queue
+      WHERE task='task_import_step'
+      AND error_detail = 'Failed validation, awaiting user to download errors file'
+      AND claimed_on < now() - interval '1 week';
+    SQL);
   }
 
   /**
@@ -206,7 +226,11 @@ class task_import_step {
     else {
       kohana::log('error', 'Could not find user with id ' . $params['user_id'] . ' to send import failed validation email.');
     }
-    $db->query("DELETE FROM work_queue WHERE id = ?", [$task->id]);
+    // Don't delete the task yet, as we need it to remain so that the user can
+    // download the errors file. Just set a specific error detail so that we
+    // know why it is still there.
+    $errorDetail = 'Failed validation, awaiting user to download errors file';
+    $db->query("UPDATE work_queue SET error_detail=?, claimed_by=null WHERE id = ?", [$errorDetail, $task->id]);
   }
 
   private static function abortTaskIfBusy($db, $procId) {
