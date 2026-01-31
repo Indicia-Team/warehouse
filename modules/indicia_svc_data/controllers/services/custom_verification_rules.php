@@ -158,9 +158,10 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
       $titleIndexes = array_flip($columnTitles);
       $rows = $importTools->openSpreadsheet($_POST['uploadedFile'], $config);
       $errors = [];
-      foreach ($rows as $rowIndex => $row) {
+      foreach ($rows as $rowIndex => $rowObject) {
         // Skip empty rows.
-        if (trim(implode('', $row)) !== '') {
+        if (!$rowObject->isEmpty()) {
+          $row = $importTools->rowToArray($rowObject, $columnTitles);
           // Convert zero-indexed to 1-indexed for reporting sheet rows.
           $spreadsheetRow = $rowIndex + 1;
           // Basic format validation.
@@ -651,9 +652,10 @@ class Custom_verification_rules_Controller extends Data_Service_Base_Controller 
       $titleIndexes = array_flip($columnTitles);
       $rows = $importTools->openSpreadsheet($_POST['uploadedFile'], $config);
       $rulesetId = $_POST['custom_verification_ruleset_id'];
-      foreach ($rows as $rowIndex => $row) {
+      foreach ($rows as $rowIndex => $rowObject) {
         // Skip empty rows.
-        if (trim(implode('', $row)) !== '') {
+        if (!$rowObject->isEmpty()) {
+          $row = $importTools->rowToArray($rowObject, $columnTitles);
           // Convert zero-indexed to 1-indexed for reporting sheet rows.
           $spreadsheetRow = $rowIndex + 1;
           $ruleType = strtolower($this->getValue($row, $titleIndexes, 'rule type'));
