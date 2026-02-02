@@ -1517,7 +1517,7 @@ SQL;
     header("Content-Description: File Transfer");
     header("Content-Type: text/csv");
     header("Content-Disposition: attachment; filename=\"import-errors.csv\"");
-    $configId = $_GET['config-id'];
+    $configId = $_GET['config-id'] ?? $_GET['data-file'];
     $config = import2ChunkHandler::getConfig($configId);
     $db = new Database();
     $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
