@@ -29,6 +29,7 @@ use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Reader\Xls;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
+use PhpOffice\PhpSpreadsheet\Worksheet\Row;
 
 /**
  * PHPSpreadsheet filter for reading the header row.
@@ -98,6 +99,30 @@ class RangeReadFilter implements IReadFilter {
  * A library of tools for handling import files.
  */
 class ImportTools {
+
+  /**
+   * List of spreadsheets opened that need to be disconnected when done.
+   *
+   * @var array
+   */
+  private $filesToDisconnect = [];
+
+  /**
+   * Destructor cleans up memory.
+   */
+  public function __destruct() {
+    $this->disconnect();
+  }
+
+  /**
+   * Ensure we clean up from any spreadsheets we connected to.
+   */
+  public function disconnect() {
+    foreach ($this->filesToDisconnect as $spreadsheet) {
+      $spreadsheet->disconnectWorksheets();
+    }
+    $this->filesToDisconnect = [];
+  }
 
   /**
    * Uploads a file in the $_FILES array so it's ready to import.
@@ -241,7 +266,7 @@ class ImportTools {
    * @param int $limit
    *   Maximum number of rows to load.
    *
-   * @return array
+   * @return PhpOffice\PhpSpreadsheet\Worksheet\RowIterator
    *   Row data.
    */
   public function openSpreadsheet($fileName, array &$config, $limit = 100000) {
@@ -259,7 +284,8 @@ class ImportTools {
     // the data array read out and we skip the header row.
     $reader->setReadFilter(new RangeReadFilter($rowsRead + 2, $limit));
     $file = $reader->load(DOCROOT . "import/$fileName");
-    return $file->getActiveSheet()->toArray();
+    $this->filesToDisconnect[] = $file;
+    return $file->getActiveSheet()->getRowIterator($rowsRead + 2);
   }
 
   /**
@@ -303,12 +329,40 @@ class ImportTools {
   }
 
   /**
+   * Convert a worksheet row instance to a simple array.
+   *
+   * The array will be associative if $columnTitles is provided.
+   *
+   * @param PhpOffice\PhpSpreadsheet\Worksheet\Row $row
+   *   Worksheet row instance from a RowIterator.
+   * @param ?array $columnTitles
+   *   Optional list of column titles to use as array keys.
+   *
+   * @return array
+   *   Row data as a simple or associative array.
+   */
+  public function rowToArray(Row $row, ?array $columnTitles = NULL) {
+    $cellIterator = $row->getCellIterator();
+    $cellIterator->setIterateOnlyExistingCells(false);
+    $rowData = [];
+    foreach ($cellIterator as $index => $cell) {
+      if ($columnTitles) {
+        $rowData[$columnTitles[$index]] = $cell->getValue();
+      }
+      else {
+        $rowData[] = $cell->getValue();
+      }
+    }
+    return $rowData;
+  }
+
+  /**
    * Opens a PHPSpreadsheet Reader for the selected file.
    *
    * @param string $fileName
    *   Name of the import file.
    *
-   * @return PhpOffice\PhpSpreadsheet\Reader
+   * @return PhpOffice\PhpSpreadsheet\Reader\BaseReader
    *   Reader object.
    */
   private function getReader($fileName) {
