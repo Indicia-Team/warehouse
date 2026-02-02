@@ -2282,30 +2282,26 @@ SQL;
   private function loadNextRecordsBatch($fileName, array &$config) {
     $importTools = new ImportTools();
     // Larger batch size for big imports is more efficient at expensive of progress granularity.
-    $batchLimit = max(min(round($config['totalRows'] / 20), 10000), 500);
+    $batchLimit = max(min(round($config['totalRows'] / 20), 5000), 500);
     $file = $importTools->openSpreadsheet($fileName, $config, $batchLimit);
     $rows = [];
     $rowsDoneInBatch = 0;
     $db = new Database();
     $foundDataInBatch = FALSE;
-    while (($rowsDoneInBatch < $batchLimit)) {
-      if ($config['files'][$fileName]['rowsRead'] >= $config['files'][$fileName]['rowCount']) {
-        // All rows done.
-        break;
-      }
-      // +1 to skip the header.
-      $data = $file[$config['files'][$fileName]['rowsRead'] + 1] ?? [];
-      // Nulls need to be empty strings for trim() to work.
-      $data = array_map(function ($value) {
-        return $value ?? '';
-      }, $data);
-      // Skip empty rows.
-      if (!empty(implode('', $data))) {
+    foreach ($file as $rowObject) {
+      if (!$rowObject->isEmpty()) {
+        $data = $importTools->rowToArray($rowObject);
         $foundDataInBatch = TRUE;
-        // Trim and escape the data, then pad to correct number of columns.
+        // Trim the data.
+        $data = array_map(function ($value) {
+          return trim($value ?? '');
+        }, $data);
+        // Pad to correct number of columns.
+        $data = array_pad($data, count($config['columns']), '');
+        // Escape ready for SQL.
         $data = array_map(function ($s) use ($db) {
           return pg_escape_literal($db->getLink(), $s);
-        }, array_pad(array_map('trim', $data), count($config['columns']), ''));
+        }, $data);
         // Also allow for their being too many columns (wider data row than
         // column titles provided).
         if (count($data) > count($config['columns'])) {
