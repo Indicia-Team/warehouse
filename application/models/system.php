@@ -102,7 +102,7 @@ class System_Model extends ORM
    * @param <type> $name
    */
   private function getSystemData($name) {
-    if (!isset($system_data[$name])) {
+    if (!isset($this->system_data[$name])) {
       // The following ensures that a blank name in the system table is treated as the system row for the indicia warehouse.
       // Having a blank name should not really occur, but it does seem to in some update sequences. This won't matter after
       // v0.6.
