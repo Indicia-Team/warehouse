@@ -29,12 +29,21 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class WorkQueue {
 
+  private static $shutdownFunctionRegistered = FALSE;
+
   /**
    * Database connection object.
    *
    * @var object
    */
   private $db;
+
+  /**
+   * Track procIds claimed in this process run for shutdown cleanup.
+   *
+   * @var array
+   */
+  private $claimedProcIds = [];
 
   /**
    * Queue a task for later processing.
@@ -95,6 +104,7 @@ SQL;
    *   true when running from unit tests to ensure tasks are processed.
    */
   public function process($db, $force = FALSE) {
+    $this->registerShutdownFunction();
     $this->db = $db;
     // Use the current server CPU load to roughly guess the top cost estimate
     // to allow for tasks of each priority.
@@ -302,25 +312,30 @@ SQL;
     // Use an atomic query to ensure we only claim tasks where they are not
     // already claimed.
     $sql = <<<SQL
-WITH rows AS (
-  UPDATE work_queue
-  SET claimed_by=?, claimed_on=now()
-  WHERE id IN (
-    SELECT id FROM work_queue
-    WHERE claimed_by IS NULL
-    AND error_detail IS NULL
-    AND task=?
-    AND COALESCE(entity, '')=COALESCE(?, '')
-    ORDER BY priority, cost_estimate, id
-    LIMIT ?
-  )
-  AND claimed_by IS NULL
-  RETURNING 1
-)
-SELECT count(*) FROM rows;
-SQL;
+      WITH rows AS (
+        UPDATE work_queue
+        SET claimed_by=?, claimed_on=now()
+        WHERE id IN (
+          SELECT id FROM work_queue
+          WHERE claimed_by IS NULL
+          AND error_detail IS NULL
+          AND task=?
+          AND COALESCE(entity, '')=COALESCE(?, '')
+          ORDER BY priority, cost_estimate, id
+          LIMIT ?
+        )
+        AND claimed_by IS NULL
+        RETURNING 1
+      )
+      SELECT count(*) FROM rows;
+    SQL;
     // Run query and return count claimed.
-    return $this->db->query($sql, [$procId, $taskType->task, $taskType->entity, $batchSize])->current()->count;
+    $claimedCount = $this->db->query($sql, [$procId, $taskType->task, $taskType->entity, $batchSize])->current()->count;
+    // Track this procId for shutdown handler.
+    if ($claimedCount > 0 && !in_array($procId, $this->claimedProcIds, TRUE)) {
+      $this->claimedProcIds[] = $procId;
+    }
+    return $claimedCount;
   }
 
   /**
@@ -396,6 +411,46 @@ SQL;
     ]);
     kohana::log('error', "Failure in work queue task batch because $taskType->task missing");
     error_logger::log_trace(debug_backtrace());
+  }
+
+  /**
+   * Registers a function to be executed on shutdown.
+   *
+   * Should be more reliable at logging fatal errors which bypass normal error
+   * handling, such as memory errors.
+   */
+  private function registerShutdownFunction() {
+    if (!self::$shutdownFunctionRegistered) {
+      register_shutdown_function(function() {
+        $error = error_get_last();
+        if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+          $errorMessage = "Fatal error: {$error['message']} in {$error['file']} on line {$error['line']}";
+          kohana::log('error', $errorMessage);
+          // In case scheduled tasks running in browser context.
+          echo 'Fatal error during shutdown: ' . $errorMessage . '<br/>';
+          $errorDetail = [
+            'message' => $error['message'],
+            'file' => $error['file'],
+            'line' => $error['line'],
+            'type' => $error['type'],
+            'shutdown' => TRUE,
+          ];
+          // Update only tasks claimed by this specific process.
+          foreach ($this->claimedProcIds as $procId) {
+            try {
+              $this->db->query("UPDATE work_queue SET error_detail=? WHERE claimed_by=? AND error_detail IS NULL", [json_encode($errorDetail), $procId]);
+            }
+            catch (Throwable $dbError) {
+              kohana::log('error', "Failed to update work_queue on shutdown: " . $dbError->getMessage());
+            }
+          }
+        }
+        else {
+          kohana::log('debug', 'Work queue shutdown complete without fatal error.');
+        }
+      });
+      self::$shutdownFunctionRegistered = TRUE;
+    }
   }
 
 }
