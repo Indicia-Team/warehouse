@@ -97,8 +97,10 @@ class task_import_step {
       }
 
       $db->query("UPDATE work_queue SET claimed_by=null, claimed_on=null, params=? WHERE id = ?", [json_encode($params), $task->id]);
-    } catch (Exception $e) {
-      self::notifyUserOfCrash($db, $task, $params, $e);
+    }
+    catch (Throwable $e) {
++     // Catch Errors as well as Exceptions and notify/record the crash.
++     self::notifyUserOfCrash($db, $task, $params, $e);
     }
   }
 
@@ -177,10 +179,10 @@ class task_import_step {
    *   Work queue task.
    * @param array $params
    *   Work queue task parameters.
-   * @param Exception $e
+   * @param Throwable $e
    *   Exception object.
    */
-  private static function notifyUserOfCrash($db, $task, $params, $e) {
+  private static function notifyUserOfCrash($db, $task, $params, Throwable $e) {
     $personInfo = self::getUserInfo($db, $params);
     if ($personInfo) {
       $emailer = new Emailer();
