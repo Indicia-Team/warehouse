@@ -1570,12 +1570,6 @@ SQL;
       fputcsv($out, $row);
     }
     fclose($out);
-    // We can now remove the background-processing work queue entry if there is one.
-    $db->query(<<<SQL
-      DELETE FROM work_queue
-      WHERE task='task_import_step' and params->>'config-id' = '{$configId}'
-      AND error_detail='Failed validation, awaiting user to download errors file'
-    SQL);
   }
 
   /**
@@ -1593,23 +1587,22 @@ SQL;
       $existsCheck = $db->query(<<<SQL
         SELECT params->>'user_id' as user_id
         FROM work_queue
-        WHERE task='task_import_step' and params->>'config-id' = '{$_POST["config-id"]}'
-      SQL)->current();
-      if (!$existsCheck) {
-        $this->fail('Import config-id not found.', 'Not Found', 404);
+        WHERE task='task_import_step' and params->>'config-id' = ?
+      SQL, $_POST['config-id'])->current();
+      if ($existsCheck) {
+        if ((int) $existsCheck->user_id !== $this->auth_user_id) {
+          $this->fail('Import does not belong to user.', 'Forbidden', 403);
+        }
+        $db->query(<<<SQL
+          DELETE FROM work_queue
+          WHERE task='task_import_step' and params->>'config-id' = ?
+        SQL, $_POST['config-id']);
       }
-      elseif ((int) $existsCheck->user_id !== $this->auth_user_id) {
-        $this->fail('Import does not belong to user.', 'Forbidden', 403);
-      }
-      // HTTP 204 for a successful delete.
+      // HTTP 204 for a successful delete, or if nothing to delete.
       http_response_code(204);
       echo json_encode([
         'status' => 'No Content',
       ]);
-      $db->query(<<<SQL
-        DELETE FROM work_queue
-        WHERE task='task_import_step' and params->>'config-id' = '{$_POST["config-id"]}'
-      SQL);
     }
     catch (RequestAbort $e) {
       // Ignore as abort already handled.
