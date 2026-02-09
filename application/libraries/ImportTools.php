@@ -143,7 +143,7 @@ class ImportTools {
       "upload::size[$ups]"
     );
     if (count($validatedFiles) === 0) {
-      throw new exception('No file was uploaded.');
+      throw new Exception('No file was uploaded.');
     }
     elseif ($validatedFiles->validate()) {
       $safeFileName = str_replace(' ', '_', strtolower($validatedFiles['media_upload']['name']));
@@ -164,7 +164,7 @@ class ImportTools {
           kohana::log('error', 'PHP reports file upload error: ' . $this->fileValidationCodeToMessage($file['error']));
         }
       }
-      throw new exception(implode('; ', $validatedFiles->errors('form_error_messages')));
+      throw new Exception(implode('; ', $validatedFiles->errors('form_error_messages')));
     }
   }
 
@@ -179,12 +179,12 @@ class ImportTools {
    */
   public function extractFile($uploadedFile) {
     if (!file_exists(DOCROOT . 'import/' . $uploadedFile)) {
-      throw new exception('Parameter uploaded-file refers to a missing file');
+      throw new Exception('Parameter uploaded-file refers to a missing file');
     }
     $zip = new ZipArchive();
     $res = $zip->open(DOCROOT . 'import/' . $uploadedFile);
     if ($res !== TRUE) {
-      throw new exception('The Zip archive could not be opened.');
+      throw new Exception('The Zip archive could not be opened.');
     }
     // Strip any __MACOSX hidden folders that may be present.
     $needToReopen = FALSE;
@@ -199,18 +199,18 @@ class ImportTools {
       $res = $zip->open(DOCROOT . 'import/' . $uploadedFile);
     }
     if ($zip->count() !== 1) {
-      throw new exception('The Zip archive must contain only one file.');
+      throw new Exception('The Zip archive must contain only one file.');
     }
     $ext = pathinfo($zip->getNameIndex(0), PATHINFO_EXTENSION);
     if (!in_array($ext, ['csv', 'xls', 'xlsx'])) {
-      throw new exception('The Zip archive contains a file type that cannot be imported.');
+      throw new Exception('The Zip archive contains a file type that cannot be imported.');
     }
     $fileName = uniqid(TRUE) . ".$ext";
     if (!$zip->renameIndex(0, $fileName)) {
-      throw new exception('Unable to rename the file in the Zip archive.');
+      throw new Exception('Unable to rename the file in the Zip archive.');
     }
     if (!$zip->extractTo(DOCROOT . "import", $fileName)) {
-      throw new exception('Unable to unzip the Zip archive.');
+      throw new Exception('Unable to unzip the Zip archive.');
     };
     $zip->close();
     // No need to keep file any more.
@@ -234,7 +234,7 @@ class ImportTools {
     // Minimise data read from spreadsheet - first sheet only.
     $worksheetData = $reader->listWorksheetInfo(DOCROOT . "import/$fileName");
     if (count($worksheetData) === 0) {
-      throw new exception('Spreadsheet contains no worksheets');
+      throw new Exception('Spreadsheet contains no worksheets');
     }
     $reader->setLoadSheetsOnly($worksheetData[0]['worksheetName']);
     // Only read first row.
@@ -242,7 +242,7 @@ class ImportTools {
     $file = $reader->load(DOCROOT . "import/$fileName");
     $data = $file->getActiveSheet()->toArray();
     if (count($data) === 0) {
-      throw new exception('The spreadsheet file is empty');
+      throw new Exception('The spreadsheet file is empty');
     }
     $columnTitles = $data[0];
     // Remove any null columns from the end.
@@ -266,7 +266,7 @@ class ImportTools {
    * @param int $limit
    *   Maximum number of rows to load.
    *
-   * @return PhpOffice\PhpSpreadsheet\Worksheet\RowIterator
+   * @return array|PhpOffice\PhpSpreadsheet\Worksheet\RowIterator
    *   Row data.
    */
   public function openSpreadsheet($fileName, array &$config, $limit = 100000) {
@@ -274,7 +274,7 @@ class ImportTools {
     // Minimise data read from spreadsheet - first sheet only.
     $worksheetData = $reader->listWorksheetInfo(DOCROOT . "import/$fileName");
     if (count($worksheetData) === 0) {
-      throw new exception('Spreadsheet contains no worksheets');
+      throw new Exception('Spreadsheet contains no worksheets');
     }
     $reader->setLoadSheetsOnly($worksheetData[0]['worksheetName']);
     // Get number of rows read. Stored in config under files array only for
@@ -285,6 +285,11 @@ class ImportTools {
     $reader->setReadFilter(new RangeReadFilter($rowsRead + 2, $limit));
     $file = $reader->load(DOCROOT . "import/$fileName");
     $this->filesToDisconnect[] = $file;
+    if ($rowsRead + 2 > $file->getActiveSheet()->getHighestRow()) {
+      kohana::log('debug', 'Past end of spreadsheet, no more rows to read');
+      // Return an empty iterator to trigger end of file handling in the caller.
+      return [];
+    }
     return $file->getActiveSheet()->getRowIterator($rowsRead + 2);
   }
 
@@ -302,7 +307,7 @@ class ImportTools {
     // Minimise data read from spreadsheet - first sheet only.
     $worksheetData = $reader->listWorksheetInfo(DOCROOT . "import/$fileName");
     if (count($worksheetData) === 0) {
-      throw new exception('Spreadsheet contains no worksheets');
+      throw new Exception('Spreadsheet contains no worksheets');
     }
     // Subtract 1 to exclude header.
     return $worksheetData[0]['totalRows'] - 1;
@@ -379,7 +384,7 @@ class ImportTools {
     }
     else {
       error_logger::log_trace(debug_backtrace());
-      throw new exception("Unsupported file type \"$ext\" for file \"$fileName\".");
+      throw new Exception("Unsupported file type \"$ext\" for file \"$fileName\".");
     }
     // Don't read document formatting.
     $reader->setReadDataOnly(TRUE);
