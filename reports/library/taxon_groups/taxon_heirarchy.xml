@@ -1,0 +1,34 @@
+<report
+    title="Return all "
+    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
+  SELECT cttlorder.taxon, cttl.family_taxon, cttl.taxon, cttl.default_common_name
+  FROM cache_taxa_taxon_lists cttlorder 
+  JOIN cache_taxon_paths ctp on cttlorder.taxon_meaning_id=any(ctp.path)
+  JOIN cache_taxa_taxon_lists cttl 
+  ON cttl.external_key=ctp.external_key 
+  AND cttl.taxon_list_id=15
+  AND cttl.preferred=true
+  AND cttl.taxon_rank='Species'
+  WHERE #sharing_filter# 
+  </query>
+  <order_bys>
+    <order_by>cttl.family_taxon</order_by>
+    <order_by>cttl.taxon</order_by>
+  </order_bys>
+  <params>
+    <param name="restrict_to_order" datatype="text" default="">
+      <where>cttlorder.taxon=#order#</where>
+    </param>
+    <param name="min_taxon_rank_sort_order" datatype="integer" default="" >
+      <where>cttlorder.taxon_rank='Order'</where>
+    </param>
+  </params>
+  <columns>
+    <column name='order' display='Order' sql='cttlorder.taxon' />
+    <column name='family' display='Family' sql='cttl.family_taxon' datatype="text" />
+    <column name="taxon" display="Taxon" sql="cttl.taxon" datatype="text" />
+    <column name="common" display="Common name" sql="cttl.default_common_name" datatype="text" />
+  </columns>
+</report>
