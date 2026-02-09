@@ -2333,7 +2333,9 @@ SQL;
     // An entire empty batch causes us to stop. Most likely the user saved a
     // spreadsheet with multiple empty rows at the bottom.
     if (!$foundDataInBatch) {
-      $config['totalRows'] = $config['rowsLoaded'];
+      $blankRowsToDiscard = $config['files'][$fileName]['rowCount'] - $config['files'][$fileName]['rowsRead'];
+      $config['totalRows'] -= $blankRowsToDiscard;
+      $config['files'][$fileName]['rowCount'] -= $blankRowsToDiscard;
       // If original row count was for mostly empty rows, we may have switched
       // to background processing unnecessarily so check if we can switch back.
       if ($config['totalRows'] <= import2ChunkHandler::BACKGROUND_PROCESSING_THRESHOLD && $config['processingMode'] === 'background') {
