@@ -586,9 +586,10 @@ class Rest_Controller extends Controller {
         ],
         'occurrences/check-newness' => [
           'params' => [
-            'external_key' => [
+            'external_keys' => [
               'datatype' => 'string',
               'required' => TRUE,
+              'description' => 'Comma-separated list of external_key values.',
             ],
             'lat' => [
               'datatype' => 'float',
@@ -3647,7 +3648,16 @@ SQL;
   public function occurrencesGetCheckNewness() {
     try {
       // Extract parameters from GET request.
-      $externalKey = $_GET['external_key'] ?? NULL;
+      // Expect a comma-separated list in 'external_keys'. Single-key checks
+      // should pass a single value in the list.
+      if (empty($_GET['external_keys'])) {
+        RestObjects::$apiResponse->fail('Bad Request', 400, 'external_keys parameter is required.');
+      }
+      $raw = trim($_GET['external_keys']);
+      $externalKeys = array_filter(array_map('trim', explode(',', $raw)), function($v) { return $v !== ''; });
+      if (count($externalKeys) === 0) {
+        RestObjects::$apiResponse->fail('Bad Request', 400, 'external_keys must contain at least one key.');
+      }
       $lat = isset($_GET['lat']) ? (float) $_GET['lat'] : NULL;
       $lon = isset($_GET['lon']) ? (float) $_GET['lon'] : NULL;
       $gridSquareSize = $_GET['grid_square_size'] ?? NULL;
@@ -3656,7 +3666,7 @@ SQL;
 
       // Check newness and get badges.
       $badges = rest_occurrence_newness_checker::checkNewness(
-        $externalKey,
+        $externalKeys,
         $lat,
         $lon,
         $gridSquareSize,

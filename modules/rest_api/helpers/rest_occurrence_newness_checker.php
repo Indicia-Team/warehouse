@@ -40,8 +40,9 @@ class rest_occurrence_newness_checker {
   /**
    * Check if a record is new based on various criteria.
    *
-   * @param string $externalKey
-   *   External key (taxon.accepted_taxon_id) for the species.
+   * @param array $externalKeys
+   *   External keys (taxon.accepted_taxon_id) for the species to check at this
+   *   location.
    * @param float $lat
    *   Latitude of the record (WGS84).
    * @param float $lon
@@ -63,38 +64,132 @@ class rest_occurrence_newness_checker {
    *
    * @throws Exception
    */
-  public static function checkNewness($externalKey, $lat = NULL, $lon = NULL,
+  public static function checkNewness($externalKeys, $lat = NULL, $lon = NULL,
       $gridSquareSize = NULL, $year = NULL, $groupId = NULL) {
     self::$esConfig = kohana::config('rest.elasticsearch');
 
-    // Validate parameters.
-    self::validateParameters($externalKey, $lat, $lon, $gridSquareSize);
+    // This helper expects an array of external keys (comma-separated list
+    // parsed by the controller). Do not support single-key external_key.
+    if (!is_array($externalKeys)) {
+      throw new Exception('external_keys must be provided as an array.', 400);
+    }
+    return self::checkNewnessBulk($externalKeys, $lat, $lon, $gridSquareSize, $year, $groupId);
+  }
 
-    $response = [
-      'is_new_global' => self::checkGlobalNewness($externalKey),
-    ];
+  /**
+   * Bulk check for multiple external keys.
+   *
+   * @param array $externalKeys
+   *   Array of external_key strings.
+   * @param float $lat
+   * @param float $lon
+   * @param string $gridSquareSize
+   * @param int $year
+   * @param int $groupId
+   *
+   * @return array
+   *   Array of result objects, one per external_key.
+   */
+  private static function checkNewnessBulk(array $externalKeys, ?float $lat = NULL, ?float $lon = NULL, $gridSquareSize = NULL, ?int $year = NULL, ?int $groupId = NULL) {
+    self::validateParameters($externalKeys, $lat, $lon, $gridSquareSize);
 
+    // Prepare initial result objects.
+    $results = [];
+    foreach ($externalKeys as $k) {
+      $res = ['external_key' => $k, 'is_new_global' => TRUE];
+      if (!empty($year)) {
+        $res['is_new_for_year'] = TRUE;
+      }
+      if (!empty($gridSquareSize)) {
+        $res['is_new_for_grid'] = TRUE;
+      }
+      if (!empty($groupId)) {
+        $res['is_new_for_group'] = TRUE;
+      }
+      $results[$k] = $res;
+    }
+
+    // Build base query with terms filter for all keys.
+    $baseQuery = self::buildEsQuery($externalKeys);
+
+    // 1) Global existence aggregation.
+    $globalQuery = $baseQuery;
+    $globalBuckets = self::executeEsAggregation($globalQuery);
+    self::applyAggOutputToResults($globalBuckets, 'is_new_global', $results);
+
+    // 2) Year check.
     if (!empty($year)) {
-      $response['is_new_for_year'] = self::checkYearNewness($externalKey, $year);
+      $yearQuery = $baseQuery;
+      $yearQuery['query']['bool']['must'][] = [
+        'term' => ['event.year' => (int) $year],
+      ];
+      $yearBuckets = self::executeEsAggregation($yearQuery);
+      self::applyAggOutputToResults($yearBuckets, 'is_new_for_year', $results);
     }
 
-    if (!empty($gridSquareSize) && $lat !== NULL && $lon !== NULL) {
+    // 3) Grid square check.
+    if (!empty($gridSquareSize)) {
+      // Find the centre point of the containing grid square which we can filter against.
       $gridSquare = self::getGridSquare($lat, $lon, $gridSquareSize);
-      $response['is_new_for_grid'] = self::checkGridSquareNewness($externalKey, $gridSquare, $gridSquareSize);
+      // ES stores the centre as a string like "<lon> <lat>" in the
+      // location.grid_square.<size>.centre field; compare exact string.
+      $gridField = 'location.grid_square.' . $gridSquareSize . '.centre';
+
+      $gridQuery = $baseQuery;
+      $gridQuery['query']['bool']['must'][] = [
+        'term' => [ $gridField => $gridSquare ],
+      ];
+      $gridBuckets = self::executeEsAggregation($gridQuery);
+      self::applyAggOutputToResults($gridBuckets, 'is_new_for_grid', $results);
     }
 
+    // 4) Group check.
     if (!empty($groupId)) {
-      $response['is_new_for_group'] = self::checkGroupNewness($externalKey, $groupId);
+      $groupQuery = $baseQuery;
+      $groupQuery['query']['bool']['must'][] = [
+        'term' => ['metadata.group.id' => $groupId],
+      ];
+      $groupBuckets = self::executeEsAggregation($groupQuery);
+      self::applyAggOutputToResults($groupBuckets, 'is_new_for_group', $results);
     }
 
-    return $response;
+    // Return results as array of objects in same order as keys provided.
+    $out = [];
+    foreach ($externalKeys as $k) {
+      $out[] = $results[$k];
+    }
+    return $out;
+  }
+
+  /**
+   * Merge the output of a bucket aggregation into the results.
+   *
+   * Find the results entry for each taxon in the aggregation output taxon key,
+   * then update the appropriate newness flag according to whether there are
+   * prior records.
+   *
+   * @param array $buckets
+   *   Buckets array returned by an appropriately filter ES request.
+   * @param mixed $flagName
+   *   Name of the flag to update, e.g. is_new_for_year.
+   * @param array $results
+   *   Results array which will be updated. Should be keyed by the taxon
+   *   accepted ID.
+   */
+  private static function applyAggOutputToResults(array $buckets, $flagName, array &$results) {
+    foreach ($buckets as $bucket) {
+      $key = $bucket['key'];
+      if (isset($results[$key])) {
+        $results[$key][$flagName] = ($bucket['doc_count'] === 0) ? TRUE : FALSE;
+      }
+    }
   }
 
   /**
    * Validate the input parameters.
    *
-   * @param string $externalKey
-   *   External key for the species.
+   * @param array $externalKeys
+   *   External keys for the species.
    * @param float $lat
    *   Latitude (optional).
    * @param float $lon
@@ -104,9 +199,9 @@ class rest_occurrence_newness_checker {
    *
    * @throws Exception
    */
-  private static function validateParameters($externalKey, $lat, $lon, $gridSquareSize) {
-    if (empty($externalKey)) {
-      throw new Exception('external_key parameter is required.', 400);
+  private static function validateParameters(array $externalKeys, $lat, $lon, $gridSquareSize) {
+    if (empty($externalKeys)) {
+      throw new Exception('external_keys parameter is required.', 400);
     }
 
     // If gridSquareSize provided, both lat and lon must be provided.
@@ -132,109 +227,18 @@ class rest_occurrence_newness_checker {
     }
   }
 
-  /**
-   * Check if the species has been recorded globally.
-   *
-   * @param string $externalKey
-   *   External key (taxon.accepted_taxon_id).
-   *
-   * @return bool
-   *   TRUE if the species has not been recorded (new).
-   */
-  private static function checkGlobalNewness($externalKey) {
-    $esQuery = self::buildEsQuery($externalKey);
-    return !self::checkEsRecordExists($esQuery);
-  }
 
   /**
-   * Check if the species was recorded in the specified year.
+   * Build ES base query for multiple external keys (terms filter).
    *
-   * @param string $externalKey
-   *   External key (taxon.accepted_taxon_id).
-   * @param int $year
-   *   Year to check.
-   *
-   * @return bool
-   *   TRUE if the species has not been recorded in that year (new).
-   */
-  private static function checkYearNewness($externalKey, $year) {
-    $esQuery = self::buildEsQuery($externalKey);
-    // Add year filter.
-    $esQuery['query']['bool']['must'][] = [
-      'term' => [
-        'event.year' => $year
-      ],
-    ];
-    return !self::checkEsRecordExists($esQuery);
-  }
-
-  /**
-   * Check if the species was recorded in the specified grid square.
-   *
-   * @param string $externalKey
-   *   External key (taxon.accepted_taxon_id).
-   * @param string $gridSquare
-   *   Grid square centre point in WKT format "POINT(lon lat)".
-   * @param string $gridSquareSize
-   *   Grid square size: '1km', '2km', or '10km'.
-   *
-   * @return bool
-   *   TRUE if the species has not been recorded in that grid square (new).
-   */
-  private static function checkGridSquareNewness($externalKey, $gridSquare, $gridSquareSize) {
-    $esQuery = self::buildEsQuery($externalKey);
-    // Add grid square filter. Extract point from WKT.
-    preg_match('/POINT\(([-\d.]+)\s+([-\d.]+)\)/', $gridSquare, $matches);
-    if (!empty($matches)) {
-      $lon = $matches[1];
-      $lat = $matches[2];
-      // Query the grid square field based on size, with an arbitrary small
-      // buffer of 0.001 degrees.
-      $esQuery['query']['bool']['must'][] = [
-        'term' => [
-          "location.grid_square.$gridSquareSize.centre" => "$lon $lat",
-        ],
-      ];
-    }
-    return !self::checkEsRecordExists($esQuery);
-  }
-
-  /**
-   * Check if the species was recorded within a group.
-   *
-   * @param string $externalKey
-   *   External key (taxon.accepted_taxon_id).
-   * @param int $groupId
-   *   Group ID.
-   *
-   * @return bool
-   *   TRUE if the species has not been recorded in that group (new).
-   */
-  private static function checkGroupNewness($externalKey, $groupId) {
-    $esQuery = self::buildEsQuery($externalKey);
-    // Add group filter.
-    $esQuery['query']['bool']['must'][] = [
-      'term' => [
-        'metadata.group.id' => $groupId
-      ],
-    ];
-    return !self::checkEsRecordExists($esQuery);
-  }
-
-  /**
-   * Build a base Elasticsearch query for counting records.
-   *
-   * @param string $externalKey
-   *   External key (taxon.accepted_taxon_id).
-   *
+   * @param array $externalKeys
    * @return array
-   *   Elasticsearch query structure.
    */
-  private static function buildEsQuery($externalKey) {
+  private static function buildEsQuery(array $externalKeys) {
     $mustClauses = [
       [
-        'term' => [
-          'taxon.accepted_taxon_id' => $externalKey,
+        'terms' => [
+          'taxon.accepted_taxon_id' => $externalKeys,
         ],
       ],
       [
@@ -252,40 +256,40 @@ class rest_occurrence_newness_checker {
           'must' => $mustClauses,
         ],
       ],
+      'aggs' => [
+        'by_taxon' => [
+          'terms' => [
+            'field' => 'taxon.accepted_taxon_id',
+            'size' => count($externalKeys),
+          ],
+        ],
+      ],
     ];
   }
 
   /**
-   * Check if any record exists for the given Elasticsearch query.
+   * Execute an ES search with aggregations and return the buckets for 'by_taxon'.
    *
    * @param array $esQuery
-   *   Elasticsearch query structure.
+   *   Elasticsearch query to execute.
    *
-   * @return bool
-   *   TRUE if at least one record exists, FALSE otherwise.
+   * @return array
+   *   Array of buckets with keys 'key' and 'doc_count'.
    */
-  private static function checkEsRecordExists(array $esQuery) {
+  private static function executeEsAggregation(array $esQuery) {
     try {
-      // Get the Elasticsearch configuration.
       $esConfig = self::$esConfig;
       if (empty($esConfig)) {
         throw new Exception('Elasticsearch is not configured.');
       }
-
       $endpoint = key($esConfig);
       $config = $esConfig[$endpoint];
-
       if (empty($config['url']) || empty($config['index'])) {
         throw new Exception('Elasticsearch endpoint not properly configured.');
       }
-
-      // Build the URL.
       $url = $config['url'] . '/' . $config['index'] . '/_search';
-
-      // Prepare the query as JSON.
       $queryJson = json_encode($esQuery);
 
-      // Use curl to make the request.
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_POST, 1);
       curl_setopt($session, CURLOPT_POSTFIELDS, $queryJson);
@@ -300,26 +304,16 @@ class rest_occurrence_newness_checker {
       if ($httpCode !== 200) {
         $responseDecoded = json_decode($response, TRUE);
         $error = $responseDecoded['error']['root_cause'][0]['reason'] ?? 'Unknown error';
-        kohana::log('error', 'Elasticsearch query failed: ' . $error);
-        throw new Exception('Elasticsearch query failed.');
+        kohana::log('error', 'Elasticsearch aggregation failed: ' . $error);
+        throw new Exception('Elasticsearch aggregation failed.');
       }
 
-      // Parse the response.
       $response = json_decode($response, TRUE);
-
-      // Check if any hits exist.
-      if (isset($response['hits']['total'])) {
-        $total = is_array($response['hits']['total'])
-          ? $response['hits']['total']['value']
-          : $response['hits']['total'];
-        return $total > 0;
-      }
-
-      return FALSE;
+      $buckets = $response['aggregations']['by_taxon']['buckets'] ?? [];
+      return $buckets;
     }
     catch (Exception $e) {
-      // Log the error and re-throw.
-      kohana::log('error', 'Elasticsearch query failed in rest_occurrence_newness_checker: ' . $e->getMessage());
+      kohana::log('error', 'Elasticsearch aggregation error: ' . $e->getMessage());
       throw $e;
     }
   }
@@ -335,9 +329,9 @@ class rest_occurrence_newness_checker {
    *   Grid square size: '1km', '2km', or '10km'.
    *
    * @return string
-   *   Grid square centre point as WKT "POINT(lon lat)".
+   *   Grid square centre point string, format "lon lat".
    */
-  private static function getGridSquare($lat, $lon, $gridSquareSize) {
+  private static function getGridSquare($lat, $lon, $gridSquareSize): string {
     $precision = match($gridSquareSize) {
       '1km' => 1000,
       '2km' => 2000,
@@ -367,7 +361,7 @@ class rest_occurrence_newness_checker {
       throw new Exception('Failed to calculate grid square.');
     }
 
-    return 'POINT(' . $result->grid_point . ')';
+    return $result->grid_point;
   }
 
 }

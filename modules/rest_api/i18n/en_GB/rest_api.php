@@ -861,8 +861,8 @@ users after they save a record.
 
 Parameters:
 <ul>
-  <li><strong>external_key</strong> (required): The accepted taxon ID (taxon.accepted_taxon_id) for
-  the species being recorded</li>
+  <li><strong>external_keys</strong>: the accepted taxon ID (taxon.accepted_taxon_id) for a single
+  species being recorded. Can accept multiple in comma-separated form.</li>
   <li><strong>lat</strong> (optional): Latitude of the record location in WGS84 (decimal degrees).
   Must be provided if grid_square_size is specified, otherwise must not be provided.</li>
   <li><strong>lon</strong> (optional): Longitude of the record location in WGS84 (decimal degrees).
@@ -877,17 +877,26 @@ Parameters:
   includes is_new_for_group badge.</li>
 </ul>
 
-Example request:
+Example request for multiple species:
 <pre><code>
-GET /index.php/services/rest/occurrences/check-newness?external_key=NBNSYS0000385&lat=51.6243&lon=-3.4123&grid_square_size=1km&year=2024
+GET /index.php/services/rest/occurrences/check-newness?external_keys=NBNSYS000000385,NBNSYS000000386&lat=51.6243&lon=-3.4123&grid_square_size=1km&year=2024
 
 Response:
 200 OK
-{
-  "is_new_global": true,
-  "is_new_for_year": false,
-  "is_new_for_grid": true
-}
+[
+  {
+    "external_key": "NBNSYS000000385",
+    "is_new_global": true,
+    "is_new_for_year": false,
+    "is_new_for_grid": true
+  },
+  {
+    "external_key": "NBNSYS000000386",
+    "is_new_global": false,
+    "is_new_for_year": false,
+    "is_new_for_grid": false
+  }
+]
 </code></pre>
 
 Response will conditionally include:
