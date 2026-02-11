@@ -584,6 +584,29 @@ class Rest_Controller extends Controller {
             ],
           ],
         ],
+        'occurrences/check-newness' => [
+          'params' => [
+            'external_key' => [
+              'datatype' => 'string',
+              'required' => TRUE,
+            ],
+            'lat' => [
+              'datatype' => 'float',
+            ],
+            'lon' => [
+              'datatype' => 'float',
+            ],
+            'grid_square_size' => [
+              'datatype' => 'string',
+            ],
+            'year' => [
+              'datatype' => 'integer',
+            ],
+            'group_id' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
       ],
       'POST' => [
         'occurrences' => [],
@@ -3605,6 +3628,53 @@ SQL;
       $preconditions['created_by_id'] = RestObjects::$clientUserId;
     }
     rest_crud::delete('occurrence', $id, $preconditions);
+  }
+
+  /**
+   * End-point to GET record newness badges.
+   *
+   * Checks if a wildlife record is new to the species, new to a specific
+   * grid square, new in the current year, or new within a specific group.
+   *
+   * Parameters:
+   * - external_key (required): The taxon.accepted_taxon_id
+   * - lat (optional): Latitude of the record (WGS84)
+   * - lon (optional): Longitude of the record (WGS84)
+   * - grid_square_size (optional): '1km', '2km', or '10km' (requires lat/lon)
+   * - year (optional): Year to check for newness
+   * - group_id (optional): Group ID to filter by
+   */
+  public function occurrencesGetCheckNewness() {
+    try {
+      // Extract parameters from GET request.
+      $externalKey = $_GET['external_key'] ?? NULL;
+      $lat = isset($_GET['lat']) ? (float) $_GET['lat'] : NULL;
+      $lon = isset($_GET['lon']) ? (float) $_GET['lon'] : NULL;
+      $gridSquareSize = $_GET['grid_square_size'] ?? NULL;
+      $year = isset($_GET['year']) ? (int) $_GET['year'] : NULL;
+      $groupId = isset($_GET['group_id']) ? (int) $_GET['group_id'] : NULL;
+
+      // Check newness and get badges.
+      $badges = rest_occurrence_newness_checker::checkNewness(
+        $externalKey,
+        $lat,
+        $lon,
+        $gridSquareSize,
+        $year,
+        $groupId
+      );
+
+      // Return the response.
+      RestObjects::$apiResponse->succeed($badges);
+    }
+    catch (Exception $e) {
+      $httpCode = $e->getCode() ?: 400;
+      RestObjects::$apiResponse->fail(
+        $httpCode === 400 ? 'Bad Request' : 'Internal Server Error',
+        $httpCode,
+        $e->getMessage()
+      );
+    }
   }
 
   /**
