@@ -196,7 +196,6 @@ class rest_occurrence_newness_checker {
         ],
       ];
     }
-    kohana::log('debug', json_encode($esQuery));
     return !self::checkEsRecordExists($esQuery);
   }
 
