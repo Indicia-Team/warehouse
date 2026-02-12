@@ -32,6 +32,11 @@ class Scratchpad_list_Model extends ORM {
 
   protected $has_many = array('scratchpad_list_entries');
 
+  protected $has_and_belongs_to_many = [
+    'groups',
+    'locations',
+  ];
+
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
@@ -39,7 +44,11 @@ class Scratchpad_list_Model extends ORM {
     $array->add_rules('website_id', 'required');
     $array->add_rules('website_id', 'integer');
     $array->add_rules('scratchpad_type_id', 'integer');
-    $this->unvalidatedFields = array('description', 'expires_on');
+    $this->unvalidatedFields = [
+      'description',
+      'expires_on',
+      'metadata',
+    ];
     return parent::validate($array, $save);
   }
 
