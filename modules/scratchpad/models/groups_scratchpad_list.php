@@ -1,9 +1,6 @@
 <?php
 
 /**
- * @file
- * Warehouse version configuration.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
@@ -25,22 +21,28 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * The application files' version number.
- *
- * @var string
+ * Model class for the groups_scratchpad_lists table.
  */
-$config['version'] = '9.18.0';
+class Groups_scratchpad_list_Model extends ORM {
 
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2026-02-12';
+  protected $has_one = [
+    'group',
+    'scratchpad_list',
+  ];
 
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+  protected $belongs_to = array(
+    'created_by'=>'user',
+    'updated_by'=>'user'
+  );
+
+  public function validate(Validation $array, $save = FALSE) {
+    $array->pre_filter('trim');
+    $array->add_rules('group_id', 'integer', 'required');
+    $array->add_rules('scratchpad_list_id', 'integer', 'required');
+    $this->unvalidatedFields = [
+      'deleted',
+    ];
+    return parent::validate($array, $save);
+  }
+
+}
