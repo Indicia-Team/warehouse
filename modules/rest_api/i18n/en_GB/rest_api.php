@@ -886,13 +886,13 @@ Response:
 [
   {
     "external_key": "NBNSYS000000385",
-    "is_new_global": true,
+    "is_new_for_website": true,
     "is_new_for_year": false,
     "is_new_for_grid": true
   },
   {
     "external_key": "NBNSYS000000386",
-    "is_new_global": false,
+    "is_new_for_website": false,
     "is_new_for_year": false,
     "is_new_for_grid": false
   }
@@ -901,7 +901,8 @@ Response:
 
 Response will conditionally include:
 <ul>
-  <li><strong>is_new_global</strong>: True if the species has not been recorded before (always included)</li>
+  <li><strong>is_new_for_website</strong>: True if the species has not been recorded before for
+  this website (always included)</li>
   <li><strong>is_new_for_year</strong>: True if the species has not been recorded in the specified
   year (only if year parameter provided)</li>
   <li><strong>is_new_for_grid</strong>: True if the species has not been recorded in the specified
