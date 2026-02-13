@@ -56,7 +56,7 @@ class rest_occurrence_newness_checker {
    *
    * @return array
    *   Associative array with badges returned conditionally:
-   *   - is_new_global: bool (always included)
+   *   - is_new_for_website: bool (always included)
    *   - is_new_for_year: bool (only if $year provided)
    *   - is_new_for_grid: bool (only if $gridSquareSize and lat/lon provided)
    *   - is_new_for_group: bool (only if $groupId provided)
@@ -96,7 +96,7 @@ class rest_occurrence_newness_checker {
     // Prepare initial result objects.
     $results = [];
     foreach ($externalKeys as $k) {
-      $res = ['external_key' => $k, 'is_new_global' => TRUE];
+      $res = ['external_key' => $k, 'is_new_for_website' => TRUE];
       if (!empty($year)) {
         $res['is_new_for_year'] = TRUE;
       }
@@ -113,9 +113,8 @@ class rest_occurrence_newness_checker {
     $baseQuery = self::buildEsQuery($externalKeys);
 
     // 1) Global existence aggregation.
-    $globalQuery = $baseQuery;
-    $globalBuckets = self::executeEsAggregation($globalQuery);
-    self::applyAggOutputToResults($globalBuckets, 'is_new_global', $results);
+    $globalBuckets = self::executeEsAggregation($baseQuery);
+    self::applyAggOutputToResults($globalBuckets, 'is_new_for_website', $results);
 
     // 2) Year check.
     if (!empty($year)) {
