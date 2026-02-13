@@ -43,13 +43,7 @@ class Base_licensed_medium_Model extends ORM {
    */
   protected function preSubmit() {
     if (!array_key_exists('id', $this->submission['fields']) || empty($this->submission['fields']['id']['value'])) {
-      global $remoteUserId;
-      if (isset($remoteUserId)) {
-        $userId = $remoteUserId;
-      }
-      elseif (isset($_SESSION['auth_user'])) {
-        $userId = $_SESSION['auth_user']->id;
-      }
+      $userId = $this->getUserId();
       // Set user's default media licence unless already specified in the
       // submission.
       if (isset($userId) && (empty($this->submission['fields']['licence_id']) || empty($this->submission['fields']['licence_id']['value']))) {
