@@ -20,18 +20,32 @@
 // @todo Scheduled tasks hook to clean expired lists.
 
 /**
- * Hook to ORM enable the relationship between taxon designations and taxa from the taxon end.
+ * Implements hook_orm_extend().
+ *
+ * Establishes a one-to-many relationship where scratchpad_list has many
+ * scratchpad_list_entries, and each entry belongs to a scratchpad_list.
  */
 function scratchpad_extend_orm() {
-  return array(
-    'scratchpad_list'=>array('has_many'=>array('scratchpad_list_entries')),
-    'scratchpad_list_entry'=>array('belongs_to'=>array('scratchpad_list'))
-  );
+  return [
+    'scratchpad_list' => ['has_many' => ['scratchpad_list_entries']],
+    'scratchpad_list_entry' => ['belongs_to' => ['scratchpad_list']],
+    'group' => ['has_many' => ['groups_scratchpad_lists']],
+    'groups_scratchpad_list' => ['belongs_to' => ['group']],
+    'location' => ['has_many' => ['locations_scratchpad_lists']],
+    'locations_scratchpad_list' => ['belongs_to' => ['location']],
+  ];
 }
 
+/**
+ * Implements hook_data_services_extend().
+ *
+ * Exposes scratchpad entities to the data services API.
+ */
 function scratchpad_extend_data_services() {
-  return array(
-    'scratchpad_lists'=>array(),
-    'scratchpad_list_entries'=>array()
-  );
+  return [
+    'scratchpad_lists' => [],
+    'scratchpad_list_entries' => [],
+    'groups_scratchpad_lists' => [],
+    'locations_scratchpad_lists' => [],
+  ];
 }

@@ -164,7 +164,7 @@ class Occurrence_Model extends ORM {
         if ($newStatus === 'V' || $newStatus === 'R') {
           // If verifying or rejecting, then set the verification metadata to
           // provided values, if present, else current values.
-          $array->verified_by_id = empty($fields['verified_by_id']) ? $this->getCurrentUserId() : $fields['verified_by_id']['value'];
+          $array->verified_by_id = empty($fields['verified_by_id']) ? $this->getUserId() : $fields['verified_by_id']['value'];
           $array->verified_on = empty($fields['verified_on']) ? date("Ymd H:i:s") : $fields['verified_on']['value'];
         }
         else {
@@ -332,19 +332,7 @@ class Occurrence_Model extends ORM {
    *   attribute_websites tables don't have updated by and updated on fields.
    */
   public function set_metadata_for_row_array(&$row = NULL, $tableName = NULL) {
-    if (isset($_SESSION['auth_user'])) {
-      $userId = $_SESSION['auth_user']->id;
-    }
-    else {
-      global $remoteUserId;
-      if (isset($remoteUserId)) {
-        $userId = $remoteUserId;
-      }
-      else {
-        $defaultUserId = Kohana::config('indicia.defaultPersonId');
-        $userId = ($defaultUserId ? $defaultUserId : 1);
-      }
-    }
+    $userId = $this->getUserId();
     $row['created_on'] = date("Ymd H:i:s");
     $row['created_by_id'] = $userId;
     // Attribute websites tables don't have updated by/date details columns so
@@ -353,28 +341,6 @@ class Occurrence_Model extends ORM {
       $row['updated_on'] = date("Ymd H:i:s");
       $row['updated_by_id'] = $userId;
     }
-  }
-
-  /*
-   * Collect the user id for the current user, this will be 1 unless logged into warehouse or Easy Login is enabled in instant-indicia.
-   */
-  private function getCurrentUserId() {
-    if (isset($_SESSION['auth_user'])) {
-      $userId = $_SESSION['auth_user']->id;
-    }
-    else {
-      global $remoteUserId;
-      if (isset($remoteUserId)) {
-        $userId = $remoteUserId;
-      }
-      else {
-        // Don't force overwrite of user IDs that already exist in the record, since
-        // we are just using a default.
-        $defaultUserId = Kohana::config('indicia.defaultPersonId');
-        $userId = ($defaultUserId ? $defaultUserId : 1);
-      }
-    }
-    return $userId;
   }
 
   /**

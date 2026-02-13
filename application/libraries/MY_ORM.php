@@ -591,6 +591,17 @@ class ORM extends ORM_Core {
   }
 
   /**
+   * Find the current authenticated user ID.
+   *
+   * @return int
+   *   ID from the users table.
+   */
+  public function getUserId() {
+    global $remoteUserId;
+    return $remoteUserId ?? $_SESSION['auth_user']->id ?? Kohana::config('indicia.defaultPersonId');
+  }
+
+  /**
    * Retrieve the caption of a new entry of this model type.
    *
    * Overrideable as required.

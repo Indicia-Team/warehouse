@@ -162,13 +162,7 @@ class Taxon_Model extends ORM {
     }
     if (!empty($this->prefExternalKeyChangedForTaxonMeaningIds)) {
       // Apply external key change to synonyms/vernaculars.
-      global $remoteUserId;
-      if (isset($remoteUserId)) {
-        $userId = $remoteUserId;
-      }
-      else {
-        $userId = isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : Kohana::config('indicia.defaultPersonId');
-      }
+      $userId = $this->getUserId();
       foreach ($this->prefExternalKeyChangedForTaxonMeaningIds as $taxonMeaningId) {
         $updateExtKeyQuery = <<<SQL
 UPDATE taxa t

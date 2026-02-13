@@ -375,25 +375,17 @@ class Sample_Model extends ORM_Tree {
    */
   private function preSubmitFillInLicence() {
     if (!(array_key_exists('id', $this->submission['fields']) || array_key_exists('licence_id', $this->submission['fields']))) {
-      global $remoteUserId;
-      if (isset($remoteUserId)) {
-        $userId = $remoteUserId;
-      }
-      elseif (isset($_SESSION['auth_user'])) {
-        $userId = $_SESSION['auth_user']->id;
-      }
-      if (isset($userId)) {
-        $row = $this->db
-          ->select('licence_id')
-          ->from('users_websites')
-          ->where([
-            'user_id' => $userId,
-            'website_id' => $this->identifiers['website_id'],
-          ])
-          ->get()->current();
-        if ($row) {
-          $this->submission['fields']['licence_id']['value'] = $row->licence_id;
-        }
+      $userId = $this->getUserId();
+      $row = $this->db
+        ->select('licence_id')
+        ->from('users_websites')
+        ->where([
+          'user_id' => $userId,
+          'website_id' => $this->identifiers['website_id'],
+        ])
+        ->get()->current();
+      if ($row) {
+        $this->submission['fields']['licence_id']['value'] = $row->licence_id;
       }
     }
   }
