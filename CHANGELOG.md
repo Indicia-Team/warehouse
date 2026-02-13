@@ -4,6 +4,18 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.18.0
+*2026-02-13*
+
+* Adds a REST API endpoint `occurrences/check-newness` for checking the newness of a record against
+  the Elasticsearch data.
+* A scratchpad list can now be linked to locations with a new entity,
+  `locations_scratchpads_lists`, so you could have a site species list for data entry for example.
+* A scratchpad list can now be linked to recording groups with a new entity,
+  `groups_scratchpads_lists`, so you could have a species list for a project or activity.
+* A scratchpad list entry can now have configurable metadata, e.g. a species presence code or
+  notes. There is a new `scratchpad_list_entries.metadata` JSON field for this information.
+
 ## Version 9.17.0
 *2026-01-13*
 
