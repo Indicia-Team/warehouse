@@ -37,3 +37,20 @@ FROM groups_scratchpad_lists gsl
 JOIN scratchpad_lists sl ON gsl.scratchpad_list_id = sl.id AND NOT sl.deleted
 JOIN groups grp ON gsl.group_id = grp.id AND NOT grp.deleted
 WHERE NOT gsl.deleted;
+
+-- Add metadata to view for scratchpad_list_entries.
+CREATE OR REPLACE VIEW list_scratchpad_list_entries AS
+ SELECT e.id,
+    s.entity,
+    e.scratchpad_list_id,
+    e.entry_id,
+    s.website_id,
+    e.metadata,
+    e.created_on,
+    e.created_by_id,
+    e.updated_on,
+    e.updated_by_id
+   FROM scratchpad_list_entries e
+   JOIN scratchpad_lists s on s.id=e.scratchpad_list_id and s.deleted=false
+   WHERE e.deleted=false;
+

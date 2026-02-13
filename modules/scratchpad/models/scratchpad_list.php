@@ -47,7 +47,6 @@ class Scratchpad_list_Model extends ORM {
     $this->unvalidatedFields = [
       'description',
       'expires_on',
-      'metadata',
     ];
     return parent::validate($array, $save);
   }
@@ -69,27 +68,56 @@ class Scratchpad_list_Model extends ORM {
     ];
   }
 
+  /**
+   * Handle update of scratchpad list entries.
+   *
+   * @param mixed $isInsert
+   *   Is the submission for an insert or update?
+   *
+   * @return bool
+   *   TRUE on success.
+   */
   public function postSubmit($isInsert) {
     if (array_key_exists('metaFields', $this->submission) &&
         array_key_exists('entries', $this->submission['metaFields'])) {
       $entries = explode(';', $this->submission['metaFields']['entries']['value']);
       $entriesCsv = implode(',', $entries);
+      $metadataJson = $this->submission['metaFields']['entries_metadata']['value'] ?? NULL;
+      $metadata = $metadataJson ? json_decode($metadataJson, TRUE) : NULL;
       warehouse::validateIntCsvListParam($entriesCsv);
+      $userId = $this->getUserId();
       if (!$isInsert) {
         $this->db->query(<<<SQL
-          DELETE FROM scratchpad_list_entries
+          UPDATE scratchpad_list_entries
+          SET deleted = true, updated_on = now(), updated_by_id = ?
           WHERE scratchpad_list_id=$this->id
           AND entry_id NOT IN ($entriesCsv)
-        SQL);
+        SQL, [$userId]);
       }
       foreach ($entries as $entry_id) {
+        $entryMetadata = $metadata[$entry_id] ?? NULL;
         if ($this->db->query(
             "select 1 from scratchpad_list_entries where scratchpad_list_id=? and entry_id=?",
             [$this->id, $entry_id]
             )->count() === 0) {
-          $this->db->query(
-            "insert into scratchpad_list_entries (scratchpad_list_id, entry_id) select ?, ?",
-            [$this->id, $entry_id]
+          // Doesn't exist, so insert it.
+          $this->db->query(<<<SQL
+              INSERT INTO scratchpad_list_entries (scratchpad_list_id, entry_id, metadata, created_on, created_by_id, updated_on, updated_by_id)
+              SELECT ?, ?, ?, now(), ?, now(), ?
+            SQL,
+            [$this->id, $entry_id, json_encode($entryMetadata), $userId, $userId]
+          );
+        }
+        else {
+          // Exists, so update the updated_on timestamp and metadata. This will
+          // undelete an entry if it was previously deleted.
+          $this->db->query(<<<SQL
+              UPDATE scratchpad_list_entries
+              SET updated_on=now(), updated_by_id=?, metadata=?, deleted=false
+              WHERE scratchpad_list_id=? AND entry_id=?
+              AND (deleted=true OR metadata::text <> ?)
+            SQL,
+            [$userId, json_encode($entryMetadata), $this->id, $entry_id, json_encode($entryMetadata)]
           );
         }
       }
