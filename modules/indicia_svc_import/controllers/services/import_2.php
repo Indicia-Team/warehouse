@@ -514,7 +514,7 @@ class Import_2_Controller extends Service_Base_Controller {
     $this->authenticate('write');
     // Data file allowed for legacy clients.
     $configId = $this->getConfigId();
-    $stepIndex = $_POST['index'];
+    $stepIndex = (int) $_POST['index'];
     $config = import2ChunkHandler::getConfig($configId);
     $steps = [];
     $parentTable = inflector::plural($config['parentEntity']);
@@ -612,7 +612,7 @@ class Import_2_Controller extends Service_Base_Controller {
   public function import_reverse() {
     $db = new Database();
     if (!empty($_POST['warehouse_user_id'])) {
-      $warehouseUserId = $_POST['warehouse_user_id'];
+      $warehouseUserId = (int) $_POST['warehouse_user_id'];
     }
     else {
       http_response_code(400);
