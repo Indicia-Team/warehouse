@@ -190,7 +190,7 @@ class Emailer {
 
     foreach ($result as $row) {
       $fields = array_map(function($field) {
-        return '"' . str_replace('"', '""', $field) . '"';
+        return empty($field) ? '' : '"' . str_replace('"', '""', $field) . '"';
       }, (array) $row);
       $data .= implode(',', $fields) . "\n";
     }
