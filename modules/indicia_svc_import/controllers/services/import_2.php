@@ -245,10 +245,9 @@ class Import_2_Controller extends Service_Base_Controller {
    */
   public function extract_file() {
     header("Content-Type: application/json");
+    // Ensure we have write permissions.
     $this->authenticate('write');
     try {
-      // Ensure we have write permissions.
-      $this->authenticate();
       if (empty($_POST['uploaded-file'])) {
         throw new exception('Parameter uploaded-file is required for file extraction');
       }
@@ -1600,9 +1599,6 @@ SQL;
       }
       // HTTP 204 for a successful delete, or if nothing to delete.
       http_response_code(204);
-      echo json_encode([
-        'status' => 'No Content',
-      ]);
     }
     catch (RequestAbort $e) {
       // Ignore as abort already handled.
