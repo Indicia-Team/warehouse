@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS ix_determinations_occurrence_id ON determinations (occurrence_id) WHERE deleted=false;
