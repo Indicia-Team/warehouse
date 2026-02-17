@@ -69,6 +69,9 @@ $options = [
 if (isset($orderby)) {
   $options['extraParams']['orderby'] = $orderby;
 }
+if (isset($sortdir)) {
+  $options['extraParams']['sortdir'] = $sortdir;
+}
 if ($gridReport) {
   $options['dataSource'] = $gridReport;
   $options['extraParams'] += $filter;
