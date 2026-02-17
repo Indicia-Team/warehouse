@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
@@ -32,16 +31,16 @@
 
 warehouse::loadHelpers(['report_helper']);
 $readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-$colDefs = array();
+$colDefs = [];
 if (isset($columns)) {
   foreach ($columns as $fieldname => $title) {
     if (!isset($orderby)) {
       $orderby = $fieldname;
     }
-    $def = array(
+    $def = [
       'fieldname' => $fieldname,
       'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title,
-    );
+    ];
     if ($fieldname == 'path') {
       $def['img'] = TRUE;
     }
@@ -55,20 +54,20 @@ foreach ($actions as &$action) {
   }
 }
 if (count($actions) > 0) {
-  $colDefs[] = array(
+  $colDefs[] = [
     'display' => 'Actions',
     'actions' => $actions,
-  );
+  ];
 }
-$options = array(
+$options = [
   'id' => $id,
   'class' => 'report-grid table',
   'readAuth' => $readAuth,
-  'extraParams' => array(),
+  'extraParams' => [],
   'itemsPerPage' => kohana::config('pagination.default.items_per_page'),
-);
+];
 if (isset($orderby)) {
-  $options['orderby'] = $orderby;
+  $options['extraParams']['orderby'] = $orderby;
 }
 if ($gridReport) {
   $options['dataSource'] = $gridReport;
