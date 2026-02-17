@@ -286,7 +286,7 @@ class Occurrence_Model extends ORM {
         $this->taxa_taxon_list_id != $this->submission['fields']['taxa_taxon_list_id']['value']) {
       $logDeterminations = kohana::config('indicia.auto_log_determinations') === TRUE ? 'true' : 'false';
       $resetClassification = empty($this->submission['fields']['classification_event_id']) ? 'true' : 'false';
-      $currentUserId = $this->getCurrentUserId();
+      $currentUserId = $this->getUserId();
       if (empty($this->submission['fields']['determiner_id']) || empty($this->submission['fields']['determiner_id']['value'])) {
         // Determiner ID not provided, so use the authorised user_id to work
         // it out.
