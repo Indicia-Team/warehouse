@@ -50,6 +50,9 @@ class emailerDevLogger {
    *   The email address that the email should be sent from.
    * @param ?string $fromName
    *   The optional name associated with the from email address.
+   * @param ?array $attachmentInfo
+   *   Attachment to add. Can contain filename, mime type and data keys. Not
+   *   implemented in this handler.
    */
   public static function send(
       $subject,
@@ -58,7 +61,8 @@ class emailerDevLogger {
       array $ccList,
       $from,
       $fromName = NULL,
-      $priority = 3
+      $priority = 3,
+      ?array $attachmentInfo = NULL
       ) {
     Kohana::log('debug', 'Email information (emailerDevLogger): ' . var_export([
       'subject' => $subject,

@@ -116,6 +116,7 @@ function notification_emails_scheduled_task($last_run_date, $db) {
  */
 function run_email_notification_jobs($db, array $frequenciesToRun) {
   $subscriptionSettingsPageUrl = url::base() . 'subscription_settings.php';
+  $maxNotificationsPerEmail = 100;
   $frequencyToRunString = '';
   // Gather all the notification frequency jobs we need to run into a set
   // ready to pass into sql.
@@ -202,7 +203,7 @@ SQL;
 ORDER BY n.user_id, u.username, n.source_type, n.id
 
 SQL;
-  $notificationsToSendEmailsFor = $db->query($notificationsToSendEmailsForSql)->result_array(FALSE);
+  $notificationsToSendEmailsFor = $db->query($notificationsToSendEmailsForSql)->result(FALSE);
   if (empty($notificationsToSendEmailsFor)) {
     echo 'There are no email notifications to send at the moment.<br/>';
   }
@@ -231,7 +232,8 @@ SQL;
     // we know we need to start building an new email to a new user.
     $previousUserId = 0;
     $notificationIds = [];
-    $emailContent = start_building_new_email($notificationsToSendEmailsFor[0]);
+    $emailContent = start_building_new_email($notificationsToSendEmailsFor->current());
+    $notificationsInCurrentEmail = 0;
     $currentType = '';
     $sourceTypes = notification_emails::getNotificationTypes();
     $recordStatuses = notification_emails::getRecordStatuses();
@@ -243,28 +245,35 @@ SQL;
     );
     $emailHighPriority = FALSE;
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
-      if ($notificationToSendEmailsFor['escalate_email_priority'] == 2) {
-        $emailHighPriority = TRUE;
-      }
-      // This user is not the first user but we have detected that it is not
-      // the same user we added a notification to the email for last time, this
-      // means we need to send out the previous user's email and start building
-      // a new email.
-      if ($notificationToSendEmailsFor['user_id'] != $previousUserId && $previousUserId !== 0) {
+      // If user changes (or we hit the per-email max for the same user), send
+      // the email built so far and start a new one.
+      $userChanged = ($notificationToSendEmailsFor['user_id'] != $previousUserId && $previousUserId !== 0);
+      $emailFullForUser = ($notificationsInCurrentEmail >= $maxNotificationsPerEmail);
+      if ($userChanged || $emailFullForUser) {
         if ($currentType !== '') {
           $emailContent .= "</tbody>\n</table>\n";
         }
-        send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config['address'],
-          $subscriptionSettingsPageUrl, $emailHighPriority);
+        send_out_user_email(
+          $db,
+          $emailContent,
+          $previousUserId,
+          $notificationIds,
+          $email_config['address'],
+          $subscriptionSettingsPageUrl,
+          $emailHighPriority
+        );
+        // Reset tracking ready for the next email (either next user, or next
+        // chunk for the same user).
         $emailHighPriority = FALSE;
-        // Used to mark the notifications in an email if an email send is
-        // successful, once email send attempt has been made we can reset the
-        // list ready for the next email.
         $notificationIds = [];
+        $notificationsInCurrentEmail = 0;
         $emailSentCounter++;
-        // As we just sent out a an email, we can start building a new one.
         $emailContent = start_building_new_email($notificationToSendEmailsFor);
         $currentType = '';
+      }
+
+      if ($notificationToSendEmailsFor['escalate_email_priority'] == 2) {
+        $emailHighPriority = TRUE;
       }
       if (!empty($notificationToSendEmailsFor['data'])) {
         $record = json_decode($notificationToSendEmailsFor['data'], TRUE);
@@ -340,6 +349,7 @@ SQL;
       // Log the notification id so we know that this will have to be set to
       // email_sent in the database for the notification.
       $notificationIds[] = $notificationToSendEmailsFor['id'];
+      $notificationsInCurrentEmail++;
       // Update the user_id tracker as we cycle through the notifications.
       $previousUserId = $notificationToSendEmailsFor['user_id'];
     }
