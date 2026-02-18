@@ -77,6 +77,9 @@ class emailerMsGraph {
    *   The email address that the email should be sent from.
    * @param ?string $fromName
    *   The optional name associated with the from email address.
+   * @param ?array $attachmentInfo
+   *   Attachment to add. Can contain filename, mime type and data keys. Not
+   *   implemented in this handler.
    */
   public static function send(
       $subject,
@@ -85,7 +88,8 @@ class emailerMsGraph {
       array $ccList,
       $from,
       $fromName = NULL,
-      $priority = 3
+      $priority = 3,
+      ?array $attachmentInfo = NULL
       ) {
     // Add spacer before footer.
     for ($i = 0; $i < $config = Kohana::config('email.msgraph_footer_spacer_rows', FALSE, FALSE) ?? 0; $i++) {
