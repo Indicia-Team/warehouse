@@ -642,8 +642,8 @@ SQL;
         $skippedValues[$info['warehouseField']] = $dataRow->$srcFieldName;
         continue;
       }
-      if (empty($dataRow->$srcFieldName)) {
-        if (empty($config['global-values'][$destFieldName])) {
+      if ($dataRow->$srcFieldName === '' || $dataRow->$srcFieldName === NULL) {
+        if (isset($config['global-values'][$destFieldName]) && $config['global-values'][$destFieldName] !== '') {
           // An empty field shouldn't overwrite a global value.
           continue;
         }
