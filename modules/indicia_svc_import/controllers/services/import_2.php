@@ -495,6 +495,14 @@ class Import_2_Controller extends Service_Base_Controller {
         }
       }
     }
+    $multiValueAttributeNames= [];
+    $importedOrm = ORM::factory($config['entity']);
+    $attrDefs = $importedOrm->getMultivalueAttributes();
+    kohana::log('debug', 'Multivalue attributes for ' . $config['entity'] . ': ' . print_r($attrDefs, TRUE));
+    foreach ($attrDefs as $attrDef) {
+      $multiValueAttributeNames[] = $attrDef['id'];
+    }
+    $config['multiValueAttributes'] = $multiValueAttributeNames;
     import2ChunkHandler::saveConfig($configId, $config);
     $this->addTempDbTableIndexes($config);
     echo json_encode([

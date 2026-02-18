@@ -1756,7 +1756,7 @@ class ORM extends ORM_Core {
       $attrEntity = $this->object_name . '_attribute';
       $attrTable = inflector::plural($this->object_name . '_attribute');
 
-      $this->db->select("$attrTable.id", "$attrTable.caption", "$attrTable.data_type");
+      $this->db->select("$attrTable.id", "$attrTable.caption", "$attrTable.data_type", "$attrTable.multi_value");
       $this->db->from($attrTable);
       $this->db->where("$attrTable.deleted", 'f');
       if ((!empty($this->identifiers['website_id']) || !empty($this->identifiers['survey_id']))
@@ -1963,6 +1963,34 @@ class ORM extends ORM_Core {
       }
     }
     return $fields;
+  }
+
+  /**
+   * Returns a list of the multi-value attributes for this object.
+   *
+   * @param array $identifiers
+   *   Website ID, survey ID and/or taxon list ID that define the context of
+   *   the list of fields, used to determine the custom attributes to include.
+   * @param int $attrTypeFilter
+   *   Specify a location type meaning id or a sample method meaning id to
+   *   filter the returned attributes to those which apply to the given type or
+   *   method.
+   *
+   * @return array
+   *   List of the multi-value attributes for this object.
+   */
+  public function getMultivalueAttributes(array $identifiers = [], $attrTypeFilter = NULL) {
+    $this->identifiers = $identifiers;
+    $r = [];
+    if ($this->has_attributes) {
+      $result = $this->getAttributes(FALSE, $attrTypeFilter);
+      foreach ($result as $row) {
+        if ($row->multi_value == 't') {
+          $r[] = $row->id;
+        }
+      }
+    }
+    return $r;
   }
 
   /**
