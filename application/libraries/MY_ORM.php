@@ -1032,11 +1032,12 @@ class ORM extends ORM_Core {
       $errors
     );
     if ($this->has_attributes) {
-      // @todo The getAttributes call should use a type filter e.g. to filter on sample_method_id.
+      // @todo The getAttributes call should use a type filter e.g. to filter
+      // on sample_method_id.
       $requiredAttributes = $this->getAttributes(TRUE);
       foreach ($requiredAttributes as $attr) {
-        if (empty($vArray["$this->attrs_field_prefix:$attr->id"])) {
-          $errors["$this->attrs_field_prefix:$attr->id"] = 'A value for this attribute is required.';
+        if (trim($vArray["$this->attrs_field_prefix:$attr->id"] ?? '') === '') {
+          $errors["$this->attrs_field_prefix:$attr->id"] = 'A value is required for this attribute.';
         }
       }
       $allAttributes = $this->getAttributes(FALSE);
@@ -1966,7 +1967,7 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Returns a list of the multi-value attributes for this object.
+   * Returns a list of the multi-value attribute IDs for this object.
    *
    * @param array $identifiers
    *   Website ID, survey ID and/or taxon list ID that define the context of
@@ -1977,9 +1978,9 @@ class ORM extends ORM_Core {
    *   method.
    *
    * @return array
-   *   List of the multi-value attributes for this object.
+   *   List of the multi-value attribute IDs for this object.
    */
-  public function getMultivalueAttributes(array $identifiers = [], $attrTypeFilter = NULL) {
+  public function getMultivalueAttributeIds(array $identifiers = [], $attrTypeFilter = NULL) {
     $this->identifiers = $identifiers;
     $r = [];
     if ($this->has_attributes) {
