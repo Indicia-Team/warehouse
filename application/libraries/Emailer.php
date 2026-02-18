@@ -119,8 +119,9 @@ class Emailer {
    *   Optional additional info to identify the source of the email, e.g. the
    *   notification type.
    *
-   * @return bool
-   *   The number of recipients who have been sent emails - 0 if an error occurred..
+   * @return int
+   *   The number of recipients who have been sent emails - 0 if an error
+   *   occurred.
    */
   public function send($subject, $message, $emailType, $emailSubtype = NULL) {
     $config = kohana::config('email');
@@ -137,7 +138,7 @@ class Emailer {
     $emailLibrary = $config['library'] ?? 'Swift';
     $emailHelper = "emailer$emailLibrary";
     try {
-      if (empty($this->recipients || empty($this->message))) {
+      if (empty($this->recipients || empty($message))) {
         throw new Exception('Email incomplete - missing recipient or message');
       }
       $emailHelper::send(
