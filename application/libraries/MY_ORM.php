@@ -1035,8 +1035,24 @@ class ORM extends ORM_Core {
       // @todo The getAttributes call should use a type filter e.g. to filter
       // on sample_method_id.
       $requiredAttributes = $this->getAttributes(TRUE);
+      $multiValueAttributeIds = $this->getMultivalueAttributeIds($identifiers);
       foreach ($requiredAttributes as $attr) {
-        if (trim($vArray["$this->attrs_field_prefix:$attr->id"] ?? '') === '') {
+        if (in_array($attr->id, $multiValueAttributeIds)) {
+          // Multi-value attribute - need to check that at least one value has been supplied for it.
+          $foundValue = FALSE;
+          foreach ($vArray as $field => $value) {
+            if (preg_match("/^$this->attrs_field_prefix\:$attr->id:?/", $field)) {
+              if (trim($value) !== '') {
+                $foundValue = TRUE;
+                break;
+              }
+            }
+          }
+          if (!$foundValue) {
+            $errors["$this->attrs_field_prefix:$attr->id"] = 'A value is required for this attribute.';
+          }
+        }
+        elseif (trim($vArray["$this->attrs_field_prefix:$attr->id"] ?? '') === '') {
           $errors["$this->attrs_field_prefix:$attr->id"] = 'A value is required for this attribute.';
         }
       }
@@ -1986,7 +2002,7 @@ class ORM extends ORM_Core {
     if ($this->has_attributes) {
       $result = $this->getAttributes(FALSE, $attrTypeFilter);
       foreach ($result as $row) {
-        if ($row->multi_value == 't') {
+        if ($row->multi_value === 't') {
           $r[] = $row->id;
         }
       }
