@@ -134,7 +134,7 @@ class import2ChunkHandler {
             // the sample, add them to the count.
             $config['rowsProcessed'] += count($childEntityDataRows);
           }
-          $keyFields = self::getDestFieldsForColumns($parentEntityColumns);
+          $keyFields = self::getDestFieldsForColumns($parentEntityColumns, $config);
           self::saveErrorsToRows($db, $parentEntityDataRow, $keyFields, $parentErrors, $config);
         }
         // If sample saved OK, or we are just prechecking, process the matching
@@ -453,7 +453,7 @@ class import2ChunkHandler {
    */
   private static function fetchChildEntityData($db, array $columns, $isPrecheck, array $config, $parentEntityDataRow) {
     $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
-    $fields = self::getDestFieldsForColumns($columns);
+    $fields = self::getDestFieldsForColumns($columns, $config);
     // Build a filter to extract rows for this parent entity.
     $fieldToTrackDoneBy = $isPrecheck ? 'checked' : 'imported';
     $wheresList = [
@@ -492,7 +492,7 @@ SQL;
    *   Import metadata configuration object.
    */
   private static function fetchParentEntityData($db, array $columns, $isPrecheck, array $config) {
-    $fields = self::getDestFieldsForColumns($columns);
+    $fields = self::getDestFieldsForColumns($columns, $config);
     $fields = array_map(function ($s) use ($db) {
       return pg_escape_identifier($db->getLink(), $s);
     }, $fields);
@@ -630,20 +630,24 @@ SQL;
       // Fk fields need to alter the fake field name to a real one and use the
       // mapped source field.
       if (!empty($info['isFkField'])) {
-        $srcFieldName .= '_id';
         $destFieldParts = explode(':', $destFieldName);
         $destFieldName = "$destFieldParts[0]:" .
             // Fieldname without fk_ prefix.
             substr($destFieldParts[1], 3) .
             // Append _id if not a custom attribute lookup.
             (preg_match('/^[a-z]{3}Attr$/', $destFieldParts[0]) ? '' : '_id');
+        // Multi-value custom attribute lookups don't use a single temp *_id
+        // column - they are resolved from config mappings.
+        if (!in_array($destFieldName, $config['multiValueAttributes'] ?? [])) {
+          $srcFieldName .= '_id';
+        }
       }
       if (in_array($info['warehouseField'], $skipColumns)) {
         $skippedValues[$info['warehouseField']] = $dataRow->$srcFieldName;
         continue;
       }
-      if (empty($dataRow->$srcFieldName)) {
-        if (empty($config['global-values'][$destFieldName])) {
+      if ($dataRow->$srcFieldName === '' || $dataRow->$srcFieldName === NULL) {
+        if (isset($config['global-values'][$destFieldName]) && $config['global-values'][$destFieldName] !== '') {
           // An empty field shouldn't overwrite a global value.
           continue;
         }
@@ -658,6 +662,26 @@ SQL;
         // Date fields are integers when read from Excel.
         $date = ImportDate::excelToDateTimeObject($dataRow->$srcFieldName);
         $submission[$destFieldName] = $date->format('d/m/Y');
+      }
+      elseif (in_array($destFieldName, $config['multiValueAttributes'] ?? [] )) {
+        // Cell is for a multi-value field, so needs to be tokenised.
+        $raw = $dataRow->$srcFieldName;
+        $tokens = self::tokeniseMultiValueCell($raw);
+        if (!empty($info['isFkField'])) {
+          // Lookup each value against the mappings.
+          $mapped = [];
+          foreach ($tokens as $token) {
+            if (empty($config['multiValueLookupMatches'][$info['tempDbField']][$token])) {
+              throw new exception('Missing lookup mapping for token "' . $token . '" in field ' . $info['tempDbField']);
+            }
+            $mapped[] = (int) $config['multiValueLookupMatches'][$info['tempDbField']][$token];
+          }
+          $submission[$destFieldName] = $mapped;
+        }
+        else {
+          // Not a FK field, so just save the tokens as the value.
+          $submission[$destFieldName] = $tokens;
+        }
       }
       else {
         $submission[$destFieldName] = $dataRow->$srcFieldName;
@@ -719,12 +743,53 @@ SQL;
    * @return array
    *   List of destination field names.
    */
-  private static function getDestFieldsForColumns(array $columns) {
+  private static function getDestFieldsForColumns(array $columns, array $config) {
     $fields = [];
     foreach ($columns as $info) {
-      $fields[] = empty($info['isFkField']) ? $info['tempDbField'] : "$info[tempDbField]_id";
+      $isMultiValueAttribute = in_array(str_replace(':fk_', ':', $info['warehouseField']), $config['multiValueAttributes'] ?? []);
+      if ($isMultiValueAttribute) {
+        // Multi-value attribute fields don't use the normal temp *_id field,
+        // as mappings stored in config.
+        $fields[] = $info['tempDbField'];
+      }
+      else {
+        $fields[] = empty($info['isFkField']) ? $info['tempDbField'] : "$info[tempDbField]_id";
+      }
     }
     return $fields;
+  }
+
+  /**
+   * Tokenise a multi-value cell.
+   *
+   * Uses CSV-style parsing to support quoted tokens. Returns canonical tokens
+   * (trimmed and lower-cased) with duplicates removed.
+   *
+   * @param string $raw
+   *  The raw cell value.
+   *
+   * @return array
+   *   List of canonical tokens.
+   */
+  public static function tokeniseMultiValueCell($raw) {
+    $raw = trim($raw ?? '');
+    if ($raw === '') {
+      return [];
+    }
+    $tokens = str_getcsv($raw, ';', '"', '\\');
+    if (!is_array($tokens)) {
+      return [];
+    }
+    $deduped = [];
+    foreach ($tokens as $token) {
+      $token = trim($token);
+      if ($token === '') {
+        continue;
+      }
+      $key = strtolower($token);
+      $deduped[$key] = $key;
+    }
+    return array_values($deduped);
   }
 
   /**

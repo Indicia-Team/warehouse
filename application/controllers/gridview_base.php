@@ -40,6 +40,20 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   protected $columns;
 
   /**
+   * Order by to pass to grid view report.
+   *
+   * @var string
+   */
+  protected $orderby;
+
+  /**
+   * Sort direction to pass to grid view report.
+   *
+   * @var string
+   */
+  protected $sortdir;
+
+  /**
    * Name of the associated model.
    *
    * @var string
@@ -115,6 +129,15 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $grid->id = $this->modelname;
     if (isset($this->columns)) {
       $grid->columns = $this->columns;
+    }
+    if (isset($this->orderby)) {
+      $grid->orderby = $this->orderby;
+    }
+    if (isset($this->orderby)) {
+      $grid->orderby = $this->orderby;
+    }
+    if (isset($this->sortdir) && in_array(strtolower($this->sortdir), ['asc', 'desc'])) {
+      $grid->sortdir = $this->sortdir;
     }
     $filter = $this->base_filter;
     if (isset($this->auth_filter['field'])) {

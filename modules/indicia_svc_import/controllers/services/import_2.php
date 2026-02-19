@@ -245,10 +245,9 @@ class Import_2_Controller extends Service_Base_Controller {
    */
   public function extract_file() {
     header("Content-Type: application/json");
+    // Ensure we have write permissions.
     $this->authenticate('write');
     try {
-      // Ensure we have write permissions.
-      $this->authenticate();
       if (empty($_POST['uploaded-file'])) {
         throw new exception('Parameter uploaded-file is required for file extraction');
       }
@@ -415,12 +414,60 @@ class Import_2_Controller extends Service_Base_Controller {
       $config = import2ChunkHandler::getConfig($configId);
       $db = new Database();
       $matchesInfo = json_decode($_POST['matches-info'], TRUE);
+      $columnLabel = $this->getColumnLabelForTempDbField($config['columns'], $matchesInfo['source-field']);
+      $columnInfo = $config['columns'][$columnLabel];
+
+      // For multi-value lookup attributes, store the mappings in config rather
+      // than in a single *_id column in the temp table.
+      if ($this->isMultiValueAttributeField($columnInfo, $config) && !empty($columnInfo['isFkField'])) {
+        if (!isset($config['multiValueLookupMatches'])) {
+          $config['multiValueLookupMatches'] = [];
+        }
+        if (!isset($config['multiValueLookupMatches'][$matchesInfo['source-field']])) {
+          $config['multiValueLookupMatches'][$matchesInfo['source-field']] = [];
+        }
+        foreach ($matchesInfo['values'] as $value => $termlists_term_id) {
+          // Safety check.
+          if (!preg_match('/^\d+$/', $termlists_term_id)) {
+            throw new exception('Mapped termlist term ID is not an integer.');
+          }
+          $token = strtolower(trim($value));
+          if ($token === '') {
+            continue;
+          }
+          $config['multiValueLookupMatches'][$matchesInfo['source-field']][$token] = (int) $termlists_term_id;
+        }
+
+        // Check all tokens found in the data are mapped.
+        $allTokens = $this->getDistinctTokensForMultiValueField($db, $config, $matchesInfo['source-field']);
+        $unmatched = [];
+        foreach ($allTokens as $token) {
+          if (!isset($config['multiValueLookupMatches'][$matchesInfo['source-field']][$token])) {
+            $unmatched[] = $token;
+          }
+        }
+
+        import2ChunkHandler::saveConfig($configId, $config);
+        if (count($unmatched) === 0) {
+          echo json_encode([
+            'status' => 'ok',
+          ]);
+        }
+        else {
+          echo json_encode([
+            'status' => 'incomplete',
+            'unmatched' => $unmatched,
+          ]);
+        }
+        return;
+      }
+
       $sourceColName = pg_escape_identifier($db->getLink(), $matchesInfo['source-field']);
       $sourceIdCol = pg_escape_identifier($db->getLink(), $matchesInfo['source-field'] . '_id');
       $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
       foreach ($matchesInfo['values'] as $value => $termlist_term_id) {
         // Safety check.
-        if (!preg_match('/\d+/', $termlist_term_id)) {
+        if (!preg_match('/^\d+$/', $termlist_term_id)) {
           throw new exception('Mapped termlist term ID is not an integer.');
         }
         $sql = <<<SQL
@@ -465,6 +512,40 @@ class Import_2_Controller extends Service_Base_Controller {
   }
 
   /**
+   * Returns a sorted list of distinct canonical tokens in a multi-value field.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param array $config
+   *   Import config array.
+   * @param string $tempDbField
+   *   Temporary database field name.
+   *
+   * @return array
+   *   Sorted list of distinct canonical tokens.
+   */
+  private function getDistinctTokensForMultiValueField($db, array $config, $tempDbField) {
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
+    $valueToMapColName = pg_escape_identifier($db->getLink(), $tempDbField);
+    $sql = <<<SQL
+SELECT DISTINCT $valueToMapColName as value
+FROM import_temp.$dbIdentifiers[tempTableName]
+WHERE $valueToMapColName <> ''
+ORDER BY $valueToMapColName;
+SQL;
+    $distinctTokens = [];
+    $rows = $db->query($sql)->result();
+    foreach ($rows as $row) {
+      foreach (import2ChunkHandler::tokeniseMultiValueCell($row->value) as $token) {
+        $distinctTokens[$token] = $token;
+      }
+    }
+    $distinctTokens = array_values($distinctTokens);
+    sort($distinctTokens);
+    return $distinctTokens;
+  }
+
+  /**
    * Controller action specifically to save the mappings to warehouse fields.
    *
    * Updates the columns config to identify the warehouse field for each
@@ -496,11 +577,39 @@ class Import_2_Controller extends Service_Base_Controller {
         }
       }
     }
+    $config['multiValueAttributes'] = [...$this->getMultiValueAttributeNames($config['parentEntity'], $config), ...$this->getMultiValueAttributeNames($config['entity'], $config)];
     import2ChunkHandler::saveConfig($configId, $config);
     $this->addTempDbTableIndexes($config);
     echo json_encode([
       'status' => 'ok',
     ]);
+  }
+
+  /**
+   * Fetch attribute names for attributes flagged as multi-value.
+   *
+   * @param string $entity
+   *   Entity name to fetch attributes for.
+   * @param array $config
+   *   Import config.
+   *
+   * @return string[]
+   *   List of attribute names, e.g. smpAttr:123.
+   */
+  private function getMultiValueAttributeNames($entity, array $config) {
+    $multiValueAttributeNames= [];
+    $importedOrm = ORM::factory($entity);
+    $identifiers = [
+      'website_id' => $config['global-values']['website_id'],
+      'survey_id' => $config['global-values']['survey_id'],
+    ];
+    $attrTypeFilter = $entity === 'sample' ? ($config['global-values']['sample_method_id'] ?? NULL) : NULL;
+    $attrIds = $importedOrm->getMultivalueAttributeIds($identifiers, $attrTypeFilter);
+    $attrPrefix = $this->getAttrPrefixFromEntity($entity);
+    foreach ($attrIds as $attrId) {
+      $multiValueAttributeNames[] = "$attrPrefix:$attrId";
+    }
+    return $multiValueAttributeNames;
   }
 
   /**
@@ -515,7 +624,7 @@ class Import_2_Controller extends Service_Base_Controller {
     $this->authenticate('write');
     // Data file allowed for legacy clients.
     $configId = $this->getConfigId();
-    $stepIndex = $_POST['index'];
+    $stepIndex = (int) $_POST['index'];
     $config = import2ChunkHandler::getConfig($configId);
     $steps = [];
     $parentTable = inflector::plural($config['parentEntity']);
@@ -613,7 +722,7 @@ class Import_2_Controller extends Service_Base_Controller {
   public function import_reverse() {
     $db = new Database();
     if (!empty($_POST['warehouse_user_id'])) {
-      $warehouseUserId = $_POST['warehouse_user_id'];
+      $warehouseUserId = (int) $_POST['warehouse_user_id'];
     }
     else {
       http_response_code(400);
@@ -1600,9 +1709,6 @@ SQL;
       }
       // HTTP 204 for a successful delete, or if nothing to delete.
       http_response_code(204);
-      echo json_encode([
-        'status' => 'No Content',
-      ]);
     }
     catch (RequestAbort $e) {
       // Ignore as abort already handled.
@@ -1783,6 +1889,34 @@ SQL;
   }
 
   /**
+   * Retreive an attribute field prefix from an entity name.
+   *
+   * @param string $entity
+   *   Entity name, e.g. occurrence or sample.
+   *
+   * @return string
+   *   Matching attribute field prefix.
+   */
+  private function getAttrPrefixFromEntity($entity) {
+    $prefixesByEntity = [
+      'occurrence' => 'occAttr',
+      'location' => 'locAttr',
+      'sample' => 'smpAttr',
+      'survey' => 'srvAttr',
+      'taxa_taxon_list' => 'ttlAttr',
+      'termlists_term' => 'trmAttr',
+      'person' => 'psnAttr',
+    ];
+    return $prefixesByEntity[$entity] ?? NULL;
+  }
+
+  private function isMultiValueAttributeField(array $columnInfo, array $config) {
+    // Check if the raw attribute name (without fk prefix) is in the list of
+    // multi-value attributes in the config.
+    return in_array(str_replace(':fk_', ':', $columnInfo['warehouseField']), $config['multiValueAttributes'] ?? []);
+  }
+
+  /**
    * Finds the next mapped field that requires lookup data matching.
    *
    * @param object $db
@@ -1817,7 +1951,12 @@ SQL;
           // Query to fill in ID for all obvious matches.
           if (substr($destFieldParts[0], -4) === 'Attr' and strlen($destFieldParts[0]) === 7) {
             // Attribute lookup values. e.g. occAttr:n.
-            $unmatchedInfo = $this->autofillLookupAttrIds($db, $config, $info);
+            if ($this->isMultiValueAttributeField($info, $config)) {
+              $unmatchedInfo = $this->autofillLookupAttrIdsMultiValue($db, $config, $info);
+            }
+            else {
+              $unmatchedInfo = $this->autofillLookupAttrIds($db, $config, $info);
+            }
           }
           elseif ($destFieldParts[0] === 'occurrence' && $destFieldParts[1] === 'fk_taxa_taxon_list') {
             $unmatchedInfo = $this->autofillOccurrenceTaxonIds($db, $config, $info);
@@ -1844,6 +1983,89 @@ SQL;
       }
     }
     return $r;
+  }
+
+  /**
+   * Autofills lookup matches for multi-value lookup custom attributes.
+   *
+   * Instead of updating a single *_id column in the temp table (which can't
+   * represent multiple values), this stores a token->termlists_term_id mapping
+   * in the import config and returns any unmatched tokens for the UI.
+   */
+  private function autofillLookupAttrIdsMultiValue($db, array &$config, array $info) {
+    $dbIdentifiers = import2ChunkHandler::getEscapedDbIdentifiers($db, $config);
+    $valueToMapColName = pg_escape_identifier($db->getLink(), $info['tempDbField']);
+    $destFieldParts = explode(':', $info['warehouseField']);
+    $attrEntity = $this->getEntityFromAttrPrefix($destFieldParts[0]);
+    $attrId = (int) str_replace('fk_', '', $destFieldParts[1]);
+
+    if (!isset($config['multiValueLookupMatches'])) {
+      $config['multiValueLookupMatches'] = [];
+    }
+    if (!isset($config['multiValueLookupMatches'][$info['tempDbField']])) {
+      $config['multiValueLookupMatches'][$info['tempDbField']] = [];
+    }
+
+    // Find the available possible options from the termlist.
+    $sql = <<<SQL
+SELECT t.id, t.term
+FROM cache_termlists_terms t
+JOIN {$attrEntity}_attributes a ON a.termlist_id=t.termlist_id
+AND a.id=$attrId AND a.deleted=false
+ORDER BY t.sort_order, t.term
+SQL;
+    $matchOptions = [];
+    $termIndex = [];
+    $rows = $db->query($sql)->result();
+    foreach ($rows as $row) {
+      $matchOptions[$row->id] = $row->term;
+      $key = strtolower(trim($row->term));
+      // Avoid overwriting in case of duplicates.
+      if (!isset($termIndex[$key])) {
+        $termIndex[$key] = (int) $row->id;
+      }
+    }
+
+    // Get distinct raw cell strings then tokenise to build distinct tokens.
+    $sql = <<<SQL
+SELECT DISTINCT $valueToMapColName as value
+FROM import_temp.$dbIdentifiers[tempTableName]
+WHERE $valueToMapColName <> ''
+ORDER BY $valueToMapColName;
+SQL;
+    $distinctTokens = [];
+    $rows = $db->query($sql)->result();
+    foreach ($rows as $row) {
+      foreach (import2ChunkHandler::tokeniseMultiValueCell($row->value) as $token) {
+        $distinctTokens[$token] = $token;
+      }
+    }
+    $distinctTokens = array_values($distinctTokens);
+    sort($distinctTokens);
+
+    // Auto-match exact token->term (case-insensitive).
+    foreach ($distinctTokens as $token) {
+      if (!isset($config['multiValueLookupMatches'][$info['tempDbField']][$token]) && isset($termIndex[$token])) {
+        $config['multiValueLookupMatches'][$info['tempDbField']][$token] = $termIndex[$token];
+      }
+    }
+
+    // Identify unmatched tokens for the UI.
+    $unmatched = [];
+    foreach ($distinctTokens as $token) {
+      if (!isset($config['multiValueLookupMatches'][$info['tempDbField']][$token])) {
+        $unmatched[] = $token;
+      }
+    }
+
+    return [
+      'values' => $unmatched,
+      'matchOptions' => $matchOptions,
+      'type' => 'customAttribute',
+      'attrType' => $destFieldParts[0],
+      'attrId' => $attrId,
+      'isMultiValue' => TRUE,
+    ];
   }
 
   /**
