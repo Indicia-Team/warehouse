@@ -4,6 +4,12 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.19.0
+*2026-02-19*
+
+* Add support for importing concatenated values (separated by a semi-colon) into any custom
+  attribute flagged multi-value. See https://github.com/BiologicalRecordsCentre/iRecord/issues/2011.
+
 ## Version 9.18.0
 *2026-02-13*
 
