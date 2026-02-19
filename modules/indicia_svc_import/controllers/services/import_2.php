@@ -1935,7 +1935,6 @@ SQL;
       'status' => 'ok',
       'msgKey' => 'findLookupFieldsDone',
     ];
-    kohana::log('debug', 'Config: ' . print_r($config, TRUE));
     foreach ($config['columns'] as $columnLabel => &$info) {
       if (isset($info['warehouseField'])) {
         $destFieldParts = explode(':', $info['warehouseField']);
@@ -1952,7 +1951,6 @@ SQL;
           // Query to fill in ID for all obvious matches.
           if (substr($destFieldParts[0], -4) === 'Attr' and strlen($destFieldParts[0]) === 7) {
             // Attribute lookup values. e.g. occAttr:n.
-            kohana::log('debug', 'Column info: ' . print_r($info, TRUE));
             if ($this->isMultiValueAttributeField($info, $config)) {
               $unmatchedInfo = $this->autofillLookupAttrIdsMultiValue($db, $config, $info);
             }
