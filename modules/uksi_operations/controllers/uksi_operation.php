@@ -48,8 +48,8 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
     ];
     $this->pagetitle = "UKSI Operations";
     $this->model = ORM::factory('uksi_operation');
-    $this->orderby = 'operation_processed,sequence';
-    $this->sortdir = 'desc';
+    $this->orderby = 'operation_processed DESC,sequence ASC';
+
   }
 
   /**

@@ -70,8 +70,8 @@ class Uksi_operation_Model extends ORM {
   protected function preSubmit() {
     if (array_key_exists('operation', $this->submission['fields']) && !empty($this->submission['fields']['operation']['value'])) {
       $mappings = [
-        'new taxon' => 1,
-        'extract name' => 2,
+        'extract name' => 1,
+        'new taxon' => 2,
         'amend taxon' => 3,
         'promote name' => 4,
         'rename taxon' => 5,
