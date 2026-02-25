@@ -60,6 +60,7 @@ class Uksi_operation_Model extends ORM {
       'batch_processed_on',
       'notes',
       'testing_comment',
+      'operation_priority',
     ];
     return parent::validate($array, $save);
   }
