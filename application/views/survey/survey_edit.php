@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
@@ -120,6 +119,16 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'default' => html::initial_value($values, 'survey:parent_id'),
       'defaultCaption' => html::initial_value($values, 'parent:title'),
       'helpText' => 'Set a parent for your survey to allow grouping of survey datasets in reports',
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Hide recorder email addresses from verifiers',
+      'fieldname' => 'survey:hide_emails_from_verifiers',
+      'default' => html::initial_value($values, 'survey:hide_emails_from_verifiers'),
+      'helpText' => <<<TXT
+        Should the email addresses of recorders be hidden from verifiers? Tick this option if contact between
+        verifiers and recorders is unlikely to be productive for this survey dataset, e.g. because the recorders
+        are not in a position to reply to verification queries.
+      TXT,
     ]);
     // Only show fields, if fields have been found in the database (the auto
     // verify module is installed).
