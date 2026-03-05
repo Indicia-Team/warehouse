@@ -3438,7 +3438,7 @@ SQL;
     $this->assertGreaterThan(0, count($response['response']), 'GET termlists returned no rows.');
     $ids = [];
     foreach ($response['response'] as $item) {
-      $ids[] = $item['values']['id'];
+      $ids[] = (int) $item['values']['id'];
     }
     $this->assertContains(1, $ids, 'GET termlists did not include expected termlist id 1.');
 
