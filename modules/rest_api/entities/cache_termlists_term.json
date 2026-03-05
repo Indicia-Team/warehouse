@@ -1,0 +1,23 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "termlist_id", "type": "integer" },
+    { "sql": "termlist_title", "type": "string" },
+    { "sql": "website_id", "type": "integer" },
+    { "sql": "term", "type": "string" },
+    { "sql": "preferred_term", "type": "string" },
+    { "sql": "meaning_id", "type": "integer" },
+    { "sql": "sort_order", "type": "integer" },
+    { "sql": "preferred", "type": "boolean" },
+    { "sql": "language_iso", "type": "string" },
+    { "sql": "language", "type": "string" },
+    { "sql": "preferred_termlists_term_id", "type": "integer" },
+    { "sql": "cache_created_on", "type": "date" },
+    { "sql": "cache_updated_on", "type": "date" }
+  ],
+  "sort": [
+    "t1.sort_order ASC",
+    "t1.term ASC"
+  ],
+  "excludeDeleted": false
+}

@@ -3426,6 +3426,44 @@ SQL;
     $this->assertEquals(3, count($response['response']), 'Group 1 should have 3 locations after adding two.');
   }
 
+  /**
+   * Test REST GET for termlists and nested terms end-points.
+   */
+  public function testTermlists_getAndNestedTerms() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+
+    $response = $this->callService('termlists');
+    $this->assertEquals(200, $response['httpCode'], 'GET termlists did not return OK.');
+    $this->assertGreaterThan(0, count($response['response']), 'GET termlists returned no rows.');
+    $ids = [];
+    foreach ($response['response'] as $item) {
+      $ids[] = $item['values']['id'];
+    }
+    $this->assertContains(1, $ids, 'GET termlists did not include expected termlist id 1.');
+
+    $response = $this->callService('termlists/1');
+    $this->assertResponseOk($response, 'termlists/1 GET');
+    $this->assertEquals('Test term list', $response['response']['values']['title'], 'GET termlists/{id} returned wrong termlist.');
+
+    $response = $this->callService('termlists/1/terms');
+    $this->assertEquals(200, $response['httpCode'], 'GET termlists/{id}/terms did not return OK.');
+    $this->assertEquals(1, count($response['response']), 'Termlist 1 should have exactly 1 term.');
+    $this->assertEquals(1, $response['response'][0]['values']['termlist_id'], 'GET termlists/{id}/terms returned unexpected termlist_id.');
+    $this->assertEquals('Test term', $response['response'][0]['values']['term'], 'GET termlists/{id}/terms returned wrong term.');
+
+    $response = $this->callService('termlists/4/terms');
+    $this->assertEquals(2, count($response['response']), 'Termlist 4 should have exactly 2 terms.');
+
+    $response = $this->callService('termlists/4/terms/5');
+    $this->assertResponseOk($response, 'termlists/4/terms/5 GET');
+    $this->assertEquals(4, $response['response']['values']['termlist_id'], 'Nested term endpoint returned a term from the wrong termlist.');
+    $this->assertEquals('twitter', $response['response']['values']['term'], 'Nested term endpoint returned wrong term value.');
+
+    $response = $this->callService('termlists/4/terms/2');
+    $this->assertEquals(404, $response['httpCode'], 'Nested term endpoint should return 404 when term does not belong to termlist.');
+  }
+
   public function testGroups_getPostDeleteUser() {
     $this->authMethod = 'jwtUser';
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
