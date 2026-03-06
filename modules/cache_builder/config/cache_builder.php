@@ -1217,11 +1217,11 @@ WHERE s.id=cache_samples_functional.id
 $config['samples']['insert']['sensitive'] = "
 INSERT INTO cache_samples_sensitive(id)
 SELECT s.id
-FROM samples s
+FROM cache_samples_functional s
 #join_needs_update#
 LEFT JOIN cache_samples_sensitive cs on cs.id=s.id
-WHERE s.deleted=false
-AND cs.id IS NULL
+WHERE cs.id IS NULL
+AND (s.sensitive = true OR s.private = true)
 ";
 
 $config['samples']['insert']['nonfunctional'] = "
