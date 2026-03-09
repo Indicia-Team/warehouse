@@ -11,7 +11,7 @@ SELECT s.id
 INTO TEMPORARY TABLE tmp_samples_to_update
 FROM cache_samples_sensitive ss
 JOIN cache_samples_functional s ON s.id = ss.id
-WHERE s.sensitive = true OR s.private = true
+WHERE (s.sensitive = true OR s.private = true)
 AND ss.location_ids IS NULL;
 
 -- Re-generate the spatial links.
