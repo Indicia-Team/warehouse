@@ -175,6 +175,7 @@ class Import_2_Controller extends Service_Base_Controller {
       // Fetch DNA fields.
       $dnaModel = ORM::factory('dna_occurrence');
       $dnaFields = $dnaModel->getSubmittableFields(TRUE, $keepFkIds);
+      /*
       // Splice them into the list after the occurrence: fields.
       $insertPos = 0;
       foreach (array_keys($fields) as $fieldName) {
@@ -186,6 +187,9 @@ class Import_2_Controller extends Service_Base_Controller {
       $fields = array_slice($fields, 0, $insertPos)
         + $dnaFields
         + array_slice($fields, $insertPos);
+      */
+      kohana::log('debug', 'Adding DNA fields to available fields list: ' . json_encode($dnaFields));
+      $fields += $dnaFields;
     }
     $wantRequired = !empty($_GET['required']) && $_GET['required'] === 'true';
     if ($wantRequired) {
