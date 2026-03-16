@@ -242,7 +242,9 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       foreach ($existingSyn as $syn) {
         // Is the taxon from the db in the list of synonyms?
         $key = str_replace('|', '', $syn->taxon->taxon) . '|' . $syn->taxon->language->iso . '|' . $syn->taxon->authority;
-        if (array_key_exists($key, $arrSyn) && $this->submission['fields']['deleted']['value'] !== 't') {
+        if (array_key_exists($key, $arrSyn) &&
+            (empty($this->submission['fields']['deleted']['value']) ||
+            $this->submission['fields']['deleted']['value'] !== 't')) {
           unset($arrSyn[$key]);
           Kohana::log("debug", "Known synonym: " . $syn->taxon->taxon . ', language ' . $syn->taxon->language->iso .
             ', Authority ' . $syn->taxon->authority);
