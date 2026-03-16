@@ -12,7 +12,7 @@
     "guzzlehttp/guzzle": "^7.10"
   },
   "require-dev": {
-    "phpunit/phpunit": "^9.5",
+    "phpunit/phpunit": "^9.6",
     "misantron/dbunit": "^5.3"
   }
 }
