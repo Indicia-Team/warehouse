@@ -5,10 +5,19 @@ Notable changes to the Indicia warehouse are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Version 9.19.0
-*2026-02-19*
+*2026-03-17*
 
 * Add support for importing concatenated values (separated by a semi-colon) into any custom
   attribute flagged multi-value. See https://github.com/BiologicalRecordsCentre/iRecord/issues/2011.
+* The list of UKSI operations are now sorted by operation processed on and sequence, mirroring the
+  application order.
+* It is now possible to include CSV data attachments in trigger notification emails.
+* Add `occurrence.basis_of_record_id` and `dna_occurrence.preparations` fields for DNA-derived data
+  support.
+* New `surveys.hide_emails_from_verifiers` field to allow email addresses to be hidden from
+  verifiers for certain surveys. This can be set via the "Hide recorder email addresses from
+  verifiers" checkbox on the survey edit page.
+* It is now possible to get details of termlists and associated terms from the REST API.
 
 ## Version 9.18.0
 *2026-02-13*

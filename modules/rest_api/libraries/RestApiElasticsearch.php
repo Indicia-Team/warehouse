@@ -483,13 +483,18 @@ class RestApiElasticsearch {
       if (!isset($postObj->query->bool)) {
         $postObj->query->bool = new stdClass();
       }
-      if (!isset($postObj->query->bool->must)) {
-        $postObj->query->bool->must = [];
+      if (!isset($postObj->query->bool->filter)) {
+        $postObj->query->bool->filter = [];
       }
-      $postObj->query->bool->must = array_merge($postObj->query->bool->must, $filters);
+      $postObj->query->bool->filter = array_merge($postObj->query->bool->filter, $filters);
+    }
+    if (!empty($filterDefBool['filter'])) {
+      $postObj->query->bool->filter = array_merge($postObj->query->bool->filter, $filterDefBool['filter']);
     }
     if (!empty($filterDefBool['must'])) {
-      $postObj->query->bool->must = array_merge($postObj->query->bool->must, $filterDefBool['must']);
+      // Treat must same as filter, as we are not expecting scoring on search
+      // results.
+      $postObj->query->bool->filter = array_merge($postObj->query->bool->filter, $filterDefBool['must']);
     }
     if (!empty($filterDefBool['must_not'])) {
       $postObj->query->bool->must_not = $filterDefBool['must_not'];
