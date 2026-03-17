@@ -152,6 +152,8 @@
     COALESCE(snf.attr_email, p.email_address, 'Email address not available') as value,
     COALESCE(snf.attr_email, p.email_address, 'Email address not available') as raw_value
   FROM cache_samples_nonfunctional snf
+  JOIN samples smp on smp.id=snf.id and smp.deleted=false
+  JOIN surveys srv ON srv.id=smp.survey_id AND srv.deleted=false AND srv.hide_emails_from_verifiers=false
   JOIN occurrences o ON o.sample_id=snf.id AND o.id=#occurrence_id#
   LEFT JOIN users u ON u.id=o.created_by_id AND u.deleted=false AND u.id&lt;&gt;1
   LEFT JOIN people p ON p.id=u.person_id AND p.deleted=false

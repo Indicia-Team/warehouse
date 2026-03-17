@@ -29,7 +29,17 @@ class XMLReportReader_Core implements ReportReader {
   private $name;
   private $title;
   private $description;
+
+  /**
+   * CSV attachment info.
+   *
+   * If the report is an email which defines a CSV attachment, details of the
+   * query and filename.
+   *
+   * @var array
+   */
   private array $attachment = [];
+
   private $row_class;
   private $query;
   private $countQuery;
@@ -877,7 +887,8 @@ class XMLReportReader_Core implements ReportReader {
           'columns' => $this->columns,
           'parameters' => array_diff_key($this->params, $this->defaultParamValues),
           'query' => $this->query,
-          'order_by' => $this->order_by
+          'order_by' => $this->order_by,
+          'attachment' => $this->attachment,
         ];
         // For direct email triggers, there can be a file attachment query.
         $attachment = $this->getAttachment();

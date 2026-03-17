@@ -1032,11 +1032,28 @@ class ORM extends ORM_Core {
       $errors
     );
     if ($this->has_attributes) {
-      // @todo The getAttributes call should use a type filter e.g. to filter on sample_method_id.
+      // @todo The getAttributes call should use a type filter e.g. to filter
+      // on sample_method_id.
       $requiredAttributes = $this->getAttributes(TRUE);
+      $multiValueAttributeIds = $this->getMultivalueAttributeIds($identifiers);
       foreach ($requiredAttributes as $attr) {
-        if (empty($vArray["$this->attrs_field_prefix:$attr->id"])) {
-          $errors["$this->attrs_field_prefix:$attr->id"] = 'A value for this attribute is required.';
+        if (in_array($attr->id, $multiValueAttributeIds)) {
+          // Multi-value attribute - need to check that at least one value has been supplied for it.
+          $foundValue = FALSE;
+          foreach ($vArray as $field => $value) {
+            if (preg_match("/^$this->attrs_field_prefix\:$attr->id:?/", $field)) {
+              if (trim($value) !== '') {
+                $foundValue = TRUE;
+                break;
+              }
+            }
+          }
+          if (!$foundValue) {
+            $errors["$this->attrs_field_prefix:$attr->id"] = 'A value is required for this attribute.';
+          }
+        }
+        elseif (trim($vArray["$this->attrs_field_prefix:$attr->id"] ?? '') === '') {
+          $errors["$this->attrs_field_prefix:$attr->id"] = 'A value is required for this attribute.';
         }
       }
       $allAttributes = $this->getAttributes(FALSE);
@@ -1756,7 +1773,7 @@ class ORM extends ORM_Core {
       $attrEntity = $this->object_name . '_attribute';
       $attrTable = inflector::plural($this->object_name . '_attribute');
 
-      $this->db->select("$attrTable.id", "$attrTable.caption", "$attrTable.data_type");
+      $this->db->select("$attrTable.id", "$attrTable.caption", "$attrTable.data_type", "$attrTable.multi_value");
       $this->db->from($attrTable);
       $this->db->where("$attrTable.deleted", 'f');
       if ((!empty($this->identifiers['website_id']) || !empty($this->identifiers['survey_id']))
@@ -1963,6 +1980,34 @@ class ORM extends ORM_Core {
       }
     }
     return $fields;
+  }
+
+  /**
+   * Returns a list of the multi-value attribute IDs for this object.
+   *
+   * @param array $identifiers
+   *   Website ID, survey ID and/or taxon list ID that define the context of
+   *   the list of fields, used to determine the custom attributes to include.
+   * @param int $attrTypeFilter
+   *   Specify a location type meaning id or a sample method meaning id to
+   *   filter the returned attributes to those which apply to the given type or
+   *   method.
+   *
+   * @return array
+   *   List of the multi-value attribute IDs for this object.
+   */
+  public function getMultivalueAttributeIds(array $identifiers = [], $attrTypeFilter = NULL) {
+    $this->identifiers = $identifiers;
+    $r = [];
+    if ($this->has_attributes) {
+      $result = $this->getAttributes(FALSE, $attrTypeFilter);
+      foreach ($result as $row) {
+        if ($row->multi_value === 't') {
+          $r[] = $row->id;
+        }
+      }
+    }
+    return $r;
   }
 
   /**

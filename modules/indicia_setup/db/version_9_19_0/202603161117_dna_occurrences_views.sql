@@ -1,3 +1,5 @@
+DROP VIEW IF EXISTS list_dna_occurrences;
+
 CREATE OR REPLACE VIEW list_dna_occurrences AS
 SELECT
   dnao.id,
@@ -17,6 +19,7 @@ SELECT
   dnao.pcr_primer_forward,
   dnao.pcr_primer_name_reverse,
   dnao.pcr_primer_reverse,
+  array_to_json(dnao.preparations) as preparations,
   dnao.created_on,
   dnao.created_by_id,
   dnao.updated_on,
@@ -25,6 +28,8 @@ SELECT
 FROM dna_occurrences dnao
 JOIN occurrences o ON o.id=dnao.occurrence_id AND o.deleted=false
 WHERE dnao.deleted=false;
+
+DROP VIEW IF EXISTS detail_dna_occurrences;
 
 CREATE OR REPLACE VIEW detail_dna_occurrences AS
 SELECT
@@ -45,6 +50,7 @@ SELECT
   dnao.pcr_primer_forward,
   dnao.pcr_primer_name_reverse,
   dnao.pcr_primer_reverse,
+  array_to_json(dnao.preparations) as preparations,
   dnao.created_on,
   dnao.created_by_id,
   c.username AS created_by,
