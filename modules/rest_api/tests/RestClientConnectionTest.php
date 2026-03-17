@@ -346,18 +346,18 @@ SQL;
   private function checkEsQueryFilters($responseStr, array $expectedWebsiteIds, $expectAllowConfidential, $expectAllowUnreleased, $expectAllowSensitive, $expectedBlurFlag) {
     // Because we use debug mode, response is the query not the data.
     $responseObj = json_decode($responseStr, TRUE);
-    $this->assertTrue(isset($responseObj['query']) && isset($responseObj['query']['bool']) && isset($responseObj['query']['bool']['must']),
+    $this->assertTrue(isset($responseObj['query']) && isset($responseObj['query']['bool']) && isset($responseObj['query']['bool']['filter']),
       'ES query does not contain expected bool filter section.');
     $correctWebsiteFilterFound = FALSE;
     $confidentialAllowed = TRUE;
     $unreleasedAllowed = TRUE;
     $sensitiveAllowed = TRUE;
     $blurFlagChecked = FALSE;
-    foreach ($responseObj['query']['bool']['must'] as $mustFilter) {
+    foreach ($responseObj['query']['bool']['filter'] as $filter) {
       $correctWebsiteFilterFound = $correctWebsiteFilterFound
-        || (isset($mustFilter['terms']) && isset($mustFilter['terms']['metadata.website.id']) && $mustFilter['terms']['metadata.website.id'] === $expectedWebsiteIds);
-      if (isset($mustFilter['query_string']) && isset($mustFilter['query_string']['query'])) {
-        $query = $mustFilter['query_string']['query'];
+        || (isset($filter['terms']) && isset($filter['terms']['metadata.website.id']) && $filter['terms']['metadata.website.id'] === $expectedWebsiteIds);
+      if (isset($filter['query_string']) && isset($filter['query_string']['query'])) {
+        $query = $filter['query_string']['query'];
         $confidentialAllowed = $confidentialAllowed && (strpos($query, 'metadata.confidential:false') === FALSE);
         $unreleasedAllowed = $unreleasedAllowed && (strpos($query, 'metadata.release_status:R') === FALSE);
         $sensitiveAllowed = $sensitiveAllowed && (strpos($query, 'metadata.sensitive:false') === FALSE);
@@ -419,6 +419,8 @@ SQL;
     self::$db->query($query);
     $r = $this->callService('es/_search', ['proj_id' => 'testreportconnection', 'debug' => 'true']);
     $this->assertEquals(200, $r['httpCode'], 'Valid ES request should return 200 OK');
+    echo "\nES query with filter applied:\n";
+    var_export($r['response']);
     $this->assertNotEquals(FALSE, strpos($r['response'], '{"terms":{"id":["2"]}}'), 'jwtClient ES request with filter ID did not apply the required occ_id filter.');
     $this->assertNotEquals(FALSE, strpos($r['response'], '{"bool":{"must_not":[{"term":{"identification.verification_status":"R"}}]}}'), 'jwtClient ES request with filter ID did not apply the required status filter.');
     // Reset.
