@@ -53,3 +53,9 @@ $config['address'] = 'no-reply@indicia.org.uk';
 $config['forgotten_passwd_title'] = 'Forgotten password reminder';
 $config['server_name'] = 'Indicia';
 $config['test_result'] = 'pass';
+
+// Email send throttling and replay queue options.
+$config['enable_send_rate_limit'] = FALSE;
+$config['hourly_send_limit'] = 250;
+$config['hourly_critical_reserve'] = 20;
+$config['queue_replay_batch_size'] = 250;

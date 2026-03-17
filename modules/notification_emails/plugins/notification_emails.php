@@ -200,7 +200,7 @@ SQL;
   }
   $notificationsToSendEmailsForSql .= <<<SQL
 )
-ORDER BY n.user_id, u.username, n.source_type, n.id
+ORDER BY n.escalate_email_priority DESC NULLS LAST, n.user_id, u.username, n.source_type, n.id
 
 SQL;
   $notificationsToSendEmailsFor = $db->query($notificationsToSendEmailsForSql)->result(FALSE);
@@ -606,28 +606,33 @@ function send_out_user_email(
     $emailer->setFrom($emailAddress);
     // Send the email.
     try {
-      $emailer->send($emailSubject, "<html>$emailContent</html>", 'notification_emails');
-      kohana::log('info', 'Email notification sent to ' . $userResults[0]->email_address);
+      $sent = $emailer->send($emailSubject, "<html>$emailContent</html>", 'notification_emails');
+      if ($sent > 0) {
+        kohana::log('info', 'Email notification sent to ' . $userResults[0]->email_address);
+        // All notifications that have been sent out in an email are marked so we
+        // don't resend them.
+        $db
+          ->set('email_sent', 't')
+          ->from('notifications')
+          ->in('id', $notificationIds)
+          ->update();
+        // As Verifier Tasks, Pending Record Tasks need to be actioned, we don't
+        // auto acknowledge them.
+        $db
+          ->set('acknowledged', 't')
+          ->from('notifications')
+          ->where("source_type != 'VT' AND source_type != 'PT'")
+          ->in('id', $notificationIds)
+          ->update();
+      }
+      else {
+        kohana::log('info', 'Email notification deferred for queue replay for user ' . $userId);
+      }
     }
     catch (Exception $e) {
       kohana::log('error', 'Failed to send email notification to ' . $userResults[0]->email_address);
       error_logger::log_error('Sending email from notification_emails', $e);
     }
-    // All notifications that have been sent out in an email are marked so we
-    // don't resend them.
-    $db
-      ->set('email_sent', 't')
-      ->from('notifications')
-      ->in('id', $notificationIds)
-      ->update();
-    // As Verifier Tasks, Pending Record Tasks need to be actioned, we don't
-    // auto acknowledge them.
-    $db
-      ->set('acknowledged', 't')
-      ->from('notifications')
-      ->where("source_type != 'VT' AND source_type != 'PT'")
-      ->in('id', $notificationIds)
-      ->update();
     $db->commit();
   }
   catch (Exception $e) {

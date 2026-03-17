@@ -72,3 +72,9 @@ $config['msgraph_footer_spacer_rows'] = 2;
 // logged.
 $config['library'] = 'DevLogger';
 */
+
+// Email send throttling and replay queue options.
+$config['enable_send_rate_limit'] = FALSE;
+$config['hourly_send_limit'] = 250;
+$config['hourly_critical_reserve'] = 20;
+$config['queue_replay_batch_size'] = 250;
