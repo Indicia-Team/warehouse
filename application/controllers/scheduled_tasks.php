@@ -102,18 +102,37 @@ class Scheduled_Tasks_Controller extends Controller {
           request_logging::log('a', 'scheduled_tasks', NULL, 'triggers_notifications', 0, 0, $tm, $this->db);
         }
       }
+      $email_config = Kohana::config('email');
+      $emailsDisabled = array_key_exists('do_not_send', $email_config) && $email_config['do_not_send'];
       if ($scheduledPlugins) {
+        // Replay queued emails before plugin digest jobs run so queued urgent
+        // emails take any available hourly capacity first.
+        if (in_array('notifications', $nonPluginTasks)) {
+          if (!$emailsDisabled) {
+            $queueReplayInfo = Emailer::processQueue();
+            if ($queueReplayInfo['sent'] > 0) {
+              self::msg("Sent {$queueReplayInfo['sent']} queued emails.");
+            }
+          }
+        }
         $this->runScheduledPlugins($system, $scheduledPlugins);
       }
       if (in_array('notifications', $nonPluginTasks)) {
-        $email_config = Kohana::config('email');
-        if (array_key_exists('do_not_send', $email_config) and $email_config['do_not_send']) {
+        if ($emailsDisabled) {
           kohana::log('info', "Email configured for do_not_send: ignoring notifications from scheduled tasks");
         }
         else {
+          $queueReplayInfo = Emailer::processQueue();
+          if ($queueReplayInfo['sent'] > 0) {
+            self::msg("Sent {$queueReplayInfo['sent']} queued emails.");
+          }
           $emailer = new Emailer();
           $this->doRecordOwnerNotifications($emailer);
           $this->doNotificationDigestEmailsForTriggers($emailer);
+        }
+        $purgedCount = Emailer::purgeOldQueueEntries();
+        if ($purgedCount > 0) {
+          self::msg("Purged $purgedCount old email queue rows.");
         }
         // The value of the last_scheduled_task_check on the Indicia system entry
         // is used to mark the last time notifications were handled, so we can
@@ -232,17 +251,20 @@ class Scheduled_Tasks_Controller extends Controller {
           // Use digest mode the user selected for this notification, or
           // their default if not specific.
           $digestMode = $action->param2 ?? $action->default_digest_mode;
+          $escalatePriority = $this->getEscalatePriorityFromData($allowedData, $parsedData['headingData']);
+          [$cleanHeadings, $cleanAllowedData] = $this->removeEscalatePriorityColumn($parsedData['headingData'], $allowedData);
           if (count($allowedData) > 0) {
             $this->db->insert('notifications', [
               'source' => $trigger->name,
               'source_type' => 'T',
               'data' => json_encode([
-                'headings' => $parsedData['headingData'],
-                'data' => $allowedData,
+                'headings' => $cleanHeadings,
+                'data' => $cleanAllowedData,
               ]),
               'user_id' => $action->param1,
               'digest_mode' => $digestMode,
               'cc' => $action->param3,
+              'escalate_email_priority' => $escalatePriority,
             ]);
           }
         }
@@ -343,13 +365,17 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     // Don't want to include the system functionality columns in the
     // notifications themselves.
-    $sysCols = ['notify_user_ids', 'log_comment', 'occurrence_id'];
+    $sysCols = ['notify_user_ids', 'log_comment', 'occurrence_id', 'escalate_email_priority'];
     $colsToRemove = [];
+    $escalatePriorityCol = NULL;
     foreach ($sysCols as $col) {
       if (($colIdx = array_search($col, $data['headings'])) !== FALSE) {
         $colsToRemove[] = $colIdx;
         if ($col === 'notify_user_ids') {
           $notifyUserIdsCol = $colIdx;
+        }
+        if ($col === 'escalate_email_priority') {
+          $escalatePriorityCol = $colIdx;
         }
       }
     }
@@ -360,16 +386,28 @@ class Scheduled_Tasks_Controller extends Controller {
     foreach ($data['data'] as $websiteId => &$records) {
       foreach ($records as &$record) {
         $userIds = explode(',', $record[$notifyUserIdsCol]);
+        $escalatePriority = $escalatePriorityCol === NULL ? NULL : $this->normaliseEscalatePriority($record[$escalatePriorityCol]);
         // Clean out system functionality columns.
         $record = array_diff_key($record, array_flip($colsToRemove));
         foreach ($userIds as $userId) {
           if (!isset($userNotifications["user:$userId"])) {
-            $userNotifications["user:$userId"] = [];
+            $userNotifications["user:$userId"] = [
+              'data' => [],
+              'escalate_email_priority' => NULL,
+            ];
           }
-          if (!isset($userNotifications["user:$userId"]["$websiteId"])) {
-            $userNotifications["user:$userId"]["$websiteId"] = [];
+          if (!isset($userNotifications["user:$userId"]['data']["$websiteId"])) {
+            $userNotifications["user:$userId"]['data']["$websiteId"] = [];
           }
-          $userNotifications["user:$userId"]["$websiteId"][] = $record;
+          $userNotifications["user:$userId"]['data']["$websiteId"][] = $record;
+          if ($escalatePriority !== NULL) {
+            $existingPriority = $userNotifications["user:$userId"]['escalate_email_priority'];
+            // If emails are being grouped together, we want to use the highest
+            // priority defined across the records.
+            if ($existingPriority === NULL || $escalatePriority > $existingPriority) {
+              $userNotifications["user:$userId"]['escalate_email_priority'] = $escalatePriority;
+            }
+          }
         }
       }
     }
@@ -380,12 +418,13 @@ class Scheduled_Tasks_Controller extends Controller {
         'source_type' => 'T',
         'data' => json_encode([
           'headings' => $data['headings'],
-          'data' => $userData,
+          'data' => $userData['data'],
         ]),
         'user_id' => str_replace('user:', '', $user),
         // Users specified in notify_user_ids should be notified as soon as
         // possible.
         'digest_mode' => 'I',
+        'escalate_email_priority' => $userData['escalate_email_priority'],
       ]);
     }
   }
@@ -518,11 +557,15 @@ class Scheduled_Tasks_Controller extends Controller {
       ->from('notifications')
       ->where('acknowledged', 'f')
       ->in('notifications.digest_mode', $digestTypes)
-      ->orderby(['notifications.user_id' => 'ASC', 'notifications.cc' => 'ASC'])
+      ->orderby([
+        'notifications.escalate_email_priority' => 'DESC',
+        'notifications.user_id' => 'ASC',
+        'notifications.cc' => 'ASC',
+      ])
       ->get();
     $nrNotifications = count($notifications);
     if ($nrNotifications > 0) {
-      self::msg("Found $nrNotifications notifications");
+      self::msg("Found $nrNotifications notifications with a digest mode of " . implode(', ', $digestTypes));
     }
     else {
       self::msg("No notifications found");
@@ -556,18 +599,11 @@ class Scheduled_Tasks_Controller extends Controller {
   }
 
   private function sendEmail($notificationIds, $emailer, $userId, $emailContent, $cc) {
+    echo "Sending email to user $userId with content:<br/>$emailContent<br/><br/>";
     // Use a transaction to allow us to prevent the email sending and marking
     // of notification as done getting out of step.
     $this->db->begin();
     try {
-      $this->db
-        ->set([
-          'acknowledged' => 't',
-          'email_sent' => 't',
-          ])
-        ->from('notifications')
-        ->in('id', $notificationIds)
-        ->update();
       $email_config = Kohana::config('email');
       $userResults = $this->db
         ->select('people.email_address, people.first_name, people.surname')
@@ -590,7 +626,20 @@ class Scheduled_Tasks_Controller extends Controller {
         }
         // Send the email.
         $sent = $emailer->send(sprintf($subject, kohana::config('email.server_name')), "<html>$emailContent</html>", 'triggerActions');
-        kohana::log('info', "$sent email notification(s) sent to $user->email_address");
+        if ($sent > 0) {
+          $this->db
+            ->set([
+              'acknowledged' => 't',
+              'email_sent' => 't',
+              ])
+            ->from('notifications')
+            ->in('id', $notificationIds)
+            ->update();
+          kohana::log('info', "$sent email notification(s) sent to $user->email_address");
+        }
+        else {
+          kohana::log('info', "Notification email to $user->email_address deferred for queue replay");
+        }
       }
     }
     catch (Exception $e) {
@@ -599,6 +648,82 @@ class Scheduled_Tasks_Controller extends Controller {
       throw $e;
     }
     $this->db->commit();
+  }
+
+  /**
+   * Find max priority in the provided data rows.
+   *
+   * @param array $allowedData
+   *   Notification record data keyed by website ID.
+   * @param array $headings
+   *   Report heading labels.
+   *
+   * @return int|null
+   *   Maximum escalation priority in the data, or NULL.
+   */
+  private function getEscalatePriorityFromData(array $allowedData, array $headings) {
+    $escalatePriorityCol = array_search('escalate_email_priority', $headings);
+    if ($escalatePriorityCol === FALSE) {
+      return NULL;
+    }
+    $priority = NULL;
+    foreach ($allowedData as $records) {
+      foreach ($records as $record) {
+        $recordPriority = $this->normaliseEscalatePriority($record[$escalatePriorityCol]);
+        if ($recordPriority !== NULL && ($priority === NULL || $recordPriority > $priority)) {
+          $priority = $recordPriority;
+        }
+      }
+    }
+    return $priority;
+  }
+
+  /**
+   * Convert trigger priority values to supported notifications values.
+    *
+    * @param mixed $value
+    *   Input value from trigger output.
+    *
+    * @return int|null
+    *   Normalized escalation priority, or NULL.
+   */
+  private function normaliseEscalatePriority($value) {
+    if ($value === NULL || $value === '') {
+      return NULL;
+    }
+    $value = (int) $value;
+    if ($value < 1) {
+      return NULL;
+    }
+    if ($value > 2) {
+      return 2;
+    }
+    return $value;
+  }
+
+  /**
+   * Removes escalate priority from notification payload headings/data.
+    *
+    * @param array $headings
+    *   Report heading labels.
+    * @param array $websiteRecordData
+    *   Notification record data keyed by website ID.
+    *
+    * @return array
+    *   Two-item array containing cleaned headings then cleaned record data.
+   */
+  private function removeEscalatePriorityColumn(array $headings, array $websiteRecordData) {
+    $escalatePriorityCol = array_search('escalate_email_priority', $headings);
+    if ($escalatePriorityCol === FALSE) {
+      return [$headings, $websiteRecordData];
+    }
+    $headings = array_diff_key($headings, [$escalatePriorityCol => TRUE]);
+    foreach ($websiteRecordData as $websiteId => $records) {
+      foreach ($records as $idx => $record) {
+        $websiteRecordData[$websiteId][$idx] = array_diff_key($record, [$escalatePriorityCol => TRUE]);
+      }
+    }
+    return [$headings, $websiteRecordData];
   }
 
   /**

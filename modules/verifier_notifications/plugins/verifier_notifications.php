@@ -253,7 +253,6 @@ function get_filters_without_existing_notification($db, array $params) {
  * creating.
  */
 function loop_through_workflows_and_filters_and_create_notifications($db, $filters, $params) {
-  $forceHighPriorityEmail = FALSE;
   $notificationCounter = 0;
   // Supply 1 as the user id to give the code maximum privileges. Also force
   // the main database connection to allow access to the temporary occdelta
@@ -299,7 +298,7 @@ function loop_through_workflows_and_filters_and_create_notifications($db, $filte
       // If applicable records are returned then create notification.
       if (!empty($reportOutput) && $reportOutput['content']['records'][0]['count'] > 0) {
         // Save the new notification.
-        save_notification($filter['user_id'], $params, $forceHighPriorityEmail);
+        save_notification($filter['user_id'], $params);
         $notificationCounter++;
         $alreadyCreatedNotifications[] = $filter['user_id'];
       }
@@ -328,11 +327,8 @@ function loop_through_workflows_and_filters_and_create_notifications($db, $filte
  *   User ID.
  * @param array $params
  *   Parameters array defining the type name and messages.
- * @param bool $forceHighPriorityEmail
- *   True if the email associated with this notification needs to be sent high
- *   priority.
  */
-function save_notification($userId, array $params, $forceHighPriorityEmail) {
+function save_notification($userId, array $params) {
   // Save the new notification.
   $notificationObj = ORM::factory('notification');
   // For overdue notifications the source field is different even though they
@@ -350,8 +346,5 @@ function save_notification($userId, array $params, $forceHighPriorityEmail) {
     'comment' => "<a href=\"$params[url]\">$linkText</a>",
     'auto_generated' => 't',
   ]);
-  if ($forceHighPriorityEmail === TRUE) {
-    $notificationObj->escalate_email_priority = 2;
-  }
   $notificationObj->save();
 }
