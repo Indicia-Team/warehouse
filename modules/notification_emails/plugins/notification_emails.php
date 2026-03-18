@@ -145,14 +145,21 @@ function notification_emails_scheduled_task($last_run_date, $db) {
 function run_email_notification_jobs($db, array $frequenciesToRun) {
   $subscriptionSettingsPageUrl = url::base() . 'subscription_settings.php';
   $maxNotificationsPerEmail = 100;
-  $frequencyToRunString = '';
+  $allowedFrequencies = ['IH', 'D', 'W'];
+  $frequencyToRun = [];
   // Gather all the notification frequency jobs we need to run into a set
   // ready to pass into sql.
   foreach ($frequenciesToRun as $frequencyToRunArray) {
-    $frequencyToRunString .= "'" . $frequencyToRunArray['notification_frequency'] . "'" . ',';
+    if (!empty($frequencyToRunArray['notification_frequency'])
+      && in_array($frequencyToRunArray['notification_frequency'], $allowedFrequencies, TRUE)) {
+      $frequencyToRun[] = "'" . $frequencyToRunArray['notification_frequency'] . "'";
+    }
   }
-  // Chop comma off end of set.
-  $frequencyToRunString = substr($frequencyToRunString, 0, -1);
+  if (empty($frequencyToRun)) {
+    echo 'There are no email notification jobs to run at the moment.<br/>';
+    return;
+  }
+  $frequencyToRunString = implode(',', $frequencyToRun);
   try {
     $modules = kohana::config('config.modules');
     $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
@@ -266,7 +273,7 @@ SQL;
       echo 'There are no email notifications to send at the moment.<br/>';
       return;
     }
-    $emailContent = start_building_new_email($notificationsToSendEmailsFor->current());
+    $emailContent = start_building_new_email($notificationsToSend);
     $notificationsInCurrentEmail = 0;
     $currentType = '';
     $sourceTypes = notification_emails::getNotificationTypes();
@@ -322,9 +329,12 @@ SQL;
             $emailContent .= "</tbody>\n</table>\n";
           }
           $currentType = $notificationToSendEmailsFor['source_type'];
-          $emailContent .= '<h2>' . $sourceTypes[$currentType]['title'] . '</h2>';
+          $sourceTypeTitle = !empty($sourceTypes[$currentType]['title'])
+            ? $sourceTypes[$currentType]['title']
+            : $currentType;
+          $emailContent .= '<h2>' . html::specialchars($sourceTypeTitle) . '</h2>';
           if (!empty($sourceTypes[$currentType]['description'])) {
-            $emailContent .= '<p>' . $sourceTypes[$currentType]['description'] . '</p>';
+            $emailContent .= '<p>' . html::specialchars($sourceTypes[$currentType]['description']) . '</p>';
           }
           $emailContent .= "<table>\n<thead><tr>";
           foreach ($dataFieldsToOutput as $field => $caption) {
@@ -336,13 +346,15 @@ SQL;
         }
         $emailContent .= '<tr>';
         foreach ($dataFieldsToOutput as $field => $caption) {
-          $htmlToDisplay = isset($record[$field]) ? $record[$field] : '';
+          $value = isset($record[$field]) ? $record[$field] : '';
+          $htmlToDisplay = html::specialchars((string) $value);
           if (isset($record[$field]) || $field === 'query') {
             if ($field === 'username' && ($record[$field] === 'admin' || $record[$field] === 'system')) {
-              $htmlToDisplay = $systemName;
+              $htmlToDisplay = html::specialchars($systemName);
             }
             elseif ($field === 'comment') {
-              $htmlToDisplay = "<div style=\"padding: 4px; border: solid silver 1px; border-radius: 4px;\">$htmlToDisplay</div>";
+              $htmlToDisplay = '<div style="padding: 4px; border: solid silver 1px; border-radius: 4px;">' .
+                nl2br($htmlToDisplay) . '</div>';
               // Add a reply link if relevant.
               if (!empty($record['occurrence_id']) && in_array($currentType, ['C', 'V', 'Q'])) {
                 $link = notification_emails_hyperlink_id(
@@ -457,11 +469,14 @@ function notification_emails_hyperlink_id($id, $websiteId, $caption = NULL) {
   if (!$caption) {
     $caption = $id;
   }
+  $safeCaption = html::specialchars((string) $caption);
+  $safeTitleId = html::specialchars((string) $id);
   // First look for record details pages from the website the record came from.
   foreach ($recordDetailsPages as $page) {
     if ($page['website_id'] == $websiteId) {
       $url = str_replace('#id#', $id, $page['url']);
-      return "<a title=\"View details of record $id\" href=\"$url\">$caption</a>";
+      $safeUrl = html::specialchars($url);
+      return "<a title=\"View details of record $safeTitleId\" href=\"$safeUrl\">$safeCaption</a>";
     }
   }
   // Record not from any configured record details page's website, but might be
@@ -470,11 +485,12 @@ function notification_emails_hyperlink_id($id, $websiteId, $caption = NULL) {
     $ids = notification_emails_get_shared_website_list($page['website_id']);
     if (in_array($websiteId, $ids)) {
       $url = str_replace('#id#', $id, $page['url']);
-      return "<a title=\"View details of record $id\" href=\"$url\">$caption</a>";
+      $safeUrl = html::specialchars($url);
+      return "<a title=\"View details of record $safeTitleId\" href=\"$safeUrl\">$safeCaption</a>";
     }
   }
   // If no record details page found, just return the caption as a label.
-  return $caption;
+  return $safeCaption;
 }
 
 function notification_emails_get_shared_website_list($websiteId) {
@@ -523,7 +539,8 @@ function start_building_new_email(array $notificationToSendEmailsFor) {
   if (empty($emailContent)) {
     $emailContent = $defaultUserAddress;
   }
-  $emailContent .= ' ' . $notificationToSendEmailsFor['name_to_use'] . ', </p>';
+  $nameToUse = html::specialchars((string) $notificationToSendEmailsFor['name_to_use']);
+  $emailContent .= ' ' . $nameToUse . ', </p>';
   // Some description before the list of notifications.
   $defaultTopOfEmailBody = 'You have the following new notifications.';
   try {
@@ -551,6 +568,7 @@ function start_building_new_email(array $notificationToSendEmailsFor) {
  * Also set the date/time the job was run.
  */
 function update_last_run_metadata($db, $frequenciesToUpdate) {
+  $allowedFrequencies = ['IH', 'D', 'W'];
   $newMaxIdData = $db->query("
     SELECT max(n.id) as new_max_notification_id
     FROM notifications n
@@ -558,6 +576,10 @@ function update_last_run_metadata($db, $frequenciesToUpdate) {
   // Cycle through the frequency jobs we are running this time as only these
   // need updating.
   foreach ($frequenciesToUpdate as $frequencyToUpdate) {
+    if (empty($frequencyToUpdate['notification_frequency'])
+      || !in_array($frequencyToUpdate['notification_frequency'], $allowedFrequencies, TRUE)) {
+      continue;
+    }
     $db->query("
       UPDATE user_email_notification_frequency_last_runs
       SET last_run_date=now(),last_max_notification_id=" . $newMaxIdData[0]['new_max_notification_id'] . "
@@ -597,13 +619,14 @@ function send_out_user_email(
     $highPriority) {
 
   $email_config = Kohana::config('email');
-  if (array_key_exists ('do_not_send' , $email_config) and $email_config['do_not_send']){
+  if (array_key_exists('do_not_send', $email_config) && $email_config['do_not_send']) {
     kohana::log('info', "Email configured for do_not_send: ignoring send_out_user_email");
     return 0;
   }
   //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
-  $emailContent .= '<br><a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
-    url::base() . '">Click here to control which notifications you receive.</a><br/><br/>';
+  $emailContent .= '<br><a href="' . html::specialchars($subscriptionSettingsPageUrl) . '?user_id=' .
+    (int) $userId . '&warehouse_url=' . html::specialchars(url::base()) .
+    '">Click here to control which notifications you receive.</a><br/><br/>';
   // Use a transaction to allow us to prevent the email sending and marking of
   // notification as done getting out of step.
   $db->begin();
@@ -616,6 +639,11 @@ function send_out_user_email(
       ->where('users.id', $userId)
       ->limit(1)
       ->get();
+    if (count($userResults) === 0 || empty($userResults[0]->email_address)) {
+      kohana::log('error', 'No recipient email address found for notification user ' . $userId);
+      $db->commit();
+      return 0;
+    }
 
     $defaultEmailSubject = 'You have new notifications.';
     try {
@@ -634,7 +662,7 @@ function send_out_user_email(
     }
     // If there is a problem getting the link configuration, then do nothing
     // at all, we can just ignore the link.
-    catch (exception $e) {
+    catch (Exception $e) {
     }
     if (!empty($notificationsLinkUrl)) {
       try {
@@ -644,12 +672,13 @@ function send_out_user_email(
       // pick up empty variable. This works better as it still works if the
       // variable is empty but no exception has been generated (e.g an empty
       // option has been provided by user).
-      catch (exception $e) {
+      catch (Exception $e) {
       }
       if (empty($notificationsLinkText)) {
         $notificationsLinkText = 'Click here to go your notifications page.';
       }
-      $emailContent .= '<a href="' . $notificationsLinkUrl . '">' . $notificationsLinkText . '</a></br>';
+      $emailContent .= '<a href="' . html::specialchars($notificationsLinkUrl) . '">' .
+        html::specialchars($notificationsLinkText) . '</a></br>';
     }
     $emailer = new Emailer();
     $emailer->addRecipient($userResults[0]->email_address);

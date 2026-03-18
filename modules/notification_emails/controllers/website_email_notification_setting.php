@@ -28,7 +28,10 @@ class Website_email_notification_setting_Controller extends Indicia_Controller {
    */
   public function index() {
     $view = new View('website_email_notification_setting/edit');
-    $website_id = $this->uri->last_segment();
+    $website_id = (int) $this->uri->last_segment();
+    if ($website_id <= 0) {
+      throw new Kohana_404_Exception('The page you requested could not be found.');
+    }
     $data = [];
     $rows = $this->db->select('notification_source_type, notification_frequency')
       ->from('website_email_notification_settings')
@@ -46,15 +49,22 @@ class Website_email_notification_setting_Controller extends Indicia_Controller {
 
   public function save() {
     $this->set_website_access('editor');
-    $website_id = $_POST['website_id'];
+    $website_id = (int) ($_POST['website_id'] ?? 0);
     $this->auto_render = FALSE;
+    if ($website_id <= 0) {
+      http_response_code(400);
+      echo json_encode(['status' => 400, 'msg' => 'Invalid website ID']);
+      return;
+    }
     if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
-      if (!in_array($website_id, $this->auth_filter['values'])) {
+      $allowedWebsiteIds = array_map('intval', $this->auth_filter['values']);
+      if (!in_array($website_id, $allowedWebsiteIds, TRUE)) {
         http_response_code(401);
         echo json_encode(['status' => 401, 'msg' => 'Unauthorized']);
         return;
       }
     }
+    $allowedFrequencies = ['IH', 'D', 'W'];
     $types = [
       'V',
       'Q',
@@ -68,22 +78,26 @@ class Website_email_notification_setting_Controller extends Indicia_Controller {
       'PT',
     ];
     foreach ($types as $type) {
+      $postedFrequency = $_POST[$type] ?? '';
+      if (!empty($postedFrequency) && !in_array($postedFrequency, $allowedFrequencies, TRUE)) {
+        http_response_code(400);
+        echo json_encode(['status' => 400, 'msg' => 'Invalid notification frequency']);
+        return;
+      }
       $obj = ORM::factory('website_email_notification_setting')->find([
         'website_id' => $website_id,
         'notification_source_type' => $type,
         'deleted' => 'f',
       ]);
-      if (empty($_POST[$type]) && !$obj->loaded) {
+      if (empty($postedFrequency) && !$obj->loaded) {
         // No value in DB and no value to save for this type.
         continue;
       }
-      if (!empty($_POST[$type])) {
+      if (!empty($postedFrequency)) {
         // Either a new setting, or update the existing found one.
         $obj->website_id = $website_id;
         $obj->notification_source_type = $type;
-        $obj->notification_frequency = $_POST[$type];
-        $obj->set_metadata();
-        $obj->save();
+        $obj->notification_frequency = $postedFrequency;
       }
       else {
         // An existing setting needs to be deleted.
