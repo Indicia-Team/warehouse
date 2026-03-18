@@ -102,12 +102,23 @@ class Scheduled_Tasks_Controller extends Controller {
           request_logging::log('a', 'scheduled_tasks', NULL, 'triggers_notifications', 0, 0, $tm, $this->db);
         }
       }
+      $email_config = Kohana::config('email');
+      $emailsDisabled = array_key_exists('do_not_send', $email_config) && $email_config['do_not_send'];
       if ($scheduledPlugins) {
+        // Replay queued emails before plugin digest jobs run so queued urgent
+        // emails take any available hourly capacity first.
+        if (in_array('notifications', $nonPluginTasks)) {
+          if (!$emailsDisabled) {
+            $queueReplayInfo = Emailer::processQueue();
+            if ($queueReplayInfo['sent'] > 0) {
+              self::msg("Sent {$queueReplayInfo['sent']} queued emails.");
+            }
+          }
+        }
         $this->runScheduledPlugins($system, $scheduledPlugins);
       }
       if (in_array('notifications', $nonPluginTasks)) {
-        $email_config = Kohana::config('email');
-        if (array_key_exists('do_not_send', $email_config) and $email_config['do_not_send']) {
+        if ($emailsDisabled) {
           kohana::log('info', "Email configured for do_not_send: ignoring notifications from scheduled tasks");
         }
         else {
@@ -550,7 +561,7 @@ class Scheduled_Tasks_Controller extends Controller {
       ->get();
     $nrNotifications = count($notifications);
     if ($nrNotifications > 0) {
-      self::msg("Found $nrNotifications notifications");
+      self::msg("Found $nrNotifications notifications with a digest mode of " . implode(', ', $digestTypes));
     }
     else {
       self::msg("No notifications found");
@@ -584,6 +595,7 @@ class Scheduled_Tasks_Controller extends Controller {
   }
 
   private function sendEmail($notificationIds, $emailer, $userId, $emailContent, $cc) {
+    echo "Sending email to user $userId with content:<br/>$emailContent<br/><br/>";
     // Use a transaction to allow us to prevent the email sending and marking
     // of notification as done getting out of step.
     $this->db->begin();

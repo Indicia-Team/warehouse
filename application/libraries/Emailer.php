@@ -135,7 +135,9 @@ class Emailer {
    */
   public function send($subject, $message, $emailType, $emailSubtype = NULL) {
     $config = kohana::config('email');
+    $recipientCount = count($this->recipients);
     $succeeded = FALSE;
+    $deferred = FALSE;
     $errorMessage = NULL;
     if (!$this->from) {
       $this->from = $config['address'];
@@ -143,7 +145,7 @@ class Emailer {
     }
     if ($config['do_not_send'] ?? FALSE) {
       // Email disabled on this server, this classes as a success.
-      return TRUE;
+      return count($this->recipients);
     }
     $emailLibrary = $config['library'] ?? 'Swift';
     $emailHelper = "emailer$emailLibrary";
@@ -154,22 +156,23 @@ class Emailer {
       if ($this->shouldQueueEmail($emailType)) {
         $this->queueEmail($subject, $message, $emailType, $emailSubtype);
         $errorMessage = 'Deferred due to hourly email limit';
+        $deferred = TRUE;
       }
       else {
-      $emailHelper::send(
-        $subject,
-        $message,
-        $this->recipients,
-        $this->cc,
-        $this->from,
-        $this->fromName,
-        $this->priority,
-        $this->attachmentInfo
-      );
-      $succeeded = TRUE;
-      if ($config['enable_send_rate_limit'] ?? FALSE) {
-        self::incrementSentThisHour();
-      }
+        $emailHelper::send(
+          $subject,
+          $message,
+          $this->recipients,
+          $this->cc,
+          $this->from,
+          $this->fromName,
+          $this->priority,
+          $this->attachmentInfo
+        );
+        $succeeded = TRUE;
+        if ($config['enable_send_rate_limit'] ?? FALSE) {
+          self::incrementSentThisHour();
+        }
       }
     }
     catch (Exception $e) {
@@ -177,13 +180,13 @@ class Emailer {
       $errorMessage = $e->getMessage();
     }
     finally {
-      if ($config['log_emails'] ?? FALSE) {
+      if (($config['log_emails'] ?? FALSE) && !$deferred) {
         $this->logEmail($subject, $message, $emailType, $emailSubtype, $errorMessage);
       }
       // Now reset the emailer for next time.
       $this->reset();
     }
-    return $succeeded ? count($this->recipients) : 0;
+    return $succeeded ? $recipientCount : 0;
   }
 
   /**
@@ -200,21 +203,20 @@ class Emailer {
     self::initDb();
     $hourlyLimit = $config['hourly_send_limit'] ?? 250;
     $criticalReserve = max(0, $config['hourly_critical_reserve'] ?? 20);
+    $nonCriticalThreshold = self::getNonCriticalThreshold($hourlyLimit, $criticalReserve);
     $batchSize = $config['queue_replay_batch_size'] ?? 250;
     $alreadySent = self::countSentThisHour();
     if ($alreadySent >= $hourlyLimit) {
       return ['attempted' => 0, 'sent' => 0];
     }
-    $queueItems = self::$db
-      ->select('*')
-      ->from('email_send_queue')
-      ->where('status', self::QUEUE_STATUS_QUEUED)
-      ->orderby([
-        'escalate_email_priority' => 'DESC',
-        'queued_on' => 'ASC',
-      ])
-      ->limit($batchSize)
-      ->get();
+    $safeBatchSize = (int) $batchSize;
+    $queueItems = self::$db->query(
+      "SELECT *
+      FROM email_send_queue
+      WHERE status='" . self::QUEUE_STATUS_QUEUED . "'
+      ORDER BY COALESCE(escalate_email_priority, 0) DESC, queued_on ASC
+      LIMIT $safeBatchSize"
+    );
     $attempted = 0;
     $sent = 0;
     $emailLibrary = $config['library'] ?? 'Swift';
@@ -225,7 +227,7 @@ class Emailer {
         break;
       }
       $isCritical = (int) $item->escalate_email_priority > 0;
-      if (!$isCritical && $alreadySent >= max(0, $hourlyLimit - $criticalReserve)) {
+      if (!$isCritical && $alreadySent >= $nonCriticalThreshold) {
         continue;
       }
       $attempted++;
@@ -300,13 +302,36 @@ class Emailer {
     self::initDb();
     $hourlyLimit = $config['hourly_send_limit'] ?? 250;
     $criticalReserve = max(0, $config['hourly_critical_reserve'] ?? 20);
+    $nonCriticalThreshold = self::getNonCriticalThreshold($hourlyLimit, $criticalReserve);
     $sentCount = self::countSentThisHour();
     $escalatePriority = self::deriveEscalateEmailPriority($emailType, $this->priority);
     $isCritical = $escalatePriority !== NULL;
     if ($isCritical) {
       return $sentCount >= $hourlyLimit;
     }
-    return $sentCount >= max(0, $hourlyLimit - $criticalReserve);
+    return $sentCount >= $nonCriticalThreshold;
+  }
+
+  /**
+   * Compute threshold where non-critical traffic starts queueing.
+   *
+   * Guards against reserve values that would consume all non-critical
+   * capacity by ensuring at least one non-critical slot remains when
+   * hourly limit is above zero.
+   *
+   * @param int $hourlyLimit
+   *   Maximum number of emails that can be sent in the hour.
+   * @param int $criticalReserve
+   *   Reserved email slots for critical traffic.
+   *
+   * @return int
+   *   Number of sent emails at which non-critical emails should queue.
+   */
+  private static function getNonCriticalThreshold($hourlyLimit, $criticalReserve) {
+    if ($hourlyLimit > 0) {
+      $criticalReserve = min($criticalReserve, $hourlyLimit - 1);
+    }
+    return max(0, $hourlyLimit - $criticalReserve);
   }
 
   /**
