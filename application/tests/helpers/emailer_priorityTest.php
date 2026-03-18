@@ -65,6 +65,27 @@ class Helper_Emailer_Priority_Test extends TestCase {
     $this->assertSame(0, $result);
   }
 
+  public function testQueueRetentionDaysDefaultsWhenNotNumeric() {
+    $method = $this->reflectionClass->getMethod('normaliseQueueRetentionDays');
+    $method->setAccessible(TRUE);
+    $result = $method->invoke(NULL, 'not-a-number');
+    $this->assertSame(7, $result);
+  }
+
+  public function testQueueRetentionDaysCanDisablePurge() {
+    $method = $this->reflectionClass->getMethod('normaliseQueueRetentionDays');
+    $method->setAccessible(TRUE);
+    $result = $method->invoke(NULL, 0);
+    $this->assertSame(0, $result);
+  }
+
+  public function testQueueRetentionDaysNegativeValuesClampToOneDay() {
+    $method = $this->reflectionClass->getMethod('normaliseQueueRetentionDays');
+    $method->setAccessible(TRUE);
+    $result = $method->invoke(NULL, -5);
+    $this->assertSame(1, $result);
+  }
+
   public function testQueueMergeKeyStableForSamePayload() {
     $subject = 'Subject';
     $emailType = 'notification_emails';

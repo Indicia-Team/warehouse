@@ -130,6 +130,10 @@ class Scheduled_Tasks_Controller extends Controller {
           $this->doRecordOwnerNotifications($emailer);
           $this->doNotificationDigestEmailsForTriggers($emailer);
         }
+        $purgedCount = Emailer::purgeOldQueueEntries();
+        if ($purgedCount > 0) {
+          self::msg("Purged $purgedCount old email queue rows.");
+        }
         // The value of the last_scheduled_task_check on the Indicia system entry
         // is used to mark the last time notifications were handled, so we can
         // process new notification info next time notifications are handled.

@@ -78,3 +78,5 @@ $config['enable_send_rate_limit'] = FALSE;
 $config['hourly_send_limit'] = 250;
 $config['hourly_critical_reserve'] = 20;
 $config['queue_replay_batch_size'] = 250;
+// Purge sent/failed queue rows older than this number of days. Set to 0 to disable purge.
+$config['queue_retention_days'] = 7;

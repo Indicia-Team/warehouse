@@ -42,6 +42,11 @@ class Emailer {
   private const QUEUE_STATUS_FAILED = 'F';
 
   /**
+   * Queued email status: sent.
+   */
+  private const QUEUE_STATUS_SENT = 'S';
+
+  /**
    * Name of the email helper class, e.g. for Swift or MS Graph connections.
    *
    * @var string
@@ -286,6 +291,47 @@ class Emailer {
   }
 
   /**
+   * Purge old processed queue rows.
+   *
+   * Deletes rows that are already sent or permanently failed and older than
+   * configured retention period.
+   *
+   * @return int
+   *   Number of purged rows.
+   */
+  public static function purgeOldQueueEntries() {
+    $config = kohana::config('email');
+    $retentionDays = self::normaliseQueueRetentionDays($config['queue_retention_days'] ?? 7);
+    if ($retentionDays === 0) {
+      return 0;
+    }
+    self::initDb();
+    $cutoff = date('Y-m-d H:i:s', strtotime("-$retentionDays days"));
+    try {
+      $countResult = self::$db->query(
+        "SELECT COUNT(*) AS count
+        FROM email_send_queue
+        WHERE status IN ('" . self::QUEUE_STATUS_SENT . "', '" . self::QUEUE_STATUS_FAILED . "')
+        AND COALESCE(sent_on, queued_on) < '$cutoff'"
+      )->current();
+      $purgeCount = (int) ($countResult->count ?? 0);
+      if ($purgeCount === 0) {
+        return 0;
+      }
+      self::$db->query(
+        "DELETE FROM email_send_queue
+        WHERE status IN ('" . self::QUEUE_STATUS_SENT . "', '" . self::QUEUE_STATUS_FAILED . "')
+        AND COALESCE(sent_on, queued_on) < '$cutoff'"
+      );
+      return $purgeCount;
+    }
+    catch (Exception $e) {
+      kohana::log('error', 'Unable to purge old queue emails: ' . $e->getMessage());
+      return 0;
+    }
+  }
+
+  /**
    * Decide if this email should be queued due to throttling.
    *
    * @param string $emailType
@@ -332,6 +378,26 @@ class Emailer {
       $criticalReserve = min($criticalReserve, $hourlyLimit - 1);
     }
     return max(0, $hourlyLimit - $criticalReserve);
+  }
+
+  /**
+   * Normalise queue retention days from config.
+   *
+   * @param mixed $configuredDays
+   *   Raw configured value.
+   *
+   * @return int
+   *   0 to disable purge, otherwise number of days retained.
+   */
+  private static function normaliseQueueRetentionDays($configuredDays) {
+    if (!is_numeric($configuredDays)) {
+      return 7;
+    }
+    $days = (int) $configuredDays;
+    if ($days === 0) {
+      return 0;
+    }
+    return max(1, $days);
   }
 
   /**
