@@ -4,6 +4,15 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.20.0
+*2026-03-18*
+
+* Allow the rate of email sending per hour to be throttled, so that server environments with send
+  limits can be respected. To enable this, add a config option to `application/config/email.php`
+  called `enable_send_rate_limit` and set it to TRUE. For other configuration options see the
+  [warehouse installation guide](https://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/warehouse-installation.html#email-configuration).
+
+
 ## Version 9.19.0
 *2026-03-17*
 
