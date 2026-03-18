@@ -30,12 +30,12 @@ class Models_Notification_Priority_Test extends Indicia_DatabaseTestCase {
     $this->insertNotification($source, 1, 2);
     $this->insertNotification($source, 1, 1);
 
-    $rows = $this->db->query(
-      "SELECT escalate_email_priority
+    $rows = $this->db->query(<<<SQL
+      SELECT escalate_email_priority
       FROM notifications
       WHERE source='$source'
-      ORDER BY escalate_email_priority DESC NULLS LAST, user_id, source_type, id"
-    )->result_array(FALSE);
+      ORDER BY escalate_email_priority DESC NULLS LAST, user_id, source_type, id
+    SQL)->result_array(FALSE);
 
     $orderedPriorities = array_map(function ($row) {
       return $row['escalate_email_priority'];
@@ -48,20 +48,20 @@ class Models_Notification_Priority_Test extends Indicia_DatabaseTestCase {
     $db = $this->db;
     $db->query("DELETE FROM email_send_queue");
 
-    $db->query("\
+    $db->query(<<<SQL
       INSERT INTO email_send_queue
         (status, queued_on, recipients, cc, subject, body, from_email, from_name, escalate_email_priority, email_type, group_key)
       VALUES
         ('Q', now() - interval '2 minutes', '[]', '[]', 'normal queued', 'body', 'noreply@example.com', 'System', NULL, 'notification_emails', 'phpunit-normal'),
         ('Q', now() - interval '1 minutes', '[]', '[]', 'urgent queued', 'body', 'noreply@example.com', 'System', 2, 'notification_emails', 'phpunit-urgent')
-    ");
+    SQL);
 
-    $rows = $db->query("\
+    $rows = $db->query(<<<SQL
       SELECT subject
       FROM email_send_queue
       WHERE status='Q'
       ORDER BY COALESCE(escalate_email_priority, 0) DESC, queued_on ASC
-    ")->result_array(FALSE);
+    SQL)->result_array(FALSE);
 
     $subjects = array_map(function ($row) {
       return $row['subject'];
@@ -74,20 +74,20 @@ class Models_Notification_Priority_Test extends Indicia_DatabaseTestCase {
     $db = $this->db;
     $db->query("DELETE FROM email_send_queue");
 
-    $db->query("\
+    $db->query(<<<SQL
       INSERT INTO email_send_queue
         (status, queued_on, recipients, cc, subject, body, from_email, from_name, escalate_email_priority, email_type, group_key)
       VALUES
         ('Q', now() - interval '5 minutes', '[]', '[]', 'first urgent', 'body', 'noreply@example.com', 'System', 2, 'notification_emails', 'phpunit-urgent-first'),
         ('Q', now() - interval '1 minutes', '[]', '[]', 'second urgent', 'body', 'noreply@example.com', 'System', 2, 'notification_emails', 'phpunit-urgent-second')
-    ");
+    SQL);
 
-    $rows = $db->query("\
+    $rows = $db->query(<<<SQL
       SELECT subject
       FROM email_send_queue
       WHERE status='Q'
       ORDER BY COALESCE(escalate_email_priority, 0) DESC, queued_on ASC
-    ")->result_array(FALSE);
+    SQL)->result_array(FALSE);
 
     $subjects = array_map(function ($row) {
       return $row['subject'];
