@@ -62,6 +62,34 @@ function notification_emails_extend_ui() {
 }
 
 /**
+ * Implements the alter_menu hook.
+ *
+ * Adds an admin page for email queue monitoring when send rate limiting is
+ * enabled.
+ *
+ * @param array $menu
+ *   Existing menu structure.
+ * @param Auth $auth
+ *   Authorization object.
+ *
+ * @return array
+ *   Altered menu structure.
+ */
+function notification_emails_alter_menu(array $menu, Auth $auth) {
+  if (!($auth->logged_in('CoreAdmin'))) {
+    return $menu;
+  }
+  if (!(kohana::config('email.enable_send_rate_limit') ?? FALSE)) {
+    return $menu;
+  }
+  if (!isset($menu['Admin']) || !is_array($menu['Admin'])) {
+    $menu['Admin'] = [];
+  }
+  $menu['Admin']['Email queue'] = 'email_queue';
+  return $menu;
+}
+
+/**
  * Implements the extend_data_services hook.
  *
  * Determines the data entities which should be added to those available via
@@ -200,7 +228,7 @@ SQL;
   }
   $notificationsToSendEmailsForSql .= <<<SQL
 )
-ORDER BY n.user_id, u.username, n.source_type, n.id
+ORDER BY n.escalate_email_priority DESC NULLS LAST, n.user_id, u.username, n.source_type, n.id
 
 SQL;
   $notificationsToSendEmailsFor = $db->query($notificationsToSendEmailsForSql)->result(FALSE);
@@ -223,15 +251,21 @@ SQL;
     // Handle also if config file present but option is not.
     if (!isset($email_config['address'])) {
       echo 'Email address not provided in email configuration or email_sender_address configuration option not provided. I cannot send any emails without a sender address.<br/>';
-      return FALSE;
+      return;
     }
     $emailSentCounter = 0;
+    $emailQueuedCounter = 0;
     // All the notifications that need to be sent in an email are grouped by
     // user, as we cycle through the notifications then we can track who the
     // user was for the previous notification. When this user id then changes,
     // we know we need to start building an new email to a new user.
     $previousUserId = 0;
     $notificationIds = [];
+    $notificationsToSend = $notificationsToSendEmailsFor->current();
+    if ($notificationsToSend === FALSE) {
+      echo 'There are no email notifications to send at the moment.<br/>';
+      return;
+    }
     $emailContent = start_building_new_email($notificationsToSendEmailsFor->current());
     $notificationsInCurrentEmail = 0;
     $currentType = '';
@@ -253,7 +287,7 @@ SQL;
         if ($currentType !== '') {
           $emailContent .= "</tbody>\n</table>\n";
         }
-        send_out_user_email(
+        $sent = send_out_user_email(
           $db,
           $emailContent,
           $previousUserId,
@@ -267,7 +301,12 @@ SQL;
         $emailHighPriority = FALSE;
         $notificationIds = [];
         $notificationsInCurrentEmail = 0;
-        $emailSentCounter++;
+        if ($sent > 0) {
+          $emailSentCounter++;
+        }
+        else {
+          $emailQueuedCounter++;
+        }
         $emailContent = start_building_new_email($notificationToSendEmailsFor);
         $currentType = '';
       }
@@ -359,24 +398,35 @@ SQL;
     // If we have run out of notifications to send we will have finished going
     // around the loop, so we just need to send out the last email whatever
     // happens.
-    send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config['address'],
+    $sent = send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config['address'],
       $subscriptionSettingsPageUrl, $emailHighPriority);
     $emailHighPriority = FALSE;
-    $emailSentCounter++;
+    if ($sent > 0) {
+      $emailSentCounter++;
+    }
+    else {
+      $emailQueuedCounter++;
+    }
     // Save the maximum notification id against the jobs we are going to run
     // now, so we know that we have done the notifications up to that id and
     // next time the jobs are run they only need to work with notifications
     // later than that id.
     // Also set the date/time the job was run.
     update_last_run_metadata($db, $frequenciesToRun);
-    if ($emailSentCounter == 0) {
+    if ($emailSentCounter == 0 && $emailQueuedCounter == 0) {
       echo 'No new notification emails have been sent.<br/>';
     }
     elseif ($emailSentCounter == 1) {
       echo '1 new notification email has been sent.<br/>';
     }
-    else {
+    elseif ($emailSentCounter > 1) {
       echo $emailSentCounter . ' new notification emails have been sent.<br/>';
+    }
+    if ($emailQueuedCounter == 1) {
+      echo '1 notification email has been queued due to hourly send limit.<br/>';
+    }
+    elseif ($emailQueuedCounter > 1) {
+      echo $emailQueuedCounter . ' notification emails have been queued due to hourly send limit.<br/>';
     }
   }
 }
@@ -533,6 +583,9 @@ function update_last_run_metadata($db, $frequenciesToUpdate) {
  *   URL of the subscription settings page to include a link to.
  * @param bool $highPriority
  *   Flag set if the email should be high priority.
+ *
+ * @return int
+ *   1 when sent now, 0 when deferred/queued or not sent.
  */
 function send_out_user_email(
     $db,
@@ -546,7 +599,7 @@ function send_out_user_email(
   $email_config = Kohana::config('email');
   if (array_key_exists ('do_not_send' , $email_config) and $email_config['do_not_send']){
     kohana::log('info', "Email configured for do_not_send: ignoring send_out_user_email");
-    return;
+    return 0;
   }
   //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
   $emailContent .= '<br><a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
@@ -606,32 +659,42 @@ function send_out_user_email(
     $emailer->setFrom($emailAddress);
     // Send the email.
     try {
-      $emailer->send($emailSubject, "<html>$emailContent</html>", 'notification_emails');
-      kohana::log('info', 'Email notification sent to ' . $userResults[0]->email_address);
+      $sent = $emailer->send($emailSubject, "<html>$emailContent</html>", 'notification_emails');
+      if ($sent > 0) {
+        kohana::log('info', 'Email notification sent to ' . $userResults[0]->email_address);
+        // All notifications that have been sent out in an email are marked so we
+        // don't resend them.
+        $db
+          ->set('email_sent', 't')
+          ->from('notifications')
+          ->in('id', $notificationIds)
+          ->update();
+        // As Verifier Tasks, Pending Record Tasks need to be actioned, we don't
+        // auto acknowledge them.
+        $db
+          ->set('acknowledged', 't')
+          ->from('notifications')
+          ->where("source_type != 'VT' AND source_type != 'PT'")
+          ->in('id', $notificationIds)
+          ->update();
+      }
+      else {
+        kohana::log('info', 'Email notification deferred for queue replay for user ' . $userId);
+      }
+      $db->commit();
+      return $sent;
     }
     catch (Exception $e) {
       kohana::log('error', 'Failed to send email notification to ' . $userResults[0]->email_address);
       error_logger::log_error('Sending email from notification_emails', $e);
+      $db->commit();
+      return 0;
     }
-    // All notifications that have been sent out in an email are marked so we
-    // don't resend them.
-    $db
-      ->set('email_sent', 't')
-      ->from('notifications')
-      ->in('id', $notificationIds)
-      ->update();
-    // As Verifier Tasks, Pending Record Tasks need to be actioned, we don't
-    // auto acknowledge them.
-    $db
-      ->set('acknowledged', 't')
-      ->from('notifications')
-      ->where("source_type != 'VT' AND source_type != 'PT'")
-      ->in('id', $notificationIds)
-      ->update();
-    $db->commit();
   }
   catch (Exception $e) {
     $db->rollback();
     throw $e;
   }
+
+  return 0;
 }
