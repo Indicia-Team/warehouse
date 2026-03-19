@@ -186,7 +186,17 @@ class Emailer {
     }
     finally {
       if (($config['log_emails'] ?? FALSE) && !$deferred) {
-        $this->logEmail($subject, $message, $emailType, $emailSubtype, $errorMessage);
+        self::insertEmailLog(
+          $subject,
+          $message,
+          $emailType,
+          $emailSubtype,
+          $this->recipients,
+          $this->cc,
+          $this->from,
+          $this->fromName,
+          $errorMessage
+        );
       }
       // Now reset the emailer for next time.
       $this->reset();
@@ -257,17 +267,19 @@ class Emailer {
           ->from('email_send_queue')
           ->where('id', $item->id)
           ->update();
-        self::insertEmailLog(
-          $item->subject,
-          $item->body,
-          $item->email_type,
-          $item->email_subtype,
-          json_decode($item->recipients, TRUE) ?: [],
-          json_decode($item->cc, TRUE) ?: [],
-          $item->from_email,
-          $item->from_name,
-          NULL
-        );
+        if ($config['log_emails'] ?? FALSE) {
+          self::insertEmailLog(
+            $item->subject,
+            $item->body,
+            $item->email_type,
+            $item->email_subtype,
+            json_decode($item->recipients, TRUE) ?: [],
+            json_decode($item->cc, TRUE) ?: [],
+            $item->from_email,
+            $item->from_name,
+            NULL
+          );
+        }
         $sent++;
         $alreadySent++;
         self::incrementSentThisHour();
@@ -639,39 +651,6 @@ class Emailer {
    */
   public function setPriority($priority) {
     $this->priority = $priority;
-  }
-
-  /**
-   * Log an email to the database.
-   *
-   * Called if email config has 'log_emails' set to TRUE, normally for
-   * debugging purposes.
-   *
-   * @param string $subject
-   *   Email subject.
-   * @param mixed $message
-   *   Email body.
-   * @param string $emailType
-   *   System component that caused the email, e.g. notifications.
-   * @param string $emailSubtype
-   *   Optional additional info to identify the source of the email, e.g. the
-   *   notification type.
-   * @param string $errorMessage
-   *   If the email failed to send and an exception caught, the message from
-   *   the exception.
-   */
-  private function logEmail($subject, $message, $emailType, $emailSubtype = NULL, $errorMessage = NULL) {
-    self::insertEmailLog(
-      $subject,
-      $message,
-      $emailType,
-      $emailSubtype,
-      $this->recipients,
-      $this->cc,
-      $this->from,
-      $this->fromName,
-      $errorMessage
-    );
   }
 
   /**
