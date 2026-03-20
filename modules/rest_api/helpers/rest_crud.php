@@ -528,6 +528,7 @@ SQL;
       unset($attr->record_id);
       $attrKey = self::$entityConfig[$entity]->attributePrefix . "Attr:$attr->attribute_id";
       $val = array_key_exists('verbose', $_GET) ? (array) $attr : $attr->value;
+      $val = self::decryptReadAttributeValue($attr, $val);
 
       if (!isset($attrs[$recordKey])) {
         $attrs[$recordKey] = [];
@@ -544,6 +545,39 @@ SQL;
       }
     }
     return $attrs;
+  }
+
+  /**
+   * Decrypt a text custom attribute value for authorized users.
+   *
+   * @param object $attr
+   *   Row from readAttributes query.
+   * @param mixed $val
+   *   Value prepared for output.
+   *
+   * @return mixed
+   *   Possibly decrypted value.
+   */
+  private static function decryptReadAttributeValue($attr, $val) {
+    if ($attr->data_type !== 'T') {
+      return $val;
+    }
+    if (!attribute_encryption::canUserDecryptForWebsite(RestObjects::$clientUserId, RestObjects::$clientWebsiteId)) {
+      return $val;
+    }
+    if (array_key_exists('verbose', $_GET)) {
+      if (!empty($val['value']) && attribute_encryption::isEncryptedPayload($val['value'])) {
+        $val['value'] = attribute_encryption::decrypt($val['value']);
+      }
+      if (!empty($val['raw_value']) && attribute_encryption::isEncryptedPayload($val['raw_value'])) {
+        $val['raw_value'] = attribute_encryption::decrypt($val['raw_value']);
+      }
+      return $val;
+    }
+    if (!empty($val) && attribute_encryption::isEncryptedPayload($val)) {
+      return attribute_encryption::decrypt($val);
+    }
+    return $val;
   }
 
   /**
