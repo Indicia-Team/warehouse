@@ -21,7 +21,7 @@ class Models_Attribute_Encryption_Test extends Indicia_DatabaseTestCase {
     $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
     $this->auth['write_tokens']['persist_auth'] = TRUE;
     $this->db = new Database();
-    Kohana::config_set('indicia.attribute_encryption_key', 'b64:' . base64_encode(str_repeat('a', 32)));
+    Kohana::config_set('indicia.attribute_encryption_key', 'base64:' . base64_encode(str_repeat('a', 32)));
     Kohana::config_set('indicia.attribute_encryption_key_id', 'test-key');
   }
 
@@ -60,7 +60,7 @@ class Models_Attribute_Encryption_Test extends Indicia_DatabaseTestCase {
     ];
     $submission = submission_builder::build_submission($array, $structure);
     $response = data_entry_helper::forward_post_to('sample', $submission, $this->auth['write_tokens']);
-
+var_export($response);
     $this->assertArrayHasKey('success', $response, 'Sample/occurrence submission did not succeed.');
     $sampleId = (int) $response['success'];
     $occurrenceId = (int) ORM::factory('occurrence', ['sample_id' => $sampleId])->id;

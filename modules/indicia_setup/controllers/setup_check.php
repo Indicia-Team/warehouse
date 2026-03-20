@@ -575,7 +575,42 @@ class Setup_Check_Controller extends Template_Controller {
     $indicia_source_config = dirname(dirname(dirname(dirname(__file__)))) . "/application/config/indicia_dist.php";
     $indicia_dest_config = dirname(dirname(dirname(dirname(__file__)))) . "/application/config/indicia.php";
 
-    return @copy($indicia_source_config, $indicia_dest_config);
+    if (!@copy($indicia_source_config, $indicia_dest_config)) {
+      return FALSE;
+    }
+
+    $config = @file_get_contents($indicia_dest_config);
+    if ($config === FALSE) {
+      Kohana::log("error", "Cannot read indicia config file after copy: " . $indicia_dest_config);
+      return FALSE;
+    }
+
+    try {
+      $privateKey = bin2hex(random_bytes(32));
+      $attributeEncryptionKey = 'base64:' . base64_encode(random_bytes(32));
+    }
+    catch (Exception $e) {
+      Kohana::log("error", "Unable to generate cryptographic keys during setup: " . $e->getMessage());
+      return FALSE;
+    }
+
+    $config = str_replace(
+      '$config[\'private_key\'] = \'Indicia\';',
+      '$config[\'private_key\'] = \'' . $privateKey . '\';',
+      $config
+    );
+    $config = str_replace(
+      '$config[\'attribute_encryption_key\'] = \'\';',
+      '$config[\'attribute_encryption_key\'] = \'' . $attributeEncryptionKey . '\';',
+      $config
+    );
+
+    if (@file_put_contents($indicia_dest_config, $config) === FALSE) {
+      Kohana::log("error", "Cannot write generated keys into indicia config file: " . $indicia_dest_config);
+      return FALSE;
+    }
+
+    return TRUE;
   }
 
   /**

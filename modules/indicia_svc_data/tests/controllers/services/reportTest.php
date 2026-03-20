@@ -316,7 +316,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
 
-    Kohana::config_set('indicia.attribute_encryption_key', 'b64:' . base64_encode(str_repeat('a', 32)));
+    Kohana::config_set('indicia.attribute_encryption_key', 'base64:' . base64_encode(str_repeat('a', 32)));
     Kohana::config_set('indicia.attribute_encryption_key_id', 'test-key');
 
     $this->auth = report_helper::get_read_write_auth(1, 'password');
