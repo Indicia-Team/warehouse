@@ -2259,9 +2259,13 @@ class ORM extends ORM_Core {
     switch ($dataType) {
       case 'T':
         $vf = 'text_value';
-        $value = security::xss_clean($value);
-        if ($value !== '' && !empty($attrDef->encrypt) && $attrDef->encrypt === 't') {
-          $value = attribute_encryption::encrypt($value);
+        $isEncryptedPayload = attributeEncryption::isEncryptedPayload($value);
+        // Note logic prevents double-encryption.
+        if (!$isEncryptedPayload) {
+          $value = security::xss_clean($value);
+        }
+        if (!$isEncryptedPayload && $value !== '' && !empty($attrDef->encrypt) && $attrDef->encrypt === 't') {
+          $value = attributeEncryption::encrypt($value);
         }
         break;
 
