@@ -1,0 +1,21 @@
+<report
+    title="Locations encrypted attribute test"
+    description="Test report for decrypt=true custom attribute columns."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+  JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+  LEFT JOIN location_attribute_values lav ON lav.location_id=l.id AND lav.location_attribute_id=1 AND lav.deleted=false
+  WHERE l.deleted=false
+    AND #website_filter#
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>l.id ASC</order_by>
+  </order_bys>
+  <columns>
+    <column name="location_id" display="ID" sql="l.id" />
+    <column name="secret_text" display="Secret" sql="lav.text_value" decrypt="true" />
+  </columns>
+</report>

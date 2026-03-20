@@ -167,6 +167,27 @@ class ReportEngine {
   private $orderby;
 
   /**
+   * True when user may run reports with decrypt columns.
+   *
+   * @var bool
+   */
+  private $decryptAllowed = FALSE;
+
+  /**
+   * True when user is core admin for decrypt report requests.
+   *
+   * @var bool
+   */
+  private $decryptCoreAdmin = FALSE;
+
+  /**
+   * Site IDs where user is site admin for decrypt report requests.
+   *
+   * @var int[]
+   */
+  private $decryptSiteWebsiteIds = [];
+
+  /**
    * Constructor.
    *
    * @param array $websiteIds
@@ -373,6 +394,7 @@ class ReportEngine {
           throw new Exception('Attempt to access unauthorised report', 404);
         }
         $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
+        $this->enforceDecryptReportPermissions();
         break;
 
       default:
@@ -463,6 +485,28 @@ class ReportEngine {
    */
   public function setAuthorisedReports(array $reports) {
     $this->authorisedReports = $reports;
+  }
+
+  /**
+   * Set role context used for decrypt-enabled report enforcement.
+   *
+   * @param bool $allowed
+   *   True when user can run reports with decrypt columns.
+   * @param bool $coreAdmin
+   *   True when user is core admin.
+   * @param int[] $siteWebsiteIds
+   *   IDs of websites user is site admin for.
+   */
+  public function setDecryptPermissions($allowed, $coreAdmin, array $siteWebsiteIds = []) {
+    $this->decryptAllowed = (bool) $allowed;
+    $this->decryptCoreAdmin = (bool) $coreAdmin;
+    $ids = [];
+    foreach ($siteWebsiteIds as $siteWebsiteId) {
+      if (is_numeric($siteWebsiteId)) {
+        $ids[] = (int) $siteWebsiteId;
+      }
+    }
+    $this->decryptSiteWebsiteIds = array_values(array_unique($ids));
   }
 
   /**
@@ -634,6 +678,7 @@ class ReportEngine {
    */
   private function postProcess(&$data) {
     $this->merge_attribute_data($data, $this->providedParams);
+    $this->applyColumnDecryption($data);
 
     $vagueDateProcessing = $this->getVagueDateProcessing();
     $downloadProcessing = $this->getDownloadDetails();
@@ -665,6 +710,80 @@ class ReportEngine {
       }
     }
     return $downloadProcessing;
+  }
+
+  /**
+   * Apply decryption to output columns flagged with decrypt="true".
+   *
+   * @param array $data
+   *   Report output rows.
+   */
+  private function applyColumnDecryption(&$data) {
+    $decryptColumns = [];
+    foreach ($this->columns as $columnName => $columnDef) {
+      if (!empty($columnDef['decrypt']) && strtolower($columnDef['decrypt']) === 'true') {
+        $decryptColumns[] = $columnName;
+      }
+    }
+    if (empty($decryptColumns) || empty($data)) {
+      return;
+    }
+    foreach ($data as $rowIdx => $row) {
+      foreach ($decryptColumns as $columnName) {
+        if (isset($row[$columnName])
+            && is_string($row[$columnName])
+            && attributeEncryption::isEncryptedPayload($row[$columnName])) {
+          $data[$rowIdx][$columnName] = attributeEncryption::decrypt($row[$columnName]);
+        }
+      }
+    }
+  }
+
+  /**
+   * Ensure reports with decrypt columns are run only by authorized users.
+   */
+  private function enforceDecryptReportPermissions() {
+    $hasDecryptColumns = FALSE;
+    foreach ($this->reportReader->getColumns() as $columnDef) {
+      if (!empty($columnDef['decrypt']) && strtolower($columnDef['decrypt']) === 'true') {
+        $hasDecryptColumns = TRUE;
+        break;
+      }
+    }
+    if (!$hasDecryptColumns) {
+      return;
+    }
+    if (!$this->decryptAllowed) {
+      throw new Exception('Attempt to access unauthorised report', 403);
+    }
+    if ($this->decryptCoreAdmin) {
+      return;
+    }
+    if (empty($this->decryptSiteWebsiteIds)) {
+      throw new Exception('Attempt to access unauthorised report', 403);
+    }
+    $queryTemplate = $this->reportReader->getQuery();
+    if (strpos($queryTemplate, '#website_filter#') === FALSE && strpos($queryTemplate, '#website_ids#') === FALSE) {
+      throw new Exception('Attempt to access unauthorised report', 403);
+    }
+    if (trim((string) $this->reportReader->getWebsiteFilterField()) === '') {
+      throw new Exception('Attempt to access unauthorised report', 403);
+    }
+    if (empty($this->websiteIds)) {
+      $this->websiteIds = $this->decryptSiteWebsiteIds;
+    }
+    else {
+      $normalisedWebsiteIds = [];
+      foreach ($this->websiteIds as $websiteId) {
+        if (is_numeric($websiteId)) {
+          $normalisedWebsiteIds[] = (int) $websiteId;
+        }
+      }
+      $this->websiteIds = array_values(array_intersect($normalisedWebsiteIds, $this->decryptSiteWebsiteIds));
+    }
+    if (empty($this->websiteIds)) {
+      throw new Exception('Attempt to access unauthorised report', 403);
+    }
   }
 
   /**

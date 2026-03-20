@@ -378,6 +378,19 @@ class warehouse {
   }
 
   /**
+   * Convert common database/form boolean forms to bool.
+   *
+   * @param mixed $value
+   *   Input value.
+   *
+   * @return bool
+   *   Normalised value.
+   */
+  public static function normaliseBool($value) {
+    return in_array(strtolower((string) $value), ['1', 't', 'true'], TRUE);
+  }
+
+  /**
    * Check format of a comma-separated list of integers.
    *
    * @param string $list

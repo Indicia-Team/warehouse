@@ -792,6 +792,16 @@ class XMLReportReader_Core implements ReportReader {
   }
 
   /**
+   * Return the website filter field configured for the report query.
+   *
+   * @return string
+   *   Website filter field expression, or empty string.
+   */
+  public function getWebsiteFilterField() {
+    return $this->websiteFilterField;
+  }
+
+  /**
    * Retrieve the query required to count the records.
    *
    * @return string
