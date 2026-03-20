@@ -184,6 +184,9 @@ abstract class Attr_Base_Controller extends Gridview_Base_Controller {
       if (!array_key_exists($this->model->object_name . ':multi_value', $_POST)) {
         $_POST[$this->model->object_name . ':multi_value'] = '0';
       }
+      if (!array_key_exists($this->model->object_name . ':encrypt', $_POST)) {
+        $_POST[$this->model->object_name . ':encrypt'] = '0';
+      }
     }
     parent::save();
   }

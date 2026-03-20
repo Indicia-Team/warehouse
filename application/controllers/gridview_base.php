@@ -211,6 +211,23 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    * This is only called by sub-classes for entities that have associated attributes.
    */
   protected function loadAttributes(&$r, $in) {
+    $websiteIds = [];
+    if (!empty($in['website_id']) && is_array($in['website_id'])) {
+      foreach ($in['website_id'] as $websiteId) {
+        if (is_numeric($websiteId)) {
+          $websiteIds[] = (int) $websiteId;
+        }
+      }
+    }
+    elseif (!empty($this->model->website_id) && is_numeric($this->model->website_id)) {
+      $websiteIds[] = (int) $this->model->website_id;
+    }
+    $canDecrypt = NULL;
+    $decryptUserId = !empty($_SESSION['auth_user']->id) ? (int) $_SESSION['auth_user']->id : NULL;
+    if ($this->auth->logged_in('CoreAdmin')) {
+      $canDecrypt = TRUE;
+    }
+
     // First load up the possible attribute list.
     $this->db->from('list_' . $this->model->object_name . '_attributes');
     foreach ($in as $field => $values) {
@@ -254,6 +271,34 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
           $attrs["$attrId:$value[id]"]['id'] = $value['id'];
           $attrs["$attrId:$value[id]"]['value'] = $value['value'];
           $attrs["$attrId:$value[id]"]['raw_value'] = $value['raw_value'];
+          $isEncrypted = !empty($value['encrypted']) && warehouse::normaliseBool($value['encrypted']);
+          if (!$isEncrypted && !empty($attrs["$attrId:$value[id]"]['value'])) {
+            $isEncrypted = attribute_encryption::isEncryptedPayload($attrs["$attrId:$value[id]"]['value']);
+          }
+          if ($isEncrypted && $canDecrypt === NULL) {
+            $canDecrypt = FALSE;
+            if (!empty($decryptUserId) && count($websiteIds) > 0) {
+              foreach ($websiteIds as $websiteId) {
+                if (attribute_encryption::canUserDecryptForWebsite($decryptUserId, $websiteId)) {
+                  $canDecrypt = TRUE;
+                  break;
+                }
+              }
+            }
+            elseif (!empty($decryptUserId)) {
+              $canDecrypt = count(attribute_encryption::getUserAdminWebsiteIds($decryptUserId)) > 0;
+            }
+          }
+          if ($isEncrypted && $canDecrypt && $attrs["$attrId:$value[id]"]['data_type'] === 'T') {
+            if (!empty($attrs["$attrId:$value[id]"]['value'])
+                && attribute_encryption::isEncryptedPayload($attrs["$attrId:$value[id]"]['value'])) {
+              $attrs["$attrId:$value[id]"]['value'] = attribute_encryption::decrypt($attrs["$attrId:$value[id]"]['value']);
+            }
+            if (!empty($attrs["$attrId:$value[id]"]['raw_value'])
+                && attribute_encryption::isEncryptedPayload($attrs["$attrId:$value[id]"]['raw_value'])) {
+              $attrs["$attrId:$value[id]"]['raw_value'] = attribute_encryption::decrypt($attrs["$attrId:$value[id]"]['raw_value']);
+            }
+          }
           // Remember the non-value specific attribute so we can remove it at
           // the end.
           $toRemove[] = $attrId;

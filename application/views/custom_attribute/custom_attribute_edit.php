@@ -243,6 +243,14 @@ TXT;
       'default' => html::initial_value($values, "$model->object_name:allow_ranges"),
       'helpText' => 'Allow (but do not require) a value to be specified as a range, e.g. 0.4 - 1.6',
     ]);
+    if (array_key_exists('encrypt', $this->model->as_array())) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => "$model->object_name:encrypt",
+        'label' => 'Encrypt values',
+        'default' => html::initial_value($values, "$model->object_name:encrypt"),
+        'helpText' => 'When enabled for text attributes, values are encrypted before storage.',
+      ]);
+    }
     echo data_entry_helper::checkbox([
       'fieldname' => "$model->object_name:public",
       'label' => $other_data['publicFieldName'],
@@ -572,6 +580,12 @@ $(document).ready(function() {
       $('#ctrl-wrap-<?php echo $model->object_name; ?>-allow_ranges').show();
     } else {
       $('#ctrl-wrap-<?php echo $model->object_name; ?>-allow_ranges').hide();
+    }
+    if ($('#data_type').val() === 'T') {
+      $('#ctrl-wrap-<?php echo $model->object_name; ?>-encrypt').show();
+    } else {
+      $('#ctrl-wrap-<?php echo $model->object_name; ?>-encrypt').hide();
+      $('#<?php echo $model->object_name; ?>-encrypt').prop('checked', false);
     }
   }
   $('#data_type').change(changeDataType);
