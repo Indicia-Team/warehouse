@@ -2259,6 +2259,10 @@ class ORM extends ORM_Core {
     switch ($dataType) {
       case 'T':
         $vf = 'text_value';
+        $value = security::xss_clean($value);
+        if ($value !== '' && !empty($attrDef->encrypt) && $attrDef->encrypt === 't') {
+          $value = attribute_encryption::encrypt($value);
+        }
         break;
 
       case 'F':
@@ -2373,7 +2377,7 @@ class ORM extends ORM_Core {
       else {
         $attrValueModel->upper_value = NULL;
       }
-      $attrValueModel->$vf = $dataType === 'T' ? security::xss_clean($value) : $value;
+      $attrValueModel->$vf = $value;
       // Test that ORM accepted the new value - it will reject if the wrong data type for example.
       // Use a string compare to get a proper test but with type tolerance.
       // A wkt geometry gets translated to a proper geom so this will look different - just check it is not empty.
@@ -2457,14 +2461,14 @@ class ORM extends ORM_Core {
       // An attribute value lookup.
       $attrId = substr($attrId, 3);
     }
-    // Cache ID includes 2 - version number, to prevent old cache records being
-    // used after inclusion of allow_ranges field.
-    $cacheId = "attrInfo.2_{$attrType}_{$attrId}";
+    // Cache ID includes 3 - version number, to prevent old cache records being
+    // used after inclusion of encryption support metadata.
+    $cacheId = "attrInfo.3_{$attrType}_{$attrId}";
     $this->cache = Cache::instance();
     $attr = $this->cache->get($cacheId);
     if (!is_object($attr)) {
       $attr = $this->db
-        ->select('caption', 'data_type', 'multi_value', 'termlist_id', 'validation_rules', 'allow_ranges')
+        ->select('caption', 'data_type', 'multi_value', 'termlist_id', 'validation_rules', 'allow_ranges', 'encrypt')
         ->from($attrType . '_attributes')
         ->where(['id' => $attrId])
         ->get()->current();
