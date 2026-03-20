@@ -1215,6 +1215,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         // Either load full data array, or just database result to iterate
         // through which uses less memory, depending on format.
         $r = in_array($this->get_output_mode(), self::STREAMABLE_FORMATS) ? $dbResult->result() : $dbResult->result_array(FALSE);
+        $r = $this->decryptAttributeValueResults($r);
         kohana::log('debug', "Query ran for service call:\n" . $this->db->last_query());
         // If we got no record but asked for a specific one, check if this was
         // a permissions issue?
@@ -1234,6 +1235,117 @@ class Data_Controller extends Data_Service_Base_Controller {
       kohana::log('error', kohana::debug($_REQUEST));
       throw $e;
     }
+  }
+
+  /**
+   * Decrypt text attribute values in data service output where permitted.
+   *
+   * For *_attribute_value entities, decrypt values when the requester either
+   * created the value, is core admin, or is site admin for the record
+   * website.
+   *
+   * @param array $rows
+   *   Query result rows as arrays or objects.
+   *
+   * @return array
+   *   Possibly decrypted rows.
+   */
+  private function decryptAttributeValueResults(array $rows) {
+    if (empty($rows)
+        || !preg_match('/_attribute_value$/', $this->entity)
+        || empty($this->user_id)
+        || !class_exists('attributeEncryption')) {
+      return $rows;
+    }
+    $firstRow = $rows[0];
+    if (is_array($firstRow)) {
+      if (!array_key_exists('value', $firstRow) || !array_key_exists('data_type', $firstRow)) {
+        return $rows;
+      }
+    }
+    elseif (is_object($firstRow)) {
+      if (!isset($firstRow->value) || !isset($firstRow->data_type)) {
+        return $rows;
+      }
+    }
+    else {
+      return $rows;
+    }
+
+    $idField = 'id';
+    $valueIds = [];
+    foreach ($rows as $row) {
+      $rowId = is_array($row) ? ($row[$idField] ?? NULL) : ($row->$idField ?? NULL);
+      if (!empty($rowId) && is_numeric($rowId)) {
+        $valueIds[] = (int) $rowId;
+      }
+    }
+    if (empty($valueIds)) {
+      return $rows;
+    }
+    $creatorMap = $this->loadAttributeValueCreators($valueIds);
+
+    foreach ($rows as $idx => $row) {
+      $dataType = is_array($row) ? ($row['data_type'] ?? '') : ($row->data_type ?? '');
+      if ($dataType !== 'T' && $dataType !== 'Text') {
+        continue;
+      }
+      $rowId = is_array($row) ? ($row['id'] ?? NULL) : ($row->id ?? NULL);
+      $websiteId = is_array($row) ? ($row['website_id'] ?? NULL) : ($row->website_id ?? NULL);
+      $creatorId = (!empty($rowId) && array_key_exists((int) $rowId, $creatorMap)) ? $creatorMap[(int) $rowId] : NULL;
+
+      $canDecrypt = ((int) $creatorId === (int) $this->user_id)
+        || attributeEncryption::canUserDecryptForWebsite($this->user_id, $websiteId);
+      if (!$canDecrypt) {
+        continue;
+      }
+
+      if (is_array($row)) {
+        if (!empty($row['value']) && attributeEncryption::isEncryptedPayload($row['value'])) {
+          $row['value'] = attributeEncryption::decrypt($row['value']);
+        }
+        if (!empty($row['raw_value']) && attributeEncryption::isEncryptedPayload($row['raw_value'])) {
+          $row['raw_value'] = attributeEncryption::decrypt($row['raw_value']);
+        }
+      }
+      else {
+        if (!empty($row->value) && attributeEncryption::isEncryptedPayload($row->value)) {
+          $row->value = attributeEncryption::decrypt($row->value);
+        }
+        if (!empty($row->raw_value) && attributeEncryption::isEncryptedPayload($row->raw_value)) {
+          $row->raw_value = attributeEncryption::decrypt($row->raw_value);
+        }
+      }
+      $rows[$idx] = $row;
+    }
+    return $rows;
+  }
+
+  /**
+   * Load created_by_id values for attribute value rows.
+   *
+   * @param int[] $valueIds
+   *   Attribute value IDs.
+   *
+   * @return array
+   *   Map of attribute value ID to created_by_id.
+   */
+  private function loadAttributeValueCreators(array $valueIds) {
+    $table = inflector::plural($this->entity);
+    if (!$this->db->table_exists($table)) {
+      return [];
+    }
+    $rows = $this->db
+      ->select('id', 'created_by_id')
+      ->from($table)
+      ->in('id', array_values(array_unique($valueIds)))
+      ->get()
+      ->result();
+    $map = [];
+    foreach ($rows as $row) {
+      $map[(int) $row->id] = (int) $row->created_by_id;
+    }
+    return $map;
   }
 
   /**
