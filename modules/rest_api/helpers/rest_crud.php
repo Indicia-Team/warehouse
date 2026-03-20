@@ -562,20 +562,20 @@ SQL;
     if ($attr->data_type !== 'T') {
       return $val;
     }
-    if (!attribute_encryption::canUserDecryptForWebsite(RestObjects::$clientUserId, RestObjects::$clientWebsiteId)) {
+    if (!attributeEncryption::canUserDecryptForWebsite(RestObjects::$clientUserId, RestObjects::$clientWebsiteId)) {
       return $val;
     }
     if (array_key_exists('verbose', $_GET)) {
-      if (!empty($val['value']) && attribute_encryption::isEncryptedPayload($val['value'])) {
-        $val['value'] = attribute_encryption::decrypt($val['value']);
+      if (!empty($val['value']) && attributeEncryption::isEncryptedPayload($val['value'])) {
+        $val['value'] = attributeEncryption::decrypt($val['value']);
       }
-      if (!empty($val['raw_value']) && attribute_encryption::isEncryptedPayload($val['raw_value'])) {
-        $val['raw_value'] = attribute_encryption::decrypt($val['raw_value']);
+      if (!empty($val['raw_value']) && attributeEncryption::isEncryptedPayload($val['raw_value'])) {
+        $val['raw_value'] = attributeEncryption::decrypt($val['raw_value']);
       }
       return $val;
     }
-    if (!empty($val) && attribute_encryption::isEncryptedPayload($val)) {
-      return attribute_encryption::decrypt($val);
+    if (!empty($val) && attributeEncryption::isEncryptedPayload($val)) {
+      return attributeEncryption::decrypt($val);
     }
     return $val;
   }

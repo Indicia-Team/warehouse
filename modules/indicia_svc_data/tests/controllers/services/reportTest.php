@@ -650,7 +650,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $db->query('UPDATE location_attributes SET encrypt=true WHERE id=1');
     $db->query('DELETE FROM location_attribute_values WHERE location_id=1 AND location_attribute_id=1');
     $db->query('INSERT INTO location_attribute_values (location_id, location_attribute_id, text_value, created_by_id, created_on, updated_by_id, updated_on) VALUES (1, 1, ?, 1, now(), 1, now())',
-      [attribute_encryption::encrypt('Top secret')]);
+      [attributeEncryption::encrypt('Top secret')]);
 
     $response = $this->getReportResponseAsAuth(
       'library/locations/locations_encrypted_attr_test.xml',
@@ -668,7 +668,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $db->query('UPDATE location_attributes SET encrypt=true WHERE id=1');
     $db->query('DELETE FROM location_attribute_values WHERE location_id=1 AND location_attribute_id=1');
     $db->query('INSERT INTO location_attribute_values (location_id, location_attribute_id, text_value, created_by_id, created_on, updated_by_id, updated_on) VALUES (1, 1, ?, 1, now(), 1, now())',
-      [attribute_encryption::encrypt('Top secret')]);
+      [attributeEncryption::encrypt('Top secret')]);
 
     $response = $this->getReportResponseAsAuth(
       'library/locations/locations_encrypted_attr_test.xml',

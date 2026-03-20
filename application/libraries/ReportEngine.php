@@ -732,8 +732,8 @@ class ReportEngine {
       foreach ($decryptColumns as $columnName) {
         if (isset($row[$columnName])
             && is_string($row[$columnName])
-            && attribute_encryption::isEncryptedPayload($row[$columnName])) {
-          $data[$rowIdx][$columnName] = attribute_encryption::decrypt($row[$columnName]);
+            && attributeEncryption::isEncryptedPayload($row[$columnName])) {
+          $data[$rowIdx][$columnName] = attributeEncryption::decrypt($row[$columnName]);
         }
       }
     }

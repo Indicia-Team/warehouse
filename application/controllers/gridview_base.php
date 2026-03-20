@@ -273,30 +273,30 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
           $attrs["$attrId:$value[id]"]['raw_value'] = $value['raw_value'];
           $isEncrypted = !empty($value['encrypted']) && warehouse::normaliseBool($value['encrypted']);
           if (!$isEncrypted && !empty($attrs["$attrId:$value[id]"]['value'])) {
-            $isEncrypted = attribute_encryption::isEncryptedPayload($attrs["$attrId:$value[id]"]['value']);
+            $isEncrypted = attributeEncryption::isEncryptedPayload($attrs["$attrId:$value[id]"]['value']);
           }
           if ($isEncrypted && $canDecrypt === NULL) {
             $canDecrypt = FALSE;
             if (!empty($decryptUserId) && count($websiteIds) > 0) {
               foreach ($websiteIds as $websiteId) {
-                if (attribute_encryption::canUserDecryptForWebsite($decryptUserId, $websiteId)) {
+                if (attributeEncryption::canUserDecryptForWebsite($decryptUserId, $websiteId)) {
                   $canDecrypt = TRUE;
                   break;
                 }
               }
             }
             elseif (!empty($decryptUserId)) {
-              $canDecrypt = count(attribute_encryption::getUserAdminWebsiteIds($decryptUserId)) > 0;
+              $canDecrypt = count(attributeEncryption::getUserAdminWebsiteIds($decryptUserId)) > 0;
             }
           }
           if ($isEncrypted && $canDecrypt && $attrs["$attrId:$value[id]"]['data_type'] === 'T') {
             if (!empty($attrs["$attrId:$value[id]"]['value'])
-                && attribute_encryption::isEncryptedPayload($attrs["$attrId:$value[id]"]['value'])) {
-              $attrs["$attrId:$value[id]"]['value'] = attribute_encryption::decrypt($attrs["$attrId:$value[id]"]['value']);
+                && attributeEncryption::isEncryptedPayload($attrs["$attrId:$value[id]"]['value'])) {
+              $attrs["$attrId:$value[id]"]['value'] = attributeEncryption::decrypt($attrs["$attrId:$value[id]"]['value']);
             }
             if (!empty($attrs["$attrId:$value[id]"]['raw_value'])
-                && attribute_encryption::isEncryptedPayload($attrs["$attrId:$value[id]"]['raw_value'])) {
-              $attrs["$attrId:$value[id]"]['raw_value'] = attribute_encryption::decrypt($attrs["$attrId:$value[id]"]['raw_value']);
+                && attributeEncryption::isEncryptedPayload($attrs["$attrId:$value[id]"]['raw_value'])) {
+              $attrs["$attrId:$value[id]"]['raw_value'] = attributeEncryption::decrypt($attrs["$attrId:$value[id]"]['raw_value']);
             }
           }
           // Remember the non-value specific attribute so we can remove it at

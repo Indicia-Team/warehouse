@@ -22,7 +22,7 @@
 /**
  * Helper for encrypting/decrypting custom attribute text values.
  */
-class attribute_encryption {
+class AttributeEncryption {
 
   /**
    * Prefix identifying encrypted payloads.
@@ -187,7 +187,7 @@ class attribute_encryption {
     }
     $db = new Database();
     $rows = $db->query(
-      'SELECT website_id FROM users_websites WHERE user_id=? AND site_role_id IS NOT NULL AND banned=false AND deleted=false',
+      'SELECT website_id FROM users_websites WHERE user_id=? AND site_role_id = 1 AND banned=false',
       [(int) $userId]
     )->result_array(FALSE);
     $ids = [];
@@ -209,12 +209,16 @@ class attribute_encryption {
    *   True when user has permission.
    */
   public static function canUserDecryptForWebsite($userId, $websiteId) {
+    kohana::debug("Checking decrypt permissions for user $userId on website $websiteId.");
     if (self::isCoreAdmin($userId)) {
+      kohana::log('debug', "User $userId is core admin, can decrypt for any website.");
       return TRUE;
     }
     if (empty($websiteId) || !is_numeric($websiteId)) {
+      kohana::log('debug', "View has no website ID so cannot decrypt.");
       return FALSE;
     }
+    kohana::log('debug', "Checking if user $userId can decrypt for website $websiteId : " . print_r(self::getUserAdminWebsiteIds($userId), TRUE));
     return in_array((int) $websiteId, self::getUserAdminWebsiteIds($userId), TRUE);
   }
 
