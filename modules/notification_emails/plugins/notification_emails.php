@@ -346,15 +346,17 @@ SQL;
         }
         $emailContent .= '<tr>';
         foreach ($dataFieldsToOutput as $field => $caption) {
-          $value = isset($record[$field]) ? $record[$field] : '';
-          $htmlToDisplay = html::specialchars((string) $value);
           if (isset($record[$field]) || $field === 'query') {
+            $value = isset($record[$field]) ? $record[$field] : '';
+            // Set a default output, which will be overridden for certain fields.
+            $htmlToDisplay = html::specialchars((string) $value);
             if ($field === 'username' && ($record[$field] === 'admin' || $record[$field] === 'system')) {
               $htmlToDisplay = html::specialchars($systemName);
             }
             elseif ($field === 'comment') {
+              // Use the raw value as it can contain HTML.
               $htmlToDisplay = '<div style="padding: 4px; border: solid silver 1px; border-radius: 4px;">' .
-                nl2br($htmlToDisplay) . '</div>';
+                nl2br($value) . '</div>';
               // Add a reply link if relevant.
               if (!empty($record['occurrence_id']) && in_array($currentType, ['C', 'V', 'Q'])) {
                 $link = notification_emails_hyperlink_id(
