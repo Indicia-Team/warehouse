@@ -37,6 +37,13 @@ class AttributeEncryption {
   private static $keyInfo;
 
   /**
+   * Signature of config used for cached key details.
+   *
+   * @var string|null
+   */
+  private static $keyInfoSignature;
+
+  /**
    * Encrypt a plaintext value.
    *
    * @param string|null $plaintext
@@ -229,9 +236,6 @@ class AttributeEncryption {
    *   Key metadata and bytes.
    */
   private static function getKeyInfo() {
-    if (isset(self::$keyInfo)) {
-      return self::$keyInfo;
-    }
     $keyString = trim((string) kohana::config('indicia.attribute_encryption_key'));
     if ($keyString === '') {
       throw new Exception('Attribute encryption key is not configured.');
@@ -239,6 +243,10 @@ class AttributeEncryption {
     $keyId = trim((string) kohana::config('indicia.attribute_encryption_key_id'));
     if ($keyId === '') {
       $keyId = 'default';
+    }
+    $signature = $keyString . '|' . $keyId;
+    if (isset(self::$keyInfo) && self::$keyInfoSignature === $signature) {
+      return self::$keyInfo;
     }
     if (strpos($keyString, 'base64:') === 0) {
       $decoded = base64_decode(substr($keyString, 7), TRUE);
@@ -258,6 +266,7 @@ class AttributeEncryption {
         'key_id' => $keyId,
         'key' => substr($key, 0, SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES),
       ];
+      self::$keyInfoSignature = $signature;
       return self::$keyInfo;
     }
     if (function_exists('openssl_encrypt')) {
@@ -266,6 +275,7 @@ class AttributeEncryption {
         'key_id' => $keyId,
         'key' => substr($key, 0, 32),
       ];
+      self::$keyInfoSignature = $signature;
       return self::$keyInfo;
     }
     throw new Exception('No supported encryption implementation is available.');
