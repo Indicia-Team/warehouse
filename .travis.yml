@@ -91,6 +91,7 @@ before_script:
 script:
   - vendor/phpunit/phpunit/phpunit --stderr --configuration phpunit-config-test.xml
   - vendor/phpunit/phpunit/phpunit --stderr --configuration phpunit-setup-check-test.xml
+  - "php -r '$file=\"application/config/indicia.php\"; $config=file_get_contents($file); $key=\"base64:\" . base64_encode(random_bytes(32)); $config=preg_replace(\"/\\$config\\['attribute_encryption_key'\\]\\s*=\\s*'';/\", \"\\$config['attribute_encryption_key'] = '\" . $key . \"';\", $config, 1); file_put_contents($file, $config);'"
   - vendor/phpunit/phpunit/phpunit --stderr --configuration phpunit-home-test.xml
   # Repeat to upgrade modules
   - vendor/phpunit/phpunit/phpunit --stderr --configuration phpunit-home-test.xml
