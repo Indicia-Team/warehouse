@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 * Adds an encrypt flag that can be used to enable encrypted storage of text custom attribute
   values, e.g. email addresses. See https://github.com/Indicia-Team/warehouse/issues/581.
+  Information on required setup steps is given in the [Indicia installation guide](https://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/warehouse-installation.html#encrypted-custom-attribute-values).
 
 ## Version 9.20.0
 *2026-03-18*
