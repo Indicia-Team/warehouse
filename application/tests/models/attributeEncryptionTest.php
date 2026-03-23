@@ -11,6 +11,10 @@ class Models_Attribute_Encryption_Test extends Indicia_DatabaseTestCase {
 
   protected $db;
 
+  protected $originalEncryptionKey;
+
+  protected $originalEncryptionKeyId;
+
   public function getDataSet() {
     return new DbUDataSetYamlDataSet('modules/phpUnit/config/core_fixture.yaml');
   }
@@ -21,8 +25,16 @@ class Models_Attribute_Encryption_Test extends Indicia_DatabaseTestCase {
     $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
     $this->auth['write_tokens']['persist_auth'] = TRUE;
     $this->db = new Database();
+    $this->originalEncryptionKey = Kohana::config('indicia.attribute_encryption_key');
+    $this->originalEncryptionKeyId = Kohana::config('indicia.attribute_encryption_key_id');
     Kohana::config_set('indicia.attribute_encryption_key', 'base64:' . base64_encode(str_repeat('a', 32)));
     Kohana::config_set('indicia.attribute_encryption_key_id', 'test-key');
+  }
+
+  public function tearDown(): void {
+    Kohana::config_set('indicia.attribute_encryption_key', $this->originalEncryptionKey);
+    Kohana::config_set('indicia.attribute_encryption_key_id', $this->originalEncryptionKeyId);
+    parent::tearDown();
   }
 
   public function testCannotToggleEncryptWhenAttributeHasValues() {
