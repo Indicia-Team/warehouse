@@ -340,6 +340,19 @@ META;
   }
 
   /**
+   * Hook for subclasses to transform each output row before encoding.
+   *
+   * @param mixed $row
+   *   Row from the recordset.
+   *
+   * @return mixed
+   *   Transformed row.
+   */
+  protected function transformOutputRow($row) {
+    return $row;
+  }
+
+  /**
    * Default implementation of method to get the record count. Must be implemented in subclasses in order to get the
    * count and therefore enable pagination.
    */
@@ -389,6 +402,7 @@ META;
     $headersDone = FALSE;
     $rowsDone = 0;
     foreach ($array['records'] as $row) {
+      $row = $this->transformOutputRow($row);
       // Tolerate a PG result row or an associative array.
       $row = (array) $row;
       if (!$headersDone) {
