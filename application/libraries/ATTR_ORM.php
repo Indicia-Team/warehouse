@@ -80,13 +80,16 @@ abstract class ATTR_ORM extends Valid_ORM {
         $array->multi_value === '1' && $array->allow_ranges === '1') {
       $array->add_error("$this->object_name:allow_ranges", 'notmultiple');
     }
-    $effectiveDataType = array_key_exists('data_type', $array->as_array()) ? $array->data_type : $this->data_type;
-    if (!empty($array->encrypt) && $effectiveDataType !== 'T') {
-      $this->errors["$this->object_name:encrypt"] = 'Encryption is only supported for text attributes.';
+    if (warehouse::normaliseBool($array->encrypt ?? 'f')) {
+      $effectiveDataType = array_key_exists('data_type', $array->as_array()) ? $array->data_type : $this->data_type;
+      if ($effectiveDataType !== 'T') {
+        $this->errors["$this->object_name:encrypt"] = 'Encryption is only supported for text attributes.';
+      }
+      if ($this->isEncryptToggleBlocked($array)) {
+        $this->errors["$this->object_name:encrypt"] = 'Cannot change encryption setting because this attribute already has values.';
+      }
     }
-    if ($this->isEncryptToggleBlocked($array)) {
-      $this->errors["$this->object_name:encrypt"] = 'Cannot change encryption setting because this attribute already has values.';
-    }
+
     $parent_valid = parent::validate($array, $save);
     if (!empty($this->errors["$this->object_name:encrypt"])) {
       $parent_valid = FALSE;
