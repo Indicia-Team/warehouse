@@ -145,7 +145,7 @@ function notification_emails_scheduled_task($last_run_date, $db) {
 function run_email_notification_jobs($db, array $frequenciesToRun) {
   $subscriptionSettingsPageUrl = url::base() . 'subscription_settings.php';
   $maxNotificationsPerEmail = 100;
-  $queryChunkSize = 1000;
+  $queryChunkSize = 500;
   $allowedFrequencies = ['IH', 'D', 'W'];
   $frequencyToRun = [];
   // Gather all the notification frequency jobs we need to run into a set
@@ -237,6 +237,7 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
   }
   $notificationsToSendEmailsForSql .= <<<SQL
     )
+
   SQL;
   // Build and process notifications in chunks so we avoid keeping a large
   // DB result set in memory when there are many pending notifications.
@@ -291,6 +292,11 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
       $safeLastUsername = $db->escape_str($lastUsername);
       $safeLastSourceType = $db->escape_str($lastSourceType);
       $safeLastId = (int) $lastId;
+      // Key based chunking, rather than offset as the latter can get thrown
+      // off by the email_sent field being updated for notifications as we go
+      // around the loop. We order by the same fields as the main query, so
+      // we know that we won't miss any records or get duplicates as we go
+      // around the loop.
       $chunkSql .= <<<SQL
         AND (
           (CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END) < $safeLastSortPriority
@@ -446,6 +452,7 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
       $lastSourceType = $notificationToSendEmailsFor['source_type'];
       $lastId = $notificationToSendEmailsFor['id'];
     }
+    // Stop the outer chunk loop once we get a partial chunk.
     if ($rowsInChunk < $queryChunkSize) {
       break;
     }
