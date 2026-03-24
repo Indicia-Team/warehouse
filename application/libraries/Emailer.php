@@ -136,7 +136,7 @@ class Emailer {
    *
    * @return int
    *   The number of recipients who have been sent emails - 0 if an error
-   *   occurred. Deferred emails addede to the queue are included in this
+   *   occurred. Deferred emails added to the queue are included in this
    *   count.
    */
   public function send($subject, $message, $emailType, $emailSubtype = NULL) {
@@ -441,6 +441,9 @@ class Emailer {
       ->get()
       ->current();
     if ($existing) {
+      if (self::queueBodyContainsMessage($existing->body, $message)) {
+        return;
+      }
       self::$db
         ->set('body', $existing->body . '<hr/>' . $message)
         ->from('email_send_queue')
@@ -463,6 +466,32 @@ class Emailer {
       'email_subtype' => $emailSubtype,
       'group_key' => $groupKey,
     ]);
+  }
+
+  /**
+   * Check if a queued body already contains a message segment.
+   *
+   * Queue merges separate message segments with <hr/> delimiters. This helper
+   * prevents repeated appends of an identical segment when scheduled tasks
+   * repeatedly queue equivalent notification content.
+   *
+   * @param string|null $queuedBody
+   *   Existing queued email body.
+   * @param string $message
+   *   Message candidate to add.
+   *
+   * @return bool
+   *   TRUE if the queued body already contains the exact message segment.
+   */
+  private static function queueBodyContainsMessage($queuedBody, $message) {
+    if ($queuedBody === NULL || $queuedBody === '') {
+      return FALSE;
+    }
+    if ($queuedBody === $message) {
+      return TRUE;
+    }
+    $segments = explode('<hr/>', $queuedBody);
+    return in_array($message, $segments, TRUE);
   }
 
   /**

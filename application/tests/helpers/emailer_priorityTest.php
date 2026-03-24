@@ -117,6 +117,30 @@ class Helper_Emailer_Priority_Test extends TestCase {
     $this->assertNotSame($normalKey, $urgentKey);
   }
 
+  public function testQueueBodyContainsMessageDetectsExactMatch() {
+    $method = $this->reflectionClass->getMethod('queueBodyContainsMessage');
+    $method->setAccessible(TRUE);
+
+    $result = $method->invoke(NULL, 'Part A', 'Part A');
+    $this->assertTrue($result);
+  }
+
+  public function testQueueBodyContainsMessageDetectsSegmentInMergedBody() {
+    $method = $this->reflectionClass->getMethod('queueBodyContainsMessage');
+    $method->setAccessible(TRUE);
+
+    $result = $method->invoke(NULL, 'Part A<hr/>Part B<hr/>Part C', 'Part B');
+    $this->assertTrue($result);
+  }
+
+  public function testQueueBodyContainsMessageReturnsFalseWhenMissing() {
+    $method = $this->reflectionClass->getMethod('queueBodyContainsMessage');
+    $method->setAccessible(TRUE);
+
+    $result = $method->invoke(NULL, 'Part A<hr/>Part B', 'Part C');
+    $this->assertFalse($result);
+  }
+
   /**
    * Populate the Emailer object with fields used in queue merge key generation.
    *
