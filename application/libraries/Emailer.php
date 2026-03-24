@@ -136,7 +136,8 @@ class Emailer {
    *
    * @return int
    *   The number of recipients who have been sent emails - 0 if an error
-   *   occurred.
+   *   occurred. Deferred emails addede to the queue are included in this
+   *   count.
    */
   public function send($subject, $message, $emailType, $emailSubtype = NULL) {
     $config = kohana::config('email');
@@ -201,7 +202,7 @@ class Emailer {
       // Now reset the emailer for next time.
       $this->reset();
     }
-    return $succeeded ? $recipientCount : 0;
+    return $succeeded || $deferred ? $recipientCount : 0;
   }
 
   /**
