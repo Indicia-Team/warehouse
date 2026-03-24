@@ -576,7 +576,6 @@ class Scheduled_Tasks_Controller extends Controller {
     $emailContent = '';
     $notificationIds = [];
     foreach ($notifications as $notification) {
-      $notificationIds[] = $notification->id;
       if (($currentUserId != $notification->user_id) || ($currentCc != $notification->cc)) {
         if ($currentUserId) {
           // Send current email data.
@@ -589,6 +588,7 @@ class Scheduled_Tasks_Controller extends Controller {
           kohana::lang('misc.notification_intro') : kohana::config('email.notification_intro');
         $emailContent = sprintf($intro, kohana::config('email.server_name')) . '<br/><br/>';
       }
+      $notificationIds[] = $notification->id;
       $emailContent .= self::unparseData($notification->data);
     }
     // Make sure we send the email to the last person in the list.
