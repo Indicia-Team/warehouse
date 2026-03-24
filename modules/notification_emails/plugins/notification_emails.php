@@ -145,6 +145,7 @@ function notification_emails_scheduled_task($last_run_date, $db) {
 function run_email_notification_jobs($db, array $frequenciesToRun) {
   $subscriptionSettingsPageUrl = url::base() . 'subscription_settings.php';
   $maxNotificationsPerEmail = 100;
+  $queryChunkSize = 1000;
   $allowedFrequencies = ['IH', 'D', 'W'];
   $frequencyToRun = [];
   // Gather all the notification frequency jobs we need to run into a set
@@ -176,116 +177,150 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
   // the frequency is for on the verifier's notification setting for that
   // source type.
   $notificationsToSendEmailsForSql = <<<SQL
-SELECT distinct n.id, n.user_id, n.source_type, n.source, n.linked_id, n.data, n.escalate_email_priority, u.username,
-      coalesce(p.first_name, u.username) as name_to_use, cof.website_id, cof.query
-FROM notifications n
-JOIN users u ON u.id = n.user_id AND u.deleted=false
-JOIN people p ON p.id = u.person_id AND p.deleted=false
-LEFT JOIN cache_occurrences_functional cof on cof.id=n.linked_id
---This part just deals with the normal situation where we include a notification email if the user has a setting that
--- matches the current run or has its escalate_email_priority set (so we always send immediately).
-LEFT JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type
-  AND unf.user_id = n.user_id
-  AND (unf.notification_frequency in ($frequencyToRunString) OR n.escalate_email_priority IS NOT NULL)
-  AND unf.deleted='f'
-LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency
+    SELECT distinct n.id, n.user_id, n.source_type, n.source, n.linked_id, n.data, n.escalate_email_priority, u.username,
+          CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END AS sort_priority,
+          coalesce(p.first_name, u.username) as name_to_use, cof.website_id, cof.query
+    FROM notifications n
+    JOIN users u ON u.id = n.user_id AND u.deleted=false
+    JOIN people p ON p.id = u.person_id AND p.deleted=false
+    LEFT JOIN cache_occurrences_functional cof on cof.id=n.linked_id
+    --This part just deals with the normal situation where we include a notification email if the user has a setting that
+    -- matches the current run or has its escalate_email_priority set (so we always send immediately).
+    LEFT JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type
+      AND unf.user_id = n.user_id
+      AND (unf.notification_frequency in ($frequencyToRunString) OR n.escalate_email_priority IS NOT NULL)
+      AND unf.deleted='f'
+    LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency
 
-SQL;
+  SQL;
   if ($useWorkflowModule === TRUE) {
     $notificationsToSendEmailsForSql .= <<<SQL
--- If there is a species that needs sending immediately, make sure the task is a verification task and the user
--- has a notification setting (although we don't care what the frequency is of the setting) and then
--- if the current run is immediate/hourly then include the notification in the run
-LEFT JOIN workflow_metadata wm ON 'IH' IN ($frequencyToRunString)
-  AND lower(wm.entity)='occurrence'
-  AND lower(wm.key)='taxa_taxon_list_external_key'
-  AND (wm.key_value=cof.taxa_taxon_list_external_key AND cof.taxa_taxon_list_external_key IS NOT NULL)
-  AND wm.verifier_notifications_immediate=true
-  AND wm.deleted=false
-LEFT JOIN user_email_notification_settings unfMetaDataLinked ON unfMetaDataLinked.notification_source_type=n.source_type
-  AND n.source_type = 'VT'
-  AND unfMetaDataLinked.user_id = n.user_id
-  AND unfMetaDataLinked.deleted='f'
-LEFT JOIN user_email_notification_frequency_last_runs unflrMetaDataLinked ON unflrMetaDataLinked.notification_frequency='IH'
+      -- If there is a species that needs sending immediately, make sure the task is a verification task and the user
+      -- has a notification setting (although we don't care what the frequency is of the setting) and then
+      -- if the current run is immediate/hourly then include the notification in the run
+      LEFT JOIN workflow_metadata wm ON 'IH' IN ($frequencyToRunString)
+        AND lower(wm.entity)='occurrence'
+        AND lower(wm.key)='taxa_taxon_list_external_key'
+        AND (wm.key_value=cof.taxa_taxon_list_external_key AND cof.taxa_taxon_list_external_key IS NOT NULL)
+        AND wm.verifier_notifications_immediate=true
+        AND wm.deleted=false
+      LEFT JOIN user_email_notification_settings unfMetaDataLinked ON unfMetaDataLinked.notification_source_type=n.source_type
+        AND n.source_type = 'VT'
+        AND unfMetaDataLinked.user_id = n.user_id
+        AND unfMetaDataLinked.deleted='f'
+      LEFT JOIN user_email_notification_frequency_last_runs unflrMetaDataLinked ON unflrMetaDataLinked.notification_frequency='IH'
 
-SQL;
+    SQL;
   }
   $idFilterQuery = $db->query(
     'SELECT MIN(last_max_notification_id) as last_id FROM user_email_notification_frequency_last_runs'
   )->result_array(FALSE);
   $newIdFilter = $idFilterQuery[0]['last_id'] === NULL ? '' : 'AND n.id>' . $idFilterQuery[0]['last_id'];
   $notificationsToSendEmailsForSql .= <<<SQL
-WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f' $newIdFilter
---Send a notification if the user has a notification setting and notification that matches the current run
---and the notification hasn't already been set (or nothing has ever been sent)
-AND (
-  (unf.id IS NOT NULL AND (
-    n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL OR unflr.id IS NULL
-  ))
+    WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f' $newIdFilter
+    --Send a notification if the user has a notification setting and notification that matches the current run
+    --and the notification hasn't already been set (or nothing has ever been sent)
+    AND (
+      (unf.id IS NOT NULL AND (
+        n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL OR unflr.id IS NULL
+      ))
 
-SQL;
+  SQL;
   if ($useWorkflowModule === TRUE) {
     $notificationsToSendEmailsForSql .= <<<SQL
-  -- Do same for high priority species verification tasks to be automatically included in the immediate hourly run
-  OR (wm.id IS NOT NULL AND unfMetaDataLinked.id IS NOT NULL AND (
-    n.id>unflrMetaDataLinked.last_max_notification_id OR unflrMetaDataLinked.last_max_notification_id IS NULL or unflrMetaDataLinked.id IS NULL
-  ))
+      -- Do same for high priority species verification tasks to be automatically included in the immediate hourly run
+      OR (wm.id IS NOT NULL AND unfMetaDataLinked.id IS NOT NULL AND (
+        n.id>unflrMetaDataLinked.last_max_notification_id OR unflrMetaDataLinked.last_max_notification_id IS NULL or unflrMetaDataLinked.id IS NULL
+      ))
 
-SQL;
+    SQL;
   }
   $notificationsToSendEmailsForSql .= <<<SQL
-)
-ORDER BY n.escalate_email_priority DESC NULLS LAST, n.user_id, u.username, n.source_type, n.id
-
-SQL;
-  $notificationsToSendEmailsFor = $db->query($notificationsToSendEmailsForSql)->result(FALSE);
-  if (empty($notificationsToSendEmailsFor)) {
-    echo 'There are no email notifications to send at the moment.<br/>';
+    )
+  SQL;
+  // Build and process notifications in chunks so we avoid keeping a large
+  // DB result set in memory when there are many pending notifications.
+  // Get address to send emails from.
+  $email_config = [];
+  // Try and get from configuration file if possible.
+  try {
+    $email_config['address'] = kohana::config('notification_emails.email_sender_address');
+    $systemName = kohana::config('notification_emails.system_name');
+    // Handle config file not present.
   }
-  else {
-    // Get address to send emails from.
-    $email_config = [];
-    // Try and get from configuration file if possible.
-    try {
-      $email_config['address'] = kohana::config('notification_emails.email_sender_address');
-      $systemName = kohana::config('notification_emails.system_name');
-      // Handle config file not present.
+  catch (Exception $e) {
+    $email_config = Kohana::config('email');
+    $systemName = 'System generated';
+  }
+  // Handle also if config file present but option is not.
+  if (!isset($email_config['address'])) {
+    echo 'Email address not provided in email configuration or email_sender_address configuration option not provided. I cannot send any emails without a sender address.<br/>';
+    return;
+  }
+  $emailSentCounter = 0;
+  $emailQueuedCounter = 0;
+  // All the notifications that need to be sent in an email are grouped by
+  // user, as we cycle through the notifications then we can track who the
+  // user was for the previous notification. When this user id then changes,
+  // we know we need to start building an new email to a new user.
+  $previousUserId = 0;
+  $notificationIds = [];
+  $emailContent = '';
+  $notificationsInCurrentEmail = 0;
+  $currentType = '';
+  $sourceTypes = notification_emails::getNotificationTypes();
+  $recordStatuses = notification_emails::getRecordStatuses();
+  $dataFieldsToOutput = array(
+    'username' => 'From',
+    'occurrence_id' => 'Record ID',
+    'comment' => 'Message',
+    'record_status' => 'Record status',
+  );
+  $emailHighPriority = FALSE;
+  $lastSortPriority = NULL;
+  $lastUserId = NULL;
+  $lastUsername = NULL;
+  $lastSourceType = NULL;
+  $lastId = NULL;
+  $foundNotifications = FALSE;
+  while (TRUE) {
+    $chunkSql = $notificationsToSendEmailsForSql;
+    if ($lastId !== NULL) {
+      $safeLastSortPriority = (int) $lastSortPriority;
+      $safeLastUserId = (int) $lastUserId;
+      $safeLastUsername = $db->escape_str($lastUsername);
+      $safeLastSourceType = $db->escape_str($lastSourceType);
+      $safeLastId = (int) $lastId;
+      $chunkSql .= <<<SQL
+        AND (
+          (CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END) < $safeLastSortPriority
+          OR (
+            (CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END) = $safeLastSortPriority
+            AND (
+              n.user_id > $safeLastUserId
+              OR (n.user_id = $safeLastUserId AND (
+                u.username > '$safeLastUsername'
+                OR (u.username = '$safeLastUsername' AND (
+                  n.source_type > '$safeLastSourceType'
+                  OR (n.source_type = '$safeLastSourceType' AND n.id > $safeLastId)
+                ))
+              ))
+            )
+          )
+        )
+
+      SQL;
     }
-    catch (Exception $e) {
-      $email_config = Kohana::config('email');
-      $systemName = 'System generated';
-    }
-    // Handle also if config file present but option is not.
-    if (!isset($email_config['address'])) {
-      echo 'Email address not provided in email configuration or email_sender_address configuration option not provided. I cannot send any emails without a sender address.<br/>';
-      return;
-    }
-    $emailSentCounter = 0;
-    $emailQueuedCounter = 0;
-    // All the notifications that need to be sent in an email are grouped by
-    // user, as we cycle through the notifications then we can track who the
-    // user was for the previous notification. When this user id then changes,
-    // we know we need to start building an new email to a new user.
-    $previousUserId = 0;
-    $notificationIds = [];
-    $notificationsToSend = $notificationsToSendEmailsFor->current();
-    if ($notificationsToSend === FALSE) {
-      echo 'There are no email notifications to send at the moment.<br/>';
-      return;
-    }
-    $emailContent = start_building_new_email($notificationsToSend);
-    $notificationsInCurrentEmail = 0;
-    $currentType = '';
-    $sourceTypes = notification_emails::getNotificationTypes();
-    $recordStatuses = notification_emails::getRecordStatuses();
-    $dataFieldsToOutput = array(
-      'username' => 'From',
-      'occurrence_id' => 'Record ID',
-      'comment' => 'Message',
-      'record_status' => 'Record status',
-    );
-    $emailHighPriority = FALSE;
+    $chunkSql .= "ORDER BY CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END DESC, n.user_id, u.username, n.source_type, n.id\n";
+    $chunkSql .= 'LIMIT ' . (int) $queryChunkSize;
+    $notificationsToSendEmailsFor = $db->query($chunkSql)->result(FALSE);
+    $rowsInChunk = 0;
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
+      $rowsInChunk++;
+      $foundNotifications = TRUE;
+      if ($previousUserId === 0) {
+        $emailContent = start_building_new_email($notificationToSendEmailsFor);
+      }
       // If user changes (or we hit the per-email max for the same user), send
       // the email built so far and start a new one.
       $userChanged = ($notificationToSendEmailsFor['user_id'] != $previousUserId && $previousUserId !== 0);
@@ -405,43 +440,55 @@ SQL;
       $notificationsInCurrentEmail++;
       // Update the user_id tracker as we cycle through the notifications.
       $previousUserId = $notificationToSendEmailsFor['user_id'];
+      $lastSortPriority = $notificationToSendEmailsFor['sort_priority'];
+      $lastUserId = $notificationToSendEmailsFor['user_id'];
+      $lastUsername = $notificationToSendEmailsFor['username'];
+      $lastSourceType = $notificationToSendEmailsFor['source_type'];
+      $lastId = $notificationToSendEmailsFor['id'];
     }
-    if ($currentType !== '') {
-      $emailContent .= "</tbody></table>\n";
+    if ($rowsInChunk < $queryChunkSize) {
+      break;
     }
-    // If we have run out of notifications to send we will have finished going
-    // around the loop, so we just need to send out the last email whatever
-    // happens.
-    $sent = send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config['address'],
-      $subscriptionSettingsPageUrl, $emailHighPriority);
-    $emailHighPriority = FALSE;
-    if ($sent > 0) {
-      $emailSentCounter++;
-    }
-    else {
-      $emailQueuedCounter++;
-    }
-    // Save the maximum notification id against the jobs we are going to run
-    // now, so we know that we have done the notifications up to that id and
-    // next time the jobs are run they only need to work with notifications
-    // later than that id.
-    // Also set the date/time the job was run.
-    update_last_run_metadata($db, $frequenciesToRun);
-    if ($emailSentCounter == 0 && $emailQueuedCounter == 0) {
-      echo 'No new notification emails have been sent.<br/>';
-    }
-    elseif ($emailSentCounter == 1) {
-      echo '1 new notification email has been sent.<br/>';
-    }
-    elseif ($emailSentCounter > 1) {
-      echo $emailSentCounter . ' new notification emails have been sent.<br/>';
-    }
-    if ($emailQueuedCounter == 1) {
-      echo '1 notification email has been queued due to hourly send limit.<br/>';
-    }
-    elseif ($emailQueuedCounter > 1) {
-      echo $emailQueuedCounter . ' notification emails have been queued due to hourly send limit.<br/>';
-    }
+  }
+  if (!$foundNotifications) {
+    echo 'There are no email notifications to send at the moment.<br/>';
+    return;
+  }
+  if ($currentType !== '') {
+    $emailContent .= "</tbody></table>\n";
+  }
+  // If we have run out of notifications to send we will have finished going
+  // around the loop, so we just need to send out the last email whatever
+  // happens.
+  $sent = send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config['address'],
+    $subscriptionSettingsPageUrl, $emailHighPriority);
+  $emailHighPriority = FALSE;
+  if ($sent > 0) {
+    $emailSentCounter++;
+  }
+  else {
+    $emailQueuedCounter++;
+  }
+  // Save the maximum notification id against the jobs we are going to run
+  // now, so we know that we have done the notifications up to that id and
+  // next time the jobs are run they only need to work with notifications
+  // later than that id.
+  // Also set the date/time the job was run.
+  update_last_run_metadata($db, $frequenciesToRun);
+  if ($emailSentCounter == 0 && $emailQueuedCounter == 0) {
+    echo 'No new notification emails have been sent.<br/>';
+  }
+  elseif ($emailSentCounter == 1) {
+    echo '1 new notification email has been sent.<br/>';
+  }
+  elseif ($emailSentCounter > 1) {
+    echo $emailSentCounter . ' new notification emails have been sent.<br/>';
+  }
+  if ($emailQueuedCounter == 1) {
+    echo '1 notification email has been queued due to hourly send limit.<br/>';
+  }
+  elseif ($emailQueuedCounter > 1) {
+    echo $emailQueuedCounter . ' notification emails have been queued due to hourly send limit.<br/>';
   }
 }
 
