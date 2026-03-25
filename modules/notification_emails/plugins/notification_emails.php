@@ -179,6 +179,12 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
   $notificationsToSendEmailsForSql = <<<SQL
     SELECT distinct n.id, n.user_id, n.source_type, n.source, n.linked_id, n.data, n.escalate_email_priority, u.username,
           CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END AS sort_priority,
+          CASE
+            WHEN unf.notification_frequency = 'IH' THEN 3
+            WHEN unf.notification_frequency = 'D' THEN 2
+            WHEN unf.notification_frequency = 'W' THEN 1
+            ELSE 0
+          END AS sort_frequency_priority,
           coalesce(p.first_name, u.username) as name_to_use, cof.website_id, cof.query
     FROM notifications n
     JOIN users u ON u.id = n.user_id AND u.deleted=false
@@ -279,19 +285,14 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
   );
   $emailHighPriority = FALSE;
   $lastSortPriority = NULL;
+  $lastSortFrequencyPriority = NULL;
   $lastUserId = NULL;
-  $lastUsername = NULL;
   $lastSourceType = NULL;
   $lastId = NULL;
   $foundNotifications = FALSE;
   while (TRUE) {
     $chunkSql = $notificationsToSendEmailsForSql;
     if ($lastId !== NULL) {
-      $safeLastSortPriority = (int) $lastSortPriority;
-      $safeLastUserId = (int) $lastUserId;
-      $safeLastUsername = $db->escape_str($lastUsername);
-      $safeLastSourceType = $db->escape_str($lastSourceType);
-      $safeLastId = (int) $lastId;
       // Key based chunking, rather than offset as the latter can get thrown
       // off by the email_sent field being updated for notifications as we go
       // around the loop. We order by the same fields as the main query, so
@@ -299,25 +300,37 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
       // around the loop.
       $chunkSql .= <<<SQL
         AND (
-          (CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END) < $safeLastSortPriority
+          (CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END) < $lastSortPriority
           OR (
-            (CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END) = $safeLastSortPriority
+            (CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END) = $lastSortPriority
             AND (
-              n.user_id > $safeLastUserId
-              OR (n.user_id = $safeLastUserId AND (
-                u.username > '$safeLastUsername'
-                OR (u.username = '$safeLastUsername' AND (
-                  n.source_type > '$safeLastSourceType'
-                  OR (n.source_type = '$safeLastSourceType' AND n.id > $safeLastId)
+              (CASE
+                WHEN unf.notification_frequency = 'IH' THEN 3
+                WHEN unf.notification_frequency = 'D' THEN 2
+                WHEN unf.notification_frequency = 'W' THEN 1
+                ELSE 0
+              END) < $lastSortFrequencyPriority
+              OR (
+                (CASE
+                  WHEN unf.notification_frequency = 'IH' THEN 3
+                  WHEN unf.notification_frequency = 'D' THEN 2
+                  WHEN unf.notification_frequency = 'W' THEN 1
+                  ELSE 0
+                END) = $lastSortFrequencyPriority
+                AND (
+                  n.user_id > $lastUserId
+                  OR (n.user_id = $lastUserId AND (
+                    n.source_type > '$lastSourceType'
+                    OR (n.source_type = '$lastSourceType' AND n.id > $lastId)
+                  ))
                 ))
-              ))
             )
           )
         )
 
       SQL;
     }
-    $chunkSql .= "ORDER BY CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END DESC, n.user_id, u.username, n.source_type, n.id\n";
+    $chunkSql .= "ORDER BY CASE WHEN n.escalate_email_priority IS NULL THEN -1 ELSE n.escalate_email_priority END DESC, CASE WHEN unf.notification_frequency = 'IH' THEN 3 WHEN unf.notification_frequency = 'D' THEN 2 WHEN unf.notification_frequency = 'W' THEN 1 ELSE 0 END DESC, n.user_id, n.source_type, n.id\n";
     $chunkSql .= 'LIMIT ' . (int) $queryChunkSize;
     $notificationsToSendEmailsFor = $db->query($chunkSql)->result(FALSE);
     $rowsInChunk = 0;
@@ -446,11 +459,11 @@ function run_email_notification_jobs($db, array $frequenciesToRun) {
       $notificationsInCurrentEmail++;
       // Update the user_id tracker as we cycle through the notifications.
       $previousUserId = $notificationToSendEmailsFor['user_id'];
-      $lastSortPriority = $notificationToSendEmailsFor['sort_priority'];
-      $lastUserId = $notificationToSendEmailsFor['user_id'];
-      $lastUsername = $notificationToSendEmailsFor['username'];
-      $lastSourceType = $notificationToSendEmailsFor['source_type'];
-      $lastId = $notificationToSendEmailsFor['id'];
+      $lastSortPriority = (int) $notificationToSendEmailsFor['sort_priority'];
+      $lastSortFrequencyPriority = (int) $notificationToSendEmailsFor['sort_frequency_priority'];
+      $lastUserId = (int) $notificationToSendEmailsFor['user_id'];
+      $lastSourceType = $db->escape_str($notificationToSendEmailsFor['source_type']);
+      $lastId = (int) $notificationToSendEmailsFor['id'];
     }
     // Stop the outer chunk loop once we get a partial chunk.
     if ($rowsInChunk < $queryChunkSize) {
