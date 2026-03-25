@@ -45,11 +45,15 @@ class Uksi_operation_Controller extends Gridview_Base_Controller {
       'operation_processed' => 'Processed',
       'has_errors' => '',
       'batch_processed_on' => 'Batch date',
+      'operation_priority' => 'Priority'
     ];
     $this->pagetitle = "UKSI Operations";
     $this->model = ORM::factory('uksi_operation');
-    $this->orderby = 'operation_processed,sequence';
-    $this->sortdir = 'desc';
+    $this->model->reload_columns(TRUE);
+    
+    $this->orderby = 'operation_processed, operation_priority ASC, sequence ASC';
+
+
   }
 
   /**

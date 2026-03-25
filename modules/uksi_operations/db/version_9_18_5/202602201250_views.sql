@@ -1,8 +1,12 @@
   -- Optional: run inside a transaction
 BEGIN;
+DROP gv_uksi_operations;
+COMMIT;
+
+BEGIN;
 
 -- Create a new view that normalizes Processed / Has errors to Yes/No
-CREATE OR REPLACE VIEW gv2_uksi_operations AS
+CREATE OR REPLACE VIEW gv_uksi_operations AS
 SELECT
   id,
   sequence,
@@ -16,7 +20,8 @@ SELECT
       WHEN error_detail IS NOT NULL THEN 'Yes'::text
       ELSE 'No' :: text
   END AS has_errors,
-  batch_processed_on::date AS batch_processed_on
+  batch_processed_on::date AS batch_processed_on,
+  operation_priority
 FROM uksi_operations
 WHERE deleted = false;
 
