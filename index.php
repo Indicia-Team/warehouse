@@ -1,4 +1,47 @@
 <?php
+
+
+// --------------------------
+// MAINTENANCE MODE CHECK
+//  ensure you are in teh warehouse root folder
+// touch MAINTENANCE to enable maintenance MODE
+// rm MAINTENANCE to disable maintenance mode 
+// --------------------------
+if (file_exists(__DIR__ . '/MAINTENANCE')) {
+
+    // Check if the client expects JSON
+    $accept = isset($_SERVER['HTTP_ACCEPT']) ? $_SERVER['HTTP_ACCEPT'] : '';
+    $xhr = isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+           strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+    $isJson =
+        strpos($accept, 'application/json') !== false ||   // explicit JSON request
+        strpos($accept, 'text/json') !== false ||
+        strpos($accept, 'application/vnd.api+json') !== false ||
+        $xhr ||                                            // AJAX usually expects JSON
+        (isset($_GET['format']) && $_GET['format'] === 'json'); // some Indicia API calls use &format=json
+
+    header('HTTP/1.1 503 Service Unavailable');
+    header('Retry-After: 3600');
+
+    if ($isJson) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'status'  => 'maintenance',
+            'message' => 'The Indicia Warehouse is currently offline for scheduled maintenance.'
+        ]);
+    } else {
+        // Return the HTML maintenance page
+        readfile(__DIR__ . '/maintenance.html');
+    }
+
+    exit;
+}
+// --------------------------
+
+
+
+
 /**
  * This file acts as the "front controller" to your application. You can
  * configure your application, modules, and system directories here.
