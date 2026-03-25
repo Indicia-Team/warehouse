@@ -1,12 +1,14 @@
 <?php
 
 
-// --------------------------
-// MAINTENANCE MODE CHECK
-//  ensure you are in teh warehouse root folder
-// touch MAINTENANCE to enable maintenance MODE
-// rm MAINTENANCE to disable maintenance mode 
-// --------------------------
+/** 
+ * MAINTENANCE MODE CHECK
+ *
+ *  ensure you are in the warehouse root folder
+ * touch MAINTENANCE to enable maintenance MODE
+ * rm MAINTENANCE to disable maintenance mode 
+ */
+ 
 if (file_exists(__DIR__ . '/MAINTENANCE')) {
 
     // Check if the client expects JSON
@@ -37,7 +39,7 @@ if (file_exists(__DIR__ . '/MAINTENANCE')) {
 
     exit;
 }
-// --------------------------
+
 
 
 
