@@ -73,7 +73,7 @@ To log in, the default credentials are:
  - Username: admin
  - Password: geoserver
 
-#### Elasticsearch and Kohana
+#### Elasticsearch and Kibana
 Note that security is enabled so use https. To log in the default credentials
 are
  - Username: elastic
