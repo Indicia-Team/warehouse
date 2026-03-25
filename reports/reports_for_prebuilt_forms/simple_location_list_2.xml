@@ -20,13 +20,17 @@
   </order_bys>
   <params>
     <param name="ownData" display="My locations only?" datatype="checkbox" />
-    <param name='website_id' display='Website: ' description='Select the website to return data for?' datatype='lookup'
+    <param name='website_id' display='Website' description='Select the website to return data for?' datatype='lookup'
         query='SELECT id, title as caption FROM websites' />
     <param name='iUserID' display='Indicia User ID' description='Something has gone wrong as you are logged in to the system but do not have an ID' datatype='int' />
     <param name="location_type_id" display="Location Type" datatype="lookup" 
            description="Select the location type, or leave blank to not filter by location type." default=""
            population_call="report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=">
       <where>l.location_type_id=#location_type_id#</where>
+    </param>
+    <param name="parent_id" display="Parent Location ID" datatype="integer" default=""
+           description="ID of the parent site to filter by or leave blank to not filter by parent ID.">
+      <where>l.parent_id=#parent_id#</where>
     </param>
   </params>
   <columns>
