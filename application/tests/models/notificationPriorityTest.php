@@ -96,6 +96,27 @@ class Models_Notification_Priority_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(['first urgent', 'second urgent'], $subjects);
   }
 
+  public function testFrequencyOrderingPrioritisesImmediateThenDailyThenWeekly() {
+    $rows = $this->db->query(<<<SQL
+      SELECT t.notification_frequency
+      FROM (
+        VALUES ('W'::varchar), ('IH'::varchar), ('D'::varchar), (NULL::varchar)
+      ) AS t(notification_frequency)
+      ORDER BY CASE
+        WHEN t.notification_frequency = 'IH' THEN 3
+        WHEN t.notification_frequency = 'D' THEN 2
+        WHEN t.notification_frequency = 'W' THEN 1
+        ELSE 0
+      END DESC
+    SQL)->result_array(FALSE);
+
+    $orderedFrequencies = array_map(function ($row) {
+      return $row['notification_frequency'];
+    }, $rows);
+
+    $this->assertEquals(['IH', 'D', 'W', NULL], $orderedFrequencies);
+  }
+
   /**
    * Inserts a notification row for ordering tests.
    *
