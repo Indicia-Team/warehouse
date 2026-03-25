@@ -8,6 +8,10 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
 
   protected $auth;
 
+  protected $siteAdminAuth;
+
+  protected $normalUserAuth;
+
   /**
    * List of featured reports to get tested. Each test has a parameters array
    * plus an expected result, either an integer number of records, or 'params'
@@ -313,8 +317,12 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     parent::setUp();
 
     $this->auth = report_helper::get_read_write_auth(1, 'password');
+    $this->siteAdminAuth = report_helper::get_read_write_auth(1, 'password');
+    $this->normalUserAuth = report_helper::get_read_write_auth(2, 'password');
     // make the tokens re-usable
     $this->auth['write_tokens']['persist_auth'] = TRUE;
+    $this->siteAdminAuth['write_tokens']['persist_auth'] = TRUE;
+    $this->normalUserAuth['write_tokens']['persist_auth'] = TRUE;
   }
 
   private function getResponse($url, $post = FALSE, $params = []) {
@@ -634,6 +642,42 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(isset($response['error']), 'Access to a restricted report worked');
   }
 
+  public function testDecryptReportRejectedForNormalUser() {
+    $db = new Database();
+    $db->query('UPDATE location_attributes SET encrypt=true WHERE id=1');
+    $db->query('DELETE FROM location_attribute_values WHERE location_id=1 AND location_attribute_id=1');
+    $db->query('INSERT INTO location_attribute_values (location_id, location_attribute_id, text_value, created_by_id, created_on, updated_by_id, updated_on) VALUES (1, 1, ?, 1, now(), 1, now())',
+      [attributeEncryption::encrypt('Top secret')]);
+    // Ensure user has normal website rights.
+    $db->query('UPDATE users SET core_role_id=NULL WHERE id=1');
+    $db->query('DELETE FROM users_websites WHERE user_id=1 AND website_id=1');
+    $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) VALUES (1, 1, 3, 1, now(), 1, now())');
+    $response = $this->getReportResponseAsAuth(
+      'library/locations/locations_encrypted_attr_test.xml',
+      $this->normalUserAuth,
+      ['location_type_id' => 2]
+    );
+    $this->assertTrue(isset($response['error']), 'Normal user should be denied decrypt reports.');
+  }
+
+  public function testDecryptReportAllowedForSiteAdminAndReturnsPlaintext() {
+    $db = new Database();
+    $db->query('UPDATE users SET core_role_id=NULL WHERE id=1');
+    $db->query('UPDATE location_attributes SET encrypt=true WHERE id=1');
+    $db->query('DELETE FROM location_attribute_values WHERE location_id=1 AND location_attribute_id=1');
+    $db->query('INSERT INTO location_attribute_values (location_id, location_attribute_id, text_value, created_by_id, created_on, updated_by_id, updated_on) VALUES (1, 1, ?, 1, now(), 1, now())',
+      [attributeEncryption::encrypt('Top secret')]);
+
+    $response = $this->getReportResponseAsAuth(
+      'library/locations/locations_encrypted_attr_test.xml',
+      $this->siteAdminAuth,
+      ['location_type_id' => 2]
+    );
+    $this->assertFalse(isset($response['error']), 'Site admin should be allowed to run decrypt reports. ' . var_export($response, TRUE));
+    $this->assertCount(1, $response, 'Expected a single location record in decrypt test report.');
+    $this->assertEquals('Top secret', $response[0]['secret_text'], 'Decrypted value should be returned to authorized site admin.');
+  }
+
   /**
    * Runs a test using the configuration array at the top of the class which does a fairly
    * thorough test of all the reports flagged as featured.
@@ -678,12 +722,16 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
   }
 
   private function getReportResponse($report, $params = []) {
+    return $this->getReportResponseAsAuth($report, $this->auth, $params);
+  }
+
+  private function getReportResponseAsAuth($report, array $auth, $params = []) {
     $requestParams = array(
       'report' => $report,
       'reportSource' => 'local',
       'mode' => 'json',
-      'auth_token' => $this->auth['read']['auth_token'],
-      'nonce' => $this->auth['read']['nonce'],
+      'auth_token' => $auth['read']['auth_token'],
+      'nonce' => $auth['read']['nonce'],
       'params' => json_encode($params)
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport';

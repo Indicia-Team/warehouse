@@ -1208,6 +1208,47 @@ $lang['resources']['DELETE surveys/{id}'] = <<<TXT
 Deletes a survey dataset. User must have editor permissions to the website the survey belongs to.
 TXT;
 
+$lang['resources']['termlists'] = <<<TXT
+Provides access to lookup lists (termlists) and their terms for use in data
+entry controls such as dropdowns and radio lists.
+TXT;
+$lang['resources']['GET termlists'] = <<<TXT
+Retrieves the list of termlists available to the authenticated website,
+including both global termlists and website-specific termlists.
+
+Example:
+<pre><code>
+GET /index.php/services/rest/termlists
+</code></pre>
+TXT;
+$lang['resources']['GET termlists/{id}'] = <<<TXT
+Retrieves metadata for a single termlist, if that termlist is available to the
+authenticated website.
+
+Example:
+<pre><code>
+GET /index.php/services/rest/termlists/4
+</code></pre>
+TXT;
+$lang['resources']['GET termlists/{id}/terms'] = <<<TXT
+Retrieves terms for the specified termlist. This endpoint reads from the
+cache_termlists_terms table for faster querying.
+
+Example:
+<pre><code>
+GET /index.php/services/rest/termlists/4/terms
+</code></pre>
+TXT;
+$lang['resources']['GET termlists/{id}/terms/{id}'] = <<<TXT
+Retrieves a single term from the specified termlist by term ID. This endpoint
+reads from the cache_termlists_terms table for faster querying.
+
+Example:
+<pre><code>
+GET /index.php/services/rest/termlists/4/terms/5
+</code></pre>
+TXT;
+
 $lang['resources']['groups'] = 'Recording groups resource endpoint (sometimes called activities or projects).';
 $lang['resources']['GET groups'] = 'A list of recording groups including the authorised user membership info. Default behaviour is to return groups the current user is a member of.';
 $lang['resources']['GET groups/{id}'] = <<<HTML

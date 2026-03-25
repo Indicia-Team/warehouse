@@ -797,6 +797,14 @@ class Rest_Controller extends Controller {
         'surveys/{id}' => [],
       ],
     ],
+    'termlists' => [
+      'GET' => [
+        'termlists' => [],
+        'termlists/{id}' => [],
+        'termlists/{id}/terms' => [],
+        'termlists/{id}/terms/{id}' => [],
+      ],
+    ],
     'taxa' => [
       'GET' => [
         'taxa/search' => [
@@ -4456,6 +4464,58 @@ SQL;
     $this->assertRecordFromCurrentWebsite('surveys', $id);
     // Delete - no need to check user as admin of website.
     rest_crud::delete('survey', $id);
+  }
+
+  /**
+   * End-point to GET a list of available termlists.
+   */
+  public function termlistsGet() {
+    $websiteId = (int) RestObjects::$clientWebsiteId;
+    $filter = "(t1.website_id IS NULL OR t1.website_id=$websiteId)";
+    rest_crud::readList('termlist', $filter, FALSE);
+  }
+
+  /**
+   * End-point to GET a termlist by ID.
+   *
+   * @param int $id
+   *   Termlist ID.
+   */
+  public function termlistsGetId($id) {
+    $websiteId = (int) RestObjects::$clientWebsiteId;
+    $filter = "(t1.website_id IS NULL OR t1.website_id=$websiteId)";
+    rest_crud::read('termlist', $id, $filter, FALSE);
+  }
+
+  /**
+   * End-point to GET terms from a single termlist.
+   *
+   * Reads from cache_termlists_terms for query performance.
+   *
+   * @param int $id
+   *   Termlist ID.
+   */
+  public function termlistsGetIdTerms($id) {
+    $websiteId = (int) RestObjects::$clientWebsiteId;
+    $termlistId = (int) $id;
+    $filter = "t1.termlist_id=$termlistId AND (t1.website_id IS NULL OR t1.website_id=$websiteId)";
+    rest_crud::readList('cache_termlists_term', $filter, FALSE);
+  }
+
+  /**
+   * End-point to GET a term from a single termlist.
+   *
+   * Reads from cache_termlists_terms for query performance.
+   *
+   * @param int $id
+   *   Termlist ID.
+   */
+  public function termlistsGetIdTermsId($id) {
+    $termId = (int) $this->uri->last_segment();
+    $websiteId = (int) RestObjects::$clientWebsiteId;
+    $termlistId = (int) $id;
+    $filter = "t1.termlist_id=$termlistId AND (t1.website_id IS NULL OR t1.website_id=$websiteId)";
+    rest_crud::read('cache_termlists_term', $termId, $filter, FALSE);
   }
 
   /**

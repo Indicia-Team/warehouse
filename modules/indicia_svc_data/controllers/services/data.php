@@ -33,6 +33,13 @@ class Data_Controller extends Data_Service_Base_Controller {
   // if there is an error
   protected $response;
 
+  /**
+   * Cache of attribute value creator IDs, keyed by attribute value ID.
+   *
+   * @var array
+   */
+  protected $attributeValueCreatorMap = [];
+
   // Read/Write Access to entities: there are several options:
   // 1) Standard: Restricted read and write access dependant on website id.
   //    There is a public function with the name of the entity in this file, and the entity appears in $allow_updates.
@@ -1212,9 +1219,13 @@ class Data_Controller extends Data_Service_Base_Controller {
       }
       else {
         $dbResult = $this->db->get();
+        $isStreamable = in_array($this->get_output_mode(), self::STREAMABLE_FORMATS);
         // Either load full data array, or just database result to iterate
         // through which uses less memory, depending on format.
-        $r = in_array($this->get_output_mode(), self::STREAMABLE_FORMATS) ? $dbResult->result() : $dbResult->result_array(FALSE);
+        $r = $isStreamable ? $dbResult->result() : $dbResult->result_array(FALSE);
+        if (!$isStreamable) {
+          $r = $this->decryptAttributeValueResults($r);
+        }
         kohana::log('debug', "Query ran for service call:\n" . $this->db->last_query());
         // If we got no record but asked for a specific one, check if this was
         // a permissions issue?
@@ -1234,6 +1245,204 @@ class Data_Controller extends Data_Service_Base_Controller {
       kohana::log('error', kohana::debug($_REQUEST));
       throw $e;
     }
+  }
+
+  /**
+   * Decrypt text attribute values in data service output where permitted.
+   *
+   * For *_attribute_value entities, decrypt values when the requester either
+   * created the value, is core admin, or is site admin for the record
+   * website.
+   *
+  * @param array|Database_Result $rows
+   *   Query result rows as arrays or objects.
+   *
+   * @return array|Database_Result
+   *   Possibly decrypted rows.
+   */
+  private function decryptAttributeValueResults(array|Database_Result $rows) {
+    if ($rows instanceof Database_Result) {
+      // Streamed output is decrypted row-by-row during encoding.
+      return $rows;
+    }
+    if (empty($rows)
+        || !preg_match('/_attribute_value$/', $this->entity)
+        || empty($this->user_id)
+        || !class_exists('attributeEncryption')) {
+      return $rows;
+    }
+    $firstRow = $rows[0];
+    if (is_array($firstRow)) {
+      if (!array_key_exists('value', $firstRow) || !array_key_exists('data_type', $firstRow)) {
+        return $rows;
+      }
+    }
+    elseif (is_object($firstRow)) {
+      if (!isset($firstRow->value) || !isset($firstRow->data_type)) {
+        return $rows;
+      }
+    }
+    else {
+      return $rows;
+    }
+
+    $idField = 'id';
+    $valueIds = [];
+    foreach ($rows as $row) {
+      $rowId = is_array($row) ? ($row[$idField] ?? NULL) : ($row->$idField ?? NULL);
+      if (!empty($rowId) && is_numeric($rowId)) {
+        $valueIds[] = (int) $rowId;
+      }
+    }
+    if (empty($valueIds)) {
+      return $rows;
+    }
+    $creatorMap = $this->loadAttributeValueCreators($valueIds);
+
+    foreach ($rows as $idx => $row) {
+      $rows[$idx] = $this->decryptAttributeValueRow($row, $creatorMap);
+    }
+    return $rows;
+  }
+
+  /**
+   * Optionally decrypt an attribute value row for output.
+   *
+   * @param array|object $row
+   *   A single result row.
+   * @param array|null $creatorMap
+   *   Optional preloaded map of value id to created_by_id.
+   *
+   * @return array|object
+   *   Possibly decrypted row.
+   */
+  private function decryptAttributeValueRow($row, ?array $creatorMap = NULL) {
+    if (!preg_match('/_attribute_value$/', $this->entity)
+        || empty($this->user_id)
+        || !class_exists('attributeEncryption')) {
+      return $row;
+    }
+    if (!is_array($row) && !is_object($row)) {
+      return $row;
+    }
+
+    $dataType = is_array($row) ? ($row['data_type'] ?? '') : ($row->data_type ?? '');
+    if ($dataType !== 'T' && $dataType !== 'Text') {
+      return $row;
+    }
+
+    $rowId = is_array($row) ? ($row['id'] ?? NULL) : ($row->id ?? NULL);
+    $websiteId = is_array($row) ? ($row['website_id'] ?? NULL) : ($row->website_id ?? NULL);
+    if (!empty($rowId) && is_numeric($rowId)) {
+      $rowId = (int) $rowId;
+    }
+    else {
+      $rowId = NULL;
+    }
+
+    if ($creatorMap !== NULL && $rowId !== NULL && array_key_exists($rowId, $creatorMap)) {
+      $creatorId = $creatorMap[$rowId];
+    }
+    else {
+      $creatorId = $this->getAttributeValueCreator($rowId);
+    }
+
+    $canDecrypt = ((int) $creatorId === (int) $this->user_id)
+      || attributeEncryption::canUserDecryptForWebsite($this->user_id, $websiteId);
+    if (!$canDecrypt) {
+      return $row;
+    }
+
+    if (is_array($row)) {
+      if (!empty($row['value']) && attributeEncryption::isEncryptedPayload($row['value'])) {
+        $row['value'] = attributeEncryption::decrypt($row['value']);
+      }
+      if (!empty($row['raw_value']) && attributeEncryption::isEncryptedPayload($row['raw_value'])) {
+        $row['raw_value'] = attributeEncryption::decrypt($row['raw_value']);
+      }
+    }
+    else {
+      if (!empty($row->value) && attributeEncryption::isEncryptedPayload($row->value)) {
+        $row->value = attributeEncryption::decrypt($row->value);
+      }
+      if (!empty($row->raw_value) && attributeEncryption::isEncryptedPayload($row->raw_value)) {
+        $row->raw_value = attributeEncryption::decrypt($row->raw_value);
+      }
+    }
+
+    return $row;
+  }
+
+  /**
+   * Transform a service output row just before encoding.
+   *
+   * @param mixed $row
+   *   Output row.
+   *
+   * @return mixed
+   *   Possibly decrypted row.
+   */
+  protected function transformOutputRow($row) {
+    return $this->decryptAttributeValueRow($row);
+  }
+
+  /**
+   * Load created_by_id values for attribute value rows.
+   *
+   * @param int[] $valueIds
+   *   Attribute value IDs.
+   *
+   * @return array
+   *   Map of attribute value ID to created_by_id.
+   */
+  private function loadAttributeValueCreators(array $valueIds) {
+    $table = inflector::plural($this->entity);
+    if (!$this->db->table_exists($table)) {
+      return [];
+    }
+    $rows = $this->db
+      ->select('id', 'created_by_id')
+      ->from($table)
+      ->in('id', array_values(array_unique($valueIds)))
+      ->get()
+      ->result();
+    $map = [];
+    foreach ($rows as $row) {
+      $map[(int) $row->id] = (int) $row->created_by_id;
+    }
+    return $map;
+  }
+
+  /**
+   * Resolve and cache the creator ID for an attribute value row.
+   *
+   * @param int|null $valueId
+   *   Attribute value ID.
+   *
+   * @return int|null
+   *   Creator ID, or null if unavailable.
+   */
+  private function getAttributeValueCreator(?int $valueId): ?int {
+    if (empty($valueId)) {
+      return NULL;
+    }
+    if (array_key_exists($valueId, $this->attributeValueCreatorMap)) {
+      return $this->attributeValueCreatorMap[$valueId];
+    }
+    $table = inflector::plural($this->entity);
+    if (!$this->db->table_exists($table)) {
+      $this->attributeValueCreatorMap[$valueId] = NULL;
+      return NULL;
+    }
+    $row = $this->db
+      ->select('created_by_id')
+      ->from($table)
+      ->where('id', $valueId)
+      ->limit(1)
+      ->get()
+      ->current();
+    $this->attributeValueCreatorMap[$valueId] = $row ? (int) $row->created_by_id : NULL;
+    return $this->attributeValueCreatorMap[$valueId];
   }
 
   /**

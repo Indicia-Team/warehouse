@@ -59,6 +59,7 @@ class Survey_Model extends ORM_Tree {
       'auto_accept_max_difficulty',
       'auto_accept_taxa_filters',
       'core_validation_rules',
+      'hide_emails_from_verifiers',
     ];
     return parent::validate($array, $save);
   }

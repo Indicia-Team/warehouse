@@ -58,6 +58,7 @@ class Dna_occurrence_Model extends ORM {
     $array->add_rules('pcr_primer_reference', 'required');
     $this->unvalidatedFields = [
       'associated_sequences',
+      'preparations',
       'env_broad_scale',
       'env_local_scale',
       'env_medium',
@@ -83,8 +84,9 @@ class Dna_occurrence_Model extends ORM {
    *   Submitted value.
    */
   public function __set($column, $value) {
-    // Format associated sequences in any list string form into an array.
-    if ($column === 'associated_sequences' && !empty($value)) {
+    // Format associated sequences and preparations in any list string form
+    // into an array.
+    if (in_array($column, ['associated_sequences', 'preparations']) && !empty($value)) {
       $value = preg_split('/[\r\n,;\t]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
     }
     parent::__set($column, $value);
@@ -97,8 +99,8 @@ class Dna_occurrence_Model extends ORM {
    *   Column name.
    */
   public function __get($column) {
-    // Convert associated sequences array to semi-colon separated string.
-    if ($column === 'associated_sequences') {
+    // Convert associated sequences and preparations arrays to newline separated strings.
+    if (in_array($column, ['associated_sequences', 'preparations'])) {
       $value = parent::__get($column);
       if (is_array($value)) {
         // Join array items with newlines.

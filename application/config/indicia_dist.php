@@ -43,6 +43,19 @@ $config['warehouse_title'] = 'Indicia Warehouse';
 $config['private_key'] = 'Indicia';
 
 /**
+ * Key used for encrypted text custom attribute values.
+ *
+ * Set to a random value in production. Prefix with base64: to provide raw key
+ * bytes in base64 format.
+ */
+$config['attribute_encryption_key'] = '';
+
+/**
+ * Identifier for the currently active attribute encryption key.
+ */
+$config['attribute_encryption_key_id'] = 'default';
+
+/**
  * Life span of an authentication token for services, in seconds.
  */
 $config['nonce_life'] = 7200;

@@ -32,6 +32,21 @@ class Emailer {
   private static $db;
 
   /**
+   * Queued email status: pending send.
+   */
+  private const QUEUE_STATUS_QUEUED = 'Q';
+
+  /**
+   * Queued email status: permanently failed.
+   */
+  private const QUEUE_STATUS_FAILED = 'F';
+
+  /**
+   * Queued email status: sent.
+   */
+  private const QUEUE_STATUS_SENT = 'S';
+
+  /**
    * Name of the email helper class, e.g. for Swift or MS Graph connections.
    *
    * @var string
@@ -121,11 +136,14 @@ class Emailer {
    *
    * @return int
    *   The number of recipients who have been sent emails - 0 if an error
-   *   occurred.
+   *   occurred. Deferred emails added to the queue are included in this
+   *   count.
    */
   public function send($subject, $message, $emailType, $emailSubtype = NULL) {
     $config = kohana::config('email');
+    $recipientCount = count($this->recipients);
     $succeeded = FALSE;
+    $deferred = FALSE;
     $errorMessage = NULL;
     if (!$this->from) {
       $this->from = $config['address'];
@@ -133,38 +151,451 @@ class Emailer {
     }
     if ($config['do_not_send'] ?? FALSE) {
       // Email disabled on this server, this classes as a success.
-      return TRUE;
+      return count($this->recipients);
     }
     $emailLibrary = $config['library'] ?? 'Swift';
     $emailHelper = "emailer$emailLibrary";
     try {
-      if (empty($this->recipients || empty($message))) {
+      if (empty($this->recipients) || empty($message)) {
         throw new Exception('Email incomplete - missing recipient or message');
       }
-      $emailHelper::send(
-        $subject,
-        $message,
-        $this->recipients,
-        $this->cc,
-        $this->from,
-        $this->fromName,
-        $this->priority,
-        $this->attachmentInfo
-      );
-      $succeeded = TRUE;
+      if ($this->shouldQueueEmail($emailType)) {
+        $this->queueEmail($subject, $message, $emailType, $emailSubtype);
+        $errorMessage = 'Deferred due to hourly email limit';
+        $deferred = TRUE;
+      }
+      else {
+        $emailHelper::send(
+          $subject,
+          $message,
+          $this->recipients,
+          $this->cc,
+          $this->from,
+          $this->fromName,
+          $this->priority,
+          $this->attachmentInfo
+        );
+        $succeeded = TRUE;
+        if ($config['enable_send_rate_limit'] ?? FALSE) {
+          self::incrementSentThisHour();
+        }
+      }
     }
     catch (Exception $e) {
       error_logger::log_error('Error in email helper', $e);
       $errorMessage = $e->getMessage();
     }
     finally {
-      if ($config['log_emails'] ?? FALSE) {
-        $this->logEmail($subject, $message, $emailType, $emailSubtype, $errorMessage);
+      if (($config['log_emails'] ?? FALSE) && !$deferred) {
+        self::insertEmailLog(
+          $subject,
+          $message,
+          $emailType,
+          $emailSubtype,
+          $this->recipients,
+          $this->cc,
+          $this->from,
+          $this->fromName,
+          $errorMessage
+        );
       }
       // Now reset the emailer for next time.
       $this->reset();
     }
-    return $succeeded ? count($this->recipients) : 0;
+    return $succeeded || $deferred ? $recipientCount : 0;
+  }
+
+  /**
+   * Process queued emails, e.g. when scheduled tasks runs.
+   *
+   * @return array
+   *   Keys sent and attempted.
+   */
+  public static function processQueue() {
+    $config = kohana::config('email');
+    if (!($config['enable_send_rate_limit'] ?? FALSE)) {
+      return ['attempted' => 0, 'sent' => 0];
+    }
+    self::initDb();
+    $hourlyLimit = $config['hourly_send_limit'] ?? 250;
+    $criticalReserve = max(0, $config['hourly_critical_reserve'] ?? 20);
+    $nonCriticalThreshold = self::getNonCriticalThreshold($hourlyLimit, $criticalReserve);
+    $batchSize = $config['queue_replay_batch_size'] ?? 250;
+    $alreadySent = self::countSentThisHour();
+    if ($alreadySent >= $hourlyLimit) {
+      return ['attempted' => 0, 'sent' => 0];
+    }
+    $safeBatchSize = (int) $batchSize;
+    $queueItems = self::$db->query(
+      "SELECT *
+      FROM email_send_queue
+      WHERE status='" . self::QUEUE_STATUS_QUEUED . "'
+      ORDER BY COALESCE(escalate_email_priority, 0) DESC, queued_on ASC
+      LIMIT $safeBatchSize"
+    );
+    $attempted = 0;
+    $sent = 0;
+    $emailLibrary = $config['library'] ?? 'Swift';
+    $emailHelper = "emailer$emailLibrary";
+    $emailHelper::init();
+    foreach ($queueItems as $item) {
+      if ($alreadySent >= $hourlyLimit) {
+        break;
+      }
+      $isCritical = (int) $item->escalate_email_priority > 0;
+      if (!$isCritical && $alreadySent >= $nonCriticalThreshold) {
+        continue;
+      }
+      $attempted++;
+      try {
+        $sendPriority = ((int) $item->escalate_email_priority === 2) ? 2 : 3;
+        $emailHelper::send(
+          $item->subject,
+          $item->body,
+          json_decode($item->recipients, TRUE) ?: [],
+          json_decode($item->cc, TRUE) ?: [],
+          $item->from_email,
+          $item->from_name,
+          $sendPriority,
+          empty($item->attachment_info) ? NULL : json_decode($item->attachment_info, TRUE)
+        );
+        self::$db
+          ->set([
+            'status' => 'S',
+            'sent_on' => date('Y-m-d H:i:s'),
+            'error_message' => NULL,
+          ])
+          ->from('email_send_queue')
+          ->where('id', $item->id)
+          ->update();
+        if ($config['log_emails'] ?? FALSE) {
+          self::insertEmailLog(
+            $item->subject,
+            $item->body,
+            $item->email_type,
+            $item->email_subtype,
+            json_decode($item->recipients, TRUE) ?: [],
+            json_decode($item->cc, TRUE) ?: [],
+            $item->from_email,
+            $item->from_name,
+            NULL
+          );
+        }
+        $sent++;
+        $alreadySent++;
+        self::incrementSentThisHour();
+      }
+      catch (Exception $e) {
+        $attempts = (int) $item->attempts + 1;
+        $status = $attempts >= 10 ? self::QUEUE_STATUS_FAILED : self::QUEUE_STATUS_QUEUED;
+        self::$db
+          ->set([
+            'attempts' => $attempts,
+            'status' => $status,
+            'error_message' => $e->getMessage(),
+          ])
+          ->from('email_send_queue')
+          ->where('id', $item->id)
+          ->update();
+        error_logger::log_error('Failed sending queued email', $e);
+      }
+    }
+    return ['attempted' => $attempted, 'sent' => $sent];
+  }
+
+  /**
+   * Purge old processed queue rows.
+   *
+   * Deletes rows that are already sent or permanently failed and older than
+   * configured retention period.
+   *
+   * @return int
+   *   Number of purged rows.
+   */
+  public static function purgeOldQueueEntries() {
+    $config = kohana::config('email');
+    $retentionDays = self::normaliseQueueRetentionDays($config['queue_retention_days'] ?? 7);
+    if ($retentionDays === 0) {
+      return 0;
+    }
+    self::initDb();
+    $cutoff = date('Y-m-d H:i:s', strtotime("-$retentionDays days"));
+    try {
+      $countResult = self::$db->query(
+        "SELECT COUNT(*) AS count
+        FROM email_send_queue
+        WHERE status IN ('" . self::QUEUE_STATUS_SENT . "', '" . self::QUEUE_STATUS_FAILED . "')
+        AND COALESCE(sent_on, queued_on) < '$cutoff'"
+      )->current();
+      $purgeCount = (int) ($countResult->count ?? 0);
+      if ($purgeCount === 0) {
+        return 0;
+      }
+      self::$db->query(
+        "DELETE FROM email_send_queue
+        WHERE status IN ('" . self::QUEUE_STATUS_SENT . "', '" . self::QUEUE_STATUS_FAILED . "')
+        AND COALESCE(sent_on, queued_on) < '$cutoff'"
+      );
+      return $purgeCount;
+    }
+    catch (Exception $e) {
+      kohana::log('error', 'Unable to purge old queue emails: ' . $e->getMessage());
+      return 0;
+    }
+  }
+
+  /**
+   * Decide if this email should be queued due to throttling.
+   *
+   * @param string $emailType
+   *   System component that caused the email.
+   *
+   * @return bool
+   *   TRUE if email should be deferred to the queue.
+   */
+  private function shouldQueueEmail($emailType) {
+    $config = kohana::config('email');
+    if (!($config['enable_send_rate_limit'] ?? FALSE)) {
+      return FALSE;
+    }
+    self::initDb();
+    $hourlyLimit = $config['hourly_send_limit'] ?? 250;
+    $criticalReserve = max(0, $config['hourly_critical_reserve'] ?? 20);
+    $nonCriticalThreshold = self::getNonCriticalThreshold($hourlyLimit, $criticalReserve);
+    $sentCount = self::countSentThisHour();
+    $escalatePriority = self::deriveEscalateEmailPriority($emailType, $this->priority);
+    $isCritical = $escalatePriority !== NULL;
+    if ($isCritical) {
+      return $sentCount >= $hourlyLimit;
+    }
+    return $sentCount >= $nonCriticalThreshold;
+  }
+
+  /**
+   * Compute threshold where non-critical traffic starts queueing.
+   *
+   * Guards against reserve values that would consume all non-critical
+   * capacity by ensuring at least one non-critical slot remains when
+   * hourly limit is above zero.
+   *
+   * @param int $hourlyLimit
+   *   Maximum number of emails that can be sent in the hour.
+   * @param int $criticalReserve
+   *   Reserved email slots for critical traffic.
+   *
+   * @return int
+   *   Number of sent emails at which non-critical emails should queue.
+   */
+  private static function getNonCriticalThreshold($hourlyLimit, $criticalReserve) {
+    if ($hourlyLimit > 0) {
+      $criticalReserve = min($criticalReserve, $hourlyLimit - 1);
+    }
+    return max(0, $hourlyLimit - $criticalReserve);
+  }
+
+  /**
+   * Normalise queue retention days from config.
+   *
+   * @param mixed $configuredDays
+   *   Raw configured value.
+   *
+   * @return int
+   *   0 to disable purge, otherwise number of days retained.
+   */
+  private static function normaliseQueueRetentionDays($configuredDays) {
+    if (!is_numeric($configuredDays)) {
+      return 7;
+    }
+    $days = (int) $configuredDays;
+    if ($days === 0) {
+      return 0;
+    }
+    return max(1, $days);
+  }
+
+  /**
+   * Queue an email payload for replay.
+   *
+   * @param string $subject
+   *   Email subject.
+   * @param string $message
+   *   Email body.
+   * @param string $emailType
+   *   System component that caused the email.
+   * @param string $emailSubtype
+   *   Optional email subtype.
+   */
+  private function queueEmail($subject, $message, $emailType, $emailSubtype) {
+    self::initDb();
+    $escalatePriority = self::deriveEscalateEmailPriority($emailType, $this->priority);
+    $groupKey = $this->getQueueMergeKey($subject, $emailType, $emailSubtype, $escalatePriority);
+    $existing = self::$db
+      ->select('id, body')
+      ->from('email_send_queue')
+      ->where([
+        'status' => self::QUEUE_STATUS_QUEUED,
+        'group_key' => $groupKey,
+      ])
+      ->orderby('queued_on', 'DESC')
+      ->limit(1)
+      ->get()
+      ->current();
+    if ($existing) {
+      if (self::queueBodyContainsMessage($existing->body, $message)) {
+        return;
+      }
+      self::$db
+        ->set('body', $existing->body . '<hr/>' . $message)
+        ->from('email_send_queue')
+        ->where('id', $existing->id)
+        ->update();
+      return;
+    }
+    self::$db->insert('email_send_queue', [
+      'status' => self::QUEUE_STATUS_QUEUED,
+      'queued_on' => date('Y-m-d H:i:s'),
+      'recipients' => json_encode($this->recipients),
+      'cc' => json_encode($this->cc),
+      'subject' => $subject,
+      'body' => $message,
+      'from_email' => $this->from,
+      'from_name' => $this->fromName,
+      'escalate_email_priority' => $escalatePriority,
+      'attachment_info' => empty($this->attachmentInfo) ? NULL : json_encode($this->attachmentInfo),
+      'email_type' => $emailType,
+      'email_subtype' => $emailSubtype,
+      'group_key' => $groupKey,
+    ]);
+  }
+
+  /**
+   * Check if a queued body already contains a message segment.
+   *
+   * Queue merges separate message segments with <hr/> delimiters. This helper
+   * prevents repeated appends of an identical segment when scheduled tasks
+   * repeatedly queue equivalent notification content.
+   *
+   * @param string|null $queuedBody
+   *   Existing queued email body.
+   * @param string $message
+   *   Message candidate to add.
+   *
+   * @return bool
+   *   TRUE if the queued body already contains the exact message segment.
+   */
+  private static function queueBodyContainsMessage($queuedBody, $message) {
+    if ($queuedBody === NULL || $queuedBody === '') {
+      return FALSE;
+    }
+    if ($queuedBody === $message) {
+      return TRUE;
+    }
+    $segments = explode('<hr/>', $queuedBody);
+    return in_array($message, $segments, TRUE);
+  }
+
+  /**
+   * Build a merge key for queue coalescing.
+   *
+   * @param string $subject
+   *   Email subject.
+   * @param string $emailType
+   *   System component that caused the email.
+   * @param string $emailSubtype
+   *   Optional email subtype.
+   * @param int|null $escalatePriority
+   *   Escalation priority value.
+   *
+   * @return string
+   *   Grouping key for queued rows.
+   */
+  private function getQueueMergeKey($subject, $emailType, $emailSubtype, $escalatePriority) {
+    // Only notification emails are merged.
+    if ($emailType !== 'notification_emails') {
+      return uniqid('', TRUE);
+    }
+    return sha1(json_encode([
+      $subject,
+      $emailType,
+      $emailSubtype,
+      $this->from,
+      $this->fromName,
+      $this->recipients,
+      $this->cc,
+      $escalatePriority,
+      empty($this->attachmentInfo),
+    ]));
+  }
+
+  /**
+   * Count successfully sent emails in the current hour.
+    *
+    * @return int
+    *   Count of emails sent this hour.
+   */
+  private static function countSentThisHour() {
+    $counterData = variable::get('email-send-hourly-counter', NULL, FALSE);
+    if (empty($counterData)) {
+      return 0;
+    }
+    $parts = explode(':', $counterData);
+    $hour = $parts[0] ?? '';
+    $count = $parts[1] ?? 0;
+    if ($hour !== date('YmdH')) {
+      return 0;
+    }
+    return (int) $count;
+  }
+
+  /**
+   * Increment hourly send counter.
+   */
+  private static function incrementSentThisHour() {
+    $currentHour = date('YmdH');
+    $counterData = variable::get('email-send-hourly-counter', NULL, FALSE);
+    if (empty($counterData)) {
+      variable::set('email-send-hourly-counter', "$currentHour:1");
+      return;
+    }
+    $parts = explode(':', $counterData);
+    $hour = $parts[0] ?? '';
+    $count = (int) ($parts[1] ?? 0);
+    if ($hour !== $currentHour) {
+      variable::set('email-send-hourly-counter', "$currentHour:1");
+    }
+    else {
+      variable::set('email-send-hourly-counter', "$currentHour:" . ($count + 1));
+    }
+  }
+
+  /**
+   * Derive escalation priority from email metadata.
+   *
+   * @param string $emailType
+   *   System component that caused the email.
+   * @param int $priority
+   *   Email helper priority from 1 (high) to 5 (low).
+   *
+   * @return int|null
+   *   NULL for normal emails, 1 for urgent send, 2 for urgent + high priority.
+   */
+  private static function deriveEscalateEmailPriority($emailType, $priority) {
+    if ((int) $priority <= 2) {
+      return 2;
+    }
+    if ($emailType === 'forgottenPassword') {
+      return 1;
+    }
+    return NULL;
+  }
+
+  /**
+   * Ensure static DB connection is available.
+   */
+  private static function initDb() {
+    if (!self::$db) {
+      self::$db = new Database();
+    }
   }
 
   /**
@@ -245,49 +676,58 @@ class Emailer {
   /**
    * Add an email from address.
    *
-   * @param string $email
-   *   Set from email address.
-   * @param ?string $name
-   *   Optional name of the email sender.
+   * @param int $priority
+   *   Priority from 1 (very high) to 5 (very low).
    */
   public function setPriority($priority) {
     $this->priority = $priority;
   }
 
   /**
-   * Log an email to the database.
-   *
-   * Called if email config has 'log_emails' set to TRUE, normally for
-   * debugging purposes.
-   *
-   * @param string $subject
-   *   Email subject.
-   * @param mixed $message
-   *   Email body.
-   * @param string $emailType
-   *   System component that caused the email, e.g. notifications.
-   * @param string $emailSubtype
-   *   Optional additional info to identify the source of the email, e.g. the
-   *   notification type.
-   * @param string $errorMessage
-   *   If the email failed to send and an exception caught, the message from
-   *   the exception.
+   * Store an email log entry.
+    *
+    * @param string $subject
+    *   Email subject.
+    * @param string $message
+    *   Email body.
+    * @param string $emailType
+    *   System component that caused the email.
+    * @param string|null $emailSubtype
+    *   Optional subtype for the email source.
+    * @param array $recipients
+    *   Recipient list.
+    * @param array $cc
+    *   CC recipient list.
+    * @param string $from
+    *   Sender email address.
+    * @param string|null $fromName
+    *   Sender name.
+    * @param string|null $errorMessage
+    *   Error text if sending failed.
    */
-  private function logEmail($subject, $message, $emailType, $emailSubtype = NULL, $errorMessage = NULL) {
-    if (!self::$db) {
-      self::$db = new Database();
-    }
+  private static function insertEmailLog(
+      $subject,
+      $message,
+      $emailType,
+      $emailSubtype,
+      array $recipients,
+      array $cc,
+      $from,
+      $fromName,
+      $errorMessage) {
+    self::initDb();
     try {
       self::$db->insert('email_log_entries', [
-        'from_email' => $this->from,
-        'from_name' => $this->fromName,
-        'recipients' => json_encode($this->recipients),
-        'cc' => json_encode($this->cc),
+        'from_email' => $from,
+        'from_name' => $fromName,
+        'recipients' => json_encode($recipients),
+        'cc' => json_encode($cc),
         'subject' => $subject,
         'body' => $message,
         'email_type' => $emailType,
         'email_subtype' => $emailSubtype,
         'sent_on' => date('Y-m-d H:i:s'),
+        'error_message' => $errorMessage,
       ]);
     }
     catch (Exception $e) {

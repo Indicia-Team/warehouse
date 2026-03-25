@@ -51,6 +51,7 @@ abstract class ATTR_ORM extends Valid_ORM {
         'validation_rules',
         'public',
         'multi_value',
+        'encrypt',
         'deleted',
         'description',
         'caption_i18n',
@@ -79,7 +80,20 @@ abstract class ATTR_ORM extends Valid_ORM {
         $array->multi_value === '1' && $array->allow_ranges === '1') {
       $array->add_error("$this->object_name:allow_ranges", 'notmultiple');
     }
+    if (warehouse::normaliseBool($array->encrypt ?? 'f')) {
+      $effectiveDataType = array_key_exists('data_type', $array->as_array()) ? $array->data_type : $this->data_type;
+      if ($effectiveDataType !== 'T') {
+        $this->errors["$this->object_name:encrypt"] = 'Encryption is only supported for text attributes.';
+      }
+      if ($this->isEncryptToggleBlocked($array)) {
+        $this->errors["$this->object_name:encrypt"] = 'Cannot change encryption setting because this attribute already has values.';
+      }
+    }
+
     $parent_valid = parent::validate($array, $save);
+    if (!empty($this->errors["$this->object_name:encrypt"])) {
+      $parent_valid = FALSE;
+    }
     // Clean up cached required fields and attribute lists in case validation
     // rules have changed.
     $cache = Cache::instance();
@@ -92,9 +106,51 @@ abstract class ATTR_ORM extends Valid_ORM {
       // Type is the object name with _attribute stripped from the end.
       $type = substr($this->object_name, 0, strlen($this->object_name) - 10);
       $cache->delete("attrInfo_{$type}_$this->id");
+      $cache->delete("attrInfo.2_{$type}_$this->id");
+      $cache->delete("attrInfo.3_{$type}_$this->id");
     }
 
     return $save && $parent_valid;
+  }
+
+  /**
+   * Check if encryption state can be changed for this attribute.
+   *
+   * Changing the encryption state of an attribute that already has values
+   * is disallowed.
+   *
+   * @param Validation $array
+   *   Incoming form data.
+   *
+   * @return bool
+   *   True when transition should be blocked.
+   */
+  private function isEncryptToggleBlocked(Validation $array) {
+    if (empty($this->id) || !array_key_exists('encrypt', $array->as_array())) {
+      return FALSE;
+    }
+    $newEncrypt = warehouse::normaliseBool($array->encrypt);
+    $oldEncrypt = warehouse::normaliseBool($this->encrypt);
+    if ($newEncrypt === $oldEncrypt) {
+      return FALSE;
+    }
+    $entity = substr($this->object_name, 0, strlen($this->object_name) - strlen('_attribute'));
+    $valueTable = $entity . '_attribute_values';
+    $valueAttrField = $entity . '_attribute_id';
+    if (!$this->db->table_exists($valueTable)) {
+      return FALSE;
+    }
+    $hasValue = $this->db
+      ->select('1 AS found')
+      ->from($valueTable)
+      ->where([
+        $valueAttrField => $this->id,
+        'deleted' => 'f',
+      ])
+      ->limit(1)
+      ->get()
+      ->current();
+    return !empty($hasValue);
   }
 
   /**

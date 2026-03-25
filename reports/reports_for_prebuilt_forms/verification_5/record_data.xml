@@ -11,6 +11,7 @@
   -- for metadata
   join occurrences occ on occ.id=o.id and occ.deleted=false
   join samples s on s.id=o.sample_id and s.deleted=false
+  join surveys srv on srv.id=s.survey_id and srv.deleted=false
   left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
   left join locations l on l.id=s.location_id and l.deleted=false
   left join locations locality on o.location_ids @> ARRAY[locality.id]
@@ -46,7 +47,7 @@
     <column name='date_type' sql='o.date_type' visible='false' />
     <column name='date' display='Key facts:Date' datatype="date" />
     <column name='occurrence_id' display='Record:ID' sql='o.id' />
-    <column name='email' visible='false' sql='coalesce(snf.attr_email, p.email_address)' />
+    <column name='email' visible='false' sql='CASE WHEN srv.hide_emails_from_verifiers THEN null ELSE coalesce(snf.attr_email, p.email_address) END' />
     <column name='verifier' display='Record:Verified by' sql='onf.verifier' />
     <column name='preferred_taxon' display='Record:Preferred species name' sql='CASE cttl.preferred_taxon WHEN cttl.taxon THEN null ELSE cttl.preferred_taxon END' />
     <column name='occurrence_comment' display='Record:Comment' sql='onf.comment' />

@@ -322,6 +322,10 @@ class Service_Base_Controller extends Controller {
     elseif ($e instanceof EntityAccessError) {
       $statusCode = 404;
     }
+    elseif ($e->getCode() >= 400 && $e->getCode() < 600) {
+      // If the exception code is a valid HTTP status code, use it.
+      $statusCode = $e->getCode();
+    }
     else {
       $statusCode = 500;
       error_logger::log_error('Internal Service Error response from data services', $e);

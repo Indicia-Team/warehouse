@@ -14,7 +14,6 @@
   WHERE #sharing_filter#
   AND o.media_count>0
   AND o.confidential=false
-  AND o.record_status='V'
   AND o.taxa_taxon_list_external_key='#external_key#'
   </query>
   <order_bys>
@@ -22,6 +21,12 @@
   </order_bys>
   <params>
     <param name="external_key" datatype="string"/>
+    <param name="quality" datatype="string" default="accepted">
+      <where value="accepted">o.record_status='V'</where>
+      <where value="plausible">o.record_status='V' OR (o.record_status='C' and o.record_substatus=3)</where>
+      <where value="not_rejected">o.record_status&lt;&gt;'R'</where>
+      <where value="all">1=1</where>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' sql='o.id' datatype="integer" />

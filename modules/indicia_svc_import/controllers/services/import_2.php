@@ -175,17 +175,7 @@ class Import_2_Controller extends Service_Base_Controller {
       // Fetch DNA fields.
       $dnaModel = ORM::factory('dna_occurrence');
       $dnaFields = $dnaModel->getSubmittableFields(TRUE, $keepFkIds);
-      // Splice them into the list after the occurrence: fields.
-      $insertPos = 0;
-      foreach (array_keys($fields) as $fieldName) {
-        if (substr($fieldName, 0, 11) !== 'occurrence:') {
-          break;
-        }
-        $insertPos++;
-      }
-      $fields = array_slice($fields, 0, $insertPos)
-        + $dnaFields
-        + array_slice($fields, $insertPos);
+      $fields += $dnaFields;
     }
     $wantRequired = !empty($_GET['required']) && $_GET['required'] === 'true';
     if ($wantRequired) {

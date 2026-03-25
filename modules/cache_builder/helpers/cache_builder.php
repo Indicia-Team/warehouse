@@ -119,6 +119,9 @@ HTML;
     if (!variable::get("populated-$table")) {
       $tableEsc = pg_escape_identifier($db->getLink(), $table);
       $cacheTableEsc = pg_escape_identifier($db->getLink(), "cache_$table");
+      if (in_array($table, ['occurrences', 'samples'])) {
+        $tableEsc = pg_escape_identifier($db->getLink(), "cache_{$table}_functional");
+      }
       $cacheQuery = $db->query("select count(*) from $cacheTableEsc")->result_array(FALSE);
       if (isset($queries['count'])) {
         $totalQuery = $db->query($queries['count'])->result_array(FALSE);
