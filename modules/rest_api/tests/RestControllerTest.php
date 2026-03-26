@@ -1418,6 +1418,73 @@ class RestControllerTest extends BaseRestClientTest {
   }
 
   /**
+   * Testing upload of queued audio then attach to sample.
+   */
+  public function testJwtSamplePostWithAudioMediaType() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+
+    $rootFolder = dirname(dirname(dirname(dirname(__FILE__))));
+    $sourceImageFile = "$rootFolder/media/images/warehouse-banner.jpg";
+    $tempAudioPrefix = tempnam(sys_get_temp_dir(), 'rest-audio-');
+    $tempAudioFile = "$tempAudioPrefix.mp3";
+    copy($sourceImageFile, $tempAudioFile);
+    @unlink($tempAudioPrefix);
+
+    $response = $this->callService(
+      'media-queue',
+      FALSE,
+      [
+        'file[]' => curl_file_create(
+          $tempAudioFile,
+          'audio/mpeg',
+          'test-audio.mp3'
+        ),
+      ],
+      [], NULL, TRUE
+    );
+    @unlink($tempAudioFile);
+    $this->assertArrayHasKey('file[0]', $response['response']);
+    $this->assertArrayHasKey('name', $response['response']['file[0]']);
+    $uploadedFileName = $response['response']['file[0]']['name'];
+
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'media' => [
+        [
+          'values' => [
+            'queued' => $uploadedFileName,
+            'caption' => 'Sample audio',
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+
+    $this->assertEquals(201, $response['httpCode']);
+    $sampleId = (int) $response['response']['values']['id'];
+    $storedMediaType = $db->query(
+      'SELECT dtt.term
+      FROM sample_media sm
+      JOIN detail_termlists_terms dtt ON dtt.id=sm.media_type_id
+      WHERE sm.sample_id=? AND sm.path=?',
+      [$sampleId, $uploadedFileName]
+    )->current();
+    $this->assertNotEmpty($storedMediaType, 'Uploaded queued audio media row not created.');
+    $this->assertEquals('Audio:Local', $storedMediaType->term, 'Queued audio should default to Audio:Local media type.');
+  }
+
+  /**
    * Test posting a nested sample/occurrence/media submission.
    */
   public function testJwtSampleOccurrenceMediaPost() {

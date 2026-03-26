@@ -27,6 +27,11 @@ defined('SYSPATH') or die('No direct script access.');
 class Base_licensed_medium_Model extends ORM {
 
   /**
+   * File extensions that should default to audio media type.
+   */
+  private const AUDIO_EXTENSIONS = ['mp3', 'wav'];
+
+  /**
    * Files uploaded by REST API's media queue pending transfer to upload dir.
    *
    * @var string
@@ -38,10 +43,16 @@ class Base_licensed_medium_Model extends ORM {
    *
    * If a submission is for an insert and does not contain the licence ID for
    * the data it contains, look it up from the user's settings and apply it to
-   * the submission. If the media_type_id is not populated, default to
-   * the ID for image:local.
+   * the submission. If the media_type_id is not populated, infer it from the
+   * file extension for queued uploads, falling back to Image:Local.
    */
   protected function preSubmit() {
+    // If using a queued media file, store this in the path. After validation
+    // we'll copy it over.
+    if (!empty($this->submission['fields']['queued'])) {
+      $this->submission['fields']['path'] = $this->submission['fields']['queued'];
+      $this->queuedFile = $this->submission['fields']['queued']['value'];
+    }
     if (!array_key_exists('id', $this->submission['fields']) || empty($this->submission['fields']['id']['value'])) {
       $userId = $this->getUserId();
       // Set user's default media licence unless already specified in the
@@ -62,30 +73,70 @@ class Base_licensed_medium_Model extends ORM {
       // Now fill in the media_type_id if not in submission.
       if (!array_key_exists('media_type_id', $this->submission['fields'])
           || empty($this->submission['fields']['media_type_id']['value'])) {
-        $cache = Cache::instance();
-        if ($cached = $cache->get('image-local-media_type_id')) {
-          $mediaTypeId = $cached;
+        $mediaTypeTerm = $this->getDefaultMediaTypeTerm();
+        $mediaTypeId = $this->findMediaTypeId($mediaTypeTerm);
+        // Fall back to image if audio type has not been configured.
+        if (!$mediaTypeId && $mediaTypeTerm !== 'Image:Local') {
+          $mediaTypeId = $this->findMediaTypeId('Image:Local');
         }
-        else {
-          $mediaTypeId = $this->db
-            ->select('id')
-            ->from('cache_termlists_terms')
-            ->where([
-              'termlist_title' => 'Media types',
-              'term' => 'Image:Local',
-            ])
-            ->get()->current()->id;
-          $cache->set('image-local-media_type_id', $mediaTypeId);
+        if ($mediaTypeId) {
+          $this->submission['fields']['media_type_id'] = ['value' => $mediaTypeId];
         }
-        $this->submission['fields']['media_type_id'] = ['value' => $mediaTypeId];
       }
     }
-    // If using a queued media file, store this in the path. After validation
-    // we'll copy it over.
-    if (!empty($this->submission['fields']['queued'])) {
-      $this->submission['fields']['path'] = $this->submission['fields']['queued'];
-      $this->queuedFile = $this->submission['fields']['queued']['value'];
+  }
+
+  /**
+   * Gets default media term for the current submission.
+   *
+   * @return string
+   *   Preferred media term.
+   */
+  private function getDefaultMediaTypeTerm() {
+    $filename = NULL;
+    if (!empty($this->submission['fields']['queued']['value'])) {
+      $filename = $this->submission['fields']['queued']['value'];
     }
+    elseif (!empty($this->submission['fields']['path']['value'])) {
+      $filename = $this->submission['fields']['path']['value'];
+    }
+    if ($filename) {
+      $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+      if (in_array($extension, self::AUDIO_EXTENSIONS, TRUE)) {
+        return 'Audio:Local';
+      }
+    }
+    return 'Image:Local';
+  }
+
+  /**
+   * Resolve a media term to its termlists_terms ID.
+   *
+   * @param string $mediaTypeTerm
+   *   Media term, e.g. Image:Local.
+   *
+   * @return int|null
+   *   ID if found.
+   */
+  private function findMediaTypeId($mediaTypeTerm) {
+    $cache = Cache::instance();
+    $cacheKey = strtolower(str_replace(':', '-', $mediaTypeTerm)) . '-media_type_id';
+    if ($cached = $cache->get($cacheKey)) {
+      return (int) $cached;
+    }
+    $row = $this->db
+      ->select('id')
+      ->from('cache_termlists_terms')
+      ->where([
+        'termlist_title' => 'Media types',
+        'term' => $mediaTypeTerm,
+      ])
+      ->get()->current();
+    if ($row) {
+      $cache->set($cacheKey, $row->id);
+      return (int) $row->id;
+    }
+    return NULL;
   }
 
   /**
