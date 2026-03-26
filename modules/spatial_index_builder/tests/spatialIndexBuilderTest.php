@@ -36,7 +36,7 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
    */
   public function testLocationIndexing() {
     $locationTypeId = 2;
-    $higherLocationTypeId = 9;
+    $higherLocationTypeId = self::$db->query("SELECT id FROM cache_termlists_terms WHERE term='Higher location type' AND termlist_title='Location types'")->current()->id;
     // A submission structure for locations plus websites.
     $structureWithWebsite = [
       'model' => 'location',
