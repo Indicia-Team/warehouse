@@ -1439,7 +1439,8 @@ class RestControllerTest extends BaseRestClientTest {
         'file[]' => curl_file_create(
           $tempAudioFile,
           'audio/mpeg',
-          'test-audio.mp3'
+          // Deliberately wrong.
+          'test-audio.jpg'
         ),
       ],
       [], NULL, TRUE
@@ -1448,6 +1449,7 @@ class RestControllerTest extends BaseRestClientTest {
     $this->assertArrayHasKey('file[0]', $response['response']);
     $this->assertArrayHasKey('name', $response['response']['file[0]']);
     $uploadedFileName = $response['response']['file[0]']['name'];
+    $this->assertMatchesRegularExpression('/\.mp3$/', $uploadedFileName, 'Queued filename should use MIME derived mp3 extension.');
 
     $data = [
       'values' => [
