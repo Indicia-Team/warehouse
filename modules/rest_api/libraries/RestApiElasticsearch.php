@@ -486,6 +486,11 @@ class RestApiElasticsearch {
       if (!isset($postObj->query->bool->filter)) {
         $postObj->query->bool->filter = [];
       }
+      elseif (is_object($postObj->query->bool->filter)) {
+        // Query already included a single filter which wasn't an array, so
+        // convert to array.
+        $postObj->query->bool->filter = [$postObj->query->bool->filter];
+      }
       $postObj->query->bool->filter = array_merge($postObj->query->bool->filter, $filters);
     }
     if (!empty($filterDefBool['filter'])) {
