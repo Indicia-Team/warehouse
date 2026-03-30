@@ -3034,6 +3034,134 @@ SQL;
   }
 
   /**
+   * Test that verbose GET for occurrences returns associations when they exist.
+   */
+  public function testJwtOccurrenceGetVerboseAssociations() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    $associationTypeId = (int) $db->query('select min(id) as id from cache_termlists_terms')->current()->id;
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Create a sample with two occurrences; occurrence A has an association pointing to B.
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'verbose-assoc-a',
+          ],
+          'associations' => [
+            [
+              'external_key' => 'verbose-assoc-b',
+              'association_type_id' => $associationTypeId,
+              'comment' => 'verbose test link',
+            ],
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'verbose-assoc-b',
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService('samples', FALSE, $data);
+    $this->assertEquals(201, $response['httpCode'], 'Sample POST for verbose association test failed.');
+    $sampleId = (int) $response['response']['values']['id'];
+    $occA = (int) $db->query(
+      'select id from occurrences where sample_id=? and external_key=?',
+      [$sampleId, 'verbose-assoc-a']
+    )->current()->id;
+    $occB = (int) $db->query(
+      'select id from occurrences where sample_id=? and external_key=?',
+      [$sampleId, 'verbose-assoc-b']
+    )->current()->id;
+    $this->assertTrue($occA > 0 && $occB > 0, 'Test setup failed: expected occurrences not created.');
+
+    // Without verbose: no associations key.
+    $response = $this->callService("occurrences/$occA");
+    $this->assertResponseOk($response, "occurrences/$occA");
+    $this->assertArrayNotHasKey(
+      'associations', $response['response']['values'],
+      'GET occurrence without verbose should not return associations.'
+    );
+
+    // With verbose on the from side: associations key must be present with correct data.
+    $response = $this->callService("occurrences/$occA", ['verbose' => '1']);
+    $this->assertResponseOk($response, "occurrences/$occA?verbose");
+    $this->assertArrayHasKey(
+      'associations', $response['response']['values'],
+      'GET occurrence with verbose should return associations when they exist.'
+    );
+    $this->assertCount(1, $response['response']['values']['associations'],
+      'GET occurrence with verbose should return exactly 1 association for occurrence A.'
+    );
+    $assoc = $response['response']['values']['associations'][0];
+    $this->assertEquals($occA, (int) $assoc['from_occurrence_id'], 'Association from_occurrence_id incorrect.');
+    $this->assertEquals($occB, (int) $assoc['to_occurrence_id'], 'Association to_occurrence_id incorrect.');
+    $this->assertEquals($associationTypeId, (int) $assoc['association_type_id'], 'Association association_type_id incorrect.');
+    $this->assertEquals('verbose test link', $assoc['comment'], 'Association comment incorrect.');
+
+    // With verbose on the to side: the association is also returned for the target occurrence.
+    $response = $this->callService("occurrences/$occB", ['verbose' => '1']);
+    $this->assertResponseOk($response, "occurrences/$occB?verbose");
+    $this->assertArrayHasKey(
+      'associations', $response['response']['values'],
+      'GET occurrence B with verbose should return associations visible from the to side.'
+    );
+    $this->assertCount(1, $response['response']['values']['associations'],
+      'GET occurrence B with verbose should return exactly 1 association.'
+    );
+
+    // With verbose on the list endpoint: occurrence A should have associations.
+    $response = $this->callService('occurrences', ['sample_id' => $sampleId, 'verbose' => '1']);
+    $this->assertResponseOk($response, 'occurrences list with verbose');
+    $occARow = NULL;
+    foreach ($response['response'] as $row) {
+      if ((int) $row['values']['id'] === $occA) {
+        $occARow = $row;
+        break;
+      }
+    }
+    $this->assertNotNull($occARow, 'Occurrence A not found in list response.');
+    $this->assertArrayHasKey('associations', $occARow['values'],
+      'Occurrence A in list response with verbose should have associations.'
+    );
+
+    // An occurrence with no associations should not have the associations key even with verbose.
+    $data2 = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        ['values' => ['taxa_taxon_list_id' => 2]],
+      ],
+    ];
+    $response2 = $this->callService('samples', FALSE, $data2);
+    $this->assertEquals(201, $response2['httpCode'], 'Second sample POST for verbose association test failed.');
+    $sampleId2 = (int) $response2['response']['values']['id'];
+    $soloOcc = (int) $db->query(
+      'select id from occurrences where sample_id=? order by id desc limit 1',
+      [$sampleId2]
+    )->current()->id;
+    $response = $this->callService("occurrences/$soloOcc", ['verbose' => '1']);
+    $this->assertResponseOk($response, "occurrences/$soloOcc?verbose no assoc");
+    $this->assertArrayNotHasKey(
+      'associations', $response['response']['values'],
+      'GET occurrence with verbose but no associations should not return associations key.'
+    );
+  }
+
+  /**
    * Check that site admin in users_websites works for DELETE.
    *
    * @param string $table

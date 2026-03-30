@@ -1439,6 +1439,12 @@ following example response (shortened):
   }
 }
 </code></pre>
+If the occurrence has any associations recorded against it (either as the source or the target of
+the association), the response also includes an <code>associations</code> array. Each entry in the
+array contains the following fields: <code>from_occurrence_id</code>, <code>to_occurrence_id</code>,
+<code>association_type_id</code>, <code>part_id</code>, <code>position_id</code>,
+<code>impact_id</code> and <code>comment</code>. The <code>associations</code> property is omitted
+when there are no associations for the occurrence.
 TXT;
 $lang['GET occurrences/{id}']['verbose'] = $lang['GET occurrences']['verbose'];
 

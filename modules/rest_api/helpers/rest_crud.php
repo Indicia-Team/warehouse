@@ -68,7 +68,24 @@ class rest_crud {
           OR COALESCE(gu.access_level, 0)>=COALESCE(gp.access_level, 0)
         )
 SQL,
-    ]
+    ],
+    'occurrence' => [
+      'associations' => <<<SQL
+        SELECT oa.from_occurrence_id AS id,
+               oa.from_occurrence_id, oa.to_occurrence_id, oa.association_type_id,
+               oa.part_id, oa.position_id, oa.impact_id, oa.comment
+        FROM occurrence_associations oa
+        WHERE oa.from_occurrence_id IN ({{ ids }})
+        AND oa.deleted=false
+        UNION ALL
+        SELECT oa.to_occurrence_id AS id,
+               oa.from_occurrence_id, oa.to_occurrence_id, oa.association_type_id,
+               oa.part_id, oa.position_id, oa.impact_id, oa.comment
+        FROM occurrence_associations oa
+        WHERE oa.to_occurrence_id IN ({{ ids }})
+        AND oa.deleted=false
+SQL,
+    ],
   ];
 
   /**
