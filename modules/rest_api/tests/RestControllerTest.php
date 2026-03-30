@@ -823,6 +823,148 @@ class RestControllerTest extends BaseRestClientTest {
     $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
   }
 
+  public function testJwtSamplePostWithOccurrenceAssociations() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    $associationTypeId = (int) $db->query('select min(id) as id from cache_termlists_terms')->current()->id;
+    $partId = (int) $db->query('select id from cache_termlists_terms order by id offset 1 limit 1')->current()->id;
+    $positionId = (int) $db->query('select id from cache_termlists_terms order by id offset 2 limit 1')->current()->id;
+    $impactId = (int) $db->query('select id from cache_termlists_terms order by id offset 3 limit 1')->current()->id;
+    if (!$partId) {
+      $partId = $associationTypeId;
+    }
+    if (!$positionId) {
+      $positionId = $associationTypeId;
+    }
+    if (!$impactId) {
+      $impactId = $associationTypeId;
+    }
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'assoc-occ-a',
+          ],
+          // Forward reference to an occurrence later in the payload.
+          'associations' => [
+            [
+              'external_key' => 'assoc-occ-b',
+              'association_type_id' => $associationTypeId,
+              'part_id' => $partId,
+              'position_id' => $positionId,
+              'impact_id' => $impactId,
+              'comment' => 'full fields link',
+            ],
+            [
+              'external_key' => 'assoc-occ-b',
+              'association_type_id' => $associationTypeId,
+              'comment' => 'second link same target',
+            ],
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'assoc-occ-b',
+          ],
+          'associations' => [
+            [
+              'external_key' => 'assoc-occ-a',
+              'association_type_id' => $associationTypeId,
+              'impact_id' => $impactId,
+              'comment' => 'reverse link',
+            ],
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService('samples', FALSE, $data);
+    $this->assertEquals(201, $response['httpCode']);
+    $sampleId = (int) $response['response']['values']['id'];
+    $occA = (int) $db->query('select id from occurrences where sample_id=? and external_key=?', [$sampleId, 'assoc-occ-a'])->current()->id;
+    $occB = (int) $db->query('select id from occurrences where sample_id=? and external_key=?', [$sampleId, 'assoc-occ-b'])->current()->id;
+    $this->assertTrue($occA > 0 && $occB > 0, 'Expected associated occurrences were not created.');
+
+    $fullFieldsCount = (int) $db->query(
+      'select count(*) as count from occurrence_associations where deleted=false and from_occurrence_id=? and to_occurrence_id=? and association_type_id=? and part_id=? and position_id=? and impact_id=? and comment=?',
+      [$occA, $occB, $associationTypeId, $partId, $positionId, $impactId, 'full fields link']
+    )->current()->count;
+    $this->assertEquals(1, $fullFieldsCount, 'Association with all supported fields was not saved correctly.');
+
+    $secondAssocCount = (int) $db->query(
+      'select count(*) as count from occurrence_associations where deleted=false and from_occurrence_id=? and to_occurrence_id=? and association_type_id=? and comment=?',
+      [$occA, $occB, $associationTypeId, 'second link same target']
+    )->current()->count;
+    $this->assertEquals(1, $secondAssocCount, 'Multiple associations from one occurrence were not saved correctly.');
+
+    $reverseCount = (int) $db->query(
+      'select count(*) as count from occurrence_associations where deleted=false and from_occurrence_id=? and to_occurrence_id=? and association_type_id=? and impact_id=? and comment=?',
+      [$occB, $occA, $associationTypeId, $impactId, 'reverse link']
+    )->current()->count;
+    $this->assertEquals(1, $reverseCount, 'Reverse occurrence association was not created correctly.');
+  }
+
+  public function testJwtSamplePostOccurrenceAssociationValidation() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    $termId = (int) $db->query('select min(id) as id from cache_termlists_terms')->current()->id;
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $baseData = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1235',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'assoc-val-a',
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'assoc-val-b',
+          ],
+        ],
+      ],
+    ];
+
+    $missingType = $baseData;
+    $missingType['occurrences'][0]['associations'] = [[
+      'external_key' => 'assoc-val-b',
+    ]];
+    $response = $this->callService('samples', FALSE, $missingType);
+    $this->assertEquals(400, $response['httpCode'], 'Missing association_type_id should fail validation.');
+
+    $invalidTerm = $baseData;
+    $invalidTerm['occurrences'][0]['associations'] = [[
+      'external_key' => 'assoc-val-b',
+      'association_type_id' => $termId,
+      'part_id' => 999999999,
+    ]];
+    $response = $this->callService('samples', FALSE, $invalidTerm);
+    $this->assertEquals(400, $response['httpCode'], 'Association *_id not in cache_termlists_terms should fail validation.');
+
+    $unknownExternalKey = $baseData;
+    $unknownExternalKey['occurrences'][0]['associations'] = [[
+      'external_key' => 'assoc-val-missing',
+      'association_type_id' => $termId,
+    ]];
+    $response = $this->callService('samples', FALSE, $unknownExternalKey);
+    $this->assertEquals(400, $response['httpCode'], 'Association external_key targeting no submitted occurrence should fail validation.');
+  }
+
   public function testJwtSamplePostWithZeroOccurrence() {
     $this->authMethod = 'jwtUser';
     $db = new Database();
@@ -1415,6 +1557,75 @@ class RestControllerTest extends BaseRestClientTest {
     // Check validation response tells me queued file missing.
     $this->assertArrayHasKey('message', $response['response']);
     $this->assertArrayHasKey('sample_medium:queued', $response['response']['message']);
+  }
+
+  /**
+   * Testing upload of queued audio then attach to sample.
+   */
+  public function testJwtSamplePostWithAudioMediaType() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+
+    $rootFolder = dirname(dirname(dirname(dirname(__FILE__))));
+    $sourceImageFile = "$rootFolder/media/images/warehouse-banner.jpg";
+    $tempAudioPrefix = tempnam(sys_get_temp_dir(), 'rest-audio-');
+    $tempAudioFile = "$tempAudioPrefix.mp3";
+    copy($sourceImageFile, $tempAudioFile);
+    @unlink($tempAudioPrefix);
+
+    $response = $this->callService(
+      'media-queue',
+      FALSE,
+      [
+        'file[]' => curl_file_create(
+          $tempAudioFile,
+          'audio/mpeg',
+          // Deliberately wrong.
+          'test-audio.jpg'
+        ),
+      ],
+      [], NULL, TRUE
+    );
+    @unlink($tempAudioFile);
+    $this->assertArrayHasKey('file[0]', $response['response']);
+    $this->assertArrayHasKey('name', $response['response']['file[0]']);
+    $uploadedFileName = $response['response']['file[0]']['name'];
+    $this->assertMatchesRegularExpression('/\.mp3$/', $uploadedFileName, 'Queued filename should use MIME derived mp3 extension.');
+
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'media' => [
+        [
+          'values' => [
+            'queued' => $uploadedFileName,
+            'caption' => 'Sample audio',
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      $data
+    );
+
+    $this->assertEquals(201, $response['httpCode']);
+    $sampleId = (int) $response['response']['values']['id'];
+    $storedMediaType = $db->query(
+      'SELECT dtt.term
+      FROM sample_media sm
+      JOIN detail_termlists_terms dtt ON dtt.id=sm.media_type_id
+      WHERE sm.sample_id=? AND sm.path=?',
+      [$sampleId, $uploadedFileName]
+    )->current();
+    $this->assertNotEmpty($storedMediaType, 'Uploaded queued audio media row not created.');
+    $this->assertEquals('Audio:Local', $storedMediaType->term, 'Queued audio should default to Audio:Local media type.');
   }
 
   /**
@@ -2820,6 +3031,134 @@ SQL;
       'sample_id' => $sampleId,
       'taxa_taxon_list_id' => 1,
     ]);
+  }
+
+  /**
+   * Test that verbose GET for occurrences returns associations when they exist.
+   */
+  public function testJwtOccurrenceGetVerboseAssociations() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    $associationTypeId = (int) $db->query('select min(id) as id from cache_termlists_terms')->current()->id;
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Create a sample with two occurrences; occurrence A has an association pointing to B.
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'verbose-assoc-a',
+          ],
+          'associations' => [
+            [
+              'external_key' => 'verbose-assoc-b',
+              'association_type_id' => $associationTypeId,
+              'comment' => 'verbose test link',
+            ],
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'verbose-assoc-b',
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService('samples', FALSE, $data);
+    $this->assertEquals(201, $response['httpCode'], 'Sample POST for verbose association test failed.');
+    $sampleId = (int) $response['response']['values']['id'];
+    $occA = (int) $db->query(
+      'select id from occurrences where sample_id=? and external_key=?',
+      [$sampleId, 'verbose-assoc-a']
+    )->current()->id;
+    $occB = (int) $db->query(
+      'select id from occurrences where sample_id=? and external_key=?',
+      [$sampleId, 'verbose-assoc-b']
+    )->current()->id;
+    $this->assertTrue($occA > 0 && $occB > 0, 'Test setup failed: expected occurrences not created.');
+
+    // Without verbose: no associations key.
+    $response = $this->callService("occurrences/$occA");
+    $this->assertResponseOk($response, "occurrences/$occA");
+    $this->assertArrayNotHasKey(
+      'associations', $response['response']['values'],
+      'GET occurrence without verbose should not return associations.'
+    );
+
+    // With verbose on the from side: associations key must be present with correct data.
+    $response = $this->callService("occurrences/$occA", ['verbose' => '1']);
+    $this->assertResponseOk($response, "occurrences/$occA?verbose");
+    $this->assertArrayHasKey(
+      'associations', $response['response']['values'],
+      'GET occurrence with verbose should return associations when they exist.'
+    );
+    $this->assertCount(1, $response['response']['values']['associations'],
+      'GET occurrence with verbose should return exactly 1 association for occurrence A.'
+    );
+    $assoc = $response['response']['values']['associations'][0];
+    $this->assertEquals($occA, (int) $assoc['from_occurrence_id'], 'Association from_occurrence_id incorrect.');
+    $this->assertEquals($occB, (int) $assoc['to_occurrence_id'], 'Association to_occurrence_id incorrect.');
+    $this->assertEquals($associationTypeId, (int) $assoc['association_type_id'], 'Association association_type_id incorrect.');
+    $this->assertEquals('verbose test link', $assoc['comment'], 'Association comment incorrect.');
+
+    // With verbose on the to side: the association is also returned for the target occurrence.
+    $response = $this->callService("occurrences/$occB", ['verbose' => '1']);
+    $this->assertResponseOk($response, "occurrences/$occB?verbose");
+    $this->assertArrayHasKey(
+      'associations', $response['response']['values'],
+      'GET occurrence B with verbose should return associations visible from the to side.'
+    );
+    $this->assertCount(1, $response['response']['values']['associations'],
+      'GET occurrence B with verbose should return exactly 1 association.'
+    );
+
+    // With verbose on the list endpoint: occurrence A should have associations.
+    $response = $this->callService('occurrences', ['sample_id' => $sampleId, 'verbose' => '1']);
+    $this->assertResponseOk($response, 'occurrences list with verbose');
+    $occARow = NULL;
+    foreach ($response['response'] as $row) {
+      if ((int) $row['values']['id'] === $occA) {
+        $occARow = $row;
+        break;
+      }
+    }
+    $this->assertNotNull($occARow, 'Occurrence A not found in list response.');
+    $this->assertArrayHasKey('associations', $occARow['values'],
+      'Occurrence A in list response with verbose should have associations.'
+    );
+
+    // An occurrence with no associations should not have the associations key even with verbose.
+    $data2 = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        ['values' => ['taxa_taxon_list_id' => 2]],
+      ],
+    ];
+    $response2 = $this->callService('samples', FALSE, $data2);
+    $this->assertEquals(201, $response2['httpCode'], 'Second sample POST for verbose association test failed.');
+    $sampleId2 = (int) $response2['response']['values']['id'];
+    $soloOcc = (int) $db->query(
+      'select id from occurrences where sample_id=? order by id desc limit 1',
+      [$sampleId2]
+    )->current()->id;
+    $response = $this->callService("occurrences/$soloOcc", ['verbose' => '1']);
+    $this->assertResponseOk($response, "occurrences/$soloOcc?verbose no assoc");
+    $this->assertArrayNotHasKey(
+      'associations', $response['response']['values'],
+      'GET occurrence with verbose but no associations should not return associations key.'
+    );
   }
 
   /**

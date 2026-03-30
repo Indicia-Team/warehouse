@@ -3369,8 +3369,8 @@ SQL;
       RestObjects::$apiResponse->fail('Bad Request', 400, json_encode($errors));
     }
     foreach ($files as $key => $file) {
-      $typeParts = explode('/', $file['type']);
-      $fileName = uniqid('', TRUE) . '.' . $typeParts[1];
+      $extension = $this->deriveMediaQueueFileExtension($file);
+      $fileName = uniqid('', TRUE) . ".{$extension}";
       $subdir = $this->getMediaSubdir();
       $dest = DOCROOT . "upload-queue/$subdir";
       if (!is_dir($dest)) {
@@ -3383,6 +3383,50 @@ SQL;
       ];
     }
     RestObjects::$apiResponse->succeed($response);
+  }
+
+  /**
+   * Determines a safe extension for a queued media file.
+   *
+    * Uses a normalised MIME subtype where available, so a misleading filename
+    * extension cannot override the type reported by PHP. Falls back to the
+    * original filename extension only if the MIME type is unavailable.
+   *
+   * @param array $file
+   *   Uploaded file array item.
+   *
+   * @return string
+   *   File extension without leading dot.
+   */
+  private function deriveMediaQueueFileExtension(array $file) {
+    $mimeSubtype = '';
+    if (!empty($file['type']) && strpos($file['type'], '/') !== FALSE) {
+      $typeParts = explode('/', strtolower($file['type']), 2);
+      $mimeSubtype = preg_replace('/[^a-z0-9+.-]/', '', trim($typeParts[1]));
+    }
+
+    $mimeSubtypeMap = [
+      'mpeg' => 'mp3',
+      'pjpeg' => 'jpg',
+      'x-png' => 'png',
+      'x-wav' => 'wav',
+      'svg+xml' => 'svg',
+    ];
+
+    if (array_key_exists($mimeSubtype, $mimeSubtypeMap)) {
+      return $mimeSubtypeMap[$mimeSubtype];
+    }
+
+    if ($mimeSubtype !== '') {
+      return $mimeSubtype;
+    }
+
+    $nameExt = strtolower(pathinfo($file['name'] ?? '', PATHINFO_EXTENSION));
+    if ($nameExt !== '' && preg_match('/^[a-z0-9]+$/', $nameExt) === 1) {
+      return $nameExt;
+    }
+
+    return 'bin';
   }
 
   /**

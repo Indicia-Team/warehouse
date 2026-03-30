@@ -139,6 +139,7 @@ $config['modules'] = [
   MODPATH.'rest_api',                // RESTful web service interface
   MODPATH.'spatial_index_builder',   // index of location occurrence overlaps
   MODPATH.'taxon_associations',      // data tables for associations between taxa
+  MODPATH.'occurrence_associations', // associations between occurrences
   MODPATH.'scratchpad',              // scratchpad tables for keeping quick lists
   MODPATH.'auto_verify',             // verification acceptance based on data cleaner rules
   MODPATH.'milestones',              // milestone achievements against milestones

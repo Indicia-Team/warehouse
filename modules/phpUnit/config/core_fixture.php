@@ -328,6 +328,9 @@ $core_fixture = [
     [
       "id" => 10008,
     ],
+    [
+      "id" => 10009,
+    ],
   ],
   "termlists" => [
     [
@@ -454,6 +457,14 @@ $core_fixture = [
       "updated_by_id" => 1,
     ],
     [
+      "term" => "Audio:Local",
+      "language_id" => 1,
+      "created_on" => "2016-07-22 16:00:00",
+      "created_by_id" => 1,
+      "updated_on" => "2016-07-22 16:00:00",
+      "updated_by_id" => 1,
+    ],
+    [
       "term" => "Unknown",
       "language_id" => 1,
       "created_on" => "2016-07-22 16:00:00",
@@ -563,9 +574,9 @@ $core_fixture = [
       "sort_order" => 1,
     ],
     [
-      // Classifiers.
-      "termlist_id" => 7,
-      // Unknown.
+      // Media types.
+      "termlist_id" => 6,
+      // Audio:Local.
       "term_id" => 8,
       "created_on" => "2016-07-22 16:00:00",
       "created_by_id" => 1,
@@ -576,15 +587,28 @@ $core_fixture = [
       "sort_order" => 1,
     ],
     [
-      // Location types.
-      "termlist_id" => 2,
-      // Higher location type.
+      // Classifiers.
+      "termlist_id" => 7,
+      // Unknown.
       "term_id" => 9,
       "created_on" => "2016-07-22 16:00:00",
       "created_by_id" => 1,
       "updated_on" => "2016-07-22 16:00:00",
       "updated_by_id" => 1,
       "meaning_id" => 10008,
+      "preferred" => "true",
+      "sort_order" => 1,
+    ],
+    [
+      // Location types.
+      "termlist_id" => 2,
+      // Higher location type.
+      "term_id" => 10,
+      "created_on" => "2016-07-22 16:00:00",
+      "created_by_id" => 1,
+      "updated_on" => "2016-07-22 16:00:00",
+      "updated_by_id" => 1,
+      "meaning_id" => 10009,
       "preferred" => "true",
       "sort_order" => 1,
     ],
@@ -719,15 +743,15 @@ $core_fixture = [
     [
       "id" => 8,
       "preferred" => "true",
-      "termlist_id" => 7,
-      "termlist_title" => "Classifiers",
+      "termlist_id" => 6,
+      "termlist_title" => "Media types",
       "website_id" => 1,
       "preferred_termlists_term_id" => 8,
       "sort_order" => 1,
-      "term" => "Unknown",
+      "term" => "Audio:Local",
       "language_iso" => "eng",
       "language" => "English",
-      "preferred_term" => "Unknown",
+      "preferred_term" => "Audio:Local",
       "preferred_language_iso" => "eng",
       "preferred_language" => "English",
       "meaning_id" => 10007,
@@ -737,10 +761,28 @@ $core_fixture = [
     [
       "id" => 9,
       "preferred" => "true",
+      "termlist_id" => 7,
+      "termlist_title" => "Classifiers",
+      "website_id" => 1,
+      "preferred_termlists_term_id" => 9,
+      "sort_order" => 1,
+      "term" => "Unknown",
+      "language_iso" => "eng",
+      "language" => "English",
+      "preferred_term" => "Unknown",
+      "preferred_language_iso" => "eng",
+      "preferred_language" => "English",
+      "meaning_id" => 10008,
+      "cache_created_on" => "2016-07-22 16:00:00",
+      "cache_updated_on" => "2016-07-22 16:00:00",
+    ],
+    [
+      "id" => 10,
+      "preferred" => "true",
       "termlist_id" => 2,
       "termlist_title" => "Location types",
       "website_id" => 1,
-      "preferred_termlists_term_id" => 9,
+      "preferred_termlists_term_id" => 10,
       "sort_order" => 2,
       "term" => "Higher location type",
       "language_iso" => "eng",
@@ -748,7 +790,7 @@ $core_fixture = [
       "preferred_term" => "Higher location type",
       "preferred_language_iso" => "eng",
       "preferred_language" => "English",
-      "meaning_id" => 10008,
+      "meaning_id" => 10009,
       "cache_created_on" => "2016-07-22 16:00:00",
       "cache_updated_on" => "2016-07-22 16:00:00",
     ],

@@ -34,6 +34,13 @@ class rest_crud {
   private static $entityConfig = [];
 
   /**
+   * Cache of cache_termlists_terms term existence checks.
+   *
+   * @var array
+   */
+  private static $cacheTermlistsTermIdExists = [];
+
+  /**
    * List of definitions for fields required by a GET request.
    *
    * @var array
@@ -61,7 +68,24 @@ class rest_crud {
           OR COALESCE(gu.access_level, 0)>=COALESCE(gp.access_level, 0)
         )
 SQL,
-    ]
+    ],
+    'occurrence' => [
+      'associations' => <<<SQL
+        SELECT oa.from_occurrence_id AS id,
+               oa.from_occurrence_id, oa.to_occurrence_id, oa.association_type_id,
+               oa.part_id, oa.position_id, oa.impact_id, oa.comment
+        FROM occurrence_associations oa
+        WHERE oa.from_occurrence_id IN ({{ ids }})
+        AND oa.deleted=false
+        UNION ALL
+        SELECT oa.to_occurrence_id AS id,
+               oa.from_occurrence_id, oa.to_occurrence_id, oa.association_type_id,
+               oa.part_id, oa.position_id, oa.impact_id, oa.comment
+        FROM occurrence_associations oa
+        WHERE oa.to_occurrence_id IN ({{ ids }})
+        AND oa.deleted=false
+SQL,
+    ],
   ];
 
   /**
@@ -812,6 +836,15 @@ SQL;
    * Link any supermodels to a submission.
    *
    * Includes one to many relationships.
+    *
+    * @param string $entity
+    *   Entity name.
+    * @param array $postObj
+    *   Submitted object for this entity.
+    * @param int $websiteId
+    *   Website ID for submission context.
+    * @param array $s
+    *   Converted submission array to append submodels to.
    */
   private static function includeSubmodels($entity, array $postObj, $websiteId, &$s) {
     $subModels = [];
@@ -831,22 +864,63 @@ SQL;
     }
     foreach ($subModels as $subModelTable => $subModelCfg) {
       foreach ($postObj[$subModelTable] as $obj) {
-        if ($subModelTable === 'media') {
+        $actualSubModelTable = $subModelTable;
+        if ($actualSubModelTable === 'media') {
           // Media subModel doesn't need prefix for simplicity.
-          $subModelTable = "{$entity}_media";
+          $actualSubModelTable = "{$entity}_media";
         }
-        $s['subModels'][] = [
+        $subModel = [
           'fkId' => $subModelCfg->fk,
-          'model' => self::convertNewToOldSubmission(inflector::singular($subModelTable), $obj, $websiteId),
+          'model' => self::convertNewToOldSubmission(inflector::singular($actualSubModelTable), $obj, $websiteId),
         ];
+        $referenceKey = NULL;
+        if ($entity === 'sample' && $subModelTable === 'occurrences') {
+          // Allow inter-occurrence links by external_key in one payload.
+          $referenceKey = self::getOccurrenceReferenceKey($obj);
+        }
+        if ($referenceKey !== NULL) {
+          if (isset($s['subModels'][$referenceKey])) {
+            RestObjects::$apiResponse->fail('Bad Request', 400, "Duplicate occurrence external_key '$referenceKey' in submitted sample.");
+          }
+          $s['subModels'][$referenceKey] = $subModel;
+        }
+        else {
+          $s['subModels'][] = $subModel;
+        }
       }
     }
+  }
+
+  /**
+   * Gets a reference key for an occurrence in a sample submission.
+    *
+    * @param array $occurrence
+    *   Occurrence payload.
+    *
+    * @return string|null
+    *   Trimmed occurrence external key, or NULL if not available.
+   */
+  private static function getOccurrenceReferenceKey(array $occurrence) {
+    if (empty($occurrence['values']) || !is_array($occurrence['values']) || !array_key_exists('external_key', $occurrence['values'])) {
+      return NULL;
+    }
+    $key = trim((string) $occurrence['values']['external_key']);
+    return $key === '' ? NULL : $key;
   }
 
   /**
    * Link any supermodels to a submission.
    *
    * Includes many to one relationships.
+    *
+    * @param string $entity
+    *   Entity name.
+    * @param array $postObj
+    *   Submitted object for this entity.
+    * @param int $websiteId
+    *   Website ID for submission context.
+    * @param array $s
+    *   Converted submission array to append supermodels to.
    */
   private static function includeSupermodels($entity, array $postObj, $websiteId, &$s) {
     $superModels = [];
@@ -864,6 +938,15 @@ SQL;
 
   /**
    * Attach any posted metaFields to the submission.
+    *
+    * @param string $entity
+    *   Entity name.
+    * @param array $postObj
+    *   Submitted object for this entity.
+    * @param int $websiteId
+    *   Website ID for submission context.
+    * @param array $s
+    *   Converted submission array to append metadata fields to.
    */
   private static function includeMetafields($entity, array $postObj, $websiteId, &$s) {
     if (isset($postObj['metaFields'])) {
@@ -872,7 +955,7 @@ SQL;
   }
 
   /**
-   * Coverts new REST API submission format to old Data Services format.
+  * Converts new REST API submission format to old Data Services format.
    *
    * @param string $entity
    *   Model name.
@@ -886,6 +969,9 @@ SQL;
    */
   public static function convertNewToOldSubmission($entity, array $postObj, $websiteId) {
     self::loadEntityConfig($entity);
+    if ($entity === 'sample') {
+      self::validateSampleOccurrenceAssociations($postObj);
+    }
     $s = [
       'id' => $entity,
       'fields' => [],
@@ -913,9 +999,135 @@ SQL;
       $s['subModels'] = [];
     }
     self::includeSubmodels($entity, $postObj, $websiteId, $s);
+    self::includeOccurrenceAssociations($entity, $postObj, $s);
     self::includeSupermodels($entity, $postObj, $websiteId, $s);
     self::includeMetafields($entity, $postObj, $websiteId, $s);
     return $s;
+  }
+
+  /**
+   * Adds occurrence association submodels from an occurrence payload.
+    *
+    * @param string $entity
+    *   Entity name.
+    * @param array $postObj
+    *   Submitted object for this entity.
+    * @param array $s
+    *   Converted submission array to append association submodels to.
+   */
+  private static function includeOccurrenceAssociations($entity, array $postObj, array &$s) {
+    if ($entity !== 'occurrence' || empty($postObj['associations'])) {
+      return;
+    }
+    if (!isset($s['subModels'])) {
+      $s['subModels'] = [];
+    }
+    foreach ($postObj['associations'] as $association) {
+      $toExternalKey = trim((string) $association['external_key']);
+      $fields = [
+        'association_type_id' => ['value' => (int) $association['association_type_id']],
+        // Use a dynamic pointer so links can target occurrences saved later.
+        'to_occurrence_id' => ['value' => "||$toExternalKey||"],
+      ];
+      foreach (['part_id', 'position_id', 'impact_id'] as $fieldName) {
+        if (isset($association[$fieldName])) {
+          $fields[$fieldName] = ['value' => (int) $association[$fieldName]];
+        }
+      }
+      if (array_key_exists('comment', $association)) {
+        $fields['comment'] = ['value' => $association['comment']];
+      }
+      $s['subModels'][] = [
+        'fkId' => 'from_occurrence_id',
+        'model' => [
+          'id' => 'occurrence_association',
+          'fields' => $fields,
+        ],
+      ];
+    }
+  }
+
+  /**
+   * Validates any occurrence associations supplied in a sample payload.
+    *
+    * @param array $postObj
+    *   Sample payload to validate.
+   */
+  private static function validateSampleOccurrenceAssociations(array $postObj) {
+    if (empty($postObj['occurrences']) || !is_array($postObj['occurrences'])) {
+      return;
+    }
+    $knownOccurrenceKeys = [];
+    foreach ($postObj['occurrences'] as $occIdx => $occurrence) {
+      $occKey = self::getOccurrenceReferenceKey($occurrence);
+      if ($occKey !== NULL) {
+        if (isset($knownOccurrenceKeys[$occKey])) {
+          RestObjects::$apiResponse->fail('Bad Request', 400, "Duplicate occurrence external_key '$occKey' at occurrences[$occIdx].");
+        }
+        $knownOccurrenceKeys[$occKey] = TRUE;
+      }
+    }
+    foreach ($postObj['occurrences'] as $occIdx => $occurrence) {
+      $fromExternalKey = self::getOccurrenceReferenceKey($occurrence);
+      if (!array_key_exists('associations', $occurrence)) {
+        continue;
+      }
+      if (!is_array($occurrence['associations'])) {
+        RestObjects::$apiResponse->fail('Bad Request', 400, "occurrences[$occIdx].associations must be an array.");
+      }
+      foreach ($occurrence['associations'] as $assocIdx => $association) {
+        if (!is_array($association)) {
+          RestObjects::$apiResponse->fail('Bad Request', 400, "occurrences[$occIdx].associations[$assocIdx] must be an object.");
+        }
+        $path = "occurrences[$occIdx].associations[$assocIdx]";
+        if (!array_key_exists('external_key', $association) || trim((string) $association['external_key']) === '') {
+          RestObjects::$apiResponse->fail('Bad Request', 400, "$path.external_key is required.");
+        }
+        $toExternalKey = trim((string) $association['external_key']);
+        if ($fromExternalKey !== NULL && $fromExternalKey === $toExternalKey) {
+          RestObjects::$apiResponse->fail('Bad Request', 400,
+            "$path.external_key must match another occurrence in the same sample, not the same occurrence.");
+        }
+        if (!isset($knownOccurrenceKeys[$toExternalKey])) {
+          RestObjects::$apiResponse->fail('Bad Request', 400,
+            "$path.external_key must match the external_key of another occurrence in the same sample.");
+        }
+        if (!array_key_exists('association_type_id', $association)) {
+          RestObjects::$apiResponse->fail('Bad Request', 400, "$path.association_type_id is required.");
+        }
+        self::validateAssociationTermId($association['association_type_id'], "$path.association_type_id");
+        foreach (['part_id', 'position_id', 'impact_id'] as $idField) {
+          if (array_key_exists($idField, $association) && $association[$idField] !== NULL && $association[$idField] !== '') {
+            self::validateAssociationTermId($association[$idField], "$path.$idField");
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Validates that an association *_id is a positive cache termlist term ID.
+    *
+    * @param mixed $value
+    *   Submitted ID value.
+    * @param string $fieldPath
+    *   Field path for error reporting.
+   */
+  private static function validateAssociationTermId($value, $fieldPath) {
+    if (!preg_match('/^\d+$/', (string) $value) || (int) $value < 1) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, "$fieldPath must be a positive integer.");
+    }
+    $termId = (int) $value;
+    if (!array_key_exists($termId, self::$cacheTermlistsTermIdExists)) {
+      $check = RestObjects::$db->query(
+        'SELECT count(*) AS count FROM cache_termlists_terms WHERE id=?',
+        [$termId]
+      )->current();
+      self::$cacheTermlistsTermIdExists[$termId] = !empty($check) && (int) $check->count > 0;
+    }
+    if (!self::$cacheTermlistsTermIdExists[$termId]) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, "$fieldPath must reference an existing cache_termlists_terms entry.");
+    }
   }
 
   /**

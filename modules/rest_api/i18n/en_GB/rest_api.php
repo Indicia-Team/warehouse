@@ -1119,6 +1119,20 @@ TXT;
 $lang['resources']['POST samples'] = 'Create a new sample, associated occurrences and media. Posted values should
 match database fields in the samples table (or equivalent table for sub-models).
 
+<p>Occurrences can include an <code>associations</code> array. Each association object must include
+<code>external_key</code> and <code>association_type_id</code>. The <code>external_key</code> must match
+the <code>external_key</code> of another occurrence in the same submitted sample. Each association creates a row in
+<code>occurrence_associations</code> with <code>from_occurrence_id</code> set to the occurrence containing the
+association and <code>to_occurrence_id</code> set to the referenced occurrence.</p>
+
+<p>Multiple association objects are allowed for each occurrence. The target occurrence can appear
+before or after the source occurrence in the submitted array.</p>
+
+<p>Optional association fields are <code>part_id</code>, <code>position_id</code>, <code>impact_id</code> and
+<code>comment</code>. Any provided <code>*_id</code> fields must be positive integers that reference existing
+<code>cache_termlists_terms</code> entries. If an association <code>external_key</code> does not match
+another occurrence in the same sample, validation fails.</p>
+
 <pre><code>
 POST /index.php/services/rest/samples
 {
@@ -1131,14 +1145,26 @@ POST /index.php/services/rest/samples
   "occurrences": [{
     "values": {
       "taxa_taxon_list_id": 2,
+      "external_key": "occ-a",
       "occAttr:8": "4 adults",
     },
+    "associations": [{
+      "external_key": "occ-b",
+      "association_type_id": 123,
+      "part_id": 456,
+      "comment": "Shares habitat"
+    }],
     "media": [{
       "values": {
         "queued": "18/60/23/5f36a6d2b51472.42086512.jpg",
         "caption": "Occurrence image"
       }
     }]
+  }, {
+    "values": {
+      "taxa_taxon_list_id": 3,
+      "external_key": "occ-b"
+    }
   }]
 }
 
@@ -1180,6 +1206,10 @@ TXT;
 $lang['resources']['PUT samples/{id}'] = <<<TXT
 <p>Updates a single sample record either created by the user, or any occurrence record belonging to
 the website if the user has site editor or admin access to the website.</p>
+
+<p>PUT supports the same nested occurrence <code>associations</code> payload as POST samples, including
+forward and backward references using occurrence <code>external_key</code> values within the same submitted
+sample, with the same validation rules.</p>
 
 <p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
 unique within the system that supplied it, add a suitable prefix to make it unique.</p>
@@ -1409,6 +1439,12 @@ following example response (shortened):
   }
 }
 </code></pre>
+If the occurrence has any associations recorded against it (either as the source or the target of
+the association), the response also includes an <code>associations</code> array. Each entry in the
+array contains the following fields: <code>from_occurrence_id</code>, <code>to_occurrence_id</code>,
+<code>association_type_id</code>, <code>part_id</code>, <code>position_id</code>,
+<code>impact_id</code> and <code>comment</code>. The <code>associations</code> property is omitted
+when there are no associations for the occurrence.
 TXT;
 $lang['GET occurrences/{id}']['verbose'] = $lang['GET occurrences']['verbose'];
 
