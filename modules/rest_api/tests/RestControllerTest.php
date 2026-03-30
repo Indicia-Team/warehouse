@@ -823,6 +823,114 @@ class RestControllerTest extends BaseRestClientTest {
     $this->assertEquals(1, $occCount, 'No occurrence created when submitted with a sample.');
   }
 
+  public function testJwtSamplePostWithOccurrenceAssociations() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    $termId = (int) $db->query('select min(id) as id from cache_termlists_terms')->current()->id;
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $data = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1234',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'assoc-occ-a',
+          ],
+          // Forward reference to an occurrence later in the payload.
+          'associations' => [
+            [
+              'external_key' => 'assoc-occ-b',
+              'association_type_id' => $termId,
+              'part_id' => $termId,
+              'comment' => 'forward link',
+            ],
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'assoc-occ-b',
+          ],
+          'associations' => [
+            [
+              'external_key' => 'assoc-occ-a',
+              'association_type_id' => $termId,
+              'impact_id' => $termId,
+              'comment' => 'reverse link',
+            ],
+          ],
+        ],
+      ],
+    ];
+    $response = $this->callService('samples', FALSE, $data);
+    $this->assertEquals(201, $response['httpCode']);
+    $sampleId = (int) $response['response']['values']['id'];
+    $occA = (int) $db->query('select id from occurrences where sample_id=? and external_key=?', [$sampleId, 'assoc-occ-a'])->current()->id;
+    $occB = (int) $db->query('select id from occurrences where sample_id=? and external_key=?', [$sampleId, 'assoc-occ-b'])->current()->id;
+    $this->assertTrue($occA > 0 && $occB > 0, 'Expected associated occurrences were not created.');
+
+    $forwardCount = (int) $db->query(
+      'select count(*) as count from occurrence_associations where deleted=false and from_occurrence_id=? and to_occurrence_id=? and association_type_id=? and part_id=? and comment=?',
+      [$occA, $occB, $termId, $termId, 'forward link']
+    )->current()->count;
+    $this->assertEquals(1, $forwardCount, 'Forward occurrence association was not created correctly.');
+    $reverseCount = (int) $db->query(
+      'select count(*) as count from occurrence_associations where deleted=false and from_occurrence_id=? and to_occurrence_id=? and association_type_id=? and impact_id=? and comment=?',
+      [$occB, $occA, $termId, $termId, 'reverse link']
+    )->current()->count;
+    $this->assertEquals(1, $reverseCount, 'Reverse occurrence association was not created correctly.');
+  }
+
+  public function testJwtSamplePostOccurrenceAssociationValidation() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    $termId = (int) $db->query('select min(id) as id from cache_termlists_terms')->current()->id;
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $baseData = [
+      'values' => [
+        'survey_id' => 1,
+        'entered_sref' => 'SU1235',
+        'entered_sref_system' => 'OSGB',
+        'date' => '01/08/2020',
+      ],
+      'occurrences' => [
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'assoc-val-a',
+          ],
+        ],
+        [
+          'values' => [
+            'taxa_taxon_list_id' => 2,
+            'external_key' => 'assoc-val-b',
+          ],
+        ],
+      ],
+    ];
+
+    $missingType = $baseData;
+    $missingType['occurrences'][0]['associations'] = [[
+      'external_key' => 'assoc-val-b',
+    ]];
+    $response = $this->callService('samples', FALSE, $missingType);
+    $this->assertEquals(400, $response['httpCode'], 'Missing association_type_id should fail validation.');
+
+    $invalidTerm = $baseData;
+    $invalidTerm['occurrences'][0]['associations'] = [[
+      'external_key' => 'assoc-val-b',
+      'association_type_id' => $termId,
+      'part_id' => 999999999,
+    ]];
+    $response = $this->callService('samples', FALSE, $invalidTerm);
+    $this->assertEquals(400, $response['httpCode'], 'Association *_id not in cache_termlists_terms should fail validation.');
+  }
+
   public function testJwtSamplePostWithZeroOccurrence() {
     $this->authMethod = 'jwtUser';
     $db = new Database();
