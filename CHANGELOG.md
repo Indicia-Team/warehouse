@@ -4,6 +4,14 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.22.0
+*2026-03-30*
+* Add support for posting occurrences with associations to the REST API. See
+  https://github.com/Indicia-Team/warehouse/issues/585 and warehouse REST API documentation at
+  index.php/services/rest.
+* Audio file submitted by the REST API media queue are now tagged with the correct media type. See
+  https://github.com/Indicia-Team/warehouse/issues/584.
+
 ## Version 9.21.0
 *2026-03-23*
 
