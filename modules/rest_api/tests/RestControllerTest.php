@@ -826,7 +826,19 @@ class RestControllerTest extends BaseRestClientTest {
   public function testJwtSamplePostWithOccurrenceAssociations() {
     $this->authMethod = 'jwtUser';
     $db = new Database();
-    $termId = (int) $db->query('select min(id) as id from cache_termlists_terms')->current()->id;
+    $associationTypeId = (int) $db->query('select min(id) as id from cache_termlists_terms')->current()->id;
+    $partId = (int) $db->query('select id from cache_termlists_terms order by id offset 1 limit 1')->current()->id;
+    $positionId = (int) $db->query('select id from cache_termlists_terms order by id offset 2 limit 1')->current()->id;
+    $impactId = (int) $db->query('select id from cache_termlists_terms order by id offset 3 limit 1')->current()->id;
+    if (!$partId) {
+      $partId = $associationTypeId;
+    }
+    if (!$positionId) {
+      $positionId = $associationTypeId;
+    }
+    if (!$impactId) {
+      $impactId = $associationTypeId;
+    }
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
     $data = [
       'values' => [
@@ -845,9 +857,16 @@ class RestControllerTest extends BaseRestClientTest {
           'associations' => [
             [
               'external_key' => 'assoc-occ-b',
-              'association_type_id' => $termId,
-              'part_id' => $termId,
-              'comment' => 'forward link',
+              'association_type_id' => $associationTypeId,
+              'part_id' => $partId,
+              'position_id' => $positionId,
+              'impact_id' => $impactId,
+              'comment' => 'full fields link',
+            ],
+            [
+              'external_key' => 'assoc-occ-b',
+              'association_type_id' => $associationTypeId,
+              'comment' => 'second link same target',
             ],
           ],
         ],
@@ -859,8 +878,8 @@ class RestControllerTest extends BaseRestClientTest {
           'associations' => [
             [
               'external_key' => 'assoc-occ-a',
-              'association_type_id' => $termId,
-              'impact_id' => $termId,
+              'association_type_id' => $associationTypeId,
+              'impact_id' => $impactId,
               'comment' => 'reverse link',
             ],
           ],
@@ -874,14 +893,21 @@ class RestControllerTest extends BaseRestClientTest {
     $occB = (int) $db->query('select id from occurrences where sample_id=? and external_key=?', [$sampleId, 'assoc-occ-b'])->current()->id;
     $this->assertTrue($occA > 0 && $occB > 0, 'Expected associated occurrences were not created.');
 
-    $forwardCount = (int) $db->query(
-      'select count(*) as count from occurrence_associations where deleted=false and from_occurrence_id=? and to_occurrence_id=? and association_type_id=? and part_id=? and comment=?',
-      [$occA, $occB, $termId, $termId, 'forward link']
+    $fullFieldsCount = (int) $db->query(
+      'select count(*) as count from occurrence_associations where deleted=false and from_occurrence_id=? and to_occurrence_id=? and association_type_id=? and part_id=? and position_id=? and impact_id=? and comment=?',
+      [$occA, $occB, $associationTypeId, $partId, $positionId, $impactId, 'full fields link']
     )->current()->count;
-    $this->assertEquals(1, $forwardCount, 'Forward occurrence association was not created correctly.');
+    $this->assertEquals(1, $fullFieldsCount, 'Association with all supported fields was not saved correctly.');
+
+    $secondAssocCount = (int) $db->query(
+      'select count(*) as count from occurrence_associations where deleted=false and from_occurrence_id=? and to_occurrence_id=? and association_type_id=? and comment=?',
+      [$occA, $occB, $associationTypeId, 'second link same target']
+    )->current()->count;
+    $this->assertEquals(1, $secondAssocCount, 'Multiple associations from one occurrence were not saved correctly.');
+
     $reverseCount = (int) $db->query(
       'select count(*) as count from occurrence_associations where deleted=false and from_occurrence_id=? and to_occurrence_id=? and association_type_id=? and impact_id=? and comment=?',
-      [$occB, $occA, $termId, $termId, 'reverse link']
+      [$occB, $occA, $associationTypeId, $impactId, 'reverse link']
     )->current()->count;
     $this->assertEquals(1, $reverseCount, 'Reverse occurrence association was not created correctly.');
   }
@@ -929,6 +955,14 @@ class RestControllerTest extends BaseRestClientTest {
     ]];
     $response = $this->callService('samples', FALSE, $invalidTerm);
     $this->assertEquals(400, $response['httpCode'], 'Association *_id not in cache_termlists_terms should fail validation.');
+
+    $unknownExternalKey = $baseData;
+    $unknownExternalKey['occurrences'][0]['associations'] = [[
+      'external_key' => 'assoc-val-missing',
+      'association_type_id' => $termId,
+    ]];
+    $response = $this->callService('samples', FALSE, $unknownExternalKey);
+    $this->assertEquals(400, $response['httpCode'], 'Association external_key targeting no submitted occurrence should fail validation.');
   }
 
   public function testJwtSamplePostWithZeroOccurrence() {
