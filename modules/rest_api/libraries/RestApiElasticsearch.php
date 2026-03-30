@@ -477,33 +477,49 @@ class RestApiElasticsearch {
       }
     }
     if (count($filters) > 0) {
-      if (!isset($postObj->query)) {
-        $postObj->query = new stdClass();
-      }
-      if (!isset($postObj->query->bool)) {
-        $postObj->query->bool = new stdClass();
-      }
-      if (!isset($postObj->query->bool->filter)) {
-        $postObj->query->bool->filter = [];
-      }
-      elseif (is_object($postObj->query->bool->filter)) {
-        // Query already included a single filter which wasn't an array, so
-        // convert to array.
-        $postObj->query->bool->filter = [$postObj->query->bool->filter];
-      }
-      $postObj->query->bool->filter = array_merge($postObj->query->bool->filter, $filters);
+      $this->addConditionToEsQuery($postObj, $filters, 'filter');
     }
     if (!empty($filterDefBool['filter'])) {
-      $postObj->query->bool->filter = array_merge($postObj->query->bool->filter, $filterDefBool['filter']);
+      $this->addConditionToEsQuery($postObj, $filterDefBool['filter'], 'filter');
     }
     if (!empty($filterDefBool['must'])) {
-      // Treat must same as filter, as we are not expecting scoring on search
-      // results.
-      $postObj->query->bool->filter = array_merge($postObj->query->bool->filter, $filterDefBool['must']);
+      // Must not used as we don't need search scoring, but just in case, treat
+      // it like filter.
+      $this->addConditionToEsQuery($postObj, $filterDefBool['must'], 'filter');
     }
     if (!empty($filterDefBool['must_not'])) {
-      $postObj->query->bool->must_not = $filterDefBool['must_not'];
+      $this->addConditionToEsQuery($postObj, $filterDefBool['must_not'], 'must_not');
     }
+  }
+
+  /**
+   * Add a condition to the Elasticsearch query in the postObj.
+   *
+   * Ensures that the query  structure is correctly initialized.
+   *
+   * @param object $postObj
+   *   Elasticsearch query object to add the condition to.
+   * @param array $filters
+   *   Array of filters to add, e.g. ['term' => ['metadata.created_by_id' => 123]].
+   * @param string $boolType
+   *   Boolean type to add the filters to, e.g. filter, must_not.
+   */
+  private function addConditionToEsQuery(&$postObj, array $filters, $boolType) {
+    if (!isset($postObj->query)) {
+      $postObj->query = new stdClass();
+    }
+    if (!isset($postObj->query->bool)) {
+      $postObj->query->bool = new stdClass();
+    }
+    if (!isset($postObj->query->bool->$boolType)) {
+      $postObj->query->bool->$boolType = [];
+    }
+    elseif (is_object($postObj->query->bool->$boolType)) {
+      // Query already included a single filter which wasn't an array, so
+      // convert to array which we can add to.
+      $postObj->query->bool->$boolType = [$postObj->query->bool->$boolType];
+    }
+    $postObj->query->bool->$boolType = array_merge($postObj->query->bool->$boolType, $filters);
   }
 
   /**
