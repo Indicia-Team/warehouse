@@ -819,6 +819,15 @@ SQL;
    * Link any supermodels to a submission.
    *
    * Includes one to many relationships.
+    *
+    * @param string $entity
+    *   Entity name.
+    * @param array $postObj
+    *   Submitted object for this entity.
+    * @param int $websiteId
+    *   Website ID for submission context.
+    * @param array $s
+    *   Converted submission array to append submodels to.
    */
   private static function includeSubmodels($entity, array $postObj, $websiteId, &$s) {
     $subModels = [];
@@ -867,6 +876,12 @@ SQL;
 
   /**
    * Gets a reference key for an occurrence in a sample submission.
+    *
+    * @param array $occurrence
+    *   Occurrence payload.
+    *
+    * @return string|null
+    *   Trimmed occurrence external key, or NULL if not available.
    */
   private static function getOccurrenceReferenceKey(array $occurrence) {
     if (empty($occurrence['values']) || !is_array($occurrence['values']) || !array_key_exists('external_key', $occurrence['values'])) {
@@ -880,6 +895,15 @@ SQL;
    * Link any supermodels to a submission.
    *
    * Includes many to one relationships.
+    *
+    * @param string $entity
+    *   Entity name.
+    * @param array $postObj
+    *   Submitted object for this entity.
+    * @param int $websiteId
+    *   Website ID for submission context.
+    * @param array $s
+    *   Converted submission array to append supermodels to.
    */
   private static function includeSupermodels($entity, array $postObj, $websiteId, &$s) {
     $superModels = [];
@@ -897,6 +921,15 @@ SQL;
 
   /**
    * Attach any posted metaFields to the submission.
+    *
+    * @param string $entity
+    *   Entity name.
+    * @param array $postObj
+    *   Submitted object for this entity.
+    * @param int $websiteId
+    *   Website ID for submission context.
+    * @param array $s
+    *   Converted submission array to append metadata fields to.
    */
   private static function includeMetafields($entity, array $postObj, $websiteId, &$s) {
     if (isset($postObj['metaFields'])) {
@@ -905,7 +938,7 @@ SQL;
   }
 
   /**
-   * Coverts new REST API submission format to old Data Services format.
+  * Converts new REST API submission format to old Data Services format.
    *
    * @param string $entity
    *   Model name.
@@ -957,6 +990,13 @@ SQL;
 
   /**
    * Adds occurrence association submodels from an occurrence payload.
+    *
+    * @param string $entity
+    *   Entity name.
+    * @param array $postObj
+    *   Submitted object for this entity.
+    * @param array $s
+    *   Converted submission array to append association submodels to.
    */
   private static function includeOccurrenceAssociations($entity, array $postObj, array &$s) {
     if ($entity !== 'occurrence' || empty($postObj['associations'])) {
@@ -992,6 +1032,9 @@ SQL;
 
   /**
    * Validates any occurrence associations supplied in a sample payload.
+    *
+    * @param array $postObj
+    *   Sample payload to validate.
    */
   private static function validateSampleOccurrenceAssociations(array $postObj) {
     if (empty($postObj['occurrences']) || !is_array($postObj['occurrences'])) {
@@ -1047,6 +1090,11 @@ SQL;
 
   /**
    * Validates that an association *_id is a positive cache termlist term ID.
+    *
+    * @param mixed $value
+    *   Submitted ID value.
+    * @param string $fieldPath
+    *   Field path for error reporting.
    */
   private static function validateAssociationTermId($value, $fieldPath) {
     if (!preg_match('/^\d+$/', (string) $value) || (int) $value < 1) {
