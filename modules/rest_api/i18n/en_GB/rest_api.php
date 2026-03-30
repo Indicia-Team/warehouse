@@ -1125,9 +1125,13 @@ the <code>external_key</code> of another occurrence in the same submitted sample
 <code>occurrence_associations</code> with <code>from_occurrence_id</code> set to the occurrence containing the
 association and <code>to_occurrence_id</code> set to the referenced occurrence.</p>
 
+<p>Multiple association objects are allowed for each occurrence. The target occurrence can appear
+before or after the source occurrence in the submitted array.</p>
+
 <p>Optional association fields are <code>part_id</code>, <code>position_id</code>, <code>impact_id</code> and
 <code>comment</code>. Any provided <code>*_id</code> fields must be positive integers that reference existing
-<code>cache_termlists_terms</code> entries.</p>
+<code>cache_termlists_terms</code> entries. If an association <code>external_key</code> does not match
+another occurrence in the same sample, validation fails.</p>
 
 <pre><code>
 POST /index.php/services/rest/samples
@@ -1205,7 +1209,7 @@ the website if the user has site editor or admin access to the website.</p>
 
 <p>PUT supports the same nested occurrence <code>associations</code> payload as POST samples, including
 forward and backward references using occurrence <code>external_key</code> values within the same submitted
-sample.</p>
+sample, with the same validation rules.</p>
 
 <p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
 unique within the system that supplied it, add a suitable prefix to make it unique.</p>
