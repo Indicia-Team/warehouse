@@ -578,6 +578,33 @@ class RestControllerTest extends BaseRestClientTest {
   }
 
   /**
+   * Check default sample licence comes from users_websites settings.
+   */
+  public function testJwtSamplePostUsesUsersWebsiteLicence() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $db = new Database();
+    ['sampleLicenceId' => $sampleLicenceId] = $this->setUserWebsiteDefaultLicences($db, 1, 1);
+
+    $response = $this->callService(
+      'samples',
+      FALSE,
+      [
+        'values' => [
+          'survey_id' => 1,
+          'entered_sref' => 'SU1234',
+          'entered_sref_system' => 'OSGB',
+          'date' => '01/08/2020',
+        ],
+      ]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $sampleId = (int) $response['response']['values']['id'];
+    $actualLicenceId = (int) $db->query('SELECT licence_id FROM samples WHERE id=?', [$sampleId])->current()->licence_id;
+    $this->assertEquals($sampleLicenceId, $actualLicenceId, 'Sample did not inherit default users_websites.licence_id.');
+  }
+
+  /**
    * Create additional user for testing auth.
    *
    * @param Database $db
@@ -1397,6 +1424,31 @@ class RestControllerTest extends BaseRestClientTest {
       'path' => 'abc.jpg',
       'sample_id' => $sampleId,
     ], 'path');
+  }
+
+  /**
+   * Check default sample_media licence comes from users_websites settings.
+   */
+  public function testJwtSampleMediaPostUsesUsersWebsiteMediaLicence() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $db = new Database();
+    ['mediaLicenceId' => $mediaLicenceId] = $this->setUserWebsiteDefaultLicences($db, 1, 1);
+    $sampleId = $this->postSampleToAddOccurrencesTo();
+    $response = $this->callService(
+      'sample_media',
+      FALSE,
+      [
+        'values' => [
+          'path' => 'abc.jpg',
+          'sample_id' => $sampleId,
+        ],
+      ]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $mediaId = (int) $response['response']['values']['id'];
+    $actualLicenceId = (int) $db->query('SELECT licence_id FROM sample_media WHERE id=?', [$mediaId])->current()->licence_id;
+    $this->assertEquals($mediaLicenceId, $actualLicenceId, 'Sample media did not inherit default users_websites.media_licence_id.');
   }
 
   /**
@@ -2804,6 +2856,31 @@ SQL;
   }
 
   /**
+   * Check default occurrence_media licence comes from users_websites settings.
+   */
+  public function testJwtOccurrenceMediaPostUsesUsersWebsiteMediaLicence() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $db = new Database();
+    ['mediaLicenceId' => $mediaLicenceId] = $this->setUserWebsiteDefaultLicences($db, 1, 1);
+    $occurrenceId = $this->postOccurrenceToAddStuffTo();
+    $response = $this->callService(
+      'occurrence_media',
+      FALSE,
+      [
+        'values' => [
+          'path' => 'abc.jpg',
+          'occurrence_id' => $occurrenceId,
+        ],
+      ]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $mediaId = (int) $response['response']['values']['id'];
+    $actualLicenceId = (int) $db->query('SELECT licence_id FROM occurrence_media WHERE id=?', [$mediaId])->current()->licence_id;
+    $this->assertEquals($mediaLicenceId, $actualLicenceId, 'Occurrence media did not inherit default users_websites.media_licence_id.');
+  }
+
+  /**
    * Test /sample_media PUT in isolation.
    */
   public function testJwtOccurrenceMediaPut() {
@@ -2864,6 +2941,35 @@ SQL;
     );
     $this->assertEquals(201, $response['httpCode']);
     return $response['response']['values']['id'];
+  }
+
+  /**
+   * Set default sample and media licences for a user on a website.
+   *
+   * @param Database $db
+   *   Database connection.
+   * @param int $userId
+   *   User ID.
+   * @param int $websiteId
+   *   Website ID.
+   *
+   * @return array
+   *   Associative array with sampleLicenceId and mediaLicenceId.
+   */
+  private function setUserWebsiteDefaultLicences(Database $db, $userId, $websiteId) {
+    $licences = $db->query('SELECT id FROM licences WHERE deleted=false ORDER BY id')->result_array(FALSE);
+    $this->assertNotEmpty($licences, 'Fixture must provide at least one licence record.');
+    $sampleLicenceId = (int) $licences[0]['id'];
+    $mediaLicenceId = (int) ($licences[1]['id'] ?? $licences[0]['id']);
+    $db->query(
+      'UPDATE users_websites SET licence_id=?, media_licence_id=? WHERE user_id=? AND website_id=?',
+      [$sampleLicenceId, $mediaLicenceId, $userId, $websiteId]
+    );
+
+    return [
+      'sampleLicenceId' => $sampleLicenceId,
+      'mediaLicenceId' => $mediaLicenceId,
+    ];
   }
 
   private function postOccurrenceToAddStuffTo() {
