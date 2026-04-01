@@ -974,7 +974,9 @@ SQL;
     }
     $s = [
       'id' => $entity,
-      'fields' => [],
+      'fields' => [
+        'website_id' => ['value' => RestObjects::$clientWebsiteId],
+      ],
     ];
     if (!isset($postObj['values'])) {
       kohana::log('debug', $entity . ': ' . var_export($postObj, TRUE));
@@ -1295,7 +1297,7 @@ SQL;
    *   Submission data.
    */
   private static function submit($entity, $obj, array $postObj) {
-    $obj->submission = rest_crud::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
+    $obj->submission = self::convertNewToOldSubmission($entity, $postObj, RestObjects::$clientWebsiteId);
     $id = $obj->submit();
     if (!$id) {
       foreach ($obj->getAllErrors() as $msg) {
