@@ -44,6 +44,7 @@ class Licence_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
     $array->add_rules('code', 'required');
+    $array->add_rules('permissiveness_sort_order', 'integer');
     $this->unvalidatedFields = [
       'description',
       'url_readable',
