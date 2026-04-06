@@ -97,7 +97,8 @@ class Models_Users_Website_Test extends Indicia_DatabaseTestCase {
       'licence_id' => $permissiveId,
       'media_licence_id' => $permissiveId,
     ], [
-      'apply_licence_to_existing_data' => TRUE,
+      'apply_licence_to_existing_records' => TRUE,
+      'apply_licence_to_existing_media' => TRUE,
     ]);
     $this->assertNotNull($result, 'users_website update should save when applying a more permissive licence.');
 
@@ -115,6 +116,93 @@ class Models_Users_Website_Test extends Indicia_DatabaseTestCase {
   }
 
   /**
+   * Records flag only updates samples/occurrence cache, leaving media unchanged.
+   */
+  public function testRecordsApplyFlagOnlyUpdatesExistingRecords() {
+    [$restrictiveId, $permissiveId] = $this->prepareLicenceOrder();
+
+    $this->db->query('UPDATE users_websites SET licence_id=?, media_licence_id=? WHERE user_id=1 AND website_id=1', [$restrictiveId, $restrictiveId]);
+    $this->db->query('UPDATE samples SET licence_id=? WHERE id=2', [$restrictiveId]);
+    $this->db->query('UPDATE cache_occurrences_functional SET licence_id=? WHERE id=2', [$restrictiveId]);
+
+    $sampleMediaId = $this->createMediaRecord('sample_medium', 'sample_id', 2, 'records-only-sm.jpg', $restrictiveId);
+    $occMediaId = $this->createMediaRecord('occurrence_medium', 'occurrence_id', 2, 'records-only-om.jpg', $restrictiveId);
+
+    $result = $this->submitUsersWebsiteUpdate([
+      'licence_id' => $permissiveId,
+      'media_licence_id' => $permissiveId,
+    ], [
+      'apply_licence_to_existing_records' => TRUE,
+      'apply_licence_to_existing_media' => FALSE,
+    ]);
+    $this->assertNotNull($result, 'users_website update should save with records-only apply flag.');
+
+    $q = new WorkQueue();
+    $q->process($this->db, TRUE);
+
+    $this->assertEquals($permissiveId, (int) $this->db->query('SELECT licence_id FROM samples WHERE id=2')->current()->licence_id);
+    $this->assertEquals($permissiveId, (int) $this->db->query('SELECT licence_id FROM cache_occurrences_functional WHERE id=2')->current()->licence_id);
+    $this->assertEquals($restrictiveId, (int) $this->db->query('SELECT licence_id FROM sample_media WHERE id=?', [$sampleMediaId])->current()->licence_id);
+    $this->assertEquals($restrictiveId, (int) $this->db->query('SELECT licence_id FROM occurrence_media WHERE id=?', [$occMediaId])->current()->licence_id);
+  }
+
+  /**
+   * Media flag only updates media tables, leaving record licences unchanged.
+   */
+  public function testMediaApplyFlagOnlyUpdatesExistingMedia() {
+    [$restrictiveId, $permissiveId] = $this->prepareLicenceOrder();
+
+    $this->db->query('UPDATE users_websites SET licence_id=?, media_licence_id=? WHERE user_id=1 AND website_id=1', [$restrictiveId, $restrictiveId]);
+    $this->db->query('UPDATE samples SET licence_id=? WHERE id=2', [$restrictiveId]);
+    $this->db->query('UPDATE cache_occurrences_functional SET licence_id=? WHERE id=2', [$restrictiveId]);
+
+    $sampleMediaId = $this->createMediaRecord('sample_medium', 'sample_id', 2, 'media-only-sm.jpg', $restrictiveId);
+    $occMediaId = $this->createMediaRecord('occurrence_medium', 'occurrence_id', 2, 'media-only-om.jpg', $restrictiveId);
+
+    $result = $this->submitUsersWebsiteUpdate([
+      'licence_id' => $permissiveId,
+      'media_licence_id' => $permissiveId,
+    ], [
+      'apply_licence_to_existing_records' => FALSE,
+      'apply_licence_to_existing_media' => TRUE,
+    ]);
+    $this->assertNotNull($result, 'users_website update should save with media-only apply flag.');
+
+    $q = new WorkQueue();
+    $q->process($this->db, TRUE);
+
+    $this->assertEquals($restrictiveId, (int) $this->db->query('SELECT licence_id FROM samples WHERE id=2')->current()->licence_id);
+    $this->assertEquals($restrictiveId, (int) $this->db->query('SELECT licence_id FROM cache_occurrences_functional WHERE id=2')->current()->licence_id);
+    $this->assertEquals($permissiveId, (int) $this->db->query('SELECT licence_id FROM sample_media WHERE id=?', [$sampleMediaId])->current()->licence_id);
+    $this->assertEquals($permissiveId, (int) $this->db->query('SELECT licence_id FROM occurrence_media WHERE id=?', [$occMediaId])->current()->licence_id);
+  }
+
+  /**
+   * Legacy combined flag is ignored when split flags are absent.
+   */
+  public function testLegacyApplyFlagIgnoredWithoutSplitFlags() {
+    [$restrictiveId, $permissiveId] = $this->prepareLicenceOrder();
+
+    $this->db->query('UPDATE users_websites SET licence_id=?, media_licence_id=? WHERE user_id=1 AND website_id=1', [$restrictiveId, $restrictiveId]);
+    $this->db->query('UPDATE samples SET licence_id=? WHERE id=2', [$restrictiveId]);
+    $sampleMediaId = $this->createMediaRecord('sample_medium', 'sample_id', 2, 'legacy-sm.jpg', $restrictiveId);
+
+    $result = $this->submitUsersWebsiteUpdate([
+      'licence_id' => $permissiveId,
+      'media_licence_id' => $permissiveId,
+    ], [
+      'apply_licence_to_existing_data' => TRUE,
+    ]);
+    $this->assertNotNull($result, 'users_website update should still save when only legacy apply flag is submitted.');
+
+    $q = new WorkQueue();
+    $q->process($this->db, TRUE);
+
+    $this->assertEquals($restrictiveId, (int) $this->db->query('SELECT licence_id FROM samples WHERE id=2')->current()->licence_id);
+    $this->assertEquals($restrictiveId, (int) $this->db->query('SELECT licence_id FROM sample_media WHERE id=?', [$sampleMediaId])->current()->licence_id);
+  }
+
+  /**
    * With apply flag, changing to a more restrictive sample licence is blocked.
    */
   public function testApplyFlagRejectsMoreRestrictiveDefaultLicenceChange() {
@@ -124,7 +212,7 @@ class Models_Users_Website_Test extends Indicia_DatabaseTestCase {
     $result = $this->submitUsersWebsiteUpdate([
       'licence_id' => $restrictiveId,
     ], [
-      'apply_licence_to_existing_data' => 't',
+      'apply_licence_to_existing_records' => 't',
     ]);
 
     $this->assertNull($result, 'users_website update should fail when applying a more restrictive licence to existing data.');
@@ -141,7 +229,7 @@ class Models_Users_Website_Test extends Indicia_DatabaseTestCase {
     $result = $this->submitUsersWebsiteUpdate([
       'media_licence_id' => $restrictiveId,
     ], [
-      'apply_licence_to_existing_data' => 1,
+      'apply_licence_to_existing_media' => 1,
     ]);
 
     $this->assertNull($result, 'users_website update should fail when applying a more restrictive media licence to existing data.');
@@ -167,8 +255,8 @@ class Models_Users_Website_Test extends Indicia_DatabaseTestCase {
    *
    * @param array $fieldValues
    *   users_websites field values to update.
-   * @param array $metaFieldValues
-   *   Optional metaFields (e.g. apply_licence_to_existing_data).
+    * @param array $metaFieldValues
+    *   Optional metaFields (e.g. apply_licence_to_existing_records).
    *
    * @return int|null
    *   Saved record id on success, otherwise null.

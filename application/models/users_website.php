@@ -85,7 +85,8 @@ class Users_website_Model extends ORM {
       return ['valid' => TRUE, 'params' => NULL];
     }
 
-    $applyToExistingData = $this->isApplyToExistingDataRequested();
+    $applyToExistingRecords = $this->isApplyToExistingDataRequested('apply_licence_to_existing_records');
+    $applyToExistingMedia = $this->isApplyToExistingDataRequested('apply_licence_to_existing_media');
     $params = [
       'user_id' => (int) $userId,
       'website_id' => (int) $websiteId,
@@ -94,7 +95,7 @@ class Users_website_Model extends ORM {
     $sampleLicencePlan = $this->buildLicenceChangePlan(
       $new['licence_id'] ?? NULL,
       $this->licence_id ?? NULL,
-      $applyToExistingData,
+      $applyToExistingRecords,
       'licence_id',
       'sample/default licence'
     );
@@ -109,7 +110,7 @@ class Users_website_Model extends ORM {
     $mediaLicencePlan = $this->buildLicenceChangePlan(
       $new['media_licence_id'] ?? NULL,
       $this->media_licence_id ?? NULL,
-      $applyToExistingData,
+      $applyToExistingMedia,
       'media_licence_id',
       'media default licence'
     );
@@ -131,14 +132,17 @@ class Users_website_Model extends ORM {
   /**
    * Determine if a licence change should apply to existing data records.
    *
+   * @param string $fieldName
+   *   Requested meta field name.
+   *
    * @return bool
    *   True if metadata flag has requested applying to existing data.
    */
-  private function isApplyToExistingDataRequested() {
-    if (!isset($this->submission['metaFields']['apply_licence_to_existing_data'])) {
+  private function isApplyToExistingDataRequested($fieldName) {
+    if (!isset($this->submission['metaFields'][$fieldName])) {
       return FALSE;
     }
-    $value = $this->submission['metaFields']['apply_licence_to_existing_data'];
+    $value = $this->submission['metaFields'][$fieldName];
     if (is_array($value) && array_key_exists('value', $value)) {
       $value = $value['value'];
     }
