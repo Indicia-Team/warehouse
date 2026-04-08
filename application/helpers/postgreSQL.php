@@ -725,8 +725,12 @@ SQL;
     if (!empty($options['scratchpad_list_id'])) {
       $listId = (int) $options['scratchpad_list_id'];
       $joins[] = <<<SQL
-        JOIN cache_taxa_taxon_lists cttl ON cttl.preferred_taxa_taxon_list_id=cts.preferred_taxa_taxon_list_id
-        JOIN scratchpad_list_entries sle ON sle.entry_id=cttl.id AND sle.scratchpad_list_id=$listId
+        JOIN (
+          SELECT DISTINCT cttl.preferred_taxa_taxon_list_id
+          FROM scratchpad_list_entries sle
+          JOIN cache_taxa_taxon_lists cttl ON cttl.id=sle.entry_id
+          WHERE sle.scratchpad_list_id=$listId
+        ) sp ON sp.preferred_taxa_taxon_list_id=cts.preferred_taxa_taxon_list_id
       SQL;
     }
     return implode("\n", $joins);
