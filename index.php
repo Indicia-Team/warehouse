@@ -9,6 +9,7 @@
  * rm MAINTENANCE to disable maintenance mode 
  */
  
+ 
 if (file_exists(__DIR__ . '/MAINTENANCE')) {
 
     // Check if the client expects JSON
@@ -23,9 +24,10 @@ if (file_exists(__DIR__ . '/MAINTENANCE')) {
         $xhr ||                                            // AJAX usually expects JSON
         (isset($_GET['format']) && $_GET['format'] === 'json'); // some Indicia API calls use &format=json
 
-    header('HTTP/1.1 503 Service Unavailable');
-    header('Retry-After: 3600');
 
+   http_response_code(503);
+   header('Retry-After: 3600');
+  
     if ($isJson) {
         header('Content-Type: application/json');
         echo json_encode([
@@ -33,13 +35,22 @@ if (file_exists(__DIR__ . '/MAINTENANCE')) {
             'message' => 'The Indicia Warehouse is currently offline for scheduled maintenance.'
         ]);
     } else {
-        // Return the HTML maintenance page
-        readfile(__DIR__ . '/maintenance.html');
+        // Return the HTML maintenance page or message
+        $file = __DIR__ . '/maintenance.html';
+
+        if (is_readable($file)) {
+            header('Content-Type: text/html; charset=UTF-8');
+            readfile($file);
+        } else {
+            header('Content-Type: text/html; charset=UTF-8');
+            echo '<h1>Maintenance</h1>';
+            echo '<p>The service is temporarily unavailable.</p>';
+        }
+
     }
 
     exit;
 }
-
 
 
 
