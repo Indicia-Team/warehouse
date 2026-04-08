@@ -670,7 +670,8 @@ SQL;
    * Limit taxon search query context.
    *
    * Prepares the part of the taxon search query SQL which limits the results
-   * to the context, e.g. the taxon group.
+   * to the context, e.g. the taxon group, by adding filters to the WHERE
+   * clause.
    *
    * @param array $options
    *   Options array passed to taxon search.
@@ -681,22 +682,13 @@ SQL;
   private static function taxonSearchGetQueryContextFilter(array $options) {
     $filters = [];
     $params = [
-      'taxon_list_id', 'scratchpad_list_id', 'taxon_group_id', 'taxon_group', 'taxon_meaning_id',
+      'taxon_list_id', 'taxon_group_id', 'taxon_group', 'taxon_meaning_id',
       'taxa_taxon_list_id', 'preferred_taxa_taxon_list_id', 'exclude_taxon_meaning_id', 'exclude_taxa_taxon_list_id',
       'exclude_preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'search_code', 'organism_key', 'parent_id',
     ];
     foreach ($params as $param) {
       if (!empty($options[$param])) {
-        if ($param === 'scratchpad_list_id') {
-          // Allow any name for the taxa on the list. Other filters can still
-          // override this.
-          $filters[] = 'cts.taxa_taxon_list_id in ' .
-            '(select cttl2.id from scratchpad_list_entries sle
-            join cache_taxa_taxon_lists cttl1 on cttl1.id=sle.entry_id
-            join cache_taxa_taxon_lists cttl2 on cttl2.preferred_taxa_taxon_list_id=cttl1.preferred_taxa_taxon_list_id
-            where scratchpad_list_id=' . (int) $options[$param] . ')';
-        }
-        elseif ($options[$param] === 'null') {
+        if ($options[$param] === 'null') {
           $filters[] = "cts.$param is null";
         }
         else {
@@ -717,6 +709,27 @@ SQL;
       $filters[] = 'cts.taxon_rank_sort_order <= ' . (int) $options['max_taxon_rank_sort_order'];
     }
     return implode("\nAND ", $filters);
+  }
+
+  /**
+   * Joins required for the taxon search query context.
+   *
+   * @param array $options
+   *   Options array passed to taxon search.
+   *
+   * @return string
+   *   Additional joins.
+   */
+  private static function taxonSearchGetQueryContextJoin(array $options) {
+    $joins = [];
+    if (!empty($options['scratchpad_list_id'])) {
+      $listId = (int) $options['scratchpad_list_id'];
+      $joins[] = <<<SQL
+        JOIN cache_taxa_taxon_lists cttl ON cttl.preferred_taxa_taxon_list_id=cts.preferred_taxa_taxon_list_id
+        JOIN scratchpad_list_entries sle ON sle.entry_id=cttl.id AND sle.scratchpad_list_id=$listId
+      SQL;
+    }
+    return implode("\n", $joins);
   }
 
   /**
@@ -857,7 +870,7 @@ SQL;
           '.+',
           '$1( )?( \(.+\) )?',
         ], $searchTerm) . ')');
-        $headlineColumnSql = "regexp_replace(original, '$highlightRegex', E'<b>\\\\1</b>', 'i') as highlighted";
+        $headlineColumnSql = "regexp_replace(cts.original, '$highlightRegex', E'<b>\\\\1</b>', 'i') as highlighted";
       }
       else {
         // No wildcard in a word, so we can use full text search - this must
@@ -953,7 +966,7 @@ SQL;
     }
     elseif ($searchFilterData['simpleOrder'] || empty($searchFilterData['searchTermNoWildcards'])) {
       return <<<SQL
-order by taxonomic_sort_order, original
+order by cts.taxonomic_sort_order, cts.original
 SQL;
     }
     else {
@@ -966,23 +979,23 @@ order by
 -- abbreviation hits come first if enabled
 cts.name_type='A' DESC,
 -- prefer matches in correct epithet order
-searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%' DESC,
+cts.searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%' DESC,
 -- prefer matches with searched phrase near start of term, by discarding the characters from the search term onwards and counting the rest
-length(regexp_replace(searchterm, replace('$regexEscapedTerm', ' ', '.*') || '.*', '','i')),
+length(regexp_replace(cts.searchterm, replace('$regexEscapedTerm', ' ', '.*') || '.*', '','i')),
 -- prefer matches where the full search term is close together, by counting the characters in the area covered by the search term
 case
-  when searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%'
-    then length(searchterm) - length(regexp_replace(searchterm, replace('$regexEscapedTerm', ' ', '.*?'), '', 'i'))
+  when cts.searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%'
+    then length(cts.searchterm) - length(regexp_replace(cts.searchterm, replace('$regexEscapedTerm', ' ', '.*?'), '', 'i'))
   else 9999 end,
 -- prefer complete matches.
-replace(lower('$escapedTerm'), '[^a-z0-9]', '')=replace(lower(original), '[^a-z0-9]', '') desc,
-replace(lower('$escapedTerm'), '[^a-z0-9]', '')=replace(lower(searchterm), '[^a-z0-9]', '') desc,
+replace(lower('$escapedTerm'), '[^a-z0-9]', '')=replace(lower(cts.original), '[^a-z0-9]', '') desc,
+replace(lower('$escapedTerm'), '[^a-z0-9]', '')=replace(lower(cts.searchterm), '[^a-z0-9]', '') desc,
 -- preferred range of ranks.
 cts.taxon_rank_sort_order between $preferredTaxonRankFrom and $preferredTaxonRankTo desc,
 cts.preferred desc,
 -- finally case and non-alpha insensitive alpha sort
-regexp_replace(lower(original), '[^a-z0-9]', '', 'g'),
-regexp_replace(lower(authority), '[^a-z0-9]', '', 'g')
+regexp_replace(lower(cts.original), '[^a-z0-9]', '', 'g'),
+regexp_replace(lower(cts.authority), '[^a-z0-9]', '', 'g')
 SQL;
     }
   }
@@ -1114,6 +1127,7 @@ SQL;
       $searchFilterData['searchFilter'] = 'AND ' . $searchFilterData['searchFilter'];
     }
     $contextFilter = self::taxonSearchGetQueryContextFilter($options);
+    $contextJoin = self::taxonSearchGetQueryContextJoin($options);
     $cols = self::taxonSearchGetColsListSql($options['count'], $searchFilterData);
     $orderBy = self::taxonSearchGetOrderBySql($db, $options['count'], $searchFilterData);
     $limitOffsetSql = self::taxonSearchGetLimitOffsetSql($options);
@@ -1121,6 +1135,7 @@ SQL;
     $query = <<<SQL
       select $cols
       from cache_taxon_searchterms cts
+      $contextJoin
       where $nameTypesFilter
       /* filter for the input search term */
       $searchFilterData[searchFilter]
