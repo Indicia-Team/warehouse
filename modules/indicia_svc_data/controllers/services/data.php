@@ -1492,7 +1492,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           if ($count) {
             break;
           }
-          $sortdir = explode(',', strtoupper($value));
+          $sortdir = array_map('trim', explode(',', strtoupper($value)));
           // Default to ASC any which are not ASC or DESC for safety.
           foreach ($sortdir as $idx => $dir) {
             if ($dir !== 'ASC' && $dir !== 'DESC') {
@@ -1503,7 +1503,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
         case 'orderby':
           if (!$count) {
-            $orderby = explode(',', strtolower($value));
+            $orderby = array_map('trim', explode(',', strtolower($value)));
             // Strip any which are not field names for safety.
             foreach ($orderby as $idx => $field) {
               if (!array_key_exists($field, $this->view_columns)) {
