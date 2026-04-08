@@ -212,8 +212,8 @@ SQL
    * Function to be called on postSubmit of a sample, to make sure that any
    * changed occurrences are linked to their map square entries properly.
    */
-  public static function insertMapSquaresForSamples($ids, $size, $db = NULL) {
-    self::insertMapSquares($ids, 's', $size, $db);
+  public static function insertMapSquaresForSamples($ids, $db) {
+    self::insertMapSquares($ids, 's', $db);
   }
 
   /**
@@ -363,7 +363,7 @@ SQL;
     }
     else {
       // This could of course be extended to support new types.
-      throw new exception('Unsupported array field sub-type ' . $udtName);
+      throw new Exception('Unsupported array field sub-type ' . $udtName);
     }
   }
 
@@ -499,11 +499,11 @@ SQL;
    * @param string $error
    *   The error message to throw.
    *
-   * @throws exception
+   * @throws Exception
    */
   private static function assert($condition, $error) {
     if (!$condition) {
-      throw new exception($error);
+      throw new Exception($error);
     }
   }
 
@@ -740,8 +740,9 @@ SQL;
         // Common means not lat.
         $filters[] = "cts.language_iso<>'lat'";
         // Clean up the fake 'common' language.
-        $array = explode(',', $options['language']);
-        unset($array['common']);
+        $array = array_filter(explode(',', $options['language']), function ($value) {
+          return trim($value) !== "'common'";
+        });
         $options['language'] = implode(',', $array);
       }
       // If any real language the filter for them as well.
@@ -959,7 +960,7 @@ SQL;
       $escapedTerm = pg_escape_string($db->getLink(), $searchFilterData['searchTermNoWildcards']);
       $regexEscapedTerm = preg_quote($escapedTerm);
       $preferredTaxonRankFrom = kohana::config('indicia.preferred_taxon_rank_from', FALSE, FALSE) ?? 290;
-      $preferredTaxonRankTo = kohana::config('indicia.preferred_taxon_rank_from', FALSE, FALSE) ?? 304;
+      $preferredTaxonRankTo = kohana::config('indicia.preferred_taxon_rank_to', FALSE, FALSE) ?? 304;
       return <<<SQL
 order by
 -- abbreviation hits come first if enabled
