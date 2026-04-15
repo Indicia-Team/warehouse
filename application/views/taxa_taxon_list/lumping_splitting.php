@@ -166,7 +166,8 @@ performLump = function(){
                            taxon_list_id : {value : ttlData[j].taxon_list_id},
                            taxon_id : {value : ttlData[j].taxon_id},
                            taxon_meaning_id : {value : ttlData[j].taxon_meaning_id},
-                           preferred : {value : ttlData[j].preferred}}}); // the very fact that allow_data_entry is not in the submission should set it to 'false'
+                           preferred : {value : ttlData[j].preferred},
+                           allow_data_entry : {value : 'f'}}});
           }}
         },
         dataType: 'json',
@@ -222,7 +223,8 @@ performSplit = function(){
                            taxon_list_id : {value : ttlData[j].taxon_list_id},
                            taxon_id : {value : ttlData[j].taxon_id},
                            taxon_meaning_id : {value : ttlData[j].taxon_meaning_id},
-                           preferred : {value : ttlData[j].preferred}}}); // the very fact that allow_data_entry is not in the submission should set it to 'false'
+                           preferred : {value : ttlData[j].preferred},
+                           allow_data_entry : {value : 'f'}}});
           }}
         },
         dataType: 'json',
