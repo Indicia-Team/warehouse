@@ -101,5 +101,6 @@
     <column name='dna_derived' sql='o.dna_derived' />
     <column name="import_guid" sql="o.import_guid" />
     <column name="import_description" sql="i.description" />
+    <column name="import_records_count" sql="i.inserted + i.updated" />
   </columns>
 </report>
