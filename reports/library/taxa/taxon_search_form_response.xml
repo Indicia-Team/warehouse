@@ -7,7 +7,7 @@
   left join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false
   left join taxa_taxon_lists ttlp on ttlp.id=ttl.parent_id and ttlp.deleted=false and ttlp.taxon_list_id=15
   left join taxa tp on tp.id=ttlp.taxon_id and tp.deleted=false
-  join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true
+  join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.deleted=false
   #joins#
   where ttl.taxon_list_id=#taxon_list_id#
   and ttl.deleted=false
