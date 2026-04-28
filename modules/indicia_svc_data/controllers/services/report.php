@@ -50,6 +50,13 @@ class Report_Controller extends Data_Service_Base_Controller {
 
   private $reportEngine;
 
+  /**
+   * List of column names that require decryption during streaming.
+   *
+   * @var array
+   */
+  private $decryptColumnNames = [];
+
   private function setup() {
     $this->authenticate('read');
     $websites = $this->website_id ? array($this->website_id) : null;
@@ -164,6 +171,9 @@ class Report_Controller extends Data_Service_Base_Controller {
       $this->view_columns = $data['content']['columns'];
       unset($data['content']['columns']);
     }
+    // Store the list of columns that need decryption for use in
+    // transformOutputRow() during streaming.
+    $this->decryptColumnNames = $this->reportEngine->getDecryptColumnNames();
     return $data['content'];
   }
 
@@ -193,6 +203,38 @@ class Report_Controller extends Data_Service_Base_Controller {
 
   protected function record_count() {
     return $this->reportEngine->recordCount();
+  }
+
+  /**
+   * Hook to transform each output row before encoding.
+   *
+   * Applies column decryption for columns marked with decrypt="true" in the
+   * report definition. This is necessary for streamed formats (csv, tsv, kml)
+   * where postProcess() is not called.
+   *
+   * @param mixed $row
+   *   Row from the recordset (array or PG result object).
+   *
+   * @return mixed
+   *   Transformed row with decrypted columns.
+   */
+  protected function transformOutputRow($row) {
+    // Only apply decryption if there are columns to decrypt.
+    if (empty($this->decryptColumnNames)) {
+      return $row;
+    }
+
+    // Convert PG result object to array if needed.
+    $rowArray = (array) $row;
+
+    // Apply decryption via ReportEngine.
+    $decryptedRow = $this->reportEngine->decryptRowColumns($rowArray, $this->decryptColumnNames);
+
+    // Return in original format (object or array).
+    if (is_object($row)) {
+      return (object) $decryptedRow;
+    }
+    return $decryptedRow;
   }
 
 }
