@@ -190,16 +190,16 @@ class ReportEngine {
   /**
    * Constructor.
    *
-   * @param array $websiteIds
+   * @param ?array $websiteIds
    *   List of websites you are loading the report for. Normally a single, but
    *   can be a list when logged in on the warehouse.
-   * @param int $userId
+   * @param ?int $userId
    *   ID of the user loading the report.
-   * @param object $db
+   * @param ?object $db
    *   Database object to run the report. Default null, which will create a new
    *   connection using the report user configuration.
    */
-  public function __construct(array $websiteIds = NULL, $userId = NULL, $db = NULL) {
+  public function __construct(?array $websiteIds = NULL, ?int $userId = NULL, ?object $db = NULL) {
     if ($websiteIds) {
       warehouse::validateIntArray($websiteIds);
     }
