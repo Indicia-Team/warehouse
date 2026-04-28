@@ -678,6 +678,25 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals('Top secret', $response[0]['secret_text'], 'Decrypted value should be returned to authorized site admin.');
   }
 
+  public function testDecryptReportAllowedForSiteAdminAndReturnsPlaintextCsv() {
+    $db = new Database();
+    $db->query('UPDATE users SET core_role_id=NULL WHERE id=1');
+    $db->query('UPDATE location_attributes SET encrypt=true WHERE id=1');
+    $db->query('DELETE FROM location_attribute_values WHERE location_id=1 AND location_attribute_id=1');
+    $encryptedPayload = attributeEncryption::encrypt('Top secret');
+    $db->query('INSERT INTO location_attribute_values (location_id, location_attribute_id, text_value, created_by_id, created_on, updated_by_id, updated_on) VALUES (1, 1, ?, 1, now(), 1, now())',
+      [$encryptedPayload]);
+
+    $response = $this->getReportCsvResponseAsAuth(
+      'library/locations/locations_encrypted_attr_test.xml',
+      $this->siteAdminAuth,
+      ['location_type_id' => 2]
+    );
+    $this->assertTrue(is_string($response), 'CSV response should be returned as a string.');
+    $this->assertStringContainsString('Top secret', $response, 'Decrypted value should be returned in CSV for authorized site admin.');
+    $this->assertStringNotContainsString($encryptedPayload, $response, 'Encrypted payload should not be present in CSV output.');
+  }
+
   /**
    * Runs a test using the configuration array at the top of the class which does a fairly
    * thorough test of all the reports flagged as featured.
@@ -725,19 +744,26 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     return $this->getReportResponseAsAuth($report, $this->auth, $params);
   }
 
-  private function getReportResponseAsAuth($report, array $auth, $params = []) {
+  private function getReportCsvResponseAsAuth($report, array $auth, $params = []) {
+    return $this->getReportResponseAsAuth($report, $auth, $params, 'csv');
+  }
+
+  private function getReportResponseAsAuth($report, array $auth, $params = [], $mode = 'json') {
     $requestParams = array(
       'report' => $report,
       'reportSource' => 'local',
-      'mode' => 'json',
+      'mode' => $mode,
       'auth_token' => $auth['read']['auth_token'],
       'nonce' => $auth['read']['nonce'],
       'params' => json_encode($params)
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport';
     $response = self::getResponse($url, TRUE, $requestParams);
-    // valid json response will decode
-    return json_decode($response, TRUE);
+    if ($mode === 'json') {
+      // Valid json response will decode.
+      return json_decode($response, TRUE);
+    }
+    return $response;
   }
 
 }

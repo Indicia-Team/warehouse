@@ -2425,4 +2425,54 @@ SQL;
     return $this->query;
   }
 
+  /**
+   * Get list of column names that require decryption.
+   *
+   * @return array
+   *   Array of column names with decrypt="true" attribute.
+   */
+  public function getDecryptColumnNames() {
+    $decryptColumns = [];
+    if (isset($this->columns)) {
+      foreach ($this->columns as $columnName => $columnDef) {
+        if (!empty($columnDef['decrypt']) && strtolower($columnDef['decrypt']) === 'true') {
+          $decryptColumns[] = $columnName;
+        }
+      }
+    }
+    return $decryptColumns;
+  }
+
+  /**
+   * Decrypt specified columns in a single row.
+   *
+   * Decrypts values in columns marked with decrypt="true", if the values are
+   * encrypted payloads. This is used for streaming data where rows are
+   * processed one at a time.
+   *
+   * @param array $row
+   *   A single data row as an associative array.
+   *
+   * @return array
+   *   The row with decrypted column values.
+   */
+  public function decryptRowColumns(array $row, ?array $decryptColumns = NULL) {
+    if ($decryptColumns === NULL) {
+      $decryptColumns = $this->getDecryptColumnNames();
+    }
+    if (empty($decryptColumns)) {
+      return $row;
+    }
+
+    foreach ($decryptColumns as $columnName) {
+      if (isset($row[$columnName])
+          && is_string($row[$columnName])
+          && attributeEncryption::isEncryptedPayload($row[$columnName])) {
+        $row[$columnName] = attributeEncryption::decrypt($row[$columnName]);
+      }
+    }
+
+    return $row;
+  }
+
 }
