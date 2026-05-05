@@ -1876,6 +1876,9 @@ class Rest_Controller extends Controller {
           $folderReadme = empty($reportHierarchy[$segment]['description']) ?
             '' : $reportHierarchy[$segment]['description'];
         }
+        if ($reportHierarchy[$segment]['type'] !== 'folder') {
+          RestObjects::$apiResponse->fail('Not found', 404, "Report folder $segment not found in path. Did you mean to add .xml and refer to a report file instead?");
+        }
         $reportHierarchy = $reportHierarchy[$segment]['content'];
       }
     }
