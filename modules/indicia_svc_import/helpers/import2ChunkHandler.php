@@ -210,7 +210,9 @@ class import2ChunkHandler {
         $config['parentEntityRowsProcessed']++;
       }
 
-      $progress = 100 * $config['rowsProcessed'] / $config['totalRows'];
+      $progress = $config['totalRows'] > 0
+        ? 100 * $config['rowsProcessed'] / $config['totalRows']
+        : 100;
       if ($progress === 100 && $config['errorsCount'] === 0 && !$isPrecheck) {
         self::tidyUpAfterImport($db, $configId, $config);
       }
@@ -225,7 +227,9 @@ class import2ChunkHandler {
         // import is restarted by refreshing the browser page, as the
         // rowsProcessed won't reach the total rows in this case.
         'status' => $config['rowsProcessed'] >= $config['totalRows'] || count($parentEntityDataRows) === 0 ? 'done' : ($isPrecheck ? 'checking' : 'importing'),
-        'progress' => 100 * $config['rowsProcessed'] / $config['totalRows'],
+        'progress' => $config['totalRows'] > 0
+          ? 100 * $config['rowsProcessed'] / $config['totalRows']
+          : 100,
         'rowsProcessed' => $config['rowsProcessed'],
         'totalRows' => $config['totalRows'],
         'errorsCount' => $config['errorsCount'],
@@ -622,7 +626,7 @@ SQL;
     $skipColumns = [];
     $skippedValues = [];
     foreach ($compoundFields as $def) {
-      $skipColumns = $skipColumns + $def['columns'];
+      $skipColumns = array_merge($skipColumns, $def['columns']);
     }
     foreach ($columns as $info) {
       $srcFieldName = $info['tempDbField'];
@@ -862,12 +866,13 @@ SQL;
   private static function setRowDone($db, $rowId, $isPrecheck, array $config) {
     $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
     $fieldToUpdate = $isPrecheck ? 'checked' : 'imported';
+    $rowId = (int) $rowId;
     $sql = <<<SQL
       UPDATE import_temp.$dbIdentifiers[tempTableName]
       SET $fieldToUpdate = true
-      WHERE _row_id = $rowId;
+      WHERE _row_id = ?;
     SQL;
-    $db->query($sql);
+    $db->query($sql, $rowId);
   }
 
   /**
