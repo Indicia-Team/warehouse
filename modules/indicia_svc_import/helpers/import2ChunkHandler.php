@@ -201,7 +201,7 @@ class import2ChunkHandler {
                   if (count($parentErrors) + count($errors) === 0) {
                     $config['errorsCount']++;
                   }
-                };
+                }
               }
             }
             $config['rowsProcessed']++;
@@ -351,13 +351,15 @@ class import2ChunkHandler {
    */
   public static function getConfig($configId) {
     // If call from older import client, the configId is the full file name.
-    $baseName = preg_replace('/(.csv|.xls|.xlsx|.json)$/i', '', $configId);
+    $baseName = preg_replace('/(\.csv|\.xls|\.xlsx|\.json)$/i', '', $configId);
     $configFile = DOCROOT . "import/$baseName.json";
     if (file_exists($configFile)) {
-      $f = fopen($configFile, "r");
-      $config = fgets($f);
-      fclose($f);
-      return json_decode($config, TRUE);
+      $config = file_get_contents($configFile);
+      $decoded = json_decode($config, TRUE);
+      if (!is_array($decoded)) {
+        throw new Exception("Config file $configFile contains invalid JSON.");
+      }
+      return $decoded;
     }
     else {
       throw new Exception("Config file $configFile missing.");
@@ -676,7 +678,7 @@ SQL;
           $mapped = [];
           foreach ($tokens as $token) {
             if (empty($config['multiValueLookupMatches'][$info['tempDbField']][$token])) {
-              throw new exception('Missing lookup mapping for token "' . $token . '" in field ' . $info['tempDbField']);
+              throw new Exception('Missing lookup mapping for token "' . $token . '" in field ' . $info['tempDbField']);
             }
             $mapped[] = (int) $config['multiValueLookupMatches'][$info['tempDbField']][$token];
           }
@@ -820,7 +822,9 @@ SQL;
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
     foreach ($errors as $fieldName => $error) {
-      list($entity, $field) = explode(':', $fieldName);
+      $fieldParts = explode(':', $fieldName, 2);
+      $entity = count($fieldParts) === 2 ? $fieldParts[0] : NULL;
+      $field = count($fieldParts) === 2 ? $fieldParts[1] : $fieldParts[0];
       $errorI18n = kohana::lang("form_error_messages.$field.$error");
       $errorStr = $errorI18n === "form_error_messages.$field.$error" ? $error : $errorI18n;
       // A date error might be reported against a vague date component
@@ -828,6 +832,9 @@ SQL;
       // date fields not being used.
       $field = preg_replace('/date_(start|end|type)$/', 'date', $field);
       try {
+        if (!$entity) {
+          throw new ColNotFoundException("No entity in error key $fieldName");
+        }
         $columnInfo = self::getColumnInfoByProperty($config['columns'], 'warehouseField', "$entity:$field");
         $errorsList[$columnInfo['columnLabel']] = $errorStr;
       }
@@ -886,7 +893,7 @@ SQL;
    *   Import metadata configuration object.
    */
   private static function tidyUpAfterImport($db, $configId, array $config) {
-    foreach(array_keys($config['files']) as $fileName) {
+    foreach (array_keys($config['files']) as $fileName) {
       @unlink(DOCROOT . "import/$fileName");
     }
     @unlink(DOCROOT . "import/$configId.json");
