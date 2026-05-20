@@ -71,13 +71,13 @@ class import2ChunkHandler {
       // Don't process cache tables immediately to improve performance.
       cache_builder::$delayCacheUpdates = TRUE;
       $config = self::getConfig($configId);
+      $isBackground = $config['processingMode'] === 'background';
       // If request to start again sent, go from beginning.
       if (!empty($params['restart'])) {
         $config['rowsProcessed'] = 0;
         $config['parentEntityRowsProcessed'] = 0;
         self::saveConfig($configId, $config);
       }
-      $isBackground = $config['processingMode'] === 'background';
       self::getChunkSize($isBackground, $isPrecheck);
 
       // @todo Correctly set parent entity for other entities.
@@ -245,7 +245,7 @@ class import2ChunkHandler {
       error_logger::log_error('Error in import_chunk', $e);
       kohana::log('debug', 'Error in import_chunk: ' . $e->getMessage());
       http_response_code(400);
-      if ($isBackground) {
+      if (!empty($isBackground)) {
         // Error handling differs in background mode.
         throw $e;
       }
