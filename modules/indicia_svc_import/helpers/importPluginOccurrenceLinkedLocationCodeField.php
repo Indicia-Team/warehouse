@@ -53,8 +53,12 @@ class importPluginOccurrenceLinkedLocationCodeField {
       // If the first parameter correctly points to an available sample
       // attribute, then add an extra option for looking up by code.
       if (in_array($params[0], $attrIds)) {
-        $fields["smpAttr:$params[0]:code"] = $fields['smpAttr:' . $params[0]] . ' (lookup using location code)';
-        $fields['smpAttr:' . $params[0]] .= ' (using database location ID)';
+        // Splice the new code field after the existing location ID field
+        $offset = array_search("smpAttr:$params[0]", array_keys($fields)) + 1;
+        $fields = array_slice($fields, 0, $offset, TRUE) +
+          ["smpAttr:$params[0]:code" => $fields["smpAttr:$params[0]"] . ' (lookup using location code)'] +
+          array_slice($fields, $offset, NULL, TRUE);
+        unset($fields['smpAttr:' . $params[0]]);
       }
     }
   }
