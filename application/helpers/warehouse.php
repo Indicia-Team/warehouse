@@ -60,7 +60,9 @@ function hostsite_get_user_field($field) {
   elseif ($field === 'indicia_user_id') {
     // PostedUserId is to support tests.
     global $postedUserId;
-    return isset($_SESSION) ? $_SESSION['auth_user']->id : ($postedUserId ?? 0);
+    return (isset($_SESSION['auth_user']) && is_object($_SESSION['auth_user']) && isset($_SESSION['auth_user']->id))
+      ? $_SESSION['auth_user']->id
+      : ($postedUserId ?? 0);
   }
   elseif ($field === 'training') {
     return FALSE;
@@ -242,11 +244,16 @@ class warehouse {
    *   List of website IDs that will share their data.
    */
   public static function getSharedWebsiteList(array $websiteIds, $db, $scope = 'reporting') {
+    $allowedScopes = array_values(self::$sharingMappings);
+    if (!in_array($scope, $allowedScopes, TRUE)) {
+      throw new Exception("Unsupported sharing scope $scope");
+    }
     if (count($websiteIds) === 1) {
       $tag = 'website-share-array-' . implode('', $websiteIds);
       $cacheId = "$tag-$scope";
       $cache = Cache::instance();
-      if ($cached = $cache->get($cacheId)) {
+      $cached = $cache->get($cacheId);
+      if ($cached !== FALSE && $cached !== NULL) {
         return $cached;
       }
     }
@@ -336,8 +343,6 @@ class warehouse {
    *
    * @param string $type
    *   Process type name, e.g. scheduled-tasks or rest-autofeed.
-   * @param array $params
-   *   Associative array of parameters to define the unique lock.
    *
    * @return string
    *   A filename which includes a hash of the parameters, so that it is
@@ -358,7 +363,12 @@ class warehouse {
    *   Process type name, e.g. scheduled-tasks or rest-autofeed.
    */
   public static function lockProcess($type) {
-    self::$lock = fopen(self::getLockFilename($type), 'w+');
+    $lockFile = self::getLockFilename($type);
+    self::$lock = fopen($lockFile, 'c+');
+    if (self::$lock === FALSE) {
+      kohana::log('alert', "Process $type attempt aborted because lock file could not be opened.");
+      die("\nProcess $type attempt aborted because lock file could not be opened.\n");
+    }
     if (!flock(self::$lock, LOCK_EX | LOCK_NB)) {
       kohana::log('alert', "Process $type attempt aborted as already running.");
       die("\nProcess $type attempt aborted as already running.\n");
@@ -373,8 +383,13 @@ class warehouse {
    *   Process type name, e.g. scheduled-tasks or rest-autofeed.
    */
   public static function unlockProcess($type) {
-    fclose(self::$lock);
-    unlink(self::getLockFilename($type));
+    if (is_resource(self::$lock)) {
+      fclose(self::$lock);
+    }
+    $lockFile = self::getLockFilename($type);
+    if (file_exists($lockFile)) {
+      @unlink($lockFile);
+    }
   }
 
   /**
@@ -417,7 +432,7 @@ class warehouse {
    */
   public static function validateIntArray(array $array, string $msg = 'Array format incorrect') {
     foreach ($array as $value) {
-      if (!filter_var($value, FILTER_VALIDATE_INT)) {
+      if (filter_var($value, FILTER_VALIDATE_INT) === FALSE) {
         throw new Exception($msg);
       }
     }
