@@ -2911,11 +2911,11 @@ class ORM extends ORM_Core {
                 }
               }
             }
-            if (!$wheresUpdated) {
-              return FALSE;
-            }
           }
       }
+    }
+    if (!$wheresUpdated) {
+      return FALSE;
     }
     return $wheres;
   }
