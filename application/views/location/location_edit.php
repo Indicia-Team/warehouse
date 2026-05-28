@@ -132,6 +132,13 @@ This page allows you to specify the details of a location.
             'blankText' => '<Please select>',
             'disabled' => $disabled,
           ]);
+          echo data_entry_helper::text_input([
+            'label' => 'External key',
+            'fieldname' => 'location:external_key',
+            'default' => $values['location:external_key'] ?? NULL,
+            'disabled' => $disabled,
+            'helpText' => 'Unique identifier for this location in an external system.',
+          ]);
           ?>
         </div>
         <div class="col-md-8">
