@@ -2797,18 +2797,20 @@ class ORM extends ORM_Core {
    * @todo Review this code as it doesn't handle lookup of existing records
    * where the filter field is not in the main table in a tidy way.
    */
-  public function buildWhereFromSaveArray($saveArray, $fields, $wheres, &$join, $assocSuffix = '') {
-    $wheresUpdated = FALSE;
+  public function buildWhereFromSaveArray($saveArray, array $lookupMatchingFields, &$join, $assocSuffix = '') {
+    $wheres = '';
     $struct = $this->get_submission_structure();
     $table = inflector::plural($this->object_name);
     if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
       $join = 'JOIN ' . inflector::plural($this->object_name) . "_websites w ON (w.website_id=" . (int) $saveArray['website_id'] .
           " AND w.{$this->object_name}_id = $table.id) ";
-      $fields = array_diff( $fields, array('website_id') );
+      $lookupMatchingFields = array_diff( $lookupMatchingFields, array('website_id') );
     } else {
       $join = "";
     }
-    foreach ($fields as $field) {
+    foreach ($lookupMatchingFields as $field) {
+      // Each field should contribute to the where clause.
+      $wheresUpdated = FALSE;
       $fieldTokens = explode(':',$field);
       $prefix = ($fieldTokens[0] === $this->object_name . $assocSuffix ? $this->object_name . $assocSuffix . ':' : '');
       if ($fieldTokens[0] === $this->object_name . $assocSuffix) {
@@ -2867,7 +2869,7 @@ class ORM extends ORM_Core {
                     // the key is used to point to another model.
                     $fkTable = $this->has_one[$fieldName];
                   }
-                  elseif ($fieldName === 'parent'){
+                  elseif ($fieldName === 'parent') {
                     $fkTable = $this->object_name;
                   }
                   else {
@@ -2910,10 +2912,12 @@ class ORM extends ORM_Core {
               }
             }
           }
-          if (!$wheresUpdated) {
-            return FALSE;
-          }
         }
+      }
+      if (!$wheresUpdated) {
+        // Field in lookup matching wasn't in the save array. Can't identify
+        // existing records.
+        return FALSE;
       }
     }
     return $wheres;

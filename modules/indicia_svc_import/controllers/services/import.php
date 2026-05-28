@@ -1103,10 +1103,17 @@ class Import_Controller extends Service_Base_Controller {
       }, $fields);
     $join = self::buildJoin($db, $fieldPrefix, $fields, $table, $saveArray);
     $websiteJoin = '';
-    $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, "(" . $tableEsc . ".deleted = 'f')", $websiteJoin, $assocSuffix);
+    $wheres = $model->buildWhereFromSaveArray($saveArray, $fields, $websiteJoin, $assocSuffix);
     if ($wheres !== FALSE) {
       // Have to use a db as this may have a join.
-      $existing = $db->query("SELECT DISTINCT $tableEsc.id FROM $tableEsc $websiteJoin $join WHERE " . $wheres)->result_array(FALSE);
+      $existing = $db->query(<<<SQL
+        SELECT DISTINCT $tableEsc.id
+        FROM $tableEsc
+        $websiteJoin
+        $join
+        WHERE $tableEsc.deleted=false
+        AND $wheres
+      SQL)->result_array(FALSE);
       if (count($existing) > 0) {
         // If an previous record exists, we have to check for existing
         // attributes.
