@@ -2801,6 +2801,13 @@ class ORM extends ORM_Core {
     $wheres = '';
     $struct = $this->get_submission_structure();
     $table = inflector::plural($this->object_name);
+    $dbLink = $this->db->getLink();
+    $escapeLiteral = function ($value) use ($dbLink) {
+      if ($value === NULL) {
+        return 'NULL';
+      }
+      return pg_escape_literal($dbLink, (string) $value);
+    };
     if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
       $join = 'JOIN ' . inflector::plural($this->object_name) . "_websites w ON (w.website_id=" . (int) $saveArray['website_id'] .
           " AND w.{$this->object_name}_id = $table.id) ";
@@ -2827,12 +2834,12 @@ class ORM extends ORM_Core {
         $wheresUpdated = TRUE;
         if ($fieldTokens[0] === 'date') {
           $vd = vague_date::string_to_vague_date($saveArray[$field]);
-          $wheres .= " AND ($table.date_start = '$vd[0]')";
-          $wheres .= " AND ($table.date_end = '$vd[1]')";
-          $wheres .= " AND ($table.date_type = '$vd[2]')";
+          $wheres .= " AND ($table.date_start = " . $escapeLiteral($vd[0]) . ')';
+          $wheres .= " AND ($table.date_end = " . $escapeLiteral($vd[1]) . ')';
+          $wheres .= " AND ($table.date_type = " . $escapeLiteral($vd[2]) . ')';
         }
         else {
-          $wheres .= " AND (".$table . "." . $fieldTokens[0] . " = '".$saveArray[$field]."')";
+          $wheres .= " AND ($table.$fieldTokens[0] = " . $escapeLiteral($saveArray[$field]) . ')';
         }
       } else {
         // There is a possibility that we are looking for for a supermodel id
@@ -2841,7 +2848,7 @@ class ORM extends ORM_Core {
         $superModelIDField = substr($fieldTokens[0], 0, -3); // cut off _id
         if (isset($saveArray[$superModelIDField . ':id'])) {
           $wheresUpdated = TRUE;
-          $wheres .= " AND ($table.$fieldTokens[0] = " . $saveArray[$superModelIDField . ':id'] . ')';
+          $wheres .= " AND ($table.$fieldTokens[0] = " . $escapeLiteral($saveArray[$superModelIDField . ':id']) . ')';
         }
         else {
           foreach ($saveArray as $saveField => $saveValue) {
@@ -2904,10 +2911,10 @@ class ORM extends ORM_Core {
                   }
                   $fk = $this->fkLookup($fkLookup);
                   if ($fk) {
-                    $wheres .= " AND ($table.$correctedField = '$fk')";
+                    $wheres .= " AND ($table.$correctedField = " . $escapeLiteral($fk) . ')';
                   }
                 } else {
-                  $wheres .= " AND ($table.$correctedField = '$saveValue')";
+                  $wheres .= " AND ($table.$correctedField = " . $escapeLiteral($saveValue) . ')';
                 }
               }
             }
