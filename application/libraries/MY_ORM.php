@@ -2859,7 +2859,6 @@ class ORM extends ORM_Core {
               }
               $correctedField = (substr($saveTokens[0], 0, 3) == 'fk_' ? substr($saveTokens[0], 3) . '_id' : $saveTokens[0]);
               if ($fieldTokens[0] === $correctedField) {
-                $wheresUpdated = TRUE;
                 if ($saveTokens[0] !== $correctedField) {
                   // saveTokens points to fk_, whilst corrected points to _id
                   // This field is a fk_* field which contains the text caption of a record which we need to lookup.
@@ -2912,9 +2911,11 @@ class ORM extends ORM_Core {
                   $fk = $this->fkLookup($fkLookup);
                   if ($fk) {
                     $wheres .= " AND ($table.$correctedField = " . $escapeLiteral($fk) . ')';
+                    $wheresUpdated = TRUE;
                   }
                 } else {
                   $wheres .= " AND ($table.$correctedField = " . $escapeLiteral($saveValue) . ')';
+                  $wheresUpdated = TRUE;
                 }
               }
             }
