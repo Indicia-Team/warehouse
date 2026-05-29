@@ -541,6 +541,15 @@ class Import_Controller extends Service_Base_Controller {
     $importTempFile = DOCROOT . "import/" . $_GET['uploaded_csv'];
     $ext = $this->getFileExt($_GET['uploaded_csv']);
     $metadata = $this->getMetadata($_GET['uploaded_csv']);
+    if (!isset($metadata['matchedCount'])) {
+      $metadata['matchedCount'] = 0;
+    }
+    if (!isset($metadata['insertedCount'])) {
+      $metadata['insertedCount'] = 0;
+    }
+    if (!isset($metadata['lookupDataErrorCount'])) {
+      $metadata['lookupDataErrorCount'] = 0;
+    }
     if (!empty($metadata['user_id'])) {
       global $remoteUserId;
       $remoteUserId = $metadata['user_id'];
@@ -780,9 +789,10 @@ class Import_Controller extends Service_Base_Controller {
         }
         // If a possible previous record, attempt to find the relevant IDs.
         if (isset($metadata['mappings']['lookupSelect' . $_GET['model']]) && $metadata['mappings']['lookupSelect' . $_GET['model']] !== '') {
+          $missingLookupData = FALSE;
           try {
             $this->mergeExistingRecordIds($_GET['model'], $originalRecordPrefix, $originalAttributePrefix, '', $metadata,
-              $mustExist, $model, $saveArray);
+              $mustExist, $model, $saveArray, FALSE, $missingLookupData);
           }
           catch (Exception $e) {
             $this->logError(
@@ -792,6 +802,22 @@ class Import_Controller extends Service_Base_Controller {
               $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
               $metadata
             );
+            continue;
+          }
+          if ($missingLookupData) {
+            $this->logError(
+              $data,
+              1,
+              'Existing-record lookup is selected, but one or more required lookup fields are missing for this row.',
+              $existingNoOfProblemsColIdx,
+              $existingProblemColIdx,
+              $existingErrorRowNoColIdx,
+              $errorHandle,
+              $count + $offset + 1,
+              $supportsImportGuid && $existingImportGuidColIdx === FALSE ? $metadata['guid'] : '',
+              $metadata
+            );
+            $metadata['lookupDataErrorCount']++;
             continue;
           }
         }
@@ -912,6 +938,7 @@ class Import_Controller extends Service_Base_Controller {
           $associationExists = FALSE;
           $modelToSubmit = $model;
         }
+        $rowMatchedExisting = !empty($saveArray[$originalRecordPrefix . ':id']);
         $mainOrSynonym = FALSE;
         $error = FALSE;
         if (isset($metadata['synonymProcessing']) && isset($metadata['synonymProcessing']['separateSynonyms']) &&
@@ -980,6 +1007,12 @@ class Import_Controller extends Service_Base_Controller {
             );
           }
           else {
+            if ($rowMatchedExisting) {
+              $metadata['matchedCount']++;
+            }
+            else {
+              $metadata['insertedCount']++;
+            }
             // Now the record has successfully posted, we need to store the
             // details of any new supermodels and their Ids, in case they are
             // duplicated in the next csv row.
@@ -1086,7 +1119,11 @@ class Import_Controller extends Service_Base_Controller {
       $mustExist,
       &$model,
       &$saveArray,
-      $setSupermodel = FALSE) {
+      $setSupermodel = FALSE,
+      &$missingLookupData = NULL) {
+    if (!is_null($missingLookupData)) {
+      $missingLookupData = FALSE;
+    }
     $join = "";
     $db = Database::instance();
     $table = inflector::plural($modelName);
@@ -1146,6 +1183,9 @@ class Import_Controller extends Service_Base_Controller {
         throw new Exception('Importing an existing ID but the row does not already exist.');
       }
     }
+    elseif (!is_null($missingLookupData)) {
+      $missingLookupData = TRUE;
+    }
   }
 
   /*
@@ -1193,6 +1233,9 @@ class Import_Controller extends Service_Base_Controller {
     echo json_encode([
       'problems' => $metadata['errorCount'],
       'file' => url::base() . 'import/' . basename($errorFile),
+      'matched' => $metadata['matchedCount'] ?? 0,
+      'inserted' => $metadata['insertedCount'] ?? 0,
+      'lookup_data_errors' => $metadata['lookupDataErrorCount'] ?? 0,
     ]);
     // Clean up the uploaded file and mapping file, but only remove the error
     // file if no errors, otherwise we make it downloadable.
@@ -1507,7 +1550,19 @@ class Import_Controller extends Service_Base_Controller {
         'settings' => [],
         'errorCount' => 0,
         'guid' => $this->createGuid(),
+        'matchedCount' => 0,
+        'insertedCount' => 0,
+        'lookupDataErrorCount' => 0,
       ];
+    }
+    if (!isset($metadata['matchedCount'])) {
+      $metadata['matchedCount'] = 0;
+    }
+    if (!isset($metadata['insertedCount'])) {
+      $metadata['insertedCount'] = 0;
+    }
+    if (!isset($metadata['lookupDataErrorCount'])) {
+      $metadata['lookupDataErrorCount'] = 0;
     }
     if (empty($metadata['fileSize']) && file_exists(DOCROOT . 'import' . DIRECTORY_SEPARATOR  . $importTempFile)) {
       // If file uploaded, we can report it's size.
