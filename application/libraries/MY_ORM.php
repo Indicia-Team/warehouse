@@ -2928,6 +2928,9 @@ class ORM extends ORM_Core {
         return FALSE;
       }
     }
+    if (!$wheresUpdated) {
+      return FALSE;
+    }
     return $wheres;
   }
 
