@@ -32,6 +32,9 @@ defined('SYSPATH') or die('No direct script access.');
  * not have a user interface, it is intended to be automated on a schedule.
  */
 class Scheduled_Tasks_Controller extends Controller {
+
+  const MAX_OCCLIST_SIZE = 5000;
+
   private $lastRunDate;
   private $occdeltaStartTimestamp = '';
   private $occdeltaEndTimestamp = '';
@@ -1169,10 +1172,13 @@ class Scheduled_Tasks_Controller extends Controller {
         $this->db->query('DROP TABLE IF EXISTS occdelta;');
         // Set date in far past if empty to avoid error.
         $lastRunTimestamp = !empty($pluginMetadata['lastRunTimestamp']) ? $pluginMetadata['lastRunTimestamp'] : '2000-01-01 01:00:00';
+        // If there are many records pending, reduce the scan window before
+        // building temporary tables to avoid excessive memory usage.
+        $effectiveCurrentTime = $this->getOccurrencesDeltaCutoffTimestamp($lastRunTimestamp, $currentTime);
         // This query uses a 2 stage process as it is faster than joining
         // occurrences to cache_occurrences.
         $ts = pg_escape_literal($this->db->getLink(), $lastRunTimestamp);
-        $ct = pg_escape_literal($this->db->getLink(), $currentTime);
+        $ct = pg_escape_literal($this->db->getLink(), $effectiveCurrentTime);
         $query = <<<SQL
           select distinct o.id
           into temporary occlist
@@ -1211,7 +1217,7 @@ class Scheduled_Tasks_Controller extends Controller {
         SQL;
         $this->db->query($query);
         $this->occdeltaStartTimestamp = $pluginMetadata['lastRunTimestamp'];
-        $this->occdeltaEndTimestamp = $currentTime;
+        $this->occdeltaEndTimestamp = $effectiveCurrentTime;
         // If processing more than a few thousand records at a time, things
         // will slow down. So we'll cut off the delta at the second which the
         // 5000th record fell on.
@@ -1221,13 +1227,44 @@ class Scheduled_Tasks_Controller extends Controller {
   }
 
   /**
+   * Find the end of the time window for building Occlist.
+   *
+   * Finds a suitable end-timestamp to ensure that occlist is not huge, causing
+   * memory issues when processing in a catch-up scenario.
+   *
+   * @param string $lastRunTimestamp
+   *   Lower bound for changed records.
+   * @param string $currentTime
+   *   Current upper bound for changed records.
+   *
+   * @return string
+   *   Effective upper bound for this run.
+   */
+  private function getOccurrencesDeltaCutoffTimestamp($lastRunTimestamp, $currentTime) {
+    $ts = pg_escape_literal($this->db->getLink(), $lastRunTimestamp);
+    $ct = pg_escape_literal($this->db->getLink(), $currentTime);
+    $maxRecords = self::MAX_OCCLIST_SIZE;
+    $qry = $this->db->query(<<<SQL
+      select updated_on
+      from occurrences
+      where updated_on>$ts and updated_on<=$ct
+      order by updated_on asc, id asc
+      limit 1 offset $maxRecords
+    SQL)->result();
+    foreach ($qry as $row) {
+      return $row->updated_on;
+    }
+    return $currentTime;
+  }
+
+  /**
    * If processing too many records, clear out the excess.
    */
   private function limitDeltaSize() {
     $this->occdeltaCount = $this->db->count_records('occdelta');
-    $max = 5000;
-    if ($this->occdeltaCount > $max) {
-      $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max")->result();
+    $maxRecords = self::MAX_OCCLIST_SIZE;
+    if ($this->occdeltaCount > $maxRecords) {
+      $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $maxRecords")->result();
       foreach ($qry as $t) {
         $delayed = $this->db->query("delete from occdelta where timestamp>?", [$t->timestamp])->count();
         self::msg("Scheduled tasks are delaying processing of $delayed records as too many to process", 'alert');
