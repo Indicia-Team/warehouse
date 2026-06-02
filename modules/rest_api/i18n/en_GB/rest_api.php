@@ -1723,7 +1723,7 @@ so the `max_time` should be set to a lower value in order to cause the next requ
 same set of records again and avoid skipping a block of records.
 TXT;
 $lang['GET reports/{path}/{file-xml}']['offset'] = 'Offset from the start of the dataset that the response will start.';
-$lang['GET reports/{path}/{file-xml}']['sortby'] = <<<TXT
+$lang['GET reports/{path}/{file-xml}']['orderby'] = <<<TXT
 The field to sort by. Must be compatible with the SQL generated for the report.
 TXT;
 $lang['GET reports/{path}/{file-xml}']['sortdir'] = 'Direction of sort, ASC or DESC';
