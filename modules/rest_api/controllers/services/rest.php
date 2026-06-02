@@ -2155,7 +2155,9 @@ class Rest_Controller extends Controller {
       // Fudge to prevent the overhead of a count query.
       $_REQUEST['wantCount'] = '0';
       // Set max number of records to process.
-      $params['limit'] = AUTOFEED_DEFAULT_PAGE_SIZE;
+      if (!isset($params['limit'])) {
+        $params['limit'] = AUTOFEED_DEFAULT_PAGE_SIZE;
+      }
       // Find our state data for this feed.
       $afSettings = (array) variable::get("rest-autofeed-$_GET[proj_id]", ['mode' => 'notStarted'], FALSE);
       if ($afSettings['mode'] === 'notStarted') {
