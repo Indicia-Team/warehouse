@@ -115,7 +115,7 @@
     <column name="sample_id" sql="s.id" datatype="integer" />
     <column name="parent_sample_id" sql="s.parent_sample_id" datatype="integer" />
     <!-- snf.group_title will be null if group just deleted, so don't pick up group_id from o.group_id if it's not been cleared by work queue task yet. -->
-    <column name="group_id" sql="case when snf.group_title is not null then o.group_id else null end" datatype="integer" />
+    <column name="group_id" sql="case when snf.group_title is not null then s.group_id else null end" datatype="integer" />
     <column name="website_title" sql="snf.website_title" datatype="text" />
     <column name="survey_title" sql="snf.survey_title" datatype="text" />
     <column name="group_title" sql="snf.group_title" datatype="text" />

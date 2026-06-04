@@ -112,7 +112,7 @@ class RecordCleanerApi {
     $pages = ceil(count($ids) / BATCH_SIZE);
     for ($page = 0; $page < $pages; $page++) {
       $start = $page * BATCH_SIZE;
-      $batch = array_slice($ids, $start, 100);
+      $batch = array_slice($ids, $start, BATCH_SIZE);
       $this->cleanoutOldMessages($batch);
       $this->processBatch($batch);
       $this->updateOccurrenceMetadata($batch, $endtime);
@@ -128,7 +128,10 @@ class RecordCleanerApi {
    *   Array of occurrence IDs to clean messages for.
    */
   private function cleanoutOldMessages(array $batch) {
-    $ids = implode(',', $batch);
+    if (empty($batch)) {
+      return;
+    }
+    $ids = implode(',', array_map('intval', $batch));
     $query = <<<SQL
       UPDATE occurrence_comments
       SET deleted=true, updated_on=now()
@@ -153,7 +156,10 @@ class RecordCleanerApi {
    *   Record IDs in the batch to process.
    */
   private function processBatch(array $batch) {
-    $ids = implode(',', $batch);
+    if (empty($batch)) {
+      return;
+    }
+    $ids = implode(',', array_map('intval', $batch));
     $query = <<<SQL
       SELECT o.id, o.taxa_taxon_list_external_key AS tvk,
         o.date_start, o.date_end, o.date_type,
@@ -168,7 +174,7 @@ class RecordCleanerApi {
       WHERE o.id IN ($ids)
     SQL;
 
-    $records = $this->db->query($query, [$batch])->result();
+    $records = $this->db->query($query)->result();
     $recordsArray = [];
     // We need to know 10km square later when checking for existing verified
     // records.
@@ -238,7 +244,7 @@ class RecordCleanerApi {
   /**
    * Return the required structure to send to the Record Cleaner sref field.
    *
-   * @param mixed $record
+   * @param object $record
    *   Record data read from the database.
    *
    * @return array
@@ -252,11 +258,11 @@ class RecordCleanerApi {
       case 'utm30ed50':
         return [
           'srid' => $this->gridSystemCodeToSrid($record->entered_sref_system),
-          'gridref' => $record['entered_sref'],
+          'gridref' => $record->entered_sref,
         ];
 
       case '23030': // Channel Islands Easting Northing
-      case '27770': // OSGB Easting Northing
+      case '27700': // OSGB Easting Northing
         if (!preg_match('/^(?<x>\d+),\s*(?<y>\d+)$/', $sref, $matches)) {
           throw new SkipRecordException('Incorrectly formatted coordinates.');
         }
@@ -285,10 +291,10 @@ class RecordCleanerApi {
    *   The accuracy value to be converted.
    *
    * @return int
-   *   The next highest number from the set [10000, 2000, 1000, 100, 10, 1].
+   *   The next highest number from the set [1, 10, 100, 1000, 2000, 10000].
    */
   private function getFormattedAccuracy($accuracy) {
-    $thresholds = [10000, 2000, 1000, 100, 10, 1];
+    $thresholds = [1, 10, 100, 1000, 2000, 10000];
     foreach ($thresholds as $threshold) {
       if ($accuracy <= $threshold) {
         return $threshold;
@@ -404,8 +410,6 @@ class RecordCleanerApi {
           $this->db->query($query, [
             $subType,
             $record->id,
-            $subType,
-            $record->id,
           ]);
           if ((int) $subType < 2) {
             continue;
@@ -458,7 +462,7 @@ class RecordCleanerApi {
     switch ($ruleType) {
       case 'phenology':
         // Only check exact dates without a hyphen separating the range.
-        if (preg_match('/^( -|- )$/', $record->date)) {
+        if (preg_match('/( -|- )/', $record->date)) {
           return FALSE;
         }
         $query .= <<<SQL
@@ -555,17 +559,20 @@ class RecordCleanerApi {
    * @param string $endtime
    *   Timestamp to save as the last verification check date.
    */
-  function updateOccurrenceMetadata(array $batch, $endtime) {
-    $ids = implode(',', $batch);
+  private function updateOccurrenceMetadata(array $batch, $endtime) {
+    if (empty($batch)) {
+      return;
+    }
+    $ids = implode(',', array_map('intval', $batch));
     // Note we use the information from the point when we started the process,
     // in caseany changes have happened in the meanwhile which might otherwise be
     // missed.
     $query = <<<SQL
       update occurrences o
-      set last_verification_check_date='$endtime'
+      set last_verification_check_date=?
       where o.id in ($ids)
     SQL;
-    $this->db->query($query);
+    $this->db->query($query, [$endtime]);
   }
 
 

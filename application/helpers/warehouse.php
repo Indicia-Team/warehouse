@@ -60,7 +60,9 @@ function hostsite_get_user_field($field) {
   elseif ($field === 'indicia_user_id') {
     // PostedUserId is to support tests.
     global $postedUserId;
-    return isset($_SESSION) ? $_SESSION['auth_user']->id : ($postedUserId ?? 0);
+    return (isset($_SESSION['auth_user']) && is_object($_SESSION['auth_user']) && isset($_SESSION['auth_user']->id))
+      ? $_SESSION['auth_user']->id
+      : ($postedUserId ?? 0);
   }
   elseif ($field === 'training') {
     return FALSE;
@@ -117,6 +119,13 @@ class warehouse {
    * @var resource
    */
   private static $lock;
+
+  /**
+   * Path of the lock file currently held by this process.
+   *
+   * @var string|null
+   */
+  private static $lockFilePath;
 
   /**
    * Loads any of the client helper libraries.
@@ -242,11 +251,16 @@ class warehouse {
    *   List of website IDs that will share their data.
    */
   public static function getSharedWebsiteList(array $websiteIds, $db, $scope = 'reporting') {
+    $allowedScopes = array_values(self::$sharingMappings);
+    if (!in_array($scope, $allowedScopes, TRUE)) {
+      throw new Exception("Unsupported sharing scope $scope");
+    }
     if (count($websiteIds) === 1) {
       $tag = 'website-share-array-' . implode('', $websiteIds);
       $cacheId = "$tag-$scope";
       $cache = Cache::instance();
-      if ($cached = $cache->get($cacheId)) {
+      $cached = $cache->get($cacheId);
+      if ($cached !== FALSE && $cached !== NULL) {
         return $cached;
       }
     }
@@ -325,6 +339,26 @@ class warehouse {
     else {
       $params = $_GET;
     }
+    return self::normaliseLockParameters($params);
+  }
+
+  /**
+   * Canonicalise lock parameters so order variations map to one lock.
+   *
+   * @param mixed $params
+   *   Lock parameters.
+   *
+   * @return mixed
+   *   Canonicalised lock parameters.
+   */
+  private static function normaliseLockParameters($params) {
+    if (!is_array($params)) {
+      return $params;
+    }
+    foreach ($params as $key => $value) {
+      $params[$key] = self::normaliseLockParameters($value);
+    }
+    ksort($params);
     return $params;
   }
 
@@ -336,15 +370,13 @@ class warehouse {
    *
    * @param string $type
    *   Process type name, e.g. scheduled-tasks or rest-autofeed.
-   * @param array $params
-   *   Associative array of parameters to define the unique lock.
    *
    * @return string
    *   A filename which includes a hash of the parameters, so that it is
    *   unique to this configuration of the scheduled tasks.
    */
   private static function getLockFilename($type) {
-    $uid = md5(http_build_query(self::getLockParameters()));
+    $uid = md5(json_encode(self::getLockParameters()));
     return DOCROOT . "application/cache/$type.lock-$uid.lock";
   }
 
@@ -358,12 +390,31 @@ class warehouse {
    *   Process type name, e.g. scheduled-tasks or rest-autofeed.
    */
   public static function lockProcess($type) {
-    self::$lock = fopen(self::getLockFilename($type), 'w+');
-    if (!flock(self::$lock, LOCK_EX | LOCK_NB)) {
-      kohana::log('alert', "Process $type attempt aborted as already running.");
-      die("\nProcess $type attempt aborted as already running.\n");
+    $lockFile = self::getLockFilename($type);
+    self::$lockFilePath = $lockFile;
+    self::$lock = fopen($lockFile, 'c+');
+    if (self::$lock === FALSE) {
+      kohana::log('alert', "Process $type attempt aborted because lock file could not be opened.");
+      die("\nProcess $type attempt aborted because lock file could not be opened.\n");
     }
-    fwrite(self::$lock, 'Got a lock: ' . var_export(self::getLockParameters(), TRUE));
+    if (!flock(self::$lock, LOCK_EX | LOCK_NB)) {
+      rewind(self::$lock);
+      $holderInfo = trim((string) stream_get_contents(self::$lock));
+      $msg = "Process $type attempt aborted as already running.";
+      if (!empty($holderInfo)) {
+        $msg .= " Current lock holder info: $holderInfo";
+      }
+      kohana::log('alert', $msg);
+      die("\n$msg\n");
+    }
+    ftruncate(self::$lock, 0);
+    rewind(self::$lock);
+    fwrite(self::$lock, json_encode([
+      'pid' => getmypid(),
+      'started_at' => date('c'),
+      'params' => self::getLockParameters(),
+    ]));
+    fflush(self::$lock);
   }
 
   /**
@@ -373,8 +424,12 @@ class warehouse {
    *   Process type name, e.g. scheduled-tasks or rest-autofeed.
    */
   public static function unlockProcess($type) {
-    fclose(self::$lock);
-    unlink(self::getLockFilename($type));
+    if (is_resource(self::$lock)) {
+      flock(self::$lock, LOCK_UN);
+      fclose(self::$lock);
+    }
+    self::$lock = NULL;
+    self::$lockFilePath = NULL;
   }
 
   /**
@@ -417,7 +472,7 @@ class warehouse {
    */
   public static function validateIntArray(array $array, string $msg = 'Array format incorrect') {
     foreach ($array as $value) {
-      if (!filter_var($value, FILTER_VALIDATE_INT)) {
+      if (filter_var($value, FILTER_VALIDATE_INT) === FALSE) {
         throw new Exception($msg);
       }
     }

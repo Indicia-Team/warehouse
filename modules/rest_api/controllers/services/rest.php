@@ -183,7 +183,7 @@ class Rest_Controller extends Controller {
   /**
    * Report generation class instance.
    *
-   * @var obj
+   * @var ReportEngine
    */
   private $reportEngine;
 
@@ -664,7 +664,7 @@ class Rest_Controller extends Controller {
             'offset' => [
               'datatype' => 'integer',
             ],
-            'sortby' => [
+            'orderby' => [
               'datatype' => 'text',
             ],
             'sortdir' => [
@@ -1870,6 +1870,9 @@ class Rest_Controller extends Controller {
       // Iterate down the report hierarchy to the level we want to show
       // according to the request.
       foreach ($segments as $idx => $segment) {
+        if (!isset($reportHierarchy[$segment]) || $reportHierarchy[$segment]['type'] !== 'folder') {
+          RestObjects::$apiResponse->fail('Not found', 404, "Report folder $segment not found in path. Did you mean to add .xml and refer to a report file instead?");
+        }
         if ($idx === count($segments) - 1) {
           // If the final folder, then grab any readme text to add to the
           // metadata.
@@ -1929,7 +1932,7 @@ class Rest_Controller extends Controller {
    *   Reports hierarchy structure.
    */
   private function applyReportRestrictions(array &$reportHierarchy) {
-    if (in_array('featured', $this->resourceOptions) || in_array('summary', $this->resourceOptions)) {
+    if (array_key_exists('featured', $this->resourceOptions) || array_key_exists('summary', $this->resourceOptions)) {
       foreach ($reportHierarchy as $item => &$cfg) {
         if ($cfg['type'] === 'report' && (
           (!empty($this->resourceOptions['featured']) && (!isset($cfg['featured']) || $cfg['featured'] !== 'true')) ||
@@ -2152,7 +2155,9 @@ class Rest_Controller extends Controller {
       // Fudge to prevent the overhead of a count query.
       $_REQUEST['wantCount'] = '0';
       // Set max number of records to process.
-      $params['limit'] = AUTOFEED_DEFAULT_PAGE_SIZE;
+      if (!isset($params['limit'])) {
+        $params['limit'] = AUTOFEED_DEFAULT_PAGE_SIZE;
+      }
       // Find our state data for this feed.
       $afSettings = (array) variable::get("rest-autofeed-$_GET[proj_id]", ['mode' => 'notStarted'], FALSE);
       if ($afSettings['mode'] === 'notStarted') {
@@ -2499,7 +2504,7 @@ class Rest_Controller extends Controller {
           }
         }
       }
-      if ($corsSetting) {
+      if (isset($corsSetting)) {
         header("Access-Control-Allow-Origin: $corsSetting");
         header("Access-Control-Allow-Methods: GET, POST, DELETE, PUT, OPTIONS");
         header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -2532,7 +2537,7 @@ class Rest_Controller extends Controller {
     }
     foreach ($methods as $method => $cfg) {
       // Skip methods if http and method requires https.
-      if ($this->isHttps || array_key_exists('allow_http', $cfg) || in_array('allow_http', $cfg)) {
+      if ($this->isHttps || (!empty($cfg['allow_http']) && $cfg['allow_http'] === TRUE)) {
         $method = ucfirst($method);
         // Try this authentication method.
         if (method_exists($this, "authenticateUsing$method")) {
@@ -3612,7 +3617,7 @@ SQL;
         [$values['sample_id'], RestObjects::$clientUserId]
       )->current()->count;
       if ($sampleCheck !== '1') {
-        RestObjects::$apiResponse->fail('Bad Request', 400, ['occurrence:sample_id' => 'Attempt to create occurrence in invalid sample.']);
+        RestObjects::$apiResponse->fail('Bad Request', 400, NULL, ['occurrence:sample_id' => 'Attempt to create occurrence in invalid sample.']);
       }
     }
   }
