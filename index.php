@@ -1,70 +1,60 @@
 <?php
 
 
-/** 
- * MAINTENANCE MODE CHECK
+/**
+ * MAINTENANCE MODE CHECK.
  *
- *  ensure you are in the warehouse root folder
- * touch MAINTENANCE to enable maintenance MODE
- * rm MAINTENANCE to disable maintenance mode 
+ * Ensure you are in the warehouse root folder.
+ * $ touch MAINTENANCE to enable maintenance MODE.
+ * $ rm MAINTENANCE to disable maintenance mode.
  */
- 
- 
 if (file_exists(__DIR__ . '/MAINTENANCE')) {
-  
 
-    // Always allow OPTIONS requests (CORS preflight) to succeed
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-        http_response_code(200);
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-        exit;
-    }
+  // Always allow OPTIONS requests (CORS preflight) to succeed.
+  if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+    exit;
+  }
 
+  // Check if the client expects JSON
+  $accept = isset($_SERVER['HTTP_ACCEPT']) ? $_SERVER['HTTP_ACCEPT'] : '';
+  $xhr = isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 
-    // Check if the client expects JSON
-    $accept = isset($_SERVER['HTTP_ACCEPT']) ? $_SERVER['HTTP_ACCEPT'] : '';
-    $xhr = isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-           strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
-
-    $isJson =
-        strpos($accept, 'application/json') !== false ||   // explicit JSON request
-        strpos($accept, 'text/json') !== false ||
-        strpos($accept, 'application/vnd.api+json') !== false ||
-        $xhr ||                                            // AJAX usually expects JSON
-        (isset($_GET['format']) && $_GET['format'] === 'json'); // some Indicia API calls use &format=json
-
+  $isJson =
+      strpos($accept, 'application/json') !== false ||   // explicit JSON request
+      strpos($accept, 'text/json') !== false ||
+      strpos($accept, 'application/vnd.api+json') !== false ||
+      $xhr ||                                            // AJAX usually expects JSON
+      (isset($_GET['format']) && $_GET['format'] === 'json'); // some Indicia API calls use &format=json
 
    http_response_code(503);
    header('Retry-After: 3600');
-  
-    if ($isJson) {
-        header('Content-Type: application/json');
-        echo json_encode([
-            'status'  => 'maintenance',
-            'message' => 'The Indicia Warehouse is currently offline for scheduled maintenance.'
-        ]);
+
+  if ($isJson) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'status'  => 'maintenance',
+        'message' => 'The Indicia Warehouse is currently offline for scheduled maintenance.'
+    ]);
+  } else {
+    // Return the HTML maintenance page or message
+    $file = __DIR__ . '/maintenance.html';
+
+    if (is_readable($file)) {
+      header('Content-Type: text/html; charset=UTF-8');
+      readfile($file);
     } else {
-        // Return the HTML maintenance page or message
-        $file = __DIR__ . '/maintenance.html';
-
-        if (is_readable($file)) {
-            header('Content-Type: text/html; charset=UTF-8');
-            readfile($file);
-        } else {
-            header('Content-Type: text/html; charset=UTF-8');
-            echo '<h1>Maintenance</h1>';
-            echo '<p>The service is temporarily unavailable.</p>';
-        }
-
+      header('Content-Type: text/html; charset=UTF-8');
+      echo '<h1>Maintenance</h1>';
+      echo '<p>The service is temporarily unavailable.</p>';
     }
-
-    exit;
+  }
+  exit;
 }
-
-
-
 
 /**
  * This file acts as the "front controller" to your application. You can
