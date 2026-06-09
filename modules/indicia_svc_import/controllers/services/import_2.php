@@ -73,6 +73,7 @@ class Import_2_Controller extends Service_Base_Controller {
         'error' => 'Invalid or missing entity parameter.',
         'status' => 'Bad Request',
       ]);
+      return;
     }
     $plugins = [];
     foreach (Kohana::config('config.modules') as $path) {
