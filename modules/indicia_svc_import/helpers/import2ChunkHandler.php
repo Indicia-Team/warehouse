@@ -556,8 +556,14 @@ SQL;
    */
   public static function getColumnInfoByProperty(array $columns, $property, $value) {
     foreach ($columns as $columnLabel => $info) {
-      if (isset($info[$property]) && $info[$property] === $value) {
-        return array_merge($info, ['columnLabel' => $columnLabel]);
+      if (isset($info[$property])) {
+        $fieldMatch = $info[$property] === $value;
+        // For foreign key lookup fields, remove the fk_ prefix and optional
+        // _id suffix before comparing.
+        $fkMatch = !empty($info['isFkField']) && str_replace(':fk_', ':', $info[$property]) === preg_replace('/_id$/', '', $value);
+        if ($fieldMatch || $fkMatch) {
+          return array_merge($info, ['columnLabel' => $columnLabel]);
+        }
       }
     }
     throw new ColNotFoundException("Property value $property=$value not found");
