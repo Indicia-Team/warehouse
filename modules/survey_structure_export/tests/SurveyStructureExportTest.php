@@ -36,6 +36,13 @@ class SurveyStructureExportTest extends TestCase {
   }
 
   /**
+   * Restore the base fixture so later test classes see a clean database.
+   */
+  public static function tearDownAfterClass(): void {
+    self::setupFixture('base_fixture.php');
+  }
+
+  /**
    * Set up function called before each tests.
    */
   protected function setUp(): void {

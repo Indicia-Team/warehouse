@@ -24,22 +24,22 @@
 $config['user_id'] = 'BRC';
 
 $config['authentication_methods'] = [
-  'hmacClient'  => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
-  'hmacWebsite' => ['allow_http', 'resource_options' => ['reports' => []]],
-  'directUser' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
+  'hmacClient'  => ['allow_http' => TRUE, 'resource_options' => ['reports' => ['featured' => TRUE]]],
+  'hmacWebsite' => ['allow_http' => TRUE, 'resource_options' => ['reports' => []]],
+  'directUser' => ['allow_http' => TRUE, 'resource_options' => ['reports' => ['featured' => TRUE]]],
   'directClient' => [
-    'allow_http',
+    'allow_http' => TRUE,
     'resource_options' => [
-      'reports' => ['featured' => true],
+      'reports' => ['featured' => TRUE],
       'elasticsearch' => ['es'],
     ],
   ],
-  'directWebsite' => ['allow_http', 'resource_options' => ['reports' => ['featured' => true]]],
+  'directWebsite' => ['allow_http' => TRUE, 'resource_options' => ['reports' => ['featured' => TRUE]]],
   'jwtUser' => [
     'allow_http' => TRUE,
     'allow_cors' => TRUE,
     'resource_options' => [
-      'reports' => ['featured' => true],
+      'reports' => ['featured' => TRUE],
       'entities' => [
         'samples',
         'occurrences',
@@ -51,7 +51,7 @@ $config['authentication_methods'] = [
     'allow_http' => TRUE,
     'allow_cors' => TRUE,
     'resource_options' => [
-      'reports' => ['featured' => true],
+      'reports' => ['featured' => TRUE],
       'entities' => [
         'samples',
         'occurrences',

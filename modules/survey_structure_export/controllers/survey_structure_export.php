@@ -407,6 +407,16 @@ class Survey_structure_export_Controller extends Indicia_Controller {
    * Constructor.
    */
   public function __construct() {
+    if (defined('inPhpUnit') && inPhpUnit) {
+      if (Kohana::$instance == NULL) {
+        Kohana::$instance = $this;
+      }
+      $this->uri = URI::instance();
+      $this->input = Input::instance();
+      $this->template = new View('templates/template');
+      $this->db = Database::instance();
+      return;
+    }
     parent::__construct();
   }
 

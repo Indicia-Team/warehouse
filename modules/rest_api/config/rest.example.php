@@ -52,8 +52,9 @@ $config['dataset_name_attr_id'] = 99;
  *
  * Note that hmacUser is not supported as the password is hashed on the server
  * so a hmac cannot be generated. Each key points to an array of options:
- * * allow_http - this must be set if access over http (rather than https) is
- *   going to be enabled. Use with caution in production environments.
+ * * allow_http - this must be set to TRUE if access over http (rather than
+ *   https) is going to be enabled. Use with caution in production
+ *   environments.
  * * resource_options - pass the name of a resource (e.g. reports) and an array
  *   of flags to pass to the resource. Flags depend on the resource.
  */
