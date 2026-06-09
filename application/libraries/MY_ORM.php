@@ -1049,7 +1049,7 @@ class ORM extends ORM_Core {
           $foundValue = FALSE;
           foreach ($vArray as $field => $value) {
             if (preg_match("/^$this->attrs_field_prefix\:$attr->id:?/", $field)) {
-              if (trim($value) !== '') {
+              if (is_string($value) && trim($value) !== '') {
                 $foundValue = TRUE;
                 break;
               }
