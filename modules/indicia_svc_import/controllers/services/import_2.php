@@ -73,6 +73,7 @@ class Import_2_Controller extends Service_Base_Controller {
         'error' => 'Invalid or missing entity parameter.',
         'status' => 'Bad Request',
       ]);
+      return;
     }
     $plugins = [];
     foreach (Kohana::config('config.modules') as $path) {
@@ -2173,7 +2174,7 @@ SQL;
       // Match against the whole taxon name.
       $searchField = 'taxon';
     }
-    $searchField = pg_escape_identifier($db->getLink(), $searchField);
+    $searchFieldEscaped = pg_escape_identifier($db->getLink(), $searchField);
     // Add a column to capture potential multiple matching taxa.
     $uniq = uniqid(TRUE);
     $sql = <<<SQL
@@ -2200,11 +2201,11 @@ SQL;
       INTO TEMPORARY species_matches_$uniq
       FROM import_temp.$config[tableName] i
       JOIN cache_taxa_taxon_lists cttl
-        ON trim(lower($matchingFieldSql))=lower(cttl.$searchField) AND cttl.allow_data_entry=true
+        ON trim(lower($matchingFieldSql))=lower(cttl.$searchFieldEscaped) AND cttl.allow_data_entry=true
         $filters
       -- Drop if accepted name exists which also matches.
       LEFT JOIN cache_taxa_taxon_lists cttlaccepted
-        ON trim(lower($matchingFieldSql))=lower(cttlaccepted.$searchField) AND cttlaccepted.id<>cttl.id
+        ON trim(lower($matchingFieldSql))=lower(cttlaccepted.$searchFieldEscaped) AND cttlaccepted.id<>cttl.id
         AND cttlaccepted.allow_data_entry=true AND cttlaccepted.preferred=true
         AND cttlaccepted.taxon_meaning_id=cttl.taxon_meaning_id
         AND cttlaccepted.taxon_list_id=cttl.taxon_list_id
@@ -2399,13 +2400,14 @@ SQL;
     $lookupAgainst = pg_escape_identifier($db->getLink(), inflector::plural($fkModel->lookup_against ?? "list_$fkEntity"));
     // Search field is lookup model default, but if there are 3 tokens in the
     // destination field name then the 3rd token overrides this.
-    $searchField = pg_escape_identifier($db->getLink(), $destFieldParts[2] ?? $fkModel->search_field);
+    $searchField = $destFieldParts[2] ?? $fkModel->search_field;
+    $searchFieldEscaped = pg_escape_identifier($db->getLink(), $searchField);
     $websiteId = (int) $config['global-values']['website_id'];
     $sql = <<<SQL
       UPDATE import_temp.$dbIdentifiers[tempTableName] i
       SET $fkField=l.id
       FROM $lookupAgainst l
-      WHERE trim(lower(i.$tempDbField))=lower(l.$searchField)
+      WHERE trim(lower(i.$tempDbField))=lower(l.$searchFieldEscaped)
       AND l.website_id=$websiteId;
     SQL;
     $db->query($sql);
@@ -2423,9 +2425,9 @@ SQL;
     }
     // Find the available possible options from the fk lookup list.
     $sql = <<<SQL
-      SELECT l.id, l.$searchField
+      SELECT l.id, l.$searchFieldEscaped
       FROM $lookupAgainst l
-      ORDER BY l.$searchField
+      ORDER BY l.$searchFieldEscaped
     SQL;
     $matchOptions = [];
     $rows = $db->query($sql)->result();

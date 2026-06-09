@@ -71,13 +71,13 @@ class import2ChunkHandler {
       // Don't process cache tables immediately to improve performance.
       cache_builder::$delayCacheUpdates = TRUE;
       $config = self::getConfig($configId);
+      $isBackground = $config['processingMode'] === 'background';
       // If request to start again sent, go from beginning.
       if (!empty($params['restart'])) {
         $config['rowsProcessed'] = 0;
         $config['parentEntityRowsProcessed'] = 0;
         self::saveConfig($configId, $config);
       }
-      $isBackground = $config['processingMode'] === 'background';
       self::getChunkSize($isBackground, $isPrecheck);
 
       // @todo Correctly set parent entity for other entities.
@@ -201,7 +201,7 @@ class import2ChunkHandler {
                   if (count($parentErrors) + count($errors) === 0) {
                     $config['errorsCount']++;
                   }
-                };
+                }
               }
             }
             $config['rowsProcessed']++;
@@ -210,7 +210,9 @@ class import2ChunkHandler {
         $config['parentEntityRowsProcessed']++;
       }
 
-      $progress = 100 * $config['rowsProcessed'] / $config['totalRows'];
+      $progress = $config['totalRows'] > 0
+        ? 100 * $config['rowsProcessed'] / $config['totalRows']
+        : 100;
       if ($progress === 100 && $config['errorsCount'] === 0 && !$isPrecheck) {
         self::tidyUpAfterImport($db, $configId, $config);
       }
@@ -225,7 +227,9 @@ class import2ChunkHandler {
         // import is restarted by refreshing the browser page, as the
         // rowsProcessed won't reach the total rows in this case.
         'status' => $config['rowsProcessed'] >= $config['totalRows'] || count($parentEntityDataRows) === 0 ? 'done' : ($isPrecheck ? 'checking' : 'importing'),
-        'progress' => 100 * $config['rowsProcessed'] / $config['totalRows'],
+        'progress' => $config['totalRows'] > 0
+          ? 100 * $config['rowsProcessed'] / $config['totalRows']
+          : 100,
         'rowsProcessed' => $config['rowsProcessed'],
         'totalRows' => $config['totalRows'],
         'errorsCount' => $config['errorsCount'],
@@ -245,7 +249,7 @@ class import2ChunkHandler {
       error_logger::log_error('Error in import_chunk', $e);
       kohana::log('debug', 'Error in import_chunk: ' . $e->getMessage());
       http_response_code(400);
-      if ($isBackground) {
+      if (!empty($isBackground)) {
         // Error handling differs in background mode.
         throw $e;
       }
@@ -347,13 +351,15 @@ class import2ChunkHandler {
    */
   public static function getConfig($configId) {
     // If call from older import client, the configId is the full file name.
-    $baseName = preg_replace('/(.csv|.xls|.xlsx|.json)$/i', '', $configId);
+    $baseName = preg_replace('/(\.csv|\.xls|\.xlsx|\.json)$/i', '', $configId);
     $configFile = DOCROOT . "import/$baseName.json";
     if (file_exists($configFile)) {
-      $f = fopen($configFile, "r");
-      $config = fgets($f);
-      fclose($f);
-      return json_decode($config, TRUE);
+      $config = file_get_contents($configFile);
+      $decoded = json_decode($config, TRUE);
+      if (!is_array($decoded)) {
+        throw new Exception("Config file $configFile contains invalid JSON.");
+      }
+      return $decoded;
     }
     else {
       throw new Exception("Config file $configFile missing.");
@@ -550,8 +556,14 @@ SQL;
    */
   public static function getColumnInfoByProperty(array $columns, $property, $value) {
     foreach ($columns as $columnLabel => $info) {
-      if (isset($info[$property]) && $info[$property] === $value) {
-        return array_merge($info, ['columnLabel' => $columnLabel]);
+      if (isset($info[$property])) {
+        $fieldMatch = $info[$property] === $value;
+        // For foreign key lookup fields, remove the fk_ prefix and optional
+        // _id suffix before comparing.
+        $fkMatch = !empty($info['isFkField']) && str_replace(':fk_', ':', $info[$property]) === preg_replace('/_id$/', '', $value);
+        if ($fieldMatch || $fkMatch) {
+          return array_merge($info, ['columnLabel' => $columnLabel]);
+        }
       }
     }
     throw new ColNotFoundException("Property value $property=$value not found");
@@ -622,7 +634,7 @@ SQL;
     $skipColumns = [];
     $skippedValues = [];
     foreach ($compoundFields as $def) {
-      $skipColumns = $skipColumns + $def['columns'];
+      $skipColumns = array_merge($skipColumns, $def['columns']);
     }
     foreach ($columns as $info) {
       $srcFieldName = $info['tempDbField'];
@@ -672,7 +684,7 @@ SQL;
           $mapped = [];
           foreach ($tokens as $token) {
             if (empty($config['multiValueLookupMatches'][$info['tempDbField']][$token])) {
-              throw new exception('Missing lookup mapping for token "' . $token . '" in field ' . $info['tempDbField']);
+              throw new Exception('Missing lookup mapping for token "' . $token . '" in field ' . $info['tempDbField']);
             }
             $mapped[] = (int) $config['multiValueLookupMatches'][$info['tempDbField']][$token];
           }
@@ -816,7 +828,9 @@ SQL;
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
     foreach ($errors as $fieldName => $error) {
-      list($entity, $field) = explode(':', $fieldName);
+      $fieldParts = explode(':', $fieldName, 2);
+      $entity = count($fieldParts) === 2 ? $fieldParts[0] : NULL;
+      $field = count($fieldParts) === 2 ? $fieldParts[1] : $fieldParts[0];
       $errorI18n = kohana::lang("form_error_messages.$field.$error");
       $errorStr = $errorI18n === "form_error_messages.$field.$error" ? $error : $errorI18n;
       // A date error might be reported against a vague date component
@@ -824,6 +838,9 @@ SQL;
       // date fields not being used.
       $field = preg_replace('/date_(start|end|type)$/', 'date', $field);
       try {
+        if (!$entity) {
+          throw new ColNotFoundException("No entity in error key $fieldName");
+        }
         $columnInfo = self::getColumnInfoByProperty($config['columns'], 'warehouseField', "$entity:$field");
         $errorsList[$columnInfo['columnLabel']] = $errorStr;
       }
@@ -862,12 +879,13 @@ SQL;
   private static function setRowDone($db, $rowId, $isPrecheck, array $config) {
     $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
     $fieldToUpdate = $isPrecheck ? 'checked' : 'imported';
+    $rowId = (int) $rowId;
     $sql = <<<SQL
       UPDATE import_temp.$dbIdentifiers[tempTableName]
       SET $fieldToUpdate = true
-      WHERE _row_id = $rowId;
+      WHERE _row_id = ?;
     SQL;
-    $db->query($sql);
+    $db->query($sql, $rowId);
   }
 
   /**
@@ -881,7 +899,7 @@ SQL;
    *   Import metadata configuration object.
    */
   private static function tidyUpAfterImport($db, $configId, array $config) {
-    foreach(array_keys($config['files']) as $fileName) {
+    foreach (array_keys($config['files']) as $fileName) {
       @unlink(DOCROOT . "import/$fileName");
     }
     @unlink(DOCROOT . "import/$configId.json");

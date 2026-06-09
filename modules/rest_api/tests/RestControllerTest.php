@@ -2184,7 +2184,8 @@ SQL;
     $db->query('UPDATE users SET core_role_id=null WHERE id=1');
     // Should succeed if we are a site admin.
     $db->query('INSERT INTO users_websites (user_id, website_id, site_role_id, created_by_id, created_on, updated_by_id, updated_on) ' .
-      ' VALUES (1, 1, 3, 1, now(), 1, now())');
+      'VALUES (1, 1, 1, 1, now(), 1, now()) ' .
+      'ON CONFLICT (user_id, website_id) DO UPDATE SET site_role_id=1');
     $response = $this->callService(
       'surveys',
       FALSE,

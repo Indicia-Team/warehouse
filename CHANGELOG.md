@@ -4,6 +4,30 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.23.0
+*2026-06-09*
+
+* Create a file called MAINTENANCE in the root folder of the warehouse in order to put the
+  warehouse into maintenance mode.
+* Adds a field for defining the sort order of licences in terms of their permissiveness to the
+  licences table.
+* Work queue task added to update a user's licence for existing records to a more permissive one.
+* Improveness to the robustnees of scheduled tasks process locking, so they are less likely to be
+  left in a stuck state.
+* Fixes to the v2 importer - see https://github.com/BiologicalRecordsCentre/iRecord/issues/2063.
+  * Ensure that the field name given in the errors field in a returned spreadsheet is correct.
+  * Fix errors using the licence code import field type.
+  * Fix errors that occurred if a multi-value custom attribute is required but data are imported
+    with no value.
+* Apply uniqueness constraints to users_websites table data.
+* Some general improvements to code robustness and in particular in the v2 importer.
+* Remove Vice County (using database location ID) import field. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/2054. Also fixes an issue with the
+  resulting options not being in order, so other sample attributes were omitted from the options
+  list.
+* Add import info to record details reports. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/1753.
+
 ## Version 9.22.0
 *2026-03-30*
 * Add support for posting occurrences with associations to the REST API. See

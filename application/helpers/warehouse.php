@@ -121,6 +121,13 @@ class warehouse {
   private static $lock;
 
   /**
+   * Path of the lock file currently held by this process.
+   *
+   * @var string|null
+   */
+  private static $lockFilePath;
+
+  /**
    * Loads any of the client helper libraries.
    *
    * Also ensures that the correct resources are loaded when the libraries are
@@ -332,6 +339,26 @@ class warehouse {
     else {
       $params = $_GET;
     }
+    return self::normaliseLockParameters($params);
+  }
+
+  /**
+   * Canonicalise lock parameters so order variations map to one lock.
+   *
+   * @param mixed $params
+   *   Lock parameters.
+   *
+   * @return mixed
+   *   Canonicalised lock parameters.
+   */
+  private static function normaliseLockParameters($params) {
+    if (!is_array($params)) {
+      return $params;
+    }
+    foreach ($params as $key => $value) {
+      $params[$key] = self::normaliseLockParameters($value);
+    }
+    ksort($params);
     return $params;
   }
 
@@ -349,7 +376,7 @@ class warehouse {
    *   unique to this configuration of the scheduled tasks.
    */
   private static function getLockFilename($type) {
-    $uid = md5(http_build_query(self::getLockParameters()));
+    $uid = md5(json_encode(self::getLockParameters()));
     return DOCROOT . "application/cache/$type.lock-$uid.lock";
   }
 
@@ -364,16 +391,30 @@ class warehouse {
    */
   public static function lockProcess($type) {
     $lockFile = self::getLockFilename($type);
+    self::$lockFilePath = $lockFile;
     self::$lock = fopen($lockFile, 'c+');
     if (self::$lock === FALSE) {
       kohana::log('alert', "Process $type attempt aborted because lock file could not be opened.");
       die("\nProcess $type attempt aborted because lock file could not be opened.\n");
     }
     if (!flock(self::$lock, LOCK_EX | LOCK_NB)) {
-      kohana::log('alert', "Process $type attempt aborted as already running.");
-      die("\nProcess $type attempt aborted as already running.\n");
+      rewind(self::$lock);
+      $holderInfo = trim((string) stream_get_contents(self::$lock));
+      $msg = "Process $type attempt aborted as already running.";
+      if (!empty($holderInfo)) {
+        $msg .= " Current lock holder info: $holderInfo";
+      }
+      kohana::log('alert', $msg);
+      die("\n$msg\n");
     }
-    fwrite(self::$lock, 'Got a lock: ' . var_export(self::getLockParameters(), TRUE));
+    ftruncate(self::$lock, 0);
+    rewind(self::$lock);
+    fwrite(self::$lock, json_encode([
+      'pid' => getmypid(),
+      'started_at' => date('c'),
+      'params' => self::getLockParameters(),
+    ]));
+    fflush(self::$lock);
   }
 
   /**
@@ -384,12 +425,11 @@ class warehouse {
    */
   public static function unlockProcess($type) {
     if (is_resource(self::$lock)) {
+      flock(self::$lock, LOCK_UN);
       fclose(self::$lock);
     }
-    $lockFile = self::getLockFilename($type);
-    if (file_exists($lockFile)) {
-      @unlink($lockFile);
-    }
+    self::$lock = NULL;
+    self::$lockFilePath = NULL;
   }
 
   /**

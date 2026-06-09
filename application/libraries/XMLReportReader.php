@@ -129,9 +129,9 @@ class XMLReportReader_Core implements ReportReader {
     if ($reader->open($report) === FALSE) {
       throw new Exception("Report $report could not be opened.");
     }
-    $metadata = array('title' => 'Untitled (' . $report . ')', 'description' => 'No description provided');
-    while($reader->read()) {
-      if ($reader->nodeType == XMLREADER::ELEMENT && $reader->name === 'report') {
+    $metadata = ['title' => 'Untitled (' . $report . ')', 'description' => 'No description provided'];
+    while ($reader->read()) {
+      if ($reader->nodeType == XMLReader::ELEMENT && $reader->name === 'report') {
         $metadata['title'] = $reader->getAttribute('title');
         $metadata['description'] = $reader->getAttribute('description');
         $metadata['featured'] = $reader->getAttribute('featured');
@@ -153,11 +153,10 @@ class XMLReportReader_Core implements ReportReader {
           $metadata['description'] = 'No description provided';
         }
       }
-      elseif ($reader->nodeType==XMLREADER::ELEMENT && $reader->name === 'query') {
-        if ($reader->getAttribute('standard_params')) {
-          $metadata['standard_params'] = $reader->getAttribute('standard_params');
-          if (!$metadata['standard_params'])
-            unset($metadata['standard_params']);
+      elseif ($reader->nodeType == XMLReader::ELEMENT && $reader->name === 'query') {
+        $standardParams = $reader->getAttribute('standard_params');
+        if ($standardParams) {
+          $metadata['standard_params'] = $standardParams;
         }
         // No need to read further than the query element
         break;
@@ -188,7 +187,7 @@ class XMLReportReader_Core implements ReportReader {
       $this->colsToInclude = $colsToInclude;
       while ($reader->read()) {
         switch ($reader->nodeType) {
-          case (XMLREADER::ELEMENT):
+          case (XMLReader::ELEMENT):
             switch ($reader->name) {
               case 'report':
                 $this->title = $reader->getAttribute('title');
@@ -199,9 +198,10 @@ class XMLReportReader_Core implements ReportReader {
               case 'query':
                 $sp = $reader->getAttribute('standard_params');
                 $this->websiteFilterField = $reader->getAttribute('website_filter_field');
-                if ($this->websiteFilterField === NULL)
+                if ($this->websiteFilterField === NULL) {
                   // default field name for filtering against websites
                   $this->websiteFilterField = 'w.id';
+                }
                 $this->trainingFilterField = $reader->getAttribute('training_filter_field');
                 if ($this->trainingFilterField === NULL) {
                   // default field name for filtering training records
@@ -860,8 +860,9 @@ class XMLReportReader_Core implements ReportReader {
    * Gets a list of the columns.
    */
   public function getColumns() {
-    if (empty($this->colsToInclude))
+    if (empty($this->colsToInclude)) {
       return $this->columns;
+    }
     else {
       // user override of the columns to return
       $columns = [];
@@ -969,7 +970,7 @@ class XMLReportReader_Core implements ReportReader {
     // table list
     $from = ""; // this is built from back to front, to scan up the tree of tables that are only relevent to this attribute request.
     $i = $attributes->parentTableIndex;
-    while(TRUE){
+    while (TRUE) {
       if ($i == 0) {
         $from = $this->tables[$i]['tablename'] . " lt" . $i . $from;
         break;
@@ -1103,7 +1104,7 @@ TBL;
         // node.
         $reader->XML("<container>$paramXml</container>");
         while ($reader->read()) {
-          if ($reader->nodeType == XMLREADER::ELEMENT && $reader->name === 'join') {
+          if ($reader->nodeType == XMLReader::ELEMENT && $reader->name === 'join') {
             if (!isset($this->params[$name]['joins'])) {
               $this->params[$name]['joins'] = [];
             }
@@ -1113,7 +1114,7 @@ TBL;
               'sql' => $reader->readString(),
             ];
           }
-          if ($reader->nodeType == XMLREADER::ELEMENT && $reader->name === 'where') {
+          if ($reader->nodeType == XMLReader::ELEMENT && $reader->name === 'where') {
             if (!isset($this->params[$name]['wheres'])) {
               $this->params[$name]['wheres'] = [];
             }
@@ -1204,8 +1205,9 @@ TBL;
             }
           }
           // and any references in the preprocessing query point to the context version of the param value
-          if (isset($cfg['preprocess']))
+          if (isset($cfg['preprocess'])) {
             $cfg['preprocess'] = str_replace("#$param#", "#{$param}_context#", $cfg['preprocess']);
+          }
           $this->params[$param . '_context'] = $cfg;
         }
       }
@@ -1267,10 +1269,12 @@ TBL;
     if (!empty($providedParams['paramsFormExcludes'])) {
       $excludes = json_decode($providedParams['paramsFormExcludes'], TRUE);
       if (in_array($from, $excludes) || in_array("{$from}_context", $excludes)) {
-        if (in_array($from, $excludes))
+        if (in_array($from, $excludes)) {
           $excludes[] = $to;
-        if (in_array("{$from}_context", $excludes))
+        }
+        if (in_array("{$from}_context", $excludes)) {
           $excludes[] = "{$to}_context";
+        }
         $providedParams['paramsFormExcludes'] = json_encode($excludes);
       }
     }
@@ -1281,8 +1285,7 @@ TBL;
    */
   private function mergeXmlColumn($reader) {
     $name = $reader->getAttribute('name');
-    if (!array_key_exists($name, $this->columns))
-    {
+    if (!array_key_exists($name, $this->columns)) {
       // set a default column setup
       $this->columns[$name] = array(
         'visible' => 'provisional_true',
@@ -1294,8 +1297,9 @@ TBL;
     $def = [];
     if ($reader->moveToFirstAttribute()) {
       do {
-        if ($reader->name!='name')
+        if ($reader->name != 'name') {
           $def[$reader->name] = $reader->value;
+        }
       } while ($reader->moveToNextAttribute());
     }
     // move back up to where we started
@@ -1305,33 +1309,55 @@ TBL;
     $this->hasColumnsSql = $this->hasColumnsSql || isset($this->columns[$name]['sql']);
     $this->hasAggregates = $this->hasAggregates || (isset($this->columns[$name]['aggregate']) && $this->columns[$name]['aggregate']=='true');
     // do we have any datatype attributes, used for column based filtering? Data types can't be used without the SQL
-    if (isset($this->columns[$name]['datatype']) && isset($this->columns[$name]['sql']))
+    if (isset($this->columns[$name]['datatype']) && isset($this->columns[$name]['sql'])) {
       $this->filterableColumns[$name] = $this->columns[$name];
+    }
     // internal sql is used in group by and count queries. If not set, just use the SQL
-    if (!empty($this->columns[$name]['sql']))
+    if (!empty($this->columns[$name]['sql'])) {
       $this->columns[$name]['internal_sql'] = empty($this->columns[$name]['internal_sql']) ?
           $this->columns[$name]['sql'] : $this->columns[$name]['internal_sql'];
+    }
   }
 
   private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='',
     $orderby='', $mappable='', $autodef=TRUE) {
     if (array_key_exists($name, $this->columns)) {
-      if ($display != '') $this->columns[$name]['display'] = $display;
-      if ($style != '') $this->columns[$name]['style'] = $style;
-      if ($feature_style != '') $this->columns[$name]['feature_style'] = $feature_style;
-      if ($class != '') $this->columns[$name]['class'] = $class;
+      if ($display != '') {
+        $this->columns[$name]['display'] = $display;
+      }
+      if ($style != '') {
+        $this->columns[$name]['style'] = $style;
+      }
+      if ($feature_style != '') {
+        $this->columns[$name]['feature_style'] = $feature_style;
+      }
+      if ($class != '') {
+        $this->columns[$name]['class'] = $class;
+      }
       if ($visible === 'false') {
-        if($this->columns[$name]['visible'] !== 'true') // allows a false to override a provisional_true, but not a true.
+        if ($this->columns[$name]['visible'] !== 'true') {
+          // Allows a false to override a provisional_true, but not a true.
           $this->columns[$name]['visible'] = 'false';
-      } elseif ($visible === 'true') // don't make any change if $visible is not set
+        }
+      }
+      elseif ($visible === 'true') {
+        // Don't make any change if $visible is not set.
         $this->columns[$name]['visible'] = 'true';
-      if ($img == 'true' || $this->columns[$name]['img'] == 'true') $this->columns[$name]['img'] = 'true';
-      if ($orderby != '') $this->columns[$name]['orderby'] = $orderby;
-      if ($mappable != '') $this->columns[$name]['mappable'] = $mappable;
-      if ($autodef != '') $this->columns[$name]['autodef'] = $autodef;
+      }
+      if ($img == 'true' || $this->columns[$name]['img'] == 'true') {
+        $this->columns[$name]['img'] = 'true';
+      }
+      if ($orderby != '') {
+        $this->columns[$name]['orderby'] = $orderby;
+      }
+      if ($mappable != '') {
+        $this->columns[$name]['mappable'] = $mappable;
+      }
+      if ($autodef != '') {
+        $this->columns[$name]['autodef'] = $autodef;
+      }
     }
-    else
-    {
+    else {
       $this->columns[$name] = [
         'display' => $display,
         'style' => $style,
@@ -1396,7 +1422,7 @@ TBL;
 
   private function mergeTabColumn($name, $func = '', $display = '', $style = '', $feature_style = '', $class = '', $visible = '', $autodef = FALSE) {
     $found = FALSE;
-    for ($r = 0; $r < count($this->tables[$this->tableIndex]['columns']); $r++){
+    for ($r = 0; $r < count($this->tables[$this->tableIndex]['columns']); $r++) {
       if ($this->tables[$this->tableIndex]['columns'][$r]['name'] == $name) {
         $found = TRUE;
         if ($func != '') {
@@ -1414,8 +1440,9 @@ TBL;
       }
     }
     // force visible if the column is already declared as visible. This prevents the id field from being forced to hidden if explicitly included.
-    if (isset($this->columns['lt' . $this->tableIndex . "_" . $name]['visible']) && $this->columns['lt' . $this->tableIndex . "_" . $name]['visible'] == 'true')
+    if (isset($this->columns['lt' . $this->tableIndex . "_" . $name]['visible']) && $this->columns['lt' . $this->tableIndex . "_" . $name]['visible'] == 'true') {
       $visible = 'true';
+    }
     $this->mergeColumn('lt' . $this->tableIndex . "_" . $name, $display, $style, $feature_style, $class, $visible, 'false', $autodef);
   }
 

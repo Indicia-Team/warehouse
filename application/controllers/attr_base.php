@@ -114,7 +114,10 @@ abstract class Attr_Base_Controller extends Gridview_Base_Controller {
     }
     else {
       // We need to know if this attribute was created by the logged in user.
-      $r['metaFields:disabled_input'] = $this->model->created_by_id == ($_SESSION['auth_user']->id) ? 'NO' : 'YES';
+      $authUserId = (isset($_SESSION['auth_user']) && is_object($_SESSION['auth_user']) && isset($_SESSION['auth_user']->id))
+        ? $_SESSION['auth_user']->id
+        : NULL;
+      $r['metaFields:disabled_input'] = $this->model->created_by_id == $authUserId ? 'NO' : 'YES';
     }
     $this->model->populate_validation_rules();
     return $r;
@@ -134,7 +137,7 @@ abstract class Attr_Base_Controller extends Gridview_Base_Controller {
    * Saves a submitted edit form.
    */
   public function save() {
-    if ($_POST['metaFields:disabled_input'] === 'NO') {
+    if (isset($_POST['metaFields:disabled_input']) && $_POST['metaFields:disabled_input'] === 'NO') {
       // Build the validation_rules field from the set of controls that are associated with it.
       $rules = array();
       $allAvailableRules = array(
@@ -156,7 +159,9 @@ abstract class Attr_Base_Controller extends Gridview_Base_Controller {
         }
       }
       // Trim the input data, incase spaces are left in the validation parameters which would affect our tests.
-      $_POST = array_map('trim', $_POST);
+      $_POST = array_map(function ($value) {
+        return is_string($value) ? trim($value) : $value;
+      }, $_POST);
       if (array_key_exists('valid_length', $_POST) && $_POST['valid_length'] == 1
           && !empty($_POST['valid_length_max'])) {
         $min = empty($_POST['valid_length_min']) ? '0' : $_POST['valid_length_min'];

@@ -1026,11 +1026,18 @@ class ORM extends ORM_Core {
     $this->validate($validationObj);
     // Errors can be in $this->errors from preSubmit function, so merge them.
     $errors = array_merge($this->errors, $validationObj->errors());
-    // Ensure fieldname prefixed with entity.
-    $errors = array_combine(
-      array_map(fn($k) => "$this->object_name:$k", array_keys($errors)),
-      $errors
-    );
+    // Ensure fieldnames are prefixed with the entity, but preserve custom
+    // attribute keys which already use the attr prefix form.
+    $prefixedErrors = [];
+    foreach ($errors as $key => $error) {
+      if (preg_match('/^[a-z]{3}Attr:/', $key)) {
+        $prefixedErrors[$key] = $error;
+      }
+      else {
+        $prefixedErrors[$this->object_name . ':' . $key] = $error;
+      }
+    }
+    $errors = $prefixedErrors;
     if ($this->has_attributes) {
       // @todo The getAttributes call should use a type filter e.g. to filter
       // on sample_method_id.
@@ -1042,7 +1049,7 @@ class ORM extends ORM_Core {
           $foundValue = FALSE;
           foreach ($vArray as $field => $value) {
             if (preg_match("/^$this->attrs_field_prefix\:$attr->id:?/", $field)) {
-              if (trim($value) !== '') {
+              if (is_string($value) && trim($value) !== '') {
                 $foundValue = TRUE;
                 break;
               }
