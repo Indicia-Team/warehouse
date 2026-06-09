@@ -54,6 +54,8 @@ class Models_Attribute_Encryption_Test extends Indicia_DatabaseTestCase {
 
   public function testEncryptedAttributeValuesAreStoredEncrypted() {
     $this->db->query('UPDATE occurrence_attributes SET encrypt=true WHERE id=1');
+    // Attribute definitions are cached, so invalidate after direct DB change.
+    Cache::instance()->delete('attrInfo.3_occurrence_1');
 
     $array = [
       'website_id' => 1,
@@ -72,7 +74,6 @@ class Models_Attribute_Encryption_Test extends Indicia_DatabaseTestCase {
     ];
     $submission = submission_builder::build_submission($array, $structure);
     $response = data_entry_helper::forward_post_to('sample', $submission, $this->auth['write_tokens']);
-var_export($response);
     $this->assertArrayHasKey('success', $response, 'Sample/occurrence submission did not succeed.');
     $sampleId = (int) $response['success'];
     $occurrenceId = (int) ORM::factory('occurrence', ['sample_id' => $sampleId])->id;
