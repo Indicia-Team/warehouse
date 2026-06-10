@@ -40,65 +40,11 @@ function hostsite_get_config_value($context, $name, $default = FALSE) {
   return $default;
 }
 
-/**
- * PHPSpreadsheet filter for reading the header row.
- */
-class FirstRowReadFilter implements IReadFilter {
-
-  /**
-   * Only read cells in row 1.
-   */
-  public function readCell($column, $row, $worksheetName = '') {
-    return $row == 1;
-  }
-
-}
-
-/**
- * PHPSpreadsheet filter for reading a range of data rows.
- */
-class RangeReadFilter implements IReadFilter {
-
-  /**
-   * Number of rows into the spreadsheet where reading starts.
-   *
-   * @var int
-   */
-  private $offset;
-
-  /**
-   * Number of rows to read.
-   *
-   * @var int
-   */
-  private $limit;
-
-  /**
-   * Indexes of the columns to include.
-   *
-   * @var array
-   */
-  private $columnIndexes;
-
-  /**
-   * Constructor stores parameters.
-   */
-  public function __construct($offset, $limit, $columnIndexes) {
-    $this->offset = $offset;
-    $this->limit = $limit;
-    $this->columnIndexes = $columnIndexes;
-  }
-
-  /**
-   * Limit range of rows.
-   */
-  public function readCell($column, $row, $worksheetName = '') {
-    $inRange = $row >= $this->offset && $row < $this->offset + $this->limit;
-    $wantCol = in_array(ord($column) - 65, $this->columnIndexes);
-    return $inRange && $wantCol;
-  }
-
-}
+$readCellParams = (new ReflectionMethod(IReadFilter::class, 'readCell'))->getParameters();
+$readCellIsTyped = isset($readCellParams[0]) && $readCellParams[0]->hasType();
+$restVerifyFilterCompatibilityFile = DOCROOT . 'application/libraries/phpspreadsheet_compat/' .
+  ($readCellIsTyped ? 'import_read_filters_typed.php' : 'import_read_filters_untyped.php');
+require_once $restVerifyFilterCompatibilityFile;
 
 /**
  * Helper class for applying verification actions in a spreadsheet.
@@ -137,7 +83,7 @@ class rest_spreadsheet_verify {
         // Start - load the first header row to find the important column
         // indexes.
         $reader = self::getReader($metadata);
-        $reader->setReadFilter(new FirstRowReadFilter());
+        $reader->setReadFilter(new IndiciaImportFirstRowReadFilter());
         $spreadsheet = $reader->load(DOCROOT . "import/$metadata[fileId].$metadata[type]");
         $header = $spreadsheet->getActiveSheet()->toArray();
         if (count($header) === 0) {
@@ -180,7 +126,7 @@ class rest_spreadsheet_verify {
     // Limit the rows we are reading to this batch.
     // Range reader offset is indexed from 1, plus 1 more to skip header.
     $offset = $metadata['totalChecked'] + 2;
-    $reader->setReadFilter(new RangeReadFilter($offset, ROWS_PER_BATCH, [
+    $reader->setReadFilter(new IndiciaImportRangeReadFilter($offset, ROWS_PER_BATCH, [
       $metadata['idColIndex'],
       $metadata['statusColIndex'],
       $metadata['commentColIndex'],
