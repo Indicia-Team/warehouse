@@ -31,69 +31,14 @@ use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 use PhpOffice\PhpSpreadsheet\Worksheet\Row;
 
-/**
- * PHPSpreadsheet filter for reading the header row.
- */
-class FirstRowReadFilter implements IReadFilter {
-
-  /**
-   * Enable reading of row 1 only.
-   *
-   * @param int $columnAddress
-   *   Column letter - ignored.
-   * @param int $row
-   *   Row number.
-   * @param string $worksheetName
-   *   Worksheet name - ignored.
-   */
-  public function readCell(string $columnAddress, int $row, string $worksheetName = ''): bool {
-    return $row == 1;
-  }
-
-}
-
-/**
- * PHPSpreadsheet filter for reading a range of data rows.
- */
-class RangeReadFilter implements IReadFilter {
-
-  /**
-   * Start row to read from.
-   *
-   * @var int
-   */
-  private $offset;
-
-  /**
-   * Number of rows to read.
-   *
-   * @var int
-   */
-  private $limit;
-
-  /**
-   * Object constructor, sets offset and limit.
-   */
-  public function __construct($offset, $limit) {
-    $this->offset = $offset;
-    $this->limit = $limit;
-  }
-
-  /**
-   * Enable reading of only the rows that are in range.
-   *
-   * @param int $columnAddress
-   *   Column letter - ignored.
-   * @param int $row
-   *   Row number.
-   * @param string $worksheetName
-   *   Worksheet name - ignored.
-   */
-  public function readCell(string $columnAddress, int $row, string $worksheetName = ''): bool {
-    return $row >= $this->offset && $row < $this->offset + $this->limit;
-  }
-
-}
+// PhpSpreadsheet 5.7.0 added type hints to the IReadFilter interface, so we
+// need to check if they are present and load a compatible filter
+// implementation.
+$readCellParams = (new ReflectionMethod(IReadFilter::class, 'readCell'))->getParameters();
+$readCellIsTyped = isset($readCellParams[0]) && $readCellParams[0]->hasType();
+$importFilterCompatibilityFile = DOCROOT . 'application/libraries/phpspreadsheet_compat/' .
+  ($readCellIsTyped ? 'import_read_filters_typed.php' : 'import_read_filters_untyped.php');
+require_once $importFilterCompatibilityFile;
 
 /**
  * A library of tools for handling import files.
@@ -238,7 +183,7 @@ class ImportTools {
     }
     $reader->setLoadSheetsOnly($worksheetData[0]['worksheetName']);
     // Only read first row.
-    $reader->setReadFilter(new FirstRowReadFilter());
+    $reader->setReadFilter(new IndiciaImportFirstRowReadFilter());
     $file = $reader->load(DOCROOT . "import/$fileName");
     $data = $file->getActiveSheet()->toArray();
     if (count($data) === 0) {
@@ -282,7 +227,7 @@ class ImportTools {
     $rowsRead = $config['rowsRead'] ?? $config['files'][$fileName]['rowsRead'];
     // Add two to the range start, as it is indexed from one not zero unlike
     // the data array read out and we skip the header row.
-    $reader->setReadFilter(new RangeReadFilter($rowsRead + 2, $limit));
+    $reader->setReadFilter(new IndiciaImportRangeReadFilter($rowsRead + 2, $limit));
     $file = $reader->load(DOCROOT . "import/$fileName");
     $this->filesToDisconnect[] = $file;
     if ($rowsRead + 2 > $file->getActiveSheet()->getHighestRow()) {

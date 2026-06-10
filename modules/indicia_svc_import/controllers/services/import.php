@@ -52,49 +52,11 @@ class CustomIndiciaValueBinder extends DefaultValueBinder {
 
 }
 
-/**
- * PHPSpreadsheet filter for reading the header row.
- */
-class FirstRowReadFilter implements IReadFilter {
-
-  public function readCell($columnAddress, $row, $worksheetName = ''): bool {
-    return $row == 1;
-  }
-
-}
-
-/**
- * PHPSpreadsheet filter for reading a range of data rows.
- */
-class RangeReadFilter implements IReadFilter {
-
-  /**
-   * Offset of range to read.
-   *
-   * @var int
-   */
-  private $offset;
-
-  /**
-   * Limit of number of records of range to read.
-   *
-   * @var int
-   */
-  private $limit;
-
-  public function __construct($offset, $limit) {
-    $this->offset = $offset;
-    $this->limit = $limit;
-  }
-
-  /**
-   * Limit range of rows.
-   */
-  public function readCell($columnAddress, $row, $worksheetName = ''): bool {
-    return $row >= $this->offset && $row < $this->offset + $this->limit;
-  }
-
-}
+$readCellParams = (new ReflectionMethod(IReadFilter::class, 'readCell'))->getParameters();
+$readCellIsTyped = isset($readCellParams[0]) && $readCellParams[0]->hasType();
+$importFilterCompatibilityFile = DOCROOT . 'application/libraries/phpspreadsheet_compat/' .
+  ($readCellIsTyped ? 'import_read_filters_typed.php' : 'import_read_filters_untyped.php');
+require_once $importFilterCompatibilityFile;
 /**
  * Controller class for import web services.
  */
@@ -371,7 +333,7 @@ class Import_Controller extends Service_Base_Controller {
     }
     $reader->setLoadSheetsOnly($worksheetData[0]['worksheetName']);
     // Only read first row.
-    $reader->setReadFilter(new FirstRowReadFilter());
+    $reader->setReadFilter(new IndiciaImportFirstRowReadFilter());
     $file = $reader->load($fileName);
     $data = $file->getActiveSheet()->toArray();
     if (count($data) === 0) {
@@ -1684,7 +1646,7 @@ class Import_Controller extends Service_Base_Controller {
     }
     $reader->setLoadSheetsOnly($worksheetData[0]['worksheetName']);
     // Limit rows read. First row to read is row 2.
-    $reader->setReadFilter(new RangeReadFilter($offset + 2, $limit));
+    $reader->setReadFilter(new IndiciaImportRangeReadFilter($offset + 2, $limit));
     $file = $reader->load($fileName);
     return $file->getActiveSheet()->toArray();
   }
