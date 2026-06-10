@@ -25,6 +25,7 @@ defined('SYSPATH') or die('No direct script access.');
 
 require 'vendor/autoload.php';
 
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Reader\Xls;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
@@ -286,7 +287,7 @@ class ImportTools {
    * @param PhpOffice\PhpSpreadsheet\Worksheet\Row $row
    *   Worksheet row instance from a RowIterator.
    * @param ?array $columnTitles
-   *   Optional list of column titles to use as array keys.
+   *   Optional list of column indexes or titles to use as array keys.
    *
    * @return array
    *   Row data as a simple or associative array.
@@ -297,7 +298,14 @@ class ImportTools {
     $rowData = [];
     foreach ($cellIterator as $index => $cell) {
       if ($columnTitles) {
-        $rowData[$columnTitles[$index]] = $cell->getValue();
+        $titleKey = $index;
+        if (!array_key_exists($titleKey, $columnTitles) && is_string($index)) {
+          // Map string column titles to 0-based index.
+          $titleKey = Coordinate::columnIndexFromString($index) - 1;
+        }
+        if (array_key_exists($titleKey, $columnTitles)) {
+          $rowData[$columnTitles[$titleKey]] = $cell->getValue();
+        }
       }
       else {
         $rowData[] = $cell->getValue();
