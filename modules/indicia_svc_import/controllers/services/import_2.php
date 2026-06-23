@@ -1712,6 +1712,41 @@ SQL;
     }
   }
 
+  public function get_imports()
+  {
+      header("Content-Type: application/json");
+
+      try {
+          $this->authenticate('read');
+
+          $imports = ORM::factory('import')
+              ->where('created_by_id', '=', $this->auth_user_id)
+              ->and_where('website_id', '=', $this->website_id)
+              ->order_by('created_on', 'DESC')
+              ->find_all();
+
+          $imports_array = [];
+
+          foreach ($imports as $import) {
+              $imports_array[] = $import->as_array();
+          }
+
+          echo json_encode([
+              'status' => 'ok',
+              'imports' => $imports_array,
+          ]);
+      }
+      catch (RequestAbort $e) {
+          // Ignore as abort already handled.
+      }
+      catch (AuthenticationError $e) {
+          $this->fail($e->getMessage(), 'Unauthorised', 401, FALSE);
+      }
+      catch (Exception $e) {
+          $this->fail($e->getMessage(), 'Internal Server Error', 500, FALSE);
+      }
+  }
+
   /**
    * Handle a web-service error.
    *
