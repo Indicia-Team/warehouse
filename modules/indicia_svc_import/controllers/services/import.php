@@ -1111,7 +1111,7 @@ class Import_Controller extends Service_Base_Controller {
         $websiteJoin
         $join
         WHERE $tableEsc.deleted=false
-        AND $wheres
+        $wheres
       SQL)->result_array(FALSE);
       if (count($existing) > 0) {
         // If an previous record exists, we have to check for existing
