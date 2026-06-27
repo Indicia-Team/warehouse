@@ -2838,24 +2838,26 @@ class ORM extends ORM_Core {
         if (!isset($saveArray[$field])) {
           return FALSE;
         }
-        $wheresUpdated = TRUE;
         if ($fieldTokens[0] === 'date') {
           $vd = vague_date::string_to_vague_date($saveArray[$field]);
-          $wheres .= " AND ($table.date_start = " . $escapeLiteral($vd[0]) . ')';
+          $wheres .= " ($table.date_start = " . $escapeLiteral($vd[0]) . ')';
           $wheres .= " AND ($table.date_end = " . $escapeLiteral($vd[1]) . ')';
           $wheres .= " AND ($table.date_type = " . $escapeLiteral($vd[2]) . ')';
         }
         else {
-          $wheres .= " AND ($table.$fieldTokens[0] = " . $escapeLiteral($saveArray[$field]) . ')';
+          $wheres .= " ($table.$fieldTokens[0] = " . $escapeLiteral($saveArray[$field]) . ')';
         }
+        $wheres = self::addAndToTheEndOfWhereClause($wheres);
+        $wheresUpdated = TRUE;
       } else {
         // There is a possibility that we are looking for for a supermodel id
         // which is represented as an ID in the supermodel itself. At this
         // point the $correctedField ends in _id.
         $superModelIDField = substr($fieldTokens[0], 0, -3); // cut off _id
         if (isset($saveArray[$superModelIDField . ':id'])) {
+          $wheres .= " ($table.$fieldTokens[0] = " . $escapeLiteral($saveArray[$superModelIDField . ':id']) . ')';
+          $wheres = self::addAndToTheEndOfWhereClause($wheres);
           $wheresUpdated = TRUE;
-          $wheres .= " AND ($table.$fieldTokens[0] = " . $escapeLiteral($saveArray[$superModelIDField . ':id']) . ')';
         }
         else {
           foreach ($saveArray as $saveField => $saveValue) {
@@ -2917,12 +2919,15 @@ class ORM extends ORM_Core {
                   }
                   $fk = $this->fkLookup($fkLookup);
                   if ($fk) {
-                    $wheres .= " AND ($table.$correctedField = " . $escapeLiteral($fk) . ')';
+                    $wheres .= " ($table.$correctedField = " . $escapeLiteral($fk) . ')';
+                    $wheres = self::addAndToTheEndOfWhereClause($wheres);
                     $wheresUpdated = TRUE;
                   }
                 } else {
-                  $wheres .= " AND ($table.$correctedField = " . $escapeLiteral($saveValue) . ')';
+                  $wheres .= " ($table.$correctedField = " . $escapeLiteral($saveValue) . ')';
+                  $wheres = self::addAndToTheEndOfWhereClause($wheres);
                   $wheresUpdated = TRUE;
+
                 }
               }
             }
@@ -2935,6 +2940,27 @@ class ORM extends ORM_Core {
         return FALSE;
       }
     }
+    // Remove AND from the end of the WHERE
+    // when the clause has finished being built.
+    $wheres = rtrim($wheres, " AND");
+    return $wheres;
+  }
+
+  /**
+   * Add AND on the end of the WHERE clause.
+   *
+   * Add an "AND" on the back of the WHERE clause as it is
+   * gradually built.
+   * The final AND will be removed elsewhere.
+   *
+   * @param array $wheres
+   *   The WHERE clause built so far.
+   *
+   * @return string
+   *   Return the WHERE clause built so far, with AND place on end.
+   */
+  private function addAndToTheEndOfWhereClause($wheres) {
+    $wheres .= " AND";
     return $wheres;
   }
 
