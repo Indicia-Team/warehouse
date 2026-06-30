@@ -2166,7 +2166,7 @@ SQL;
       // When matching genus, add the species name epithet paired field to the
       // SQL used for matching.
       foreach ($config['columns'] as $colInfo) {
-        if (isset($colInfo['warehouseField']) && $colInfo['warehouseField'] = 'occurrence:fk_taxa_taxon_list:specific') {
+        if (isset($colInfo['warehouseField']) && $colInfo['warehouseField'] === 'occurrence:fk_taxa_taxon_list:specific') {
           $tempDbField = pg_escape_identifier($db->getLink(), $colInfo['tempDbField']);
           $matchingFieldSql = "i.{$valueToMapColName} || ' ' || i.$tempDbField";
         }
@@ -2503,18 +2503,18 @@ SQL;
         $data = array_map(function ($value) {
           return trim($value ?? '');
         }, $data);
-        // Pad to correct number of columns.
-        $data = array_pad($data, count($config['columns']), '');
-        // Escape ready for SQL.
-        $data = array_map(function ($s) use ($db) {
-          return pg_escape_literal($db->getLink(), $s);
-        }, $data);
-        // Also allow for their being too many columns (wider data row than
-        // column titles provided).
-        if (count($data) > count($config['columns'])) {
-          $data = array_slice($data, 0, count($config['columns']));
-        }
         if (implode('', $data) <> '') {
+          // Pad to correct number of columns.
+          $data = array_pad($data, count($config['columns']), '');
+          // Escape ready for SQL.
+          $data = array_map(function ($s) use ($db) {
+            return pg_escape_literal($db->getLink(), $s);
+          }, $data);
+          // Also allow for their being too many columns (wider data row than
+          // column titles provided).
+          if (count($data) > count($config['columns'])) {
+            $data = array_slice($data, 0, count($config['columns']));
+          }
           $rows[] = '(' . implode(', ', $data) . ')';
         }
         $config['rowsLoaded']++;
