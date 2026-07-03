@@ -4,6 +4,13 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.24.0
+*2026-07-03*
+
+* Adds supports for linking image classifier suggestions to sample, occurrence or location
+  atrtibute lookup terms. For example, a habitat custom attribute for a sample or location could
+  be determined by an image classifier.
+
 ## Version 9.23.0
 *2026-06-09*
 
