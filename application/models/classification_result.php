@@ -31,8 +31,8 @@ class Classification_result_Model extends ORM {
   /**
    * Media join info.
    *
-   * List of many to many joins to occurrence media that needs to be created
-   * after submission done, in postProcess.
+    * List of many-to-many joins to media that need to be created after
+    * submission done, in postProcess.
    */
   public static $mediaJoins = [];
 
@@ -44,6 +44,8 @@ class Classification_result_Model extends ORM {
 
   protected $has_and_belongs_to_many = [
     'occurrence_media',
+    'sample_media',
+    'location_media',
   ];
 
   public function validate(Validation $array, $save = FALSE) {
@@ -110,8 +112,7 @@ class Classification_result_Model extends ORM {
   public static function createMediaJoins($db) {
     $occurrencesToUpdate = [];
     foreach (self::$mediaJoins as $crId => $joinInfo) {
-      // Find the list of missing occurrence_media IDs that correspond to the
-      // paths.
+      // Find missing media IDs that correspond to the posted paths.
       $pathsArray = is_string($joinInfo['pathsJson']) ? json_decode($joinInfo['pathsJson']) : $joinInfo['pathsJson'];
       $paths = warehouse::stringArrayToSqlInList($db, $pathsArray);
       $occurrenceMediaQuery = <<<SQL
@@ -133,6 +134,38 @@ SQL;
         $m->save();
         // Keep a distinct list of the affected occurrences.
         $occurrencesToUpdate[$mediaLink->occurrence_id] = $mediaLink->occurrence_id;
+      }
+
+      $sampleMediaQuery = <<<SQL
+SELECT sm.id as sample_media_id
+FROM sample_media sm
+LEFT JOIN classification_results_sample_media crsm ON crsm.classification_result_id=$crId AND crsm.sample_media_id=sm.id
+WHERE sm.deleted=false AND sm.path in ($paths)
+AND crsm.id IS NULL;
+SQL;
+      $sampleMediaLinkInfo = $db->query($sampleMediaQuery)->result();
+      foreach ($sampleMediaLinkInfo as $mediaLink) {
+        $m = ORM::factory('classification_results_sample_medium');
+        $m->sample_media_id = $mediaLink->sample_media_id;
+        $m->classification_result_id = $crId;
+        $m->set_metadata();
+        $m->save();
+      }
+
+      $locationMediaQuery = <<<SQL
+SELECT lm.id as location_media_id
+FROM location_media lm
+LEFT JOIN classification_results_location_media crlm ON crlm.classification_result_id=$crId AND crlm.location_media_id=lm.id
+WHERE lm.deleted=false AND lm.path in ($paths)
+AND crlm.id IS NULL;
+SQL;
+      $locationMediaLinkInfo = $db->query($locationMediaQuery)->result();
+      foreach ($locationMediaLinkInfo as $mediaLink) {
+        $m = ORM::factory('classification_results_location_medium');
+        $m->location_media_id = $mediaLink->location_media_id;
+        $m->classification_result_id = $crId;
+        $m->set_metadata();
+        $m->save();
       }
     }
     if (count($occurrencesToUpdate) > 0) {

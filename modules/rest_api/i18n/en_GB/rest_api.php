@@ -314,6 +314,36 @@ POST {{ url }}
 unique within the system that supplied it, add a suitable prefix to make it unique.</p>
 TXT;
 $lang['resources']['POST locations'] = '<p>Creates a saved site or other type of location.</p>' . str_replace('{{ url }}', '/index.php/services/rest/locations', $locationsPostExample);
+$lang['resources']['POST locations'] .= <<<HTML
+<p>To classify location media, first POST the location (including media), then POST a classifier event:</p>
+<pre><code>
+POST /index.php/services/rest/classification_events
+{
+  "values": {
+    "created_by_id": 123
+  },
+  "classification_results": [{
+    "values": {
+      "classifier_id": 2,
+      "classifier_version": "1.0"
+    },
+    "classification_lookup_suggestions": [{
+      "values": {
+        "location_attribute_id": 1,
+        "term_given": "Suggested site type",
+        "termlists_term_id": 3,
+        "probability_given": 0.72
+      }
+    }],
+    "metaFields": {
+      "mediaPaths": ["location-image.jpg"]
+    }
+  }]
+}
+</code></pre>
+<p>The <code>mediaPaths</code> entry should match one or more queued/uploaded media filenames.
+Matched location media are linked in <code>classification_results_location_media</code>.</p>
+HTML;
 $lang['resources']['PUT locations/{id}'] = <<<HTML
 <p>Updates the details of a location identified by {id}. Users are allowed to update locations they
 created; users with site editor or admin rights to the authenticated website are allowed to update
@@ -788,7 +818,7 @@ TXT;
 $lang['resources']['POST occurrences'] = <<<HTML
 <p>Creates an occurrence on the system within an existing sample.</p>
 <p>A posted occurrence can include a many-to-one relationship to a single classification_event,
-which itself can contain nested results, suggestions and links to media. This is illustrated in the
+which itself can contain nested results, taxon suggestions, lookup suggestions and links to media. This is illustrated in the
 following example:</p>
 <pre><code>
 POST /index.php/services/rest/occurrences
@@ -831,6 +861,16 @@ POST /index.php/services/rest/occurrences
             }
           }
         ],
+        "classification_lookup_suggestions": [
+          {
+            "values": {
+              "occurrence_attribute_id": 1,
+              "term_given": "Suggested life stage",
+              "termlists_term_id": 3,
+              "probability_given": 0.8
+            }
+          }
+        ],
         "metaFields": {
           "mediaPaths": ["abcdefg.jpg"]
         }
@@ -839,6 +879,12 @@ POST /index.php/services/rest/occurrences
   }
 }
 </code></pre>
+
+<p><code>classification_lookup_suggestions</code> records must target exactly one attribute field:
+<code>sample_attribute_id</code>, <code>occurrence_attribute_id</code> or <code>location_attribute_id</code>.</p>
+
+<p><code>metaFields.mediaPaths</code> can include queued filenames that resolve to occurrence, sample or location media.
+Matching media are linked to the classification result.</p>
 
 <p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
 unique within the system that supplied it, add a suitable prefix to make it unique.</p>
@@ -1119,6 +1165,18 @@ TXT;
 $lang['resources']['POST samples'] = 'Create a new sample, associated occurrences and media. Posted values should
 match database fields in the samples table (or equivalent table for sub-models).
 
+<p>Classifier submissions are supported in nested occurrences via <code>classification_event</code>.
+Within each classification result you can include <code>classification_lookup_suggestions</code> and
+target sample, occurrence or location attributes using exactly one of
+<code>sample_attribute_id</code>, <code>occurrence_attribute_id</code> or <code>location_attribute_id</code>.</p>
+
+<p>When posting to <code>POST samples</code>, the <code>classification_event</code> object is nested under each
+occurrence (not at the top-level sample object), because the relationship is through
+<code>occurrences.classification_event_id</code>.</p>
+
+<p>Use <code>metaFields.mediaPaths</code> to map classifier output back to uploaded media across occurrence,
+sample and location media tables.</p>
+
 <p>Occurrences can include an <code>associations</code> array. Each association object must include
 <code>external_key</code> and <code>association_type_id</code>. The <code>external_key</code> must match
 the <code>external_key</code> of another occurrence in the same submitted sample. Each association creates a row in
@@ -1198,6 +1256,61 @@ Response:
 <p>If specified, the external_key field must be unique. For this reason, a UUID is preferable, or if the key is only
 unique within the system that supplied it, add a suitable prefix to make it unique.</p>
 ';
+
+$lang['resources']['POST samples'] .= <<<HTML
+<p>Example classifier payload nested in a sample submission:</p>
+<pre><code>
+POST /index.php/services/rest/samples
+{
+  "values": {
+    "survey_id": 1,
+    "entered_sref": "SU1234",
+    "entered_sref_system": "OSGB",
+    "date": "01/08/2020"
+  },
+  "media": [{
+    "values": {
+      "queued": "18/60/23/sample.jpg"
+    }
+  }],
+  "occurrences": [{
+    "values": {
+      "taxa_taxon_list_id": 2,
+      "machine_involvement": 3
+    },
+    "media": [{
+      "values": {
+        "queued": "18/60/23/occ.jpg"
+      }
+    }],
+    "classification_event": {
+      "values": {
+        "created_by_id": 123
+      },
+      "classification_results": [{
+        "values": {
+          "classifier_id": 2,
+          "classifier_version": "1.0"
+        },
+        "classification_lookup_suggestions": [{
+          "values": {
+            "sample_attribute_id": 1,
+            "term_given": "Suggested habitat",
+            "termlists_term_id": 3,
+            "probability_given": 0.85
+          }
+        }],
+        "metaFields": {
+          "mediaPaths": ["18/60/23/sample.jpg", "18/60/23/occ.jpg"]
+        }
+      }]
+    }
+  }]
+}
+</code></pre>
+<p>Set each <code>mediaPaths</code> entry to the exact queued filename returned by <code>POST media-queue</code>
+(including any folder prefix such as <code>18/60/23/</code>).</p>
+HTML;
 $lang['resources']['POST samples/list'] = <<<TXT
 Allows posting of a list of samples to create multiple in one request. Identical to the POST samples endpoint but
 the request body should be an array containing the list of samples to create. The response will similarly have an

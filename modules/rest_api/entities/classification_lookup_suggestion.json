@@ -1,0 +1,16 @@
+{
+  "fields": [
+    { "sql": "id", "type": "integer" },
+    { "sql": "classification_result_id", "type": "integer" },
+    { "sql": "sample_attribute_id", "type": "integer" },
+    { "sql": "occurrence_attribute_id", "type": "integer" },
+    { "sql": "location_attribute_id", "type": "integer" },
+    { "sql": "term_given", "type": "string" },
+    { "sql": "termlists_term_id", "type": "integer" },
+    { "sql": "probability_given", "type": "float" },
+    { "sql": "classifier_chosen", "type": "boolean" },
+    { "sql": "human_chosen", "type": "boolean" },
+    { "sql": "created_on", "type": "date" },
+    { "sql": "created_by_id", "type": "integer" }
+  ]
+}

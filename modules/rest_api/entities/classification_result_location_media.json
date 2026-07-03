@@ -2,6 +2,6 @@
   "fields": [
     { "sql": "id", "type": "integer" },
     { "sql": "classification_result_id", "type": "integer" },
-    { "sql": "occurrence_media_id", "type": "integer" }
+    { "sql": "location_media_id", "type": "integer" }
   ]
 }
