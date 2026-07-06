@@ -21,6 +21,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
     with no value.
 * Apply uniqueness constraints to users_websites table data.
 * Some general improvements to code robustness and in particular in the v2 importer.
+* Upgrade to the PHPSpreadsheet library version 5.8.
 * Remove Vice County (using database location ID) import field. See
   https://github.com/BiologicalRecordsCentre/iRecord/issues/2054. Also fixes an issue with the
   resulting options not being in order, so other sample attributes were omitted from the options
