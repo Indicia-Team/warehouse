@@ -556,7 +556,7 @@ class Scheduled_Tasks_Controller extends Controller {
     // Get a list of the notifications to send, ordered by user so we can
     // construct each email.
     $notifications = $this->db
-      ->select('id, source, source_type, data, user_id, cc')
+      ->select('id, source, source_type, data, user_id, cc, escalate_email_priority')
       ->from('notifications')
       ->where('acknowledged', 'f')
       ->in('notifications.digest_mode', $digestTypes)
@@ -576,20 +576,26 @@ class Scheduled_Tasks_Controller extends Controller {
 
     $currentUserId = NULL;
     $currentCc = NULL;
+    $currentEscalatePriority = NULL;
     $emailContent = '';
     $notificationIds = [];
     foreach ($notifications as $notification) {
       if (($currentUserId != $notification->user_id) || ($currentCc != $notification->cc)) {
         if ($currentUserId) {
           // Send current email data.
-          $this->sendEmail($notificationIds, $emailer, $currentUserId, $emailContent, $currentCc);
+          $this->sendEmail($notificationIds, $emailer, $currentUserId, $emailContent, $currentCc, $currentEscalatePriority);
           $notificationIds = [];
         }
         $currentUserId = $notification->user_id;
         $currentCc = $notification->cc;
+        $currentEscalatePriority = $notification->escalate_email_priority;
         $intro = empty(kohana::config('email.notification_intro')) ?
           kohana::lang('misc.notification_intro') : kohana::config('email.notification_intro');
         $emailContent = sprintf($intro, kohana::config('email.server_name')) . '<br/><br/>';
+      }
+      elseif ($notification->escalate_email_priority !== NULL &&
+          ($currentEscalatePriority === NULL || $notification->escalate_email_priority > $currentEscalatePriority)) {
+        $currentEscalatePriority = $notification->escalate_email_priority;
       }
       $notificationIds[] = $notification->id;
       $emailContent .= self::unparseData($notification->data);
@@ -597,11 +603,11 @@ class Scheduled_Tasks_Controller extends Controller {
     // Make sure we send the email to the last person in the list.
     if ($currentUserId !== NULL) {
       // Send current email data.
-      $this->sendEmail($notificationIds, $emailer, $currentUserId, $emailContent, $currentCc);
+      $this->sendEmail($notificationIds, $emailer, $currentUserId, $emailContent, $currentCc, $currentEscalatePriority);
     }
   }
 
-  private function sendEmail($notificationIds, $emailer, $userId, $emailContent, $cc) {
+  private function sendEmail($notificationIds, $emailer, $userId, $emailContent, $cc, $escalatePriority = NULL) {
     echo "Sending email to user $userId with content:<br/>$emailContent<br/><br/>";
     // Use a transaction to allow us to prevent the email sending and marking
     // of notification as done getting out of step.
@@ -623,6 +629,9 @@ class Scheduled_Tasks_Controller extends Controller {
         $subject = empty(kohana::config('email.notification_subject')) ?
           kohana::lang('misc.notification_subject') : kohana::config('email.notification_subject');
         $emailer->addRecipient($user->email_address,"$user->first_name $user->surname");
+        if ($escalatePriority !== NULL) {
+          $emailer->setPriority((int) $escalatePriority);
+        }
         $cc = isset($cc) ? explode(',', $cc) : [];
         foreach ($cc as $ccEmail) {
           $emailer->addCc(trim($ccEmail));
