@@ -248,7 +248,8 @@ class Emailer {
       }
       $attempted++;
       try {
-        $sendPriority = ((int) $item->escalate_email_priority === 2) ? 2 : 3;
+        $escalatePriority = (int) $item->escalate_email_priority;
+        $sendPriority = in_array($escalatePriority, [1, 2], TRUE) ? $escalatePriority : 3;
         $emailHelper::send(
           $item->subject,
           $item->body,
@@ -580,8 +581,9 @@ class Emailer {
    *   NULL for normal emails, 1 for urgent send, 2 for urgent + high priority.
    */
   private static function deriveEscalateEmailPriority($emailType, $priority) {
-    if ((int) $priority <= 2) {
-      return 2;
+    $priority = (int) $priority;
+    if (in_array($priority, [1, 2], TRUE)) {
+      return $priority;
     }
     if ($emailType === 'forgottenPassword') {
       return 1;
