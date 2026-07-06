@@ -77,6 +77,8 @@ class emailerMsGraph {
    *   The email address that the email should be sent from.
    * @param ?string $fromName
    *   The optional name associated with the from email address.
+   * @param ?int $priority
+   *   Priority from 1 (very high) to 5 (very low). Default 3.
    * @param ?array $attachmentInfo
    *   Attachment to add. Can contain filename, mime type and data keys. Not
    *   implemented in this handler.
