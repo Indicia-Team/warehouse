@@ -295,4 +295,8 @@ $lang = [
     'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
       'multiple values or Allow ranges.',
   ],
+  'sample_attribute_id' => [
+    'required' => 'The sample attribute id is required.',
+    'integer' => 'The sample attribute id must be an integer.',
+  ],
 ];

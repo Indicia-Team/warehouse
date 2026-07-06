@@ -43,10 +43,21 @@ class Classification_event_Model extends ORM {
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
+    $array->add_rules('website_id', 'required', 'integer');
     $this->unvalidatedFields = [
       'deleted',
     ];
     return parent::validate($array, $save);
+  }
+
+  /**
+   * Auto-fill the website ID.
+   */
+  public function preSubmit() {
+    if (!isset($this->submission['fields']['website_id'])) {
+      $this->submission['fields']['website_id'] = $this->identifiers['website_id'];
+    }
+    return parent::preSubmit();
   }
 
 }

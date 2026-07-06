@@ -1758,7 +1758,8 @@ class RestControllerTest extends BaseRestClientTest {
     // Post into the media queue.
     $rootFolder = dirname(dirname(dirname(dirname(__FILE__))));
     $file = "$rootFolder/media/images/warehouse-banner.jpg";
-    // Submit files for occurrence and sample media.
+    // Submit 3 files with deliberate mix of by field array and single field
+    // value.
     $response = $this->callService(
       "media-queue",
       FALSE,
@@ -1768,16 +1769,10 @@ class RestControllerTest extends BaseRestClientTest {
           'image/jpg',
           basename($file)
         ),
-        'file[]' => curl_file_create(
-          $file,
-          'image/jpg',
-          'sample-' . basename($file)
-        ),
       ],
       [], NULL, TRUE
     );
     $uploadedFileName = $response['response']['file[0]']['name'];
-    $uploadedSampleFileName = $response['response']['file[1]']['name'];
     $readAuth = data_entry_helper::get_read_auth(self::$websiteId, self::$websitePassword);
     $classifierTerms = data_entry_helper::get_population_data([
       'table' => 'termlists_term',
@@ -1792,14 +1787,6 @@ class RestControllerTest extends BaseRestClientTest {
         'entered_sref' => 'SU1234',
         'entered_sref_system' => 'OSGB',
         'date' => '01/08/2020',
-      ],
-      'media' => [
-        [
-          'values' => [
-            'queued' => $uploadedSampleFileName,
-            'caption' => 'Sample image',
-          ],
-        ],
       ],
       'occurrences' => [
         [
@@ -1825,18 +1812,22 @@ class RestControllerTest extends BaseRestClientTest {
                   'classifier_id' => $classifierTerms[0]['id'],
                   'classifier_version' => '1.0',
                 ],
-                'classification_lookup_suggestions' => [
+                'classification_suggestions' => [
                   [
                     'values' => [
-                      'sample_attribute_id' => 1,
-                      'term_given' => 'Suggested habitat',
-                      'termlists_term_id' => $classifierTerms[0]['id'],
-                      'probability_given' => 0.8,
+                      'taxon_name_given' => 'A suggested name',
+                      'taxa_taxon_list_id' => 1,
+                      'probability' => 0.9,
+                    ],
+                    'values' => [
+                      'taxon_name_given' => 'An alternative name',
+                      'taxa_taxon_list_id' => 2,
+                      'probability' => 0.4,
                     ],
                   ],
                 ],
                 'metaFields' => [
-                  'mediaPaths' => [$uploadedFileName, $uploadedSampleFileName],
+                  'mediaPaths' => [$uploadedFileName],
                 ],
               ],
             ],
@@ -1856,42 +1847,33 @@ select s.id as sample_id,
   o.id as occurrence_id,
   o.machine_involvement,
   om.id as occurrence_medium_id,
-  sm.id as sample_medium_id,
   ce.id as classification_event_id,
   cr.id as classification_result_id,
-  cls.id as classification_lookup_suggestion_id,
+  cs.id as classification_suggestion_id,
   crom.id as classification_results_occurrence_medium_id,
-  crom.occurrence_media_id as crom_om_id,
-  crsm.id as classification_results_sample_medium_id,
-  crsm.sample_media_id as crsm_sm_id
+  crom.occurrence_media_id as crom_om_id
 from samples s
 left join occurrences o on o.sample_id=s.id and o.deleted=false
 left join occurrence_media om on om.occurrence_id=o.id and om.deleted=false
-left join sample_media sm on sm.sample_id=s.id and sm.deleted=false
 left join classification_events ce on ce.id=o.classification_event_id and ce.deleted=false
 left join classification_results cr on cr.classification_event_id=ce.id and cr.deleted=false
-left join classification_lookup_suggestions cls on cls.classification_result_id=cr.id and cls.deleted=false
+left join classification_suggestions cs on cs.classification_result_id=cr.id and cs.deleted=false
 left join classification_results_occurrence_media crom on crom.classification_result_id=cr.id
-left join classification_results_sample_media crsm on crsm.classification_result_id=cr.id
 where s.id=?;
 SQL;
     $checkData = $db->query($sql, [$sampleId])->current();
     $this->assertTrue(!empty($checkData->occurrence_id), 'REST Classification submission occurrence not created.');
     $this->assertEquals(3, $checkData->machine_involvement, 'REST Classification submission machine_involvement saved incorrectly.');
     $this->assertTrue(!empty($checkData->occurrence_medium_id), 'REST Classification submission occurrence_medium not created.');
-    $this->assertTrue(!empty($checkData->sample_medium_id), 'REST Classification submission sample_medium not created.');
     $this->assertTrue(!empty($checkData->classification_event_id), 'REST Classification submission classification_event not created.');
     $this->assertTrue(!empty($checkData->classification_result_id), 'REST Classification submission classification_result not created.');
-    $this->assertTrue(!empty($checkData->classification_lookup_suggestion_id), 'REST Classification submission classification_lookup_suggestion not created.');
+    $this->assertTrue(!empty($checkData->classification_suggestion_id), 'REST Classification submission classification_suggestion not created.');
     $this->assertTrue(!empty($checkData->classification_results_occurrence_medium_id), 'REST Classification submission classification_results_occurrence_medium not created.');
     $this->assertTrue(!empty($checkData->crom_om_id), 'REST Classification submission classification_results_occurrence_medium not linked to media file.');
     $this->assertEquals($checkData->occurrence_medium_id, $checkData->crom_om_id, 'REST Classification submission mediaPaths linking incorrect.');
-    $this->assertTrue(!empty($checkData->classification_results_sample_medium_id), 'REST Classification submission classification_results_sample_medium not created.');
-    $this->assertTrue(!empty($checkData->crsm_sm_id), 'REST Classification submission classification_results_sample_medium not linked to media file.');
-    $this->assertEquals($checkData->sample_medium_id, $checkData->crsm_sm_id, 'REST Classification submission sample mediaPaths linking incorrect.');
   }
 
-  public function testJwtLocationClassifiedMediaPost() {
+  public function testJwtLocationAttrClassifiedMediaPost() {
     $this->authMethod = 'jwtUser';
     $db = new Database();
     self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
@@ -2040,7 +2022,7 @@ SQL;
     );
     $this->assertEquals(400, $response['httpCode']);
     $this->assertArrayHasKey('message', $response['response']);
-    $this->assertTrue(strpos(json_encode($response['response']['message']), 'classification_target') !== FALSE);
+    $this->assertTrue(strpos(json_encode($response['response']['message']), 'classification_lookup_suggestion:sample_attribute_id') !== FALSE);
   }
 
   /**

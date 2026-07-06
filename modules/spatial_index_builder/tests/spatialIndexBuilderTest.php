@@ -55,6 +55,7 @@ class SpatialIndexBuilderTest extends Indicia_DatabaseTestCase {
     ];
     $s = submission_builder::build_submission($array, ['model' => 'location']);
     $r = data_entry_helper::forward_post_to('location', $s, self::$auth['write_tokens']);
+    var_export($r);
     $this->assertTrue(isset($r['success']), 'Submitting a location did not return success response');
     $higherLocId1 = $r['success'];
     // Add an identical, but private location.

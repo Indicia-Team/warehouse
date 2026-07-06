@@ -317,7 +317,7 @@ $lang['resources']['POST locations'] = '<p>Creates a saved site or other type of
 $lang['resources']['POST locations'] .= <<<HTML
 <p>To classify location media, first POST the location (including media), then POST a classifier event:</p>
 <pre><code>
-POST /index.php/services/rest/classification_events
+POST /index.php/services/rest/classification-events
 {
   "values": {
     "created_by_id": 123
@@ -344,6 +344,34 @@ POST /index.php/services/rest/classification_events
 <p>The <code>mediaPaths</code> entry should match one or more queued/uploaded media filenames.
 Matched location media are linked in <code>classification_results_location_media</code>.</p>
 HTML;
+
+$lang['resources']['classification-events'] = <<<HTML
+<p>Provides access to classifier submissions for the authenticated website.</p>
+<p>All operations are scoped to <code>classification_events.website_id</code> matching the authenticated website.
+POST requests automatically set <code>website_id</code> to the authenticated website.</p>
+HTML;
+$lang['resources']['GET classification-events'] = 'Retrieves a list of classification events for the authenticated website. Results are limited to the current user unless the user has editor or admin rights in the website.';
+$lang['resources']['GET classification-events/{id}'] = 'Retrieves a single classification event by ID if it belongs to the authenticated website.';
+$lang['resources']['POST classification-events'] = <<<HTML
+<p>Creates a classification event and any nested classification results.</p>
+<p>Example:</p>
+<pre><code>
+POST /index.php/services/rest/classification-events
+{
+  "values": {
+    "created_by_id": 123
+  },
+  "classification_results": [{
+    "values": {
+      "classifier_id": 2,
+      "classifier_version": "1.0"
+    }
+  }]
+}
+</code></pre>
+HTML;
+$lang['resources']['PUT classification-events/{id}'] = 'Updates a classification event belonging to the authenticated website. Non-editor users are further limited to events they created.';
+$lang['resources']['DELETE classification-events/{id}'] = 'Deletes a classification event belonging to the authenticated website. Non-editor users are further limited to events they created.';
 $lang['resources']['PUT locations/{id}'] = <<<HTML
 <p>Updates the details of a location identified by {id}. Users are allowed to update locations they
 created; users with site editor or admin rights to the authenticated website are allowed to update
