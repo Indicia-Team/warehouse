@@ -412,6 +412,33 @@ class Rest_Controller extends Controller {
         ],
       ],
     ],
+    'classification-events' => [
+      'GET' => [
+        'classification-events' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
+        'classification-events/{id}' => [
+          'params' => [
+            'verbose' => [
+              'datatype' => 'integer',
+            ],
+          ],
+        ],
+      ],
+      'POST' => [
+        'classification-events' => [],
+      ],
+      'PUT' => [
+        'classification-events/{id}' => [],
+      ],
+      'DELETE' => [
+        'classification-events/{id}' => [],
+      ],
+    ],
     'custom-verification-rulesets' => [
       'POST' => [
         'custom-verification-rulesets/{id}/run-request' => [],
@@ -1283,6 +1310,87 @@ class Rest_Controller extends Controller {
         RestObjects::$apiResponse->fail('No Content', 204);
       }
     }
+  }
+
+  /**
+   * End-point to GET a list of classification events.
+   *
+   * Returns classification events for the user of website.
+   */
+  public function classificationEventsGet() {
+    rest_crud::readList(
+      'classification_event',
+      't1.website_id=' . RestObjects::$clientWebsiteId,
+      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2
+    );
+  }
+
+  /**
+   * API end-point to retrieve a classification event by ID.
+   *
+   * @param int $id
+   *   ID of the classification event.
+   */
+  public function classificationEventsGetId($id) {
+    rest_crud::read(
+      'classification_event',
+      $id,
+      't1.website_id=' . RestObjects::$clientWebsiteId,
+      !isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2
+    );
+  }
+
+  /**
+   * API end-point to POST a classification event to create.
+   */
+  public function classificationEventsPost() {
+    $post = file_get_contents('php://input');
+    $item = json_decode($post, TRUE);
+    // Create only allowed on this website.
+    if (isset($item['values'])) {
+      $item['values']['website_id'] = RestObjects::$clientWebsiteId;
+    }
+    $r = rest_crud::create('classification_event', $item);
+    echo json_encode($r);
+    http_response_code(201);
+    header("Location: $r[href]");
+  }
+
+  /**
+   * API end-point to PUT an existing classification event to update.
+   */
+  public function classificationEventsPutId($id) {
+    $put = file_get_contents('php://input');
+    $putArray = json_decode($put, TRUE);
+    // Update only allowed on this website.
+    $preconditions = ['website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if ($this->needToFilterToUser()) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    $r = rest_crud::update('classification_event', $id, $putArray, $preconditions);
+    echo json_encode($r);
+  }
+
+  /**
+   * API end-point to DELETE a classification event.
+   *
+   * Will only be deleted if the classification event was created by the current user.
+   *
+   * @param int $id
+   *   Classification event ID to delete.
+   */
+  public function classificationEventsDeleteId($id) {
+    if (empty(RestObjects::$clientUserId)) {
+      RestObjects::$apiResponse->fail('Bad Request', 400, 'Authenticated user unknown so cannot delete.');
+    }
+    // Delete only allowed on this website.
+    $preconditions = ['website_id' => RestObjects::$clientWebsiteId];
+    // Also limit to user's own data unless site admin or editor.
+    if (!isset(RestObjects::$clientUserWebsiteRole) || RestObjects::$clientUserWebsiteRole > 2) {
+      $preconditions['created_by_id'] = RestObjects::$clientUserId;
+    }
+    rest_crud::delete('classification_event', $id, $preconditions);
   }
 
   /**
