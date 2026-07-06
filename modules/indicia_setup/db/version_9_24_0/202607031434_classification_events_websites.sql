@@ -15,7 +15,8 @@ UPDATE classification_events ce
 SET website_id = o.website_id
 FROM determinations d
 JOIN occurrences o ON o.id = d.occurrence_id
-WHERE ce.id = d.classification_event_id;
+WHERE ce.id = d.classification_event_id
+AND ce.website_id IS NULL;
 
 -- Catch-all using occurrence media in case any weren't correctly saved with the occurrence ID.
 UPDATE classification_events ce
