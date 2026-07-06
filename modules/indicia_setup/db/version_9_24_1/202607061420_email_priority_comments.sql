@@ -1,0 +1,2 @@
+COMMENT ON COLUMN notifications.escalate_email_priority IS
+  'Default null. 1 and 2 bypass the non-critical reserve and are sent immediately where hourly capacity permits, otherwise queued for the next replay block. 2 additionally flags the email as high priority.';
