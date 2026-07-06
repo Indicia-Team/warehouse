@@ -77,7 +77,9 @@ $config['irregular'] = [
   'taxon' => 'taxa',
   'woman' => 'women',
   // Data tables.
+  'classification_results_location_medium' => 'classification_results_location_media',
   'classification_results_occurrence_medium' => 'classification_results_occurrence_media',
+  'classification_results_sample_medium' => 'classification_results_sample_media',
   'gv_taxon_lists_taxon' => 'gv_taxon_lists_taxa',
   'location_medium' => 'location_media',
   'occurrence_medium' => 'occurrence_media',

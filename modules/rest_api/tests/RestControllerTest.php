@@ -1873,6 +1873,158 @@ SQL;
     $this->assertEquals($checkData->occurrence_medium_id, $checkData->crom_om_id, 'REST Classification submission mediaPaths linking incorrect.');
   }
 
+  public function testJwtLocationAttrClassifiedMediaPost() {
+    $this->authMethod = 'jwtUser';
+    $db = new Database();
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    // Post a file into the media queue for location media creation.
+    $rootFolder = dirname(dirname(dirname(dirname(__FILE__))));
+    $file = "$rootFolder/media/images/warehouse-banner.jpg";
+    $response = $this->callService(
+      'media-queue',
+      FALSE,
+      [
+        'file[]' => curl_file_create(
+          $file,
+          'image/jpg',
+          basename($file)
+        ),
+      ],
+      [], NULL, TRUE
+    );
+    $uploadedFileName = $response['response']['file[0]']['name'];
+    // Create location and location media.
+    $response = $this->callService(
+      'locations',
+      FALSE,
+      [
+        'values' => [
+          'name' => 'Classifier location ' . microtime(TRUE),
+          'centroid_sref' => 'ST1234',
+          'centroid_sref_system' => 'OSGB',
+        ],
+        'media' => [
+          [
+            'values' => [
+              'queued' => $uploadedFileName,
+              'caption' => 'Location image',
+            ],
+          ],
+        ],
+      ]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $locationId = (int) $response['response']['values']['id'];
+    $readAuth = data_entry_helper::get_read_auth(self::$websiteId, self::$websitePassword);
+    $classifierTerms = data_entry_helper::get_population_data([
+      'table' => 'termlists_term',
+      'extraParams' => $readAuth + [
+        'termlist_external_key' => 'indicia:classifiers',
+        'term' => 'Unknown',
+      ],
+    ]);
+    // Classify location media by posting to classification_events.
+    $response = $this->callService(
+      'classification_events',
+      FALSE,
+      [
+        'values' => [
+          'created_by_id' => self::$userId,
+        ],
+        'classification_results' => [
+          [
+            'values' => [
+              'classifier_id' => $classifierTerms[0]['id'],
+              'classifier_version' => '1.0',
+            ],
+            'classification_lookup_suggestions' => [
+              [
+                'values' => [
+                  'location_attribute_id' => 1,
+                  'term_given' => 'Suggested site type',
+                  'termlists_term_id' => $classifierTerms[0]['id'],
+                  'probability_given' => 0.7,
+                ],
+              ],
+            ],
+            'metaFields' => [
+              'mediaPaths' => [$uploadedFileName],
+            ],
+          ],
+        ],
+      ]
+    );
+    $this->assertEquals(201, $response['httpCode']);
+    $classificationEventId = (int) $response['response']['values']['id'];
+    $sql = <<<SQL
+select lm.id as location_media_id,
+  ce.id as classification_event_id,
+  cr.id as classification_result_id,
+  cls.id as classification_lookup_suggestion_id,
+  crlm.id as classification_results_location_medium_id,
+  crlm.location_media_id as crlm_lm_id
+from classification_events ce
+left join classification_results cr on cr.classification_event_id=ce.id and cr.deleted=false
+left join classification_lookup_suggestions cls on cls.classification_result_id=cr.id and cls.deleted=false
+left join classification_results_location_media crlm on crlm.classification_result_id=cr.id
+left join location_media lm on lm.id=crlm.location_media_id and lm.deleted=false
+where ce.id=?;
+SQL;
+    $checkData = $db->query($sql, [$classificationEventId])->current();
+    $this->assertTrue(!empty($checkData->classification_event_id), 'REST location classification event not created.');
+    $this->assertTrue(!empty($checkData->classification_result_id), 'REST location classification result not created.');
+    $this->assertTrue(!empty($checkData->classification_lookup_suggestion_id), 'REST location lookup suggestion not created.');
+    $this->assertTrue(!empty($checkData->classification_results_location_medium_id), 'REST location classification_results_location_medium not created.');
+    $this->assertTrue(!empty($checkData->location_media_id), 'REST location media not linked.');
+    $this->assertEquals($checkData->location_media_id, $checkData->crlm_lm_id, 'REST location mediaPaths linking incorrect.');
+
+    // Confirm linked media belongs to the location created by this test.
+    $linkedLocationId = $db->query('select location_id from location_media where id=?', [$checkData->location_media_id])->current()->location_id;
+    $this->assertEquals($locationId, (int) $linkedLocationId, 'REST location classifier linked unexpected location media.');
+  }
+
+  public function testJwtClassificationEventRejectsInvalidLookupSuggestionTarget() {
+    $this->authMethod = 'jwtUser';
+    self::$jwt = $this->getJwt(self::$privateKey, 'http://www.indicia.org.uk', 1, time() + 120);
+    $readAuth = data_entry_helper::get_read_auth(self::$websiteId, self::$websitePassword);
+    $classifierTerms = data_entry_helper::get_population_data([
+      'table' => 'termlists_term',
+      'extraParams' => $readAuth + [
+        'termlist_external_key' => 'indicia:classifiers',
+        'term' => 'Unknown',
+      ],
+    ]);
+    $response = $this->callService(
+      'classification_events',
+      FALSE,
+      [
+        'values' => [
+          'created_by_id' => self::$userId,
+        ],
+        'classification_results' => [
+          [
+            'values' => [
+              'classifier_id' => $classifierTerms[0]['id'],
+              'classifier_version' => '1.0',
+            ],
+            'classification_lookup_suggestions' => [
+              [
+                'values' => [
+                  'term_given' => 'Invalid suggestion without target',
+                  'termlists_term_id' => $classifierTerms[0]['id'],
+                  'probability_given' => 0.3,
+                ],
+              ],
+            ],
+          ],
+        ],
+      ]
+    );
+    $this->assertEquals(400, $response['httpCode']);
+    $this->assertArrayHasKey('message', $response['response']);
+    $this->assertTrue(strpos(json_encode($response['response']['message']), 'classification_lookup_suggestion:sample_attribute_id') !== FALSE);
+  }
+
   /**
    * A basic test of /samples/id GET.
    */

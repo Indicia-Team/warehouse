@@ -1,6 +1,7 @@
 {
   "fields": [
     { "sql": "id", "type": "integer" },
+    { "sql": "website_id", "type": "integer" },
     { "sql": "created_on", "type": "date" },
     { "sql": "created_by_id", "type": "integer" }
   ],
