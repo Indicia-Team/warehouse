@@ -170,7 +170,7 @@ class data_utils {
             }
           }
           // This record is done, so exclude from the bulk operation.
-          unset($idList['$id']);
+          unset($idList[$id]);
         }
       }
     }
