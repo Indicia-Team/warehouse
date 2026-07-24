@@ -1,16 +1,16 @@
 ﻿CREATE OR REPLACE function f_add_ddl (OUT success bool)
     LANGUAGE plpgsql AS
 $func$
-BEGIN 
-  
+BEGIN
+
 success := TRUE;
 
 BEGIN
   CREATE TABLE groups
   (
-    id serial NOT NULL, 
+    id serial NOT NULL,
     title character varying NOT NULL,
-    description character varying, 
+    description character varying,
     filter_id integer,
     joining_method char NOT NULL,
     website_id integer NOT NULL,
@@ -32,16 +32,16 @@ BEGIN
     CONSTRAINT fk_group_website FOREIGN KEY (website_id)
         REFERENCES websites (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION
-  ) 
+  )
   WITH (
     OIDS = FALSE
   );
 
   ALTER TABLE groups
     ADD CONSTRAINT groups_joining_method_check CHECK (joining_method = ANY (ARRAY['P'::bpchar, 'R'::bpchar, 'I'::bpchar, 'A'::bpchar]));
-  
+
 EXCEPTION
-    WHEN duplicate_table THEN 
+    WHEN duplicate_table THEN
       RAISE NOTICE 'table exists.';
       success := FALSE;
 END;
@@ -70,9 +70,9 @@ BEGIN
     CONSTRAINT fk_groups_users_updater FOREIGN KEY (updated_by_id)
         REFERENCES users (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION
-  ) WITHOUT OIDS;
+  );
 EXCEPTION
-    WHEN duplicate_table THEN 
+    WHEN duplicate_table THEN
       RAISE NOTICE 'table exists.';
       success := FALSE;
 END;
@@ -99,14 +99,14 @@ BEGIN
         REFERENCES users (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION
 
-  ) WITHOUT OIDS;
+  );
 EXCEPTION
-    WHEN duplicate_table THEN 
+    WHEN duplicate_table THEN
       RAISE NOTICE 'table exists.';
       success := FALSE;
 END;
 
-/* 
+/*
 Column additions
 The following columns must be added separately to the initial table create, as this script tidies up a messy upgrade
 */
@@ -114,7 +114,7 @@ The following columns must be added separately to the initial table create, as t
 BEGIN
   ALTER TABLE groups ADD COLUMN code character varying(20);
 EXCEPTION
-    WHEN duplicate_column THEN 
+    WHEN duplicate_column THEN
       RAISE NOTICE 'column exists.';
       success := FALSE;
 END;
@@ -126,15 +126,15 @@ BEGIN
       REFERENCES termlists_terms (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION;
 EXCEPTION
-    WHEN duplicate_column THEN 
+    WHEN duplicate_column THEN
       RAISE NOTICE 'column exists.';
       success := FALSE;
-END;   
+END;
 
 BEGIN
   ALTER TABLE groups ADD COLUMN from_date date;
 EXCEPTION
-    WHEN duplicate_column THEN 
+    WHEN duplicate_column THEN
       RAISE NOTICE 'column exists.';
       success := FALSE;
 END;
@@ -142,7 +142,7 @@ END;
 BEGIN
   ALTER TABLE groups ADD COLUMN to_date date;
 EXCEPTION
-    WHEN duplicate_column THEN 
+    WHEN duplicate_column THEN
       RAISE NOTICE 'column exists.';
       success := FALSE;
 END;
@@ -150,7 +150,7 @@ END;
 BEGIN
   ALTER TABLE groups ADD COLUMN private_records boolean default false;
 EXCEPTION
-    WHEN duplicate_column THEN 
+    WHEN duplicate_column THEN
       RAISE NOTICE 'column exists.';
       success := FALSE;
 END;
@@ -158,7 +158,7 @@ END;
 BEGIN
   ALTER TABLE groups ADD COLUMN implicit_record_inclusion boolean NOT NULL default false;
 EXCEPTION
-    WHEN duplicate_column THEN 
+    WHEN duplicate_column THEN
       RAISE NOTICE 'column exists.';
       success := FALSE;
 END;
@@ -166,7 +166,7 @@ END;
 BEGIN
   ALTER TABLE groups ADD COLUMN view_full_precision boolean NOT NULL default false;
 EXCEPTION
-    WHEN duplicate_column THEN 
+    WHEN duplicate_column THEN
       RAISE NOTICE 'column exists.';
       success := FALSE;
 END;
@@ -174,7 +174,7 @@ END;
 BEGIN
   ALTER TABLE groups_users ADD pending BOOLEAN DEFAULT FALSE;
 EXCEPTION
-    WHEN duplicate_column THEN 
+    WHEN duplicate_column THEN
       RAISE NOTICE 'column exists.';
       success := FALSE;
 END;
@@ -206,11 +206,11 @@ COMMENT ON COLUMN groups.code IS 'A code or abbreviation identifying the group.'
 COMMENT ON COLUMN groups.group_type_id IS 'Foreign key to the termlists_terms table. Identifies the type of group, e.g. recording group, project, organisation.';
 COMMENT ON COLUMN groups.from_date IS 'Date the group''s activities commenced if relevent, e.g. a project start date.';
 COMMENT ON COLUMN groups.to_date IS 'Date the group''s activities ceased if relevent, e.g. a project finish date.';
-COMMENT ON COLUMN groups.private_records IS 
-    'Set to true to indicate that the records input which are directly linked to the group should be witheld from uses outside the group. Relies on reporting queries to respect this.'; 
+COMMENT ON COLUMN groups.private_records IS
+    'Set to true to indicate that the records input which are directly linked to the group should be witheld from uses outside the group. Relies on reporting queries to respect this.';
 COMMENT ON COLUMN groups.implicit_record_inclusion IS
     'If true, then records are included in this group''s content if they are posted by a group member and meet the groups filter criteria. If false, then records must be explicitly posted into the group.';
-COMMENT ON COLUMN groups.view_full_precision IS 'Allow group members to view records explicitly posted into the at full precision.';    
+COMMENT ON COLUMN groups.view_full_precision IS 'Allow group members to view records explicitly posted into the at full precision.';
 
 COMMENT ON TABLE groups_users IS 'Identifies the users that belong to a group.';
 COMMENT ON COLUMN groups_users.id IS 'Unique identifier and primary key for the table.';
@@ -235,7 +235,7 @@ COMMENT ON COLUMN group_invitations.updated_on IS 'Date this record was last upd
 COMMENT ON COLUMN group_invitations.updated_by_id IS 'Foreign key to the users table (last updater).';
 COMMENT ON COLUMN group_invitations.deleted IS 'Has this record been deleted?';
 
-CREATE OR REPLACE VIEW list_group_invitations AS 
+CREATE OR REPLACE VIEW list_group_invitations AS
  SELECT i.id, i.group_id, i.email, i.token, g.website_id, g.title as group_title
    FROM group_invitations i
    JOIN groups g on g.id=i.group_id AND g.deleted=false

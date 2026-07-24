@@ -25,20 +25,34 @@ if (file_exists(__DIR__ . '/MAINTENANCE')) {
           strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 
   $isJson =
-      strpos($accept, 'application/json') !== false ||   // explicit JSON request
+      // Explicit JSON request.
+      strpos($accept, 'application/json') !== false ||
       strpos($accept, 'text/json') !== false ||
       strpos($accept, 'application/vnd.api+json') !== false ||
-      $xhr ||                                            // AJAX usually expects JSON
-      (isset($_GET['format']) && $_GET['format'] === 'json'); // some Indicia API calls use &format=json
+      // AJAX usually expects JSON.
+      $xhr ||
+      // Some Indicia API calls use &format=json.
+      (isset($_GET['format']) && $_GET['format'] === 'json') ||
+      // Web services calls which might not request JSON (e.g. auth token
+      // requests) - JSON response more convenient than an HTML page.
+      strpos($_SERVER['REQUEST_URI'], '/index.php/services') === 0;
 
    http_response_code(503);
    header('Retry-After: 3600');
 
   if ($isJson) {
     header('Content-Type: application/json');
+    // Message can be overridden by creating a maintenance.txt file in the
+    // warehouse root folder.
+    $file = __DIR__ . '/maintenance.txt';
+    if (is_readable($file)) {
+      $message = file_get_contents($file);
+    } else {
+      $message = 'The Indicia Warehouse is currently offline for scheduled maintenance.';
+    }
     echo json_encode([
         'status'  => 'maintenance',
-        'message' => 'The Indicia Warehouse is currently offline for scheduled maintenance.'
+        'message' => $message,
     ]);
   } else {
     // Return the HTML maintenance page or message

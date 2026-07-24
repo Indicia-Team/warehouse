@@ -74,7 +74,7 @@ class workflow {
       // If the key is in the main entity, we can directly compare the old and new keys.
       if ($keyDef['table'] === $entity) {
         $keyCol = $keyDef['column'];
-        $keyChanged = (string) $oldRecord->column !== (string) $newRecord->column;
+        $keyChanged = (string) $oldRecord->$keyCol !== (string) $newRecord->$keyCol;
       }
       else {
         // Find the definintion of the extra data table that contains the

@@ -53,13 +53,14 @@ JOIN occurrences o ON o.id=q.record_id
 JOIN workflow_events e on e.id::text=q.params->>'workflow_events.id'
 LEFT JOIN (occurrence_attribute_values v
   JOIN cache_termlists_terms t on t.id=v.int_value
-  JOIN occurrence_attributes a ON a.id=v.occurrence_attribute_id
+  JOIN occurrence_attributes a ON a.id=v.occurrence_attribute_id AND a.deleted=false
 ) ON v.occurrence_id=o.id AND e.attrs_filter_term IS NOT NULL
   -- case insensitive array check.
   AND lower(t.term)=ANY(lower(e.attrs_filter_values::text)::text[])
   AND lower(a.term_name)=lower(e.attrs_filter_term)
+  AND v.deleted=false
 WHERE q.entity='occurrence' AND q.task='task_workflow_event_check_filters' AND claimed_by=?
--- Need to either fail on the locations filter, or attribute values filter.
+-- Need to fail on the attribute values filter.
 AND e.attrs_filter_term IS NOT NULL AND v.id IS NULL;
 SQL;
     $tasks = $db->query($qry, [$procId]);

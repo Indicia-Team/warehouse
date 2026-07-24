@@ -4,6 +4,17 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.25.0
+*2026-07-24*
+
+* Compatibility with PostgreSQL 17.
+* Maintenance mode on the warehouse improvements:
+  * now returns JSON rather than an HTML page when an auth token is requested.
+  * the message returned to API requests is configurable, so can inform apps as to the reason for
+    downtime. See https://github.com/BiologicalRecordsCentre/iRecord/issues/2051.
+* Minor bugfixes in the workflow code.
+
+
 ## Version 9.24.0
 *2026-07-03*
 
