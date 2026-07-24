@@ -4,6 +4,11 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.25.0
+*2026-07-24*
+
+* Compatibility with PostgreSQL 17.
+
 ## Version 9.24.0
 *2026-07-03*
 
