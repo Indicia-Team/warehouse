@@ -21,43 +21,23 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Model class for the classification_events table.
+ * Model class for the Classification_results_sample_media table.
  *
- * Each row represents a single request or set of requests to an image
+ * Links classification results to the media files that were sent to the
  * classifier.
  */
-class Classification_event_Model extends ORM {
+class Classification_results_sample_medium_Model extends ORM {
 
-  protected $has_many = [
+  protected $has_one = array(
     'classification_result',
-  ];
-
-  protected $has_one = [
-    'occurrence',
-    'determination',
-  ];
-
-  protected $belongs_to = [
-    'created_by' => 'user',
-  ];
+    'sample_medium',
+  );
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
-    $array->add_rules('website_id', 'required', 'integer');
-    $this->unvalidatedFields = [
-      'deleted',
-    ];
+    $array->add_rules('classification_result_id', 'integer', 'required');
+    $array->add_rules('sample_media_id', 'integer', 'required');
     return parent::validate($array, $save);
-  }
-
-  /**
-   * Auto-fill the website ID.
-   */
-  public function preSubmit() {
-    if (!isset($this->submission['fields']['website_id'])) {
-      $this->submission['fields']['website_id'] = $this->identifiers['website_id'];
-    }
-    return parent::preSubmit();
   }
 
 }

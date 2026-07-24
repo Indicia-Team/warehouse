@@ -295,4 +295,17 @@ $lang = [
     'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
       'multiple values or Allow ranges.',
   ],
+  'location_attribute_id' => [
+    'required' => 'The location attribute id is required.',
+    'integer' => 'The location attribute id must be an integer.',
+  ],
+  'occurrence_attribute_id' => [
+    'required' => 'The occurrence attribute id is required.',
+    'integer' => 'The occurrence attribute id must be an integer.',
+  ],
+  'sample_attribute_id' => [
+    'required' => 'The sample attribute id is required.',
+    'integer' => 'The sample attribute id must be an integer.',
+    'exactly_one_target_attribute_required' => 'Exactly one of sample_attribute_id, occurrence_attribute_id or location_attribute_id must be supplied.',
+  ],
 ];
