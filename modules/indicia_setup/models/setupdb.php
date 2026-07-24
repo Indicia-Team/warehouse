@@ -144,16 +144,12 @@ class Setupdb_Model extends Model {
   /**
    * check if postscript scripts are installed
    *
-   * @return bool
+   * @return string
+   *   TRUE if OK.
    */
-  public function checkPostgis()
-  {
-      if(false === ($result = pg_query($this->dbconn, "SELECT postgis_scripts_installed()")))
-      {
-          return pg_last_error($this->dbconn);
-      }
-
-      return true;
+  public function checkPostgis() {
+    $result = pg_query($this->dbconn, "select extversion from pg_extension where extname='postgis'");
+    return pg_num_rows($result) > 0;
   }
 
   /**
