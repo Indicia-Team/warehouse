@@ -22,7 +22,7 @@ CREATE TRIGGER set_sample_occurrences_to_training_trigger
   AFTER UPDATE
   ON samples
   FOR EACH ROW
-  EXECUTE PROCEDURE set_sample_occurrences_to_training();
+  EXECUTE FUNCTION set_sample_occurrences_to_training();
 
 DROP TRIGGER IF EXISTS set_occurrence_to_training_from_sample_trigger ON occurrences;
 

@@ -177,7 +177,7 @@ BEGIN
         END IF;
         _q_txt = 'CREATE TRIGGER audit_trigger_row AFTER ' || row_targets || ' ON ' ||
                  quote_ident(target_table::text) ||
-                 ' FOR EACH ROW EXECUTE PROCEDURE audit.if_modified_func(' ||
+                 ' FOR EACH ROW EXECUTE FUNCTION audit.if_modified_func(' ||
                  primary_column || _ignored_cols_snip || ');';
         RAISE NOTICE '%',_q_txt;
         EXECUTE _q_txt;
@@ -187,7 +187,7 @@ BEGIN
 
     _q_txt = 'CREATE TRIGGER audit_trigger_stm AFTER ' || stm_targets || ' ON ' ||
              quote_ident(target_table::text) ||
-             ' FOR EACH STATEMENT EXECUTE PROCEDURE audit.if_modified_func(' ||
+             ' FOR EACH STATEMENT EXECUTE FUNCTION audit.if_modified_func(' ||
              primary_column || ');';
     RAISE NOTICE '%',_q_txt;
     EXECUTE _q_txt;

@@ -10,7 +10,4 @@ CREATE TABLE image_organiser_problems
   CONSTRAINT fk_image_organiser_problems_creator FOREIGN KEY (created_by_id)
       REFERENCES users (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
-)
-WITH (
-  OIDS=FALSE
 );

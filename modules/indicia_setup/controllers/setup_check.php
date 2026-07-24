@@ -391,9 +391,9 @@ class Setup_Check_Controller extends Template_Controller {
       }
 
       // check postgis installation
-      if (TRUE !== ($result = $this->db->checkPostgis())) {
+      if (!$this->db->checkPostgis()) {
         $this->view_var['error_general'][] = Kohana::lang('setup.error_db_postgis');
-        Kohana::log("error", "Setup failed: {$result}");
+        Kohana::log("error", 'Setup failed: the PostGIS extension is not installed on the database server.');
         return FALSE;
       }
 

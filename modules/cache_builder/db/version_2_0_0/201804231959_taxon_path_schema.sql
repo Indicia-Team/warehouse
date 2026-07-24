@@ -15,9 +15,6 @@ CREATE TABLE cache_taxon_paths
   CONSTRAINT fk_taxon_list_id FOREIGN KEY (taxon_list_id)
       REFERENCES taxon_lists (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
-)
-WITH (
-  OIDS=FALSE
 );
 COMMENT ON TABLE cache_taxon_paths
   IS 'Materialised paths for all taxon meanings on the master taxon list.';
