@@ -43,9 +43,6 @@ CREATE TABLE cache_occurrences_functional
   zero_abundance boolean,
   licence_id integer,
   CONSTRAINT pk_cache_occurrences_functional PRIMARY KEY (id)
-)
-WITH (
-  OIDS=FALSE
 );
 
 -- Table: cache_occurrences_nonfunctional
@@ -72,9 +69,6 @@ CREATE TABLE cache_occurrences_nonfunctional
   attr_det_last_name character varying,
   attr_det_full_name character varying,
   CONSTRAINT pk_cache_occurrences_nonfunctional PRIMARY KEY (id)
-)
-WITH (
-  OIDS=FALSE
 );
 
 -- Table: cache_samples_functional
@@ -105,9 +99,6 @@ CREATE TABLE cache_samples_functional
   query character(1),
   media_count integer default 0,
   CONSTRAINT pk_cache_samples_functional PRIMARY KEY (id)
-)
-WITH (
-  OIDS=FALSE
 );
 
 -- Table: cache_samples_nonfunctional
@@ -136,7 +127,4 @@ CREATE TABLE cache_samples_nonfunctional
   attr_biotope character varying,
   attr_sref_precision double precision,
   CONSTRAINT pk_cache_samples_nonfunctional PRIMARY KEY (id)
-)
-WITH (
-  OIDS=FALSE
 );

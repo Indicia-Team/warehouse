@@ -18,9 +18,6 @@
   CONSTRAINT fk_verification_rule_updater FOREIGN KEY (updated_by_id)
       REFERENCES users (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
-)
-WITH (
-  OIDS=FALSE
 );
 COMMENT ON TABLE verification_rules IS 'List of available verification rules.';
 COMMENT ON COLUMN verification_rules.id IS 'Unique identifier for the verification_rule table. Primary key.';
@@ -50,9 +47,6 @@ CREATE TABLE verification_rule_metadata
   CONSTRAINT fk_verification_rule_metadata_verification_rule FOREIGN KEY (verification_rule_id)
       REFERENCES verification_rules (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
-)
-WITH (
-  OIDS=FALSE
 );
 COMMENT ON TABLE verification_rule_metadata IS 'Metadata for a verification rule';
 COMMENT ON COLUMN verification_rule_metadata.id IS 'Primary key and unique identifier for the verification_rule_metadata table.';
@@ -85,9 +79,6 @@ CREATE TABLE verification_rule_data
   CONSTRAINT fk_verification_rule_data_verification_rule FOREIGN KEY (verification_rule_id)
       REFERENCES verification_rules (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
-)
-WITH (
-  OIDS=FALSE
 );
 COMMENT ON TABLE verification_rule_data IS 'Data item for a verification rule';
 COMMENT ON COLUMN verification_rule_data.id IS 'Primary key and unique identifier for the verification_rule_data table.';

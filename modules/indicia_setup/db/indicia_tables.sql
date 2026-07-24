@@ -74,7 +74,7 @@ CREATE TABLE core_roles (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table languages (OID = 117421) :
 --
@@ -87,7 +87,7 @@ CREATE TABLE languages (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table location_attribute_values (OID = 117425) :
 --
@@ -106,7 +106,7 @@ CREATE TABLE location_attribute_values (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table location_attributes (OID = 117431) :
 --
@@ -123,7 +123,7 @@ CREATE TABLE location_attributes (
     multi_value boolean DEFAULT false,
     public boolean DEFAULT false,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table location_attributes_websites (OID = 117434) :
 --
@@ -135,7 +135,7 @@ CREATE TABLE location_attributes_websites (
     created_by_id integer NOT NULL,
     restrict_to_survey_id integer,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table locations (OID = 117440) :
 --
@@ -153,7 +153,7 @@ CREATE TABLE locations (
     "comment" text,
     external_key character varying(50),
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 
 SELECT AddGeometryColumn ('locations', 'centroid_geom', 900913, 'GEOMETRY', 2);
 SELECT AddGeometryColumn ('locations', 'boundary_geom', 900913, 'GEOMETRY', 2);
@@ -168,13 +168,13 @@ CREATE TABLE locations_websites (
     created_on timestamp without time zone NOT NULL,
     created_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table meanings (OID = 117457) :
 --
 CREATE TABLE meanings (
     id integer DEFAULT nextval('meanings_id_seq'::regclass) NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table occurrence_attribute_values (OID = 117461) :
 --
@@ -193,7 +193,7 @@ CREATE TABLE occurrence_attribute_values (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table occurrence_attributes (OID = 117467) :
 --
@@ -210,7 +210,7 @@ CREATE TABLE occurrence_attributes (
     multi_value boolean DEFAULT false,
     public boolean DEFAULT false,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table occurrence_attributes_websites (OID = 117470) :
 --
@@ -222,7 +222,7 @@ CREATE TABLE occurrence_attributes_websites (
     created_by_id integer NOT NULL,
     restrict_to_survey_id integer,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table occurrence_images (OID = 117473) :
 --
@@ -236,7 +236,7 @@ CREATE TABLE occurrence_images (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table occurrences (OID = 117476) :
 --
@@ -258,7 +258,7 @@ CREATE TABLE occurrences (
     verified_by_id integer,
     verified_on timestamp without time zone,
     CONSTRAINT occurrences_record_status_check CHECK ((record_status = ANY (ARRAY['I'::bpchar, 'C'::bpchar, 'V'::bpchar])))
-) WITHOUT OIDS;
+);
 --
 -- Structure for table people (OID = 117480) :
 --
@@ -276,7 +276,7 @@ CREATE TABLE people (
     title_id integer,
     address character varying(200),
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table sample_attribute_values (OID = 117486) :
 --
@@ -295,7 +295,7 @@ CREATE TABLE sample_attribute_values (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table sample_attributes (OID = 117492) :
 --
@@ -313,7 +313,7 @@ CREATE TABLE sample_attributes (
     multi_value boolean DEFAULT false,
     public boolean DEFAULT false,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table sample_attributes_websites (OID = 117495) :
 --
@@ -325,7 +325,7 @@ CREATE TABLE sample_attributes_websites (
     created_by_id integer NOT NULL,
     restrict_to_survey_id integer,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table samples (OID = 117498) :
 --
@@ -347,7 +347,7 @@ CREATE TABLE samples (
     external_key character varying(50),
     sample_method_id integer,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 
 SELECT AddGeometryColumn ('samples', 'geom', 900913, 'GEOMETRY', 2);
 
@@ -362,7 +362,7 @@ CREATE TABLE site_roles (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table surveys (OID = 117520) :
 --
@@ -377,7 +377,7 @@ CREATE TABLE surveys (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table taxa (OID = 117528) :
 --
@@ -395,7 +395,7 @@ CREATE TABLE taxa (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table taxa_taxon_lists (OID = 117533) :
 --
@@ -412,7 +412,7 @@ CREATE TABLE taxa_taxon_lists (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table taxon_groups (OID = 117536) :
 --
@@ -424,7 +424,7 @@ CREATE TABLE taxon_groups (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table taxon_lists (OID = 117541) :
 --
@@ -439,13 +439,13 @@ CREATE TABLE taxon_lists (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table taxon_meanings (OID = 117548) :
 --
 CREATE TABLE taxon_meanings (
     id integer DEFAULT nextval('taxon_meanings_id_seq'::regclass) NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table termlists (OID = 117553) :
 --
@@ -460,7 +460,7 @@ CREATE TABLE termlists (
     created_by_id integer NOT NULL,
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table termlists_terms (OID = 117563) :
 --
@@ -477,7 +477,7 @@ CREATE TABLE termlists_terms (
     preferred boolean DEFAULT false NOT NULL,
     sort_order integer,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table terms (OID = 117569) :
 --
@@ -490,7 +490,7 @@ CREATE TABLE terms (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table users (OID = 117574) :
 --
@@ -517,7 +517,7 @@ CREATE TABLE users (
     CONSTRAINT enforce_dims_home_geom CHECK ((st_ndims(home_geom) = 2)),
     CONSTRAINT enforce_geotype_home_geom CHECK (((geometrytype(home_geom) = 'LINESTRING'::text) OR (home_geom IS NULL))),
     CONSTRAINT enforce_srid_home_geom CHECK ((st_srid(home_geom) = (-1)))
-) WITHOUT OIDS;
+);
 --
 -- Structure for table users_websites (OID = 117585) :
 --
@@ -537,7 +537,7 @@ CREATE TABLE users_websites (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     preferred_sref_system character varying(10)
-) WITHOUT OIDS;
+);
 --
 -- Structure for table websites (OID = 117593) :
 --
@@ -553,7 +553,7 @@ CREATE TABLE websites (
     default_survey_id integer,
     "password" character varying(30) NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table system (OID = 119204) :
 --
@@ -563,7 +563,7 @@ CREATE TABLE system (
     name character varying(30) DEFAULT ''::character varying NOT NULL,
     repository character varying(150) DEFAULT ''::character varying NOT NULL,
     release_date date
-) WITHOUT OIDS;
+);
 --
 -- Structure for table occurrence_comments (OID = 119215) :
 --
@@ -577,7 +577,7 @@ CREATE TABLE occurrence_comments (
     occurrence_id integer,
     email_address character varying(50),
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table user_tokens (OID = 119247) :
 --
@@ -588,7 +588,7 @@ CREATE TABLE user_tokens (
     created timestamp without time zone NOT NULL,
     user_agent character varying NOT NULL,
     token character varying NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Structure for table titles (OID = 119311) :
 --
@@ -600,7 +600,7 @@ CREATE TABLE titles (
     updated_on timestamp without time zone NOT NULL,
     updated_by_id integer NOT NULL,
     deleted boolean DEFAULT false NOT NULL
-) WITHOUT OIDS;
+);
 --
 -- Definition for index fki_location_attribute_value_location_attribute (OID = 118464) :
 --
