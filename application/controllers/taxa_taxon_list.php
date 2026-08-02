@@ -48,6 +48,41 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller {
     $this->internal_index($taxon_list_id, $taxonList);
   }
 
+  /**
+   * Ensure the edit form is only loaded for the preferred name in a taxon list.
+   *
+   * Synonyms and common names share the taxon meaning with the preferred name,
+   * but the edit form submits the preferred flag as true. Redirecting here
+   * prevents a non-preferred name from being promoted if the form is saved.
+   *
+   * @param int $id
+   *   The taxa_taxon_list id to edit.
+   */
+  public function edit($id) {
+    $id = (int) $id;
+    if (!$this->record_authorised($id)) {
+      $this->access_denied();
+      return;
+    }
+
+    $taxa = ORM::factory('taxa_taxon_list', $id);
+    if ($taxa->deleted !== 't' && $taxa->preferred !== 't') {
+      $preferred = ORM::factory('taxa_taxon_list')->where([
+        'taxon_list_id' => $taxa->taxon_list_id,
+        'taxon_meaning_id' => $taxa->taxon_meaning_id,
+        'preferred' => 't',
+        'deleted' => 'f',
+      ])->find();
+      if ($preferred->loaded) {
+        $query = !empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '';
+        url::redirect("taxa_taxon_list/edit/$preferred->id$query");
+        return;
+      }
+    }
+
+    parent::edit($id);
+  }
+
   public function children($id) {
     $parentTtl = ORM::factory('taxa_taxon_list', $id);
     $this->base_filter['parent_id'] = $id;
