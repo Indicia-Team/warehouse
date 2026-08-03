@@ -656,6 +656,7 @@ SQL;
         $preferred->parent_id,
         $synonym->id,
       ]);
+      // Copy the promoted synonym's search code to the other names in the concept.
       $searchCode = trim((string) $synonym->taxon->search_code);
       if ($searchCode !== '') {
         $this->db->query(<<<SQL

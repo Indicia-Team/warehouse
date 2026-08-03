@@ -302,6 +302,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
             $this->copySharedFieldsFromSubmission('taxon', $supermodel['model']['fields'], [
               'description',
               'external_key',
+              'organism_key',
               'search_code',
               'taxon_group_id',
               'taxon_rank_id',

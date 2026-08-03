@@ -50,6 +50,13 @@ class Taxon_Model extends ORM {
   private $prefExternalKeyChangedForTaxonMeaningIds = [];
 
   /**
+   * Taxon meaning IDs whose preferred organism key has changed.
+   *
+   * @var array
+   */
+  private $prefOrganismKeyChangedForTaxonMeaningIds = [];
+
+  /**
    * Does an update change fields which are in the occurrences cache tables?
    *
    * @var bool
@@ -63,6 +70,13 @@ class Taxon_Model extends ORM {
       foreach ($this->taxa_taxon_lists as $ttl) {
         if ($ttl->preferred && $this->external_key !== $this->submission['fields']['external_key']['value']) {
           $this->prefExternalKeyChangedForTaxonMeaningIds[] = $ttl->taxon_meaning_id;
+        }
+      }
+    }
+    if (isset($this->submission['fields']['organism_key'])) {
+      foreach ($this->taxa_taxon_lists as $ttl) {
+        if ($ttl->preferred && $this->organism_key !== $this->submission['fields']['organism_key']['value']) {
+          $this->prefOrganismKeyChangedForTaxonMeaningIds[] = $ttl->taxon_meaning_id;
         }
       }
     }
@@ -172,6 +186,20 @@ WHERE ttl.taxon_meaning_id=?
 AND t.id=ttl.taxon_id
 SQL;
         $this->db->query($updateExtKeyQuery, [$this->external_key, $userId, $taxonMeaningId]);
+      }
+    }
+    if (!empty($this->prefOrganismKeyChangedForTaxonMeaningIds)) {
+      // Apply organism key changes to synonyms/vernaculars.
+      $userId = $this->getUserId();
+      foreach ($this->prefOrganismKeyChangedForTaxonMeaningIds as $taxonMeaningId) {
+        $updateOrganismKeyQuery = <<<SQL
+UPDATE taxa t
+SET organism_key=?, updated_on=now(), updated_by_id=?
+FROM taxa_taxon_lists ttl
+WHERE ttl.taxon_meaning_id=?
+AND t.id=ttl.taxon_id
+SQL;
+        $this->db->query($updateOrganismKeyQuery, [$this->organism_key, $userId, $taxonMeaningId]);
       }
     }
     return TRUE;
