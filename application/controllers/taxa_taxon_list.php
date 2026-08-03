@@ -656,6 +656,17 @@ SQL;
         $preferred->parent_id,
         $synonym->id,
       ]);
+      $searchCode = trim((string) $synonym->taxon->search_code);
+      if ($searchCode !== '') {
+        $this->db->query(<<<SQL
+          UPDATE taxa t
+          SET external_key=?, updated_on=now(), updated_by_id=?
+          FROM taxa_taxon_lists ttl
+          WHERE ttl.taxon_meaning_id=?
+          AND t.id=ttl.taxon_id
+          AND t.deleted=false
+        SQL, [$searchCode, security::getUserId(), $synonym->taxon_meaning_id]);
+      }
       $this->db->query('UPDATE taxa_taxon_lists SET preferred=false, updated_on=now(), updated_by_id=? WHERE id=?', [security::getUserId(), $preferred->id]);
       $this->db->query('UPDATE taxa_taxon_lists SET preferred=true, updated_on=now(), updated_by_id=? WHERE id=?', [security::getUserId(), $synonym->id]);
       $this->db->query('COMMIT');
