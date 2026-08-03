@@ -651,6 +651,11 @@ SQL;
     }
     $this->db->query('BEGIN');
     try {
+      $this->db->query('UPDATE taxa_taxon_lists SET common_taxon_id=?, parent_id=? WHERE id=?', [
+        $preferred->common_taxon_id,
+        $preferred->parent_id,
+        $synonym->id,
+      ]);
       $this->db->query('UPDATE taxa_taxon_lists SET preferred=false, updated_on=now(), updated_by_id=? WHERE id=?', [security::getUserId(), $preferred->id]);
       $this->db->query('UPDATE taxa_taxon_lists SET preferred=true, updated_on=now(), updated_by_id=? WHERE id=?', [security::getUserId(), $synonym->id]);
       $this->db->query('COMMIT');
