@@ -149,7 +149,7 @@ $config['image_handling'] = array(
  * should have thumbnails created.
  */
 $config['upload_file_type'] = array(
-    'image' => array('jpg', 'gif', 'png', 'jpeg'),
+    'image' => array('jpg', 'gif', 'png', 'jpeg','webp' ),
     'pdf' => array('pdf'),
     'audio' => array('mp3', 'wav')
   );
