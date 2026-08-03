@@ -665,6 +665,13 @@ SQL;
         $preferred->parent_id,
         $synonym->id,
       ]);
+      if (!isset($_POST['move_attributes']) || $_POST['move_attributes'] === 't') {
+        $this->db->query('UPDATE taxa_taxon_list_attribute_values SET taxa_taxon_list_id=?, updated_on=now(), updated_by_id=? WHERE taxa_taxon_list_id=? AND deleted=false', [
+          $synonym->id,
+          security::getUserId(),
+          $preferred->id,
+        ]);
+      }
       // Copy the promoted synonym's search code to the other names in the concept.
       $searchCode = trim((string) $synonym->taxon->search_code);
       if ($searchCode !== '') {

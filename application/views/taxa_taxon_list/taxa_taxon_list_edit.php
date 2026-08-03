@@ -277,6 +277,13 @@ TXT;
 $preferredId = (int) html::initial_value($values, 'taxa_taxon_list:id');
 $taxonMeaningId = (int) html::initial_value($values, 'taxon_meaning:id');
 $taxonListId = (int) html::initial_value($values, 'taxa_taxon_list:taxon_list_id');
+$hasAttributeValues = FALSE;
+foreach ($values['attributes'] as $attribute) {
+  if (!empty($attribute['id'])) {
+    $hasAttributeValues = TRUE;
+    break;
+  }
+}
 
 /**
  * Render an editable row in the related names grid.
@@ -338,9 +345,10 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
           <button type="submit" class="btn btn-xs btn-danger">Delete</button>
         </form>
         <?php if ($isSynonym) : ?>
-          <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/promote_synonym" class="form-inline related-name-action-form" style="display: inline-block" onsubmit="return confirm('Make this synonym the accepted name?');">
+          <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/promote_synonym" class="form-inline related-name-action-form" style="display: inline-block" onsubmit="return <?php echo $hasAttributeValues ? 'handlePromoteSynonym(this)' : 'true'; ?>;">
             <input type="hidden" name="id" value="<?php echo $rowId; ?>" />
             <input type="hidden" name="preferred_id" value="<?php echo $preferredId; ?>" />
+            <input type="hidden" name="move_attributes" value="t" />
             <button type="submit" class="btn btn-xs btn-success">Make preferred</button>
           </form>
         <?php endif; ?>
@@ -430,6 +438,61 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
   <?php echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id') !== NULL); ?>
 </div>
 <script>
+  function handlePromoteSynonym(form) {
+    var dialog = document.createElement('div');
+    var panel = document.createElement('div');
+    var heading = document.createElement('h4');
+    var message = document.createElement('p');
+    var moveButton = document.createElement('button');
+    var keepButton = document.createElement('button');
+    var cancelButton = document.createElement('button');
+
+    dialog.id = 'promote-synonym-dialog';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.style.cssText = 'position: fixed; z-index: 1050; inset: 0; background: rgba(0, 0, 0, 0.35); display: flex; align-items: center; justify-content: center;';
+    panel.style.cssText = 'background: #fff; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); max-width: 32rem; padding: 1.5rem;';
+    heading.textContent = 'Make this synonym the accepted name?';
+    message.textContent = 'Choose how to handle attribute values attached to the current preferred name.';
+    moveButton.type = 'button';
+    moveButton.className = 'btn btn-primary';
+    moveButton.textContent = 'Move attribute values';
+    keepButton.type = 'button';
+    keepButton.className = 'btn btn-default';
+    keepButton.textContent = 'Keep attribute values';
+    cancelButton.type = 'button';
+    cancelButton.className = 'btn btn-link';
+    cancelButton.textContent = 'Cancel';
+
+    function closeDialog() {
+      dialog.remove();
+    }
+    function submitPromotion(moveAttributes) {
+      form.querySelector('[name="move_attributes"]').value = moveAttributes ? 't' : 'f';
+      closeDialog();
+      form.submit();
+    }
+    moveButton.addEventListener('click', function () { submitPromotion(true); });
+    keepButton.addEventListener('click', function () { submitPromotion(false); });
+    cancelButton.addEventListener('click', closeDialog);
+    dialog.addEventListener('click', function (event) {
+      if (event.target === dialog) {
+        closeDialog();
+      }
+    });
+    panel.appendChild(heading);
+    panel.appendChild(message);
+    panel.appendChild(moveButton);
+    panel.appendChild(document.createTextNode(' '));
+    panel.appendChild(keepButton);
+    panel.appendChild(document.createTextNode(' '));
+    panel.appendChild(cancelButton);
+    dialog.appendChild(panel);
+    document.body.appendChild(dialog);
+    moveButton.focus();
+    return false;
+  }
+
   <?php if ($isNewTaxon) : ?>
   (function () {
     var pendingNames = {synonym: [], common_name: []};
