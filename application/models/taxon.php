@@ -57,6 +57,13 @@ class Taxon_Model extends ORM {
   private $prefOrganismKeyChangedForTaxonMeaningIds = [];
 
   /**
+   * Taxon meaning IDs whose preferred conservation flags should be synced.
+   *
+   * @var array
+   */
+  private $prefFlagsChangedForTaxonMeaningIds = [];
+
+  /**
    * Does an update change fields which are in the occurrences cache tables?
    *
    * @var bool
@@ -77,6 +84,14 @@ class Taxon_Model extends ORM {
       foreach ($this->taxa_taxon_lists as $ttl) {
         if ($ttl->preferred && $this->organism_key !== $this->submission['fields']['organism_key']['value']) {
           $this->prefOrganismKeyChangedForTaxonMeaningIds[] = $ttl->taxon_meaning_id;
+        }
+      }
+    }
+    $flagFields = ['marine_flag', 'freshwater_flag', 'terrestrial_flag', 'non_native_flag'];
+    if (array_intersect($flagFields, array_keys($this->submission['fields']))) {
+      foreach ($this->taxa_taxon_lists as $ttl) {
+        if ($ttl->preferred) {
+          $this->prefFlagsChangedForTaxonMeaningIds[$ttl->taxon_meaning_id] = TRUE;
         }
       }
     }
@@ -200,6 +215,27 @@ WHERE ttl.taxon_meaning_id=?
 AND t.id=ttl.taxon_id
 SQL;
         $this->db->query($updateOrganismKeyQuery, [$this->organism_key, $userId, $taxonMeaningId]);
+      }
+    }
+    if (!empty($this->prefFlagsChangedForTaxonMeaningIds)) {
+      // Apply preferred conservation flags to synonyms/vernaculars.
+      $userId = $this->getUserId();
+      foreach (array_keys($this->prefFlagsChangedForTaxonMeaningIds) as $taxonMeaningId) {
+        $updateFlagsQuery = <<<SQL
+UPDATE taxa t
+SET marine_flag=?, freshwater_flag=?, terrestrial_flag=?, non_native_flag=?, updated_on=now(), updated_by_id=?
+FROM taxa_taxon_lists ttl
+WHERE ttl.taxon_meaning_id=?
+AND t.id=ttl.taxon_id
+SQL;
+        $this->db->query($updateFlagsQuery, [
+          $this->marine_flag,
+          $this->freshwater_flag,
+          $this->terrestrial_flag,
+          $this->non_native_flag,
+          $userId,
+          $taxonMeaningId,
+        ]);
       }
     }
     return TRUE;

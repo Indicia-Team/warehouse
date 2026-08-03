@@ -651,6 +651,15 @@ SQL;
     }
     $this->db->query('BEGIN');
     try {
+      // Ensure that the previous preferred taxon flags are preserved.
+      $this->db->query('UPDATE taxa SET marine_flag=?, freshwater_flag=?, terrestrial_flag=?, non_native_flag=?, updated_on=now(), updated_by_id=? WHERE id IN (SELECT taxon_id FROM taxa_taxon_lists WHERE taxon_meaning_id=?)', [
+        $preferred->taxon->marine_flag,
+        $preferred->taxon->freshwater_flag,
+        $preferred->taxon->terrestrial_flag,
+        $preferred->taxon->non_native_flag,
+        security::getUserId(),
+        $preferred->taxon_meaning_id,
+      ]);
       $this->db->query('UPDATE taxa_taxon_lists SET common_taxon_id=?, parent_id=? WHERE id=?', [
         $preferred->common_taxon_id,
         $preferred->parent_id,
