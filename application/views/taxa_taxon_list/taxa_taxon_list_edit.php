@@ -25,6 +25,7 @@
 require_once 'application/views/multi_value_data_editing_support.php';
 warehouse::loadHelpers(['data_entry_helper', 'map_helper']);
 $id = html::initial_value($values, 'taxa_taxon_list:id');
+$isNewTaxon = empty($id);
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 
 echo html::error_message($model->getError('deleted'));
@@ -37,6 +38,10 @@ echo html::error_message($model->getError('deleted'));
     <input type="hidden" name="taxon:id" value="<?php echo html::initial_value($values, 'taxon:id'); ?>" />
     <input type="hidden" name="taxon_meaning:id" value="<?php echo html::initial_value($values, 'taxon_meaning:id'); ?>" />
     <input type="hidden" name="taxa_taxon_list:preferred" value="t" />
+    <?php if ($isNewTaxon) : ?>
+      <input type="hidden" name="metaFields:synonyms" id="pending-synonyms" value="" />
+      <input type="hidden" name="metaFields:commonNames" id="pending-common-names" value="" />
+    <?php endif; ?>
     <?php
     echo data_entry_helper::text_input([
       'fieldname' => 'taxon:taxon',
@@ -237,9 +242,6 @@ TXT;
       ?>
     </div>
   </fieldset>
-  <?php
-  echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id') !== NULL);
-  ?>
   <div id="delete-replacement-check-msg" class="alert alert-info" style="display: none">
     Checking if there are existing occurrences for this taxon...
   </div>
@@ -353,9 +355,9 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
   <p>Manage alternative scientific names individually. Make preferred swaps the accepted name for this taxonomic concept.</p>
   <table class="table table-striped related-names">
     <thead><tr><th>Name and details</th></tr></thead>
-    <tbody><?php $renderNameRows($other_data['related_names']['synonyms'], 'synonym'); ?></tbody>
+    <tbody id="pending-synonyms-grid"><?php $renderNameRows($other_data['related_names']['synonyms'], 'synonym'); ?></tbody>
   </table>
-  <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/save_related_name" class="form-inline related-name-form">
+  <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/save_related_name" class="form-inline related-name-form<?php echo $isNewTaxon ? ' pending-related-name-form' : ''; ?>" data-name-type="synonym">
     <input type="hidden" name="taxon_meaning_id" value="<?php echo $taxonMeaningId; ?>" />
     <input type="hidden" name="taxon_meaning_preferred_id" value="<?php echo $preferredId; ?>" />
     <input type="hidden" name="taxon_list_id" value="<?php echo $taxonListId; ?>" />
@@ -372,7 +374,7 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
     <label><input type="checkbox" name="allow_data_entry" value="t" checked /> Data entry</label>
     <label><input type="checkbox" name="manually_entered" value="t" checked /> Manually entered</label>
     <label><input type="checkbox" name="name_deprecated" value="t" /> Deprecated</label>
-    <button type="submit" class="btn btn-primary">Add synonym</button>
+    <button type="<?php echo $isNewTaxon ? 'button' : 'submit'; ?>" class="btn btn-primary<?php echo $isNewTaxon ? ' add-pending-related-name' : ''; ?>">Add synonym</button>
   </form>
 </fieldset>
 <fieldset>
@@ -380,9 +382,9 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
   <p>Manage common names individually, including their language and data-entry settings.</p>
   <table class="table table-striped related-names">
     <thead><tr><th>Name and details</th></tr></thead>
-    <tbody><?php $renderNameRows($other_data['related_names']['common_names'], 'common_name'); ?></tbody>
+    <tbody id="pending-common-names-grid"><?php $renderNameRows($other_data['related_names']['common_names'], 'common_name'); ?></tbody>
   </table>
-  <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/save_related_name" class="form-inline related-name-form">
+  <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/save_related_name" class="form-inline related-name-form<?php echo $isNewTaxon ? ' pending-related-name-form' : ''; ?>" data-name-type="common_name">
     <input type="hidden" name="taxon_meaning_id" value="<?php echo $taxonMeaningId; ?>" />
     <input type="hidden" name="taxon_meaning_preferred_id" value="<?php echo $preferredId; ?>" />
     <input type="hidden" name="taxon_list_id" value="<?php echo $taxonListId; ?>" />
@@ -396,12 +398,15 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
     <label><input type="checkbox" name="allow_data_entry" value="t" checked /> Data entry</label>
     <label><input type="checkbox" name="manually_entered" value="t" checked /> Manually entered</label>
     <label><input type="checkbox" name="name_deprecated" value="t" /> Deprecated</label>
-    <button type="submit" class="btn btn-primary">Add common name</button>
+    <button type="<?php echo $isNewTaxon ? 'button' : 'submit'; ?>" class="btn btn-primary<?php echo $isNewTaxon ? ' add-pending-related-name' : ''; ?>">Add common name</button>
   </form>
 </fieldset>
-<fieldset id="taxon-attributes">
-  <legend>Taxon Attributes</legend>
-  <ol>
+<?php if (count($values['attributes']) > 0) : ?>
+  <fieldset id="taxon-attributes">
+    <legend>Taxon Attributes</legend>
+    <p>Manage additional attributes for this taxon. These are defined by the list and can be used to store extra information about the taxon.</p>
+    <ol>
+<?php endif; ?>
     <?php
     // The $values['attributes'] array has multi-value attributes on separate
     // rows, so organise these into sub array.
@@ -417,10 +422,73 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
       }
     }
     ?>
-  </ol>
-</fieldset>
+<?php if (count($values['attributes']) > 0) : ?>
+    </ol>
+  </fieldset>
+<?php endif; ?>
+<div id="taxon-form-actions">
+  <?php echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id') !== NULL); ?>
+</div>
 <script>
+  <?php if ($isNewTaxon) : ?>
+  (function () {
+    var pendingNames = {synonym: [], common_name: []};
+
+    function renderPendingNames(type) {
+      var grid = document.getElementById('pending-' + (type === 'synonym' ? 'synonyms' : 'common-names') + '-grid');
+      grid.querySelectorAll('.pending-related-row').forEach(function (row) { row.remove(); });
+      pendingNames[type].forEach(function (name, index) {
+        var row = document.createElement('tr');
+        row.className = 'pending-related-row';
+        var cell = document.createElement('td');
+        cell.colSpan = type === 'synonym' ? 9 : 8;
+        cell.textContent = name.taxon + (type === 'synonym' && name.authority ? ' ' + name.authority : '')
+          + (type === 'common_name' && name.language_iso ? ' (' + name.language_iso + ')' : '');
+        var remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'btn btn-xs btn-danger pull-right';
+        remove.textContent = 'Remove';
+        remove.addEventListener('click', function () {
+          pendingNames[type].splice(index, 1);
+          renderPendingNames(type);
+        });
+        cell.appendChild(remove);
+        row.appendChild(cell);
+        grid.appendChild(row);
+      });
+    }
+
+    document.querySelectorAll('.add-pending-related-name').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var form = button.closest('form');
+        var taxon = form.querySelector('[name="taxon"]');
+        if (!taxon.value.trim()) {
+          taxon.reportValidity();
+          return;
+        }
+        var name = {};
+        form.querySelectorAll('[name]').forEach(function (field) {
+          if (['taxon_meaning_id', 'taxon_meaning_preferred_id', 'taxon_list_id', 'name_type'].indexOf(field.name) !== -1) {
+            return;
+          }
+          name[field.name] = field.type === 'checkbox' ? (field.checked ? 't' : 'f') : field.value.trim();
+        });
+        pendingNames[form.dataset.nameType].push(name);
+        renderPendingNames(form.dataset.nameType);
+        form.reset();
+      });
+    });
+
+    document.getElementById('entry_form').addEventListener('submit', function () {
+      document.getElementById('pending-synonyms').value = JSON.stringify(pendingNames.synonym);
+      document.getElementById('pending-common-names').value = JSON.stringify(pendingNames.common_name);
+    });
+  }());
+  <?php endif; ?>
   document.querySelectorAll('#taxon-attributes [name]').forEach(function (control) {
+    control.setAttribute('form', 'entry_form');
+  });
+  document.querySelectorAll('#taxon-form-actions [name]').forEach(function (control) {
     control.setAttribute('form', 'entry_form');
   });
 </script>
