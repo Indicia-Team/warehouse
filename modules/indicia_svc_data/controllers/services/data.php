@@ -1105,6 +1105,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         Image::create_image_files($directory, basename($fTmp), $subdir, $this->website_id);
         $this->response = $subdir . basename($fTmp);
         $this->send_response();
+        $this->delete_nonce();
         kohana::log('debug', 'Successfully uploaded media to ' . $subdir . basename($fTmp));
       }
       else {
