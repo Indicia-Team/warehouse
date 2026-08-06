@@ -62,8 +62,10 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   protected $view_columns;
 
   /**
-  * Cleanup a write once nonce from the cache. Should be called after a call to authenticate.
-  * Read nonces do not need to be deleted - they are left to expire.
+  * Cleanup a write once nonce from the cache.
+  *
+  * Should be called after a call to authenticate. Read nonces do not need to
+  * be deleted - they are left to expire.
   */
   protected function delete_nonce() {
     // Unless the request explicitly requests that the nonce should persist, delete it as a write nonce is
@@ -79,8 +81,9 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   }
 
   /**
-  * Generic method to handle a request for data or a report. Depends on the sub-class
-  * implementing a read_data method.
+  * Generic method to handle a request for data or a report.
+  *
+  * Depends on the sub-class implementing a read_data method.
   */
   protected function handle_request() {
     // Authenticate for a 'read' parameter.
