@@ -62,7 +62,7 @@ $id = html::initial_value($values, 'taxon_rank:id');
   </fieldset>
   <?php
   echo html::form_buttons(!empty($id), FALSE, FALSE);
-  data_entry_helper::enable_validation('entry_form');
+  data_entry_helper::enableValidation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

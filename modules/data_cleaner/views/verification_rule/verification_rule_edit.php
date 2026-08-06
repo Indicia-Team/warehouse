@@ -94,7 +94,7 @@ if (isset($_POST)) {
           'started by a header name in square brackets, followed by parameters in parameter=value format with ' .
           'one parameter per line',
     ));
-    data_entry_helper::enable_validation('entry-form');
+    data_entry_helper::enableValidation('entry-form');
     echo html::form_buttons(html::initial_value($values, 'verification_rule:id') !== NULL, FALSE, FALSE);
     echo data_entry_helper::dump_javascript();
     ?>

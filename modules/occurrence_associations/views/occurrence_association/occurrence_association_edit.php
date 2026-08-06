@@ -72,6 +72,6 @@ $id = html::initial_value($values, 'occurrence_association:id');
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL);
-  data_entry_helper::enable_validation('occurrence_association-edit');
+  data_entry_helper::enableValidation('occurrence_association-edit');
   ?>
 </form>

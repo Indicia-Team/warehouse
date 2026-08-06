@@ -268,7 +268,7 @@ TXT;
     <input type="submit" name="submit" value="Delete" class="btn btn-warning" id="confirm-delete-btn" />
   </div>
   <?php
-  data_entry_helper::enable_validation('entry_form');
+  data_entry_helper::enableValidation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

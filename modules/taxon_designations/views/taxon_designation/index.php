@@ -72,6 +72,6 @@ echo $grid;
   </fieldset>
 </form>
 <?php
-data_entry_helper::enable_validation('cons-desig-upload');
+data_entry_helper::enableValidation('cons-desig-upload');
 echo data_entry_helper::dump_javascript();
 ?>

@@ -25,7 +25,7 @@ $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohan
 <p>This page allows you to specify the details of an identifier for a subject observation.</p>
 <form class="cmxform" action="<?php echo url::site().'identifiers_subject_observation/save'; ?>" method="post" id="entry-form">
 <?php
-data_entry_helper::enable_validation('entry-form');
+data_entry_helper::enableValidation('entry-form');
 echo $metadata;
 ?>
 <fieldset>

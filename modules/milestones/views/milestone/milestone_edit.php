@@ -164,7 +164,7 @@ JS;
     echo $filterPanelHTML;
 
     echo html::form_buttons(html::initial_value($values, 'milestone:id') != NULL, FALSE, FALSE);
-    data_entry_helper::enable_validation('milestones-form');
+    data_entry_helper::enableValidation('milestones-form');
     echo data_entry_helper::dump_javascript();
     ?>
   </fieldset>

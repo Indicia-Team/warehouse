@@ -30,7 +30,7 @@ if (isset($_POST)) {
 <?php
 
 data_entry_helper::link_default_stylesheet();
-data_entry_helper::enable_validation('entry-form');
+data_entry_helper::enableValidation('entry-form');
 
 if ($existing) {
 

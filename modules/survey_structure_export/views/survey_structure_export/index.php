@@ -1,5 +1,5 @@
 <p>
-  This tool allows you to generate a piece of text which describes the 
+  This tool allows you to generate a piece of text which describes the
   structure of the custom attributes associated with a survey. The text
   generated can be used to recreate the same attribute structure on another
   survey on this warehouse or on another warehouse. It is therefore ideal for
@@ -16,10 +16,10 @@ echo data_entry_helper::textarea([
   'default' => $export,
 ]);
 ?>
-<form 
-  id="survey-structure-import" 
-  action="<?php echo url::site(); ?>survey_structure_export/save" 
-  method="post" 
+<form
+  id="survey-structure-import"
+  action="<?php echo url::site(); ?>survey_structure_export/save"
+  method="post"
   id="entry-form"
 >
   <fieldset>
@@ -36,7 +36,7 @@ echo data_entry_helper::textarea([
     ]);
 
     echo '<input type="submit" name="submit" value="Import" class="btn btn-primary" />' . "\n";
-    data_entry_helper::enable_validation('survey-structure-import');
+    data_entry_helper::enableValidation('survey-structure-import');
     echo data_entry_helper::dump_javascript();
     ?>
   </fieldset>

@@ -61,7 +61,7 @@ warehouse::loadHelpers(['data_entry_helper']);
   </fieldset>
   <input type="submit" value="Submit new password" class="btn btn-primary" />
   <?php
-  data_entry_helper::enable_validation('entry_form');
+  data_entry_helper::enableValidation('entry_form');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

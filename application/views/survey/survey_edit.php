@@ -205,7 +205,7 @@ HTML;
   <?php
   endif;
   echo html::form_buttons(html::initial_value($values, 'survey:id') !== NULL);
-  data_entry_helper::enable_validation('entry_form');
+  data_entry_helper::enableValidation('entry_form');
   data_entry_helper::$javascript .= <<<JS
 // ensure the parent lookup does not allow an inappropriate survey to be selected (i.e. self or wrong website)
 function setParentFilter() {

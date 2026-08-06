@@ -31,7 +31,7 @@ if (isset($_POST)) {
     <legend>Verification Template definition details</legend>
 <?php
 data_entry_helper::link_default_stylesheet();
-data_entry_helper::enable_validation('entry-form');
+data_entry_helper::enableValidation('entry-form');
 echo data_entry_helper::hidden_text(array(
   'fieldname' => 'verification_template:id',
   'default' => html::initial_value($values, 'verification_template:id'),
