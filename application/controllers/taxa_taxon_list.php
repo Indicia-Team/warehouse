@@ -741,6 +741,12 @@ SQL;
         security::getUserId(),
         $preferred->taxon_meaning_id,
       ]);
+      // Also ensure the taxonomic sort order preserved across all names.
+      $this->db->query('UPDATE taxa_taxon_lists SET taxonomic_sort_order=?, updated_on=now(), updated_by_id=? WHERE taxon_meaning_id=?', [
+        $preferred->taxonomic_sort_order,
+        security::getUserId(),
+        $preferred->taxon_meaning_id,
+      ]);
       if (!isset($_POST['move_attributes']) || $_POST['move_attributes'] === 't') {
         $this->db->query('UPDATE taxa_taxon_list_attribute_values SET taxa_taxon_list_id=?, updated_on=now(), updated_by_id=? WHERE taxa_taxon_list_id=? AND deleted=false', [
           $synonym->id,
