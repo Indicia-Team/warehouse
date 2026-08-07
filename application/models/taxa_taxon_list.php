@@ -267,11 +267,32 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           unset($arrSyn[$key]);
         }
       }
+      if ($this->common_taxon_id == NULL) {
+        $replacement = $this->db->select('ttl.taxon_id')
+          ->from('taxa_taxon_lists AS ttl')
+          ->join('taxa AS t', 't.id', 'ttl.taxon_id')
+          ->join('languages AS l', 'l.id', 't.language_id')
+          ->where([
+            'ttl.taxon_meaning_id' => $this->taxon_meaning_id,
+            'ttl.taxon_list_id' => $this->taxon_list_id,
+            'ttl.preferred' => 'f',
+            'ttl.deleted' => 'f',
+            't.deleted' => 'f',
+          ])
+          ->where('l.iso !=', 'lat')
+          ->orderby(['ttl.id' => 'ASC'])
+          ->limit(1)
+          ->get()->current();
+        if ($replacement) {
+          $this->common_taxon_id = $replacement->taxon_id;
+        }
+      }
 
       // $arraySyn should now be left only with those synonyms we wish to add
       // to the database.
       Kohana::log("debug", "Number of synonyms remaining to add: " . count($arrSyn));
       $sm = ORM::factory('taxa_taxon_list');
+      $selectedCommonTaxonId = NULL;
       foreach ($arrSyn as $key => $syn) {
         $sm->clear();
         $taxon = $syn['taxon'];
@@ -342,9 +363,11 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         if (isset($syn['related:taxon_rank_id']) && $syn['related:taxon_rank_id'] !== '') {
           $syn['taxon:taxon_rank_id'] = $syn['related:taxon_rank_id'];
         }
+        $isSelectedCommonName = !empty($syn['related:is_default']) && $lang !== 'lat';
         foreach (['allow_data_entry', 'manually_entered', 'name_deprecated', 'attribute', 'search_code', 'name_form', 'taxon_rank_id'] as $field) {
           unset($syn["related:$field"]);
         }
+        unset($syn['related:is_default']);
         // Taxon meaning Id cannot be copied from the submission, since for new
         // data it is generated when saved.
         $syn['taxa_taxon_list:taxon_meaning_id'] = $this->taxon_meaning_id;
@@ -369,7 +392,13 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           if ($this->common_taxon_id == NULL && $syn['taxon:language_id'] != 2) {
             $this->common_taxon_id = $sm->taxon->id;
           }
+          if ($isSelectedCommonName) {
+            $selectedCommonTaxonId = $sm->taxon->id;
+          }
         }
+      }
+      if ($selectedCommonTaxonId !== NULL) {
+        $this->common_taxon_id = $selectedCommonTaxonId;
       }
       if ($result && array_key_exists('codes', $this->submission['metaFields'])) {
         $result = $this->saveCodeMetafields($this->submission['metaFields']['codes']);
@@ -581,7 +610,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         'lang' => $lang,
         'auth' => $authority,
       ];
-      foreach (['allow_data_entry', 'manually_entered', 'name_deprecated', 'attribute', 'search_code', 'name_form', 'taxon_rank_id'] as $field) {
+      foreach (['allow_data_entry', 'manually_entered', 'name_deprecated', 'attribute', 'search_code', 'name_form', 'taxon_rank_id', 'is_default'] as $field) {
         if (array_key_exists($field, $name)) {
           $result[$key]["related:$field"] = $name[$field];
         }

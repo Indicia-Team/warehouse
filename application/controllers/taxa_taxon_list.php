@@ -514,24 +514,35 @@ SQL;
     $rows = $this->db->select('ttl.id, ttl.allow_data_entry, ttl.manually_entered, '
         . 't.id AS taxon_id, t.taxon, t.authority, t.attribute, t.search_code, '
         . 't.name_deprecated, t.name_form, t.taxon_rank_id, l.iso AS language_iso, '
-        . 'tr.rank AS taxon_rank')
+        . 'tr.rank AS taxon_rank, ttlpref.common_taxon_id')
       ->from('taxa_taxon_lists AS ttl')
       ->join('taxa AS t', 't.id', 'ttl.taxon_id')
       ->join('languages AS l', 'l.id', 't.language_id', 'LEFT')
       ->join('taxon_ranks AS tr', 'tr.id', 't.taxon_rank_id', 'LEFT')
+      ->join('taxa_taxon_lists AS ttlpref', [
+        'ttlpref.taxon_meaning_id' => 'ttl.taxon_meaning_id',
+        'ttlpref.taxon_list_id' => 'ttl.taxon_list_id',
+      ], NULL, 'LEFT')
       ->where([
         'ttl.taxon_meaning_id' => $taxonMeaningId,
         'ttl.taxon_list_id' => $taxonListId,
         'ttl.preferred' => 'f',
         'ttl.deleted' => 'f',
+        'ttlpref.preferred' => 't',
+        'ttlpref.deleted' => 'f',
         't.deleted' => 'f',
       ])
       ->orderby(['l.iso' => 'ASC', 't.taxon' => 'ASC'])
       ->get()->result_array(FALSE);
     $relatedNames = ['synonyms' => [], 'common_names' => []];
     foreach ($rows as $row) {
+      $row['is_default'] = $row['language_iso'] !== 'lat'
+        && (int) $row['taxon_id'] === (int) $row['common_taxon_id'];
       $relatedNames[$row['language_iso'] === 'lat' ? 'synonyms' : 'common_names'][] = $row;
     }
+    usort($relatedNames['common_names'], function ($left, $right) {
+      return (int) $right['is_default'] - (int) $left['is_default'];
+    });
     return $relatedNames;
   }
 
@@ -596,6 +607,14 @@ SQL;
     }
     $ttl->set_submission_data($_POST);
     if ($ttl->submit()) {
+      if (!$isSynonym && !$preferred->common_taxon_id) {
+        $this->db->query('UPDATE taxa_taxon_lists SET common_taxon_id=?, updated_on=now(), updated_by_id=? WHERE id=?', [
+          $ttl->taxon_id,
+          security::getUserId(),
+          $preferred->id,
+        ]);
+        $this->queueTaxonMeaningCache($preferred->taxon_meaning_id);
+      }
       url::redirect('taxa_taxon_list/edit/' . (int) $_POST['taxon_meaning_preferred_id']);
       return;
     }
@@ -625,9 +644,71 @@ SQL;
       $this->relatedNameError('The related taxon name cannot be deleted.');
       return;
     }
-    $ttl->deleted = 't';
-    $ttl->save();
+    $isDefault = $ttl->taxon->language && $ttl->taxon->language->iso !== 'lat'
+      && (int) $preferred->common_taxon_id === (int) $ttl->taxon_id;
+    $this->db->query('BEGIN');
+    try {
+      $ttl->deleted = 't';
+      $ttl->save();
+      if ($isDefault) {
+        $replacement = $this->db->select('t.taxon_id')
+          ->from('taxa_taxon_lists AS t')
+          ->join('taxa AS tx', 'tx.id', 't.taxon_id')
+          ->join('languages AS l', 'l.id', 'tx.language_id')
+          ->where([
+            't.taxon_meaning_id' => $preferred->taxon_meaning_id,
+            't.taxon_list_id' => $preferred->taxon_list_id,
+            't.preferred' => 'f',
+            't.deleted' => 'f',
+          ])
+          ->where('l.iso !=', 'lat')
+          ->orderby(['t.id' => 'ASC'])
+          ->limit(1)
+          ->get()->current();
+        $replacementId = $replacement ? $replacement->taxon_id : NULL;
+        $this->db->query('UPDATE taxa_taxon_lists SET common_taxon_id=?, updated_on=now(), updated_by_id=? WHERE id=?', [
+          $replacementId,
+          security::getUserId(),
+          $preferred->id,
+        ]);
+      }
+      $this->db->query('COMMIT');
+      if ($isDefault) {
+        $this->queueTaxonMeaningCache($preferred->taxon_meaning_id);
+      }
+    }
+    catch (Exception $e) {
+      $this->db->query('ROLLBACK');
+      throw $e;
+    }
     url::redirect('taxa_taxon_list/edit/' . (int) $_POST['taxon_meaning_preferred_id']);
+  }
+
+  /**
+   * Make a common name the default common name for a taxon concept.
+   *
+   * @return void
+   *   Redirects to the preferred taxon edit page.
+   */
+  public function make_default_common_name() {
+    $commonName = ORM::factory('taxa_taxon_list', (int) $_POST['id']);
+    $preferred = ORM::factory('taxa_taxon_list', (int) $_POST['preferred_id']);
+    if (!$commonName->loaded || !$preferred->loaded || $commonName->preferred === 't'
+        || $preferred->preferred !== 't' || $commonName->deleted === 't' || $preferred->deleted === 't'
+        || $commonName->taxon_list_id !== $preferred->taxon_list_id
+        || $commonName->taxon_meaning_id !== $preferred->taxon_meaning_id
+        || $commonName->taxon->language->iso === 'lat'
+        || !$this->taxon_list_authorised($preferred->taxon_list_id)) {
+      $this->relatedNameError('The common name cannot be made the default.');
+      return;
+    }
+    $this->db->query('UPDATE taxa_taxon_lists SET common_taxon_id=?, updated_on=now(), updated_by_id=? WHERE id=?', [
+      $commonName->taxon_id,
+      security::getUserId(),
+      $preferred->id,
+    ]);
+    $this->queueTaxonMeaningCache($preferred->taxon_meaning_id);
+    url::redirect('taxa_taxon_list/edit/' . (int) $preferred->id);
   }
 
   /**
@@ -727,6 +808,26 @@ SQL;
   private function relatedNameError($message) {
     $this->session->set_flash('flash_error', $message);
     url::redirect('taxa_taxon_list/edit/' . (int) $_POST['taxon_meaning_preferred_id']);
+  }
+
+  /**
+   * Queue cache refreshes for all names in a taxon meaning.
+   *
+   * @param int $taxonMeaningId
+   *   The taxon meaning whose cached default name changed.
+   *
+   * @return void
+   */
+  private function queueTaxonMeaningCache($taxonMeaningId) {
+    if (in_array(MODPATH . 'cache_builder', Kohana::config('config.modules'))) {
+      $this->db->query(<<<SQL
+        INSERT INTO work_queue(task, entity, record_id, cost_estimate, priority, created_on)
+        SELECT 'task_cache_builder_taxonomy_occurrence', 'taxa_taxon_list', id, 100, 3, now()
+        FROM taxa_taxon_lists
+        WHERE taxon_meaning_id=? AND deleted=false
+        ON CONFLICT DO NOTHING
+      SQL, [$taxonMeaningId]);
+    }
   }
 
   /**

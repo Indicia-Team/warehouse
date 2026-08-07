@@ -1,0 +1,38 @@
+table.related-names {
+  margin-bottom: 1rem;
+}
+#taxon-form-actions {
+  margin-top: 3rem;
+}
+.related-name-form button[type="submit"] {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.related-name-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+.related-name-actions {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+.related-name-actions form {
+  margin: 0;
+}
+.default-common-name-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid #5bc0de;
+  border-radius: 999px;
+  background: #e8f7fb;
+  color: #31708f;
+  font-weight: 600;
+  line-height: 1;
+}

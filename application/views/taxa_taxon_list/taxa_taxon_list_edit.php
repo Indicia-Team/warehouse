@@ -303,7 +303,7 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
     ?>
     <tr>
       <td colspan="<?php echo $isSynonym ? 9 : 8; ?>">
-        <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/save_related_name" class="form-inline related-name-form">
+        <form id="related-name-save-<?php echo $rowId; ?>" method="post" action="<?php echo url::site(); ?>taxa_taxon_list/save_related_name" class="form-inline related-name-form">
           <input type="hidden" name="id" value="<?php echo $rowId; ?>" />
           <input type="hidden" name="taxon_meaning_id" value="<?php echo $taxonMeaningId; ?>" />
           <input type="hidden" name="taxon_meaning_preferred_id" value="<?php echo $preferredId; ?>" />
@@ -337,21 +337,33 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
           <label><input type="checkbox" name="allow_data_entry" value="t" <?php echo $row['allow_data_entry'] === 't' ? 'checked' : ''; ?> /> Data entry</label>
           <label><input type="checkbox" name="manually_entered" value="t" <?php echo $row['manually_entered'] === 't' ? 'checked' : ''; ?> /> Manually entered</label>
           <label><input type="checkbox" name="name_deprecated" value="t" <?php echo $row['name_deprecated'] === 't' ? 'checked' : ''; ?> /> Deprecated</label>
-          <button type="submit" name="submit" value="Save" class="btn btn-xs btn-primary">Save</button>
         </form>
-        <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/delete_related_name" class="form-inline related-name-action-form" style="display: inline-block; margin-right: 0.25rem" onsubmit="return confirm('Delete this name?');">
-          <input type="hidden" name="id" value="<?php echo $rowId; ?>" />
-          <input type="hidden" name="taxon_meaning_preferred_id" value="<?php echo $preferredId; ?>" />
-          <button type="submit" class="btn btn-xs btn-danger">Delete</button>
-        </form>
-        <?php if ($isSynonym) : ?>
-          <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/promote_synonym" class="form-inline related-name-action-form" style="display: inline-block" onsubmit="return <?php echo $hasAttributeValues ? 'handlePromoteSynonym(this)' : 'true'; ?>;">
+        <div class="related-name-actions">
+          <button type="submit" form="related-name-save-<?php echo $rowId; ?>" name="submit" value="Save" class="btn btn-xs btn-primary">Save</button>
+          <?php if ($isSynonym) : ?>
+            <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/promote_synonym" class="form-inline related-name-action-form" onsubmit="return <?php echo $hasAttributeValues ? 'handlePromoteSynonym(this)' : 'true'; ?>;">
+              <input type="hidden" name="id" value="<?php echo $rowId; ?>" />
+              <input type="hidden" name="preferred_id" value="<?php echo $preferredId; ?>" />
+              <input type="hidden" name="move_attributes" value="t" />
+              <button type="submit" class="btn btn-xs btn-success">Make preferred</button>
+            </form>
+          <?php endif; ?>
+          <?php if (!$isSynonym && empty($row['is_default'])) : ?>
+            <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/make_default_common_name" class="form-inline related-name-action-form">
+              <input type="hidden" name="id" value="<?php echo $rowId; ?>" />
+              <input type="hidden" name="preferred_id" value="<?php echo $preferredId; ?>" />
+              <button type="submit" class="btn btn-xs btn-success">Make default</button>
+            </form>
+          <?php endif; ?>
+          <form method="post" action="<?php echo url::site(); ?>taxa_taxon_list/delete_related_name" class="form-inline related-name-action-form" onsubmit="return confirm('Delete this name?');">
             <input type="hidden" name="id" value="<?php echo $rowId; ?>" />
-            <input type="hidden" name="preferred_id" value="<?php echo $preferredId; ?>" />
-            <input type="hidden" name="move_attributes" value="t" />
-            <button type="submit" class="btn btn-xs btn-success">Make preferred</button>
+            <input type="hidden" name="taxon_meaning_preferred_id" value="<?php echo $preferredId; ?>" />
+            <button type="submit" class="btn btn-xs btn-danger">Delete</button>
           </form>
-        <?php endif; ?>
+          <?php if (!$isSynonym && !empty($row['is_default'])) : ?>
+            <strong class="default-common-name-badge">Default</strong>
+          <?php endif; ?>
+        </div>
       </td>
     </tr>
     <?php
@@ -382,7 +394,9 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
     <label><input type="checkbox" name="allow_data_entry" value="t" checked /> Data entry</label>
     <label><input type="checkbox" name="manually_entered" value="t" checked /> Manually entered</label>
     <label><input type="checkbox" name="name_deprecated" value="t" /> Deprecated</label>
-    <button type="<?php echo $isNewTaxon ? 'button' : 'submit'; ?>" class="btn btn-primary<?php echo $isNewTaxon ? ' add-pending-related-name' : ''; ?>">Add synonym</button>
+    <div class="related-name-actions">
+      <button type="<?php echo $isNewTaxon ? 'button' : 'submit'; ?>" class="btn btn-primary btn-xs<?php echo $isNewTaxon ? ' add-pending-related-name' : ''; ?>">Add synonym</button>
+    </div>
   </form>
 </fieldset>
 <fieldset>
@@ -406,7 +420,9 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
     <label><input type="checkbox" name="allow_data_entry" value="t" checked /> Data entry</label>
     <label><input type="checkbox" name="manually_entered" value="t" checked /> Manually entered</label>
     <label><input type="checkbox" name="name_deprecated" value="t" /> Deprecated</label>
-    <button type="<?php echo $isNewTaxon ? 'button' : 'submit'; ?>" class="btn btn-primary<?php echo $isNewTaxon ? ' add-pending-related-name' : ''; ?>">Add common name</button>
+    <div class="related-name-actions">
+      <button type="<?php echo $isNewTaxon ? 'button' : 'submit'; ?>" class="btn btn-primary btn-xs<?php echo $isNewTaxon ? ' add-pending-related-name' : ''; ?>">Add common name</button>
+    </div>
   </form>
 </fieldset>
 <?php if (count($values['attributes']) > 0) : ?>
@@ -507,6 +523,9 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
         cell.colSpan = type === 'synonym' ? 9 : 8;
         cell.textContent = name.taxon + (type === 'synonym' && name.authority ? ' ' + name.authority : '')
           + (type === 'common_name' && name.language_iso ? ' (' + name.language_iso + ')' : '');
+        if (type === 'common_name' && name.is_default === 't') {
+          cell.appendChild(document.createTextNode(' [Default]'));
+        }
         var remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'btn btn-xs btn-danger pull-right';
@@ -534,9 +553,19 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
           if (['taxon_meaning_id', 'taxon_meaning_preferred_id', 'taxon_list_id', 'name_type'].indexOf(field.name) !== -1) {
             return;
           }
+          if (field.type === 'radio' && !field.checked) {
+            return;
+          }
           name[field.name] = field.type === 'checkbox' ? (field.checked ? 't' : 'f') : field.value.trim();
         });
         pendingNames[form.dataset.nameType].push(name);
+        if (form.dataset.nameType === 'common_name' && name.is_default === 't') {
+          pendingNames.common_name.forEach(function (pendingName) {
+            if (pendingName !== name) {
+              pendingName.is_default = 'f';
+            }
+          });
+        }
         renderPendingNames(form.dataset.nameType);
         form.reset();
       });
