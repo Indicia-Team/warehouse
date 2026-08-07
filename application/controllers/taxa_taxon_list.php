@@ -660,11 +660,6 @@ SQL;
         security::getUserId(),
         $preferred->taxon_meaning_id,
       ]);
-      $this->db->query('UPDATE taxa_taxon_lists SET common_taxon_id=?, parent_id=? WHERE id=?', [
-        $preferred->common_taxon_id,
-        $preferred->parent_id,
-        $synonym->id,
-      ]);
       if (!isset($_POST['move_attributes']) || $_POST['move_attributes'] === 't') {
         $this->db->query('UPDATE taxa_taxon_list_attribute_values SET taxa_taxon_list_id=?, updated_on=now(), updated_by_id=? WHERE taxa_taxon_list_id=? AND deleted=false', [
           $synonym->id,
@@ -684,10 +679,24 @@ SQL;
           AND t.deleted=false
         SQL, [$searchCode, security::getUserId(), $synonym->taxon_meaning_id]);
       }
-      $this->db->query('UPDATE taxa_taxon_lists SET preferred=false, updated_on=now(), updated_by_id=? WHERE id=?', [security::getUserId(), $preferred->id]);
-      $this->db->query('UPDATE taxa_taxon_lists SET preferred=true, updated_on=now(), updated_by_id=? WHERE id=?', [security::getUserId(), $synonym->id]);
+      // Update old preferred name, no longer preferred and with parent nulled.
+      $this->db->query(<<<SQL
+        UPDATE taxa_taxon_lists
+        SET preferred=false, parent_id=null, common_taxon_id=null, updated_on=now(), updated_by_id=?
+        WHERE id=?
+      SQL, [security::getUserId(), $preferred->id]);
+      // Update the promoted synonym to be preferred and with parent set.
+      $this->db->query(<<<SQL
+        UPDATE taxa_taxon_lists
+        SET preferred=true, parent_id=?, common_taxon_id=?, updated_on=now(), updated_by_id=?
+        WHERE id=?
+      SQL, [$preferred->parent_id, $preferred->common_taxon_id, security::getUserId(), $synonym->id]);
       // Ensure children of the old preferred taxon are updated to point to the new preferred taxon.
-      $this->db->query('UPDATE taxa_taxon_lists SET parent_id=?, updated_on=now(), updated_by_id=? WHERE parent_id=?', [$synonym->id, security::getUserId(), $preferred->id]);
+      $this->db->query(<<<SQL
+        UPDATE taxa_taxon_lists
+        SET parent_id=?, updated_on=now(), updated_by_id=?
+        WHERE parent_id=?
+      SQL, [$synonym->id, security::getUserId(), $preferred->id]);
       $this->db->query('COMMIT');
     }
     catch (Exception $e) {
