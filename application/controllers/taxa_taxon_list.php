@@ -596,7 +596,7 @@ SQL;
     $_POST['taxon:attribute'] = trim($_POST['attribute'] ?? '');
     $_POST['taxon:search_code'] = trim($_POST['search_code'] ?? '');
     $_POST['taxon:name_deprecated'] = !empty($_POST['name_deprecated']) ? 't' : 'f';
-    $_POST['taxon:name_form'] = trim($_POST['name_form'] ?? '');
+    $_POST['taxon:name_form'] = strtoupper(trim($_POST['name_form'] ?? ''));
     $_POST['taxon:taxon_rank_id'] = $isSynonym && !empty($_POST['taxon_rank_id'])
       ? (int) $_POST['taxon_rank_id']
       : ($isNew ? $preferred->taxon->taxon_rank_id : NULL);

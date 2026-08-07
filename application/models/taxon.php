@@ -99,6 +99,10 @@ class Taxon_Model extends ORM {
     $array->add_rules('taxon', 'required');
     $array->add_rules('language_id', 'required');
     $array->add_rules('taxon_group_id', 'required');
+    if (isset($array['name_form'])) {
+      $array['name_form'] = strtoupper($array['name_form']);
+    }
+    $array->add_rules('name_form', 'length[0,1]', 'regex[/^[A-Z]?$/]');
 
     // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = [
@@ -117,7 +121,6 @@ class Taxon_Model extends ORM {
       'scientific',
       'organism_deprecated',
       'name_deprecated',
-      'name_form',
     ];
     return parent::validate($array, $save);
   }

@@ -308,4 +308,9 @@ $lang = [
     'integer' => 'The sample attribute id must be an integer.',
     'exactly_one_target_attribute_required' => 'Exactly one of sample_attribute_id, occurrence_attribute_id or location_attribute_id must be supplied.',
   ],
+  // taxon.name_form
+  'name_form' => [
+    'length' => 'The name form must be a single letter.',
+    'regex' => 'The name form must be a single letter.',
+  ],
 ];

@@ -237,6 +237,7 @@ TXT;
         'label' => 'Name form',
         'fieldname' => 'taxon:name_form',
         'default' => html::initial_value($values, 'taxon:name_form'),
+        'maxlength' => 1,
         'helpText' => 'For internal use by scripts which sync names from other databases.',
       ]);
       ?>
@@ -333,7 +334,7 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
             <input type="hidden" name="taxon_rank_id" value="" />
             <input type="hidden" name="attribute" value="" />
           <?php endif; ?>
-          <input class="form-control" name="name_form" placeholder="Name form" value="<?php echo html::specialchars($row['name_form']); ?>" />
+          <input class="form-control" name="name_form" placeholder="Name form" maxlength="1" value="<?php echo html::specialchars($row['name_form']); ?>" />
           <label><input type="checkbox" name="allow_data_entry" value="t" <?php echo $row['allow_data_entry'] === 't' ? 'checked' : ''; ?> /> Data entry</label>
           <label><input type="checkbox" name="manually_entered" value="t" <?php echo $row['manually_entered'] === 't' ? 'checked' : ''; ?> /> Manually entered</label>
           <label><input type="checkbox" name="name_deprecated" value="t" <?php echo $row['name_deprecated'] === 't' ? 'checked' : ''; ?> /> Deprecated</label>
@@ -390,7 +391,7 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
       <?php foreach ($other_data['name_ranks'] as $rank) : ?><option value="<?php echo (int) $rank['id']; ?>"><?php echo html::specialchars($rank['rank']); ?></option><?php endforeach; ?>
     </select>
     <input class="form-control" name="attribute" placeholder="Attribute" />
-    <input class="form-control" name="name_form" placeholder="Name form" />
+    <input class="form-control" name="name_form" placeholder="Name form" maxlength="1" />
     <label><input type="checkbox" name="allow_data_entry" value="t" checked /> Data entry</label>
     <label><input type="checkbox" name="manually_entered" value="t" checked /> Manually entered</label>
     <label><input type="checkbox" name="name_deprecated" value="t" /> Deprecated</label>
@@ -416,7 +417,7 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
       <?php foreach ($other_data['name_languages'] as $language) : ?><option value="<?php echo html::specialchars($language['iso']); ?>"><?php echo html::specialchars($language['language']); ?></option><?php endforeach; ?>
     </select>
     <input class="form-control" name="search_code" placeholder="Search code" />
-    <input class="form-control" name="name_form" placeholder="Name form" />
+    <input class="form-control" name="name_form" placeholder="Name form" maxlength="1" />
     <label><input type="checkbox" name="allow_data_entry" value="t" checked /> Data entry</label>
     <label><input type="checkbox" name="manually_entered" value="t" checked /> Manually entered</label>
     <label><input type="checkbox" name="name_deprecated" value="t" /> Deprecated</label>
@@ -509,6 +510,34 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
     return false;
   }
 
+  (function () {
+    var relatedNameForms = document.querySelectorAll('.related-name-form');
+    var warning = 'You have unsaved changes to a common name or synonym. If you continue, those changes will be lost. Continue?';
+
+    relatedNameForms.forEach(function (form) {
+      form.addEventListener('input', function () {
+        form.setAttribute('data-related-name-dirty', 'true');
+      });
+      form.addEventListener('change', function () {
+        form.setAttribute('data-related-name-dirty', 'true');
+      });
+      form.addEventListener('submit', function () {
+        form.removeAttribute('data-related-name-dirty');
+      });
+    });
+
+    document.querySelectorAll('#taxon-form-actions button, #taxon-form-actions input').forEach(function (control) {
+      var label = control.value || control.textContent.trim();
+      if (control.type === 'submit' && label === 'Save') {
+        control.addEventListener('click', function (event) {
+          if (document.querySelector('[data-related-name-dirty="true"]') && !window.confirm(warning)) {
+            event.preventDefault();
+          }
+        });
+      }
+    });
+  }());
+
   <?php if ($isNewTaxon) : ?>
   (function () {
     var pendingNames = {synonym: [], common_name: []};
@@ -568,6 +597,7 @@ $renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $t
         }
         renderPendingNames(form.dataset.nameType);
         form.reset();
+        form.removeAttribute('data-related-name-dirty');
       });
     });
 
