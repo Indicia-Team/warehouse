@@ -296,7 +296,7 @@ foreach ($values['attributes'] as $attribute) {
  * @return void
  *   Outputs the related name rows.
  */
-$renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $taxonListId, $other_data) {
+$renderNameRows = function ($rows, $type) use ($preferredId, $taxonMeaningId, $taxonListId, $other_data, $hasAttributeValues) {
   foreach ($rows as $row) {
     $isSynonym = $type === 'synonym';
     $rowId = (int) $row['id'];
