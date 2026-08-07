@@ -686,6 +686,8 @@ SQL;
       }
       $this->db->query('UPDATE taxa_taxon_lists SET preferred=false, updated_on=now(), updated_by_id=? WHERE id=?', [security::getUserId(), $preferred->id]);
       $this->db->query('UPDATE taxa_taxon_lists SET preferred=true, updated_on=now(), updated_by_id=? WHERE id=?', [security::getUserId(), $synonym->id]);
+      // Ensure children of the old preferred taxon are updated to point to the new preferred taxon.
+      $this->db->query('UPDATE taxa_taxon_lists SET parent_id=?, updated_on=now(), updated_by_id=? WHERE parent_id=?', [$synonym->id, security::getUserId(), $preferred->id]);
       $this->db->query('COMMIT');
     }
     catch (Exception $e) {
