@@ -82,9 +82,6 @@ $lang = [
     'required' => 'The centroid spatial reference system must be supplied.',
     'default' => 'Invalid input.',
   ],
-  'external_key' => [
-    'length' => 'The external key field can be up to 50 characters long.',
-  ],
   'first_name' => [
     'required' => 'The first name cannot be blank.',
     'length' => 'The first name must be between 1 and 50 letters.',
@@ -118,9 +115,6 @@ $lang = [
   ],
   'language' => [
     'required' => 'The language name is required.',
-  ],
-  'language_id' => [
-    'required' => 'The language is required.',
   ],
   'licence_id' => [
     'integer' => 'The licence ID must be a valid integer.',
@@ -176,12 +170,6 @@ $lang = [
   ],
   'target_gene' => [
     'required' => 'Please provide a value for the target gene.',
-  ],
-  'taxon' => [
-    'required' => 'The taxon name is required.',
-  ],
-  'taxon_group_id' => [
-    'required' => 'The taxon group is required.',
   ],
   'taxon_id' => [
     'default' => 'Unable to create a valid taxon entry.',
@@ -308,9 +296,24 @@ $lang = [
     'integer' => 'The sample attribute id must be an integer.',
     'exactly_one_target_attribute_required' => 'Exactly one of sample_attribute_id, occurrence_attribute_id or location_attribute_id must be supplied.',
   ],
-  // taxon.name_form
+  /* Taxon table */
+  'external_key' => [
+    'length' => 'The external key must be a maximum of 50 characters in length.',
+  ],
+  'language_id' => [
+    'required' => 'The language is required.',
+  ],
   'name_form' => [
     'length' => 'The name form must be a single letter.',
     'regex' => 'The name form must be a single letter.',
+  ],
+  'search_code' => [
+    'length' => 'The search code must be a maximum of 20 characters in length.',
+  ],
+  'taxon' => [
+    'required' => 'The taxon name is required.',
+  ],
+  'taxon_group_id' => [
+    'required' => 'The taxon group is required.',
   ],
 ];

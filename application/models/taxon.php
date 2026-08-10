@@ -99,6 +99,9 @@ class Taxon_Model extends ORM {
     $array->add_rules('taxon', 'required');
     $array->add_rules('language_id', 'required');
     $array->add_rules('taxon_group_id', 'required');
+    $array->add_rules('external_key', 'length[0,50]');
+    $array->add_rules('search_code', 'length[0,20]');
+
     if (isset($array['name_form'])) {
       $array['name_form'] = strtoupper($array['name_form']);
     }
@@ -107,10 +110,8 @@ class Taxon_Model extends ORM {
     // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = [
       'attribute',
-      'external_key',
       'authority',
       'deleted',
-      'search_code',
       'description',
       'taxon_rank_id',
       'marine_flag',
