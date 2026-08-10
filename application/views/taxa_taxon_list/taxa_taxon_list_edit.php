@@ -118,6 +118,7 @@ TXT;
       'label' => 'Accepted name unique identifier (external key)',
       'default' => html::initial_value($values, 'taxon:external_key'),
       'helpText' => $helpText,
+      'attributes' => ['maxlength' => 50],
     ]);
     $helpText = <<<TXT
 Unique identifier for this taxon name as defined by an external source. For example in the UK this field is
@@ -130,6 +131,7 @@ TXT;
       'fieldname' => 'taxon:search_code',
       'default' => html::initial_value($values, 'taxon:search_code'),
       'helpText' => $helpText,
+      'attributes' => ['maxlength' => 20],
     ]);
     $helpText = <<<TXT
 Unique identifier for this taxon concept as defined by an external source. When linking to UKSI, this
