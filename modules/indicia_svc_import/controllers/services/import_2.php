@@ -240,7 +240,7 @@ class Import_2_Controller extends Service_Base_Controller {
     $this->authenticate('write');
     try {
       if (empty($_POST['uploaded-file'])) {
-        throw new exception('Parameter uploaded-file is required for file extraction');
+        throw new Exception('Parameter uploaded-file is required for file extraction');
       }
       $importTools = new ImportTools();
       $fileName = $importTools->extractFile($_POST['uploaded-file']);
@@ -264,46 +264,71 @@ class Import_2_Controller extends Service_Base_Controller {
    */
   public function init_server_config() {
     header("Content-Type: application/json");
-    $this->authenticate('write');
-    if (isset($_POST['data-file'])) {
-      // Legacy single file upload.
-      $files = [$_POST['data-file']];
-    }
-    else {
-      $files = json_decode($_POST['data-files']);
-    }
-    foreach ($files as $fileName) {
-      if (!file_exists(DOCROOT . "import/$fileName")) {
-        throw new exception("Parameter data-files refers to a missing file $fileName");
-      }
-    }
     try {
+      $this->authenticate('write');
+      if (isset($_POST['data-file'])) {
+        // Legacy single file upload.
+        $files = [$_POST['data-file']];
+      }
+      elseif (isset($_POST['data-files'])) {
+        $files = json_decode($_POST['data-files']);
+      }
+      if (empty($files) || !is_array($files)) {
+        throw new InvalidArgumentException('Parameter data-files must contain a list of files to import.');
+      }
+      foreach ($files as $fileName) {
+        if (!is_string($fileName)) {
+          throw new InvalidArgumentException('Parameter data-files contains an invalid file name.');
+        }
+        if (!file_exists(DOCROOT . "import/$fileName")) {
+          throw new InvalidArgumentException("Parameter data-files refers to a missing file $fileName");
+        }
+      }
       $config = $this->createConfig(
         $files,
         ($_POST['enable-background-imports'] ?? 'f') === 't',
         ($_POST['support-dna'] ?? 'f') === 't'
       );
-    }
-    catch (RequestAbort) {
-      return;
-    }
-    if (!empty($_POST['import_template_id'])) {
-      // Merge the template into the config.
-      $template = ORM::factory('import_template', $_POST['import_template_id']);
-      if ($template->id) {
-        // Save the template mappings in the config.
-        $config['columns'] = json_decode($template->mappings, TRUE);
-        $config['importTemplateId'] = $template->id;
-        $config['importTemplateTitle'] = $template->title;
+      if (!empty($_POST['import_template_id'])) {
+        // Merge the template into the config.
+        $template = ORM::factory('import_template', $_POST['import_template_id']);
+        if ($template->id) {
+          // Save the template mappings in the config.
+          $templateColumns = json_decode($template->mappings, TRUE);
+          if (!is_array($templateColumns)) {
+            throw new InvalidArgumentException('The selected import template does not contain valid column mappings.');
+          }
+          $this->validateImportColumns($templateColumns);
+          $config['columns'] = $templateColumns;
+          $config['importTemplateId'] = $template->id;
+          $config['importTemplateTitle'] = $template->title;
+        }
       }
+      $plugins = json_decode($_POST['plugins'] ?? '{}', TRUE);
+      if (!is_array($plugins)) {
+        throw new InvalidArgumentException('Parameter plugins must contain a JSON object.');
+      }
+      $config['plugins'] = $plugins;
+      $configId = $this->getConfigId($files[0]);
+      import2ChunkHandler::saveConfig($configId, $config);
+      echo json_encode([
+        'status' => 'ok',
+        'configId' => $configId,
+      ]);
     }
-    $config['plugins'] = json_decode($_POST['plugins'] ?? '{}', TRUE);
-    $configId = $this->getConfigId($files[0]);
-    import2ChunkHandler::saveConfig($configId, $config);
-    echo json_encode([
-      'status' => 'ok',
-      'configId' => $configId,
-    ]);
+    catch (RequestAbort $e) {
+      // Response already output by the code which aborted the request.
+    }
+    catch (AuthenticationError $e) {
+      $this->fail($e->getMessage(), 'Unauthorised', 401, FALSE);
+    }
+    catch (InvalidArgumentException $e) {
+      $this->fail($e->getMessage(), 'Bad Request', 400, FALSE);
+    }
+    catch (Throwable $e) {
+      error_logger::log_error('Error in init_server_config', $e);
+      $this->fail('Unable to initialise the import configuration.', 'Internal Server Error', 500, FALSE);
+    }
   }
 
   /**
@@ -322,11 +347,11 @@ class Import_2_Controller extends Service_Base_Controller {
       // Ensure we have write permissions.
       $this->authenticate('write');
       if (empty($_POST['data-file'])) {
-        throw new exception('Parameter data-file is required to load the next batch of recrods');
+        throw new Exception('Parameter data-file is required to load the next batch of recrods');
       }
       $fileName = $_POST['data-file'];
       if (!file_exists(DOCROOT . "import/$fileName")) {
-        throw new exception('Parameter data-file refers to a missing file');
+        throw new Exception('Parameter data-file refers to a missing file');
       }
       $configId = $this->getConfigId();
       $config = import2ChunkHandler::getConfig($configId);
@@ -420,7 +445,7 @@ class Import_2_Controller extends Service_Base_Controller {
         foreach ($matchesInfo['values'] as $value => $termlists_term_id) {
           // Safety check.
           if (!preg_match('/^\d+$/', $termlists_term_id)) {
-            throw new exception('Mapped termlist term ID is not an integer.');
+            throw new Exception('Mapped termlist term ID is not an integer.');
           }
           $token = strtolower(trim($value));
           if ($token === '') {
@@ -459,7 +484,7 @@ class Import_2_Controller extends Service_Base_Controller {
       foreach ($matchesInfo['values'] as $value => $termlist_term_id) {
         // Safety check.
         if (!preg_match('/^\d+$/', $termlist_term_id)) {
-          throw new exception('Mapped termlist term ID is not an integer.');
+          throw new Exception('Mapped termlist term ID is not an integer.');
         }
         $sql = <<<SQL
           UPDATE import_temp.$dbIdentifiers[tempTableName]
@@ -888,7 +913,7 @@ SQL;
         break;
 
       default:
-        throw new exception('Unsupported parent entity for import: ' . $config['parentEntity']);
+        throw new Exception('Unsupported parent entity for import: ' . $config['parentEntity']);
     }
     $indexFields = [];
     foreach ($fields as &$warehouseField) {
@@ -2474,7 +2499,7 @@ SQL;
     $db->query($qry);
     $errorCheck = pg_last_error($db->getLink());
     if (!empty($errorCheck)) {
-      throw new exception($errorCheck);
+      throw new Exception($errorCheck);
     }
   }
 
@@ -2487,6 +2512,7 @@ SQL;
    *   File upload config.
    */
   private function loadNextRecordsBatch($fileName, array &$config) {
+    $this->validateImportColumns($config['columns']);
     $importTools = new ImportTools();
     // Larger batch size for big imports is more efficient at expensive of progress granularity.
     $batchLimit = max(min(round($config['totalRows'] / 20), 5000), 500);
@@ -2538,11 +2564,11 @@ SQL;
       $db->query($query);
       $errorCheck = pg_last_error($db->getLink());
       if (!empty($errorCheck)) {
-        throw new exception($errorCheck);
+        throw new Exception($errorCheck);
       }
     }
     if ($config['totalRows'] === 0) {
-      throw new exception('The import file does not contain any data to import.');
+      throw new Exception('The import file does not contain any data to import.');
     }
     // An entire empty batch causes us to stop. Most likely the user saved a
     // spreadsheet with multiple empty rows at the bottom.
@@ -2630,6 +2656,8 @@ SQL;
       $totalRows += $fileRowCount;
     }
     // Create a new config object.
+    $columns = $this->tidyUpColumnsList($importTools->loadColumnTitlesFromFile($files[0], FALSE));
+    $this->validateImportColumns($columns);
     return [
       'files' => $fileMetadata,
       'tableName' => '',
@@ -2637,7 +2665,7 @@ SQL;
       'entity' => $entity,
       'parentEntity' => $parentEntity,
       'supportDnaDerivedOccurrences' => $supportDnaDerivedOccurrences,
-      'columns' => $this->tidyUpColumnsList($importTools->loadColumnTitlesFromFile($files[0], FALSE)),
+      'columns' => $columns,
       'systemAddedColumns' => [],
       'state' => 'initial',
       // Rows loaded into the temp table (excludes blanks).
@@ -2705,6 +2733,18 @@ SQL;
       ];
     }
     return $colsAndFieldInfo;
+  }
+
+  /**
+   * Ensure the import has at least one column to load.
+   *
+   * @param array $columns
+   *   Import column definitions.
+   */
+  private function validateImportColumns(array $columns) {
+    if (count($columns) === 0) {
+      throw new InvalidArgumentException('The import file must contain at least one column heading in the first row.');
+    }
   }
 
   /**
