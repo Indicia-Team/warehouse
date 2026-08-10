@@ -447,8 +447,15 @@ class ORM extends ORM_Core {
         }
       }
     }
-
     $modelFields = $array->as_array();
+    // Normalize all submitted nullable model fields, including validated fields.
+    foreach ($modelFields as $field => $value) {
+      if ($value === ''
+          && isset($this->table_columns[$field]['null'])
+          && $this->table_columns[$field]['null'] == 1) {
+        $array[$field] = NULL;
+      }
+    }
     $fields_to_copy = $this->unvalidatedFields;
     // The created_by_id and updated_by_id fields can be specified by web
     // service calls if the caller knows which Indicia user is making the post.
@@ -458,13 +465,9 @@ class ORM extends ORM_Core {
     if (!empty($modelFields['updated_by_id'])) {
       $fields_to_copy[] = 'updated_by_id';
     }
+    // Copy data into the model.
     foreach ($fields_to_copy as $a) {
       if (array_key_exists($a, $modelFields)) {
-        // When a field allows nulls, convert empty values to null. Otherwise
-        // we end up trying to store '' in non-string fields such as dates.
-        if ($array[$a] === '' && isset($this->table_columns[$a]['null']) && $this->table_columns[$a]['null'] == 1) {
-          $array[$a] = NULL;
-        }
         $this->__set($a, $array[$a]);
       }
     }
