@@ -91,6 +91,7 @@ class import2ChunkHandler {
       if (!empty($params['restart'])) {
         $config['rowsProcessed'] = 0;
         $config['parentEntityRowsProcessed'] = 0;
+        unset($config['activeParent']);
         self::saveConfig($configId, $config);
       }
       self::getChunkSize($isBackground, $isPrecheck);
@@ -103,15 +104,35 @@ class import2ChunkHandler {
         $dnaEntityColumns = self::findEntityColumns('dna_occurrence', $config);
       }
       $parentEntityDataRows = self::fetchParentEntityData($db, $parentEntityColumns, $isPrecheck, $config);
+      $activeParent = $config['activeParent'] ?? NULL;
+      if (!empty($activeParent['data']) && isset($activeParent['id'])) {
+        // A parent with more child rows than fit in one request is saved in
+        // the import config. Put it back at the front and remove its normal
+        // grouped result so it is resumed rather than submitted twice.
+        $activeParentData = (object) $activeParent['data'];
+        $parentEntityDataRows = array_values(array_filter(
+          $parentEntityDataRows,
+          function ($parentEntityDataRow) use ($activeParentData, $parentEntityColumns, $config) {
+            return !self::parentRowsMatch($parentEntityDataRow, $activeParentData, $parentEntityColumns, $config);
+          }
+        ));
+        array_unshift($parentEntityDataRows, $activeParentData);
+      }
 
       // Check for compound field handling which require presence of a set of
       // fields (e.g. build date from day, month, year).
       $parentEntityCompoundFields = self::getCompoundFieldsToProcessForEntity($config['parentEntity'], $parentEntityColumns);
       $childEntityCompoundFields = self::getCompoundFieldsToProcessForEntity($config['entity'], $childEntityColumns);
       $precheckRowIds = [];
+      $occurrenceRowsProcessedThisRequest = 0;
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
-        // @todo Updating existing data.
-        $parent = ORM::factory($config['parentEntity']);
+        $isContinuingParent = !empty($activeParent)
+          && self::parentRowsMatch($parentEntityDataRow, (object) $activeParent['data'], $parentEntityColumns, $config);
+        // Reuse the saved parent when continuing a group across requests. The
+        // sample grouping remains based on the original parent field values.
+        $parent = $isContinuingParent
+          ? ORM::factory($config['parentEntity'], $activeParent['id'])
+          : ORM::factory($config['parentEntity']);
         $submission = [];
         self::applyGlobalValues($config, $config['parentEntity'], $parent->attrs_field_prefix ?? NULL, $submission);
         self::copyFieldsFromRowToSubmission($parentEntityDataRow, $parentEntityColumns, $config, $submission, $parentEntityCompoundFields);
@@ -125,7 +146,10 @@ class import2ChunkHandler {
         }
         $parent->set_submission_data($submission);
         $parentErrors = [];
-        if ($isPrecheck) {
+        if ($isContinuingParent) {
+          $parent->set_submission_data($submission);
+        }
+        elseif ($isPrecheck) {
           try {
             $parentErrors = $parent->precheck($identifiers);
           } catch (Exception $e) {
@@ -144,7 +168,18 @@ class import2ChunkHandler {
             $parentErrors['sample:general'] = $e->getMessage();
           }
         }
-        $childEntityDataRows = self::fetchChildEntityData($db, $parentEntityColumns, $isPrecheck, $config, $parentEntityDataRow);
+        $childEntityData = self::fetchChildEntityData(
+          $db,
+          $parentEntityColumns,
+          $isPrecheck,
+          $config,
+          $parentEntityDataRow,
+          // Use the existing chunk-size setting as the total per-request
+          // budget, regardless of how many parent groups it contains.
+          max(1, self::$batchRowLimit - $occurrenceRowsProcessedThisRequest)
+        );
+        $childEntityDataRows = $childEntityData['rows'];
+        $hasMoreChildRows = $childEntityData['hasMore'];
         if (count($parentErrors) > 0) {
           $config['errorsCount'] += count($childEntityDataRows);
           if (!$isPrecheck) {
@@ -233,12 +268,31 @@ class import2ChunkHandler {
               }
             }
             $config['rowsProcessed']++;
+            $occurrenceRowsProcessedThisRequest++;
           }
         }
         if ($isPrecheck && !empty($precheckRowIds)) {
           self::setPrecheckedRowsDone($db, $precheckRowIds, $config);
         }
+        if ($hasMoreChildRows) {
+          if (!$isPrecheck && count($parentErrors) === 0) {
+            // Only saved samples can be resumed. Precheck uses a fake parent
+            // ID, so its rows must be completed in the current request.
+            $config['activeParent'] = [
+              'id' => $parent->id,
+              'data' => (array) $parentEntityDataRow,
+            ];
+          }
+          else {
+            unset($config['activeParent']);
+          }
+          break;
+        }
+        unset($config['activeParent']);
         $config['parentEntityRowsProcessed']++;
+        if ($occurrenceRowsProcessedThisRequest >= self::$batchRowLimit) {
+          break;
+        }
       }
 
       $progress = $config['totalRows'] > 0
@@ -478,8 +532,8 @@ class import2ChunkHandler {
     $moduleConfig = kohana::config('indicia_svc_import', FALSE, FALSE);
     $key = 'chunk_size_' . ($isBackground ? 'background_' : '') . ($isPrecheck ? 'preprocess' : 'import');
     $defaults = [
-      'chunk_size_preprocess' => 100,
-      'chunk_size_import' => 50,
+      'chunk_size_preprocess' => 500,
+      'chunk_size_import' => 100,
       'chunk_size_background_preprocess' => 1000,
       'chunk_size_background_import' => 500,
     ];
@@ -599,10 +653,14 @@ class import2ChunkHandler {
    * @param object $parentEntityDataRow
    *   Data row holding the parent record values.
    *
-   * @return object
-   *   Database result containing child rows.
+  * @param int $limit
+  *   Maximum number of child rows to return. One additional row is fetched
+  *   to determine whether the parent group needs to continue next request.
+  *
+  * @return array
+  *   Array containing the child rows and a flag indicating more rows remain.
    */
-  private static function fetchChildEntityData($db, array $columns, $isPrecheck, array $config, $parentEntityDataRow) {
+  private static function fetchChildEntityData($db, array $columns, $isPrecheck, array $config, $parentEntityDataRow, $limit) {
     $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
     $fields = self::getDestFieldsForColumns($columns, $config);
     // Build a filter to extract rows for this parent entity.
@@ -613,8 +671,14 @@ class import2ChunkHandler {
     ];
     foreach ($fields as $field) {
       $fieldEsc = pg_escape_identifier($db->getLink(), $field);
-      $value = pg_escape_literal($db->getLink(), $parentEntityDataRow->$field ?? '');
-      $wheresList[] = "COALESCE($fieldEsc, '')=$value";
+      $fieldValue = $parentEntityDataRow->$field ?? NULL;
+      if ($fieldValue === NULL) {
+        $wheresList[] = "$fieldEsc IS NULL";
+      }
+      else {
+        $value = pg_escape_literal($db->getLink(), $fieldValue);
+        $wheresList[] = "$fieldEsc=$value";
+      }
     }
     $wheres = implode("\nAND ", $wheresList);
     // Now retrieve the sub-entity rows.
@@ -622,9 +686,37 @@ class import2ChunkHandler {
 SELECT *
 FROM import_temp.$dbIdentifiers[tempTableName]
 WHERE $wheres
-ORDER BY _row_id;
+ORDER BY _row_id
+LIMIT ?;
 SQL;
-    return $db->query($sql)->result();
+    // Materialise the legacy result wrapper before using array operations;
+    // result_array() still returns stdClass rows for the importer.
+    $rows = $db->query($sql, $limit + 1)->result()->result_array();
+    $hasMore = count($rows) > $limit;
+    return [
+      // The extra row is only a lookahead marker and must not be processed.
+      'rows' => $hasMore ? array_slice($rows, 0, $limit) : $rows,
+      'hasMore' => $hasMore,
+    ];
+  }
+
+  /**
+   * Checks whether two parent rows represent the same grouped sample.
+   */
+  private static function parentRowsMatch($left, $right, array $columns, array $config) {
+    foreach (self::getDestFieldsForColumns($columns, $config) as $field) {
+      $leftValue = $left->$field ?? NULL;
+      $rightValue = $right->$field ?? NULL;
+      if ($leftValue === NULL || $rightValue === NULL) {
+        if ($leftValue !== $rightValue) {
+          return FALSE;
+        }
+      }
+      elseif ((string) $leftValue !== (string) $rightValue) {
+        return FALSE;
+      }
+    }
+    return TRUE;
   }
 
   /**
@@ -659,7 +751,9 @@ SQL;
       ORDER BY $fieldsAsCsv
       LIMIT ?;
     SQL;
-    return $db->query($sql, self::$batchRowLimit)->result();
+    // Return a PHP array because continuation handling filters and prepends
+    // parent groups before iterating over them.
+    return $db->query($sql, self::$batchRowLimit)->result()->result_array();
   }
 
   /**
@@ -967,8 +1061,14 @@ SQL;
     $whereList = [];
     foreach ($keyFields as $field) {
       $fieldEsc = pg_escape_identifier($db->getLink(), $field);
-      $value = pg_escape_literal($db->getLink(), $rowData->$field ?? '');
-      $whereList[] = "COALESCE($fieldEsc::text, '')=$value";
+      $fieldValue = $rowData->$field ?? NULL;
+      if ($fieldValue === NULL) {
+        $whereList[] = "$fieldEsc IS NULL";
+      }
+      else {
+        $value = pg_escape_literal($db->getLink(), $fieldValue);
+        $whereList[] = "$fieldEsc=$value";
+      }
     }
     $wheres = implode(' AND ', $whereList);
     $errorsList = [];
