@@ -1213,8 +1213,24 @@ SQL;
    * Attribute value submissions should derive survey context from their owner.
    */
   public function testAttributeValueSubmissionDerivesSurveyContext() {
+    $sampleSubmission = submission_builder::build_submission([
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+    ], ['model' => 'sample']);
+    $sampleResponse = data_entry_helper::forward_post_to(
+      'sample',
+      $sampleSubmission,
+      self::$auth['write_tokens']
+    );
+    $this->assertArrayHasKey('success', $sampleResponse, 'Sample creation for survey context test failed.');
+    $sampleId = (int) $sampleResponse['success'];
+
     $occurrenceSubmission = submission_builder::build_submission([
-      'occurrence:sample_id' => 1,
+      'occurrence:website_id' => 1,
+      'occurrence:sample_id' => $sampleId,
       'occurrence:taxa_taxon_list_id' => 1,
     ], ['model' => 'occurrence']);
     $occurrenceResponse = data_entry_helper::forward_post_to(
@@ -1238,7 +1254,7 @@ SQL;
     $this->assertArrayHasKey('success', $occurrenceAttributeResponse, 'Occurrence attribute value without survey_id failed.');
 
     $sampleAttributeSubmission = submission_builder::build_submission([
-      'sample_attribute_value:sample_id' => 1,
+      'sample_attribute_value:sample_id' => $sampleId,
       'sample_attribute_value:sample_attribute_id' => 1,
       'sample_attribute_value:int_value' => 42,
     ], ['model' => 'sample_attribute_value']);
@@ -1251,7 +1267,8 @@ SQL;
 
     self::$db->query('DELETE FROM occurrence_attribute_values WHERE occurrence_id=?', [$occurrenceId]);
     self::$db->query('DELETE FROM occurrences WHERE id=?', [$occurrenceId]);
-    self::$db->query('DELETE FROM sample_attribute_values WHERE sample_id=? AND sample_attribute_id=?', [1, 1]);
+    self::$db->query('DELETE FROM sample_attribute_values WHERE sample_id=? AND sample_attribute_id=?', [$sampleId, 1]);
+    self::$db->query('DELETE FROM samples WHERE id=?', [$sampleId]);
   }
 
   /**

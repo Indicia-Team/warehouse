@@ -817,14 +817,18 @@ class ORM extends ORM_Core {
   private function populateSurveyIdentifierFromOwner() {
     $ownerType = NULL;
     $ownerId = NULL;
-    if (in_array($this->object_name, ['sample', 'sample_attribute_value'])) {
+    // Attribute values need the owner survey to validate survey-specific
+    // rules. Do not infer it for ordinary sample/occurrence saves: doing so
+    // would apply survey-level core validation rules to partial updates that
+    // previously validated without a survey context.
+    if ($this->object_name === 'sample_attribute_value') {
       $ownerType = 'sample';
       $ownerId = $this->getSubmissionFieldValue('sample_id');
-      if (empty($ownerId) && $this->object_name === 'sample_attribute_value' && $this->id) {
+      if (empty($ownerId) && $this->id) {
         $ownerId = $this->sample_id;
       }
     }
-    elseif (in_array($this->object_name, ['occurrence', 'occurrence_attribute_value'])) {
+    elseif ($this->object_name === 'occurrence_attribute_value') {
       if (!empty($this->getSubmissionFieldValue('sample_id'))) {
         $ownerType = 'sample';
         $ownerId = $this->getSubmissionFieldValue('sample_id');
@@ -832,10 +836,7 @@ class ORM extends ORM_Core {
       else {
         $ownerType = 'occurrence';
         $ownerId = $this->getSubmissionFieldValue('occurrence_id');
-        if (empty($ownerId) && $this->object_name === 'occurrence' && $this->id) {
-          $ownerId = $this->id;
-        }
-        elseif (empty($ownerId) && $this->object_name === 'occurrence_attribute_value' && $this->id) {
+        if (empty($ownerId) && $this->id) {
           $ownerId = $this->occurrence_id;
         }
       }
@@ -846,13 +847,14 @@ class ORM extends ORM_Core {
     $cacheKey = "$ownerType:$ownerId";
     if (!array_key_exists($cacheKey, self::$recordContexts)) {
       if ($ownerType === 'sample') {
-        $context = $this->db->select('website_id, survey_id')
-          ->from('samples')
-          ->where('id', $ownerId)
+        $context = $this->db->select('srv.website_id, s.survey_id')
+          ->from('samples AS s')
+          ->join('surveys AS srv', 'srv.id', 's.survey_id')
+          ->where('s.id', $ownerId)
           ->get()->current();
       }
       else {
-        $context = $this->db->select('s.website_id, s.survey_id')
+        $context = $this->db->select('o.website_id, s.survey_id')
           ->from('occurrences AS o')
           ->join('samples AS s', 's.id', 'o.sample_id')
           ->where('o.id', $ownerId)
