@@ -65,6 +65,9 @@ class import2ChunkHandler {
    *   Array containing summary of processing after this step.
    */
   public static function importChunk($db, $params) {
+    $benchmarkStartedAt = microtime(TRUE);
+    $benchmarkStartIndex = count(Database::$benchmarks);
+    $benchmarkLogged = FALSE;
     try {
       $configId = $params['config-id'];
       $isPrecheck = !empty($params['precheck']);
@@ -103,6 +106,7 @@ class import2ChunkHandler {
           'website_id' => $config['global-values']['website_id'],
           'survey_id' => $submission['survey_id'] ?? NULL,
         ];
+        $parent->setIdentifiers($identifiers);
         if ($config['parentEntitySupportsImportGuid']) {
           $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
         }
@@ -152,6 +156,7 @@ class import2ChunkHandler {
               $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
             $child->set_submission_data($submission);
+            $child->setIdentifiers($identifiers);
             $errors = [];
             if ($isPrecheck) {
               try {
@@ -224,6 +229,8 @@ class import2ChunkHandler {
       if (!$isPrecheck) {
         self::saveImportRecord($config);
       }
+      self::logBenchmark($benchmarkStartIndex, $benchmarkStartedAt, $config, $isPrecheck);
+      $benchmarkLogged = TRUE;
       return [
         // Additional check for count of parentDataEntityRows will apply if an
         // import is restarted by refreshing the browser page, as the
@@ -238,6 +245,14 @@ class import2ChunkHandler {
       ];
     }
     catch (Exception $e) {
+      if (!$benchmarkLogged) {
+        self::logBenchmark(
+          $benchmarkStartIndex,
+          $benchmarkStartedAt,
+          $config ?? [],
+          $isPrecheck ?? FALSE
+        );
+      }
       if ($e instanceof RequestAbort) {
         // Abort request implies response already sent.
         return;
@@ -440,6 +455,105 @@ class import2ChunkHandler {
       'chunk_size_background_import' => 500,
     ];
     self::$batchRowLimit = $moduleConfig[$key] ?? $defaults[$key];
+  }
+
+  /**
+   * Log database benchmark data for an import chunk when enabled.
+   *
+   * Query values are removed from the signatures before logging, so the
+   * benchmark does not expose imported data in the log.
+   *
+   * @param int $benchmarkStartIndex
+   *   Index in Database::$benchmarks at the start of the chunk.
+   * @param float $startedAt
+   *   Microtime when processing the chunk started.
+   * @param array $config
+   *   Import configuration.
+   * @param bool $isPrecheck
+   *   Whether this is a precheck chunk.
+   */
+  private static function logBenchmark($benchmarkStartIndex, $startedAt, array $config, $isPrecheck) {
+    $moduleConfig = kohana::config('indicia_svc_import', FALSE, FALSE);
+    if (empty($moduleConfig['benchmark_import_chunks'])) {
+      return;
+    }
+    $benchmarks = array_slice(Database::$benchmarks, $benchmarkStartIndex);
+    $queryTime = 0;
+    $byCategory = [];
+    $bySignature = [];
+    foreach ($benchmarks as $benchmark) {
+      $time = (float) ($benchmark['time'] ?? 0);
+      $queryTime += $time;
+      $category = self::getBenchmarkQueryCategory($benchmark['query'] ?? '');
+      if (!isset($byCategory[$category])) {
+        $byCategory[$category] = [
+          'count' => 0,
+          'time' => 0,
+        ];
+      }
+      $byCategory[$category]['count']++;
+      $byCategory[$category]['time'] += $time;
+
+      $signature = self::getBenchmarkQuerySignature($benchmark['query'] ?? '');
+      if (!isset($bySignature[$signature])) {
+        $bySignature[$signature] = [
+          'count' => 0,
+          'time' => 0,
+          'rows' => 0,
+        ];
+      }
+      $bySignature[$signature]['count']++;
+      $bySignature[$signature]['time'] += $time;
+      $bySignature[$signature]['rows'] += (int) ($benchmark['rows'] ?? 0);
+    }
+    uasort($bySignature, function ($left, $right) {
+      return $right['count'] <=> $left['count'];
+    });
+    $bySignature = array_slice($bySignature, 0, 20, TRUE);
+    $summary = [
+      'configId' => $config['importGuid'] ?? NULL,
+      'mode' => $isPrecheck ? 'precheck' : 'import',
+      'rowsProcessed' => $config['rowsProcessed'] ?? NULL,
+      'parentRowsProcessed' => $config['parentEntityRowsProcessed'] ?? NULL,
+      'requestTime' => microtime(TRUE) - $startedAt,
+      'queryCount' => count($benchmarks),
+      'queryTime' => $queryTime,
+      'queriesByCategory' => $byCategory,
+      'topQuerySignatures' => $bySignature,
+    ];
+    kohana::log('debug', 'Import chunk benchmark: ' . json_encode($summary));
+  }
+
+  /**
+   * Categorise a benchmark query by its leading SQL operation.
+   *
+   * @param string $query
+   *   SQL query.
+   *
+   * @return string
+   *   Query category.
+   */
+  private static function getBenchmarkQueryCategory($query) {
+    if (preg_match('/^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|BEGIN|COMMIT|ROLLBACK)\b/i', $query, $matches)) {
+      return strtoupper($matches[1]);
+    }
+    return 'OTHER';
+  }
+
+  /**
+   * Normalise a benchmark query for grouping without retaining its values.
+   *
+   * @param string $query
+   *   SQL query.
+   *
+   * @return string
+   *   Normalised query signature.
+   */
+  private static function getBenchmarkQuerySignature($query) {
+    $signature = preg_replace("/'(?:''|[^'])*'/", "'?" . "'", $query);
+    $signature = preg_replace('/\b\d+(?:\.\d+)?\b/', '?', $signature);
+    $signature = preg_replace('/\s+/', ' ', trim($signature));
+    return substr($signature, 0, 240);
   }
 
   /**
