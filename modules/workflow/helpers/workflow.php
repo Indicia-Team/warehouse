@@ -193,6 +193,7 @@ class workflow {
       return $r;
     }
     $table = inflector::plural($entity);
+    $eventTypes = array_values(array_unique($eventTypes));
     foreach ($entityConfig['keys'] as $keyDef) {
       $qry = $db
         ->select('workflow_events.id, workflow_events.key_value, workflow_events.event_type, workflow_events.mimic_rewind_first, ' .
@@ -200,9 +201,10 @@ class workflow {
         ->from('workflow_events')
         ->where([
           'workflow_events.deleted' => 'f',
-          'key' => $keyDef['db_store_value'],
+          'workflow_events.entity' => $entity,
+          'workflow_events.key' => $keyDef['db_store_value'],
         ])
-        ->in('group_code', $groupCodes)
+        ->in('workflow_events.group_code', $groupCodes)
         ->in('workflow_events.event_type', $eventTypes);
       if ($keyDef['table'] === $entity) {
         $column = $keyDef['column'];
@@ -224,7 +226,6 @@ class workflow {
       }
       $qry->in("$table.id", $entityIdList);
       $events = $qry->get();
-      kohana::log('debug', 'getEventsForRecords query: ' . $db->last_query());
       foreach ($events as $event) {
         $idField = "{$entity}_id";
         if (!isset($r["$entity.{$event->$idField}"])) {
@@ -306,9 +307,10 @@ class workflow {
       ->from('workflow_events')
       ->where([
         'workflow_events.deleted' => 'f',
-        'key' => $keyDef['db_store_value'],
+        'workflow_events.entity' => $entity,
+        'workflow_events.key' => $keyDef['db_store_value'],
       ])
-      ->in('group_code', $groupCodes);
+      ->in('workflow_events.group_code', $groupCodes);
     if ($keyDef['table'] === $entity) {
       $column = $keyDef['column'];
       $qry->where('workflow_events.key_value', $newRecord->$column);
@@ -357,6 +359,7 @@ class workflow {
         // Translate Released to Fully released event type - other codes are the same.
         $eventTypes[] = ($newRecord->release_status === 'R') ? 'F' : $newRecord->release_status;
       }
+      $eventTypes = array_values(array_unique($eventTypes));
       $qry->in('workflow_events.event_type', $eventTypes);
     }
     return $qry;
