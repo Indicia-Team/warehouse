@@ -1210,6 +1210,51 @@ SQL;
   }
 
   /**
+   * Attribute value submissions should derive survey context from their owner.
+   */
+  public function testAttributeValueSubmissionDerivesSurveyContext() {
+    $occurrenceSubmission = submission_builder::build_submission([
+      'occurrence:sample_id' => 1,
+      'occurrence:taxa_taxon_list_id' => 1,
+    ], ['model' => 'occurrence']);
+    $occurrenceResponse = data_entry_helper::forward_post_to(
+      'occurrence',
+      $occurrenceSubmission,
+      self::$auth['write_tokens']
+    );
+    $this->assertArrayHasKey('success', $occurrenceResponse, 'Occurrence creation without survey_id failed.');
+    $occurrenceId = (int) $occurrenceResponse['success'];
+
+    $occurrenceAttributeSubmission = submission_builder::build_submission([
+      'occurrence_attribute_value:occurrence_id' => $occurrenceId,
+      'occurrence_attribute_value:occurrence_attribute_id' => 1,
+      'occurrence_attribute_value:text_value' => 'Derived survey context',
+    ], ['model' => 'occurrence_attribute_value']);
+    $occurrenceAttributeResponse = data_entry_helper::forward_post_to(
+      'occurrence_attribute_value',
+      $occurrenceAttributeSubmission,
+      self::$auth['write_tokens']
+    );
+    $this->assertArrayHasKey('success', $occurrenceAttributeResponse, 'Occurrence attribute value without survey_id failed.');
+
+    $sampleAttributeSubmission = submission_builder::build_submission([
+      'sample_attribute_value:sample_id' => 1,
+      'sample_attribute_value:sample_attribute_id' => 1,
+      'sample_attribute_value:int_value' => 42,
+    ], ['model' => 'sample_attribute_value']);
+    $sampleAttributeResponse = data_entry_helper::forward_post_to(
+      'sample_attribute_value',
+      $sampleAttributeSubmission,
+      self::$auth['write_tokens']
+    );
+    $this->assertArrayHasKey('success', $sampleAttributeResponse, 'Sample attribute value without survey_id failed.');
+
+    self::$db->query('DELETE FROM occurrence_attribute_values WHERE occurrence_id=?', [$occurrenceId]);
+    self::$db->query('DELETE FROM occurrences WHERE id=?', [$occurrenceId]);
+    self::$db->query('DELETE FROM sample_attribute_values WHERE sample_id=? AND sample_attribute_id=?', [1, 1]);
+  }
+
+  /**
    * Check filling in of map_square links to cache tables.
    */
   public function testSampleOccurrenceMapSquares() {

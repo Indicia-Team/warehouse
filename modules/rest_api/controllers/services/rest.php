@@ -3716,17 +3716,18 @@ SQL;
     if (!empty($values['sample_id'])) {
       // Sample must be for same user.
       $sampleCheck = RestObjects::$db->query(<<<SQL
-        SELECT count(*)
+        SELECT survey_id
         FROM samples
         WHERE id=?
         AND deleted=false
         AND created_by_id=?
       SQL,
         [$values['sample_id'], RestObjects::$clientUserId]
-      )->current()->count;
-      if ($sampleCheck !== '1') {
+      )->current();
+      if (!$sampleCheck) {
         RestObjects::$apiResponse->fail('Bad Request', 400, NULL, ['occurrence:sample_id' => 'Attempt to create occurrence in invalid sample.']);
       }
+      $values['survey_id'] = $sampleCheck->survey_id;
     }
   }
 

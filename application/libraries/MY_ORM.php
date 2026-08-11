@@ -50,6 +50,13 @@ class ORM extends ORM_Core {
   public static $changedRecords;
 
   /**
+   * Request-local cache of survey IDs for sample and occurrence records.
+   *
+   * @var array
+   */
+  private static $recordContexts = [];
+
+  /**
    * Values before any changes applied.
    *
    * @var array
@@ -796,6 +803,86 @@ class ORM extends ORM_Core {
         $this->identifiers['survey_id'] = $this->submission['fields']['survey_id'];
       }
     }
+    if (empty($this->identifiers['survey_id'])) {
+      $this->populateSurveyIdentifierFromOwner();
+    }
+  }
+
+  /**
+   * Populate survey context when the submission only identifies an owner.
+   *
+   * This supports standalone occurrence and attribute-value submissions,
+   * where the survey is not itself a submitted field.
+   */
+  private function populateSurveyIdentifierFromOwner() {
+    $ownerType = NULL;
+    $ownerId = NULL;
+    if (in_array($this->object_name, ['sample', 'sample_attribute_value'])) {
+      $ownerType = 'sample';
+      $ownerId = $this->getSubmissionFieldValue('sample_id');
+      if (empty($ownerId) && $this->object_name === 'sample_attribute_value' && $this->id) {
+        $ownerId = $this->sample_id;
+      }
+    }
+    elseif (in_array($this->object_name, ['occurrence', 'occurrence_attribute_value'])) {
+      if (!empty($this->getSubmissionFieldValue('sample_id'))) {
+        $ownerType = 'sample';
+        $ownerId = $this->getSubmissionFieldValue('sample_id');
+      }
+      else {
+        $ownerType = 'occurrence';
+        $ownerId = $this->getSubmissionFieldValue('occurrence_id');
+        if (empty($ownerId) && $this->object_name === 'occurrence' && $this->id) {
+          $ownerId = $this->id;
+        }
+        elseif (empty($ownerId) && $this->object_name === 'occurrence_attribute_value' && $this->id) {
+          $ownerId = $this->occurrence_id;
+        }
+      }
+    }
+    if (empty($ownerType) || empty($ownerId)) {
+      return;
+    }
+    $cacheKey = "$ownerType:$ownerId";
+    if (!array_key_exists($cacheKey, self::$recordContexts)) {
+      if ($ownerType === 'sample') {
+        $context = $this->db->select('website_id, survey_id')
+          ->from('samples')
+          ->where('id', $ownerId)
+          ->get()->current();
+      }
+      else {
+        $context = $this->db->select('s.website_id, s.survey_id')
+          ->from('occurrences AS o')
+          ->join('samples AS s', 's.id', 'o.sample_id')
+          ->where('o.id', $ownerId)
+          ->get()->current();
+      }
+      self::$recordContexts[$cacheKey] = $context ? [
+        'website_id' => $context->website_id,
+        'survey_id' => $context->survey_id,
+      ] : NULL;
+    }
+    if (!empty(self::$recordContexts[$cacheKey])) {
+      if (empty($this->identifiers['website_id'])) {
+        $this->identifiers['website_id'] = self::$recordContexts[$cacheKey]['website_id'];
+      }
+      if (empty($this->identifiers['survey_id'])) {
+        $this->identifiers['survey_id'] = self::$recordContexts[$cacheKey]['survey_id'];
+      }
+    }
+  }
+
+  /**
+   * Get a submitted field value regardless of whether it uses the standard
+   * value wrapper or the scalar form accepted by generic services.
+   */
+  private function getSubmissionFieldValue($field) {
+    if (!isset($this->submission['fields'][$field])) {
+      return NULL;
+    }
+    $value = $this->submission['fields'][$field];
+    return is_array($value) ? ($value['value'] ?? NULL) : $value;
   }
 
   /**
