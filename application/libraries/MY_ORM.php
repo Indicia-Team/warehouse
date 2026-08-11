@@ -414,7 +414,7 @@ class ORM extends ORM_Core {
   public function validate(Validation $array, $save = FALSE) {
     if (!empty($this->identifiers['survey_id'])) {
       $cache_key = 'survey_validation_rules_' . $this->identifiers['survey_id'];
-      $validationRules = Kohana::cache($cache_key);
+      $validationRules = $this->cache->get($cache_key);
       if ($validationRules === NULL) {
         $qry = $this->db
           ->select('core_validation_rules')
@@ -423,7 +423,7 @@ class ORM extends ORM_Core {
           ->get()
           ->current();
         $validationRules = $qry->core_validation_rules;
-        Kohana::cache($cache_key, $validationRules);
+        $this->cache->set($cache_key, $validationRules);
       }
       if (!empty($validationRules)) {
         $rules = json_decode($validationRules, TRUE);
@@ -1881,13 +1881,12 @@ class ORM extends ORM_Core {
       ($this->identifiers['taxon_list_id'] ?? '') . '-' .
       ($required ? 't' : 'f') .
       $typeFilter;
-    $cache = Cache::instance();
-    $attrs = $cache->get($cacheId);
+    $attrs = $this->cache->get($cacheId);
     if ($attrs === NULL) {
       $attrEntity = $this->object_name . '_attribute';
       $attrTable = inflector::plural($this->object_name . '_attribute');
 
-      $this->db->select("$attrTable.id", "$attrTable.caption", "$attrTable.data_type", "$attrTable.multi_value");
+      $this->db->select(["$attrTable.id", "$attrTable.caption", "$attrTable.data_type", "$attrTable.multi_value"]);
       $this->db->from($attrTable);
       $this->db->where("$attrTable.deleted", 'f');
       if ((!empty($this->identifiers['website_id']) || !empty($this->identifiers['survey_id']))
@@ -1942,7 +1941,7 @@ class ORM extends ORM_Core {
       }
       $this->db->orderby("$attrTable.caption", 'ASC');
       $attrs = $this->db->get()->result_array(TRUE);
-      $cache->set($cacheId, $attrs, ['attribute-lists']);
+      $this->cache->set($cacheId, $attrs, ['attribute-lists']);
     }
     return $attrs;
   }

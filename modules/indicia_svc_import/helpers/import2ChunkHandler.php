@@ -53,6 +53,13 @@ class import2ChunkHandler {
   public static $batchRowLimit = 50;
 
   /**
+   * Maximum number of prechecked row flags to update in one statement.
+   *
+   * @var int
+   */
+  private const PRECHECK_ROW_UPDATE_BATCH_SIZE = 200;
+
+  /**
    * Import or validate a chunk of an import file.
    *
    * @param Database $db
@@ -96,6 +103,7 @@ class import2ChunkHandler {
       // fields (e.g. build date from day, month, year).
       $parentEntityCompoundFields = self::getCompoundFieldsToProcessForEntity($config['parentEntity'], $parentEntityColumns);
       $childEntityCompoundFields = self::getCompoundFieldsToProcessForEntity($config['entity'], $childEntityColumns);
+      $precheckRowIds = [];
       foreach ($parentEntityDataRows as $parentEntityDataRow) {
         // @todo Updating existing data.
         $parent = ORM::factory($config['parentEntity']);
@@ -184,7 +192,15 @@ class import2ChunkHandler {
               self::saveErrorsToRows($db, $childEntityDataRow, ['_row_id'], $errors, $config);
             }
             else {
-              self::setRowDone($db, $childEntityDataRow->_row_id, $isPrecheck, $config);
+              if ($isPrecheck) {
+                $precheckRowIds[] = (int) $childEntityDataRow->_row_id;
+                if (count($precheckRowIds) >= self::PRECHECK_ROW_UPDATE_BATCH_SIZE) {
+                  self::setPrecheckedRowsDone($db, $precheckRowIds, $config);
+                }
+              }
+              else {
+                self::setRowDone($db, $childEntityDataRow->_row_id, FALSE, $config);
+              }
               if (!$isPrecheck) {
                 if (!empty($submission['occurrence:id'])) {
                   $config['rowsUpdated']++;
@@ -213,6 +229,9 @@ class import2ChunkHandler {
             }
             $config['rowsProcessed']++;
           }
+        }
+        if ($isPrecheck && !empty($precheckRowIds)) {
+          self::setPrecheckedRowsDone($db, $precheckRowIds, $config);
         }
         $config['parentEntityRowsProcessed']++;
       }
@@ -1002,6 +1021,37 @@ SQL;
       WHERE _row_id = ?;
     SQL;
     $db->query($sql, $rowId);
+  }
+
+  /**
+   * Set the checked flag for a bounded batch of successfully prechecked rows.
+   *
+   * Precheck flags are deliberately flushed independently from import flags.
+   * Repeating a precheck after a failed request is safe, whereas marking an
+   * imported row before the whole operation is durable could allow a retry to
+   * duplicate records. Batching them improves precheck performance.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param array $rowIds
+   *   Import row IDs to mark as checked. Values must be integers.
+   * @param array $config
+   *   Import configuration settings.
+   */
+  private static function setPrecheckedRowsDone($db, array &$rowIds, array $config) {
+    if (empty($rowIds)) {
+      return;
+    }
+    $dbIdentifiers = self::getEscapedDbIdentifiers($db, $config);
+    $rowIds = array_map('intval', $rowIds);
+    $rowIdsSql = implode(',', $rowIds);
+    $sql = <<<SQL
+      UPDATE import_temp.$dbIdentifiers[tempTableName]
+      SET checked = true
+      WHERE _row_id IN ($rowIdsSql);
+SQL;
+    $db->query($sql);
+    $rowIds = [];
   }
 
   /**
