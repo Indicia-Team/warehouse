@@ -406,14 +406,20 @@ class ORM extends ORM_Core {
    */
   public function validate(Validation $array, $save = FALSE) {
     if (!empty($this->identifiers['survey_id'])) {
-      $qry = $this->db
-        ->select('core_validation_rules')
-        ->from('surveys')
-        ->where('id', $this->identifiers['survey_id'])
-        ->get()
-        ->current();
-      if (!empty($qry->core_validation_rules)) {
-        $rules = json_decode($qry->core_validation_rules, TRUE);
+      $cache_key = 'survey_validation_rules_' . $this->identifiers['survey_id'];
+      $validationRules = Kohana::cache($cache_key);
+      if ($validationRules === NULL) {
+        $qry = $this->db
+          ->select('core_validation_rules')
+          ->from('surveys')
+          ->where('id', $this->identifiers['survey_id'])
+          ->get()
+          ->current();
+        $validationRules = $qry->core_validation_rules;
+        Kohana::cache($cache_key, $validationRules);
+      }
+      if (!empty($validationRules)) {
+        $rules = json_decode($validationRules, TRUE);
         if (isset($rules[$this->object_name])) {
           foreach ($rules[$this->object_name] as $field => $rules) {
             $array->add_rules($field, $rules);
@@ -602,6 +608,16 @@ class ORM extends ORM_Core {
   public function getUserId() {
     global $remoteUserId;
     return $remoteUserId ?? $_SESSION['auth_user']->id ?? Kohana::config('indicia.defaultPersonId');
+  }
+
+  /**
+   * Provide website, survey or taxon list context for validation.
+   *
+   * @param array $identifiers
+   *   Identifier values keyed by identifier name.
+   */
+  public function setIdentifiers(array $identifiers) {
+    $this->identifiers = array_merge($this->identifiers, $identifiers);
   }
 
   /**
@@ -1070,6 +1086,7 @@ class ORM extends ORM_Core {
       foreach ($vArray as $field => $value) {
         if (preg_match("/^$this->attrs_field_prefix\:(?<id>\d+)/", $field, $matches)) {
           $attrObj = ORM::factory($this->object_name . '_attribute_value');
+          $attrObj->setIdentifiers($this->identifiers);
           $valueField = $this->getValueField($allAttributes, $matches['id']);
           $attrArray = [
             $this->object_name . '_id' => 1,
@@ -2240,6 +2257,7 @@ class ORM extends ORM_Core {
       $attrValueModel = ORM::factory($this->object_name . '_attribute_value');
       $this->attrValModels[$this->object_name] = $attrValueModel;
     }
+    $attrValueModel->setIdentifiers($this->identifiers);
     if (!empty($valueId)) {
       // If we know the value ID, load the model.
       $attrValueModel->find($valueId);

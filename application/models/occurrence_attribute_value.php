@@ -34,6 +34,22 @@ class Occurrence_Attribute_Value_Model extends Attribute_Value_ORM {
   }
 
   protected function get_survey_specific_rules($values) {
+    // If identifiers are available, then we can use a faster query to get the
+    // rules. Otherwise we have to join through the samples and occurrences
+    // tables to get the survey.
+    if (!empty($this->identifiers['website_id']) && !empty($this->identifiers['survey_id'])) {
+      return $this->db
+        ->from('occurrence_attributes_websites as oaw')
+        ->join('occurrence_attributes as oa', 'oa.id', 'oaw.occurrence_attribute_id')
+        ->select('oaw.validation_rules, oa.allow_ranges')
+        ->where([
+          'oaw.website_id' => $this->identifiers['website_id'],
+          'oaw.restrict_to_survey_id' => $this->identifiers['survey_id'],
+          'oaw.occurrence_attribute_id' => $values['occurrence_attribute_id'],
+        ])
+        ->limit(1)
+        ->get();
+    }
     return $this->db
             ->from('occurrence_attributes_websites as oaw')
             ->join('samples as s', 's.survey_id', 'oaw.restrict_to_survey_id')

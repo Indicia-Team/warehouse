@@ -28,6 +28,13 @@
 abstract class Attribute_Value_ORM extends ORM {
 
   /**
+   * Survey-specific rules loaded during this request.
+   *
+   * @var array
+   */
+  private static $surveySpecificRules = [];
+
+  /**
    * Should metadata fields be updated?
    *
    * Default behaviour on save is to update metadata. If we detect no changes
@@ -131,12 +138,9 @@ abstract class Attribute_Value_ORM extends ORM {
         $this->unvalidatedFields[] = $vf;
       }
       // Now get the survey specific custom attribute validation rules for the attribute
-      // @todo: Are there opportunities to cache this information as this is called for each
-      // attribute value saved and causes a query to be issued to the db.
       if (method_exists($this, 'get_survey_specific_rules')) {
-        $aw = $this->get_survey_specific_rules($values);
-        if (count($aw) > 0) {
-          $aw = $aw[0];
+        $aw = $this->getSurveySpecificRules($values, $type);
+        if ($aw !== NULL) {
           if ($aw->validation_rules != '') {
             $rules = explode("\n", $aw->validation_rules);
             foreach ($rules as $a) {
@@ -160,6 +164,39 @@ abstract class Attribute_Value_ORM extends ORM {
       }
 
     }
+  }
+
+  /**
+   * Retrieve and request-cache survey-specific attribute validation rules.
+   *
+   * @param array $values
+   *   Attribute value submission.
+   * @param string $type
+   *   Attribute owner type.
+   *
+   * @return object|null
+   *   Validation rule record, or NULL if no survey-specific rules exist.
+   */
+  private function getSurveySpecificRules(array $values, $type) {
+    $attributeId = $values[$type . '_attribute_id'];
+    $canCache = !empty($this->identifiers['website_id']) && !empty($this->identifiers['survey_id']);
+    if ($canCache) {
+      $cacheKey = implode(':', [
+        $type,
+        $this->identifiers['website_id'],
+        $this->identifiers['survey_id'],
+        $attributeId,
+      ]);
+      if (array_key_exists($cacheKey, self::$surveySpecificRules)) {
+        return self::$surveySpecificRules[$cacheKey];
+      }
+    }
+    $result = $this->get_survey_specific_rules($values);
+    $rules = count($result) > 0 ? $result[0] : NULL;
+    if ($canCache) {
+      self::$surveySpecificRules[$cacheKey] = $rules;
+    }
+    return $rules;
   }
 
   public function save() {
