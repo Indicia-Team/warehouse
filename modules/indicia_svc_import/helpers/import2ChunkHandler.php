@@ -107,6 +107,7 @@ class import2ChunkHandler {
           $submission["$config[parentEntity]:import_guid"] = $config['importGuid'];
         }
         $parent->set_submission_data($submission);
+        $parentErrors = [];
         if ($isPrecheck) {
           try {
             $parentErrors = $parent->precheck($identifiers);
@@ -151,6 +152,7 @@ class import2ChunkHandler {
               $submission["$config[entity]:import_guid"] = $config['importGuid'];
             }
             $child->set_submission_data($submission);
+            $errors = [];
             if ($isPrecheck) {
               try {
                 $errors = $child->precheck($identifiers);
