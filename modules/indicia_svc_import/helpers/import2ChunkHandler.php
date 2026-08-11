@@ -75,11 +75,16 @@ class import2ChunkHandler {
     $benchmarkStartedAt = microtime(TRUE);
     $benchmarkStartIndex = count(Database::$benchmarks);
     $benchmarkLogged = FALSE;
+    $workflowBulkModeEnabled = FALSE;
     try {
       $configId = $params['config-id'];
       $isPrecheck = !empty($params['precheck']);
       // Don't process cache tables immediately to improve performance.
       cache_builder::$delayCacheUpdates = TRUE;
+      if (class_exists('workflow')) {
+        workflow::setBulkMode(TRUE);
+        $workflowBulkModeEnabled = TRUE;
+      }
       $config = self::getConfig($configId);
       $isBackground = $config['processingMode'] === 'background';
       // If request to start again sent, go from beginning.
@@ -293,6 +298,11 @@ class import2ChunkHandler {
         'status' => 'error',
         'msg' => $e->getMessage(),
       ];
+    }
+    finally {
+      if ($workflowBulkModeEnabled) {
+        workflow::setBulkMode(FALSE);
+      }
     }
   }
 

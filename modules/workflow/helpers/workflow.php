@@ -28,6 +28,45 @@ class workflow {
 
   private static $configForEntities = [];
 
+  /**
+   * Request-local workflow events indexed by target ID and event type.
+   *
+   * @var array
+   */
+  private static $eventsByTarget = [];
+
+  /**
+   * Request-local workflow events loaded for individual targets.
+   *
+   * @var array
+   */
+  private static $eventsByTargetLazy = [];
+
+  /**
+   * Whether workflow event lookups should preload all targets for a key.
+   *
+   * @var bool
+   */
+  private static $bulkMode = FALSE;
+
+  /**
+   * Enable or disable bulk workflow event loading for the current request.
+   *
+   * @param bool $enabled
+   *   Whether bulk mode should be enabled.
+   */
+  public static function setBulkMode($enabled) {
+    self::$bulkMode = (bool) $enabled;
+  }
+
+  /**
+   * Clear workflow events preloaded during this request.
+   */
+  public static function clearEventCache() {
+    self::$eventsByTarget = [];
+    self::$eventsByTargetLazy = [];
+  }
+
   public static function getEntityConfig($entity) {
     if (!isset(self::$configForEntities[$entity])) {
       $config = Kohana::config('workflow');
@@ -265,22 +304,21 @@ class workflow {
       // First state change, oldRecord to rewoundRecord. Not necessary if
       // oldRecord and rewoundRecord are the same.
       if ($oldRecord->as_array() != $rewoundValues) {
-        $qry = self::buildEventQueryForKey($db, $groupCodes, $entity, $oldRecord, $rewoundRecord, $keyDef);
-        self::applyEventsQueryToRecord($db, $qry, $entity, $rewoundValues, $newRecord, $state);
-        kohana::log('error', 'EventsQuery oldToRewound: ' . $db->last_query());
+        $events = self::getEventsForKey($db, $groupCodes, $entity, $oldRecord, $rewoundRecord, $keyDef);
+        self::applyEventsToRecord($db, $events, $entity, $rewoundValues, $newRecord, $state);
       }
       // Second state change, rewoundRecord to newRecord.
-      $qry = self::buildEventQueryForKey($db, $groupCodes, $entity, $rewoundRecord, $newRecord, $keyDef);
-      self::applyEventsQueryToRecord($db, $qry, $entity, $rewoundValues, $newRecord, $state);
+      $events = self::getEventsForKey($db, $groupCodes, $entity, $rewoundRecord, $newRecord, $keyDef);
+      self::applyEventsToRecord($db, $events, $entity, $rewoundValues, $newRecord, $state);
     }
     return $state;
   }
 
   /**
-   * Construct a query to retrieve workflow events.
+   * Retrieve preloaded workflow events applicable to a record transition.
    *
-   * Constructs a query object which will find all the events applicable to the
-   * current record for a given key in the entity's configuration.
+  * Finds all events applicable to the current record for a given key in the
+  * entity's configuration.
    *
    * @param object $db
    *   Database connection.
@@ -295,41 +333,28 @@ class workflow {
    * @param array $keyDef
    *   Configuration for the key we are building the query for.
    *
-   * @return object
-   *   Query object.
+   * @return array
+   *   Applicable workflow event records.
    */
-  private static function buildEventQueryForKey($db, array $groupCodes, $entity, $oldRecord, $newRecord, array $keyDef) {
+  private static function getEventsForKey($db, array $groupCodes, $entity, $oldRecord, $newRecord, array $keyDef) {
     $entityConfig = self::getEntityConfig($entity);
     $eventTypes = [];
-    $qry = $db
-      ->select('workflow_events.id, workflow_events.event_type, workflow_events.mimic_rewind_first, workflow_events.values, ' .
-          'workflow_events.attrs_filter_term, workflow_events.location_ids_filter')
-      ->from('workflow_events')
-      ->where([
-        'workflow_events.deleted' => 'f',
-        'workflow_events.entity' => $entity,
-        'workflow_events.key' => $keyDef['db_store_value'],
-      ])
-      ->in('workflow_events.group_code', $groupCodes);
+    $targetId = NULL;
     if ($keyDef['table'] === $entity) {
       $column = $keyDef['column'];
-      $qry->where('workflow_events.key_value', $newRecord->$column);
+      $targetId = $newRecord->$column;
       // It's a set event if the key is changing in the main entity table.
       if ((string) $newRecord->$column !== (string) $oldRecord->$column) {
         $eventTypes[] = 'S';
       }
     }
     else {
-      $qry->join($keyDef['table'], "$keyDef[table].$keyDef[column]", 'workflow_events.key_value');
       // Cross reference to the extraData for the same table to find the field
       // name which matches $newRecord->column.
       foreach ($entityConfig['extraData'] as $extraDataDef) {
         if ($extraDataDef['table'] === $keyDef['table']) {
           $originatingColumn = $extraDataDef['originating_table_column'];
-          $qry->where(
-            "$extraDataDef[table].$extraDataDef[target_table_column]",
-            $newRecord->$originatingColumn
-          );
+          $targetId = $newRecord->$originatingColumn;
           // It's a set event if the foreign key in the main data table which
           // points to the extraData record holding the key is changing.
           if ((string) $newRecord->$originatingColumn !== (string) $oldRecord->$originatingColumn) {
@@ -359,10 +384,68 @@ class workflow {
         // Translate Released to Fully released event type - other codes are the same.
         $eventTypes[] = ($newRecord->release_status === 'R') ? 'F' : $newRecord->release_status;
       }
-      $eventTypes = array_values(array_unique($eventTypes));
-      $qry->in('workflow_events.event_type', $eventTypes);
     }
-    return $qry;
+    $eventTypes = array_values(array_unique($eventTypes));
+    if ($targetId === NULL || empty($eventTypes)) {
+      return [];
+    }
+    $eventsByTarget = self::getPreloadedEventsForKey($db, $groupCodes, $entity, $keyDef, $targetId);
+    $events = [];
+    foreach ($eventTypes as $eventType) {
+      if (isset($eventsByTarget[(string) $targetId][$eventType])) {
+        $events = array_merge($events, $eventsByTarget[(string) $targetId][$eventType]);
+      }
+    }
+    return $events;
+  }
+
+  /**
+   * Preload workflow events for an entity key, indexed by target and type.
+   */
+  private static function getPreloadedEventsForKey($db, array $groupCodes, $entity, array $keyDef, $targetId) {
+    sort($groupCodes);
+    $baseCacheKey = implode('|', [$entity, $keyDef['db_store_value'], implode(',', $groupCodes)]);
+    $cacheKey = self::$bulkMode ? $baseCacheKey : $baseCacheKey . '|' . (string) $targetId;
+    $cache = self::$bulkMode ? self::$eventsByTarget : self::$eventsByTargetLazy;
+    if (!array_key_exists($cacheKey, $cache)) {
+      $targetField = 'workflow_events.key_value';
+      if ($keyDef['table'] !== $entity) {
+        $entityConfig = self::getEntityConfig($entity);
+        foreach ($entityConfig['extraData'] as $extraDataDef) {
+          if ($extraDataDef['table'] === $keyDef['table']) {
+            $targetField = "$extraDataDef[table].$extraDataDef[target_table_column]";
+            break;
+          }
+        }
+      }
+      $qry = $db
+        ->select('workflow_events.id, workflow_events.event_type, workflow_events.mimic_rewind_first, workflow_events.values, ' .
+          "workflow_events.attrs_filter_term, workflow_events.location_ids_filter, $targetField AS workflow_target_id")
+        ->from('workflow_events')
+        ->where([
+          'workflow_events.deleted' => 'f',
+          'workflow_events.entity' => $entity,
+          'workflow_events.key' => $keyDef['db_store_value'],
+        ])
+        ->in('workflow_events.group_code', $groupCodes);
+      if ($keyDef['table'] !== $entity) {
+        $qry->join($keyDef['table'], "$keyDef[table].$keyDef[column]", 'workflow_events.key_value');
+      }
+      if (!self::$bulkMode) {
+        $qry->where($targetField, $targetId);
+      }
+      $eventsByTarget = [];
+      foreach ($qry->get() as $event) {
+        $eventsByTarget[(string) $event->workflow_target_id][$event->event_type][] = $event;
+      }
+      if (self::$bulkMode) {
+        self::$eventsByTarget[$cacheKey] = $eventsByTarget;
+      }
+      else {
+        self::$eventsByTargetLazy[$cacheKey] = $eventsByTarget;
+      }
+    }
+    return $cache[$cacheKey] ?? (self::$bulkMode ? self::$eventsByTarget[$cacheKey] : self::$eventsByTargetLazy[$cacheKey]);
   }
 
   /**
@@ -396,8 +479,8 @@ class workflow {
    *
    * @param object $db
    *   Database connection.
-   * @param object $qry
-   *   Query object set up to retrieve the events to apply.
+  * @param array $events
+  *   Workflow events to apply.
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
    * @param array $oldValues
@@ -409,8 +492,7 @@ class workflow {
    *   State data to pass through to the post-process hook, containing undo
    *   data.
    */
-  private static function applyEventsQueryToRecord($db, $qry, $entity, array $oldValues, &$newRecord, array &$state) {
-    $events = $qry->get();
+  private static function applyEventsToRecord($db, array $events, $entity, array $oldValues, &$newRecord, array &$state) {
     foreach ($events as $event) {
       // If a location filter, then check it now.
       if ($entity === 'occurrence' && !empty($event->location_ids_filter)) {

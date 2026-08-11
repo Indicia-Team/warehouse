@@ -80,4 +80,12 @@ class Workflow_event_Model extends ORM {
     }
   }
 
+  /**
+   * Invalidate workflow events preloaded earlier in this request.
+   */
+  protected function postSubmit($isInsert) {
+    workflow::clearEventCache();
+    return TRUE;
+  }
+
 }
