@@ -469,7 +469,7 @@ class import2ChunkHandler {
     foreach ($fields as $field) {
       $fieldEsc = pg_escape_identifier($db->getLink(), $field);
       $value = pg_escape_literal($db->getLink(), $parentEntityDataRow->$field ?? '');
-      $wheresList[] = "COALESCE($fieldEsc::text, '')=$value";
+      $wheresList[] = "COALESCE($fieldEsc, '')=$value";
     }
     $wheres = implode("\nAND ", $wheresList);
     // Now retrieve the sub-entity rows.
