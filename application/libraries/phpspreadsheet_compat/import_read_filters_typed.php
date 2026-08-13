@@ -1,5 +1,6 @@
 <?php
 
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 
 class IndiciaImportFirstRowReadFilter implements IReadFilter {
@@ -66,7 +67,8 @@ class IndiciaImportRangeReadFilter implements IReadFilter {
 
   public function readCell(string $columnAddress, int $row, string $worksheetName = ''): bool {
     $inRange = $row >= $this->offset && $row < $this->offset + $this->limit;
-    $wantCol = $this->columnIndexes === NULL || in_array(ord($columnAddress) - 65, $this->columnIndexes);
+    $columnIndex = Coordinate::columnIndexFromString($columnAddress) - 1;
+    $wantCol = $this->columnIndexes === NULL || in_array($columnIndex, $this->columnIndexes);
     return $inRange && $wantCol;
   }
 
