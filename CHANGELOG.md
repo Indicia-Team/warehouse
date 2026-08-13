@@ -4,6 +4,25 @@ Notable changes to the Indicia warehouse are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Version 9.26.0
+*2026-08-13*
+
+* Significant upgrade to the taxa taxon list edit form, with features for better management of
+  synonyms and common names:
+  * Synonyms can be promoted to be the preferred name.
+  * Common names can be selected as the default common name.
+  * Ability to edit name specific flags and keys.
+  * Better syncing of fields such as the terrestrial/marine, parent_id, etc across names whilst
+    editing.
+* Some general performance improvements on data saving, especially for imports.
+* Import files containing samples with large lists of occurrence records will no longer cause
+  timeouts (https://github.com/BiologicalRecordsCentre/iRecord/issues/2063).
+* Import files with blank first row no longer cause errors, instead a warning is returned. See
+  https://github.com/BiologicalRecordsCentre/iRecord/issues/2101.
+* Update to latest version of PHPSpreadsheet library used for imports.
+* PHP version requirement increased to 8.2.
+
+
 ## Version 9.25.0
 *2026-07-24*
 
